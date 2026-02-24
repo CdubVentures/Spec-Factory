@@ -356,11 +356,27 @@ export function identityStatusBadgeClass(status: string): string {
       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
     case 'provisional':
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+    case 'conflict':
+      return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
     case 'unlocked':
-    case 'unknown':
-      return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+      return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+  }
+}
+
+export function identityStatusTooltip(status: string): string {
+  switch (status) {
+    case 'locked':
+      return 'Identity confirmed with high confidence (>=95%). Extraction gates are open for all fields.';
+    case 'provisional':
+      return 'Identity partially confirmed (>=70% confidence). Some field extraction is gated until confidence improves.';
+    case 'conflict':
+      return 'Sources disagree about this product\'s identity. Conflicting anchors detected.';
+    case 'unlocked':
+      return 'Identity not yet resolved. The brand resolver and source matching have not run or have not reached confidence thresholds.';
+    default:
+      return 'Identity status has not been computed yet.';
   }
 }
 
@@ -475,6 +491,7 @@ export function prefetchTabAccent(tab: string): string {
     case 'needset': return 'border-emerald-500';
     case 'search_profile':
     case 'search_results': return 'border-purple-500';
+    case 'query_journey': return 'border-sky-500';
     case 'brand_resolver':
     case 'search_planner':
     case 'url_predictor':

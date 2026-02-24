@@ -1,294 +1,304 @@
-# Component System Architecture
+# Field Studio Contract and Component System Architecture
 
-Comprehensive developer guide for the Spec Factory component configuration, matching, and review system.
+Last updated: 2026-02-24
 
----
-
-## 1. What Is a Component?
-
-A **component** is a discrete, identifiable sub-part of a product that has its own identity, maker, and measurable properties. Examples:
-
-- **Sensor** (mouse): PixArt PAW3950, Razer Focus Pro 4K — with properties like DPI, IPS, acceleration
-- **Switch** (mouse/keyboard): Omron D2F-01F, Razer Gen-3 Optical — with properties like actuation force, lifespan, travel distance
-- **Encoder** (mouse): TTC Gold, Alps Alpine — with properties like steps per rotation, detent type
-- **Material** (any): PTFE, glass, ceramic — with properties like friction coefficient, durability
-
-Components differ from regular fields because:
-- They have a **canonical identity** (type + name + maker) in a shared database
-- Multiple products can reference the **same** component
-- Component properties create **variance relationships** with product-level field values (e.g., a sensor's max DPI is an upper bound for the product's DPI)
-- Changes to a component cascade to all products that reference it
+This document is the implementation-facing contract for Field Studio rules, workbook capture, component matching, and review payload wiring.
 
 ---
 
-## 2. Configuration Flow
+## 1. Scope
+
+This contract covers:
+
+- authoring surfaces in `workbook_map.json` and draft overlays
+- compile and load behavior for `field_rules.json` and `component_db/*.json`
+- review payload composition for item, component, and enum lanes
+- flag and badge semantics used by the review UI
+
+This contract does not define the extraction runtime in full detail. It only defines the rule and review interfaces that extraction consumes.
+
+---
+
+## 2. Canonical Inputs and Outputs
+
+### Control plane inputs
+
+- `_control_plane/field_studio_map.json` (preferred when present)
+- `_control_plane/workbook_map.json` (legacy mirror)
+- `_control_plane/field_rules_draft.json`
+- `_control_plane/ui_field_catalog_draft.json`
+
+### Generated outputs
+
+- `_generated/field_rules.json`
+- `_generated/field_rules.runtime.json`
+- `_generated/known_values.json`
+- `_generated/component_db/<type>.json`
+- `_generated/ui_field_catalog.json`
+
+### Runtime projection
+
+- `loadCategoryConfig()` projects compiled + draft overlays.
+- Review routes pass that projection into review payload builders.
+
+### Frontend write ownership and separation
+
+- Field Studio authoring writes are category-scoped and remain separate from global runtime settings files.
+- `tools/gui-react/src/pages/studio/studioPersistenceAuthority.ts` owns:
+  - `PUT /api/v1/studio/{category}/field-studio-map`
+  - `POST /api/v1/studio/{category}/save-drafts`
+- Runtime/convergence/LLM settings are owned by separate settings authorities and persisted outside Field Studio control-plane files.
+- Result: map/draft artifacts under `helper_files/{category}/_control_plane/*` are not merged into global `_runtime/settings.json` snapshots.
+
+---
+
+## 3. Workbook Capture Contract
+
+### 3.1 Selected key scope
+
+- `selected_keys` defines the active field set for the category.
+- Every selected key must have an entry in `field_overrides`.
+- `selected_keys` can be empty only when compile intentionally includes all extracted keys.
+
+### 3.2 Field rule shape per key
+
+Each `field_overrides.<field_key>` entry is expected to carry the full rule contract family:
+
+- `contract.*`
+- `parse.*`
+- `enum.*` and/or `enum_policy`
+- `component.*` when field is a component reference
+- `evidence.*`
+- `priority.*`
+- `selection_policy.*`
+- `ui.*`
+
+### 3.3 Component source shape
+
+Each `component_sources[]` entry must define:
+
+- component identity: `type` or `component_type`
+- lane roles: `roles.primary_identifier`, optional `roles.maker`, aliases, links
+- property mappings in `roles.properties[]` with:
+- `field_key` or `key`
+- `type`
+- `unit`
+- `variance_policy`
+- `constraints` (array)
+
+Property mappings are the source of truth for component property columns and variance behavior.
+
+---
+
+## 4. Policy Support Matrix
+
+### 4.1 Enum policy support
+
+Compiler-supported enum policies:
+
+- `open`
+- `open_prefer_known`
+- `closed`
+- `closed_with_curation`
+
+Authoring may choose a subset per category. Runtime and compile validation accept the full set above.
+
+### 4.2 Variance policy support
+
+Supported variance policies:
+
+- `authoritative`
+- `upper_bound`
+- `lower_bound`
+- `range`
+- `override_allowed`
+
+Numeric-only guard:
+
+- `upper_bound`, `lower_bound`, and `range` are valid only for numeric properties.
+- If authored on string properties, compiler coerces them to `authoritative` and emits warnings.
+
+---
+
+## 5. Component Identity and Aggregation Invariants
+
+### 5.1 Canonical identity
+
+Component row identity is strict:
+
+- `(component_type, component_name, component_maker)`
+- shared lane key format: `type::name::maker`
+
+### 5.2 Slot aggregation invariant
+
+For row key `K = (type, name, maker)` and slot field `F`:
 
 ```
-Mapping Studio (GUI)
-    ↓  component sources, property mappings, variance policies
-Field Rules Compiler (src/field-rules/compiler.js)
-    ↓  compileRules() → field_rules.json, component_db/*.json
-Generated Artifacts (helper_files/<category>/_generated/)
-    ↓  field_rules.json, component_db/<type>.json, known_values.json
-Field Rules Loader (src/field-rules/loader.js)
-    ↓  loadFieldRules() → in-memory rules + indexed component DB
-SpecDb Seeder (src/db/seed.js)
-    ↓  seedComponents() → component_identity, component_aliases, component_values
-Review Grid (src/review/componentReviewData.js)
-    ↓  buildComponentReviewPayloads() → lane payloads for GUI
+C(K, F) = count(candidates where product_id in linked_products(K) and field_key = F)
 ```
 
-### Mapping Studio
-The Mapping Studio tab in Field Studio defines component sources. Each component source specifies:
-- **Component type** (sensor, switch, encoder, material)
-- **Property mappings** — which field keys map to which component properties, with variance policies
-- **AI Assist + Priority** — component-level AI configuration for future Component Review tab LLM reviews (kept for future wiring)
+This invariant applies to:
 
-### Compiler
-`compileRules()` in `src/field-rules/compiler.js` reads the workbook map and component source definitions, generates `component_db/<type>.json` files containing all known entities with their names, makers, aliases, and property values. It also embeds component match settings into `field_rules.json` for each component reference field.
+- `__name`
+- `__maker`
+- every property slot
 
-### Loader
-`loadFieldRules()` in `src/field-rules/loader.js` reads the generated artifacts and builds fast lookup indexes:
-- `__index` — primary O(1) lookup by normalized token (name or alias)
-- `__indexAll` — returns all matches for a token (handles ambiguous names)
-- Component DB is cached per category and invalidated on edits via `invalidateFieldRulesCache()`
+No slot is allowed to use a different linked-product aggregation path.
 
-### SpecDb Seed
-`seedComponents()` in `src/db/seed.js` populates three tables:
-- `component_identity` — canonical (type, name, maker) rows
-- `component_aliases` — alternative names for fuzzy matching
-- `component_values` — property values per component (field_key, value, unit)
+### 5.3 Fallback guardrail
+
+- If linked products exist for lane `K`, candidates must come from linked products only.
+- Queue/pipeline fallback is allowed only when linked product count is zero.
 
 ---
 
-## 3. Property Link System
+## 6. Review Payload Wiring Contract
 
-Component properties create **variance relationships** between the component DB value and the product-level extracted value. This is configured per property mapping in the Mapping Studio.
+### 6.1 Route-level rule payload merge
 
-### Variance Policies
+Review routes merge:
 
-| Policy | Meaning | Example |
-|--------|---------|---------|
-| `authoritative` | Component value IS the product value (default) | Sensor name → product sensor field |
-| `upper_bound` | Component gives the maximum possible value | Sensor max DPI → product DPI cannot exceed this |
-| `lower_bound` | Component gives the minimum value | Switch minimum actuation force |
-| `range` | Component provides a reference range (±tolerance) | Weight within ±5g of component spec |
-| `override_allowed` | Component is the default, but product can override | Default polling rate, product may differ |
+- compiled category field rules
+- session `mergedFields` overlay
 
-### Type-Policy Guard
+This preserves non-field metadata while honoring in-session edits.
 
-The compiler enforces that `upper_bound`, `lower_bound`, and `range` policies are only valid for `type: 'number'` properties. String/enum properties are automatically coerced to `authoritative` with a compile warning. This prevents silent scoring failures where numeric comparison is attempted on non-numeric values (e.g., `parseFloat("tactile")` → `NaN` → skipped).
+### 6.2 Declared column preservation
 
-### Tolerance
+Component review payloads and layout must include property columns from:
 
-Numeric tolerance for `upper_bound`, `lower_bound`, and `range` policies. E.g., `tolerance: 5` means ±5 from the component value is acceptable.
+- observed DB/property rows
+- declared contract property keys from field rules and component source mappings
 
-### Storage
+If a declared property column has no observed value rows, it must still appear in payload and drawer with null-selected state.
 
-Property links are stored in `field_rules.json` under each component reference field's `component.match.property_keys` array. The variance policy and tolerance are stored per property mapping in the component source definition.
+### 6.3 Drawer metadata requirements
 
-### Constraint Evaluation
+For each property slot shown in drawer:
 
-`src/engine/constraintEvaluator.js` evaluates cross-field constraints including component-derived constraints (e.g., `component_release_date <= product_release_date`). Violations are flagged during extraction and review.
-
----
-
-## 4. Match Settings Reference
-
-Match settings control how extracted component names are matched to the canonical component DB. All settings live under `component.match` in the field rule.
-
-### Settings
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `fuzzy_threshold` | 0.75 | Minimum string similarity (0-1) for fuzzy match candidacy |
-| `name_weight` | 0.4 | Weight of name similarity in the combined score |
-| `property_weight` | 0.6 | Weight of property comparison in the combined score |
-| `auto_accept_score` | 0.95 | Combined score above this = auto-accept without review |
-| `flag_review_score` | 0.65 | Combined score above this = flagged for review |
-| `property_keys` | (auto-derived) | Field keys to compare against component DB properties. Auto-derived from Mapping Studio `component_sources[].roles.properties[].field_key`. Authored keys in `field_rules_draft.json` take precedence as an explicit override. |
-
-### UI Grouping
-
-Match settings are grouped in the Key Navigator and WorkbenchDrawer:
-
-- **Name Matching**: Fuzzy Threshold, Name Weight, Auto-Accept Score, Flag Review Score
-- **Property Matching**: Property Weight, Property Keys (read-only derived chips with variance policy badges)
-
-Property Keys are displayed as read-only chips derived from the Mapping Studio's `component_sources` configuration. Each chip shows the field key and its variance policy (e.g., `dpi [upper_bound]`).
-
-### Scoring Formula
-
-```
-combined_score = (name_similarity × name_weight) + (property_match × property_weight)
-```
-
-Where:
-- `name_similarity` = fuzzy string similarity (0-1) between extracted name and canonical name/aliases
-- `property_match` = variance-aware numeric comparison across all `property_keys`
-
-### Decision Tree
-
-```
-extracted_name → fuzzy match against component DB
-    ↓
-similarity < fuzzy_threshold → REJECT (no match candidate)
-    ↓
-combined_score ≥ auto_accept_score → AUTO-ACCEPT (confirmed match)
-    ↓
-combined_score ≥ flag_review_score → FLAG FOR REVIEW (provisional match)
-    ↓
-combined_score < flag_review_score AND allow_new_components → SUGGEST NEW COMPONENT
-    ↓
-combined_score < flag_review_score AND !allow_new_components → REJECT
-```
-
-### Boolean Flags
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `allow_new_components` | true | Allow suggesting new components not in the DB |
-| `require_identity_evidence` | true | Require evidence from at least one source for identity matching |
+- selected value state
+- variance policy
+- constraints
+- reason codes
+- confidence color
 
 ---
 
-## 5. Review Grid Integration
+## 7. Flags, Badges, and Metrics
 
-`src/review/componentReviewData.js` builds review lane payloads for the Component Review tab in the GUI.
+### 7.1 Canonical actionable flags
 
-### How Lanes Are Built
+Actionable real flags:
 
-`buildComponentReviewPayloads()` generates one review lane per unique component row (type + name + maker). Each lane contains:
-- **Identity slots** (`__name`, `__maker`) — candidates for the component's name and maker
-- **Property slots** — candidates for each mapped property key
-- **Link slots** (`__links`) — which products reference this component
-- **Alias slots** (`__aliases`) — alternative names
+- `variance_violation`
+- `constraint_conflict`
+- `compound_range_conflict`
+- `dependency_missing`
+- `new_component`
+- `new_enum_value`
+- `below_min_evidence`
+- `conflict_policy_hold`
 
-### Candidate Aggregation Rule
+### 7.2 Non-flag visual states
 
-All slot types use the **same** aggregation logic. For a component row K = (type, name, maker) with N linked products:
+Non-actionable visual states include:
 
-```
-C(K, F) = sum over all linked products of (candidate rows where product_id = P and field_key = F)
-```
+- `manual_override`
+- `missing_value`
+- confidence bands
+- pending AI indicators
 
-No slot type gets special treatment. Every slot aggregates candidates from all linked products uniformly.
+### 7.3 Metrics note
 
-### Lane State
+Current semantics differ by domain:
 
-Lane state (pending/accepted/confirmed) is tracked in `key_review_state` via `src/review/keyReviewState.js`. The lane key is the canonical component identifier: `type::name::maker`.
+- item grid `metrics.flags` uses the actionable flag taxonomy above
+- component/enum grids count rows requiring review
 
----
-
-## 6. Component Change Cascade
-
-When a component's properties change, `src/review/componentImpact.js` handles the cascade.
-
-### cascadeComponentChange()
-
-1. `findProductsReferencingComponent()` finds all products that reference the changed component (SpecDb query, filesystem fallback)
-2. For each affected product, evaluates the variance policy:
-   - `authoritative` — pushes the new value directly to the product
-   - `upper_bound` / `lower_bound` / `range` — evaluates whether the product's current value violates the new bound
-3. Marks affected products as **stale** with appropriate priority
-4. Dirty flags trigger re-extraction on the next pipeline run
-
-### cascadeEnumChange()
-
-When an enum value is renamed or removed:
-1. Updates all product `normalized.json` files
-2. Marks products stale with highest priority (1)
+Treat these metrics as domain-local and do not compare them as identical counters.
 
 ---
 
-## 7. AI Configuration
+## 8. Source Precedence and Snapshot Logic
 
-The component system has three distinct AI configuration surfaces:
+Rule projection precedence:
 
-### Field-Level AI Assist (Active)
-Lives under `ai_assist` in each field rule. Drives the extraction pipeline:
-- `mode` — off / advisory / planner / judge
-- `model_strategy` — auto / force_fast / force_deep
-- `max_calls`, `max_tokens` — budget controls
-- `reasoning_note` — extraction guidance injected into LLM prompts
+1. compiled generated rules
+2. draft overlays from control-plane session cache
+3. explicit draft field order overlay (including `__grp::` markers)
 
-When a field has `component.type` set, the auto-generated extraction guidance automatically includes component context (e.g., "Component ref (sensor). Match to known names/aliases.").
+Snapshot token derives from:
 
-### Mapping Studio Component AI (Kept for Future Use)
-Lives in `EditableComponentSource` in the Mapping Studio tab. Contains:
-- AI Assist mode/model/calls/tokens
-- AI Review Priority difficulty/effort/reasoning_note
-
-These settings will be wired to component-level LLM reviews in the Component Review tab in a future task. They are **kept as-is** and are not dead code.
-
-### Key Navigator component.ai (Removed — Dead Code)
-Previously lived under `component.ai` in the Key Navigator's component section:
-- `mode`, `model_strategy`, `context_level`, `reasoning_note`
-
-These were compiled into artifacts but **never consumed at runtime**. The `reasoning_note` field was read by `fieldRulesEngine.js` (lines 1070, 1096) but was always empty (`""`) in all existing data. The auto-generated guidance from field-level AI Assist already provides component context. These settings were removed from the Key Navigator UI as dead code.
-
-### Key Navigator component.priority (Removed — Dead Code)
-Previously lived under `component.priority` in the Key Navigator:
-- `difficulty`, `effort`
-
-The field already has top-level `priority.difficulty` and `priority.effort` which ARE consumed by the pipeline. The component-level duplicates were compiled but never read. Removed as dead code.
+- draft timestamp
+- compiled timestamp
+- SpecDb sync version
 
 ---
 
-## 8. Mapping Studio Role
+## 9. Current Audit Status (2026-02-24)
 
-The Mapping Studio tab serves two purposes:
+Fixed in this audit:
 
-### Structural Setup
-- Define component **type** (sensor, switch, encoder, material)
-- Define **roles** (which fields are component references)
-- Configure **property mappings** (field key → component property, with variance policy and tolerance)
-- Set **match settings** (fuzzy threshold, weights, accept/review scores)
+- review payload now preserves declared component property columns even when observed values are blank
+- review routes now pass merged field-rule payloads that include full metadata families
+- mouse workbook component source alignment fixed:
+- `sensor.dpi`: numeric `upper_bound`
+- `sensor.ips`: numeric `upper_bound`
+- `sensor.acceleration`: numeric `upper_bound`
+- regression guard added to prevent drift for the three fields above
 
-### Component-Level AI Configuration
-- AI Assist settings (mode, model, budget) per component source
-- AI Review Priority (difficulty, effort) per component source
-- Reasoning note for component-level extraction guidance
+Open tracking items:
 
-These AI settings are distinct from field-level `ai_assist` and will drive component-level LLM reviews in the Component Review tab. They allow per-component-type AI behavior (e.g., sensor matching might use `judge` mode while material matching uses `advisory`).
-
----
-
-## 9. IndexLab Connection
-
-Component reference fields participate in the IndexLab extraction pipeline like any other field:
-
-### NeedSet
-Component reference fields generate NeedSet scores based on the same formula as all fields. Their `required_level`, `difficulty`, and `effort` drive the need score. Identity fields (component refs marked as `identity`) get the highest priority.
-
-### Search & Discovery
-Query terms from `search_hints` drive discovery. Component names and aliases are used as search terms when the field has high need.
-
-### Extraction
-During LLM extraction, the extraction context includes component DB context when `component.type` is set. The AI receives the list of known components and is instructed to match against them. The `ai_assist.reasoning_note` (or auto-generated guidance) provides component-specific instructions.
-
-### Evidence & Retrieval
-Component reference fields use the same tier-aware retrieval system. Tier preferences from `evidence.tier_preference` control which sources are preferred for component identification.
-
-No changes were made to any IndexLab, pipeline, or runtime code as part of this cleanup.
+- `closed_with_curation` is compile-valid but still lacks dedicated test-mode scenario branch mapping
+- `dependency_missing` production emitter path remains limited and should stay under active audit
 
 ---
 
-## 10. Key Source Files
+## 10. Validation and Regression Checklist
 
-| File | Purpose |
-|------|---------|
-| `src/field-rules/compiler.js` | Compiles workbook → field_rules.json, component_db/*.json |
-| `src/field-rules/loader.js` | Loads artifacts, builds component DB indexes (__index, __indexAll) |
-| `src/db/seed.js` | Seeds SpecDb: component_identity, component_aliases, component_values |
-| `src/db/specDb.js` | SQLite schema, component table definitions, query helpers |
-| `src/review/componentReviewData.js` | Builds component/enum review lane payloads |
-| `src/review/keyReviewState.js` | Lane state upsert/update for key_review_state |
-| `src/review/componentImpact.js` | Cascade logic: component changes → product staleness |
-| `src/utils/componentIdentifier.js` | Canonical key: `type::name::maker` |
-| `src/engine/constraintEvaluator.js` | Cross-field constraint evaluation (including component constraints) |
-| `tools/gui-react/src/pages/studio/StudioPage.tsx` | Key Navigator component settings UI |
-| `tools/gui-react/src/pages/studio/workbench/WorkbenchDrawer.tsx` | Workbench Deps tab component settings |
-| `tools/gui-react/src/pages/studio/studioConstants.ts` | STUDIO_TIPS tooltip text for all component settings |
-| `tools/gui-react/src/pages/component-review/ComponentSubTab.tsx` | Component review table rendering |
-| `tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx` | Component review candidate actions |
+Minimum checks after contract edits:
+
+1. `node --test test/categoryCompile.test.js`
+2. `node --test test/componentReviewDataLaneState.test.js`
+3. `node --test test/reviewLaneContractApi.test.js`
+4. `node --test test/reviewRoutesDataChangeContract.test.js test/reviewRouteSharedHelpersDataChange.test.js`
+
+Contract-specific assertions to keep green:
+
+- selected keys map cleanly into workbook field entries
+- declared component property columns are preserved in layout and payload
+- numeric variance policies stay numeric for sensor property mappings
+- review route field-rule payload keeps compiled metadata plus draft/session overlays
+
+---
+
+## 11. Key Files
+
+Compile/load:
+
+- `src/ingest/categoryCompile.js`
+- `src/field-rules/compiler.js`
+- `src/field-rules/loader.js`
+
+Review payload and flags:
+
+- `src/review/reviewGridData.js`
+- `src/review/componentReviewData.js`
+- `src/review/keyReviewState.js`
+
+Routes:
+
+- `src/api/routes/reviewRoutes.js`
+- `src/api/routes/studioRoutes.js`
+
+Frontend review UI:
+
+- `tools/gui-react/src/pages/component-review/ComponentSubTab.tsx`
+- `tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx`
+- `tools/gui-react/src/pages/component-review/EnumSubTab.tsx`
+
+Frontend authoring persistence:
+
+- `tools/gui-react/src/pages/studio/StudioPage.tsx`
+- `tools/gui-react/src/pages/studio/studioPersistenceAuthority.ts`
+

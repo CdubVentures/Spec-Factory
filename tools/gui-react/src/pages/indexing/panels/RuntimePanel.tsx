@@ -7,21 +7,8 @@ import {
   providerFromModelToken,
 } from '../helpers';
 import type { SearxngStatusResponse } from '../types';
-
-interface ConvergenceKnob {
-  key: string;
-  label: string;
-  tip?: string;
-  type: 'int' | 'float' | 'bool';
-  min?: number;
-  max?: number;
-  step?: number;
-}
-
-interface ConvergenceKnobGroup {
-  label: string;
-  knobs: ConvergenceKnob[];
-}
+import { usePersistedToggle } from '../../../stores/collapseStore';
+import type { ConvergenceKnobGroup } from '../../../stores/settingsManifest';
 
 interface LlmRouteSnapshotRow {
   role: string;
@@ -156,6 +143,8 @@ interface RuntimePanelProps {
   onConvergenceReload: () => void;
   onConvergenceSave: () => void;
   convergenceSaving: boolean;
+  convergenceSettingsSaveState: 'idle' | 'ok' | 'partial' | 'error';
+  convergenceSettingsSaveMessage: string;
 
   searxngStatus: SearxngStatusResponse | null | undefined;
   searxngStatusErrorMessage: string;
@@ -168,6 +157,15 @@ interface RuntimePanelProps {
   selectedIndexLabRunId: string;
   onClearSelectedRunView: () => void;
   onReplaySelectedRunView: () => void;
+
+  runtimeSettingsReady: boolean;
+  runtimeSettingsDirty: boolean;
+  runtimeAutoSave: boolean;
+  onRuntimeAutoSaveChange: (enabled: boolean) => void;
+  onRuntimeSettingsSave: () => void;
+  runtimeSettingsSaving: boolean;
+  runtimeSettingsSaveState: 'idle' | 'ok' | 'partial' | 'error';
+  runtimeSettingsSaveMessage: string;
 }
 
 export function RuntimePanel({
@@ -285,6 +283,8 @@ export function RuntimePanel({
   onConvergenceReload,
   onConvergenceSave,
   convergenceSaving,
+  convergenceSettingsSaveState,
+  convergenceSettingsSaveMessage,
   searxngStatus,
   searxngStatusErrorMessage,
   onStartSearxng,
@@ -295,7 +295,27 @@ export function RuntimePanel({
   selectedIndexLabRunId,
   onClearSelectedRunView,
   onReplaySelectedRunView,
+  runtimeSettingsReady,
+  runtimeSettingsDirty,
+  runtimeAutoSave,
+  onRuntimeAutoSaveChange,
+  onRuntimeSettingsSave,
+  runtimeSettingsSaving,
+  runtimeSettingsSaveState,
+  runtimeSettingsSaveMessage,
 }: RuntimePanelProps) {
+  const [runSetupDiscoveryOpen, , setRunSetupDiscoveryOpen] = usePersistedToggle('indexing:runtime:runSetupDiscovery', false);
+  const [fetchThroughputOpen, , setFetchThroughputOpen] = usePersistedToggle('indexing:runtime:fetchThroughput', false);
+  const [dynamicRenderingOcrOpen, , setDynamicRenderingOcrOpen] = usePersistedToggle('indexing:runtime:dynamicRenderingOcr', false);
+  const [plannerTriageOpen, , setPlannerTriageOpen] = usePersistedToggle('indexing:runtime:plannerTriage', false);
+  const [roleRoutingOpen, , setRoleRoutingOpen] = usePersistedToggle('indexing:runtime:roleRouting', false);
+  const [fallbackRoutingOpen, , setFallbackRoutingOpen] = usePersistedToggle('indexing:runtime:fallbackRouting', false);
+  const [routeSnapshotOpen, , setRouteSnapshotOpen] = usePersistedToggle('indexing:runtime:routeSnapshot', false);
+  const [resumePolicyOpen, , setResumePolicyOpen] = usePersistedToggle('indexing:runtime:resumePolicy', false);
+  const [convergenceTuningOpen, , setConvergenceTuningOpen] = usePersistedToggle('indexing:runtime:convergenceTuning', false);
+  const plannerTriageLocked = !discoveryEnabled;
+  const runtimeSettingsLocked = !runtimeSettingsReady;
+
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-3" style={{ order: 30 }}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -310,17 +330,74 @@ export function RuntimePanel({
           <span>Runtime Settings</span>
           <Tip text="Profile controls run depth/cost. Resume mode controls whether prior state is reused or ignored." />
         </div>
-        <ActivityGauge
-          label="runtime activity"
-          currentPerMin={runtimeActivity.currentPerMin}
-          peakPerMin={runtimeActivity.peakPerMin}
-          active={processRunning}
-        />
+        <div className="flex items-center gap-2">
+          {!runtimeAutoSave && (
+            <button
+              onClick={onRuntimeSettingsSave}
+              disabled={runtimeSettingsLocked || !runtimeSettingsDirty || runtimeSettingsSaving}
+              className="px-3 py-1.5 text-sm bg-accent text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            >
+              {runtimeSettingsSaving ? 'Saving\u2026' : 'Save'}
+            </button>
+          )}
+          <span
+            className={`text-[10px] font-semibold ${
+              runtimeSettingsSaving
+                ? 'text-blue-600 dark:text-blue-400'
+                : runtimeSettingsLocked
+                ? 'text-amber-600 dark:text-amber-400'
+                : runtimeSettingsSaveState === 'error'
+                ? 'text-rose-600 dark:text-rose-300'
+                : runtimeSettingsSaveState === 'partial'
+                ? 'text-amber-600 dark:text-amber-400'
+                : runtimeSettingsDirty && !runtimeAutoSave
+                ? 'text-amber-600 dark:text-amber-400'
+                : 'text-gray-500 dark:text-gray-400'
+            }`}
+          >
+            {runtimeSettingsSaving
+              ? 'saving…'
+              : runtimeSettingsLocked
+              ? 'loading persisted runtime settings...'
+              : runtimeSettingsSaveState === 'error'
+              ? (runtimeSettingsSaveMessage || 'Failed to save runtime settings.')
+              : runtimeSettingsSaveState === 'partial'
+              ? runtimeSettingsSaveMessage
+              : runtimeSettingsDirty && !runtimeAutoSave
+              ? 'unsaved'
+              : runtimeSettingsSaveState === 'ok'
+              ? (runtimeSettingsSaveMessage || 'saved')
+              : ''}
+          </span>
+          <button
+            onClick={() => onRuntimeAutoSaveChange(!runtimeAutoSave)}
+            disabled={runtimeSettingsLocked}
+            className={`px-3 py-1.5 text-sm rounded border ${runtimeAutoSave ? 'bg-blue-700 text-white border-blue-800 ring-1 ring-inset ring-blue-900/40' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}
+            style={runtimeAutoSave ? { boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' } : undefined}
+            title="When enabled, runtime settings are automatically saved to the server 1.5 seconds after any change."
+          >
+            Auto-Save
+          </button>
+          <ActivityGauge
+            label="runtime activity"
+            currentPerMin={runtimeActivity.currentPerMin}
+            peakPerMin={runtimeActivity.peakPerMin}
+            active={processRunning}
+          />
+        </div>
       </div>
       {!collapsed ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <details className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600">
+          <fieldset
+            disabled={runtimeSettingsLocked}
+            className={`m-0 min-w-0 border-0 p-0 ${runtimeSettingsLocked ? 'opacity-70' : ''}`}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <details
+          className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600"
+          open={runSetupDiscoveryOpen}
+          onToggle={(event) => setRunSetupDiscoveryOpen(event.currentTarget.open)}
+        >
           <summary className="flex w-full cursor-pointer list-none items-center rounded bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-700/40 dark:text-slate-200 [&::-webkit-details-marker]:hidden">
             <span className="inline-flex items-center">
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded border border-slate-300 text-[10px] leading-none text-slate-600 dark:border-slate-500 dark:text-slate-200">
@@ -383,7 +460,11 @@ export function RuntimePanel({
         </div>
           </div>
         </details>
-        <details className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600">
+        <details
+          className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600"
+          open={fetchThroughputOpen}
+          onToggle={(event) => setFetchThroughputOpen(event.currentTarget.open)}
+        >
           <summary className="flex w-full cursor-pointer list-none items-center rounded bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-700/40 dark:text-slate-200 [&::-webkit-details-marker]:hidden">
             <span className="inline-flex items-center">
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded border border-slate-300 text-[10px] leading-none text-slate-600 dark:border-slate-500 dark:text-slate-200">
@@ -432,7 +513,11 @@ export function RuntimePanel({
         </div>
           </div>
         </details>
-        <details className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600">
+        <details
+          className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600"
+          open={dynamicRenderingOcrOpen}
+          onToggle={(event) => setDynamicRenderingOcrOpen(event.currentTarget.open)}
+        >
           <summary className="flex w-full cursor-pointer list-none items-center rounded bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-700/40 dark:text-slate-200 [&::-webkit-details-marker]:hidden">
             <span className="inline-flex items-center">
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded border border-slate-300 text-[10px] leading-none text-slate-600 dark:border-slate-500 dark:text-slate-200">
@@ -522,15 +607,33 @@ export function RuntimePanel({
         </label>
           </div>
         </details>
-        <details className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600">
-          <summary className="flex w-full cursor-pointer list-none items-center rounded bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-700/40 dark:text-slate-200 [&::-webkit-details-marker]:hidden">
+        <details
+          className={`group md:col-span-2 rounded border ${plannerTriageLocked ? 'border-gray-300 dark:border-gray-700 opacity-70' : 'border-slate-200 dark:border-slate-600'}`}
+          open={plannerTriageLocked ? false : plannerTriageOpen}
+          onToggle={(event) => {
+            if (plannerTriageLocked) {
+              setPlannerTriageOpen(false);
+              return;
+            }
+            setPlannerTriageOpen(event.currentTarget.open);
+          }}
+        >
+          <summary
+            aria-disabled={plannerTriageLocked}
+            className={`flex w-full list-none items-center rounded px-2 py-1 text-[11px] font-semibold [&::-webkit-details-marker]:hidden ${plannerTriageLocked ? 'cursor-not-allowed bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' : 'cursor-pointer bg-slate-100 text-slate-700 dark:bg-slate-700/40 dark:text-slate-200'}`}
+          >
             <span className="inline-flex items-center">
-              <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded border border-slate-300 text-[10px] leading-none text-slate-600 dark:border-slate-500 dark:text-slate-200">
+              <span className={`mr-1 inline-flex h-4 w-4 items-center justify-center rounded border text-[10px] leading-none ${plannerTriageLocked ? 'border-gray-300 text-gray-500 dark:border-gray-600 dark:text-gray-400' : 'border-slate-300 text-slate-600 dark:border-slate-500 dark:text-slate-200'}`}>
                 <span className="group-open:hidden">+</span>
                 <span className="hidden group-open:inline">-</span>
               </span>
               <span>Planner and Triage LLM</span>
               <Tip text="Model and token controls for planner and triage lanes." />
+              {plannerTriageLocked ? (
+                <span className="ml-2 inline-flex items-center rounded border border-red-300 bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:border-red-700 dark:bg-red-950/40 dark:text-red-300">
+                  blocked: discovery disabled
+                </span>
+              ) : null}
             </span>
           </summary>
           <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 px-2 pb-2">
@@ -550,6 +653,9 @@ export function RuntimePanel({
           <select value={llmTokensPlan} onChange={(e) => onLlmTokensPlanChange(clampTokenForModel(phase2LlmModel, Number.parseInt(e.target.value, 10) || llmTokensPlan))} disabled={isAll || busy || !discoveryEnabled || !phase2LlmEnabled} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for planner calls.">
             {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(phase2LlmModel).max_output_tokens; const disabled = token > cap; return (<option key={`phase2-token:${token}`} value={token} disabled={disabled}>planner tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
           </select>
+          {llmTokensPlan > resolveModelTokenDefaults(phase2LlmModel).max_output_tokens && (
+            <div className="mt-1 text-[10px] text-red-600 dark:text-red-400 font-semibold">Not Allowed — exceeds {phase2LlmModel} limit of {resolveModelTokenDefaults(phase2LlmModel).max_output_tokens.toLocaleString()} tokens</div>
+          )}
         </div>
         <label className="md:col-span-2 flex items-center gap-2 rounded border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-200">
           <input type="checkbox" checked={phase3LlmTriageEnabled} onChange={(e) => onPhase3LlmTriageEnabledChange(e.target.checked)} disabled={isAll || busy || !discoveryEnabled} />
@@ -567,10 +673,17 @@ export function RuntimePanel({
           <select value={llmTokensTriage} onChange={(e) => onLlmTokensTriageChange(clampTokenForModel(phase3LlmModel, Number.parseInt(e.target.value, 10) || llmTokensTriage))} disabled={isAll || busy || !discoveryEnabled || !phase3LlmTriageEnabled} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for triage calls.">
             {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(phase3LlmModel).max_output_tokens; const disabled = token > cap; return (<option key={`phase3-token:${token}`} value={token} disabled={disabled}>triage tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
           </select>
+          {llmTokensTriage > resolveModelTokenDefaults(phase3LlmModel).max_output_tokens && (
+            <div className="mt-1 text-[10px] text-red-600 dark:text-red-400 font-semibold">Not Allowed — exceeds {phase3LlmModel} limit of {resolveModelTokenDefaults(phase3LlmModel).max_output_tokens.toLocaleString()} tokens</div>
+          )}
         </div>
           </div>
         </details>
-        <details className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600">
+        <details
+          className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600"
+          open={roleRoutingOpen}
+          onToggle={(event) => setRoleRoutingOpen(event.currentTarget.open)}
+        >
           <summary className="flex w-full cursor-pointer list-none items-center rounded bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-700/40 dark:text-slate-200 [&::-webkit-details-marker]:hidden">
             <span className="inline-flex items-center">
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded border border-slate-300 text-[10px] leading-none text-slate-600 dark:border-slate-500 dark:text-slate-200">
@@ -593,6 +706,9 @@ export function RuntimePanel({
           <select value={llmTokensFast} onChange={(e) => onLlmTokensFastChange(clampTokenForModel(llmModelFast, Number.parseInt(e.target.value, 10) || llmTokensFast))} disabled={isAll || busy} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for fast LLM passes.">
             {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmModelFast).max_output_tokens; const disabled = token > cap; return (<option key={`fast-token:${token}`} value={token} disabled={disabled}>fast tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
           </select>
+          {llmTokensFast > resolveModelTokenDefaults(llmModelFast).max_output_tokens && (
+            <div className="mt-1 text-[10px] text-red-600 dark:text-red-400 font-semibold">Not Allowed — exceeds {llmModelFast} limit of {resolveModelTokenDefaults(llmModelFast).max_output_tokens.toLocaleString()} tokens</div>
+          )}
         </div>
         <div className="rounded border border-gray-300 dark:border-gray-600 px-2 py-2">
           <div className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 dark:text-gray-200">reasoning model<Tip text="Model used by deeper reasoning passes." /></div>
@@ -605,6 +721,9 @@ export function RuntimePanel({
           <select value={llmTokensReasoning} onChange={(e) => onLlmTokensReasoningChange(clampTokenForModel(llmModelReasoning, Number.parseInt(e.target.value, 10) || llmTokensReasoning))} disabled={isAll || busy} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for reasoning passes.">
             {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmModelReasoning).max_output_tokens; const disabled = token > cap; return (<option key={`reasoning-token:${token}`} value={token} disabled={disabled}>reasoning tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
           </select>
+          {llmTokensReasoning > resolveModelTokenDefaults(llmModelReasoning).max_output_tokens && (
+            <div className="mt-1 text-[10px] text-red-600 dark:text-red-400 font-semibold">Not Allowed — exceeds {llmModelReasoning} limit of {resolveModelTokenDefaults(llmModelReasoning).max_output_tokens.toLocaleString()} tokens</div>
+          )}
         </div>
         <div className="md:col-span-2 px-1 text-[11px] text-gray-700 dark:text-gray-200"><span className="inline-flex items-center font-semibold">extract role<Tip text={roleHelpText('extract')} /></span></div>
         <select value={llmModelExtract} onChange={(e) => onLlmModelExtractChange(e.target.value)} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Primary route model for extract role.">
@@ -613,6 +732,9 @@ export function RuntimePanel({
         <select value={llmTokensExtract} onChange={(e) => onLlmTokensExtractChange(clampTokenForModel(llmModelExtract, Number.parseInt(e.target.value, 10) || llmTokensExtract))} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for extract role calls.">
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmModelExtract).max_output_tokens; const disabled = token > cap; return (<option key={`extract-token:${token}`} value={token} disabled={disabled}>extract tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
+        {llmTokensExtract > resolveModelTokenDefaults(llmModelExtract).max_output_tokens && (
+          <div className="mt-1 text-[10px] text-red-600 dark:text-red-400 font-semibold">Not Allowed — exceeds {llmModelExtract} limit of {resolveModelTokenDefaults(llmModelExtract).max_output_tokens.toLocaleString()} tokens</div>
+        )}
         <div className="md:col-span-2 px-1 text-[11px] text-gray-700 dark:text-gray-200"><span className="inline-flex items-center font-semibold">validate role<Tip text={roleHelpText('validate')} /></span></div>
         <select value={llmModelValidate} onChange={(e) => onLlmModelValidateChange(e.target.value)} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Primary route model for validate role.">
           {llmModelOptions.map((model) => (<option key={`validate:${model}`} value={model}>validate role model: {model}</option>))}
@@ -620,6 +742,9 @@ export function RuntimePanel({
         <select value={llmTokensValidate} onChange={(e) => onLlmTokensValidateChange(clampTokenForModel(llmModelValidate, Number.parseInt(e.target.value, 10) || llmTokensValidate))} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for validate role calls.">
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmModelValidate).max_output_tokens; const disabled = token > cap; return (<option key={`validate-token:${token}`} value={token} disabled={disabled}>validate tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
+        {llmTokensValidate > resolveModelTokenDefaults(llmModelValidate).max_output_tokens && (
+          <div className="mt-1 text-[10px] text-red-600 dark:text-red-400 font-semibold">Not Allowed — exceeds {llmModelValidate} limit of {resolveModelTokenDefaults(llmModelValidate).max_output_tokens.toLocaleString()} tokens</div>
+        )}
         <div className="md:col-span-2 px-1 text-[11px] text-gray-700 dark:text-gray-200"><span className="inline-flex items-center font-semibold">write role<Tip text={roleHelpText('write')} /></span></div>
         <select value={llmModelWrite} onChange={(e) => onLlmModelWriteChange(e.target.value)} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Primary route model for write/summary role.">
           {llmModelOptions.map((model) => (<option key={`write:${model}`} value={model}>write role model: {model}</option>))}
@@ -627,9 +752,16 @@ export function RuntimePanel({
         <select value={llmTokensWrite} onChange={(e) => onLlmTokensWriteChange(clampTokenForModel(llmModelWrite, Number.parseInt(e.target.value, 10) || llmTokensWrite))} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for write role calls.">
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmModelWrite).max_output_tokens; const disabled = token > cap; return (<option key={`write-token:${token}`} value={token} disabled={disabled}>write tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
+        {llmTokensWrite > resolveModelTokenDefaults(llmModelWrite).max_output_tokens && (
+          <div className="mt-1 text-[10px] text-red-600 dark:text-red-400 font-semibold">Not Allowed — exceeds {llmModelWrite} limit of {resolveModelTokenDefaults(llmModelWrite).max_output_tokens.toLocaleString()} tokens</div>
+        )}
           </div>
         </details>
-        <details className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600">
+        <details
+          className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600"
+          open={fallbackRoutingOpen}
+          onToggle={(event) => setFallbackRoutingOpen(event.currentTarget.open)}
+        >
           <summary className="flex w-full cursor-pointer list-none items-center rounded bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-700/40 dark:text-slate-200 [&::-webkit-details-marker]:hidden">
             <span className="inline-flex items-center">
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded border border-slate-300 text-[10px] leading-none text-slate-600 dark:border-slate-500 dark:text-slate-200">
@@ -656,6 +788,9 @@ export function RuntimePanel({
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmFallbackPlanModel || phase2LlmModel).max_output_tokens; const disabled = token > cap; return (<option key={`fplan-token:${token}`} value={token} disabled={disabled}>fallback plan tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
         </div>
+        {llmTokensPlanFallback > resolveModelTokenDefaults(llmFallbackPlanModel || phase2LlmModel).max_output_tokens && (
+          <div className="md:col-span-2 mt-1 text-[10px] text-red-600 dark:text-red-400 font-semibold">Not Allowed — exceeds {llmFallbackPlanModel || phase2LlmModel} limit of {resolveModelTokenDefaults(llmFallbackPlanModel || phase2LlmModel).max_output_tokens.toLocaleString()} tokens</div>
+        )}
         <div className="md:col-span-2 px-1 text-[11px] text-gray-700 dark:text-gray-200"><span className="inline-flex items-center font-semibold">extract fallback<Tip text="Fallback route for extract role when primary extraction route is unavailable." /></span></div>
         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
         <select value={llmFallbackExtractModel} onChange={(e) => onLlmFallbackExtractModelChange(e.target.value)} disabled={isAll || busy || !llmFallbackEnabled} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Fallback model for extract role.">
@@ -666,6 +801,9 @@ export function RuntimePanel({
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmFallbackExtractModel || llmModelExtract).max_output_tokens; const disabled = token > cap; return (<option key={`fextract-token:${token}`} value={token} disabled={disabled}>fallback extract tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
         </div>
+        {llmTokensExtractFallback > resolveModelTokenDefaults(llmFallbackExtractModel || llmModelExtract).max_output_tokens && (
+          <div className="md:col-span-2 mt-1 text-[10px] text-red-600 dark:text-red-400 font-semibold">Not Allowed — exceeds {llmFallbackExtractModel || llmModelExtract} limit of {resolveModelTokenDefaults(llmFallbackExtractModel || llmModelExtract).max_output_tokens.toLocaleString()} tokens</div>
+        )}
         <div className="md:col-span-2 px-1 text-[11px] text-gray-700 dark:text-gray-200"><span className="inline-flex items-center font-semibold">validate fallback<Tip text="Fallback route for validate role when primary validation route is unavailable." /></span></div>
         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
         <select value={llmFallbackValidateModel} onChange={(e) => onLlmFallbackValidateModelChange(e.target.value)} disabled={isAll || busy || !llmFallbackEnabled} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Fallback model for validate role.">
@@ -676,6 +814,9 @@ export function RuntimePanel({
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmFallbackValidateModel || llmModelValidate).max_output_tokens; const disabled = token > cap; return (<option key={`fvalidate-token:${token}`} value={token} disabled={disabled}>fallback validate tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
         </div>
+        {llmTokensValidateFallback > resolveModelTokenDefaults(llmFallbackValidateModel || llmModelValidate).max_output_tokens && (
+          <div className="md:col-span-2 mt-1 text-[10px] text-red-600 dark:text-red-400 font-semibold">Not Allowed — exceeds {llmFallbackValidateModel || llmModelValidate} limit of {resolveModelTokenDefaults(llmFallbackValidateModel || llmModelValidate).max_output_tokens.toLocaleString()} tokens</div>
+        )}
         <div className="md:col-span-2 px-1 text-[11px] text-gray-700 dark:text-gray-200"><span className="inline-flex items-center font-semibold">write fallback<Tip text="Fallback route for write role when primary write route is unavailable." /></span></div>
         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
         <select value={llmFallbackWriteModel} onChange={(e) => onLlmFallbackWriteModelChange(e.target.value)} disabled={isAll || busy || !llmFallbackEnabled} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Fallback model for write role.">
@@ -686,12 +827,19 @@ export function RuntimePanel({
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmFallbackWriteModel || llmModelWrite).max_output_tokens; const disabled = token > cap; return (<option key={`fwrite-token:${token}`} value={token} disabled={disabled}>fallback write tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
         </div>
+        {llmTokensWriteFallback > resolveModelTokenDefaults(llmFallbackWriteModel || llmModelWrite).max_output_tokens && (
+          <div className="md:col-span-2 mt-1 text-[10px] text-red-600 dark:text-red-400 font-semibold">Not Allowed — exceeds {llmFallbackWriteModel || llmModelWrite} limit of {resolveModelTokenDefaults(llmFallbackWriteModel || llmModelWrite).max_output_tokens.toLocaleString()} tokens</div>
+        )}
         <div className="md:col-span-2 text-[11px] text-gray-500 dark:text-gray-400">
           One run executes the full pipeline in order. Every LLM route can be tuned here (plan, fast, triage, reasoning, extract, validate, write, and fallbacks).
         </div>
           </div>
         </details>
-        <details className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600">
+        <details
+          className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600"
+          open={routeSnapshotOpen}
+          onToggle={(event) => setRouteSnapshotOpen(event.currentTarget.open)}
+        >
           <summary className="flex w-full cursor-pointer list-none items-center rounded bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-700/40 dark:text-slate-200 [&::-webkit-details-marker]:hidden">
             <span className="inline-flex items-center">
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded border border-slate-300 text-[10px] leading-none text-slate-600 dark:border-slate-500 dark:text-slate-200">
@@ -723,7 +871,11 @@ export function RuntimePanel({
           </table>
           </div>
         </details>
-        <details className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600">
+        <details
+          className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600"
+          open={resumePolicyOpen}
+          onToggle={(event) => setResumePolicyOpen(event.currentTarget.open)}
+        >
           <summary className="flex w-full cursor-pointer list-none items-center rounded bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-700/40 dark:text-slate-200 [&::-webkit-details-marker]:hidden">
             <span className="inline-flex items-center">
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded border border-slate-300 text-[10px] leading-none text-slate-600 dark:border-slate-500 dark:text-slate-200">
@@ -761,7 +913,11 @@ export function RuntimePanel({
         </div>
           </div>
         </details>
-        <details className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600">
+        <details
+          className="group md:col-span-2 rounded border border-slate-200 dark:border-slate-600"
+          open={convergenceTuningOpen}
+          onToggle={(event) => setConvergenceTuningOpen(event.currentTarget.open)}
+        >
           <summary className="flex w-full cursor-pointer list-none items-center rounded bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-700/40 dark:text-slate-200 [&::-webkit-details-marker]:hidden">
             <span className="inline-flex items-center">
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded border border-slate-300 text-[10px] leading-none text-slate-600 dark:border-slate-500 dark:text-slate-200">
@@ -777,6 +933,31 @@ export function RuntimePanel({
             <div className="flex items-center justify-end gap-2">
               <button onClick={onConvergenceReload} className="px-2 py-1 text-[11px] border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200">Reload</button>
               <button onClick={onConvergenceSave} disabled={!convergenceDirty || convergenceSaving} className="px-2 py-1 text-[11px] bg-accent text-white rounded hover:bg-blue-700 disabled:opacity-50">{convergenceSaving ? 'Saving...' : 'Save'}</button>
+              <span
+                className={`text-[10px] font-semibold ${
+                  convergenceSaving
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : convergenceSettingsSaveState === 'error'
+                    ? 'text-rose-600 dark:text-rose-300'
+                    : convergenceSettingsSaveState === 'partial'
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : convergenceDirty
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}
+              >
+                {convergenceSaving
+                  ? 'saving...'
+                  : convergenceSettingsSaveState === 'error'
+                  ? (convergenceSettingsSaveMessage || 'Failed to save convergence settings.')
+                  : convergenceSettingsSaveState === 'partial'
+                  ? convergenceSettingsSaveMessage
+                  : convergenceDirty
+                  ? 'unsaved'
+                  : convergenceSettingsSaveState === 'ok'
+                  ? (convergenceSettingsSaveMessage || 'saved')
+                  : ''}
+              </span>
             </div>
             {convergenceKnobGroups.map((group) => (
               <div key={group.label} className="rounded border border-gray-200 dark:border-gray-700 p-2">
@@ -792,7 +973,10 @@ export function RuntimePanel({
                         </label>
                       );
                     }
-                    const numValue = typeof convergenceSettings[knob.key] === 'number' ? (convergenceSettings[knob.key] as number) : 0;
+                    const fallback = knob.min;
+                    const numValue = typeof convergenceSettings[knob.key] === 'number'
+                      ? (convergenceSettings[knob.key] as number)
+                      : fallback;
                     const step = 'step' in knob ? knob.step : 1;
                     return (
                       <div key={knob.key}>
@@ -800,7 +984,7 @@ export function RuntimePanel({
                           <span className="text-[11px] text-gray-500 dark:text-gray-400 inline-flex items-center">{knob.label}{'tip' in knob && knob.tip ? <Tip text={knob.tip} /> : null}</span>
                           <span className="text-[11px] font-mono text-gray-700 dark:text-gray-300">{knob.type === 'float' ? numValue.toFixed(2) : numValue}</span>
                         </div>
-                        <input type="range" className="w-full" min={knob.min} max={knob.max} step={step} value={numValue} onChange={(e) => { const parsed = knob.type === 'float' ? Number.parseFloat(e.target.value) : Number.parseInt(e.target.value, 10); onConvergenceKnobUpdate(knob.key, Number.isFinite(parsed) ? parsed : 0); }} />
+                        <input type="range" className="w-full" min={knob.min} max={knob.max} step={step} value={numValue} onChange={(e) => { const parsed = knob.type === 'float' ? Number.parseFloat(e.target.value) : Number.parseInt(e.target.value, 10); onConvergenceKnobUpdate(knob.key, Number.isFinite(parsed) ? parsed : fallback); }} />
                         <div className="flex justify-between text-[10px] text-gray-400 mt-0"><span>{knob.min}</span><span>{knob.max}</span></div>
                       </div>
                     );
@@ -811,6 +995,7 @@ export function RuntimePanel({
           </div>
         </details>
       </div>
+          </fieldset>
       <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-2 text-xs">
         {searxngStatus?.running ? (
           <>

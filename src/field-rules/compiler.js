@@ -1193,10 +1193,18 @@ export async function compileRules({
       let dryRunWorkbookPath = workbookPath;
       let dryRunWorkbookMap = workbookMap;
       if (!dryRunWorkbookMap) {
-        const existingMapPath = String(mapPath || '').trim()
-          ? path.resolve(String(mapPath))
-          : path.join(helperRoot, normalizedCategory, '_control_plane', 'workbook_map.json');
-        const existingMap = await readJsonIfExists(existingMapPath);
+        const controlPlaneRoot = path.join(helperRoot, normalizedCategory, '_control_plane');
+        const candidateMapPaths = String(mapPath || '').trim()
+          ? [path.resolve(String(mapPath))]
+          : [
+            path.join(controlPlaneRoot, 'field_studio_map.json'),
+            path.join(controlPlaneRoot, 'workbook_map.json'),
+          ];
+        let existingMap = null;
+        for (const candidateMapPath of candidateMapPaths) {
+          existingMap = await readJsonIfExists(candidateMapPath);
+          if (isObject(existingMap)) break;
+        }
         if (isObject(existingMap)) {
           dryRunWorkbookMap = existingMap;
           if (!String(dryRunWorkbookPath || '').trim() && nonEmptyString(existingMap.workbook_path)) {
@@ -1830,10 +1838,11 @@ export async function discoverCompileCategories({
     }
     const categoryRoot = path.join(helperRoot, category);
     const hasWorkbookMap = await fileExists(path.join(categoryRoot, '_control_plane', 'workbook_map.json'));
+    const hasFieldStudioMap = await fileExists(path.join(categoryRoot, '_control_plane', 'field_studio_map.json'));
     const hasGeneratedRules = await fileExists(path.join(categoryRoot, '_generated', 'field_rules.json'));
     const sourceRoot = path.join(categoryRoot, '_source');
     const hasSourceSeed = await fileExists(path.join(sourceRoot, 'field_catalog.seed.json'));
-    if (hasWorkbookMap || hasGeneratedRules || hasSourceSeed) {
+    if (hasFieldStudioMap || hasWorkbookMap || hasGeneratedRules || hasSourceSeed) {
       categories.push(category);
     }
   }

@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import type { PrefetchLlmCall, SerpTriageResult, TriageCandidate } from '../types';
+import { useMemo } from 'react';
+import { usePersistedToggle } from '../../../stores/collapseStore';
+import { usePersistedNullableTab } from '../../../stores/tabStore';
+import type { PrefetchLlmCall, SerpTriageResult, TriageCandidate, PrefetchLiveSettings } from '../types';
 import { llmCallStatusBadgeClass, formatMs, triageDecisionBadgeClass, scoreBarSegments } from '../helpers';
 import { KanbanLane, KanbanCard } from '../components/KanbanLane';
 import { StackedScoreBar } from '../components/StackedScoreBar';
@@ -8,6 +10,8 @@ import { DrawerShell, DrawerSection } from '../../../components/common/DrawerShe
 interface PrefetchSerpTriagePanelProps {
   calls: PrefetchLlmCall[];
   serpTriage?: SerpTriageResult[];
+  persistScope: string;
+  liveSettings?: PrefetchLiveSettings;
 }
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
@@ -49,12 +53,43 @@ function CandidateDrawer({ candidate, onClose }: { candidate: TriageCandidate; o
   );
 }
 
-export function PrefetchSerpTriagePanel({ calls, serpTriage }: PrefetchSerpTriagePanelProps) {
-  const [expandedQuery, setExpandedQuery] = useState<number | null>(null);
-  const [showScoreDecomposition, setShowScoreDecomposition] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState<TriageCandidate | null>(null);
+export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveSettings }: PrefetchSerpTriagePanelProps) {
+  const [showScoreDecomposition, toggleScoreDecomposition] = usePersistedToggle('runtimeOps:serp:scoreDecomposition', false);
 
   const triage = serpTriage || [];
+  const triageQueryKeys = useMemo(
+    () => triage.map((row, index) => row.query || `query-${index}`),
+    [triage],
+  );
+  const candidateValues = useMemo(
+    () => triage.flatMap((row, index) => {
+      const rowKey = triageQueryKeys[index] || `query-${index}`;
+      return row.candidates.map((candidate) => `${rowKey}::${candidate.url}`);
+    }),
+    [triage, triageQueryKeys],
+  );
+  const [expandedQuery, setExpandedQuery] = usePersistedNullableTab<string>(
+    `runtimeOps:prefetch:serpTriage:expandedQuery:${persistScope}`,
+    null,
+    { validValues: triageQueryKeys },
+  );
+  const [selectedCandidateKey, setSelectedCandidateKey] = usePersistedNullableTab<string>(
+    `runtimeOps:prefetch:serpTriage:selectedCandidate:${persistScope}`,
+    null,
+    { validValues: candidateValues },
+  );
+  const selectedCandidate = useMemo(() => {
+    if (!selectedCandidateKey) return null;
+    for (let index = 0; index < triage.length; index += 1) {
+      const row = triage[index];
+      const rowKey = triageQueryKeys[index] || `query-${index}`;
+      for (const candidate of row.candidates) {
+        if (`${rowKey}::${candidate.url}` === selectedCandidateKey) return candidate;
+      }
+    }
+    return null;
+  }, [selectedCandidateKey, triage, triageQueryKeys]);
+
   const hasStructured = triage.length > 0;
   const totalTokens = calls.reduce((sum, c) => sum + (c.tokens?.input ?? 0) + (c.tokens?.output ?? 0), 0);
   const totalDuration = calls.reduce((sum, c) => sum + (c.duration_ms ?? 0), 0);
@@ -85,9 +120,18 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage }: PrefetchSerpTriag
             {calls.some((c) => c.status === 'failed') ? 'Error' : 'Done'}
           </span>
         )}
+        {liveSettings && (
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+            liveSettings.phase3LlmTriageEnabled
+              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+              : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+          }`}>
+            LLM Triage: {liveSettings.phase3LlmTriageEnabled ? 'ON' : 'OFF'}
+          </span>
+        )}
         <button
           type="button"
-          onClick={() => setShowScoreDecomposition((v) => !v)}
+          onClick={() => toggleScoreDecomposition()}
           className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline ml-auto"
         >
           {showScoreDecomposition ? 'Hide Scores' : 'Show Scores'}
@@ -108,7 +152,8 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage }: PrefetchSerpTriag
 
       {/* Per-query triage accordion with Kanban lanes */}
       {hasStructured && triage.map((t, ti) => {
-        const isExpanded = expandedQuery === ti || triage.length === 1;
+        const queryKey = triageQueryKeys[ti] || `query-${ti}`;
+        const isExpanded = triage.length === 1 || expandedQuery === queryKey;
         const kept = t.candidates.filter((c) => c.decision === 'keep');
         const maybe = t.candidates.filter((c) => c.decision === 'maybe');
         const dropped = t.candidates.filter((c) => c.decision === 'drop' || c.decision === 'skip');
@@ -118,7 +163,7 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage }: PrefetchSerpTriag
             {triage.length > 1 && (
               <button
                 type="button"
-                onClick={() => setExpandedQuery(isExpanded ? null : ti)}
+                onClick={() => setExpandedQuery(isExpanded ? null : queryKey)}
                 className="w-full flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800/80 hover:bg-gray-100 dark:hover:bg-gray-700/50 text-left"
               >
                 <span className="text-[10px] text-gray-400">{isExpanded ? '▼' : '▶'}</span>
@@ -138,7 +183,11 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage }: PrefetchSerpTriag
                       snippet={c.snippet}
                       score={c.score}
                       rationale={c.rationale}
-                      onClick={() => setSelectedCandidate(c)}
+                      onClick={() => setSelectedCandidateKey(
+                        selectedCandidateKey === `${queryKey}::${c.url}`
+                          ? null
+                          : `${queryKey}::${c.url}`,
+                      )}
                     >
                       {showScoreDecomposition && (
                         <StackedScoreBar segments={scoreBarSegments(c.score_components)} className="mt-1" />
@@ -156,7 +205,11 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage }: PrefetchSerpTriag
                       snippet={c.snippet}
                       score={c.score}
                       rationale={c.rationale}
-                      onClick={() => setSelectedCandidate(c)}
+                      onClick={() => setSelectedCandidateKey(
+                        selectedCandidateKey === `${queryKey}::${c.url}`
+                          ? null
+                          : `${queryKey}::${c.url}`,
+                      )}
                     >
                       {showScoreDecomposition && (
                         <StackedScoreBar segments={scoreBarSegments(c.score_components)} className="mt-1" />
@@ -174,7 +227,11 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage }: PrefetchSerpTriag
                       snippet={c.snippet}
                       score={c.score}
                       rationale={c.rationale}
-                      onClick={() => setSelectedCandidate(c)}
+                      onClick={() => setSelectedCandidateKey(
+                        selectedCandidateKey === `${queryKey}::${c.url}`
+                          ? null
+                          : `${queryKey}::${c.url}`,
+                      )}
                     >
                       {showScoreDecomposition && (
                         <StackedScoreBar segments={scoreBarSegments(c.score_components)} className="mt-1" />
@@ -190,7 +247,7 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage }: PrefetchSerpTriag
       })}
 
       {selectedCandidate && (
-        <CandidateDrawer candidate={selectedCandidate} onClose={() => setSelectedCandidate(null)} />
+        <CandidateDrawer candidate={selectedCandidate} onClose={() => setSelectedCandidateKey(null)} />
       )}
 
       {/* Debug Section */}

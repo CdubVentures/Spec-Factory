@@ -127,6 +127,16 @@ export function registerTestModeRoutes(ctx) {
         });
       } catch { /* non-fatal */ }
 
+      emitDataChange({
+        broadcastWs,
+        event: 'test-mode-created',
+        category: 'all',
+        meta: {
+          sourceCategory,
+          testCategory,
+        },
+      });
+
       return jsonRes(res, 200, { ok: true, category: testCategory, contractSummary });
     }
 
@@ -284,6 +294,15 @@ export function registerTestModeRoutes(ctx) {
           }
         }
       }
+
+      emitDataChange({
+        broadcastWs,
+        event: 'test-mode-products-generated',
+        category,
+        meta: {
+          count: testCases.length,
+        },
+      });
 
       return jsonRes(res, 200, { ok: true, products: productIds, testCases });
     }
@@ -510,6 +529,15 @@ export function registerTestModeRoutes(ctx) {
         }
         await saveBrandRegistry(config, registry);
       } catch { /* non-fatal */ }
+
+      emitDataChange({
+        broadcastWs,
+        event: 'test-mode-deleted',
+        category: 'all',
+        meta: {
+          deleted: category,
+        },
+      });
 
       return jsonRes(res, 200, { ok: true, deleted: category });
     }

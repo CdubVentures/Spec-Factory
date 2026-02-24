@@ -1,243 +1,43 @@
----
-title: "Field Studio Contract v3 — Complete Rule Hierarchy, Flags, Test Coverage & Gaps"
----
-graph TB
-    %% ═══════════════════════════════════════════════════════════════════
-    %% LEVEL 0 — ROOT
-    %% ═══════════════════════════════════════════════════════════════════
-    ROOT(["<b>FIELD STUDIO CONTRACT</b><br/>✅=tested  ⚑=grid flag  ⚠=gap"])
+flowchart LR
+  ROOT["FIELD STUDIO CONTRACT HIERARCHY (DUAL VIEW)<br/>Legend: [x] verified | [flag] actionable flag | [!] tracked gap"]
 
-    %% ═══════════════════════════════════════════════════════════════════
-    %% LEVEL 1 — DATA TYPES (7 types branch horizontally)
-    %% ═══════════════════════════════════════════════════════════════════
-    ROOT --> T_STR & T_NUM & T_INT & T_BOOL & T_DATE & T_URL & T_OBJ & T_CREF
+  subgraph LEFT["Panel A - Capture and Compile Contract"]
+    direction TB
+    L0["[x] Authoring sources<br/>field_studio_map/workbook_map + drafts"]
+    L1["[x] Workbook capture scope<br/>selected_keys -> field_overrides entries"]
+    L2["[x] Component source schema<br/>roles.properties requires key/type/unit/variance/constraints"]
+    L3["[x] Policy support<br/>enum: open|open_prefer_known|closed|closed_with_curation<br/>variance: authoritative|upper_bound|lower_bound|range|override_allowed"]
+    L4["[x] Numeric guard<br/>numeric variance on non-number type coerces to authoritative with warning"]
+    L5["[x] Compile outputs<br/>field_rules.json + component_db/*.json + known_values.json"]
+    L6["[x] Drift guard<br/>mouse sensor dpi/ips/acceleration remain numeric upper_bound (FRC-05-E)"]
+    L7["[!] closed_with_curation compile-valid but no dedicated test-mode scenario branch"]
+    L0 --> L1 --> L2 --> L3 --> L4 --> L5 --> L6
+    L3 --> L7
+  end
 
-    T_STR["<b>string</b><br/>scalar ✅ | list ✅<br/>trim + normalize<br/>text_field | enum_string"]
-    T_NUM["<b>number</b><br/>scalar ✅ | list ✅ | range ✅<br/>number_with_unit<br/>price_range_string | year_field"]
-    T_INT["<b>integer</b><br/>scalar ✅ | list ✅<br/>integer_with_unit<br/>integer_field"]
-    T_BOOL["<b>boolean</b><br/>scalar only ✅<br/>boolean_yes_no_unk<br/>auto: closed/yes_no"]
-    T_DATE["<b>date</b><br/>scalar only ✅<br/>date_field<br/>YYYY-MM-DD | YYYY-MM | YYYY"]
-    T_URL["<b>url</b><br/>scalar only ✅<br/>url_field<br/>new URL() validate"]
-    T_OBJ["<b>object</b><br/>list ✅ | object ⚠GAP-1<br/>latency_list_modes_ms<br/>mode_tagged_list"]
-    T_CREF["<b>component_ref</b><br/>scalar only ✅<br/>component_reference<br/>→ Component Grid"]
+  subgraph RIGHT["Panel B - Review Projection and UI Contract"]
+    direction TB
+    R1["[x] Review route payload<br/>compiled rules merged with session mergedFields"]
+    R2["[x] Component payload columns<br/>observed columns UNION declared contract columns"]
+    R3["[x] Blank declared columns preserved<br/>drawer shows slot with null-selected state"]
+    R4["[x] Slot aggregation invariant<br/>C(K,F) on linked products for name/maker/properties"]
+    R5["[x] Actionable flags<br/>[flag] variance_violation, constraint_conflict,<br/>compound_range_conflict, dependency_missing,<br/>new_component, new_enum_value,<br/>below_min_evidence, conflict_policy_hold"]
+    R6["[!] metrics.flags semantics differ by domain<br/>item grid uses real flag taxonomy,<br/>component/enum grids count needs_review rows"]
+    R1 --> R2 --> R3 --> R4 --> R5 --> R6
+  end
 
-    %% ═══════════════════════════════════════════════════════════════════
-    %% LEVEL 2 — STRING BRANCHES
-    %% ═══════════════════════════════════════════════════════════════════
-    T_STR --> EP_NONE & EP_CLOSED & EP_OPK & EP_OPEN & EP_CWC & EP_LIST_RULES
+  ROOT --> LEFT
+  ROOT --> RIGHT
+  L5 --> R1
+  L2 --> R2
+  L3 --> R5
 
-    EP_NONE["No enum ✅<br/>Free text value"]
-    EP_CLOSED["<b>enum: closed</b> ✅<br/>Reject unknown → unk<br/>⚑new_enum_value"]
-    EP_OPK["<b>enum: open_prefer_known</b> ✅<br/>Accept new + flag<br/>⚑new_enum_value"]
-    EP_OPEN["<b>enum: open</b> ✅<br/>Accept any value"]
-    EP_CWC["<b>enum: closed_with_curation</b><br/>Reject + queue curator<br/>⚠GAP untested runtime"]
-    EP_LIST_RULES["<b>list_rules</b> ✅<br/>dedupe case-insens ✅<br/>sort: asc/desc/none ✅<br/>min/max_items ✅<br/>item_union: set/ordered ✅"]
+  classDef rootStyle fill:#0f172a,stroke:#1d4ed8,stroke-width:3px,color:#f8fafc,font-weight:bold;
+  classDef leftStyle fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
+  classDef rightStyle fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+  classDef gapStyle fill:#fff7ed,stroke:#ea580c,stroke-width:2px,color:#7c2d12;
 
-    %% ═══════════════════════════════════════════════════════════════════
-    %% LEVEL 2 — NUMBER BRANCHES
-    %% ═══════════════════════════════════════════════════════════════════
-    T_NUM --> NUM_RANGE & NUM_UNIT & NUM_ROUND & NUM_SEL
-    T_INT --> NUM_RANGE
-
-    NUM_RANGE["<b>Range</b> ✅<br/>min ≤ val ≤ max<br/>OOR → ⚑constraint_conflict"]
-    NUM_UNIT["<b>Unit Conversion</b> ✅<br/>19 normalization_fns:<br/>oz→g | lbs→g | in→mm<br/>cm→mm | Hz | ms | dpi | gf<br/>unit_accepts: alternates ✅<br/>strict_unit_required ✅"]
-    NUM_ROUND["<b>Rounding</b> ✅<br/>decimals: 0/1/2 (int→0dp)<br/>mode: nearest<br/>⚠GAP-8 no grid-level test"]
-    NUM_SEL["<b>Selection Policy</b> ✅<br/>best_confidence ✅ | best_evidence ✅<br/>prefer_deterministic ✅ | prefer_llm ✅<br/>prefer_latest ✅<br/>Object: source_field ⚠GAP-2<br/>tolerance_ms | mode_preference"]
-
-    %% ═══════════════════════════════════════════════════════════════════
-    %% LEVEL 2 — OBJECT BRANCHES
-    %% ═══════════════════════════════════════════════════════════════════
-    T_OBJ --> OBJ_SCHEMA & OBJ_MODE
-
-    OBJ_SCHEMA["<b>object_schema</b> ⚠GAP-1<br/>Nested field definitions<br/>Compile validates ✅<br/>No runtime test"]
-    OBJ_MODE["<b>Mode-tagged values</b> ✅<br/>mode_aliases ✅<br/>accept_bare_numbers_as_mode<br/>latency_list_modes_ms ✅"]
-
-    %% ═══════════════════════════════════════════════════════════════════
-    %% LEVEL 2 — COMPONENT REF BRANCHES
-    %% ═══════════════════════════════════════════════════════════════════
-    T_CREF --> CREF_MATCH & CREF_DISAMBIG & CREF_VAR
-
-    CREF_MATCH["<b>Identity Match</b> ✅<br/>exact → alias → fuzzy<br/>fuzzy_threshold: 0.75 ✅<br/>auto_accept ≥ 0.95 ✅<br/>flag_review ≥ 0.65 ✅<br/>allow_new_components ✅"]
-    CREF_DISAMBIG["<b>Maker Disambig</b> ✅<br/>6-step: type_brand →<br/>type_maker → fk_brand →<br/>fk_maker → brand → maker"]
-    CREF_VAR["<b>Variance Policies</b> ✅<br/>authoritative ⚑variance_violation<br/>upper_bound ⚑ | lower_bound ✅<br/>range ±tol ✅<br/>override_allowed (no flag) ✅"]
-
-    %% ═══════════════════════════════════════════════════════════════════
-    %% LEVEL 1 — CROSS-CUTTING RULES
-    %% ═══════════════════════════════════════════════════════════════════
-    ROOT --> RULES["<b>CROSS-CUTTING RULES</b>"]
-    RULES --> PRI & EVID & CONSTR & CONF & AI_M
-
-    PRI["<b>PRIORITY</b> ✅<br/><b>required_level:</b><br/>identity | critical | required<br/>expected | optional | rare<br/><b>availability:</b> expected | sometimes | rare<br/><b>difficulty:</b> easy→2 | medium→5 | hard→8<br/><b>effort:</b> 1-10 (auto from difficulty)<br/>publish_gate ✅ | block_publish_when_unk ✅"]
-    EVID["<b>EVIDENCE</b> ✅<br/>required: bool (default true)<br/>min_refs ≥ N → ⚑below_min_evidence<br/>tier_pref: T1(1.0) → T4(0.4) ✅<br/>conflict: resolve_by_tier ✅<br/>preserve_all → ⚑conflict_policy_hold"]
-    CONSTR["<b>CONSTRAINTS</b> ✅<br/>Range → ⚑constraint_conflict<br/>CompDB → ⚑constraint_conflict<br/>Range∩CompDB → ⚑compound_range_conflict<br/>Group → ⚑dependency_missing<br/>Mutual exclusion | Conditional"]
-    CONF["<b>CONFIDENCE</b> ✅<br/>Gray=0 | Red<0.6<br/>Yellow 0.6-0.84<br/>Green ≥ 0.85<br/>⚑constraint → Red override<br/>⚑compound → Red override"]
-    AI_M["<b>AI ASSIST</b> ✅<br/><b>mode:</b> off | advisory | planner | judge<br/>Auto: identity/req/crit→judge<br/>expected+hard→planner<br/>expected→advisory<br/><b>model_strategy:</b> auto|force_fast|force_deep<br/><b>max_calls:</b> 1-10 (auto: effort→1/2/3)<br/><b>max_tokens:</b> 256-65536 (auto: mode→0/4k/8k/16k)<br/><b>reasoning_note:</b> free-form or auto-gen"]
-
-    %% ═══════════════════════════════════════════════════════════════════
-    %% LEVEL 1 — ENUM VALUE FLOW
-    %% ═══════════════════════════════════════════════════════════════════
-    ROOT --> ENUM_FLOW["<b>ENUM VALUE FLOW</b>"]
-
-    ENUM_FLOW --> EV_SOURCES & EV_MATCH
-
-    EV_SOURCES["<b>4 Value Sources → known_values.json</b><br/>1. Workbook pullEnumLists() ✅<br/>2. manual_enum_values (workbook_map) ✅<br/>3. enum.additional_values (Studio UI) ✅<br/>4. component_db entries (names+aliases) ✅<br/><b>All merge at compile → Seed → IDX → REV</b>"]
-
-    EV_MATCH["<b>Match Configuration</b><br/>strategy: exact | alias ✅<br/>fuzzy_threshold: 0.0-1.0 ✅<br/>token_map: grey→gray ✅<br/>new_value_policy: accept_if_evidence<br/>mark_needs_curation | suggestion_target"]
-
-    %% ═══════════════════════════════════════════════════════════════════
-    %% LEVEL 1 — PARSE CONFIGURATION
-    %% ═══════════════════════════════════════════════════════════════════
-    ROOT --> PARSE_CFG["<b>PARSE CONFIGURATION</b>"]
-    PARSE_CFG --> PARSE_TPL & PARSE_PROPS
-
-    PARSE_TPL["<b>19 Parse Templates</b> ✅<br/><b>String:</b> text_field | enum_string<br/><b>Bool:</b> boolean_yes_no_unk<br/><b>Numeric:</b> number_with_unit | integer_with_unit<br/>integer_field | price_range_string | year_field<br/><b>List:</b> list_of_tokens_delimited<br/>list_of_numbers_with_unit<br/>list_numbers_or_ranges_with_unit<br/>mode_tagged_list<br/><b>Object:</b> latency_list_modes_ms<br/><b>Range:</b> range_number<br/><b>Special:</b> url_field | date_field | component_reference"]
-
-    PARSE_PROPS["<b>Parse Properties</b><br/>unit + unit_accepts + unit_conversions ✅<br/>strict_unit_required ✅<br/>delimiters: , / | ; ✅<br/>range_separators: - to – ✅<br/>component_type ✅<br/>token_map ✅ | mode_aliases ✅<br/>patterns: regex+group+convert ✅<br/>normalization_fn: 19 functions ✅<br/>context_keywords | negative_keywords"]
-
-    %% ═══════════════════════════════════════════════════════════════════
-    %% LEVEL 1 — THREE REVIEW DOMAINS
-    %% ═══════════════════════════════════════════════════════════════════
-    ROOT --> ITEM_D & COMP_D & ENUM_D
-
-    %% ── ITEM GRID ──
-    subgraph ITEM_G [" ITEM GRID "]
-        ITEM_D["<b>ITEM GRID</b><br/>item_field_state<br/>Row = product<br/>Col = field_key"]
-        ITEM_D --> I_SRC["Sources ✅<br/>pipeline | user<br/>reference | synthetic"]
-        ITEM_D --> I_MUT["4 Mutations ✅<br/>override | manual<br/>AI confirm | accept"]
-        ITEM_D --> I_SC["9 Scenarios ✅<br/>#1 happy ✅ | #11 range ✅⚑<br/>#12 xval ✅⚑ | #15 min_evid ✅⚑<br/>#16 tier ✅ | #17 preserve ✅⚑<br/>#18 missing ✅ | #19 consensus ✅<br/>#20 list_dedup ✅"]
-        ITEM_D --> I_FL["<b>Item Flags</b><br/>⚑constraint_conflict ✅ engine<br/>⚠GAP-6 no e2e grid test<br/>⚑compound_range_conflict ✅<br/>⚑below_min_evidence ✅ FLAG-02<br/>⚑conflict_policy_hold ✅ FLAG-03<br/>⚑dependency_missing ⚠GAP-9"]
-    end
-
-    %% ── COMPONENT GRID ──
-    subgraph COMP_G [" COMPONENT GRID "]
-        COMP_D["<b>COMPONENT GRID</b><br/>identity + values<br/>Row = type::name::maker"]
-        COMP_D --> C_KEY["Row UNIQUE ✅<br/>Collision → merge ✅"]
-        COMP_D --> C_SLOTS["5 Slots ✅<br/>__name | __maker | property<br/>__links | __aliases"]
-        COMP_D --> C_AGG["<b>AGG INVARIANT</b> ✅<br/>C(K,F) = SUM cands ALL<br/>linked products per F<br/>IDENTICAL every slot"]
-        COMP_D --> C_LIFE["Lifecycle ✅<br/>exact→link | fuzzy→unresolved<br/>maker set → collision check<br/>merge: links+vals+aliases+KRS"]
-        COMP_D --> C_SC["Scenarios ✅<br/>#2,4,6,7 new_{type} ✅<br/>#3,5 similar_{type} ✅<br/>#13 constraints ✅⚑<br/>#14 variance ✅⚑"]
-        COMP_D --> C_FL["<b>Component Flags</b><br/>⚑variance_violation ✅<br/>⚑constraint_conflict ✅<br/>⚑compound_range_conflict ✅<br/>⚑new_component ✅ scenario<br/>⚠GAP-4 no FLAG-0x assertion"]
-        COMP_D --> C_PROPS["<b>Property Metadata</b> ✅<br/>variance_policy ✅<br/>constraints ✅<br/>enum_values/enum_policy ✅<br/>e.g. encoder_steps: closed [5,16,18,20,24]"]
-    end
-
-    %% ── ENUM GRID ──
-    subgraph ENUM_G [" ENUM GRID "]
-        ENUM_D["<b>ENUM GRID</b><br/>enum_lists + list_values<br/>Row = field_key"]
-        ENUM_D --> E_SRC["Sources ✅<br/>known_values | manual<br/>pipeline | additional_values ✅<br/>policy-dep transitions ✅"]
-        ENUM_D --> E_POL["4 Policies ✅<br/>open ✅ | open_prefer_known ✅⚑<br/>closed ✅⚑ | closed_with_curation ⚠"]
-        ENUM_D --> E_TRANS["Policy Transition ✅<br/>closed→open: review 1→0<br/>open→closed: review 0→1<br/>overridden untouched ✅"]
-        ENUM_D --> E_MUT["5 Actions ✅<br/>add | remove | accept<br/>confirm | rename+cascade"]
-        ENUM_D --> E_SC["Scenarios ✅<br/>#8 new_enum ✅⚑<br/>#9 similar ✅<br/>#10 closed_reject ✅⚑"]
-        ENUM_D --> E_FL["<b>Enum Flags</b><br/>⚑new_enum_value ✅ scenario<br/>⚠GAP-5 no FLAG-0x assertion"]
-    end
-
-    %% ═══════════════════════════════════════════════════════════════════
-    %% CROSS-LINKS between types and domains
-    %% ═══════════════════════════════════════════════════════════════════
-    EP_CLOSED -.->|"enforcement"| E_POL
-    EP_OPK -.->|"enforcement"| E_POL
-    CREF_MATCH -.->|"identity"| C_LIFE
-    CREF_VAR -.->|"property scoring"| C_FL
-    NUM_RANGE -.->|"comp property"| CREF_VAR
-    NUM_RANGE -.->|"compound intersection"| CONSTR
-    EV_SOURCES -.->|"values flow"| E_SRC
-    EV_MATCH -.->|"match cfg"| CREF_MATCH
-
-    %% ═══════════════════════════════════════════════════════════════════
-    %% LANE STATE MACHINE
-    %% ═══════════════════════════════════════════════════════════════════
-    ITEM_D & COMP_D & ENUM_D --> LN_STATE
-
-    LN_STATE["<b>LANE STATE MACHINE</b><br/>key_review_state ✅"]
-    LN_STATE --> LN_AI & LN_USR & LN_TR & LN_OVR
-
-    LN_AI["<b>AI Confirm</b> ✅<br/>pending → confirmed<br/>Transaction-safe ✅"]
-    LN_USR["<b>User Accept</b> ✅<br/>null → accepted"]
-    LN_TR["<b>Transitions</b> ✅<br/>Accept+Δsel → AI regresses<br/>Accept+= → AI stays<br/>Confirm=CANDIDATE<br/>Accept=SLOT"]
-    LN_OVR["<b>Override AI</b> ⚠<br/>regression untested"]
-
-    C_LIFE --> MERGE["<b>MERGE SYSTEM</b> ✅<br/>Collision detect (type,name,maker)<br/>Links → target (skip dupes)<br/>Values → target wins<br/>KRS → confirmed>accepted>pending"]
-
-    %% ═══════════════════════════════════════════════════════════════════
-    %% FLAG SYSTEM
-    %% ═══════════════════════════════════════════════════════════════════
-    I_FL & C_FL & E_FL --> FL_SYS["<b>FLAG SYSTEM</b>"]
-    FL_SYS --> FL_REAL & FL_VIS
-
-    FL_REAL["<b>8 REAL FLAGS → metrics</b><br/>1. ⚑variance_violation ✅ comp review<br/>    ⚠GAP-7 not in product grid metrics<br/>2. ⚑constraint_conflict ✅ engine<br/>    ⚠GAP-6 no e2e grid test<br/>3. ⚑compound_range_conflict ✅ #12,13<br/>4. ⚑new_component ✅ scenarios<br/>    ⚠GAP-4 no FLAG-0x assertion<br/>5. ⚑new_enum_value ✅ scenarios<br/>    ⚠GAP-5 no FLAG-0x assertion<br/>6. ⚑below_min_evidence ✅ FLAG-02<br/>7. ⚑conflict_policy_hold ✅ FLAG-03<br/>8. ⚑dependency_missing ✅ unit test<br/>    ⚠GAP-9 no contract scenario"]
-    FL_VIS["<b>Visual Treatments</b> ✅<br/>6 codes STRIPPED from real flags<br/>constraint+compound promote<br/>⚑flag → Red confidence override"]
-
-    %% ═══════════════════════════════════════════════════════════════════
-    %% BOTTOM — TEST COVERAGE + GAPS
-    %% ═══════════════════════════════════════════════════════════════════
-    FL_SYS & LN_STATE & MERGE --> BOTTOM["<b>TEST COVERAGE & GAPS</b>"]
-    BOTTOM --> TC_ALL & G_ALL & CID
-
-    TC_ALL["<b>2572 TESTS — 15+ files</b><br/>contractDriven (155+): S0-S8 ✅<br/>laneState (28) + apiContract (17) ✅<br/>ecosystem (60+) + engine (15) ✅<br/>compoundBoundary (14) ✅<br/>enumPolicy (5) + enumFuzzyThreshold (15) ✅<br/>listRules (15) + listUnionReducer (16) ✅<br/>categoryCompile (12) + loader (4) ✅<br/>gridData (8) + overrideWorkflow (7) ✅<br/>constraintEvaluator ✅<br/>systemMappingCoverage (5) ✅"]
-
-    G_ALL["<b>9 GAPS IDENTIFIED</b><br/><b>⚠GAP-1:</b> object×object runtime<br/>       object_schema compile only<br/><b>⚠GAP-2:</b> selection_policy.source_field<br/>       compile test, no runtime test<br/><b>⚠GAP-3:</b> unknown_token hardcoded 'unk'<br/>       deferred — no custom token test<br/><b>⚠GAP-4:</b> new_component → grid metrics<br/>       scenario exists, no FLAG-0x test<br/><b>⚠GAP-5:</b> new_enum_value → grid metrics<br/>       scenario exists, no FLAG-0x test<br/><b>⚠GAP-6:</b> constraint_conflict → grid<br/>       engine test, no e2e grid test<br/><b>⚠GAP-7:</b> variance_violation → product grid<br/>       comp review tested, not grid metrics<br/><b>⚠GAP-8:</b> rounding at grid level<br/>       compile test, no grid test<br/><b>⚠GAP-9:</b> dependency_missing scenario<br/>       unit test only, no contract scenario"]
-
-    CID["<b>CANDIDATE IDs</b> ✅<br/>9 prefixes | Scope: prod::field::raw<br/>Collision: ::dup_N | FNV-1a hash<br/>Synthetic READ-only"]
-
-    %% ═══════════════════════════════════════════════════════════════════
-    %% TEST SCENARIO MATRIX
-    %% ═══════════════════════════════════════════════════════════════════
-    BOTTOM --> SC_MAT
-
-    SC_MAT["<b>17 TEST SCENARIOS</b><br/>#1 happy_path ✅ (all fields, 3 src, 0 flags)<br/>#2-7 new_{type} ✅ (alien component × N types)<br/>#3,5 similar_{type} ✅ (alias near-match × N)<br/>#8 new_enum_values ✅ (open_prefer_known)<br/>#9 similar_enum_values ✅ (near-match enum)<br/>#10 closed_enum_reject ✅ (closed policy)<br/>#11 range_violations ✅⚑ (OOR values)<br/>#12 cross_validation ✅⚑ (constraint triggers)<br/>#12b compound_range_conflict ✅⚑<br/>#13 component_constraints ✅⚑<br/>#14 variance_policies ✅⚑ (boundary values)<br/>#15 min_evidence_refs ✅⚑ → below_min_evidence<br/>#16 tier_preference_override ✅ (tier2>tier1)<br/>#17 preserve_all_candidates ✅⚑ → conflict_policy_hold<br/>#18 missing_required ✅ (3-4 optional only)<br/>#19 multi_source_consensus ✅ (4 src disagree)<br/>#20 list_fields_dedup ✅ (5 src overlap)"]
-
-    %% ═══════════════════════════════════════════════════════════════════
-    %% STYLES
-    %% ═══════════════════════════════════════════════════════════════════
-    classDef rootStyle fill:#1a1a2e,stroke:#e94560,stroke-width:4px,color:#eee,font-weight:bold,font-size:16px
-    classDef typeStyle fill:#161b22,stroke:#58a6ff,stroke-width:2px,color:#c9d1d9
-    classDef numStyle fill:#161b22,stroke:#f0883e,stroke-width:2px,color:#c9d1d9
-    classDef otherStyle fill:#161b22,stroke:#8b949e,stroke-width:2px,color:#c9d1d9
-    classDef objStyle fill:#161b22,stroke:#d2a8ff,stroke-width:2px,color:#c9d1d9
-    classDef enumStyle fill:#1a0a2e,stroke:#bc8cff,stroke-width:2px,color:#d2a8ff
-    classDef enumGapStyle fill:#2d0a2a,stroke:#f85149,stroke-width:2px,color:#ffa198
-    classDef rulesStyle fill:#0d1117,stroke:#a371f7,stroke-width:2px,color:#c9d1d9
-    classDef itemStyle fill:#0d1a2e,stroke:#58a6ff,stroke-width:2px,color:#c9d1d9
-    classDef compStyle fill:#0a1f0a,stroke:#3fb950,stroke-width:2px,color:#c9d1d9
-    classDef aggStyle fill:#0a2f0a,stroke:#3fb950,stroke-width:3px,color:#7ee787,font-weight:bold
-    classDef enumGridStyle fill:#1a0a2e,stroke:#bc8cff,stroke-width:2px,color:#d2a8ff
-    classDef laneStyle fill:#0d1117,stroke:#58a6ff,stroke-width:2px,color:#c9d1d9
-    classDef mergeStyle fill:#0a1f0a,stroke:#3fb950,stroke-width:3px,color:#7ee787,font-weight:bold
-    classDef flagStyle fill:#2d0a0a,stroke:#f85149,stroke-width:2px,color:#ffa198
-    classDef flagVisStyle fill:#1a1000,stroke:#d29922,stroke-width:1px,color:#e3b341
-    classDef testStyle fill:#071a07,stroke:#56d364,stroke-width:2px,color:#c9d1d9
-    classDef gapStyle fill:#1a1a2e,stroke:#e94560,stroke-width:2px,color:#eee
-    classDef cidStyle fill:#0d1117,stroke:#a371f7,stroke-width:1px,color:#8b949e
-    classDef bridgeStyle fill:#1a1a2e,stroke:#484f58,stroke-width:2px,color:#c9d1d9,font-weight:bold
-    classDef flowStyle fill:#0d1117,stroke:#8957e5,stroke-width:2px,color:#d2a8ff
-    classDef parseStyle fill:#0d1117,stroke:#f0883e,stroke-width:2px,color:#c9d1d9
-    classDef scenarioStyle fill:#071a07,stroke:#56d364,stroke-width:2px,color:#7ee787
-
-    class ROOT rootStyle
-    class T_STR typeStyle
-    class T_NUM,T_INT numStyle
-    class T_BOOL,T_DATE,T_URL,T_CREF otherStyle
-    class T_OBJ objStyle
-    class EP_NONE,EP_CLOSED,EP_OPK,EP_OPEN,EP_LIST_RULES enumStyle
-    class EP_CWC enumGapStyle
-    class NUM_RANGE,NUM_UNIT,NUM_ROUND,NUM_SEL numStyle
-    class OBJ_SCHEMA enumGapStyle
-    class OBJ_MODE objStyle
-    class CREF_MATCH,CREF_DISAMBIG,CREF_VAR otherStyle
-    class RULES,PRI,EVID,CONSTR,CONF,AI_M rulesStyle
-    class ENUM_FLOW,EV_SOURCES,EV_MATCH flowStyle
-    class PARSE_CFG,PARSE_TPL,PARSE_PROPS parseStyle
-    class ITEM_D,I_SRC,I_MUT,I_SC,I_FL itemStyle
-    class COMP_D,C_KEY,C_SLOTS,C_LIFE,C_SC,C_FL,C_PROPS compStyle
-    class C_AGG aggStyle
-    class ENUM_D,E_SRC,E_POL,E_TRANS,E_MUT,E_SC,E_FL enumGridStyle
-    class LN_STATE,LN_AI,LN_USR,LN_TR laneStyle
-    class LN_OVR flagStyle
-    class MERGE mergeStyle
-    class FL_SYS,BOTTOM bridgeStyle
-    class FL_REAL flagStyle
-    class FL_VIS flagVisStyle
-    class TC_ALL testStyle
-    class G_ALL gapStyle
-    class CID cidStyle
-    class SC_MAT scenarioStyle
+  class ROOT rootStyle
+  class L0,L1,L2,L3,L4,L5,L6 leftStyle
+  class R1,R2,R3,R4,R5 rightStyle
+  class L7,R6 gapStyle

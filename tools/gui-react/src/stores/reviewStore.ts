@@ -8,6 +8,24 @@ interface ActiveCell {
   field: string;
 }
 
+function dedupeBrandTokens(brands: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const token of brands) {
+    const brand = String(token || '').trim();
+    if (!brand || seen.has(brand)) continue;
+    seen.add(brand);
+    result.push(brand);
+  }
+  return result;
+}
+
+function resolveBrandFilterMode(selectedSize: number, availableSize: number): BrandFilter['mode'] {
+  if (selectedSize <= 0) return 'none';
+  if (availableSize > 0 && selectedSize >= availableSize) return 'all';
+  return 'custom';
+}
+
 interface ReviewState {
   selectedField: string;
   selectedProductId: string;
@@ -26,7 +44,7 @@ interface ReviewState {
   availableBrands: string[];
   brandFilter: BrandFilter;
 
-  // Sort & filter
+  // Sort + filter
   sortMode: SortMode;
   showOnlyFlagged: boolean;
 
@@ -50,9 +68,10 @@ interface ReviewState {
   // Brand filter actions
   setAvailableBrands: (brands: string[]) => void;
   setBrandFilterMode: (mode: 'all' | 'none' | 'custom') => void;
+  setBrandFilterSelection: (brands: string[]) => void;
   toggleBrand: (brand: string) => void;
 
-  // Sort & filter actions
+  // Sort + filter actions
   setSortMode: (mode: SortMode) => void;
   setShowOnlyFlagged: (value: boolean) => void;
 }
@@ -77,7 +96,11 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   showOnlyFlagged: false,
 
   setSelectedField: (field) => set({ selectedField: field }),
-  setActiveCell: (cell) => set({ activeCell: cell, selectedField: cell?.field ?? '', selectedProductId: cell?.productId ?? '' }),
+  setActiveCell: (cell) => set({
+    activeCell: cell,
+    selectedField: cell?.field ?? '',
+    selectedProductId: cell?.productId ?? '',
+  }),
   openDrawer: (productId, field) => {
     set({
       activeCell: { productId, field },
@@ -93,14 +116,26 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
     if (flaggedCells.length === 0) return;
     const next = (flagIndex + 1) % flaggedCells.length;
     const cell = flaggedCells[next];
-    set({ flagIndex: next, activeCell: cell, selectedField: cell.field, selectedProductId: cell.productId, drawerOpen: true });
+    set({
+      flagIndex: next,
+      activeCell: cell,
+      selectedField: cell.field,
+      selectedProductId: cell.productId,
+      drawerOpen: true,
+    });
   },
   prevFlagged: () => {
     const { flaggedCells, flagIndex } = get();
     if (flaggedCells.length === 0) return;
     const prev = (flagIndex - 1 + flaggedCells.length) % flaggedCells.length;
     const cell = flaggedCells[prev];
-    set({ flagIndex: prev, activeCell: cell, selectedField: cell.field, selectedProductId: cell.productId, drawerOpen: true });
+    set({
+      flagIndex: prev,
+      activeCell: cell,
+      selectedField: cell.field,
+      selectedProductId: cell.productId,
+      drawerOpen: true,
+    });
   },
 
   // Cell mode actions
@@ -115,7 +150,6 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
     });
   },
   startEditing: (initialValue = '') => {
-    // NOTE: does NOT touch drawerOpen — drawer stays open if it was open
     set({
       cellMode: 'editing',
       editingValue: initialValue,
@@ -128,12 +162,11 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   },
   setEditingValue: (value) => {
     const { originalEditingValue } = get();
-    // Only mark unsaved if value actually changed from original
     if (value !== originalEditingValue) {
       set({ editingValue: value, saveStatus: 'unsaved' });
-    } else {
-      set({ editingValue: value, saveStatus: 'idle' });
+      return;
     }
+    set({ editingValue: value, saveStatus: 'idle' });
   },
   commitEditing: () => {
     set({ cellMode: 'viewing', saveStatus: 'idle' });
@@ -141,17 +174,68 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   setSaveStatus: (status) => set({ saveStatus: status }),
 
   // Brand filter actions
-  setAvailableBrands: (brands) => set({ availableBrands: brands }),
+  setAvailableBrands: (brands) => {
+    const deduped = dedupeBrandTokens(brands);
+    const availableSet = new Set(deduped);
+    const { brandFilter } = get();
+
+    if (brandFilter.mode === 'all') {
+      set({
+        availableBrands: deduped,
+        brandFilter: { mode: 'all', selected: new Set(deduped) },
+      });
+      return;
+    }
+    if (brandFilter.mode === 'none') {
+      set({
+        availableBrands: deduped,
+        brandFilter: { mode: 'none', selected: new Set<string>() },
+      });
+      return;
+    }
+
+    const nextSelected = new Set(
+      Array.from(brandFilter.selected).filter((brand) => availableSet.has(brand)),
+    );
+    const mode = resolveBrandFilterMode(nextSelected.size, deduped.length);
+    set({
+      availableBrands: deduped,
+      brandFilter: {
+        mode,
+        selected: mode === 'all' ? new Set(deduped) : nextSelected,
+      },
+    });
+  },
   setBrandFilterMode: (mode) => {
     const { availableBrands } = get();
     if (mode === 'all') {
       set({ brandFilter: { mode: 'all', selected: new Set(availableBrands) } });
-    } else if (mode === 'none') {
-      set({ brandFilter: { mode: 'none', selected: new Set<string>() } });
-    } else {
-      // custom — keep current selection
-      set((state) => ({ brandFilter: { ...state.brandFilter, mode: 'custom' } }));
+      return;
     }
+    if (mode === 'none') {
+      set({ brandFilter: { mode: 'none', selected: new Set<string>() } });
+      return;
+    }
+    set((state) => ({ brandFilter: { ...state.brandFilter, mode: 'custom' } }));
+  },
+  setBrandFilterSelection: (brands) => {
+    const deduped = dedupeBrandTokens(brands);
+    const { availableBrands } = get();
+    if (availableBrands.length === 0) {
+      const nextSelected = new Set(deduped);
+      const mode = nextSelected.size === 0 ? 'none' : 'custom';
+      set({ brandFilter: { mode, selected: nextSelected } });
+      return;
+    }
+    const availableSet = new Set(availableBrands);
+    const nextSelected = new Set(deduped.filter((brand) => availableSet.has(brand)));
+    const mode = resolveBrandFilterMode(nextSelected.size, availableBrands.length);
+    set({
+      brandFilter: {
+        mode,
+        selected: mode === 'all' ? new Set(availableBrands) : nextSelected,
+      },
+    });
   },
   toggleBrand: (brand) => {
     const { brandFilter, availableBrands } = get();
@@ -161,12 +245,16 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
     } else {
       next.add(brand);
     }
-    // Determine mode: if all selected → 'all', none → 'none', else → 'custom'
-    const mode = next.size === 0 ? 'none' : next.size === availableBrands.length ? 'all' : 'custom';
-    set({ brandFilter: { mode, selected: next } });
+    const mode = resolveBrandFilterMode(next.size, availableBrands.length);
+    set({
+      brandFilter: {
+        mode,
+        selected: mode === 'all' ? new Set(availableBrands) : next,
+      },
+    });
   },
 
-  // Sort & filter actions
+  // Sort + filter actions
   setSortMode: (mode) => set({ sortMode: mode }),
   setShowOnlyFlagged: (value) => set({ showOnlyFlagged: value }),
 }));

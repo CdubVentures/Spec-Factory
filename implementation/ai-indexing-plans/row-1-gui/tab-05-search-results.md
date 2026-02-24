@@ -58,6 +58,7 @@ Columns (customizable):
 ## Empty/error states
 - No results: show query list + suggestions (relax constraints, add synonyms)
 - Provider failure: per-provider error cards
+- Provider unavailable fallback: emit plan-only events with provider plan so Search Results still updates and run auto-stop can complete after Search Results loads.
 
 ---
 

@@ -7,9 +7,9 @@ function categoryFromCliArgs(cliArgs) {
   return String(cliArgs[idx + 1]).trim();
 }
 
-function isCategoryCompileCommand(cliArgs) {
+function isCompileCommand(cliArgs) {
   if (!Array.isArray(cliArgs)) return false;
-  return cliArgs.includes('category-compile');
+  return cliArgs.includes('category-compile') || cliArgs.includes('compile-rules');
 }
 
 export async function handleCompileProcessCompletion({
@@ -32,7 +32,7 @@ export async function handleCompileProcessCompletion({
   reviewLayoutByCategory?.delete?.(category);
 
   let specDbSync = null;
-  if (isCategoryCompileCommand(cliArgs) && typeof syncSpecDbForCategory === 'function') {
+  if (isCompileCommand(cliArgs) && typeof syncSpecDbForCategory === 'function') {
     try {
       const syncResult = await syncSpecDbForCategory({ category });
       specDbSync = { ok: true, ...syncResult };

@@ -108,6 +108,7 @@ export function OverviewPage() {
   const { data: billing } = useQuery({
     queryKey: ['billing', category],
     queryFn: () => api.get<{ totals?: { cost_usd?: number; calls?: number } }>(`/billing/${category}/monthly`),
+    refetchInterval: 30_000,
   });
 
   if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
@@ -140,6 +141,7 @@ export function OverviewPage() {
         data={catalog}
         columns={columns}
         searchable
+        persistKey={`overview:table:${category}`}
         maxHeight="max-h-[calc(100vh-340px)]"
         onRowClick={(row) => setSelectedProduct(row.productId, row.brand, row.model)}
       />

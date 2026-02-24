@@ -30,6 +30,22 @@ export function arrN(obj: Record<string, unknown>, path: string): string[] {
   return Array.isArray(v) ? v.map(String) : [];
 }
 
+const CONSTRAINT_KEYWORDS = new Set(['requires', 'and', 'or', 'not', 'if', 'then', 'else', 'true', 'false', 'null']);
+
+export function extractConstraintVariables(constraints: string[], currentKey = ''): string[] {
+  const vars = new Set<string>();
+  for (const expr of constraints) {
+    const tokens = String(expr || '').match(/[a-z_][a-z0-9_]*/gi) || [];
+    for (const token of tokens) {
+      const normalized = token.toLowerCase();
+      if (CONSTRAINT_KEYWORDS.has(normalized)) continue;
+      if (normalized === currentKey) continue;
+      vars.add(normalized);
+    }
+  }
+  return [...vars].sort((a, b) => a.localeCompare(b));
+}
+
 // ── setNested: mutates a rule object at a dot-path ───────────────────
 export function setNested(rule: Record<string, unknown>, dotPath: string, val: unknown): void {
   const p = dotPath.split('.');
@@ -146,6 +162,8 @@ export function buildWorkbenchRows(
       queryTermsCount: arrN(r, 'search_hints.query_terms').length,
       domainHintsCount: arrN(r, 'search_hints.domain_hints').length,
       contentTypesCount: arrN(r, 'search_hints.preferred_content_types').length,
+      constraintsCount: arrN(r, 'constraints').length,
+      constraintVariables: extractConstraintVariables(arrN(r, 'constraints'), key).join(', '),
 
       componentType: strN(r, 'component.type'),
 

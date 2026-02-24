@@ -1,0 +1,774 @@
+{
+  "generatedAt": "2026-02-24T22:28:44.984Z",
+  "runtimeKeysCount": 49,
+  "convergenceKeysCount": 26,
+  "runtimeAudit": [
+    {
+      "key": "profile",
+      "mapped": true,
+      "cfgKeys": [
+        "runProfile"
+      ],
+      "usage": [
+        {
+          "cfgKey": "runProfile",
+          "useCountOutsideRoutes": 22
+        }
+      ]
+    },
+    {
+      "key": "searchProvider",
+      "mapped": true,
+      "cfgKeys": [
+        "searchProvider"
+      ],
+      "usage": [
+        {
+          "cfgKey": "searchProvider",
+          "useCountOutsideRoutes": 64
+        }
+      ]
+    },
+    {
+      "key": "phase2LlmModel",
+      "mapped": true,
+      "cfgKeys": [
+        "llmModelPlan"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmModelPlan",
+          "useCountOutsideRoutes": 25
+        }
+      ]
+    },
+    {
+      "key": "phase3LlmModel",
+      "mapped": true,
+      "cfgKeys": [
+        "llmModelTriage"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmModelTriage",
+          "useCountOutsideRoutes": 20
+        }
+      ]
+    },
+    {
+      "key": "llmModelFast",
+      "mapped": true,
+      "cfgKeys": [
+        "llmModelFast"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmModelFast",
+          "useCountOutsideRoutes": 42
+        }
+      ]
+    },
+    {
+      "key": "llmModelReasoning",
+      "mapped": true,
+      "cfgKeys": [
+        "llmModelReasoning"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmModelReasoning",
+          "useCountOutsideRoutes": 31
+        }
+      ]
+    },
+    {
+      "key": "llmModelExtract",
+      "mapped": true,
+      "cfgKeys": [
+        "llmModelExtract"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmModelExtract",
+          "useCountOutsideRoutes": 48
+        }
+      ]
+    },
+    {
+      "key": "llmModelValidate",
+      "mapped": true,
+      "cfgKeys": [
+        "llmModelValidate"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmModelValidate",
+          "useCountOutsideRoutes": 39
+        }
+      ]
+    },
+    {
+      "key": "llmModelWrite",
+      "mapped": true,
+      "cfgKeys": [
+        "llmModelWrite"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmModelWrite",
+          "useCountOutsideRoutes": 33
+        }
+      ]
+    },
+    {
+      "key": "llmFallbackPlanModel",
+      "mapped": true,
+      "cfgKeys": [
+        "llmPlanFallbackModel"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmPlanFallbackModel",
+          "useCountOutsideRoutes": 12
+        }
+      ]
+    },
+    {
+      "key": "llmFallbackExtractModel",
+      "mapped": true,
+      "cfgKeys": [
+        "llmExtractFallbackModel"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmExtractFallbackModel",
+          "useCountOutsideRoutes": 12
+        }
+      ]
+    },
+    {
+      "key": "llmFallbackValidateModel",
+      "mapped": true,
+      "cfgKeys": [
+        "llmValidateFallbackModel"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmValidateFallbackModel",
+          "useCountOutsideRoutes": 12
+        }
+      ]
+    },
+    {
+      "key": "llmFallbackWriteModel",
+      "mapped": true,
+      "cfgKeys": [
+        "llmWriteFallbackModel"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmWriteFallbackModel",
+          "useCountOutsideRoutes": 12
+        }
+      ]
+    },
+    {
+      "key": "resumeMode",
+      "mapped": true,
+      "cfgKeys": [
+        "indexingResumeMode"
+      ],
+      "usage": [
+        {
+          "cfgKey": "indexingResumeMode",
+          "useCountOutsideRoutes": 5
+        }
+      ]
+    },
+    {
+      "key": "scannedPdfOcrBackend",
+      "mapped": true,
+      "cfgKeys": [
+        "scannedPdfOcrBackend"
+      ],
+      "usage": [
+        {
+          "cfgKey": "scannedPdfOcrBackend",
+          "useCountOutsideRoutes": 23
+        }
+      ]
+    },
+    {
+      "key": "fetchConcurrency",
+      "mapped": true,
+      "cfgKeys": [
+        "concurrency"
+      ],
+      "usage": [
+        {
+          "cfgKey": "concurrency",
+          "useCountOutsideRoutes": 47
+        }
+      ]
+    },
+    {
+      "key": "perHostMinDelayMs",
+      "mapped": true,
+      "cfgKeys": [
+        "perHostMinDelayMs"
+      ],
+      "usage": [
+        {
+          "cfgKey": "perHostMinDelayMs",
+          "useCountOutsideRoutes": 40
+        }
+      ]
+    },
+    {
+      "key": "llmTokensPlan",
+      "mapped": true,
+      "cfgKeys": [
+        "llmMaxOutputTokensPlan"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmMaxOutputTokensPlan",
+          "useCountOutsideRoutes": 25
+        }
+      ]
+    },
+    {
+      "key": "llmTokensTriage",
+      "mapped": true,
+      "cfgKeys": [
+        "llmMaxOutputTokensTriage"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmMaxOutputTokensTriage",
+          "useCountOutsideRoutes": 7
+        }
+      ]
+    },
+    {
+      "key": "llmTokensFast",
+      "mapped": true,
+      "cfgKeys": [
+        "llmMaxOutputTokensFast"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmMaxOutputTokensFast",
+          "useCountOutsideRoutes": 9
+        }
+      ]
+    },
+    {
+      "key": "llmTokensReasoning",
+      "mapped": true,
+      "cfgKeys": [
+        "llmMaxOutputTokensReasoning"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmMaxOutputTokensReasoning",
+          "useCountOutsideRoutes": 7
+        }
+      ]
+    },
+    {
+      "key": "llmTokensExtract",
+      "mapped": true,
+      "cfgKeys": [
+        "llmMaxOutputTokensExtract"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmMaxOutputTokensExtract",
+          "useCountOutsideRoutes": 14
+        }
+      ]
+    },
+    {
+      "key": "llmTokensValidate",
+      "mapped": true,
+      "cfgKeys": [
+        "llmMaxOutputTokensValidate"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmMaxOutputTokensValidate",
+          "useCountOutsideRoutes": 14
+        }
+      ]
+    },
+    {
+      "key": "llmTokensWrite",
+      "mapped": true,
+      "cfgKeys": [
+        "llmMaxOutputTokensWrite"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmMaxOutputTokensWrite",
+          "useCountOutsideRoutes": 14
+        }
+      ]
+    },
+    {
+      "key": "llmTokensPlanFallback",
+      "mapped": true,
+      "cfgKeys": [
+        "llmMaxOutputTokensPlanFallback"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmMaxOutputTokensPlanFallback",
+          "useCountOutsideRoutes": 11
+        }
+      ]
+    },
+    {
+      "key": "llmTokensExtractFallback",
+      "mapped": true,
+      "cfgKeys": [
+        "llmMaxOutputTokensExtractFallback"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmMaxOutputTokensExtractFallback",
+          "useCountOutsideRoutes": 8
+        }
+      ]
+    },
+    {
+      "key": "llmTokensValidateFallback",
+      "mapped": true,
+      "cfgKeys": [
+        "llmMaxOutputTokensValidateFallback"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmMaxOutputTokensValidateFallback",
+          "useCountOutsideRoutes": 8
+        }
+      ]
+    },
+    {
+      "key": "llmTokensWriteFallback",
+      "mapped": true,
+      "cfgKeys": [
+        "llmMaxOutputTokensWriteFallback"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmMaxOutputTokensWriteFallback",
+          "useCountOutsideRoutes": 8
+        }
+      ]
+    },
+    {
+      "key": "resumeWindowHours",
+      "mapped": true,
+      "cfgKeys": [
+        "indexingResumeMaxAgeHours"
+      ],
+      "usage": [
+        {
+          "cfgKey": "indexingResumeMaxAgeHours",
+          "useCountOutsideRoutes": 5
+        }
+      ]
+    },
+    {
+      "key": "reextractAfterHours",
+      "mapped": true,
+      "cfgKeys": [
+        "indexingReextractAfterHours"
+      ],
+      "usage": [
+        {
+          "cfgKey": "indexingReextractAfterHours",
+          "useCountOutsideRoutes": 5
+        }
+      ]
+    },
+    {
+      "key": "scannedPdfOcrMaxPages",
+      "mapped": true,
+      "cfgKeys": [
+        "scannedPdfOcrMaxPages"
+      ],
+      "usage": [
+        {
+          "cfgKey": "scannedPdfOcrMaxPages",
+          "useCountOutsideRoutes": 24
+        }
+      ]
+    },
+    {
+      "key": "scannedPdfOcrMaxPairs",
+      "mapped": true,
+      "cfgKeys": [
+        "scannedPdfOcrMaxPairs"
+      ],
+      "usage": [
+        {
+          "cfgKey": "scannedPdfOcrMaxPairs",
+          "useCountOutsideRoutes": 24
+        }
+      ]
+    },
+    {
+      "key": "scannedPdfOcrMinCharsPerPage",
+      "mapped": true,
+      "cfgKeys": [
+        "scannedPdfOcrMinCharsPerPage"
+      ],
+      "usage": [
+        {
+          "cfgKey": "scannedPdfOcrMinCharsPerPage",
+          "useCountOutsideRoutes": 24
+        }
+      ]
+    },
+    {
+      "key": "scannedPdfOcrMinLinesPerPage",
+      "mapped": true,
+      "cfgKeys": [
+        "scannedPdfOcrMinLinesPerPage"
+      ],
+      "usage": [
+        {
+          "cfgKey": "scannedPdfOcrMinLinesPerPage",
+          "useCountOutsideRoutes": 24
+        }
+      ]
+    },
+    {
+      "key": "scannedPdfOcrMinConfidence",
+      "mapped": true,
+      "cfgKeys": [
+        "scannedPdfOcrMinConfidence"
+      ],
+      "usage": [
+        {
+          "cfgKey": "scannedPdfOcrMinConfidence",
+          "useCountOutsideRoutes": 24
+        }
+      ]
+    },
+    {
+      "key": "crawleeRequestHandlerTimeoutSecs",
+      "mapped": true,
+      "cfgKeys": [
+        "crawleeRequestHandlerTimeoutSecs"
+      ],
+      "usage": [
+        {
+          "cfgKey": "crawleeRequestHandlerTimeoutSecs",
+          "useCountOutsideRoutes": 18
+        }
+      ]
+    },
+    {
+      "key": "dynamicFetchRetryBudget",
+      "mapped": true,
+      "cfgKeys": [
+        "dynamicFetchRetryBudget"
+      ],
+      "usage": [
+        {
+          "cfgKey": "dynamicFetchRetryBudget",
+          "useCountOutsideRoutes": 22
+        }
+      ]
+    },
+    {
+      "key": "dynamicFetchRetryBackoffMs",
+      "mapped": true,
+      "cfgKeys": [
+        "dynamicFetchRetryBackoffMs"
+      ],
+      "usage": [
+        {
+          "cfgKey": "dynamicFetchRetryBackoffMs",
+          "useCountOutsideRoutes": 22
+        }
+      ]
+    },
+    {
+      "key": "dynamicFetchPolicyMapJson",
+      "mapped": true,
+      "cfgKeys": [
+        "dynamicFetchPolicyMapJson",
+        "dynamicFetchPolicyMap"
+      ],
+      "usage": [
+        {
+          "cfgKey": "dynamicFetchPolicyMapJson",
+          "useCountOutsideRoutes": 24
+        },
+        {
+          "cfgKey": "dynamicFetchPolicyMap",
+          "useCountOutsideRoutes": 30
+        }
+      ]
+    },
+    {
+      "key": "scannedPdfOcrEnabled",
+      "mapped": true,
+      "cfgKeys": [
+        "scannedPdfOcrEnabled"
+      ],
+      "usage": [
+        {
+          "cfgKey": "scannedPdfOcrEnabled",
+          "useCountOutsideRoutes": 32
+        }
+      ]
+    },
+    {
+      "key": "scannedPdfOcrPromoteCandidates",
+      "mapped": true,
+      "cfgKeys": [
+        "scannedPdfOcrPromoteCandidates"
+      ],
+      "usage": [
+        {
+          "cfgKey": "scannedPdfOcrPromoteCandidates",
+          "useCountOutsideRoutes": 22
+        }
+      ]
+    },
+    {
+      "key": "phase2LlmEnabled",
+      "mapped": true,
+      "cfgKeys": [
+        "llmPlanDiscoveryQueries"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmPlanDiscoveryQueries",
+          "useCountOutsideRoutes": 11
+        }
+      ]
+    },
+    {
+      "key": "phase3LlmTriageEnabled",
+      "mapped": true,
+      "cfgKeys": [
+        "llmSerpRerankEnabled"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmSerpRerankEnabled",
+          "useCountOutsideRoutes": 6
+        }
+      ]
+    },
+    {
+      "key": "llmFallbackEnabled",
+      "mapped": true,
+      "cfgKeys": [
+        "llmFallbackEnabled"
+      ],
+      "usage": [
+        {
+          "cfgKey": "llmFallbackEnabled",
+          "useCountOutsideRoutes": 27
+        }
+      ]
+    },
+    {
+      "key": "reextractIndexed",
+      "mapped": true,
+      "cfgKeys": [
+        "indexingReextractEnabled"
+      ],
+      "usage": [
+        {
+          "cfgKey": "indexingReextractEnabled",
+          "useCountOutsideRoutes": 5
+        }
+      ]
+    },
+    {
+      "key": "discoveryEnabled",
+      "mapped": true,
+      "cfgKeys": [
+        "discoveryEnabled"
+      ],
+      "usage": [
+        {
+          "cfgKey": "discoveryEnabled",
+          "useCountOutsideRoutes": 60
+        }
+      ]
+    },
+    {
+      "key": "dynamicCrawleeEnabled",
+      "mapped": true,
+      "cfgKeys": [
+        "dynamicCrawleeEnabled"
+      ],
+      "usage": [
+        {
+          "cfgKey": "dynamicCrawleeEnabled",
+          "useCountOutsideRoutes": 26
+        }
+      ]
+    },
+    {
+      "key": "crawleeHeadless",
+      "mapped": true,
+      "cfgKeys": [
+        "crawleeHeadless"
+      ],
+      "usage": [
+        {
+          "cfgKey": "crawleeHeadless",
+          "useCountOutsideRoutes": 18
+        }
+      ]
+    },
+    {
+      "key": "runtimeAutoSaveEnabled",
+      "mapped": false,
+      "cfgKeys": [],
+      "usage": []
+    }
+  ],
+  "convergenceAudit": [
+    {
+      "key": "convergenceMaxRounds",
+      "mapped": true,
+      "useCountOutsideRoutes": 7
+    },
+    {
+      "key": "convergenceNoProgressLimit",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "convergenceMaxLowQualityRounds",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "convergenceLowQualityConfidence",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "convergenceMaxDispatchQueries",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "convergenceMaxTargetFields",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "needsetCapIdentityLocked",
+      "mapped": true,
+      "useCountOutsideRoutes": 6
+    },
+    {
+      "key": "needsetCapIdentityProvisional",
+      "mapped": true,
+      "useCountOutsideRoutes": 6
+    },
+    {
+      "key": "needsetCapIdentityConflict",
+      "mapped": true,
+      "useCountOutsideRoutes": 6
+    },
+    {
+      "key": "needsetCapIdentityUnlocked",
+      "mapped": true,
+      "useCountOutsideRoutes": 6
+    },
+    {
+      "key": "needsetEvidenceDecayDays",
+      "mapped": true,
+      "useCountOutsideRoutes": 6
+    },
+    {
+      "key": "needsetEvidenceDecayFloor",
+      "mapped": true,
+      "useCountOutsideRoutes": 6
+    },
+    {
+      "key": "consensusLlmWeightTier1",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "consensusLlmWeightTier2",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "consensusLlmWeightTier3",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "consensusLlmWeightTier4",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "consensusTier1Weight",
+      "mapped": true,
+      "useCountOutsideRoutes": 4
+    },
+    {
+      "key": "consensusTier2Weight",
+      "mapped": true,
+      "useCountOutsideRoutes": 4
+    },
+    {
+      "key": "consensusTier3Weight",
+      "mapped": true,
+      "useCountOutsideRoutes": 4
+    },
+    {
+      "key": "consensusTier4Weight",
+      "mapped": true,
+      "useCountOutsideRoutes": 4
+    },
+    {
+      "key": "serpTriageMinScore",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "serpTriageMaxUrls",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "serpTriageEnabled",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "retrievalMaxHitsPerField",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "retrievalMaxPrimeSources",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    },
+    {
+      "key": "retrievalIdentityFilterEnabled",
+      "mapped": true,
+      "useCountOutsideRoutes": 5
+    }
+  ]
+}

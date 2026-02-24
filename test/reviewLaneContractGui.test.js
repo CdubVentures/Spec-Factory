@@ -489,7 +489,7 @@ test('GUI click contract: grid + component + enum accept/confirm stay decoupled 
     const categorySelect = page.locator('aside select').first();
     await waitForCondition(async () => (await categorySelect.locator(`option[value="${CATEGORY}"]`).count()) > 0, 20_000, 150, 'category_option_visible');
     await categorySelect.selectOption(CATEGORY);
-    await page.waitForSelector(`text=${CATEGORY}`, { timeout: 20_000 });
+    await waitForCondition(async () => (await categorySelect.inputValue()) === CATEGORY, 20_000, 150, 'category_selected');
     await page.getByRole('link', { name: 'Review Grid' }).click();
     await waitForCondition(async () => {
       const payload = await apiJson(baseUrl, 'GET', `/review/${CATEGORY}/products-index`);
@@ -773,4 +773,3 @@ test('GUI click contract: grid + component + enum accept/confirm stay decoupled 
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
-

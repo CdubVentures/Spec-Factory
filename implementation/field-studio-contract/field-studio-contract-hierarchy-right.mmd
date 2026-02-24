@@ -1,0 +1,60 @@
+flowchart LR
+  ROOT["FIELD STUDIO CONTRACT - PANEL B (REVIEW AND FLAGS)<br/>Legend: [x] verified | [flag] actionable flag | [!] tracked gap"]
+
+  subgraph B1["B1. Review Payload Projection"]
+    direction TB
+    R1["[x] reviewRoutes merges compiled field rules with session mergedFields"]
+    R2["[x] builders receive full field-rule metadata families"]
+    R3["[x] component property columns = observed UNION declared"]
+    R4["[x] declared-but-blank properties stay visible with null-selected state in drawer"]
+    R1 --> R2 --> R3 --> R4
+  end
+
+  subgraph B2["B2. Lane Identity and Aggregation"]
+    direction TB
+    L1["[x] lane identity key: type::name::maker"]
+    L2["[x] slot aggregation invariant C(K,F) over linked products"]
+    L3["[x] applies equally to __name, __maker, and all property slots"]
+    L4["[x] fallback to queue allowed only when linked product set is empty"]
+    L1 --> L2 --> L3 --> L4
+  end
+
+  subgraph B3["B3. Actionable Runtime Flags"]
+    direction TB
+    F0["[x] Item-grid REAL_FLAG_CODES set"]
+    F1["[x] [flag] variance_violation"]
+    F2["[x] [flag] constraint_conflict"]
+    F3["[x] [flag] compound_range_conflict"]
+    F4["[x] [flag] dependency_missing"]
+    F5["[x] [flag] new_component"]
+    F6["[x] [flag] new_enum_value"]
+    F7["[x] [flag] below_min_evidence"]
+    F8["[x] [flag] conflict_policy_hold"]
+    F0 --> F1 --> F2 --> F3 --> F4 --> F5 --> F6 --> F7 --> F8
+  end
+
+  subgraph B4["B4. Loop and Gap Tracking"]
+    direction TB
+    E1["[x] enum loop<br/>known_values + manual values + suggestions -> enum lane mutations -> cascadeEnumChange"]
+    E2["[x] component loop<br/>component_db -> component lane mutations -> component impact cascade"]
+    G1["[!] dependency_missing production emitter coverage is still limited"]
+    G2["[!] metrics.flags semantics differ by domain<br/>item grid uses real flag codes; component/enum count needs_review rows"]
+    G3["[!] closed_with_curation remains compile-valid with no dedicated test-mode scenario branch"]
+    E1 --> E2 --> G1 --> G2 --> G3
+  end
+
+  ROOT --> B1 --> B2 --> B3 --> B4
+  B1 --> B3
+  B2 --> B3
+
+  classDef rootStyle fill:#0f172a,stroke:#1d4ed8,stroke-width:3px,color:#f8fafc,font-weight:bold;
+  classDef reviewStyle fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
+  classDef laneStyle fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+  classDef flagStyle fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d;
+  classDef gapStyle fill:#fff7ed,stroke:#ea580c,stroke-width:2px,color:#7c2d12;
+
+  class ROOT rootStyle
+  class R1,R2,R3,R4 reviewStyle
+  class L1,L2,L3,L4,E1,E2 laneStyle
+  class F0,F1,F2,F3,F4,F5,F6,F7,F8 flagStyle
+  class G1,G2,G3 gapStyle

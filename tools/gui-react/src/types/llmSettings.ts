@@ -39,6 +39,8 @@ export interface LlmRouteRow {
 
 export interface LlmRouteResponse {
   category: string;
-  scope: string | null;
+  scope?: string | null;
   rows: LlmRouteRow[];
+  ok?: boolean;
+  rejected?: Record<string, string>;
 }

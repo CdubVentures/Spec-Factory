@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { usePersistedToggle } from '../../stores/collapseStore';
 import { useQuery, useMutation, type QueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import type {
@@ -135,7 +135,7 @@ function ReviewItemCard({
 }
 
 export function ComponentReviewPanel({ category, queryClient, componentType }: ComponentReviewPanelProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, toggleExpanded] = usePersistedToggle('componentReview:panel:expanded', false);
 
   const reviewQuery = useQuery({
     queryKey: ['componentReview', category],
@@ -204,7 +204,7 @@ export function ComponentReviewPanel({ category, queryClient, componentType }: C
             </button>
           )}
           <button
-            onClick={() => setExpanded(!expanded)}
+            onClick={() => toggleExpanded()}
             className="px-2 py-1 text-[10px] font-medium rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
           >
             {expanded ? 'Hide Details' : 'Show Details'}

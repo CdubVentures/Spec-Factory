@@ -33,8 +33,8 @@ export function resolveCandidateConfidence({
 
 export function createRouteResponder(jsonRes, res) {
   return (status, payload) => {
-    jsonRes(res, status, payload);
-    return true;
+    const response = jsonRes(res, status, payload);
+    return response === undefined ? true : response;
   };
 }
 
@@ -266,7 +266,7 @@ export async function runHandledRouteChain({
   for (const handler of handlers) {
     const handled = await handler(args);
     if (handled !== false) {
-      return true;
+      return handled;
     }
   }
   return false;

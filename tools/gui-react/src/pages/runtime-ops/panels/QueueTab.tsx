@@ -1,11 +1,14 @@
-import { useMemo, useState } from 'react';
-import type { QueueStateResponse, QueueJobRow, LaneSummary, BlockedHostEntry } from '../types';
+import { useMemo } from 'react';
+import { usePersistedToggle } from '../../../stores/collapseStore';
+import { usePersistedNullableTab } from '../../../stores/tabStore';
+import type { QueueStateResponse, LaneSummary, BlockedHostEntry } from '../types';
 import { queueStatusBadgeClass, truncateUrl, METRIC_TIPS, timeUntil } from '../helpers';
 import { Tip } from '../../../components/common/Tip';
 import { relativeTime } from '../../../utils/formatting';
 
 interface QueueTabProps {
   queueState: QueueStateResponse | undefined;
+  category: string;
   onNavigateToDocuments?: (host: string) => void;
 }
 
@@ -49,14 +52,34 @@ function LaneCard({
   );
 }
 
-export function QueueTab({ queueState, onNavigateToDocuments }: QueueTabProps) {
-  const [laneFilter, setLaneFilter] = useState<string | null>(null);
-  const [selectedJob, setSelectedJob] = useState<QueueJobRow | null>(null);
-  const [blockedExpanded, setBlockedExpanded] = useState(false);
+export function QueueTab({ queueState, category, onNavigateToDocuments }: QueueTabProps) {
+  const [blockedExpanded, toggleBlockedExpanded] = usePersistedToggle(`runtimeOps:queue:blocked:${category}`, false);
 
   const jobs = queueState?.jobs ?? [];
+  const jobIds = useMemo(
+    () => jobs.map((job) => job.id),
+    [jobs],
+  );
+  const [selectedJobId, setSelectedJobId] = usePersistedNullableTab<string>(
+    `runtimeOps:queue:selectedJob:${category}`,
+    null,
+    { validValues: jobIds },
+  );
+  const selectedJob = useMemo(
+    () => jobs.find((job) => job.id === selectedJobId) ?? null,
+    [jobs, selectedJobId],
+  );
   const laneSummary = queueState?.lane_summary ?? [];
   const blockedHosts = queueState?.blocked_hosts ?? [];
+  const laneFilterValues = useMemo(
+    () => laneSummary.map((lane) => lane.lane),
+    [laneSummary],
+  );
+  const [laneFilter, setLaneFilter] = usePersistedNullableTab<string>(
+    `runtimeOps:queue:lane:${category}`,
+    null,
+    { validValues: laneFilterValues },
+  );
 
   const filtered = useMemo(() => {
     if (!laneFilter) return jobs;
@@ -97,7 +120,7 @@ export function QueueTab({ queueState, onNavigateToDocuments }: QueueTabProps) {
             {filtered.map((j) => (
               <tr
                 key={j.id}
-                onClick={() => setSelectedJob(selectedJob?.id === j.id ? null : j)}
+                onClick={() => setSelectedJobId(selectedJob?.id === j.id ? null : j.id)}
                 className={`cursor-pointer border-b border-gray-100 dark:border-gray-700/50 transition-colors ${
                   selectedJob?.id === j.id
                     ? 'bg-blue-50 dark:bg-blue-900/20'
@@ -140,7 +163,7 @@ export function QueueTab({ queueState, onNavigateToDocuments }: QueueTabProps) {
           <div className="border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
-              onClick={() => setBlockedExpanded(!blockedExpanded)}
+              onClick={() => toggleBlockedExpanded()}
               className={`w-full flex items-center justify-between px-4 py-2 text-xs font-medium transition-colors ${
                 blockedHosts.length > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'
               } hover:bg-gray-50 dark:hover:bg-gray-800/50`}

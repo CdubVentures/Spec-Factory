@@ -1,7 +1,10 @@
 import { useMemo, useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client';
-import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse } from '../types';
+import { usePersistedToggle } from '../../../stores/collapseStore';
+import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
+import { useRuntimeSettingsAuthority } from '../../../stores/runtimeSettingsAuthority';
+import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse, PrefetchLiveSettings } from '../types';
 import { getRefetchInterval } from '../helpers';
 import { WorkerSubTabs } from './WorkerSubTabs';
 import { WorkerLivePanel } from './WorkerLivePanel';
@@ -11,24 +14,49 @@ import { PrefetchNeedSetPanel } from './PrefetchNeedSetPanel';
 import { PrefetchSearchProfilePanel } from './PrefetchSearchProfilePanel';
 import { PrefetchBrandResolverPanel } from './PrefetchBrandResolverPanel';
 import { PrefetchSearchPlannerPanel } from './PrefetchSearchPlannerPanel';
+import { PrefetchQueryJourneyPanel } from './PrefetchQueryJourneyPanel';
 import { PrefetchSearchResultsPanel } from './PrefetchSearchResultsPanel';
 import { PrefetchUrlPredictorPanel } from './PrefetchUrlPredictorPanel';
 import { PrefetchSerpTriagePanel } from './PrefetchSerpTriagePanel';
 import { PrefetchDomainClassifierPanel } from './PrefetchDomainClassifierPanel';
+import { shouldAutoStopOnSearchResults } from './workersTabAutoStopHelpers.js';
+import { buildBusyPrefetchTabs } from './prefetchTabBusyHelpers.js';
 
 interface WorkersTabProps {
   workers: RuntimeOpsWorkerRow[];
   selectedWorker: RuntimeOpsWorkerRow | null;
   onSelectWorker: (w: RuntimeOpsWorkerRow | null) => void;
   runId: string;
+  category: string;
   isRunning: boolean;
   wsUrl?: string;
 }
 
-export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, isRunning, wsUrl }: WorkersTabProps) {
-  const [poolFilter, setPoolFilter] = useState('all');
-  const [drawerOpen, setDrawerOpen] = useState(true);
-  const [prefetchTab, setPrefetchTab] = useState<PrefetchTabKey | null>(null);
+interface ProcessStatus {
+  running: boolean;
+}
+
+const PREFETCH_TAB_KEYS = [
+  'needset',
+  'search_profile',
+  'brand_resolver',
+  'search_planner',
+  'query_journey',
+  'search_results',
+  'url_predictor',
+  'serp_triage',
+  'domain_classifier',
+] as const satisfies ReadonlyArray<PrefetchTabKey>;
+
+export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, category, isRunning, wsUrl }: WorkersTabProps) {
+  const [poolFilter, setPoolFilter] = usePersistedTab<string>(`runtimeOps:workers:poolFilter:${category}`, 'all');
+  const [drawerOpen, toggleDrawerOpen] = usePersistedToggle(`runtimeOps:workers:drawer:${category}`, true);
+  const [autoStopRunId, setAutoStopRunId] = useState<string | null>(null);
+  const [prefetchTab, setPrefetchTab] = usePersistedNullableTab<PrefetchTabKey>(
+    `runtimeOps:workers:prefetchTab:${category}`,
+    null,
+    { validValues: PREFETCH_TAB_KEYS },
+  );
 
   const { data: prefetchData } = useQuery({
     queryKey: ['runtime-ops', runId, 'prefetch'],
@@ -36,6 +64,53 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, isR
     enabled: Boolean(runId) && prefetchTab !== null,
     refetchInterval: getRefetchInterval(isRunning, prefetchTab === null, 3000, 15000),
   });
+
+  const stopMut = useMutation({
+    mutationFn: async () => {
+      const first = await api.post<ProcessStatus>('/process/stop', { force: false });
+      if (first?.running) {
+        return api.post<ProcessStatus>('/process/stop', { force: false });
+      }
+      return first;
+    },
+    onError: () => {
+      setAutoStopRunId(null);
+    },
+  });
+
+  useEffect(() => {
+    if (autoStopRunId && autoStopRunId !== runId) {
+      setAutoStopRunId(null);
+    }
+  }, [autoStopRunId, runId]);
+
+  const shouldAutoStop = shouldAutoStopOnSearchResults({
+    isRunning,
+    isPrefetchActive: prefetchTab !== null,
+    hasStopBeenRequested: stopMut.isPending || autoStopRunId === runId,
+    searchResults: prefetchData?.search_results,
+  });
+
+  useEffect(() => {
+    if (!shouldAutoStop) return;
+    setAutoStopRunId(runId);
+    stopMut.mutate();
+  }, [runId, shouldAutoStop, stopMut]);
+
+  const { settings: rawSettings } = useRuntimeSettingsAuthority({
+    payload: {},
+    dirty: false,
+    autoSaveEnabled: false,
+  });
+
+  const liveSettings = useMemo((): PrefetchLiveSettings => ({
+    phase2LlmEnabled: Boolean(rawSettings?.phase2LlmEnabled),
+    phase3LlmTriageEnabled: Boolean(rawSettings?.phase3LlmTriageEnabled),
+    searchProvider: String(rawSettings?.searchProvider ?? ''),
+    discoveryEnabled: Boolean(rawSettings?.discoveryEnabled),
+    dynamicCrawleeEnabled: Boolean(rawSettings?.dynamicCrawleeEnabled),
+    scannedPdfOcrEnabled: Boolean(rawSettings?.scannedPdfOcrEnabled),
+  }), [rawSettings]);
 
   const pools = useMemo(() => {
     const set = new Set(workers.map((w) => w.pool));
@@ -58,7 +133,7 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, isR
       const running = filtered.find((w) => w.state === 'running');
       onSelectWorker(running ?? filtered[0]);
     }
-  }, [filtered.length]);
+  }, [filtered, selectedWorker, prefetchTab, onSelectWorker]);
 
   const handleSelectWorker = (workerId: string) => {
     setPrefetchTab(null);
@@ -75,10 +150,19 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, isR
     : null;
 
   const isPrefetchActive = prefetchTab !== null;
+  const busyPrefetchTabs = useMemo(
+    () => buildBusyPrefetchTabs({
+      isRunning,
+      activeTab: prefetchTab,
+      prefetchData,
+      tabKeys: PREFETCH_TAB_KEYS,
+    }),
+    [isRunning, prefetchTab, prefetchData],
+  );
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <PrefetchTabRow activeTab={prefetchTab} onSelectTab={handleSelectPrefetchTab} />
+      <PrefetchTabRow activeTab={prefetchTab} onSelectTab={handleSelectPrefetchTab} busyTabs={busyPrefetchTabs} />
 
       <div className="px-4 py-2 flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <label className="text-xs text-gray-500 dark:text-gray-400">Pool:</label>
@@ -103,7 +187,7 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, isR
       <div className="flex flex-1 min-h-0">
         <div className="flex flex-col flex-1 min-h-0">
           {isPrefetchActive ? (
-            renderPrefetchPanel(prefetchTab, prefetchData)
+            renderPrefetchPanel(prefetchTab, prefetchData, category, liveSettings)
           ) : activeWorker ? (
             <WorkerLivePanel worker={activeWorker} wsUrl={wsUrl} isRunning={isRunning} />
           ) : (
@@ -123,8 +207,9 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, isR
             <WorkerDataDrawer
               runId={runId}
               workerId={activeWorker.worker_id}
+              category={category}
               isOpen={drawerOpen && !isPrefetchActive}
-              onToggle={() => setDrawerOpen((o) => !o)}
+              onToggle={toggleDrawerOpen}
               isRunning={isRunning}
             />
           )}
@@ -134,25 +219,42 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, isR
   );
 }
 
-function renderPrefetchPanel(tab: PrefetchTabKey, data: PreFetchPhasesResponse | undefined) {
-  const emptyNeedset = { needset_size: 0, total_fields: 0, identity_lock_state: { status: 'unknown', confidence: 0 }, needs: [], reason_counts: {}, required_level_counts: {}, snapshots: [] };
+function renderPrefetchPanel(tab: PrefetchTabKey, data: PreFetchPhasesResponse | undefined, persistScope: string, liveSettings: PrefetchLiveSettings) {
+  const emptyNeedset = { needset_size: 0, total_fields: 0, identity_lock_state: { status: 'unlocked', confidence: 0 }, needs: [], reason_counts: {}, required_level_counts: {}, snapshots: [] };
   const emptyProfile = { query_count: 0, provider: '', llm_query_planning: false, identity_aliases: [], variant_guard_terms: [], query_rows: [], query_guard: {} };
 
   switch (tab) {
     case 'needset':
-      return <PrefetchNeedSetPanel data={data?.needset ?? emptyNeedset} />;
+      return <PrefetchNeedSetPanel data={data?.needset ?? emptyNeedset} persistScope={persistScope} />;
     case 'search_profile':
-      return <PrefetchSearchProfilePanel data={data?.search_profile ?? emptyProfile} searchPlans={data?.search_plans} />;
+      return <PrefetchSearchProfilePanel data={data?.search_profile ?? emptyProfile} searchPlans={data?.search_plans} persistScope={persistScope} liveSettings={liveSettings} />;
     case 'brand_resolver':
-      return <PrefetchBrandResolverPanel calls={data?.llm_calls?.brand_resolver ?? []} brandResolution={data?.brand_resolution} />;
+      return <PrefetchBrandResolverPanel calls={data?.llm_calls?.brand_resolver ?? []} brandResolution={data?.brand_resolution} persistScope={persistScope} />;
     case 'search_planner':
-      return <PrefetchSearchPlannerPanel calls={data?.llm_calls?.search_planner ?? []} searchPlans={data?.search_plans} />;
+      return (
+        <PrefetchSearchPlannerPanel
+          calls={data?.llm_calls?.search_planner ?? []}
+          searchPlans={data?.search_plans}
+          searchResults={data?.search_results}
+          liveSettings={liveSettings}
+        />
+      );
+    case 'query_journey':
+      return (
+        <PrefetchQueryJourneyPanel
+          searchProfile={data?.search_profile ?? emptyProfile}
+          searchPlans={data?.search_plans}
+          searchResults={data?.search_results}
+          searchResultDetails={data?.search_result_details}
+          persistScope={persistScope}
+        />
+      );
     case 'search_results':
-      return <PrefetchSearchResultsPanel results={data?.search_results ?? []} searchResultDetails={data?.search_result_details} />;
+      return <PrefetchSearchResultsPanel results={data?.search_results ?? []} searchResultDetails={data?.search_result_details} searchPlans={data?.search_plans} persistScope={persistScope} liveSettings={liveSettings} />;
     case 'url_predictor':
       return <PrefetchUrlPredictorPanel calls={data?.llm_calls?.url_predictor ?? []} urlPredictions={data?.url_predictions} />;
     case 'serp_triage':
-      return <PrefetchSerpTriagePanel calls={data?.llm_calls?.serp_triage ?? []} serpTriage={data?.serp_triage} />;
+      return <PrefetchSerpTriagePanel calls={data?.llm_calls?.serp_triage ?? []} serpTriage={data?.serp_triage} persistScope={persistScope} liveSettings={liveSettings} />;
     case 'domain_classifier':
       return <PrefetchDomainClassifierPanel calls={data?.llm_calls?.domain_classifier ?? []} domainHealth={data?.domain_health} />;
     default:

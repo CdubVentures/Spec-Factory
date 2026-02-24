@@ -141,7 +141,7 @@ function toNeedSetBaseline({
     reason_counts: {},
     required_level_counts: {},
     identity_lock_state: {
-      status: 'unknown',
+      status: 'unlocked',
       confidence: 0,
       identity_gate_validated: false,
       extraction_gate_open: false,
@@ -227,12 +227,19 @@ function toSearchProfileBaseline({
 function toSearchProfileQueryRow(entry = {}) {
   return {
     query: String(entry.query || '').trim(),
-    target_fields: [],
+    target_fields: Array.isArray(entry.target_fields)
+      ? entry.target_fields.map((value) => String(value || '').trim()).filter(Boolean)
+      : [],
     attempts: Math.max(0, asInt(entry.attempts, 0)),
     result_count: Math.max(0, asInt(entry.result_count, 0)),
     providers: Array.isArray(entry.providers)
       ? entry.providers.map((value) => String(value || '').trim()).filter(Boolean).slice(0, 8)
-      : []
+      : [],
+    hint_source: String(entry.hint_source || '').trim(),
+    doc_hint: String(entry.doc_hint || '').trim(),
+    domain_hint: String(entry.domain_hint || '').trim(),
+    source_host: String(entry.source_host || '').trim(),
+    __from_plan_profile: Boolean(entry.__from_plan_profile)
   };
 }
 
@@ -240,10 +247,11 @@ function toSearchProfileQueryCard(entry = {}) {
   const row = toSearchProfileQueryRow(entry);
   return {
     query: row.query,
-    hint_source: 'runtime_bridge',
-    target_fields: [],
-    doc_hint: '',
-    domain_hint: '',
+    hint_source: row.hint_source || 'runtime_bridge',
+    target_fields: row.target_fields,
+    doc_hint: row.doc_hint,
+    domain_hint: row.domain_hint,
+    source_host: row.source_host,
     result_count: row.result_count,
     attempts: row.attempts,
     providers: row.providers,
@@ -255,6 +263,75 @@ function toSearchProfileQueryCard(entry = {}) {
 
 async function appendNdjson(filePath, row) {
   await fs.appendFile(filePath, `${JSON.stringify(row)}\n`, 'utf8');
+}
+
+function isRuntimeSource(source = '') {
+  return String(source || '')
+    .trim()
+    .toLowerCase()
+    .startsWith('runtime_bridge');
+}
+
+function mergeSearchProfileRows(runtimeRows = [], plannedRows = []) {
+  const toLookup = (rows = []) => {
+    const lookup = new Map();
+    for (const row of rows) {
+      const normalized = String(row?.query || '').trim().toLowerCase();
+      if (!normalized || lookup.has(normalized)) continue;
+      lookup.set(normalized, toSearchProfileQueryRow(row));
+    }
+    return lookup;
+  };
+  const runtimeLookup = toLookup(runtimeRows);
+  const planLookup = toLookup(plannedRows);
+  const mergedRows = [];
+  const seen = new Set();
+  for (const [normalized, runtimeRow] of runtimeLookup.entries()) {
+    const planRow = planLookup.get(normalized);
+    const merged = {
+      ...runtimeRow,
+      ...planRow
+    };
+    merged.query = String(runtimeRow.query || planRow?.query || '').trim();
+    merged.attempts = Math.max(asInt(runtimeRow.attempts, 0), asInt(planRow?.attempts, 0));
+    merged.result_count = Math.max(asInt(runtimeRow.result_count, 0), asInt(planRow?.result_count, 0));
+    merged.providers = [
+      ...(Array.isArray(planRow?.providers) ? planRow.providers : []),
+      ...(Array.isArray(runtimeRow.providers) ? runtimeRow.providers : [])
+    ].filter((value, index, self) => Boolean(value) && self.indexOf(value) === index).slice(0, 8);
+    merged.__from_plan_profile = Boolean(planRow);
+
+    if (merged.hint_source) {
+      if (isRuntimeSource(merged.hint_source) && planRow?.hint_source) {
+        merged.hint_source = String(planRow.hint_source || '').trim();
+      }
+    } else {
+      merged.hint_source = String(planRow?.hint_source || '').trim();
+    }
+    if (!merged.doc_hint) merged.doc_hint = String(planRow?.doc_hint || '').trim();
+    if (!merged.domain_hint) merged.domain_hint = String(planRow?.domain_hint || '').trim();
+    if (!merged.source_host) merged.source_host = String(planRow?.source_host || '').trim();
+    if ((!merged.target_fields || merged.target_fields.length === 0) && Array.isArray(planRow?.target_fields)) {
+      merged.target_fields = [...planRow.target_fields];
+    }
+    if (isRuntimeSource(merged.hint_source)) {
+      merged.hint_source = String(planRow?.hint_source || merged.hint_source).trim() || 'runtime_bridge';
+    }
+    mergedRows.push(merged);
+    seen.add(normalized);
+  }
+  for (const [normalized, planRow] of planLookup.entries()) {
+    if (seen.has(normalized)) continue;
+    mergedRows.push({
+      ...planRow,
+      __from_plan_profile: true
+    });
+    seen.add(normalized);
+  }
+  return mergedRows
+    .map((row) => toSearchProfileQueryRow(row))
+    .filter((row) => row.query)
+    .slice(0, 220);
 }
 
 export class IndexLabRuntimeBridge {
@@ -270,6 +347,7 @@ export class IndexLabRuntimeBridge {
     this.runMetaPath = '';
     this.needSetPath = '';
     this.searchProfilePath = '';
+    this.brandResolutionPath = '';
     this.startedAt = '';
     this.endedAt = '';
     this.status = 'running';
@@ -412,6 +490,7 @@ export class IndexLabRuntimeBridge {
     this.runMetaPath = path.join(this.runDir, 'run.json');
     this.needSetPath = path.join(this.runDir, 'needset.json');
     this.searchProfilePath = path.join(this.runDir, 'search_profile.json');
+    this.brandResolutionPath = path.join(this.runDir, 'brand_resolution.json');
 
     if (!isNewRound) {
       this.startedAt = toIso(row.ts || new Date().toISOString());
@@ -469,7 +548,8 @@ export class IndexLabRuntimeBridge {
         has_needset: Boolean(this.needSet),
         has_search_profile: Boolean(this.searchProfile),
         needset_path: this.needSetPath || '',
-        search_profile_path: this.searchProfilePath || ''
+        search_profile_path: this.searchProfilePath || '',
+        brand_resolution_path: this.brandResolutionPath || ''
       },
       ...extra
     };
@@ -549,13 +629,13 @@ export class IndexLabRuntimeBridge {
       ? this.searchProfile.query_rows
       : [];
     const existing = rows.find((row) => normalizeQueryToken(row?.query || '') === token);
-    const row = existing || {
+    const row = existing || toSearchProfileQueryRow({
       query: String(query || '').trim(),
       target_fields: [],
       attempts: 0,
       result_count: 0,
       providers: []
-    };
+    });
     if (!existing) rows.push(row);
     if (incrementAttempt) {
       row.attempts = Math.max(0, asInt(row.attempts, 0)) + 1;
@@ -574,6 +654,29 @@ export class IndexLabRuntimeBridge {
     this.searchProfile.query_rows = rows;
     this._refreshSearchProfileCollections(ts);
     await this._writeSearchProfile(this.searchProfile);
+    return true;
+  }
+
+  _applySearchProfilePlannedPayload(payload = {}, ts = '') {
+    if (!payload || typeof payload !== 'object') return;
+    if (!this.searchProfile || typeof this.searchProfile !== 'object') {
+      this.searchProfile = this._buildSearchProfileBaseline(ts);
+    }
+    const base = payload?.query_rows && Array.isArray(payload.query_rows)
+      ? payload.query_rows
+      : [];
+    const runtimeRows = Array.isArray(this.searchProfile?.query_rows)
+      ? this.searchProfile.query_rows
+      : [];
+    const mergedRows = mergeSearchProfileRows(runtimeRows, base);
+    this.searchProfile = {
+      ...this.searchProfile,
+      ...payload,
+      query_rows: mergedRows
+    };
+    this.searchProfile.generated_at = toIso(ts || this.searchProfile.generated_at || new Date().toISOString());
+    this.searchProfile.status = mergedRows.length > 0 ? 'planned' : 'pending';
+    this._refreshSearchProfileCollections(ts);
     return true;
   }
 
@@ -621,6 +724,47 @@ export class IndexLabRuntimeBridge {
         // ignore callback failures
       }
     }
+  }
+
+  _extractRuntimeEventPayload(row = {}) {
+    if (!row || typeof row !== 'object') {
+      return {};
+    }
+
+    const nestedPayload = row.payload && typeof row.payload === 'object' && !Array.isArray(row.payload)
+      ? row.payload
+      : null;
+    if (nestedPayload) {
+      return nestedPayload;
+    }
+
+    const ignoredKeys = new Set([
+      'event',
+      'ts',
+      'run_id',
+      'runId',
+      'cat',
+      'category',
+      'product_id',
+      'productId',
+      'stage',
+      'payload',
+      'level',
+      'message',
+      'url',
+      'finalUrl',
+      'worker_id',
+      'run_profile',
+      'runtime_mode',
+      'identity_fingerprint',
+      'identity_lock_status',
+      'dedupe_mode',
+      'phase_cursor'
+    ]);
+
+    return Object.fromEntries(
+      Object.entries(row).filter(([key]) => !ignoredKeys.has(key))
+    );
   }
 
   async _startStage(stage, ts = '', payload = {}) {
@@ -715,6 +859,15 @@ export class IndexLabRuntimeBridge {
         phase_cursor: this.phaseCursor
       }, ts);
       await this._writeRunMeta();
+    }
+
+    if (eventName === 'search_profile_generated') {
+      this._setPhaseCursor('phase_02_search_profile');
+      const payload = this._extractRuntimeEventPayload(row);
+      const applied = this._applySearchProfilePlannedPayload(payload, ts);
+      if (applied) {
+        await this._writeSearchProfile(this.searchProfile);
+      }
     }
 
     if (isSearchEvent(eventName)) {
@@ -1043,9 +1196,11 @@ export class IndexLabRuntimeBridge {
     if (eventName === 'brand_resolved') {
       await this._startStage('search', ts, { trigger: eventName });
       this._setPhaseCursor('phase_02_search_profile');
-      await this._emit('search', 'brand_resolved', {
+      const brandPayload = {
         scope: 'brand',
         brand: String(row.brand || '').trim(),
+        status: String(row.status || 'resolved').trim(),
+        skip_reason: String(row.skip_reason || '').trim(),
         official_domain: String(row.official_domain || '').trim(),
         aliases: Array.isArray(row.aliases) ? row.aliases : [],
         support_domain: String(row.support_domain || '').trim(),
@@ -1056,7 +1211,11 @@ export class IndexLabRuntimeBridge {
           evidence_snippets: Array.isArray(c?.evidence_snippets) ? c.evidence_snippets : [],
           disambiguation_note: String(c?.disambiguation_note || '').trim(),
         })) : [],
-      }, ts);
+      };
+      await this._emit('search', 'brand_resolved', brandPayload, ts);
+      if (this.brandResolutionPath) {
+        await fs.writeFile(this.brandResolutionPath, `${JSON.stringify(brandPayload, null, 2)}\n`, 'utf8');
+      }
     }
 
     if (eventName === 'search_plan_generated') {
@@ -1069,6 +1228,9 @@ export class IndexLabRuntimeBridge {
         queries_generated: Array.isArray(row.queries_generated) ? row.queries_generated : [],
         stop_condition: String(row.stop_condition || '').trim(),
         plan_rationale: String(row.plan_rationale || '').trim(),
+        query_target_map: row.query_target_map && typeof row.query_target_map === 'object' ? row.query_target_map : {},
+        missing_critical_fields: Array.isArray(row.missing_critical_fields) ? row.missing_critical_fields : [],
+        mode: String(row.mode || '').trim(),
       }, ts);
     }
 
@@ -1088,6 +1250,7 @@ export class IndexLabRuntimeBridge {
           relevance_score: asFloat(r?.relevance_score, 0),
           decision: String(r?.decision || '').trim(),
           reason: String(r?.reason || '').trim(),
+          provider: String(r?.provider || '').trim(),
         })) : [],
       }, ts);
     }

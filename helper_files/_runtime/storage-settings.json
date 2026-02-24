@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "destinationType": "s3",
+  "localDirectory": "",
+  "s3Region": "us-east-2",
+  "s3Bucket": "my-spec-harvester-data",
+  "s3Prefix": "spec-factory-runs",
+  "s3AccessKeyId": "AKIA_TEST",
+  "hasS3SecretAccessKey": true,
+  "hasS3SessionToken": false,
+  "stagingTempDirectory": "C:\\Users\\Chris\\AppData\\Local\\Temp",
+  "updatedAt": "2026-02-24T23:31:29.680Z"
+}

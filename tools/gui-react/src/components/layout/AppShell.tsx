@@ -10,6 +10,7 @@ import { isTestCategory } from '../../utils/testMode';
 import { wsManager } from '../../api/ws';
 import { useEventsStore } from '../../stores/eventsStore';
 import { useIndexLabStore, type IndexLabEvent } from '../../stores/indexlabStore';
+import { useSettingsAuthorityBootstrap } from '../../stores/settingsAuthority';
 import type { ProcessStatus } from '../../types/events';
 import type { RuntimeEvent } from '../../types/events';
 import { resolveDataChangeScopedCategories } from './dataChangeScope';
@@ -18,6 +19,7 @@ import { createDataChangeInvalidationScheduler } from './dataChangeInvalidationS
 import { recordDataChangeInvalidationFlush } from './dataChangeClientObservability.js';
 
 export function AppShell() {
+  useSettingsAuthorityBootstrap();
   const setCategories = useUiStore((s) => s.setCategories);
   const setCategory = useUiStore((s) => s.setCategory);
   const category = useUiStore((s) => s.category);
@@ -86,7 +88,7 @@ export function AppShell() {
       },
     });
     wsManager.connect();
-    wsManager.subscribe(['events', 'queue', 'process', 'data-change', 'indexlab-event'], category);
+    wsManager.subscribe(['events', 'process', 'process-status', 'data-change', 'test-import-progress', 'indexlab-event'], category);
 
     const unsub = wsManager.onMessage((channel, data) => {
       if (channel === 'events' && Array.isArray(data)) {
@@ -94,6 +96,9 @@ export function AppShell() {
       }
       if (channel === 'process' && Array.isArray(data)) {
         appendProcessOutput(data as string[]);
+      }
+      if (channel === 'process-status' && data && typeof data === 'object') {
+        setProcessStatus(data as ProcessStatus);
       }
       if (channel === 'indexlab-event' && Array.isArray(data)) {
         appendIndexLabEvents(data as IndexLabEvent[]);
@@ -128,11 +133,32 @@ export function AppShell() {
     }
   }, [testMode, location.pathname, navigate]);
 
+  const processStatus = useRuntimeStore((s) => s.processStatus);
+  const isRunning = Boolean(processStatus?.running);
+  const isRelocating = Boolean(processStatus?.relocating);
+  const showIndicator = isRunning || isRelocating;
+  const indicatorTitle = isRunning
+    ? `Run active${processStatus?.pid ? ` (PID ${processStatus.pid})` : ''}`
+    : isRelocating
+      ? `Uploading run data${processStatus?.relocatingRunId ? ` (${processStatus.relocatingRunId})` : ''}`
+      : '';
+
   return (
     <div className="flex flex-col h-screen">
       <header className="flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-        <h1 className="text-lg font-bold text-gray-900 dark:text-white">Spec Factory</h1>
-          <span className="text-[9px] text-gray-400 ml-1" title={`Build: ${__BUILD_ID__}`}>v{__BUILD_ID__.slice(0, 8)}</span>
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white">Spec Factory</h1>
+          {showIndicator && (
+            <span title={indicatorTitle} className="relative flex items-center justify-center w-5 h-5">
+              <svg className="w-5 h-5 animate-spin" viewBox="0 0 20 20" fill="none">
+                <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2"
+                  className={isRunning ? 'text-blue-200 dark:text-blue-900' : 'text-amber-200 dark:text-amber-900'} />
+                <path d="M10 2a8 8 0 0 1 8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                  className={isRunning ? 'text-blue-500 dark:text-blue-400' : 'text-amber-500 dark:text-amber-400'} />
+              </svg>
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           {testMode && (
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 border border-amber-300 dark:border-amber-700">

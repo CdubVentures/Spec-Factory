@@ -864,6 +864,44 @@ function buildQueryAttemptStats(rows = []) {
   return [...byQuery.values()].sort((a, b) => b.result_count - a.result_count || a.query.localeCompare(b.query));
 }
 
+function normalizeCategoryScope(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function normalizeTriageScore(row) {
+  const candidates = [
+    row?.rerank_score,
+    row?.score,
+    row?.score_det
+  ];
+  for (const value of candidates) {
+    const parsed = Number.parseFloat(String(value ?? ''));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
+}
+
+export function resolveEnabledSourceStrategies({
+  sourceStrategyRows = null,
+  storage = null,
+  category = '',
+} = {}) {
+  const scopedCategory = normalizeCategoryScope(category);
+  const rows = Array.isArray(sourceStrategyRows)
+    ? sourceStrategyRows
+    : (typeof storage?.listEnabledSourceStrategies === 'function'
+      ? storage.listEnabledSourceStrategies(scopedCategory)
+      : []);
+  if (!Array.isArray(rows)) return [];
+  return rows.filter((row) => {
+    if (!row || typeof row !== 'object') return false;
+    const enabled = Number.parseInt(String(row.enabled ?? 1), 10);
+    if (enabled === 0) return false;
+    const scoped = normalizeCategoryScope(row.category_scope || row.categoryScope || '');
+    return !scoped || !scopedCategory || scoped === scopedCategory;
+  });
+}
+
 export async function discoverCandidateSources({
   config,
   storage,
@@ -875,7 +913,8 @@ export async function discoverCandidateSources({
   llmContext = {},
   frontierDb = null,
   runtimeTraceWriter = null,
-  learningStoreHints = null
+  learningStoreHints = null,
+  sourceStrategyRows = null
 }) {
   if (!config.discoveryEnabled) {
     return {
@@ -913,11 +952,20 @@ export async function discoverCandidateSources({
     category: categoryConfig.category
   });
   let brandResolution = null;
-  if (variables.brand && config.llmEnabled && hasLlmRouteApiKey(config, { role: 'triage' })) {
+  let brandStatus = 'skipped';
+  let brandSkipReason = '';
+  if (!variables.brand) {
+    brandSkipReason = 'no_brand_in_identity_lock';
+  } else if (!config.llmEnabled) {
+    brandSkipReason = 'llm_disabled';
+  } else if (!hasLlmRouteApiKey(config, { role: 'triage' })) {
+    brandSkipReason = 'no_api_key_for_triage_role';
+  } else {
     try {
       const brandCallLlm = createBrandResolverCallLlm({
         callRoutedLlmFn: callLlmWithRouting,
-        config
+        config,
+        logger
       });
       brandResolution = await resolveBrandDomain({
         brand: variables.brand,
@@ -926,27 +974,30 @@ export async function discoverCandidateSources({
         callLlmFn: brandCallLlm,
         storage
       });
-      if (brandResolution?.officialDomain) {
-        logger?.info?.('brand_resolved', {
-          brand: variables.brand,
-          official_domain: brandResolution.officialDomain,
-          aliases: brandResolution.aliases?.slice(0, 5) || [],
-          support_domain: brandResolution.supportDomain || '',
-          confidence: brandResolution.confidence ?? 0,
-          candidates: Array.isArray(brandResolution.candidates)
-            ? brandResolution.candidates.slice(0, 10).map((c) => ({
-              name: c?.name || '',
-              confidence: c?.confidence ?? 0,
-              evidence_snippets: Array.isArray(c?.evidence_snippets) ? c.evidence_snippets.slice(0, 5) : [],
-              disambiguation_note: c?.disambiguation_note || ''
-            }))
-            : []
-        });
-      }
-    } catch {
-      // brand resolution is non-essential
+      brandStatus = brandResolution?.officialDomain ? 'resolved' : 'resolved_empty';
+    } catch (err) {
+      brandStatus = 'failed';
+      brandSkipReason = String(err?.message || 'unknown_error');
     }
   }
+  logger?.info?.('brand_resolved', {
+    brand: variables.brand || '',
+    status: brandStatus,
+    skip_reason: brandSkipReason,
+    official_domain: brandResolution?.officialDomain || '',
+    aliases: brandResolution?.aliases?.slice(0, 5) || [],
+    support_domain: brandResolution?.supportDomain || '',
+    confidence: brandResolution?.confidence ?? 0,
+    candidates: Array.isArray(brandResolution?.candidates)
+      ? brandResolution.candidates.slice(0, 10).map((c) => ({
+        name: c?.name || '',
+        confidence: c?.confidence ?? 0,
+        evidence_snippets: Array.isArray(c?.evidence_snippets) ? c.evidence_snippets.slice(0, 5) : [],
+        disambiguation_note: c?.disambiguation_note || ''
+      }))
+      : [],
+    reasoning: Array.isArray(brandResolution?.reasoning) ? brandResolution.reasoning.slice(0, 10) : []
+  });
 
   const enrichedLexicon = mergeLearningStoreHintsIntoLexicon(learning.lexicon, learningStoreHints);
   const profileMaxQueries = Math.max(6, Number(config.discoveryMaxQueries || 8) * 2);
@@ -979,7 +1030,15 @@ export async function discoverCandidateSources({
         typeof q === 'object' ? String(q?.query || '').trim() : String(q || '').trim()
       ).filter(Boolean),
       stop_condition: 'planner_complete',
-      plan_rationale: `LLM planner generated ${toArray(llmQueries).length} queries for ${toArray(planningHints.missingCriticalFields).length} missing critical fields`
+      plan_rationale: `LLM planner generated ${toArray(llmQueries).length} queries for ${toArray(planningHints.missingCriticalFields).length} missing critical fields`,
+      query_target_map: toArray(llmQueries).reduce((acc, q) => {
+        if (q && typeof q === 'object' && q.query && Array.isArray(q.target_fields) && q.target_fields.length > 0) {
+          acc[String(q.query).trim()] = q.target_fields;
+        }
+        return acc;
+      }, {}),
+      missing_critical_fields: toArray(planningHints.missingCriticalFields).slice(0, 30),
+      mode: String(llmContext?.mode || 'standard'),
     });
   }
 
@@ -1094,7 +1153,22 @@ export async function discoverCandidateSources({
     product_id: job.productId,
     alias_count: toArray(searchProfileBase?.identity_aliases).length,
     query_count: queries.length,
-    key: searchProfileKeys.inputKey
+    key: searchProfileKeys.inputKey,
+    hint_source_counts: searchProfilePlanned?.hint_source_counts || {},
+    source: 'runtime_planner',
+    query_rows: toArray(searchProfilePlanned?.query_rows)
+      .slice(0, 220)
+      .map((queryRow) => ({
+        query: String(queryRow?.query || '').trim(),
+        hint_source: String(queryRow?.hint_source || '').trim(),
+        target_fields: Array.isArray(queryRow?.target_fields) ? queryRow.target_fields : [],
+        doc_hint: String(queryRow?.doc_hint || '').trim(),
+        domain_hint: String(queryRow?.domain_hint || '').trim(),
+        source_host: String(queryRow?.source_host || '').trim(),
+        attempts: Number.parseInt(String(queryRow?.attempts || 0), 10) || 0,
+        result_count: Number.parseInt(String(queryRow?.result_count || 0), 10) || 0,
+        providers: Array.isArray(queryRow?.providers) ? queryRow.providers : []
+      }))
   });
   const resultsPerQuery = Math.max(1, Number(config.discoveryResultsPerQuery || 10));
   const discoveryCap = Math.max(1, Number(config.discoveryMaxDiscovered || 120));
@@ -1279,20 +1353,28 @@ export async function discoverCandidateSources({
           duration_ms: durationMs
         });
         if (providerResults.length > 0) {
+          const engines = [...new Set(providerResults.map((r) => r?.provider).filter(Boolean))];
+          const resolvedProvider = engines.length === 1 ? engines[0] : engines.length > 1 ? engines.join('+') : config.searchProvider;
           logger?.info?.('search_results_collected', {
             query,
-            provider: config.searchProvider,
+            provider: resolvedProvider,
             dedupe_count: 0,
-            results: providerResults.slice(0, 30).map((r, idx) => ({
-              title: String(r?.title || '').trim(),
-              url: String(r?.url || '').trim(),
-              domain: String(r?.host || '').trim(),
-              snippet: String(r?.snippet || '').trim().slice(0, 300),
-              rank: idx + 1,
-              relevance_score: 0,
-              decision: '',
-              reason: ''
-            }))
+            results: providerResults.slice(0, 30).map((r, idx) => {
+              const rawUrl = String(r?.url || '').trim();
+              let domain = '';
+              try { domain = new URL(rawUrl).hostname.replace(/^www\./, ''); } catch { /* ignore */ }
+              return {
+                title: String(r?.title || '').trim(),
+                url: rawUrl,
+                domain,
+                snippet: String(r?.snippet || '').trim().slice(0, 300),
+                rank: idx + 1,
+                relevance_score: 0,
+                decision: '',
+                reason: '',
+                provider: String(r?.provider || '').trim(),
+              };
+            })
           });
         }
         return {
@@ -1342,13 +1424,62 @@ export async function discoverCandidateSources({
       result_count: planned.length,
       reason_code: 'plan_only_no_provider'
     });
+    if (planned.length > 0) {
+      const plannedByQuery = new Map();
+      for (const row of planned) {
+        const query = String(row?.query || queries[0] || 'plan_only').trim() || 'plan_only';
+        if (!plannedByQuery.has(query)) {
+          plannedByQuery.set(query, []);
+        }
+        plannedByQuery.get(query).push(row);
+      }
+      for (const [query, rows] of plannedByQuery.entries()) {
+        logger?.info?.('discovery_query_started', {
+          query,
+          provider: 'plan'
+        });
+        logger?.info?.('discovery_query_completed', {
+          query,
+          provider: 'plan',
+          result_count: rows.length,
+          duration_ms: 0
+        });
+        logger?.info?.('search_results_collected', {
+          query,
+          provider: 'plan',
+          dedupe_count: 0,
+          results: rows.slice(0, 30).map((result, index) => {
+            const rawUrl = String(result?.url || '').trim();
+            let domain = '';
+            try {
+              domain = new URL(rawUrl).hostname.replace(/^www\./, '');
+            } catch {
+              domain = '';
+            }
+            return {
+              title: String(result?.title || '').trim(),
+              url: rawUrl,
+              domain,
+              snippet: String(result?.snippet || '').trim().slice(0, 300),
+              rank: index + 1,
+              relevance_score: 0,
+              decision: '',
+              reason: 'plan_only_no_provider',
+              provider: 'plan'
+            };
+          })
+        });
+      }
+    }
   }
 
   if (config.llmEnabled && hasLlmRouteApiKey(config, { role: 'triage' }) && variables.brand) {
     try {
-      const enabledSources = typeof storage?.listEnabledSourceStrategies === 'function'
-        ? storage.listEnabledSourceStrategies(variables.category)
-        : [];
+      const enabledSources = resolveEnabledSourceStrategies({
+        sourceStrategyRows,
+        storage,
+        category: variables.category,
+      });
       const predictableSources = enabledSources
         .filter((s) => s.discovery_method === 'llm_predict' || s.discovery_method === 'search_first')
         .map((s) => ({ host: s.host, source_type: s.source_type, search_pattern: s.search_pattern || '' }));
@@ -1646,7 +1777,13 @@ export async function discoverCandidateSources({
     }
   }
 
-  const llmTriageEnabled = Boolean(uberMode || (config.llmEnabled && config.llmSerpRerankEnabled));
+  const triageEnabledSetting = config.serpTriageEnabled !== false;
+  const triageMinScore = Math.max(0, Number.parseFloat(String(config.serpTriageMinScore ?? 0)) || 0);
+  const triageMaxUrls = Math.max(1, Number.parseInt(String(config.serpTriageMaxUrls ?? discoveryCap), 10) || discoveryCap);
+  const llmTriageEnabled = Boolean(
+    triageEnabledSetting
+    && (uberMode || (config.llmEnabled && config.llmSerpRerankEnabled)),
+  );
   let llmTriageApplied = false;
   if (llmTriageEnabled) {
     const llmReranked = await rerankSerpResults({
@@ -1657,24 +1794,29 @@ export async function discoverCandidateSources({
       missingFields,
       serpResults: [...byUrl.values()],
       frontier: frontierDb,
-      topK: Math.max(discoveryCap, Number(config.discoveryResultsPerQuery || 10) * 2),
+      topK: Math.max(discoveryCap, triageMaxUrls, Number(config.discoveryResultsPerQuery || 10) * 2),
       domainSafetyResults
     });
     if (llmReranked.length > 0) {
-      reranked = llmReranked;
+      const triageFiltered = llmReranked.filter((row) => normalizeTriageScore(row) >= triageMinScore);
+      const triageSelected = (triageFiltered.length > 0 ? triageFiltered : llmReranked)
+        .slice(0, triageMaxUrls);
+      reranked = triageSelected;
       llmTriageApplied = true;
-      const kept = llmReranked.filter((r) => r?.decision !== 'drop');
-      const dropped = llmReranked.filter((r) => r?.decision === 'drop');
+      const kept = triageSelected.filter((r) => r?.decision !== 'drop');
+      const dropped = llmReranked.filter((r) => !triageSelected.includes(r) || r?.decision === 'drop');
       logger?.info?.('serp_triage_completed', {
         query: '',
         kept_count: kept.length,
         dropped_count: dropped.length,
+        triage_min_score: triageMinScore,
+        triage_max_urls: triageMaxUrls,
         candidates: llmReranked.slice(0, 40).map((r) => ({
           url: String(r?.url || '').trim(),
           title: String(r?.title || '').trim(),
           domain: String(r?.host || '').trim(),
           snippet: String(r?.snippet || '').trim().slice(0, 300),
-          score: Number.isFinite(Number(r?.rerank_score || r?.score)) ? Number(r.rerank_score || r.score) : 0,
+          score: normalizeTriageScore(r),
           decision: String(r?.decision || 'keep').trim(),
           rationale: String(r?.rerank_reason || r?.reason_code || '').trim(),
           score_components: r?.score_components && typeof r.score_components === 'object'
@@ -1684,7 +1826,10 @@ export async function discoverCandidateSources({
       });
     }
   }
-  const discovered = reranked.slice(0, discoveryCap);
+  const discoveredCap = llmTriageEnabled
+    ? Math.max(1, Math.min(discoveryCap, triageMaxUrls))
+    : discoveryCap;
+  const discovered = reranked.slice(0, discoveredCap);
   const discoveredUrlSet = new Set(discovered.map((item) => item.url));
   const ensureTierCoverage = (tierName) => {
     const hasTier = discovered.some(
@@ -1701,7 +1846,7 @@ export async function discoverCandidateSources({
     if (!candidate) {
       return;
     }
-    if (discovered.length >= discoveryCap && discovered.length > 0) {
+    if (discovered.length >= discoveredCap && discovered.length > 0) {
       const removed = discovered.pop();
       discoveredUrlSet.delete(removed.url);
     }

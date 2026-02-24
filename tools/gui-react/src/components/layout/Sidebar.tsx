@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useUiStore } from '../../stores/uiStore';
 import { useProductStore } from '../../stores/productStore';
 import { useRuntimeStore } from '../../stores/runtimeStore';
+import { usePersistedTab } from '../../stores/tabStore';
 import { StatusBadge } from '../common/StatusBadge';
 import { Spinner } from '../common/Spinner';
 import { isTestCategory, formatTestCategory } from '../../utils/testMode';
@@ -30,11 +31,6 @@ export function Sidebar() {
   const realCategories = categories.filter((c) => !isTestCategory(c));
   const testCategories = categories.filter((c) => isTestCategory(c));
 
-  // Cascading selector state
-  const [selectedBrand, setSelectedBrand] = useState('');
-  const [selectedModel, setSelectedModel] = useState('');
-  const [selectedVariant, setSelectedVariant] = useState('');
-
   const { data: catalog = [], isLoading: catalogLoading } = useQuery({
     queryKey: ['catalog', category],
     queryFn: () => api.get<CatalogRow[]>(`/catalog/${category}`),
@@ -50,6 +46,11 @@ export function Sidebar() {
     }
     return [...brandSet].sort();
   }, [catalog]);
+  const [selectedBrand, setSelectedBrand] = usePersistedTab<string>(
+    `sidebar:product:brand:${category}`,
+    '',
+    { validValues: brands },
+  );
 
   // Models filtered by selected brand
   const models = useMemo(() => {
@@ -60,6 +61,11 @@ export function Sidebar() {
     }
     return [...modelSet].sort();
   }, [catalog, selectedBrand]);
+  const [selectedModel, setSelectedModel] = usePersistedTab<string>(
+    `sidebar:product:model:${category}`,
+    '',
+    { validValues: models },
+  );
 
   // Variants filtered by selected brand + model
   const variants = useMemo(() => {
@@ -73,6 +79,11 @@ export function Sidebar() {
     }
     return [...varSet].sort();
   }, [catalog, selectedBrand, selectedModel]);
+  const [selectedVariant, setSelectedVariant] = usePersistedTab<string>(
+    `sidebar:product:variant:${category}`,
+    '',
+    { validValues: variants },
+  );
 
   // Auto-select productId when brand+model are chosen
   useEffect(() => {
@@ -97,17 +108,13 @@ export function Sidebar() {
   const storeModel = useProductStore((s) => s.selectedModel);
 
   useEffect(() => {
-    if (storeBrand && storeBrand !== selectedBrand) setSelectedBrand(storeBrand);
-    if (storeModel && storeModel !== selectedModel) setSelectedModel(storeModel);
-  }, [storeBrand, storeModel]);
-
-  // Reset selectors when category changes
-  useEffect(() => {
-    setSelectedBrand('');
-    setSelectedModel('');
-    setSelectedVariant('');
-    setSelectedProduct('');
-  }, [category]);
+    if (storeBrand && brands.includes(storeBrand) && storeBrand !== selectedBrand) {
+      setSelectedBrand(storeBrand);
+    }
+    if (storeModel && models.includes(storeModel) && storeModel !== selectedModel) {
+      setSelectedModel(storeModel);
+    }
+  }, [storeBrand, storeModel, brands, models, selectedBrand, selectedModel, setSelectedBrand, setSelectedModel]);
 
   // Reset model when brand changes
   function handleBrandChange(brand: string) {

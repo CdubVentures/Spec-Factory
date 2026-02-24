@@ -1,5 +1,7 @@
 import { emitDataChange } from '../events/dataChangeContract.js';
-import { runEnumConsistencyReview } from '../../llm/validateEnumConsistency.js';
+import { runEnumConsistencyReview as runEnumConsistencyReviewDefault } from '../../llm/validateEnumConsistency.js';
+import { isConsumerEnabled } from '../../field-rules/consumerGate.js';
+import { loadUserSettings, persistUserSettingsSections, readStudioMapFromUserSettings } from '../services/userSettingsService.js';
 
 function normalizeEnumToken(value) {
   return String(value ?? '').trim().toLowerCase();
@@ -24,16 +26,15 @@ function dedupeEnumValues(values = []) {
   return output;
 }
 
-function enumConsistencyGuidanceForField(fieldKey = '') {
-  const token = normalizeEnumToken(fieldKey);
-  if (token.includes('lighting')) {
-    return [
-      'Preserve canonical token pattern exactly: "<number> zone (rgb)" or "<number> zone (led)".',
-      'Examples: "1 zone rgb" -> "1 zone (rgb)", "7 zone led" -> "7 zone (led)".',
-      'Do not change semantics, only formatting.',
-    ].join(' ');
-  }
-  return 'Preserve canonical punctuation/casing/token shape from known values.';
+function readEnumConsistencyFormatHint(rule = {}) {
+  const enumBlock = rule?.enum && typeof rule.enum === 'object' ? rule.enum : {};
+  const enumMatch = enumBlock?.match && typeof enumBlock.match === 'object' ? enumBlock.match : {};
+  return String(enumMatch?.format_hint || rule?.enum_match_format_hint || '').trim();
+}
+
+function isEnumConsistencyReviewEnabled(rule = {}) {
+  return isConsumerEnabled(rule, 'enum.match.strategy', 'review')
+    && isConsumerEnabled(rule, 'enum.match.format_hint', 'review');
 }
 
 function buildPendingEnumValuesFromSuggestions(suggestionsDoc = {}, fieldKey = '') {
@@ -57,6 +58,170 @@ function buildPendingEnumValuesFromSuggestions(suggestionsDoc = {}, fieldKey = '
     }
   }
   return dedupeEnumValues(pending);
+}
+
+function normalizeComponentAliasList(aliasRows = []) {
+  const seen = new Set();
+  const aliases = [];
+  for (const aliasRow of aliasRows) {
+    const alias = String(aliasRow?.alias ?? aliasRow ?? '').trim();
+    if (!alias) continue;
+    const token = alias.toLowerCase();
+    if (seen.has(token)) continue;
+    seen.add(token);
+    aliases.push(alias);
+  }
+  return aliases;
+}
+
+function buildStudioKnownValuesPayload({
+  category = '',
+  fields = {},
+  source = '',
+}) {
+  const normalizedFields = {};
+  for (const [rawFieldKey, rawValues] of Object.entries(fields || {})) {
+    const fieldKey = String(rawFieldKey || '').trim();
+    if (!fieldKey) continue;
+    const values = dedupeEnumValues(Array.isArray(rawValues) ? rawValues : [rawValues])
+      .sort((a, b) => a.localeCompare(b));
+    normalizedFields[fieldKey] = values;
+  }
+  const enumLists = Object.entries(normalizedFields)
+    .map(([field, values]) => ({
+      field,
+      normalize: 'lower_trim',
+      values,
+    }))
+    .sort((a, b) => a.field.localeCompare(b.field));
+  return {
+    category: String(category || '').trim(),
+    source: String(source || '').trim() || null,
+    fields: normalizedFields,
+    enum_lists: enumLists,
+  };
+}
+
+function buildStudioKnownValuesFromSpecDb(runtimeSpecDb, category) {
+  if (!runtimeSpecDb) return null;
+  if (typeof runtimeSpecDb.getAllEnumFields !== 'function') return null;
+  if (typeof runtimeSpecDb.getListValues !== 'function') return null;
+  const fields = {};
+  const fieldKeys = runtimeSpecDb.getAllEnumFields();
+  for (const rawFieldKey of fieldKeys) {
+    const fieldKey = String(rawFieldKey || '').trim();
+    if (!fieldKey) continue;
+    const listRows = runtimeSpecDb.getListValues(fieldKey) || [];
+    fields[fieldKey] = listRows.map((row) => row?.value);
+  }
+  return buildStudioKnownValuesPayload({
+    category,
+    fields,
+    source: 'specdb',
+  });
+}
+
+function buildStudioComponentDbFromSpecDb(runtimeSpecDb) {
+  if (!runtimeSpecDb) return null;
+  if (typeof runtimeSpecDb.getComponentTypeList !== 'function') return null;
+  if (typeof runtimeSpecDb.getAllComponentsForType !== 'function') return null;
+
+  const componentTypes = runtimeSpecDb.getComponentTypeList();
+  const result = {};
+  for (const typeRow of componentTypes) {
+    const componentType = String(typeRow?.component_type || '').trim();
+    if (!componentType) continue;
+    const componentRows = runtimeSpecDb.getAllComponentsForType(componentType);
+    const items = [];
+    for (const row of componentRows) {
+      const name = String(row?.identity?.canonical_name || '').trim();
+      if (!name) continue;
+      items.push({
+        name,
+        maker: String(row?.identity?.maker || '').trim(),
+        aliases: normalizeComponentAliasList(row?.aliases),
+      });
+    }
+    result[componentType] = items;
+  }
+  return result;
+}
+
+function summarizeStudioMapPayload(map) {
+  const payload = map && typeof map === 'object' && !Array.isArray(map) ? map : {};
+  const componentSources = Array.isArray(payload.component_sources) ? payload.component_sources.length : 0;
+  const dataLists = Array.isArray(payload.data_lists) ? payload.data_lists.length : 0;
+  const enumLists = Array.isArray(payload.enum_lists) ? payload.enum_lists.length : 0;
+  return {
+    component_sources: componentSources,
+    data_lists: dataLists,
+    enum_lists: enumLists,
+    has_mapping_payload: componentSources > 0 || dataLists > 0 || enumLists > 0,
+  };
+}
+
+function summarizeStudioMapValidation(payload, validateMap) {
+  if (typeof validateMap !== 'function') {
+    return null;
+  }
+  try {
+    const result = validateMap(payload?.map || {});
+    const errors = Array.isArray(result?.errors) ? result.errors.length : 0;
+    return {
+      valid: Boolean(result?.valid),
+      error_count: errors,
+    };
+  } catch {
+    return {
+      valid: false,
+      error_count: Number.POSITIVE_INFINITY,
+    };
+  }
+}
+
+function choosePreferredStudioMap(settingsMap, controlPlaneMap, { validateMap = null } = {}) {
+  const settingsPayload = settingsMap && typeof settingsMap === 'object' && settingsMap.map && typeof settingsMap.map === 'object'
+    ? settingsMap
+    : null;
+  const controlPayload = controlPlaneMap && typeof controlPlaneMap === 'object' && controlPlaneMap.map && typeof controlPlaneMap.map === 'object'
+    ? controlPlaneMap
+    : null;
+  if (!settingsPayload && !controlPayload) return null;
+  if (!settingsPayload) return controlPayload;
+  if (!controlPayload) return settingsPayload;
+
+  const settingsValidation = summarizeStudioMapValidation(settingsPayload, validateMap);
+  const controlValidation = summarizeStudioMapValidation(controlPayload, validateMap);
+  if (settingsValidation && controlValidation) {
+    if (controlValidation.valid && !settingsValidation.valid) {
+      return controlPayload;
+    }
+    if (settingsValidation.valid && !controlValidation.valid) {
+      return settingsPayload;
+    }
+    if (!settingsValidation.valid && !controlValidation.valid && settingsValidation.error_count !== controlValidation.error_count) {
+      return controlValidation.error_count < settingsValidation.error_count ? controlPayload : settingsPayload;
+    }
+  }
+
+  const settingsSummary = summarizeStudioMapPayload(settingsPayload.map);
+  const controlSummary = summarizeStudioMapPayload(controlPayload.map);
+
+  if (controlSummary.has_mapping_payload && !settingsSummary.has_mapping_payload) {
+    return controlPayload;
+  }
+  if (settingsSummary.has_mapping_payload && !controlSummary.has_mapping_payload) {
+    return settingsPayload;
+  }
+  if (controlSummary.has_mapping_payload && settingsSummary.has_mapping_payload) {
+    const settingsScore = (settingsSummary.component_sources * 1000) + (settingsSummary.data_lists * 10) + settingsSummary.enum_lists;
+    const controlScore = (controlSummary.component_sources * 1000) + (controlSummary.data_lists * 10) + controlSummary.enum_lists;
+    return controlScore >= settingsScore ? controlPayload : settingsPayload;
+  }
+
+  const controlKeyCount = Object.keys(controlPayload.map || {}).length;
+  const settingsKeyCount = Object.keys(settingsPayload.map || {}).length;
+  return controlKeyCount >= settingsKeyCount ? controlPayload : settingsPayload;
 }
 
 async function applyEnumConsistencyToSuggestions({
@@ -168,6 +333,7 @@ export function registerStudioRoutes(ctx) {
     validateWorkbookMap,
     invalidateFieldRulesCache,
     buildFieldLabelsMap,
+    getSpecDbReady,
     storage,
     loadCategoryConfig,
     startProcess,
@@ -175,7 +341,18 @@ export function registerStudioRoutes(ctx) {
     reviewLayoutByCategory,
     loadProductCatalog,
     cleanVariant,
+    runEnumConsistencyReview = runEnumConsistencyReviewDefault,
   } = ctx;
+
+  const helperFilesRoot = config?.helperFilesRoot || HELPER_ROOT || 'helper_files';
+
+  async function getStudioMapFromUserSettings(category) {
+    if (typeof ctx.loadStudioMapFromUserSettings === 'function') {
+      return ctx.loadStudioMapFromUserSettings(category);
+    }
+    const userSettings = await loadUserSettings({ helperFilesRoot });
+    return readStudioMapFromUserSettings(userSettings, category);
+  }
 
   return async function handleStudioRoutes(parts, params, method, req, res) {
     if (parts[0] === 'field-labels' && parts[1] && !parts[2] && method === 'GET') {
@@ -201,8 +378,8 @@ export function registerStudioRoutes(ctx) {
       });
     }
 
-    // Workbook products (reads from product catalog)
-    if (parts[0] === 'workbook' && parts[1] && parts[2] === 'products' && method === 'GET') {
+    // Studio products (reads from product catalog)
+    if (parts[0] === 'studio' && parts[1] && parts[2] === 'products' && method === 'GET') {
       const category = parts[1];
       const catalog = await loadProductCatalog(config, category);
       const products = [];
@@ -227,7 +404,7 @@ export function registerStudioRoutes(ctx) {
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'compile' && method === 'POST') {
       const category = parts[1];
       try {
-        const status = startProcess('src/cli/spec.js', ['category-compile', '--category', category, '--local']);
+        const status = startProcess('src/cli/spec.js', ['compile-rules', '--category', category, '--local']);
         return jsonRes(res, 200, status);
       } catch (err) {
         return jsonRes(res, 409, { error: err.message });
@@ -256,9 +433,25 @@ export function registerStudioRoutes(ctx) {
     // Studio known-values
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'known-values' && method === 'GET') {
       const category = parts[1];
-      const kvPath = path.join(HELPER_ROOT, category, '_generated', 'known_values.json');
-      const data = await safeReadJson(kvPath);
-      return jsonRes(res, 200, data || {});
+      const runtimeSpecDb = typeof getSpecDbReady === 'function'
+        ? await getSpecDbReady(category)
+        : null;
+      const specDbReady = Boolean(runtimeSpecDb)
+        && (typeof runtimeSpecDb.isSeeded !== 'function' || runtimeSpecDb.isSeeded());
+      if (!specDbReady) {
+        return jsonRes(res, 503, {
+          error: 'specdb_not_ready',
+          message: `SpecDb not ready for ${category}`,
+        });
+      }
+      const specDbPayload = buildStudioKnownValuesFromSpecDb(runtimeSpecDb, category);
+      if (specDbPayload) {
+        return jsonRes(res, 200, specDbPayload);
+      }
+      return jsonRes(res, 503, {
+        error: 'specdb_not_ready',
+        message: `SpecDb not ready for ${category}`,
+      });
     }
 
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'enum-consistency' && method === 'POST') {
@@ -291,15 +484,41 @@ export function registerStudioRoutes(ctx) {
         || session?.mergedFields?.[field]?.enum_policy
         || 'open_prefer_known'
       ).trim() || 'open_prefer_known';
-      const formatGuidance = String(body?.formatGuidance || '').trim() || enumConsistencyGuidanceForField(field);
+      const fieldRule = session?.mergedFields?.[field] && typeof session.mergedFields[field] === 'object'
+        ? session.mergedFields[field]
+        : {};
+      const formatGuidance = String(body?.formatGuidance || '').trim() || readEnumConsistencyFormatHint(fieldRule);
+      const reviewEnabledOverride = typeof body?.reviewEnabled === 'boolean' ? body.reviewEnabled : null;
+      const reviewEnabled = reviewEnabledOverride == null
+        ? isEnumConsistencyReviewEnabled(fieldRule)
+        : reviewEnabledOverride;
+
+      if (!reviewEnabled) {
+        return jsonRes(res, 200, {
+          category,
+          field,
+          review_enabled: false,
+          enum_policy: enumPolicy,
+          known_values: knownValues,
+          pending_values: pendingValues,
+          format_guidance: formatGuidance || null,
+          apply,
+          decisions: [],
+          applied: { mapped: 0, kept: 0, uncertain: 0, changed: 0 },
+          llm_enabled: false,
+          skipped_reason: 'review_consumer_disabled',
+        });
+      }
 
       if (pendingValues.length === 0) {
         return jsonRes(res, 200, {
           category,
           field,
+          review_enabled: true,
           enum_policy: enumPolicy,
           known_values: knownValues,
           pending_values: [],
+          format_guidance: formatGuidance || null,
           apply,
           decisions: [],
           applied: { mapped: 0, kept: 0, uncertain: 0, changed: 0 },
@@ -353,9 +572,11 @@ export function registerStudioRoutes(ctx) {
       return jsonRes(res, 200, {
         category,
         field,
+        review_enabled: reviewEnabled,
         enum_policy: enumPolicy,
         known_values: knownValues,
         pending_values: pendingValues,
+        format_guidance: formatGuidance || null,
         apply,
         decisions,
         applied,
@@ -369,59 +590,100 @@ export function registerStudioRoutes(ctx) {
     // Studio component-db (entity names by type)
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'component-db' && method === 'GET') {
       const category = parts[1];
-      const dbDir = path.join(HELPER_ROOT, category, '_generated', 'component_db');
-      const files = await listFiles(dbDir, '.json');
-      const result = {};
-      for (const f of files) {
-        const data = await safeReadJson(path.join(dbDir, f));
-        if (data?.component_type && Array.isArray(data.items)) {
-          result[data.component_type] = data.items.map(item => ({
-            name: item.name || '',
-            maker: item.maker || '',
-            aliases: item.aliases || [],
-          }));
-        }
+      const runtimeSpecDb = typeof getSpecDbReady === 'function'
+        ? await getSpecDbReady(category)
+        : null;
+      const specDbResult = buildStudioComponentDbFromSpecDb(runtimeSpecDb);
+      if (specDbResult) {
+        return jsonRes(res, 200, specDbResult);
       }
-      return jsonRes(res, 200, result);
+      return jsonRes(res, 503, {
+        error: 'specdb_not_ready',
+        message: `SpecDb not ready for ${category}`,
+      });
     }
 
-    // Studio workbook-map GET (using full loadWorkbookMap with normalization)
-    if (parts[0] === 'studio' && parts[1] && parts[2] === 'workbook-map' && method === 'GET') {
+    // Studio map GET
+    if (parts[0] === 'studio' && parts[1] && parts[2] === 'field-studio-map' && method === 'GET') {
       const category = parts[1];
+      let settingsMap = null;
       try {
-        const result = await loadWorkbookMap({ category, config });
-        return jsonRes(res, 200, result || { file_path: '', map: {} });
+        settingsMap = await getStudioMapFromUserSettings(category);
+      } catch {
+        settingsMap = null;
+      }
+
+      let controlPlaneMap = null;
+      try {
+        controlPlaneMap = await loadWorkbookMap({ category, config });
       } catch (err) {
+        const preferred = choosePreferredStudioMap(settingsMap, null, { validateMap: validateWorkbookMap });
+        if (preferred) return jsonRes(res, 200, preferred);
         return jsonRes(res, 200, { file_path: '', map: {}, error: err.message });
       }
+
+      const preferred = choosePreferredStudioMap(settingsMap, controlPlaneMap, { validateMap: validateWorkbookMap });
+      return jsonRes(res, 200, preferred || { file_path: '', map: {} });
     }
 
-    // Studio workbook-map PUT (save)
-    if (parts[0] === 'studio' && parts[1] && parts[2] === 'workbook-map' && method === 'PUT') {
+    // Studio map PUT (save)
+    if (parts[0] === 'studio' && parts[1] && parts[2] === 'field-studio-map' && method === 'PUT') {
       const category = parts[1];
       const body = await readJsonBody(req);
       const validation = validateWorkbookMap(body, { category });
       if (!validation?.valid) {
         return jsonRes(res, 400, {
-          error: 'invalid_workbook_map',
+          error: 'invalid_field_studio_map',
           valid: false,
           errors: Array.isArray(validation?.errors) ? validation.errors : [],
           warnings: Array.isArray(validation?.warnings) ? validation.warnings : [],
         });
       }
-      const normalizedWorkbookMap = validation?.normalized && typeof validation.normalized === 'object'
+      const normalizedFieldStudioMap = validation?.normalized && typeof validation.normalized === 'object'
         ? validation.normalized
         : body;
       try {
-        const result = await saveWorkbookMap({ category, workbookMap: normalizedWorkbookMap, config });
+        const incomingSummary = summarizeStudioMapPayload(normalizedFieldStudioMap);
+        if (!incomingSummary.has_mapping_payload && params.get('allowEmptyOverwrite') !== 'true') {
+          const existingMap = await loadWorkbookMap({ category, config }).catch(() => null);
+          const existingSummary = summarizeStudioMapPayload(existingMap?.map);
+          if (existingSummary.has_mapping_payload) {
+            return jsonRes(res, 409, {
+              error: 'empty_map_overwrite_rejected',
+              message: 'Incoming studio map has no component sources or data lists. Add mapping payload or set allowEmptyOverwrite=true to force.',
+              existing: existingSummary,
+              incoming: incomingSummary,
+            });
+          }
+        }
+        const result = await saveWorkbookMap({ category, workbookMap: normalizedFieldStudioMap, config });
+        const currentSettings = await loadUserSettings({ helperFilesRoot });
+        const existingStudio = currentSettings && typeof currentSettings.studio === 'object' && !Array.isArray(currentSettings.studio)
+          ? currentSettings.studio
+          : {};
+        await persistUserSettingsSections({
+          helperFilesRoot,
+          studio: {
+            ...existingStudio,
+            [category]: {
+              file_path: typeof result.file_path === 'string' ? result.file_path : '',
+              map: result.workbook_map && typeof result.workbook_map === 'object'
+                ? result.workbook_map
+                : normalizedFieldStudioMap,
+              map_hash: result.map_hash,
+              version_snapshot: result.version_snapshot,
+              updated_at: new Date().toISOString(),
+            },
+          },
+        });
         emitDataChange({
           broadcastWs,
-          event: 'workbook-map-saved',
+          event: 'field-studio-map-saved',
           category,
           categories: [category],
           domains: ['studio', 'mapping', 'review-layout'],
           meta: {
-            map_sections: Array.isArray(normalizedWorkbookMap?.field_mapping) ? normalizedWorkbookMap.field_mapping.length : 0,
+            map_sections: Array.isArray(normalizedFieldStudioMap?.field_mapping) ? normalizedFieldStudioMap.field_mapping.length : 0,
           },
         });
         return jsonRes(res, 200, result);
@@ -430,8 +692,8 @@ export function registerStudioRoutes(ctx) {
       }
     }
 
-    // Studio workbook-map validate
-    if (parts[0] === 'studio' && parts[1] && parts[2] === 'validate-map' && method === 'POST') {
+    // Studio map validate
+    if (parts[0] === 'studio' && parts[1] && parts[2] === 'validate-field-studio-map' && method === 'POST') {
       const category = parts[1];
       const body = await readJsonBody(req);
       const result = validateWorkbookMap(body, { category });
@@ -442,7 +704,10 @@ export function registerStudioRoutes(ctx) {
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'tooltip-bank' && method === 'GET') {
       const category = parts[1];
       const catRoot = path.join(HELPER_ROOT, category);
-      const mapData = await safeReadJson(path.join(catRoot, '_control_plane', 'workbook_map.json'));
+      const mapData = (
+        await safeReadJson(path.join(catRoot, '_control_plane', 'field_studio_map.json'))
+        || await safeReadJson(path.join(catRoot, '_control_plane', 'workbook_map.json'))
+      );
       const tooltipPath = mapData?.tooltip_source?.path || '';
       const tooltipFiles = [];
       const tooltipEntries = {};
@@ -493,6 +758,9 @@ export function registerStudioRoutes(ctx) {
         await fs.writeFile(renamesPath, JSON.stringify(existing, null, 2));
       }
       sessionCache.invalidateSessionCache(category);
+      if (typeof invalidateFieldRulesCache === 'function') {
+        invalidateFieldRulesCache(category);
+      }
       reviewLayoutByCategory.delete(category);
       emitDataChange({
         broadcastWs,

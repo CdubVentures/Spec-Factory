@@ -276,18 +276,41 @@ export type PrefetchTabKey =
   | 'search_profile'
   | 'brand_resolver'
   | 'search_planner'
+  | 'query_journey'
   | 'url_predictor'
   | 'serp_triage'
   | 'domain_classifier'
   | 'search_results';
 
 export interface PrefetchNeedSetNeed {
-  field: string;
-  required: string;
+  field_key: string;
+  field?: string;
+  required_level: string;
+  required?: string;
+  required_weight: number;
+  status: string;
+  value: string;
   need_score: number;
-  confidence?: number;
-  best_tier?: number;
-  refs?: number;
+  confidence: number;
+  effective_confidence: number;
+  pass_target: number;
+  meets_pass_target: boolean;
+  refs_found: number;
+  min_refs: number;
+  best_tier_seen: number | null;
+  tier_preference: number[];
+  identity_state: string;
+  best_identity_match: number;
+  blocked_by: string[];
+  quarantined: boolean;
+  conflict: boolean;
+  reasons: string[];
+  reason_payload: {
+    why_missing: string | null;
+    why_low_conf: string | null;
+    why_blocked: string | null;
+  };
+  unknown_reason?: string;
 }
 
 export interface PrefetchNeedSetSnapshot {
@@ -312,17 +335,47 @@ export interface PrefetchSearchProfileQueryRow {
   query: string;
   target_fields?: string[];
   result_count?: number;
+  attempts?: number;
   providers?: string[];
+  hint_source?: string;
+  doc_hint?: string;
+  domain_hint?: string;
+  source_host?: string;
+  __from_plan_profile?: boolean;
+}
+
+export interface PrefetchSearchProfileAlias {
+  alias?: string;
+  source?: string;
+  weight?: number;
+}
+
+export interface PrefetchFieldRuleGateCount {
+  value_count?: number;
+  enabled_field_count?: number;
+  disabled_field_count?: number;
+  status?: string;
 }
 
 export interface PrefetchSearchProfileData {
   query_count: number;
+  selected_query_count?: number;
   provider: string;
   llm_query_planning: boolean;
-  identity_aliases: string[];
+  llm_query_model?: string;
+  llm_queries?: Array<{ query?: string; target_fields?: string[] }>;
+  identity_aliases: Array<string | PrefetchSearchProfileAlias>;
   variant_guard_terms: string[];
+  focus_fields?: string[];
   query_rows: PrefetchSearchProfileQueryRow[];
   query_guard: Record<string, number>;
+  hint_source_counts?: Record<string, number>;
+  field_rule_gate_counts?: Record<string, PrefetchFieldRuleGateCount>;
+  generated_at?: string;
+  product_id?: string;
+  source?: string;
+  query_reject_log?: Array<{ query?: string; source?: string; reason: string; stage?: string; detail?: string }>;
+  alias_reject_log?: Array<{ alias?: string; source?: string; reason?: string; stage?: string }>;
 }
 
 export interface PrefetchLlmCall {
@@ -357,11 +410,14 @@ export interface BrandCandidate {
 
 export interface BrandResolutionData {
   brand: string;
+  status?: string;
+  skip_reason?: string;
   official_domain: string;
   aliases: string[];
   support_domain: string;
   confidence: number;
   candidates: BrandCandidate[];
+  reasoning?: string[];
 }
 
 // ── Search Planner Story Mode ──
@@ -370,6 +426,9 @@ export interface SearchPlanPass {
   pass_index: number;
   pass_name: string;
   queries_generated: string[];
+  query_target_map: Record<string, string[]>;
+  missing_critical_fields: string[];
+  mode: string;
   stop_condition: string;
   plan_rationale: string;
 }
@@ -385,6 +444,7 @@ export interface SerpResultRow {
   relevance_score: number;
   decision: string;
   reason: string;
+  provider?: string;
 }
 
 export interface SearchResultDetail {
@@ -448,6 +508,17 @@ export interface DomainHealthRow {
   success_rate: number;
   avg_latency_ms: number;
   notes: string;
+}
+
+// ── Live Settings (from /api/v1/runtime-settings) ──
+
+export interface PrefetchLiveSettings {
+  phase2LlmEnabled: boolean;
+  phase3LlmTriageEnabled: boolean;
+  searchProvider: string;
+  discoveryEnabled: boolean;
+  dynamicCrawleeEnabled: boolean;
+  scannedPdfOcrEnabled: boolean;
 }
 
 // ── Pre-Fetch Phases Response ──

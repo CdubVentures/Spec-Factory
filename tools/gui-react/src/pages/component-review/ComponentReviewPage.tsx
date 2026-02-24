@@ -1,14 +1,17 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect } from 'react';
+import { usePersistedToggle } from '../../stores/collapseStore';
+import { usePersistedTab } from '../../stores/tabStore';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useUiStore } from '../../stores/uiStore';
 import { useComponentReviewStore } from '../../stores/componentReviewStore';
+import { useEnumReviewData } from './useEnumReviewData';
 import { MetricRow } from '../../components/common/MetricRow';
 import { Spinner } from '../../components/common/Spinner';
 import { ComponentSubTab } from './ComponentSubTab';
 import { EnumSubTab } from './EnumSubTab';
 import { pct } from '../../utils/formatting';
-import type { ComponentReviewLayout, ComponentReviewPayload, EnumReviewPayload } from '../../types/componentReview';
+import type { ComponentReviewLayout, ComponentReviewPayload } from '../../types/componentReview';
 
 const baseCls = 'px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors cursor-pointer';
 const activeCls = 'border-accent text-accent dark:border-accent-dark dark:text-accent-dark';
@@ -16,11 +19,13 @@ const inactiveCls = 'border-transparent text-gray-600 dark:text-gray-400 hover:t
 
 export function ComponentReviewPage() {
   const category = useUiStore((s) => s.category);
+  const subTabPersistKey = `componentReview:tab:sub:${category}`;
   // Individual selectors: only re-render when activeSubTab changes,
   // NOT when cellEditValue or other unrelated store slices change.
   const activeSubTab = useComponentReviewStore((s) => s.activeSubTab);
   const setActiveSubTab = useComponentReviewStore((s) => s.setActiveSubTab);
-  const [debugLinkedProducts, setDebugLinkedProducts] = useState(false);
+  const [persistedSubTab, setPersistedSubTab] = usePersistedTab<string>(subTabPersistKey, '');
+  const [debugLinkedProducts, toggleDebugLinkedProducts] = usePersistedToggle('componentReview:debugLinkedProducts', false);
   const queryClient = useQueryClient();
 
   const { data: layout, isLoading: layoutLoading } = useQuery({
@@ -29,12 +34,23 @@ export function ComponentReviewPage() {
     enabled: category !== 'all',
   });
 
-  // Auto-select first sub-tab when layout loads
+  // Resolve tab on layout load with category-scoped persisted fallback.
   useEffect(() => {
-    if (layout && layout.types.length > 0 && !activeSubTab) {
-      setActiveSubTab(layout.types[0].type);
+    if (!layout || layout.types.length === 0) return;
+    const allowedTabs = new Set(layout.types.map((t) => t.type));
+    allowedTabs.add('enums');
+    const hasActive = allowedTabs.has(activeSubTab);
+    const hasPersisted = allowedTabs.has(persistedSubTab);
+    const nextTab = hasActive
+      ? activeSubTab
+      : (hasPersisted ? persistedSubTab : layout.types[0].type);
+    if (!hasActive) {
+      setActiveSubTab(nextTab);
     }
-  }, [layout, activeSubTab, setActiveSubTab]);
+    if (persistedSubTab !== nextTab) {
+      setPersistedSubTab(nextTab);
+    }
+  }, [layout, activeSubTab, persistedSubTab, setActiveSubTab, setPersistedSubTab]);
 
   // Fetch component data for active sub-tab (skip for enums)
   const { data: componentData, isLoading: componentLoading } = useQuery({
@@ -43,12 +59,12 @@ export function ComponentReviewPage() {
     enabled: category !== 'all' && !!activeSubTab && activeSubTab !== 'enums',
   });
 
-  // Fetch enum data
-  const { data: enumData, isLoading: enumLoading } = useQuery({
-    queryKey: ['enumReviewData', category],
-    queryFn: () => api.get<EnumReviewPayload>(`/review-components/${category}/enums`),
-    enabled: category !== 'all' && activeSubTab === 'enums',
+  const enumReviewQuery = useEnumReviewData({
+    category,
+    enabled: activeSubTab === 'enums',
   });
+  const enumDataFromStore = enumReviewQuery.data;
+  const enumLoadingFromStore = enumReviewQuery.isLoading;
 
   // Build sub-tab list from layout + enums
   const subTabs = useMemo(() => {
@@ -64,11 +80,11 @@ export function ComponentReviewPage() {
 
   // Aggregate metrics
   const metrics = useMemo(() => {
-    if (activeSubTab === 'enums' && enumData) {
-      const totalValues = enumData.fields.reduce((s, f) => s + f.metrics.total, 0);
-      const totalFlags = enumData.fields.reduce((s, f) => s + f.metrics.flags, 0);
+    if (activeSubTab === 'enums' && enumDataFromStore) {
+      const totalValues = enumDataFromStore.fields.reduce((s, f) => s + f.metrics.total, 0);
+      const totalFlags = enumDataFromStore.fields.reduce((s, f) => s + f.metrics.flags, 0);
       return [
-        { label: 'Fields', value: enumData.fields.length },
+        { label: 'Fields', value: enumDataFromStore.fields.length },
         { label: 'Total Values', value: totalValues },
         { label: 'Flags', value: totalFlags },
       ];
@@ -81,7 +97,7 @@ export function ComponentReviewPage() {
       ];
     }
     return null;
-  }, [activeSubTab, componentData, enumData]);
+  }, [activeSubTab, componentData, enumDataFromStore]);
 
   if (category === 'all') {
     return <p className="text-gray-500 mt-8 text-center">Select a specific category to review components.</p>;
@@ -91,13 +107,13 @@ export function ComponentReviewPage() {
     return <p className="text-gray-500 mt-8 text-center">No component data found. Run a compile first.</p>;
   }
 
-  const isLoading = activeSubTab === 'enums' ? enumLoading : componentLoading;
+  const isLoading = activeSubTab === 'enums' ? enumLoadingFromStore : componentLoading;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-end">
         <button
-          onClick={() => setDebugLinkedProducts((value) => !value)}
+          onClick={() => toggleDebugLinkedProducts()}
           className={`px-2.5 py-1 rounded text-[11px] font-medium border transition-colors ${
             debugLinkedProducts
               ? 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700'
@@ -117,7 +133,10 @@ export function ComponentReviewPage() {
         {subTabs.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveSubTab(tab.key)}
+            onClick={() => {
+              setActiveSubTab(tab.key);
+              setPersistedSubTab(tab.key);
+            }}
             className={`${baseCls} ${activeSubTab === tab.key ? activeCls : inactiveCls}`}
           >
             {tab.label}
@@ -133,9 +152,9 @@ export function ComponentReviewPage() {
       {/* Content */}
       {isLoading && <Spinner className="h-6 w-6 mx-auto mt-8" />}
 
-      {!isLoading && activeSubTab === 'enums' && enumData && (
+      {!isLoading && activeSubTab === 'enums' && enumDataFromStore && (
         <EnumSubTab
-          data={enumData}
+          data={enumDataFromStore}
           category={category}
           queryClient={queryClient}
           debugLinkedProducts={debugLinkedProducts}

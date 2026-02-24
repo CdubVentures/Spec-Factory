@@ -404,6 +404,14 @@ test('enforceEnumPolicy supports alias resolution and closed-policy rejection', 
     const rejected = engine.enforceEnumPolicy('connection', 'satellite');
     assert.equal(rejected.ok, false);
     assert.equal(rejected.reason_code, 'enum_value_not_allowed');
+
+    engine.rules.connection = {
+      ...(engine.rules.connection || {}),
+      enum_policy: 'closed_with_curation'
+    };
+    const rejectedClosedWithCuration = engine.enforceEnumPolicy('connection', 'satellite');
+    assert.equal(rejectedClosedWithCuration.ok, false);
+    assert.equal(rejectedClosedWithCuration.reason_code, 'enum_value_not_allowed');
   } finally {
     await fs.rm(fixture.root, { recursive: true, force: true });
   }

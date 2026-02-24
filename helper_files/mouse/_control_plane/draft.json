@@ -16,6 +16,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -152,6 +153,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -273,6 +275,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -401,6 +404,7 @@
       ],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -540,6 +544,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -661,6 +666,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -782,6 +788,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -920,6 +927,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 2,
@@ -1062,6 +1070,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -1248,6 +1257,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -1392,6 +1402,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -1514,7 +1525,7 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": null,
-        "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey→gray; multi-colorways may use '+'.",
+        "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey?gray; multi-colorways may use '+'.",
         "tooltip_source": null
       },
       "unknown_reason_default": "not_found_after_search"
@@ -1530,6 +1541,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1651,6 +1663,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1779,8 +1792,15 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
-        "shape": "scalar",
+        "list_rules": {
+          "dedupe": true,
+          "max_items": 100,
+          "min_items": 0,
+          "sort": "none"
+        },
+        "shape": "list",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
@@ -1838,9 +1858,16 @@
       "field_key": "connectivity",
       "group": "connectivity",
       "key": "connectivity",
-      "output_shape": "scalar",
+      "output_shape": "list",
       "parse": {
-        "template": "text_field"
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";",
+          "+"
+        ],
+        "template": "list_of_tokens_delimited"
       },
       "priority": {
         "availability": "expected",
@@ -1910,6 +1937,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 2,
@@ -2041,6 +2069,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -2175,6 +2204,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2296,6 +2326,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "range": {
           "max": 100000,
@@ -2436,30 +2467,8 @@
       },
       "aliases": [],
       "availability": "sometimes",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium",
-          "effort": 5
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.encoder",
-        "type": "encoder"
-      },
+      "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2480,7 +2489,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": "component_db.encoder"
+        "source": null
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -2582,6 +2591,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2704,6 +2714,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2821,6 +2832,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2948,6 +2960,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3069,6 +3082,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3197,6 +3211,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3324,6 +3339,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -3457,6 +3473,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -3590,6 +3607,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3715,6 +3733,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 1,
@@ -3858,6 +3877,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3979,6 +3999,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -4100,6 +4121,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -4231,6 +4253,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -4371,6 +4394,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -4439,8 +4463,7 @@
         ],
         "range_separators": [
           "-",
-          "–",
-          "—"
+          "�"
         ],
         "strict_unit_required": false,
         "template": "list_numbers_or_ranges_with_unit",
@@ -4528,6 +4551,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -4668,6 +4692,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -4817,6 +4842,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 1,
@@ -4960,30 +4986,8 @@
       },
       "aliases": [],
       "availability": "expected",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium",
-          "effort": 5
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.material",
-        "type": "material"
-      },
+      "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5004,7 +5008,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": "component_db.material"
+        "source": null
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -5108,6 +5112,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5240,6 +5245,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5359,6 +5365,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -5488,6 +5495,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5609,6 +5617,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5730,6 +5739,7 @@
       "aliases": [],
       "availability": "rare",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5851,6 +5861,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5972,6 +5983,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -6100,6 +6112,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -6227,6 +6240,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -6388,6 +6402,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -6512,6 +6527,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -6633,6 +6649,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -6762,6 +6779,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -6890,6 +6908,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7010,30 +7029,8 @@
       },
       "aliases": [],
       "availability": "expected",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium",
-          "effort": 5
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.sensor",
-        "type": "sensor"
-      },
+      "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7054,7 +7051,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": "component_db.sensor"
+        "source": null
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -7163,6 +7160,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7287,6 +7285,9 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [
+        "sensor_date <= release_date"
+      ],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -7419,6 +7420,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 2,
@@ -7561,6 +7563,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -7747,6 +7750,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7869,6 +7873,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7996,6 +8001,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8123,6 +8129,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 2,
@@ -8255,6 +8262,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -8384,6 +8392,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8505,6 +8514,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8626,6 +8636,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8746,30 +8757,8 @@
       },
       "aliases": [],
       "availability": "expected",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium",
-          "effort": 5
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.switch",
-        "type": "switch"
-      },
+      "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8790,7 +8779,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": "component_db.switch"
+        "source": null
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -8899,6 +8888,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9023,6 +9013,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9155,6 +9146,7 @@
       ],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9299,6 +9291,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9420,6 +9413,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9546,6 +9540,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "range": {
           "max": 500,
@@ -9674,7 +9669,7 @@
         "short_label": null,
         "suffix": "g",
         "tooltip_key": "weight",
-        "tooltip_md": "Mouse weight in grams. Convert oz→g when necessary; keep decimals if provided.",
+        "tooltip_md": "Mouse weight in grams. Convert oz?g when necessary; keep decimals if provided.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unknown_reason_default": "not_found_after_search"
@@ -9694,6 +9689,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 1,
@@ -9837,6 +9833,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9948,7 +9945,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-02-17T09:49:22.300Z",
+  "generated_at": "2026-02-24T22:51:45.113Z",
   "selected_keys": [
     "acceleration",
     "adjustable_scroll_wheel",
@@ -10165,7 +10162,7 @@
       "short_label": null,
       "suffix": null,
       "tooltip_key": null,
-      "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey→gray; multi-colorways may use '+'.",
+      "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey?gray; multi-colorways may use '+'.",
       "tooltip_source": null
     },
     {
@@ -10715,7 +10712,7 @@
       "short_label": null,
       "suffix": "g",
       "tooltip_key": "weight",
-      "tooltip_md": "Mouse weight in grams. Convert oz→g when necessary; keep decimals if provided.",
+      "tooltip_md": "Mouse weight in grams. Convert oz?g when necessary; keep decimals if provided.",
       "tooltip_source": "hbs_tooltipsMouse.js"
     },
     {
@@ -12291,5 +12288,5 @@
     }
   ],
   "version": 1,
-  "workbook_map_hash": "476fed973318886bd478b72bb5790eead87db3ed0ffd976efacf28934a3b2637"
+  "workbook_map_hash": "e6ade5f1eaeca55a0f01fc7810c751aa814fa7fd2f5f4ca631acea26ffc9100c"
 }

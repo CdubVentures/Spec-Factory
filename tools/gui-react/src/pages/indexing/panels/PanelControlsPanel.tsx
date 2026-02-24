@@ -1,4 +1,5 @@
 import { Tip } from '../../../components/common/Tip';
+import { usePersistedToggle } from '../../../stores/collapseStore';
 import { panelStateChipClasses } from '../helpers';
 import type { PanelStateToken } from '../types';
 
@@ -12,15 +13,26 @@ interface PanelControlsPanelProps {
   containerStatuses: ContainerStatusRow[];
   onOpenAll: () => void;
   onCloseAll: () => void;
+  persistKey: string;
 }
 
 export function PanelControlsPanel({
   containerStatuses,
   onOpenAll,
   onCloseAll,
+  persistKey,
 }: PanelControlsPanelProps) {
+  const [open, , setOpen] = usePersistedToggle(persistKey, true);
   return (
-    <details open className="group rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2" style={{ order: 15 }}>
+    <details
+      open={open}
+      onToggle={(event) => {
+        const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
+        if (nextOpen !== open) setOpen(nextOpen);
+      }}
+      className="group rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2"
+      style={{ order: 15 }}
+    >
       <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 text-xs text-gray-700 dark:text-gray-200">
         <span className="inline-flex items-center font-semibold">
           <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 text-[10px] leading-none text-gray-700 dark:border-gray-600 dark:text-gray-200 mr-1">

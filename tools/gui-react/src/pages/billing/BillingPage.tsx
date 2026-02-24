@@ -32,11 +32,13 @@ function SingleCategoryBilling({ category }: { category: string }) {
   const { data: billing, isLoading: billingLoading } = useQuery({
     queryKey: ['billing', category],
     queryFn: () => api.get<MonthlyBilling>(`/billing/${category}/monthly`),
+    refetchInterval: 30_000,
   });
 
   const { data: artifacts = [] } = useQuery({
     queryKey: ['learning', category],
     queryFn: () => api.get<LearningArtifact[]>(`/learning/${category}/artifacts`),
+    refetchInterval: 30_000,
   });
 
   if (billingLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
@@ -115,6 +117,7 @@ function AllCategoriesBilling({ categories }: { categories: string[] }) {
     queries: categories.map((cat) => ({
       queryKey: ['billing', cat],
       queryFn: () => api.get<MonthlyBilling>(`/billing/${cat}/monthly`),
+      refetchInterval: 30_000,
     })),
   });
 

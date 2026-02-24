@@ -197,6 +197,35 @@ import {
 
 const RUN_DEDUPE_MODE = 'serp_url+content_hash';
 
+function normalizeCategoryToken(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function buildNeedSetIdentityCaps(config = {}) {
+  return {
+    locked: toFloat(config.needsetCapIdentityLocked, 1),
+    provisional: toFloat(config.needsetCapIdentityProvisional, 0.74),
+    conflict: toFloat(config.needsetCapIdentityConflict, 0.39),
+    unlocked: toFloat(config.needsetCapIdentityUnlocked, 0.59),
+  };
+}
+
+async function loadEnabledSourceStrategyRows({ config = {}, category = '' } = {}) {
+  const categoryToken = normalizeCategoryToken(category);
+  if (!categoryToken) return [];
+  let db = null;
+  try {
+    const { SpecDb } = await import('../db/specDb.js');
+    const dbPath = `${String(config.specDbDir || '.specfactory_tmp').replace(/[\\\/]+$/, '')}/${categoryToken}/spec.sqlite`;
+    db = new SpecDb({ dbPath, category: categoryToken });
+    return db.listEnabledSourceStrategies(categoryToken);
+  } catch {
+    return [];
+  } finally {
+    try { db?.close?.(); } catch { /* ignore */ }
+  }
+}
+
 export async function runProduct({ storage, config, s3Key, jobOverride = null, roundContext = null }) {
   const runId = buildRunId();
   const logger = new EventLogger({
@@ -214,6 +243,7 @@ export async function runProduct({ storage, config, s3Key, jobOverride = null, r
   const job = jobOverride || (await storage.readJson(s3Key));
   const productId = job.productId;
   const category = job.category || 'mouse';
+  const needSetIdentityCaps = buildNeedSetIdentityCaps(config);
   const runArtifactsBase = storage.resolveOutputKey(category, productId, 'runs', runId);
   const baseIdentityLock = job.identityLock || {};
   const identityAmbiguity = await resolveIdentityAmbiguitySnapshot({
@@ -307,6 +337,14 @@ export async function runProduct({ storage, config, s3Key, jobOverride = null, r
     category,
     source: routeMatrixPolicy.source,
     row_count: Number(routeMatrixPolicy.row_count || 0),
+    route_key: routeMatrixPolicy.route_key || null,
+    model_ladder_today: routeMatrixPolicy.model_ladder_today || '',
+    max_tokens: Number(routeMatrixPolicy.max_tokens || 0),
+    single_source_data: Boolean(routeMatrixPolicy.single_source_data),
+    all_source_data: Boolean(routeMatrixPolicy.all_source_data),
+    enable_websearch: Boolean(routeMatrixPolicy.enable_websearch),
+    all_sources_confidence_repatch: Boolean(routeMatrixPolicy.all_sources_confidence_repatch),
+    insufficient_evidence_action: routeMatrixPolicy.insufficient_evidence_action || 'threshold_unmet',
     scalar_linked_send: routeMatrixPolicy.scalar_linked_send,
     component_values_send: routeMatrixPolicy.component_values_send,
     list_values_send: routeMatrixPolicy.list_values_send,
@@ -730,9 +768,49 @@ export async function runProduct({ storage, config, s3Key, jobOverride = null, r
     }
   }
 
+  const initialNeedSet = computeNeedSet({
+    runId,
+    category,
+    productId,
+    fieldOrder,
+    provenance: {},
+    fieldRules: categoryConfig.fieldRules,
+    fieldReasoning: {},
+    constraintAnalysis: {},
+    identityContext: {
+      status: identityLockStatus || 'unknown',
+      confidence: 0,
+      identity_gate_validated: false,
+      extraction_gate_open: false,
+      family_model_count: Number(identityLock.family_model_count || 0),
+      ambiguity_level: normalizeAmbiguityLevel(identityLock.ambiguity_level || ''),
+      publishable: false,
+      publish_blockers: [],
+      reason_codes: [],
+      page_count: 0,
+      max_match_score: 0
+    },
+    identityCaps: needSetIdentityCaps
+  });
+  logger.info('needset_computed', {
+    productId,
+    runId,
+    category,
+    scope: 'initial',
+    needset_size: initialNeedSet.needset_size,
+    total_fields: initialNeedSet.total_fields,
+    identity_lock_state: initialNeedSet.identity_lock_state || null,
+    identity_audit_rows: [],
+    reason_counts: initialNeedSet.reason_counts,
+    required_level_counts: initialNeedSet.required_level_counts,
+    snapshots: initialNeedSet.snapshots || [],
+    needs: initialNeedSet.needs || []
+  });
+
   const discoveryConfig = runtimeOverrides.disable_search
     ? { ...config, discoveryEnabled: false, searchProvider: 'none' }
     : config;
+  const sourceStrategyRows = await loadEnabledSourceStrategyRows({ config, category });
   const discoveryResult = await discoverCandidateSources({
     config: discoveryConfig,
     storage,
@@ -754,7 +832,8 @@ export async function runProduct({ storage, config, s3Key, jobOverride = null, r
     llmContext,
     frontierDb,
     runtimeTraceWriter: traceWriter,
-    learningStoreHints
+    learningStoreHints,
+    sourceStrategyRows
   });
 
   planner.seed(discoveryResult.approvedUrls || [], { forceBrandBypass: false });
@@ -3108,6 +3187,7 @@ export async function runProduct({ storage, config, s3Key, jobOverride = null, r
     fieldReasoning,
     constraintAnalysis,
     identityContext: needSetIdentityContext,
+    identityCaps: needSetIdentityCaps,
     decayConfig: {
       decayDays: config.needsetEvidenceDecayDays,
       decayFloor: config.needsetEvidenceDecayFloor
@@ -3132,7 +3212,8 @@ export async function runProduct({ storage, config, s3Key, jobOverride = null, r
     },
     options: {
       maxHitsPerField: config.retrievalMaxHitsPerField || 24,
-      maxPrimeSourcesPerField: config.retrievalMaxPrimeSources || 8
+      maxPrimeSourcesPerField: config.retrievalMaxPrimeSources || 8,
+      identityFilterEnabled: Boolean(config.retrievalIdentityFilterEnabled)
     },
     ftsQueryFn
   });

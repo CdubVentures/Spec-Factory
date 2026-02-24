@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { api } from '../../api/client';
+import { usePersistedTab } from '../../stores/tabStore';
 import { useUiStore } from '../../stores/uiStore';
+import { useLlmSettingsAuthority } from '../../stores/llmSettingsAuthority';
 import { Spinner } from '../../components/common/Spinner';
-import type { LlmRouteResponse, LlmRouteRow, LlmScope } from '../../types/llmSettings';
+import type { LlmRouteRow, LlmScope } from '../../types/llmSettings';
+import { LLM_ROUTE_PRESET_LIMITS, LLM_SETTING_LIMITS } from '../../stores/settingsManifest';
+import type { LlmRoutePresetConfig } from '../../stores/settingsManifest';
 
+const SCOPE_KEYS = ['field', 'component', 'list'] as const satisfies ReadonlyArray<LlmScope>;
 const scopes: Array<{ key: LlmScope; label: string }> = [
   { key: 'field', label: 'Field Keys' },
   { key: 'component', label: 'Component Review' },
@@ -37,10 +40,26 @@ const AVAILABILITY_RANK: Record<string, number> = {
 };
 
 type SortBy = 'route_key' | 'required_level' | 'difficulty' | 'availability' | 'effort';
+const SORT_BY_KEYS = [
+  'route_key',
+  'required_level',
+  'difficulty',
+  'availability',
+  'effort',
+] as const satisfies ReadonlyArray<SortBy>;
+const SORT_DIR_KEYS = ['asc', 'desc'] as const;
 
 const inputCls = 'px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700';
 const selectCls = inputCls;
 const cardCls = 'bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 p-4';
+const EFFORT_BOUNDS = LLM_SETTING_LIMITS.effort;
+const MAX_TOKEN_BOUNDS = LLM_SETTING_LIMITS.maxTokens;
+const MIN_EVIDENCE_BOUNDS = LLM_SETTING_LIMITS.minEvidenceRefs;
+const MAX_TOKEN_STEP = MAX_TOKEN_BOUNDS.step ?? 1;
+
+function clampToRange(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
 
 const PROMPT_FLAG_FIELDS: Array<keyof LlmRouteRow> = [
   'studio_key_navigation_sent_in_extract_review',
@@ -60,7 +79,7 @@ const PROMPT_FLAG_FIELDS: Array<keyof LlmRouteRow> = [
 ];
 
 function toEffortBand(effort: number) {
-  const n = Math.max(1, Math.min(10, effort || 3));
+  const n = clampToRange(effort || 3, EFFORT_BOUNDS.min, EFFORT_BOUNDS.max);
   if (n <= 3) return '1-3';
   if (n <= 6) return '4-6';
   if (n <= 8) return '7-8';
@@ -158,38 +177,42 @@ function rowDefaultsComparable(row: LlmRouteRow) {
 }
 
 function applyRoutePreset(row: LlmRouteRow, preset: 'fast' | 'balanced' | 'deep') {
+  const presetConfig: LlmRoutePresetConfig = LLM_ROUTE_PRESET_LIMITS[preset];
   if (preset === 'fast') {
     return {
       ...row,
-      single_source_data: true,
-      all_source_data: false,
-      enable_websearch: false,
-      all_sources_confidence_repatch: true,
-      model_ladder_today: 'gpt-5-low -> gpt-5-medium',
-      max_tokens: Math.max(2048, Math.min(6144, row.max_tokens)),
-      llm_output_min_evidence_refs_required: 1,
+      single_source_data: presetConfig.singleSourceData,
+      all_source_data: presetConfig.allSourceData,
+      enable_websearch: presetConfig.enableWebsearch,
+      all_sources_confidence_repatch: presetConfig.allSourcesConfidenceRepatch,
+      model_ladder_today: presetConfig.modelLadderToday,
+      max_tokens: clampToRange(row.max_tokens, presetConfig.maxTokensMin, presetConfig.maxTokensMax),
+      llm_output_min_evidence_refs_required: presetConfig.minEvidenceRefsRequired ?? 1,
     };
   }
-  if (preset === 'deep') {
+  if (preset === 'balanced') {
     return {
       ...row,
-      single_source_data: true,
-      all_source_data: true,
-      enable_websearch: true,
-      all_sources_confidence_repatch: true,
-      model_ladder_today: 'gpt-5.2-high -> gpt-5.1-high',
-      max_tokens: Math.max(12288, row.max_tokens),
-      llm_output_min_evidence_refs_required: Math.max(2, row.llm_output_min_evidence_refs_required),
+      single_source_data: presetConfig.singleSourceData,
+      all_source_data: row.required_level === 'required' || row.required_level === 'critical' || row.difficulty === 'hard',
+      enable_websearch: row.availability === 'rare' || row.difficulty === 'hard' || row.required_level === 'critical' || row.required_level === 'identity',
+      all_sources_confidence_repatch: presetConfig.allSourcesConfidenceRepatch,
+      model_ladder_today: row.model_ladder_today || presetConfig.modelLadderToday,
+      max_tokens: clampToRange(row.max_tokens, presetConfig.maxTokensMin, presetConfig.maxTokensMax),
     };
   }
   return {
     ...row,
-    single_source_data: true,
+    single_source_data: presetConfig.singleSourceData,
     all_source_data: row.required_level === 'required' || row.required_level === 'critical' || row.difficulty === 'hard',
     enable_websearch: row.availability === 'rare' || row.difficulty === 'hard' || row.required_level === 'critical' || row.required_level === 'identity',
-    all_sources_confidence_repatch: true,
-    model_ladder_today: row.model_ladder_today || 'gpt-5-medium -> gpt-5.1-medium',
-    max_tokens: Math.max(4096, Math.min(8192, row.max_tokens)),
+    all_sources_confidence_repatch: presetConfig.allSourcesConfidenceRepatch,
+    model_ladder_today: row.model_ladder_today || presetConfig.modelLadderToday,
+    max_tokens: clampToRange(row.max_tokens, presetConfig.maxTokensMin, presetConfig.maxTokensMax),
+    llm_output_min_evidence_refs_required: Math.max(
+      presetConfig.minEvidenceRefsRequired || 0,
+      row.llm_output_min_evidence_refs_required || 0,
+    ),
   };
 }
 
@@ -231,26 +254,101 @@ function tagCls(kind: 'required' | 'difficulty' | 'availability' | 'effort', val
 
 export function LlmSettingsPage() {
   const category = useUiStore((s) => s.category);
+  const autoSaveEnabled = useUiStore((s) => s.llmSettingsAutoSaveEnabled);
+  const setAutoSaveEnabled = useUiStore((s) => s.setLlmSettingsAutoSaveEnabled);
   const isAll = category === 'all';
-  const [activeScope, setActiveScope] = useState<LlmScope>('field');
-  const [selectedRouteKey, setSelectedRouteKey] = useState('');
+  const [activeScope, setActiveScope] = usePersistedTab<LlmScope>(
+    'llmSettings:scope:main',
+    'field',
+    { validValues: SCOPE_KEYS },
+  );
+  const scopeStateKey = `${category}:${activeScope}`;
+  const [selectedRouteKey, setSelectedRouteKey] = usePersistedTab<string>(
+    `llmSettings:selectedRoute:${scopeStateKey}`,
+    '',
+  );
   const [rows, setRows] = useState<LlmRouteRow[]>([]);
   const [defaultRowsByKey, setDefaultRowsByKey] = useState<Record<string, LlmRouteRow>>({});
   const [dirty, setDirty] = useState(false);
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
-  const [sortBy, setSortBy] = useState<SortBy>('effort');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
-  const [filterRequiredLevel, setFilterRequiredLevel] = useState('all');
-  const [filterDifficulty, setFilterDifficulty] = useState('all');
-  const [filterAvailability, setFilterAvailability] = useState('all');
-  const [filterEffortBand, setFilterEffortBand] = useState('all');
+  const [sortBy, setSortBy] = usePersistedTab<SortBy>(
+    `llmSettings:sortBy:${scopeStateKey}`,
+    'effort',
+    { validValues: SORT_BY_KEYS },
+  );
+  const [sortDir, setSortDir] = usePersistedTab<'asc' | 'desc'>(
+    `llmSettings:sortDir:${scopeStateKey}`,
+    'desc',
+    { validValues: SORT_DIR_KEYS },
+  );
+  const [filterRequiredLevel, setFilterRequiredLevel] = usePersistedTab<string>(
+    `llmSettings:filterRequired:${scopeStateKey}`,
+    'all',
+  );
+  const [filterDifficulty, setFilterDifficulty] = usePersistedTab<string>(
+    `llmSettings:filterDifficulty:${scopeStateKey}`,
+    'all',
+  );
+  const [filterAvailability, setFilterAvailability] = usePersistedTab<string>(
+    `llmSettings:filterAvailability:${scopeStateKey}`,
+    'all',
+  );
+  const [filterEffortBand, setFilterEffortBand] = usePersistedTab<string>(
+    `llmSettings:filterEffortBand:${scopeStateKey}`,
+    'all',
+  );
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<{
+    kind: 'idle' | 'ok' | 'partial' | 'error';
+    message: string;
+  }>({ kind: 'idle', message: '' });
   const editVersionRef = useRef(0);
 
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ['llm-settings-routes', category],
-    queryFn: () => api.get<LlmRouteResponse>(`/llm-settings/${category}/routes`),
+  const {
+    data,
+    isLoading,
+    isSaving,
+    isResetting,
+    reload,
+    save,
+    resetDefaults,
+  } = useLlmSettingsAuthority({
+    category,
     enabled: !isAll,
+    rows,
+    dirty,
+    autoSaveEnabled,
+    editVersion: editVersionRef.current,
+    onPersisted: (result, payload) => {
+      if (payload.version >= editVersionRef.current) {
+        setRows(result.rows || []);
+        if (result.ok) {
+          setDirty(false);
+          setSaveStatus({ kind: 'ok', message: 'LLM settings saved.' });
+        } else {
+          const rejectedKeys = Object.keys(result.rejected);
+          if (rejectedKeys.length > 0) {
+            setSaveStatus({
+              kind: 'partial',
+              message: `LLM settings partially saved. Rejected ${rejectedKeys.length} route(s).`,
+            });
+          } else {
+            setSaveStatus({ kind: 'error', message: 'LLM settings save failed.' });
+          }
+        }
+        setLastSavedAt(new Date().toLocaleTimeString());
+      }
+    },
+    onError: (error) => {
+      setSaveStatus({ kind: 'error', message: error instanceof Error ? error.message : 'Failed to save LLM settings.' });
+    },
+    onResetSuccess: (resp) => {
+      setRows(resp.rows || []);
+      setDefaultRowsByKey(Object.fromEntries((resp.rows || []).map((row) => [row.route_key, row])));
+      setDirty(false);
+      editVersionRef.current += 1;
+      setSaveStatus({ kind: 'ok', message: 'LLM settings reset to defaults.' });
+      setLastSavedAt(new Date().toLocaleTimeString());
+    },
   });
 
   useEffect(() => {
@@ -267,6 +365,11 @@ export function LlmSettingsPage() {
     });
   }, [data]);
 
+  useEffect(() => {
+    if (!dirty) return;
+    setSaveStatus((current) => (current.kind === 'idle' ? current : { kind: 'idle', message: '' }));
+  }, [dirty]);
+
   const scopeRows = useMemo(
     () => rows.filter((row) => row.scope === activeScope),
     [rows, activeScope]
@@ -280,19 +383,37 @@ export function LlmSettingsPage() {
     return counts;
   }, [rows]);
 
-  useEffect(() => {
-    setFilterRequiredLevel('all');
-    setFilterDifficulty('all');
-    setFilterAvailability('all');
-    setFilterEffortBand('all');
-  }, [activeScope]);
-
   const filterOptions = useMemo(() => ({
     required: [...new Set(scopeRows.map((row) => row.required_level).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     difficulty: [...new Set(scopeRows.map((row) => row.difficulty).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     availability: [...new Set(scopeRows.map((row) => row.availability).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     effortBand: [...new Set(scopeRows.map((row) => row.effort_band).filter(Boolean))].sort((a, b) => a.localeCompare(b))
   }), [scopeRows]);
+
+  useEffect(() => {
+    if (filterRequiredLevel !== 'all' && !filterOptions.required.includes(filterRequiredLevel)) {
+      setFilterRequiredLevel('all');
+    }
+    if (filterDifficulty !== 'all' && !filterOptions.difficulty.includes(filterDifficulty)) {
+      setFilterDifficulty('all');
+    }
+    if (filterAvailability !== 'all' && !filterOptions.availability.includes(filterAvailability)) {
+      setFilterAvailability('all');
+    }
+    if (filterEffortBand !== 'all' && !filterOptions.effortBand.includes(filterEffortBand)) {
+      setFilterEffortBand('all');
+    }
+  }, [
+    filterRequiredLevel,
+    filterDifficulty,
+    filterAvailability,
+    filterEffortBand,
+    filterOptions,
+    setFilterRequiredLevel,
+    setFilterDifficulty,
+    setFilterAvailability,
+    setFilterEffortBand,
+  ]);
 
   const filteredScopeRows = useMemo(() => {
     return scopeRows.filter((row) => {
@@ -347,37 +468,6 @@ export function LlmSettingsPage() {
   );
   const selectedIsUserSet = selectedRow ? Boolean(userSetByRouteKey[selectedRow.route_key]) : false;
 
-  const saveMut = useMutation({
-    mutationFn: (payload: { rows: LlmRouteRow[]; version: number }) =>
-      api.put<LlmRouteResponse>(`/llm-settings/${category}/routes`, { rows: payload.rows }),
-    onSuccess: (resp, payload) => {
-      if (payload.version >= editVersionRef.current) {
-        setRows(resp.rows || []);
-        setDirty(false);
-      }
-      setLastSavedAt(new Date().toLocaleTimeString());
-    }
-  });
-
-  const resetMut = useMutation({
-    mutationFn: () => api.post<LlmRouteResponse>(`/llm-settings/${category}/routes/reset`),
-    onSuccess: (resp) => {
-      setRows(resp.rows || []);
-      setDefaultRowsByKey(Object.fromEntries((resp.rows || []).map((row) => [row.route_key, row])));
-      setDirty(false);
-      editVersionRef.current += 1;
-      setLastSavedAt(new Date().toLocaleTimeString());
-    }
-  });
-
-  useEffect(() => {
-    if (!autoSaveEnabled || !dirty || saveMut.isPending || resetMut.isPending) return;
-    const timer = setTimeout(() => {
-      saveMut.mutate({ rows, version: editVersionRef.current });
-    }, 700);
-    return () => clearTimeout(timer);
-  }, [autoSaveEnabled, dirty, rows, saveMut, saveMut.isPending, resetMut.isPending]);
-
   function updateRow(routeKey: string, patch: Partial<LlmRouteRow>) {
     setRows((prev) => prev.map((row) => {
       if (row.route_key !== routeKey) return row;
@@ -416,30 +506,45 @@ export function LlmSettingsPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => refetch()}
+              onClick={() => { void reload(); }}
               className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               Reload
             </button>
             <button
-              onClick={() => resetMut.mutate()}
-              disabled={resetMut.isPending}
+              onClick={resetDefaults}
+              disabled={isResetting}
               className="px-3 py-1.5 text-xs border border-amber-300 text-amber-700 rounded hover:bg-amber-50 disabled:opacity-50"
             >
-              {resetMut.isPending ? 'Resetting...' : 'Reset Defaults'}
+              {isResetting ? 'Resetting...' : 'Reset Defaults'}
             </button>
             <button
-              onClick={() => saveMut.mutate({ rows, version: editVersionRef.current })}
-              disabled={!dirty || saveMut.isPending}
+              onClick={save}
+              disabled={!dirty || isSaving}
               className="px-3 py-1.5 text-xs bg-accent text-white rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              {saveMut.isPending ? 'Saving...' : autoSaveEnabled ? 'Save Now' : 'Save LLM Settings'}
+              {isSaving ? 'Saving...' : autoSaveEnabled ? 'Save Now' : 'Save LLM Settings'}
             </button>
           </div>
         </div>
         <div className="mt-2 flex items-center justify-between">
-          <div className="text-[11px] text-gray-500">
-            {dirty ? 'Unsaved changes.' : 'All changes saved.'}
+          <div
+            className={`text-[11px] ${isSaving
+              ? 'text-blue-600 dark:text-blue-400'
+              : saveStatus.kind === 'error'
+              ? 'text-rose-600 dark:text-rose-300'
+              : saveStatus.kind === 'partial'
+              ? 'text-amber-600 dark:text-amber-400'
+              : 'text-gray-500'
+            }`}
+          >
+            {isSaving
+              ? 'Saving...'
+              : saveStatus.kind === 'error' || saveStatus.kind === 'partial'
+              ? saveStatus.message
+              : dirty
+              ? 'Unsaved changes.'
+              : 'All changes saved.'}
             {lastSavedAt ? ` Last save: ${lastSavedAt}` : ''}
           </div>
           <label className="text-xs flex items-center gap-2">
@@ -503,7 +608,7 @@ export function LlmSettingsPage() {
                   <div className="text-[10px] text-gray-500 mb-1">Direction</div>
                   <button
                     className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={() => setSortDir((d) => d === 'asc' ? 'desc' : 'asc')}
+                    onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
                   >
                     {sortDir}
                   </button>
@@ -657,10 +762,12 @@ export function LlmSettingsPage() {
                     <input
                       className="w-full"
                       type="range"
-                      min={1}
-                      max={10}
+                      min={EFFORT_BOUNDS.min}
+                      max={EFFORT_BOUNDS.max}
                       value={selectedRow.effort}
-                      onChange={(e) => updateSelected({ effort: Math.max(1, Math.min(10, Number.parseInt(e.target.value, 10) || 1)) })}
+                      onChange={(e) => updateSelected({
+                        effort: clampToRange(Number.parseInt(e.target.value, 10) || EFFORT_BOUNDS.min, EFFORT_BOUNDS.min, EFFORT_BOUNDS.max),
+                      })}
                     />
                     <div className="text-[10px] text-gray-500 mt-1">Band: {selectedRow.effort_band}</div>
                   </div>
@@ -740,11 +847,13 @@ export function LlmSettingsPage() {
                       <input
                         className="w-full"
                         type="range"
-                        min={1024}
-                        max={32768}
-                        step={256}
+                        min={MAX_TOKEN_BOUNDS.min}
+                        max={MAX_TOKEN_BOUNDS.max}
+                        step={MAX_TOKEN_STEP}
                         value={selectedRow.max_tokens}
-                        onChange={(e) => updateSelected({ max_tokens: Math.max(256, Math.min(65536, Number.parseInt(e.target.value, 10) || 256)) })}
+                        onChange={(e) => updateSelected({
+                          max_tokens: clampToRange(Number.parseInt(e.target.value, 10) || MAX_TOKEN_BOUNDS.min, MAX_TOKEN_BOUNDS.min, MAX_TOKEN_BOUNDS.max),
+                        })}
                       />
                     </div>
                   </div>
@@ -758,10 +867,16 @@ export function LlmSettingsPage() {
                       <input
                         className="w-full"
                         type="range"
-                        min={1}
-                        max={5}
+                        min={MIN_EVIDENCE_BOUNDS.min}
+                        max={MIN_EVIDENCE_BOUNDS.max}
                         value={selectedRow.llm_output_min_evidence_refs_required}
-                        onChange={(e) => updateSelected({ llm_output_min_evidence_refs_required: Math.max(1, Math.min(5, Number.parseInt(e.target.value, 10) || 1)) })}
+                        onChange={(e) => updateSelected({
+                          llm_output_min_evidence_refs_required: clampToRange(
+                            Number.parseInt(e.target.value, 10) || MIN_EVIDENCE_BOUNDS.min,
+                            MIN_EVIDENCE_BOUNDS.min,
+                            MIN_EVIDENCE_BOUNDS.max,
+                          ),
+                        })}
                       />
                     </div>
                     <div>

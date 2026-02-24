@@ -1,7 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useUiStore } from '../../stores/uiStore';
+import { usePersistedToggle } from '../../stores/collapseStore';
+import { usePersistedTab } from '../../stores/tabStore';
 import { DataTable } from '../../components/common/DataTable';
 import { Spinner } from '../../components/common/Spinner';
 import { inputCls, labelCls } from './studioConstants';
@@ -164,8 +166,28 @@ export function BrandManager() {
   const queryClient = useQueryClient();
 
   // Drawer state
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editSlug, setEditSlug] = useState<string | null>(null);
+  const [drawerOpen, , setDrawerOpen] = usePersistedToggle(`catalog:brands:drawerOpen:${selectedCategory}`, false);
+  const [persistedSelectedBrand, setPersistedSelectedBrand] = usePersistedTab<string>(
+    `catalog:brands:selectedBrand:${selectedCategory}`,
+    '',
+  );
+  const [editSlug, setEditSlug] = useState<string | null>(() => persistedSelectedBrand || null);
+  const [addDraftName, setAddDraftName] = usePersistedTab<string>(
+    `catalog:brands:addDraft:name:${selectedCategory}`,
+    '',
+  );
+  const [addDraftAliases, setAddDraftAliases] = usePersistedTab<string>(
+    `catalog:brands:addDraft:aliases:${selectedCategory}`,
+    '',
+  );
+  const [addDraftCategoriesCsv, setAddDraftCategoriesCsv] = usePersistedTab<string>(
+    `catalog:brands:addDraft:categories:${selectedCategory}`,
+    '',
+  );
+  const [addDraftWebsite, setAddDraftWebsite] = usePersistedTab<string>(
+    `catalog:brands:addDraft:website:${selectedCategory}`,
+    '',
+  );
   const [editIdentifier, setEditIdentifier] = useState<string>('');
   const [formName, setFormName] = useState('');
   const [formAliases, setFormAliases] = useState('');
@@ -187,9 +209,10 @@ export function BrandManager() {
   const [bulkResult, setBulkResult] = useState<BrandBulkImportResult | null>(null);
 
   // Bulk single-column modal state
-  const [bulkOpen, setBulkOpen] = useState(false);
-  const [bulkCategory, setBulkCategory] = useState('');
-  const [bulkText, setBulkText] = useState('');
+  const [bulkOpen, , setBulkOpen] = usePersistedToggle(`catalog:brands:bulkOpen:${selectedCategory}`, false);
+  const [bulkCategory, setBulkCategory] = usePersistedTab<string>(`catalog:brands:bulkCategory:${selectedCategory}`, '');
+  const [bulkText, setBulkText] = usePersistedTab<string>(`catalog:brands:bulkText:${selectedCategory}`, '');
+  const hydratedEditSlugRef = useRef('');
 
   // ── Queries ────────────────────────────────────────────────────
   const { data: brands = [], isLoading } = useQuery<Brand[]>({
@@ -265,13 +288,21 @@ export function BrandManager() {
   });
 
   // ── Drawer helpers ─────────────────────────────────────────────
+  function parseDraftCategories(value: string): string[] {
+    return String(value || '')
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+
   function openAdd() {
+    hydratedEditSlugRef.current = '';
     setEditSlug(null);
     setEditIdentifier('');
-    setFormName('');
-    setFormAliases('');
-    setFormCategories([]);
-    setFormWebsite('');
+    setFormName(addDraftName);
+    setFormAliases(addDraftAliases);
+    setFormCategories(parseDraftCategories(addDraftCategoriesCsv));
+    setFormWebsite(addDraftWebsite);
     setOrigName('');
     setOrigAliases('');
     setOrigCategories([]);
@@ -282,6 +313,7 @@ export function BrandManager() {
   }
 
   function openEdit(brand: Brand) {
+    hydratedEditSlugRef.current = brand.slug;
     setEditSlug(brand.slug);
     setEditIdentifier(brand.identifier || '');
     setFormName(brand.canonical_name);
@@ -299,12 +331,63 @@ export function BrandManager() {
   }
 
   function closeDrawer() {
+    hydratedEditSlugRef.current = '';
     setDrawerOpen(false);
     setEditSlug(null);
     setEditIdentifier('');
     setConfirmAction(null);
     setConfirmInput('');
   }
+
+  useEffect(() => {
+    const next = editSlug || '';
+    if (persistedSelectedBrand === next) return;
+    setPersistedSelectedBrand(next);
+  }, [editSlug, persistedSelectedBrand, setPersistedSelectedBrand]);
+
+  useEffect(() => {
+    hydratedEditSlugRef.current = '';
+    setEditSlug(persistedSelectedBrand || null);
+  }, [selectedCategory, persistedSelectedBrand]);
+
+  useEffect(() => {
+    if (!drawerOpen || !editSlug) return;
+    if (hydratedEditSlugRef.current === editSlug) return;
+    const brand = brands.find((row) => row.slug === editSlug);
+    if (!brand) return;
+    hydratedEditSlugRef.current = editSlug;
+    const aliasStr = (brand.aliases || []).join(', ');
+    setEditIdentifier(brand.identifier || '');
+    setFormName(brand.canonical_name);
+    setFormAliases(aliasStr);
+    setFormCategories([...(brand.categories || [])]);
+    setFormWebsite(brand.website || '');
+    setOrigName(brand.canonical_name);
+    setOrigAliases(aliasStr);
+    setOrigCategories([...(brand.categories || [])]);
+    setOrigWebsite(brand.website || '');
+    setConfirmAction(null);
+    setConfirmInput('');
+  }, [drawerOpen, editSlug, brands]);
+
+  useEffect(() => {
+    if (!drawerOpen || editSlug) return;
+    setAddDraftName(formName);
+    setAddDraftAliases(formAliases);
+    setAddDraftCategoriesCsv(formCategories.join(','));
+    setAddDraftWebsite(formWebsite);
+  }, [
+    drawerOpen,
+    editSlug,
+    formName,
+    formAliases,
+    formCategories,
+    formWebsite,
+    setAddDraftName,
+    setAddDraftAliases,
+    setAddDraftCategoriesCsv,
+    setAddDraftWebsite,
+  ]);
 
   function resetConfirm() {
     setConfirmAction(null);
@@ -564,6 +647,7 @@ export function BrandManager() {
             data={brands}
             columns={columns}
             searchable
+            persistKey={`catalog:brands:table:${selectedCategory}`}
             onRowClick={openEdit}
             maxHeight="max-h-[550px]"
           />

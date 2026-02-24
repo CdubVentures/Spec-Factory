@@ -36,14 +36,16 @@ function PoolCard({ label, pool }: { label: string; pool: PoolMetric }) {
 
 export function MetricsRail({ data }: MetricsRailProps) {
   const pools = data?.pool_metrics ?? {};
-  const quality = data?.quality_metrics ?? { identity_status: 'unknown', acceptance_rate: 0, mean_confidence: 0 };
+  const quality = data?.quality_metrics ?? { identity_status: 'unlocked', acceptance_rate: 0, mean_confidence: 0 };
   const failure = data?.failure_metrics ?? { total_fetches: 0, fallback_count: 0, fallback_rate: 0, blocked_hosts: 0, retry_total: 0, no_progress_streak: 0 };
 
   const identityBadge = quality.identity_status === 'locked'
     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
     : quality.identity_status === 'provisional'
       ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+      : quality.identity_status === 'unlocked'
+        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
 
   return (
     <aside className="w-60 shrink-0 border-r border-gray-200 dark:border-gray-700 overflow-y-auto p-3 space-y-4">

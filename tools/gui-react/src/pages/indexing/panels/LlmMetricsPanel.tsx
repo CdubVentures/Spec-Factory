@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { Tip } from '../../../components/common/Tip';
+import { usePersistedToggle } from '../../../stores/collapseStore';
 import {
   formatNumber,
   formatDateTime,
@@ -67,7 +67,7 @@ export function LlmMetricsPanel({
   selectedLlmPricingRows,
   indexingLlmConfig,
 }: LlmMetricsPanelProps) {
-  const [activeModelPricingCollapsed, setActiveModelPricingCollapsed] = useState(true);
+  const [activeModelPricingCollapsed, toggleActiveModelPricing] = usePersistedToggle('indexing:llmMetrics:pricing', true);
 
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-3" style={{ order: 90 }}>
@@ -137,7 +137,7 @@ export function LlmMetricsPanel({
                 ) : null}
               </div>
               <button
-                onClick={() => setActiveModelPricingCollapsed((prev) => !prev)}
+                onClick={() => toggleActiveModelPricing()}
                 className="inline-flex items-center justify-center w-5 h-5 text-[10px] rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                 title={activeModelPricingCollapsed ? 'Open pricing table' : 'Close pricing table'}
               >

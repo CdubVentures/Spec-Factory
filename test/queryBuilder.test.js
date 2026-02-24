@@ -90,3 +90,71 @@ test('buildDeterministicAliases emits spacing and hyphen model variants', () => 
   assert.equal(tokens.includes('aw-610-m') || tokens.includes('aw-610m'), true);
   assert.equal(tokens.includes('aw 610 m') || tokens.includes('aw 610m'), true);
 });
+
+test('buildSearchProfile emits field rule gate counts with off vs zero states', () => {
+  const profile = buildSearchProfile({
+    job: {
+      category: 'mouse',
+      identityLock: {
+        brand: 'Alienware',
+        model: 'AW610M',
+        variant: ''
+      }
+    },
+    categoryConfig: {
+      category: 'mouse',
+      fieldOrder: ['polling_rate', 'sensor', 'dpi'],
+      sourceHosts: [
+        { host: 'alienware.com', tierName: 'manufacturer' }
+      ],
+      searchTemplates: [],
+      fieldRules: {
+        fields: {
+          polling_rate: {
+            search_hints: {
+              query_terms: ['polling rate']
+            }
+          },
+          sensor: {
+            search_hints: {
+              domain_hints: ['rtings.com']
+            },
+            consumers: {
+              'search_hints.domain_hints': {
+                indexlab: false
+              }
+            }
+          },
+          dpi: {
+            search_hints: {
+              preferred_content_types: []
+            }
+          }
+        }
+      }
+    },
+    missingFields: ['polling_rate', 'sensor', 'dpi'],
+    maxQueries: 24
+  });
+
+  const counts = profile.field_rule_gate_counts || {};
+  assert.deepEqual(counts['search_hints.query_terms'], {
+    value_count: 1,
+    enabled_field_count: 1,
+    disabled_field_count: 0,
+    status: 'active'
+  });
+  assert.deepEqual(counts['search_hints.domain_hints'], {
+    value_count: 0,
+    enabled_field_count: 0,
+    disabled_field_count: 1,
+    status: 'off'
+  });
+  assert.deepEqual(counts['search_hints.preferred_content_types'], {
+    value_count: 0,
+    enabled_field_count: 1,
+    disabled_field_count: 0,
+    status: 'zero'
+  });
+  assert.equal(profile.queries.some((query) => query.includes('site:rtings.com')), false);
+});

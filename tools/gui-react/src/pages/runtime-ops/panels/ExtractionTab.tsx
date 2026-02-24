@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
 import type { ExtractionFieldRow, ExtractionCandidate } from '../types';
 import {
   methodBadgeClass,
@@ -14,6 +15,7 @@ import { Tip } from '../../../components/common/Tip';
 
 interface ExtractionTabProps {
   fields: ExtractionFieldRow[];
+  category: string;
   onNavigateToDocument?: (url: string) => void;
 }
 
@@ -42,16 +44,46 @@ function ConfidenceBar({ value }: { value: number }) {
   );
 }
 
-export function ExtractionTab({ fields, onNavigateToDocument }: ExtractionTabProps) {
-  const [searchFilter, setSearchFilter] = useState('');
-  const [methodFilter, setMethodFilter] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [selectedField, setSelectedField] = useState<ExtractionFieldRow | null>(null);
+const EXTRACTION_STATUS_FILTER_KEYS = [
+  'accepted',
+  'conflict',
+  'candidate',
+  'unknown',
+] as const;
+
+export function ExtractionTab({ fields, category, onNavigateToDocument }: ExtractionTabProps) {
+  const [searchFilter, setSearchFilter] = usePersistedTab<string>(
+    `runtimeOps:extraction:search:${category}`,
+    '',
+  );
 
   const methods = useMemo(() => {
     const set = new Set(fields.map((f) => f.method).filter(Boolean));
     return Array.from(set).sort();
   }, [fields]);
+  const [methodFilter, setMethodFilter] = usePersistedNullableTab<string>(
+    `runtimeOps:extraction:method:${category}`,
+    null,
+    { validValues: methods },
+  );
+  const [statusFilter, setStatusFilter] = usePersistedNullableTab<string>(
+    `runtimeOps:extraction:status:${category}`,
+    null,
+    { validValues: EXTRACTION_STATUS_FILTER_KEYS },
+  );
+  const fieldKeys = useMemo(
+    () => fields.map((field) => field.field),
+    [fields],
+  );
+  const [selectedFieldKey, setSelectedFieldKey] = usePersistedNullableTab<string>(
+    `runtimeOps:extraction:selectedField:${category}`,
+    null,
+    { validValues: fieldKeys },
+  );
+  const selectedField = useMemo(
+    () => fields.find((field) => field.field === selectedFieldKey) ?? null,
+    [fields, selectedFieldKey],
+  );
 
   const filtered = useMemo(() => {
     let list = fields;
@@ -143,7 +175,7 @@ export function ExtractionTab({ fields, onNavigateToDocument }: ExtractionTabPro
             {filtered.map((f) => (
               <tr
                 key={f.field}
-                onClick={() => setSelectedField(selectedField?.field === f.field ? null : f)}
+                onClick={() => setSelectedFieldKey(selectedField?.field === f.field ? null : f.field)}
                 className={`cursor-pointer border-b border-gray-100 dark:border-gray-700/50 transition-colors ${
                   selectedField?.field === f.field
                     ? 'bg-blue-50 dark:bg-blue-900/20'

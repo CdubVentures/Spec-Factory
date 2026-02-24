@@ -109,6 +109,121 @@ test('discoverCandidateSources runs internet query fanout with concurrency > 1',
   }
 });
 
+test('discoverCandidateSources with logger emits search profile events without crashing', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-logger-profile-'));
+  const config = makeConfig(tempRoot, {
+    discoveryMaxQueries: 3,
+    discoveryQueryConcurrency: 1,
+    searchProvider: 'dual',
+    searxngBaseUrl: 'http://127.0.0.1:8080',
+    duckduckgoEnabled: false
+  });
+  const storage = createStorage(config);
+  const categoryConfig = {
+    category: 'mouse',
+    sourceHosts: [
+      { host: 'rtings.com', tier: 2, tierName: 'review', role: 'review' }
+    ],
+    denylist: [],
+    searchTemplates: ['{brand} {model} specs'],
+    fieldOrder: []
+  };
+  const job = makeJob();
+  const events = [];
+  const logger = {
+    info(name, payload = {}) {
+      events.push({ name, payload });
+    }
+  };
+
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: true,
+    async json() {
+      return {
+        results: [
+          {
+            url: 'https://www.rtings.com/mouse/reviews/hyperx/pulsefire-haste-2-core-wireless',
+            title: 'HyperX Pulsefire Haste 2 Core Wireless',
+            content: 'Specs and measurements'
+          }
+        ]
+      };
+    }
+  });
+
+  try {
+    const result = await discoverCandidateSources({
+      config,
+      storage,
+      categoryConfig,
+      job,
+      runId: 'run-logger-profile',
+      logger,
+      planningHints: {},
+      llmContext: {}
+    });
+
+    assert.equal(Array.isArray(result.search_profile?.query_rows), true);
+    assert.equal(events.some((event) => event.name === 'search_profile_generated'), true);
+  } finally {
+    global.fetch = originalFetch;
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('discoverCandidateSources emits plan-only search result events when internet provider is unavailable', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-plan-only-events-'));
+  const config = makeConfig(tempRoot, {
+    searchProvider: 'google',
+    googleCseKey: '',
+    googleCseCx: '',
+    searxngBaseUrl: '',
+    duckduckgoEnabled: false,
+    llmEnabled: false,
+    llmPlanDiscoveryQueries: false
+  });
+  const storage = createStorage(config);
+  const categoryConfig = {
+    category: 'mouse',
+    sourceHosts: [
+      { host: 'rtings.com', tier: 2, tierName: 'review', role: 'review' }
+    ],
+    denylist: [],
+    searchTemplates: ['{brand} {model} specs'],
+    fieldOrder: []
+  };
+  const job = makeJob();
+  const events = [];
+  const logger = {
+    info(name, payload = {}) {
+      events.push({ name, payload });
+    }
+  };
+
+  try {
+    const result = await discoverCandidateSources({
+      config,
+      storage,
+      categoryConfig,
+      job,
+      runId: 'run-plan-only-events',
+      logger,
+      planningHints: {},
+      llmContext: {}
+    });
+
+    assert.equal(
+      result.search_attempts.some((attempt) => attempt.reason_code === 'plan_only_no_provider'),
+      true
+    );
+    assert.equal(events.some((event) => event.name === 'discovery_query_completed'), true);
+    assert.equal(events.some((event) => event.name === 'search_results_collected'), true);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('discoverCandidateSources returns provider diagnostics for dual mode fallback readiness', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-provider-diag-'));
   const config = makeConfig(tempRoot, {

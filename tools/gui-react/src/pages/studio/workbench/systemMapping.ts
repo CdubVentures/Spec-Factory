@@ -95,6 +95,7 @@ export const FIELD_SYSTEM_MAP: Record<string, SystemSet> = {
   'enum.policy':                SEED_IDX_REV,
   'enum.source':                SEED_IDX_REV,
   'enum.match.strategy':        REV,
+  'enum.match.format_hint':     REV,
   'enum.match.fuzzy_threshold': REV,
   'enum.additional_values':     REV,
 
@@ -425,6 +426,12 @@ export const CONSUMER_TOOLTIPS: Record<string, Partial<Record<DownstreamSystem, 
       off: 'LLM Review defaults to exact string matching only. Aliases and fuzzy matching are not used.',
     },
   },
+  'enum.match.format_hint': {
+    review: {
+      on: 'LLM Review uses this format template as output guidance during enum consistency runs. Use placeholders like XXXX and YYYY for variable segments.',
+      off: 'LLM Review ignores the custom format template and falls back to canonical list style inference.',
+    },
+  },
   'enum.match.fuzzy_threshold': {
     review: {
       on: 'LLM Review uses this threshold (0-1) as the minimum fuzzy similarity for a candidate to match an enum value. Lower = more lenient.',
@@ -607,15 +614,18 @@ export function formatConsumerTooltip(
     return `${cfg.title}\nStatus: ${enabled ? 'Enabled' : 'Disabled'}\n\nClick to ${enabled ? 'disable' : 'enable'}`;
   }
 
+  const enabledDescription = `${cfg.title} reads '${fieldPath}' for this field. ${tip.on}`.trim();
+  const disabledDescription = `${cfg.title} ignores '${fieldPath}' for this field when disabled (gate applied). ${tip.off}`.trim();
+
   return [
     `${cfg.title}`,
     `Status: ${enabled ? 'Enabled' : 'Disabled'}`,
     '',
     'When enabled:',
-    tip.on,
+    enabledDescription,
     '',
     'When disabled:',
-    tip.off,
+    disabledDescription,
     '',
     `Click to ${enabled ? 'disable' : 'enable'}`,
   ].join('\n');
@@ -630,10 +640,12 @@ export function formatStaticConsumerTooltip(
 
   if (!tip) return cfg.title;
 
+  const summary = `${cfg.title} reads '${fieldPath}' for this field. ${tip.on}`.trim();
+
   return [
     cfg.title,
     '',
-    tip.on,
+    summary,
   ].join('\n');
 }
 

@@ -1,13 +1,15 @@
 // ── WorkbenchDrawer: right-side detail panel with 7 tabs ─────────────
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Tip } from '../../../components/common/Tip';
 import { ComboSelect } from '../../../components/common/ComboSelect';
 import { TagPicker } from '../../../components/common/TagPicker';
 import { TierPicker } from '../../../components/common/TierPicker';
 import { EnumConfigurator } from '../../../components/common/EnumConfigurator';
 import { JsonViewer } from '../../../components/common/JsonViewer';
+import { api } from '../../../api/client';
+import { usePersistedTab } from '../../../stores/tabStore';
 import { humanizeField } from '../../../utils/fieldNormalize';
-import { strN, numN, boolN, arrN } from './workbenchHelpers';
+import { strN, numN, boolN, arrN, extractConstraintVariables } from './workbenchHelpers';
 import {
   selectCls, inputCls, labelCls,
   UNITS, UNKNOWN_TOKENS, COMPONENT_TYPES,
@@ -21,6 +23,7 @@ import type { DrawerTab } from './workbenchTypes';
 import type { EnumEntry, ComponentDbResponse, ComponentSource, ComponentSourceProperty } from '../../../types/studio';
 
 interface Props {
+  category: string;
   fieldKey: string;
   rule: Record<string, unknown>;
   fieldOrder: string[];
@@ -28,6 +31,7 @@ interface Props {
   enumLists: EnumEntry[];
   componentDb: ComponentDbResponse;
   componentSources: ComponentSource[];
+  onCommitImmediate: () => void;
   onClose: () => void;
   onNavigate: (key: string) => void;
 }
@@ -41,8 +45,18 @@ const DRAWER_TABS: { id: DrawerTab; label: string }[] = [
   { id: 'deps', label: 'Deps' },
   { id: 'preview', label: 'Preview' },
 ];
+const DRAWER_TAB_IDS = [
+  'contract',
+  'parse',
+  'enum',
+  'evidence',
+  'search',
+  'deps',
+  'preview',
+] as const satisfies ReadonlyArray<DrawerTab>;
 
 export function WorkbenchDrawer({
+  category,
   fieldKey,
   rule,
   fieldOrder,
@@ -50,13 +64,61 @@ export function WorkbenchDrawer({
   enumLists,
   componentDb,
   componentSources,
+  onCommitImmediate,
   onClose,
   onNavigate,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<DrawerTab>('contract');
+  const [activeTab, setActiveTab] = usePersistedTab<DrawerTab>(
+    'studio:workbench:drawerTab',
+    'contract',
+    { validValues: DRAWER_TAB_IDS },
+  );
+  const [consistencyPending, setConsistencyPending] = useState(false);
+  const [consistencyMessage, setConsistencyMessage] = useState('');
+  const [consistencyError, setConsistencyError] = useState('');
   const { updateField } = useFieldRulesStore();
 
   const update = (path: string, value: unknown) => updateField(fieldKey, path, value);
+
+  useEffect(() => {
+    setConsistencyMessage('');
+    setConsistencyError('');
+  }, [fieldKey]);
+
+  async function runEnumConsistency(options?: { formatGuidance?: string; reviewEnabled?: boolean }) {
+    if (consistencyPending) return;
+    setConsistencyPending(true);
+    setConsistencyMessage('');
+    setConsistencyError('');
+    try {
+      const response = await api.post(`/studio/${category}/enum-consistency`, {
+        field: fieldKey,
+        apply: options?.reviewEnabled !== false,
+        formatGuidance: options?.formatGuidance,
+        reviewEnabled: options?.reviewEnabled,
+      }) as {
+        ok?: boolean;
+        applied?: { changed?: number };
+        skipped_reason?: string | null;
+        error?: string;
+      };
+      if (response?.ok === false) {
+        throw new Error(response?.error || 'Consistency run failed.');
+      }
+      const changed = Number(response?.applied?.changed || 0);
+      if (changed > 0) {
+        setConsistencyMessage(`Consistency applied ${changed} change${changed === 1 ? '' : 's'}.`);
+      } else if (response?.skipped_reason) {
+        setConsistencyMessage(`Consistency skipped: ${String(response.skipped_reason).replace(/_/g, ' ')}.`);
+      } else {
+        setConsistencyMessage('Consistency finished with no changes.');
+      }
+    } catch (error) {
+      setConsistencyError(error instanceof Error ? error.message : 'Consistency run failed.');
+    } finally {
+      setConsistencyPending(false);
+    }
+  }
 
   const handleConsumerToggle = (fieldPath: string, system: DownstreamSystem, enabled: boolean) => {
     const currentConsumers = (rule.consumers || {}) as Record<string, Record<string, boolean>>;
@@ -73,6 +135,7 @@ export function WorkbenchDrawer({
       nextConsumers[fieldPath] = fieldOverrides;
     }
     update('consumers', Object.keys(nextConsumers).length > 0 ? nextConsumers : undefined);
+    onCommitImmediate();
   };
 
   const B = ({ p }: { p: string }) => (
@@ -163,11 +226,16 @@ export function WorkbenchDrawer({
         )}
         {activeTab === 'enum' && (
           <EnumTab
+            category={category}
             fieldKey={fieldKey}
             rule={rule}
             knownValues={knownValues}
             enumLists={enumLists}
             onUpdate={update}
+            onRunConsistency={runEnumConsistency}
+            consistencyPending={consistencyPending}
+            consistencyMessage={consistencyMessage}
+            consistencyError={consistencyError}
             B={B}
           />
         )}
@@ -178,7 +246,7 @@ export function WorkbenchDrawer({
           <SearchTab rule={rule} onUpdate={update} B={B} />
         )}
         {activeTab === 'deps' && (
-          <DepsTab rule={rule} fieldKey={fieldKey} onUpdate={update} componentSources={componentSources} knownValues={knownValues} B={B} />
+          <DepsTab rule={rule} fieldKey={fieldKey} onUpdate={update} componentSources={componentSources} knownValues={knownValues} onNavigate={onNavigate} B={B} />
         )}
         {activeTab === 'preview' && (
           <PreviewTab
@@ -562,29 +630,44 @@ function ParseTab({ rule, onUpdate, B }: { rule: Record<string, unknown>; onUpda
 
 // ── Enum Tab ─────────────────────────────────────────────────────────
 function EnumTab({
+  category,
   fieldKey,
   rule,
   knownValues,
   enumLists,
   onUpdate,
+  onRunConsistency,
+  consistencyPending,
+  consistencyMessage,
+  consistencyError,
   B,
 }: {
+  category: string;
   fieldKey: string;
   rule: Record<string, unknown>;
   knownValues: Record<string, string[]>;
   enumLists: EnumEntry[];
   onUpdate: (path: string, val: unknown) => void;
+  onRunConsistency: (options?: { formatGuidance?: string; reviewEnabled?: boolean }) => Promise<void>;
+  consistencyPending: boolean;
+  consistencyMessage: string;
+  consistencyError: string;
   B: BadgeSlot;
 }) {
   const parseTemplate = strN(rule, 'parse.template', strN(rule, 'parse_template'));
   return (
     <EnumConfigurator
+      persistTabKey={`studio:workbench:enumSourceTab:${category}:${fieldKey}`}
       fieldKey={fieldKey}
       rule={rule}
       knownValues={knownValues}
       enumLists={enumLists}
       parseTemplate={parseTemplate}
       onUpdate={onUpdate}
+      onRunConsistency={onRunConsistency}
+      consistencyPending={consistencyPending}
+      consistencyMessage={consistencyMessage}
+      consistencyError={consistencyError}
       renderLabelSuffix={(path) => <B p={path} />}
     />
   );
@@ -679,8 +762,35 @@ function SearchTab({ rule, onUpdate, B }: { rule: Record<string, unknown>; onUpd
 }
 
 // ── Deps (Component) Tab ─────────────────────────────────────────────
-function DepsTab({ rule, fieldKey: _fieldKey, onUpdate, componentSources, knownValues, B }: { rule: Record<string, unknown>; fieldKey: string; onUpdate: (path: string, val: unknown) => void; componentSources: ComponentSource[]; knownValues: Record<string, string[]>; B: BadgeSlot }) {
+function DepsTab({
+  rule,
+  fieldKey,
+  onUpdate,
+  componentSources,
+  knownValues,
+  onNavigate,
+  B,
+}: {
+  rule: Record<string, unknown>;
+  fieldKey: string;
+  onUpdate: (path: string, val: unknown) => void;
+  componentSources: ComponentSource[];
+  knownValues: Record<string, string[]>;
+  onNavigate: (key: string) => void;
+  B: BadgeSlot;
+}) {
   const { editedRules } = useFieldRulesStore();
+  const [newConstraint, setNewConstraint] = useState('');
+  const constraints = arrN(rule, 'constraints');
+  const constraintVariables = extractConstraintVariables(constraints, fieldKey);
+
+  const addConstraint = () => {
+    const expr = newConstraint.trim();
+    if (!expr || constraints.includes(expr)) return;
+    onUpdate('constraints', [...constraints, expr]);
+    setNewConstraint('');
+  };
+
   return (
     <div className="space-y-3">
       <div>
@@ -838,6 +948,74 @@ function DepsTab({ rule, fieldKey: _fieldKey, onUpdate, componentSources, knownV
           </details>
         </>
       )}
+      <div>
+        <div className={`${labelCls} flex items-center`}><span>Cross-Field Constraints<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.key_section_constraints} /></span><B p="constraints" /></div>
+        <div className="space-y-2">
+          {constraints.length > 0 ? (
+            <div className="space-y-1">
+              {constraints.map((expr, idx) => (
+                <div key={`${expr}-${idx}`} className="flex items-center gap-1">
+                  <code className="flex-1 text-[11px] px-2 py-1 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 break-all">{expr}</code>
+                  <button
+                    className="text-xs px-2 py-1 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    onClick={() => onUpdate('constraints', constraints.filter((_, i) => i !== idx))}
+                    title="Remove constraint"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-xs text-gray-400 italic">No constraints configured</div>
+          )}
+          <div className="flex gap-1">
+            <input
+              className={`${inputCls} flex-1`}
+              placeholder={`${fieldKey} <= other_field`}
+              value={newConstraint}
+              onChange={(e) => setNewConstraint(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addConstraint();
+                }
+              }}
+            />
+            <button
+              className="text-xs px-2 py-1 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
+              onClick={addConstraint}
+              disabled={!newConstraint.trim()}
+            >
+              Add
+            </button>
+          </div>
+          {constraintVariables.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {constraintVariables.map((dep) => {
+                const isKnownField = Boolean(editedRules[dep]);
+                if (!isKnownField) {
+                  return (
+                    <span key={dep} className="px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                      {dep}
+                    </span>
+                  );
+                }
+                return (
+                  <button
+                    key={dep}
+                    className="px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/60"
+                    onClick={() => onNavigate(dep)}
+                    title={`Open ${dep}`}
+                  >
+                    {dep}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+      </div>
       <div>
         <div className={`${labelCls} flex items-center`}><span>Aliases<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.aliases} /></span><B p="aliases" /></div>
         <TagPicker values={arrN(rule, 'aliases')} onChange={(v) => onUpdate('aliases', v)} placeholder="alternative names for this key" />

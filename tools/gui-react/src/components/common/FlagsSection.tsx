@@ -1,15 +1,15 @@
-import { useState } from 'react';
 import { FlagIcon } from './FlagIcon';
 import { DrawerSection, DrawerCard } from './DrawerShell';
 import { getFlagInfo } from '../../utils/flagDescriptions';
 import { humanizeField } from '../../utils/fieldNormalize';
+import { usePersistedToggle } from '../../stores/collapseStore';
 
 interface FlagsSectionProps {
   reasonCodes: string[];
 }
 
 export function FlagsSection({ reasonCodes }: FlagsSectionProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, toggleExpanded] = usePersistedToggle('flags:detail', false);
 
   if (reasonCodes.length === 0) return null;
 
@@ -18,7 +18,7 @@ export function FlagsSection({ reasonCodes }: FlagsSectionProps) {
       title={`Flags (${reasonCodes.length})`}
       meta={
         <button
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => toggleExpanded()}
           className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 font-mono w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700"
         >
           {expanded ? '−' : '+'}
@@ -67,7 +67,7 @@ interface FlagsOverviewSectionProps {
 }
 
 export function FlagsOverviewSection({ flaggedProperties, getLabel = humanizeField }: FlagsOverviewSectionProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, toggleExpanded] = usePersistedToggle('flags:overview', false);
 
   if (flaggedProperties.length === 0) return null;
 
@@ -78,7 +78,7 @@ export function FlagsOverviewSection({ flaggedProperties, getLabel = humanizeFie
       title={`Flags (${totalFlags} across ${flaggedProperties.length} properties)`}
       meta={
         <button
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => toggleExpanded()}
           className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 font-mono w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700"
         >
           {expanded ? '−' : '+'}

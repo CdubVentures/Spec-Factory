@@ -1,12 +1,12 @@
 # 02 - Data Authority Data Sources
 
-Last verified: 2026-02-23
+Last verified: 2026-02-24
 
 ## Source inventory
 
 | Layer | Source | Path or table | Primary writers | Primary readers |
 |---|---|---|---|---|
-| Authoring control plane | Workbook map | `helper_files/{category}/_control_plane/workbook_map.json` | `PUT /studio/{category}/workbook-map` | Studio mapping queries, compile |
+| Authoring control plane | Workbook map | `helper_files/{category}/_control_plane/workbook_map.json` | `PUT /studio/{category}/field-studio-map` | Studio mapping queries, compile |
 | Authoring control plane | Draft field rules | `helper_files/{category}/_control_plane/field_rules_draft.json` | `POST /studio/{category}/save-drafts` | `sessionCache.getSessionRules`, Studio payload, review payload builders |
 | Authoring control plane | UI field catalog draft | `helper_files/{category}/_control_plane/ui_field_catalog_draft.json` | `POST /studio/{category}/save-drafts` | Studio draft endpoint |
 | Authoring control plane | Pending renames | `helper_files/{category}/_control_plane/pending_renames.json` | `POST /studio/{category}/save-drafts` | compile/migration flows |
@@ -20,8 +20,27 @@ Last verified: 2026-02-23
 | Queue JSON | Queue state | `_queue/{category}/state.json` (legacy read: `helper_files/{category}/_queue/state.json`) | queue/cascade flows | seed, runtime queue surfaces |
 | SQL authority | Sync state | `data_authority_sync` | `recordSpecDbSync` | snapshot endpoint, compile metadata |
 | SQL authority | Source strategy | `source_strategy` | `/source-strategy` routes, seed defaults | source strategy APIs |
+| Runtime config snapshot | Convergence settings | `helper_files/_runtime/convergence-settings.json` | `PUT /convergence-settings` | convergence settings APIs |
+| Runtime config snapshot | Runtime settings | `helper_files/_runtime/settings.json` | `PUT /runtime-settings` | runtime/indexing APIs |
 | SQL runtime | Product queue | `product_queue` | queue/cascade/catalog mutation paths | queue APIs, seed/reporting |
 | SQL runtime | Review/source tables | `key_review_*`, `source_*`, `component_*`, `list_*`, `item_*` | review mutation routes, seed | review payload builders |
+
+## Frontend write ownership (authoritative GUI paths)
+
+- Runtime settings:
+  - writer: `tools/gui-react/src/stores/runtimeSettingsAuthority.ts`
+  - route: `PUT /api/v1/runtime-settings`
+- Convergence settings:
+  - writer: `tools/gui-react/src/stores/convergenceSettingsAuthority.ts`
+  - route: `PUT /api/v1/convergence-settings`
+- LLM route matrix:
+  - writer: `tools/gui-react/src/stores/llmSettingsAuthority.ts`
+  - routes: `PUT /api/v1/llm-settings/{category}/routes`, `POST /api/v1/llm-settings/{category}/routes/reset`
+- Studio map + drafts (category scoped):
+  - writer: `tools/gui-react/src/pages/studio/studioPersistenceAuthority.ts`
+  - routes: `PUT /api/v1/studio/{category}/field-studio-map`, `POST /api/v1/studio/{category}/save-drafts`
+- Startup hydration bootstrap:
+  - `tools/gui-react/src/stores/settingsAuthority.ts` is invoked once from `AppShell` to reload shared settings slices.
 
 ## Data precedence rules
 
@@ -45,7 +64,7 @@ Last verified: 2026-02-23
 
 - `GET /api/v1/studio/{category}/payload`
   - merged `fieldRules` + merged `fieldOrder` + compile/draft timestamps
-- `GET /api/v1/studio/{category}/workbook-map`
+- `GET /api/v1/studio/{category}/field-studio-map`
   - normalized workbook map
 - `GET /api/v1/studio/{category}/drafts`
   - persisted draft payloads

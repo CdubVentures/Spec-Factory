@@ -288,8 +288,10 @@ async function collectListSeedRows(fieldRules, config, category) {
 
   // From control plane manual enum values
   const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
-  const controlMapPath = path.join(helperRoot, category, '_control_plane', 'workbook_map.json');
-  const controlMap = await readJsonIfExists(controlMapPath);
+  const controlPlaneRoot = path.join(helperRoot, category, '_control_plane');
+  const fieldStudioMapPath = path.join(controlPlaneRoot, 'field_studio_map.json');
+  const controlMapPath = path.join(controlPlaneRoot, 'workbook_map.json');
+  const controlMap = await readJsonIfExists(fieldStudioMapPath) || await readJsonIfExists(controlMapPath);
   const manualEnumTimestamps = isObject(controlMap?.manual_enum_timestamps) ? controlMap.manual_enum_timestamps : {};
   if (isObject(controlMap?.manual_enum_values)) {
     for (const [fieldKey, values] of Object.entries(controlMap.manual_enum_values)) {

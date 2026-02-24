@@ -4,6 +4,7 @@ import { handleReviewEnumMutationRoute } from '../reviewEnumMutationRoutes.js';
 import { resolveProductIdentity } from '../../catalog/productIdentityAuthority.js';
 import { emitDataChange } from '../events/dataChangeContract.js';
 import { runEnumConsistencyReview as runEnumConsistencyReviewDefault } from '../../llm/validateEnumConsistency.js';
+import { isConsumerEnabled } from '../../field-rules/consumerGate.js';
 
 function normalizeEnumToken(value) {
   return String(value ?? '').trim().toLowerCase();
@@ -28,15 +29,58 @@ function dedupeEnumValues(values = []) {
   return output;
 }
 
-function buildReviewFieldRulesPayload(session = null) {
+function readEnumConsistencyFormatHint(rule = {}) {
+  const enumBlock = rule?.enum && typeof rule.enum === 'object' ? rule.enum : {};
+  const enumMatch = enumBlock?.match && typeof enumBlock.match === 'object' ? enumBlock.match : {};
+  return String(enumMatch?.format_hint || rule?.enum_match_format_hint || '').trim();
+}
+
+function isEnumConsistencyReviewEnabled(rule = {}) {
+  return isConsumerEnabled(rule, 'enum.match.strategy', 'review')
+    && isConsumerEnabled(rule, 'enum.match.format_hint', 'review')
+    && isConsumerEnabled(rule, 'enum.additional_values', 'review');
+}
+
+function normalizeFieldKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function resolveSessionFieldRule(session = null, fieldKey = '') {
   const mergedFields = session?.mergedFields;
   if (!mergedFields || typeof mergedFields !== 'object' || Array.isArray(mergedFields)) {
-    return null;
+    return {};
   }
+  const wanted = normalizeFieldKey(fieldKey);
+  if (!wanted) return {};
+  for (const [rawFieldKey, rule] of Object.entries(mergedFields)) {
+    if (normalizeFieldKey(rawFieldKey) !== wanted) continue;
+    if (!rule || typeof rule !== 'object' || Array.isArray(rule)) return {};
+    return rule;
+  }
+  return {};
+}
+
+function buildReviewFieldRulesPayload(session = null, compiledFieldRules = null) {
+  const mergedFields = session?.mergedFields;
+  const compiled = (compiledFieldRules && typeof compiledFieldRules === 'object' && !Array.isArray(compiledFieldRules))
+    ? compiledFieldRules
+    : null;
+  if (!mergedFields || typeof mergedFields !== 'object' || Array.isArray(mergedFields)) {
+    return compiled;
+  }
+  const compiledRules = (compiled && typeof compiled.rules === 'object' && !Array.isArray(compiled.rules))
+    ? compiled.rules
+    : {};
   return {
+    ...(compiled || {}),
     rules: {
-      fields: mergedFields
-    }
+      ...compiledRules,
+      fields: mergedFields,
+    },
   };
 }
 
@@ -60,6 +104,7 @@ export function registerReviewRoutes(ctx) {
     buildComponentReviewLayout,
     buildComponentReviewPayloads,
     buildEnumReviewPayloads,
+    loadCategoryConfig,
     loadProductCatalog,
     readLatestArtifacts,
     sessionCache,
@@ -120,6 +165,17 @@ export function registerReviewRoutes(ctx) {
       normalizedIdentity: payload.identity,
     });
     return payload;
+  }
+
+  async function isReviewFieldPathEnabledForCategory({
+    category,
+    fieldKey,
+    fieldPath,
+  }) {
+    if (!fieldKey || !fieldPath) return true;
+    const session = await sessionCache.getSessionRules(category);
+    const fieldRule = resolveSessionFieldRule(session, fieldKey);
+    return isConsumerEnabled(fieldRule, fieldPath, 'review');
   }
 
   return async function handleReviewRoutes(parts, params, method, req, res) {
@@ -537,7 +593,14 @@ export function registerReviewRoutes(ctx) {
       if (!runtimeSpecDb || !runtimeSpecDb.isSeeded()) {
         return jsonRes(res, 503, { error: 'specdb_not_ready', message: `SpecDb not ready for ${category}` });
       }
-      const layout = await buildComponentReviewLayout({ config, category, specDb: runtimeSpecDb });
+      const sessionCompLayout = await sessionCache.getSessionRules(category);
+      const categoryConfig = await loadCategoryConfig(category, { storage, config }).catch(() => ({}));
+      const layout = await buildComponentReviewLayout({
+        config,
+        category,
+        specDb: runtimeSpecDb,
+        fieldRules: buildReviewFieldRulesPayload(sessionCompLayout, categoryConfig.fieldRules),
+      });
       return jsonRes(res, 200, layout);
     }
 
@@ -551,12 +614,13 @@ export function registerReviewRoutes(ctx) {
         return jsonRes(res, 503, { error: 'specdb_not_ready', message: `SpecDb not ready for ${category}` });
       }
       const sessionComp = await sessionCache.getSessionRules(category);
+      const categoryConfig = await loadCategoryConfig(category, { storage, config }).catch(() => ({}));
       const payload = await buildComponentReviewPayloads({
         config,
         category,
         componentType,
         specDb,
-        fieldRules: buildReviewFieldRulesPayload(sessionComp),
+        fieldRules: buildReviewFieldRulesPayload(sessionComp, categoryConfig.fieldRules),
         fieldOrderOverride: sessionComp.cleanFieldOrder
       });
       return jsonRes(res, 200, payload);
@@ -570,11 +634,12 @@ export function registerReviewRoutes(ctx) {
         return jsonRes(res, 503, { error: 'specdb_not_ready', message: `SpecDb not ready for ${category}` });
       }
       const sessionEnum = await sessionCache.getSessionRules(category);
+      const categoryConfig = await loadCategoryConfig(category, { storage, config }).catch(() => ({}));
       const payload = await buildEnumReviewPayloads({
         config,
         category,
         specDb,
-        fieldRules: buildReviewFieldRulesPayload(sessionEnum),
+        fieldRules: buildReviewFieldRulesPayload(sessionEnum, categoryConfig.fieldRules),
         fieldOrderOverride: sessionEnum.cleanFieldOrder
       });
       return jsonRes(res, 200, payload);
@@ -594,7 +659,6 @@ export function registerReviewRoutes(ctx) {
       const apply = body?.apply === true;
       const maxPendingInput = Number.parseInt(String(body?.maxPending ?? ''), 10);
       const maxPending = Number.isFinite(maxPendingInput) ? Math.max(1, Math.min(200, maxPendingInput)) : 120;
-      const formatGuidance = String(body?.formatGuidance || '').trim();
 
       const enumListRow = specDb.getEnumList(field);
       const listRows = specDb.getListValues(field) || [];
@@ -617,6 +681,19 @@ export function registerReviewRoutes(ctx) {
         || listRows.find((row) => String(row?.enum_policy || '').trim())?.enum_policy
         || 'open',
       ).trim() || 'open';
+      const session = await sessionCache.getSessionRules(category);
+      const fieldRule = resolveSessionFieldRule(session, field);
+      const formatGuidance = String(body?.formatGuidance || '').trim() || readEnumConsistencyFormatHint(fieldRule);
+      const reviewEnabled = isEnumConsistencyReviewEnabled(fieldRule);
+
+      if (!reviewEnabled) {
+        return jsonRes(res, 403, {
+          error: 'review_consumer_disabled',
+          message: `Review consumer disabled for enum consistency on field '${field}'.`,
+          field,
+          field_path: 'enum.match.strategy',
+        });
+      }
 
       if (pendingValues.length === 0) {
         return jsonRes(res, 200, {
@@ -625,6 +702,7 @@ export function registerReviewRoutes(ctx) {
           enum_policy: policy,
           known_values: knownValues,
           pending_values: [],
+          format_guidance: formatGuidance || null,
           apply,
           decisions: [],
           applied: {
@@ -675,7 +753,9 @@ export function registerReviewRoutes(ctx) {
 
           if (action === 'map_to_existing') {
             const targetValue = String(decision?.target_value || '').trim();
-            if (!hasMeaningfulEnumValue(targetValue) || normalizeEnumToken(targetValue) === normalizeEnumToken(rawValue)) {
+            const sameToken = normalizeEnumToken(targetValue) === normalizeEnumToken(rawValue);
+            const sameValue = targetValue === rawValue;
+            if (!hasMeaningfulEnumValue(targetValue) || (sameToken && sameValue)) {
               applied.uncertain += 1;
               continue;
             }
@@ -771,6 +851,7 @@ export function registerReviewRoutes(ctx) {
         enum_policy: policy,
         known_values: knownValues,
         pending_values: pendingValues,
+        format_guidance: formatGuidance || null,
         apply,
         decisions,
         applied,
@@ -833,6 +914,7 @@ export function registerReviewRoutes(ctx) {
         loadQueueState,
         saveQueueState,
         markEnumSuggestionStatus: markEnumSuggestionStatusBound,
+        isReviewFieldPathEnabled: isReviewFieldPathEnabledForCategory,
         broadcastWs,
       },
     });

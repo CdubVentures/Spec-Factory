@@ -65,6 +65,87 @@ test('brand_resolution defaults to null when no brand_resolved event', () => {
   assert.equal(result.brand_resolution, null);
 });
 
+test('brand_resolved with status skipped populates brand_resolution', () => {
+  const events = [
+    makeEvent('brand_resolved', {
+      brand: '',
+      status: 'skipped',
+      skip_reason: 'no_brand_in_identity_lock',
+      official_domain: '',
+      aliases: [],
+      support_domain: '',
+      confidence: 0,
+      candidates: [],
+    }),
+  ];
+  const result = buildPreFetchPhases(events, makeMeta(), {});
+  assert.ok(result.brand_resolution, 'brand_resolution should be present even when skipped');
+  assert.equal(result.brand_resolution.status, 'skipped');
+  assert.equal(result.brand_resolution.skip_reason, 'no_brand_in_identity_lock');
+  assert.equal(result.brand_resolution.brand, '');
+  assert.equal(result.brand_resolution.official_domain, '');
+});
+
+test('brand_resolved with status failed populates brand_resolution', () => {
+  const events = [
+    makeEvent('brand_resolved', {
+      brand: 'Razer',
+      status: 'failed',
+      skip_reason: 'LLM call timed out',
+      official_domain: '',
+      aliases: [],
+      support_domain: '',
+      confidence: 0,
+      candidates: [],
+    }),
+  ];
+  const result = buildPreFetchPhases(events, makeMeta(), {});
+  assert.ok(result.brand_resolution);
+  assert.equal(result.brand_resolution.status, 'failed');
+  assert.equal(result.brand_resolution.skip_reason, 'LLM call timed out');
+  assert.equal(result.brand_resolution.brand, 'Razer');
+});
+
+test('brand_resolved with status resolved populates brand_resolution', () => {
+  const events = [
+    makeEvent('brand_resolved', {
+      brand: 'Razer',
+      status: 'resolved',
+      skip_reason: '',
+      official_domain: 'razer.com',
+      aliases: ['Razer Inc'],
+      support_domain: 'support.razer.com',
+      confidence: 0.95,
+      candidates: [{ name: 'Razer', confidence: 0.95, evidence_snippets: [], disambiguation_note: '' }],
+    }),
+  ];
+  const result = buildPreFetchPhases(events, makeMeta(), {});
+  assert.ok(result.brand_resolution);
+  assert.equal(result.brand_resolution.status, 'resolved');
+  assert.equal(result.brand_resolution.brand, 'Razer');
+  assert.equal(result.brand_resolution.official_domain, 'razer.com');
+});
+
+test('brand_resolution falls back to artifact when no event', () => {
+  const artifacts = {
+    brand_resolution: {
+      brand: 'Cooler Master',
+      status: 'resolved',
+      skip_reason: '',
+      official_domain: 'coolermaster.com',
+      aliases: [],
+      support_domain: '',
+      confidence: 0.8,
+      candidates: [],
+    },
+  };
+  const result = buildPreFetchPhases([], makeMeta(), artifacts);
+  assert.ok(result.brand_resolution, 'should fall back to artifact');
+  assert.equal(result.brand_resolution.brand, 'Cooler Master');
+  assert.equal(result.brand_resolution.official_domain, 'coolermaster.com');
+  assert.equal(result.brand_resolution.status, 'resolved');
+});
+
 test('search_plan_generated events populate search_plans array', () => {
   const events = [
     makeEvent('search_plan_generated', {
@@ -298,6 +379,47 @@ test('new structured fields coexist with existing fields in buildPreFetchPhases'
   assert.ok(Array.isArray(result.domain_health), 'new domain_health present');
 });
 
+test('brand_resolved event passes through reasoning array', () => {
+  const events = [
+    makeEvent('brand_resolved', {
+      brand: 'Razer',
+      status: 'resolved',
+      official_domain: 'razer.com',
+      aliases: ['Razer Inc'],
+      support_domain: 'support.razer.com',
+      confidence: 0.92,
+      candidates: [],
+      reasoning: [
+        'LLM identified razer.com as the official manufacturer domain',
+        'Alias "Razer Inc" confirmed via corporate filings',
+        'Support subdomain support.razer.com verified',
+      ],
+    }),
+  ];
+  const result = buildPreFetchPhases(events, makeMeta(), {});
+  assert.ok(result.brand_resolution, 'brand_resolution should be present');
+  assert.ok(Array.isArray(result.brand_resolution.reasoning), 'reasoning should be an array');
+  assert.equal(result.brand_resolution.reasoning.length, 3);
+  assert.equal(result.brand_resolution.reasoning[0], 'LLM identified razer.com as the official manufacturer domain');
+});
+
+test('brand_resolved event defaults reasoning to empty array when absent', () => {
+  const events = [
+    makeEvent('brand_resolved', {
+      brand: 'Razer',
+      official_domain: 'razer.com',
+      aliases: [],
+      support_domain: '',
+      confidence: 0.8,
+      candidates: [],
+    }),
+  ];
+  const result = buildPreFetchPhases(events, makeMeta(), {});
+  assert.ok(result.brand_resolution);
+  assert.ok(Array.isArray(result.brand_resolution.reasoning), 'reasoning should default to empty array');
+  assert.equal(result.brand_resolution.reasoning.length, 0);
+});
+
 test('brand_resolved event handles missing optional fields gracefully', () => {
   const events = [
     makeEvent('brand_resolved', {
@@ -328,6 +450,83 @@ test('search_results_collected handles empty results array', () => {
   assert.equal(result.search_result_details.length, 1);
   assert.equal(result.search_result_details[0].results.length, 0);
   assert.equal(result.search_result_details[0].dedupe_count, 0);
+});
+
+test('search_plan_generated with enriched fields preserves query_target_map, missing_critical_fields, mode', () => {
+  const events = [
+    makeEvent('search_plan_generated', {
+      pass_index: 0,
+      pass_name: 'primary',
+      queries_generated: ['Razer Viper V3 Pro specs', 'Razer Viper V3 Pro weight sensor'],
+      stop_condition: 'planner_complete',
+      plan_rationale: 'Targeting core specs',
+      query_target_map: {
+        'Razer Viper V3 Pro specs': ['weight', 'sensor', 'dpi'],
+        'Razer Viper V3 Pro weight sensor': ['weight', 'sensor'],
+      },
+      missing_critical_fields: ['weight', 'sensor', 'dpi', 'polling_rate'],
+      mode: 'uber_aggressive',
+    }),
+  ];
+  const result = buildPreFetchPhases(events, makeMeta(), {});
+  assert.equal(result.search_plans.length, 1);
+  const plan = result.search_plans[0];
+  assert.deepEqual(plan.query_target_map, {
+    'Razer Viper V3 Pro specs': ['weight', 'sensor', 'dpi'],
+    'Razer Viper V3 Pro weight sensor': ['weight', 'sensor'],
+  });
+  assert.deepEqual(plan.missing_critical_fields, ['weight', 'sensor', 'dpi', 'polling_rate']);
+  assert.equal(plan.mode, 'uber_aggressive');
+});
+
+test('search_plan_generated backward compat: missing enrichment fields default gracefully', () => {
+  const events = [
+    makeEvent('search_plan_generated', {
+      pass_index: 0,
+      pass_name: 'primary',
+      queries_generated: ['test query'],
+      stop_condition: 'done',
+      plan_rationale: 'test',
+    }),
+  ];
+  const result = buildPreFetchPhases(events, makeMeta(), {});
+  const plan = result.search_plans[0];
+  assert.deepEqual(plan.query_target_map, {});
+  assert.deepEqual(plan.missing_critical_fields, []);
+  assert.equal(plan.mode, '');
+});
+
+test('search_plan_generated multi-pass with enriched fields', () => {
+  const events = [
+    makeEvent('search_plan_generated', {
+      pass_index: 0,
+      pass_name: 'primary',
+      queries_generated: ['query A', 'query B'],
+      stop_condition: 'planner_complete',
+      plan_rationale: 'Primary pass',
+      query_target_map: { 'query A': ['weight'], 'query B': ['sensor'] },
+      missing_critical_fields: ['weight', 'sensor'],
+      mode: 'standard',
+    }),
+    makeEvent('search_plan_generated', {
+      pass_index: 1,
+      pass_name: 'fast',
+      queries_generated: ['query C'],
+      stop_condition: 'all_critical_covered',
+      plan_rationale: 'Fast pass',
+      query_target_map: { 'query C': ['dpi', 'polling_rate'] },
+      missing_critical_fields: ['dpi', 'polling_rate'],
+      mode: 'uber_aggressive',
+    }),
+  ];
+  const result = buildPreFetchPhases(events, makeMeta(), {});
+  assert.equal(result.search_plans.length, 2);
+  assert.equal(result.search_plans[0].mode, 'standard');
+  assert.deepEqual(result.search_plans[0].query_target_map, { 'query A': ['weight'], 'query B': ['sensor'] });
+  assert.deepEqual(result.search_plans[0].missing_critical_fields, ['weight', 'sensor']);
+  assert.equal(result.search_plans[1].mode, 'uber_aggressive');
+  assert.deepEqual(result.search_plans[1].query_target_map, { 'query C': ['dpi', 'polling_rate'] });
+  assert.deepEqual(result.search_plans[1].missing_critical_fields, ['dpi', 'polling_rate']);
 });
 
 test('serp_triage_completed handles candidates with missing score_components', () => {

@@ -1,6 +1,6 @@
 # 01 - Data Authority System Overview
 
-Last verified: 2026-02-23
+Last verified: 2026-02-24
 
 ## Objective
 
@@ -41,7 +41,12 @@ Frontend propagation plane:
 - `tools/gui-react/src/api/dataChangeInvalidationMap.js`
 - `tools/gui-react/src/hooks/useDataChangeSubscription.js`
 - `tools/gui-react/src/hooks/useAuthoritySnapshot.js`
+- `tools/gui-react/src/stores/settingsAuthority.ts`
+- `tools/gui-react/src/stores/runtimeSettingsAuthority.ts`
+- `tools/gui-react/src/stores/convergenceSettingsAuthority.ts`
+- `tools/gui-react/src/stores/llmSettingsAuthority.ts`
 - `tools/gui-react/src/pages/studio/StudioPage.tsx`
+- `tools/gui-react/src/pages/studio/studioPersistenceAuthority.ts`
 - `tools/gui-react/src/pages/studio/authoritySync.js`
 
 Persistence plane:
@@ -54,11 +59,15 @@ Persistence plane:
 ## High-value guarantees
 
 - `workbook-map` save is blocked if `validate-map` fails (frontend and backend).
-- `studio-drafts-saved` includes `product` domain fanout.
+- `field-studio-map-saved` is emitted for workbook-map writes; `studio-drafts-saved` includes `product` domain fanout.
+- runtime/convergence/LLM settings writes are authority-owned by shared frontend hooks (not page-local route calls).
+- Studio map/draft writes are authority-owned by `studioPersistenceAuthority.ts` while remaining category-scoped files.
 - source strategy CRUD emits typed events (`source-strategy-*`).
+- runtime/test-mode/storage/indexlab relocation flows emit typed `data-change` events.
 - compile completion emits `process-completed` and attempts SpecDb sync first.
 - failed sync writes durable `data_authority_sync` state when DB handle exists.
-- frontend/backed event-domain parity is enforced (`test/dataChangeDomainParity.test.js`).
+- frontend/backend event-domain parity is enforced (`test/dataChangeDomainParity.test.js`).
+- all known domains must map to invalidation templates (`test/dataChangeInvalidationMap.test.js`).
 
 ## Authority invariants
 

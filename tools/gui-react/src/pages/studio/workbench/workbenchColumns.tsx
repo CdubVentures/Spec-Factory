@@ -493,6 +493,30 @@ export function buildColumns(
     // Content types count
     { accessorKey: 'contentTypesCount', header: 'C Types', size: 65 },
 
+    // Constraints count
+    {
+      accessorKey: 'constraintsCount',
+      header: 'Constraints',
+      size: 85,
+      cell: ({ getValue }) => {
+        const n = getValue() as number;
+        return n > 0
+          ? <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{n}</span>
+          : <span className="text-gray-300">0</span>;
+      },
+    },
+
+    // Constraint variables
+    {
+      accessorKey: 'constraintVariables',
+      header: 'Constraint Vars',
+      size: 220,
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return v ? <span className="text-xs text-gray-500 truncate">{v}</span> : <span className="text-gray-300">—</span>;
+      },
+    },
+
     // Component type
     {
       accessorKey: 'componentType',
@@ -542,6 +566,7 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   contract: [
     ...ALWAYS_VISIBLE,
     'requiredLevel', 'contractType', 'contractShape', 'contractUnit', 'unknownToken',
+    'constraintsCount', 'constraintVariables',
     'availability', 'difficulty', 'effort', 'publishGate', 'blockPublishWhenUnk',
     'aiMode', 'aiMaxCalls',
   ],
@@ -560,12 +585,12 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   ],
   search: [
     ...ALWAYS_VISIBLE,
-    'queryTermsCount', 'domainHintsCount', 'contentTypesCount', 'componentType',
+    'queryTermsCount', 'domainHintsCount', 'contentTypesCount', 'constraintsCount', 'constraintVariables', 'componentType',
   ],
   debug: [
     ...ALWAYS_VISIBLE,
     'requiredLevel', 'contractType', 'parseTemplate', 'enumPolicy', 'enumSource',
-    'componentType', 'uiInputControl', 'uiOrder', 'conflictPolicy', 'draftDirty',
+    'constraintsCount', 'constraintVariables', 'componentType', 'uiInputControl', 'uiOrder', 'conflictPolicy', 'draftDirty',
     'aiMode', 'aiModelStrategy', 'aiMaxCalls',
   ],
   all: [], // empty = show all
@@ -616,6 +641,8 @@ export const ALL_COLUMN_IDS_WITH_LABELS: { id: string; label: string }[] = [
   { id: 'queryTermsCount', label: 'Query Terms' },
   { id: 'domainHintsCount', label: 'Domain Hints' },
   { id: 'contentTypesCount', label: 'Content Types' },
+  { id: 'constraintsCount', label: 'Constraints' },
+  { id: 'constraintVariables', label: 'Constraint Vars' },
   { id: 'componentType', label: 'Component' },
   { id: 'uiInputControl', label: 'Input Control' },
   { id: 'uiOrder', label: 'Order' },

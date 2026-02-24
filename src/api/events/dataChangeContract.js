@@ -1,8 +1,8 @@
 import { recordDataChangeBroadcast } from '../../observability/dataPropagationCounters.js';
 
 export const DATA_CHANGE_EVENT_DOMAIN_MAP = Object.freeze({
-  'studio-drafts-saved': ['studio', 'review-layout', 'labels', 'product'],
-  'workbook-map-saved': ['studio', 'mapping', 'review-layout'],
+  'studio-drafts-saved': ['studio', 'review-layout', 'labels', 'product', 'review'],
+  'field-studio-map-saved': ['studio', 'mapping', 'review-layout'],
   'process-completed': ['studio', 'review-layout', 'component', 'enum'],
   'catalog-seed': ['catalog', 'queue', 'identity'],
   'catalog-bulk-add': ['catalog', 'queue', 'identity'],
@@ -18,6 +18,16 @@ export const DATA_CHANGE_EVENT_DOMAIN_MAP = Object.freeze({
   'llm-settings-updated': ['settings', 'indexing'],
   'llm-settings-reset': ['settings', 'indexing'],
   'convergence-settings-updated': ['settings', 'indexing'],
+  'runtime-settings-updated': ['settings', 'indexing'],
+  'user-settings-updated': ['settings', 'indexing'],
+  'category-created': ['categories'],
+  'test-mode-created': ['test-mode', 'categories'],
+  'test-mode-products-generated': ['test-mode'],
+  'test-mode-deleted': ['test-mode', 'categories'],
+  'storage-settings-updated': ['storage', 'settings'],
+  'indexlab-run-data-relocation-started': ['storage', 'indexing'],
+  'indexlab-run-data-relocated': ['storage', 'indexing'],
+  'indexlab-run-data-relocation-failed': ['storage', 'indexing'],
   'source-strategy-created': ['source-strategy'],
   'source-strategy-updated': ['source-strategy'],
   'source-strategy-deleted': ['source-strategy'],

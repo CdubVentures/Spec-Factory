@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { Tip } from '../../../components/common/Tip';
+import { usePersistedToggle } from '../../../stores/collapseStore';
 import {
   ActivityGauge,
   formatNumber,
@@ -88,8 +88,8 @@ export function OverviewPanel({
   lastReceivedResponseIsJson,
   pipelineSteps,
 }: OverviewPanelProps) {
-  const [pendingPromptCollapsed, setPendingPromptCollapsed] = useState(true);
-  const [lastResponseCollapsed, setLastResponseCollapsed] = useState(true);
+  const [pendingPromptCollapsed, togglePendingPrompt] = usePersistedToggle('indexing:overview:pendingPrompt', true);
+  const [lastResponseCollapsed, toggleLastResponse] = usePersistedToggle('indexing:overview:lastResponse', true);
 
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4" style={{ order: 10 }}>
@@ -198,7 +198,7 @@ export function OverviewPanel({
                   ) : null}
                 </div>
                 <button
-                  onClick={() => setPendingPromptCollapsed((prev) => !prev)}
+                  onClick={() => togglePendingPrompt()}
                   className={`inline-flex items-center justify-center w-5 h-5 text-[10px] rounded border ${activePendingLlm ? 'border-emerald-400 dark:border-emerald-500 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20' : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                   title={pendingPromptCollapsed ? 'Open panel' : 'Close panel'}
                 >
@@ -234,7 +234,7 @@ export function OverviewPanel({
                   ) : null}
                 </div>
                 <button
-                  onClick={() => setLastResponseCollapsed((prev) => !prev)}
+                  onClick={() => toggleLastResponse()}
                   className="inline-flex items-center justify-center w-5 h-5 text-[10px] rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                   title={lastResponseCollapsed ? 'Open panel' : 'Close panel'}
                 >

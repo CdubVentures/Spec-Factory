@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
-import type { FallbacksResponse, FallbackEventRow, HostFallbackProfile } from '../types';
+import { useMemo } from 'react';
+import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
+import type { FallbacksResponse, FallbackEventRow } from '../types';
 import {
   fallbackResultBadgeClass,
   fetchModeBadgeClass,
@@ -12,6 +13,7 @@ import { Tip } from '../../../components/common/Tip';
 
 interface FallbacksTabProps {
   fallbacks: FallbacksResponse | undefined;
+  category: string;
   onNavigateToDocuments?: (host: string) => void;
 }
 
@@ -27,13 +29,39 @@ function SuccessRateBar({ rate }: { rate: number }) {
   );
 }
 
-export function FallbacksTab({ fallbacks, onNavigateToDocuments }: FallbacksTabProps) {
-  const [hostFilter, setHostFilter] = useState('');
-  const [resultFilter, setResultFilter] = useState<string | null>(null);
-  const [selectedProfile, setSelectedProfile] = useState<HostFallbackProfile | null>(null);
+const FALLBACK_RESULT_FILTER_KEYS = [
+  'pending',
+  'succeeded',
+  'exhausted',
+  'failed',
+] as const;
+
+export function FallbacksTab({ fallbacks, category, onNavigateToDocuments }: FallbacksTabProps) {
+  const [hostFilter, setHostFilter] = usePersistedTab<string>(
+    `runtimeOps:fallbacks:host:${category}`,
+    '',
+  );
+  const [resultFilter, setResultFilter] = usePersistedNullableTab<string>(
+    `runtimeOps:fallbacks:result:${category}`,
+    null,
+    { validValues: FALLBACK_RESULT_FILTER_KEYS },
+  );
 
   const events = fallbacks?.events ?? [];
   const hostProfiles = fallbacks?.host_profiles ?? [];
+  const profileHosts = useMemo(
+    () => hostProfiles.map((profile) => profile.host),
+    [hostProfiles],
+  );
+  const [selectedProfileHost, setSelectedProfileHost] = usePersistedNullableTab<string>(
+    `runtimeOps:fallbacks:selectedProfile:${category}`,
+    null,
+    { validValues: profileHosts },
+  );
+  const selectedProfile = useMemo(
+    () => hostProfiles.find((profile) => profile.host === selectedProfileHost) ?? null,
+    [hostProfiles, selectedProfileHost],
+  );
 
   const hosts = useMemo(() => {
     const set = new Set(events.map((e) => e.host).filter(Boolean));
@@ -65,7 +93,7 @@ export function FallbacksTab({ fallbacks, onNavigateToDocuments }: FallbacksTabP
               <button
                 key={hp.host}
                 type="button"
-                onClick={() => setSelectedProfile(selectedProfile?.host === hp.host ? null : hp)}
+                onClick={() => setSelectedProfileHost(selectedProfile?.host === hp.host ? null : hp.host)}
                 className={`shrink-0 p-2 rounded border text-left text-xs transition-colors ${
                   selectedProfile?.host === hp.host
                     ? 'border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20'
@@ -126,7 +154,7 @@ export function FallbacksTab({ fallbacks, onNavigateToDocuments }: FallbacksTabP
                 key={`${e.url}-${e.ts}-${i}`}
                 onClick={() => {
                   const prof = hostProfiles.find((p) => p.host === e.host) || null;
-                  setSelectedProfile(selectedProfile?.host === e.host ? null : prof);
+                  setSelectedProfileHost(selectedProfile?.host === e.host ? null : prof?.host ?? null);
                 }}
                 className={`cursor-pointer border-b transition-colors ${
                   e.result === 'exhausted'

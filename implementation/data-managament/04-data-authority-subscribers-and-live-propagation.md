@@ -1,6 +1,6 @@
 # 04 - Data Authority Subscribers and Live Propagation
 
-Last verified: 2026-02-23
+Last verified: 2026-02-24
 
 ## Subscriber inventory
 
@@ -27,7 +27,10 @@ Key actions:
 Authority note:
 
 - This store is local editor state, not persisted authority by itself.
-- Persisted authority writes occur through API mutations (`save-drafts`, `workbook-map`, `compile`).
+- Persisted authority writes occur through authority-owned mutation modules:
+  - `studioPersistenceAuthority.ts` for `save-drafts` and `field-studio-map`
+  - `runtimeSettingsAuthority.ts`, `convergenceSettingsAuthority.ts`, and `llmSettingsAuthority.ts` for settings surfaces
+  - compile remains route-owned (`POST /studio/{category}/compile`)
 
 ## 1) WebSocket transport subscriber boundary
 
@@ -47,9 +50,46 @@ Files:
 
 Behavior:
 
-- App shell subscribes to `data-change` and schedules batched invalidation.
+- App shell subscribes to `events`, `process`, `process-status`, `data-change`, `test-import-progress`, and `indexlab-event`.
+- `data-change` traffic is routed through the invalidation scheduler.
 - Domains are resolved from payload `domains` first, then event fallback map.
 - Query keys are materialized per scoped category and deduped before invalidation.
+
+## 2b) Test mode progress subscriber
+
+Files:
+
+- `tools/gui-react/src/pages/test-mode/TestModePage.tsx`
+
+Behavior:
+
+- `test-import-progress` frames are consumed as live progress updates.
+- This channel is intentionally separate from `data-change` invalidation.
+
+## 2c) Runtime screencast subscriber
+
+Files:
+
+- `tools/gui-react/src/pages/runtime-ops/panels/BrowserStream.tsx`
+
+Behavior:
+
+- Uses direct WS subscribe/unsubscribe messages (`screencast_subscribe`, `screencast_unsubscribe`).
+- Consumes `screencast-*` channels for image frames.
+- This stream is telemetry/visual only; it does not drive query invalidation.
+
+## 2d) Settings authority bootstrap
+
+Files:
+
+- `tools/gui-react/src/stores/settingsAuthority.ts`
+- `tools/gui-react/src/components/layout/AppShell.tsx`
+
+Behavior:
+
+- App shell invokes `useSettingsAuthorityBootstrap()` once at startup.
+- Bootstrap composes shared settings authorities and triggers one-time `runtime.reload()` and `convergence.reload()`.
+- Settings consumers subscribe through authority hooks/store selectors instead of direct page-level route ownership.
 
 ## 3) Scoped authority snapshot subscriber
 
@@ -88,6 +128,9 @@ Behavior:
 |---|---|---|---|
 | WS server category filter | per socket | all `data-change` | drop non-matching payloads |
 | AppShell scheduler | app active category | all mapped domains | invalidate mapped React Query keys |
+| TestMode progress listener | none | `test-import-progress` | update import progress state |
+| Runtime BrowserStream | none | `screencast-*` | render live frames |
+| Settings bootstrap | app startup | settings slices | one-time hydrate/reload of shared settings authorities |
 | useAuthoritySnapshot | hook category | `AUTHORITY_SNAPSHOT_DOMAINS` | invalidate snapshot + mapped keys |
 | Studio authority sync | Studio page category | authority token only | hydrate/rehydrate/conflict |
 
@@ -96,6 +139,7 @@ Behavior:
 - Domain templates live in `tools/gui-react/src/api/dataChangeInvalidationMap.js`.
 - Category scoping lives in `tools/gui-react/src/components/layout/dataChangeScope.js`.
 - Batch/flush behavior lives in `tools/gui-react/src/components/layout/dataChangeInvalidationScheduler.js`.
+- Query families intentionally refreshed outside `data-change`: `billing`, `learning`, `data-authority`, `indexlab`, `processStatus`, `runtime-ops`, `searxng` (polling/manual invalidation paths).
 
 ## Adding a new subscriber safely
 
@@ -110,3 +154,4 @@ Minimum test set:
 - `test/dataChangeContract.test.js`
 - `test/dataChangeInvalidationMap.test.js`
 - `test/dataChangeDomainParity.test.js`
+- `test/wsSubscriptionWiring.test.js`

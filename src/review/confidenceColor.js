@@ -13,7 +13,9 @@ export function confidenceColor(confidence, reasonCodes = []) {
   if (
     confidence < 0.6 ||
     reasonCodes.includes('constraint_conflict') ||
-    reasonCodes.includes('compound_range_conflict')
+    reasonCodes.includes('compound_range_conflict') ||
+    reasonCodes.includes('variance_violation') ||
+    reasonCodes.includes('dependency_missing')
   ) return 'red';
   if (confidence < 0.85) return 'yellow';
   return 'green';

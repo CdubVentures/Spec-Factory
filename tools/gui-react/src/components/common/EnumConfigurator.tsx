@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Tip } from './Tip';
 import { TagPicker } from './TagPicker';
 import { selectCls, inputCls, labelCls, STUDIO_TIPS } from '../../pages/studio/studioConstants';
+import { usePersistedTab } from '../../stores/tabStore';
 import type { EnumEntry } from '../../types/studio';
 
 // ── Types ────────────────────────────────────────────────────────────
 interface EnumConfiguratorProps {
+  persistTabKey: string;
   fieldKey: string;
   rule: Record<string, unknown>;
   knownValues: Record<string, string[]>;
@@ -13,13 +15,14 @@ interface EnumConfiguratorProps {
   parseTemplate: string;
   onUpdate: (path: string, value: unknown) => void;
   renderLabelSuffix?: (fieldPath: string) => React.ReactNode;
-  onRunConsistency?: () => Promise<unknown> | void;
+  onRunConsistency?: (options?: { formatGuidance?: string; reviewEnabled?: boolean }) => Promise<unknown> | void;
   consistencyPending?: boolean;
   consistencyMessage?: string;
   consistencyError?: string;
 }
 
 type SourceTab = 'manual' | 'enum';
+const SOURCE_TAB_IDS = ['manual', 'enum'] as const;
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function getN(obj: Record<string, unknown>, path: string): unknown {
@@ -43,6 +46,13 @@ function detectSourceTab(source: string): SourceTab {
   return 'manual';
 }
 
+function consistencyFormatPlaceholder(fieldKey: string): string {
+  const token = String(fieldKey || '').trim().toLowerCase();
+  if (token.includes('lighting')) return 'XXXX zone (YYYY)';
+  if (token.includes('feet') && token.includes('material')) return 'YYYY';
+  return 'e.g. XXXX zone (YYYY)';
+}
+
 // ── Chip styles ──────────────────────────────────────────────────────
 const chipBase = 'inline-flex items-center px-2 py-0.5 text-xs rounded-full font-medium';
 const chipBlue = `${chipBase} bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300`;
@@ -59,6 +69,7 @@ const dotEnum = `${dotActive} bg-purple-500`;
 
 // ── Component ────────────────────────────────────────────────────────
 export function EnumConfigurator({
+  persistTabKey,
   fieldKey,
   rule,
   knownValues,
@@ -78,21 +89,32 @@ export function EnumConfigurator({
   const isBoolean = parseTemplate === 'boolean_yes_no_unk';
 
   // State
-  const [activeTab, setActiveTab] = useState<SourceTab>(() => detectSourceTab(currentSource));
-
-  // Reset state when fieldKey changes
-  useEffect(() => {
-    const source = strN(rule, 'enum.source', strN(rule, 'enum_source'));
-    setActiveTab(detectSourceTab(source));
-  }, [fieldKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [activeTab, setActiveTab] = usePersistedTab<SourceTab>(
+    persistTabKey,
+    detectSourceTab(currentSource),
+    { validValues: SOURCE_TAB_IDS },
+  );
 
   // Known values for this field
   const fieldKnownValues = knownValues[fieldKey] || [];
   const additionalValues = arrN(rule, 'enum.additional_values');
   const [customValue, setCustomValue] = useState('');
   const consumers = (rule?.consumers || {}) as Record<string, Record<string, boolean>>;
-  const consistencyReviewEnabled = consumers?.['enum.match.strategy']?.review !== false;
+  const consistencyMatchReviewEnabled = consumers?.['enum.match.strategy']?.review !== false;
+  const consistencyFormatReviewEnabled = consumers?.['enum.match.format_hint']?.review !== false;
+  const consistencyReviewEnabled = consistencyMatchReviewEnabled && consistencyFormatReviewEnabled;
   const customStringReviewEnabled = consumers?.['enum.additional_values']?.review !== false;
+  const consistencyFormatHint = strN(rule, 'enum.match.format_hint');
+  const hasFormatPattern = consistencyFormatHint.trim().length > 0;
+  const hasCustomStrings = additionalValues.length > 0;
+  const modeConflict = hasFormatPattern && hasCustomStrings;
+  const formatModeActive = hasFormatPattern && !hasCustomStrings;
+  const customModeActive = hasCustomStrings && !hasFormatPattern;
+  const formatPatternLocked = customModeActive;
+  const consistencyLocked = customModeActive || modeConflict;
+  const customValuesLocked = formatModeActive;
+  const reviewToggleFields = ['enum.match.strategy', 'enum.match.format_hint', 'enum.additional_values'] as const;
+  const reviewToggleOn = reviewToggleFields.every((fieldPath) => consumers?.[fieldPath]?.review !== false);
 
   const hasManual = currentSource === 'yes_no' || additionalValues.length > 0;
   const hasEnum = currentSource.startsWith('data_lists.');
@@ -127,6 +149,35 @@ export function EnumConfigurator({
     }
     setActiveTab('manual');
     setCustomValue('');
+  }
+
+  function handleReviewModeToggle() {
+    if (consistencyPending) return;
+    const nextEnabled = !reviewToggleOn;
+    const currentConsumers = (rule?.consumers || {}) as Record<string, Record<string, boolean>>;
+    const nextConsumers: Record<string, Record<string, boolean>> = { ...currentConsumers };
+    reviewToggleFields.forEach((fieldPath) => {
+      const overrides = { ...(nextConsumers[fieldPath] || {}) };
+      if (nextEnabled) {
+        delete overrides.review;
+      } else {
+        overrides.review = false;
+      }
+      if (Object.keys(overrides).length === 0) {
+        delete nextConsumers[fieldPath];
+      } else {
+        nextConsumers[fieldPath] = overrides;
+      }
+    });
+    onUpdate('consumers', Object.keys(nextConsumers).length > 0 ? nextConsumers : undefined);
+    if (typeof onRunConsistency === 'function') {
+      const formatGuidance = consistencyFormatHint.trim() || undefined;
+      if (!nextEnabled) {
+        void onRunConsistency({ formatGuidance, reviewEnabled: false });
+      } else if (!consistencyLocked) {
+        void onRunConsistency({ formatGuidance, reviewEnabled: true });
+      }
+    }
   }
 
   return (
@@ -221,12 +272,19 @@ export function EnumConfigurator({
                   <span>Add Values<Tip text={STUDIO_TIPS.enum_add_values} /></span>
                   {renderLabelSuffix?.('enum.additional_values')}
                 </div>
-                <TagPicker
-                  values={additionalValues}
-                  onChange={handleAdditionalValuesChange}
-                  suggestions={fieldKnownValues}
-                  placeholder="Type to add values..."
-                />
+                <div className={customValuesLocked ? 'pointer-events-none opacity-50' : ''}>
+                  <TagPicker
+                    values={additionalValues}
+                    onChange={customValuesLocked ? () => {} : handleAdditionalValuesChange}
+                    suggestions={fieldKnownValues}
+                    placeholder="Type to add values..."
+                  />
+                </div>
+                {customValuesLocked ? (
+                  <div className="text-[10px] text-gray-500">
+                    Locked while Format Pattern is active. Clear Format Pattern to edit custom values.
+                  </div>
+                ) : null}
               </div>
 
               {additionalValues.length > 0 ? (
@@ -290,25 +348,92 @@ export function EnumConfigurator({
       </div>
 
       <div className="space-y-3">
+        {modeConflict ? (
+          <div className="text-[11px] text-amber-700 dark:text-amber-300">
+            Format Pattern and Custom String are both set. Keep only one mode active.
+          </div>
+        ) : null}
+        {formatModeActive ? (
+          <div className="text-[11px] text-blue-700 dark:text-blue-300">
+            Format Pattern mode is active. Custom String is locked until the pattern is cleared.
+          </div>
+        ) : null}
+        {customModeActive ? (
+          <div className="text-[11px] text-blue-700 dark:text-blue-300">
+            Custom String mode is active. Format Pattern and Consistency are locked until custom values are removed.
+          </div>
+        ) : null}
+
         {typeof onRunConsistency === 'function' ? (
           <div className="space-y-1">
             <div className={`${labelCls} flex items-center`}>
               <span className="flex items-center gap-1.5">
-                <span>Consistency</span>
-                <Tip text="LLM review consistency for pending enum values only. Lighting pattern examples: 1..9 zone (rgb), 1..7 zone (led)." />
+                <span>Consistency Mode</span>
+                <Tip text="Backend-linked review mode. ON enables review consumers and runs enum-consistency with current format guidance when allowed. OFF disables review consumers and sends gated backend request." />
                 {renderLabelSuffix?.('enum.match.strategy')}
               </span>
             </div>
-            <div className="inline-flex items-center">
+            <div className="inline-flex rounded border border-gray-300 dark:border-gray-600 overflow-hidden">
               <button
-                onClick={() => void onRunConsistency()}
-                disabled={Boolean(consistencyPending) || !consistencyReviewEnabled}
-                className="min-w-[120px] px-3 py-1 text-[11px] rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-                title="Lighting examples: 1..9 zone (rgb), 1..7 zone (led). Normalizes forms like '1 zone rgb' to '1 zone (rgb)'."
+                type="button"
+                onClick={() => {
+                  if (!reviewToggleOn) handleReviewModeToggle();
+                }}
+                disabled={Boolean(consistencyPending)}
+                className={`px-3 py-1 text-[11px] font-medium disabled:opacity-50 ${reviewToggleOn ? 'bg-blue-600 text-white shadow-inner' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}
+                title="Enable review mode for Format Pattern, Consistency, and Custom String."
               >
-                {consistencyPending ? 'Running...' : (consistencyReviewEnabled ? 'On' : 'Off')}
+                On
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (reviewToggleOn) handleReviewModeToggle();
+                }}
+                disabled={Boolean(consistencyPending)}
+                className={`px-3 py-1 text-[11px] font-medium border-l border-gray-300 dark:border-gray-600 disabled:opacity-50 ${reviewToggleOn ? 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' : 'bg-gray-700 text-white shadow-inner'}`}
+                title="Disable review mode for Format Pattern, Consistency, and Custom String."
+              >
+                Off
               </button>
             </div>
+            <div className="text-[10px] text-gray-500">
+              {reviewToggleOn
+                ? 'ON: review consumers enabled and backend consistency run can execute.'
+                : 'OFF: review consumers disabled and backend consistency is gated.'}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="space-y-1">
+          <div className={`${labelCls} flex items-center`}>
+            <span className="flex items-center gap-1.5">
+              <span>Format Pattern</span>
+              <Tip text="Exact output template sent to LLM as formatGuidance. Use XXXX for changing numeric/count tokens and YYYY for changing text tokens. Example lighting: XXXX zone (YYYY). Example feet material: YYYY." />
+              {renderLabelSuffix?.('enum.match.format_hint')}
+            </span>
+          </div>
+          <input
+            className={`${inputCls} w-full`}
+            value={consistencyFormatHint}
+            disabled={formatPatternLocked || !consistencyFormatReviewEnabled}
+            onChange={(event) => onUpdate('enum.match.format_hint', event.target.value)}
+            placeholder={consistencyFormatPlaceholder(fieldKey)}
+          />
+          <div className="text-[10px] text-gray-500">
+            {formatPatternLocked
+              ? 'Locked while Custom String mode is active.'
+              : (consistencyFormatReviewEnabled
+                ? 'Review-only guidance. Not used for parse-time input matching.'
+                : 'Off (review consumer disabled).')}
+          </div>
+        </div>
+
+        {typeof onRunConsistency === 'function' ? (
+          <div className="text-[10px] text-gray-500">
+            {consistencyPending
+              ? 'Consistency run in progress.'
+              : 'Consistency execution is controlled by the mode above.'}
           </div>
         ) : null}
         {consistencyMessage ? (
@@ -322,7 +447,7 @@ export function EnumConfigurator({
           <div className={`${labelCls} flex items-center`}>
             <span className="flex items-center gap-1.5">
               <span>Custom String</span>
-              <Tip text="Type a value then press Enter or Add. Examples: 10 zone (rgb), per-key (rgb), ambient ring (led)." />
+              <Tip text="Adds manual canonical output strings into enum.additional_values. Use this when exact wording should be available directly to LLM review without pattern inference. Examples: front flare hum, ambient ring (led), 10 zone (rgb)." />
               {renderLabelSuffix?.('enum.additional_values')}
             </span>
           </div>
@@ -330,7 +455,7 @@ export function EnumConfigurator({
             <input
               className={`${inputCls} w-full`}
               value={customValue}
-              disabled={!customStringReviewEnabled}
+              disabled={customValuesLocked || !customStringReviewEnabled}
               onChange={(event) => setCustomValue(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') {
@@ -346,7 +471,11 @@ export function EnumConfigurator({
             />
           </div>
           <div className="text-[10px] text-gray-500">
-            {customStringReviewEnabled ? 'Type and press Enter to add.' : 'Off (review consumer disabled).'}
+            {customValuesLocked
+              ? 'Locked while Format Pattern mode is active.'
+              : (customStringReviewEnabled
+                ? 'Type and press Enter to add.'
+                : 'Off (review consumer disabled).')}
           </div>
         </div>
 

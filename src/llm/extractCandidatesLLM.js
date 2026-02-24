@@ -469,11 +469,253 @@ function buildMultimodalUserInput({
   };
 }
 
-function buildBatchEvidence(evidencePack = {}, batchFields = [], config = {}) {
+const SEARCH_HOST_MARKERS = ['google.', 'bing.', 'duckduckgo.', 'search.brave.', 'searx', 'yahoo.'];
+
+function parseModelLadder(value = '') {
+  return uniqueTokens(
+    String(value || '')
+      .split(/->|,|;/)
+      .map((row) => String(row || '').trim())
+      .filter(Boolean)
+  );
+}
+
+function inferSourceFingerprint(row = {}) {
+  const sourceId = normalizeSourceToken(row?.source_id || row?.source || '');
+  if (sourceId) return sourceId;
+  const host = hostFromUrl(row?.url || row?.source_url || '');
+  if (host) return host;
+  const id = String(row?.id || '').trim();
+  if (id) return `id:${id.toLowerCase()}`;
+  return 'unknown_source';
+}
+
+function isSearchHost(host = '') {
+  const token = String(host || '').trim().toLowerCase();
+  if (!token) return false;
+  return SEARCH_HOST_MARKERS.some((marker) => token.includes(marker));
+}
+
+function isWebSearchSourceRow(row = {}) {
+  const sourceId = normalizeSourceToken(row?.source_id || row?.source || '');
+  const typeToken = normalizeSourceToken(row?.type || row?.surface || '');
+  const urlHost = hostFromUrl(row?.url || row?.source_url || '');
+  if (sourceId.includes('search') || sourceId.includes('serp')) return true;
+  if (typeToken.includes('search') || typeToken.includes('serp')) return true;
+  return isSearchHost(urlHost);
+}
+
+function applySingleSourceSelection(scoredSnippets = []) {
+  if (!Array.isArray(scoredSnippets) || scoredSnippets.length === 0) return [];
+  const buckets = new Map();
+  for (const snippet of scoredSnippets) {
+    const key = inferSourceFingerprint(snippet);
+    const score = Number(snippet?._score || 0);
+    const item = buckets.get(key) || { totalScore: 0, snippets: [] };
+    item.totalScore += score;
+    item.snippets.push(snippet);
+    buckets.set(key, item);
+  }
+  const best = [...buckets.entries()]
+    .sort((a, b) => {
+      if (a[1].totalScore !== b[1].totalScore) return b[1].totalScore - a[1].totalScore;
+      return b[1].snippets.length - a[1].snippets.length;
+    })[0];
+  if (!best) return [];
+  return best[1].snippets;
+}
+
+function toBooleanPolicy(value, fallback) {
+  if (value === undefined || value === null) return Boolean(fallback);
+  return Boolean(value);
+}
+
+function scoreBatchPolicyRow(row = {}) {
+  const effort = Number.parseInt(String(row?.effort ?? 0), 10) || 0;
+  const minRefs = Number.parseInt(String(row?.llm_output_min_evidence_refs_required ?? 1), 10) || 1;
+  return (effort * 100) + minRefs;
+}
+
+function resolveBatchRoutePolicy({
+  routeMatrixPolicy = null,
+  batchFields = []
+} = {}) {
+  const policy = routeMatrixPolicy && typeof routeMatrixPolicy === 'object'
+    ? routeMatrixPolicy
+    : {};
+  const fieldPolicyByKey = policy?.field_policy_by_key && typeof policy.field_policy_by_key === 'object'
+    ? policy.field_policy_by_key
+    : {};
+  const matchedRows = (batchFields || [])
+    .map((field) => String(field || '').trim())
+    .filter(Boolean)
+    .map((field) => fieldPolicyByKey[field])
+    .filter((row) => row && typeof row === 'object');
+  const dominantRow = matchedRows
+    .slice()
+    .sort((a, b) => scoreBatchPolicyRow(b) - scoreBatchPolicyRow(a))[0]
+    || (policy?.field_policy_default && typeof policy.field_policy_default === 'object' ? policy.field_policy_default : null)
+    || policy;
+  const merged = {
+    ...policy,
+    ...(dominantRow || {})
+  };
+  const rowMinRefs = Number.parseInt(
+    String(
+      merged?.llm_output_min_evidence_refs_required
+      ?? policy?.llm_output_min_evidence_refs_required
+      ?? 1
+    ),
+    10
+  ) || 1;
+  const policyMinRefs = Number.parseInt(
+    String(policy?.min_evidence_refs_effective ?? 1),
+    10
+  ) || 1;
+  return {
+    ...merged,
+    llm_output_min_evidence_refs_required: Math.max(1, rowMinRefs),
+    min_evidence_refs_effective: Math.max(1, rowMinRefs, policyMinRefs),
+    route_models: parseModelLadder(merged?.model_ladder_today || ''),
+    single_source_data: toBooleanPolicy(merged?.single_source_data, true),
+    all_source_data: toBooleanPolicy(merged?.all_source_data, false),
+    enable_websearch: toBooleanPolicy(merged?.enable_websearch, true),
+    all_sources_confidence_repatch: toBooleanPolicy(merged?.all_sources_confidence_repatch, false),
+    studio_key_navigation_sent_in_extract_review: toBooleanPolicy(merged?.studio_key_navigation_sent_in_extract_review, true),
+    studio_contract_rules_sent_in_extract_review: toBooleanPolicy(merged?.studio_contract_rules_sent_in_extract_review, true),
+    studio_extraction_guidance_sent_in_extract_review: toBooleanPolicy(merged?.studio_extraction_guidance_sent_in_extract_review, true),
+    studio_tooltip_or_description_sent_when_present: toBooleanPolicy(merged?.studio_tooltip_or_description_sent_when_present, true),
+    studio_enum_options_sent_when_present: toBooleanPolicy(merged?.studio_enum_options_sent_when_present, true),
+    studio_component_variance_constraints_sent_in_component_review: toBooleanPolicy(merged?.studio_component_variance_constraints_sent_in_component_review, true),
+    studio_parse_template_sent_direct_in_extract_review: toBooleanPolicy(merged?.studio_parse_template_sent_direct_in_extract_review, true),
+    studio_ai_mode_difficulty_effort_sent_direct_in_extract_review: toBooleanPolicy(merged?.studio_ai_mode_difficulty_effort_sent_direct_in_extract_review, true),
+    studio_required_level_sent_in_extract_review: toBooleanPolicy(merged?.studio_required_level_sent_in_extract_review, true),
+    studio_component_entity_set_sent_when_component_field: toBooleanPolicy(merged?.studio_component_entity_set_sent_when_component_field, true),
+    studio_evidence_policy_sent_direct_in_extract_review: toBooleanPolicy(merged?.studio_evidence_policy_sent_direct_in_extract_review, true),
+    studio_variance_policy_sent_in_component_review: toBooleanPolicy(merged?.studio_variance_policy_sent_in_component_review, true),
+    studio_constraints_sent_in_component_review: toBooleanPolicy(merged?.studio_constraints_sent_in_component_review, true),
+    studio_send_booleans_prompted_to_model: toBooleanPolicy(merged?.studio_send_booleans_prompted_to_model, false),
+    insufficient_evidence_action: String(merged?.insufficient_evidence_action || 'threshold_unmet').trim() || 'threshold_unmet'
+  };
+}
+
+function stripBooleanLeaves(value) {
+  if (Array.isArray(value)) {
+    return value.map((row) => stripBooleanLeaves(row));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  const out = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (typeof child === 'boolean') continue;
+    out[key] = stripBooleanLeaves(child);
+  }
+  return out;
+}
+
+function applyRoutePolicyToPromptPayload({
+  payload = {},
+  routePolicy = {}
+} = {}) {
+  const next = {
+    ...(payload || {})
+  };
+  const extractionContext = next?.extraction_context && typeof next.extraction_context === 'object'
+    ? {
+      ...next.extraction_context,
+      fields: next.extraction_context.fields && typeof next.extraction_context.fields === 'object'
+        ? Object.fromEntries(
+          Object.entries(next.extraction_context.fields).map(([fieldKey, fieldValue]) => [
+            fieldKey,
+            fieldValue && typeof fieldValue === 'object' ? { ...fieldValue } : fieldValue
+          ])
+        )
+        : {}
+    }
+    : null;
+
+  if (!routePolicy.studio_contract_rules_sent_in_extract_review) {
+    next.contracts = {};
+  }
+  if (!routePolicy.studio_enum_options_sent_when_present) {
+    next.enumOptions = {};
+  }
+  if (!routePolicy.studio_component_entity_set_sent_when_component_field) {
+    next.componentRefs = {};
+  }
+
+  if (extractionContext && extractionContext.fields && typeof extractionContext.fields === 'object') {
+    for (const [fieldKey, fieldContext] of Object.entries(extractionContext.fields)) {
+      if (!fieldContext || typeof fieldContext !== 'object') continue;
+      const updated = { ...fieldContext };
+      if (!routePolicy.studio_key_navigation_sent_in_extract_review) {
+        delete updated.field_key;
+      }
+      if (!routePolicy.studio_contract_rules_sent_in_extract_review) {
+        delete updated.contract;
+      }
+      if (!routePolicy.studio_parse_template_sent_direct_in_extract_review) {
+        delete updated.parse_template_intent;
+      }
+      if (!routePolicy.studio_evidence_policy_sent_direct_in_extract_review) {
+        delete updated.evidence_policy;
+      }
+      if (!routePolicy.studio_required_level_sent_in_extract_review) {
+        delete updated.required_level;
+      }
+      if (!routePolicy.studio_ai_mode_difficulty_effort_sent_direct_in_extract_review) {
+        delete updated.ai_mode;
+        delete updated.ai_reasoning_note;
+        delete updated.difficulty;
+        delete updated.availability;
+        delete updated.effort;
+      }
+      if (!routePolicy.studio_tooltip_or_description_sent_when_present) {
+        delete updated.ui;
+      }
+      if (!routePolicy.studio_enum_options_sent_when_present) {
+        delete updated.enum_options;
+      }
+      if (!routePolicy.studio_component_entity_set_sent_when_component_field) {
+        delete updated.component_ref;
+      }
+      if (!routePolicy.studio_variance_policy_sent_in_component_review) {
+        if (updated.contract && typeof updated.contract === 'object') {
+          delete updated.contract.range;
+        }
+      }
+      if (!routePolicy.studio_constraints_sent_in_component_review) {
+        if (updated.contract && typeof updated.contract === 'object') {
+          delete updated.contract.list_rules;
+        }
+      }
+      if (!routePolicy.studio_extraction_guidance_sent_in_extract_review && updated.contract && typeof updated.contract === 'object') {
+        delete updated.contract.extraction_guidance;
+      }
+      if (!routePolicy.studio_tooltip_or_description_sent_when_present && updated.contract && typeof updated.contract === 'object') {
+        delete updated.contract.description;
+      }
+      extractionContext.fields[fieldKey] = updated;
+    }
+  }
+  if (extractionContext) {
+    next.extraction_context = extractionContext;
+  }
+  if (!routePolicy.studio_send_booleans_prompted_to_model) {
+    return stripBooleanLeaves(next);
+  }
+  return next;
+}
+
+function buildBatchEvidence(evidencePack = {}, batchFields = [], config = {}, routePolicy = null) {
   const wantedFields = uniqueTokens((batchFields || []).map((field) => String(field || '').trim().toLowerCase()));
-  const wanted = new Set(wantedFields);
   const wantsOnlyIdentity = wantedFields.length > 0 && wantedFields.every((field) => IDENTITY_FIELDS.has(field));
   const { snippetById, refById } = collectSnippetAndRefMaps(evidencePack);
+  const policy = routePolicy && typeof routePolicy === 'object' ? routePolicy : {};
+  const allowWebsearch = policy.enable_websearch !== false;
+  const allowAllSources = policy.all_source_data === true;
+  const forceSingleSource = allowAllSources ? false : policy.single_source_data === true;
   const selectedSnippets = [];
   const selectedRefs = [];
   const selectedIds = new Set();
@@ -485,6 +727,10 @@ function buildBatchEvidence(evidencePack = {}, batchFields = [], config = {}) {
   }));
 
   for (const snippet of allSnippets) {
+    const linkedRef = refById.get(String(snippet?.id || '').trim()) || null;
+    if (!allowWebsearch && isWebSearchSourceRow({ ...(snippet || {}), ...(linkedRef || {}) })) {
+      continue;
+    }
     const snippetType = String(snippet?.type || '').toLowerCase();
     const normalizedText = String(snippet?.normalized_text || snippet?.text || '');
     const text = normalizedText.toLowerCase();
@@ -515,9 +761,17 @@ function buildBatchEvidence(evidencePack = {}, batchFields = [], config = {}) {
     });
   }
 
-  const maxSnippets = Math.max(1, Number.parseInt(String(config.llmExtractMaxSnippetsPerBatch || 6), 10) || 6);
-  scoredSnippets
+  const maxSnippetsBase = Math.max(1, Number.parseInt(String(config.llmExtractMaxSnippetsPerBatch || 6), 10) || 6);
+  const maxSnippets = allowAllSources
+    ? Math.max(maxSnippetsBase, Math.min(maxSnippetsBase * 2, 24))
+    : maxSnippetsBase;
+  const sortedSnippets = scoredSnippets
     .sort((a, b) => (b._score - a._score) || (a._length - b._length))
+    .slice(0, allowAllSources ? Math.max(maxSnippets * 2, 12) : maxSnippets);
+  const candidateSnippets = forceSingleSource
+    ? applySingleSourceSelection(sortedSnippets)
+    : sortedSnippets;
+  candidateSnippets
     .slice(0, maxSnippets)
     .forEach((snippet) => {
       selectedSnippets.push(snippet);
@@ -624,7 +878,8 @@ function sanitizeExtractionResult({
   fieldSet,
   validRefs,
   evidencePack,
-  minEvidenceRefsByField = {}
+  minEvidenceRefsByField = {},
+  insufficientEvidenceAction = 'threshold_unmet'
 }) {
   const identityCandidates = sanitizeIdentity(result?.identityCandidates, job.identityLock || {});
   const fieldCandidates = [];
@@ -633,8 +888,10 @@ function sanitizeExtractionResult({
   let droppedUnknownValue = 0;
   let droppedMissingRefs = 0;
   let droppedInsufficientRefs = 0;
+  let escalatedLowEvidenceCount = 0;
   let droppedInvalidRefs = 0;
   const rawFieldCandidates = Array.isArray(result?.fieldCandidates) ? result.fieldCandidates : [];
+  const evidenceAction = String(insufficientEvidenceAction || 'threshold_unmet').trim().toLowerCase();
 
   for (const row of rawFieldCandidates) {
     const field = String(row.field || '').trim();
@@ -663,11 +920,6 @@ function sanitizeExtractionResult({
       1,
       Number.parseInt(String(minEvidenceRefsByField?.[field] ?? 1), 10) || 1
     );
-    if (refs.length < requiredMinRefs) {
-      droppedInsufficientRefs += 1;
-      continue;
-    }
-
     const candidate = {
       field,
       value,
@@ -679,6 +931,17 @@ function sanitizeExtractionResult({
       quote: row.quote || '',
       quoteSpan: Array.isArray(row.quoteSpan) ? row.quoteSpan : null
     };
+
+    if (refs.length < requiredMinRefs) {
+      if (evidenceAction !== 'escalate') {
+        droppedInsufficientRefs += 1;
+        continue;
+      }
+      candidate.method = 'llm_extract_escalated_low_evidence';
+      candidate.low_evidence_escalated = true;
+      candidate.requiredEvidenceRefs = requiredMinRefs;
+      escalatedLowEvidenceCount += 1;
+    }
 
     const evidenceCheck = verifyCandidateEvidence({
       candidate,
@@ -692,12 +955,13 @@ function sanitizeExtractionResult({
     fieldCandidates.push({
       field: evidenceCheck.candidate.field,
       value: evidenceCheck.candidate.value,
-      method: 'llm_extract',
+      method: evidenceCheck.candidate.method || 'llm_extract',
       keyPath: evidenceCheck.candidate.keyPath || 'llm.extract',
       evidenceRefs: evidenceCheck.candidate.evidenceRefs,
       snippetId: evidenceCheck.candidate.snippetId || '',
       snippetHash: evidenceCheck.candidate.snippetHash || '',
       quote: evidenceCheck.candidate.quote || '',
+      low_evidence_escalated: Boolean(evidenceCheck.candidate.low_evidence_escalated),
       quoteSpan: Array.isArray(evidenceCheck.candidate.quoteSpan)
         ? evidenceCheck.candidate.quoteSpan
         : null
@@ -724,6 +988,9 @@ function sanitizeExtractionResult({
   if (droppedInsufficientRefs > 0) {
     notes.push(`Dropped ${droppedInsufficientRefs} candidates below min_evidence_refs.`);
   }
+  if (escalatedLowEvidenceCount > 0) {
+    notes.push(`Escalated ${escalatedLowEvidenceCount} low-evidence candidates.`);
+  }
 
   return {
     identityCandidates,
@@ -738,6 +1005,7 @@ function sanitizeExtractionResult({
       dropped_unknown_value: droppedUnknownValue,
       dropped_missing_refs: droppedMissingRefs,
       dropped_insufficient_refs: droppedInsufficientRefs,
+      escalated_low_evidence_count: escalatedLowEvidenceCount,
       dropped_invalid_refs: droppedInvalidRefs,
       dropped_evidence_verifier: droppedByEvidenceVerifier
     }
@@ -1077,7 +1345,8 @@ export async function extractCandidatesLLM({
       fieldSet,
       validRefs,
       evidencePack: scopedEvidencePack,
-      minEvidenceRefsByField
+      minEvidenceRefsByField,
+      insufficientEvidenceAction: routeMatrixPolicy?.insufficient_evidence_action || 'threshold_unmet'
     });
   };
 
@@ -1132,7 +1401,11 @@ export async function extractCandidatesLLM({
         continue;
       }
 
-      const scoped = buildBatchEvidence(evidencePack, batchFields, config);
+      const batchRoutePolicy = resolveBatchRoutePolicy({
+        routeMatrixPolicy,
+        batchFields
+      });
+      const scoped = buildBatchEvidence(evidencePack, batchFields, config, batchRoutePolicy);
       const validRefs = new Set((scoped.references || []).map((item) => String(item.id || '').trim()).filter(Boolean));
       const fieldSet = new Set(batchFields);
       const contextMatrix = buildExtractionContextMatrix({
@@ -1156,8 +1429,8 @@ export async function extractCandidatesLLM({
         1,
         Number.parseInt(
           String(
-            routeMatrixPolicy?.min_evidence_refs_effective
-            ?? routeMatrixPolicy?.llm_output_min_evidence_refs_required
+            batchRoutePolicy?.min_evidence_refs_effective
+            ?? batchRoutePolicy?.llm_output_min_evidence_refs_required
             ?? 1
           ),
           10
@@ -1174,12 +1447,19 @@ export async function extractCandidatesLLM({
         forcedHighFields: llmContext?.forcedHighFields || [],
         fieldRules
       });
-      const model = modelRoute.model || config.llmModelExtract;
+      const routeModels = Array.isArray(batchRoutePolicy?.route_models) ? batchRoutePolicy.route_models : [];
+      const routePrimaryModel = String(routeModels[0] || '').trim();
+      const model = routePrimaryModel || modelRoute.model || config.llmModelExtract;
+      const routeMaxTokens = Math.max(0, Number.parseInt(String(batchRoutePolicy?.max_tokens || 0), 10) || 0);
+      const effectiveMaxTokens = routeMaxTokens > 0
+        ? (modelRoute.maxTokens > 0 ? Math.min(routeMaxTokens, Number(modelRoute.maxTokens || 0)) : routeMaxTokens)
+        : Number(modelRoute.maxTokens || 0);
       if (!Array.isArray(scoped.snippets) || scoped.snippets.length === 0) {
         logger?.info?.('llm_extract_batch_skipped_no_signal', {
           productId: job.productId,
           batch: batch.id,
-          field_count: batchFields.length
+          field_count: batchFields.length,
+          route_key: batchRoutePolicy?.route_key || null
         });
         aggregateNotes.push(`Batch ${batch.id} skipped: no relevant evidence snippets.`);
         phase08BatchRows.push({
@@ -1202,7 +1482,7 @@ export async function extractCandidatesLLM({
         continue;
       }
       const promptEvidence = buildPromptEvidencePayload(scoped, config);
-      const userPayload = {
+      const userPayloadRaw = {
         product: {
           productId: job.productId,
           brand: job.identityLock?.brand || '',
@@ -1222,11 +1502,20 @@ export async function extractCandidatesLLM({
         references: promptEvidence.references,
         snippets: promptEvidence.snippets
       };
+      const userPayload = applyRoutePolicyToPromptPayload({
+        payload: userPayloadRaw,
+        routePolicy: batchRoutePolicy
+      });
       logger?.info?.('llm_extract_batch_prompt_profile', {
         productId: job.productId,
         batch: batch.id,
         model,
         route_reason: modelRoute.reason,
+        route_key: batchRoutePolicy?.route_key || null,
+        route_single_source_data: Boolean(batchRoutePolicy?.single_source_data),
+        route_all_source_data: Boolean(batchRoutePolicy?.all_source_data),
+        route_enable_websearch: Boolean(batchRoutePolicy?.enable_websearch),
+        route_insufficient_evidence_action: batchRoutePolicy?.insufficient_evidence_action || 'threshold_unmet',
         target_field_count: batchFields.length,
         reference_count: promptEvidence.references.length,
         snippet_count: promptEvidence.snippets.length,
@@ -1254,7 +1543,13 @@ export async function extractCandidatesLLM({
         },
         extra: {
           productId: job.productId || '',
-          runId: llmContext.runId || ''
+          runId: llmContext.runId || '',
+          routeKey: batchRoutePolicy?.route_key || '',
+          routeModelLadder: batchRoutePolicy?.model_ladder_today || '',
+          routeSingleSourceData: Boolean(batchRoutePolicy?.single_source_data),
+          routeAllSourceData: Boolean(batchRoutePolicy?.all_source_data),
+          routeEnableWebsearch: Boolean(batchRoutePolicy?.enable_websearch),
+          routeInsufficientEvidenceAction: batchRoutePolicy?.insufficient_evidence_action || 'threshold_unmet'
         }
       });
 
@@ -1274,7 +1569,7 @@ export async function extractCandidatesLLM({
             routeRole: modelRoute.routeRole || 'extract',
             reasoningMode: Boolean(modelRoute.reasoningMode),
             reason: modelRoute.reason,
-            maxTokens: modelRoute.maxTokens || 0,
+            maxTokens: effectiveMaxTokens,
             usageTracker: null,
             userPayload,
             promptEvidence,
@@ -1293,8 +1588,60 @@ export async function extractCandidatesLLM({
                 ? scoped.visual_assets
                 : (Array.isArray(evidencePack?.visual_assets) ? evidencePack.visual_assets : [])
             },
-            routeMatrixPolicy
+            routeMatrixPolicy: batchRoutePolicy
           });
+          const repatchEnabled = Boolean(batchRoutePolicy?.all_sources_confidence_repatch);
+          const repatchModel = String(
+            routeModels[1]
+              || (modelRoute.reasoningMode ? '' : (config.llmModelReasoning || ''))
+          ).trim();
+          const currentCandidateCount = Number(sanitized?.fieldCandidates?.length || 0);
+          if (
+            repatchEnabled
+            && currentCandidateCount === 0
+            && repatchModel
+            && repatchModel !== model
+          ) {
+            try {
+              const repatched = await invokeModel({
+                model: repatchModel,
+                routeRole: modelRoute.routeRole || 'extract',
+                reasoningMode: true,
+                reason: `${modelRoute.reason}_repatch`,
+                maxTokens: effectiveMaxTokens,
+                usageTracker: null,
+                userPayload,
+                promptEvidence,
+                fieldSet,
+                validRefs,
+                minEvidenceRefsByField,
+                scopedEvidencePack: {
+                  ...evidencePack,
+                  references: Array.isArray(evidencePack?.references)
+                    ? evidencePack.references
+                    : scoped.references,
+                  snippets: Array.isArray(evidencePack?.snippets)
+                    ? evidencePack.snippets
+                    : scoped.snippets,
+                  visual_assets: (Array.isArray(scoped.visual_assets) && scoped.visual_assets.length > 0)
+                    ? scoped.visual_assets
+                    : (Array.isArray(evidencePack?.visual_assets) ? evidencePack.visual_assets : [])
+                },
+                routeMatrixPolicy: batchRoutePolicy
+              });
+              const repatchCount = Number(repatched?.fieldCandidates?.length || 0);
+              if (repatchCount > currentCandidateCount) {
+                sanitized = repatched;
+              }
+            } catch (repatchError) {
+              logger?.warn?.('llm_extract_batch_repatch_failed', {
+                productId: job.productId,
+                batch: batch.id,
+                model: repatchModel,
+                message: repatchError?.message || 'unknown_error'
+              });
+            }
+          }
         } catch (error) {
           phase08BatchErrorCount += 1;
           phase08BatchRows.push({
@@ -1507,7 +1854,11 @@ export async function extractCandidatesLLM({
           if (!verifyFields.length) {
             continue;
           }
-          const verifyScoped = buildBatchEvidence(evidencePack, verifyFields, config);
+          const verifyRoutePolicy = resolveBatchRoutePolicy({
+            routeMatrixPolicy,
+            batchFields: verifyFields
+          });
+          const verifyScoped = buildBatchEvidence(evidencePack, verifyFields, config, verifyRoutePolicy);
           const verifyRefs = new Set((verifyScoped.references || []).map((item) => String(item.id || '').trim()).filter(Boolean));
           const verifyFieldSet = new Set(verifyFields);
           const verifyPromptEvidence = buildPromptEvidencePayload(verifyScoped, config);
@@ -1526,7 +1877,7 @@ export async function extractCandidatesLLM({
               maxEnumOptions: 60
             }
           });
-          const verifyPayload = {
+          const verifyPayloadRaw = {
             product: {
               productId: job.productId,
               brand: job.identityLock?.brand || '',
@@ -1546,6 +1897,10 @@ export async function extractCandidatesLLM({
             references: verifyPromptEvidence.references,
             snippets: verifyPromptEvidence.snippets
           };
+          const verifyPayload = applyRoutePolicyToPromptPayload({
+            payload: verifyPayloadRaw,
+            routePolicy: verifyRoutePolicy
+          });
 
           let fastResult = null;
           let reasonResult = null;
@@ -1578,7 +1933,7 @@ export async function extractCandidatesLLM({
                     ? verifyScoped.visual_assets
                     : (Array.isArray(evidencePack?.visual_assets) ? evidencePack.visual_assets : [])
                 },
-                routeMatrixPolicy
+                routeMatrixPolicy: verifyRoutePolicy
               });
             }
           }
@@ -1611,7 +1966,7 @@ export async function extractCandidatesLLM({
                     ? verifyScoped.visual_assets
                     : (Array.isArray(evidencePack?.visual_assets) ? evidencePack.visual_assets : [])
                 },
-                routeMatrixPolicy
+                routeMatrixPolicy: verifyRoutePolicy
               });
             }
           }

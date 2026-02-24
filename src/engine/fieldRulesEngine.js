@@ -529,8 +529,9 @@ export class FieldRulesEngine {
     const fromRule = normalizeToken(rule.enum_policy || rule?.enum?.policy || '');
     const enumSpec = this.enumIndex.get(key) || buildRuleEnumSpec(rule);
     const policy = fromRule || normalizeToken(enumSpec?.policy || 'open') || 'open';
+    const isClosedPolicy = policy === 'closed' || policy === 'closed_with_curation';
     if (!enumSpec || enumSpec.index.size === 0) {
-      if (policy === 'closed') {
+      if (isClosedPolicy) {
         return {
           ok: false,
           reason_code: 'enum_value_not_allowed',
@@ -558,7 +559,7 @@ export class FieldRulesEngine {
         wasAliased = wasAliased || normalizeToken(canonical) !== token;
         continue;
       }
-      if (policy === 'closed') {
+      if (isClosedPolicy) {
         return {
           ok: false,
           reason_code: 'enum_value_not_allowed',

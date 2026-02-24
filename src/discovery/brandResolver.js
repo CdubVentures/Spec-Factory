@@ -7,19 +7,22 @@ export async function resolveBrandDomain({
 }) {
   const brandKey = String(brand || '').trim();
   const categoryKey = String(category || '').trim();
-  const empty = { officialDomain: '', aliases: [], supportDomain: '', confidence: 0 };
+  const empty = { officialDomain: '', aliases: [], supportDomain: '', confidence: 0, reasoning: [] };
 
   if (!brandKey) return empty;
 
-  const cached = storage.getBrandDomain(brandKey, categoryKey);
-  if (cached) {
-    const aliases = parseAliases(cached.aliases);
-    return {
-      officialDomain: cached.official_domain || '',
-      aliases,
-      supportDomain: cached.support_domain || '',
-      confidence: cached.confidence || 0.8
-    };
+  if (typeof storage?.getBrandDomain === 'function') {
+    const cached = storage.getBrandDomain(brandKey, categoryKey);
+    if (cached) {
+      const aliases = parseAliases(cached.aliases);
+      return {
+        officialDomain: cached.official_domain || '',
+        aliases,
+        supportDomain: cached.support_domain || '',
+        confidence: cached.confidence || 0.8,
+        reasoning: []
+      };
+    }
   }
 
   if (!config.llmEnabled || !callLlmFn) return empty;
@@ -33,17 +36,20 @@ export async function resolveBrandDomain({
     const officialDomain = String(result?.official_domain || '').trim().toLowerCase();
     const aliases = toArray(result?.aliases).map(a => String(a || '').trim().toLowerCase()).filter(Boolean);
     const supportDomain = String(result?.support_domain || '').trim().toLowerCase();
+    const reasoning = toArray(result?.reasoning).map(r => String(r || '').trim()).filter(Boolean);
 
-    storage.upsertBrandDomain({
-      brand: brandKey,
-      category: categoryKey,
-      official_domain: officialDomain,
-      aliases: JSON.stringify(aliases),
-      support_domain: supportDomain,
-      confidence: 0.8
-    });
+    if (typeof storage?.upsertBrandDomain === 'function') {
+      storage.upsertBrandDomain({
+        brand: brandKey,
+        category: categoryKey,
+        official_domain: officialDomain,
+        aliases: JSON.stringify(aliases),
+        support_domain: supportDomain,
+        confidence: 0.8
+      });
+    }
 
-    return { officialDomain, aliases, supportDomain, confidence: 0.8 };
+    return { officialDomain, aliases, supportDomain, confidence: 0.8, reasoning };
   } catch {
     return empty;
   }

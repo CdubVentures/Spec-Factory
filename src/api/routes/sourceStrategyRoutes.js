@@ -9,25 +9,35 @@ export function registerSourceStrategyRoutes(ctx) {
     broadcastWs,
   } = ctx;
 
+  function resolveScopedCategory(params) {
+    const category = resolveCategoryAlias(params.get('category') || '');
+    if (!category) return '';
+    return category;
+  }
+
   return async function handleSourceStrategyRoutes(parts, params, method, req, res) {
     // GET /api/v1/source-strategy
     if (parts[0] === 'source-strategy' && method === 'GET' && !parts[1]) {
-      const category = resolveCategoryAlias(params.get('category') || '');
-      const db = getSpecDb(category || 'mouse');
+      const category = resolveScopedCategory(params);
+      if (!category) return jsonRes(res, 400, { error: 'category_required' });
+      const db = getSpecDb(category);
+      if (!db) return jsonRes(res, 500, { error: 'specdb_unavailable' });
       return jsonRes(res, 200, db.listSourceStrategies());
     }
 
     // POST /api/v1/source-strategy
     if (parts[0] === 'source-strategy' && method === 'POST' && !parts[1]) {
+      const category = resolveScopedCategory(params);
+      if (!category) return jsonRes(res, 400, { error: 'category_required' });
       const body = await readJsonBody(req).catch(() => ({}));
       if (!body.host) return jsonRes(res, 400, { error: 'host_required' });
-      const category = resolveCategoryAlias(params.get('category') || '');
-      const db = getSpecDb(category || 'mouse');
+      const db = getSpecDb(category);
+      if (!db) return jsonRes(res, 500, { error: 'specdb_unavailable' });
       const result = db.insertSourceStrategy(body);
       emitDataChange({
         broadcastWs,
         event: 'source-strategy-created',
-        category: category || 'mouse',
+        category,
         domains: ['source-strategy'],
         meta: {
           id: Number(result?.id || 0),
@@ -41,15 +51,17 @@ export function registerSourceStrategyRoutes(ctx) {
     if (parts[0] === 'source-strategy' && parts[1] && method === 'PUT') {
       const id = Number.parseInt(parts[1], 10);
       if (!Number.isFinite(id)) return jsonRes(res, 400, { error: 'invalid_id' });
+      const category = resolveScopedCategory(params);
+      if (!category) return jsonRes(res, 400, { error: 'category_required' });
       const body = await readJsonBody(req).catch(() => ({}));
-      const category = resolveCategoryAlias(params.get('category') || '');
-      const db = getSpecDb(category || 'mouse');
+      const db = getSpecDb(category);
+      if (!db) return jsonRes(res, 500, { error: 'specdb_unavailable' });
       const updated = db.updateSourceStrategy(id, body);
       if (!updated) return jsonRes(res, 404, { error: 'not_found' });
       emitDataChange({
         broadcastWs,
         event: 'source-strategy-updated',
-        category: category || 'mouse',
+        category,
         domains: ['source-strategy'],
         meta: {
           id,
@@ -62,13 +74,15 @@ export function registerSourceStrategyRoutes(ctx) {
     if (parts[0] === 'source-strategy' && parts[1] && method === 'DELETE') {
       const id = Number.parseInt(parts[1], 10);
       if (!Number.isFinite(id)) return jsonRes(res, 400, { error: 'invalid_id' });
-      const category = resolveCategoryAlias(params.get('category') || '');
-      const db = getSpecDb(category || 'mouse');
+      const category = resolveScopedCategory(params);
+      if (!category) return jsonRes(res, 400, { error: 'category_required' });
+      const db = getSpecDb(category);
+      if (!db) return jsonRes(res, 500, { error: 'specdb_unavailable' });
       db.deleteSourceStrategy(id);
       emitDataChange({
         broadcastWs,
         event: 'source-strategy-deleted',
-        category: category || 'mouse',
+        category,
         domains: ['source-strategy'],
         meta: {
           id,

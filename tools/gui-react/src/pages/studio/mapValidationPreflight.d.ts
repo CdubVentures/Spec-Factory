@@ -20,10 +20,10 @@ export declare function getWorkbookMapValidationOutcome(
 export declare function assertWorkbookMapValidationOrThrow(args: {
   result: unknown;
   actionLabel?: string;
+  allowLegacyCompileBypass?: boolean;
 }): WorkbookMapValidationOutcome;
 
 export declare function resolveWorkbookMapPayloadForSave(args: {
   result: unknown;
   fallback: Record<string, unknown>;
 }): Record<string, unknown>;
-

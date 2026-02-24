@@ -1,4 +1,5 @@
 import { Tip } from '../../../components/common/Tip';
+import { usePersistedToggle } from '../../../stores/collapseStore';
 
 interface SessionCrawledCell {
   key: string;
@@ -11,14 +12,25 @@ interface SessionCrawledCell {
 interface SessionDataPanelProps {
   selectedIndexLabRunId: string;
   sessionCrawledCells: SessionCrawledCell[];
+  persistKey: string;
 }
 
 export function SessionDataPanel({
   selectedIndexLabRunId,
   sessionCrawledCells,
+  persistKey,
 }: SessionDataPanelProps) {
+  const [open, , setOpen] = usePersistedToggle(persistKey, true);
   return (
-    <details open className="group rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3" style={{ order: 16 }}>
+    <details
+      open={open}
+      onToggle={(event) => {
+        const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
+        if (nextOpen !== open) setOpen(nextOpen);
+      }}
+      className="group rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3"
+      style={{ order: 16 }}
+    >
       <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2">
         <span className="inline-flex items-center text-sm font-semibold text-gray-900 dark:text-gray-100">
           <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 text-[10px] leading-none text-gray-700 dark:border-gray-600 dark:text-gray-200 mr-1">

@@ -2,7 +2,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useUiStore } from '../../stores/uiStore';
+import { usePersistedNullableTab, usePersistedTab } from '../../stores/tabStore';
 import { getRefetchInterval } from './helpers';
+import { resolveRunActiveScope } from './runActivityScopeHelpers.js';
 import { MetricsRail } from './panels/MetricsRail';
 import { OverviewTab } from './panels/OverviewTab';
 import { WorkersTab } from './panels/WorkersTab';
@@ -19,8 +21,6 @@ import type {
   ExtractionFieldsResponse,
   FallbacksResponse,
   QueueStateResponse,
-  RuntimeOpsBlocker,
-  RuntimeOpsWorkerRow,
 } from './types';
 
 interface ProcessStatus {
@@ -39,6 +39,14 @@ const TAB_DEFS: { key: RuntimeOpsTab; label: string; desc: string }[] = [
   { key: 'fallbacks', label: 'Fallbacks', desc: 'Fetch mode transitions and host degradation' },
   { key: 'queue', label: 'Queue', desc: 'Repair queue lanes and job inspection' },
 ];
+const RUNTIME_OPS_TAB_KEYS = [
+  'overview',
+  'workers',
+  'documents',
+  'extraction',
+  'fallbacks',
+  'queue',
+] as const satisfies ReadonlyArray<RuntimeOpsTab>;
 
 const tabCls = 'px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer';
 const activeTabCls = 'border-accent text-accent dark:border-accent-dark dark:text-accent-dark';
@@ -46,10 +54,11 @@ const inactiveTabCls = 'border-transparent text-gray-600 dark:text-gray-400 hove
 
 export function RuntimeOpsPage() {
   const category = useUiStore((s) => s.category);
-  const [activeTab, setActiveTab] = useState<RuntimeOpsTab>('overview');
-  const [selectedRunId, setSelectedRunId] = useState('');
-  const [selectedBlocker, setSelectedBlocker] = useState<RuntimeOpsBlocker | null>(null);
-  const [selectedWorker, setSelectedWorker] = useState<RuntimeOpsWorkerRow | null>(null);
+  const [activeTab, setActiveTab] = usePersistedTab<RuntimeOpsTab>(
+    'runtimeOps:tab:main',
+    'overview',
+    { validValues: RUNTIME_OPS_TAB_KEYS },
+  );
   const [throughputHistory, setThroughputHistory] = useState<{ ts: string; docs: number; fields: number }[]>([]);
 
   const wsUrl = useMemo(() => {
@@ -75,16 +84,47 @@ export function RuntimeOpsPage() {
     if (category === 'all') return rows;
     return rows.filter((r) => r.category === category);
   }, [runsResp, category]);
+  const runIdValidValues = useMemo(
+    () => ['', ...runs.map((r) => r.run_id)],
+    [runs],
+  );
+  const [selectedRunId, setSelectedRunId] = usePersistedTab<string>(
+    `runtimeOps:run:${category}`,
+    '',
+    { validValues: runIdValidValues },
+  );
 
   const hasRuns = runs.length > 0;
   const effectiveRunId = selectedRunId || runs[0]?.run_id || '';
+  const selectedRun = useMemo(
+    () => runs.find((run) => run.run_id === effectiveRunId) ?? null,
+    [runs, effectiveRunId],
+  );
+  const isSelectedRunActive = resolveRunActiveScope({
+    processRunning: isRunning,
+    selectedRunStatus: selectedRun?.status,
+  });
 
   const { data: summary } = useQuery({
     queryKey: ['runtime-ops', effectiveRunId, 'summary'],
     queryFn: () => api.get<RuntimeOpsSummaryResponse>(`/indexlab/run/${effectiveRunId}/runtime/summary`),
     enabled: Boolean(effectiveRunId),
-    refetchInterval: getRefetchInterval(isRunning, activeTab !== 'overview', 2000, 10000),
+    refetchInterval: getRefetchInterval(isSelectedRunActive, activeTab !== 'overview', 2000, 10000),
   });
+
+  const blockerValidValues = useMemo(
+    () => (summary?.top_blockers ?? []).map((blocker) => blocker.host),
+    [summary?.top_blockers],
+  );
+  const [selectedBlockerHost, setSelectedBlockerHost] = usePersistedNullableTab<string>(
+    `runtimeOps:overview:selectedBlocker:${category}`,
+    null,
+    { validValues: blockerValidValues },
+  );
+  const selectedBlocker = useMemo(() => {
+    if (!selectedBlockerHost) return null;
+    return (summary?.top_blockers ?? []).find((blocker) => blocker.host === selectedBlockerHost) ?? null;
+  }, [selectedBlockerHost, summary?.top_blockers]);
 
   useEffect(() => {
     if (!summary) return;
@@ -99,21 +139,35 @@ export function RuntimeOpsPage() {
     queryKey: ['runtime-ops', effectiveRunId, 'workers'],
     queryFn: () => api.get<RuntimeOpsWorkersResponse>(`/indexlab/run/${effectiveRunId}/runtime/workers`),
     enabled: Boolean(effectiveRunId) && activeTab === 'workers',
-    refetchInterval: getRefetchInterval(isRunning, activeTab !== 'workers', 2000, 10000),
+    refetchInterval: getRefetchInterval(isSelectedRunActive, activeTab !== 'workers', 2000, 10000),
   });
+
+  const workerValidValues = useMemo(
+    () => (workersResp?.workers ?? []).map((worker) => worker.worker_id),
+    [workersResp?.workers],
+  );
+  const [selectedWorkerId, setSelectedWorkerId] = usePersistedNullableTab<string>(
+    `runtimeOps:workers:selectedWorker:${category}`,
+    null,
+    { validValues: workerValidValues },
+  );
+  const selectedWorker = useMemo(() => {
+    if (!selectedWorkerId) return null;
+    return (workersResp?.workers ?? []).find((worker) => worker.worker_id === selectedWorkerId) ?? null;
+  }, [selectedWorkerId, workersResp?.workers]);
 
   const { data: documentsResp } = useQuery({
     queryKey: ['runtime-ops', effectiveRunId, 'documents'],
     queryFn: () => api.get<RuntimeOpsDocumentsResponse>(`/indexlab/run/${effectiveRunId}/runtime/documents?limit=200`),
     enabled: Boolean(effectiveRunId) && activeTab === 'documents',
-    refetchInterval: getRefetchInterval(isRunning, activeTab !== 'documents', 2000, 10000),
+    refetchInterval: getRefetchInterval(isSelectedRunActive, activeTab !== 'documents', 2000, 10000),
   });
 
   const { data: metricsResp } = useQuery({
     queryKey: ['runtime-ops', effectiveRunId, 'metrics'],
     queryFn: () => api.get<RuntimeOpsMetricsResponse>(`/indexlab/run/${effectiveRunId}/runtime/metrics`),
     enabled: Boolean(effectiveRunId),
-    refetchInterval: getRefetchInterval(isRunning, false, 2000, 10000),
+    refetchInterval: getRefetchInterval(isSelectedRunActive, false, 2000, 10000),
   });
 
   const { data: extractionResp } = useQuery({
@@ -122,7 +176,7 @@ export function RuntimeOpsPage() {
       `/indexlab/run/${effectiveRunId}/runtime/extraction/fields`,
     ),
     enabled: Boolean(effectiveRunId) && activeTab === 'extraction',
-    refetchInterval: getRefetchInterval(isRunning, activeTab !== 'extraction', 2000, 10000),
+    refetchInterval: getRefetchInterval(isSelectedRunActive, activeTab !== 'extraction', 2000, 10000),
   });
 
   const { data: fallbacksResp } = useQuery({
@@ -131,7 +185,7 @@ export function RuntimeOpsPage() {
       `/indexlab/run/${effectiveRunId}/runtime/fallbacks`,
     ),
     enabled: Boolean(effectiveRunId) && activeTab === 'fallbacks',
-    refetchInterval: getRefetchInterval(isRunning, activeTab !== 'fallbacks', 2000, 10000),
+    refetchInterval: getRefetchInterval(isSelectedRunActive, activeTab !== 'fallbacks', 2000, 10000),
   });
 
   const { data: queueResp } = useQuery({
@@ -140,7 +194,7 @@ export function RuntimeOpsPage() {
       `/indexlab/run/${effectiveRunId}/runtime/queue`,
     ),
     enabled: Boolean(effectiveRunId) && activeTab === 'queue',
-    refetchInterval: getRefetchInterval(isRunning, activeTab !== 'queue', 2000, 10000),
+    refetchInterval: getRefetchInterval(isSelectedRunActive, activeTab !== 'queue', 2000, 10000),
   });
 
   const handleNavigateToDocument = (url: string) => {
@@ -170,7 +224,7 @@ export function RuntimeOpsPage() {
               No runs yet
             </span>
           )}
-          {isRunning && (
+          {isSelectedRunActive && (
             <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
               <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               Live
@@ -184,11 +238,7 @@ export function RuntimeOpsPage() {
               key={t.key}
               type="button"
               title={t.desc}
-              onClick={() => {
-                setActiveTab(t.key);
-                setSelectedBlocker(null);
-                setSelectedWorker(null);
-              }}
+              onClick={() => setActiveTab(t.key)}
               className={`${tabCls} ${activeTab === t.key ? activeTabCls : inactiveTabCls}`}
             >
               {t.label}
@@ -201,7 +251,7 @@ export function RuntimeOpsPage() {
       <div className="flex flex-1 min-h-0">
         <MetricsRail data={metricsResp} />
 
-        <div className="flex flex-1 min-h-0 flex-col">
+        <div className="flex flex-1 min-h-0 min-w-0 flex-col">
           {!hasRuns ? (
             <div className="flex flex-col items-center justify-center flex-1 gap-4 p-8">
               <div className="text-4xl opacity-30">
@@ -228,10 +278,10 @@ export function RuntimeOpsPage() {
                 <OverviewTab
                   summary={summary}
                   selectedBlocker={selectedBlocker}
-                  onSelectBlocker={setSelectedBlocker}
+                  onSelectBlocker={(blocker) => setSelectedBlockerHost(blocker?.host ?? null)}
                   throughputHistory={throughputHistory}
                   runId={effectiveRunId}
-                  isRunning={isRunning}
+                  isRunning={isSelectedRunActive}
                   onNavigateToWorkers={(pool) => {
                     setActiveTab('workers');
                   }}
@@ -241,9 +291,10 @@ export function RuntimeOpsPage() {
                 <WorkersTab
                   workers={workersResp?.workers ?? []}
                   selectedWorker={selectedWorker}
-                  onSelectWorker={setSelectedWorker}
+                  onSelectWorker={(worker) => setSelectedWorkerId(worker?.worker_id ?? null)}
                   runId={effectiveRunId}
-                  isRunning={isRunning}
+                  category={category}
+                  isRunning={isSelectedRunActive}
                   wsUrl={wsUrl}
                 />
               )}
@@ -251,24 +302,28 @@ export function RuntimeOpsPage() {
                 <DocumentsTab
                   documents={documentsResp?.documents ?? []}
                   runId={effectiveRunId}
-                  isRunning={isRunning}
+                  category={category}
+                  isRunning={isSelectedRunActive}
                 />
               )}
               {activeTab === 'extraction' && (
                 <ExtractionTab
                   fields={extractionResp?.fields ?? []}
+                  category={category}
                   onNavigateToDocument={handleNavigateToDocument}
                 />
               )}
               {activeTab === 'fallbacks' && (
                 <FallbacksTab
                   fallbacks={fallbacksResp}
+                  category={category}
                   onNavigateToDocuments={handleNavigateToDocument}
                 />
               )}
               {activeTab === 'queue' && (
                 <QueueTab
                   queueState={queueResp}
+                  category={category}
                   onNavigateToDocuments={handleNavigateToDocument}
                 />
               )}

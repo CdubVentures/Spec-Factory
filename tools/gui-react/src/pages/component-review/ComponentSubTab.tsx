@@ -668,6 +668,7 @@ export function ComponentSubTab({
       <ComponentReviewPanel category={category} queryClient={queryClient} componentType={data.componentType} />
       <div className={`grid ${drawerOpen && selectedItem ? 'grid-cols-[1fr,340px]' : 'grid-cols-1'} gap-3 min-w-0`}>
         <DataTable
+          persistKey={`componentReview:table:${category}:${data.componentType}`}
           data={mergedItems}
           columns={columns}
           searchable

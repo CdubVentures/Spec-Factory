@@ -421,7 +421,11 @@ export function buildRuntimeOpsMetricsRail(events, options) {
       activeLlm.delete(key);
       pools.llm.failed += 1;
     } else if (type === 'needset_computed') {
-      identityStatus = String(payload.identity_status || '').trim() || 'unknown';
+      const ils = payload.identity_lock_state && typeof payload.identity_lock_state === 'object'
+        ? payload.identity_lock_state : null;
+      identityStatus = (ils ? String(ils.status || '').trim() : '')
+        || String(payload.identity_status || '').trim()
+        || 'unlocked';
       acceptanceRate = toFloat(payload.acceptance_rate, 0);
       meanConfidence = toFloat(payload.mean_confidence, 0);
     }
@@ -1015,20 +1019,29 @@ export function buildPreFetchPhases(events, meta, artifacts) {
     const ts = String(evt?.ts || '').trim();
 
     if (type === 'needset_computed') {
+      const evtLockState = payload.identity_lock_state && typeof payload.identity_lock_state === 'object'
+        ? payload.identity_lock_state
+        : null;
+      const identityStatus = evtLockState
+        ? String(evtLockState.status || '').trim()
+        : String(payload.identity_status || '').trim();
+      const identityConfidence = evtLockState
+        ? toFloat(evtLockState.confidence, 0)
+        : toFloat(payload.identity_confidence, 0);
       const snap = {
         needset_size: toInt(payload.needset_size, 0),
         total_fields: toInt(payload.total_fields, 0),
-        identity_status: String(payload.identity_status || '').trim(),
-        identity_confidence: toFloat(payload.identity_confidence, 0),
+        identity_status: identityStatus,
+        identity_confidence: identityConfidence,
         ts,
       };
       needsetSnapshots.push(snap);
       lastNeedset = {
         needset_size: snap.needset_size,
         total_fields: snap.total_fields,
-        identity_lock_state: {
-          status: snap.identity_status,
-          confidence: snap.identity_confidence,
+        identity_lock_state: evtLockState || {
+          status: identityStatus,
+          confidence: identityConfidence,
         },
         needs: Array.isArray(payload.needs) ? payload.needs : [],
         reason_counts: payload.reason_counts && typeof payload.reason_counts === 'object' ? payload.reason_counts : {},
@@ -1131,6 +1144,8 @@ export function buildPreFetchPhases(events, meta, artifacts) {
     if (type === 'brand_resolved') {
       brandResolution = {
         brand: String(payload.brand || '').trim(),
+        status: String(payload.status || 'resolved').trim(),
+        skip_reason: String(payload.skip_reason || '').trim(),
         official_domain: String(payload.official_domain || '').trim(),
         aliases: Array.isArray(payload.aliases) ? payload.aliases : [],
         support_domain: String(payload.support_domain || '').trim(),
@@ -1141,6 +1156,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
           evidence_snippets: Array.isArray(c?.evidence_snippets) ? c.evidence_snippets : [],
           disambiguation_note: String(c?.disambiguation_note || '').trim(),
         })) : [],
+        reasoning: Array.isArray(payload.reasoning) ? payload.reasoning : [],
       };
     }
 
@@ -1151,6 +1167,10 @@ export function buildPreFetchPhases(events, meta, artifacts) {
         queries_generated: Array.isArray(payload.queries_generated) ? payload.queries_generated : [],
         stop_condition: String(payload.stop_condition || '').trim(),
         plan_rationale: String(payload.plan_rationale || '').trim(),
+        query_target_map: payload.query_target_map && typeof payload.query_target_map === 'object'
+          ? payload.query_target_map : {},
+        missing_critical_fields: Array.isArray(payload.missing_critical_fields) ? payload.missing_critical_fields : [],
+        mode: String(payload.mode || '').trim(),
       });
     }
 
@@ -1159,16 +1179,24 @@ export function buildPreFetchPhases(events, meta, artifacts) {
         query: String(payload.query || '').trim(),
         provider: String(payload.provider || '').trim(),
         dedupe_count: toInt(payload.dedupe_count, 0),
-        results: Array.isArray(payload.results) ? payload.results.map((r) => ({
-          title: String(r?.title || '').trim(),
-          url: String(r?.url || '').trim(),
-          domain: String(r?.domain || '').trim(),
-          snippet: String(r?.snippet || '').trim(),
-          rank: toInt(r?.rank, 0),
-          relevance_score: toFloat(r?.relevance_score, 0),
-          decision: String(r?.decision || '').trim(),
-          reason: String(r?.reason || '').trim(),
-        })) : [],
+        results: Array.isArray(payload.results) ? payload.results.map((r) => {
+          const rawUrl = String(r?.url || '').trim();
+          let domain = String(r?.domain || '').trim();
+          if (!domain && rawUrl) {
+            try { domain = new URL(rawUrl).hostname.replace(/^www\./, ''); } catch { /* ignore */ }
+          }
+          return {
+            title: String(r?.title || '').trim(),
+            url: rawUrl,
+            domain,
+            snippet: String(r?.snippet || '').trim(),
+            rank: toInt(r?.rank, 0),
+            relevance_score: toFloat(r?.relevance_score, 0),
+            decision: String(r?.decision || '').trim(),
+            reason: String(r?.reason || '').trim(),
+            provider: String(r?.provider || '').trim(),
+          };
+        }) : [],
       });
     }
 
@@ -1230,6 +1258,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
 
   const artNeedset = safeArtifacts.needset && typeof safeArtifacts.needset === 'object' ? safeArtifacts.needset : null;
   const artProfile = safeArtifacts.search_profile && typeof safeArtifacts.search_profile === 'object' ? safeArtifacts.search_profile : null;
+  const artBrand = safeArtifacts.brand_resolution && typeof safeArtifacts.brand_resolution === 'object' ? safeArtifacts.brand_resolution : null;
 
   const needset = lastNeedset
     ? {
@@ -1242,7 +1271,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
           total_fields: toInt(artNeedset.total_fields, 0),
           identity_lock_state: artNeedset.identity_lock_state && typeof artNeedset.identity_lock_state === 'object'
             ? artNeedset.identity_lock_state
-            : { status: 'unknown', confidence: 0 },
+            : { status: 'unlocked', confidence: 0 },
           needs: Array.isArray(artNeedset.needs) ? artNeedset.needs : [],
           reason_counts: artNeedset.reason_counts && typeof artNeedset.reason_counts === 'object' ? artNeedset.reason_counts : {},
           required_level_counts: artNeedset.required_level_counts && typeof artNeedset.required_level_counts === 'object' ? artNeedset.required_level_counts : {},
@@ -1251,7 +1280,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
       : {
           needset_size: 0,
           total_fields: 0,
-          identity_lock_state: { status: 'unknown', confidence: 0 },
+          identity_lock_state: { status: 'unlocked', confidence: 0 },
           needs: [],
           reason_counts: {},
           required_level_counts: {},
@@ -1261,21 +1290,43 @@ export function buildPreFetchPhases(events, meta, artifacts) {
   const search_profile = artProfile
     ? {
         query_count: toInt(artProfile.query_count, Array.isArray(artProfile.query_rows) ? artProfile.query_rows.length : 0),
+        selected_query_count: toInt(artProfile.selected_query_count, 0),
         provider: String(artProfile.provider || '').trim(),
         llm_query_planning: Boolean(artProfile.llm_query_planning),
+        llm_query_model: String(artProfile.llm_query_model || '').trim(),
+        llm_queries: Array.isArray(artProfile.llm_queries) ? artProfile.llm_queries : [],
         identity_aliases: Array.isArray(artProfile.identity_aliases) ? artProfile.identity_aliases : [],
         variant_guard_terms: Array.isArray(artProfile.variant_guard_terms) ? artProfile.variant_guard_terms : [],
+        focus_fields: Array.isArray(artProfile.focus_fields) ? artProfile.focus_fields : [],
         query_rows: Array.isArray(artProfile.query_rows) ? artProfile.query_rows : [],
         query_guard: artProfile.query_guard && typeof artProfile.query_guard === 'object' ? artProfile.query_guard : {},
+        hint_source_counts: artProfile.hint_source_counts && typeof artProfile.hint_source_counts === 'object' ? artProfile.hint_source_counts : {},
+        field_rule_gate_counts: artProfile.field_rule_gate_counts && typeof artProfile.field_rule_gate_counts === 'object' ? artProfile.field_rule_gate_counts : {},
+        generated_at: String(artProfile.generated_at || '').trim(),
+        product_id: String(artProfile.product_id || '').trim(),
+        source: String(artProfile.source || '').trim(),
+        query_reject_log: Array.isArray(artProfile.query_reject_log) ? artProfile.query_reject_log : [],
+        alias_reject_log: Array.isArray(artProfile.alias_reject_log) ? artProfile.alias_reject_log : [],
       }
     : {
         query_count: 0,
+        selected_query_count: 0,
         provider: '',
         llm_query_planning: false,
+        llm_query_model: '',
+        llm_queries: [],
         identity_aliases: [],
         variant_guard_terms: [],
+        focus_fields: [],
         query_rows: [],
         query_guard: {},
+        hint_source_counts: {},
+        field_rule_gate_counts: {},
+        generated_at: '',
+        product_id: '',
+        source: '',
+        query_reject_log: [],
+        alias_reject_log: [],
       };
 
   return {
@@ -1283,7 +1334,22 @@ export function buildPreFetchPhases(events, meta, artifacts) {
     search_profile,
     llm_calls: llmGroups,
     search_results: searchResults,
-    brand_resolution: brandResolution,
+    brand_resolution: brandResolution || (artBrand ? {
+      brand: String(artBrand.brand || '').trim(),
+      status: String(artBrand.status || 'resolved').trim(),
+      skip_reason: String(artBrand.skip_reason || '').trim(),
+      official_domain: String(artBrand.official_domain || '').trim(),
+      aliases: Array.isArray(artBrand.aliases) ? artBrand.aliases : [],
+      support_domain: String(artBrand.support_domain || '').trim(),
+      confidence: toFloat(artBrand.confidence, 0),
+      candidates: Array.isArray(artBrand.candidates) ? artBrand.candidates.map((c) => ({
+        name: String(c?.name || '').trim(),
+        confidence: toFloat(c?.confidence, 0),
+        evidence_snippets: Array.isArray(c?.evidence_snippets) ? c.evidence_snippets : [],
+        disambiguation_note: String(c?.disambiguation_note || '').trim(),
+      })) : [],
+      reasoning: Array.isArray(artBrand.reasoning) ? artBrand.reasoning : [],
+    } : null),
     search_plans: searchPlans,
     search_result_details: searchResultDetails,
     url_predictions: urlPredictions,

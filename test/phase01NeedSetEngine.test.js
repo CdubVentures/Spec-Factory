@@ -395,4 +395,47 @@ describe('Phase 01 — NeedSet Event Payload Shape (via runtimeBridge)', () => {
 
     await harness.cleanup();
   });
+
+  it('initial needset with empty provenance marks all fields as needed', () => {
+    const fieldOrder = ['weight', 'sensor', 'dpi_max', 'rgb', 'brand'];
+    const fieldRules = makeBaseRules();
+    const result = computeNeedSet({
+      runId: 'r_initial',
+      category: 'mouse',
+      productId: 'test-mouse-initial',
+      fieldOrder,
+      provenance: {},
+      fieldRules,
+      fieldReasoning: {},
+      constraintAnalysis: {},
+      identityContext: {
+        status: 'unknown',
+        confidence: 0,
+        identity_gate_validated: false,
+        extraction_gate_open: false,
+        family_model_count: 0,
+        ambiguity_level: 'unknown',
+        publishable: false,
+        publish_blockers: [],
+        reason_codes: [],
+        page_count: 0,
+        max_match_score: 0
+      },
+      now: '2026-02-20T00:00:00Z'
+    });
+
+    assert.equal(result.total_fields, 5, 'total_fields should match fieldOrder length');
+    assert.equal(result.needset_size, 5, 'all fields should be needed when provenance is empty');
+    assert.ok(result.needs.length > 0, 'needs array should not be empty');
+
+    for (const need of result.needs) {
+      assert.ok(need.field_key, 'every need must have field_key');
+      assert.ok(need.reasons.includes('missing'), `${need.field_key} should have "missing" reason`);
+      assert.ok(need.need_score > 0, `${need.field_key} should have positive need_score`);
+    }
+
+    assert.ok(result.reason_counts.missing >= 5, 'reason_counts.missing should be at least 5');
+    console.log(`[INITIAL] needset_size=${result.needset_size} total_fields=${result.total_fields}`);
+    console.log(`[INITIAL] reason_counts: ${JSON.stringify(result.reason_counts)}`);
+  });
 });

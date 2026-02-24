@@ -133,6 +133,25 @@ function sourceResultsToArtifacts(sourceResults, product, contractAnalysis) {
       sources: sourceResults.length,
     };
   }
+  const dependencyRules = product._testCase?.name === 'cross_validation'
+    ? (raw.rules || []).filter((rule) =>
+      String(rule?.requires_field || '').trim() && String(rule?.trigger_field || '').trim())
+    : [];
+  for (const rule of dependencyRules) {
+    const triggerField = String(rule.trigger_field || '').trim();
+    if (!triggerField) continue;
+    if (!fieldReasoning[triggerField]) {
+      fieldReasoning[triggerField] = {
+        value: fields[triggerField],
+        confidence: provenance[triggerField]?.confidence || 0,
+        sources: sourceResults.length,
+      };
+    }
+    fieldReasoning[triggerField] = {
+      ...fieldReasoning[triggerField],
+      unknown_reason: 'dependency_missing',
+    };
+  }
 
   const summary = {
     confidence: Math.round(avgConfidence * 100) / 100,
@@ -327,8 +346,8 @@ test('Contract-Driven End-to-End Test', async (t) => {
     // 8. Build review payloads for all products (used by multiple sections)
     //    Built WITHOUT specDb to avoid backfill mutations that would affect SEED tests.
     const REAL_FLAGS = new Set([
-      'variance_violation', 'constraint_conflict', 'new_component',
-      'new_enum_value', 'below_min_evidence', 'conflict_policy_hold',
+      'variance_violation', 'constraint_conflict', 'compound_range_conflict', 'dependency_missing',
+      'new_component', 'new_enum_value', 'below_min_evidence', 'conflict_policy_hold',
     ]);
     const reviewPayloads = {};
     for (const product of products) {
@@ -1278,6 +1297,7 @@ test('Contract-Driven End-to-End Test', async (t) => {
     await t.test('SECTION 5 — Enum Review', async (s) => {
       const enumResult = await buildEnumReviewPayloads({
         config, category: CATEGORY,
+        specDb: db,
       });
 
       await s.test('ENUM-01 — returns catalogs from contract', () => {
@@ -1297,19 +1317,20 @@ test('Contract-Driven End-to-End Test', async (t) => {
       await s.test('ENUM-03 — pipeline-suggested values have needs_review=true (GAP-5)', () => {
         const openPKCatalogs = (contractAnalysis._raw.knownValuesCatalogs || [])
           .filter(c => c.policy === 'open_prefer_known' && c.catalog !== 'yes_no' && c.usingFields?.[0]);
-        if (openPKCatalogs.length === 0) return;
-        let foundPipelinePending = false;
+        assert.ok(openPKCatalogs.length > 0, 'expected open_prefer_known catalogs in contract analysis');
         for (const cat of openPKCatalogs) {
           const fieldKey = cat.usingFields[0];
           const enumField = enumResult.fields.find(f => f.field === fieldKey);
           if (!enumField) continue;
-          const pipelineValues = enumField.values.filter(v =>
-            v.source === 'pipeline' && v.needs_review === true);
-          if (pipelineValues.length > 0) foundPipelinePending = true;
+          const pipelineValues = enumField.values.filter(v => v.source === 'pipeline');
+          for (const pipelineValue of pipelineValues) {
+            assert.equal(
+              pipelineValue.needs_review,
+              true,
+              `${fieldKey}/${pipelineValue.value} should keep needs_review=true for visible pipeline values`
+            );
+          }
         }
-        assert.ok(foundPipelinePending,
-          `at least one open_prefer_known catalog should have pipeline-suggested values with needs_review=true ` +
-          `(enum fields: [${openPKCatalogs.map(c => c.usingFields[0]).join(', ')}])`);
       });
     });
 
@@ -1693,7 +1714,7 @@ test('Contract-Driven End-to-End Test', async (t) => {
     });
 
     // ══════════════════════════════════════════════════════════════════════
-    // SECTION 8: FLAG CLEANUP — ONLY 6 REAL FLAGS COUNT
+    // SECTION 8: FLAG CLEANUP — ONLY 8 REAL FLAG CODES COUNT
     // ══════════════════════════════════════════════════════════════════════
 
     await t.test('SECTION 8 — Flag Cleanup', async (s) => {
@@ -1755,10 +1776,38 @@ test('Contract-Driven End-to-End Test', async (t) => {
           ))}`);
       });
 
+      await s.test('FLAG-06 — cross_validation product has dependency_missing flag when requires_field rules exist', async () => {
+        const requiresRules = (contractAnalysis._raw.rules || [])
+          .filter((rule) => String(rule?.requires_field || '').trim() && String(rule?.trigger_field || '').trim());
+        if (requiresRules.length === 0) return;
+
+        const product = products.find((p) => p._testCase.name === 'cross_validation');
+        if (!product) return;
+        const payload = await buildProductReviewPayload({
+          storage, config, category: CATEGORY, productId: product.productId,
+        });
+
+        const triggerFields = new Set(requiresRules.map((rule) => String(rule.trigger_field).trim()));
+        const flaggedFields = Object.entries(payload.fields)
+          .filter(([field, state]) => (
+            triggerFields.has(field)
+            && (state.reason_codes || []).includes('dependency_missing')
+          ));
+
+        assert.ok(flaggedFields.length > 0,
+          `cross_validation should include dependency_missing on at least one requires_field trigger, ` +
+          `trigger fields: [${[...triggerFields].join(', ')}], ` +
+          `all reason_codes: ${JSON.stringify(Object.fromEntries(
+            Object.entries(payload.fields)
+              .filter(([, s]) => s.reason_codes?.length > 0)
+              .map(([k, s]) => [k, s.reason_codes])
+          ))}`);
+      });
+
       await s.test('FLAG-04 — metrics.flags counts only real flags', async () => {
         const REAL_FLAGS = new Set([
-          'variance_violation', 'constraint_conflict', 'new_component',
-          'new_enum_value', 'below_min_evidence', 'conflict_policy_hold',
+          'variance_violation', 'constraint_conflict', 'compound_range_conflict', 'dependency_missing',
+          'new_component', 'new_enum_value', 'below_min_evidence', 'conflict_policy_hold',
         ]);
         for (const product of products) {
           const payload = await buildProductReviewPayload({

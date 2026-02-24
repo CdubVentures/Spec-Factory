@@ -1,17 +1,17 @@
 {
   "category": "mouse",
-  "generated_at": "2026-02-13T02:18:36.677Z",
+  "generated_at": "2026-02-24T22:51:45.113Z",
   "rules": [
     {
       "check": {
-        "max": 500,
-        "min": 1,
+        "max": 100000,
+        "min": 50,
         "on_fail": "reject_candidate",
         "type": "range"
       },
-      "description": "weight must stay within configured plausible range",
-      "rule_id": "weight_plausibility",
-      "trigger_field": "weight"
+      "description": "dpi must stay within configured plausible range",
+      "rule_id": "dpi_plausibility",
+      "trigger_field": "dpi"
     },
     {
       "check": {
@@ -26,14 +26,14 @@
     },
     {
       "check": {
-        "max": 100000,
-        "min": 50,
+        "max": 500,
+        "min": 1,
         "on_fail": "reject_candidate",
         "type": "range"
       },
-      "description": "dpi must stay within configured plausible range",
-      "rule_id": "dpi_plausibility",
-      "trigger_field": "dpi"
+      "description": "weight must stay within configured plausible range",
+      "rule_id": "weight_plausibility",
+      "trigger_field": "weight"
     },
     {
       "condition": "connection IN ['wireless','hybrid','bluetooth']",

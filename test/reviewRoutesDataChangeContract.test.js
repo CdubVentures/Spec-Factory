@@ -309,3 +309,124 @@ test('enum consistency apply emits typed data-change contract', async () => {
   assert.deepEqual(emitted[0].payload.categories, ['mouse']);
   assert.deepEqual(emitted[0].payload.domains, ['enum', 'review']);
 });
+
+test('enum consistency skips when review consumer disables enum.additional_values', async () => {
+  const emitted = [];
+  const specDb = makeMockEnumSpecDb();
+  const handler = registerReviewRoutes(makeReviewCtx({
+    readJsonBody: async () => ({ field: 'lighting', apply: true }),
+    getSpecDbReady: async () => specDb,
+    sessionCache: {
+      getSessionRules: async () => ({
+        mergedFields: {
+          lighting: {
+            enum: {
+              policy: 'open_prefer_known',
+              source: 'data_lists.lighting',
+            },
+            consumers: {
+              'enum.additional_values': {
+                review: false,
+              },
+            },
+          },
+        },
+        draftFieldOrder: [],
+        draftFields: {},
+        cleanFieldOrder: [],
+      }),
+      invalidateSessionCache: () => {},
+    },
+    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
+  }));
+
+  const result = await handler(['review-components', 'mouse', 'enum-consistency'], new URLSearchParams(), 'POST', {}, {});
+  assert.equal(result.status, 403);
+  assert.equal(result.body?.error, 'review_consumer_disabled');
+  assert.equal(emitted.length, 0);
+});
+
+test('enum override is blocked when review consumer disables enum.source', async () => {
+  const emitted = [];
+  const seededSpecDb = { isSeeded: () => true };
+  const handler = registerReviewRoutes(makeReviewCtx({
+    readJsonBody: async () => ({
+      action: 'confirm',
+      listValueId: 12,
+      enumListId: 4,
+      candidateId: 'cand-lighting',
+    }),
+    getSpecDbReady: async () => seededSpecDb,
+    resolveEnumMutationContext: () => ({
+      field: 'lighting',
+      value: 'Rgb Led',
+      oldValue: 'Rgb Led',
+      listValueId: 12,
+      enumListId: 4,
+      error: null,
+    }),
+    sessionCache: {
+      getSessionRules: async () => ({
+        mergedFields: {
+          lighting: {
+            enum: {
+              policy: 'open_prefer_known',
+              source: 'data_lists.lighting',
+            },
+            consumers: {
+              'enum.source': {
+                review: false,
+              },
+            },
+          },
+        },
+        draftFieldOrder: [],
+        draftFields: {},
+        cleanFieldOrder: [],
+      }),
+      invalidateSessionCache: () => {},
+    },
+    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
+  }));
+
+  const result = await handler(['review-components', 'mouse', 'enum-override'], new URLSearchParams(), 'POST', {}, {});
+  assert.equal(result.status, 403);
+  assert.equal(result.body?.error, 'review_consumer_disabled');
+  assert.equal(emitted.length, 0);
+});
+
+test('enum consistency skips when review consumer is disabled', async () => {
+  const emitted = [];
+  const specDb = makeMockEnumSpecDb();
+  let llmInvoked = false;
+  const handler = registerReviewRoutes(makeReviewCtx({
+    readJsonBody: async () => ({ field: 'lighting', apply: true }),
+    getSpecDbReady: async () => specDb,
+    sessionCache: {
+      getSessionRules: async () => ({
+        mergedFields: {
+          lighting: {
+            consumers: {
+              'enum.match.strategy': { review: false },
+            },
+          },
+        },
+      }),
+      invalidateSessionCache: () => {},
+    },
+    runEnumConsistencyReview: async () => {
+      llmInvoked = true;
+      return {
+        enabled: true,
+        decisions: [],
+      };
+    },
+    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
+  }));
+
+  const result = await handler(['review-components', 'mouse', 'enum-consistency'], new URLSearchParams(), 'POST', {}, {});
+  assert.equal(result.status, 403);
+  assert.equal(result.body?.error, 'review_consumer_disabled');
+  assert.equal(llmInvoked, false);
+  assert.equal(emitted.length, 0);
+});

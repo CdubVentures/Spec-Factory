@@ -11,6 +11,8 @@ export interface RuntimeEvent {
 
 export interface ProcessStatus {
   running: boolean;
+  relocating?: boolean;
+  relocatingRunId?: string | null;
   pid?: number;
   command?: string;
   startedAt?: string;

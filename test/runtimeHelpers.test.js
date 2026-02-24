@@ -123,6 +123,97 @@ test('deriveRouteMatrixPolicy picks max from route rows and field rules', () => 
   assert.equal(result.min_evidence_refs_effective, 5);
 });
 
+test('deriveRouteMatrixPolicy surfaces route policy knobs from the preferred field row', () => {
+  const result = deriveRouteMatrixPolicy({
+    routeRows: [
+      {
+        scope: 'field',
+        route_key: 'field-critical-hard',
+        required_level: 'critical',
+        difficulty: 'hard',
+        availability: 'expected',
+        effort: 9,
+        single_source_data: false,
+        all_source_data: true,
+        enable_websearch: false,
+        model_ladder_today: 'gpt-ladder-a -> gpt-ladder-b',
+        all_sources_confidence_repatch: true,
+        max_tokens: 1234,
+        studio_contract_rules_sent_in_extract_review: false,
+        studio_send_booleans_prompted_to_model: true,
+        insufficient_evidence_action: 'escalate',
+        llm_output_min_evidence_refs_required: 2
+      }
+    ],
+    categoryConfig: {
+      fieldRules: {
+        fields: {
+          sensor: {
+            required_level: 'critical',
+            difficulty: 'hard',
+            availability: 'expected'
+          }
+        }
+      }
+    }
+  });
+
+  assert.equal(result.route_key, 'field-critical-hard');
+  assert.equal(result.single_source_data, false);
+  assert.equal(result.all_source_data, true);
+  assert.equal(result.enable_websearch, false);
+  assert.equal(result.model_ladder_today, 'gpt-ladder-a -> gpt-ladder-b');
+  assert.equal(result.all_sources_confidence_repatch, true);
+  assert.equal(result.max_tokens, 1234);
+  assert.equal(result.studio_contract_rules_sent_in_extract_review, false);
+  assert.equal(result.studio_send_booleans_prompted_to_model, true);
+  assert.equal(result.insufficient_evidence_action, 'escalate');
+});
+
+test('deriveRouteMatrixPolicy maps field rules to route rows', () => {
+  const result = deriveRouteMatrixPolicy({
+    routeRows: [
+      {
+        scope: 'field',
+        route_key: 'row-critical-hard-rare',
+        required_level: 'critical',
+        difficulty: 'hard',
+        availability: 'rare',
+        effort: 9,
+        llm_output_min_evidence_refs_required: 3
+      },
+      {
+        scope: 'field',
+        route_key: 'row-expected-medium-expected',
+        required_level: 'expected',
+        difficulty: 'medium',
+        availability: 'expected',
+        effort: 4,
+        llm_output_min_evidence_refs_required: 1
+      }
+    ],
+    categoryConfig: {
+      fieldRules: {
+        fields: {
+          click_latency: {
+            required_level: 'critical',
+            difficulty: 'hard',
+            availability: 'rare'
+          },
+          weight: {
+            required_level: 'expected',
+            difficulty: 'medium',
+            availability: 'expected'
+          }
+        }
+      }
+    }
+  });
+
+  assert.equal(result.field_policy_by_key.click_latency.route_key, 'row-critical-hard-rare');
+  assert.equal(result.field_policy_by_key.weight.route_key, 'row-expected-medium-expected');
+});
+
 // --- resolveRuntimeControlKey ---
 
 test('resolveRuntimeControlKey uses default path', () => {

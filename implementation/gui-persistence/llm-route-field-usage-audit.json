@@ -1,0 +1,312 @@
+{
+  "generatedAt": "2026-02-24T22:32:15.186Z",
+  "keysCount": 32,
+  "dormantKeys": [
+    "route_key",
+    "effort_band",
+    "single_source_data",
+    "all_source_data",
+    "enable_websearch",
+    "model_ladder_today",
+    "all_sources_confidence_repatch",
+    "studio_key_navigation_sent_in_extract_review",
+    "studio_contract_rules_sent_in_extract_review",
+    "studio_extraction_guidance_sent_in_extract_review",
+    "studio_tooltip_or_description_sent_when_present",
+    "studio_enum_options_sent_when_present",
+    "studio_component_variance_constraints_sent_in_component_review",
+    "studio_parse_template_sent_direct_in_extract_review",
+    "studio_ai_mode_difficulty_effort_sent_direct_in_extract_review",
+    "studio_required_level_sent_in_extract_review",
+    "studio_component_entity_set_sent_when_component_field",
+    "studio_evidence_policy_sent_direct_in_extract_review",
+    "studio_variance_policy_sent_in_component_review",
+    "studio_constraints_sent_in_component_review",
+    "studio_send_booleans_prompted_to_model",
+    "insufficient_evidence_action"
+  ],
+  "results": [
+    {
+      "key": "scope",
+      "totalMatchesInSrc": 207,
+      "matchesOutsidePersistence": 122,
+      "sampleOutsidePersistence": [
+        "src\\api\\reviewItemRoutes.js:429:  if (routeMatches({ parts, method, scope: 'review', action: 'override' })) {",
+        "src\\api\\reviewItemRoutes.js:432:  if (routeMatches({ parts, method, scope: 'review', action: 'manual-override' })) {",
+        "src\\api\\reviewItemRoutes.js:598:  if (!routeMatches({ parts, method, scope: 'review', action })) {",
+        "src\\api\\reviewItemRoutes.js:634:          message: 'Valid itemFieldStateId is required for candidate-scoped item confirm.',",
+        "src\\api\\reviewItemRoutes.js:716:    candidateRequiredMessage: 'candidateId is required for candidate-scoped AI confirm.',",
+        "src\\api\\reviewItemRoutes.js:727:    candidateRequiredMessage: 'candidateId is required for candidate-scoped accept.',",
+        "src\\api\\reviewEnumMutationRoutes.js:222:  if (routeMatches({ parts, method, scope: 'review-components', action: 'enum-override' })) {",
+        "src\\api\\reviewEnumMutationRoutes.js:595:  if (routeMatches({ parts, method, scope: 'review-components', action: 'enum-rename' })) {",
+        "src\\discovery\\searchDiscovery.js:889:  const scopedCategory = normalizeCategoryScope(category);",
+        "src\\discovery\\searchDiscovery.js:893:      ? storage.listEnabledSourceStrategies(scopedCategory)"
+      ]
+    },
+    {
+      "key": "route_key",
+      "totalMatchesInSrc": 10,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "required_level",
+      "totalMatchesInSrc": 113,
+      "matchesOutsidePersistence": 73,
+      "sampleOutsidePersistence": [
+        "src\\api\\routes\\indexlabDataBuilders.js:1763:      required_level: String(row?.required_level || '').trim().toLowerCase(),",
+        "src\\api\\routes\\indexlabDataBuilders.js:1790:      priority: automationPriorityForRequiredLevel(row.required_level),",
+        "src\\api\\routes\\runtimeOpsDataBuilders.js:1048:        required_level_counts: payload.required_level_counts && typeof payload.required_level_counts === 'object' ? payload.required_level_counts : {},",
+        "src\\api\\routes\\runtimeOpsDataBuilders.js:1277:          required_level_counts: artNeedset.required_level_counts && typeof artNeedset.required_level_counts === 'object' ? artNeedset.required_level_counts : {},",
+        "src\\api\\routes\\runtimeOpsDataBuilders.js:1286:          required_level_counts: {},",
+        "src\\indexlab\\runtimeBridge.js:114:    required_level_counts: toObject(row.required_level_counts),",
+        "src\\indexlab\\runtimeBridge.js:142:    required_level_counts: {},",
+        "src\\indexlab\\runtimeBridge.js:1182:        required_level_counts: payload.required_level_counts,",
+        "src\\indexlab\\needsetEngine.js:372:      required_level: requiredLevel,",
+        "src\\indexlab\\needsetEngine.js:399:    const levelDelta = (REQUIRED_WEIGHT[b.required_level] ?? 0) - (REQUIRED_WEIGHT[a.required_level] ?? 0);"
+      ]
+    },
+    {
+      "key": "difficulty",
+      "totalMatchesInSrc": 107,
+      "matchesOutsidePersistence": 65,
+      "sampleOutsidePersistence": [
+        "src\\engine\\ruleAccessors.js:25:  return normalizeToken(priority.difficulty || rule.difficulty || 'medium') || 'medium';",
+        "src\\engine\\ruleAccessors.js:34:  const difficulty = ruleDifficulty(rule);",
+        "src\\engine\\ruleAccessors.js:35:  if (difficulty === 'hard') return 8;",
+        "src\\engine\\ruleAccessors.js:36:  if (difficulty === 'medium') return 5;",
+        "src\\engine\\ruleAccessors.js:37:  if (difficulty === 'easy') return 2;",
+        "src\\engine\\ruleAccessors.js:137:  // Auto-derive from priority + difficulty",
+        "src\\engine\\fieldRulesEngine.js:19:  ruleDifficulty as difficultyLevel,",
+        "src\\engine\\fieldRulesEngine.js:79:// requiredLevel, availabilityLevel, difficultyLevel imported from ruleAccessors.js",
+        "src\\engine\\fieldRulesEngine.js:361:        return level === 'expected' && difficultyLevel(this.rules[field]) === 'easy';",
+        "src\\engine\\fieldRulesEngine.js:712:      difficulty: difficultyLevel(rule),"
+      ]
+    },
+    {
+      "key": "availability",
+      "totalMatchesInSrc": 131,
+      "matchesOutsidePersistence": 95,
+      "sampleOutsidePersistence": [
+        "src\\field-rules\\consumerGate.js:37:  'priority.availability': ['seed', 'indexlab', 'review'],",
+        "src\\field-rules\\consumerGate.js:85:  'priority.availability': [['priority', 'availability'], ['availability']],",
+        "src\\ingest\\categoryCompile.js:79:  availability: 'expected',",
+        "src\\ingest\\categoryCompile.js:89:  const availability = normalizeToken(priority.availability || DEFAULT_REVIEW_PRIORITY.availability);",
+        "src\\ingest\\categoryCompile.js:94:    availability: REVIEW_AVAILABILITY_LEVELS.has(availability) ? availability : DEFAULT_REVIEW_PRIORITY.availability,",
+        "src\\ingest\\categoryCompile.js:2716:  const currentAvailability = normalizeToken(rule.availability || priority.availability || '');",
+        "src\\ingest\\categoryCompile.js:2722:  rule.availability = finalAvailability;",
+        "src\\ingest\\categoryCompile.js:2723:  priority.availability = finalAvailability;",
+        "src\\ingest\\categoryCompile.js:2899:  availability = 'sometimes',",
+        "src\\ingest\\categoryCompile.js:2921:  if (difficulty === 'hard' || availability === 'rare') {"
+      ]
+    },
+    {
+      "key": "effort",
+      "totalMatchesInSrc": 146,
+      "matchesOutsidePersistence": 92,
+      "sampleOutsidePersistence": [
+        "src\\adapters\\index.js:136:          // best effort only",
+        "src\\api\\reviewItemRoutes.js:210:  } catch { /* best-effort */ }",
+        "src\\api\\reviewRouteSharedHelpers.js:167:      // best-effort sync hook",
+        "src\\api\\reviewEnumMutationRoutes.js:180:    try { await markEnumSuggestionStatus(category, field, value, 'accepted'); } catch { /* best-effort */ }",
+        "src\\api\\reviewEnumMutationRoutes.js:182:      try { await markEnumSuggestionStatus(category, field, priorValue, 'accepted'); } catch { /* best-effort */ }",
+        "src\\api\\reviewEnumMutationRoutes.js:187:    try { await markEnumSuggestionStatus(category, field, value, 'dismissed'); } catch { /* best-effort */ }",
+        "src\\api\\reviewEnumMutationRoutes.js:670:      try { await markEnumSuggestionStatus(category, field, oldValue, 'accepted'); } catch { /* best-effort */ }",
+        "src\\index\\evidenceIndexDb.js:165:        // FTS sync best-effort",
+        "src\\logger.js:58:    // SQLite write (synchronous, best-effort)",
+        "src\\logger.js:70:      } catch { /* best-effort */ }"
+      ]
+    },
+    {
+      "key": "effort_band",
+      "totalMatchesInSrc": 8,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "single_source_data",
+      "totalMatchesInSrc": 27,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "all_source_data",
+      "totalMatchesInSrc": 27,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "enable_websearch",
+      "totalMatchesInSrc": 24,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "model_ladder_today",
+      "totalMatchesInSrc": 25,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "all_sources_confidence_repatch",
+      "totalMatchesInSrc": 8,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "max_tokens",
+      "totalMatchesInSrc": 36,
+      "matchesOutsidePersistence": 13,
+      "sampleOutsidePersistence": [
+        "src\\indexlab\\runtimeBridge.js:1399:        max_tokens_applied: asInt(row.max_tokens_applied, 0),",
+        "src\\field-rules\\consumerGate.js:45:  'ai_assist.max_tokens': ['indexlab', 'review'],",
+        "src\\field-rules\\consumerGate.js:93:  'ai_assist.max_tokens': [['ai_assist', 'max_tokens']],",
+        "src\\api\\routes\\indexlabDataBuilders.js:809:      max_tokens_applied: toInt(row.max_tokens_applied, 0),",
+        "src\\llm\\fieldBatching.js:177:  // Compute per-field max_tokens: use MAX across all fields in batch",
+        "src\\engine\\ruleAccessors.js:164:  const raw = Number.parseInt(String(ai.max_tokens ?? ''), 10);",
+        "src\\ingest\\categoryCompile.js:105:  const maxTokensRaw = asInt(aiAssist.max_tokens, 0);",
+        "src\\ingest\\categoryCompile.js:110:    max_tokens: maxTokensRaw > 0 ? Math.max(256, Math.min(65536, maxTokensRaw)) : null,",
+        "src\\ingest\\categoryCompile.js:3934:    max_tokens: asInt(aiAssistInput.max_tokens, 0) || null,",
+        "src\\llm\\openaiClient.js:602:      body.max_tokens = effectiveMaxTokens;"
+      ]
+    },
+    {
+      "key": "studio_key_navigation_sent_in_extract_review",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "studio_contract_rules_sent_in_extract_review",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "studio_extraction_guidance_sent_in_extract_review",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "studio_tooltip_or_description_sent_when_present",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "studio_enum_options_sent_when_present",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "studio_component_variance_constraints_sent_in_component_review",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "studio_parse_template_sent_direct_in_extract_review",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "studio_ai_mode_difficulty_effort_sent_direct_in_extract_review",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "studio_required_level_sent_in_extract_review",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "studio_component_entity_set_sent_when_component_field",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "studio_evidence_policy_sent_direct_in_extract_review",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "studio_variance_policy_sent_in_component_review",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "studio_constraints_sent_in_component_review",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "studio_send_booleans_prompted_to_model",
+      "totalMatchesInSrc": 6,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    },
+    {
+      "key": "scalar_linked_send",
+      "totalMatchesInSrc": 12,
+      "matchesOutsidePersistence": 5,
+      "sampleOutsidePersistence": [
+        "src\\llm\\extractCandidatesLLM.js:382:  const scalarSend = String(routeMatrixPolicy?.scalar_linked_send || '').trim().toLowerCase();",
+        "src\\llm\\extractCandidatesLLM.js:1010:      route_policy_scalar_linked_send: routeMatrixPolicy?.scalar_linked_send ?? null,",
+        "src\\pipeline\\runProduct.js:340:    scalar_linked_send: routeMatrixPolicy.scalar_linked_send,",
+        "src\\pipeline\\helpers\\runtimeHelpers.js:55:    preferredField?.scalar_linked_send || 'scalar value + prime sources'",
+        "src\\pipeline\\helpers\\runtimeHelpers.js:69:    scalar_linked_send: scalarSend,"
+      ]
+    },
+    {
+      "key": "component_values_send",
+      "totalMatchesInSrc": 16,
+      "matchesOutsidePersistence": 5,
+      "sampleOutsidePersistence": [
+        "src\\pipeline\\runProduct.js:341:    component_values_send: routeMatrixPolicy.component_values_send,",
+        "src\\pipeline\\helpers\\runtimeHelpers.js:58:    preferredComponent?.component_values_send || 'component values + prime sources'",
+        "src\\pipeline\\helpers\\runtimeHelpers.js:70:    component_values_send: componentSend,",
+        "src\\llm\\extractCandidatesLLM.js:381:  const componentSend = String(routeMatrixPolicy?.component_values_send || '').trim().toLowerCase();",
+        "src\\llm\\extractCandidatesLLM.js:1009:      route_policy_component_values_send: routeMatrixPolicy?.component_values_send ?? null,"
+      ]
+    },
+    {
+      "key": "list_values_send",
+      "totalMatchesInSrc": 16,
+      "matchesOutsidePersistence": 5,
+      "sampleOutsidePersistence": [
+        "src\\pipeline\\runProduct.js:342:    list_values_send: routeMatrixPolicy.list_values_send,",
+        "src\\llm\\extractCandidatesLLM.js:383:  const listSend = String(routeMatrixPolicy?.list_values_send || '').trim().toLowerCase();",
+        "src\\llm\\extractCandidatesLLM.js:1011:      route_policy_list_values_send: routeMatrixPolicy?.list_values_send ?? null,",
+        "src\\pipeline\\helpers\\runtimeHelpers.js:61:    preferredList?.list_values_send || 'list values prime sources'",
+        "src\\pipeline\\helpers\\runtimeHelpers.js:71:    list_values_send: listSend,"
+      ]
+    },
+    {
+      "key": "llm_output_min_evidence_refs_required",
+      "totalMatchesInSrc": 22,
+      "matchesOutsidePersistence": 5,
+      "sampleOutsidePersistence": [
+        "src\\pipeline\\helpers\\runtimeHelpers.js:28:      const minA = parseMinEvidenceRefs(a?.llm_output_min_evidence_refs_required, 1);",
+        "src\\pipeline\\helpers\\runtimeHelpers.js:29:      const minB = parseMinEvidenceRefs(b?.llm_output_min_evidence_refs_required, 1);",
+        "src\\pipeline\\helpers\\runtimeHelpers.js:48:    .map((row) => parseMinEvidenceRefs(row?.llm_output_min_evidence_refs_required, 1));",
+        "src\\pipeline\\helpers\\runtimeHelpers.js:72:    llm_output_min_evidence_refs_required: minEvidenceRefsEffective,",
+        "src\\llm\\extractCandidatesLLM.js:1160:            ?? routeMatrixPolicy?.llm_output_min_evidence_refs_required"
+      ]
+    },
+    {
+      "key": "insufficient_evidence_action",
+      "totalMatchesInSrc": 10,
+      "matchesOutsidePersistence": 0,
+      "sampleOutsidePersistence": []
+    }
+  ]
+}

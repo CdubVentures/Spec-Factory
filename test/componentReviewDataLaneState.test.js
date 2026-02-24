@@ -142,6 +142,96 @@ test('component payload hydrates __name/__maker accepted_candidate_id from key_r
   }
 });
 
+test('component payload keeps contract-declared property columns when component values are blank', async () => {
+  const { tempRoot, specDb } = await createTempSpecDb();
+  try {
+    specDb.upsertComponentIdentity({
+      componentType: 'sensor',
+      canonicalName: 'PAW3950',
+      maker: 'PixArt',
+      links: [],
+      source: 'pipeline',
+    });
+    specDb.upsertComponentValue({
+      componentType: 'sensor',
+      componentName: 'PAW3950',
+      componentMaker: 'PixArt',
+      propertyKey: 'dpi_max',
+      value: '35000',
+      confidence: 1,
+      variancePolicy: 'upper_bound',
+      source: 'pipeline',
+      acceptedCandidateId: null,
+      needsReview: false,
+      overridden: false,
+      constraints: [],
+    });
+
+    const config = { helperFilesRoot: path.join(tempRoot, 'helper_files') };
+    const fieldRules = {
+      rules: {
+        fields: {
+          sensor: {
+            component: {
+              type: 'sensor',
+              source: 'component_db.sensor',
+              match: {
+                property_keys: ['dpi_max', 'ips'],
+              },
+            },
+          },
+          dpi_max: {
+            variance_policy: 'upper_bound',
+            constraints: [],
+          },
+          ips: {
+            variance_policy: 'upper_bound',
+            constraints: ['ips <= dpi_max'],
+          },
+        },
+      },
+      component_db_sources: {
+        sensor: {
+          roles: {
+            properties: [
+              { field_key: 'dpi_max' },
+              { field_key: 'ips' },
+            ],
+          },
+        },
+      },
+    };
+    const payload = await buildComponentReviewPayloads({
+      config,
+      category: CATEGORY,
+      componentType: 'sensor',
+      specDb,
+      fieldRules,
+    });
+
+    assert.ok(payload.property_columns.includes('dpi_max'));
+    assert.ok(payload.property_columns.includes('ips'));
+
+    const row = payload.items.find((item) => item.name === 'PAW3950' && item.maker === 'PixArt');
+    assert.ok(row, 'expected PAW3950/PixArt row');
+    assert.ok(Object.prototype.hasOwnProperty.call(row.properties || {}, 'ips'));
+    assert.equal(row.properties.ips.selected.value, null);
+    assert.deepEqual(row.properties.ips.constraints, ['ips <= dpi_max']);
+
+    const layout = await buildComponentReviewLayout({
+      config,
+      category: CATEGORY,
+      specDb,
+      fieldRules,
+    });
+    const sensorType = (layout.types || []).find((type) => type.type === 'sensor');
+    assert.ok(sensorType, 'expected sensor component type in layout');
+    assert.ok((sensorType.property_columns || []).includes('ips'));
+  } finally {
+    await cleanupTempSpecDb(tempRoot, specDb);
+  }
+});
+
 test('component layout item_count matches visible payload rows', async () => {
   const { tempRoot, specDb } = await createTempSpecDb();
   try {
@@ -992,6 +1082,20 @@ test('enum payload hides pending pipeline values without linked products', async
   }
 });
 
+test('enum payload requires SpecDb authority when building review payloads', async () => {
+  await assert.rejects(
+    () => buildEnumReviewPayloads({
+      config: {},
+      category: CATEGORY,
+    }),
+    (err) => {
+      assert.equal(err?.code, 'specdb_not_ready');
+      assert.equal(String(err?.message || '').includes(CATEGORY), true);
+      return true;
+    }
+  );
+});
+
 test('component payload aggregates candidates from ALL linked products for EVERY slot type', async () => {
   const { tempRoot, specDb } = await createTempSpecDb();
   try {
@@ -1306,6 +1410,16 @@ test('edge case — confidence boundary values map to correct colors', async () 
   assert.strictEqual(confidenceColor(0.84, []), 'yellow', 'confidence 0.84 should be yellow');
   assert.strictEqual(confidenceColor(0.85, []), 'green', 'confidence 0.85 should be green');
   assert.strictEqual(confidenceColor(1.0, []), 'green', 'confidence 1.0 should be green');
+  assert.strictEqual(
+    confidenceColor(0.95, ['variance_violation']),
+    'red',
+    'variance_violation should force red regardless of confidence'
+  );
+  assert.strictEqual(
+    confidenceColor(0.95, ['dependency_missing']),
+    'red',
+    'dependency_missing should force red regardless of confidence'
+  );
 });
 
 test('edge case — confidence boundaries in component payload slots', async () => {

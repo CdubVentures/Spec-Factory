@@ -315,7 +315,17 @@ export async function runConvergenceLoop({
         fieldOrder: previousSummary.fieldOrder || job.fieldOrder || [],
         fieldReasoning: previousSummary.field_reasoning || previousSummary.fieldReasoning || {},
         constraintAnalysis: previousSummary.constraint_analysis || {},
-        identityContext: previousSummary.identityContext || {}
+        identityContext: previousSummary.identityContext || {},
+        identityCaps: {
+          locked: toFloat(config?.needsetCapIdentityLocked, 1),
+          provisional: toFloat(config?.needsetCapIdentityProvisional, 0.74),
+          conflict: toFloat(config?.needsetCapIdentityConflict, 0.39),
+          unlocked: toFloat(config?.needsetCapIdentityUnlocked, 0.59)
+        },
+        decayConfig: {
+          decayDays: toInt(config?.needsetEvidenceDecayDays, 14),
+          decayFloor: toFloat(config?.needsetEvidenceDecayFloor, 0.3)
+        }
       });
 
       const dispatch = buildNeedSetDispatch({

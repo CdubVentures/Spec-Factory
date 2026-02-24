@@ -210,6 +210,14 @@ function buildSearchProfileFromEvents(meta = {}, eventRows = []) {
   };
 }
 
+async function readOutputRootJson(storageKey) {
+  if (!_outputRoot || !storageKey) {
+    return null;
+  }
+  const artifactPath = path.join(_outputRoot, ...String(storageKey).split('/'));
+  return safeReadJson(artifactPath);
+}
+
 export async function resolveIndexLabRunContext(runId) {
   const token = String(runId || '').trim();
   if (!token) return null;
@@ -285,8 +293,6 @@ export async function readIndexLabRunSearchProfile(runId) {
   const runDir = safeJoin(_indexLabRoot, token);
   if (!runDir) return null;
 
-  const directPath = path.join(runDir, 'search_profile.json');
-  const direct = await safeReadJson(directPath);
 
   const meta = await safeReadJson(path.join(runDir, 'run.json'));
   if (!meta || typeof meta !== 'object') {
@@ -296,6 +302,14 @@ export async function readIndexLabRunSearchProfile(runId) {
   const category = String(meta?.category || '').trim();
   const resolvedRunId = String(meta?.run_id || token).trim();
   const productId = resolveRunProductId(meta, eventRows);
+  const normalizedRunBase = String(meta?.run_base || meta?.runBase || '')
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\/+|\/+$/g, '');
+  const normalizedLatestBase = String(meta?.latest_base || meta?.latestBase || '')
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\/+|\/+$/g, '');
 
   if (productId && _storage && typeof _storage.resolveOutputKey === 'function' && typeof _storage.readJsonOrNull === 'function') {
     const runProfileKey = _storage.resolveOutputKey(category, productId, 'runs', resolvedRunId, 'analysis', 'search_profile.json');
@@ -304,10 +318,34 @@ export async function readIndexLabRunSearchProfile(runId) {
       return runProfile;
     }
 
+    const runProfileFromOutputRoot = await readOutputRootJson(runProfileKey);
+    if (runProfileFromOutputRoot && typeof runProfileFromOutputRoot === 'object') {
+      return runProfileFromOutputRoot;
+    }
+
     const latestProfileKey = _storage.resolveOutputKey(category, productId, 'latest', 'search_profile.json');
     const latestProfile = await _storage.readJsonOrNull(latestProfileKey);
     if (latestProfile && typeof latestProfile === 'object') {
       return latestProfile;
+    }
+
+    const latestProfileFromOutputRoot = await readOutputRootJson(latestProfileKey);
+    if (latestProfileFromOutputRoot && typeof latestProfileFromOutputRoot === 'object') {
+      return latestProfileFromOutputRoot;
+    }
+  }
+
+  if (normalizedRunBase) {
+    const runBaseProfile = await readOutputRootJson(`${normalizedRunBase}/analysis/search_profile.json`);
+    if (runBaseProfile && typeof runBaseProfile === 'object') {
+      return runBaseProfile;
+    }
+  }
+
+  if (normalizedLatestBase) {
+    const latestBaseProfile = await readOutputRootJson(`${normalizedLatestBase}/search_profile.json`);
+    if (latestBaseProfile && typeof latestBaseProfile === 'object') {
+      return latestBaseProfile;
     }
   }
 
@@ -318,13 +356,37 @@ export async function readIndexLabRunSearchProfile(runId) {
       return fromDiscoveryProfile;
     }
 
+    const fromDiscoveryProfileFromOutputRoot = await readOutputRootJson(discoveryProfileKey);
+    if (fromDiscoveryProfileFromOutputRoot && typeof fromDiscoveryProfileFromOutputRoot === 'object') {
+      return fromDiscoveryProfileFromOutputRoot;
+    }
+
     const discoveryLegacyKey = _storage.resolveInputKey('_discovery', category, `${resolvedRunId}.json`);
     const fromDiscovery = await _storage.readJsonOrNull(discoveryLegacyKey);
     if (fromDiscovery?.search_profile && typeof fromDiscovery.search_profile === 'object') {
       return fromDiscovery.search_profile;
     }
+
+    const fromDiscoveryFromOutputRoot = await readOutputRootJson(discoveryLegacyKey);
+    if (fromDiscoveryFromOutputRoot?.search_profile && typeof fromDiscoveryFromOutputRoot.search_profile === 'object') {
+      return fromDiscoveryFromOutputRoot.search_profile;
+    }
   }
 
+  const localDiscoveryProfilePath = path.join(runDir, '_discovery', `${resolvedRunId}.search_profile.json`);
+  const localDiscoveryProfile = await safeReadJson(localDiscoveryProfilePath);
+  if (localDiscoveryProfile && typeof localDiscoveryProfile === 'object') {
+    return localDiscoveryProfile;
+  }
+
+  const localDiscoveryLegacyPath = path.join(runDir, '_discovery', `${resolvedRunId}.json`);
+  const localDiscoveryLegacy = await safeReadJson(localDiscoveryLegacyPath);
+  if (localDiscoveryLegacy?.search_profile && typeof localDiscoveryLegacy.search_profile === 'object') {
+    return localDiscoveryLegacy.search_profile;
+  }
+
+  const directPath = path.join(runDir, 'search_profile.json');
+  const direct = await safeReadJson(directPath);
   if (direct && typeof direct === 'object') {
     return direct;
   }

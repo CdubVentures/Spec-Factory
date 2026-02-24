@@ -15,6 +15,7 @@ interface Props {
   saveSuccess: boolean;
   autoSaveEnabled: boolean;
   setAutoSaveEnabled: (v: boolean) => void;
+  autoSaveLocked: boolean;
 }
 
 export function WorkbenchColumnPresets({
@@ -29,6 +30,7 @@ export function WorkbenchColumnPresets({
   saveSuccess,
   autoSaveEnabled,
   setAutoSaveEnabled,
+  autoSaveLocked,
 }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
@@ -110,14 +112,18 @@ export function WorkbenchColumnPresets({
         {saving ? 'Saving…' : 'Save'}
       </button>
       <button
-        onClick={() => setAutoSaveEnabled(!autoSaveEnabled)}
+        onClick={() => {
+          if (autoSaveLocked) return;
+          setAutoSaveEnabled(!autoSaveEnabled);
+        }}
+        disabled={autoSaveLocked}
         className={`relative px-3 py-1.5 text-xs font-medium rounded border transition-colors overflow-visible ${
           autoSaveEnabled
             ? 'bg-accent/10 text-accent border-accent/40 shadow-inner dark:bg-accent/20 dark:border-accent/50'
             : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
-        }`}
+        } ${autoSaveLocked ? 'opacity-80 cursor-not-allowed' : ''}`}
       >
-        {autoSaveEnabled ? 'Auto-save On' : 'Auto-save Off'}
+        {autoSaveLocked ? 'Auto-save On (Locked by Auto-save ALL)' : (autoSaveEnabled ? 'Auto-save On' : 'Auto-save Off')}
         {saving && (
           <span
             className="absolute inline-block h-2 w-2 rounded-full bg-gray-400 animate-pulse border border-white/90 shadow-sm"

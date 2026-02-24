@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCollapseStore } from '../../stores/collapseStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { wsManager } from '../../api/ws';
@@ -258,7 +259,7 @@ function ImportProgressPanel({ steps }: { steps: ImportProgress[] }) {
 export function TestModePage() {
   const LS_KEY = 'test-mode-state';
   function loadSaved() {
-    try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch { return {}; }
+    try { return JSON.parse(sessionStorage.getItem(LS_KEY) || '{}'); } catch { return {}; }
   }
   const saved = loadSaved();
 
@@ -268,38 +269,42 @@ export function TestModePage() {
   const [runResults, setRunResults] = useState<RunResultItem[]>(saved.runResults || []);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(saved.validationResult || null);
   const [importSteps, setImportSteps] = useState<ImportProgress[]>([]);
-  const [matrixCollapsed, setMatrixCollapsed] = useState<Record<string, boolean>>({
-    fieldRules: true,
-    components: true,
-    listsEnums: true
-  });
-  const [aiReview, setAiReview] = useState(false);
+  const matrixCollapseValues = useCollapseStore((s) => s.values);
+  const matrixCollapseToggle = useCollapseStore((s) => s.toggle);
+  const matrixCollapsed = {
+    fieldRules: matrixCollapseValues['testMode:matrix:fieldRules'] ?? true,
+    components: matrixCollapseValues['testMode:matrix:components'] ?? true,
+    listsEnums: matrixCollapseValues['testMode:matrix:listsEnums'] ?? true,
+  };
+  const [aiReview, setAiReview] = useState(Boolean(saved.aiReview));
   const [sourcesPerScenario, setSourcesPerScenario] = useState<number>(saved.sourcesPerScenario ?? 0);
   const [sharedFieldRatioPercent, setSharedFieldRatioPercent] = useState<number>(saved.sharedFieldRatioPercent ?? 40);
   const [sameValueDuplicatePercent, setSameValueDuplicatePercent] = useState<number>(saved.sameValueDuplicatePercent ?? 30);
   const [statusLoaded, setStatusLoaded] = useState(false);
   const importStepsRef = useRef<ImportProgress[]>([]);
 
-  // Persist key state to localStorage whenever it changes
+  // Persist key state to sessionStorage whenever it changes
   useEffect(() => {
     try {
-      localStorage.setItem(LS_KEY, JSON.stringify({
+      sessionStorage.setItem(LS_KEY, JSON.stringify({
         sourceCategory,
         testCategory,
         generatedProducts,
         runResults,
         validationResult,
+        aiReview,
         sourcesPerScenario,
         sharedFieldRatioPercent,
         sameValueDuplicatePercent,
       }));
-    } catch { /* localStorage full or disabled */ }
+    } catch { /* sessionStorage full or disabled */ }
   }, [
     sourceCategory,
     testCategory,
     generatedProducts,
     runResults,
     validationResult,
+    aiReview,
     sourcesPerScenario,
     sharedFieldRatioPercent,
     sameValueDuplicatePercent,
@@ -327,7 +332,7 @@ export function TestModePage() {
     sameValueDuplicatePercent: Number.isFinite(sameValueDuplicatePercent) ? Math.max(0, Math.min(100, sameValueDuplicatePercent)) : 30,
   };
 
-  // On mount, verify and restore state from backend (handles cold reload / stale localStorage)
+  // On mount, verify and restore state from backend (handles cold reload / stale sessionStorage)
   useEffect(() => {
     if (statusLoaded) return;
     const cat = saved.sourceCategory || sourceCategory;
@@ -340,7 +345,7 @@ export function TestModePage() {
         if (data.testCases.length > 0) setGeneratedProducts(data.testCases);
         if (data.runResults.length > 0) setRunResults(data.runResults);
       } else if (saved.testCategory) {
-        // Backend says it doesn't exist — clear stale localStorage state
+        // Backend says it doesn't exist — clear stale sessionStorage state
         setTestCategory('');
         setGeneratedProducts([]);
         setRunResults([]);
@@ -456,8 +461,12 @@ export function TestModePage() {
       setValidationResult(null);
       setImportSteps([]);
       importStepsRef.current = [];
-      setMatrixCollapsed({ fieldRules: true, components: true, listsEnums: true });
-      try { localStorage.removeItem(LS_KEY); } catch { /* ignore */ }
+      useCollapseStore.getState().setBatch({
+        'testMode:matrix:fieldRules': true,
+        'testMode:matrix:components': true,
+        'testMode:matrix:listsEnums': true,
+      });
+      try { sessionStorage.removeItem(LS_KEY); } catch { /* ignore */ }
       queryClient.invalidateQueries({ queryKey: ['contract-summary'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories-real'] });
@@ -505,8 +514,8 @@ export function TestModePage() {
   }
 
   const toggleMatrix = useCallback((key: string) => {
-    setMatrixCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
-  }, []);
+    matrixCollapseToggle(`testMode:matrix:${key}`, true);
+  }, [matrixCollapseToggle]);
 
   // Group test cases by category
   const groupedProducts = generatedProducts.reduce<Record<string, TestCase[]>>((acc, tc) => {
@@ -938,3 +947,4 @@ export function TestModePage() {
     </div>
   );
 }
+

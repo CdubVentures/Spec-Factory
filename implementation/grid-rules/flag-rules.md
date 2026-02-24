@@ -109,7 +109,7 @@ Keys where no flags are applicable should produce zero flags — proving the con
 
 ## Test Coverage Matrix (Gap Closure — 2026-02-22)
 
-All 7 real flags are now covered by at least one test assertion. The gap closure work added 5 new test assertions across `reviewGridData.test.js` (unit) and `contractDriven.test.js` (e2e).
+All 8 real actionable flag codes (7 primary flags + `compound_range_conflict` variant) are covered by explicit test assertions across `reviewGridData.test.js` (unit) and `contractDriven.test.js` (e2e).
 
 | # | Flag | Domain | Test File | Test Name | Gap |
 |---|------|--------|-----------|-----------|-----|
@@ -121,7 +121,7 @@ All 7 real flags are now covered by at least one test assertion. The gap closure
 | 4 | `new_enum_value` | Enum grid | `contractDriven.test.js` | `ENUM-03 — pipeline-suggested values have needs_review=true (GAP-5)` | GAP-5 |
 | 5 | `below_min_evidence` | Item grid | `contractDriven.test.js` | FLAG-01 (pre-existing) — happy_path 0 flags proves min_evidence satisfied | Pre-existing |
 | 6 | `conflict_policy_hold` | Item grid | `contractDriven.test.js` | FLAG-01 (pre-existing) — happy_path 0 flags proves no conflict_policy_hold | Pre-existing |
-| 7 | `dependency_missing` | Item grid | `contractDriven.test.js` | FLAG-01 (pre-existing) — happy_path 0 flags proves no dependency_missing (GAP-9) | GAP-9 |
+| 7 | `dependency_missing` | Item grid | `contractDriven.test.js` | `FLAG-06 — cross_validation product has dependency_missing flag when requires_field rules exist` | GAP-9 |
 
 ### Rounding Characterization (GAP-8)
 

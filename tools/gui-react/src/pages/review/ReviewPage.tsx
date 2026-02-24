@@ -15,6 +15,7 @@ import { pct } from '../../utils/formatting';
 import { hasKnownValue } from '../../utils/fieldNormalize';
 import { useFieldLabels } from '../../hooks/useFieldLabels';
 import { useDebouncedCallback } from '../../hooks/useDebounce';
+import { readReviewGridSessionState, writeReviewGridSessionState } from './reviewGridSessionState';
 import type { ReviewLayout, ProductReviewPayload, ProductsIndexResponse, CandidateResponse, ReviewCandidate } from '../../types/review';
 import type { CatalogRow } from '../../types/product';
 import type { KeyReviewLaneState } from '../../types/review';
@@ -63,11 +64,16 @@ export function ReviewPage() {
     selectedProductId, selectedField,
     cellMode, editingValue, originalEditingValue, saveStatus,
     selectCell, startEditing, cancelEditing, setEditingValue, commitEditing, setSaveStatus,
-    brandFilter, setAvailableBrands,
+    brandFilter, setAvailableBrands, setBrandFilterMode, setBrandFilterSelection,
     sortMode, setSortMode, showOnlyFlagged, setShowOnlyFlagged,
   } = useReviewStore();
   const queryClient = useQueryClient();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reviewGridHydratedRef = useRef<string>('');
+  const persistedGridState = useMemo(
+    () => readReviewGridSessionState(category),
+    [category],
+  );
 
   const { data: layout } = useQuery({
     queryKey: ['reviewLayout', category],
@@ -100,6 +106,37 @@ export function ReviewPage() {
       setAvailableBrands(indexData.brands);
     }
   }, [indexData?.brands, setAvailableBrands]);
+
+  useEffect(() => {
+    if (!indexData?.brands || indexData.brands.length === 0) return;
+    if (reviewGridHydratedRef.current === category) return;
+    setSortMode(persistedGridState.sortMode);
+    setShowOnlyFlagged(persistedGridState.showOnlyFlagged);
+    if (persistedGridState.brandFilterMode === 'custom') {
+      setBrandFilterSelection(persistedGridState.selectedBrands);
+    } else {
+      setBrandFilterMode(persistedGridState.brandFilterMode);
+    }
+    reviewGridHydratedRef.current = category;
+  }, [
+    category,
+    indexData?.brands,
+    persistedGridState,
+    setSortMode,
+    setShowOnlyFlagged,
+    setBrandFilterMode,
+    setBrandFilterSelection,
+  ]);
+
+  useEffect(() => {
+    if (reviewGridHydratedRef.current !== category) return;
+    writeReviewGridSessionState(category, {
+      sortMode,
+      showOnlyFlagged,
+      brandFilterMode: brandFilter.mode,
+      selectedBrands: Array.from(brandFilter.selected),
+    });
+  }, [category, sortMode, showOnlyFlagged, brandFilter.mode, brandFilter.selected]);
 
   // Auto-clear "saved" status after 2 seconds
   useEffect(() => {

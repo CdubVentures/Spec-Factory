@@ -1,79 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../api/client';
-
-type ConvergenceSettings = Record<string, number | boolean>;
-
-interface SourceStrategyRow {
-  id: number;
-  host: string;
-  display_name: string;
-  source_type: string;
-  default_tier: number;
-  discovery_method: string;
-  search_pattern: string | null;
-  priority: number;
-  enabled: number;
-  category_scope: string | null;
-  notes: string | null;
-}
-
-const KNOB_GROUPS = [
-  {
-    label: 'Convergence Loop',
-    knobs: [
-      { key: 'convergenceMaxRounds', label: 'Max Rounds', type: 'int', min: 1, max: 12 },
-      { key: 'convergenceNoProgressLimit', label: 'No-Progress Streak Limit', type: 'int', min: 1, max: 6 },
-      { key: 'convergenceMaxLowQualityRounds', label: 'Max Low-Quality Rounds', type: 'int', min: 1, max: 6 },
-      { key: 'convergenceLowQualityConfidence', label: 'Low Quality Confidence Threshold', type: 'float', min: 0, max: 1, step: 0.05 },
-      { key: 'convergenceMaxDispatchQueries', label: 'Max Dispatch Queries/Round', type: 'int', min: 5, max: 50 },
-      { key: 'convergenceMaxTargetFields', label: 'Max Target Fields/Round', type: 'int', min: 5, max: 80 },
-    ],
-  },
-  {
-    label: 'NeedSet Identity Caps',
-    knobs: [
-      { key: 'needsetCapIdentityLocked', label: 'Locked', type: 'float', min: 0.5, max: 1, step: 0.05 },
-      { key: 'needsetCapIdentityProvisional', label: 'Provisional', type: 'float', min: 0.5, max: 0.9, step: 0.01 },
-      { key: 'needsetCapIdentityConflict', label: 'Conflict', type: 'float', min: 0.2, max: 0.6, step: 0.01 },
-      { key: 'needsetCapIdentityUnlocked', label: 'Unlocked', type: 'float', min: 0.3, max: 0.8, step: 0.01 },
-    ],
-  },
-  {
-    label: 'Consensus Scoring — LLM Weights',
-    knobs: [
-      { key: 'consensusLlmWeightTier1', label: 'LLM Tier 1 (Manufacturer)', type: 'float', min: 0.3, max: 0.9, step: 0.05 },
-      { key: 'consensusLlmWeightTier2', label: 'LLM Tier 2 (Lab Review)', type: 'float', min: 0.2, max: 0.7, step: 0.05 },
-      { key: 'consensusLlmWeightTier3', label: 'LLM Tier 3 (Retail)', type: 'float', min: 0.1, max: 0.4, step: 0.05 },
-      { key: 'consensusLlmWeightTier4', label: 'LLM Tier 4 (Unverified)', type: 'float', min: 0.05, max: 0.3, step: 0.05 },
-    ],
-  },
-  {
-    label: 'Consensus Scoring — Tier Weights',
-    knobs: [
-      { key: 'consensusTier1Weight', label: 'Tier 1 Weight', type: 'float', min: 0.8, max: 1, step: 0.05 },
-      { key: 'consensusTier2Weight', label: 'Tier 2 Weight', type: 'float', min: 0.5, max: 0.9, step: 0.05 },
-      { key: 'consensusTier3Weight', label: 'Tier 3 Weight', type: 'float', min: 0.2, max: 0.6, step: 0.05 },
-      { key: 'consensusTier4Weight', label: 'Tier 4 Weight', type: 'float', min: 0.1, max: 0.4, step: 0.05 },
-    ],
-  },
-  {
-    label: 'SERP Triage',
-    knobs: [
-      { key: 'serpTriageMinScore', label: 'Min Score Threshold', type: 'int', min: 1, max: 10 },
-      { key: 'serpTriageMaxUrls', label: 'Max URLs After Triage', type: 'int', min: 5, max: 30 },
-      { key: 'serpTriageEnabled', label: 'Triage Enabled', type: 'bool' },
-    ],
-  },
-  {
-    label: 'Retrieval',
-    knobs: [
-      { key: 'retrievalMaxHitsPerField', label: 'Max Hits Per Field', type: 'int', min: 5, max: 50 },
-      { key: 'retrievalMaxPrimeSources', label: 'Max Prime Sources', type: 'int', min: 3, max: 20 },
-      { key: 'retrievalIdentityFilterEnabled', label: 'Identity Filter Enabled', type: 'bool' },
-    ],
-  },
-] as const;
+import { useConvergenceSettingsAuthority } from '../../stores/convergenceSettingsAuthority';
+import { CONVERGENCE_KNOB_GROUPS } from '../../stores/settingsManifest';
+import { useSourceStrategyAuthority, type SourceStrategyRow } from '../../stores/sourceStrategyAuthority';
+import { useUiStore } from '../../stores/uiStore';
 
 const cardCls = 'bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 p-4';
 const inputCls = 'px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 w-full';
@@ -83,7 +12,7 @@ function KnobInput({
   value,
   onChange,
 }: {
-  knob: (typeof KNOB_GROUPS)[number]['knobs'][number];
+  knob: (typeof CONVERGENCE_KNOB_GROUPS)[number]['knobs'][number];
   value: number | boolean | undefined;
   onChange: (v: number | boolean) => void;
 }) {
@@ -100,7 +29,8 @@ function KnobInput({
     );
   }
 
-  const numValue = typeof value === 'number' ? value : 0;
+  const fallback = knob.min;
+  const numValue = typeof value === 'number' ? value : fallback;
   const step = 'step' in knob ? knob.step : 1;
 
   return (
@@ -122,7 +52,7 @@ function KnobInput({
           const parsed = knob.type === 'float'
             ? Number.parseFloat(e.target.value)
             : Number.parseInt(e.target.value, 10);
-          onChange(Number.isFinite(parsed) ? parsed : 0);
+          onChange(Number.isFinite(parsed) ? parsed : fallback);
         }}
       />
       <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
@@ -133,24 +63,19 @@ function KnobInput({
   );
 }
 
-function SourceStrategyTable() {
-  const queryClient = useQueryClient();
-  const { data: rows, isLoading } = useQuery({
-    queryKey: ['source-strategy'],
-    queryFn: () => api.get<SourceStrategyRow[]>('/source-strategy'),
-  });
-
-  const toggleMut = useMutation({
-    mutationFn: (row: SourceStrategyRow) =>
-      api.put<SourceStrategyRow>(`/source-strategy/${row.id}`, { enabled: row.enabled ? 0 : 1 }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['source-strategy'] }),
-  });
-
-  const deleteMut = useMutation({
-    mutationFn: (id: number) => api.del(`/source-strategy/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['source-strategy'] }),
-  });
-
+function SourceStrategyTable({
+  rows,
+  isLoading,
+  isSaving,
+  onToggleRow,
+  onDeleteRow,
+}: {
+  rows: SourceStrategyRow[];
+  isLoading: boolean;
+  isSaving: boolean;
+  onToggleRow: (row: SourceStrategyRow) => void;
+  onDeleteRow: (id: number) => void;
+}) {
   if (isLoading) return <p className="text-xs text-gray-500">Loading sources...</p>;
   if (!rows || rows.length === 0) return <p className="text-xs text-gray-500">No source strategies configured.</p>;
 
@@ -182,7 +107,8 @@ function SourceStrategyTable() {
               <td className="py-1.5 px-2">{row.priority}</td>
               <td className="py-1.5 px-2">
                 <button
-                  onClick={() => toggleMut.mutate(row)}
+                  onClick={() => onToggleRow(row)}
+                  disabled={isSaving}
                   className={`px-2 py-0.5 rounded text-[10px] border ${
                     row.enabled
                       ? 'border-emerald-300 text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800'
@@ -194,7 +120,11 @@ function SourceStrategyTable() {
               </td>
               <td className="py-1.5 px-2">
                 <button
-                  onClick={() => { if (confirm(`Delete ${row.host}?`)) deleteMut.mutate(row.id); }}
+                  onClick={() => {
+                    if (!confirm(`Delete ${row.host}?`)) return;
+                    onDeleteRow(row.id);
+                  }}
+                  disabled={isSaving}
                   className="text-[10px] text-red-500 hover:text-red-700"
                 >
                   Delete
@@ -209,34 +139,81 @@ function SourceStrategyTable() {
 }
 
 export function PipelineSettingsPage() {
-  const [settings, setSettings] = useState<ConvergenceSettings>({});
-  const [dirty, setDirty] = useState(false);
+  const category = useUiStore((s) => s.category);
+  const [sourceStrategySaveState, setSourceStrategySaveState] = useState<{
+    kind: 'idle' | 'ok' | 'error';
+    message: string;
+  }>({ kind: 'idle', message: '' });
 
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ['convergence-settings'],
-    queryFn: () => api.get<ConvergenceSettings>('/convergence-settings'),
-  });
+  const [saveStatus, setSaveStatus] = useState<{
+    kind: 'idle' | 'ok' | 'partial' | 'error';
+    message: string;
+  }>({ kind: 'idle', message: '' });
 
-  useEffect(() => {
-    if (data) {
-      setSettings(data);
-      setDirty(false);
-    }
-  }, [data]);
-
-  const saveMut = useMutation({
-    mutationFn: (payload: ConvergenceSettings) =>
-      api.put<{ ok: boolean; applied: ConvergenceSettings }>('/convergence-settings', payload),
-    onSuccess: () => {
-      setDirty(false);
-      refetch();
+  const {
+    settings,
+    dirty,
+    isLoading,
+    isSaving,
+    updateSetting,
+    reload,
+    save,
+  } = useConvergenceSettingsAuthority({
+    onPersisted: (result) => {
+      const rejectedKeys = Object.keys(result.rejected);
+      if (rejectedKeys.length === 0 && result.ok) {
+        setSaveStatus({ kind: 'ok', message: 'Pipeline settings saved.' });
+        return;
+      }
+      if (rejectedKeys.length > 0) {
+        setSaveStatus({
+          kind: 'partial',
+          message: `Pipeline settings partially saved. Rejected ${rejectedKeys.length} key(s): ${rejectedKeys.join(', ')}`,
+        });
+        return;
+      }
+      setSaveStatus({ kind: 'error', message: 'Pipeline settings save failed.' });
+    },
+    onError: (error) => {
+      setSaveStatus({
+        kind: 'error',
+        message: error instanceof Error ? error.message : 'Pipeline settings save failed.',
+      });
     },
   });
 
-  function updateKnob(key: string, value: number | boolean) {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-    setDirty(true);
-  }
+  const {
+    rows: sourceStrategyRows,
+    isLoading: sourceStrategyLoading,
+    isSaving: sourceStrategySaving,
+    toggleEnabled,
+    deleteRow,
+  } = useSourceStrategyAuthority({
+    category,
+    onError: (error) => {
+      setSourceStrategySaveState({
+        kind: 'error',
+        message: error instanceof Error ? error.message : 'Source strategy update failed.',
+      });
+    },
+    onToggled: () => {
+      setSourceStrategySaveState({ kind: 'ok', message: 'Source strategy updated.' });
+    },
+    onDeleted: () => {
+      setSourceStrategySaveState({ kind: 'ok', message: 'Source strategy removed.' });
+    },
+  });
+
+  useEffect(() => {
+    if (dirty && saveStatus.kind !== 'idle') {
+      setSaveStatus({ kind: 'idle', message: '' });
+    }
+  }, [dirty, saveStatus.kind]);
+
+  useEffect(() => {
+    if (!sourceStrategySaving) return;
+    setSourceStrategySaveState({ kind: 'idle', message: '' });
+  }, [sourceStrategySaving]);
 
   return (
     <div className="space-y-4">
@@ -250,28 +227,46 @@ export function PipelineSettingsPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => refetch()}
+              onClick={() => { void reload(); }}
               className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               Reload
             </button>
             <button
-              onClick={() => saveMut.mutate(settings)}
-              disabled={!dirty || saveMut.isPending}
+              onClick={save}
+              disabled={!dirty || isSaving}
               className="px-3 py-1.5 text-xs bg-accent text-white rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              {saveMut.isPending ? 'Saving...' : 'Save Settings'}
+              {isSaving ? 'Saving...' : 'Save Settings'}
             </button>
           </div>
         </div>
-        {dirty && <p className="text-[11px] text-amber-600 mt-2">Unsaved changes</p>}
+        <p
+          className={`text-[11px] mt-2 ${
+            isSaving
+              ? 'text-blue-600 dark:text-blue-400'
+              : saveStatus.kind === 'error'
+              ? 'text-rose-600 dark:text-rose-300'
+              : saveStatus.kind === 'partial'
+              ? 'text-amber-600 dark:text-amber-400'
+              : 'text-gray-500'
+          }`}
+        >
+          {isSaving
+            ? 'Saving...'
+            : saveStatus.kind === 'error' || saveStatus.kind === 'partial'
+            ? saveStatus.message
+            : dirty
+            ? 'Unsaved changes'
+            : 'All changes saved.'}
+        </p>
       </div>
 
       {isLoading ? (
         <p className="text-xs text-gray-500">Loading settings...</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {KNOB_GROUPS.map((group) => (
+          {CONVERGENCE_KNOB_GROUPS.map((group) => (
             <div key={group.label} className={cardCls}>
               <h3 className="text-xs font-semibold mb-3">{group.label}</h3>
               <div className="space-y-3">
@@ -280,7 +275,7 @@ export function PipelineSettingsPage() {
                     key={knob.key}
                     knob={knob}
                     value={settings[knob.key] as number | boolean | undefined}
-                    onChange={(v) => updateKnob(knob.key, v)}
+                    onChange={(v) => updateSetting(knob.key, v)}
                   />
                 ))}
               </div>
@@ -290,12 +285,34 @@ export function PipelineSettingsPage() {
       )}
 
       <div className={cardCls}>
+        <div className="text-xs text-gray-700 dark:text-gray-300 mb-2">
+          {sourceStrategySaveState.kind === 'error'
+            ? sourceStrategySaveState.message
+            : sourceStrategySaving
+              ? 'Updating source strategy...'
+              : sourceStrategySaveState.kind === 'ok'
+                ? sourceStrategySaveState.message
+                : ''}
+        </div>
         <h3 className="text-xs font-semibold mb-3">Source Strategy</h3>
         <p className="text-[11px] text-gray-500 mb-3">
           Configurable source table — replaces hardcoded adapters. LLM predicts URLs for enabled sources.
         </p>
-        <SourceStrategyTable />
+        <SourceStrategyTable
+          rows={sourceStrategyRows}
+          isLoading={sourceStrategyLoading}
+          isSaving={sourceStrategySaving}
+          onToggleRow={(row) => {
+            setSourceStrategySaveState({ kind: 'idle', message: '' });
+            toggleEnabled(row);
+          }}
+          onDeleteRow={(id) => {
+            setSourceStrategySaveState({ kind: 'idle', message: '' });
+            deleteRow(id);
+          }}
+        />
       </div>
     </div>
   );
 }
+

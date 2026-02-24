@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client';
+import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
 import type { RuntimeOpsDocumentRow, RuntimeOpsDocumentDetailResponse } from '../types';
 import { statusBadgeClass, formatBytes, truncateUrl, formatMs, getRefetchInterval, METRIC_TIPS } from '../helpers';
 import { Tip } from '../../../components/common/Tip';
@@ -9,13 +10,33 @@ import { relativeTime } from '../../../utils/formatting';
 interface DocumentsTabProps {
   documents: RuntimeOpsDocumentRow[];
   runId: string;
+  category: string;
   isRunning: boolean;
 }
 
-export function DocumentsTab({ documents, runId, isRunning }: DocumentsTabProps) {
-  const [searchFilter, setSearchFilter] = useState('');
-  const [pageSize, setPageSize] = useState(50);
-  const [selectedDocUrl, setSelectedDocUrl] = useState<string | null>(null);
+const DOCUMENT_PAGE_SIZE_KEYS = ['25', '50', '100'] as const;
+type DocumentPageSize = (typeof DOCUMENT_PAGE_SIZE_KEYS)[number];
+
+export function DocumentsTab({ documents, runId, category, isRunning }: DocumentsTabProps) {
+  const [searchFilter, setSearchFilter] = usePersistedTab<string>(
+    `runtimeOps:documents:search:${category}`,
+    '',
+  );
+  const [pageSizeValue, setPageSizeValue] = usePersistedTab<DocumentPageSize>(
+    `runtimeOps:documents:pageSize:${category}`,
+    '50',
+    { validValues: DOCUMENT_PAGE_SIZE_KEYS },
+  );
+  const pageSize = Number(pageSizeValue);
+  const docUrlValues = useMemo(
+    () => documents.map((document) => document.url),
+    [documents],
+  );
+  const [selectedDocUrl, setSelectedDocUrl] = usePersistedNullableTab<string>(
+    `runtimeOps:documents:selectedDoc:${category}`,
+    null,
+    { validValues: docUrlValues },
+  );
 
   const filtered = useMemo(() => {
     if (!searchFilter) return documents.slice(0, pageSize);
@@ -47,13 +68,13 @@ export function DocumentsTab({ documents, runId, isRunning }: DocumentsTabProps)
             className="flex-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1"
           />
           <select
-            value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
+            value={pageSizeValue}
+            onChange={(e) => setPageSizeValue(e.target.value as DocumentPageSize)}
             className="text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1"
           >
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
           </select>
           <span className="text-xs text-gray-400 dark:text-gray-500">{filtered.length}/{documents.length}</span>
         </div>

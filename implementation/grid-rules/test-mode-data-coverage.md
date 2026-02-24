@@ -63,7 +63,7 @@ This is expected and correct — SC tells you how much evidence exists for a spe
 **LP 0 with SC > 0 on name/maker is also valid.** Non-discovered rows (seeded from the component DB or created via manual override) have no linked products. Their `name_tracked` and `maker_tracked` are initialized with a reference candidate from the DB identity itself (`componentReviewData.js`) before the linked-product lookup runs. So a non-discovered row shows LP 0, SC 1 on `__name`, SC 1 on `__maker` (if maker is non-empty), and SC 0 on all property slots. A manual override changes the selected value but does not insert new candidate rows — SC stays the same.
 
 ### Flag rules
-Flag definitions, the 6 real flags, non-flag visual treatments, and the flag-to-domain matrix are defined in `implementation/grid-rules/flag-rules.md`. Only real flags count toward `metrics.flags`.
+Flag definitions, the 8 real actionable flag codes (7 primary flags + `compound_range_conflict` variant), non-flag visual treatments, and the flag-to-domain matrix are defined in `implementation/grid-rules/flag-rules.md`. Only real flags count toward `metrics.flags`.
 
 ---
 
@@ -159,7 +159,7 @@ Distinct row counts: 7, 9, 10 — confirms variation across types.
 
 ## Grid Flag Gap Closure (2026-02-22)
 
-Closed 5 actionable gaps from the field-studio-contract-hierarchy audit. All 7 real flags now have explicit test assertions.
+Closed actionable gaps from the field-studio-contract-hierarchy audit. All 8 real actionable flag codes now have explicit test assertions.
 
 ### New tests in `reviewGridData.test.js` (+3 tests, 8→11)
 

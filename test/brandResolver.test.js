@@ -86,6 +86,20 @@ describe('brandResolver', () => {
     assert.ok(llm.called);
   });
 
+  it('works when storage lacks getBrandDomain (file storage adapter)', async () => {
+    const fileStorage = {};
+    const llm = makeLlmContext();
+    const result = await resolveBrandDomain({
+      brand: 'Asus',
+      category: 'mouse',
+      config: { llmEnabled: true },
+      callLlmFn: llm.callLlm,
+      storage: fileStorage
+    });
+    assert.equal(result.officialDomain, 'cougargaming.com');
+    assert.ok(llm.called, 'should call LLM when cache is unavailable');
+  });
+
   it('resolved aliases flow through selectManufacturerHosts', async () => {
     const { buildSearchProfile } = await import('../src/search/queryBuilder.js');
     const profile = buildSearchProfile({

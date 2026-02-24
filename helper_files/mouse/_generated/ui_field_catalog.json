@@ -181,7 +181,7 @@
         "xxl": false
       },
       "tooltip_key": null,
-      "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey→gray; multi-colorways may use '+'.",
+      "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey?gray; multi-colorways may use '+'.",
       "tooltip_source": null,
       "type": "string",
       "unit": ""
@@ -353,7 +353,7 @@
       "placeholder": "unk",
       "prefix": null,
       "required_level": "required",
-      "shape": "scalar",
+      "shape": "list",
       "short_label": null,
       "suffix": null,
       "surfaces": {
@@ -857,7 +857,7 @@
         "xxl": false
       },
       "tooltip_key": "weight",
-      "tooltip_md": "Mouse weight in grams. Convert oz→g when necessary; keep decimals if provided.",
+      "tooltip_md": "Mouse weight in grams. Convert oz?g when necessary; keep decimals if provided.",
       "tooltip_source": "hbs_tooltipsMouse.js",
       "type": "number",
       "unit": "g"
@@ -2828,6 +2828,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-02-17T09:49:22.300Z",
+  "generated_at": "2026-02-24T22:51:45.113Z",
   "version": 1
 }

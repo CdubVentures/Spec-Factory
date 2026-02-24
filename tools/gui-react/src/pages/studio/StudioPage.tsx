@@ -1,4 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { usePersistedToggle } from '../../stores/collapseStore';
+import { usePersistedTab } from '../../stores/tabStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { api } from '../../api/client';
@@ -28,13 +30,14 @@ import { decideStudioAuthorityAction, shouldOpenStudioAuthorityConflict } from '
 import { validateNewKeyTs, rewriteConstraintsTs, constraintRefsKey, reorderFieldOrder, deriveGroupsTs, validateNewGroupTs, validateBulkRows, type BulkKeyRow } from './keyUtils';
 import DraggableKeyList from './DraggableKeyList';
 import { invalidateFieldRulesQueries } from './invalidateFieldRulesQueries';
+import { useStudioPersistenceAuthority } from './studioPersistenceAuthority';
 import { 
   assertWorkbookMapValidationOrThrow,
-  resolveWorkbookMapPayloadForSave,
 } from './mapValidationPreflight.js';
 import { useAuthoritySnapshot } from '../../hooks/useAuthoritySnapshot.js';
 import { buildAuthorityVersionToken } from '../../hooks/authoritySnapshotHelpers.js';
 import BulkPasteGrid, { type BulkGridRow } from '../../components/common/BulkPasteGrid';
+import { autoSaveFingerprint } from '../../stores/autoSaveFingerprint';
 import {
   selectCls, inputCls, labelCls,
   UNITS, UNKNOWN_TOKENS, GROUPS, COMPONENT_TYPES,
@@ -45,7 +48,7 @@ import {
 import type {
   FieldRule,
   StudioPayload,
-  WorkbookMapResponse,
+  FieldStudioMapResponse,
   StudioConfig,
   TooltipBankResponse,
   DraftsResponse,
@@ -78,7 +81,7 @@ interface ComponentSourceRoles {
   [k: string]: unknown;
 }
 
-interface WorkbookMapValidationResponse {
+interface FieldStudioMapValidationResponse {
   valid?: boolean;
   ok?: boolean;
   errors?: string[];
@@ -345,7 +348,8 @@ function migrateProperty(p: Record<string, unknown>, _rules: Record<string, Fiel
 
 
 // â"€â"€ Tabs â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-const subTabs = [
+const STUDIO_TAB_IDS = ['mapping', 'keys', 'contract', 'reports'] as const;
+const subTabs: Array<{ id: (typeof STUDIO_TAB_IDS)[number]; label: string }> = [
   { id: 'mapping', label: '1) Mapping Studio' },
   { id: 'keys', label: '2) Key Navigator' },
   { id: 'contract', label: '3) Field Contract' },
@@ -369,18 +373,31 @@ function emptyComponentSource(): ComponentSource {
 // â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 export function StudioPage() {
   const category = useUiStore((s) => s.category);
-  const [activeTab, setActiveTab] = useState('mapping');
-  const [selectedKey, setSelectedKey] = useState('');
+  const [activeTab, setActiveTab] = usePersistedTab(
+    'studio:tab:main',
+    'mapping',
+    { validValues: STUDIO_TAB_IDS },
+  );
+  const [selectedKey, setSelectedKey] = usePersistedTab<string>(
+    `studio:keyNavigator:selectedKey:${category}`,
+    '',
+  );
   const setProcessStatus = useRuntimeStore((s) => s.setProcessStatus);
+  const processStatus = useRuntimeStore((s) => s.processStatus);
   const queryClient = useQueryClient();
+  const autoSaveAllEnabled = useUiStore((s) => s.autoSaveAllEnabled);
+  const setAutoSaveAllEnabled = useUiStore((s) => s.setAutoSaveAllEnabled);
   const autoSaveEnabled = useUiStore((s) => s.autoSaveEnabled);
   const setAutoSaveEnabled = useUiStore((s) => s.setAutoSaveEnabled);
   const autoSaveMapEnabled = useUiStore((s) => s.autoSaveMapEnabled);
   const setAutoSaveMapEnabled = useUiStore((s) => s.setAutoSaveMapEnabled);
+  const effectiveAutoSaveEnabled = autoSaveAllEnabled || autoSaveEnabled;
+  const effectiveAutoSaveMapEnabled = autoSaveAllEnabled || autoSaveMapEnabled;
   const hydrated = useRef(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saved'>('idle');
   const [authorityConflictVersion, setAuthorityConflictVersion] = useState('');
   const [authorityConflictDetectedAt, setAuthorityConflictDetectedAt] = useState('');
+  const knownValuesTabActive = activeTab === 'mapping' || activeTab === 'keys' || activeTab === 'contract';
 
   // â"€â"€ Queries â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const { data: studio, isLoading } = useQuery({
@@ -390,7 +407,7 @@ export function StudioPage() {
 
   const { data: wbMapRes } = useQuery({
     queryKey: ['studio-config', category],
-    queryFn: () => api.get<WorkbookMapResponse>(`/studio/${category}/workbook-map`),
+    queryFn: () => api.get<FieldStudioMapResponse>(`/studio/${category}/field-studio-map`),
   });
 
   const { data: tooltipBank } = useQuery({
@@ -409,22 +426,35 @@ export function StudioPage() {
     queryKey: ['studio-artifacts', category],
     queryFn: () => api.get<ArtifactEntry[]>(`/studio/${category}/artifacts`),
     enabled: activeTab === 'reports',
+    refetchInterval: activeTab === 'reports' && processStatus.running ? 1200 : false,
   });
 
-  const { data: knownValuesRes } = useQuery({
+  const {
+    data: knownValuesRes,
+    isError: knownValuesIsError,
+    error: knownValuesError,
+  } = useQuery({
     queryKey: ['studio-known-values', category],
     queryFn: () => api.get<KnownValuesResponse>(`/studio/${category}/known-values`),
-    enabled: activeTab === 'mapping' || activeTab === 'keys' || activeTab === 'contract' || activeTab === 'context',
+    enabled: knownValuesTabActive,
   });
 
   const { data: componentDbRes } = useQuery({
     queryKey: ['studio-component-db', category],
     queryFn: () => api.get<ComponentDbResponse>(`/studio/${category}/component-db`),
-    enabled: activeTab === 'keys' || activeTab === 'contract' || activeTab === 'context',
+    enabled: activeTab === 'keys' || activeTab === 'contract',
   });
 
   // â"€â"€ Invalidate studio queries when any process finishes â"€â"€â"€â"€â"€â"€â"€â"€
-  const processStatus = useRuntimeStore((s) => s.processStatus);
+  const processCommandToken = String(processStatus?.command || '').toLowerCase();
+  const isCompileProcessCommand = processCommandToken.includes('compile-rules') || processCommandToken.includes('category-compile');
+  const isValidateProcessCommand = processCommandToken.includes('validate-rules');
+  const compileProcessRunning = Boolean(processStatus?.running) && isCompileProcessCommand;
+  const compileProcessFailed = !processStatus?.running
+    && isCompileProcessCommand
+    && processStatus?.exitCode !== null
+    && processStatus?.exitCode !== undefined
+    && Number(processStatus?.exitCode) !== 0;
   useEffect(() => {
     if (!processStatus.running && processStatus.exitCode !== undefined) {
       invalidateFieldRulesQueries(queryClient, category);
@@ -434,14 +464,15 @@ export function StudioPage() {
   // â"€â"€ Mutations â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const compileMut = useMutation({
     mutationFn: async () => {
-      const currentMap = await api.get<WorkbookMapResponse>(`/studio/${category}/workbook-map`);
-      const validation = await api.post<WorkbookMapValidationResponse>(
-        `/studio/${category}/validate-map`,
+      const currentMap = await api.get<FieldStudioMapResponse>(`/studio/${category}/field-studio-map`);
+      const validation = await api.post<FieldStudioMapValidationResponse>(
+        `/studio/${category}/validate-field-studio-map`,
         currentMap?.map || {},
       );
       assertWorkbookMapValidationOrThrow({
         result: validation,
         actionLabel: 'compile',
+        allowLegacyCompileBypass: true,
       });
       return api.post<ProcessStatus>(`/studio/${category}/compile`);
     },
@@ -453,8 +484,17 @@ export function StudioPage() {
     onSuccess: (data) => setProcessStatus(data),
   });
 
+  const runCompileFromStudio = useCallback(() => {
+    setActiveTab('reports');
+    compileMut.mutate();
+  }, [setActiveTab, compileMut]);
+
+  const reportsTabRunning = compileMut.isPending
+    || validateRulesMut.isPending
+    || (Boolean(processStatus?.running) && (isCompileProcessCommand || isValidateProcessCommand));
+
   const enumConsistencyMut = useMutation({
-    mutationFn: (body: { field: string; apply?: boolean }) =>
+    mutationFn: (body: { field: string; apply?: boolean; formatGuidance?: string; reviewEnabled?: boolean }) =>
       api.post(`/studio/${category}/enum-consistency`, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
@@ -464,47 +504,48 @@ export function StudioPage() {
     },
   });
 
-  const saveMapMut = useMutation({
-    mutationFn: async (body: StudioConfig) => {
-      const validation = await api.post<WorkbookMapValidationResponse>(`/studio/${category}/validate-map`, body);
-      const payload = resolveWorkbookMapPayloadForSave({
-        result: assertWorkbookMapValidationOrThrow({
-          result: validation,
-          actionLabel: 'save mapping',
-        }),
-        fallback: body,
-      }) as StudioConfig;
-      return api.put<unknown>(`/studio/${category}/workbook-map`, payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['studio-config', category] });
-    },
-  });
-
-  const saveEditsMut = useMutation({
-    mutationFn: (body: Record<string, unknown>) => api.post<unknown>(`/studio/${category}/save-drafts`, body),
-    onSuccess: () => {
-      fieldRulesStore.clearRenames();
-      invalidateFieldRulesQueries(queryClient, category);
-    },
-  });
-
   // â"€â"€ Derived data â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const rules = studio?.fieldRules || {};
   const fieldOrder = studio?.fieldOrder || Object.keys(rules);
   const wbMap = wbMapRes?.map || ({} as StudioConfig);
 
-  const enumListsWithValues: EnumEntry[] = (Array.isArray(wbMap.data_lists) && wbMap.data_lists.length > 0
-    ? wbMap.data_lists
-    : Array.isArray(wbMap.enum_lists) ? wbMap.enum_lists : []
-  ).map((dl: Record<string, unknown>) => ({
-    field: String(dl.field || ''),
-    normalize: String(dl.normalize || 'lower_trim'),
-    values: Array.isArray(dl.manual_values) ? dl.manual_values.map(String) : (Array.isArray(dl.values) ? dl.values.map(String) : []),
-  }));
+  const enumListsWithValues: EnumEntry[] = useMemo(() => {
+    const specDbLists = Array.isArray(knownValuesRes?.enum_lists) ? knownValuesRes.enum_lists : [];
+    if (specDbLists.length > 0) {
+      return specDbLists
+        .map((entry: Record<string, unknown>) => ({
+          field: String(entry.field || ''),
+          normalize: String(entry.normalize || 'lower_trim'),
+          values: Array.isArray(entry.values) ? entry.values.map(String) : [],
+        }))
+        .filter((entry) => entry.field)
+        .sort((a, b) => a.field.localeCompare(b.field));
+    }
+    const knownFields = knownValuesRes?.fields && typeof knownValuesRes.fields === 'object'
+      ? Object.entries(knownValuesRes.fields)
+      : [];
+    if (knownFields.length > 0) {
+      return knownFields
+        .map(([field, values]) => ({
+          field: String(field || ''),
+          normalize: 'lower_trim',
+          values: Array.isArray(values) ? values.map(String) : [],
+        }))
+        .filter((entry) => entry.field)
+        .sort((a, b) => a.field.localeCompare(b.field));
+    }
+    return [];
+  }, [knownValuesRes]);
 
   // â"€â"€ Field Rules Store: centralized editable state â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const fieldRulesStore = useFieldRulesStore();
+  const { saveMapMut, saveDraftsMut } = useStudioPersistenceAuthority({
+    category,
+    onDraftsSaved: () => {
+      fieldRulesStore.clearRenames();
+      invalidateFieldRulesQueries(queryClient, category);
+    },
+  });
   const previousCategoryRef = useRef(category);
   const authorityVersionRef = useRef('');
   const ignoredConflictVersionRef = useRef('');
@@ -581,39 +622,72 @@ export function StudioPage() {
 
   const storeRules = fieldRulesStore.initialized ? fieldRulesStore.editedRules : rules;
   const storeFieldOrder = fieldRulesStore.initialized ? fieldRulesStore.editedFieldOrder : fieldOrder;
+  const lastDraftAutoSaveFingerprintRef = useRef('');
+  const lastDraftAutoSaveAttemptFingerprintRef = useRef('');
+  const saveDrafts = saveDraftsMut.mutate;
 
-  const saveFromStore = useCallback(() => {
+  const buildDraftPersistPayload = useCallback((snap: {
+    rules: Record<string, Record<string, unknown>>;
+    fieldOrder: string[];
+    renames: Record<string, string>;
+  }) => ({
+    fieldRulesDraft: {
+      ...(Object.keys(snap.rules).length > 0 ? { fields: snap.rules } : {}),
+      ...(snap.fieldOrder.length > 0 ? { fieldOrder: snap.fieldOrder } : {}),
+    },
+    ...(Object.keys(snap.renames).length > 0 ? { renames: snap.renames } : {}),
+  }), []);
+
+  const saveFromStore = useCallback((options?: { force?: boolean }) => {
+    const force = options?.force === true;
     const snap = useFieldRulesStore.getState().getSnapshot();
-    saveEditsMut.mutate({
-      fieldRulesDraft: {
-        ...(Object.keys(snap.rules).length > 0 ? { fields: snap.rules } : {}),
-        ...(snap.fieldOrder.length > 0 ? { fieldOrder: snap.fieldOrder } : {}),
-      },
-      ...(Object.keys(snap.renames).length > 0 ? { renames: snap.renames } : {}),
-    }, {
+    const payload = buildDraftPersistPayload(snap);
+    const nextFingerprint = autoSaveFingerprint(payload);
+    if (!force && nextFingerprint && nextFingerprint === lastDraftAutoSaveFingerprintRef.current) {
+      return;
+    }
+    if (!force && nextFingerprint && nextFingerprint === lastDraftAutoSaveAttemptFingerprintRef.current) {
+      return;
+    }
+    if (nextFingerprint) {
+      lastDraftAutoSaveAttemptFingerprintRef.current = nextFingerprint;
+    }
+    saveDrafts(payload, {
       onSuccess: () => {
-        if (autoSaveEnabled) {
+        lastDraftAutoSaveFingerprintRef.current = nextFingerprint;
+        lastDraftAutoSaveAttemptFingerprintRef.current = nextFingerprint;
+        if (effectiveAutoSaveEnabled) {
           setAutoSaveStatus('saved');
           setTimeout(() => setAutoSaveStatus('idle'), 2000);
         }
       },
     });
-  }, [saveEditsMut, autoSaveEnabled]);
+  }, [saveDrafts, effectiveAutoSaveEnabled, buildDraftPersistPayload]);
 
   // Mark hydration complete after store has been initialized from server data
   useEffect(() => {
-    if (fieldRulesStore.initialized) hydrated.current = true;
-  }, [fieldRulesStore.initialized]);
+    if (!fieldRulesStore.initialized) return;
+    const snap = useFieldRulesStore.getState().getSnapshot();
+    const hydratedFingerprint = autoSaveFingerprint(buildDraftPersistPayload(snap));
+    lastDraftAutoSaveFingerprintRef.current = hydratedFingerprint;
+    lastDraftAutoSaveAttemptFingerprintRef.current = hydratedFingerprint;
+    hydrated.current = true;
+  }, [fieldRulesStore.initialized, buildDraftPersistPayload, authoritySnapshotVersion]);
 
   // Debounced auto-save
   const editedRules = fieldRulesStore.editedRules;
   const editedFieldOrder = fieldRulesStore.editedFieldOrder;
   useEffect(() => {
-    if (!autoSaveEnabled || !fieldRulesStore.initialized || !hydrated.current || authorityConflictVersion) return;
+    if (!effectiveAutoSaveEnabled || !fieldRulesStore.initialized || !hydrated.current || authorityConflictVersion) return;
+    const snap = useFieldRulesStore.getState().getSnapshot();
+    const nextFingerprint = autoSaveFingerprint(buildDraftPersistPayload(snap));
+    if (!nextFingerprint) return;
+    if (nextFingerprint === lastDraftAutoSaveFingerprintRef.current) return;
+    if (nextFingerprint === lastDraftAutoSaveAttemptFingerprintRef.current) return;
     const timer = setTimeout(saveFromStore, 1500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoSaveEnabled, editedRules, editedFieldOrder, saveFromStore, authorityConflictVersion]);
+  }, [effectiveAutoSaveEnabled, editedRules, editedFieldOrder, saveFromStore, authorityConflictVersion, buildDraftPersistPayload]);
 
   const hasUnsavedChanges = useMemo(
     () => Object.values(fieldRulesStore.editedRules).some((r: any) => r?._edited),
@@ -670,10 +744,10 @@ export function StudioPage() {
     : 0;
 
   const saveStatus = (() => {
-    if (saveEditsMut.isPending) {
+    if (saveDraftsMut.isPending) {
       return { label: 'Savingâ€¦', dot: 'bg-gray-400', text: 'text-gray-500', border: 'border-gray-200 dark:border-gray-600' };
     }
-    if (autoSaveEnabled) {
+    if (effectiveAutoSaveEnabled) {
       if (autoSaveStatus === 'saved') {
         return { label: 'Auto-saved', dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400', border: 'border-green-200 dark:border-green-700/60' };
       }
@@ -689,7 +763,7 @@ export function StudioPage() {
   })();
 
   const compileStatus = (() => {
-    if (compileMut.isPending) {
+    if (compileMut.isPending || compileProcessRunning) {
       return { label: 'Compilingâ€¦', dot: 'bg-gray-400', text: 'text-gray-500', border: 'border-gray-200 dark:border-gray-600' };
     }
     if (compileMut.isError) {
@@ -700,8 +774,13 @@ export function StudioPage() {
         border: 'border-red-200 dark:border-red-700/60',
       };
     }
-    if (compileMut.isSuccess) {
-      return { label: 'Started', dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400', border: 'border-green-200 dark:border-green-700/60' };
+    if (compileProcessFailed) {
+      return {
+        label: `Compile failed${processStatus?.exitCode !== null && processStatus?.exitCode !== undefined ? ` (${processStatus.exitCode})` : ''}`,
+        dot: 'bg-red-500',
+        text: 'text-red-600 dark:text-red-400',
+        border: 'border-red-200 dark:border-red-700/60',
+      };
     }
     if (studio && studio.compileStale) {
       return { label: 'Not compiled', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-700/60' };
@@ -715,6 +794,11 @@ export function StudioPage() {
   const saveStatusDot = saveStatus?.dot || 'bg-green-500';
   const compileStatusLabel = compileStatus?.label || 'Compiled';
   const compileStatusDot = compileStatus?.dot || 'bg-green-500';
+  const knownValuesErrorText = String((knownValuesError as Error | undefined)?.message || '').toLowerCase();
+  const knownValuesSpecDbNotReady = knownValuesTabActive
+    && knownValuesIsError
+    && knownValuesErrorText.includes('api 503')
+    && (knownValuesErrorText.includes('specdb_not_ready') || knownValuesErrorText.includes('specdb not ready'));
 
   // â"€â"€ Category guard â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (category === 'all') {
@@ -787,8 +871,8 @@ export function StudioPage() {
       <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2">
         <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={saveFromStore}
-            disabled={saveEditsMut.isPending || autoSaveEnabled}
+            onClick={() => saveFromStore({ force: true })}
+            disabled={saveDraftsMut.isPending || effectiveAutoSaveEnabled}
             className={`${btnSecondary} relative h-11 min-h-11 text-sm rounded inline-flex items-center justify-center overflow-visible whitespace-nowrap ${actionBtnWidth}`}
           >
             <span className="w-full text-center font-medium truncate">Save Edits</span>
@@ -817,29 +901,54 @@ export function StudioPage() {
           </button>
 
           <button
-            onClick={() => setAutoSaveEnabled(!autoSaveEnabled)}
+            onClick={() => setAutoSaveAllEnabled(!autoSaveAllEnabled)}
             className={`${btnSecondary} relative h-11 min-h-11 text-sm rounded inline-flex items-center justify-center overflow-visible whitespace-nowrap ${actionBtnWidth} transition-colors ${
-              autoSaveEnabled
-                ? 'bg-accent/10 text-accent border-accent/40 shadow-inner dark:bg-accent/20 dark:border-accent/50'
+              autoSaveAllEnabled
+                ? 'bg-accent text-white border-accent shadow-inner dark:bg-accent dark:border-accent/70'
                 : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
-            <span className="w-full text-center font-medium truncate">{autoSaveEnabled ? 'Auto-save On' : 'Auto-save Off'}</span>
+            <span className="w-full text-center font-medium truncate">{autoSaveAllEnabled ? 'Auto-save ALL On' : 'Auto-save ALL Off'}</span>
             <span className="absolute top-0 right-0 -ml-1 translate-x-1/2 -translate-y-1/2">
-              <Tip text={'Auto-save\n\nWhen enabled, saves are automatically persisted after 1.5s of inactivity.\nAuto-save applies to all field rule and catalog edits.'} />
+              <Tip text={'Auto-save ALL\n\nWhen enabled, workbook and mapping auto-save are locked on.\nThis applies to all Field Rules Studio edits.'} />
             </span>
           </button>
 
           <button
-            onClick={() => compileMut.mutate()}
-            disabled={compileMut.isPending}
+            onClick={() => {
+              if (autoSaveAllEnabled) return;
+              setAutoSaveEnabled(!autoSaveEnabled);
+            }}
+            disabled={autoSaveAllEnabled}
+            className={`${btnSecondary} relative h-11 min-h-11 text-sm rounded inline-flex items-center justify-center overflow-visible whitespace-nowrap ${actionBtnWidth} transition-colors ${
+              effectiveAutoSaveEnabled
+                ? 'bg-accent/10 text-accent border-accent/40 shadow-inner dark:bg-accent/20 dark:border-accent/50'
+                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            } ${autoSaveAllEnabled ? 'opacity-80 cursor-not-allowed' : ''}`}
+          >
+            <span className="w-full text-center font-medium truncate">{autoSaveAllEnabled ? 'Auto-save On (Locked by Auto-save ALL)' : (autoSaveEnabled ? 'Auto-save On' : 'Auto-save Off')}</span>
+            <span className="absolute top-0 right-0 -ml-1 translate-x-1/2 -translate-y-1/2">
+              <Tip text={autoSaveAllEnabled
+                ? 'Locked by Auto-save ALL.\n\nDisable Auto-save ALL to control this toggle manually.'
+                : 'Auto-save\n\nWhen enabled, saves are automatically persisted after 1.5s of inactivity.\nAuto-save applies to all field rule and catalog edits.'}
+              />
+            </span>
+          </button>
+
+          <button
+            onClick={runCompileFromStudio}
+            disabled={compileMut.isPending || processStatus.running}
             className={`${btnPrimary} relative h-11 min-h-11 text-sm rounded inline-flex items-center justify-center overflow-visible whitespace-nowrap ${actionBtnWidth}`}
           >
-            <span className="w-full text-center font-medium truncate">{compileMut.isPending ? 'Compiling�' : 'Compile & Generate'}</span>
+            <span className="w-full text-center font-medium truncate">
+              {compileProcessRunning
+                ? 'Compiling...'
+                : (compileMut.isPending ? 'Starting...' : (processStatus.running ? 'Process Running...' : 'Compile & Generate'))}
+            </span>
             <span className="absolute top-0 right-0 -ml-1 translate-x-1/2 -translate-y-1/2">
               <Tip text={
                 'Compile & Generate Artifacts\n\n'
-                + 'Reads your workbook (Excel) + draft edits and generates production artifacts:\n\n'
+                + 'Reads your Field Studio map + draft edits and generates production artifacts:\n\n'
                 + '\u2022 field_rules.json \u2014 compiled field definitions\n'
                 + '\u2022 component_db/*.json \u2014 component databases\n'
                 + '\u2022 known_values.json \u2014 enum / known value lists\n'
@@ -890,7 +999,7 @@ export function StudioPage() {
                 + '\u2022 Browser query cache\n\n'
                 + 'When to use:\n'
                 + '\u2022 After editing files outside the GUI\n'
-                    + '\u2022 After a manual workbook change\n'
+                    + '\u2022 After a manual Field Studio mapping change\n'
                     + '\u2022 If displayed data appears stale'
                   } />
                 </span>
@@ -903,18 +1012,37 @@ export function StudioPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-2 text-sm font-medium border-b-2 ${
+            className={`relative px-3 py-2 text-sm font-medium border-b-2 ${
               activeTab === tab.id
                 ? 'border-accent text-accent'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
+            } ${tab.id === 'reports' ? 'pr-7' : ''}`}
           >
             {tab.label}
+            {tab.id === 'reports' && reportsTabRunning ? (
+              <span
+                aria-label="Compile/validation in progress"
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+              >
+                <span className="block h-3.5 w-3.5 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+              </span>
+            ) : null}
           </button>
         ))}
       </div>
 
       {/* â"€â"€ Tab 1: Mapping Studio â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
+      {knownValuesSpecDbNotReady ? (
+        <div className="rounded border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2">
+          <div className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+            Known values authority unavailable
+          </div>
+          <div className="text-xs text-amber-700/90 dark:text-amber-200 mt-1">
+            SpecDb is not ready for {category}. Run compile/sync, then refresh to load authoritative enum values.
+          </div>
+        </div>
+      ) : null}
+
       {activeTab === 'mapping' ? (
         <MappingStudioTab
           wbMap={wbMap}
@@ -928,8 +1056,9 @@ export function StudioPage() {
           rules={storeRules}
           fieldOrder={storeFieldOrder}
           knownValues={knownValuesRes?.fields || {}}
-          autoSaveMapEnabled={autoSaveMapEnabled}
+          autoSaveMapEnabled={effectiveAutoSaveMapEnabled}
           setAutoSaveMapEnabled={setAutoSaveMapEnabled}
+          autoSaveMapLocked={autoSaveAllEnabled}
         />
       ) : null}
 
@@ -939,16 +1068,22 @@ export function StudioPage() {
           category={category}
           selectedKey={selectedKey}
           onSelectKey={setSelectedKey}
-          onSave={saveFromStore}
-          saving={saveEditsMut.isPending}
-          saveSuccess={saveEditsMut.isSuccess}
+          onSave={() => saveFromStore({ force: true })}
+          saving={saveDraftsMut.isPending}
+          saveSuccess={saveDraftsMut.isSuccess}
           knownValues={knownValuesRes?.fields || {}}
           enumLists={enumListsWithValues}
           componentDb={componentDbRes || {}}
           componentSources={(wbMap.component_sources || []) as ComponentSource[]}
-          autoSaveEnabled={autoSaveEnabled}
+          autoSaveEnabled={effectiveAutoSaveEnabled}
           setAutoSaveEnabled={setAutoSaveEnabled}
-          onRunEnumConsistency={(fieldKey) => enumConsistencyMut.mutateAsync({ field: fieldKey, apply: true })}
+          autoSaveLocked={autoSaveAllEnabled}
+          onRunEnumConsistency={(fieldKey, options) => enumConsistencyMut.mutateAsync({
+            field: fieldKey,
+            apply: options?.reviewEnabled !== false,
+            formatGuidance: options?.formatGuidance,
+            reviewEnabled: options?.reviewEnabled,
+          })}
           enumConsistencyPending={enumConsistencyMut.isPending}
         />
       ) : null}
@@ -956,6 +1091,7 @@ export function StudioPage() {
       {/* â"€â"€ Tab 3: Field Contract (Workbench) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       {activeTab === 'contract' ? (
         <FieldRulesWorkbench
+          key={category}
           category={category}
           knownValues={knownValuesRes?.fields || {}}
           enumLists={enumListsWithValues}
@@ -963,11 +1099,12 @@ export function StudioPage() {
           componentSources={(wbMap.component_sources || []) as ComponentSource[]}
           wbMap={wbMap}
           guardrails={studio?.guardrails as Record<string, unknown> | undefined}
-          onSave={saveFromStore}
-          saving={saveEditsMut.isPending}
-          saveSuccess={saveEditsMut.isSuccess}
-          autoSaveEnabled={autoSaveEnabled}
+          onSave={() => saveFromStore({ force: true })}
+          saving={saveDraftsMut.isPending}
+          saveSuccess={saveDraftsMut.isSuccess}
+          autoSaveEnabled={effectiveAutoSaveEnabled}
           setAutoSaveEnabled={setAutoSaveEnabled}
+          autoSaveLocked={autoSaveAllEnabled}
         />
       ) : null}
 
@@ -980,6 +1117,8 @@ export function StudioPage() {
           guardrails={studio?.guardrails}
           compileMut={compileMut}
           validateRulesMut={validateRulesMut}
+          processStatus={processStatus}
+          onRunCompile={runCompileFromStudio}
         />
       ) : null}
 
@@ -1007,6 +1146,7 @@ function MappingStudioTab({
   knownValues,
   autoSaveMapEnabled,
   setAutoSaveMapEnabled,
+  autoSaveMapLocked,
 }: {
   wbMap: StudioConfig;
   tooltipCount: number;
@@ -1021,18 +1161,37 @@ function MappingStudioTab({
   knownValues: Record<string, string[]>;
   autoSaveMapEnabled: boolean;
   setAutoSaveMapEnabled: (v: boolean) => void;
+  autoSaveMapLocked: boolean;
 }) {
   const [tooltipPath, setTooltipPath] = useState('');
   const [compSources, setCompSources] = useState<ComponentSource[]>([]);
   const [dataLists, setDataLists] = useState<DataListEntry[]>([]);
   const [seededVersion, setSeededVersion] = useState('');
-  const [showTooltipSource, setShowTooltipSource] = useState(false);
-  const [showComponentSourceMapping, setShowComponentSourceMapping] = useState(false);
-  const [showEnumSection, setShowEnumSection] = useState(false);
+  const lastMapAutoSaveFingerprintRef = useRef('');
+  const [showTooltipSource, toggleTooltipSource] = usePersistedToggle('studio:drawer:tooltipSource', false);
+  const [showComponentSourceMapping, toggleComponentSourceMapping] = usePersistedToggle('studio:drawer:componentSourceMapping', false);
+  const [showEnumSection, toggleEnumSection] = usePersistedToggle('studio:drawer:enumSection', false);
 
-  const mapVersion = String(wbMap.version || '');
+  const mapSeedVersion = useMemo(() => {
+    const componentSourceCount = Array.isArray(wbMap.component_sources) ? wbMap.component_sources.length : 0;
+    const rawEnumLists = (Array.isArray(wbMap.data_lists) && wbMap.data_lists.length > 0
+      ? wbMap.data_lists
+      : Array.isArray(wbMap.enum_lists) ? wbMap.enum_lists : []) as EnumEntry[];
+    const manualMap = wbMap.manual_enum_values && typeof wbMap.manual_enum_values === 'object'
+      ? wbMap.manual_enum_values as Record<string, unknown>
+      : {};
+    return [
+      String(wbMap.version || ''),
+      String(wbMap.version_snapshot || ''),
+      String(wbMap.tooltip_source?.path || ''),
+      String(componentSourceCount),
+      String(rawEnumLists.length),
+      String(Object.keys(manualMap).length),
+    ].join('|');
+  }, [wbMap]);
+
   useEffect(() => {
-    if (!mapVersion || seededVersion === mapVersion) return;
+    if (seededVersion === mapSeedVersion) return;
     setTooltipPath(wbMap.tooltip_source?.path || '');
     const sources = wbMap.component_sources || [];
     const normalizedCompSources = (Array.isArray(sources) ? sources : []).map((src) => {
@@ -1080,8 +1239,27 @@ function MappingStudioTab({
       }
     }
     setDataLists(seededLists);
-    setSeededVersion(mapVersion);
-  }, [wbMap, mapVersion, seededVersion, rules]);
+    const seededPayload: StudioConfig = {
+      ...wbMap,
+      tooltip_source: {
+        path: wbMap.tooltip_source?.path || '',
+      },
+      component_sources: normalizedCompSources.map((src) => ({
+        ...src,
+        priority: normalizePriorityProfile(src.priority),
+        ai_assist: normalizeAiAssistConfig(src.ai_assist),
+      })),
+      enum_lists: seededLists.map((dl) => ({
+        field: dl.field,
+        normalize: dl.normalize,
+        values: dl.manual_values,
+        priority: normalizePriorityProfile(dl.priority),
+        ai_assist: normalizeAiAssistConfig(dl.ai_assist),
+      })),
+    };
+    lastMapAutoSaveFingerprintRef.current = autoSaveFingerprint(seededPayload);
+    setSeededVersion(mapSeedVersion);
+  }, [wbMap, mapSeedVersion, seededVersion, rules]);
 
   const assembleMap = useCallback((): StudioConfig => {
     return {
@@ -1105,17 +1283,26 @@ function MappingStudioTab({
   }, [wbMap, tooltipPath, compSources, dataLists]);
 
   function handleSave() {
-    onSaveMap(assembleMap());
+    const nextMap = assembleMap();
+    lastMapAutoSaveFingerprintRef.current = autoSaveFingerprint(nextMap);
+    onSaveMap(nextMap);
   }
 
   const mapHydrated = useRef(false);
+  const hasMapPayload = Object.keys(wbMap || {}).length > 0;
   useEffect(() => {
-    if (seededVersion) mapHydrated.current = true;
-  }, [seededVersion]);
+    if (seededVersion && hasMapPayload) mapHydrated.current = true;
+  }, [seededVersion, hasMapPayload]);
 
   useEffect(() => {
     if (!autoSaveMapEnabled || !mapHydrated.current) return;
-    const timer = setTimeout(() => onSaveMap(assembleMap()), 1500);
+    const nextMap = assembleMap();
+    const nextFingerprint = autoSaveFingerprint(nextMap);
+    if (nextFingerprint && nextFingerprint === lastMapAutoSaveFingerprintRef.current) return;
+    const timer = setTimeout(() => {
+      onSaveMap(nextMap);
+      lastMapAutoSaveFingerprintRef.current = nextFingerprint;
+    }, 1500);
     return () => clearTimeout(timer);
   }, [autoSaveMapEnabled, tooltipPath, compSources, dataLists, assembleMap, onSaveMap]);
 
@@ -1170,7 +1357,7 @@ function MappingStudioTab({
       {/* -- Header: description left, save right -- */}
       <div className="flex items-center gap-3">
         <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed max-w-[50%]">
-          Configure how the compiler reads your Excel workbook. Map tooltip sources, define component types and their property slots, and set up enum / data lists with normalization rules.
+          Configure how the compiler reads your Field Studio mapping. Define component types and their property slots, then set up enum / data lists with normalization rules.
         </p>
         <div className="flex-1" />
         <button
@@ -1180,7 +1367,7 @@ function MappingStudioTab({
         >
           <span className="w-full text-center font-medium truncate">Save Mapping</span>
           <span className="absolute top-0 right-0 -ml-1 translate-x-1/2 -translate-y-1/2">
-            <Tip text={'Save Mapping (manual)\n\nWrites your workbook map configuration to disk.\nThis tells the compiler how to read your Excel workbook.'} />
+            <Tip text={'Save Mapping (manual)\n\nWrites your Field Studio map configuration to disk.\nThis is the authoritative contract input for compile.'} />
           </span>
           <Tooltip.Root>
             <Tooltip.Trigger asChild>
@@ -1204,16 +1391,23 @@ function MappingStudioTab({
         </button>
 
         <button
-          onClick={() => setAutoSaveMapEnabled(!autoSaveMapEnabled)}
+          onClick={() => {
+            if (autoSaveMapLocked) return;
+            setAutoSaveMapEnabled(!autoSaveMapEnabled);
+          }}
+          disabled={autoSaveMapLocked}
           className={`${btnSecondary} relative h-11 min-h-11 text-sm rounded inline-flex items-center justify-center overflow-visible whitespace-nowrap ${actionBtnWidth} transition-colors ${
             autoSaveMapEnabled
               ? 'bg-accent/10 text-accent border-accent/40 shadow-inner dark:bg-accent/20 dark:border-accent/50'
               : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-          }`}
+          } ${autoSaveMapLocked ? 'opacity-80 cursor-not-allowed' : ''}`}
         >
-          <span className="w-full text-center font-medium truncate">{autoSaveMapEnabled ? 'Auto-save On' : 'Auto-save Off'}</span>
+          <span className="w-full text-center font-medium truncate">{autoSaveMapLocked ? 'Auto-save On (Locked by Auto-save ALL)' : (autoSaveMapEnabled ? 'Auto-save On' : 'Auto-save Off')}</span>
           <span className="absolute top-0 right-0 -ml-1 translate-x-1/2 -translate-y-1/2">
-            <Tip text={'Auto-save Mapping\n\nWhen enabled, mapping changes are automatically\nsaved after 1.5s of inactivity.\n\nWhat gets saved:\n\u2022 Tooltip source configuration\n\u2022 Component source mappings\n\u2022 Enum / data list definitions\n\nDefault: on. Setting persists across sessions.'} />
+            <Tip text={autoSaveMapLocked
+              ? 'Locked by Auto-save ALL.\n\nDisable Auto-save ALL to control this toggle manually.'
+              : 'Auto-save Mapping\n\nWhen enabled, mapping changes are automatically\nsaved after 1.5s of inactivity.\n\nWhat gets saved:\n\u2022 Tooltip source configuration\n\u2022 Component source mappings\n\u2022 Enum / data list definitions\n\nDefault: on. Setting persists across sessions.'}
+            />
           </span>
         </button>
       </div>
@@ -1228,7 +1422,7 @@ function MappingStudioTab({
         <button
           type="button"
           aria-expanded={showTooltipSource}
-          onClick={() => setShowTooltipSource((prev) => !prev)}
+          onClick={() => toggleTooltipSource()}
           className="w-full flex items-center justify-between gap-2 text-left text-sm font-semibold text-gray-700 dark:text-gray-100 hover:text-gray-900 dark:hover:text-white"
         >
           <span className="flex items-center gap-2">
@@ -1273,7 +1467,7 @@ function MappingStudioTab({
           <button
             type="button"
             aria-expanded={showComponentSourceMapping}
-            onClick={() => setShowComponentSourceMapping((prev) => !prev)}
+            onClick={() => toggleComponentSourceMapping()}
             className="flex-1 flex items-center justify-between gap-2 text-left text-sm font-semibold text-gray-700 dark:text-gray-100 hover:text-gray-900 dark:hover:text-white"
           >
             <span className="flex items-center gap-2">
@@ -1333,7 +1527,7 @@ function MappingStudioTab({
         <button
           type="button"
           aria-expanded={showEnumSection}
-          onClick={() => setShowEnumSection((prev) => !prev)}
+          onClick={() => toggleEnumSection()}
           className="flex-1 flex items-center justify-between gap-2 text-left text-sm font-semibold text-gray-700 dark:text-gray-100 hover:text-gray-900 dark:hover:text-white"
         >
           <span className="flex items-center gap-2">
@@ -1886,9 +2080,10 @@ function EditableDataList({
   onUpdate: (updates: Partial<DataListEntry>) => void;
   onRemove: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const dlKey = entry.field || `idx-${index}`;
+  const [expanded, toggleExpanded, setExpanded] = usePersistedToggle(`studio:dataList:${dlKey}:expanded`, false);
   const [confirmingRemove, setConfirmingRemove] = useState(false);
-  const [showAiSections, setShowAiSections] = useState(false);
+  const [showAiSections, toggleAiSections] = usePersistedToggle(`studio:dataList:${dlKey}:ai`, false);
 
   const valueCount = entry.manual_values.length;
   const listPriority = normalizePriorityProfile(entry.priority);
@@ -2044,7 +2239,7 @@ function EditableDataList({
       {/* List review priority / effort */}
       <button
         type="button"
-        onClick={() => setShowAiSections((v) => !v)}
+        onClick={() => toggleAiSections()}
         className="w-full flex items-center gap-2 mb-2"
       >
         <span className="inline-flex items-center justify-center w-5 h-5 border border-gray-300 dark:border-gray-600 rounded text-xs font-medium text-gray-500 dark:text-gray-300">{showAiSections ? '-' : '+'}</span>
@@ -2114,7 +2309,7 @@ function EditableDataList({
       {/* List-level AI assist (same controls as Key Navigator) */}
       <button
         type="button"
-        onClick={() => setShowAiSections((v) => !v)}
+        onClick={() => toggleAiSections()}
         className="w-full flex items-center gap-2 mb-2 mt-2"
       >
         <span className="inline-flex items-center justify-center w-5 h-5 border border-gray-300 dark:border-gray-600 rounded text-xs font-medium text-gray-500 dark:text-gray-300">{showAiSections ? '-' : '+'}</span>
@@ -2341,9 +2536,10 @@ function EditableComponentSource({
     return (roles.properties as unknown as typeof roles.properties).map((p) => migrateProperty(p, rules));
   });
   const [pendingFieldKey, setPendingFieldKey] = useState('');
-  const [showAiSections, setShowAiSections] = useState(false);
-  const [showTrackedRoles, setShowTrackedRoles] = useState(false);
-  const [showAttributes, setShowAttributes] = useState(false);
+  const csKey = source.component_type || source.type || `idx-${index}`;
+  const [showAiSections, toggleCsAiSections] = usePersistedToggle(`studio:compSource:${csKey}:ai`, false);
+  const [showTrackedRoles, toggleTrackedRoles] = usePersistedToggle(`studio:compSource:${csKey}:roles`, false);
+  const [showAttributes, toggleAttributes] = usePersistedToggle(`studio:compSource:${csKey}:attrs`, false);
 
   // Group field keys by ui.group for the field key picker
   const fieldKeyGroups = useMemo(() => {
@@ -2435,7 +2631,7 @@ function EditableComponentSource({
   }
 
   const compType = source.component_type || source.type || '';
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, toggleCsExpanded, setExpanded] = usePersistedToggle(`studio:compSource:${compType || `idx-${index}`}:expanded`, false);
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const sourceTitle = compType
     ? displayLabel(compType)
@@ -2568,7 +2764,7 @@ function EditableComponentSource({
       {/* Component-level full review priority/effort */}
       <button
         type="button"
-        onClick={() => setShowAiSections((v) => !v)}
+        onClick={() => toggleCsAiSections()}
         className="w-full flex items-center gap-2 mb-2"
       >
         <span className="inline-flex items-center justify-center w-5 h-5 border border-gray-300 dark:border-gray-600 rounded text-xs font-medium text-gray-500 dark:text-gray-300">{showAiSections ? '-' : '+'}</span>
@@ -2639,7 +2835,7 @@ function EditableComponentSource({
       {/* Component table-level AI assist */}
       <button
         type="button"
-        onClick={() => setShowAiSections((v) => !v)}
+        onClick={() => toggleCsAiSections()}
         className="w-full flex items-center gap-2 mb-2"
       >
         <span className="inline-flex items-center justify-center w-5 h-5 border border-gray-300 dark:border-gray-600 rounded text-xs font-medium text-gray-500 dark:text-gray-300">{showAiSections ? '-' : '+'}</span>
@@ -2782,7 +2978,7 @@ function EditableComponentSource({
       <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
         <button
           type="button"
-          onClick={() => setShowTrackedRoles((v) => !v)}
+          onClick={() => toggleTrackedRoles()}
           className="w-full flex items-center justify-between gap-2 mb-2"
         >
           <span className="flex items-center gap-2">
@@ -2852,7 +3048,7 @@ function EditableComponentSource({
         {/* Attributes (Properties) */}
         <button
           type="button"
-          onClick={() => setShowAttributes((v) => !v)}
+          onClick={() => toggleAttributes()}
           className="w-full flex items-center justify-between gap-2 mb-2"
         >
           <span className="flex items-center gap-2">
@@ -3133,17 +3329,19 @@ function arrN(obj: Record<string, unknown>, path: string): string[] {
 function Section({
   title,
   children,
+  persistKey,
   defaultOpen = false,
   titleTooltip,
   centerTitle = false,
 }: {
   title: React.ReactNode;
   children: React.ReactNode;
+  persistKey: string;
   defaultOpen?: boolean;
   titleTooltip?: string;
   centerTitle?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, , setOpen] = usePersistedToggle(persistKey, defaultOpen);
   const titleCls = centerTitle ? 'text-center leading-snug' : 'text-left pl-1 leading-snug';
   return (
     <div className="relative border border-gray-200 dark:border-gray-700 rounded">
@@ -3193,6 +3391,7 @@ function KeyNavigatorTab({
   componentSources,
   autoSaveEnabled,
   setAutoSaveEnabled,
+  autoSaveLocked,
   onRunEnumConsistency,
   enumConsistencyPending,
 }: {
@@ -3208,7 +3407,8 @@ function KeyNavigatorTab({
   componentDb: ComponentDbResponse;
   autoSaveEnabled: boolean;
   setAutoSaveEnabled: (v: boolean) => void;
-  onRunEnumConsistency: (fieldKey: string) => Promise<unknown>;
+  autoSaveLocked: boolean;
+  onRunEnumConsistency: (fieldKey: string, options?: { formatGuidance?: string; reviewEnabled?: boolean }) => Promise<unknown>;
   enumConsistencyPending: boolean;
 }) {
   const {
@@ -3236,14 +3436,21 @@ function KeyNavigatorTab({
   const [enumConsistencyError, setEnumConsistencyError] = useState('');
 
   // Group UI state
-  const [selectedGroup, setSelectedGroup] = useState('');
+  const [selectedGroup, setSelectedGroup] = usePersistedTab<string>(
+    `studio:keyNavigator:selectedGroup:${category}`,
+    '',
+  );
   const [showAddGroupForm, setShowAddGroupForm] = useState(false);
   const [addGroupValue, setAddGroupValue] = useState('');
 
   // Bulk paste modal state
-  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkOpen, , setBulkOpen] = usePersistedToggle(`studio:keyNavigator:bulkOpen:${category}`, false);
   const [bulkGridRows, setBulkGridRows] = useState<BulkGridRow[]>([]);
-  const [bulkGroup, setBulkGroup] = useState('');
+  const [bulkGroup, setBulkGroup] = usePersistedTab<string>(`studio:keyNavigator:bulkGroup:${category}`, '');
+  const [showFullRuleJson, , setShowFullRuleJson] = usePersistedToggle(
+    `studio:keyNavigator:section:fullRuleJson:${category}`,
+    false,
+  );
 
   useEffect(() => {
     setRenamingKey(false);
@@ -3252,10 +3459,32 @@ function KeyNavigatorTab({
   }, [selectedKey]);
 
   const activeFieldOrder = editedFieldOrder;
+  const activeFieldKeys = useMemo(
+    () => activeFieldOrder.filter((key) => !key.startsWith('__grp::')),
+    [activeFieldOrder],
+  );
+
+  useEffect(() => {
+    if (activeFieldKeys.length === 0) {
+      if (selectedKey) onSelectKey('');
+      return;
+    }
+    if (!selectedKey || !activeFieldKeys.includes(selectedKey)) {
+      onSelectKey(activeFieldKeys[0]);
+    }
+  }, [selectedKey, activeFieldKeys, onSelectKey]);
 
   const groups = useMemo(() => {
     return deriveGroupsTs(activeFieldOrder, editedRules);
   }, [activeFieldOrder, editedRules]);
+
+  useEffect(() => {
+    if (!selectedGroup) return;
+    const groupExists = groups.some(([groupName]) => groupName === selectedGroup);
+    if (!groupExists) {
+      setSelectedGroup('');
+    }
+  }, [selectedGroup, groups, setSelectedGroup]);
 
   const existingGroups = useMemo(() => {
     const gs = new Set<string>();
@@ -3264,10 +3493,9 @@ function KeyNavigatorTab({
   }, [groups]);
 
   const existingLabels = useMemo(() => {
-    return activeFieldOrder
-      .filter(k => !k.startsWith('__grp::'))
-      .map(k => displayLabel(k, editedRules[k]));
-  }, [activeFieldOrder, editedRules]);
+    return activeFieldKeys
+      .map((key) => displayLabel(key, editedRules[key]));
+  }, [activeFieldKeys, editedRules]);
 
   const bulkPreviewRows: BulkKeyRow[] = useMemo(() => {
     const filled = bulkGridRows.filter(r => r.col1.trim() || r.col2.trim());
@@ -3292,10 +3520,15 @@ function KeyNavigatorTab({
     bulkPreviewRows.filter(r => r.status === 'ready'),
   [bulkPreviewRows]);
 
+  const saveIfAutoSaveEnabled = useCallback(() => {
+    if (!autoSaveEnabled) return;
+    onSave();
+  }, [autoSaveEnabled, onSave]);
+
   const handleReorder = useCallback((activeItem: string, overItem: string) => {
     reorder(activeItem, overItem);
-    onSave();
-  }, [reorder, onSave]);
+    saveIfAutoSaveEnabled();
+  }, [reorder, saveIfAutoSaveEnabled]);
 
   function handleSaveAll() {
     onSave();
@@ -3312,7 +3545,7 @@ function KeyNavigatorTab({
     setAddKeyGroup('');
     setSelectedGroup('');
     onSelectKey(key);
-    onSave();
+    saveIfAutoSaveEnabled();
   }
 
   function handleDeleteKey() {
@@ -3324,7 +3557,7 @@ function KeyNavigatorTab({
     const idx = activeFieldOrder.indexOf(deletedKey);
     const nextKey = nextOrder[Math.min(idx, nextOrder.length - 1)] || '';
     onSelectKey(nextKey);
-    onSave();
+    saveIfAutoSaveEnabled();
   }
 
   function handleRenameKey() {
@@ -3335,7 +3568,7 @@ function KeyNavigatorTab({
     renameKey(selectedKey, newKey, rewriteConstraintsTs, constraintRefsKey);
     setRenamingKey(false);
     onSelectKey(newKey);
-    onSave();
+    saveIfAutoSaveEnabled();
   }
 
   function handleAddGroup() {
@@ -3345,7 +3578,7 @@ function KeyNavigatorTab({
     addGroup(name);
     setShowAddGroupForm(false);
     setAddGroupValue('');
-    onSave();
+    saveIfAutoSaveEnabled();
   }
 
   function handleBulkImport() {
@@ -3355,7 +3588,7 @@ function KeyNavigatorTab({
       key: row.key,
       rule: { label: row.label, group, ui: { label: row.label, group }, constraints: [] },
     })));
-    onSave();
+    saveIfAutoSaveEnabled();
     setBulkOpen(false);
     setBulkGridRows([]);
     setBulkGroup('');
@@ -3365,7 +3598,7 @@ function KeyNavigatorTab({
     if (!window.confirm(`Delete group "${group}"? Fields in this group will become ungrouped.`)) return;
     removeGroup(group);
     setSelectedGroup('');
-    onSave();
+    saveIfAutoSaveEnabled();
   }
 
   function handleRenameGroup(oldName: string, newName: string) {
@@ -3375,11 +3608,11 @@ function KeyNavigatorTab({
     if (validateNewGroupTs(trimmed, otherGroups)) return;
     renameGroup(oldName, trimmed);
     setSelectedGroup(trimmed);
-    onSave();
+    saveIfAutoSaveEnabled();
   }
 
   function handleSelectGroup(group: string) {
-    setSelectedGroup((prev) => prev === group ? '' : group);
+    setSelectedGroup(selectedGroup === group ? '' : group);
     onSelectKey('');
   }
 
@@ -3398,7 +3631,8 @@ function KeyNavigatorTab({
     const next = { ...cur };
     if (Object.keys(fo).length === 0) { delete next[fieldPath]; } else { next[fieldPath] = fo; }
     updateField(selectedKey, 'consumers', Object.keys(next).length > 0 ? next : undefined);
-  }, [selectedKey, currentRule, updateField]);
+    saveIfAutoSaveEnabled();
+  }, [selectedKey, currentRule, updateField, saveIfAutoSaveEnabled]);
 
   const B = useCallback(({ p }: { p: string }) => (
     currentRule ? <SystemBadges fieldPath={p} rule={currentRule} onToggle={handleConsumerToggle} /> : null
@@ -3596,14 +3830,18 @@ function KeyNavigatorTab({
                       {saving ? 'Saving\u2026' : 'Save'}
                     </button>
                     <button
-                      onClick={() => setAutoSaveEnabled(!autoSaveEnabled)}
+                      onClick={() => {
+                        if (autoSaveLocked) return;
+                        setAutoSaveEnabled(!autoSaveEnabled);
+                      }}
+                      disabled={autoSaveLocked}
                       className={`relative px-3 py-1.5 text-xs font-medium rounded border transition-colors overflow-visible ${
                         autoSaveEnabled
                           ? 'bg-accent/10 text-accent border-accent/40 shadow-inner dark:bg-accent/20 dark:border-accent/50'
                           : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
+                      } ${autoSaveLocked ? 'opacity-80 cursor-not-allowed' : ''}`}
                     >
-                      {autoSaveEnabled ? 'Auto-save On' : 'Auto-save Off'}
+                      {autoSaveLocked ? 'Auto-save On (Locked by Auto-save ALL)' : (autoSaveEnabled ? 'Auto-save On' : 'Auto-save Off')}
                       {saving && (
                         <span
                           className="absolute inline-block h-2 w-2 rounded-full bg-gray-400 animate-pulse border border-white/90 shadow-sm"
@@ -3673,7 +3911,11 @@ function KeyNavigatorTab({
             })()}
 
             {/* â"€â"€ Contract â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
-            <Section title="Contract (Type, Shape, Unit)" titleTooltip={STUDIO_TIPS.key_section_contract}>
+            <Section
+              title="Contract (Type, Shape, Unit)"
+              persistKey={`studio:keyNavigator:section:contract:${category}`}
+              titleTooltip={STUDIO_TIPS.key_section_contract}
+            >
               <div className="grid grid-cols-4 gap-3">
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Data Type<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.data_type} /></span><B p="contract.type" /></div>
@@ -3728,7 +3970,11 @@ function KeyNavigatorTab({
             </Section>
 
             {/* â"€â"€ Priority â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
-            <Section title="Priority & Effort" titleTooltip={STUDIO_TIPS.key_section_priority}>
+            <Section
+              title="Priority & Effort"
+              persistKey={`studio:keyNavigator:section:priority:${category}`}
+              titleTooltip={STUDIO_TIPS.key_section_priority}
+            >
               <div className="grid grid-cols-4 gap-3">
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Required Level<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.required_level} /></span><B p="priority.required_level" /></div>
@@ -3984,7 +4230,11 @@ function KeyNavigatorTab({
             </Section>
 
             {/* â"€â"€ Parse â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
-            <Section title="Parse Rules" titleTooltip={STUDIO_TIPS.key_section_parse}>
+            <Section
+              title="Parse Rules"
+              persistKey={`studio:keyNavigator:section:parse:${category}`}
+              titleTooltip={STUDIO_TIPS.key_section_parse}
+            >
               {(() => {
                 const pt = strN(currentRule, 'parse.template', strN(currentRule, 'parse_template'));
                 const showUnits = pt === 'number_with_unit' || pt === 'list_of_numbers_with_unit' || pt === 'list_numbers_or_ranges_with_unit';
@@ -4048,8 +4298,13 @@ function KeyNavigatorTab({
             </Section>
 
             {/* â"€â"€ Enum â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
-            <Section title="Enum Policy" titleTooltip={STUDIO_TIPS.key_section_enum}>
+            <Section
+              title="Enum Policy"
+              persistKey={`studio:keyNavigator:section:enum:${category}`}
+              titleTooltip={STUDIO_TIPS.key_section_enum}
+            >
               <EnumConfigurator
+                persistTabKey={`studio:keyNavigator:enumSourceTab:${category}:${selectedKey}`}
                 fieldKey={selectedKey}
                 rule={currentRule}
                 knownValues={knownValues}
@@ -4057,12 +4312,12 @@ function KeyNavigatorTab({
                 parseTemplate={strN(currentRule, 'parse.template', strN(currentRule, 'parse_template'))}
                 onUpdate={(path, value) => updateField(selectedKey, path, value)}
                 renderLabelSuffix={(path) => <B p={path} />}
-                onRunConsistency={async () => {
+                onRunConsistency={async (options) => {
                   if (!selectedKey) return;
                   setEnumConsistencyMessage('');
                   setEnumConsistencyError('');
                   try {
-                    const result = await onRunEnumConsistency(selectedKey) as {
+                    const result = await onRunEnumConsistency(selectedKey, options) as {
                       applied?: { changed?: number; mapped?: number; kept?: number; uncertain?: number };
                       skipped_reason?: string | null;
                     };
@@ -4086,7 +4341,11 @@ function KeyNavigatorTab({
 
 
             {/* Components - Component DB & Match Settings */}
-            <Section title="Components" titleTooltip={STUDIO_TIPS.key_section_components}>
+            <Section
+              title="Components"
+              persistKey={`studio:keyNavigator:section:components:${category}`}
+              titleTooltip={STUDIO_TIPS.key_section_components}
+            >
               <div className="grid grid-cols-4 gap-3">
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Component DB<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.component_db} /></span><B p="component.type" /></div>
@@ -4269,7 +4528,11 @@ function KeyNavigatorTab({
               })() : null}
             </Section>
 
-            <Section title={<span className="flex items-center gap-1">Cross-Field Constraints<B p="constraints" /></span>} titleTooltip={STUDIO_TIPS.key_section_constraints}>
+            <Section
+              title={<span className="flex items-center gap-1">Cross-Field Constraints<B p="constraints" /></span>}
+              persistKey={`studio:keyNavigator:section:constraints:${category}`}
+              titleTooltip={STUDIO_TIPS.key_section_constraints}
+            >
               <KeyConstraintEditor
                 currentKey={selectedKey}
                 constraints={arrN(currentRule, 'constraints')}
@@ -4279,7 +4542,11 @@ function KeyNavigatorTab({
               />
             </Section>
 
-            <Section title="Evidence Requirements" titleTooltip={STUDIO_TIPS.key_section_evidence}>
+            <Section
+              title="Evidence Requirements"
+              persistKey={`studio:keyNavigator:section:evidence:${category}`}
+              titleTooltip={STUDIO_TIPS.key_section_evidence}
+            >
               <div className="grid grid-cols-3 gap-3 items-start">
                 <div className="space-y-2">
                   <div>
@@ -4311,7 +4578,11 @@ function KeyNavigatorTab({
             </Section>
 
             {/* â"€â"€ Extraction Hints & Aliases â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
-            <Section title="Extraction Hints & Aliases" titleTooltip={STUDIO_TIPS.key_section_ui}>
+            <Section
+              title="Extraction Hints & Aliases"
+              persistKey={`studio:keyNavigator:section:uiDisplay:${category}`}
+              titleTooltip={STUDIO_TIPS.key_section_ui}
+            >
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className={labelCls}>Input Control<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.input_control} /></div>
@@ -4340,7 +4611,11 @@ function KeyNavigatorTab({
             </Section>
 
             {/* â"€â"€ Search Hints â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
-            <Section title="Search Hints" titleTooltip={STUDIO_TIPS.key_section_search}>
+            <Section
+              title="Search Hints"
+              persistKey={`studio:keyNavigator:section:searchHints:${category}`}
+              titleTooltip={STUDIO_TIPS.key_section_search}
+            >
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Domain Hints<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.domain_hints} /></span><B p="search_hints.domain_hints" /></div>
@@ -4357,7 +4632,11 @@ function KeyNavigatorTab({
               </div>
             </Section>
 
-            <details className="mt-2">
+            <details
+              className="mt-2"
+              open={showFullRuleJson}
+              onToggle={(event) => setShowFullRuleJson(event.currentTarget.open)}
+            >
               <summary className="text-xs text-gray-400 cursor-pointer">Full Rule JSON</summary>
               <div className="mt-2"><JsonViewer data={currentRule} maxDepth={3} /></div>
             </details>
@@ -4376,7 +4655,7 @@ function KeyNavigatorTab({
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <div>
               <h4 className="text-sm font-semibold">Bulk Paste Keys + Labels</h4>
-              <p className="text-xs text-gray-500 mt-0.5">Paste two columns: <strong>Key</strong> and <strong>Label</strong> (tab-separated from Excel/Sheets).</p>
+              <p className="text-xs text-gray-500 mt-0.5">Paste two columns: <strong>Key</strong> and <strong>Label</strong> (tab-separated from your spreadsheet tool).</p>
             </div>
             <button
               onClick={() => { setBulkOpen(false); setBulkGridRows([]); setBulkGroup(''); }}
@@ -4516,6 +4795,8 @@ function CompileReportsTab({
   guardrails,
   compileMut,
   validateRulesMut,
+  processStatus,
+  onRunCompile,
 }: {
   artifacts: ArtifactEntry[];
   compileErrors: string[];
@@ -4523,30 +4804,193 @@ function CompileReportsTab({
   guardrails?: Record<string, unknown> | null;
   compileMut: ReturnType<typeof useMutation<ProcessStatus, Error>>;
   validateRulesMut: ReturnType<typeof useMutation<ProcessStatus, Error>>;
+  processStatus: ProcessStatus;
+  onRunCompile: () => void;
 }) {
+  const processCommandToken = String(processStatus?.command || '').toLowerCase();
+  const processRunning = Boolean(processStatus?.running);
+  const compileProcessCommand = processCommandToken.includes('compile-rules') || processCommandToken.includes('category-compile');
+  const validateProcessCommand = processCommandToken.includes('validate-rules');
+  const compileProcessRunning = processRunning && compileProcessCommand;
+  const validateProcessRunning = processRunning && validateProcessCommand;
+  const compileProcessFinished = !processRunning && compileProcessCommand;
+  const validateProcessFinished = !processRunning && validateProcessCommand;
+  const compileProcessFailed = compileProcessFinished
+    && processStatus?.exitCode !== null
+    && processStatus?.exitCode !== undefined
+    && Number(processStatus?.exitCode) !== 0;
+  const validateProcessFailed = validateProcessFinished
+    && processStatus?.exitCode !== null
+    && processStatus?.exitCode !== undefined
+    && Number(processStatus?.exitCode) !== 0;
+  const anyProcessRunning = processRunning;
+  const progressActive = compileProcessRunning || validateProcessRunning || compileMut.isPending || validateRulesMut.isPending;
+  const [progressTick, setProgressTick] = useState(0);
+  useEffect(() => {
+    if (!progressActive) {
+      setProgressTick(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setProgressTick((value) => value + 1);
+    }, 500);
+    return () => clearInterval(timer);
+  }, [progressActive]);
+  const activeArtifactGoal = compileProcessCommand
+    ? (processCommandToken.includes('compile-rules') ? 10 : 6)
+    : 10;
+  const idleArtifactGoal = 10;
+  const compileStartedAtMs = Date.parse(String(processStatus?.startedAt || ''));
+  const artifactUpdatedThisRunCount = Number.isFinite(compileStartedAtMs)
+    ? artifacts.filter((artifact) => {
+      const updatedMs = Date.parse(String(artifact?.updated || ''));
+      return Number.isFinite(updatedMs) && updatedMs >= (compileStartedAtMs - 1000);
+    }).length
+    : 0;
+  const runningArtifactCount = Math.min(Math.max(0, artifactUpdatedThisRunCount), activeArtifactGoal);
+  const elapsedMs = Number.isFinite(compileStartedAtMs)
+    ? Math.max(0, Date.now() - compileStartedAtMs)
+    : (progressTick * 500);
+  const fallbackRunningCount = progressActive
+    ? Math.min(
+      Math.max(1, Math.floor(elapsedMs / 1500)),
+      Math.max(1, activeArtifactGoal - 1)
+    )
+    : 0;
+  const artifactProgressCount = progressActive ? Math.max(runningArtifactCount, fallbackRunningCount) : 0;
+  const artifactProgressGoal = progressActive ? activeArtifactGoal : idleArtifactGoal;
+  const artifactProgressPercent = progressActive
+    ? (artifactProgressGoal > 0 ? Math.round((artifactProgressCount / artifactProgressGoal) * 100) : 0)
+    : 0;
+  const artifactProgressLabel = progressActive
+    ? `Artifacts ${artifactProgressCount} of ${artifactProgressGoal}`
+    : `Artifacts 0 of ${idleArtifactGoal}`;
+
+  const compileProgressBadge = (() => {
+    if (compileProcessRunning) {
+      return {
+        label: 'Compile running',
+        className: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+      };
+    }
+    if (compileMut.isPending) {
+      return {
+        label: 'Compile starting',
+        className: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+      };
+    }
+    if (compileMut.isError) {
+      return {
+        label: (compileMut.error as Error)?.message || 'Compile failed',
+        className: 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300',
+      };
+    }
+    if (compileProcessFailed) {
+      return {
+        label: `Compile failed${processStatus?.exitCode !== null && processStatus?.exitCode !== undefined ? ` (${processStatus.exitCode})` : ''}`,
+        className: 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300',
+      };
+    }
+    return null;
+  })();
+
+  const validateProgressBadge = (() => {
+    if (validateProcessRunning) {
+      return {
+        label: 'Validation running',
+        className: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+      };
+    }
+    if (validateRulesMut.isPending) {
+      return {
+        label: 'Validation starting',
+        className: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+      };
+    }
+    if (validateRulesMut.isError) {
+      return {
+        label: (validateRulesMut.error as Error)?.message || 'Validation failed',
+        className: 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300',
+      };
+    }
+    if (validateProcessFailed) {
+      return {
+        label: `Validation failed${processStatus?.exitCode !== null && processStatus?.exitCode !== undefined ? ` (${processStatus.exitCode})` : ''}`,
+        className: 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300',
+      };
+    }
+    if (validateProcessFinished) {
+      return {
+        label: 'Validation complete',
+        className: 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300',
+      };
+    }
+    return null;
+  })();
+  const compileBadgeLabel = compileProgressBadge?.label || 'Compile idle';
+  const compileBadgeClass = compileProgressBadge?.className
+    || 'border-gray-200 bg-gray-50 text-gray-500 dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-400';
+  const validateBadgeLabel = validateProgressBadge?.label || 'Validation idle';
+  const validateBadgeClass = validateProgressBadge?.className
+    || 'border-gray-200 bg-gray-50 text-gray-500 dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-400';
+
   return (
     <div className="space-y-4">
       {/* Compile + Validate buttons */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 overflow-x-auto pb-1">
         <button
-          onClick={() => compileMut.mutate()}
-          disabled={compileMut.isPending}
-          className={btnPrimary}
+          onClick={onRunCompile}
+          disabled={compileMut.isPending || anyProcessRunning}
+          className={`${btnPrimary} h-10 min-h-10 w-52 inline-flex items-center justify-center whitespace-nowrap shrink-0`}
+          title={STUDIO_TIPS.run_compile}
         >
-          {compileMut.isPending ? 'Starting...' : 'Run Category Compile'}
+          {compileProcessRunning
+            ? 'Compiling...'
+            : (compileMut.isPending
+              ? 'Starting...'
+              : (anyProcessRunning ? 'Process Running...' : 'Run Category Compile'))}
         </button>
         <button
           onClick={() => validateRulesMut.mutate()}
-          disabled={validateRulesMut.isPending}
-          className="px-3 py-1.5 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50"
+          disabled={validateRulesMut.isPending || anyProcessRunning}
+          className="h-10 min-h-10 w-52 inline-flex items-center justify-center px-4 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50 whitespace-nowrap shrink-0"
+          title="Validate generated rule artifacts and schema contracts."
         >
-          {validateRulesMut.isPending ? 'Validating...' : 'Validate Rules'}
+          {validateProcessRunning
+            ? 'Validating...'
+            : (validateRulesMut.isPending
+              ? 'Starting...'
+              : (anyProcessRunning ? 'Process Running...' : 'Validate Rules'))}
         </button>
-        <Tip text={STUDIO_TIPS.run_compile} />
-        {compileMut.isSuccess ? <span className="text-sm text-green-600">Compile started â€" check Indexing Lab process output for logs</span> : null}
-        {compileMut.isError ? <span className="text-sm text-red-600">{(compileMut.error as Error)?.message || 'Failed'}</span> : null}
-        {validateRulesMut.isSuccess ? <span className="text-sm text-green-600">Validation started â€" check Indexing Lab process output</span> : null}
-        {validateRulesMut.isError ? <span className="text-sm text-red-600">{(validateRulesMut.error as Error)?.message || 'Validation failed'}</span> : null}
+        <span
+          className={`h-10 min-h-10 w-52 inline-flex items-center rounded border px-3 text-sm font-medium truncate shrink-0 ${compileBadgeClass}`}
+          title={compileBadgeLabel}
+        >
+          {compileBadgeLabel}
+        </span>
+        <span
+          className={`h-10 min-h-10 w-52 inline-flex items-center rounded border px-3 text-sm font-medium truncate shrink-0 ${validateBadgeClass}`}
+          title={validateBadgeLabel}
+        >
+          {validateBadgeLabel}
+        </span>
+        <div
+          className={`h-10 min-h-10 w-80 inline-flex items-center gap-2 rounded border px-3 shrink-0 ${
+            progressActive
+              ? 'border-blue-200 bg-blue-50/70 dark:border-blue-800 dark:bg-blue-900/20'
+              : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/30'
+          }`}
+          title={`${artifactProgressLabel} (${artifactProgressPercent}%)`}
+        >
+          <div className="h-2 flex-1 rounded bg-gray-200 dark:bg-gray-700 overflow-hidden">
+            <div
+              className={`h-full transition-all duration-300 ${progressActive ? 'bg-accent' : 'bg-gray-400 dark:bg-gray-500'}`}
+              style={{ width: `${artifactProgressPercent}%` }}
+            />
+          </div>
+          <span className="w-28 text-xs text-gray-700 dark:text-gray-200 truncate">{artifactProgressLabel}</span>
+          <span className="w-10 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">{artifactProgressPercent}%</span>
+        </div>
       </div>
 
       {/* Errors */}
@@ -4604,6 +5048,10 @@ function CompileReportsTab({
     </div>
   );
 }
+
+
+
+
 
 
 

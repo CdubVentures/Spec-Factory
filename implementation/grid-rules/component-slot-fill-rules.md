@@ -133,4 +133,4 @@ For any row key `K = (component_type, component_name, component_maker)`:
 - Clicking accept/confirm in one candidate does not mutate sibling candidates in the same drawer.
 
 ### Flag rules
-Flag definitions, the 6 real flags, non-flag visual treatments, and the flag-to-domain matrix are defined in `implementation/grid-rules/flag-rules.md`. Only real flags count toward `metrics.flags`.
+Flag definitions, the 8 real actionable flag codes (7 primary flags + `compound_range_conflict` variant), non-flag visual treatments, and the flag-to-domain matrix are defined in `implementation/grid-rules/flag-rules.md`. Only real flags count toward `metrics.flags`.

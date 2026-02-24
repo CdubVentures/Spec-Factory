@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client';
+import { usePersistedTab } from '../../../stores/tabStore';
 import type { WorkerDataTab, WorkerDetailResponse, WorkerExtractionField, WorkerScreenshot } from '../types';
 import { formatBytes, truncateUrl, fieldStatusBadgeClass, queueStatusBadgeClass, formatMs } from '../helpers';
 
 interface WorkerDataDrawerProps {
   runId: string;
   workerId: string;
+  category: string;
   isOpen: boolean;
   onToggle: () => void;
   isRunning: boolean;
@@ -19,9 +21,27 @@ const TABS: { key: WorkerDataTab; label: string }[] = [
   { key: 'screenshots', label: 'Shots' },
   { key: 'metrics', label: 'Metrics' },
 ];
+const WORKER_DRAWER_TAB_KEYS = [
+  'documents',
+  'extraction',
+  'queue',
+  'screenshots',
+  'metrics',
+] as const satisfies ReadonlyArray<WorkerDataTab>;
 
-export function WorkerDataDrawer({ runId, workerId, isOpen, onToggle, isRunning }: WorkerDataDrawerProps) {
-  const [activeTab, setActiveTab] = useState<WorkerDataTab>('documents');
+export function WorkerDataDrawer({
+  runId,
+  workerId,
+  category,
+  isOpen,
+  onToggle,
+  isRunning,
+}: WorkerDataDrawerProps) {
+  const [activeTab, setActiveTab] = usePersistedTab<WorkerDataTab>(
+    `runtimeOps:workers:drawerTab:${category}`,
+    'documents',
+    { validValues: WORKER_DRAWER_TAB_KEYS },
+  );
 
   const { data } = useQuery({
     queryKey: ['runtime-ops', runId, 'worker-detail', workerId],

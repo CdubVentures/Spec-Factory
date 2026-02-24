@@ -3,142 +3,46 @@
   "publish_gate": "required_complete",
   "component_db_sources": {
     "encoder": {
-      "entity_count": 40,
+      "entity_count": 0,
       "excel": {
         "alias_columns": [],
         "auto_derive_aliases": true,
         "first_data_row": 2,
         "header_row": 1,
-        "link_columns": [
-          "G"
-        ],
-        "maker_column": "B",
-        "primary_identifier_column": "C",
-        "property_columns": [
-          "D",
-          "E",
-          "F"
-        ],
-        "property_mappings": [
-          {
-            "column": "D",
-            "constraints": [],
-            "field_key": "encoder_type",
-            "key": "encoder_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "field_key": "encoder_steps",
-            "key": "encoder_steps",
-            "type": "number",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "field_key": "encoder_life_span",
-            "key": "encoder_life_span",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          }
-        ],
-        "sheet": "encoder",
+        "link_columns": [],
+        "maker_column": "YES",
+        "primary_identifier_column": "A",
+        "property_columns": [],
+        "property_mappings": [],
+        "sheet": "",
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
-      "name_column": "C",
+      "name_column": "A",
       "preview_stats": {
-        "entity_count": 40,
+        "entity_count": 0,
         "first_20_all_numeric": false,
-        "first_20_names": [
-          "Encoder",
-          "Encoder",
-          "Black",
-          "Brown",
-          "E10A2",
-          "Encoder",
-          "Green",
-          "Pink",
-          "Teal",
-          "Encoder",
-          "Red",
-          "Unspecified",
-          "Black",
-          "GE 2.0",
-          "GE 5.0",
-          "Gray",
-          "Green",
-          "Red",
-          "Encoder",
-          "E11"
-        ],
-        "non_blank_names": 40,
+        "first_20_names": [],
+        "non_blank_names": 0,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
-        "scanned_rows": 46,
+        "scanned_rows": 0,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
       "roles": {
         "aliases": [],
-        "links": [
-          "G"
-        ],
-        "maker": "B",
-        "primary_identifier": "C",
-        "properties": [
-          {
-            "column": "D",
-            "constraints": [],
-            "field_key": "encoder_type",
-            "key": "encoder_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "field_key": "encoder_steps",
-            "key": "encoder_steps",
-            "type": "number",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "field_key": "encoder_life_span",
-            "key": "encoder_life_span",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          }
-        ]
+        "links": [],
+        "maker": "YES",
+        "primary_identifier": "A",
+        "properties": []
       },
-      "sample_entities": [
-        "Encoder",
-        "Encoder",
-        "Black",
-        "Brown",
-        "E10A2",
-        "Encoder",
-        "Green",
-        "Pink",
-        "Teal",
-        "Encoder"
-      ],
-      "sheet": "encoder",
+      "sample_entities": [],
+      "sheet": "",
       "type": "encoder"
     },
     "material": {
-      "entity_count": 3,
+      "entity_count": 0,
       "excel": {
         "alias_columns": [],
         "auto_derive_aliases": true,
@@ -146,26 +50,22 @@
         "header_row": 1,
         "link_columns": [],
         "maker_column": null,
-        "primary_identifier_column": "B",
+        "primary_identifier_column": "A",
         "property_columns": [],
         "property_mappings": [],
-        "sheet": "material",
+        "sheet": "",
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
-      "name_column": "B",
+      "name_column": "A",
       "preview_stats": {
-        "entity_count": 3,
+        "entity_count": 0,
         "first_20_all_numeric": false,
-        "first_20_names": [
-          "metal",
-          "plastic",
-          "carbon fiber"
-        ],
-        "non_blank_names": 3,
+        "first_20_names": [],
+        "non_blank_names": 0,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
-        "scanned_rows": 13,
+        "scanned_rows": 0,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
@@ -173,1024 +73,93 @@
         "aliases": [],
         "links": [],
         "maker": null,
-        "primary_identifier": "B",
+        "primary_identifier": "A",
         "properties": []
       },
-      "sample_entities": [
-        "metal",
-        "plastic",
-        "carbon fiber"
-      ],
-      "sheet": "material",
+      "sample_entities": [],
+      "sheet": "",
       "type": "material"
     },
     "sensor": {
-      "entity_count": 116,
+      "entity_count": 0,
       "excel": {
         "alias_columns": [],
         "auto_derive_aliases": true,
         "first_data_row": 2,
         "header_row": 1,
-        "link_columns": [
-          "J"
-        ],
-        "maker_column": "B",
-        "primary_identifier_column": "C",
-        "property_columns": [
-          "D",
-          "E",
-          "F",
-          "G",
-          "H",
-          "I"
-        ],
-        "property_mappings": [
-          {
-            "column": "D",
-            "constraints": [],
-            "field_key": "flawless_sensor",
-            "key": "flawless_sensor",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "field_key": "sensor_type",
-            "key": "sensor_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "field_key": "dpi",
-            "key": "dpi",
-            "type": "number",
-            "unit": "dpi",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "G",
-            "constraints": [],
-            "field_key": "ips",
-            "key": "ips",
-            "type": "number",
-            "unit": "ips",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "H",
-            "constraints": [],
-            "field_key": "acceleration",
-            "key": "acceleration",
-            "type": "number",
-            "unit": "g",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "I",
-            "constraints": [
-              "sensor_date <= release_date"
-            ],
-            "field_key": "sensor_date",
-            "key": "sensor_date",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          }
-        ],
-        "sheet": "sensors",
+        "link_columns": [],
+        "maker_column": "YES",
+        "primary_identifier_column": "A",
+        "property_columns": [],
+        "property_mappings": [],
+        "sheet": "",
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
-      "name_column": "C",
+      "name_column": "A",
       "preview_stats": {
-        "entity_count": 116,
+        "entity_count": 0,
         "first_20_all_numeric": false,
-        "first_20_names": [
-          "Focus Pro 45K",
-          "HERO 2",
-          "PAW3950 Ti",
-          "PAW3950 Max",
-          "AimPoint Pro (PixArt PAW3950)",
-          "XERO",
-          "Focus Pro Gen-2",
-          "MARKSMAN S",
-          "XS-1",
-          "BAMF 3.0",
-          "Owl-Eye 30K",
-          "3950IZ",
-          "AimNinja",
-          "G3950",
-          "Focus Pro 30K",
-          "PAW3950 HS",
-          "PAW3950 Pro",
-          "PAW3950 Ultra",
-          "PAW3950",
-          "PAW3950 APEX"
-        ],
-        "non_blank_names": 116,
-        "numeric_only_names": 3,
-        "numeric_only_ratio": 0.025862,
-        "scanned_rows": 124,
+        "first_20_names": [],
+        "non_blank_names": 0,
+        "numeric_only_names": 0,
+        "numeric_only_ratio": 0,
+        "scanned_rows": 0,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
       "roles": {
         "aliases": [],
-        "links": [
-          "J"
-        ],
-        "maker": "B",
-        "primary_identifier": "C",
-        "properties": [
-          {
-            "column": "D",
-            "constraints": [],
-            "field_key": "flawless_sensor",
-            "key": "flawless_sensor",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "field_key": "sensor_type",
-            "key": "sensor_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "field_key": "dpi",
-            "key": "dpi",
-            "type": "number",
-            "unit": "dpi",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "G",
-            "constraints": [],
-            "field_key": "ips",
-            "key": "ips",
-            "type": "number",
-            "unit": "ips",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "H",
-            "constraints": [],
-            "field_key": "acceleration",
-            "key": "acceleration",
-            "type": "number",
-            "unit": "g",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "I",
-            "constraints": [
-              "sensor_date <= release_date"
-            ],
-            "field_key": "sensor_date",
-            "key": "sensor_date",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          }
-        ]
+        "links": [],
+        "maker": "YES",
+        "primary_identifier": "A",
+        "properties": []
       },
-      "sample_entities": [
-        "Focus Pro 45K",
-        "HERO 2",
-        "PAW3950 Ti",
-        "PAW3950 Max",
-        "AimPoint Pro (PixArt PAW3950)",
-        "XERO",
-        "Focus Pro Gen-2",
-        "MARKSMAN S",
-        "XS-1",
-        "BAMF 3.0"
-      ],
-      "sheet": "sensors",
+      "sample_entities": [],
+      "sheet": "",
       "type": "sensor"
     },
     "switch": {
-      "entity_count": 106,
+      "entity_count": 0,
       "excel": {
         "alias_columns": [],
         "auto_derive_aliases": true,
         "first_data_row": 2,
         "header_row": 1,
-        "link_columns": [
-          "H"
-        ],
-        "maker_column": "B",
-        "primary_identifier_column": "C",
-        "property_columns": [
-          "D",
-          "E",
-          "F",
-          "G"
-        ],
-        "property_mappings": [
-          {
-            "column": "D",
-            "constraints": [],
-            "field_key": "switch_type",
-            "key": "switch_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "field_key": "switch_life_span",
-            "key": "switch_life_span",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "field_key": "click_force",
-            "key": "click_force",
-            "type": "number",
-            "unit": "gf",
-            "variance_policy": "override_allowed"
-          },
-          {
-            "column": "G",
-            "constraints": [],
-            "field_key": "releasing_force",
-            "key": "releasing_force",
-            "type": "number",
-            "unit": "gf",
-            "variance_policy": "authoritative"
-          }
-        ],
-        "sheet": "switches",
+        "link_columns": [],
+        "maker_column": "YES",
+        "primary_identifier_column": "A",
+        "property_columns": [],
+        "property_mappings": [],
+        "sheet": "",
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
-      "name_column": "C",
+      "name_column": "A",
       "preview_stats": {
-        "entity_count": 106,
+        "entity_count": 0,
         "first_20_all_numeric": false,
-        "first_20_names": [
-          "ROG Micro Switch",
-          "ROG Micro Switch II",
-          "Light Blade",
-          "Optical Switches",
-          "SwiftLight",
-          "Blue Ghost Optical",
-          "Fog Blue Optical",
-          "Advanced Optical Switch",
-          "Black Shell White Dot",
-          "Mouse Switches",
-          "Optical",
-          "Black Shell Pink Dot",
-          "Black Shell White Dot",
-          "Blue Shell Blue Dot",
-          "Blue Shell Pink Dot",
-          "Blue Shell White Dot",
-          "Crispy Pink",
-          "Dragon Claw",
-          "Orange SPDT",
-          "Silent Brown Shell White Dot"
-        ],
-        "non_blank_names": 106,
+        "first_20_names": [],
+        "non_blank_names": 0,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
-        "scanned_rows": 114,
+        "scanned_rows": 0,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
       "roles": {
         "aliases": [],
-        "links": [
-          "H"
-        ],
-        "maker": "B",
-        "primary_identifier": "C",
-        "properties": [
-          {
-            "column": "D",
-            "constraints": [],
-            "field_key": "switch_type",
-            "key": "switch_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "field_key": "switch_life_span",
-            "key": "switch_life_span",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "field_key": "click_force",
-            "key": "click_force",
-            "type": "number",
-            "unit": "gf",
-            "variance_policy": "override_allowed"
-          },
-          {
-            "column": "G",
-            "constraints": [],
-            "field_key": "releasing_force",
-            "key": "releasing_force",
-            "type": "number",
-            "unit": "gf",
-            "variance_policy": "authoritative"
-          }
-        ]
+        "links": [],
+        "maker": "YES",
+        "primary_identifier": "A",
+        "properties": []
       },
-      "sample_entities": [
-        "ROG Micro Switch",
-        "ROG Micro Switch II",
-        "Light Blade",
-        "Optical Switches",
-        "SwiftLight",
-        "Blue Ghost Optical",
-        "Fog Blue Optical",
-        "Advanced Optical Switch",
-        "Black Shell White Dot",
-        "Mouse Switches"
-      ],
-      "sheet": "switches",
+      "sample_entities": [],
+      "sheet": "",
       "type": "switch"
     }
   },
-  "enum_buckets": {
-    "coating": {
-      "excel": {
-        "column": "W",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "matte",
-        "rubber grips",
-        "A",
-        "help"
-      ]
-    },
-    "connection": {
-      "excel": {
-        "column": "P",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "unk",
-        "hybrid",
-        "wired",
-        "wireless",
-        "bluetooth",
-        "1",
-        "2",
-        "he"
-      ]
-    },
-    "connectivity": {
-      "excel": {
-        "column": "Q",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "unk",
-        "n/a",
-        "2.4GHz Dongle",
-        "2.4GHz RF Dongle",
-        "2.4GHz WIFI Dongle",
-        "1",
-        "2.5"
-      ]
-    },
-    "data_lists.coating": {
-      "column_index": 23,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "coating",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.connection": {
-      "column_index": 16,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "connection",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.connectivity": {
-      "column_index": 17,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "connectivity",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.date": {
-      "column_index": 10,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "date",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.EG_AvailableIDs": {
-      "column_index": 27,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "EG_AvailableIDs",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.feet_material": {
-      "column_index": 21,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "feet_material",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.form_factor": {
-      "column_index": 4,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "form_factor",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.front_flare": {
-      "column_index": 7,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "front_flare",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.game": {
-      "column_index": 1,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "game",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.hump": {
-      "column_index": 6,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "hump",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.id": {
-      "column_index": 2,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "id",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.lift_notes": {
-      "column_index": 22,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "lift_notes",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.lighting": {
-      "column_index": 20,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "lighting",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.link": {
-      "column_index": 11,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "link",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.mcu": {
-      "column_index": 12,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "mcu",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.polling": {
-      "column_index": 18,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "polling",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.sensor": {
-      "column_index": 9,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "sensor",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.sensor_type": {
-      "column_index": 8,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "sensor_type",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.shape": {
-      "column_index": 5,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "shape",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.switch_type": {
-      "column_index": 19,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "switch_type",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.switches": {
-      "column_index": 14,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "switches",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "feet_material": {
-      "excel": {
-        "column": "U",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "PTFE",
-        "PTFE (Black-Dyed)",
-        "PTFE (Virgin-Grade)",
-        "PTFE (Teflon)",
-        "PTFE (95%)",
-        "Glass",
-        "l"
-      ]
-    },
-    "form_factor": {
-      "excel": {
-        "column": "D",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "right",
-        "ambidextrous",
-        "left",
-        "lets"
-      ]
-    },
-    "front_flare": {
-      "excel": {
-        "column": "G",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "flat",
-        "inward",
-        "outward"
-      ]
-    },
-    "hump": {
-      "excel": {
-        "column": "F",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "middle",
-        "back - front",
-        "back mid",
-        "back - rear",
-        "front"
-      ]
-    },
-    "lift_notes": {
-      "excel": {
-        "column": "V",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "unk",
-        "no",
-        "adjustable",
-        "fixed low",
-        "fixed high",
-        "surface-tuned"
-      ]
-    },
-    "lighting": {
-      "excel": {
-        "column": "T",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "none",
-        "1 zone (rgb)",
-        "2 zone (rgb)",
-        "3 zone (rgb)",
-        "4 zone (rgb)",
-        "5 zone (rgb)",
-        "6 zone (rgb)",
-        "7 zone (rgb)",
-        "8 zone (rgb)",
-        "9 zone (rgb)",
-        "1 zone (led)",
-        "2 zone (led)",
-        "3 zone (led)",
-        "4 zone (led)",
-        "5 zone (led)",
-        "6 zone (led)",
-        "7 zone (led)"
-      ]
-    },
-    "mcu": {
-      "excel": {
-        "column": "L",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "unk",
-        "unspecified",
-        "Nordic nRF52840",
-        "Nordic nRF52832",
-        "STM32",
-        "Holtek HT32F52352",
-        "Nordic nRF52833",
-        "NXP LPC11U68",
-        "NXP LPC54605J512",
-        "STM32L412C8U6",
-        "STM32F072CBU6",
-        "Nuvoton M484SIDAE",
-        "Ti CC2462R"
-      ]
-    },
-    "polling": {
-      "excel": {
-        "column": "R",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "8000, 4000, 2000, 1000, 500, 250, 125",
-        "4000, 2000, 1000, 500, 250, 125",
-        "2000, 1000, 500, 250, 125",
-        "1000, 500, 250, 125",
-        "500, 250, 125",
-        "250, 125",
-        "125",
-        "0-9, 125, 600, 10-11"
-      ]
-    },
-    "sensor_type": {
-      "excel": {
-        "column": "H",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "unk",
-        "optical",
-        "laser"
-      ]
-    },
-    "shape": {
-      "excel": {
-        "column": "E",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "symmetrical",
-        "ergonomic",
-        "asymmetrical"
-      ]
-    },
-    "switch_type": {
-      "excel": {
-        "column": "S",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "unk",
-        "unspecified",
-        "Omron D2FP-FN2",
-        "Omron D2FC-F-K",
-        "Omron",
-        "Kailh GM 4.0",
-        "Omron D2FC-7N",
-        "LK Optical V2",
-        "TTC Optical Microswitch",
-        "Corsair Quickstrike",
-        "D2FC-F-7N (20M)",
-        "Omron D2FC-F-K (50M)",
-        "Omron D2FC-7N (60M)",
-        "Black Shell Blue Dot",
-        "Transparent Crystal Shell White Dot",
-        "ROG Optical Micro Switches",
-        "ROG 70M",
-        "ROG Micro Switches",
-        "Haptic Inductive Trigger System (HITS)",
-        "Logitech LIGHTFORCE (Omron (70M) - D2FP-FH1)",
-        "ROG Micro Switch II",
-        "mechanical",
-        "optical",
-        "optical-mechanical",
-        "optical / mechanical",
-        "eqwe",
-        "yay"
-      ]
-    }
-  },
+  "enum_buckets": {},
   "field_count": 75,
   "fields": {
     "acceleration": {
@@ -1208,6 +177,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -1331,9 +301,7 @@
         "tooltip_md": "Define 'Max Acceleration' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
-      "variance_policy": "upper_bound",
-      "constraints": []
+      "unknown_reason_default": "not_found_after_search"
     },
     "adjustable_scroll_wheel": {
       "ai_assist": {
@@ -1346,6 +314,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1467,6 +436,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1595,6 +565,7 @@
       ],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -1734,6 +705,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1855,6 +827,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1976,6 +949,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -2101,9 +1075,7 @@
         "tooltip_md": "Define 'Click Force' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
-      "variance_policy": "override_allowed",
-      "constraints": []
+      "unknown_reason_default": "not_found_after_search"
     },
     "click_latency": {
       "ai_assist": {
@@ -2116,6 +1088,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 2,
@@ -2258,6 +1231,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -2444,6 +1418,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -2588,6 +1563,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -2710,7 +1686,7 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": null,
-        "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey→gray; multi-colorways may use '+'.",
+        "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey?gray; multi-colorways may use '+'.",
         "tooltip_source": null
       },
       "unknown_reason_default": "not_found_after_search"
@@ -2726,6 +1702,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2847,6 +1824,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2975,8 +1953,15 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
-        "shape": "scalar",
+        "list_rules": {
+          "dedupe": true,
+          "max_items": 100,
+          "min_items": 0,
+          "sort": "none"
+        },
+        "shape": "list",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
@@ -3034,9 +2019,16 @@
       "field_key": "connectivity",
       "group": "connectivity",
       "key": "connectivity",
-      "output_shape": "scalar",
+      "output_shape": "list",
       "parse": {
-        "template": "text_field"
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";",
+          "+"
+        ],
+        "template": "list_of_tokens_delimited"
       },
       "priority": {
         "availability": "expected",
@@ -3106,6 +2098,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 2,
@@ -3237,6 +2230,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -3371,6 +2365,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3492,6 +2487,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "range": {
           "max": 100000,
@@ -3620,9 +2616,7 @@
         "tooltip_md": "Max DPI (or max CPI) as integer. Do not list steps; store maximum unless field_rules later adds a steps field.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
-      "variance_policy": "upper_bound",
-      "constraints": []
+      "unknown_reason_default": "not_found_after_search"
     },
     "encoder": {
       "ai_assist": {
@@ -3634,30 +2628,8 @@
       },
       "aliases": [],
       "availability": "sometimes",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium",
-          "effort": 5
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.encoder",
-        "type": "encoder"
-      },
+      "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3678,7 +2650,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": "component_db.encoder"
+        "source": null
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -3780,6 +2752,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3891,117 +2864,6 @@
       },
       "unknown_reason_default": "not_found_after_search"
     },
-    "encoder_life_span": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
-      "aliases": [],
-      "availability": "sometimes",
-      "component": null,
-      "constraints": [],
-      "contract": {
-        "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
-      },
-      "data_type": "string",
-      "difficulty": "medium",
-      "display_name": "Encoder Life Span",
-      "effort": 4,
-      "enum": {
-        "match": {
-          "strategy": "alias"
-        },
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
-        },
-        "policy": "open",
-        "source": null
-      },
-      "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
-        "min_evidence_refs": 1,
-        "required": true,
-        "tier_preference": [
-          "tier1",
-          "tier2",
-          "tier3"
-        ]
-      },
-      "evidence_required": true,
-      "excel_hints": {},
-      "field_key": "encoder_life_span",
-      "group": "encoder",
-      "key": "encoder_life_span",
-      "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
-      "priority": {
-        "availability": "sometimes",
-        "block_publish_when_unk": false,
-        "difficulty": "medium",
-        "effort": 4,
-        "publish_gate": false,
-        "required_level": "optional"
-      },
-      "required_level": "optional",
-      "search_hints": {
-        "domain_hints": [
-          "manufacturer",
-          "support",
-          "manual",
-          "pdf"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
-        "preferred_tiers": [
-          "tier1",
-          "tier2",
-          "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} {field}",
-          "{brand} {model} specifications {field}",
-          "{brand} {model} manual pdf {field}",
-          "{brand} {model} datasheet {field}"
-        ],
-        "query_terms": [
-          "Encoder Life Span"
-        ]
-      },
-      "ui": {
-        "display_decimals": 0,
-        "display_mode": "all",
-        "examples": [],
-        "group": "Encoder",
-        "guidance_md": null,
-        "input_control": "text",
-        "label": "Encoder Life Span",
-        "order": 78,
-        "placeholder": "unk",
-        "prefix": null,
-        "short_label": null,
-        "suffix": null,
-        "tooltip_key": null,
-        "tooltip_md": "Define 'Encoder Life Span' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
-        "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search",
-      "variance_policy": "authoritative"
-    },
     "encoder_link": {
       "ai_assist": {
         "max_calls": null,
@@ -4013,6 +2875,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -4119,233 +2982,6 @@
       },
       "unknown_reason_default": "not_found_after_search"
     },
-    "encoder_steps": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
-      "aliases": [],
-      "availability": "sometimes",
-      "component": null,
-      "constraints": [],
-      "contract": {
-        "rounding": {
-          "decimals": 0,
-          "mode": "nearest"
-        },
-        "shape": "scalar",
-        "type": "number",
-        "unit": "",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
-      },
-      "data_type": "number",
-      "difficulty": "easy",
-      "display_name": "Encoder Steps",
-      "effort": 3,
-      "enum": {
-        "match": {
-          "strategy": "alias"
-        },
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
-        },
-        "policy": "closed",
-        "source": "data_lists.encoder_steps"
-      },
-      "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
-        "min_evidence_refs": 1,
-        "required": true,
-        "tier_preference": [
-          "tier1",
-          "tier2",
-          "tier3"
-        ]
-      },
-      "evidence_required": true,
-      "excel_hints": {},
-      "field_key": "encoder_steps",
-      "group": "encoder",
-      "key": "encoder_steps",
-      "output_shape": "scalar",
-      "parse": {
-        "template": "number_field"
-      },
-      "priority": {
-        "availability": "sometimes",
-        "block_publish_when_unk": false,
-        "difficulty": "easy",
-        "effort": 3,
-        "publish_gate": false,
-        "required_level": "expected"
-      },
-      "required_level": "expected",
-      "search_hints": {
-        "domain_hints": [
-          "manufacturer",
-          "support",
-          "manual",
-          "pdf"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
-        "preferred_tiers": [
-          "tier1",
-          "tier2",
-          "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} {field}",
-          "{brand} {model} specifications {field}",
-          "{brand} {model} manual pdf {field}",
-          "{brand} {model} datasheet {field}"
-        ],
-        "query_terms": [
-          "Encoder Steps"
-        ]
-      },
-      "ui": {
-        "display_decimals": 0,
-        "display_mode": "all",
-        "examples": [],
-        "group": "Encoder",
-        "guidance_md": null,
-        "input_control": "text",
-        "label": "Encoder Steps",
-        "order": 76,
-        "placeholder": "unk",
-        "prefix": null,
-        "short_label": null,
-        "suffix": null,
-        "tooltip_key": null,
-        "tooltip_md": "Define 'Encoder Steps' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
-        "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search",
-      "variance_policy": "authoritative"
-    },
-    "encoder_type": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
-      "aliases": [],
-      "availability": "sometimes",
-      "component": null,
-      "constraints": [],
-      "contract": {
-        "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
-      },
-      "data_type": "string",
-      "difficulty": "easy",
-      "display_name": "Encoder Type",
-      "effort": 3,
-      "enum": {
-        "match": {
-          "strategy": "alias"
-        },
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
-        },
-        "policy": "open",
-        "source": null
-      },
-      "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
-        "min_evidence_refs": 1,
-        "required": true,
-        "tier_preference": [
-          "tier1",
-          "tier2",
-          "tier3"
-        ]
-      },
-      "evidence_required": true,
-      "excel_hints": {},
-      "field_key": "encoder_type",
-      "group": "encoder",
-      "key": "encoder_type",
-      "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
-      "priority": {
-        "availability": "sometimes",
-        "block_publish_when_unk": false,
-        "difficulty": "easy",
-        "effort": 3,
-        "publish_gate": false,
-        "required_level": "expected"
-      },
-      "required_level": "expected",
-      "search_hints": {
-        "domain_hints": [
-          "manufacturer",
-          "support",
-          "manual",
-          "pdf"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
-        "preferred_tiers": [
-          "tier1",
-          "tier2",
-          "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} {field}",
-          "{brand} {model} specifications {field}",
-          "{brand} {model} manual pdf {field}",
-          "{brand} {model} datasheet {field}"
-        ],
-        "query_terms": [
-          "Encoder Type"
-        ]
-      },
-      "ui": {
-        "display_decimals": 0,
-        "display_mode": "all",
-        "examples": [],
-        "group": "Encoder",
-        "guidance_md": null,
-        "input_control": "text",
-        "label": "Encoder Type",
-        "order": 77,
-        "placeholder": "unk",
-        "prefix": null,
-        "short_label": null,
-        "suffix": null,
-        "tooltip_key": null,
-        "tooltip_md": "Define 'Encoder Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
-        "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search",
-      "variance_policy": "authoritative"
-    },
     "feet_material": {
       "ai_assist": {
         "max_calls": null,
@@ -4357,6 +2993,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -4484,6 +3121,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -4592,9 +3230,7 @@
         "tooltip_md": "Define 'Flawless Sensor' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
-      "variance_policy": "authoritative",
-      "constraints": []
+      "unknown_reason_default": "not_found_after_search"
     },
     "form_factor": {
       "ai_assist": {
@@ -4607,6 +3243,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -4735,6 +3372,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -4862,6 +3500,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -4995,6 +3634,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -5128,6 +3768,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5253,6 +3894,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 1,
@@ -5396,6 +4038,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5517,6 +4160,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5638,6 +4282,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5769,6 +4414,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -5891,9 +4537,7 @@
         "tooltip_md": "Define 'Max IPS' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
-      "variance_policy": "upper_bound",
-      "constraints": []
+      "unknown_reason_default": "not_found_after_search"
     },
     "lift": {
       "ai_assist": {
@@ -5911,6 +4555,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -5979,8 +4624,7 @@
         ],
         "range_separators": [
           "-",
-          "–",
-          "—"
+          "�"
         ],
         "strict_unit_required": false,
         "template": "list_numbers_or_ranges_with_unit",
@@ -6068,6 +4712,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -6208,6 +4853,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -6357,6 +5003,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 1,
@@ -6500,30 +5147,8 @@
       },
       "aliases": [],
       "availability": "expected",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium",
-          "effort": 5
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.material",
-        "type": "material"
-      },
+      "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -6544,7 +5169,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": "component_db.material"
+        "source": null
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -6648,6 +5273,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -6780,6 +5406,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -6899,6 +5526,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -7028,6 +5656,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7149,6 +5778,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7270,6 +5900,7 @@
       "aliases": [],
       "availability": "rare",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7391,6 +6022,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7512,6 +6144,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -7640,6 +6273,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7767,6 +6401,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -7928,6 +6563,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8052,6 +6688,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8173,6 +6810,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -8302,6 +6940,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8419,133 +7058,6 @@
       },
       "unknown_reason_default": "not_found_after_search"
     },
-    "releasing_force": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
-      "aliases": [],
-      "availability": "sometimes",
-      "component": null,
-      "constraints": [],
-      "contract": {
-        "rounding": {
-          "decimals": 0,
-          "mode": "nearest"
-        },
-        "shape": "scalar",
-        "type": "number",
-        "unit": "gf",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
-      },
-      "data_type": "number",
-      "difficulty": "hard",
-      "display_name": "Releasing Force",
-      "effort": 7,
-      "enum": {
-        "match": {
-          "strategy": "alias"
-        },
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
-        },
-        "policy": "open",
-        "source": null
-      },
-      "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
-        "min_evidence_refs": 1,
-        "required": true,
-        "tier_preference": [
-          "tier2",
-          "tier1",
-          "tier3"
-        ]
-      },
-      "evidence_required": true,
-      "excel_hints": {},
-      "field_key": "releasing_force",
-      "group": "switches",
-      "key": "releasing_force",
-      "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "gf",
-        "unit_accepts": [
-          "gf",
-          "g",
-          "grams",
-          "gram-force"
-        ],
-        "unit_conversions": {
-          "g_to_gf": 1
-        }
-      },
-      "priority": {
-        "availability": "sometimes",
-        "block_publish_when_unk": false,
-        "difficulty": "hard",
-        "effort": 7,
-        "publish_gate": false,
-        "required_level": "optional"
-      },
-      "required_level": "optional",
-      "search_hints": {
-        "domain_hints": [
-          "manufacturer",
-          "support",
-          "manual",
-          "pdf"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
-        "preferred_tiers": [
-          "tier1",
-          "tier2",
-          "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} {field}",
-          "{brand} {model} specifications {field}",
-          "{brand} {model} manual pdf {field}",
-          "{brand} {model} datasheet {field}"
-        ],
-        "query_terms": [
-          "Releasing Force"
-        ]
-      },
-      "ui": {
-        "display_decimals": 1,
-        "display_mode": "all",
-        "examples": [],
-        "group": "Switches",
-        "guidance_md": null,
-        "input_control": "text",
-        "label": "Releasing Force",
-        "order": 73,
-        "placeholder": "unk",
-        "prefix": null,
-        "short_label": null,
-        "suffix": null,
-        "tooltip_key": null,
-        "tooltip_md": "Define 'Releasing Force' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
-        "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search",
-      "variance_policy": "authoritative"
-    },
     "rgb": {
       "ai_assist": {
         "max_calls": null,
@@ -8557,6 +7069,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8677,30 +7190,8 @@
       },
       "aliases": [],
       "availability": "expected",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium",
-          "effort": 5
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.sensor",
-        "type": "sensor"
-      },
+      "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8721,7 +7212,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": "component_db.sensor"
+        "source": null
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -8830,6 +7321,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8954,14 +7446,21 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [
+        "sensor_date <= release_date"
+      ],
       "contract": {
+        "rounding": {
+          "decimals": 0,
+          "mode": "nearest"
+        },
         "shape": "scalar",
-        "type": "string",
-        "unit": "",
+        "type": "integer",
+        "unit": "year",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Sensor Date",
       "effort": 3,
@@ -9010,8 +7509,7 @@
         "accepted_formats": [
           "YYYY",
           "YYYY-MM",
-          "YYYY-MM-DD",
-          "MM YYYY"
+          "YYYY-MM-DD"
         ],
         "template": "date_field"
       },
@@ -9059,22 +7557,18 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "text",
+        "input_control": "number",
         "label": "Sensor Date",
         "order": 47,
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
-        "suffix": null,
+        "suffix": "year",
         "tooltip_key": null,
         "tooltip_md": "Define 'Sensor Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "variance_policy": "authoritative",
-      "constraints": [
-        "sensor_date <= release_date"
-      ]
+      "unknown_reason_default": "not_found_after_search"
     },
     "sensor_latency": {
       "ai_assist": {
@@ -9087,6 +7581,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 2,
@@ -9229,6 +7724,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -9415,6 +7911,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9537,6 +8034,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9651,9 +8149,7 @@
         "tooltip_md": "Define 'Sensor Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "variance_policy": "authoritative",
-      "constraints": []
+      "unknown_reason_default": "not_found_after_search"
     },
     "shape": {
       "ai_assist": {
@@ -9666,6 +8162,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9793,6 +8290,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 2,
@@ -9925,6 +8423,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -10054,6 +8553,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -10175,6 +8675,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -10296,6 +8797,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -10416,30 +8918,8 @@
       },
       "aliases": [],
       "availability": "expected",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium",
-          "effort": 5
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.switch",
-        "type": "switch"
-      },
+      "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -10460,7 +8940,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": "component_db.switch"
+        "source": null
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -10569,6 +9049,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -10682,117 +9163,6 @@
       },
       "unknown_reason_default": "not_found_after_search"
     },
-    "switch_life_span": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
-      "aliases": [],
-      "availability": "expected",
-      "component": null,
-      "constraints": [],
-      "contract": {
-        "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
-      },
-      "data_type": "string",
-      "difficulty": "easy",
-      "display_name": "Switch Life Span",
-      "effort": 3,
-      "enum": {
-        "match": {
-          "strategy": "alias"
-        },
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
-        },
-        "policy": "open",
-        "source": null
-      },
-      "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
-        "min_evidence_refs": 1,
-        "required": true,
-        "tier_preference": [
-          "tier1",
-          "tier2",
-          "tier3"
-        ]
-      },
-      "evidence_required": true,
-      "excel_hints": {},
-      "field_key": "switch_life_span",
-      "group": "switches",
-      "key": "switch_life_span",
-      "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
-      "priority": {
-        "availability": "expected",
-        "block_publish_when_unk": false,
-        "difficulty": "easy",
-        "effort": 3,
-        "publish_gate": false,
-        "required_level": "expected"
-      },
-      "required_level": "expected",
-      "search_hints": {
-        "domain_hints": [
-          "manufacturer",
-          "support",
-          "manual",
-          "pdf"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
-        "preferred_tiers": [
-          "tier1",
-          "tier2",
-          "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} {field}",
-          "{brand} {model} specifications {field}",
-          "{brand} {model} manual pdf {field}",
-          "{brand} {model} datasheet {field}"
-        ],
-        "query_terms": [
-          "Switch Life Span"
-        ]
-      },
-      "ui": {
-        "display_decimals": 0,
-        "display_mode": "all",
-        "examples": [],
-        "group": "Switches",
-        "guidance_md": null,
-        "input_control": "text",
-        "label": "Switch Life Span",
-        "order": 67,
-        "placeholder": "unk",
-        "prefix": null,
-        "short_label": null,
-        "suffix": null,
-        "tooltip_key": null,
-        "tooltip_md": "Define 'Switch Life Span' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
-        "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search",
-      "variance_policy": "authoritative"
-    },
     "switch_type": {
       "ai_assist": {
         "max_calls": null,
@@ -10804,6 +9174,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -10919,9 +9290,7 @@
         "tooltip_md": "Define 'Switch Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
-      "variance_policy": "authoritative",
-      "constraints": []
+      "unknown_reason_default": "not_found_after_search"
     },
     "switches_link": {
       "ai_assist": {
@@ -10938,6 +9307,7 @@
       ],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -11082,6 +9452,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -11203,6 +9574,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -11329,6 +9701,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "range": {
           "max": 500,
@@ -11457,7 +9830,7 @@
         "short_label": null,
         "suffix": "g",
         "tooltip_key": "weight",
-        "tooltip_md": "Mouse weight in grams. Convert oz→g when necessary; keep decimals if provided.",
+        "tooltip_md": "Mouse weight in grams. Convert oz?g when necessary; keep decimals if provided.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unknown_reason_default": "not_found_after_search"
@@ -11477,6 +9850,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 1,
@@ -11620,6 +9994,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -11731,7 +10106,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-02-17T09:49:22.300Z",
+  "generated_at": "2026-02-24T22:51:45.113Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",
@@ -11903,10 +10278,6 @@
   "source_workbook": "mouseData.xlsm",
   "version": "field_rules_mouse_compiled_v1",
   "workbook_tabs": {
-    "data_lists": {
-      "notes": "Columns contain canonical lists for form_factor/shape/hump/front_flare/etc.",
-      "role": "enum buckets (canonical values)"
-    },
     "data_values": {
       "notes": "Observed values across products; can be used for suggestion/inference but not strict enums.",
       "role": "observed value samples (optional)"
@@ -11914,22 +10285,6 @@
     "dataEntry": {
       "notes": "Column B holds field keys; columns C+ hold product values.",
       "role": "field_keys + optional product-table sampling"
-    },
-    "encoder": {
-      "notes": "Entity source sheet mapped by column roles (primary identifier, maker, aliases, links, properties).",
-      "role": "component_db:encoder"
-    },
-    "material": {
-      "notes": "Entity source sheet mapped by column roles (primary identifier, maker, aliases, links, properties).",
-      "role": "component_db:material"
-    },
-    "sensors": {
-      "notes": "Entity source sheet mapped by column roles (primary identifier, maker, aliases, links, properties).",
-      "role": "component_db:sensor"
-    },
-    "switches": {
-      "notes": "Entity source sheet mapped by column roles (primary identifier, maker, aliases, links, properties).",
-      "role": "component_db:switch"
     }
   }
 }

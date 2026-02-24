@@ -1,6 +1,6 @@
 # 05 - Data Authority Audit Playbook
 
-Last full pass: 2026-02-23
+Last full pass: 2026-02-24
 
 ## Audit scope used in this pass
 
@@ -10,7 +10,7 @@ Last full pass: 2026-02-23
 - SpecDb sync durability and snapshot endpoint
 - JSON/SQL authority data source inventory
 
-## Current audit result (2026-02-23)
+## Current audit result (2026-02-24)
 
 Status: pass with documented guardrails in place.
 
@@ -22,7 +22,11 @@ Verified:
 - sync failures persist durable failed state (when db handle exists)
 - source strategy mutations emit typed `data-change`
 - `studio-drafts-saved` includes `product` domain fanout
-- backend/frontend domain parity test exists
+- backend/frontend event-domain maps are in parity (`45` events, `19` domains)
+- no unmapped domains in frontend invalidation templates
+- no zero-fanout events in invalidation resolution
+- WS channel coverage is aligned (`data-change`, `events`, `process`, `process-status`, `indexlab-event`, `test-import-progress`)
+- polling/manual refresh families are intentionally outside `data-change` invalidation (`billing`, `learning`, `data-authority`, `indexlab`, `processStatus`, `runtime-ops`, `searxng`)
 
 Historical rollout status (extracted from prior master/window plans):
 
@@ -73,6 +77,9 @@ Run targeted suites:
 - `test/dataChangeInvalidationMap.test.js`
 - `test/dataChangeDomainParity.test.js`
 - `test/dataAuthorityPropagationMatrix.test.js`
+- `test/wsSubscriptionWiring.test.js`
+- `test/frontendSessionAuditCoverage.test.js`
+- `test/guiPersistenceSessionScope.test.js`
 
 ## Drift indicators to watch
 

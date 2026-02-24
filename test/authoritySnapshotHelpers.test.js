@@ -32,7 +32,7 @@ test('shouldRefreshAuthoritySnapshot only accepts relevant category/domain messa
   const shouldRefresh = shouldRefreshAuthoritySnapshot({
     message: {
       type: 'data-change',
-      event: 'workbook-map-saved',
+      event: 'field-studio-map-saved',
       category: 'mouse',
       domains: ['studio', 'mapping'],
     },
@@ -43,7 +43,7 @@ test('shouldRefreshAuthoritySnapshot only accepts relevant category/domain messa
   const ignoredCategory = shouldRefreshAuthoritySnapshot({
     message: {
       type: 'data-change',
-      event: 'workbook-map-saved',
+      event: 'field-studio-map-saved',
       category: 'keyboard',
       domains: ['studio', 'mapping'],
     },

@@ -1,3 +1,5 @@
+import { emitDataChange } from '../events/dataChangeContract.js';
+
 export function registerInfraRoutes(ctx) {
   const {
     jsonRes,
@@ -15,6 +17,7 @@ export function registerInfraRoutes(ctx) {
     processStatus,
     isProcessRunning,
     waitForProcessExit,
+    broadcastWs,
   } = ctx;
 
   return async function handleInfraRoutes(parts, params, method, req, res) {
@@ -52,6 +55,12 @@ export function registerInfraRoutes(ctx) {
       await fs.mkdir(path.join(catDir, '_control_plane'), { recursive: true });
       await fs.mkdir(path.join(catDir, '_generated'), { recursive: true });
       const cats = (await listDirs(HELPER_ROOT)).filter(c => c !== '_global' && !c.startsWith('_'));
+      emitDataChange({
+        broadcastWs,
+        event: 'category-created',
+        category: 'all',
+        meta: { slug },
+      });
       return jsonRes(res, 201, { ok: true, slug, categories: cats });
     }
 

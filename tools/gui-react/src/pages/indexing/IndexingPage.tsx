@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useUiStore } from '../../stores/uiStore';
 import { useRuntimeStore } from '../../stores/runtimeStore';
 import { useIndexLabStore } from '../../stores/indexlabStore';
+import { useCollapseStore } from '../../stores/collapseStore';
+import { usePersistedTab } from '../../stores/tabStore';
+import { CONVERGENCE_KNOB_GROUPS, useConvergenceSettingsAuthority } from '../../stores/convergenceSettingsAuthority';
+import { useRuntimeSettingsAuthority } from '../../stores/runtimeSettingsAuthority';
+import { RUNTIME_SETTING_DEFAULTS } from '../../stores/settingsManifest';
 import { Tip } from '../../components/common/Tip';
 import type { ProcessStatus } from '../../types/events';
 import type { CatalogRow } from '../../types/product';
@@ -62,77 +67,117 @@ import { EventStreamPanel } from './panels/EventStreamPanel';
 import { Phase05Panel } from './panels/Phase05Panel';
 import { RuntimePanel } from './panels/RuntimePanel';
 
+const NEEDSET_SORT_KEYS = [
+  'need_score',
+  'field_key',
+  'required_level',
+  'confidence',
+  'best_tier_seen',
+  'refs',
+] as const;
+const NEEDSET_SORT_DIRS = ['asc', 'desc'] as const;
 
 export function IndexingPage() {
   const category = useUiStore((s) => s.category);
+  const runtimeAutoSaveEnabled = useUiStore((s) => s.runtimeAutoSaveEnabled);
+  const setRuntimeAutoSaveEnabled = useUiStore((s) => s.setRuntimeAutoSaveEnabled);
   const isAll = category === 'all';
   const clearProcessOutput = useRuntimeStore((s) => s.clearProcessOutput);
   const liveIndexLabByRun = useIndexLabStore((s) => s.byRun);
   const clearIndexLabRun = useIndexLabStore((s) => s.clearRun);
   const queryClient = useQueryClient();
+  const runtimeDefaults = RUNTIME_SETTING_DEFAULTS;
 
-  const [profile, setProfile] = useState<'fast' | 'standard' | 'thorough'>('fast');
-  const [fetchConcurrency, setFetchConcurrency] = useState('2');
-  const [perHostMinDelayMs, setPerHostMinDelayMs] = useState('900');
-  const [dynamicCrawleeEnabled, setDynamicCrawleeEnabled] = useState(true);
-  const [crawleeHeadless, setCrawleeHeadless] = useState(true);
-  const [crawleeRequestHandlerTimeoutSecs, setCrawleeRequestHandlerTimeoutSecs] = useState('45');
-  const [dynamicFetchRetryBudget, setDynamicFetchRetryBudget] = useState('1');
-  const [dynamicFetchRetryBackoffMs, setDynamicFetchRetryBackoffMs] = useState('500');
-  const [dynamicFetchPolicyMapJson, setDynamicFetchPolicyMapJson] = useState('');
-  const [scannedPdfOcrEnabled, setScannedPdfOcrEnabled] = useState(true);
-  const [scannedPdfOcrPromoteCandidates, setScannedPdfOcrPromoteCandidates] = useState(true);
-  const [scannedPdfOcrBackend, setScannedPdfOcrBackend] = useState<'auto' | 'tesseract' | 'none'>('auto');
-  const [scannedPdfOcrMaxPages, setScannedPdfOcrMaxPages] = useState('4');
-  const [scannedPdfOcrMaxPairs, setScannedPdfOcrMaxPairs] = useState('800');
-  const [scannedPdfOcrMinCharsPerPage, setScannedPdfOcrMinCharsPerPage] = useState('30');
-  const [scannedPdfOcrMinLinesPerPage, setScannedPdfOcrMinLinesPerPage] = useState('2');
-  const [scannedPdfOcrMinConfidence, setScannedPdfOcrMinConfidence] = useState('0.5');
-  const [resumeMode, setResumeMode] = useState<'auto' | 'force_resume' | 'start_over'>('auto');
-  const [resumeWindowHours, setResumeWindowHours] = useState('48');
-  const [reextractAfterHours, setReextractAfterHours] = useState('24');
-  const [reextractIndexed, setReextractIndexed] = useState(true);
-  const [discoveryEnabled, setDiscoveryEnabled] = useState(true);
-  const [searchProvider, setSearchProvider] = useState<'none' | 'google' | 'bing' | 'searxng' | 'duckduckgo' | 'dual'>('duckduckgo');
-  const [phase2LlmEnabled, setPhase2LlmEnabled] = useState(true);
-  const [phase2LlmModel, setPhase2LlmModel] = useState('gpt-5.1-low');
-  const [llmTokensPlan, setLlmTokensPlan] = useState(2048);
-  const [phase3LlmTriageEnabled, setPhase3LlmTriageEnabled] = useState(true);
-  const [phase3LlmModel, setPhase3LlmModel] = useState('gemini-2.5-flash');
-  const [llmTokensTriage, setLlmTokensTriage] = useState(2048);
-  const [llmModelFast, setLlmModelFast] = useState('gpt-5-low');
-  const [llmTokensFast, setLlmTokensFast] = useState(2048);
-  const [llmModelReasoning, setLlmModelReasoning] = useState('gpt-5.2-high');
-  const [llmTokensReasoning, setLlmTokensReasoning] = useState(4096);
-  const [llmModelExtract, setLlmModelExtract] = useState('gpt-5.1-high');
-  const [llmTokensExtract, setLlmTokensExtract] = useState(2048);
-  const [llmModelValidate, setLlmModelValidate] = useState('gpt-5.1-high');
-  const [llmTokensValidate, setLlmTokensValidate] = useState(2048);
-  const [llmModelWrite, setLlmModelWrite] = useState('gemini-2.5-flash-lite');
-  const [llmTokensWrite, setLlmTokensWrite] = useState(2048);
-  const [llmFallbackEnabled, setLlmFallbackEnabled] = useState(true);
-  const [llmFallbackPlanModel, setLlmFallbackPlanModel] = useState('');
-  const [llmTokensPlanFallback, setLlmTokensPlanFallback] = useState(2048);
-  const [llmFallbackExtractModel, setLlmFallbackExtractModel] = useState('');
-  const [llmTokensExtractFallback, setLlmTokensExtractFallback] = useState(2048);
-  const [llmFallbackValidateModel, setLlmFallbackValidateModel] = useState('');
-  const [llmTokensValidateFallback, setLlmTokensValidateFallback] = useState(2048);
-  const [llmFallbackWriteModel, setLlmFallbackWriteModel] = useState('');
-  const [llmTokensWriteFallback, setLlmTokensWriteFallback] = useState(2048);
+  const [profile, setProfile] = useState<'fast' | 'standard' | 'thorough'>(runtimeDefaults.profile);
+  const [fetchConcurrency, setFetchConcurrency] = useState(String(runtimeDefaults.fetchConcurrency));
+  const [perHostMinDelayMs, setPerHostMinDelayMs] = useState(String(runtimeDefaults.perHostMinDelayMs));
+  const [dynamicCrawleeEnabled, setDynamicCrawleeEnabled] = useState(runtimeDefaults.dynamicCrawleeEnabled);
+  const [crawleeHeadless, setCrawleeHeadless] = useState(runtimeDefaults.crawleeHeadless);
+  const [crawleeRequestHandlerTimeoutSecs, setCrawleeRequestHandlerTimeoutSecs] = useState(String(runtimeDefaults.crawleeRequestHandlerTimeoutSecs));
+  const [dynamicFetchRetryBudget, setDynamicFetchRetryBudget] = useState(String(runtimeDefaults.dynamicFetchRetryBudget));
+  const [dynamicFetchRetryBackoffMs, setDynamicFetchRetryBackoffMs] = useState(String(runtimeDefaults.dynamicFetchRetryBackoffMs));
+  const [dynamicFetchPolicyMapJson, setDynamicFetchPolicyMapJson] = useState(runtimeDefaults.dynamicFetchPolicyMapJson);
+  const [scannedPdfOcrEnabled, setScannedPdfOcrEnabled] = useState(runtimeDefaults.scannedPdfOcrEnabled);
+  const [scannedPdfOcrPromoteCandidates, setScannedPdfOcrPromoteCandidates] = useState(runtimeDefaults.scannedPdfOcrPromoteCandidates);
+  const [scannedPdfOcrBackend, setScannedPdfOcrBackend] = useState<'auto' | 'tesseract' | 'none'>(runtimeDefaults.scannedPdfOcrBackend);
+  const [scannedPdfOcrMaxPages, setScannedPdfOcrMaxPages] = useState(String(runtimeDefaults.scannedPdfOcrMaxPages));
+  const [scannedPdfOcrMaxPairs, setScannedPdfOcrMaxPairs] = useState(String(runtimeDefaults.scannedPdfOcrMaxPairs));
+  const [scannedPdfOcrMinCharsPerPage, setScannedPdfOcrMinCharsPerPage] = useState(String(runtimeDefaults.scannedPdfOcrMinCharsPerPage));
+  const [scannedPdfOcrMinLinesPerPage, setScannedPdfOcrMinLinesPerPage] = useState(String(runtimeDefaults.scannedPdfOcrMinLinesPerPage));
+  const [scannedPdfOcrMinConfidence, setScannedPdfOcrMinConfidence] = useState(String(runtimeDefaults.scannedPdfOcrMinConfidence));
+  const [resumeMode, setResumeMode] = useState<'auto' | 'force_resume' | 'start_over'>(runtimeDefaults.resumeMode);
+  const [resumeWindowHours, setResumeWindowHours] = useState(String(runtimeDefaults.resumeWindowHours));
+  const [reextractAfterHours, setReextractAfterHours] = useState(String(runtimeDefaults.reextractAfterHours));
+  const [reextractIndexed, setReextractIndexed] = useState(runtimeDefaults.reextractIndexed);
+  const [discoveryEnabled, setDiscoveryEnabled] = useState(runtimeDefaults.discoveryEnabled);
+  const [searchProvider, setSearchProvider] = useState<'none' | 'google' | 'bing' | 'searxng' | 'duckduckgo' | 'dual'>(runtimeDefaults.searchProvider as 'none' | 'google' | 'bing' | 'searxng' | 'duckduckgo' | 'dual');
+  const [phase2LlmEnabled, setPhase2LlmEnabled] = useState(runtimeDefaults.phase2LlmEnabled);
+  const [phase2LlmModel, setPhase2LlmModel] = useState(runtimeDefaults.phase2LlmModel);
+  const [llmTokensPlan, setLlmTokensPlan] = useState(runtimeDefaults.llmTokensPlan);
+  const [phase3LlmTriageEnabled, setPhase3LlmTriageEnabled] = useState(runtimeDefaults.phase3LlmTriageEnabled);
+  const [phase3LlmModel, setPhase3LlmModel] = useState(runtimeDefaults.phase3LlmModel);
+  const [llmTokensTriage, setLlmTokensTriage] = useState(runtimeDefaults.llmTokensTriage);
+  const [llmModelFast, setLlmModelFast] = useState(runtimeDefaults.llmModelFast);
+  const [llmTokensFast, setLlmTokensFast] = useState(runtimeDefaults.llmTokensFast);
+  const [llmModelReasoning, setLlmModelReasoning] = useState(runtimeDefaults.llmModelReasoning);
+  const [llmTokensReasoning, setLlmTokensReasoning] = useState(runtimeDefaults.llmTokensReasoning);
+  const [llmModelExtract, setLlmModelExtract] = useState(runtimeDefaults.llmModelExtract);
+  const [llmTokensExtract, setLlmTokensExtract] = useState(runtimeDefaults.llmTokensExtract);
+  const [llmModelValidate, setLlmModelValidate] = useState(runtimeDefaults.llmModelValidate);
+  const [llmTokensValidate, setLlmTokensValidate] = useState(runtimeDefaults.llmTokensValidate);
+  const [llmModelWrite, setLlmModelWrite] = useState(runtimeDefaults.llmModelWrite);
+  const [llmTokensWrite, setLlmTokensWrite] = useState(runtimeDefaults.llmTokensWrite);
+  const [llmFallbackEnabled, setLlmFallbackEnabled] = useState(runtimeDefaults.llmFallbackEnabled);
+  const [llmFallbackPlanModel, setLlmFallbackPlanModel] = useState(runtimeDefaults.llmFallbackPlanModel);
+  const [llmTokensPlanFallback, setLlmTokensPlanFallback] = useState(runtimeDefaults.llmTokensPlanFallback);
+  const [llmFallbackExtractModel, setLlmFallbackExtractModel] = useState(runtimeDefaults.llmFallbackExtractModel);
+  const [llmTokensExtractFallback, setLlmTokensExtractFallback] = useState(runtimeDefaults.llmTokensExtractFallback);
+  const [llmFallbackValidateModel, setLlmFallbackValidateModel] = useState(runtimeDefaults.llmFallbackValidateModel);
+  const [llmTokensValidateFallback, setLlmTokensValidateFallback] = useState(runtimeDefaults.llmTokensValidateFallback);
+  const [llmFallbackWriteModel, setLlmFallbackWriteModel] = useState(runtimeDefaults.llmFallbackWriteModel);
+  const [llmTokensWriteFallback, setLlmTokensWriteFallback] = useState(runtimeDefaults.llmTokensWriteFallback);
   const [llmKnobsInitialized, setLlmKnobsInitialized] = useState(false);
-  const [singleBrand, setSingleBrand] = useState('');
-  const [singleModel, setSingleModel] = useState('');
-  const [singleProductId, setSingleProductId] = useState('');
-  const [selectedIndexLabRunId, setSelectedIndexLabRunId] = useState('');
+  const singleBrand = useIndexLabStore((s) => s.pickerBrand);
+  const setSingleBrand = useIndexLabStore((s) => s.setPickerBrand);
+  const singleModel = useIndexLabStore((s) => s.pickerModel);
+  const setSingleModel = useIndexLabStore((s) => s.setPickerModel);
+  const singleProductId = useIndexLabStore((s) => s.pickerProductId);
+  const setSingleProductId = useIndexLabStore((s) => s.setPickerProductId);
+  const selectedIndexLabRunId = useIndexLabStore((s) => s.pickerRunId);
+  const setSelectedIndexLabRunId = useIndexLabStore((s) => s.setPickerRunId);
   const [clearedRunViewId, setClearedRunViewId] = useState('');
-  const [needsetSortKey, setNeedsetSortKey] = useState<'need_score' | 'field_key' | 'required_level' | 'confidence' | 'best_tier_seen' | 'refs'>('need_score');
-  const [needsetSortDir, setNeedsetSortDir] = useState<'asc' | 'desc'>('desc');
-  const [selectedLlmTraceId, setSelectedLlmTraceId] = useState('');
+  const [needsetSortKey, setNeedsetSortKey] = usePersistedTab<(typeof NEEDSET_SORT_KEYS)[number]>(
+    `indexing:needset:sortKey:${category}`,
+    'need_score',
+    { validValues: NEEDSET_SORT_KEYS },
+  );
+  const [needsetSortDir, setNeedsetSortDir] = usePersistedTab<(typeof NEEDSET_SORT_DIRS)[number]>(
+    `indexing:needset:sortDir:${category}`,
+    'desc',
+    { validValues: NEEDSET_SORT_DIRS },
+  );
+  const [selectedLlmTraceId, setSelectedLlmTraceId] = usePersistedTab<string>(
+    `indexing:llmTrace:selected:${category}`,
+    '',
+  );
   const [activityNowMs, setActivityNowMs] = useState(() => Date.now());
-  const [panelCollapsed, setPanelCollapsed] = useState<Record<PanelKey, boolean>>({ ...DEFAULT_PANEL_COLLAPSED });
+  const collapseValues = useCollapseStore((s) => s.values);
+  const collapseToggle = useCollapseStore((s) => s.toggle);
+  const collapseBatch = useCollapseStore((s) => s.setBatch);
+  const panelCollapsed = useMemo(() => {
+    const result = {} as Record<PanelKey, boolean>;
+    for (const key of PANEL_KEYS) {
+      result[key] = collapseValues[`indexing:panel:${key}`] ?? DEFAULT_PANEL_COLLAPSED[key];
+    }
+    return result;
+  }, [collapseValues]);
   const [stopForceKill, setStopForceKill] = useState(true);
   const [replayPending, setReplayPending] = useState(false);
-  const [phase6SearchQuery, setPhase6SearchQuery] = useState('');
+  const [phase6SearchQuery, setPhase6SearchQuery] = usePersistedTab<string>(
+    `indexing:phase6:searchQuery:${category}`,
+    '',
+  );
+  const previousCategoryRef = useRef(category);
 
   const { data: processStatus } = useQuery({
     queryKey: ['processStatus', 'indexing'],
@@ -155,106 +200,50 @@ export function IndexingPage() {
     return message;
   }, [searxngStatusError]);
 
+  const [runtimeSettingsDirty, setRuntimeSettingsDirty] = useState(false);
+  const [convergenceSettingsSaveState, setConvergenceSettingsSaveState] = useState<'idle' | 'ok' | 'partial' | 'error'>('idle');
+  const [convergenceSettingsSaveMessage, setConvergenceSettingsSaveMessage] = useState('');
+  const [runtimeSettingsSaveState, setRuntimeSettingsSaveState] = useState<'idle' | 'ok' | 'partial' | 'error'>('idle');
+  const [runtimeSettingsSaveMessage, setRuntimeSettingsSaveMessage] = useState('');
+
   const { data: indexingLlmConfig } = useQuery({
     queryKey: ['indexing', 'llm-config'],
     queryFn: () => api.get<IndexingLlmConfigResponse>('/indexing/llm-config'),
     refetchInterval: 15_000
   });
 
-  type ConvergenceSettings = Record<string, number | boolean>;
-  const CONVERGENCE_KNOB_GROUPS = [
-    {
-      label: 'Convergence Loop',
-      knobs: [
-        { key: 'convergenceMaxRounds', label: 'Max Rounds', tip: 'Maximum convergence rounds before stopping. Higher values give more chances to fill missing fields but cost more LLM calls.', type: 'int' as const, min: 1, max: 12 },
-        { key: 'convergenceNoProgressLimit', label: 'No-Progress Streak Limit', tip: 'Stop after this many consecutive rounds with no improvement. Lower values save budget; higher values tolerate slow-burn discovery.', type: 'int' as const, min: 1, max: 6 },
-        { key: 'convergenceMaxLowQualityRounds', label: 'Max Low-Quality Rounds', tip: 'Stop after this many rounds where no identity-matched sources were found or confidence stayed below threshold.', type: 'int' as const, min: 1, max: 6 },
-        { key: 'convergenceLowQualityConfidence', label: 'Low Quality Confidence Threshold', tip: 'Confidence below this value counts the round as low-quality. Raise to be stricter about what counts as progress.', type: 'float' as const, min: 0, max: 1, step: 0.05 },
-        { key: 'convergenceMaxDispatchQueries', label: 'Max Dispatch Queries/Round', tip: 'Cap on search queries dispatched per convergence round from NeedSet deficits. Higher values widen discovery but increase API cost.', type: 'int' as const, min: 5, max: 50 },
-        { key: 'convergenceMaxTargetFields', label: 'Max Target Fields/Round', tip: 'Cap on LLM target fields per round. Higher values attempt more fields per extraction pass.', type: 'int' as const, min: 5, max: 80 },
-      ],
+  const {
+    settings: convergenceSettings,
+    dirty: convergenceDirty,
+    isSaving: convergenceSaving,
+    updateSetting: updateConvergenceKnob,
+    reload: reloadConvergenceSettings,
+    save: saveConvergenceSettings,
+    } = useConvergenceSettingsAuthority({
+    onPersisted: (result) => {
+      if (result.ok) {
+        setConvergenceSettingsSaveState('ok');
+        setConvergenceSettingsSaveMessage(`Saved convergence settings at ${new Date().toLocaleTimeString()}`);
+        return;
+      }
+      const rejectedKeys = Object.keys(result.rejected);
+      if (rejectedKeys.length > 0) {
+        setConvergenceSettingsSaveState('partial');
+        setConvergenceSettingsSaveMessage(
+          `Convergence settings partially saved. Rejected ${rejectedKeys.length} key(s): ${rejectedKeys.join(', ')}`,
+        );
+        return;
+      }
+      setConvergenceSettingsSaveState('error');
+      setConvergenceSettingsSaveMessage('Convergence settings failed to save.');
     },
-    {
-      label: 'NeedSet Identity Caps',
-      knobs: [
-        { key: 'needsetCapIdentityLocked', label: 'Locked', tip: 'Max effective confidence when product identity is locked (fully confirmed). Normally 1.0.', type: 'float' as const, min: 0.5, max: 1, step: 0.05 },
-        { key: 'needsetCapIdentityProvisional', label: 'Provisional', tip: 'Max effective confidence when identity is provisional (likely correct but not fully confirmed).', type: 'float' as const, min: 0.5, max: 0.9, step: 0.01 },
-        { key: 'needsetCapIdentityConflict', label: 'Conflict', tip: 'Max effective confidence when identity has conflicting signals. Lower values force more re-verification.', type: 'float' as const, min: 0.2, max: 0.6, step: 0.01 },
-        { key: 'needsetCapIdentityUnlocked', label: 'Unlocked', tip: 'Max effective confidence when identity is not yet confirmed. Lower values keep NeedSet scores conservative until identity resolves.', type: 'float' as const, min: 0.3, max: 0.8, step: 0.01 },
-      ],
-    },
-    {
-      label: 'NeedSet Freshness Decay',
-      knobs: [
-        { key: 'needsetEvidenceDecayDays', label: 'Decay Half-Life (days)', tip: 'Number of days until evidence confidence is halved. Lower values penalize stale evidence more aggressively, higher values trust older evidence longer.', type: 'int' as const, min: 1, max: 90 },
-        { key: 'needsetEvidenceDecayFloor', label: 'Decay Floor', tip: 'Minimum decay multiplier — even very old evidence retains at least this fraction of its confidence. Set to 0 to allow full decay.', type: 'float' as const, min: 0, max: 0.9, step: 0.05 },
-      ],
-    },
-    {
-      label: 'Consensus — LLM Weights',
-      knobs: [
-        { key: 'consensusLlmWeightTier1', label: 'LLM Tier 1 (Manufacturer)', tip: 'Weight applied to LLM-extracted candidates from tier-1 (manufacturer) sources in consensus scoring.', type: 'float' as const, min: 0.3, max: 0.9, step: 0.05 },
-        { key: 'consensusLlmWeightTier2', label: 'LLM Tier 2 (Lab Review)', tip: 'Weight applied to LLM-extracted candidates from tier-2 (lab review) sources.', type: 'float' as const, min: 0.2, max: 0.7, step: 0.05 },
-        { key: 'consensusLlmWeightTier3', label: 'LLM Tier 3 (Retail)', tip: 'Weight applied to LLM-extracted candidates from tier-3 (retail) sources.', type: 'float' as const, min: 0.1, max: 0.4, step: 0.05 },
-        { key: 'consensusLlmWeightTier4', label: 'LLM Tier 4 (Unverified)', tip: 'Weight applied to LLM-extracted candidates from tier-4 (unverified) sources. Keep low to prevent unreliable data from winning consensus.', type: 'float' as const, min: 0.05, max: 0.3, step: 0.05 },
-      ],
-    },
-    {
-      label: 'Consensus — Tier Weights',
-      knobs: [
-        { key: 'consensusTier1Weight', label: 'Tier 1 Weight', tip: 'Base scoring weight for all tier-1 (manufacturer) evidence rows in consensus. Higher values strongly prefer official sources.', type: 'float' as const, min: 0.8, max: 1, step: 0.05 },
-        { key: 'consensusTier2Weight', label: 'Tier 2 Weight', tip: 'Base scoring weight for tier-2 (lab review) evidence rows.', type: 'float' as const, min: 0.5, max: 0.9, step: 0.05 },
-        { key: 'consensusTier3Weight', label: 'Tier 3 Weight', tip: 'Base scoring weight for tier-3 (retail) evidence rows.', type: 'float' as const, min: 0.2, max: 0.6, step: 0.05 },
-        { key: 'consensusTier4Weight', label: 'Tier 4 Weight', tip: 'Base scoring weight for tier-4 (unverified) evidence rows. Lower values reduce influence of unverified sources.', type: 'float' as const, min: 0.1, max: 0.4, step: 0.05 },
-      ],
-    },
-    {
-      label: 'SERP Triage',
-      knobs: [
-        { key: 'serpTriageMinScore', label: 'Min Score Threshold', tip: 'Minimum LLM triage score (1-10) for a SERP result to pass. Higher values filter more aggressively.', type: 'int' as const, min: 1, max: 10 },
-        { key: 'serpTriageMaxUrls', label: 'Max URLs After Triage', tip: 'Maximum number of URLs kept after triage scoring. Lower values reduce fetch volume; higher values increase coverage.', type: 'int' as const, min: 5, max: 30 },
-        { key: 'serpTriageEnabled', label: 'Triage Enabled', tip: 'Enable LLM-powered SERP triage. When off, all search results pass through unfiltered.', type: 'bool' as const },
-      ],
-    },
-    {
-      label: 'Retrieval',
-      knobs: [
-        { key: 'retrievalMaxHitsPerField', label: 'Max Hits Per Field', tip: 'Maximum evidence rows retrieved per field during tier-aware retrieval. Higher values increase recall but slow scoring.', type: 'int' as const, min: 5, max: 50 },
-        { key: 'retrievalMaxPrimeSources', label: 'Max Prime Sources', tip: 'Maximum prime sources selected per field for extraction context. Higher values provide more evidence to LLM but increase token usage.', type: 'int' as const, min: 3, max: 20 },
-        { key: 'retrievalIdentityFilterEnabled', label: 'Identity Filter Enabled', tip: 'Filter retrieval results by product identity match. Disable to include all sources regardless of identity confidence.', type: 'bool' as const },
-      ],
-    },
-  ];
-
-  const [convergenceSettings, setConvergenceSettings] = useState<ConvergenceSettings>({});
-  const [convergenceDirty, setConvergenceDirty] = useState(false);
-
-  const { data: convergenceData, refetch: refetchConvergence } = useQuery({
-    queryKey: ['convergence-settings'],
-    queryFn: () => api.get<ConvergenceSettings>('/convergence-settings'),
-    refetchInterval: 30_000,
-  });
-
-  useEffect(() => {
-    if (convergenceData) {
-      setConvergenceSettings(convergenceData);
-      setConvergenceDirty(false);
-    }
-  }, [convergenceData]);
-
-  const saveConvergenceMut = useMutation({
-    mutationFn: (payload: ConvergenceSettings) =>
-      api.put<{ ok: boolean; applied: ConvergenceSettings }>('/convergence-settings', payload),
-    onSuccess: () => {
-      setConvergenceDirty(false);
-      refetchConvergence();
+    onError: (error) => {
+      setConvergenceSettingsSaveState('error');
+      setConvergenceSettingsSaveMessage(error instanceof Error ? error.message : 'Convergence settings save failed.');
     },
   });
-
-  const updateConvergenceKnob = (key: string, value: number | boolean) => {
-    setConvergenceSettings((prev) => ({ ...prev, [key]: value }));
-    setConvergenceDirty(true);
-  };
+  const runtimeAutoSave = runtimeAutoSaveEnabled;
+  const handleAutoSaveToggle = (enabled: boolean) => setRuntimeAutoSaveEnabled(enabled);
 
   const { data: indexingLlmMetrics } = useQuery({
     queryKey: ['indexing', 'llm-metrics', category],
@@ -655,11 +644,107 @@ export function IndexingPage() {
     };
   };
 
+  const parseRuntimeInt = (value: string, fallback: number) => {
+    const parsed = Number.parseInt(String(value), 10);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+
+  const parseRuntimeFloat = (value: string, fallback: number) => {
+    const parsed = Number.parseFloat(String(value));
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+
   const clampTokenForModel = (model: string, value: number) => {
     const defaults = resolveModelTokenDefaults(model);
-    const safeValue = Math.max(128, Number.parseInt(String(value || 0), 10) || defaults.default_output_tokens);
+    const parsed = Number.parseInt(String(value), 10);
+    const safeValue = Math.max(128, Number.isFinite(parsed) ? parsed : defaults.default_output_tokens);
     return Math.min(safeValue, defaults.max_output_tokens);
   };
+
+  const collectRuntimeSettingsPayload = () => ({
+    profile,
+    searchProvider,
+    phase2LlmModel,
+    phase3LlmModel,
+    llmModelFast,
+    llmModelReasoning,
+    llmModelExtract,
+    llmModelValidate,
+    llmModelWrite,
+    llmFallbackPlanModel,
+    llmFallbackExtractModel,
+    llmFallbackValidateModel,
+    llmFallbackWriteModel,
+    resumeMode,
+    scannedPdfOcrBackend,
+    fetchConcurrency: parseRuntimeInt(fetchConcurrency, runtimeDefaults.fetchConcurrency),
+    perHostMinDelayMs: parseRuntimeInt(perHostMinDelayMs, runtimeDefaults.perHostMinDelayMs),
+    llmTokensPlan: clampTokenForModel(phase2LlmModel, llmTokensPlan),
+    llmTokensTriage: clampTokenForModel(phase3LlmModel, llmTokensTriage),
+    llmTokensFast: clampTokenForModel(llmModelFast, llmTokensFast),
+    llmTokensReasoning: clampTokenForModel(llmModelReasoning, llmTokensReasoning),
+    llmTokensExtract: clampTokenForModel(llmModelExtract, llmTokensExtract),
+    llmTokensValidate: clampTokenForModel(llmModelValidate, llmTokensValidate),
+    llmTokensWrite: clampTokenForModel(llmModelWrite, llmTokensWrite),
+    llmTokensPlanFallback: clampTokenForModel(llmFallbackPlanModel || phase2LlmModel, llmTokensPlanFallback),
+    llmTokensExtractFallback: clampTokenForModel(llmFallbackExtractModel || llmModelExtract, llmTokensExtractFallback),
+    llmTokensValidateFallback: clampTokenForModel(llmFallbackValidateModel || llmModelValidate, llmTokensValidateFallback),
+    llmTokensWriteFallback: clampTokenForModel(llmFallbackWriteModel || llmModelWrite, llmTokensWriteFallback),
+    resumeWindowHours: parseRuntimeInt(resumeWindowHours, runtimeDefaults.resumeWindowHours),
+    reextractAfterHours: parseRuntimeInt(reextractAfterHours, runtimeDefaults.reextractAfterHours),
+    scannedPdfOcrMaxPages: parseRuntimeInt(scannedPdfOcrMaxPages, runtimeDefaults.scannedPdfOcrMaxPages),
+    scannedPdfOcrMaxPairs: parseRuntimeInt(scannedPdfOcrMaxPairs, runtimeDefaults.scannedPdfOcrMaxPairs),
+    scannedPdfOcrMinCharsPerPage: parseRuntimeInt(scannedPdfOcrMinCharsPerPage, runtimeDefaults.scannedPdfOcrMinCharsPerPage),
+    scannedPdfOcrMinLinesPerPage: parseRuntimeInt(scannedPdfOcrMinLinesPerPage, runtimeDefaults.scannedPdfOcrMinLinesPerPage),
+    scannedPdfOcrMinConfidence: parseRuntimeFloat(scannedPdfOcrMinConfidence, runtimeDefaults.scannedPdfOcrMinConfidence),
+    crawleeRequestHandlerTimeoutSecs: parseRuntimeInt(crawleeRequestHandlerTimeoutSecs, runtimeDefaults.crawleeRequestHandlerTimeoutSecs),
+    dynamicFetchRetryBudget: parseRuntimeInt(dynamicFetchRetryBudget, runtimeDefaults.dynamicFetchRetryBudget),
+    dynamicFetchRetryBackoffMs: parseRuntimeInt(dynamicFetchRetryBackoffMs, runtimeDefaults.dynamicFetchRetryBackoffMs),
+    dynamicFetchPolicyMapJson: String(dynamicFetchPolicyMapJson || '').trim(),
+    discoveryEnabled,
+    phase2LlmEnabled,
+    phase3LlmTriageEnabled,
+    llmFallbackEnabled,
+    reextractIndexed,
+    scannedPdfOcrEnabled,
+    scannedPdfOcrPromoteCandidates,
+    dynamicCrawleeEnabled,
+    crawleeHeadless,
+  });
+
+  const runtimeSettingsPayload = collectRuntimeSettingsPayload();
+  const {
+    settings: runtimeSettingsData,
+    isLoading: runtimeSettingsLoading,
+    saveNow: saveRuntimeSettingsNow,
+    isSaving: runtimeSettingsSaving,
+  } = useRuntimeSettingsAuthority({
+    payload: runtimeSettingsPayload,
+    dirty: runtimeSettingsDirty,
+    autoSaveEnabled: runtimeAutoSave,
+    onPersisted: (result) => {
+      if (result.ok) {
+        setRuntimeSettingsDirty(false);
+        setRuntimeSettingsSaveState('ok');
+        setRuntimeSettingsSaveMessage(`Saved runtime settings at ${new Date().toLocaleTimeString()}`);
+        return;
+      }
+      const rejectedKeys = Object.keys(result.rejected);
+      if (rejectedKeys.length > 0) {
+        setRuntimeSettingsSaveState('partial');
+        setRuntimeSettingsSaveMessage(
+          `Runtime settings partially saved. Rejected ${rejectedKeys.length} setting(s).`,
+        );
+        return;
+      }
+      setRuntimeSettingsSaveState('error');
+      setRuntimeSettingsSaveMessage('Runtime settings failed to save.');
+    },
+    onError: (error) => {
+      setRuntimeSettingsSaveState('error');
+      setRuntimeSettingsSaveMessage(error instanceof Error ? error.message : 'Runtime settings save failed.');
+    },
+  });
 
   const selectedRunLlmMetrics = useMemo(() => {
     const runs = Array.isArray(indexingLlmMetrics?.by_run) ? indexingLlmMetrics.by_run : [];
@@ -670,6 +755,18 @@ export function IndexingPage() {
     }
     return runs[0];
   }, [indexingLlmMetrics, selectedIndexLabRunId]);
+
+  useEffect(() => {
+    if (!runtimeSettingsDirty) return;
+    setRuntimeSettingsSaveState('idle');
+    setRuntimeSettingsSaveMessage('');
+  }, [runtimeSettingsDirty]);
+
+  useEffect(() => {
+    if (!convergenceDirty) return;
+    setConvergenceSettingsSaveState('idle');
+    setConvergenceSettingsSaveMessage('');
+  }, [convergenceDirty]);
 
   const modelPricingLookup = useMemo(() => {
     const map = new Map<string, { provider?: string; input_per_1m?: number; output_per_1m?: number; cached_input_per_1m?: number }>();
@@ -865,11 +962,64 @@ export function IndexingPage() {
   }, [indexingLlmConfig, llmKnobsInitialized, llmModelOptions]);
 
   useEffect(() => {
+    if (!runtimeSettingsData || !llmKnobsInitialized || runtimeSettingsDirty) return;
+    const d = runtimeSettingsData;
+    if (typeof d.profile === 'string' && d.profile) setProfile(d.profile as typeof profile);
+    if (typeof d.searchProvider === 'string') setSearchProvider(d.searchProvider as typeof searchProvider);
+    if (typeof d.phase2LlmModel === 'string' && d.phase2LlmModel) setPhase2LlmModel(d.phase2LlmModel as string);
+    if (typeof d.phase3LlmModel === 'string' && d.phase3LlmModel) setPhase3LlmModel(d.phase3LlmModel as string);
+    if (typeof d.llmModelFast === 'string' && d.llmModelFast) setLlmModelFast(d.llmModelFast as string);
+    if (typeof d.llmModelReasoning === 'string' && d.llmModelReasoning) setLlmModelReasoning(d.llmModelReasoning as string);
+    if (typeof d.llmModelExtract === 'string' && d.llmModelExtract) setLlmModelExtract(d.llmModelExtract as string);
+    if (typeof d.llmModelValidate === 'string' && d.llmModelValidate) setLlmModelValidate(d.llmModelValidate as string);
+    if (typeof d.llmModelWrite === 'string' && d.llmModelWrite) setLlmModelWrite(d.llmModelWrite as string);
+    if (typeof d.llmFallbackPlanModel === 'string') setLlmFallbackPlanModel(d.llmFallbackPlanModel as string);
+    if (typeof d.llmFallbackExtractModel === 'string') setLlmFallbackExtractModel(d.llmFallbackExtractModel as string);
+    if (typeof d.llmFallbackValidateModel === 'string') setLlmFallbackValidateModel(d.llmFallbackValidateModel as string);
+    if (typeof d.llmFallbackWriteModel === 'string') setLlmFallbackWriteModel(d.llmFallbackWriteModel as string);
+    if (typeof d.resumeMode === 'string' && d.resumeMode) setResumeMode(d.resumeMode as typeof resumeMode);
+    if (typeof d.scannedPdfOcrBackend === 'string' && d.scannedPdfOcrBackend) setScannedPdfOcrBackend(d.scannedPdfOcrBackend as typeof scannedPdfOcrBackend);
+    if (typeof d.fetchConcurrency === 'number') setFetchConcurrency(String(d.fetchConcurrency));
+    if (typeof d.perHostMinDelayMs === 'number') setPerHostMinDelayMs(String(d.perHostMinDelayMs));
+    if (typeof d.llmTokensPlan === 'number') setLlmTokensPlan(d.llmTokensPlan as number);
+    if (typeof d.llmTokensTriage === 'number') setLlmTokensTriage(d.llmTokensTriage as number);
+    if (typeof d.llmTokensFast === 'number') setLlmTokensFast(d.llmTokensFast as number);
+    if (typeof d.llmTokensReasoning === 'number') setLlmTokensReasoning(d.llmTokensReasoning as number);
+    if (typeof d.llmTokensExtract === 'number') setLlmTokensExtract(d.llmTokensExtract as number);
+    if (typeof d.llmTokensValidate === 'number') setLlmTokensValidate(d.llmTokensValidate as number);
+    if (typeof d.llmTokensWrite === 'number') setLlmTokensWrite(d.llmTokensWrite as number);
+    if (typeof d.llmTokensPlanFallback === 'number') setLlmTokensPlanFallback(d.llmTokensPlanFallback as number);
+    if (typeof d.llmTokensExtractFallback === 'number') setLlmTokensExtractFallback(d.llmTokensExtractFallback as number);
+    if (typeof d.llmTokensValidateFallback === 'number') setLlmTokensValidateFallback(d.llmTokensValidateFallback as number);
+    if (typeof d.llmTokensWriteFallback === 'number') setLlmTokensWriteFallback(d.llmTokensWriteFallback as number);
+    if (typeof d.resumeWindowHours === 'number') setResumeWindowHours(String(d.resumeWindowHours));
+    if (typeof d.reextractAfterHours === 'number') setReextractAfterHours(String(d.reextractAfterHours));
+    if (typeof d.scannedPdfOcrMaxPages === 'number') setScannedPdfOcrMaxPages(String(d.scannedPdfOcrMaxPages));
+    if (typeof d.scannedPdfOcrMaxPairs === 'number') setScannedPdfOcrMaxPairs(String(d.scannedPdfOcrMaxPairs));
+    if (typeof d.scannedPdfOcrMinCharsPerPage === 'number') setScannedPdfOcrMinCharsPerPage(String(d.scannedPdfOcrMinCharsPerPage));
+    if (typeof d.scannedPdfOcrMinLinesPerPage === 'number') setScannedPdfOcrMinLinesPerPage(String(d.scannedPdfOcrMinLinesPerPage));
+    if (typeof d.scannedPdfOcrMinConfidence === 'number') setScannedPdfOcrMinConfidence(String(d.scannedPdfOcrMinConfidence));
+    if (typeof d.crawleeRequestHandlerTimeoutSecs === 'number') setCrawleeRequestHandlerTimeoutSecs(String(d.crawleeRequestHandlerTimeoutSecs));
+    if (typeof d.dynamicFetchRetryBudget === 'number') setDynamicFetchRetryBudget(String(d.dynamicFetchRetryBudget));
+    if (typeof d.dynamicFetchRetryBackoffMs === 'number') setDynamicFetchRetryBackoffMs(String(d.dynamicFetchRetryBackoffMs));
+    if (typeof d.dynamicFetchPolicyMapJson === 'string') setDynamicFetchPolicyMapJson(d.dynamicFetchPolicyMapJson);
+    if (typeof d.discoveryEnabled === 'boolean') setDiscoveryEnabled(d.discoveryEnabled as boolean);
+    if (typeof d.phase2LlmEnabled === 'boolean') setPhase2LlmEnabled(d.phase2LlmEnabled as boolean);
+    if (typeof d.phase3LlmTriageEnabled === 'boolean') setPhase3LlmTriageEnabled(d.phase3LlmTriageEnabled as boolean);
+    if (typeof d.llmFallbackEnabled === 'boolean') setLlmFallbackEnabled(d.llmFallbackEnabled as boolean);
+    if (typeof d.reextractIndexed === 'boolean') setReextractIndexed(d.reextractIndexed as boolean);
+    if (typeof d.scannedPdfOcrEnabled === 'boolean') setScannedPdfOcrEnabled(d.scannedPdfOcrEnabled as boolean);
+    if (typeof d.scannedPdfOcrPromoteCandidates === 'boolean') setScannedPdfOcrPromoteCandidates(d.scannedPdfOcrPromoteCandidates as boolean);
+    if (typeof d.dynamicCrawleeEnabled === 'boolean') setDynamicCrawleeEnabled(d.dynamicCrawleeEnabled as boolean);
+    if (typeof d.crawleeHeadless === 'boolean') setCrawleeHeadless(d.crawleeHeadless as boolean);
+    setRuntimeSettingsDirty(false);
+  }, [runtimeSettingsData, runtimeSettingsDirty, llmKnobsInitialized]);
+
+  useEffect(() => {
+    if (previousCategoryRef.current === category) return;
+    previousCategoryRef.current = category;
     setSingleBrand('');
-    setSingleModel('');
-    setSingleProductId('');
     setSelectedIndexLabRunId('');
-    setSelectedLlmTraceId('');
   }, [category]);
 
   useEffect(() => {
@@ -883,6 +1033,7 @@ export function IndexingPage() {
   }, [llmTraceRows, selectedLlmTraceId]);
 
   useEffect(() => {
+    if (catalogRows.length === 0) return;
     if (singleBrand && !brandOptions.some((brand) => normalizeToken(brand) === normalizeToken(singleBrand))) {
       setSingleBrand('');
       setSingleModel('');
@@ -897,7 +1048,7 @@ export function IndexingPage() {
     if (singleProductId && !variantOptions.some((option) => option.productId === singleProductId)) {
       setSingleProductId('');
     }
-  }, [brandOptions, modelOptions, variantOptions, singleBrand, singleModel, singleProductId]);
+  }, [catalogRows.length, brandOptions, modelOptions, variantOptions, singleBrand, singleModel, singleProductId]);
 
   const indexlabLiveEvents = useMemo(() => {
     if (!selectedIndexLabRunId) return [];
@@ -3682,30 +3833,32 @@ export function IndexingPage() {
   };
 
   const runControlPayload = useMemo(() => {
-    const parsedResumeWindowHours = Number.parseInt(resumeWindowHours, 10);
-    const parsedReextractAfterHours = Number.parseInt(reextractAfterHours, 10);
+    const parsedResumeWindowHours = parseRuntimeInt(resumeWindowHours, runtimeDefaults.resumeWindowHours);
+    const parsedReextractAfterHours = parseRuntimeInt(reextractAfterHours, runtimeDefaults.reextractAfterHours);
     return {
       resumeMode,
       resumeWindowHours: Number.isFinite(parsedResumeWindowHours) && parsedResumeWindowHours >= 0
         ? parsedResumeWindowHours
-        : 48,
+        : runtimeDefaults.resumeWindowHours,
       reextractAfterHours: Number.isFinite(parsedReextractAfterHours) && parsedReextractAfterHours >= 0
         ? parsedReextractAfterHours
-        : 24,
+        : runtimeDefaults.reextractAfterHours,
       reextractIndexed
     };
   }, [resumeMode, resumeWindowHours, reextractAfterHours, reextractIndexed]);
 
   const startIndexLabMut = useMutation({
     mutationFn: () => {
-      const parsedCrawleeTimeout = Number.parseInt(crawleeRequestHandlerTimeoutSecs, 10);
-      const parsedRetryBudget = Number.parseInt(dynamicFetchRetryBudget, 10);
-      const parsedRetryBackoff = Number.parseInt(dynamicFetchRetryBackoffMs, 10);
-      const parsedScannedPdfOcrMaxPages = Number.parseInt(scannedPdfOcrMaxPages, 10);
-      const parsedScannedPdfOcrMaxPairs = Number.parseInt(scannedPdfOcrMaxPairs, 10);
-      const parsedScannedPdfOcrMinChars = Number.parseInt(scannedPdfOcrMinCharsPerPage, 10);
-      const parsedScannedPdfOcrMinLines = Number.parseInt(scannedPdfOcrMinLinesPerPage, 10);
-      const parsedScannedPdfOcrMinConfidence = Number.parseFloat(scannedPdfOcrMinConfidence);
+      const parsedConcurrency = parseRuntimeInt(fetchConcurrency, runtimeDefaults.fetchConcurrency);
+      const parsedPerHostMinDelayMs = parseRuntimeInt(perHostMinDelayMs, runtimeDefaults.perHostMinDelayMs);
+      const parsedCrawleeTimeout = parseRuntimeInt(crawleeRequestHandlerTimeoutSecs, runtimeDefaults.crawleeRequestHandlerTimeoutSecs);
+      const parsedRetryBudget = parseRuntimeInt(dynamicFetchRetryBudget, runtimeDefaults.dynamicFetchRetryBudget);
+      const parsedRetryBackoff = parseRuntimeInt(dynamicFetchRetryBackoffMs, runtimeDefaults.dynamicFetchRetryBackoffMs);
+      const parsedScannedPdfOcrMaxPages = parseRuntimeInt(scannedPdfOcrMaxPages, runtimeDefaults.scannedPdfOcrMaxPages);
+      const parsedScannedPdfOcrMaxPairs = parseRuntimeInt(scannedPdfOcrMaxPairs, runtimeDefaults.scannedPdfOcrMaxPairs);
+      const parsedScannedPdfOcrMinChars = parseRuntimeInt(scannedPdfOcrMinCharsPerPage, runtimeDefaults.scannedPdfOcrMinCharsPerPage);
+      const parsedScannedPdfOcrMinLines = parseRuntimeInt(scannedPdfOcrMinLinesPerPage, runtimeDefaults.scannedPdfOcrMinLinesPerPage);
+      const parsedScannedPdfOcrMinConfidence = parseRuntimeFloat(scannedPdfOcrMinConfidence, runtimeDefaults.scannedPdfOcrMinConfidence);
       return api.post<ProcessStatus>('/process/start', {
         category,
         mode: 'indexlab',
@@ -3713,26 +3866,22 @@ export function IndexingPage() {
         extractionMode: 'balanced',
         productId: singleProductId,
         profile,
-        fetchConcurrency: Number.parseInt(fetchConcurrency, 10) || 2,
-        perHostMinDelayMs: Number.parseInt(perHostMinDelayMs, 10) || 900,
+        fetchConcurrency: parsedConcurrency,
+        perHostMinDelayMs: parsedPerHostMinDelayMs,
         dynamicCrawleeEnabled,
         crawleeHeadless,
-        crawleeRequestHandlerTimeoutSecs: Number.isFinite(parsedCrawleeTimeout) ? Math.max(0, parsedCrawleeTimeout) : 45,
-        dynamicFetchRetryBudget: Number.isFinite(parsedRetryBudget) ? Math.max(0, parsedRetryBudget) : 1,
-        dynamicFetchRetryBackoffMs: Number.isFinite(parsedRetryBackoff) ? Math.max(0, parsedRetryBackoff) : 500,
+        crawleeRequestHandlerTimeoutSecs: Math.max(0, parsedCrawleeTimeout),
+        dynamicFetchRetryBudget: Math.max(0, parsedRetryBudget),
+        dynamicFetchRetryBackoffMs: Math.max(0, parsedRetryBackoff),
         scannedPdfOcrEnabled,
         scannedPdfOcrPromoteCandidates,
         scannedPdfOcrBackend,
-        scannedPdfOcrMaxPages: Number.isFinite(parsedScannedPdfOcrMaxPages) ? Math.max(1, parsedScannedPdfOcrMaxPages) : 4,
-        scannedPdfOcrMaxPairs: Number.isFinite(parsedScannedPdfOcrMaxPairs) ? Math.max(50, parsedScannedPdfOcrMaxPairs) : 800,
-        scannedPdfOcrMinCharsPerPage: Number.isFinite(parsedScannedPdfOcrMinChars) ? Math.max(1, parsedScannedPdfOcrMinChars) : 30,
-        scannedPdfOcrMinLinesPerPage: Number.isFinite(parsedScannedPdfOcrMinLines) ? Math.max(1, parsedScannedPdfOcrMinLines) : 2,
-        scannedPdfOcrMinConfidence: Number.isFinite(parsedScannedPdfOcrMinConfidence)
-          ? Math.max(0, Math.min(1, parsedScannedPdfOcrMinConfidence))
-          : 0.5,
-        ...(String(dynamicFetchPolicyMapJson || '').trim()
-          ? { dynamicFetchPolicyMapJson: String(dynamicFetchPolicyMapJson || '').trim() }
-          : {}),
+        scannedPdfOcrMaxPages: Math.max(1, parsedScannedPdfOcrMaxPages),
+        scannedPdfOcrMaxPairs: Math.max(50, parsedScannedPdfOcrMaxPairs),
+        scannedPdfOcrMinCharsPerPage: Math.max(1, parsedScannedPdfOcrMinChars),
+        scannedPdfOcrMinLinesPerPage: Math.max(1, parsedScannedPdfOcrMinLines),
+        scannedPdfOcrMinConfidence: Math.max(0, Math.min(1, parsedScannedPdfOcrMinConfidence)),
+        dynamicFetchPolicyMapJson: String(dynamicFetchPolicyMapJson || '').trim(),
         discoveryEnabled,
         searchProvider,
         phase2LlmEnabled,
@@ -3795,7 +3944,8 @@ export function IndexingPage() {
     ? 'running'
     : (processStatus?.exitCode === 0 && processStatus?.endedAt ? 'completed' : (processStatus?.exitCode !== null && processStatus?.exitCode !== undefined ? 'failed' : 'idle'));
   const busy = startIndexLabMut.isPending || stopMut.isPending || startSearxngMut.isPending || replayPending;
-  const canRunSingle = !isAll && !!singleProductId;
+  const runtimeSettingsReady = Boolean(runtimeSettingsData) && !runtimeSettingsLoading;
+  const canRunSingle = !isAll && !!singleProductId && runtimeSettingsReady;
 
   const actionError =
     (startIndexLabMut.error as Error)?.message
@@ -3803,26 +3953,23 @@ export function IndexingPage() {
     || (startSearxngMut.error as Error)?.message
     || '';
 
-  const setNeedsetSort = (nextKey: 'need_score' | 'field_key' | 'required_level' | 'confidence' | 'best_tier_seen' | 'refs') => {
+  const setNeedsetSort = (nextKey: (typeof NEEDSET_SORT_KEYS)[number]) => {
     if (needsetSortKey === nextKey) {
-      setNeedsetSortDir((prev) => (prev === 'desc' ? 'asc' : 'desc'));
+      setNeedsetSortDir(needsetSortDir === 'desc' ? 'asc' : 'desc');
       return;
     }
     setNeedsetSortKey(nextKey);
     setNeedsetSortDir(nextKey === 'field_key' ? 'asc' : 'desc');
   };
   const togglePanel = (panel: PanelKey) => {
-    setPanelCollapsed((prev) => ({
-      ...prev,
-      [panel]: !prev[panel]
-    }));
+    collapseToggle(`indexing:panel:${panel}`, DEFAULT_PANEL_COLLAPSED[panel]);
   };
   const setAllPanels = (collapsed: boolean) => {
-    const next: Record<PanelKey, boolean> = { ...DEFAULT_PANEL_COLLAPSED };
+    const batch: Record<string, boolean> = {};
     for (const key of PANEL_KEYS) {
-      next[key] = collapsed;
+      batch[`indexing:panel:${key}`] = collapsed;
     }
-    setPanelCollapsed(next);
+    collapseBatch(batch);
   };
 
   return (
@@ -3858,11 +4005,13 @@ export function IndexingPage() {
         containerStatuses={containerStatuses}
         onOpenAll={() => setAllPanels(false)}
         onCloseAll={() => setAllPanels(true)}
+        persistKey={`indexing:panelControls:open:${category}`}
       />
 
       <SessionDataPanel
         selectedIndexLabRunId={selectedIndexLabRunId}
         sessionCrawledCells={sessionCrawledCells}
+        persistKey={`indexing:sessionData:open:${category}`}
       />
 
       <LlmOutputPanel
@@ -4019,117 +4168,120 @@ export function IndexingPage() {
         processRunning={processRunning}
         runtimeActivity={runtimeActivity}
         profile={profile}
-        onProfileChange={setProfile}
+        onProfileChange={(v) => { setProfile(v); setRuntimeSettingsDirty(true); }}
         discoveryEnabled={discoveryEnabled}
         onDiscoveryEnabledChange={(enabled, setSp) => {
           setDiscoveryEnabled(enabled);
           if (!enabled) { setSp('none'); }
           else if (searchProvider === 'none') { setSp('duckduckgo'); }
+          setRuntimeSettingsDirty(true);
         }}
         searchProvider={searchProvider}
-        onSearchProviderChange={(v) => setSearchProvider(v as typeof searchProvider)}
+        onSearchProviderChange={(v) => { setSearchProvider(v as typeof searchProvider); setRuntimeSettingsDirty(true); }}
         fetchConcurrency={fetchConcurrency}
-        onFetchConcurrencyChange={setFetchConcurrency}
+        onFetchConcurrencyChange={(v) => { setFetchConcurrency(v); setRuntimeSettingsDirty(true); }}
         perHostMinDelayMs={perHostMinDelayMs}
-        onPerHostMinDelayMsChange={setPerHostMinDelayMs}
+        onPerHostMinDelayMsChange={(v) => { setPerHostMinDelayMs(v); setRuntimeSettingsDirty(true); }}
         scannedPdfOcrEnabled={scannedPdfOcrEnabled}
-        onScannedPdfOcrEnabledChange={setScannedPdfOcrEnabled}
+        onScannedPdfOcrEnabledChange={(v) => { setScannedPdfOcrEnabled(v); setRuntimeSettingsDirty(true); }}
         scannedPdfOcrPromoteCandidates={scannedPdfOcrPromoteCandidates}
-        onScannedPdfOcrPromoteCandidatesChange={setScannedPdfOcrPromoteCandidates}
+        onScannedPdfOcrPromoteCandidatesChange={(v) => { setScannedPdfOcrPromoteCandidates(v); setRuntimeSettingsDirty(true); }}
         scannedPdfOcrBackend={scannedPdfOcrBackend}
-        onScannedPdfOcrBackendChange={setScannedPdfOcrBackend}
+        onScannedPdfOcrBackendChange={(v) => { setScannedPdfOcrBackend(v); setRuntimeSettingsDirty(true); }}
         scannedPdfOcrMaxPages={scannedPdfOcrMaxPages}
-        onScannedPdfOcrMaxPagesChange={setScannedPdfOcrMaxPages}
+        onScannedPdfOcrMaxPagesChange={(v) => { setScannedPdfOcrMaxPages(v); setRuntimeSettingsDirty(true); }}
         scannedPdfOcrMaxPairs={scannedPdfOcrMaxPairs}
-        onScannedPdfOcrMaxPairsChange={setScannedPdfOcrMaxPairs}
+        onScannedPdfOcrMaxPairsChange={(v) => { setScannedPdfOcrMaxPairs(v); setRuntimeSettingsDirty(true); }}
         scannedPdfOcrMinCharsPerPage={scannedPdfOcrMinCharsPerPage}
-        onScannedPdfOcrMinCharsPerPageChange={setScannedPdfOcrMinCharsPerPage}
+        onScannedPdfOcrMinCharsPerPageChange={(v) => { setScannedPdfOcrMinCharsPerPage(v); setRuntimeSettingsDirty(true); }}
         scannedPdfOcrMinLinesPerPage={scannedPdfOcrMinLinesPerPage}
-        onScannedPdfOcrMinLinesPerPageChange={setScannedPdfOcrMinLinesPerPage}
+        onScannedPdfOcrMinLinesPerPageChange={(v) => { setScannedPdfOcrMinLinesPerPage(v); setRuntimeSettingsDirty(true); }}
         scannedPdfOcrMinConfidence={scannedPdfOcrMinConfidence}
-        onScannedPdfOcrMinConfidenceChange={setScannedPdfOcrMinConfidence}
+        onScannedPdfOcrMinConfidenceChange={(v) => { setScannedPdfOcrMinConfidence(v); setRuntimeSettingsDirty(true); }}
         dynamicCrawleeEnabled={dynamicCrawleeEnabled}
-        onDynamicCrawleeEnabledChange={setDynamicCrawleeEnabled}
+        onDynamicCrawleeEnabledChange={(v) => { setDynamicCrawleeEnabled(v); setRuntimeSettingsDirty(true); }}
         crawleeHeadless={crawleeHeadless}
-        onCrawleeHeadlessChange={setCrawleeHeadless}
+        onCrawleeHeadlessChange={(v) => { setCrawleeHeadless(v); setRuntimeSettingsDirty(true); }}
         dynamicFetchRetryBudget={dynamicFetchRetryBudget}
-        onDynamicFetchRetryBudgetChange={setDynamicFetchRetryBudget}
+        onDynamicFetchRetryBudgetChange={(v) => { setDynamicFetchRetryBudget(v); setRuntimeSettingsDirty(true); }}
         dynamicFetchRetryBackoffMs={dynamicFetchRetryBackoffMs}
-        onDynamicFetchRetryBackoffMsChange={setDynamicFetchRetryBackoffMs}
+        onDynamicFetchRetryBackoffMsChange={(v) => { setDynamicFetchRetryBackoffMs(v); setRuntimeSettingsDirty(true); }}
         crawleeRequestHandlerTimeoutSecs={crawleeRequestHandlerTimeoutSecs}
-        onCrawleeRequestHandlerTimeoutSecsChange={setCrawleeRequestHandlerTimeoutSecs}
+        onCrawleeRequestHandlerTimeoutSecsChange={(v) => { setCrawleeRequestHandlerTimeoutSecs(v); setRuntimeSettingsDirty(true); }}
         dynamicFetchPolicyMapJson={dynamicFetchPolicyMapJson}
-        onDynamicFetchPolicyMapJsonChange={setDynamicFetchPolicyMapJson}
+        onDynamicFetchPolicyMapJsonChange={(v) => { setDynamicFetchPolicyMapJson(v); setRuntimeSettingsDirty(true); }}
         phase2LlmEnabled={phase2LlmEnabled}
-        onPhase2LlmEnabledChange={setPhase2LlmEnabled}
+        onPhase2LlmEnabledChange={(v) => { setPhase2LlmEnabled(v); setRuntimeSettingsDirty(true); }}
         phase2LlmModel={phase2LlmModel}
-        onPhase2LlmModelChange={(model) => { setPhase2LlmModel(model); setLlmTokensPlan(resolveModelTokenDefaults(model).default_output_tokens); }}
+        onPhase2LlmModelChange={(model) => { setPhase2LlmModel(model); setLlmTokensPlan(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
         llmTokensPlan={llmTokensPlan}
-        onLlmTokensPlanChange={setLlmTokensPlan}
+        onLlmTokensPlanChange={(v) => { setLlmTokensPlan(v); setRuntimeSettingsDirty(true); }}
         phase3LlmTriageEnabled={phase3LlmTriageEnabled}
-        onPhase3LlmTriageEnabledChange={setPhase3LlmTriageEnabled}
+        onPhase3LlmTriageEnabledChange={(v) => { setPhase3LlmTriageEnabled(v); setRuntimeSettingsDirty(true); }}
         phase3LlmModel={phase3LlmModel}
-        onPhase3LlmModelChange={(model) => { setPhase3LlmModel(model); setLlmTokensTriage(resolveModelTokenDefaults(model).default_output_tokens); }}
+        onPhase3LlmModelChange={(model) => { setPhase3LlmModel(model); setLlmTokensTriage(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
         llmTokensTriage={llmTokensTriage}
-        onLlmTokensTriageChange={setLlmTokensTriage}
+        onLlmTokensTriageChange={(v) => { setLlmTokensTriage(v); setRuntimeSettingsDirty(true); }}
         llmModelFast={llmModelFast}
-        onLlmModelFastChange={(model) => { setLlmModelFast(model); setLlmTokensFast(resolveModelTokenDefaults(model).default_output_tokens); }}
+        onLlmModelFastChange={(model) => { setLlmModelFast(model); setLlmTokensFast(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
         llmTokensFast={llmTokensFast}
-        onLlmTokensFastChange={setLlmTokensFast}
+        onLlmTokensFastChange={(v) => { setLlmTokensFast(v); setRuntimeSettingsDirty(true); }}
         llmModelReasoning={llmModelReasoning}
-        onLlmModelReasoningChange={(model) => { setLlmModelReasoning(model); setLlmTokensReasoning(resolveModelTokenDefaults(model).default_output_tokens); }}
+        onLlmModelReasoningChange={(model) => { setLlmModelReasoning(model); setLlmTokensReasoning(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
         llmTokensReasoning={llmTokensReasoning}
-        onLlmTokensReasoningChange={setLlmTokensReasoning}
+        onLlmTokensReasoningChange={(v) => { setLlmTokensReasoning(v); setRuntimeSettingsDirty(true); }}
         llmModelExtract={llmModelExtract}
-        onLlmModelExtractChange={(model) => { setLlmModelExtract(model); setLlmTokensExtract(resolveModelTokenDefaults(model).default_output_tokens); }}
+        onLlmModelExtractChange={(model) => { setLlmModelExtract(model); setLlmTokensExtract(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
         llmTokensExtract={llmTokensExtract}
-        onLlmTokensExtractChange={setLlmTokensExtract}
+        onLlmTokensExtractChange={(v) => { setLlmTokensExtract(v); setRuntimeSettingsDirty(true); }}
         llmModelValidate={llmModelValidate}
-        onLlmModelValidateChange={(model) => { setLlmModelValidate(model); setLlmTokensValidate(resolveModelTokenDefaults(model).default_output_tokens); }}
+        onLlmModelValidateChange={(model) => { setLlmModelValidate(model); setLlmTokensValidate(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
         llmTokensValidate={llmTokensValidate}
-        onLlmTokensValidateChange={setLlmTokensValidate}
+        onLlmTokensValidateChange={(v) => { setLlmTokensValidate(v); setRuntimeSettingsDirty(true); }}
         llmModelWrite={llmModelWrite}
-        onLlmModelWriteChange={(model) => { setLlmModelWrite(model); setLlmTokensWrite(resolveModelTokenDefaults(model).default_output_tokens); }}
+        onLlmModelWriteChange={(model) => { setLlmModelWrite(model); setLlmTokensWrite(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
         llmTokensWrite={llmTokensWrite}
-        onLlmTokensWriteChange={setLlmTokensWrite}
+        onLlmTokensWriteChange={(v) => { setLlmTokensWrite(v); setRuntimeSettingsDirty(true); }}
         llmFallbackEnabled={llmFallbackEnabled}
-        onLlmFallbackEnabledChange={setLlmFallbackEnabled}
+        onLlmFallbackEnabledChange={(v) => { setLlmFallbackEnabled(v); setRuntimeSettingsDirty(true); }}
         llmFallbackPlanModel={llmFallbackPlanModel}
-        onLlmFallbackPlanModelChange={(model) => { setLlmFallbackPlanModel(model); setLlmTokensPlanFallback(resolveModelTokenDefaults(model).default_output_tokens); }}
+        onLlmFallbackPlanModelChange={(model) => { setLlmFallbackPlanModel(model); setLlmTokensPlanFallback(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
         llmTokensPlanFallback={llmTokensPlanFallback}
-        onLlmTokensPlanFallbackChange={setLlmTokensPlanFallback}
+        onLlmTokensPlanFallbackChange={(v) => { setLlmTokensPlanFallback(v); setRuntimeSettingsDirty(true); }}
         llmFallbackExtractModel={llmFallbackExtractModel}
-        onLlmFallbackExtractModelChange={(model) => { setLlmFallbackExtractModel(model); setLlmTokensExtractFallback(resolveModelTokenDefaults(model).default_output_tokens); }}
+        onLlmFallbackExtractModelChange={(model) => { setLlmFallbackExtractModel(model); setLlmTokensExtractFallback(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
         llmTokensExtractFallback={llmTokensExtractFallback}
-        onLlmTokensExtractFallbackChange={setLlmTokensExtractFallback}
+        onLlmTokensExtractFallbackChange={(v) => { setLlmTokensExtractFallback(v); setRuntimeSettingsDirty(true); }}
         llmFallbackValidateModel={llmFallbackValidateModel}
-        onLlmFallbackValidateModelChange={(model) => { setLlmFallbackValidateModel(model); setLlmTokensValidateFallback(resolveModelTokenDefaults(model).default_output_tokens); }}
+        onLlmFallbackValidateModelChange={(model) => { setLlmFallbackValidateModel(model); setLlmTokensValidateFallback(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
         llmTokensValidateFallback={llmTokensValidateFallback}
-        onLlmTokensValidateFallbackChange={setLlmTokensValidateFallback}
+        onLlmTokensValidateFallbackChange={(v) => { setLlmTokensValidateFallback(v); setRuntimeSettingsDirty(true); }}
         llmFallbackWriteModel={llmFallbackWriteModel}
-        onLlmFallbackWriteModelChange={(model) => { setLlmFallbackWriteModel(model); setLlmTokensWriteFallback(resolveModelTokenDefaults(model).default_output_tokens); }}
+        onLlmFallbackWriteModelChange={(model) => { setLlmFallbackWriteModel(model); setLlmTokensWriteFallback(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
         llmTokensWriteFallback={llmTokensWriteFallback}
-        onLlmTokensWriteFallbackChange={setLlmTokensWriteFallback}
+        onLlmTokensWriteFallbackChange={(v) => { setLlmTokensWriteFallback(v); setRuntimeSettingsDirty(true); }}
         llmModelOptions={llmModelOptions}
         llmTokenPresetOptions={llmTokenPresetOptions}
         resolveModelTokenDefaults={resolveModelTokenDefaults}
         clampTokenForModel={clampTokenForModel}
         llmRouteSnapshotRows={llmRouteSnapshotRows}
         resumeMode={resumeMode}
-        onResumeModeChange={setResumeMode}
+        onResumeModeChange={(v) => { setResumeMode(v); setRuntimeSettingsDirty(true); }}
         resumeWindowHours={resumeWindowHours}
-        onResumeWindowHoursChange={setResumeWindowHours}
+        onResumeWindowHoursChange={(v) => { setResumeWindowHours(v); setRuntimeSettingsDirty(true); }}
         reextractAfterHours={reextractAfterHours}
-        onReextractAfterHoursChange={setReextractAfterHours}
+        onReextractAfterHoursChange={(v) => { setReextractAfterHours(v); setRuntimeSettingsDirty(true); }}
         reextractIndexed={reextractIndexed}
-        onReextractIndexedChange={setReextractIndexed}
+        onReextractIndexedChange={(v) => { setReextractIndexed(v); setRuntimeSettingsDirty(true); }}
         convergenceKnobGroups={CONVERGENCE_KNOB_GROUPS}
         convergenceSettings={convergenceSettings}
         convergenceDirty={convergenceDirty}
         onConvergenceKnobUpdate={updateConvergenceKnob}
-        onConvergenceReload={() => refetchConvergence()}
-        onConvergenceSave={() => saveConvergenceMut.mutate(convergenceSettings)}
-        convergenceSaving={saveConvergenceMut.isPending}
+        onConvergenceReload={() => { void reloadConvergenceSettings(); }}
+        onConvergenceSave={saveConvergenceSettings}
+        convergenceSaving={convergenceSaving}
+        convergenceSettingsSaveState={convergenceSettingsSaveState}
+        convergenceSettingsSaveMessage={convergenceSettingsSaveMessage}
         searxngStatus={searxngStatus}
         searxngStatusErrorMessage={searxngStatusErrorMessage}
         onStartSearxng={() => startSearxngMut.mutate()}
@@ -4140,6 +4292,14 @@ export function IndexingPage() {
         selectedIndexLabRunId={selectedIndexLabRunId}
         onClearSelectedRunView={clearSelectedRunView}
         onReplaySelectedRunView={replaySelectedRunView}
+        runtimeSettingsReady={runtimeSettingsReady}
+        runtimeSettingsDirty={runtimeSettingsDirty}
+        runtimeAutoSave={runtimeAutoSave}
+        onRuntimeAutoSaveChange={handleAutoSaveToggle}
+        onRuntimeSettingsSave={saveRuntimeSettingsNow}
+        runtimeSettingsSaving={runtimeSettingsSaving}
+        runtimeSettingsSaveState={runtimeSettingsSaveState}
+        runtimeSettingsSaveMessage={runtimeSettingsSaveMessage}
       />
 
       <PickerPanel
@@ -4149,9 +4309,9 @@ export function IndexingPage() {
         busy={busy}
         processRunning={processRunning}
         singleBrand={singleBrand}
-        onBrandChange={(brand) => { setSingleBrand(brand); setSingleModel(''); setSingleProductId(''); }}
+        onBrandChange={setSingleBrand}
         singleModel={singleModel}
-        onModelChange={(model) => { setSingleModel(model); setSingleProductId(''); }}
+        onModelChange={setSingleModel}
         singleProductId={singleProductId}
         onProductIdChange={setSingleProductId}
         brandOptions={brandOptions}
@@ -4160,6 +4320,7 @@ export function IndexingPage() {
         selectedCatalogProduct={selectedCatalogProduct}
         displayVariant={displayVariant}
         selectedAmbiguityMeter={selectedAmbiguityMeter}
+        runtimeSettingsReady={runtimeSettingsReady}
         canRunSingle={canRunSingle}
         onRunIndexLab={() => startIndexLabMut.mutate()}
         productPickerActivity={productPickerActivity}
@@ -4168,11 +4329,13 @@ export function IndexingPage() {
       <SearchProfilePanel
         collapsed={panelCollapsed.searchProfile}
         onToggle={() => togglePanel('searchProfile')}
+        persistScope={`${category}:${selectedIndexLabRunId || 'none'}`}
         indexlabSearchProfile={indexlabSearchProfile}
         indexlabSearchProfileRows={indexlabSearchProfileRows}
         indexlabSearchProfileVariantGuardTerms={indexlabSearchProfileVariantGuardTerms}
         indexlabSearchProfileQueryRejectBreakdown={indexlabSearchProfileQueryRejectBreakdown}
         indexlabSearchProfileAliasRejectRows={indexlabSearchProfileAliasRejectRows}
+        needsetRows={indexlabNeedsetRows}
       />
 
       <EventStreamPanel

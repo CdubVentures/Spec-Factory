@@ -1,10 +1,12 @@
 // ── FieldRulesWorkbench: top-level orchestrator for Tab 3 ────────────
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { SortingState } from '@tanstack/react-table';
 import type { ColumnPreset } from './workbenchTypes';
 import type { EnumEntry, ComponentDbResponse, ComponentSource } from '../../../types/studio';
+import { usePersistedTab } from '../../../stores/tabStore';
 import { buildWorkbenchRows } from './workbenchHelpers';
 import { buildColumns, getPresetVisibility } from './workbenchColumns';
+import { readWorkbenchSessionState, writeWorkbenchSessionState } from './workbenchSessionState';
 import { WorkbenchColumnPresets } from './WorkbenchColumnPresets';
 import { WorkbenchTable } from './WorkbenchTable';
 import { WorkbenchDrawer } from './WorkbenchDrawer';
@@ -24,10 +26,50 @@ interface Props {
   saveSuccess: boolean;
   autoSaveEnabled: boolean;
   setAutoSaveEnabled: (v: boolean) => void;
+  autoSaveLocked: boolean;
+}
+
+const PRESET_TAB_IDS = [
+  'minimal',
+  'contract',
+  'parsing',
+  'enums',
+  'evidence',
+  'search',
+  'debug',
+  'all',
+] as const satisfies ReadonlyArray<ColumnPreset>;
+
+function hasTruthySelectionDiff(
+  previous: Record<string, boolean>,
+  next: Record<string, boolean>,
+): boolean {
+  const prevKeys = Object.keys(previous).filter((key) => previous[key]);
+  const nextKeys = Object.keys(next);
+  if (prevKeys.length !== nextKeys.length) return true;
+  return prevKeys.some((key) => !next[key]);
+}
+
+function pruneSelectionForRows(
+  selection: Record<string, boolean>,
+  rowKeys: Set<string>,
+): Record<string, boolean> {
+  return Object.entries(selection).reduce<Record<string, boolean>>((acc, [key, selected]) => {
+    if (selected && rowKeys.has(key)) {
+      acc[key] = true;
+    }
+    return acc;
+  }, {});
+}
+
+function hasAnyVisibleColumn(columnVisibility: Record<string, boolean>): boolean {
+  const entries = Object.entries(columnVisibility);
+  if (entries.length === 0) return true;
+  return entries.some(([, visible]) => visible !== false);
 }
 
 export function FieldRulesWorkbench({
-  category: _category,
+  category,
   knownValues,
   enumLists,
   componentDb,
@@ -39,19 +81,41 @@ export function FieldRulesWorkbench({
   saveSuccess,
   autoSaveEnabled,
   setAutoSaveEnabled,
+  autoSaveLocked,
 }: Props) {
   const { editedRules, editedFieldOrder, updateField } = useFieldRulesStore();
 
   // ── Table state ──────────────────────────────────────────────────
-  const [activePreset, setActivePreset] = useState<ColumnPreset>('minimal');
-  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(
-    () => getPresetVisibility('minimal') || {},
+  const [activePreset, setActivePreset] = usePersistedTab<ColumnPreset>(
+    'studio:workbench:presetTab',
+    'minimal',
+    { validValues: PRESET_TAB_IDS },
   );
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = useState('');
-  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  const initialSessionState = useMemo(
+    () => readWorkbenchSessionState(category),
+    [category],
+  );
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(
+    () => {
+      if (Object.keys(initialSessionState.columnVisibility).length > 0) {
+        return initialSessionState.columnVisibility;
+      }
+      return getPresetVisibility(activePreset) || {};
+    },
+  );
+  const [sorting, setSorting] = useState<SortingState>(
+    () => initialSessionState.sorting,
+  );
+  const [globalFilter, setGlobalFilter] = useState(
+    () => initialSessionState.globalFilter,
+  );
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>(
+    () => initialSessionState.rowSelection,
+  );
   const [editingCell, setEditingCell] = useState<{ key: string; column: string } | null>(null);
-  const [drawerKey, setDrawerKey] = useState<string | null>(null);
+  const [drawerKey, setDrawerKey] = useState<string | null>(
+    () => initialSessionState.drawerKey,
+  );
 
   // ── Build rows ───────────────────────────────────────────────────
   const rows = useMemo(
@@ -59,17 +123,44 @@ export function FieldRulesWorkbench({
     [editedFieldOrder, editedRules, guardrails, knownValues],
   );
 
+  useEffect(() => {
+    if (hasAnyVisibleColumn(columnVisibility)) return;
+    setColumnVisibility(getPresetVisibility(activePreset) || {});
+  }, [columnVisibility, activePreset]);
+
+  useEffect(() => {
+    const rowKeys = new Set(rows.map((row) => row.key));
+    setRowSelection((previous) => {
+      const next = pruneSelectionForRows(previous, rowKeys);
+      return hasTruthySelectionDiff(previous, next) ? next : previous;
+    });
+    setDrawerKey((previous) => {
+      if (!previous) return null;
+      return rowKeys.has(previous) ? previous : null;
+    });
+  }, [rows]);
+
+  useEffect(() => {
+    writeWorkbenchSessionState(category, {
+      columnVisibility,
+      sorting,
+      globalFilter,
+      rowSelection,
+      drawerKey,
+    });
+  }, [category, columnVisibility, sorting, globalFilter, rowSelection, drawerKey]);
+
   // ── Preset change ────────────────────────────────────────────────
   const handlePreset = useCallback((preset: ColumnPreset) => {
     setActivePreset(preset);
     const vis = getPresetVisibility(preset);
     setColumnVisibility(vis || {});
-  }, []);
+  }, [setActivePreset]);
 
   const handleToggleColumn = useCallback((id: string) => {
     setColumnVisibility((prev) => ({ ...prev, [id]: prev[id] === false ? true : false }));
     setActivePreset('all'); // switch to "all" since we're manually overriding
-  }, []);
+  }, [setActivePreset]);
 
   // ── Inline edit handlers ─────────────────────────────────────────
   const handleInlineCommit = useCallback((key: string, column: string, value: unknown) => {
@@ -118,6 +209,11 @@ export function FieldRulesWorkbench({
     onSave();
   }, [onSave]);
 
+  const saveIfAutoSaveEnabled = useCallback(() => {
+    if (!autoSaveEnabled) return;
+    onSave();
+  }, [autoSaveEnabled, onSave]);
+
   // ── Build columns ────────────────────────────────────────────────
   const columns = useMemo(
     () => buildColumns(
@@ -151,6 +247,7 @@ export function FieldRulesWorkbench({
           saveSuccess={saveSuccess}
           autoSaveEnabled={autoSaveEnabled}
           setAutoSaveEnabled={setAutoSaveEnabled}
+          autoSaveLocked={autoSaveLocked}
         />
 
         <WorkbenchTable
@@ -176,6 +273,7 @@ export function FieldRulesWorkbench({
 
       {drawerOpen && drawerKey && drawerRule && (
         <WorkbenchDrawer
+          category={category}
           fieldKey={drawerKey}
           rule={drawerRule}
           fieldOrder={editedFieldOrder}
@@ -183,6 +281,7 @@ export function FieldRulesWorkbench({
           enumLists={enumLists}
           componentDb={componentDb}
           componentSources={componentSources}
+          onCommitImmediate={saveIfAutoSaveEnabled}
           onClose={() => setDrawerKey(null)}
           onNavigate={(key) => setDrawerKey(key)}
         />

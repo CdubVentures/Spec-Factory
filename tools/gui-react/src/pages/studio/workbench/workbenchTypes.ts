@@ -50,6 +50,8 @@ export interface WorkbenchRow {
   queryTermsCount: number;
   domainHintsCount: number;
   contentTypesCount: number;
+  constraintsCount: number;
+  constraintVariables: string;
 
   // Component
   componentType: string;

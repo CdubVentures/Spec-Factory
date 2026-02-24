@@ -87,6 +87,60 @@ async function setupTempHelper(tempRoot, category = 'mouse') {
   return { helperRoot, catRoot, genRoot, dbDir, overrideDir, suggestDir, controlDir };
 }
 
+function buildSeedFieldRulesForEnumReview() {
+  return {
+    rules: {
+      fields: {
+        connection: {
+          required_level: 'required',
+          contract: { type: 'string', shape: 'scalar' },
+          enum: { policy: 'closed' },
+        },
+        switch_type: {
+          required_level: 'optional',
+          contract: { type: 'string', shape: 'scalar' },
+          enum: { policy: 'open_prefer_known' },
+        },
+        sensor_type: {
+          required_level: 'optional',
+          contract: { type: 'string', shape: 'scalar' },
+          enum: { policy: 'closed' },
+        },
+      },
+    },
+    componentDBs: {},
+    knownValues: {
+      enums: {
+        connection: { policy: 'closed', values: ['wired', 'wireless', 'bluetooth'] },
+        sensor_type: { policy: 'closed', values: ['optical', 'laser'] },
+      },
+    },
+  };
+}
+
+async function createSeededSpecDb({ tempRoot, helperRoot, category = 'mouse' }) {
+  const { SpecDb } = await import('../src/db/specDb.js');
+  const { seedSpecDb } = await import('../src/db/seed.js');
+  const specDbDir = path.join(tempRoot, '.specfactory_tmp');
+  const dbDir = path.join(specDbDir, category);
+  await fs.mkdir(dbDir, { recursive: true });
+  const dbPath = path.join(dbDir, 'spec.sqlite');
+  const specDb = new SpecDb({ dbPath, category });
+  const config = {
+    helperFilesRoot: helperRoot,
+    localOutputRoot: path.join(tempRoot, 'out'),
+    specDbDir,
+  };
+  await seedSpecDb({
+    db: specDb,
+    config,
+    category,
+    fieldRules: buildSeedFieldRulesForEnumReview(),
+    logger: null,
+  });
+  return { specDb, config };
+}
+
 
 // ══════════════════════════════════════════════════════════════════════
 // Fix #1: Component overrides consumed by compiler and runtime
@@ -468,6 +522,7 @@ test('Fix #8: suggestion file paths are consolidated (enum + component)', () => 
 test('Fix #8: buildEnumReviewPayloads reads curation suggestion format', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'comp-fix8-'));
   const { helperRoot } = await setupTempHelper(tempRoot);
+  let specDb;
 
   try {
     // Write curation-format suggestions (the new format from runtime)
@@ -481,25 +536,32 @@ test('Fix #8: buildEnumReviewPayloads reads curation suggestion format', async (
       ]
     }, null, 2));
 
+    const seeded = await createSeededSpecDb({ tempRoot, helperRoot, category: 'mouse' });
+    specDb = seeded.specDb;
     const payload = await buildEnumReviewPayloads({
-      config: { helperFilesRoot: helperRoot },
-      category: 'mouse'
+      config: seeded.config,
+      category: 'mouse',
+      specDb,
     });
 
-    // connection should have workbook values + the curation suggestion
+    const connectionSuggestion = specDb.getListValueByFieldAndValue('connection', 'usb-c_direct');
+    assert.ok(connectionSuggestion, 'connection curation suggestion should be materialized in SpecDb');
+    const switchSuggestion = specDb.getListValueByFieldAndValue('switch_type', 'magnetic_reed');
+    assert.ok(switchSuggestion, 'switch_type curation suggestion should be materialized in SpecDb');
+
+    // Strict enum-review behavior: pending pipeline values without linked products stay hidden.
     const connField = payload.fields.find(f => f.field === 'connection');
     assert.ok(connField, 'connection field should exist');
     const usbcValue = connField.values.find(v => v.value === 'usb-c_direct');
-    assert.ok(usbcValue, 'usb-c_direct should appear in connection values');
-    assert.equal(usbcValue.source, 'pipeline', 'suggestion should be marked as pipeline');
-    assert.equal(usbcValue.needs_review, true, 'suggestion should need review');
+    assert.equal(usbcValue, undefined, 'unlinked pending suggestion should not be shown in enum payload');
 
-    // switch_type should appear as a new field from curation
+    // switch_type has no linked products, so no visible values are emitted.
     const switchField = payload.fields.find(f => f.field === 'switch_type');
-    assert.ok(switchField, 'switch_type field should exist from curation suggestion');
-    assert.equal(switchField.values.length, 1);
-    assert.equal(switchField.values[0].value, 'magnetic_reed');
+    assert.ok(switchField, 'switch_type field should still be present in payload metadata');
+    assert.equal(Array.isArray(switchField.values), true);
+    assert.equal(switchField.values.length, 0, 'unlinked suggestion-only enum fields should have zero visible values');
   } finally {
+    try { specDb?.close?.(); } catch {}
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });

@@ -20,7 +20,7 @@ sequenceDiagram
     FE->>API: PUT /studio/{category}/workbook-map(normalized)
     API->>CC: saveWorkbookMap
     CC-->>API: map_hash + snapshot
-    API->>WS: emit workbook-map-saved
+    API->>WS: emit field-studio-map-saved
     WS->>APP: data-change
     APP->>APP: invalidate mapped queries
   end

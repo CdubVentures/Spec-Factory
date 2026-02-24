@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import type { PrefetchLlmCall } from '../types';
 import { llmCallStatusBadgeClass, formatMs } from '../helpers';
+import { usePersistedToggle } from '../../../stores/collapseStore';
 
 interface PrefetchLlmCallPanelProps {
   title: string;
@@ -18,7 +18,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 }
 
 function LlmCallCard({ call, index }: { call: PrefetchLlmCall; index: number }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, toggleExpanded] = usePersistedToggle(`runtimeOps:llmCall:${index}`, false);
   const totalTokens = (call.tokens?.input ?? 0) + (call.tokens?.output ?? 0);
 
   return (
@@ -46,7 +46,7 @@ function LlmCallCard({ call, index }: { call: PrefetchLlmCall; index: number }) 
         {(call.prompt_preview || call.response_preview || call.error) && (
           <button
             type="button"
-            onClick={() => setExpanded((o) => !o)}
+            onClick={() => toggleExpanded()}
             className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline shrink-0"
           >
             {expanded ? 'Hide' : 'Raw I/O'}

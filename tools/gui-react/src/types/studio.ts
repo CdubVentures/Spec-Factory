@@ -97,11 +97,14 @@ export interface StudioConfig {
   [k: string]: unknown;
 }
 
-export interface WorkbookMapResponse {
+export interface FieldStudioMapResponse {
   file_path: string;
   map: StudioConfig;
   error?: string;
 }
+
+// Backward-compatible alias
+export type WorkbookMapResponse = FieldStudioMapResponse;
 
 export interface TooltipBankResponse {
   entries: Record<string, unknown>;
@@ -122,7 +125,9 @@ export interface ArtifactEntry {
 
 export interface KnownValuesResponse {
   category?: string;
+  source?: string | null;
   fields: Record<string, string[]>;
+  enum_lists?: EnumEntry[];
 }
 
 export interface ComponentDbItem {

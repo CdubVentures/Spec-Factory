@@ -115,6 +115,7 @@ export function buildPhase07PrimeSources({
     : provenancePool;
   const maxHitsPerField = Math.max(4, Math.min(80, toInt(options.maxHitsPerField, 24)));
   const maxPrimeSourcesPerField = Math.max(2, Math.min(20, toInt(options.maxPrimeSourcesPerField, 8)));
+  const identityFilterEnabled = Boolean(options.identityFilterEnabled);
 
   const needRows = toArray(needSet?.needs)
     .filter((row) => isObject(row) && String(row.field_key || '').trim())
@@ -140,6 +141,7 @@ export function buildPhase07PrimeSources({
       evidencePool,
       identity,
       maxHits: maxHitsPerField,
+      identityFilterEnabled,
       ftsQueryFn
     });
     const prime = selectPrimeSourcesForField({

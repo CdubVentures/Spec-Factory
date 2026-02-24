@@ -291,6 +291,9 @@ function parseDuckduckgoHtml(html = '', query = '', limit = 10) {
     if (!url || rows.some((row) => row.url === url)) {
       continue;
     }
+    try {
+      if (new URL(url).hostname.endsWith('duckduckgo.com')) continue;
+    } catch { continue; }
     rows.push({
       url,
       title: stripHtmlTags(match[2]),
@@ -313,6 +316,10 @@ function parseDuckduckgoHtml(html = '', query = '', limit = 10) {
     if (!url || !/^https?:\/\//i.test(url) || rows.some((row) => row.url === url)) {
       continue;
     }
+    try {
+      const host = new URL(url).hostname;
+      if (host.endsWith('duckduckgo.com')) continue;
+    } catch { continue; }
     const title = stripHtmlTags(match[2]);
     if (!title || title.length < 3) {
       continue;

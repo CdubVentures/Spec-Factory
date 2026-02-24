@@ -76,6 +76,43 @@ function toInt(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+const FIELD_TERM_MAP = {
+  polling_rate: ['polling', 'report rate', 'hz'],
+  dpi: ['dpi', 'cpi'],
+  sensor: ['sensor', 'optical'],
+  click_latency: ['latency', 'response time'],
+  battery_hours: ['battery', 'battery life'],
+  weight: ['weight', 'mass', 'grams'],
+  switch: ['switch', 'microswitch'],
+  connection: ['connectivity', 'wireless', 'wired'],
+  lift: ['lift off', 'lod'],
+  resolution: ['resolution', 'pixel'],
+  refresh_rate: ['refresh rate', 'hertz'],
+  response_time: ['response time', 'gtg'],
+  panel_type: ['panel', 'ips', 'va', 'oled'],
+  brightness: ['brightness', 'nits', 'luminance'],
+  contrast: ['contrast ratio'],
+  hdr: ['hdr'],
+  size: ['size', 'inch', 'diagonal']
+};
+
+export function filterRelevantQueries(queries, missingFields = []) {
+  if (!missingFields.length || !queries.length) return queries;
+  const terms = new Set();
+  for (const field of missingFields) {
+    const normalized = String(field || '').toLowerCase().replace(/^fields\./, '');
+    terms.add(normalized.replace(/_/g, ' '));
+    for (const synonym of (FIELD_TERM_MAP[normalized] || [])) {
+      terms.add(synonym.toLowerCase());
+    }
+  }
+  const filtered = queries.filter((q) => {
+    const lower = String(q || '').toLowerCase();
+    return [...terms].some((term) => lower.includes(term));
+  });
+  return filtered.length >= 3 ? filtered : queries;
+}
+
 export async function planDiscoveryQueriesLLM({
   job,
   categoryConfig,
@@ -100,7 +137,7 @@ export async function planDiscoveryQueriesLLM({
     },
     criticalFields: categoryConfig.schema?.critical_fields || [],
     missingCriticalFields,
-    existingQueries: baseQueries.slice(0, 20)
+    existingQueries: filterRelevantQueries(baseQueries, missingCriticalFields).slice(0, 20)
   };
   const payloadSize = JSON.stringify(payload).length;
 
@@ -108,7 +145,9 @@ export async function planDiscoveryQueriesLLM({
     'You generate focused web research queries for hardware specification collection.',
     'Output 5-12 short search queries.',
     'Prioritize manufacturer docs, manuals, instrumented labs, and trusted databases.',
-    'Do not include junk domains, login workflows, or irrelevant topics.'
+    'Do not include junk domains, login workflows, or irrelevant topics.',
+    'The existingQueries show searches already tried. Generate DIFFERENT query patterns covering new angles.',
+    'Vary strategies: official product pages, spec databases, review sites, teardowns, comparison pages.'
   ];
 
   const passCap = Math.max(1, Math.min(4, toInt(config.aggressiveLlmDiscoveryPasses, 3)));

@@ -15,11 +15,18 @@ import {
   buildReferenceEnumCandidateId
 } from '../utils/candidateIdentifier.js';
 import { buildComponentIdentifier } from '../utils/componentIdentifier.js';
-import { projectFieldRulesForConsumer } from '../field-rules/consumerGate.js';
+import { isConsumerEnabled, projectFieldRulesForConsumer } from '../field-rules/consumerGate.js';
 
 function isObject(v) { return Boolean(v) && typeof v === 'object' && !Array.isArray(v); }
 function toArray(v) { return Array.isArray(v) ? v : []; }
 function normalizeToken(v) { return String(v ?? '').trim().toLowerCase(); }
+function normalizeFieldKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
 function slugify(v) { return String(v || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
 function splitCandidateParts(v) {
   if (Array.isArray(v)) {
@@ -49,6 +56,29 @@ function parseReviewItemAttributes(reviewItem) {
     }
   }
   return {};
+}
+
+function resolveFieldRulesEntries(fieldRules = null) {
+  if (!isObject(fieldRules)) return {};
+  if (isObject(fieldRules?.rules?.fields)) return fieldRules.rules.fields;
+  if (isObject(fieldRules?.fields)) return fieldRules.fields;
+  return {};
+}
+
+function resolveReviewEnabledEnumFieldSet(fieldRules = null) {
+  if (!isObject(fieldRules)) return null;
+  const rules = resolveFieldRulesEntries(fieldRules);
+  const entries = Object.entries(rules);
+  if (entries.length === 0) return null;
+  const enabled = new Set();
+  for (const [rawFieldKey, rule] of entries) {
+    if (!isObject(rule)) continue;
+    if (!isConsumerEnabled(rule, 'enum.source', 'review')) continue;
+    const fieldKey = normalizeFieldKey(rawFieldKey);
+    if (!fieldKey) continue;
+    enabled.add(fieldKey);
+  }
+  return enabled.size > 0 ? enabled : null;
 }
 
 function makerTokensFromReviewItem(reviewItem, componentType) {
@@ -672,11 +702,56 @@ export function resolvePropertyFieldMeta(propertyKey, fieldRules) {
   return { variance_policy, constraints, enum_values, enum_policy };
 }
 
+function resolveDeclaredComponentPropertyColumns({ fieldRules = null, componentType = '' } = {}) {
+  const targetType = normalizeFieldKey(componentType);
+  if (!targetType || !isObject(fieldRules)) return [];
+
+  const keys = new Set();
+  const fields = resolveFieldRulesEntries(fieldRules);
+  for (const rule of Object.values(fields)) {
+    if (!isObject(rule)) continue;
+    const componentBlock = isObject(rule.component) ? rule.component : {};
+    if (normalizeFieldKey(componentBlock.type || '') !== targetType) continue;
+    const matchBlock = isObject(componentBlock.match) ? componentBlock.match : {};
+    for (const rawKey of toArray(matchBlock.property_keys)) {
+      const key = normalizeFieldKey(rawKey);
+      if (!key || key.startsWith('__')) continue;
+      keys.add(key);
+    }
+  }
+
+  const componentSources = isObject(fieldRules?.component_db_sources)
+    ? fieldRules.component_db_sources
+    : (isObject(fieldRules?.rules?.component_db_sources) ? fieldRules.rules.component_db_sources : {});
+  for (const [sourceType, sourceDef] of Object.entries(componentSources)) {
+    if (normalizeFieldKey(sourceType) !== targetType) continue;
+    const roles = isObject(sourceDef?.roles) ? sourceDef.roles : {};
+    for (const mapping of toArray(roles.properties)) {
+      if (!isObject(mapping)) continue;
+      const key = normalizeFieldKey(mapping.field_key || mapping.key || mapping.property_key || '');
+      if (!key || key.startsWith('__')) continue;
+      keys.add(key);
+    }
+  }
+
+  return [...keys].sort();
+}
+
+function mergePropertyColumns(observedColumns = [], declaredColumns = []) {
+  const keys = new Set();
+  for (const raw of [...toArray(observedColumns), ...toArray(declaredColumns)]) {
+    const key = normalizeFieldKey(raw);
+    if (!key || key.startsWith('__')) continue;
+    keys.add(key);
+  }
+  return [...keys].sort((a, b) => a.localeCompare(b));
+}
+
 // ── Layout ──────────────────────────────────────────────────────────
 
-export async function buildComponentReviewLayout({ config = {}, category, specDb = null }) {
+export async function buildComponentReviewLayout({ config = {}, category, specDb = null, fieldRules = null }) {
   if (!specDb) {
-    return buildComponentReviewLayoutLegacy({ config, category });
+    return buildComponentReviewLayoutLegacy({ config, category, fieldRules });
   }
   const typeRows = specDb.getComponentTypeList();
   const componentTypes = [...new Set(
@@ -685,10 +760,18 @@ export async function buildComponentReviewLayout({ config = {}, category, specDb
       .filter(Boolean)
   )];
   const payloads = await Promise.all(componentTypes.map(async (componentType) => {
-    const payload = await buildComponentReviewPayloadsSpecDb({ config, category, componentType, specDb });
+    const payload = await buildComponentReviewPayloadsSpecDb({
+      config,
+      category,
+      componentType,
+      specDb,
+      fieldRules,
+    });
+    const declaredColumns = resolveDeclaredComponentPropertyColumns({ fieldRules, componentType });
+    const observedColumns = specDb.getPropertyColumnsForType(componentType);
     return {
       type: componentType,
-      property_columns: payload?.property_columns || specDb.getPropertyColumnsForType(componentType),
+      property_columns: mergePropertyColumns(payload?.property_columns || observedColumns, declaredColumns),
       item_count: Array.isArray(payload?.items) ? payload.items.length : 0,
     };
   }));
@@ -696,7 +779,7 @@ export async function buildComponentReviewLayout({ config = {}, category, specDb
   return { category, types };
 }
 
-async function buildComponentReviewLayoutLegacy({ config = {}, category }) {
+async function buildComponentReviewLayoutLegacy({ config = {}, category, fieldRules = null }) {
   const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
   const dbDir = path.join(helperRoot, category, '_generated', 'component_db');
   const files = await listJsonFiles(dbDir);
@@ -718,7 +801,13 @@ async function buildComponentReviewLayoutLegacy({ config = {}, category }) {
 
     types.push({
       type: data.component_type,
-      property_columns: [...propKeys].sort(),
+      property_columns: mergePropertyColumns(
+        [...propKeys].sort(),
+        resolveDeclaredComponentPropertyColumns({
+          fieldRules,
+          componentType: data.component_type,
+        })
+      ),
       item_count: data.items.length,
     });
   }
@@ -732,7 +821,13 @@ export async function buildComponentReviewPayloads({ config = {}, category, comp
   const reviewFieldRules = projectFieldRulesForConsumer(fieldRules, 'review');
   let result;
   if (!specDb) {
-    result = await buildComponentReviewPayloadsLegacy({ config, category, componentType, specDb });
+    result = await buildComponentReviewPayloadsLegacy({
+      config,
+      category,
+      componentType,
+      specDb,
+      fieldRules: reviewFieldRules,
+    });
   } else {
     result = await buildComponentReviewPayloadsSpecDb({
       config,
@@ -760,8 +855,10 @@ async function buildComponentReviewPayloadsSpecDb({ config = {}, category, compo
 
   let allComponents = specDb.getAllComponentsForType(componentType);
 
-  // Property columns from SpecDb
-  const propertyColumns = specDb.getPropertyColumnsForType(componentType);
+  const propertyColumns = mergePropertyColumns(
+    specDb.getPropertyColumnsForType(componentType),
+    resolveDeclaredComponentPropertyColumns({ fieldRules, componentType })
+  );
 
   // Still load pipeline component_review.json (kept for Phase 2 migration)
   const reviewPath = path.join(helperRoot, category, '_suggestions', 'component_review.json');
@@ -1451,7 +1548,7 @@ async function buildComponentReviewPayloadsSpecDb({ config = {}, category, compo
   };
 }
 
-async function buildComponentReviewPayloadsLegacy({ config = {}, category, componentType, specDb = null }) {
+async function buildComponentReviewPayloadsLegacy({ config = {}, category, componentType, specDb = null, fieldRules = null }) {
   const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
   const dbDir = path.join(helperRoot, category, '_generated', 'component_db');
   const overrideDir = path.join(helperRoot, category, '_overrides', 'components');
@@ -1534,7 +1631,10 @@ async function buildComponentReviewPayloadsLegacy({ config = {}, category, compo
       }
     }
   }
-  const propertyColumns = [...allPropKeys].sort();
+  const propertyColumns = mergePropertyColumns(
+    [...allPropKeys].sort(),
+    resolveDeclaredComponentPropertyColumns({ fieldRules, componentType })
+  );
 
   const items = [];
 
@@ -2172,13 +2272,20 @@ async function buildComponentReviewPayloadsLegacy({ config = {}, category, compo
 
 // ── Enum Payloads ───────────────────────────────────────────────────
 
-export async function buildEnumReviewPayloads({ config = {}, category, specDb = null, fieldOrderOverride = null }) {
-  let result;
+export async function buildEnumReviewPayloads({
+  config = {},
+  category,
+  specDb = null,
+  fieldRules = null,
+  fieldOrderOverride = null,
+}) {
+  const enabledEnumFields = resolveReviewEnabledEnumFieldSet(fieldRules);
   if (!specDb) {
-    result = await buildEnumReviewPayloadsLegacy({ config, category, specDb });
-  } else {
-    result = await buildEnumReviewPayloadsSpecDb({ config, category, specDb });
+    const error = new Error(`SpecDb not ready for ${String(category || '').trim()}`);
+    error.code = 'specdb_not_ready';
+    throw error;
   }
+  const result = await buildEnumReviewPayloadsSpecDb({ config, category, specDb, enabledEnumFields });
   if (Array.isArray(fieldOrderOverride) && fieldOrderOverride.length > 0 && Array.isArray(result?.fields)) {
     const orderIndex = new Map(fieldOrderOverride.map((k, i) => [k, i]));
     result.fields = [...result.fields].sort((a, b) => {
@@ -2192,8 +2299,11 @@ export async function buildEnumReviewPayloads({ config = {}, category, specDb = 
 
 // ── SpecDb-primary enum payloads ─────────────────────────────────────
 
-async function buildEnumReviewPayloadsSpecDb({ config = {}, category, specDb }) {
-  const fieldKeys = specDb.getAllEnumFields();
+async function buildEnumReviewPayloadsSpecDb({ config = {}, category, specDb, enabledEnumFields = null }) {
+  const rawFieldKeys = specDb.getAllEnumFields();
+  const fieldKeys = enabledEnumFields instanceof Set
+    ? rawFieldKeys.filter((fieldKey) => enabledEnumFields.has(normalizeFieldKey(fieldKey)))
+    : rawFieldKeys;
   const fields = [];
 
   for (const field of fieldKeys) {
@@ -2331,15 +2441,17 @@ async function buildEnumReviewPayloadsSpecDb({ config = {}, category, specDb }) 
   return { category, fields };
 }
 
-async function buildEnumReviewPayloadsLegacy({ config = {}, category, specDb = null }) {
+async function buildEnumReviewPayloadsLegacy({ config = {}, category, specDb = null, enabledEnumFields = null }) {
   const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
   const kvPath = path.join(helperRoot, category, '_generated', 'known_values.json');
   const suggestPath = path.join(helperRoot, category, '_suggestions', 'enums.json');
-  const controlMapPath = path.join(helperRoot, category, '_control_plane', 'workbook_map.json');
+  const controlPlaneRoot = path.join(helperRoot, category, '_control_plane');
+  const fieldStudioMapPath = path.join(controlPlaneRoot, 'field_studio_map.json');
+  const controlMapPath = path.join(controlPlaneRoot, 'workbook_map.json');
 
   const kv = await safeReadJson(kvPath);
   const suggestions = await safeReadJson(suggestPath);
-  const wbMap = await safeReadJson(controlMapPath);
+  const wbMap = await safeReadJson(fieldStudioMapPath) || await safeReadJson(controlMapPath);
 
   const kvFields = isObject(kv?.fields) ? kv.fields : {};
   const kvGeneratedAt = kv?.generated_at || '';
@@ -2384,9 +2496,14 @@ async function buildEnumReviewPayloadsLegacy({ config = {}, category, specDb = n
   }
 
   const allFields = new Set([...Object.keys(kvFields), ...Object.keys(sugByField)]);
+  const filteredFields = [...allFields]
+    .filter((fieldKey) => (
+      !(enabledEnumFields instanceof Set) || enabledEnumFields.has(normalizeFieldKey(fieldKey))
+    ))
+    .sort();
   const fields = [];
 
-  for (const field of [...allFields].sort()) {
+  for (const field of filteredFields) {
     const knownValues = toArray(kvFields[field]);
     const suggestedValues = toArray(sugByField[field]);
     const manualSet = manualLookup[field] || new Set();

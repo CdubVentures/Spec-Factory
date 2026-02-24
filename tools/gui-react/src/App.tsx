@@ -27,6 +27,7 @@ const ComponentReviewPage = lazyNamedPage(() => import('./pages/component-review
 const TestModePage = lazyNamedPage(() => import('./pages/test-mode/TestModePage'), 'TestModePage');
 const IndexingPage = lazyNamedPage(() => import('./pages/indexing/IndexingPage'), 'IndexingPage');
 const RuntimeOpsPage = lazyNamedPage(() => import('./pages/runtime-ops/RuntimeOpsPage'), 'RuntimeOpsPage');
+const StoragePage = lazyNamedPage(() => import('./pages/storage/StoragePage'), 'StoragePage');
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -74,6 +75,7 @@ export default function App() {
             <Route path="review-components" element={wrap(ComponentReviewPage)} />
             <Route path="test-mode" element={wrap(TestModePage)} />
             <Route path="runtime-ops" element={wrap(RuntimeOpsPage)} />
+            <Route path="storage" element={wrap(StoragePage)} />
           </Route>
         </Routes>
       </HashRouter>

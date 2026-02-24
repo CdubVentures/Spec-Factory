@@ -58,7 +58,14 @@ import { registerSourceStrategyRoutes } from './routes/sourceStrategyRoutes.js';
 import { registerRuntimeOpsRoutes } from './routes/runtimeOpsRoutes.js';
 import { syncSpecDbForCategory as syncSpecDbForCategoryService } from './services/specDbSyncService.js';
 import { handleCompileProcessCompletion } from './services/compileProcessCompletion.js';
+import { handleIndexLabProcessCompletion } from './services/indexLabProcessCompletion.js';
 import { dataChangeMatchesCategory } from './events/dataChangeContract.js';
+import { normalizeRunDataStorageSettings } from './services/runDataRelocationService.js';
+import {
+  applyConvergenceSettingsToConfig,
+  applyRuntimeSettingsToConfig,
+  loadUserSettingsSync,
+} from './services/userSettingsService.js';
 import {
   loadBrandRegistry,
   saveBrandRegistry,
@@ -187,11 +194,53 @@ const isLocal = args.includes('--local');
 
 // â”€â”€ Config + Storage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 loadDotEnvFile();
-const config = loadConfig({ localMode: isLocal || true, outputMode: 'local' });
+const config = loadConfig({
+  ...(isLocal ? { localMode: true } : {}),
+  ...(argVal('local-input-root', '') ? { localInputRoot: argVal('local-input-root', '') } : {}),
+  ...(argVal('local-output-root', '') ? { localOutputRoot: argVal('local-output-root', '') } : {}),
+  ...(argVal('output-mode', '') ? { outputMode: argVal('output-mode', '') } : {}),
+});
+const userSettings = loadUserSettingsSync({ helperFilesRoot: config.helperFilesRoot || 'helper_files' });
+applyRuntimeSettingsToConfig(config, userSettings.runtime);
+applyConvergenceSettingsToConfig(config, userSettings.convergence);
 const storage = createStorage(config);
 const OUTPUT_ROOT = path.resolve(config.localOutputRoot || 'out');
 const HELPER_ROOT = path.resolve(config.helperFilesRoot || 'helper_files');
 const INDEXLAB_ROOT = path.resolve(argVal('indexlab-root', 'artifacts/indexlab'));
+
+function envToken(name, fallback = '') {
+  const value = String(process.env[name] || '').trim();
+  return value || fallback;
+}
+
+function envBool(name, fallback = false) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === null || raw === '') return fallback;
+  const token = String(raw).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(token)) return true;
+  if (['0', 'false', 'no', 'off'].includes(token)) return false;
+  return fallback;
+}
+
+function resolveRunDataDestinationType() {
+  const explicit = envToken('RUN_DATA_STORAGE_DESTINATION_TYPE', '').toLowerCase();
+  if (explicit === 's3' || explicit === 'local') return explicit;
+  return envToken('S3_BUCKET', '') ? 's3' : 'local';
+}
+
+const runDataStorageState = normalizeRunDataStorageSettings({
+  enabled: envBool('RUN_DATA_STORAGE_ENABLED', envToken('S3_BUCKET', '') !== ''),
+  destinationType: resolveRunDataDestinationType(),
+  localDirectory: envToken('RUN_DATA_STORAGE_LOCAL_DIRECTORY', ''),
+  s3Region: envToken('RUN_DATA_STORAGE_S3_REGION', config.awsRegion || 'us-east-2'),
+  s3Bucket: envToken('RUN_DATA_STORAGE_S3_BUCKET', config.s3Bucket || ''),
+  s3Prefix: envToken('RUN_DATA_STORAGE_S3_PREFIX', 'spec-factory-runs'),
+  s3AccessKeyId: envToken('RUN_DATA_STORAGE_S3_ACCESS_KEY_ID', process.env.AWS_ACCESS_KEY_ID || ''),
+  s3SecretAccessKey: envToken('RUN_DATA_STORAGE_S3_SECRET_ACCESS_KEY', process.env.AWS_SECRET_ACCESS_KEY || ''),
+  s3SessionToken: envToken('RUN_DATA_STORAGE_S3_SESSION_TOKEN', process.env.AWS_SESSION_TOKEN || ''),
+  updatedAt: null,
+  ...userSettings.storage,
+});
 
 initIndexLabDataBuilders({
   indexLabRoot: INDEXLAB_ROOT,
@@ -1510,6 +1559,7 @@ let lastProcessSnapshot = {
   exitCode: null,
   endedAt: null
 };
+let relocatingRunId = null;
 
 function isProcessRunning() {
   return Boolean(childProc && childProc.exitCode === null);
@@ -1520,6 +1570,8 @@ function processStatus() {
   const active = running ? childProc : null;
   return {
     running,
+    relocating: Boolean(relocatingRunId),
+    relocatingRunId: relocatingRunId || null,
     pid: active?.pid || lastProcessSnapshot.pid || null,
     command: active?._cmd || lastProcessSnapshot.command || null,
     startedAt: active?._startedAt || lastProcessSnapshot.startedAt || null,
@@ -1817,23 +1869,46 @@ function startProcess(cmd, cliArgs, envOverrides = {}) {
     if (childProc === child) {
       childProc = null;
     }
-    if (resolvedExitCode === 0) {
-      void handleCompileProcessCompletion({
-        exitCode: resolvedExitCode,
-        cliArgs,
-        sessionCache,
-        invalidateFieldRulesCache,
-        reviewLayoutByCategory,
-        syncSpecDbForCategory: ({ category }) =>
-          syncSpecDbForCategoryService({
-            category,
-            config,
-            resolveCategoryAlias,
-            getSpecDbReady,
-          }),
-        broadcastWs,
-      });
-    }
+    void (async () => {
+      try {
+        if (resolvedExitCode === 0) {
+          await handleCompileProcessCompletion({
+            exitCode: resolvedExitCode,
+            cliArgs,
+            sessionCache,
+            invalidateFieldRulesCache,
+            reviewLayoutByCategory,
+            syncSpecDbForCategory: ({ category }) =>
+              syncSpecDbForCategoryService({
+                category,
+                config,
+                resolveCategoryAlias,
+                getSpecDbReady,
+              }),
+            broadcastWs,
+          });
+        }
+        relocatingRunId = child._runId || 'unknown';
+        broadcastWs('process-status', processStatus());
+        try {
+          await handleIndexLabProcessCompletion({
+            exitCode: resolvedExitCode,
+            cliArgs,
+            startedAt: child._startedAt || '',
+            runDataStorageSettings: runDataStorageState,
+            indexLabRoot: INDEXLAB_ROOT,
+            outputRoot: OUTPUT_ROOT,
+            outputPrefix: config.s3OutputPrefix || 'specs/outputs',
+            broadcastWs,
+          });
+        } finally {
+          relocatingRunId = null;
+          broadcastWs('process-status', processStatus());
+        }
+      } catch (error) {
+        console.error('[process-completion] failed', error);
+      }
+    })();
   });
   child.on('message', (msg) => {
     if (msg && msg.__screencast) {
@@ -2205,6 +2280,7 @@ const routeCtx = {
   toUnitRatio,
   hasKnownValue,
   config,
+  runDataStorageState,
   storage,
   fs,
   path,
@@ -2644,3 +2720,4 @@ server.listen(PORT, '0.0.0.0', () => {
     execCb(cmd);
   }
 });
+

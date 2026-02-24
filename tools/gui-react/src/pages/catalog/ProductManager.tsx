@@ -1,8 +1,10 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useUiStore } from '../../stores/uiStore';
 import { useProductStore } from '../../stores/productStore';
+import { usePersistedToggle } from '../../stores/collapseStore';
+import { usePersistedTab } from '../../stores/tabStore';
 import { DataTable } from '../../components/common/DataTable';
 import { Spinner } from '../../components/common/Spinner';
 import BulkPasteGrid, { type BulkGridRow } from '../../components/common/BulkPasteGrid';
@@ -101,6 +103,8 @@ interface BulkImportResult {
   total_catalog?: number;
   results?: BulkImportResultRow[];
 }
+
+const PRODUCT_STATUS_VALUES = ['active', 'inactive'] as const;
 
 const BULK_VARIANT_PLACEHOLDERS = new Set([
   '', 'unk', 'unknown', 'na', 'n/a', 'none', 'null', '-', 'default'
@@ -267,8 +271,33 @@ export function ProductManager() {
   const setSelectedProduct = useProductStore((s) => s.setSelectedProduct);
 
   // Drawer state
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editPid, setEditPid] = useState<string | null>(null);
+  const [drawerOpen, , setDrawerOpen] = usePersistedToggle(`catalog:products:drawerOpen:${category}`, false);
+  const [persistedSelectedProduct, setPersistedSelectedProduct] = usePersistedTab<string>(
+    `catalog:products:selectedProduct:${category}`,
+    '',
+  );
+  const [editPid, setEditPid] = useState<string | null>(() => persistedSelectedProduct || null);
+  const [addDraftBrand, setAddDraftBrand] = usePersistedTab<string>(
+    `catalog:products:addDraft:brand:${category}`,
+    '',
+  );
+  const [addDraftModel, setAddDraftModel] = usePersistedTab<string>(
+    `catalog:products:addDraft:model:${category}`,
+    '',
+  );
+  const [addDraftVariant, setAddDraftVariant] = usePersistedTab<string>(
+    `catalog:products:addDraft:variant:${category}`,
+    '',
+  );
+  const [addDraftSeedUrls, setAddDraftSeedUrls] = usePersistedTab<string>(
+    `catalog:products:addDraft:seedUrls:${category}`,
+    '',
+  );
+  const [addDraftStatus, setAddDraftStatus] = usePersistedTab<(typeof PRODUCT_STATUS_VALUES)[number]>(
+    `catalog:products:addDraft:status:${category}`,
+    'active',
+    { validValues: PRODUCT_STATUS_VALUES },
+  );
   const [formBrand, setFormBrand] = useState('');
   const [formModel, setFormModel] = useState('');
   const [formVariant, setFormVariant] = useState('');
@@ -286,10 +315,11 @@ export function ProductManager() {
   // Migration result banner
   const [migrationResult, setMigrationResult] = useState<MutationResult | null>(null);
   // Bulk paste modal state
-  const [bulkOpen, setBulkOpen] = useState(false);
-  const [bulkBrand, setBulkBrand] = useState('');
+  const [bulkOpen, , setBulkOpen] = usePersistedToggle(`catalog:products:bulkOpen:${category}`, false);
+  const [bulkBrand, setBulkBrand] = usePersistedTab<string>(`catalog:products:bulkBrand:${category}`, '');
   const [bulkGridRows, setBulkGridRows] = useState<BulkGridRow[]>([]);
   const [bulkResult, setBulkResult] = useState<BulkImportResult | null>(null);
+  const hydratedEditPidRef = useRef('');
 
   // ── Queries ────────────────────────────────────────────────────
   const { data: products = [], isLoading } = useQuery<CatalogProduct[]>({
@@ -360,17 +390,20 @@ export function ProductManager() {
 
   // ── Drawer helpers ─────────────────────────────────────────────
   function openAdd() {
+    hydratedEditPidRef.current = '';
     setEditPid(null);
-    setFormBrand(brands.length > 0 ? brands[0].canonical_name : '');
-    setFormModel('');
-    setFormVariant('');
-    setFormSeedUrls('');
-    setFormStatus('active');
+    setFormBrand(addDraftBrand || (brands.length > 0 ? brands[0].canonical_name : ''));
+    setFormModel(addDraftModel);
+    setFormVariant(addDraftVariant);
+    setFormSeedUrls(addDraftSeedUrls);
+    setFormStatus(addDraftStatus);
     setDrawerOpen(true);
   }
 
   function openEdit(product: CatalogProduct) {
+    hydratedEditPidRef.current = product.productId;
     setEditPid(product.productId);
+    setSelectedProduct(product.productId, product.brand, product.model);
     setFormBrand(product.brand);
     setFormModel(product.model);
     setFormVariant(product.variant || '');
@@ -387,11 +420,65 @@ export function ProductManager() {
   }
 
   function closeDrawer() {
+    hydratedEditPidRef.current = '';
     setDrawerOpen(false);
     setEditPid(null);
     setConfirmAction(null);
     setConfirmInput('');
   }
+
+  useEffect(() => {
+    const next = editPid || '';
+    if (persistedSelectedProduct === next) return;
+    setPersistedSelectedProduct(next);
+  }, [editPid, persistedSelectedProduct, setPersistedSelectedProduct]);
+
+  useEffect(() => {
+    hydratedEditPidRef.current = '';
+    setEditPid(persistedSelectedProduct || null);
+  }, [category, persistedSelectedProduct]);
+
+  useEffect(() => {
+    if (!drawerOpen || !editPid) return;
+    if (hydratedEditPidRef.current === editPid) return;
+    const product = products.find((row) => row.productId === editPid);
+    if (!product) return;
+    hydratedEditPidRef.current = editPid;
+    setFormBrand(product.brand);
+    setFormModel(product.model);
+    setFormVariant(product.variant || '');
+    setOrigModel(product.model);
+    setOrigVariant(product.variant || '');
+    const urls = (product.seed_urls || []).join('\n');
+    setFormSeedUrls(urls);
+    setOrigSeedUrls(urls);
+    setFormStatus(product.status || 'active');
+    setOrigStatus(product.status || 'active');
+    setConfirmAction(null);
+    setConfirmInput('');
+  }, [drawerOpen, editPid, products]);
+
+  useEffect(() => {
+    if (!drawerOpen || editPid) return;
+    setAddDraftBrand(formBrand);
+    setAddDraftModel(formModel);
+    setAddDraftVariant(formVariant);
+    setAddDraftSeedUrls(formSeedUrls);
+    setAddDraftStatus(formStatus === 'inactive' ? 'inactive' : 'active');
+  }, [
+    drawerOpen,
+    editPid,
+    formBrand,
+    formModel,
+    formVariant,
+    formSeedUrls,
+    formStatus,
+    setAddDraftBrand,
+    setAddDraftModel,
+    setAddDraftVariant,
+    setAddDraftSeedUrls,
+    setAddDraftStatus,
+  ]);
 
   // ── Change detection ──────────────────────────────────────────
   const isRename = Boolean(editPid && (formModel !== origModel || formVariant !== origVariant));
@@ -608,10 +695,12 @@ export function ProductManager() {
   }, [bulkPreviewRows]);
 
   const openBulkModal = useCallback(() => {
-    setBulkBrand((current) => current || brandNames[0] || '');
+    if (!bulkBrand) {
+      setBulkBrand(brandNames[0] || '');
+    }
     setBulkGridRows([]);
     setBulkOpen(true);
-  }, [brandNames]);
+  }, [bulkBrand, brandNames, setBulkBrand, setBulkOpen]);
 
   const closeBulkModal = useCallback(() => {
     if (bulkMut.isPending) return;
@@ -688,6 +777,7 @@ export function ProductManager() {
             data={products}
             columns={columns}
             searchable
+            persistKey={`catalog:products:table:${category}`}
             onRowClick={openEdit}
             maxHeight="max-h-[550px]"
           />
@@ -1161,7 +1251,7 @@ export function ProductManager() {
             <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-semibold">Bulk Paste Models + Variants</h4>
-                <p className="text-xs text-gray-500 mt-0.5">Type or paste <strong>Model</strong> and <strong>Variant</strong> columns (supports tab-separated paste from Excel/Sheets).</p>
+                <p className="text-xs text-gray-500 mt-0.5">Type or paste <strong>Model</strong> and <strong>Variant</strong> columns (supports tab-separated paste from your spreadsheet tool).</p>
               </div>
               <button
                 onClick={closeBulkModal}

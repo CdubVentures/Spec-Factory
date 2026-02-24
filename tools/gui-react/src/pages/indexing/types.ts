@@ -164,10 +164,16 @@ export interface IndexLabSearchProfileResponse {
   key?: string;
   run_key?: string;
   latest_key?: string;
+  provider?: string;
   llm_query_planning?: boolean;
   llm_query_model?: string;
+  llm_queries?: Array<{ query?: string; target_fields?: string[] }>;
   llm_serp_triage?: boolean;
   llm_serp_triage_model?: string;
+  discovered_count?: number;
+  approved_count?: number;
+  candidate_count?: number;
+  source?: string;
   serp_explorer?: IndexLabSerpExplorerResponse;
 }
 

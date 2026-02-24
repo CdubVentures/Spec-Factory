@@ -70,3 +70,20 @@ test('compile completion still emits completion event when SpecDb sync fails', a
   assert.equal(emitted[0].payload.meta.specDbSync.error, 'seed_failed');
   assert.equal(emitted[0].payload.version.specdb_sync_version, null);
 });
+
+test('compile completion treats compile-rules as compile command for SpecDb sync', async () => {
+  const syncCalls = [];
+  await handleCompileProcessCompletion({
+    exitCode: 0,
+    cliArgs: ['compile-rules', '--category', 'mouse', '--local'],
+    sessionCache: { invalidateSessionCache: () => {} },
+    invalidateFieldRulesCache: () => {},
+    reviewLayoutByCategory: new Map(),
+    syncSpecDbForCategory: async ({ category }) => {
+      syncCalls.push(category);
+      return { specdb_sync_version: 1 };
+    },
+    broadcastWs: () => {},
+  });
+  assert.deepEqual(syncCalls, ['mouse']);
+});

@@ -10,13 +10,14 @@ import {
   type ExpandedState,
   type Row,
 } from '@tanstack/react-table';
-import { useState, useCallback, memo, Fragment, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, useMemo, memo, Fragment, type ReactNode } from 'react';
 
 interface DataTableProps<T> {
   data: T[];
   columns: ColumnDef<T, unknown>[];
   searchable?: boolean;
   maxHeight?: string;
+  persistKey?: string;
   onRowClick?: (row: T) => void;
   onCellClick?: (row: T, columnId: string, rowIndex: number) => void;
   getRowClassName?: (row: T) => string;
@@ -26,20 +27,105 @@ interface DataTableProps<T> {
   getCanExpand?: (row: T) => boolean;
 }
 
+interface PersistedDataTableState {
+  sorting: SortingState;
+  globalFilter: string;
+}
+
+function getSessionStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+function parseSorting(value: unknown): SortingState {
+  if (!Array.isArray(value)) return [];
+  return value.reduce<SortingState>((acc, entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return acc;
+    const id = (entry as { id?: unknown }).id;
+    const desc = (entry as { desc?: unknown }).desc;
+    if (typeof id !== 'string' || id.length === 0) return acc;
+    if (typeof desc !== 'boolean') return acc;
+    acc.push({ id, desc });
+    return acc;
+  }, []);
+}
+
+function parseDataTableSessionState(raw: string | null): PersistedDataTableState {
+  if (!raw) return { sorting: [], globalFilter: '' };
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return { sorting: [], globalFilter: '' };
+    }
+    return {
+      sorting: parseSorting((parsed as { sorting?: unknown }).sorting),
+      globalFilter: typeof (parsed as { globalFilter?: unknown }).globalFilter === 'string'
+        ? (parsed as { globalFilter?: string }).globalFilter || ''
+        : '',
+    };
+  } catch {
+    return { sorting: [], globalFilter: '' };
+  }
+}
+
+function readDataTableSessionState(persistKey?: string): PersistedDataTableState {
+  if (!persistKey) return { sorting: [], globalFilter: '' };
+  const storage = getSessionStorage();
+  if (!storage) return { sorting: [], globalFilter: '' };
+  try {
+    return parseDataTableSessionState(storage.getItem(persistKey));
+  } catch {
+    return { sorting: [], globalFilter: '' };
+  }
+}
+
+function writeDataTableSessionState(persistKey: string | undefined, state: PersistedDataTableState): void {
+  if (!persistKey) return;
+  const storage = getSessionStorage();
+  if (!storage) return;
+  try {
+    storage.setItem(persistKey, JSON.stringify({
+      sorting: parseSorting(state.sorting),
+      globalFilter: typeof state.globalFilter === 'string' ? state.globalFilter : '',
+    }));
+  } catch {
+    return;
+  }
+}
+
 function DataTableInner<T>({
   data,
   columns,
   searchable = false,
   maxHeight = 'max-h-[600px]',
+  persistKey,
   onRowClick,
   onCellClick,
   getRowClassName,
   renderExpandedRow,
   getCanExpand,
 }: DataTableProps<T>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = useState('');
+  const initialSessionState = useMemo(
+    () => readDataTableSessionState(persistKey),
+    [persistKey],
+  );
+  const [sorting, setSorting] = useState<SortingState>(initialSessionState.sorting);
+  const [globalFilter, setGlobalFilter] = useState(initialSessionState.globalFilter);
   const [expanded, setExpanded] = useState<ExpandedState>({});
+
+  useEffect(() => {
+    const next = readDataTableSessionState(persistKey);
+    setSorting(next.sorting);
+    setGlobalFilter(next.globalFilter);
+  }, [persistKey]);
+
+  useEffect(() => {
+    writeDataTableSessionState(persistKey, { sorting, globalFilter });
+  }, [persistKey, sorting, globalFilter]);
 
   const canExpandRow = useCallback(
     (row: Row<T>) => {

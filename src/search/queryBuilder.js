@@ -1,4 +1,5 @@
 import { normalizeFieldList } from '../utils/fieldKeys.js';
+import { resolveConsumerGate } from '../field-rules/consumerGate.js';
 
 function clean(value) {
   return String(value || '')
@@ -8,6 +9,37 @@ function clean(value) {
 
 function toArray(value) {
   return Array.isArray(value) ? value : [];
+}
+
+function isObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function hasOwn(target, key) {
+  return Object.prototype.hasOwnProperty.call(target, key);
+}
+
+function readPathValue(target, segments = []) {
+  let cursor = target;
+  for (const segment of segments) {
+    if (!isObject(cursor) || !hasOwn(cursor, segment)) {
+      return undefined;
+    }
+    cursor = cursor[segment];
+  }
+  return cursor;
+}
+
+function hasPathValue(target, segments = []) {
+  if (!segments.length) return false;
+  let cursor = target;
+  for (const segment of segments) {
+    if (!isObject(cursor) || !hasOwn(cursor, segment)) {
+      return false;
+    }
+    cursor = cursor[segment];
+  }
+  return true;
 }
 
 const STOPWORDS = new Set([
@@ -113,10 +145,12 @@ function manufacturerHostHintsForBrand(brand) {
   return [...hints];
 }
 
+const TLD_STOPWORDS = new Set(['com', 'net', 'org', 'io', 'co', 'dev', 'gg', 'xyz', 'info']);
+
 function selectManufacturerHosts(categoryConfig, brand, extraHints = []) {
   const hints = manufacturerHostHintsForBrand(brand);
   for (const hint of toArray(extraHints)) {
-    hints.push(...tokenize(hint));
+    hints.push(...tokenize(hint).filter((t) => !TLD_STOPWORDS.has(t)));
   }
   const rows = toArray(categoryConfig?.sourceHosts)
     .filter((row) => String(row?.tierName || row?.role || '').toLowerCase() === 'manufacturer')
@@ -345,6 +379,62 @@ function lookupFieldRule(categoryConfig, field) {
   return categoryConfig?.fieldRules?.fields?.[field] || {};
 }
 
+const SEARCH_HINT_GATE_SPECS = [
+  { key: 'search_hints.query_terms', path: ['search_hints', 'query_terms'] },
+  { key: 'search_hints.domain_hints', path: ['search_hints', 'domain_hints'] },
+  { key: 'search_hints.preferred_content_types', path: ['search_hints', 'preferred_content_types'] }
+];
+
+function countHintValues(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => clean(entry))
+      .filter(Boolean)
+      .length;
+  }
+  const token = clean(value);
+  return token ? 1 : 0;
+}
+
+function buildFieldRuleGateCounts(categoryConfig = {}) {
+  const fieldRules = categoryConfig?.fieldRules?.fields;
+  if (!isObject(fieldRules)) {
+    return {};
+  }
+
+  const out = {};
+  for (const spec of SEARCH_HINT_GATE_SPECS) {
+    let valueCount = 0;
+    let enabledFieldCount = 0;
+    let disabledFieldCount = 0;
+    for (const rule of Object.values(fieldRules)) {
+      if (!isObject(rule)) continue;
+      const gate = resolveConsumerGate(rule, spec.key, 'indexlab');
+      const hasPath = hasPathValue(rule, spec.path);
+      if (!hasPath && !gate.explicit) {
+        continue;
+      }
+      if (!gate.enabled) {
+        disabledFieldCount += 1;
+        continue;
+      }
+      enabledFieldCount += 1;
+      valueCount += countHintValues(readPathValue(rule, spec.path));
+    }
+    const status = disabledFieldCount > 0 && enabledFieldCount === 0
+      ? 'off'
+      : (valueCount > 0 ? 'active' : 'zero');
+    out[spec.key] = {
+      value_count: valueCount,
+      enabled_field_count: enabledFieldCount,
+      disabled_field_count: disabledFieldCount,
+      status
+    };
+  }
+
+  return out;
+}
+
 function contentTypeSuffixes(fieldRule = {}) {
   const values = toArray(fieldRule?.search_hints?.preferred_content_types)
     .map((value) => String(value || '').trim().toLowerCase())
@@ -484,7 +574,8 @@ function buildQueryRows({
       target_fields: [...new Set(toArray(targetFields).filter(Boolean))],
       doc_hint: clean(docHint),
       alias: clean(alias),
-      domain_hint: clean(domainHint)
+      domain_hint: clean(domainHint),
+      source_host: clean(domainHint)
     });
     seen.set(token, rows.length - 1);
   };
@@ -503,7 +594,10 @@ function buildQueryRows({
 
   for (const field of focusFields) {
     const fieldRule = lookupFieldRule(categoryConfig, field);
-    const searchHintTerms = toArray(fieldRule?.search_hints?.query_terms)
+    const queryTermsGateEnabled = resolveConsumerGate(fieldRule, 'search_hints.query_terms', 'indexlab').enabled;
+    const domainHintsGateEnabled = resolveConsumerGate(fieldRule, 'search_hints.domain_hints', 'indexlab').enabled;
+    const contentTypesGateEnabled = resolveConsumerGate(fieldRule, 'search_hints.preferred_content_types', 'indexlab').enabled;
+    const searchHintTerms = (queryTermsGateEnabled ? toArray(fieldRule?.search_hints?.query_terms) : [])
       .map((value) => normalizeSearchTerm(value))
       .filter(Boolean);
     const fallbackSynonyms = fieldSynonyms(field, lexicon, fieldRule, tooltipHints)
@@ -513,53 +607,77 @@ function buildQueryRows({
       ...searchHintTerms,
       ...fallbackSynonyms
     ])].slice(0, 12);
-    const preferredContent = contentTypeSuffixes(fieldRule);
-    const ruleDomainHints = domainHintsForField(fieldRule);
-    const manufacturerHosts = selectManufacturerHosts(categoryConfig, brand, [...ruleDomainHints, ...brandResolutionHints]);
+    const preferredContent = contentTypesGateEnabled ? contentTypeSuffixes(fieldRule) : [];
+    const ruleDomainHints = domainHintsGateEnabled ? domainHintsForField(fieldRule) : [];
+    let manufacturerHosts = selectManufacturerHosts(categoryConfig, brand, [...ruleDomainHints, ...brandResolutionHints]);
+    if (manufacturerHosts.length === 0) {
+      const officialHost = brandResolutionHints.find((h) => h.includes('.'));
+      if (officialHost) manufacturerHosts = [officialHost];
+    }
     const hosts = [...new Set([...manufacturerHosts, ...ruleDomainHints])].slice(0, 8);
+
+    const perTypeCap = Math.max(2, Math.ceil(8 / Math.max(1, focusFields.length)));
+    const templateCounts = new Map();
+    const canEmit = (templateType) => {
+      const key = `${field}:${templateType}`;
+      const count = templateCounts.get(key) || 0;
+      if (count >= perTypeCap) return false;
+      templateCounts.set(key, count + 1);
+      return true;
+    };
 
     for (const term of terms) {
       const hintSource = searchHintTerms.includes(term)
         ? 'field_rules.search_hints'
         : 'deterministic';
-      addRow({
-        query: `${product} ${term} specification`,
-        hintSource,
-        targetFields: [field],
-        docHint: 'spec',
-        alias: product
-      });
-      addRow({
-        query: `${product} ${term} manual pdf`,
-        hintSource,
-        targetFields: [field],
-        docHint: 'manual_pdf',
-        alias: product
-      });
-      for (const suffix of preferredContent) {
+      if (canEmit('spec')) {
         addRow({
-          query: `${product} ${term} ${suffix}`,
-          hintSource: 'field_rules.search_hints',
+          query: `${product} ${term} specification`,
+          hintSource,
           targetFields: [field],
-          docHint: suffix,
+          docHint: 'spec',
           alias: product
         });
       }
-      for (const host of hosts) {
+      if (canEmit('manual_pdf')) {
         addRow({
-          query: `site:${host} ${brand} ${model} ${term}`,
-          hintSource: 'field_rules.search_hints',
-          targetFields: [field],
-          domainHint: host
-        });
-      }
-      for (const alias of queryAliasRows.slice(0, 4)) {
-        addRow({
-          query: `${brand} ${alias} ${term} specification`,
+          query: `${product} ${term} manual pdf`,
           hintSource,
           targetFields: [field],
-          alias
+          docHint: 'manual_pdf',
+          alias: product
         });
+      }
+      for (const suffix of preferredContent) {
+        if (canEmit(`content:${suffix}`)) {
+          addRow({
+            query: `${product} ${term} ${suffix}`,
+            hintSource: 'field_rules.search_hints',
+            targetFields: [field],
+            docHint: suffix,
+            alias: product
+          });
+        }
+      }
+      for (const host of hosts) {
+        if (canEmit(`site:${host}`)) {
+          addRow({
+            query: `site:${host} ${brand} ${model} ${term}`,
+            hintSource: 'field_rules.search_hints',
+            targetFields: [field],
+            domainHint: host
+          });
+        }
+      }
+      for (const alias of queryAliasRows.slice(0, 4)) {
+        if (canEmit('alias')) {
+          addRow({
+            query: `${brand} ${alias} ${term} specification`,
+            hintSource,
+            targetFields: [field],
+            alias
+          });
+        }
       }
     }
 
@@ -605,6 +723,45 @@ function fillTemplate(template, values) {
       .replaceAll('{variant}', values.variant || '')
       .replaceAll('{category}', values.category || '')
   );
+}
+
+function groupByTargetField(rows) {
+  const byField = new Map();
+  const noField = [];
+  for (const row of rows) {
+    const fields = toArray(row.target_fields).filter(Boolean);
+    if (fields.length === 0) {
+      noField.push(row);
+      continue;
+    }
+    const primary = fields[0];
+    if (!byField.has(primary)) byField.set(primary, []);
+    byField.get(primary).push(row);
+  }
+  if (noField.length > 0) {
+    byField.set('__untagged__', noField);
+  }
+  return byField;
+}
+
+function roundRobinInterleave(byField) {
+  const buckets = [...byField.values()];
+  if (buckets.length <= 1) return buckets[0] || [];
+  const result = [];
+  const indices = buckets.map(() => 0);
+  let remaining = true;
+  while (remaining) {
+    remaining = false;
+    for (let b = 0; b < buckets.length; b++) {
+      if (indices[b] < buckets[b].length) {
+        result.push(buckets[b][indices[b]]);
+        indices[b] += 1;
+        if (indices[b] < buckets[b].length) remaining = true;
+      }
+    }
+    if (!remaining) break;
+  }
+  return result;
 }
 
 export function buildSearchProfile({
@@ -686,7 +843,8 @@ export function buildSearchProfile({
   for (const query of baseTemplates) {
     addQuery(query, 'base_template');
   }
-  for (const row of queryRows) {
+  const interleaved = roundRobinInterleave(groupByTargetField(queryRows));
+  for (const row of interleaved) {
     addQuery(row.query, row.hint_source || 'query_row');
   }
   if (!selectedQueries.length && brand && model) {
@@ -729,7 +887,8 @@ export function buildSearchProfile({
     targeted_queries: boundedRows.map((row) => row.query),
     field_target_queries: toFieldTargetMap(boundedRows),
     doc_hint_queries: toDocHintRows(boundedRows),
-    hint_source_counts: hintSourceCounts
+    hint_source_counts: hintSourceCounts,
+    field_rule_gate_counts: buildFieldRuleGateCounts(categoryConfig)
   };
 }
 

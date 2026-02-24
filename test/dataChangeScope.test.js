@@ -5,10 +5,10 @@ import {
   applyDataChangeInvalidation,
 } from '../tools/gui-react/src/components/layout/dataChangeScope.js';
 
-test('resolveDataChangeScopedCategories uses explicit category from workbook-map event', () => {
+test('resolveDataChangeScopedCategories uses explicit category from field-studio-map event', () => {
   const categories = resolveDataChangeScopedCategories({
     type: 'data-change',
-    event: 'workbook-map-saved',
+    event: 'field-studio-map-saved',
     category: 'mouse',
     categories: ['mouse'],
   }, 'keyboard');

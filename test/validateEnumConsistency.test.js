@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  resolveEnumConsistencyFormatGuidance,
   sanitizeEnumConsistencyDecisions,
   runEnumConsistencyReview,
 } from '../src/llm/validateEnumConsistency.js';
@@ -68,4 +69,24 @@ test('runEnumConsistencyReview returns uncertain defaults when llm is disabled',
   assert.equal(Array.isArray(result.decisions), true);
   assert.equal(result.decisions.length, 1);
   assert.equal(result.decisions[0].decision, 'uncertain');
+});
+
+test('resolveEnumConsistencyFormatGuidance prefers explicit guidance when provided', () => {
+  const guidance = resolveEnumConsistencyFormatGuidance({
+    fieldKey: 'lighting',
+    formatGuidance: 'Use exact pattern: XXXX zone (YYYY).',
+    canonicalValues: ['1 zone (rgb)', '7 zone (led)'],
+  });
+
+  assert.equal(guidance, 'Use exact pattern: XXXX zone (YYYY).');
+});
+
+test('resolveEnumConsistencyFormatGuidance infers placeholder template from canonical values', () => {
+  const guidance = resolveEnumConsistencyFormatGuidance({
+    fieldKey: 'lighting',
+    canonicalValues: ['1 zone (rgb)', '7 zone (led)'],
+  });
+
+  assert.ok(guidance.includes('XXXX zone (YYYY)'));
+  assert.ok(guidance.includes('Placeholder convention'));
 });

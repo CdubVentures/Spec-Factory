@@ -175,6 +175,7 @@ export function ProductPage() {
         data={fieldRows}
         columns={fieldColumns}
         searchable
+        persistKey={`product:fields:${category}:${productId}`}
         maxHeight="max-h-[calc(100vh-420px)]"
       />
     </div>

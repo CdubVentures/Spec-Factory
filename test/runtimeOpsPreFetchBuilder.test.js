@@ -124,6 +124,9 @@ test('buildPreFetchPhases: extracts search_profile from artifacts', () => {
         { query: 'Razer Viper V3 Pro specs', target_fields: ['weight', 'sensor'], result_count: 12, providers: ['searxng'] },
       ],
       query_guard: { total: 8, guarded: 2 },
+      field_rule_gate_counts: {
+        'search_hints.query_terms': { value_count: 2, enabled_field_count: 1, disabled_field_count: 0, status: 'active' },
+      },
     },
   };
   const result = buildPreFetchPhases([], makeMeta(), artifacts);
@@ -133,6 +136,7 @@ test('buildPreFetchPhases: extracts search_profile from artifacts', () => {
   assert.deepEqual(result.search_profile.identity_aliases, ['Razer Viper V3 Pro', 'Razer Viper V3']);
   assert.equal(result.search_profile.query_rows.length, 1);
   assert.equal(result.search_profile.query_rows[0].query, 'Razer Viper V3 Pro specs');
+  assert.equal(result.search_profile.field_rule_gate_counts?.['search_hints.query_terms']?.value_count, 2);
 });
 
 test('buildPreFetchPhases: groups brand_resolution LLM calls', () => {

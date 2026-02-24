@@ -213,6 +213,7 @@ async function handleEnumOverrideEndpoint({
     loadQueueState,
     saveQueueState,
     markEnumSuggestionStatus,
+    isReviewFieldPathEnabled,
     broadcastWs,
   } = context || {};
   const respond = createRouteResponder(jsonRes, res);
@@ -250,6 +251,21 @@ async function handleEnumOverrideEndpoint({
     const listValueId = enumCtx?.listValueId ?? null;
     if (!field) return respond(400, { error: 'field required' });
     if (!value) return respond(400, { error: 'value required' });
+    if (typeof isReviewFieldPathEnabled === 'function') {
+      const enabled = await isReviewFieldPathEnabled({
+        category,
+        fieldKey: field,
+        fieldPath: 'enum.source',
+      });
+      if (!enabled) {
+        return respond(403, {
+          error: 'review_consumer_disabled',
+          message: `Review consumer disabled for enum.source on field '${field}'.`,
+          field,
+          field_path: 'enum.source',
+        });
+      }
+    }
 
     // SQL-first runtime path (known_values writes removed from write path)
     try {
@@ -570,6 +586,7 @@ async function handleEnumRenameEndpoint({
     loadQueueState,
     saveQueueState,
     markEnumSuggestionStatus,
+    isReviewFieldPathEnabled,
     broadcastWs,
   } = context || {};
   const respond = createRouteResponder(jsonRes, res);
@@ -608,6 +625,21 @@ async function handleEnumRenameEndpoint({
     const listValueId = enumCtx?.listValueId ?? null;
     if (!field || !oldValue) {
       return respond(400, { error: 'field and oldValue (or listValueId) required' });
+    }
+    if (typeof isReviewFieldPathEnabled === 'function') {
+      const enabled = await isReviewFieldPathEnabled({
+        category,
+        fieldKey: field,
+        fieldPath: 'enum.source',
+      });
+      if (!enabled) {
+        return respond(403, {
+          error: 'review_consumer_disabled',
+          message: `Review consumer disabled for enum.source on field '${field}'.`,
+          field,
+          field_path: 'enum.source',
+        });
+      }
     }
     if (oldValue.toLowerCase() === trimmedNew.toLowerCase()) {
       return respond(200, { ok: true, field, changed: false });

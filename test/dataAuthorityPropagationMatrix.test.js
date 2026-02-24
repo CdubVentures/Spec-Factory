@@ -193,7 +193,6 @@ test('propagation matrix: compile completion emits versioned process-completed a
     fallbackCategory: 'mouse',
   });
 
-  assert.equal(hasQueryKey(queryKeys, ['enumReview', 'mouse']), true);
   assert.equal(hasQueryKey(queryKeys, ['enumReviewData', 'mouse']), true);
   assert.equal(hasQueryKey(queryKeys, ['componentReview', 'mouse']), true);
   assert.equal(hasQueryKey(queryKeys, ['componentReviewData', 'mouse']), true);

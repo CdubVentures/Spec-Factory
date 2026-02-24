@@ -7,12 +7,19 @@ import { ReviewValueCell, type ReviewValueCellState } from '../../components/com
 import { CellDrawer } from '../../components/common/CellDrawer';
 import { FlagIcon } from '../../components/common/FlagIcon';
 import { FlagsSection } from '../../components/common/FlagsSection';
+import { usePersistedToggle } from '../../stores/collapseStore';
+import { usePersistedTab } from '../../stores/tabStore';
 import { LinkedProductsList } from '../../components/common/LinkedProductsList';
 import { Tip } from '../../components/common/Tip';
 import { useComponentReviewStore } from '../../stores/componentReviewStore';
 import { hasKnownValue } from '../../utils/fieldNormalize';
 import { useFieldLabels } from '../../hooks/useFieldLabels';
 import { sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../utils/colors';
+import {
+  invalidateEnumAuthorityQueries,
+  invalidateEnumReviewDataQuery,
+  setEnumReviewQueryData,
+} from './enumReviewStore.js';
 import type { EnumReviewPayload, EnumFieldReview, EnumValueReviewItem } from '../../types/componentReview';
 
 interface EnumSubTabProps {
@@ -145,7 +152,7 @@ function ValueRow({
   onClick: () => void;
   debugLinkedProducts: boolean;
 }) {
-  const [linksExpanded, setLinksExpanded] = useState(false);
+  const [linksExpanded, toggleLinksExpanded] = usePersistedToggle(`componentReview:enumRow:${item.value}:links`, false);
   const linkedCount = item.linked_products?.length ?? 0;
 
   if (isEditing) {
@@ -196,7 +203,7 @@ function ValueRow({
         />
         {linkedCount > 0 && (
           <span
-            onClick={(e) => { e.stopPropagation(); setLinksExpanded(!linksExpanded); }}
+            onClick={(e) => { e.stopPropagation(); toggleLinksExpanded(); }}
             className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium flex-shrink-0 cursor-pointer transition-colors ${
               linksExpanded
                 ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
@@ -244,6 +251,16 @@ export function EnumSubTab({
   debugLinkedProducts = false,
 }: EnumSubTabProps) {
   const { getLabel } = useFieldLabels(category);
+  const enumFieldIds = useMemo(
+    () => data.fields.map((field) => field.field),
+    [data.fields],
+  );
+  const enumFieldPersistKey = `componentReview:enumField:${category}`;
+  const [persistedEnumField, setPersistedEnumField] = usePersistedTab<string>(
+    enumFieldPersistKey,
+    '',
+    { validValues: enumFieldIds },
+  );
   // Individual selectors to avoid re-renders from unrelated store changes
   const selectedEnumField = useComponentReviewStore((s) => s.selectedEnumField);
   const setSelectedEnumField = useComponentReviewStore((s) => s.setSelectedEnumField);
@@ -261,8 +278,9 @@ export function EnumSubTab({
   // ── Drawer mutations (moved from EnumReviewDrawer) ──────────────
   function optimisticAccept(field: string, valueIndex: number, candidateId?: string | null, candidateValue?: string) {
     const now = new Date().toISOString();
-    queryClient.setQueryData<EnumReviewPayload>(
-      ['enumReviewData', category],
+    setEnumReviewQueryData(
+      queryClient,
+      category,
       (old) => {
         if (!old) return old;
         return {
@@ -299,8 +317,9 @@ export function EnumSubTab({
   }
 
   function optimisticRemove(field: string, valueIndex: number) {
-    queryClient.setQueryData<EnumReviewPayload>(
-      ['enumReviewData', category],
+    setEnumReviewQueryData(
+      queryClient,
+      category,
       (old) => {
         if (!old) return old;
         return {
@@ -332,12 +351,10 @@ export function EnumSubTab({
     }) =>
       api.post(`/review-components/${category}/enum-override`, body),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['studio-known-values', category] });
+      invalidateEnumAuthorityQueries(queryClient, category);
     },
     onError: () => {
-      queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
+      invalidateEnumReviewDataQuery(queryClient, category);
     },
   });
 
@@ -345,13 +362,11 @@ export function EnumSubTab({
     mutationFn: (body: { field: string; action: string; value: string; listValueId?: number; enumListId?: number }) =>
       api.post(`/review-components/${category}/enum-override`, body),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['studio-known-values', category] });
+      invalidateEnumAuthorityQueries(queryClient, category);
       closeEnumDrawer();
     },
     onError: () => {
-      queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
+      invalidateEnumReviewDataQuery(queryClient, category);
     },
   });
 
@@ -378,8 +393,9 @@ export function EnumSubTab({
     }),
     onMutate: async ({ field, newValue: newVal, valueIndex, listValueId }) => {
       if (!toPositiveId(listValueId)) return;
-      queryClient.setQueryData<EnumReviewPayload>(
-        ['enumReviewData', category],
+      setEnumReviewQueryData(
+        queryClient,
+        category,
         (old) => {
           if (!old) return old;
           return {
@@ -393,12 +409,10 @@ export function EnumSubTab({
       );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['studio-known-values', category] });
+      invalidateEnumAuthorityQueries(queryClient, category);
     },
     onError: () => {
-      queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
+      invalidateEnumReviewDataQuery(queryClient, category);
     },
   });
 
@@ -408,8 +422,7 @@ export function EnumSubTab({
       api.post(`/review-components/${category}/run-component-review-batch`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['componentReview', category] });
-      queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
+      invalidateEnumAuthorityQueries(queryClient, category, { includeStudioKnownValues: false });
     },
   });
 
@@ -421,9 +434,7 @@ export function EnumSubTab({
       setConsistencyError('');
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['studio-known-values', category] });
+      invalidateEnumAuthorityQueries(queryClient, category);
       const changed = Number(result?.applied?.changed || 0);
       if (changed > 0) {
         setConsistencyMessage(`Consistency applied ${changed} change${changed === 1 ? '' : 's'}.`);
@@ -435,15 +446,30 @@ export function EnumSubTab({
     },
     onError: (error) => {
       setConsistencyError((error as Error)?.message || 'Consistency run failed.');
-      queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
+      invalidateEnumReviewDataQuery(queryClient, category);
     },
   });
 
   useEffect(() => {
-    if (!selectedEnumField && data.fields.length > 0) {
-      setSelectedEnumField(data.fields[0].field);
+    if (enumFieldIds.length === 0) return;
+    const hasSelected = enumFieldIds.includes(selectedEnumField);
+    const hasPersisted = enumFieldIds.includes(persistedEnumField);
+    const nextField = hasSelected
+      ? selectedEnumField
+      : (hasPersisted ? persistedEnumField : enumFieldIds[0]);
+    if (!hasSelected) {
+      setSelectedEnumField(nextField);
     }
-  }, [selectedEnumField, data.fields, setSelectedEnumField]);
+    if (persistedEnumField !== nextField) {
+      setPersistedEnumField(nextField);
+    }
+  }, [
+    enumFieldIds,
+    selectedEnumField,
+    persistedEnumField,
+    setSelectedEnumField,
+    setPersistedEnumField,
+  ]);
 
   const selectedFieldData = useMemo(
     () => data.fields.find((field) => field.field === selectedEnumField),
@@ -487,7 +513,7 @@ export function EnumSubTab({
     const idx = editingIndex;
 
     // Optimistic rename in cache — match by index
-    queryClient.setQueryData<EnumReviewPayload>(['enumReviewData', category], (old) => {
+    setEnumReviewQueryData(queryClient, category, (old) => {
       if (!old) return old;
       return {
         ...old,
@@ -510,9 +536,7 @@ export function EnumSubTab({
     } catch (err) {
       console.error('Enum rename failed:', err);
     } finally {
-      queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['studio-known-values', category] });
+      invalidateEnumAuthorityQueries(queryClient, category);
     }
     setEditingIndex(null);
   }, [editingIndex, editText, selectedEnumField, selectedFieldData, queryClient, category]);
@@ -527,7 +551,7 @@ export function EnumSubTab({
 
     // Optimistic add to cache
     const now = new Date().toISOString();
-    queryClient.setQueryData<EnumReviewPayload>(['enumReviewData', category], (old) => {
+    setEnumReviewQueryData(queryClient, category, (old) => {
       if (!old) return old;
       return {
         ...old,
@@ -549,9 +573,7 @@ export function EnumSubTab({
     } catch (err) {
       console.error('Failed to add enum value:', err);
     } finally {
-      queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['studio-known-values', category] });
+      invalidateEnumAuthorityQueries(queryClient, category);
     }
     setNewValue('');
   }, [newValue, selectedEnumField, selectedFieldData, queryClient, category]);
@@ -586,6 +608,7 @@ export function EnumSubTab({
                 getLabel={getLabel}
                 onClick={() => {
                   setSelectedEnumField(field.field);
+                  setPersistedEnumField(field.field);
                   closeEnumDrawer();
                   setEditingIndex(null);
                   setSelectedValueIndex(null);
@@ -613,12 +636,12 @@ export function EnumSubTab({
                             onClick={() => enumConsistencyMut.mutate({ field: selectedFieldData.field, apply: true })}
                             disabled={enumConsistencyMut.isPending}
                             className="px-2 py-0.5 bg-blue-600 text-white text-[10px] rounded hover:bg-blue-700 disabled:opacity-50"
-                            title="Run LLM enum formatting consistency. Lighting examples: 1..9 zone (rgb), 1..7 zone (led)."
+                            title="Run LLM enum formatting consistency. Uses Key Navigator format pattern when configured (example: XXXX zone (YYYY))."
                           >
                             {enumConsistencyMut.isPending ? 'Consistency...' : 'Consistency'}
                           </button>
                           <span className="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-[10px] font-semibold">LLM</span>
-                          <Tip text="LLM final/review only. Lighting pattern examples: 1..9 zone (rgb), 1..7 zone (led). Seed and Index extraction behavior stay unchanged." />
+                          <Tip text="LLM final/review only. Uses Key Navigator format pattern placeholders (XXXX, YYYY) when configured. Seed and Index extraction behavior stay unchanged." />
                         </div>
                         <button
                           onClick={() => aiReviewBatchMut.mutate()}

@@ -2,136 +2,46 @@
   "category": "mouse",
   "component_db_sources": {
     "encoder": {
-      "entity_count": 40,
+      "entity_count": 0,
       "excel": {
         "alias_columns": [],
         "auto_derive_aliases": true,
         "first_data_row": 2,
         "header_row": 1,
-        "link_columns": [
-          "G"
-        ],
-        "maker_column": "B",
-        "primary_identifier_column": "C",
-        "property_columns": [
-          "D",
-          "E",
-          "F"
-        ],
-        "property_mappings": [
-          {
-            "column": "D",
-            "constraints": [],
-            "key": "encoder_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "key": "encoder_steps",
-            "type": "number",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "key": "encoder_life_span",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          }
-        ],
-        "sheet": "encoder",
+        "link_columns": [],
+        "maker_column": "YES",
+        "primary_identifier_column": "A",
+        "property_columns": [],
+        "property_mappings": [],
+        "sheet": "",
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
-      "name_column": "C",
+      "name_column": "A",
       "preview_stats": {
-        "entity_count": 40,
+        "entity_count": 0,
         "first_20_all_numeric": false,
-        "first_20_names": [
-          "Encoder",
-          "Encoder",
-          "Black",
-          "Brown",
-          "E10A2",
-          "Encoder",
-          "Green",
-          "Pink",
-          "Teal",
-          "Encoder",
-          "Red",
-          "Unspecified",
-          "Black",
-          "GE 2.0",
-          "GE 5.0",
-          "Gray",
-          "Green",
-          "Red",
-          "Encoder",
-          "E11"
-        ],
-        "non_blank_names": 40,
+        "first_20_names": [],
+        "non_blank_names": 0,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
-        "scanned_rows": 46,
+        "scanned_rows": 0,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
       "roles": {
         "aliases": [],
-        "links": [
-          "G"
-        ],
-        "maker": "B",
-        "primary_identifier": "C",
-        "properties": [
-          {
-            "column": "D",
-            "constraints": [],
-            "key": "encoder_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "key": "encoder_steps",
-            "type": "number",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "key": "encoder_life_span",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          }
-        ]
+        "links": [],
+        "maker": "YES",
+        "primary_identifier": "A",
+        "properties": []
       },
-      "sample_entities": [
-        "Encoder",
-        "Encoder",
-        "Black",
-        "Brown",
-        "E10A2",
-        "Encoder",
-        "Green",
-        "Pink",
-        "Teal",
-        "Encoder"
-      ],
-      "sheet": "encoder",
+      "sample_entities": [],
+      "sheet": "",
       "type": "encoder"
     },
     "material": {
-      "entity_count": 3,
+      "entity_count": 0,
       "excel": {
         "alias_columns": [],
         "auto_derive_aliases": true,
@@ -139,26 +49,22 @@
         "header_row": 1,
         "link_columns": [],
         "maker_column": null,
-        "primary_identifier_column": "B",
+        "primary_identifier_column": "A",
         "property_columns": [],
         "property_mappings": [],
-        "sheet": "material",
+        "sheet": "",
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
-      "name_column": "B",
+      "name_column": "A",
       "preview_stats": {
-        "entity_count": 3,
+        "entity_count": 0,
         "first_20_all_numeric": false,
-        "first_20_names": [
-          "metal",
-          "plastic",
-          "carbon fiber"
-        ],
-        "non_blank_names": 3,
+        "first_20_names": [],
+        "non_blank_names": 0,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
-        "scanned_rows": 13,
+        "scanned_rows": 0,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
@@ -166,1020 +72,93 @@
         "aliases": [],
         "links": [],
         "maker": null,
-        "primary_identifier": "B",
+        "primary_identifier": "A",
         "properties": []
       },
-      "sample_entities": [
-        "metal",
-        "plastic",
-        "carbon fiber"
-      ],
-      "sheet": "material",
+      "sample_entities": [],
+      "sheet": "",
       "type": "material"
     },
     "sensor": {
-      "entity_count": 116,
+      "entity_count": 0,
       "excel": {
         "alias_columns": [],
         "auto_derive_aliases": true,
         "first_data_row": 2,
         "header_row": 1,
-        "link_columns": [
-          "J"
-        ],
-        "maker_column": "B",
-        "primary_identifier_column": "C",
-        "property_columns": [
-          "D",
-          "E",
-          "F",
-          "G",
-          "H",
-          "I"
-        ],
-        "property_mappings": [
-          {
-            "column": "D",
-            "constraints": [],
-            "field_key": "flawless_sensor",
-            "key": "flawless_sensor",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "field_key": "sensor_type",
-            "key": "sensor_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "field_key": "dpi",
-            "key": "dpi",
-            "type": "number",
-            "unit": "dpi",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "G",
-            "constraints": [],
-            "field_key": "ips",
-            "key": "ips",
-            "type": "number",
-            "unit": "ips",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "H",
-            "constraints": [],
-            "field_key": "acceleration",
-            "key": "acceleration",
-            "type": "number",
-            "unit": "g",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "I",
-            "constraints": [
-              "sensor_date <= release_date"
-            ],
-            "field_key": "sensor_date",
-            "key": "sensor_date",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          }
-        ],
-        "sheet": "sensors",
+        "link_columns": [],
+        "maker_column": "YES",
+        "primary_identifier_column": "A",
+        "property_columns": [],
+        "property_mappings": [],
+        "sheet": "",
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
-      "name_column": "C",
+      "name_column": "A",
       "preview_stats": {
-        "entity_count": 116,
+        "entity_count": 0,
         "first_20_all_numeric": false,
-        "first_20_names": [
-          "Focus Pro 45K",
-          "HERO 2",
-          "PAW3950 Ti",
-          "PAW3950 Max",
-          "AimPoint Pro (PixArt PAW3950)",
-          "XERO",
-          "Focus Pro Gen-2",
-          "MARKSMAN S",
-          "XS-1",
-          "BAMF 3.0",
-          "Owl-Eye 30K",
-          "3950IZ",
-          "AimNinja",
-          "G3950",
-          "Focus Pro 30K",
-          "PAW3950 HS",
-          "PAW3950 Pro",
-          "PAW3950 Ultra",
-          "PAW3950",
-          "PAW3950 APEX"
-        ],
-        "non_blank_names": 116,
-        "numeric_only_names": 3,
-        "numeric_only_ratio": 0.025862,
-        "scanned_rows": 124,
+        "first_20_names": [],
+        "non_blank_names": 0,
+        "numeric_only_names": 0,
+        "numeric_only_ratio": 0,
+        "scanned_rows": 0,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
       "roles": {
         "aliases": [],
-        "links": [
-          "J"
-        ],
-        "maker": "B",
-        "primary_identifier": "C",
-        "properties": [
-          {
-            "column": "D",
-            "constraints": [],
-            "field_key": "flawless_sensor",
-            "key": "flawless_sensor",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "field_key": "sensor_type",
-            "key": "sensor_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "field_key": "dpi",
-            "key": "dpi",
-            "type": "number",
-            "unit": "dpi",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "G",
-            "constraints": [],
-            "field_key": "ips",
-            "key": "ips",
-            "type": "number",
-            "unit": "ips",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "H",
-            "constraints": [],
-            "field_key": "acceleration",
-            "key": "acceleration",
-            "type": "number",
-            "unit": "g",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "I",
-            "constraints": [
-              "sensor_date <= release_date"
-            ],
-            "field_key": "sensor_date",
-            "key": "sensor_date",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          }
-        ]
+        "links": [],
+        "maker": "YES",
+        "primary_identifier": "A",
+        "properties": []
       },
-      "sample_entities": [
-        "Focus Pro 45K",
-        "HERO 2",
-        "PAW3950 Ti",
-        "PAW3950 Max",
-        "AimPoint Pro (PixArt PAW3950)",
-        "XERO",
-        "Focus Pro Gen-2",
-        "MARKSMAN S",
-        "XS-1",
-        "BAMF 3.0"
-      ],
-      "sheet": "sensors",
+      "sample_entities": [],
+      "sheet": "",
       "type": "sensor"
     },
     "switch": {
-      "entity_count": 106,
+      "entity_count": 0,
       "excel": {
         "alias_columns": [],
         "auto_derive_aliases": true,
         "first_data_row": 2,
         "header_row": 1,
-        "link_columns": [
-          "H"
-        ],
-        "maker_column": "B",
-        "primary_identifier_column": "C",
-        "property_columns": [
-          "D",
-          "E",
-          "F",
-          "G"
-        ],
-        "property_mappings": [
-          {
-            "column": "D",
-            "constraints": [],
-            "field_key": "switch_type",
-            "key": "switch_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "key": "switch_life_span",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "field_key": "click_force",
-            "key": "click_force",
-            "type": "number",
-            "unit": "gf",
-            "variance_policy": "override_allowed"
-          },
-          {
-            "column": "G",
-            "constraints": [],
-            "key": "releasing_force",
-            "type": "number",
-            "unit": "gf",
-            "variance_policy": "authoritative"
-          }
-        ],
-        "sheet": "switches",
+        "link_columns": [],
+        "maker_column": "YES",
+        "primary_identifier_column": "A",
+        "property_columns": [],
+        "property_mappings": [],
+        "sheet": "",
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
-      "name_column": "C",
+      "name_column": "A",
       "preview_stats": {
-        "entity_count": 106,
+        "entity_count": 0,
         "first_20_all_numeric": false,
-        "first_20_names": [
-          "ROG Micro Switch",
-          "ROG Micro Switch II",
-          "Light Blade",
-          "Optical Switches",
-          "SwiftLight",
-          "Blue Ghost Optical",
-          "Fog Blue Optical",
-          "Advanced Optical Switch",
-          "Black Shell White Dot",
-          "Mouse Switches",
-          "Optical",
-          "Black Shell Pink Dot",
-          "Black Shell White Dot",
-          "Blue Shell Blue Dot",
-          "Blue Shell Pink Dot",
-          "Blue Shell White Dot",
-          "Crispy Pink",
-          "Dragon Claw",
-          "Orange SPDT",
-          "Silent Brown Shell White Dot"
-        ],
-        "non_blank_names": 106,
+        "first_20_names": [],
+        "non_blank_names": 0,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
-        "scanned_rows": 114,
+        "scanned_rows": 0,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
       "roles": {
         "aliases": [],
-        "links": [
-          "H"
-        ],
-        "maker": "B",
-        "primary_identifier": "C",
-        "properties": [
-          {
-            "column": "D",
-            "constraints": [],
-            "field_key": "switch_type",
-            "key": "switch_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "key": "switch_life_span",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "field_key": "click_force",
-            "key": "click_force",
-            "type": "number",
-            "unit": "gf",
-            "variance_policy": "override_allowed"
-          },
-          {
-            "column": "G",
-            "constraints": [],
-            "key": "releasing_force",
-            "type": "number",
-            "unit": "gf",
-            "variance_policy": "authoritative"
-          }
-        ]
+        "links": [],
+        "maker": "YES",
+        "primary_identifier": "A",
+        "properties": []
       },
-      "sample_entities": [
-        "ROG Micro Switch",
-        "ROG Micro Switch II",
-        "Light Blade",
-        "Optical Switches",
-        "SwiftLight",
-        "Blue Ghost Optical",
-        "Fog Blue Optical",
-        "Advanced Optical Switch",
-        "Black Shell White Dot",
-        "Mouse Switches"
-      ],
-      "sheet": "switches",
+      "sample_entities": [],
+      "sheet": "",
       "type": "switch"
     }
   },
-  "enum_buckets": {
-    "coating": {
-      "excel": {
-        "column": "W",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "matte",
-        "rubber grips",
-        "A",
-        "help"
-      ]
-    },
-    "connection": {
-      "excel": {
-        "column": "P",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "unk",
-        "hybrid",
-        "wired",
-        "wireless",
-        "bluetooth",
-        "1",
-        "2",
-        "he"
-      ]
-    },
-    "connectivity": {
-      "excel": {
-        "column": "Q",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "unk",
-        "n/a",
-        "2.4GHz Dongle",
-        "2.4GHz RF Dongle",
-        "2.4GHz WIFI Dongle",
-        "1",
-        "2.5"
-      ]
-    },
-    "data_lists.coating": {
-      "column_index": 23,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "coating",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.connection": {
-      "column_index": 16,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "connection",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.connectivity": {
-      "column_index": 17,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "connectivity",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.date": {
-      "column_index": 10,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "date",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.EG_AvailableIDs": {
-      "column_index": 27,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "EG_AvailableIDs",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.feet_material": {
-      "column_index": 21,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "feet_material",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.form_factor": {
-      "column_index": 4,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "form_factor",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.front_flare": {
-      "column_index": 7,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "front_flare",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.game": {
-      "column_index": 1,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "game",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.hump": {
-      "column_index": 6,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "hump",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.id": {
-      "column_index": 2,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "id",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.lift_notes": {
-      "column_index": 22,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "lift_notes",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.lighting": {
-      "column_index": 20,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "lighting",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.link": {
-      "column_index": 11,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "link",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.mcu": {
-      "column_index": 12,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "mcu",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.polling": {
-      "column_index": 18,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "polling",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.sensor": {
-      "column_index": 9,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "sensor",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.sensor_type": {
-      "column_index": 8,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "sensor_type",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.shape": {
-      "column_index": 5,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "shape",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.switch_type": {
-      "column_index": 19,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "switch_type",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "data_lists.switches": {
-      "column_index": 14,
-      "delimiters": [
-        ",",
-        "/",
-        "|",
-        ";",
-        "+"
-      ],
-      "header": "switches",
-      "normalization": {
-        "collapse_whitespace": true,
-        "lowercase": true,
-        "trim": true
-      },
-      "sheet": "data_lists",
-      "source_type": "sheet_column",
-      "start_row": 2
-    },
-    "feet_material": {
-      "excel": {
-        "column": "U",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "PTFE",
-        "PTFE (Black-Dyed)",
-        "PTFE (Virgin-Grade)",
-        "PTFE (Teflon)",
-        "PTFE (95%)",
-        "Glass",
-        "l"
-      ]
-    },
-    "form_factor": {
-      "excel": {
-        "column": "D",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "right",
-        "ambidextrous",
-        "left",
-        "lets"
-      ]
-    },
-    "front_flare": {
-      "excel": {
-        "column": "G",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "flat",
-        "inward",
-        "outward"
-      ]
-    },
-    "hump": {
-      "excel": {
-        "column": "F",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "middle",
-        "back - front",
-        "back mid",
-        "back - rear",
-        "front"
-      ]
-    },
-    "lift_notes": {
-      "excel": {
-        "column": "V",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "unk",
-        "no",
-        "adjustable",
-        "fixed low",
-        "fixed high",
-        "surface-tuned"
-      ]
-    },
-    "lighting": {
-      "excel": {
-        "column": "T",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "none",
-        "1 zone (rgb)",
-        "2 zone (rgb)",
-        "3 zone (rgb)",
-        "4 zone (rgb)",
-        "5 zone (rgb)",
-        "6 zone (rgb)",
-        "7 zone (rgb)",
-        "8 zone (rgb)",
-        "9 zone (rgb)",
-        "1 zone (led)",
-        "2 zone (led)",
-        "3 zone (led)",
-        "4 zone (led)",
-        "5 zone (led)",
-        "6 zone (led)",
-        "7 zone (led)"
-      ]
-    },
-    "mcu": {
-      "excel": {
-        "column": "L",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "unk",
-        "unspecified",
-        "Nordic nRF52840",
-        "Nordic nRF52832",
-        "STM32",
-        "Holtek HT32F52352",
-        "Nordic nRF52833",
-        "NXP LPC11U68",
-        "NXP LPC54605J512",
-        "STM32L412C8U6",
-        "STM32F072CBU6",
-        "Nuvoton M484SIDAE",
-        "Ti CC2462R"
-      ]
-    },
-    "polling": {
-      "excel": {
-        "column": "R",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "8000, 4000, 2000, 1000, 500, 250, 125",
-        "4000, 2000, 1000, 500, 250, 125",
-        "2000, 1000, 500, 250, 125",
-        "1000, 500, 250, 125",
-        "500, 250, 125",
-        "250, 125",
-        "125",
-        "0-9, 125, 600, 10-11"
-      ]
-    },
-    "sensor_type": {
-      "excel": {
-        "column": "H",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "unk",
-        "optical",
-        "laser"
-      ]
-    },
-    "shape": {
-      "excel": {
-        "column": "E",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "symmetrical",
-        "ergonomic",
-        "asymmetrical"
-      ]
-    },
-    "switch_type": {
-      "excel": {
-        "column": "S",
-        "header_row": 1,
-        "sheet": "data_lists",
-        "start_row": 2
-      },
-      "values": [
-        "unk",
-        "unspecified",
-        "Omron D2FP-FN2",
-        "Omron D2FC-F-K",
-        "Omron",
-        "Kailh GM 4.0",
-        "Omron D2FC-7N",
-        "LK Optical V2",
-        "TTC Optical Microswitch",
-        "Corsair Quickstrike",
-        "D2FC-F-7N (20M)",
-        "Omron D2FC-F-K (50M)",
-        "Omron D2FC-7N (60M)",
-        "Black Shell Blue Dot",
-        "Transparent Crystal Shell White Dot",
-        "ROG Optical Micro Switches",
-        "ROG 70M",
-        "ROG Micro Switches",
-        "Haptic Inductive Trigger System (HITS)",
-        "Logitech LIGHTFORCE (Omron (70M) - D2FP-FH1)",
-        "ROG Micro Switch II",
-        "mechanical",
-        "optical",
-        "optical-mechanical",
-        "optical / mechanical",
-        "eqwe",
-        "yay"
-      ]
-    }
-  },
+  "enum_buckets": {},
   "fields": {
     "acceleration": {
       "ai_assist": {
@@ -1196,6 +175,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -1332,6 +312,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1453,6 +434,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1581,6 +563,7 @@
       ],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -1720,6 +703,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1841,6 +825,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1962,6 +947,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -2100,6 +1086,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 2,
@@ -2242,6 +1229,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -2428,6 +1416,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -2572,6 +1561,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -2694,7 +1684,7 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": null,
-        "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey→gray; multi-colorways may use '+'.",
+        "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey?gray; multi-colorways may use '+'.",
         "tooltip_source": null
       },
       "unknown_reason_default": "not_found_after_search"
@@ -2710,6 +1700,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2831,6 +1822,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2959,8 +1951,15 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
-        "shape": "scalar",
+        "list_rules": {
+          "dedupe": true,
+          "max_items": 100,
+          "min_items": 0,
+          "sort": "none"
+        },
+        "shape": "list",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
@@ -3018,9 +2017,16 @@
       "field_key": "connectivity",
       "group": "connectivity",
       "key": "connectivity",
-      "output_shape": "scalar",
+      "output_shape": "list",
       "parse": {
-        "template": "text_field"
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";",
+          "+"
+        ],
+        "template": "list_of_tokens_delimited"
       },
       "priority": {
         "availability": "expected",
@@ -3090,6 +2096,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 2,
@@ -3221,6 +2228,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -3355,6 +2363,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3476,6 +2485,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "range": {
           "max": 100000,
@@ -3616,30 +2626,8 @@
       },
       "aliases": [],
       "availability": "sometimes",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium",
-          "effort": 5
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.encoder",
-        "type": "encoder"
-      },
+      "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3660,7 +2648,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": "component_db.encoder"
+        "source": null
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -3762,6 +2750,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3884,6 +2873,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -4001,6 +2991,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -4128,6 +3119,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -4249,6 +3241,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -4377,6 +3370,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -4504,6 +3498,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -4637,6 +3632,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -4770,6 +3766,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -4895,6 +3892,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 1,
@@ -5038,6 +4036,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5159,6 +4158,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5280,6 +4280,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -5411,6 +4412,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -5551,6 +4553,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -5619,8 +4622,7 @@
         ],
         "range_separators": [
           "-",
-          "–",
-          "—"
+          "�"
         ],
         "strict_unit_required": false,
         "template": "list_numbers_or_ranges_with_unit",
@@ -5708,6 +4710,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -5848,6 +4851,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -5997,6 +5001,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 1,
@@ -6140,30 +5145,8 @@
       },
       "aliases": [],
       "availability": "expected",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium",
-          "effort": 5
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.material",
-        "type": "material"
-      },
+      "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -6184,7 +5167,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": "component_db.material"
+        "source": null
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -6288,6 +5271,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -6420,6 +5404,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -6539,6 +5524,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -6668,6 +5654,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -6789,6 +5776,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -6910,6 +5898,7 @@
       "aliases": [],
       "availability": "rare",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7031,6 +6020,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7152,6 +6142,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -7280,6 +6271,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7407,6 +6399,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -7568,6 +6561,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7692,6 +6686,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -7813,6 +6808,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -7942,6 +6938,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8070,6 +7067,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8190,30 +7188,8 @@
       },
       "aliases": [],
       "availability": "expected",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium",
-          "effort": 5
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.sensor",
-        "type": "sensor"
-      },
+      "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8234,7 +7210,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": "component_db.sensor"
+        "source": null
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -8343,6 +7319,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -8467,6 +7444,9 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [
+        "sensor_date <= release_date"
+      ],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -8599,6 +7579,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 2,
@@ -8741,6 +7722,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -8927,6 +7909,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9049,6 +8032,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9176,6 +8160,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9303,6 +8288,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 2,
@@ -9435,6 +8421,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 0,
@@ -9564,6 +8551,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9685,6 +8673,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9806,6 +8795,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9926,30 +8916,8 @@
       },
       "aliases": [],
       "availability": "expected",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium",
-          "effort": 5
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.switch",
-        "type": "switch"
-      },
+      "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -9970,7 +8938,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": "component_db.switch"
+        "source": null
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -10079,6 +9047,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -10203,6 +9172,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -10335,6 +9305,7 @@
       ],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -10479,6 +9450,7 @@
       "aliases": [],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -10600,6 +9572,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -10726,6 +9699,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "range": {
           "max": 500,
@@ -10854,7 +9828,7 @@
         "short_label": null,
         "suffix": "g",
         "tooltip_key": "weight",
-        "tooltip_md": "Mouse weight in grams. Convert oz→g when necessary; keep decimals if provided.",
+        "tooltip_md": "Mouse weight in grams. Convert oz?g when necessary; keep decimals if provided.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unknown_reason_default": "not_found_after_search"
@@ -10874,6 +9848,7 @@
       ],
       "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "rounding": {
           "decimals": 1,
@@ -11017,6 +9992,7 @@
       "aliases": [],
       "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -11128,7 +10104,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-02-17T09:49:22.300Z",
+  "generated_at": "2026-02-24T22:51:45.113Z",
   "global": {
     "availability_levels": [
       "expected",
@@ -11654,14 +10630,10 @@
   "version": 1,
   "workbook": {
     "hash": "8383ddb04030edd39344c901672f06c1d117a3b42ea9531678c4111e5e6be5ee",
-    "path": "C:\\Users\\Chris\\Desktop\\spec-harvester - claude\\helper_files\\mouse\\mouseData.xlsm"
+    "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\mouseData.xlsm"
   },
-  "workbook_map_hash": "476fed973318886bd478b72bb5790eead87db3ed0ffd976efacf28934a3b2637",
+  "workbook_map_hash": "e6ade5f1eaeca55a0f01fc7810c751aa814fa7fd2f5f4ca631acea26ffc9100c",
   "workbook_tabs": {
-    "data_lists": {
-      "notes": "Columns contain canonical lists for form_factor/shape/hump/front_flare/etc.",
-      "role": "enum buckets (canonical values)"
-    },
     "data_values": {
       "notes": "Observed values across products; can be used for suggestion/inference but not strict enums.",
       "role": "observed value samples (optional)"
@@ -11669,22 +10641,6 @@
     "dataEntry": {
       "notes": "Column B holds field keys; columns C+ hold product values.",
       "role": "field_keys + optional product-table sampling"
-    },
-    "encoder": {
-      "notes": "Entity source sheet mapped by column roles (primary identifier, maker, aliases, links, properties).",
-      "role": "component_db:encoder"
-    },
-    "material": {
-      "notes": "Entity source sheet mapped by column roles (primary identifier, maker, aliases, links, properties).",
-      "role": "component_db:material"
-    },
-    "sensors": {
-      "notes": "Entity source sheet mapped by column roles (primary identifier, maker, aliases, links, properties).",
-      "role": "component_db:sensor"
-    },
-    "switches": {
-      "notes": "Entity source sheet mapped by column roles (primary identifier, maker, aliases, links, properties).",
-      "role": "component_db:switch"
     }
   }
 }

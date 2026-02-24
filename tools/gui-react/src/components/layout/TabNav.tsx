@@ -27,6 +27,7 @@ const OPS_TABS: TabDef[] = [
   { path: '/review', label: 'Review Grid', disabledOnAll: true },
   { path: '/review-components', label: 'Review Components', disabledOnAll: true, dividerAfter: true },
   { path: '/billing', label: 'Billing & Learning', disabledOnTest: true },
+  { path: '/storage', label: 'Storage' },
 ];
 
 const activeCls = 'border-transparent text-accent dark:text-accent-dark';

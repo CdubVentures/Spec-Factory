@@ -50,7 +50,64 @@ test('assertWorkbookMapValidationOrThrow throws concise preflight error for hard
       },
       actionLabel: 'compile',
     }),
-    /Workbook map validation failed before compile: e1; e2; e3 \(\+1 more\)/,
+    /Field Studio map validation failed before compile: e1; e2; e3 \(\+1 more\)/,
+  );
+});
+
+test('assertWorkbookMapValidationOrThrow allows legacy workbook-only failures during compile when explicitly enabled', () => {
+  const outcome = assertWorkbookMapValidationOrThrow({
+    result: {
+      valid: false,
+      errors: [
+        'key_list: sheet is required',
+        "component_sources: invalid property mapping column '' for sheet ''",
+        "component_sources: invalid property mapping column '' for sheet ''",
+      ],
+      warnings: [],
+    },
+    actionLabel: 'compile',
+    allowLegacyCompileBypass: true,
+  });
+
+  assert.equal(outcome.valid, true);
+  assert.equal(
+    outcome.warnings.some((warning) => warning.includes('legacy workbook validation mismatch')),
+    true,
+  );
+});
+
+test('assertWorkbookMapValidationOrThrow does not bypass legacy errors for save mapping', () => {
+  assert.throws(
+    () => assertWorkbookMapValidationOrThrow({
+      result: {
+        valid: false,
+        errors: [
+          'key_list: sheet is required',
+          "component_sources: invalid property mapping column '' for sheet ''",
+        ],
+      },
+      actionLabel: 'save mapping',
+      allowLegacyCompileBypass: true,
+    }),
+    /Field Studio map validation failed before save mapping:/,
+  );
+});
+
+test('assertWorkbookMapValidationOrThrow does not bypass when non-legacy errors are present', () => {
+  assert.throws(
+    () => assertWorkbookMapValidationOrThrow({
+      result: {
+        valid: false,
+        errors: [
+          'key_list: sheet is required',
+          "component_sources: invalid property mapping column '' for sheet ''",
+          'component_sources: type is required for sheet \'\'',
+        ],
+      },
+      actionLabel: 'compile',
+      allowLegacyCompileBypass: true,
+    }),
+    /Field Studio map validation failed before compile:/,
   );
 });
 
@@ -66,4 +123,3 @@ test('resolveWorkbookMapPayloadForSave prefers normalized payload when available
 
   assert.deepEqual(payload, { tooltip_source: { path: 'normalized.json' } });
 });
-

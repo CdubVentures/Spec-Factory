@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "runtime": {
+    "runProfile": "thorough",
+    "searchProvider": "duckduckgo",
+    "llmModelPlan": "gemini-2.5-flash-lite",
+    "llmModelTriage": "gemini-2.5-flash",
+    "llmModelFast": "gemini-2.5-flash-lite",
+    "llmModelReasoning": "gemini-2.5-flash-lite",
+    "llmModelExtract": "test-persist-model-xyz",
+    "llmModelValidate": "gpt-5.1-high",
+    "llmModelWrite": "gemini-2.5-flash-lite",
+    "llmPlanFallbackModel": "deepseek-chat",
+    "llmExtractFallbackModel": "deepseek-reasoner",
+    "llmValidateFallbackModel": "deepseek-reasoner",
+    "llmWriteFallbackModel": "deepseek-chat",
+    "indexingResumeMode": "auto",
+    "concurrency": 7,
+    "indexingResumeMaxAgeHours": 48,
+    "indexingReextractAfterHours": 24,
+    "scannedPdfOcrBackend": "auto",
+    "scannedPdfOcrMaxPages": 4,
+    "scannedPdfOcrMaxPairs": 800,
+    "scannedPdfOcrMinCharsPerPage": 30,
+    "scannedPdfOcrMinLinesPerPage": 2,
+    "scannedPdfOcrMinConfidence": 0.5,
+    "crawleeRequestHandlerTimeoutSecs": 75,
+    "dynamicFetchRetryBudget": 2,
+    "dynamicFetchRetryBackoffMs": 1200,
+    "llmMaxOutputTokensPlan": 2048,
+    "llmMaxOutputTokensTriage": 2048,
+    "llmMaxOutputTokensFast": 2048,
+    "llmMaxOutputTokensReasoning": 2048,
+    "llmMaxOutputTokensExtract": 2048,
+    "llmMaxOutputTokensValidate": 2048,
+    "llmMaxOutputTokensWrite": 2048,
+    "llmMaxOutputTokensPlanFallback": 2048,
+    "llmMaxOutputTokensExtractFallback": 4096,
+    "llmMaxOutputTokensValidateFallback": 4096,
+    "llmMaxOutputTokensWriteFallback": 2048,
+    "discoveryEnabled": false,
+    "llmPlanDiscoveryQueries": true,
+    "llmSerpRerankEnabled": true,
+    "llmFallbackEnabled": false,
+    "indexingReextractEnabled": true,
+    "scannedPdfOcrEnabled": true,
+    "scannedPdfOcrPromoteCandidates": true,
+    "dynamicFetchPolicyMap": {},
+    "dynamicCrawleeEnabled": true,
+    "crawleeHeadless": true
+  },
+  "convergence": {
+    "convergenceMaxRounds": 12,
+    "convergenceNoProgressLimit": 2,
+    "convergenceMaxLowQualityRounds": 1,
+    "convergenceLowQualityConfidence": 0.2,
+    "convergenceMaxDispatchQueries": 20,
+    "convergenceMaxTargetFields": 30,
+    "needsetEvidenceDecayDays": 14,
+    "needsetEvidenceDecayFloor": 0.3,
+    "needsetCapIdentityLocked": 1,
+    "needsetCapIdentityProvisional": 0.74,
+    "needsetCapIdentityConflict": 0.39,
+    "needsetCapIdentityUnlocked": 0.59,
+    "consensusLlmWeightTier1": 0.6,
+    "consensusLlmWeightTier2": 0.4,
+    "consensusLlmWeightTier3": 0.2,
+    "consensusLlmWeightTier4": 0.15,
+    "consensusTier1Weight": 1,
+    "consensusTier2Weight": 0.8,
+    "consensusTier3Weight": 0.45,
+    "consensusTier4Weight": 0.25,
+    "serpTriageMinScore": 5,
+    "serpTriageMaxUrls": 12,
+    "serpTriageEnabled": false,
+    "retrievalMaxHitsPerField": 24,
+    "retrievalMaxPrimeSources": 8,
+    "retrievalIdentityFilterEnabled": true,
+    "laneConcurrencySearch": 2,
+    "laneConcurrencyFetch": 4,
+    "laneConcurrencyParse": 4,
+    "laneConcurrencyLlm": 2
+  },
+  "storage": {
+    "enabled": true,
+    "destinationType": "s3",
+    "localDirectory": "",
+    "s3Region": "us-east-2",
+    "s3Bucket": "my-spec-harvester-data",
+    "s3Prefix": "spec-factory-runs",
+    "s3AccessKeyId": "AKIA_TEST",
+    "s3SecretAccessKey": "secret",
+    "s3SessionToken": "",
+    "updatedAt": "2026-02-24T23:31:29.680Z"
+  },
+  "studio": {
+    "mouse": {
+      "map": {
+        "key_list": {
+          "sheet": "Sheet1",
+          "source": "column_range",
+          "column": "A",
+          "row_start": 2,
+          "row_end": 2
+        },
+        "field_mapping": [
+          {
+            "key": "dpi"
+          }
+        ]
+      },
+      "file_path": "",
+      "updated_at": "2026-02-24T23:00:47.929Z"
+    }
+  },
+  "ui": {
+    "studioAutoSaveAllEnabled": false,
+    "studioAutoSaveEnabled": false,
+    "studioAutoSaveMapEnabled": true,
+    "runtimeAutoSaveEnabled": true,
+    "storageAutoSaveEnabled": false,
+    "llmSettingsAutoSaveEnabled": true
+  }
+}
+

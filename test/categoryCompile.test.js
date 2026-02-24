@@ -6,6 +6,7 @@ import path from 'node:path';
 import {
   compileCategoryWorkbook,
   introspectWorkbook,
+  loadWorkbookMap,
   saveWorkbookMap,
   validateWorkbookMap
 } from '../src/ingest/categoryCompile.js';
@@ -103,6 +104,137 @@ test('validateWorkbookMap accepts named_range key source', () => {
   assert.equal(checked.valid, true);
 });
 
+test('validateWorkbookMap accepts scratch-only maps without key_list and blank property columns', () => {
+  const checked = validateWorkbookMap({
+    version: 2,
+    workbook_path: '',
+    key_list: null,
+    product_table: null,
+    data_lists: [
+      {
+        field: 'switch_type',
+        mode: 'scratch',
+        sheet: '',
+        value_column: '',
+        row_start: 2,
+        row_end: 0,
+        manual_values: ['optical', 'mechanical'],
+      },
+    ],
+    component_sources: [
+      {
+        type: 'switch',
+        sheet: '',
+        header_row: 1,
+        first_data_row: 2,
+        roles: {
+          primary_identifier: 'A',
+          maker: '',
+          aliases: [],
+          links: [],
+          properties: [
+            { field_key: 'switch_type', column: '', type: 'string', variance_policy: 'authoritative' },
+          ],
+        },
+      },
+    ],
+  });
+
+  assert.equal(checked.valid, true);
+  assert.equal(
+    checked.errors.some((row) => String(row).includes('key_list: sheet is required')),
+    false,
+  );
+  assert.equal(
+    checked.errors.some((row) => String(row).includes('invalid property mapping column')),
+    false,
+  );
+});
+
+test('validateWorkbookMap still requires key_list for workbook-backed component maps', () => {
+  const checked = validateWorkbookMap({
+    version: 1,
+    workbook_path: 'C:/tmp/sample.xlsx',
+    component_sources: [
+      {
+        type: 'switch',
+        sheet: 'Sheet1',
+        header_row: 1,
+        first_data_row: 2,
+        roles: {
+          primary_identifier: 'A',
+          maker: 'B',
+          aliases: [],
+          links: [],
+          properties: [{ field_key: 'switch_type', column: 'C', type: 'string' }],
+        },
+      },
+    ],
+  }, {
+    sheetNames: ['Sheet1'],
+  });
+
+  assert.equal(checked.valid, false);
+  assert.equal(
+    checked.errors.some((row) => String(row).includes('key_list: sheet is required')),
+    true,
+  );
+});
+
+test('compileCategoryWorkbook accepts component_reference when component types are declared in map sources (app-driven)', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-component-ref-map-types-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  const categoryRoot = path.join(helperRoot, 'mouse');
+  await fs.mkdir(categoryRoot, { recursive: true });
+  const sourceWorkbookPath = mouseWorkbookPath();
+  const localWorkbookPath = path.join(categoryRoot, 'mouseData.xlsm');
+  await fs.copyFile(sourceWorkbookPath, localWorkbookPath);
+  const workbookMap = buildMouseWorkbookMap(localWorkbookPath);
+  workbookMap.component_sources = [
+    { component_type: 'sensor', sheet: '', roles: { properties: [] } },
+    { component_type: 'switch', sheet: '', roles: { properties: [] } },
+    { component_type: 'encoder', sheet: '', roles: { properties: [] } },
+    { component_type: 'material', sheet: '', roles: { properties: [] } },
+  ];
+
+  try {
+    await saveWorkbookMap({
+      category: 'mouse',
+      workbookMap,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+
+    const controlPlaneRoot = path.join(categoryRoot, '_control_plane');
+    await fs.mkdir(controlPlaneRoot, { recursive: true });
+    await fs.writeFile(
+      path.join(controlPlaneRoot, 'field_rules_draft.json'),
+      JSON.stringify({
+        fields: {
+          sensor: { _edited: true, parse: { template: 'component_reference' } },
+          switch: { _edited: true, parse: { template: 'component_reference' } },
+          encoder: { _edited: true, parse: { template: 'component_reference' } },
+          material: { _edited: true, parse: { template: 'component_reference' } },
+        },
+      }, null, 2),
+      'utf8',
+    );
+
+    const result = await compileCategoryWorkbook({
+      category: 'mouse',
+      workbookPath: localWorkbookPath,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+
+    assert.equal(result.compiled, true, `compile should succeed, got errors: ${JSON.stringify(result.errors || [])}`);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('introspectWorkbook returns sheet metadata for mouse workbook fixture', async () => {
   const introspection = await introspectWorkbook({
     workbookPath: mouseWorkbookPath(),
@@ -115,6 +247,71 @@ test('introspectWorkbook returns sheet metadata for mouse workbook fixture', asy
     introspection.sheets.some((sheet) => String(sheet.name).toLowerCase() === 'dataentry'),
     true
   );
+});
+
+test('saveWorkbookMap writes field studio control map and legacy workbook map mirror', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-field-studio-map-save-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
+  const workbookPath = mouseWorkbookPath();
+  const workbookMap = buildMouseWorkbookMap(workbookPath);
+
+  try {
+    const saved = await saveWorkbookMap({
+      category: 'mouse',
+      workbookMap,
+      config: { helperFilesRoot: helperRoot },
+    });
+
+    const controlPlane = path.join(helperRoot, 'mouse', '_control_plane');
+    const fieldStudioPath = path.join(controlPlane, 'field_studio_map.json');
+    const workbookPathLegacy = path.join(controlPlane, 'workbook_map.json');
+
+    assert.equal(saved.file_path, fieldStudioPath);
+    assert.equal(await fs.stat(fieldStudioPath).then(() => true).catch(() => false), true);
+    assert.equal(await fs.stat(workbookPathLegacy).then(() => true).catch(() => false), true);
+
+    const loaded = await loadWorkbookMap({
+      category: 'mouse',
+      config: { helperFilesRoot: helperRoot },
+    });
+    assert.equal(loaded.file_path, fieldStudioPath);
+    assert.equal(Boolean(loaded?.map), true);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('loadWorkbookMap prefers field studio map when both control maps exist', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-field-studio-map-load-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  const controlPlane = path.join(helperRoot, 'mouse', '_control_plane');
+  await fs.mkdir(controlPlane, { recursive: true });
+
+  try {
+    await fs.writeFile(
+      path.join(controlPlane, 'workbook_map.json'),
+      JSON.stringify({ version: 1, sheet_roles: [] }, null, 2),
+      'utf8',
+    );
+    await fs.writeFile(
+      path.join(controlPlane, 'field_studio_map.json'),
+      JSON.stringify({ version: 1, sheet_roles: [{ sheet: 'dataEntry', role: 'field_key_list' }] }, null, 2),
+      'utf8',
+    );
+
+    const loaded = await loadWorkbookMap({
+      category: 'mouse',
+      config: { helperFilesRoot: helperRoot },
+    });
+
+    assert.equal(
+      loaded.file_path,
+      path.join(controlPlane, 'field_studio_map.json'),
+    );
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test('compileCategoryWorkbook writes deterministic generated artifacts', async () => {
@@ -698,6 +895,44 @@ test('FRC-05-D — compiler coerces string property variance_policy to authorita
     'string property with range should be coerced to authoritative');
   assert.equal(detentTypeProp.variance_policy, 'authoritative',
     'default string property with lower_bound should be coerced to authoritative');
+});
+
+test('FRC-05-E — mouse sensor component policies remain numeric upper_bound for dpi/ips/acceleration', async () => {
+  const loaded = await loadWorkbookMap({
+    category: 'mouse'
+  });
+  assert.ok(loaded?.map, 'mouse workbook map should load');
+
+  const sources = Array.isArray(loaded.map.component_sources) ? loaded.map.component_sources : [];
+  const sensorSource = sources.find((row) => String(row?.type || row?.component_type || '').toLowerCase() === 'sensor');
+  assert.ok(sensorSource, 'mouse workbook map should define a sensor component source');
+
+  const props = Array.isArray(sensorSource?.roles?.properties) ? sensorSource.roles.properties : [];
+  const findProp = (key) => props.find((prop) => (prop?.field_key || prop?.key) === key);
+  const requiredPolicies = [
+    { key: 'dpi', unit: 'dpi' },
+    { key: 'ips', unit: 'ips' },
+    { key: 'acceleration', unit: 'g' }
+  ];
+
+  for (const requirement of requiredPolicies) {
+    const prop = findProp(requirement.key);
+    assert.ok(prop, `sensor property '${requirement.key}' should exist in workbook map`);
+    assert.equal(prop.type, 'number', `${requirement.key} should stay typed as number`);
+    assert.equal(prop.unit, requirement.unit, `${requirement.key} unit should stay '${requirement.unit}'`);
+    assert.equal(prop.variance_policy, 'upper_bound', `${requirement.key} variance policy should stay upper_bound`);
+  }
+
+  const validated = validateWorkbookMap(loaded.map);
+  const driftWarnings = (validated.warnings || []).filter((warning) => (
+    warning.includes('coerced to \'authoritative\'')
+    && (warning.includes('dpi') || warning.includes('ips') || warning.includes('acceleration'))
+  ));
+  assert.equal(
+    driftWarnings.length,
+    0,
+    `mouse sensor numeric properties should not be coerced to authoritative: ${JSON.stringify(driftWarnings)}`
+  );
 });
 
 test('compileCategoryWorkbook merges enum.additional_values from field rule drafts into known_values', async () => {

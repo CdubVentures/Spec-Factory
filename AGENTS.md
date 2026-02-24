@@ -6,12 +6,186 @@ Keep it up to date as the project evolves.
 ---
 
 
-## Active Implementation Plan 
+## Active Implementation Plan
 
+Tracking rule: every phase must be checked off only after tests are green and evidence is captured in docs/tests.
 
+### Phase 0 - Baseline and safety net
+- [x] Run current targeted test suites and record baseline failures/pass rates.
+- [x] Add/extend characterization tests for current settings persistence behavior before refactor.
+- [x] Capture an initial "frontend knob inventory seed" from code search to avoid missing hidden surfaces.
+- [x] Confirm one end-to-end product flow runs successfully before structural changes.
 
+### Phase 1 - Full frontend knob inventory and source trace
+- [x] Enumerate every setting/save/autosave/inline edit control in `tools/gui-react/src` (inputs, toggles, selects, drawers, modals, hotkeys, quick actions).
+- [x] Map each control to: UI component, current state owner, save trigger, persistence target, and read path on app load.
+- [x] Identify duplicate settings exposed in multiple UI locations and document canonical key ownership.
+- [x] Produce an auditable source map of all writers and readers (frontend + backend routes + db columns/files).
 
+### Phase 2 - Settings authority contract
+- [ ] Define canonical settings schema (keys, types, defaults, versioning, migration rules). *(partially done for domain schemas; no global single-file schema contract yet)*
+- [ ] Define authority precedence (server snapshot vs local cache vs runtime defaults) with deterministic merge order.
+- [ ] Define update contract: single write API, autosave debounce rules, optimistic update behavior, rollback behavior.
+- [ ] Define propagation contract for cross-surface updates (same-tab, cross-tab, websocket/event invalidation where needed).
+- [x] Make the canonical source of truth a single `user-settings.json` model that includes category-mapping studio config and all runtime/convergence/llm/storage settings.
+- [ ] Define deterministic generation pipeline where all derived config artifacts are generated from `user-settings.json`, not vice versa.
 
+### Settings audit gap log (2026-02-24)
+- [x] `Storage settings` mutations now persist and restore on restart through the settings authority write/read path.
+- [x] Runtime persistence no longer uses fallback coercion that overwrites explicit low/falsy values.
+- [x] Convergence slider fallbacks in `PipelineSettingsPage` and `RuntimePanel` now use schema-derived minima (`knob.min`) instead of hardcoded `0`.
+- [x] Runtime `dynamicFetchPolicyMapJson` is now part of the persisted runtime payload and write schema.
+- [x] Convergence knob definitions remain duplicated across `pipeline-settings` and authority modules.
+- [ ] Canonical defaults manifest is not the single initialization source for all settings surfaces.
+- [ ] Failed autosave/error outcome handling is not fully surfaced as persisted-state truth in all settings surfaces.
+- [x] LLM route-matrix editor knobs now affect runtime extraction behavior (field-policy mapping, evidence source mode, model ladder/tokens, studio prompt flags, insufficient-evidence action).
+- [x] LLM autosave mode is now global durable state (`llmSettingsAutoSaveEnabled`) persisted via `/ui-settings` and hydrated from `user-settings.json`.
+- [x] GUI API bootstrap now initializes `config` before settings hydration (`src/api/guiServer.js`).
+- [x] Source strategy authority/routes are now category-scoped and runtime discovery consumes category-enabled source-strategy rows from SpecDb.
+- [x] Convergence knobs for identity caps / SERP triage min-max-enable / retrieval identity filter now affect runtime execution paths.
+- [x] Global autosave-mode toggles (studio all/workbook/map, runtime, storage) now persist through `/ui-settings` into `user-settings.json` and hydrate on app bootstrap.
+- [x] Field Rules Studio `Auto-save ALL` now hard-locks Mapping Studio (tab1), Key Navigator (tab2), and Field Contract/Workbook (tab3) autosave toggles to ON with explicit locked-state labels.
+- [x] Studio nested writers under Key Navigator and Field Contract now respect autosave ownership (autosave-gated save path) and no longer bypass autosave mode with unconditional save commits.
+- [x] `Storage settings` now persist from `StoragePage` through `useStorageSettingsAuthority` and are restored via the settings authority write/read pipeline.
+- [x] `WorkersTab` no longer reads `/runtime-settings` directly (`useQuery`) and now consumes runtime settings via authority hook/snapshot.
+- [x] Canonical settings model now includes category-studio mapping as a first-class persisted key in `user-settings.json`.
+- [x] Runtime planner/triage UI now hard-locks closed when discovery is disabled and shows an explicit red blocked reason badge.
+- [x] Field Rules Studio now recovers from stale session UI state by auto-selecting the first valid key, clearing invalid group filters, and seeding mapping from map payload shape (not only `version`).
+- [x] Studio map read path now ignores missing/empty `user-settings` studio entries so canonical workbook maps load instead of blank map payloads.
+- [x] Autosave for runtime/storage/llm/studio now tracks last attempted payload fingerprints so unchanged failed payloads do not retry-loop; manual save paths can still force retry.
+- [x] Settings authority reads for runtime/storage/convergence/ui no longer use fixed query polling intervals; hydration/refresh uses bootstrap reload plus invalidation.
+- [x] Studio map GET now deterministically selects the richer source between `user-settings` and control-plane map files, preventing legacy partial `user-settings` map payloads from masking complete category maps.
+- [x] Indexing `Run IndexLab` is now hydration-gated on runtime settings authority load, preventing pre-hydration defaults from overriding persisted runtime settings.
+- [x] Runtime panel settings controls now hard-lock until runtime settings hydrate, preventing pre-hydration edits from writing default drift.
+
+### Frontend settings control audit (2026-02-24)
+- Persistence authority coverage for knobs: `tools/gui-react/src/stores/runtimeSettingsAuthority.ts`, `tools/gui-react/src/stores/convergenceSettingsAuthority.ts`, `tools/gui-react/src/stores/storageSettingsAuthority.ts`, `tools/gui-react/src/stores/llmSettingsAuthority.ts`, `tools/gui-react/src/stores/sourceStrategyAuthority.ts`, `tools/gui-react/src/stores/settingsAuthority.ts`.
+- UI writers through authority:
+  - Convergence controls in `tools/gui-react/src/pages/pipeline-settings/PipelineSettingsPage.tsx` and `tools/gui-react/src/pages/indexing/panels/RuntimePanel.tsx` route to convergence authority updates.
+  - Runtime knobs in `tools/gui-react/src/pages/indexing/IndexingPage.tsx` route through runtime authority.
+  - Storage controls in `tools/gui-react/src/pages/storage/StoragePage.tsx` use storage authority autosave/manual save APIs.
+  - LLM controls in `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` use LLM authority APIs.
+  - Source strategy controls in `tools/gui-react/src/pages/pipeline-settings/PipelineSettingsPage.tsx` use source-strategy authority APIs.
+  - Studio map/drafts are owned by `tools/gui-react/src/pages/studio/studioPersistenceAuthority.ts` and written via `saveMap`/`saveDrafts` studio mutations.
+  - Studio Key Navigator + Field Contract nested edits now trigger draft persistence via autosave-gated authority paths (manual save remains explicit when autosave is off).
+- Read/hydration path:
+  - Startup bootstrap now hydrates runtime + convergence + storage + source-strategy through `tools/gui-react/src/components/layout/AppShell.tsx`; LLM routes are preloaded for the active category.
+  - Consumers should read via authority selectors (`useAuthoritySnapshot` + dedicated hooks), but some surfaces still carry local defaults on first render.
+  - Indexing run-start actions now wait for runtime settings hydration before enabling run dispatch.
+- No-op hardcoded behavior check:
+  - Convergence `knob` minimum fallback is now metadata-driven (`knob.min`) in the primary slider surfaces.
+  - Runtime numeric text/numeric parsing and serialization now go through authority schema-aware helpers rather than local ad-hoc coercion.
+  - Runtime execution now consumes persisted convergence keys (`needsetCapIdentity*`, `serpTriage*`, `retrievalIdentityFilterEnabled`) in convergence/triage/retrieval flows.
+  - Source strategy table mutations are now consumed by runtime discovery via category-scoped SpecDb reads in run execution.
+  - Planner/Triage runtime section is non-interactive and force-collapsed while `discoveryEnabled=false`, with a visible blocked-state reason.
+  - Studio `Auto-save ALL` lock propagation is consistent across tab1/tab2/tab3 autosave controls and status labels.
+
+### Phase 3 - Single authoritative store foundation
+- [ ] Implement a single settings authority store module with: hydrate-once, subscribe/select, patch update, and reset APIs.
+- [ ] Add persistence adapters for backend + local cache with schema validation at trust boundaries.
+- [ ] Add migration/version handling for stored settings so old payloads are upgraded deterministically.
+- [ ] Add telemetry/log hooks for setting-write success/failure and stale-read detection.
+- [ ] Add a generator-safe contract: every writer writes the canonical settings model, and every generated file derives from this model.
+
+### Phase 4 - Bootstrap and load path unification
+- [ ] Route app startup through one hydration pipeline that resolves settings once and publishes globally (runtime + convergence + storage + source-strategy + active-category llm).
+- [ ] Remove per-component ad hoc initialization that bypasses the authority store.
+- [ ] Ensure first paint and post-hydration behavior are deterministic (no hardcoded fallback drift).
+- [ ] Validate reload behavior: changes survive restart and load into all consumers immediately.
+
+### Phase 5 - Migrate all settings writers
+- [x] Replace direct/local writes in every setting control with store actions.
+- [x] Standardize autosave and explicit save flows to the same authority write path.
+- [ ] Ensure all mutation routes persist to the real authority target (no UI-only state).
+- [ ] Add tests for every writer path proving persisted value is present after reload.
+
+### Phase 6 - Migrate all settings readers/consumers
+- [ ] Replace component-local mirrors and hardcoded constants with store selectors.
+- [ ] Ensure all duplicated setting surfaces subscribe to the same key and stay in sync live.
+- [ ] Validate non-UI consumers (api payload builders, backend-triggered flows, derived displays) consume authority values.
+- [ ] Remove stale selector logic and dead fallback branches once parity is proven.
+
+### Phase 7 - Hardcoded behavior elimination audit
+- [ ] Audit for hardcoded setting-dependent behavior and replace with derived authority values.
+- [ ] Audit conditional UI logic to ensure it reacts to live settings updates without refresh hacks.
+- [ ] Audit save success states to ensure UI reflects actual persistence result, not assumed success.
+- [ ] Document and remove obsolete constants that conflict with authority contract.
+
+### Phase 8 - End-to-end validation matrix
+- [x] Build a settings persistence matrix: setting key x writer surface x reload x duplicate surface sync x backend reflection.
+- [x] Add/extend unit tests for store reducers/selectors and integration tests for writer/reader wiring.
+- [ ] Add/extend GUI/E2E tests for autosave, explicit save, reload persistence, and cross-surface live propagation.
+- [ ] Run full targeted suites and resolve regressions until green.
+
+## Frontend settings persistence status matrix (2026-02-24)
+- Runtime settings (`/runtime-settings`)
+  - Writer: `tools/gui-react/src/stores/runtimeSettingsAuthority.ts` → `useRuntimeSettingsAuthority`.
+  - Save surfaces: `tools/gui-react/src/pages/indexing/IndexingPage.tsx`, `tools/gui-react/src/pages/indexing/panels/RuntimePanel.tsx`.
+  - Read/hydrate: `tools/gui-react/src/stores/runtimeSettingsAuthority.ts` + `tools/gui-react/src/components/layout/AppShell.tsx` bootstrap (no fixed `refetchInterval` polling).
+  - Persist on reload: route-backed read/write exists.
+  - Globality: partial; bootstrap available, with runtime run-start and runtime panel controls locked until runtime settings hydration completes.
+  - Hardcoded risk: low; local fallback/default render state still exists pre-hydration, but runtime edits/run payload emission are hydration-gated.
+
+- Convergence settings (`/convergence-settings`)
+  - Writer: `tools/gui-react/src/stores/convergenceSettingsAuthority.ts` → `useConvergenceSettingsAuthority`.
+  - Save surfaces: `tools/gui-react/src/pages/pipeline-settings/PipelineSettingsPage.tsx`, `tools/gui-react/src/pages/indexing/IndexingPage.tsx`, `tools/gui-react/src/pages/indexing/panels/RuntimePanel.tsx`.
+  - Read/hydrate: `tools/gui-react/src/stores/convergenceSettingsAuthority.ts` + `tools/gui-react/src/components/layout/AppShell.tsx` bootstrap (no fixed `refetchInterval` polling).
+  - Persist on reload: route-backed read/write exists.
+  - Globality: partial; duplicate controls present and should be observed for cross-surface sync parity.
+  - Hardcoded risk: medium; slider fallback rendering is fixed and runtime now consumes persisted convergence knobs, with residual risk limited to pre-hydration UI defaults.
+
+- Storage settings (`/storage-settings`)
+  - Writer: `tools/gui-react/src/stores/storageSettingsAuthority.ts` → `useStorageSettingsAuthority`.
+  - Save surface: `tools/gui-react/src/pages/storage/StoragePage.tsx`.
+  - Read/hydrate: authority query with AppShell bootstrap path plus page-level reads (no fixed `refetchInterval` polling).
+  - Persist on reload: route-backed read/write exists.
+  - Globality: now bootstrapped at app startup through AppShell.
+  - Hardcoded risk: medium; local defaults/guards can mask fresh server state until hydrate completes.
+
+- UI autosave settings (`/ui-settings`)
+  - Writer: `tools/gui-react/src/stores/settingsAuthority.ts` via `tools/gui-react/src/stores/uiSettingsAuthority.ts`.
+  - Save surfaces: `tools/gui-react/src/pages/studio/StudioPage.tsx`, `tools/gui-react/src/pages/storage/StoragePage.tsx`, `tools/gui-react/src/pages/indexing/IndexingPage.tsx`.
+  - Read/hydrate: `tools/gui-react/src/stores/settingsAuthority.ts` bootstrap hydrates `useUiStore` from `/ui-settings` (no fixed `refetchInterval` polling).
+  - Persist on reload: route-backed read/write exists in `helper_files/_runtime/user-settings.json`.
+  - Globality: global (not category-scoped); shared across studio/runtime/storage surfaces.
+  - Hardcoded risk: low; LLM autosave is now part of global `/ui-settings` persistence with shared bootstrap hydration.
+
+- LLM settings routes (`/llm-settings/:category/routes`)
+  - Writer: `tools/gui-react/src/stores/llmSettingsAuthority.ts` → `useLlmSettingsAuthority`.
+  - Save surface: `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`.
+  - Read/hydrate: authority query exists per category on route entry.
+  - Persist on reload: route-backed read/write exists.
+  - Globality: active category preloaded at startup; non-active categories still load on demand.
+  - Hardcoded risk: low in persistence path, but cross-page defaults remain a local concern.
+
+- Source strategy (`/source-strategy/:id`)
+  - Writer: `tools/gui-react/src/stores/sourceStrategyAuthority.ts`.
+  - Save surface: `tools/gui-react/src/pages/pipeline-settings/PipelineSettingsPage.tsx`.
+  - Read/hydrate: authority query with AppShell bootstrap path plus page-level reads.
+  - Persist on reload: route-backed read/write exists.
+  - Globality: category-scoped; authority query keys + route params now bind to active category and avoid backend fallback categories.
+  - Hardcoded risk: low/medium; runtime discovery now consumes category-enabled source strategy rows, with remaining risk in non-run contexts that do not load SpecDb.
+
+- Studio map/drafts (field studio persistence endpoints)
+  - Writer: `tools/gui-react/src/pages/studio/studioPersistenceAuthority.ts` (`saveMap`, `saveDrafts`).
+  - Save surface: `tools/gui-react/src/pages/studio/StudioPage.tsx`.
+  - Read/hydrate: page reads dedicated studio endpoints.
+  - Persist on reload: route-backed persistence exists for map/drafts.
+  - Globality: partial; domain-specific and does not yet use a shared app-shell settings pipeline.
+  - Hardcoded risk: low.
+
+### Phase 6 follow-up status (2026-02-24)
+- [ ] Complete migration of all settings reads to pure authority selectors (remaining local initialization mirrors/fallbacks).
+- [ ] Replace local duplicated defaults with authority-derived defaults across all setting consumers.
+- [ ] Add explicit cross-surface propagation tests for shared settings keys.
+- [x] Ensure source-strategy authority is category-scoped end-to-end (UI query key, route params, and runtime consumption).
+- [x] Ensure converged settings keys marked in manifest are all wired into runtime behavior (no persistence-only dead knobs).
+
+### Phase 9 - Documentation and operational handoff
+- [ ] Update implementation docs with final authority contract, source map, and subscriber map.
+- [ ] Record known invariants and anti-patterns (no direct component writes, no hardcoded setting forks).
+- [ ] Add a maintenance checklist for future settings: add key, add writer, add reader, add persistence test, add propagation test.
+- [ ] Keep this section as the active checklist and mark each phase complete as execution progresses.
 
 ## Scope and source trees
 
@@ -191,6 +365,29 @@ Audit execution snapshot (2026-02-24):
 - Data authority suite: 30/30 passing.
 - Grid suite: all targeted tests passing except `test/reviewLaneContractGui.test.js`.
 - Current GUI failure: Playwright timeout waiting for visible `mouse_contract_lane_matrix_gui` option while option exists but is hidden.
+- Settings audit focused suites (latest local run): 31/31 passing.
+  - `test/runtimeSettingsApi.test.js`
+  - `test/storageSettingsRoutes.test.js`
+  - `test/sourceStrategyCategoryScope.test.js`
+  - `test/sourceStrategyAuthorityWiring.test.js`
+  - `test/convergenceRuntimeKnobWiring.test.js`
+  - `test/dataChangeInvalidationMap.test.js`
+- Settings autosave authority + studio propagation focused suites (latest local run): 42/42 passing.
+  - `test/uiAutosaveAuthorityWiring.test.js`
+  - `test/studioConsumerToggleImmediatePropagation.test.js`
+  - `test/guiPersistenceSessionScope.test.js`
+  - `test/uiSettingsRoutes.test.js`
+  - `test/settingsAuthorityMatrixWiring.test.js`
+  - `test/runtimeSettingsApi.test.js`
+  - `test/storageSettingsRoutes.test.js`
+- Adjacent runtime/discovery regression suites touched by these changes: 62/62 passing.
+  - `test/convergenceLoop.test.js`
+  - `test/phase07PrimeSourcesBuilder.test.js`
+  - `test/discoveryBrandFilter.test.js`
+  - `test/discoveryPerformanceAndRelevance.test.js`
+  - `test/internalCorpusDiscovery.test.js`
+  - `test/sourceStrategyRoutesDataChangeContract.test.js`
+  - `test/sourceStrategy.test.js`
 
 ## Quick run commands
 

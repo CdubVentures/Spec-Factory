@@ -31,6 +31,70 @@ function dedupeValues(values = []) {
   return output;
 }
 
+function inferTemplateFromValue(value) {
+  const text = String(value ?? '').trim();
+  if (!text) return '';
+  return text
+    .replace(/\d+(?:[.,]\d+)?/g, 'XXXX')
+    .replace(/\(([^)]+)\)/g, '(YYYY)')
+    .replace(/\[([^\]]+)\]/g, '[YYYY]')
+    .replace(/"[^"]+"/g, '"YYYY"')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function inferTemplateExamples(values = []) {
+  const out = [];
+  const seen = new Set();
+  for (const value of dedupeValues(values)) {
+    const template = inferTemplateFromValue(value);
+    if (!template) continue;
+    const token = normalizeToken(template);
+    if (!token || seen.has(token)) continue;
+    seen.add(token);
+    out.push(template);
+    if (out.length >= 4) break;
+  }
+  return out;
+}
+
+function defaultFieldFormatGuidance(fieldKey = '') {
+  const token = normalizeToken(fieldKey);
+  if (token.includes('lighting')) {
+    return 'Preferred template: XXXX zone (YYYY). Example outputs: 1 zone (rgb), 7 zone (led).';
+  }
+  if (token.includes('feet') && token.includes('material')) {
+    return 'Prefer canonical material strings exactly as listed, including punctuation and casing.';
+  }
+  return '';
+}
+
+export function resolveEnumConsistencyFormatGuidance({
+  fieldKey = '',
+  formatGuidance = '',
+  canonicalValues = [],
+} = {}) {
+  const explicitGuidance = String(formatGuidance ?? '').trim();
+  if (explicitGuidance) {
+    return explicitGuidance;
+  }
+
+  const parts = [];
+  const templates = inferTemplateExamples(canonicalValues);
+  if (templates.length > 0) {
+    parts.push(`Use canonical template(s): ${templates.join(' | ')}.`);
+    parts.push('Placeholder convention: XXXX for numeric/count segments and YYYY for variable text segments.');
+  }
+  const fieldHint = defaultFieldFormatGuidance(fieldKey);
+  if (fieldHint) {
+    parts.push(fieldHint);
+  }
+  if (parts.length === 0) {
+    return 'Preserve canonical punctuation/casing/token shape from known values.';
+  }
+  return parts.join(' ');
+}
+
 function responseSchema() {
   return {
     type: 'object',
@@ -173,10 +237,16 @@ export async function runEnumConsistencyReview({
 } = {}) {
   const normalizedPending = dedupeValues(pendingValues);
   const normalizedCanonical = dedupeValues(canonicalValues);
+  const effectiveFormatGuidance = resolveEnumConsistencyFormatGuidance({
+    fieldKey,
+    formatGuidance,
+    canonicalValues: normalizedCanonical,
+  });
   if (!normalizedPending.length) {
     return {
       enabled: false,
       skipped_reason: 'no_pending_values',
+      format_guidance: effectiveFormatGuidance,
       decisions: [],
     };
   }
@@ -186,6 +256,7 @@ export async function runEnumConsistencyReview({
     return {
       enabled: false,
       skipped_reason: 'llm_disabled_or_missing_key',
+      format_guidance: effectiveFormatGuidance,
       decisions: normalizedPending.map((value) => defaultUncertainDecision(value)),
     };
   }
@@ -195,7 +266,7 @@ export async function runEnumConsistencyReview({
       config,
       reason: 'validate_enum_consistency',
       role: 'validate',
-      system: buildSystemPrompt(formatGuidance),
+      system: buildSystemPrompt(effectiveFormatGuidance),
       user: buildUserPayload({
         fieldKey,
         enumPolicy,
@@ -220,6 +291,7 @@ export async function runEnumConsistencyReview({
       enabled: true,
       model: String(config?.llmModelValidate || config?.llmModelExtract || '').trim() || null,
       provider: String(config?.llmValidateProvider || config?.llmProvider || '').trim() || null,
+      format_guidance: effectiveFormatGuidance,
       decisions: sanitizeEnumConsistencyDecisions(raw || {}, {
         pendingValues: normalizedPending,
         canonicalValues: normalizedCanonical,
@@ -233,6 +305,7 @@ export async function runEnumConsistencyReview({
     return {
       enabled: false,
       skipped_reason: 'llm_call_failed',
+      format_guidance: effectiveFormatGuidance,
       decisions: normalizedPending.map((value) => defaultUncertainDecision(value)),
     };
   }

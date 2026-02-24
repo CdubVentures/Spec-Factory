@@ -34,6 +34,7 @@ interface PickerPanelProps {
   selectedCatalogProduct: CatalogRow | null;
   displayVariant: (variant: string) => string;
   selectedAmbiguityMeter: AmbiguityMeterShape;
+  runtimeSettingsReady: boolean;
   canRunSingle: boolean;
   onRunIndexLab: () => void;
   productPickerActivity: { currentPerMin: number; peakPerMin: number };
@@ -57,6 +58,7 @@ export function PickerPanel({
   selectedCatalogProduct,
   displayVariant,
   selectedAmbiguityMeter,
+  runtimeSettingsReady,
   canRunSingle,
   onRunIndexLab,
   productPickerActivity,
@@ -174,12 +176,19 @@ Variant-empty extraction policy:
       </div>
           <button
             onClick={onRunIndexLab}
-            disabled={!canRunSingle || busy || processRunning}
+            disabled={!canRunSingle || busy || processRunning || !runtimeSettingsReady}
             className="w-full px-3 py-2 text-sm rounded bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-40"
-            title="Run IndexLab for selected product and stream events."
+            title={runtimeSettingsReady
+              ? 'Run IndexLab for selected product and stream events.'
+              : 'Run start is locked until runtime settings finish hydrating.'}
           >
             Run IndexLab
           </button>
+          {!runtimeSettingsReady ? (
+            <div className="text-[11px] text-amber-700 dark:text-amber-300">
+              Runtime settings are loading. Run start is locked until persisted settings hydrate.
+            </div>
+          ) : null}
         </>
       ) : null}
     </div>

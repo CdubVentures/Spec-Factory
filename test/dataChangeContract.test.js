@@ -34,6 +34,26 @@ test('createDataChangePayload builds canonical data-change shape', () => {
   assert.equal(isDataChangePayload(payload), true);
 });
 
+test('createDataChangePayload maps storage update events to storage/settings domains', () => {
+  const payload = createDataChangePayload({
+    event: 'storage-settings-updated',
+  });
+
+  assert.equal(payload.type, 'data-change');
+  assert.equal(payload.event, 'storage-settings-updated');
+  assert.deepEqual(payload.domains, ['storage', 'settings']);
+});
+
+test('createDataChangePayload maps storage relocation started event to storage/indexing domains', () => {
+  const payload = createDataChangePayload({
+    event: 'indexlab-run-data-relocation-started',
+  });
+
+  assert.equal(payload.type, 'data-change');
+  assert.equal(payload.event, 'indexlab-run-data-relocation-started');
+  assert.deepEqual(payload.domains, ['storage', 'indexing']);
+});
+
 test('emitDataChange broadcasts canonical payload', () => {
   const emitted = [];
   const payload = emitDataChange({
