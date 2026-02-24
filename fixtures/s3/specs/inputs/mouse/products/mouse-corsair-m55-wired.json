@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-corsair-m55-wired",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Corsair",
+    "model": "M55 Wired",
+    "variant": "",
+    "sku": "CH-930F000-WW",
+    "mpn": "",
+    "gtin": "",
+    "id": 21,
+    "identifier": "aee1e8e4"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-evga-x12",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "EVGA",
+    "model": "X12",
+    "variant": "",
+    "sku": "",
+    "mpn": "",
+    "gtin": "",
+    "id": 208,
+    "identifier": "c640d0bd"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

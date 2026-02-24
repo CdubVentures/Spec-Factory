@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-logitech-g-g305-lightspeed",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Logitech G",
+    "model": "G305 Lightspeed",
+    "variant": "",
+    "sku": "",
+    "mpn": "",
+    "gtin": "",
+    "id": 111,
+    "identifier": "c2e832ba"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

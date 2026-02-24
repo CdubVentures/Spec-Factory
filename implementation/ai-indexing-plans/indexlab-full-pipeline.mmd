@@ -1,0 +1,114 @@
+%%{init: {'theme': 'neutral', 'flowchart': {'curve': 'linear', 'nodeSpacing': 36, 'rankSpacing': 44}}}%%
+
+flowchart LR
+    subgraph FOUNDATION["Foundation and Discovery (Phase 00-03)"]
+        P00["Phase 00 Harness/Event Stream<br/>Status: COMPLETE"]
+        P01["Phase 01 NeedSet<br/>Status: NEAR-COMPLETE<br/>Open: snippet timestamp lineage"]
+        P02["Phase 02 SearchProfile<br/>Status: COMPLETE"]
+        P03["Phase 03 Provider Search/Triage<br/>Status: COMPLETE"]
+    end
+
+    subgraph INGESTION["Ingestion and Evidence (Phase 04-06)"]
+        P04["Phase 04 URL Health<br/>Status: PARTIAL<br/>Open: repair signal to durable queue handoff"]
+        P05["Phase 05 Fetch/Parse Scheduler<br/>Status: COMPLETE"]
+        P06A["Phase 06A Evidence Index<br/>Status: COMPLETE"]
+        P06B["Phase 06B Refetch Worker<br/>Status: PARTIAL<br/>Open: production handoff wiring"]
+    end
+
+    subgraph RETRIEVAL["Retrieval and Convergence (Phase 07-09)"]
+        P07["Phase 07 Tier Retrieval<br/>Status: COMPLETE"]
+        P08["Phase 08 Extraction Context<br/>Status: COMPLETE<br/>Visual refs blocked by 08B gaps"]
+        P08B["Phase 08B Visual Capture<br/>Status: PARTIAL"]
+        P09["Phase 09 Convergence Loop<br/>Status: COMPLETE"]
+    end
+
+    subgraph OPS["Learning, Runtime, Batch, and Ops (Phase 10-13)"]
+        P10["Phase 10 Learning<br/>Status: COMPLETE"]
+        P11["Phase 11 Worker Controls<br/>Status: NEAR-COMPLETE<br/>Open: per-run knob usage telemetry"]
+        P12["Phase 12 Batch Automation<br/>Status: COMPLETE"]
+        P13["Phase 13 Runtime Ops Workbench<br/>Status: COMPLETE"]
+    end
+
+    subgraph PARSING["Parsing Surface Track"]
+        S0106["Parsing 01-06 Core Surfaces<br/>Status: COMPLETE"]
+        S07["Parsing 07 Scanned PDF OCR<br/>Status: PARTIAL"]
+        S08["Parsing 08 Image OCR<br/>Status: NOT IMPLEMENTED"]
+        S09["Parsing 09 Chart Extraction<br/>Status: PARTIAL"]
+        S10["Parsing 10 Mixed Office Docs<br/>Status: NOT IMPLEMENTED"]
+        S11["Parsing 11 Visual Capture Control Plane<br/>Status: PARTIAL"]
+    end
+
+    subgraph LLM_LIVE["LLM Touchpoints (Live)"]
+        L01["LLM Brand Resolver<br/>phase 00/03"]
+        L02["LLM Search Planner<br/>phase 02"]
+        L03["LLM URL Predictor<br/>phase 03"]
+        L04["LLM SERP Reranker<br/>phase 03"]
+        L05["LLM Domain Safety Gate<br/>phase 03"]
+        L06["LLM Candidate Extraction<br/>phase 08"]
+        L07["LLM Component Validator<br/>phase 08"]
+        L08["LLM Field Judge<br/>phase 08"]
+        L09["LLM Escalation Planner<br/>phase 09"]
+        L10["LLM Summary Writer<br/>phase 10"]
+        L11["LLM Learning Suggestions<br/>phase 10"]
+    end
+
+    subgraph LLM_PLANNED["LLM Touchpoints (Planned / Deferred)"]
+        L20["LLM Vision OCR Assist<br/>phase 08B + parsing 08"]
+        L21["LLM Chart Vision Fallback<br/>parsing 09"]
+        L22["LLM Mixed-Doc Semantic Normalizer<br/>parsing 10"]
+    end
+
+    subgraph CRITICAL["Critical Path Remaining (Audit 2026-02-24)"]
+        CP0["CP-0 Fix deterministic GUI lane contract test failure"]
+        CP1["CP-1 Wire phase 04 repair signal into phase 06B queue and worker"]
+        CP2["CP-2/CP-3 Build phase 08B visual manifest + quality/target gates"]
+        CP4["CP-4/CP-5 Build image OCR + wire image_asset_refs + visual GUI panel"]
+        CP6["CP-6..CP-10 Parallel backlog:<br/>OCR preprocess, chart stack, mixed docs,<br/>knob telemetry, NeedSet timestamp lineage"]
+    end
+
+    P00 --> P01 --> P02 --> P03 --> P04 --> P05 --> P06A --> P07 --> P08 --> P09 --> P10 --> P11 --> P12 --> P13
+    P04 --> P06B
+    P08B --> P08
+
+    S0106 --> S07 --> S08
+    S11 --> S08
+    P08B --> S11
+
+    P00 --> L01 --> P03
+    P02 --> L02 --> P03
+    P03 --> L03 --> P04
+    P03 --> L04 --> P04
+    P03 --> L05 --> P04
+    P08 --> L06 --> P09
+    P08 --> L07 --> P09
+    P08 --> L08 --> P09
+    P09 --> L09 --> P03
+    P10 --> L10 --> P11
+    P10 --> L11 --> P02
+
+    P08B --> L20 --> S08
+    S09 --> L21 --> P08
+    S10 --> L22 --> P08
+
+    CP0 --> CP1 --> CP2 --> CP4 --> CP6
+    P06B --> CP1
+    S08 --> CP4
+    S07 --> CP6
+    S09 --> CP6
+    S10 --> CP6
+    P11 --> CP6
+    P01 --> CP6
+
+    classDef complete fill:#0f5132,stroke:#2f9e44,stroke-width:2px,color:#f8fff9
+    classDef partial fill:#7a4f01,stroke:#f59f00,stroke-width:2px,color:#fff8e6
+    classDef missing fill:#7f1d1d,stroke:#fa5252,stroke-width:2px,color:#fff5f5
+    classDef critical fill:#3b1f6a,stroke:#9775fa,stroke-width:3px,color:#f8f0ff
+    classDef llm_live fill:#1f3a5f,stroke:#60a5fa,stroke-width:2px,color:#eff6ff
+    classDef llm_planned fill:#4a2c12,stroke:#fb923c,stroke-width:2px,color:#fff7ed
+
+    class P00,P02,P03,P05,P06A,P07,P08,P09,P10,P12,P13,S0106 complete
+    class P01,P04,P06B,P08B,P11,S07,S09,S11 partial
+    class S08,S10 missing
+    class CP0,CP1,CP2,CP4,CP6 critical
+    class L01,L02,L03,L04,L05,L06,L07,L08,L09,L10,L11 llm_live
+    class L20,L21,L22 llm_planned

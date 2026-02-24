@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-asus-rog-keris",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Asus",
+    "model": "ROG Keris",
+    "variant": "",
+    "sku": "90MP01R0-B0UA00",
+    "mpn": "",
+    "gtin": "",
+    "id": 59,
+    "identifier": "48daf257"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

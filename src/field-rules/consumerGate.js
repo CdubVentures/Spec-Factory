@@ -1,0 +1,506 @@
+function isObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeText(value) {
+  return String(value ?? '').trim();
+}
+
+function normalizeFieldKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function toArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+const SYSTEM_ALIASES = new Map([
+  ['seed', 'seed'],
+  ['indexlab', 'indexlab'],
+  ['idx', 'indexlab'],
+  ['review', 'review'],
+  ['rev', 'review']
+]);
+
+export const FIELD_SYSTEM_MAP = {
+  'contract.type': ['indexlab', 'seed', 'review'],
+  'contract.shape': ['indexlab', 'seed', 'review'],
+  'contract.unit': ['indexlab', 'review'],
+  'contract.unknown_token': ['indexlab'],
+  'contract.rounding.decimals': ['indexlab'],
+  'contract.rounding.mode': ['indexlab'],
+  'priority.required_level': ['seed', 'indexlab', 'review'],
+  'priority.availability': ['seed', 'indexlab', 'review'],
+  'priority.difficulty': ['seed', 'indexlab', 'review'],
+  'priority.effort': ['seed', 'indexlab', 'review'],
+  'priority.publish_gate': ['indexlab', 'review'],
+  'priority.block_publish_when_unk': ['indexlab', 'review'],
+  'ai_assist.mode': ['seed', 'indexlab', 'review'],
+  'ai_assist.model_strategy': ['indexlab', 'review'],
+  'ai_assist.max_calls': ['indexlab', 'review'],
+  'ai_assist.max_tokens': ['indexlab', 'review'],
+  'ai_assist.reasoning_note': ['indexlab', 'review'],
+  'parse.template': ['indexlab', 'review'],
+  'parse.unit': ['indexlab', 'review'],
+  'parse.unit_accepts': ['indexlab', 'review'],
+  'parse.allow_unitless': ['indexlab'],
+  'parse.allow_ranges': ['indexlab'],
+  'parse.strict_unit_required': ['indexlab'],
+  'enum.policy': ['seed', 'indexlab', 'review'],
+  'enum.source': ['seed', 'indexlab', 'review'],
+  'enum.match.strategy': ['review'],
+  'enum.match.fuzzy_threshold': ['review'],
+  'enum.additional_values': ['review'],
+  'evidence.required': ['seed', 'indexlab', 'review'],
+  'evidence.min_evidence_refs': ['seed', 'indexlab', 'review'],
+  'evidence.conflict_policy': ['indexlab', 'review'],
+  'evidence.tier_preference': ['indexlab', 'review'],
+  'search_hints.domain_hints': ['indexlab'],
+  'search_hints.preferred_content_types': ['indexlab'],
+  'search_hints.query_terms': ['indexlab'],
+  constraints: ['indexlab', 'review'],
+  'component.type': ['seed', 'indexlab', 'review'],
+  'component.match.fuzzy_threshold': ['review'],
+  'component.match.name_weight': ['review'],
+  'component.match.auto_accept_score': ['review'],
+  'component.match.flag_review_score': ['review'],
+  'component.match.property_weight': ['review'],
+  aliases: ['seed', 'indexlab', 'review'],
+  'ui.tooltip_md': ['indexlab', 'review']
+};
+
+const FIELD_PATH_ALIAS_DELETE_MAP = {
+  'contract.type': [['contract', 'type'], ['data_type'], ['type']],
+  'contract.shape': [['contract', 'shape'], ['output_shape'], ['shape']],
+  'contract.unit': [['contract', 'unit'], ['unit']],
+  'contract.unknown_token': [['contract', 'unknown_token'], ['unknown_token']],
+  'contract.rounding.decimals': [['contract', 'rounding', 'decimals'], ['rounding_decimals'], ['round']],
+  'contract.rounding.mode': [['contract', 'rounding', 'mode'], ['rounding_mode']],
+  'priority.required_level': [['priority', 'required_level'], ['required_level']],
+  'priority.availability': [['priority', 'availability'], ['availability']],
+  'priority.difficulty': [['priority', 'difficulty'], ['difficulty']],
+  'priority.effort': [['priority', 'effort'], ['effort']],
+  'priority.publish_gate': [['priority', 'publish_gate'], ['publish_gate']],
+  'priority.block_publish_when_unk': [['priority', 'block_publish_when_unk'], ['block_publish_when_unk']],
+  'ai_assist.mode': [['ai_assist', 'mode']],
+  'ai_assist.model_strategy': [['ai_assist', 'model_strategy']],
+  'ai_assist.max_calls': [['ai_assist', 'max_calls']],
+  'ai_assist.max_tokens': [['ai_assist', 'max_tokens']],
+  'ai_assist.reasoning_note': [['ai_assist', 'reasoning_note']],
+  'parse.template': [['parse', 'template'], ['parse_template']],
+  'parse.unit': [['parse', 'unit']],
+  'parse.unit_accepts': [['parse', 'unit_accepts']],
+  'parse.allow_unitless': [['parse', 'allow_unitless']],
+  'parse.allow_ranges': [['parse', 'allow_ranges']],
+  'parse.strict_unit_required': [['parse', 'strict_unit_required']],
+  'enum.policy': [['enum', 'policy'], ['enum_policy']],
+  'enum.source': [['enum', 'source'], ['enum_source']],
+  'enum.match.strategy': [['enum', 'match', 'strategy']],
+  'enum.match.fuzzy_threshold': [['enum', 'match', 'fuzzy_threshold'], ['enum_fuzzy_threshold']],
+  'enum.additional_values': [['enum', 'additional_values']],
+  'evidence.required': [['evidence', 'required'], ['evidence_required']],
+  'evidence.min_evidence_refs': [['evidence', 'min_evidence_refs'], ['min_evidence_refs']],
+  'evidence.conflict_policy': [['evidence', 'conflict_policy']],
+  'evidence.tier_preference': [['evidence', 'tier_preference']],
+  'search_hints.domain_hints': [['search_hints', 'domain_hints']],
+  'search_hints.preferred_content_types': [['search_hints', 'preferred_content_types']],
+  'search_hints.query_terms': [['search_hints', 'query_terms']],
+  constraints: [['constraints']],
+  'component.type': [['component', 'type'], ['component_db_ref']],
+  'component.match.fuzzy_threshold': [['component', 'match', 'fuzzy_threshold']],
+  'component.match.name_weight': [['component', 'match', 'name_weight']],
+  'component.match.auto_accept_score': [['component', 'match', 'auto_accept_score']],
+  'component.match.flag_review_score': [['component', 'match', 'flag_review_score']],
+  'component.match.property_weight': [['component', 'match', 'property_weight']],
+  aliases: [['aliases']],
+  'ui.tooltip_md': [['ui', 'tooltip_md']]
+};
+
+export function normalizeConsumerSystem(system) {
+  const token = normalizeText(system).toLowerCase();
+  if (!token) {
+    return null;
+  }
+  return SYSTEM_ALIASES.get(token) || null;
+}
+
+function normalizeFieldPath(fieldPath) {
+  return normalizeText(fieldPath);
+}
+
+export function normalizeConsumerOverrides(consumers) {
+  if (!isObject(consumers)) {
+    return null;
+  }
+
+  const normalized = {};
+  for (const [fieldPathRaw, overrideRowRaw] of Object.entries(consumers)) {
+    const fieldPath = normalizeFieldPath(fieldPathRaw);
+    if (!fieldPath || !isObject(overrideRowRaw)) {
+      continue;
+    }
+
+    const overrideRow = {};
+    for (const [systemRaw, enabledRaw] of Object.entries(overrideRowRaw)) {
+      const system = normalizeConsumerSystem(systemRaw);
+      if (!system || typeof enabledRaw !== 'boolean') {
+        continue;
+      }
+      overrideRow[system] = enabledRaw;
+    }
+
+    if (Object.keys(overrideRow).length > 0) {
+      normalized[fieldPath] = overrideRow;
+    }
+  }
+
+  if (Object.keys(normalized).length === 0) {
+    return null;
+  }
+  return normalized;
+}
+
+function toPathSegments(pathText = '') {
+  return normalizeText(pathText)
+    .split('.')
+    .map((segment) => normalizeText(segment))
+    .filter(Boolean);
+}
+
+function hasOwn(target, key) {
+  return Object.prototype.hasOwnProperty.call(target, key);
+}
+
+function cloneRuleValue(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => cloneRuleValue(item));
+  }
+  if (!isObject(value)) {
+    return value;
+  }
+  const out = {};
+  for (const [key, child] of Object.entries(value)) {
+    out[key] = cloneRuleValue(child);
+  }
+  return out;
+}
+
+function deletePath(target, pathSegments, depth = 0) {
+  if (!isObject(target) || depth >= pathSegments.length) {
+    return;
+  }
+  const key = pathSegments[depth];
+  if (!key || !hasOwn(target, key)) {
+    return;
+  }
+
+  if (depth === pathSegments.length - 1) {
+    delete target[key];
+    return;
+  }
+
+  const child = target[key];
+  if (!isObject(child)) {
+    return;
+  }
+
+  deletePath(child, pathSegments, depth + 1);
+
+  if (Object.keys(child).length === 0) {
+    delete target[key];
+  }
+}
+
+function getPathAliases(fieldPath) {
+  if (Array.isArray(FIELD_PATH_ALIAS_DELETE_MAP[fieldPath])) {
+    return FIELD_PATH_ALIAS_DELETE_MAP[fieldPath];
+  }
+  const fallback = toPathSegments(fieldPath);
+  return fallback.length > 0 ? [fallback] : [];
+}
+
+function collectDisabledPathsForSystem(rule, system) {
+  const normalized = normalizeConsumerOverrides(rule?.consumers);
+  if (!normalized || !system) {
+    return [];
+  }
+  const disabled = [];
+  for (const [fieldPath, row] of Object.entries(normalized)) {
+    if (isObject(row) && row[system] === false) {
+      disabled.push(fieldPath);
+    }
+  }
+  return disabled;
+}
+
+function applyDisabledFieldPathsToRule(rule, disabledFieldPaths = []) {
+  const projected = cloneRuleValue(rule);
+  for (const fieldPath of disabledFieldPaths) {
+    for (const pathSegments of getPathAliases(fieldPath)) {
+      deletePath(projected, pathSegments);
+    }
+  }
+  return projected;
+}
+
+function getFieldsContainer(payload) {
+  if (isObject(payload?.rules?.fields)) {
+    return {
+      fields: payload.rules.fields,
+      write: (nextPayload, fields) => {
+        nextPayload.rules = {
+          ...(isObject(nextPayload.rules) ? nextPayload.rules : {}),
+          fields
+        };
+      }
+    };
+  }
+
+  if (isObject(payload?.fields)) {
+    return {
+      fields: payload.fields,
+      write: (nextPayload, fields) => {
+        nextPayload.fields = fields;
+      }
+    };
+  }
+
+  return null;
+}
+
+function mergeDisabledPathsByField(map, fieldKey, disabledPaths = []) {
+  const raw = normalizeText(fieldKey);
+  const normalized = normalizeFieldKey(fieldKey);
+  const keys = [raw, normalized].filter(Boolean);
+  if (keys.length === 0 || disabledPaths.length === 0) {
+    return;
+  }
+
+  for (const key of keys) {
+    if (!map.has(key)) {
+      map.set(key, new Set());
+    }
+    const out = map.get(key);
+    for (const pathToken of disabledPaths) {
+      out.add(pathToken);
+    }
+  }
+}
+
+function isPathDisabled(disabledPathsByField, fieldKey, fieldPath) {
+  const raw = normalizeText(fieldKey);
+  const normalized = normalizeFieldKey(fieldKey);
+  const rawSet = raw ? disabledPathsByField.get(raw) : null;
+  const normalizedSet = normalized ? disabledPathsByField.get(normalized) : null;
+  return Boolean(rawSet?.has(fieldPath) || normalizedSet?.has(fieldPath));
+}
+
+function projectKnownValuesForConsumer(knownValues, disabledPathsByField) {
+  if (!isObject(knownValues) || !isObject(knownValues.enums)) {
+    return knownValues;
+  }
+
+  const nextEnums = {};
+  let changed = false;
+  for (const [fieldKey, enumRow] of Object.entries(knownValues.enums)) {
+    if (isPathDisabled(disabledPathsByField, fieldKey, 'enum.source')) {
+      changed = true;
+      continue;
+    }
+    nextEnums[fieldKey] = enumRow;
+  }
+
+  if (!changed) {
+    return knownValues;
+  }
+  return {
+    ...knownValues,
+    enums: nextEnums
+  };
+}
+
+function projectParseTemplatesForConsumer(parseTemplates, disabledPathsByField) {
+  if (!isObject(parseTemplates) || !isObject(parseTemplates.templates)) {
+    return parseTemplates;
+  }
+
+  const nextTemplates = {};
+  let changed = false;
+  for (const [fieldKey, templateRow] of Object.entries(parseTemplates.templates)) {
+    if (isPathDisabled(disabledPathsByField, fieldKey, 'parse.template')) {
+      changed = true;
+      continue;
+    }
+    nextTemplates[fieldKey] = templateRow;
+  }
+
+  if (!changed) {
+    return parseTemplates;
+  }
+  return {
+    ...parseTemplates,
+    templates: nextTemplates
+  };
+}
+
+function projectCrossValidationRulesForConsumer(crossValidation, disabledPathsByField) {
+  if (!Array.isArray(crossValidation)) {
+    return crossValidation;
+  }
+  const filtered = crossValidation.filter((row) => {
+    const triggerField = normalizeText(row?.trigger_field || row?.triggerField || '');
+    if (!triggerField) {
+      return true;
+    }
+    return !isPathDisabled(disabledPathsByField, triggerField, 'constraints');
+  });
+  if (filtered.length === crossValidation.length) {
+    return crossValidation;
+  }
+  return filtered;
+}
+
+function projectCrossValidationContainerForConsumer(crossValidationContainer, disabledPathsByField) {
+  if (!isObject(crossValidationContainer) || !Array.isArray(crossValidationContainer.rules)) {
+    return crossValidationContainer;
+  }
+  const filteredRules = projectCrossValidationRulesForConsumer(crossValidationContainer.rules, disabledPathsByField);
+  if (filteredRules === crossValidationContainer.rules) {
+    return crossValidationContainer;
+  }
+  return {
+    ...crossValidationContainer,
+    rules: filteredRules
+  };
+}
+
+function resolveOverrideValue({ rule, fieldPath, system }) {
+  const normalizedOverrides = normalizeConsumerOverrides(rule?.consumers);
+  if (!normalizedOverrides) {
+    return {
+      hasOverride: false,
+      enabled: true
+    };
+  }
+
+  const fieldOverride = normalizedOverrides[fieldPath];
+  if (!isObject(fieldOverride)) {
+    return {
+      hasOverride: false,
+      enabled: true
+    };
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(fieldOverride, system)) {
+    return {
+      hasOverride: false,
+      enabled: true
+    };
+  }
+
+  return {
+    hasOverride: true,
+    enabled: fieldOverride[system] !== false
+  };
+}
+
+export function resolveConsumerGate(rule, fieldPath, system) {
+  const normalizedFieldPath = normalizeFieldPath(fieldPath);
+  const normalizedSystem = normalizeConsumerSystem(system);
+
+  if (!normalizedFieldPath || !normalizedSystem) {
+    return {
+      fieldPath: normalizedFieldPath || normalizeText(fieldPath),
+      system: normalizeText(system),
+      enabled: true,
+      explicit: false
+    };
+  }
+
+  const resolved = resolveOverrideValue({
+    rule,
+    fieldPath: normalizedFieldPath,
+    system: normalizedSystem
+  });
+
+  return {
+    fieldPath: normalizedFieldPath,
+    system: normalizedSystem,
+    enabled: resolved.enabled,
+    explicit: resolved.hasOverride
+  };
+}
+
+export function isConsumerEnabled(rule, fieldPath, system) {
+  return resolveConsumerGate(rule, fieldPath, system).enabled;
+}
+
+export function projectRuleForConsumer(rule, system) {
+  const normalizedSystem = normalizeConsumerSystem(system);
+  if (!isObject(rule) || !normalizedSystem) {
+    return rule;
+  }
+  const disabledPaths = collectDisabledPathsForSystem(rule, normalizedSystem);
+  if (disabledPaths.length === 0) {
+    return cloneRuleValue(rule);
+  }
+  return applyDisabledFieldPathsToRule(rule, disabledPaths);
+}
+
+export function projectFieldRulesForConsumer(payload, system) {
+  const normalizedSystem = normalizeConsumerSystem(system);
+  if (!isObject(payload) || !normalizedSystem) {
+    return payload;
+  }
+
+  const fieldsContainer = getFieldsContainer(payload);
+  if (!fieldsContainer) {
+    return payload;
+  }
+
+  const nextPayload = { ...payload };
+  const projectedFields = {};
+  const disabledPathsByField = new Map();
+
+  for (const [fieldKey, rule] of Object.entries(fieldsContainer.fields)) {
+    if (!isObject(rule)) {
+      projectedFields[fieldKey] = rule;
+      continue;
+    }
+
+    const disabledPaths = collectDisabledPathsForSystem(rule, normalizedSystem);
+    mergeDisabledPathsByField(disabledPathsByField, fieldKey, disabledPaths);
+    projectedFields[fieldKey] = disabledPaths.length > 0
+      ? applyDisabledFieldPathsToRule(rule, disabledPaths)
+      : cloneRuleValue(rule);
+  }
+  fieldsContainer.write(nextPayload, projectedFields);
+
+  nextPayload.knownValues = projectKnownValuesForConsumer(nextPayload.knownValues, disabledPathsByField);
+  nextPayload.parseTemplates = projectParseTemplatesForConsumer(nextPayload.parseTemplates, disabledPathsByField);
+  nextPayload.crossValidation = projectCrossValidationRulesForConsumer(nextPayload.crossValidation, disabledPathsByField);
+
+  if (isObject(nextPayload.crossValidation)) {
+    nextPayload.crossValidation = projectCrossValidationContainerForConsumer(
+      nextPayload.crossValidation,
+      disabledPathsByField
+    );
+  }
+
+  const hasCrossValidationRules = isObject(nextPayload?.crossValidation?.rules);
+  if (hasCrossValidationRules && Array.isArray(nextPayload.crossValidation.rules)) {
+    const filtered = projectCrossValidationRulesForConsumer(nextPayload.crossValidation.rules, disabledPathsByField);
+    if (filtered !== nextPayload.crossValidation.rules) {
+      nextPayload.crossValidation = {
+        ...nextPayload.crossValidation,
+        rules: filtered
+      };
+    }
+  }
+
+  return nextPayload;
+}

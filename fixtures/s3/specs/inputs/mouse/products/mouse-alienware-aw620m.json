@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-alienware-aw620m",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Alienware",
+    "model": "AW620M",
+    "variant": "",
+    "sku": "570-BBBV",
+    "mpn": "",
+    "gtin": "",
+    "id": 2,
+    "identifier": "34500132"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

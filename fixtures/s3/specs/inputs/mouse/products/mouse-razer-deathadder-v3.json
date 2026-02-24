@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-razer-deathadder-v3",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Razer",
+    "model": "Deathadder V3",
+    "variant": "",
+    "sku": "",
+    "mpn": "",
+    "gtin": "",
+    "id": 139,
+    "identifier": "e6a3960e"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

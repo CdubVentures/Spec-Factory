@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-cooler-master-mm731",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Cooler Master",
+    "model": "MM731",
+    "variant": "",
+    "sku": "",
+    "mpn": "",
+    "gtin": "",
+    "id": 341,
+    "identifier": "8048f950"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

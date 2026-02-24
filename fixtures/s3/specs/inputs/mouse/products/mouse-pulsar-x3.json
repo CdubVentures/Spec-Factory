@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-pulsar-x3",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Pulsar",
+    "model": "X3",
+    "variant": "",
+    "sku": "",
+    "mpn": "",
+    "gtin": "",
+    "id": 285,
+    "identifier": "77865bf6"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

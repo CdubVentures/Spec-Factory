@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-evga-x17",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "EVGA",
+    "model": "X17",
+    "variant": "",
+    "sku": "",
+    "mpn": "",
+    "gtin": "",
+    "id": 209,
+    "identifier": "c5513b8d"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

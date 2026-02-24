@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-fnatic-bolt",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Fnatic",
+    "model": "Bolt",
+    "variant": "",
+    "sku": "",
+    "mpn": "",
+    "gtin": "",
+    "id": 219,
+    "identifier": "062b81e9"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

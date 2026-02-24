@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-logitech-g-g903-lightspeed",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Logitech G",
+    "model": "G903 Lightspeed",
+    "variant": "",
+    "sku": "",
+    "mpn": "",
+    "gtin": "",
+    "id": 113,
+    "identifier": "dbe9d673"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

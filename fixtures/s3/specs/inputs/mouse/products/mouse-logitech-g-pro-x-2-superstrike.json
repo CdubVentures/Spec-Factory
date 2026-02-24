@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-logitech-g-pro-x-2-superstrike",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Logitech G",
+    "model": "Pro X 2 Superstrike",
+    "variant": "",
+    "sku": "910-007778",
+    "mpn": "",
+    "gtin": "",
+    "id": 105,
+    "identifier": "83165eba"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

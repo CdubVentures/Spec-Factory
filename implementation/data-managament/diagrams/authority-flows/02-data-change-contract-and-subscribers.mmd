@@ -1,0 +1,49 @@
+flowchart LR
+  subgraph P["Mutation producers"]
+    P1["studioRoutes\nstudio-drafts-saved\nworkbook-map-saved"]
+    P2["compileProcessCompletion\nprocess-completed"]
+    P3["catalog/brand/queue/config/source-strategy/review routes"]
+  end
+
+  subgraph C["Contract normalization"]
+    C1["createDataChangePayload"]
+    C2["event + category/categories + domains + version + entities + meta + ts"]
+  end
+
+  subgraph W["WebSocket broadcast"]
+    W1["broadcastWs('data-change', payload)"]
+    W2["wsFilterPayload -> dataChangeMatchesCategory"]
+  end
+
+  subgraph F["Frontend subscribers"]
+    F1["AppShell onMessage(data-change)"]
+    F2["createDataChangeInvalidationScheduler"]
+    F3["resolveDataChangeInvalidationQueryKeys"]
+    F4["useDataChangeSubscription"]
+    F5["useAuthoritySnapshot"]
+  end
+
+  subgraph Q["Query families invalidated"]
+    Q1["studio, studio-drafts, studio-config"]
+    Q2["reviewLayout, reviewProductsIndex, candidates"]
+    Q3["catalog, catalog-products, product"]
+    Q4["componentReview, enumReview, componentImpact"]
+    Q5["data-authority snapshot"]
+  end
+
+  P1 --> C1
+  P2 --> C1
+  P3 --> C1
+  C1 --> C2
+  C2 --> W1
+  W1 --> W2
+  W2 --> F1
+  W2 --> F4
+  F1 --> F2
+  F2 --> F3
+  F3 --> Q1
+  F3 --> Q2
+  F3 --> Q3
+  F3 --> Q4
+  F4 --> F5
+  F5 --> Q5

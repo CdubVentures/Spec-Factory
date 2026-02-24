@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-corsair-ironclaw-rgb",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Corsair",
+    "model": "Ironclaw RGB",
+    "variant": "",
+    "sku": "CH-9307011-NA",
+    "mpn": "",
+    "gtin": "",
+    "id": 43,
+    "identifier": "01280363"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

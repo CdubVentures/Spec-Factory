@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-asus-rog-harpe-ace-aim-lab",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Asus",
+    "model": "ROG Harpe Ace Aim Lab",
+    "variant": "",
+    "sku": "90MP02W0-BMAA10",
+    "mpn": "",
+    "gtin": "",
+    "id": 56,
+    "identifier": "7f69b779"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

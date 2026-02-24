@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-asus-rog-harpe-ii-ace",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Asus",
+    "model": "ROG Harpe II Ace",
+    "variant": "",
+    "sku": "",
+    "mpn": "",
+    "gtin": "",
+    "id": 53,
+    "identifier": "b3ab70c1"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

@@ -1,0 +1,24 @@
+# /etc/searxng/settings.yml
+use_default_settings: true
+
+general:
+  instance_name: "Spec Harvester Local Search"
+  debug: false
+  enable_metrics: true
+  open_metrics: ""   # set a password to enable /metrics with basic auth
+
+search:
+  safe_search: 0
+  formats:
+    - html
+    - json
+
+server:
+  bind_address: "127.0.0.1"
+  port: 8888
+  base_url: false
+  secret_key: "CHANGE_THIS_TO_A_RANDOM_LONG_SECRET"
+  limiter: false
+  public_instance: false
+  image_proxy: false
+  method: "POST"   # or "GET"

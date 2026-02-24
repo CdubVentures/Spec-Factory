@@ -1,0 +1,82 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  KNOWN_DATA_CHANGE_DOMAINS,
+  findUnmappedDataChangeDomains,
+  resolveDataChangeInvalidationQueryKeys,
+  invalidateDataChangeQueries,
+} from '../tools/gui-react/src/api/dataChangeInvalidationMap.js';
+
+function hasQueryKey(keys, expected) {
+  const target = JSON.stringify(expected);
+  return keys.some((queryKey) => JSON.stringify(queryKey) === target);
+}
+
+test('all known data-change domains are mapped to invalidation templates', () => {
+  const unmapped = findUnmappedDataChangeDomains(KNOWN_DATA_CHANGE_DOMAINS);
+  assert.deepEqual(unmapped, []);
+});
+
+test('review drawer regression: review events invalidate candidates query family', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'review-override',
+      domains: ['review', 'product'],
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['reviewProductsIndex', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['product', 'mouse']), true);
+});
+
+test('component impact regression: component events invalidate componentImpact', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'component-review',
+      domains: ['component', 'review'],
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['componentImpact']), true);
+  assert.equal(hasQueryKey(keys, ['componentReviewData', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse']), true);
+});
+
+test('event fallback mapping works when domains are omitted', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'component-review',
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['componentImpact']), true);
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse']), true);
+});
+
+test('invalidateDataChangeQueries deduplicates repeated domains and categories', () => {
+  const invalidated = [];
+  const queryKeys = invalidateDataChangeQueries({
+    queryClient: {
+      invalidateQueries: ({ queryKey }) => {
+        invalidated.push(queryKey);
+      },
+    },
+    message: {
+      type: 'data-change',
+      event: 'component-review',
+      domains: ['component', 'review', 'component'],
+    },
+    categories: ['mouse', 'mouse'],
+  });
+
+  assert.deepEqual(invalidated, queryKeys);
+  const componentImpactCount = queryKeys.filter((queryKey) => JSON.stringify(queryKey) === JSON.stringify(['componentImpact'])).length;
+  assert.equal(componentImpactCount, 1);
+});

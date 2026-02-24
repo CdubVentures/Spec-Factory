@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-acer-cestus-335",
+  "category": "mouse",
+  "identityLock": {
+    "id": 8,
+    "identifier": "5b2844dc",
+    "brand": "Acer",
+    "model": "Cestus 335",
+    "variant": "",
+    "sku": "",
+    "mpn": "",
+    "gtin": ""
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

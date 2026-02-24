@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-aorus-m6",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Aorus",
+    "model": "M6",
+    "variant": "",
+    "sku": "GM-AORUS-M6",
+    "mpn": "",
+    "gtin": "",
+    "id": 14,
+    "identifier": "dc354956"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

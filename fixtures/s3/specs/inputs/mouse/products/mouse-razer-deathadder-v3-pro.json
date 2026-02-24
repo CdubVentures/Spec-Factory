@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-razer-deathadder-v3-pro",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Razer",
+    "model": "Deathadder V3 Pro",
+    "variant": "",
+    "sku": "",
+    "mpn": "",
+    "gtin": "",
+    "id": 137,
+    "identifier": "307a7df0"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

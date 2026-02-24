@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-alienware-aw720m",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Alienware",
+    "model": "AW720M",
+    "variant": "",
+    "sku": "570-ABNC",
+    "mpn": "",
+    "gtin": "",
+    "id": 4,
+    "identifier": "f97115ea"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

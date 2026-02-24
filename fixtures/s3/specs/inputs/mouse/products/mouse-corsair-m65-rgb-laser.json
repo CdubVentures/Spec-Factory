@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-corsair-m65-rgb-laser",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Corsair",
+    "model": "M65 RGB Laser",
+    "variant": "",
+    "sku": "CH-9000070-NA",
+    "mpn": "",
+    "gtin": "",
+    "id": 35,
+    "identifier": "7e1fb4e6"
+  },
+  "seedUrls": [],
+  "anchors": {}
+}
