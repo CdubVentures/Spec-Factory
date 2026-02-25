@@ -1,9 +1,9 @@
-﻿# Tab 2 - LLM Brand Resolver
+# Tab 2 - LLM Brand Resolver
 
 **Purpose:** Who/what entity is this?
 
 ## Primary goal
-Show the chosen canonical brand/manufacturer, confidence, and alternativesâ€”so a newbie never wonders â€œare we on the right thing?â€
+Show the chosen canonical brand/manufacturer, confidence, and alternatives—so a newbie never wonders “are we on the right thing?”
 
 ---
 
@@ -13,17 +13,17 @@ Show the chosen canonical brand/manufacturer, confidence, and alternativesâ€�
 - Canonical name
 - Confidence gauge
 - Suggested official domains (if any)
-- â€œWhy we believe thisâ€ (2â€“4 bullets)
+- “Why we believe this” (2–4 bullets)
 
 ### B) Candidate brands table
 Columns:
 - Candidate name
 - Confidence (bar)
 - Supporting evidence (links to Search Results)
-- Disambiguation note (1â€“2 lines)
+- Disambiguation note (1–2 lines)
 
 ### C) Disambiguation helper (only if confidence < threshold)
-- â€œWeâ€™re not sureâ€ banner
+- “We’re not sure” banner
 - One recommended user question (multiple-choice)
 - Impact preview: queries/domains that would change
 
@@ -48,7 +48,7 @@ Columns:
 ---
 
 ## Empty/error states
-- No candidates: show â€œbrand resolution skippedâ€ + likely reason
+- No candidates: show “brand resolution skipped” + likely reason
 - Conflicting evidence: conflict banner + require user decision
 
 ---

@@ -76,7 +76,7 @@ test('scanOrphans: detects fabricated variants as orphans when canonical exists'
       makeProduct('mouse-acer-cestus-310', 'Acer', 'Cestus 310', ''),
     'specs/inputs/mouse/products/mouse-acer-cestus-310-310.json':
       makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310', {
-        seed: { source: 'excel' }
+        seed: { source: 'field_studio' }
       })
   });
 
@@ -288,7 +288,7 @@ test('reconcileOrphans: Redragon Woki M994 real-world case', async () => {
       makeProduct('mouse-redragon-woki-m994', 'Redragon', 'Woki M994', ''),
     'specs/inputs/mouse/products/mouse-redragon-woki-m994-m994.json':
       makeProduct('mouse-redragon-woki-m994-m994', 'Redragon', 'Woki M994', 'M994', {
-        seed: { source: 'excel', workbook_path: 'C:\\old\\path\\mouseData.xlsm' }
+        seed: { source: 'field_studio', field_studio_source_path: 'C:\\old\\path\\mouseData.xlsm' }
       })
   });
 

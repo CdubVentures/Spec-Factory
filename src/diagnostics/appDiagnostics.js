@@ -45,7 +45,7 @@ async function listDirNames(dirPath) {
   }
 }
 
-async function listWorkbookFiles(dirPath) {
+async function listFieldStudioSourceFiles(dirPath) {
   try {
     const rows = await fs.readdir(dirPath, { withFileTypes: true });
     return rows
@@ -106,7 +106,7 @@ async function collectCategoryReport({ rootDir, category, config }) {
   const runtimeSearchTemplatesPath = path.join(paths.runtimeCategory, 'search_templates.json');
   const runtimeAnchorsPath = path.join(paths.runtimeCategory, 'anchors.json');
 
-  const workbooks = await listWorkbookFiles(paths.helperCategory);
+  const fieldStudioSourceFiles = await listFieldStudioSourceFiles(paths.helperCategory);
   const [helperSchemaRaw, runtimeSchemaRaw, helperRequiredRaw, runtimeRequiredRaw] = await Promise.all([
     readTextIfExists(helperSchemaPath),
     readTextIfExists(runtimeSchemaPath),
@@ -153,7 +153,7 @@ async function collectCategoryReport({ rootDir, category, config }) {
     category,
     helper_root: toPosixRelative(rootDir, paths.helperCategory),
     runtime_root: toPosixRelative(rootDir, paths.runtimeCategory),
-    workbooks,
+    field_studio_sources: fieldStudioSourceFiles,
     files,
     compiled: {
       loaded_from: helperContract ? 'helper_files' : (dataContract ? 'data' : null),

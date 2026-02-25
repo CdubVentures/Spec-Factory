@@ -128,7 +128,7 @@ export async function bootstrapExpansionCategories({
       template: normalizedTemplate,
       helper_category_root: initResult.paths.helper_category_root,
       category_root: initResult.paths.category_root,
-      starter_workbook: path.join(initResult.paths.source_root, 'field_catalog.xlsx'),
+      starter_field_studio_source: path.join(initResult.paths.source_root, 'field_catalog.xlsx'),
       golden_manifest: manifestPath,
       golden_manifest_created: manifestCreated,
       created_files_count: Array.isArray(initResult.created_files) ? initResult.created_files.length : 0

@@ -2447,18 +2447,17 @@ async function buildEnumReviewPayloadsLegacy({ config = {}, category, specDb = n
   const suggestPath = path.join(helperRoot, category, '_suggestions', 'enums.json');
   const controlPlaneRoot = path.join(helperRoot, category, '_control_plane');
   const fieldStudioMapPath = path.join(controlPlaneRoot, 'field_studio_map.json');
-  const controlMapPath = path.join(controlPlaneRoot, 'workbook_map.json');
 
   const kv = await safeReadJson(kvPath);
   const suggestions = await safeReadJson(suggestPath);
-  const wbMap = await safeReadJson(fieldStudioMapPath) || await safeReadJson(controlMapPath);
+  const studioMap = await safeReadJson(fieldStudioMapPath);
 
   const kvFields = isObject(kv?.fields) ? kv.fields : {};
   const kvGeneratedAt = kv?.generated_at || '';
 
   // Build a lookup of manually added enum values (user-accepted or user-added)
-  const manualEnumValues = isObject(wbMap?.manual_enum_values) ? wbMap.manual_enum_values : {};
-  const manualEnumTimestamps = isObject(wbMap?.manual_enum_timestamps) ? wbMap.manual_enum_timestamps : {};
+  const manualEnumValues = isObject(studioMap?.manual_enum_values) ? studioMap.manual_enum_values : {};
+  const manualEnumTimestamps = isObject(studioMap?.manual_enum_timestamps) ? studioMap.manual_enum_timestamps : {};
   const manualLookup = {};
   for (const [f, vals] of Object.entries(manualEnumValues)) {
     manualLookup[f] = new Set(toArray(vals).map(v => String(v).trim().toLowerCase()));

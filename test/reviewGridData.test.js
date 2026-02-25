@@ -39,7 +39,7 @@ async function seedCategoryArtifacts(helperRoot, category) {
         difficulty: 'easy',
         effort: 2,
         contract: { type: 'number', shape: 'scalar', unit: 'g' },
-        excel: {
+        field_studio_hints: {
           dataEntry: { sheet: 'dataEntry', row: 9, key_cell: 'B9' }
         },
         ui: { label: 'Weight', group: 'General', order: 9 }
@@ -50,7 +50,7 @@ async function seedCategoryArtifacts(helperRoot, category) {
         difficulty: 'medium',
         effort: 5,
         contract: { type: 'number', shape: 'scalar', unit: null },
-        excel: {
+        field_studio_hints: {
           dataEntry: { sheet: 'dataEntry', row: 10, key_cell: 'B10' }
         },
         ui: { label: 'DPI', group: '', order: 10 }
@@ -61,7 +61,7 @@ async function seedCategoryArtifacts(helperRoot, category) {
         difficulty: 'easy',
         effort: 3,
         contract: { type: 'enum', shape: 'scalar', unit: null },
-        excel: {
+        field_studio_hints: {
           dataEntry: { sheet: 'dataEntry', row: 11, key_cell: 'B11' }
         },
         ui: { label: 'Connection', group: 'Connectivity', order: 11 }
@@ -225,7 +225,7 @@ async function seedQueueState(storage, category, productIds = []) {
   );
 }
 
-test('buildReviewLayout follows excel row order and inherits blank group labels', async () => {
+test('buildReviewLayout follows field-studio row order and inherits blank group labels', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-layout-'));
   const storage = makeStorage(tempRoot);
   const config = { helperFilesRoot: path.join(tempRoot, 'helper_files') };
@@ -233,7 +233,7 @@ test('buildReviewLayout follows excel row order and inherits blank group labels'
     await seedCategoryArtifacts(config.helperFilesRoot, 'mouse');
     const layout = await buildReviewLayout({ storage, config, category: 'mouse' });
     assert.equal(layout.category, 'mouse');
-    assert.equal(layout.excel.key_range, 'B9:B11');
+    assert.equal(layout.field_studio.key_range, 'B9:B11');
     assert.equal(layout.rows.length, 3);
     assert.deepEqual(layout.rows.map((row) => row.key), ['weight', 'dpi', 'connection']);
     assert.equal(layout.rows[0].group, 'General');
@@ -268,7 +268,7 @@ test('buildReviewLayout strips review-disabled rule paths before deriving field_
             'evidence.conflict_policy': { review: false },
             'component.type': { review: false },
           },
-          excel: {
+          field_studio_hints: {
             dataEntry: { sheet: 'dataEntry', row: 9, key_cell: 'B9' }
           },
           ui: { label: 'Connection', group: 'Connectivity', order: 9 },

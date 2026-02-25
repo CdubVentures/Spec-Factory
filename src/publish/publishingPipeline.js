@@ -2,7 +2,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import ExcelJS from 'exceljs';
 import semver from 'semver';
 import { createFieldRulesEngine } from '../engine/fieldRulesEngine.js';
 import { applyRuntimeFieldRules } from '../engine/runtimeGate.js';
@@ -726,16 +725,6 @@ async function writeCategoryIndexAndChangelog(storage, category) {
   };
 }
 
-function confidenceStyle(score) {
-  if (score >= 0.85) {
-    return { argb: 'FFC6EFCE' };
-  }
-  if (score >= 0.6) {
-    return { argb: 'FFFFF2CC' };
-  }
-  return { argb: 'FFF8CBAD' };
-}
-
 async function writeCsvExport(storage, category, records) {
   const fieldSet = new Set();
   for (const row of records) {
@@ -771,120 +760,6 @@ async function writeCsvExport(storage, category, records) {
 
   await writeTextDual(storage, [category, 'exports', 'all_products.csv'], `${lines.join('\n')}\n`, 'text/csv; charset=utf-8');
   return outputModernKey([category, 'exports', 'all_products.csv']);
-}
-
-async function writeXlsxExport(storage, category, records, accuracyReport = null) {
-  const workbook = new ExcelJS.Workbook();
-
-  const fieldSet = new Set();
-  for (const row of records) {
-    for (const key of Object.keys(row.specs || {})) {
-      fieldSet.add(key);
-    }
-  }
-  const fields = [...fieldSet].sort((a, b) => a.localeCompare(b));
-
-  const products = workbook.addWorksheet('Products');
-  const productHeaders = ['product_id', 'brand', 'model', 'variant', 'published_version', 'published_at', ...fields];
-  products.addRow(productHeaders);
-  for (const row of records) {
-    const values = [
-      row.product_id,
-      row.identity?.brand || '',
-      row.identity?.model || '',
-      row.identity?.variant || '',
-      row.published_version,
-      row.published_at,
-      ...fields.map((field) => {
-        const value = row.specs?.[field];
-        if (Array.isArray(value)) {
-          return value.join(', ');
-        }
-        if (isObject(value)) {
-          return JSON.stringify(value);
-        }
-        return value ?? 'unk';
-      })
-    ];
-    const added = products.addRow(values);
-    fields.forEach((field, index) => {
-      const columnIndex = 7 + index;
-      const metadata = row.specs_with_metadata?.[field] || {};
-      const value = String(added.getCell(columnIndex).value || '').trim().toLowerCase();
-      if (!value || value === 'unk' || value === 'unknown' || value === 'n/a') {
-        added.getCell(columnIndex).font = { italic: true, color: { argb: 'FF666666' } };
-      }
-      if (metadata.override_source) {
-        added.getCell(columnIndex).font = {
-          ...(added.getCell(columnIndex).font || {}),
-          bold: true,
-          color: { argb: 'FF1F4E79' }
-        };
-      }
-    });
-  }
-
-  productHeaders.forEach((header, index) => {
-    const column = products.getColumn(index + 1);
-    column.width = Math.max(14, String(header).length + 2);
-  });
-
-  const confidence = workbook.addWorksheet('Confidence');
-  confidence.addRow(['product_id', ...fields]);
-  for (const row of records) {
-    const values = [row.product_id, ...fields.map((field) => toNumber(row.specs_with_metadata?.[field]?.confidence, 0))];
-    const added = confidence.addRow(values);
-    fields.forEach((field, index) => {
-      const cell = added.getCell(index + 2);
-      const score = toNumber(row.specs_with_metadata?.[field]?.confidence, 0);
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: confidenceStyle(score)
-      };
-    });
-  }
-
-  const metadataSheet = workbook.addWorksheet('Field Metadata');
-  metadataSheet.addRow(['field_key', 'display_name', 'type', 'unit', 'required_level']);
-  const firstRecord = records[0] || {};
-  const fieldMetaRows = Object.keys(firstRecord.specs_with_metadata || {})
-    .sort((a, b) => a.localeCompare(b))
-    .map((field) => {
-      const meta = firstRecord.specs_with_metadata[field] || {};
-      return [field, field, typeof meta.value, meta.unit || '', meta.required_level || ''];
-    });
-  for (const row of fieldMetaRows) {
-    metadataSheet.addRow(row);
-  }
-
-  const unknownsSheet = workbook.addWorksheet('Unknowns');
-  unknownsSheet.addRow(['product_id', 'field', 'reason']);
-  for (const row of records) {
-    for (const [field, unknown] of Object.entries(row.unknowns || {})) {
-      unknownsSheet.addRow([row.product_id, field, String(unknown?.reason || '')]);
-    }
-  }
-
-  const changelogSheet = workbook.addWorksheet('Changelog');
-  changelogSheet.addRow(['product_id', 'published_version', 'published_at']);
-  for (const row of records) {
-    changelogSheet.addRow([row.product_id, row.published_version, row.published_at]);
-  }
-
-  const accuracySheet = workbook.addWorksheet('Accuracy');
-  accuracySheet.addRow(['field', 'accuracy', 'coverage']);
-  const reportByField = isObject(accuracyReport?.by_field)
-    ? accuracyReport.by_field
-    : (isObject(accuracyReport?.raw?.by_field) ? accuracyReport.raw.by_field : {});
-  for (const field of Object.keys(reportByField).sort((a, b) => a.localeCompare(b))) {
-    const row = reportByField[field] || {};
-    accuracySheet.addRow([field, toNumber(row.accuracy, 0), toNumber(row.coverage, 0)]);
-  }
-
-  const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
-  await writeBufferDual(storage, [category, 'exports', 'all_products.xlsx'], buffer, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  return outputModernKey([category, 'exports', 'all_products.xlsx']);
 }
 
 async function writeSqliteExport(storage, category, records) {
@@ -931,18 +806,14 @@ async function writeSqliteExport(storage, category, records) {
 async function writeBulkExports(storage, category, format = 'all') {
   const records = await listPublishedCurrentRecords(storage, category);
   const normalizedFormat = normalizeToken(format || 'all');
-  const written = {};
-
-  let latestAccuracy = await readJsonDual(storage, [category, '_accuracy_report.json']);
-  if (!latestAccuracy) {
-    latestAccuracy = null;
+  const allowedFormats = new Set(['all', 'csv', 'sqlite']);
+  if (!allowedFormats.has(normalizedFormat)) {
+    throw new Error(`publish_invalid_format:${normalizedFormat}; expected all|csv|sqlite`);
   }
+  const written = {};
 
   if (normalizedFormat === 'all' || normalizedFormat === 'csv') {
     written.csv_key = await writeCsvExport(storage, category, records);
-  }
-  if (normalizedFormat === 'all' || normalizedFormat === 'xlsx') {
-    written.xlsx_key = await writeXlsxExport(storage, category, records, latestAccuracy);
   }
   if (normalizedFormat === 'all' || normalizedFormat === 'sqlite') {
     const sqlite = await writeSqliteExport(storage, category, records);

@@ -1,4 +1,4 @@
-﻿# Tab 3 - Search Profile
+# Tab 3 - Search Profile
 
 **Purpose:** How are we going to search? (queries, targets, constraints)
 
@@ -10,7 +10,7 @@ Make query intent + coverage obvious: **Do we have the right queries for the nee
 ## Story Mode layout
 
 ### A) Coverage overview (top)
-- Need â†’ # queries planned (mini matrix)
+- Need → # queries planned (mini matrix)
 - Highlight gaps: needs with 0 queries
 - Coverage score summary
 
@@ -26,12 +26,12 @@ Columns:
 ### C) Entities & aliases panel
 - Canonical brand/model + aliases
 - Alias source: deterministic / learned / LLM
-- Per-alias â€œdisableâ€ toggle (prevent noisy searches)
+- Per-alias “disable” toggle (prevent noisy searches)
 
 ### D) Query detail drawer
 - Query rationale (plain English)
 - Needs covered (chips)
-- â€œEdit queryâ€ inline + re-run (admin)
+- “Edit query” inline + re-run (admin)
 
 ---
 
@@ -43,13 +43,13 @@ Columns:
 ---
 
 ## Key visuals
-- Needs Ã— Queries coverage heatmap
-- Query lifecycle timeline: planned â†’ sent â†’ received
+- Needs × Queries coverage heatmap
+- Query lifecycle timeline: planned → sent → received
 
 ---
 
 ## Empty/error states
-- No queries: â€œSearchProfile not generatedâ€ + regenerate/import template
+- No queries: “SearchProfile not generated” + regenerate/import template
 - Too many queries: redundancy hints + merge suggestions
 
 ---
@@ -58,3 +58,9 @@ Columns:
 - Approve / disable queries
 - Add query manually
 - Export SearchProfile
+
+---
+
+## IDX gate implementation note
+- Runtime + UI handling for prefetch IDX gates is documented in:
+  - `implementation/ai-indexing-plans/row-1-gui/idx-gates-runbook.md`

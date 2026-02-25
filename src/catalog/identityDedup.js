@@ -4,7 +4,7 @@
  *
  * A "fabricated variant" is one where the variant value is already
  * contained within the model name (e.g. model="Cestus 310", variant="310").
- * These duplicates arose from a legacy Excel seed with an empty variant row.
+ * These duplicates arose from a legacy seed import with an empty variant row.
  */
 
 import { slugify, buildProductId } from './slugify.js';

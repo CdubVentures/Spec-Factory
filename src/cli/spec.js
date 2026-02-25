@@ -20,7 +20,7 @@ import { startIntelGraphApi } from '../api/intelGraphApi.js';
 import { runGoldenBenchmark } from '../benchmark/goldenBenchmark.js';
 import { rankBatchWithBandit } from '../learning/banditScheduler.js';
 import { ingestCsvFile } from '../ingest/csvIngestor.js';
-import { compileCategoryWorkbook } from '../ingest/categoryCompile.js';
+import { compileCategoryFieldStudio } from '../ingest/categoryCompile.js';
 import { runWatchImports, runDaemon } from '../daemon/daemon.js';
 import { runUntilComplete } from '../runner/runUntilComplete.js';
 import {
@@ -89,7 +89,7 @@ import {
 import {
   buildAccuracyReport,
   createGoldenFixture,
-  createGoldenFromExcel,
+  createGoldenFromCatalog,
   renderAccuracyReportMarkdown,
   validateGoldenFixtures
 } from '../testing/goldenFiles.js';
@@ -121,13 +121,13 @@ function usage() {
     '',
     'Commands:',
     '  run-one --s3key <key> [--local] [--dry-run]',
-    '  indexlab --category <category> --seed <product_id|s3key|url|title> [--product-id <id>] [--s3key <key>] [--brand <brand>] [--model <model>] [--variant <variant>] [--sku <sku>] [--fields <csv>] [--providers <csv>] [--out <dir>] [--convergence] [--max-rounds <n>] [--mode <mode>] [--local]',
+    '  indexlab --category <category> --seed <product_id|s3key|url|title> [--product-id <id>] [--s3key <key>] [--brand <brand>] [--model <model>] [--variant <variant>] [--sku <sku>] [--fields <csv>] [--providers <csv>] [--out <dir>] [--run-id <run_id>] [--convergence] [--max-rounds <n>] [--mode <mode>] [--local]',
     '  run-ad-hoc <category> <brand> <model> [<variant>] [--seed-urls <csv>] [--until-complete] [--mode uber_aggressive|aggressive|balanced] [--max-rounds <n>] [--local]',
     '  run-ad-hoc --category <category> --brand <brand> --model <model> [--variant <variant>] [--seed-urls <csv>] [--until-complete] [--mode uber_aggressive|aggressive|balanced] [--max-rounds <n>] [--local]',
     '  run-batch --category <category> [--brand <brand>] [--strategy <explore|exploit|mixed|bandit>] [--local] [--dry-run]',
     '  run-until-complete --s3key <key> [--max-rounds <n>] [--mode uber_aggressive|aggressive|balanced] [--local]',
-    '  category-compile --category <category> [--workbook <path>] [--map <path>] [--local]',
-    '  compile-rules --category <category> [--workbook <path>] [--map <path>] [--dry-run] [--watch] [--watch-seconds <n>] [--max-events <n>] [--local]',
+    '  category-compile --category <category> [--field-studio-source <path>] [--map <path>] [--local]',
+    '  compile-rules --category <category> [--field-studio-source <path>] [--map <path>] [--dry-run] [--watch] [--watch-seconds <n>] [--max-events <n>] [--local]',
     '  compile-rules --all [--dry-run] [--local]',
     '  compile-report --category <category> [--local]',
     '  rules-diff --category <category> [--local]',
@@ -137,14 +137,14 @@ function usage() {
     '  field-report --category <category> [--format md|json] [--local]',
     '  field-rules-verify --category <category> [--fixture <path>] [--strict-bytes] [--local]',
     '  create-golden --category <category> --product-id <id> [--fields-json <json>] [--identity-json <json>] [--unknowns-json <json>] [--notes <text>] [--local]',
-    '  create-golden --category <category> --from-excel [--count <n>] [--product-id <id>] [--local]',
+    '  create-golden --category <category> --from-catalog [--count <n>] [--product-id <id>] [--local]',
     '  test-golden --category <category> [--local]',
     '  calibrate-confidence --category <category> [--product-id <id>] [--local]',
     '  accuracy-report --category <category> [--format md|json] [--max-cases <n>] [--local]',
     '  accuracy-benchmark --category <category> [--period weekly|daily] [--max-cases <n>] [--golden-files] [--local]',
     '  accuracy-trend --category <category> --field <field> [--period <n>d|week|month] [--local]',
     '  generate-types --category <category> [--out-dir <path>] [--local]',
-    '  publish --category <category> [--product-id <id>] [--all-approved] [--format all|csv|xlsx|sqlite] [--local]',
+    '  publish --category <category> [--product-id <id>] [--all-approved] [--format all|csv|sqlite] [--local]',
     '  provenance --category <category> --product-id <id> [--field <field>|--full] [--local]',
     '  changelog --category <category> --product-id <id> [--local]',
     '  source-health --category <category> [--source <host_or_source_id>] [--period <n>d|week|month] [--local]',
@@ -505,6 +505,10 @@ async function commandIndexLab(config, storage, args) {
   const category = String(args.category || 'mouse').trim();
   const seed = String(args.seed || '').trim();
   const outRoot = String(args.out || pathNode.join('artifacts', 'indexlab')).trim();
+  const requestedRunIdRaw = String(args['run-id'] || '').trim();
+  const requestedRunId = /^[A-Za-z0-9._-]{8,96}$/.test(requestedRunIdRaw)
+    ? requestedRunIdRaw
+    : '';
   const productIdArg = String(args['product-id'] || '').trim();
   const fields = parseCsvList(args.fields);
   const providerTokens = parseCsvList(args.providers).map((entry) => entry.toLowerCase());
@@ -628,11 +632,17 @@ async function commandIndexLab(config, storage, args) {
       job,
       maxRounds: convergenceMaxRounds,
       mode: convergenceMode,
+      initialRunId: requestedRunId || undefined,
       logger: bridgeAsLogger(bridge)
     });
     result = loopResult.final_result;
   } else {
-    result = await runProduct({ storage, config: runConfig, s3Key });
+    result = await runProduct({
+      storage,
+      config: runConfig,
+      s3Key,
+      runIdOverride: requestedRunId || undefined,
+    });
   }
 
   bridge.setContext({
@@ -780,11 +790,11 @@ async function commandCategoryCompile(config, _storage, args) {
   if (!category) {
     throw new Error('category-compile requires --category <category>');
   }
-  const workbookPath = String(args.workbook || '').trim();
+  const fieldStudioSourcePath = String(args['field-studio-source'] || '').trim();
   const mapPath = String(args.map || '').trim();
-  const result = await compileCategoryWorkbook({
+  const result = await compileCategoryFieldStudio({
     category,
-    workbookPath,
+    fieldStudioSourcePath,
     config,
     mapPath: mapPath || null
   });
@@ -797,7 +807,7 @@ async function commandCategoryCompile(config, _storage, args) {
 async function commandCompileRules(config, _storage, args) {
   const all = asBool(args.all, false);
   const watch = asBool(args.watch, false);
-  const workbookPath = String(args.workbook || '').trim();
+  const fieldStudioSourcePath = String(args['field-studio-source'] || '').trim();
   const mapPath = String(args.map || '').trim();
   const dryRun = asBool(args['dry-run'], false);
   if (all) {
@@ -826,7 +836,7 @@ async function commandCompileRules(config, _storage, args) {
     const watchResult = await watchCompileRules({
       category,
       config,
-      workbookPath,
+      fieldStudioSourcePath,
       mapPath: mapPath || null,
       watchSeconds,
       maxEvents,
@@ -840,7 +850,7 @@ async function commandCompileRules(config, _storage, args) {
   }
   const result = await compileRules({
     category,
-    workbookPath,
+    fieldStudioSourcePath,
     dryRun,
     config,
     mapPath: mapPath || null
@@ -886,11 +896,11 @@ async function commandCreateGolden(config, _storage, args) {
   if (!category) {
     throw new Error('create-golden requires --category <category>');
   }
-  const fromExcel = asBool(args['from-excel'], false);
-  if (fromExcel) {
+  const fromCatalog = asBool(args['from-catalog'], false);
+  if (fromCatalog) {
     const count = Math.max(1, Number.parseInt(String(args.count || '50'), 10) || 50);
     const productId = String(args['product-id'] || '').trim();
-    const result = await createGoldenFromExcel({
+    const result = await createGoldenFromCatalog({
       category,
       count,
       productId,
@@ -898,14 +908,14 @@ async function commandCreateGolden(config, _storage, args) {
     });
     return {
       command: 'create-golden',
-      mode: 'from-excel',
+      mode: 'from-catalog',
       ...result
     };
   }
 
   const productId = String(args['product-id'] || '').trim();
   if (!productId) {
-    throw new Error('create-golden requires --product-id <id> when --from-excel is not set');
+    throw new Error('create-golden requires --product-id <id> when --from-catalog is not set');
   }
   const identity = parseJsonArg('identity-json', args['identity-json'], {});
   const fields = parseJsonArg('fields-json', args['fields-json'], {});

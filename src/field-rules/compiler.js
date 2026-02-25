@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import semver from 'semver';
-import { compileCategoryWorkbook, saveWorkbookMap } from '../ingest/categoryCompile.js';
+import { compileCategoryFieldStudio, saveFieldStudioMap } from '../ingest/categoryCompile.js';
 import { buildMigrationPlan } from './migrations.js';
 import {
   ruleType as ruleTypeAccessor,
@@ -960,131 +960,19 @@ async function ensurePhase1Artifacts({ category, generatedRoot }) {
 
 async function compileIntoRoot({
   category,
-  workbookPath = '',
-  workbookMap = null,
+  fieldStudioSourcePath = '',
+  fieldStudioMap = null,
   config = {},
   mapPath = null,
   helperFilesRoot
 }) {
-  const helperRoot = path.resolve(helperFilesRoot || 'helper_files');
-  const categoryRoot = path.join(helperRoot, category);
-  const preferredHelperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
-  const preferredCategoryRoot = path.join(preferredHelperRoot, category);
+  const resolvedFieldStudioSourcePath = String(fieldStudioSourcePath || '').trim();
+  const resolvedFieldStudioMap = fieldStudioMap ?? null;
 
-  async function resolveWorkbookFromDir(dirPath) {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true }).catch(() => []);
-    const workbookCandidate = entries.find((entry) => (
-      entry.isFile() && /\.(xlsm|xlsx)$/i.test(entry.name) && !entry.name.startsWith('~$')
-    ));
-    return workbookCandidate ? path.join(dirPath, workbookCandidate.name) : '';
-  }
-
-  async function resolveFallbackWorkbookPath() {
-    const direct = String(workbookPath || '').trim();
-    if (direct) {
-      return path.resolve(direct);
-    }
-    const explicitCandidates = [
-      path.join(categoryRoot, `${category}Data.xlsm`),
-      path.join(categoryRoot, `${category}Data.xlsx`),
-      path.join(preferredCategoryRoot, `${category}Data.xlsm`),
-      path.join(preferredCategoryRoot, `${category}Data.xlsx`),
-      path.join(categoryRoot, '_source', 'field_catalog.xlsx'),
-      path.join(preferredCategoryRoot, '_source', 'field_catalog.xlsx')
-    ];
-    for (const candidate of explicitCandidates) {
-      if (await fileExists(candidate)) {
-        return candidate;
-      }
-    }
-
-    const scanDirs = [
-      categoryRoot,
-      preferredCategoryRoot,
-      path.join(categoryRoot, '_source'),
-      path.join(preferredCategoryRoot, '_source')
-    ];
-    for (const dirPath of scanDirs) {
-      const workbookCandidate = await resolveWorkbookFromDir(dirPath);
-      if (workbookCandidate) {
-        return workbookCandidate;
-      }
-    }
-    return '';
-  }
-
-  function buildDefaultWorkbookMap(resolvedWorkbookPath) {
-    const normalizedName = path.basename(String(resolvedWorkbookPath || '')).toLowerCase();
-    const isStarterCatalog = normalizedName === 'field_catalog.xlsx';
-    if (isStarterCatalog) {
-      return {
-        version: 1,
-        workbook_path: resolvedWorkbookPath,
-        sheet_roles: [
-          { sheet: 'field_catalog', role: 'field_key_list' }
-        ],
-        key_list: {
-          sheet: 'field_catalog',
-          source: 'column_range',
-          column: 'B',
-          row_start: 2,
-          row_end: 2000
-        },
-        expectations: {
-          required_fields: [],
-          critical_fields: [],
-          expected_easy_fields: [],
-          expected_sometimes_fields: [],
-          deep_fields: []
-        },
-        enum_lists: [],
-        component_sheets: [],
-        field_overrides: {}
-      };
-    }
-
-    // Safe bootstrap map used only when no workbook_map exists yet.
-    return {
-      version: 1,
-      workbook_path: resolvedWorkbookPath,
-      sheet_roles: [
-        { sheet: 'dataEntry', role: 'product_table' },
-        { sheet: 'dataEntry', role: 'field_key_list' }
-      ],
-      key_list: {
-        sheet: 'dataEntry',
-        source: 'column_range',
-        column: 'B',
-        row_start: 9,
-        row_end: 400
-      },
-      product_table: {
-        sheet: 'dataEntry',
-        layout: 'matrix',
-        brand_row: 3,
-        model_row: 4,
-        variant_row: 5,
-        value_col_start: 'C',
-        value_col_end: '',
-        sample_columns: 18
-      },
-      expectations: {
-        required_fields: ['connection', 'weight', 'dpi'],
-        critical_fields: ['polling_rate'],
-        expected_easy_fields: [],
-        expected_sometimes_fields: [],
-        deep_fields: []
-      },
-      enum_lists: [],
-      component_sheets: [],
-      field_overrides: {}
-    };
-  }
-
-  if (workbookMap) {
-    await saveWorkbookMap({
+  if (resolvedFieldStudioMap) {
+    await saveFieldStudioMap({
       category,
-      workbookMap,
+      fieldStudioMap: resolvedFieldStudioMap,
       config: {
         ...config,
         helperFilesRoot
@@ -1093,51 +981,17 @@ async function compileIntoRoot({
     });
   }
 
-  let compileResult;
-  try {
-    compileResult = await compileCategoryWorkbook({
-      category,
-      workbookPath,
-      workbookMap,
-      config: {
-        ...config,
-        helperFilesRoot
-      },
-      mapPath
-    });
-  } catch (error) {
-    if (
-      String(error?.message || '') === 'workbook_map_missing'
-      && !workbookMap
-    ) {
-      const resolvedWorkbookPath = await resolveFallbackWorkbookPath();
-      if (!resolvedWorkbookPath) {
-        throw error;
-      }
-      const fallbackMap = buildDefaultWorkbookMap(resolvedWorkbookPath);
-      await saveWorkbookMap({
-        category,
-        workbookMap: fallbackMap,
-        config: {
-          ...config,
-          helperFilesRoot
-        },
-        mapPath
-      });
-      compileResult = await compileCategoryWorkbook({
-        category,
-        workbookPath: resolvedWorkbookPath,
-        workbookMap: fallbackMap,
-        config: {
-          ...config,
-          helperFilesRoot
-        },
-        mapPath
-      });
-    } else {
-      throw error;
-    }
-  }
+  const compileResult = await compileCategoryFieldStudio({
+    category,
+    fieldStudioSourcePath: resolvedFieldStudioSourcePath,
+    fieldStudioMap: resolvedFieldStudioMap,
+    config: {
+      ...config,
+      helperFilesRoot,
+      preferFieldStudioCompile: config.preferFieldStudioCompile !== false
+    },
+    mapPath
+  });
 
   if (!compileResult?.compiled) {
     return {
@@ -1172,12 +1026,14 @@ function mapArtifactsToList(generatedRoot) {
 
 export async function compileRules({
   category,
-  workbookPath = '',
-  workbookMap = null,
+  fieldStudioSourcePath = '',
+  fieldStudioMap = null,
   dryRun = false,
   config = {},
   mapPath = null
 }) {
+  const resolvedFieldStudioSourcePath = String(fieldStudioSourcePath || '').trim();
+  const resolvedFieldStudioMap = fieldStudioMap ?? null;
   const normalizedCategory = normalizeFieldKey(category);
   if (!normalizedCategory) {
     throw new Error('category_required');
@@ -1190,25 +1046,23 @@ export async function compileRules({
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-dry-run-'));
     const tempHelperRoot = path.join(tempRoot, 'helper_files');
     try {
-      let dryRunWorkbookPath = workbookPath;
-      let dryRunWorkbookMap = workbookMap;
-      if (!dryRunWorkbookMap) {
+      let dryRunFieldStudioSourcePath = resolvedFieldStudioSourcePath;
+      let dryRunFieldStudioMap = resolvedFieldStudioMap;
+      if (!dryRunFieldStudioMap) {
         const controlPlaneRoot = path.join(helperRoot, normalizedCategory, '_control_plane');
         const candidateMapPaths = String(mapPath || '').trim()
           ? [path.resolve(String(mapPath))]
-          : [
-            path.join(controlPlaneRoot, 'field_studio_map.json'),
-            path.join(controlPlaneRoot, 'workbook_map.json'),
-          ];
+          : [path.join(controlPlaneRoot, 'field_studio_map.json')];
         let existingMap = null;
         for (const candidateMapPath of candidateMapPaths) {
           existingMap = await readJsonIfExists(candidateMapPath);
           if (isObject(existingMap)) break;
         }
         if (isObject(existingMap)) {
-          dryRunWorkbookMap = existingMap;
-          if (!String(dryRunWorkbookPath || '').trim() && nonEmptyString(existingMap.workbook_path)) {
-            dryRunWorkbookPath = String(existingMap.workbook_path);
+          dryRunFieldStudioMap = existingMap;
+          const mapSourcePath = String(existingMap.field_studio_source_path || '').trim();
+          if (!String(dryRunFieldStudioSourcePath || '').trim() && nonEmptyString(mapSourcePath)) {
+            dryRunFieldStudioSourcePath = mapSourcePath;
           }
         }
       }
@@ -1219,8 +1073,8 @@ export async function compileRules({
       );
       const staged = await compileIntoRoot({
         category: normalizedCategory,
-        workbookPath: dryRunWorkbookPath,
-        workbookMap: dryRunWorkbookMap,
+        fieldStudioSourcePath: dryRunFieldStudioSourcePath,
+        fieldStudioMap: dryRunFieldStudioMap,
         config,
         mapPath: null,
         helperFilesRoot: tempHelperRoot
@@ -1271,8 +1125,8 @@ export async function compileRules({
 
   const result = await compileIntoRoot({
     category: normalizedCategory,
-    workbookPath,
-    workbookMap,
+    fieldStudioSourcePath: resolvedFieldStudioSourcePath,
+    fieldStudioMap: resolvedFieldStudioMap,
     config,
     mapPath,
     helperFilesRoot: helperRoot
@@ -1837,12 +1691,11 @@ export async function discoverCompileCategories({
       continue;
     }
     const categoryRoot = path.join(helperRoot, category);
-    const hasWorkbookMap = await fileExists(path.join(categoryRoot, '_control_plane', 'workbook_map.json'));
     const hasFieldStudioMap = await fileExists(path.join(categoryRoot, '_control_plane', 'field_studio_map.json'));
     const hasGeneratedRules = await fileExists(path.join(categoryRoot, '_generated', 'field_rules.json'));
     const sourceRoot = path.join(categoryRoot, '_source');
     const hasSourceSeed = await fileExists(path.join(sourceRoot, 'field_catalog.seed.json'));
-    if (hasFieldStudioMap || hasWorkbookMap || hasGeneratedRules || hasSourceSeed) {
+    if (hasFieldStudioMap || hasGeneratedRules || hasSourceSeed) {
       categories.push(category);
     }
   }
@@ -1858,8 +1711,8 @@ export async function compileRulesAll({
   categories = [],
   config = {},
   dryRun = false,
-  workbookPathByCategory = {},
-  workbookMapByCategory = {},
+  fieldStudioSourcePathByCategory = {},
+  fieldStudioMapByCategory = {},
   mapPathByCategory = {}
 } = {}) {
   const discovered = await discoverCompileCategories({ config });
@@ -1882,8 +1735,8 @@ export async function compileRulesAll({
     const startedAt = Date.now();
     const result = await compileRules({
       category,
-      workbookPath: String(workbookPathByCategory?.[category] || '').trim(),
-      workbookMap: workbookMapByCategory?.[category] || null,
+      fieldStudioSourcePath: String(fieldStudioSourcePathByCategory?.[category] || '').trim(),
+      fieldStudioMap: fieldStudioMapByCategory?.[category] ?? null,
       dryRun,
       config,
       mapPath: String(mapPathByCategory?.[category] || '').trim() || null
@@ -1985,8 +1838,8 @@ export async function rulesDiff({
 export async function watchCompileRules({
   category,
   config = {},
-  workbookPath = '',
-  workbookMap = null,
+  fieldStudioSourcePath = '',
+  fieldStudioMap = null,
   mapPath = null,
   debounceMs = 500,
   watchSeconds = 0,
@@ -2071,8 +1924,8 @@ export async function watchCompileRules({
     try {
       const result = await compileRules({
         category: normalizedCategory,
-        workbookPath,
-        workbookMap,
+        fieldStudioSourcePath: String(fieldStudioSourcePath || '').trim(),
+        fieldStudioMap: fieldStudioMap ?? null,
         config,
         mapPath
       });

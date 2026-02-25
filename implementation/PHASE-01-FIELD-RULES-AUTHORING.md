@@ -115,7 +115,7 @@ Every field in every category MUST have the following metadata. This is the **fi
         "rounding":         { "type": "string", "enum": ["integer","1dp","2dp","3dp","none"], "default": "none" },
         "range_min":        { "type": ["number","null"], "description": "Plausibility floor" },
         "range_max":        { "type": ["number","null"], "description": "Plausibility ceiling" },
-        "normalization_fn": { "type": ["string","null"], "description": "Named normalization function (e.g., 'strip_unit_suffix','parse_date_excel','parse_polling_list')" },
+        "normalization_fn": { "type": ["string","null"], "description": "Named normalization function (e.g., 'strip_unit_suffix','parse_date_serial','parse_polling_list')" },
 
         // ─── ENUM POLICY ───
         "enum_policy":      { "type": ["string","null"], "enum": ["closed","open",null], "description": "closed=only known_values; open=allow new if evidence-backed" },
@@ -376,7 +376,7 @@ Component databases are curated lookup tables for complex fields. Each component
 
 | Tool | Purpose | Install |
 |------|---------|---------|
-| **ExcelJS** | Read/write .xlsx/.xlsm for authoring | `npm install exceljs` |
+| **Node fs/path** | Read/write canonical JSON artifacts | Built-in |
 | **AJV** | JSON Schema validation for all generated artifacts | `npm install ajv ajv-formats` |
 | **Zod** | Runtime TypeScript/JS schema validation | `npm install zod` |
 | **zod-to-json-schema** | Generate JSON Schema from Zod for docs | `npm install zod-to-json-schema` |
@@ -391,7 +391,7 @@ Component databases are curated lookup tables for complex fields. Each component
 |------|---------|---------|
 | **json-schema-to-zod** | Bidirectional schema conversion | `npm install json-schema-to-zod` |
 | **fastest-validator** | Lightweight alternative to AJV | `npm install fastest-validator` |
-| **xlsx-populate** | Alternative Excel library with macro support | `npm install xlsx-populate` |
+| **xlsx-populate** | Alternative spreadsheet library with macro support | `npm install xlsx-populate` |
 | **Fuse.js** | Fuzzy matching for alias resolution | `npm install fuse.js` |
 | **string-similarity** | Dice coefficient for alias matching | `npm install string-similarity` |
 
@@ -573,14 +573,14 @@ function normalizeFieldContract(rule = {}) {
 ### List Value Lifecycle
 
 ```
-Excel data_lists sheet
+spreadsheet data_lists sheet
   -> compile-rules -> known_values.json (compiled snapshot)
                    -> field_rules.json enum_buckets (embedded copy)
                    -> list_values table (SQLite runtime store)
 
 Pipeline suggestion
   -> _suggestions/enums.json (pending review)
-  -> user accepts -> manual_enum_values in workbook_map.json (survives recompile)
+  -> user accepts -> manual_enum_values in field_studio_map.json (survives recompile)
                   -> known_values.json patched in-place
                   -> list_values table updated
 ```
@@ -599,7 +599,7 @@ When a list value changes, the field contract drives how it cascades to all affe
 5. Mark all affected products stale with `priority = 1` and `dirty_flags: [{ reason: 'enum_removed', field, value }]`
 
 **Rename (`cascadeEnumChange({ action: 'rename' })`):**
-1. Atomic updates to `workbook_map.json` and `known_values.json` (remove old, add new)
+1. Atomic updates to `field_studio_map.json` and `known_values.json` (remove old, add new)
 2. SQLite transaction: delete old `list_values` row, insert new, `UPDATE item_field_state SET value = newValue WHERE LOWER(TRIM(value)) = LOWER(TRIM(oldValue))`, re-point `item_list_links` foreign keys
 3. Rewrite affected `normalized.json` files with new value
 4. Mark products stale with `dirty_flags: [{ reason: 'enum_renamed' }]`
@@ -610,7 +610,7 @@ List values carry source provenance identical to field candidates:
 
 | Source | `source_id` | Confidence | Color | Candidate ID |
 |--------|-------------|------------|-------|--------------|
-| Excel workbook | `workbook` | 1.0 | green | `wb_enum_{field}_{value}` |
+| field-studio source spreadsheet | `field_studio` | 1.0 | green | `wb_enum_{field}_{value}` |
 | Pipeline (accepted) | `pipeline` | 1.0 | green | `pl_enum_{field}_{value}` |
 | Manual | `manual` | 1.0 | green | `man_enum_{field}_{value}` |
 | Pipeline (pending) | `pipeline` | 0.6 | yellow | `pl_enum_{field}_{value}` |
@@ -698,7 +698,7 @@ evaluateConstraintsForLinkedProducts()
 
 Component properties draw candidates from three source tiers:
 
-1. **Workbook** (`source_id: 'workbook'`) — compiled Excel values. Score=1.0, highest trust.
+1. **Field Studio** (`source_id: 'field_studio'`) — compiled spreadsheet values. Score=1.0, highest trust.
 2. **Pipeline** (`source_id: 'pipeline'`) — values seen on real products during extraction. Score=0.5-0.6. Quote shows which products contributed.
 3. **SpecDb** (`source_id: 'specdb'`) — extraction candidates from `candidates` table, joined through `item_component_links`. Source shows `{host} ({count} products)`.
 
@@ -1018,7 +1018,7 @@ The architecture audit found 28+ remaining manual fallback patterns that should 
 | `src/field-rules/compiler.js` | 9 locations (imports but bypasses) | MEDIUM |
 | `src/engine/fieldRulesEngine.js` | 2 locations (`enum_policy` fallback) | LOW |
 | `src/build/generate-types.js` | 1 location (`required_level`) | LOW |
-| `src/ingest/excelCategorySync.js` | 1 location (missing contract fallback) | LOW |
+| `src/ingest/categorySchemaSync.js` | 1 location (missing contract fallback) | LOW |
 
 These are functional (they produce correct results) but represent maintenance debt. `categoryCompile.js` is the highest-priority target for the next consolidation pass.
 

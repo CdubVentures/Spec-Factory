@@ -1,3 +1,5 @@
+import { SETTINGS_DEFAULTS } from '../../../../src/shared/settingsDefaults.js';
+
 export interface ConvergenceBoolKnob {
   key: string;
   label: string;
@@ -86,6 +88,10 @@ export const CONVERGENCE_KNOB_GROUPS = [
   },
 ] as ConvergenceKnobGroup[];
 
+export const CONVERGENCE_SETTING_DEFAULTS = Object.freeze({
+  ...SETTINGS_DEFAULTS.convergence,
+} satisfies Record<string, number | boolean>);
+
 export interface RuntimeSettingDefaults {
   profile: 'fast' | 'standard' | 'thorough';
   searchProvider: string;
@@ -139,62 +145,26 @@ export interface RuntimeSettingDefaults {
 }
 
 export const RUNTIME_SETTING_DEFAULTS: RuntimeSettingDefaults = {
-  profile: 'fast',
-  searchProvider: 'duckduckgo',
-  phase2LlmModel: 'gpt-5.1-low',
-  phase3LlmModel: 'gemini-2.5-flash',
-  llmModelFast: 'gpt-5-low',
-  llmModelReasoning: 'gpt-5.2-high',
-  llmModelExtract: 'gpt-5.1-high',
-  llmModelValidate: 'gpt-5.1-high',
-  llmModelWrite: 'gemini-2.5-flash-lite',
-  llmFallbackPlanModel: '',
-  llmFallbackExtractModel: '',
-  llmFallbackValidateModel: '',
-  llmFallbackWriteModel: '',
-  resumeMode: 'auto',
-  scannedPdfOcrBackend: 'auto',
-  fetchConcurrency: 2,
-  perHostMinDelayMs: 900,
-  llmTokensPlan: 2048,
-  llmTokensTriage: 2048,
-  llmTokensFast: 2048,
-  llmTokensReasoning: 4096,
-  llmTokensExtract: 2048,
-  llmTokensValidate: 2048,
-  llmTokensWrite: 2048,
-  llmTokensPlanFallback: 2048,
-  llmTokensExtractFallback: 2048,
-  llmTokensValidateFallback: 2048,
-  llmTokensWriteFallback: 2048,
-  resumeWindowHours: 48,
-  reextractAfterHours: 24,
-  scannedPdfOcrMaxPages: 4,
-  scannedPdfOcrMaxPairs: 800,
-  scannedPdfOcrMinCharsPerPage: 30,
-  scannedPdfOcrMinLinesPerPage: 2,
-  scannedPdfOcrMinConfidence: 0.5,
-  crawleeRequestHandlerTimeoutSecs: 45,
-  dynamicFetchRetryBudget: 1,
-  dynamicFetchRetryBackoffMs: 500,
-  dynamicFetchPolicyMapJson: '',
-  scannedPdfOcrEnabled: true,
-  scannedPdfOcrPromoteCandidates: true,
-  phase2LlmEnabled: true,
-  phase3LlmTriageEnabled: true,
-  llmFallbackEnabled: true,
-  reextractIndexed: true,
-  discoveryEnabled: true,
-  dynamicCrawleeEnabled: true,
-  crawleeHeadless: true,
-  runtimeAutoSaveEnabled: true,
+  ...(SETTINGS_DEFAULTS.runtime as unknown as RuntimeSettingDefaults),
 };
 
 export interface StorageSettingDefaults {
   enabled: boolean;
+  destinationType: 'local' | 's3';
+  localDirectory: string;
   s3Region: string;
   s3Bucket: string;
   s3Prefix: string;
+  s3AccessKeyId: string;
+}
+
+export interface UiSettingDefaults {
+  studioAutoSaveAllEnabled: boolean;
+  studioAutoSaveEnabled: boolean;
+  studioAutoSaveMapEnabled: boolean;
+  runtimeAutoSaveEnabled: boolean;
+  storageAutoSaveEnabled: boolean;
+  llmSettingsAutoSaveEnabled: boolean;
 }
 
 export interface LlmSettingLimit {
@@ -260,8 +230,17 @@ export const LLM_ROUTE_PRESET_LIMITS = {
 } as const satisfies Record<'fast' | 'balanced' | 'deep', LlmRoutePresetConfig>;
 
 export const STORAGE_SETTING_DEFAULTS: StorageSettingDefaults = {
-  enabled: false,
-  s3Region: 'us-east-2',
-  s3Bucket: '',
-  s3Prefix: 'spec-factory-runs',
+  ...(SETTINGS_DEFAULTS.storage as StorageSettingDefaults),
 };
+
+export const UI_SETTING_DEFAULTS: UiSettingDefaults = {
+  ...(SETTINGS_DEFAULTS.ui as UiSettingDefaults),
+};
+
+export const SETTINGS_AUTOSAVE_DEBOUNCE_MS = Object.freeze({
+  ...SETTINGS_DEFAULTS.autosave.debounceMs,
+});
+
+export const SETTINGS_AUTOSAVE_STATUS_MS = Object.freeze({
+  ...SETTINGS_DEFAULTS.autosave.statusMs,
+});

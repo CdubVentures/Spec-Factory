@@ -37,6 +37,13 @@ interface PickerPanelProps {
   runtimeSettingsReady: boolean;
   canRunSingle: boolean;
   onRunIndexLab: () => void;
+  stopForceKill: boolean;
+  onStopForceKillChange: (value: boolean) => void;
+  onStopProcess: (opts: { force: boolean }) => void;
+  stopPending: boolean;
+  selectedIndexLabRunId: string;
+  onClearSelectedRunView: () => void;
+  onReplaySelectedRunView: () => void;
   productPickerActivity: { currentPerMin: number; peakPerMin: number };
 }
 
@@ -61,10 +68,17 @@ export function PickerPanel({
   runtimeSettingsReady,
   canRunSingle,
   onRunIndexLab,
+  stopForceKill,
+  onStopForceKillChange,
+  onStopProcess,
+  stopPending,
+  selectedIndexLabRunId,
+  onClearSelectedRunView,
+  onReplaySelectedRunView,
   productPickerActivity,
 }: PickerPanelProps) {
   return (
-    <div className="rounded-lg border-2 border-emerald-300 dark:border-emerald-600 ring-1 ring-emerald-100 dark:ring-emerald-900/40 bg-white dark:bg-gray-800 p-3 space-y-3" style={{ order: 20 }}>
+    <div className="rounded-lg border-2 border-emerald-300 dark:border-emerald-600 ring-1 ring-emerald-100 dark:ring-emerald-900/40 bg-white dark:bg-gray-800 p-3 space-y-3" style={{ order: -20 }}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center text-sm font-semibold text-gray-900 dark:text-gray-100">
           <button
@@ -177,13 +191,55 @@ Variant-empty extraction policy:
           <button
             onClick={onRunIndexLab}
             disabled={!canRunSingle || busy || processRunning || !runtimeSettingsReady}
-            className="w-full px-3 py-2 text-sm rounded bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-40"
+            className={`w-full px-3 py-2 text-sm rounded text-white transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed ${
+              processRunning
+                ? 'bg-cyan-700 translate-y-px scale-[0.99] shadow-inner ring-1 ring-cyan-900/40'
+                : 'bg-cyan-600 hover:bg-cyan-700 shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner'
+            }`}
             title={runtimeSettingsReady
               ? 'Run IndexLab for selected product and stream events.'
               : 'Run start is locked until runtime settings finish hydrating.'}
           >
             Run IndexLab
           </button>
+          <div className="grid grid-cols-1 md:grid-cols-3 items-start gap-2">
+            <div className="space-y-1">
+              <button
+                onClick={() => onStopProcess({ force: stopForceKill })}
+                disabled={stopPending}
+                className="w-full h-10 inline-flex items-center justify-center px-3 text-sm rounded bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                title={stopForceKill ? 'Force kill process tree if needed.' : 'Graceful stop request.'}
+              >
+                Stop Process
+              </button>
+              <label className="inline-flex items-center gap-2 text-[11px] text-gray-600 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={stopForceKill}
+                  onChange={(e) => onStopForceKillChange(e.target.checked)}
+                  disabled={stopPending}
+                />
+                force kill (hard stop)
+                <Tip text="When enabled, Stop Process uses forced kill behavior if graceful stop hangs." />
+              </label>
+            </div>
+            <button
+              onClick={onClearSelectedRunView}
+              disabled={isAll || busy || !selectedIndexLabRunId}
+              className="w-full h-10 self-start inline-flex items-center justify-center px-3 text-sm rounded bg-gray-700 hover:bg-gray-800 text-white shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Clear only selected run containers from the current view."
+            >
+              Clear Selected View
+            </button>
+            <button
+              onClick={onReplaySelectedRunView}
+              disabled={isAll || busy || !selectedIndexLabRunId}
+              className="w-full h-10 self-start inline-flex items-center justify-center px-3 text-sm rounded bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Replay selected run from persisted events/artifacts."
+            >
+              Replay Selected Run
+            </button>
+          </div>
           {!runtimeSettingsReady ? (
             <div className="text-[11px] text-amber-700 dark:text-amber-300">
               Runtime settings are loading. Run start is locked until persisted settings hydrate.

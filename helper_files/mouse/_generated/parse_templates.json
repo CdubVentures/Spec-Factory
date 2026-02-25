@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-02-24T22:51:45.113Z",
+  "generated_at": "2026-02-25T18:50:55.275Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
@@ -269,9 +269,33 @@
       "patterns": [],
       "template": "text_field"
     },
+    "encoder_life_span": {
+      "context_keywords": [
+        "Encoder Life Span",
+        "encoder_life_span"
+      ],
+      "patterns": [],
+      "template": "integer_field"
+    },
     "encoder_link": {
       "patterns": [],
       "template": "url_field"
+    },
+    "encoder_steps": {
+      "context_keywords": [
+        "Encoder Steps",
+        "encoder_steps"
+      ],
+      "patterns": [],
+      "template": "integer_field"
+    },
+    "encoder_type": {
+      "context_keywords": [
+        "Encoder Type",
+        "encoder_type"
+      ],
+      "patterns": [],
+      "template": "text_field"
     },
     "feet_material": {
       "patterns": [],
@@ -434,6 +458,15 @@
       "patterns": [],
       "template": "date_field"
     },
+    "releasing_force": {
+      "context_keywords": [
+        "Releasing Force",
+        "releasing_force"
+      ],
+      "patterns": [],
+      "template": "integer_with_unit",
+      "unit": "g"
+    },
     "rgb": {
       "patterns": [],
       "template": "boolean_yes_no_unk"
@@ -499,6 +532,14 @@
       "template": "component_reference"
     },
     "switch_brand": {
+      "patterns": [],
+      "template": "text_field"
+    },
+    "switch_life_span": {
+      "context_keywords": [
+        "Switch Life Span",
+        "switch_life_span"
+      ],
       "patterns": [],
       "template": "text_field"
     },

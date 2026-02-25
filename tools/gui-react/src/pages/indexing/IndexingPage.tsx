@@ -7,8 +7,9 @@ import { useIndexLabStore } from '../../stores/indexlabStore';
 import { useCollapseStore } from '../../stores/collapseStore';
 import { usePersistedTab } from '../../stores/tabStore';
 import { CONVERGENCE_KNOB_GROUPS, useConvergenceSettingsAuthority } from '../../stores/convergenceSettingsAuthority';
-import { useRuntimeSettingsAuthority } from '../../stores/runtimeSettingsAuthority';
-import { RUNTIME_SETTING_DEFAULTS } from '../../stores/settingsManifest';
+import { useRuntimeSettingsAuthority, readRuntimeSettingsBootstrap } from '../../stores/runtimeSettingsAuthority';
+import { LLM_SETTING_LIMITS, RUNTIME_SETTING_DEFAULTS } from '../../stores/settingsManifest';
+import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore';
 import { Tip } from '../../components/common/Tip';
 import type { ProcessStatus } from '../../types/events';
 import type { CatalogRow } from '../../types/product';
@@ -76,6 +77,69 @@ const NEEDSET_SORT_KEYS = [
   'refs',
 ] as const;
 const NEEDSET_SORT_DIRS = ['asc', 'desc'] as const;
+const LLM_MIN_OUTPUT_TOKENS = LLM_SETTING_LIMITS.maxTokens.min;
+const LLM_MAX_OUTPUT_TOKENS = LLM_SETTING_LIMITS.maxTokens.max;
+
+function parseRuntimeLlmTokenCap(value: unknown): number | null {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return Math.max(
+    LLM_MIN_OUTPUT_TOKENS,
+    Math.min(LLM_MAX_OUTPUT_TOKENS, parsed),
+  );
+}
+
+interface RuntimeSettingsNumericBaseline {
+  fetchConcurrency: number;
+  perHostMinDelayMs: number;
+  crawleeRequestHandlerTimeoutSecs: number;
+  dynamicFetchRetryBudget: number;
+  dynamicFetchRetryBackoffMs: number;
+  scannedPdfOcrMaxPages: number;
+  scannedPdfOcrMaxPairs: number;
+  scannedPdfOcrMinCharsPerPage: number;
+  scannedPdfOcrMinLinesPerPage: number;
+  scannedPdfOcrMinConfidence: number;
+  resumeWindowHours: number;
+  reextractAfterHours: number;
+}
+
+function runtimeSettingsBaselineEqual(a: RuntimeSettingsNumericBaseline, b: RuntimeSettingsNumericBaseline) {
+  return (
+    a.fetchConcurrency === b.fetchConcurrency
+    && a.perHostMinDelayMs === b.perHostMinDelayMs
+    && a.crawleeRequestHandlerTimeoutSecs === b.crawleeRequestHandlerTimeoutSecs
+    && a.dynamicFetchRetryBudget === b.dynamicFetchRetryBudget
+    && a.dynamicFetchRetryBackoffMs === b.dynamicFetchRetryBackoffMs
+    && a.scannedPdfOcrMaxPages === b.scannedPdfOcrMaxPages
+    && a.scannedPdfOcrMaxPairs === b.scannedPdfOcrMaxPairs
+    && a.scannedPdfOcrMinCharsPerPage === b.scannedPdfOcrMinCharsPerPage
+    && a.scannedPdfOcrMinLinesPerPage === b.scannedPdfOcrMinLinesPerPage
+    && a.scannedPdfOcrMinConfidence === b.scannedPdfOcrMinConfidence
+    && a.resumeWindowHours === b.resumeWindowHours
+    && a.reextractAfterHours === b.reextractAfterHours
+  );
+}
+
+function randomHex(bytes = 3) {
+  const safeBytes = Math.max(1, Math.min(16, Number.parseInt(String(bytes || 3), 10) || 3));
+  const seeded = new Uint8Array(safeBytes);
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.getRandomValues) {
+    globalThis.crypto.getRandomValues(seeded);
+  } else {
+    for (let idx = 0; idx < safeBytes; idx += 1) {
+      seeded[idx] = Math.floor(Math.random() * 256);
+    }
+  }
+  return Array.from(seeded)
+    .map((value) => value.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function buildRequestedRunId(date = new Date()) {
+  const stamp = date.toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+  return `${stamp}-${randomHex(3)}`;
+}
 
 export function IndexingPage() {
   const category = useUiStore((s) => s.category);
@@ -83,60 +147,64 @@ export function IndexingPage() {
   const setRuntimeAutoSaveEnabled = useUiStore((s) => s.setRuntimeAutoSaveEnabled);
   const isAll = category === 'all';
   const clearProcessOutput = useRuntimeStore((s) => s.clearProcessOutput);
+  const setRuntimeProcessStatus = useRuntimeStore((s) => s.setProcessStatus);
   const liveIndexLabByRun = useIndexLabStore((s) => s.byRun);
   const clearIndexLabRun = useIndexLabStore((s) => s.clearRun);
   const queryClient = useQueryClient();
-  const runtimeDefaults = RUNTIME_SETTING_DEFAULTS;
+  const runtimeSettingsAuthorityReady = useSettingsAuthorityStore((s) => s.snapshot.runtimeReady);
+  const runtimeSettingsBootstrap = useMemo(
+    () => readRuntimeSettingsBootstrap(queryClient, RUNTIME_SETTING_DEFAULTS),
+    [queryClient],
+  );
 
-  const [profile, setProfile] = useState<'fast' | 'standard' | 'thorough'>(runtimeDefaults.profile);
-  const [fetchConcurrency, setFetchConcurrency] = useState(String(runtimeDefaults.fetchConcurrency));
-  const [perHostMinDelayMs, setPerHostMinDelayMs] = useState(String(runtimeDefaults.perHostMinDelayMs));
-  const [dynamicCrawleeEnabled, setDynamicCrawleeEnabled] = useState(runtimeDefaults.dynamicCrawleeEnabled);
-  const [crawleeHeadless, setCrawleeHeadless] = useState(runtimeDefaults.crawleeHeadless);
-  const [crawleeRequestHandlerTimeoutSecs, setCrawleeRequestHandlerTimeoutSecs] = useState(String(runtimeDefaults.crawleeRequestHandlerTimeoutSecs));
-  const [dynamicFetchRetryBudget, setDynamicFetchRetryBudget] = useState(String(runtimeDefaults.dynamicFetchRetryBudget));
-  const [dynamicFetchRetryBackoffMs, setDynamicFetchRetryBackoffMs] = useState(String(runtimeDefaults.dynamicFetchRetryBackoffMs));
-  const [dynamicFetchPolicyMapJson, setDynamicFetchPolicyMapJson] = useState(runtimeDefaults.dynamicFetchPolicyMapJson);
-  const [scannedPdfOcrEnabled, setScannedPdfOcrEnabled] = useState(runtimeDefaults.scannedPdfOcrEnabled);
-  const [scannedPdfOcrPromoteCandidates, setScannedPdfOcrPromoteCandidates] = useState(runtimeDefaults.scannedPdfOcrPromoteCandidates);
-  const [scannedPdfOcrBackend, setScannedPdfOcrBackend] = useState<'auto' | 'tesseract' | 'none'>(runtimeDefaults.scannedPdfOcrBackend);
-  const [scannedPdfOcrMaxPages, setScannedPdfOcrMaxPages] = useState(String(runtimeDefaults.scannedPdfOcrMaxPages));
-  const [scannedPdfOcrMaxPairs, setScannedPdfOcrMaxPairs] = useState(String(runtimeDefaults.scannedPdfOcrMaxPairs));
-  const [scannedPdfOcrMinCharsPerPage, setScannedPdfOcrMinCharsPerPage] = useState(String(runtimeDefaults.scannedPdfOcrMinCharsPerPage));
-  const [scannedPdfOcrMinLinesPerPage, setScannedPdfOcrMinLinesPerPage] = useState(String(runtimeDefaults.scannedPdfOcrMinLinesPerPage));
-  const [scannedPdfOcrMinConfidence, setScannedPdfOcrMinConfidence] = useState(String(runtimeDefaults.scannedPdfOcrMinConfidence));
-  const [resumeMode, setResumeMode] = useState<'auto' | 'force_resume' | 'start_over'>(runtimeDefaults.resumeMode);
-  const [resumeWindowHours, setResumeWindowHours] = useState(String(runtimeDefaults.resumeWindowHours));
-  const [reextractAfterHours, setReextractAfterHours] = useState(String(runtimeDefaults.reextractAfterHours));
-  const [reextractIndexed, setReextractIndexed] = useState(runtimeDefaults.reextractIndexed);
-  const [discoveryEnabled, setDiscoveryEnabled] = useState(runtimeDefaults.discoveryEnabled);
-  const [searchProvider, setSearchProvider] = useState<'none' | 'google' | 'bing' | 'searxng' | 'duckduckgo' | 'dual'>(runtimeDefaults.searchProvider as 'none' | 'google' | 'bing' | 'searxng' | 'duckduckgo' | 'dual');
-  const [phase2LlmEnabled, setPhase2LlmEnabled] = useState(runtimeDefaults.phase2LlmEnabled);
-  const [phase2LlmModel, setPhase2LlmModel] = useState(runtimeDefaults.phase2LlmModel);
-  const [llmTokensPlan, setLlmTokensPlan] = useState(runtimeDefaults.llmTokensPlan);
-  const [phase3LlmTriageEnabled, setPhase3LlmTriageEnabled] = useState(runtimeDefaults.phase3LlmTriageEnabled);
-  const [phase3LlmModel, setPhase3LlmModel] = useState(runtimeDefaults.phase3LlmModel);
-  const [llmTokensTriage, setLlmTokensTriage] = useState(runtimeDefaults.llmTokensTriage);
-  const [llmModelFast, setLlmModelFast] = useState(runtimeDefaults.llmModelFast);
-  const [llmTokensFast, setLlmTokensFast] = useState(runtimeDefaults.llmTokensFast);
-  const [llmModelReasoning, setLlmModelReasoning] = useState(runtimeDefaults.llmModelReasoning);
-  const [llmTokensReasoning, setLlmTokensReasoning] = useState(runtimeDefaults.llmTokensReasoning);
-  const [llmModelExtract, setLlmModelExtract] = useState(runtimeDefaults.llmModelExtract);
-  const [llmTokensExtract, setLlmTokensExtract] = useState(runtimeDefaults.llmTokensExtract);
-  const [llmModelValidate, setLlmModelValidate] = useState(runtimeDefaults.llmModelValidate);
-  const [llmTokensValidate, setLlmTokensValidate] = useState(runtimeDefaults.llmTokensValidate);
-  const [llmModelWrite, setLlmModelWrite] = useState(runtimeDefaults.llmModelWrite);
-  const [llmTokensWrite, setLlmTokensWrite] = useState(runtimeDefaults.llmTokensWrite);
-  const [llmFallbackEnabled, setLlmFallbackEnabled] = useState(runtimeDefaults.llmFallbackEnabled);
-  const [llmFallbackPlanModel, setLlmFallbackPlanModel] = useState(runtimeDefaults.llmFallbackPlanModel);
-  const [llmTokensPlanFallback, setLlmTokensPlanFallback] = useState(runtimeDefaults.llmTokensPlanFallback);
-  const [llmFallbackExtractModel, setLlmFallbackExtractModel] = useState(runtimeDefaults.llmFallbackExtractModel);
-  const [llmTokensExtractFallback, setLlmTokensExtractFallback] = useState(runtimeDefaults.llmTokensExtractFallback);
-  const [llmFallbackValidateModel, setLlmFallbackValidateModel] = useState(runtimeDefaults.llmFallbackValidateModel);
-  const [llmTokensValidateFallback, setLlmTokensValidateFallback] = useState(runtimeDefaults.llmTokensValidateFallback);
-  const [llmFallbackWriteModel, setLlmFallbackWriteModel] = useState(runtimeDefaults.llmFallbackWriteModel);
-  const [llmTokensWriteFallback, setLlmTokensWriteFallback] = useState(runtimeDefaults.llmTokensWriteFallback);
-  const [llmKnobsInitialized, setLlmKnobsInitialized] = useState(false);
+  const [profile, setProfile] = useState<'fast' | 'standard' | 'thorough'>(runtimeSettingsBootstrap.profile);
+  const [fetchConcurrency, setFetchConcurrency] = useState(String(runtimeSettingsBootstrap.fetchConcurrency));
+  const [perHostMinDelayMs, setPerHostMinDelayMs] = useState(String(runtimeSettingsBootstrap.perHostMinDelayMs));
+  const [dynamicCrawleeEnabled, setDynamicCrawleeEnabled] = useState(runtimeSettingsBootstrap.dynamicCrawleeEnabled);
+  const [crawleeHeadless, setCrawleeHeadless] = useState(runtimeSettingsBootstrap.crawleeHeadless);
+  const [crawleeRequestHandlerTimeoutSecs, setCrawleeRequestHandlerTimeoutSecs] = useState(String(runtimeSettingsBootstrap.crawleeRequestHandlerTimeoutSecs));
+  const [dynamicFetchRetryBudget, setDynamicFetchRetryBudget] = useState(String(runtimeSettingsBootstrap.dynamicFetchRetryBudget));
+  const [dynamicFetchRetryBackoffMs, setDynamicFetchRetryBackoffMs] = useState(String(runtimeSettingsBootstrap.dynamicFetchRetryBackoffMs));
+  const [dynamicFetchPolicyMapJson, setDynamicFetchPolicyMapJson] = useState(runtimeSettingsBootstrap.dynamicFetchPolicyMapJson);
+  const [scannedPdfOcrEnabled, setScannedPdfOcrEnabled] = useState(runtimeSettingsBootstrap.scannedPdfOcrEnabled);
+  const [scannedPdfOcrPromoteCandidates, setScannedPdfOcrPromoteCandidates] = useState(runtimeSettingsBootstrap.scannedPdfOcrPromoteCandidates);
+  const [scannedPdfOcrBackend, setScannedPdfOcrBackend] = useState<'auto' | 'tesseract' | 'none'>(runtimeSettingsBootstrap.scannedPdfOcrBackend);
+  const [scannedPdfOcrMaxPages, setScannedPdfOcrMaxPages] = useState(String(runtimeSettingsBootstrap.scannedPdfOcrMaxPages));
+  const [scannedPdfOcrMaxPairs, setScannedPdfOcrMaxPairs] = useState(String(runtimeSettingsBootstrap.scannedPdfOcrMaxPairs));
+  const [scannedPdfOcrMinCharsPerPage, setScannedPdfOcrMinCharsPerPage] = useState(String(runtimeSettingsBootstrap.scannedPdfOcrMinCharsPerPage));
+  const [scannedPdfOcrMinLinesPerPage, setScannedPdfOcrMinLinesPerPage] = useState(String(runtimeSettingsBootstrap.scannedPdfOcrMinLinesPerPage));
+  const [scannedPdfOcrMinConfidence, setScannedPdfOcrMinConfidence] = useState(String(runtimeSettingsBootstrap.scannedPdfOcrMinConfidence));
+  const [resumeMode, setResumeMode] = useState<'auto' | 'force_resume' | 'start_over'>(runtimeSettingsBootstrap.resumeMode);
+  const [resumeWindowHours, setResumeWindowHours] = useState(String(runtimeSettingsBootstrap.resumeWindowHours));
+  const [reextractAfterHours, setReextractAfterHours] = useState(String(runtimeSettingsBootstrap.reextractAfterHours));
+  const [reextractIndexed, setReextractIndexed] = useState(runtimeSettingsBootstrap.reextractIndexed);
+  const [discoveryEnabled, setDiscoveryEnabled] = useState(runtimeSettingsBootstrap.discoveryEnabled);
+  const [searchProvider, setSearchProvider] = useState<'none' | 'google' | 'bing' | 'searxng' | 'duckduckgo' | 'dual'>(runtimeSettingsBootstrap.searchProvider as 'none' | 'google' | 'bing' | 'searxng' | 'duckduckgo' | 'dual');
+  const [phase2LlmEnabled, setPhase2LlmEnabled] = useState(runtimeSettingsBootstrap.phase2LlmEnabled);
+  const [phase2LlmModel, setPhase2LlmModel] = useState(runtimeSettingsBootstrap.phase2LlmModel);
+  const [llmTokensPlan, setLlmTokensPlan] = useState(runtimeSettingsBootstrap.llmTokensPlan);
+  const [phase3LlmTriageEnabled, setPhase3LlmTriageEnabled] = useState(runtimeSettingsBootstrap.phase3LlmTriageEnabled);
+  const [phase3LlmModel, setPhase3LlmModel] = useState(runtimeSettingsBootstrap.phase3LlmModel);
+  const [llmTokensTriage, setLlmTokensTriage] = useState(runtimeSettingsBootstrap.llmTokensTriage);
+  const [llmModelFast, setLlmModelFast] = useState(runtimeSettingsBootstrap.llmModelFast);
+  const [llmTokensFast, setLlmTokensFast] = useState(runtimeSettingsBootstrap.llmTokensFast);
+  const [llmModelReasoning, setLlmModelReasoning] = useState(runtimeSettingsBootstrap.llmModelReasoning);
+  const [llmTokensReasoning, setLlmTokensReasoning] = useState(runtimeSettingsBootstrap.llmTokensReasoning);
+  const [llmModelExtract, setLlmModelExtract] = useState(runtimeSettingsBootstrap.llmModelExtract);
+  const [llmTokensExtract, setLlmTokensExtract] = useState(runtimeSettingsBootstrap.llmTokensExtract);
+  const [llmModelValidate, setLlmModelValidate] = useState(runtimeSettingsBootstrap.llmModelValidate);
+  const [llmTokensValidate, setLlmTokensValidate] = useState(runtimeSettingsBootstrap.llmTokensValidate);
+  const [llmModelWrite, setLlmModelWrite] = useState(runtimeSettingsBootstrap.llmModelWrite);
+  const [llmTokensWrite, setLlmTokensWrite] = useState(runtimeSettingsBootstrap.llmTokensWrite);
+  const [llmFallbackEnabled, setLlmFallbackEnabled] = useState(runtimeSettingsBootstrap.llmFallbackEnabled);
+  const [llmFallbackPlanModel, setLlmFallbackPlanModel] = useState(runtimeSettingsBootstrap.llmFallbackPlanModel);
+  const [llmTokensPlanFallback, setLlmTokensPlanFallback] = useState(runtimeSettingsBootstrap.llmTokensPlanFallback);
+  const [llmFallbackExtractModel, setLlmFallbackExtractModel] = useState(runtimeSettingsBootstrap.llmFallbackExtractModel);
+  const [llmTokensExtractFallback, setLlmTokensExtractFallback] = useState(runtimeSettingsBootstrap.llmTokensExtractFallback);
+  const [llmFallbackValidateModel, setLlmFallbackValidateModel] = useState(runtimeSettingsBootstrap.llmFallbackValidateModel);
+  const [llmTokensValidateFallback, setLlmTokensValidateFallback] = useState(runtimeSettingsBootstrap.llmTokensValidateFallback);
+  const [llmFallbackWriteModel, setLlmFallbackWriteModel] = useState(runtimeSettingsBootstrap.llmFallbackWriteModel);
+  const [llmTokensWriteFallback, setLlmTokensWriteFallback] = useState(runtimeSettingsBootstrap.llmTokensWriteFallback);
   const singleBrand = useIndexLabStore((s) => s.pickerBrand);
   const setSingleBrand = useIndexLabStore((s) => s.setPickerBrand);
   const singleModel = useIndexLabStore((s) => s.pickerModel);
@@ -180,11 +248,12 @@ export function IndexingPage() {
   const previousCategoryRef = useRef(category);
 
   const { data: processStatus } = useQuery({
-    queryKey: ['processStatus', 'indexing'],
+    queryKey: ['processStatus'],
     queryFn: () => api.get<ProcessStatus>('/process/status'),
     refetchInterval: 1500
   });
   const isProcessRunning = Boolean(processStatus?.running);
+  const processStatusRunId = String(processStatus?.run_id || processStatus?.runId || '').trim();
 
   const { data: searxngStatus, error: searxngStatusError } = useQuery({
     queryKey: ['searxng', 'status'],
@@ -205,6 +274,128 @@ export function IndexingPage() {
   const [convergenceSettingsSaveMessage, setConvergenceSettingsSaveMessage] = useState('');
   const [runtimeSettingsSaveState, setRuntimeSettingsSaveState] = useState<'idle' | 'ok' | 'partial' | 'error'>('idle');
   const [runtimeSettingsSaveMessage, setRuntimeSettingsSaveMessage] = useState('');
+  const [runtimeSettingsFallbackBaseline, setRuntimeSettingsFallbackBaseline] = useState(() => ({
+    fetchConcurrency: runtimeSettingsBootstrap.fetchConcurrency,
+    perHostMinDelayMs: runtimeSettingsBootstrap.perHostMinDelayMs,
+    crawleeRequestHandlerTimeoutSecs: runtimeSettingsBootstrap.crawleeRequestHandlerTimeoutSecs,
+    dynamicFetchRetryBudget: runtimeSettingsBootstrap.dynamicFetchRetryBudget,
+    dynamicFetchRetryBackoffMs: runtimeSettingsBootstrap.dynamicFetchRetryBackoffMs,
+    scannedPdfOcrMaxPages: runtimeSettingsBootstrap.scannedPdfOcrMaxPages,
+    scannedPdfOcrMaxPairs: runtimeSettingsBootstrap.scannedPdfOcrMaxPairs,
+    scannedPdfOcrMinCharsPerPage: runtimeSettingsBootstrap.scannedPdfOcrMinCharsPerPage,
+    scannedPdfOcrMinLinesPerPage: runtimeSettingsBootstrap.scannedPdfOcrMinLinesPerPage,
+    scannedPdfOcrMinConfidence: runtimeSettingsBootstrap.scannedPdfOcrMinConfidence,
+    resumeWindowHours: runtimeSettingsBootstrap.resumeWindowHours,
+    reextractAfterHours: runtimeSettingsBootstrap.reextractAfterHours,
+  }));
+  const runtimeStringHydrationBindings = useMemo(() => ([
+    {
+      key: 'profile',
+      apply: (value: string) => setProfile(value as 'fast' | 'standard' | 'thorough'),
+    },
+    {
+      key: 'searchProvider',
+      allowEmpty: true,
+      apply: (value: string) => setSearchProvider(value as 'none' | 'google' | 'bing' | 'searxng' | 'duckduckgo' | 'dual'),
+    },
+    {
+      key: 'phase2LlmModel',
+      apply: (value: string) => setPhase2LlmModel(value),
+    },
+    {
+      key: 'phase3LlmModel',
+      apply: (value: string) => setPhase3LlmModel(value),
+    },
+    {
+      key: 'llmModelFast',
+      apply: (value: string) => setLlmModelFast(value),
+    },
+    {
+      key: 'llmModelReasoning',
+      apply: (value: string) => setLlmModelReasoning(value),
+    },
+    {
+      key: 'llmModelExtract',
+      apply: (value: string) => setLlmModelExtract(value),
+    },
+    {
+      key: 'llmModelValidate',
+      apply: (value: string) => setLlmModelValidate(value),
+    },
+    {
+      key: 'llmModelWrite',
+      apply: (value: string) => setLlmModelWrite(value),
+    },
+    {
+      key: 'llmFallbackPlanModel',
+      allowEmpty: true,
+      apply: (value: string) => setLlmFallbackPlanModel(value),
+    },
+    {
+      key: 'llmFallbackExtractModel',
+      allowEmpty: true,
+      apply: (value: string) => setLlmFallbackExtractModel(value),
+    },
+    {
+      key: 'llmFallbackValidateModel',
+      allowEmpty: true,
+      apply: (value: string) => setLlmFallbackValidateModel(value),
+    },
+    {
+      key: 'llmFallbackWriteModel',
+      allowEmpty: true,
+      apply: (value: string) => setLlmFallbackWriteModel(value),
+    },
+    {
+      key: 'resumeMode',
+      apply: (value: string) => setResumeMode(value as 'auto' | 'force_resume' | 'start_over'),
+    },
+    {
+      key: 'scannedPdfOcrBackend',
+      apply: (value: string) => setScannedPdfOcrBackend(value as 'auto' | 'tesseract' | 'none'),
+    },
+    {
+      key: 'dynamicFetchPolicyMapJson',
+      allowEmpty: true,
+      apply: (value: string) => setDynamicFetchPolicyMapJson(value),
+    },
+  ]), []);
+  const runtimeNumberHydrationBindings = useMemo(() => ([
+    { key: 'fetchConcurrency', apply: (value: number) => setFetchConcurrency(String(value)) },
+    { key: 'perHostMinDelayMs', apply: (value: number) => setPerHostMinDelayMs(String(value)) },
+    { key: 'llmTokensPlan', apply: (value: number) => setLlmTokensPlan(value) },
+    { key: 'llmTokensTriage', apply: (value: number) => setLlmTokensTriage(value) },
+    { key: 'llmTokensFast', apply: (value: number) => setLlmTokensFast(value) },
+    { key: 'llmTokensReasoning', apply: (value: number) => setLlmTokensReasoning(value) },
+    { key: 'llmTokensExtract', apply: (value: number) => setLlmTokensExtract(value) },
+    { key: 'llmTokensValidate', apply: (value: number) => setLlmTokensValidate(value) },
+    { key: 'llmTokensWrite', apply: (value: number) => setLlmTokensWrite(value) },
+    { key: 'llmTokensPlanFallback', apply: (value: number) => setLlmTokensPlanFallback(value) },
+    { key: 'llmTokensExtractFallback', apply: (value: number) => setLlmTokensExtractFallback(value) },
+    { key: 'llmTokensValidateFallback', apply: (value: number) => setLlmTokensValidateFallback(value) },
+    { key: 'llmTokensWriteFallback', apply: (value: number) => setLlmTokensWriteFallback(value) },
+    { key: 'resumeWindowHours', apply: (value: number) => setResumeWindowHours(String(value)) },
+    { key: 'reextractAfterHours', apply: (value: number) => setReextractAfterHours(String(value)) },
+    { key: 'scannedPdfOcrMaxPages', apply: (value: number) => setScannedPdfOcrMaxPages(String(value)) },
+    { key: 'scannedPdfOcrMaxPairs', apply: (value: number) => setScannedPdfOcrMaxPairs(String(value)) },
+    { key: 'scannedPdfOcrMinCharsPerPage', apply: (value: number) => setScannedPdfOcrMinCharsPerPage(String(value)) },
+    { key: 'scannedPdfOcrMinLinesPerPage', apply: (value: number) => setScannedPdfOcrMinLinesPerPage(String(value)) },
+    { key: 'scannedPdfOcrMinConfidence', apply: (value: number) => setScannedPdfOcrMinConfidence(String(value)) },
+    { key: 'crawleeRequestHandlerTimeoutSecs', apply: (value: number) => setCrawleeRequestHandlerTimeoutSecs(String(value)) },
+    { key: 'dynamicFetchRetryBudget', apply: (value: number) => setDynamicFetchRetryBudget(String(value)) },
+    { key: 'dynamicFetchRetryBackoffMs', apply: (value: number) => setDynamicFetchRetryBackoffMs(String(value)) },
+  ]), []);
+  const runtimeBooleanHydrationBindings = useMemo(() => ([
+    { key: 'discoveryEnabled', apply: (value: boolean) => setDiscoveryEnabled(value) },
+    { key: 'phase2LlmEnabled', apply: (value: boolean) => setPhase2LlmEnabled(value) },
+    { key: 'phase3LlmTriageEnabled', apply: (value: boolean) => setPhase3LlmTriageEnabled(value) },
+    { key: 'llmFallbackEnabled', apply: (value: boolean) => setLlmFallbackEnabled(value) },
+    { key: 'reextractIndexed', apply: (value: boolean) => setReextractIndexed(value) },
+    { key: 'scannedPdfOcrEnabled', apply: (value: boolean) => setScannedPdfOcrEnabled(value) },
+    { key: 'scannedPdfOcrPromoteCandidates', apply: (value: boolean) => setScannedPdfOcrPromoteCandidates(value) },
+    { key: 'dynamicCrawleeEnabled', apply: (value: boolean) => setDynamicCrawleeEnabled(value) },
+    { key: 'crawleeHeadless', apply: (value: boolean) => setCrawleeHeadless(value) },
+  ]), []);
 
   const { data: indexingLlmConfig } = useQuery({
     queryKey: ['indexing', 'llm-config'],
@@ -267,15 +458,37 @@ export function IndexingPage() {
   const { data: indexlabRunsResp } = useQuery({
     queryKey: ['indexlab', 'runs'],
     queryFn: () => api.get<IndexLabRunsResponse>('/indexlab/runs?limit=80'),
-    refetchInterval: getRefetchInterval(isProcessRunning, panelCollapsed.picker)
+    refetchInterval: getRefetchInterval(isProcessRunning, false)
   });
 
   const indexlabRuns = useMemo(() => {
     const rows = indexlabRunsResp?.runs || [];
-    if (isAll) return rows;
-    const categoryToken = normalizeToken(category);
-    return rows.filter((row) => normalizeToken(row.category) === categoryToken);
-  }, [indexlabRunsResp, isAll, category]);
+    const scopedRows = isAll
+      ? rows
+      : rows.filter((row) => normalizeToken(row.category) === normalizeToken(category));
+    const activeRunId = String(processStatusRunId || selectedIndexLabRunId || '').trim();
+    if (!activeRunId || scopedRows.some((row) => String(row.run_id || '').trim() === activeRunId)) {
+      return scopedRows;
+    }
+    return [{
+      run_id: activeRunId,
+      category: isAll ? String(category || '').trim() : String(category || '').trim(),
+      product_id: '',
+      status: isProcessRunning ? 'running' : 'starting',
+      started_at: String(processStatus?.startedAt || ''),
+      ended_at: '',
+      has_needset: false,
+      has_search_profile: false,
+    }, ...scopedRows];
+  }, [
+    indexlabRunsResp,
+    isAll,
+    category,
+    processStatusRunId,
+    selectedIndexLabRunId,
+    isProcessRunning,
+    processStatus?.startedAt,
+  ]);
   const selectedRunForChecklist = useMemo(
     () => indexlabRuns.find((row) => row.run_id === selectedIndexLabRunId) || null,
     [indexlabRuns, selectedIndexLabRunId]
@@ -290,15 +503,17 @@ export function IndexingPage() {
   );
 
   useEffect(() => {
+    const activeRunId = String(processStatusRunId || '').trim();
     const newestRunId = indexlabRuns[0]?.run_id || '';
     const isProcessRunning = Boolean(processStatus?.running);
-    if (!newestRunId) {
+    if (!newestRunId && !activeRunId) {
       if (selectedIndexLabRunId) setSelectedIndexLabRunId('');
       return;
     }
     if (isProcessRunning) {
-      if (selectedIndexLabRunId !== newestRunId) {
-        setSelectedIndexLabRunId(newestRunId);
+      const targetRunId = activeRunId || newestRunId;
+      if (targetRunId && selectedIndexLabRunId !== targetRunId) {
+        setSelectedIndexLabRunId(targetRunId);
       }
       return;
     }
@@ -314,7 +529,7 @@ export function IndexingPage() {
       || indexlabRuns.find((row) => normalizeToken(row.status) === 'completed')?.run_id
       || newestRunId;
     setSelectedIndexLabRunId(newestCompletedRunId);
-  }, [indexlabRuns, selectedIndexLabRunId, processStatus?.running]);
+  }, [indexlabRuns, selectedIndexLabRunId, processStatus?.running, processStatusRunId, setSelectedIndexLabRunId]);
 
   useEffect(() => {
     if (!selectedIndexLabRunId) {
@@ -609,16 +824,81 @@ export function IndexingPage() {
     return [...new Set(rows)];
   }, [indexingLlmConfig]);
 
-  const llmTokenPresetOptions = useMemo(() => {
-    const raw = Array.isArray(indexingLlmConfig?.token_presets)
-      ? indexingLlmConfig.token_presets
-      : [256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096, 8192];
-    const cleaned = raw
-      .map((value) => Number.parseInt(String(value || ''), 10))
-      .filter((value) => Number.isFinite(value) && value > 0)
+  const llmModelOptionsWithCurrent = useMemo(() => {
+    const seeded = [
+      ...llmModelOptions,
+      phase2LlmModel,
+      phase3LlmModel,
+      llmModelFast,
+      llmModelReasoning,
+      llmModelExtract,
+      llmModelValidate,
+      llmModelWrite,
+      llmFallbackPlanModel,
+      llmFallbackExtractModel,
+      llmFallbackValidateModel,
+      llmFallbackWriteModel,
+    ];
+    const deduped = [] as string[];
+    const seen = new Set<string>();
+    for (const model of seeded) {
+      const token = String(model || '').trim();
+      if (!token) continue;
+      const normalized = normalizeToken(token);
+      if (!normalized || seen.has(normalized)) continue;
+      seen.add(normalized);
+      deduped.push(token);
+    }
+    return deduped;
+  }, [
+    llmModelOptions,
+    phase2LlmModel,
+    phase3LlmModel,
+    llmModelFast,
+    llmModelReasoning,
+    llmModelExtract,
+    llmModelValidate,
+    llmModelWrite,
+    llmFallbackPlanModel,
+    llmFallbackExtractModel,
+    llmFallbackValidateModel,
+    llmFallbackWriteModel,
+  ]);
+
+  const llmTokenPresetFallbackOptions = useMemo(() => {
+    const seeded = [
+      runtimeSettingsBootstrap.llmTokensPlan,
+      runtimeSettingsBootstrap.llmTokensTriage,
+      runtimeSettingsBootstrap.llmTokensFast,
+      runtimeSettingsBootstrap.llmTokensReasoning,
+      runtimeSettingsBootstrap.llmTokensExtract,
+      runtimeSettingsBootstrap.llmTokensValidate,
+      runtimeSettingsBootstrap.llmTokensWrite,
+      runtimeSettingsBootstrap.llmTokensPlanFallback,
+      runtimeSettingsBootstrap.llmTokensExtractFallback,
+      runtimeSettingsBootstrap.llmTokensValidateFallback,
+      runtimeSettingsBootstrap.llmTokensWriteFallback,
+    ];
+    const cleaned = seeded
+      .map((value) => parseRuntimeLlmTokenCap(value))
+      .filter((value): value is number => value !== null)
       .sort((a, b) => a - b);
     return [...new Set(cleaned)];
-  }, [indexingLlmConfig]);
+  }, [runtimeSettingsBootstrap]);
+
+  const llmTokenPresetOptions = useMemo(() => {
+    const fallbackPresets = llmTokenPresetFallbackOptions.length > 0
+      ? llmTokenPresetFallbackOptions
+      : [runtimeSettingsBootstrap.llmTokensPlan];
+    const raw = Array.isArray(indexingLlmConfig?.token_presets)
+      ? indexingLlmConfig.token_presets
+      : fallbackPresets;
+    const cleaned = raw
+      .map((value) => parseRuntimeLlmTokenCap(value))
+      .filter((value): value is number => value !== null)
+      .sort((a, b) => a - b);
+    return [...new Set(cleaned)];
+  }, [indexingLlmConfig, llmTokenPresetFallbackOptions, runtimeSettingsBootstrap.llmTokensPlan]);
 
   const llmTokenProfileLookup = useMemo(() => {
     const map = new Map<string, { default_output_tokens: number; max_output_tokens: number }>();
@@ -626,8 +906,8 @@ export function IndexingPage() {
       const token = normalizeToken(row.model);
       if (!token) continue;
       map.set(token, {
-        default_output_tokens: Math.max(0, Number(row.default_output_tokens || 0)),
-        max_output_tokens: Math.max(0, Number(row.max_output_tokens || 0))
+        default_output_tokens: parseRuntimeLlmTokenCap(row.default_output_tokens) || 0,
+        max_output_tokens: parseRuntimeLlmTokenCap(row.max_output_tokens) || 0,
       });
     }
     return map;
@@ -635,9 +915,15 @@ export function IndexingPage() {
 
   const resolveModelTokenDefaults = (model: string) => {
     const profile = llmTokenProfileLookup.get(normalizeToken(model));
-    const globalDefault = Number(indexingLlmConfig?.token_defaults?.plan || 2048);
-    const default_output_tokens = Math.max(128, Number(profile?.default_output_tokens || globalDefault));
-    const max_output_tokens = Math.max(default_output_tokens, Number(profile?.max_output_tokens || 8192));
+    const defaultFromConfig = parseRuntimeLlmTokenCap(indexingLlmConfig?.token_defaults?.plan);
+    const fallbackDefault = llmTokenPresetOptions[0] || runtimeSettingsBootstrap.llmTokensPlan;
+    const globalDefault = defaultFromConfig || parseRuntimeLlmTokenCap(fallbackDefault) || LLM_MIN_OUTPUT_TOKENS;
+    const fallbackMaxOutputTokens = llmTokenPresetOptions[llmTokenPresetOptions.length - 1] || globalDefault;
+    const default_output_tokens = parseRuntimeLlmTokenCap(profile?.default_output_tokens) || globalDefault;
+    const max_output_tokens = Math.max(
+      default_output_tokens,
+      parseRuntimeLlmTokenCap(profile?.max_output_tokens) || parseRuntimeLlmTokenCap(fallbackMaxOutputTokens) || default_output_tokens,
+    );
     return {
       default_output_tokens,
       max_output_tokens
@@ -657,7 +943,7 @@ export function IndexingPage() {
   const clampTokenForModel = (model: string, value: number) => {
     const defaults = resolveModelTokenDefaults(model);
     const parsed = Number.parseInt(String(value), 10);
-    const safeValue = Math.max(128, Number.isFinite(parsed) ? parsed : defaults.default_output_tokens);
+    const safeValue = Math.max(LLM_MIN_OUTPUT_TOKENS, Number.isFinite(parsed) ? parsed : defaults.default_output_tokens);
     return Math.min(safeValue, defaults.max_output_tokens);
   };
 
@@ -677,8 +963,8 @@ export function IndexingPage() {
     llmFallbackWriteModel,
     resumeMode,
     scannedPdfOcrBackend,
-    fetchConcurrency: parseRuntimeInt(fetchConcurrency, runtimeDefaults.fetchConcurrency),
-    perHostMinDelayMs: parseRuntimeInt(perHostMinDelayMs, runtimeDefaults.perHostMinDelayMs),
+    fetchConcurrency: parseRuntimeInt(fetchConcurrency, runtimeSettingsFallbackBaseline.fetchConcurrency),
+    perHostMinDelayMs: parseRuntimeInt(perHostMinDelayMs, runtimeSettingsFallbackBaseline.perHostMinDelayMs),
     llmTokensPlan: clampTokenForModel(phase2LlmModel, llmTokensPlan),
     llmTokensTriage: clampTokenForModel(phase3LlmModel, llmTokensTriage),
     llmTokensFast: clampTokenForModel(llmModelFast, llmTokensFast),
@@ -690,16 +976,16 @@ export function IndexingPage() {
     llmTokensExtractFallback: clampTokenForModel(llmFallbackExtractModel || llmModelExtract, llmTokensExtractFallback),
     llmTokensValidateFallback: clampTokenForModel(llmFallbackValidateModel || llmModelValidate, llmTokensValidateFallback),
     llmTokensWriteFallback: clampTokenForModel(llmFallbackWriteModel || llmModelWrite, llmTokensWriteFallback),
-    resumeWindowHours: parseRuntimeInt(resumeWindowHours, runtimeDefaults.resumeWindowHours),
-    reextractAfterHours: parseRuntimeInt(reextractAfterHours, runtimeDefaults.reextractAfterHours),
-    scannedPdfOcrMaxPages: parseRuntimeInt(scannedPdfOcrMaxPages, runtimeDefaults.scannedPdfOcrMaxPages),
-    scannedPdfOcrMaxPairs: parseRuntimeInt(scannedPdfOcrMaxPairs, runtimeDefaults.scannedPdfOcrMaxPairs),
-    scannedPdfOcrMinCharsPerPage: parseRuntimeInt(scannedPdfOcrMinCharsPerPage, runtimeDefaults.scannedPdfOcrMinCharsPerPage),
-    scannedPdfOcrMinLinesPerPage: parseRuntimeInt(scannedPdfOcrMinLinesPerPage, runtimeDefaults.scannedPdfOcrMinLinesPerPage),
-    scannedPdfOcrMinConfidence: parseRuntimeFloat(scannedPdfOcrMinConfidence, runtimeDefaults.scannedPdfOcrMinConfidence),
-    crawleeRequestHandlerTimeoutSecs: parseRuntimeInt(crawleeRequestHandlerTimeoutSecs, runtimeDefaults.crawleeRequestHandlerTimeoutSecs),
-    dynamicFetchRetryBudget: parseRuntimeInt(dynamicFetchRetryBudget, runtimeDefaults.dynamicFetchRetryBudget),
-    dynamicFetchRetryBackoffMs: parseRuntimeInt(dynamicFetchRetryBackoffMs, runtimeDefaults.dynamicFetchRetryBackoffMs),
+    resumeWindowHours: parseRuntimeInt(resumeWindowHours, runtimeSettingsFallbackBaseline.resumeWindowHours),
+    reextractAfterHours: parseRuntimeInt(reextractAfterHours, runtimeSettingsFallbackBaseline.reextractAfterHours),
+    scannedPdfOcrMaxPages: parseRuntimeInt(scannedPdfOcrMaxPages, runtimeSettingsFallbackBaseline.scannedPdfOcrMaxPages),
+    scannedPdfOcrMaxPairs: parseRuntimeInt(scannedPdfOcrMaxPairs, runtimeSettingsFallbackBaseline.scannedPdfOcrMaxPairs),
+    scannedPdfOcrMinCharsPerPage: parseRuntimeInt(scannedPdfOcrMinCharsPerPage, runtimeSettingsFallbackBaseline.scannedPdfOcrMinCharsPerPage),
+    scannedPdfOcrMinLinesPerPage: parseRuntimeInt(scannedPdfOcrMinLinesPerPage, runtimeSettingsFallbackBaseline.scannedPdfOcrMinLinesPerPage),
+    scannedPdfOcrMinConfidence: parseRuntimeFloat(scannedPdfOcrMinConfidence, runtimeSettingsFallbackBaseline.scannedPdfOcrMinConfidence),
+    crawleeRequestHandlerTimeoutSecs: parseRuntimeInt(crawleeRequestHandlerTimeoutSecs, runtimeSettingsFallbackBaseline.crawleeRequestHandlerTimeoutSecs),
+    dynamicFetchRetryBudget: parseRuntimeInt(dynamicFetchRetryBudget, runtimeSettingsFallbackBaseline.dynamicFetchRetryBudget),
+    dynamicFetchRetryBackoffMs: parseRuntimeInt(dynamicFetchRetryBackoffMs, runtimeSettingsFallbackBaseline.dynamicFetchRetryBackoffMs),
     dynamicFetchPolicyMapJson: String(dynamicFetchPolicyMapJson || '').trim(),
     discoveryEnabled,
     phase2LlmEnabled,
@@ -746,6 +1032,53 @@ export function IndexingPage() {
     },
   });
 
+  const runtimeSettingsBaseline = useMemo(() => ({
+    fetchConcurrency: Number.isFinite(Number(runtimeSettingsData?.fetchConcurrency))
+      ? Number(runtimeSettingsData?.fetchConcurrency)
+      : runtimeSettingsFallbackBaseline.fetchConcurrency,
+    perHostMinDelayMs: Number.isFinite(Number(runtimeSettingsData?.perHostMinDelayMs))
+      ? Number(runtimeSettingsData?.perHostMinDelayMs)
+      : runtimeSettingsFallbackBaseline.perHostMinDelayMs,
+    crawleeRequestHandlerTimeoutSecs: Number.isFinite(Number(runtimeSettingsData?.crawleeRequestHandlerTimeoutSecs))
+      ? Number(runtimeSettingsData?.crawleeRequestHandlerTimeoutSecs)
+      : runtimeSettingsFallbackBaseline.crawleeRequestHandlerTimeoutSecs,
+    dynamicFetchRetryBudget: Number.isFinite(Number(runtimeSettingsData?.dynamicFetchRetryBudget))
+      ? Number(runtimeSettingsData?.dynamicFetchRetryBudget)
+      : runtimeSettingsFallbackBaseline.dynamicFetchRetryBudget,
+    dynamicFetchRetryBackoffMs: Number.isFinite(Number(runtimeSettingsData?.dynamicFetchRetryBackoffMs))
+      ? Number(runtimeSettingsData?.dynamicFetchRetryBackoffMs)
+      : runtimeSettingsFallbackBaseline.dynamicFetchRetryBackoffMs,
+    scannedPdfOcrMaxPages: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMaxPages))
+      ? Number(runtimeSettingsData?.scannedPdfOcrMaxPages)
+      : runtimeSettingsFallbackBaseline.scannedPdfOcrMaxPages,
+    scannedPdfOcrMaxPairs: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMaxPairs))
+      ? Number(runtimeSettingsData?.scannedPdfOcrMaxPairs)
+      : runtimeSettingsFallbackBaseline.scannedPdfOcrMaxPairs,
+    scannedPdfOcrMinCharsPerPage: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMinCharsPerPage))
+      ? Number(runtimeSettingsData?.scannedPdfOcrMinCharsPerPage)
+      : runtimeSettingsFallbackBaseline.scannedPdfOcrMinCharsPerPage,
+    scannedPdfOcrMinLinesPerPage: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMinLinesPerPage))
+      ? Number(runtimeSettingsData?.scannedPdfOcrMinLinesPerPage)
+      : runtimeSettingsFallbackBaseline.scannedPdfOcrMinLinesPerPage,
+    scannedPdfOcrMinConfidence: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMinConfidence))
+      ? Number(runtimeSettingsData?.scannedPdfOcrMinConfidence)
+      : runtimeSettingsFallbackBaseline.scannedPdfOcrMinConfidence,
+    resumeWindowHours: Number.isFinite(Number(runtimeSettingsData?.resumeWindowHours))
+      ? Number(runtimeSettingsData?.resumeWindowHours)
+      : runtimeSettingsFallbackBaseline.resumeWindowHours,
+    reextractAfterHours: Number.isFinite(Number(runtimeSettingsData?.reextractAfterHours))
+      ? Number(runtimeSettingsData?.reextractAfterHours)
+      : runtimeSettingsFallbackBaseline.reextractAfterHours,
+  }), [runtimeSettingsData, runtimeSettingsFallbackBaseline]);
+
+  useEffect(() => {
+    setRuntimeSettingsFallbackBaseline((previous) => (
+      runtimeSettingsBaselineEqual(previous, runtimeSettingsBaseline)
+        ? previous
+        : runtimeSettingsBaseline
+    ));
+  }, [runtimeSettingsBaseline]);
+
   const selectedRunLlmMetrics = useMemo(() => {
     const runs = Array.isArray(indexingLlmMetrics?.by_run) ? indexingLlmMetrics.by_run : [];
     if (runs.length === 0) return null;
@@ -755,18 +1088,6 @@ export function IndexingPage() {
     }
     return runs[0];
   }, [indexingLlmMetrics, selectedIndexLabRunId]);
-
-  useEffect(() => {
-    if (!runtimeSettingsDirty) return;
-    setRuntimeSettingsSaveState('idle');
-    setRuntimeSettingsSaveMessage('');
-  }, [runtimeSettingsDirty]);
-
-  useEffect(() => {
-    if (!convergenceDirty) return;
-    setConvergenceSettingsSaveState('idle');
-    setConvergenceSettingsSaveMessage('');
-  }, [convergenceDirty]);
 
   const modelPricingLookup = useMemo(() => {
     const map = new Map<string, { provider?: string; input_per_1m?: number; output_per_1m?: number; cached_input_per_1m?: number }>();
@@ -898,122 +1219,32 @@ export function IndexingPage() {
   }, [llmTraceRows, selectedLlmTraceId]);
 
   useEffect(() => {
-    if (!indexingLlmConfig || llmKnobsInitialized) return;
-    const defaults = indexingLlmConfig.model_defaults || {};
-    const tokenDefaults = indexingLlmConfig.token_defaults || {};
-    const phase2Default = String(indexingLlmConfig.phase2?.model_default || defaults.plan || '').trim();
-    const phase3Default = String(indexingLlmConfig.phase3?.model_default || defaults.triage || '').trim();
-    const fallbackModel = phase2Default || phase3Default || llmModelOptions[0] || 'gpt-5.1-low';
-    const fallbackDefaults = indexingLlmConfig.fallback_defaults || {};
-    const planModel = phase2Default || fallbackModel;
-    const triageModel = phase3Default || fallbackModel;
-    const fastModel = String(defaults.fast || fallbackModel).trim() || fallbackModel;
-    const reasoningModel = String(defaults.reasoning || fallbackModel).trim() || fallbackModel;
-    const extractModel = String(defaults.extract || fallbackModel).trim() || fallbackModel;
-    const validateModel = String(defaults.validate || fallbackModel).trim() || fallbackModel;
-    const writeModel = String(defaults.write || fallbackModel).trim() || fallbackModel;
-
-    setPhase2LlmEnabled(true);
-    setPhase3LlmTriageEnabled(true);
-    setPhase2LlmModel(planModel);
-    setPhase3LlmModel(triageModel);
-    setLlmModelFast(fastModel);
-    setLlmModelReasoning(reasoningModel);
-    setLlmModelExtract(extractModel);
-    setLlmModelValidate(validateModel);
-    setLlmModelWrite(writeModel);
-    setLlmTokensPlan(clampTokenForModel(planModel, Number(tokenDefaults.plan || resolveModelTokenDefaults(planModel).default_output_tokens)));
-    setLlmTokensTriage(clampTokenForModel(triageModel, Number(tokenDefaults.triage || resolveModelTokenDefaults(triageModel).default_output_tokens)));
-    setLlmTokensFast(clampTokenForModel(fastModel, Number(tokenDefaults.fast || resolveModelTokenDefaults(fastModel).default_output_tokens)));
-    setLlmTokensReasoning(clampTokenForModel(reasoningModel, Number(tokenDefaults.reasoning || resolveModelTokenDefaults(reasoningModel).default_output_tokens)));
-    setLlmTokensExtract(clampTokenForModel(extractModel, Number(tokenDefaults.extract || resolveModelTokenDefaults(extractModel).default_output_tokens)));
-    setLlmTokensValidate(clampTokenForModel(validateModel, Number(tokenDefaults.validate || resolveModelTokenDefaults(validateModel).default_output_tokens)));
-    setLlmTokensWrite(clampTokenForModel(writeModel, Number(tokenDefaults.write || resolveModelTokenDefaults(writeModel).default_output_tokens)));
-    setLlmFallbackEnabled(Boolean(fallbackDefaults.enabled));
-    setLlmFallbackPlanModel(String(fallbackDefaults.plan || '').trim());
-    setLlmFallbackExtractModel(String(fallbackDefaults.extract || '').trim());
-    setLlmFallbackValidateModel(String(fallbackDefaults.validate || '').trim());
-    setLlmFallbackWriteModel(String(fallbackDefaults.write || '').trim());
-    setLlmTokensPlanFallback(
-      clampTokenForModel(
-        String(fallbackDefaults.plan || planModel).trim(),
-        Number(fallbackDefaults.plan_tokens || resolveModelTokenDefaults(String(fallbackDefaults.plan || planModel).trim()).default_output_tokens)
-      )
-    );
-    setLlmTokensExtractFallback(
-      clampTokenForModel(
-        String(fallbackDefaults.extract || extractModel).trim(),
-        Number(fallbackDefaults.extract_tokens || resolveModelTokenDefaults(String(fallbackDefaults.extract || extractModel).trim()).default_output_tokens)
-      )
-    );
-    setLlmTokensValidateFallback(
-      clampTokenForModel(
-        String(fallbackDefaults.validate || validateModel).trim(),
-        Number(fallbackDefaults.validate_tokens || resolveModelTokenDefaults(String(fallbackDefaults.validate || validateModel).trim()).default_output_tokens)
-      )
-    );
-    setLlmTokensWriteFallback(
-      clampTokenForModel(
-        String(fallbackDefaults.write || writeModel).trim(),
-        Number(fallbackDefaults.write_tokens || resolveModelTokenDefaults(String(fallbackDefaults.write || writeModel).trim()).default_output_tokens)
-      )
-    );
-    setLlmKnobsInitialized(true);
-  }, [indexingLlmConfig, llmKnobsInitialized, llmModelOptions]);
-
-  useEffect(() => {
-    if (!runtimeSettingsData || !llmKnobsInitialized || runtimeSettingsDirty) return;
-    const d = runtimeSettingsData;
-    if (typeof d.profile === 'string' && d.profile) setProfile(d.profile as typeof profile);
-    if (typeof d.searchProvider === 'string') setSearchProvider(d.searchProvider as typeof searchProvider);
-    if (typeof d.phase2LlmModel === 'string' && d.phase2LlmModel) setPhase2LlmModel(d.phase2LlmModel as string);
-    if (typeof d.phase3LlmModel === 'string' && d.phase3LlmModel) setPhase3LlmModel(d.phase3LlmModel as string);
-    if (typeof d.llmModelFast === 'string' && d.llmModelFast) setLlmModelFast(d.llmModelFast as string);
-    if (typeof d.llmModelReasoning === 'string' && d.llmModelReasoning) setLlmModelReasoning(d.llmModelReasoning as string);
-    if (typeof d.llmModelExtract === 'string' && d.llmModelExtract) setLlmModelExtract(d.llmModelExtract as string);
-    if (typeof d.llmModelValidate === 'string' && d.llmModelValidate) setLlmModelValidate(d.llmModelValidate as string);
-    if (typeof d.llmModelWrite === 'string' && d.llmModelWrite) setLlmModelWrite(d.llmModelWrite as string);
-    if (typeof d.llmFallbackPlanModel === 'string') setLlmFallbackPlanModel(d.llmFallbackPlanModel as string);
-    if (typeof d.llmFallbackExtractModel === 'string') setLlmFallbackExtractModel(d.llmFallbackExtractModel as string);
-    if (typeof d.llmFallbackValidateModel === 'string') setLlmFallbackValidateModel(d.llmFallbackValidateModel as string);
-    if (typeof d.llmFallbackWriteModel === 'string') setLlmFallbackWriteModel(d.llmFallbackWriteModel as string);
-    if (typeof d.resumeMode === 'string' && d.resumeMode) setResumeMode(d.resumeMode as typeof resumeMode);
-    if (typeof d.scannedPdfOcrBackend === 'string' && d.scannedPdfOcrBackend) setScannedPdfOcrBackend(d.scannedPdfOcrBackend as typeof scannedPdfOcrBackend);
-    if (typeof d.fetchConcurrency === 'number') setFetchConcurrency(String(d.fetchConcurrency));
-    if (typeof d.perHostMinDelayMs === 'number') setPerHostMinDelayMs(String(d.perHostMinDelayMs));
-    if (typeof d.llmTokensPlan === 'number') setLlmTokensPlan(d.llmTokensPlan as number);
-    if (typeof d.llmTokensTriage === 'number') setLlmTokensTriage(d.llmTokensTriage as number);
-    if (typeof d.llmTokensFast === 'number') setLlmTokensFast(d.llmTokensFast as number);
-    if (typeof d.llmTokensReasoning === 'number') setLlmTokensReasoning(d.llmTokensReasoning as number);
-    if (typeof d.llmTokensExtract === 'number') setLlmTokensExtract(d.llmTokensExtract as number);
-    if (typeof d.llmTokensValidate === 'number') setLlmTokensValidate(d.llmTokensValidate as number);
-    if (typeof d.llmTokensWrite === 'number') setLlmTokensWrite(d.llmTokensWrite as number);
-    if (typeof d.llmTokensPlanFallback === 'number') setLlmTokensPlanFallback(d.llmTokensPlanFallback as number);
-    if (typeof d.llmTokensExtractFallback === 'number') setLlmTokensExtractFallback(d.llmTokensExtractFallback as number);
-    if (typeof d.llmTokensValidateFallback === 'number') setLlmTokensValidateFallback(d.llmTokensValidateFallback as number);
-    if (typeof d.llmTokensWriteFallback === 'number') setLlmTokensWriteFallback(d.llmTokensWriteFallback as number);
-    if (typeof d.resumeWindowHours === 'number') setResumeWindowHours(String(d.resumeWindowHours));
-    if (typeof d.reextractAfterHours === 'number') setReextractAfterHours(String(d.reextractAfterHours));
-    if (typeof d.scannedPdfOcrMaxPages === 'number') setScannedPdfOcrMaxPages(String(d.scannedPdfOcrMaxPages));
-    if (typeof d.scannedPdfOcrMaxPairs === 'number') setScannedPdfOcrMaxPairs(String(d.scannedPdfOcrMaxPairs));
-    if (typeof d.scannedPdfOcrMinCharsPerPage === 'number') setScannedPdfOcrMinCharsPerPage(String(d.scannedPdfOcrMinCharsPerPage));
-    if (typeof d.scannedPdfOcrMinLinesPerPage === 'number') setScannedPdfOcrMinLinesPerPage(String(d.scannedPdfOcrMinLinesPerPage));
-    if (typeof d.scannedPdfOcrMinConfidence === 'number') setScannedPdfOcrMinConfidence(String(d.scannedPdfOcrMinConfidence));
-    if (typeof d.crawleeRequestHandlerTimeoutSecs === 'number') setCrawleeRequestHandlerTimeoutSecs(String(d.crawleeRequestHandlerTimeoutSecs));
-    if (typeof d.dynamicFetchRetryBudget === 'number') setDynamicFetchRetryBudget(String(d.dynamicFetchRetryBudget));
-    if (typeof d.dynamicFetchRetryBackoffMs === 'number') setDynamicFetchRetryBackoffMs(String(d.dynamicFetchRetryBackoffMs));
-    if (typeof d.dynamicFetchPolicyMapJson === 'string') setDynamicFetchPolicyMapJson(d.dynamicFetchPolicyMapJson);
-    if (typeof d.discoveryEnabled === 'boolean') setDiscoveryEnabled(d.discoveryEnabled as boolean);
-    if (typeof d.phase2LlmEnabled === 'boolean') setPhase2LlmEnabled(d.phase2LlmEnabled as boolean);
-    if (typeof d.phase3LlmTriageEnabled === 'boolean') setPhase3LlmTriageEnabled(d.phase3LlmTriageEnabled as boolean);
-    if (typeof d.llmFallbackEnabled === 'boolean') setLlmFallbackEnabled(d.llmFallbackEnabled as boolean);
-    if (typeof d.reextractIndexed === 'boolean') setReextractIndexed(d.reextractIndexed as boolean);
-    if (typeof d.scannedPdfOcrEnabled === 'boolean') setScannedPdfOcrEnabled(d.scannedPdfOcrEnabled as boolean);
-    if (typeof d.scannedPdfOcrPromoteCandidates === 'boolean') setScannedPdfOcrPromoteCandidates(d.scannedPdfOcrPromoteCandidates as boolean);
-    if (typeof d.dynamicCrawleeEnabled === 'boolean') setDynamicCrawleeEnabled(d.dynamicCrawleeEnabled as boolean);
-    if (typeof d.crawleeHeadless === 'boolean') setCrawleeHeadless(d.crawleeHeadless as boolean);
+    if (!runtimeSettingsData || runtimeSettingsDirty) return;
+    const d = runtimeSettingsData as Record<string, unknown>;
+    for (const binding of runtimeStringHydrationBindings) {
+      const value = d[binding.key];
+      if (typeof value !== 'string') continue;
+      if (!binding.allowEmpty && !value) continue;
+      binding.apply(value);
+    }
+    for (const binding of runtimeNumberHydrationBindings) {
+      const value = d[binding.key];
+      if (typeof value !== 'number') continue;
+      binding.apply(value);
+    }
+    for (const binding of runtimeBooleanHydrationBindings) {
+      const value = d[binding.key];
+      if (typeof value !== 'boolean') continue;
+      binding.apply(value);
+    }
     setRuntimeSettingsDirty(false);
-  }, [runtimeSettingsData, runtimeSettingsDirty, llmKnobsInitialized]);
+  }, [
+    runtimeSettingsData,
+    runtimeSettingsDirty,
+    runtimeStringHydrationBindings,
+    runtimeNumberHydrationBindings,
+    runtimeBooleanHydrationBindings,
+  ]);
 
   useEffect(() => {
     if (previousCategoryRef.current === category) return;
@@ -3749,15 +3980,22 @@ export function IndexingPage() {
     ];
   }, [indexlabSummary, processRunning, indexlabSearchProfile, phase3Status, phase4Status, phase5Status, phase6bStatus, phase6Status, phase7Status, phase8Status]);
 
+  const publishProcessStatus = (status: ProcessStatus | null | undefined) => {
+    if (!status || typeof status !== 'object') return;
+    setRuntimeProcessStatus(status);
+    queryClient.setQueryData(['processStatus'], status);
+  };
+
   const refreshAll = async () => {
     const refreshes: Array<Promise<unknown>> = [
-      queryClient.invalidateQueries({ queryKey: ['processStatus', 'indexing'], exact: true }),
+      queryClient.invalidateQueries({ queryKey: ['processStatus'], exact: true }),
       queryClient.invalidateQueries({ queryKey: ['searxng', 'status'], exact: true }),
       queryClient.invalidateQueries({ queryKey: ['indexing', 'llm-config'], exact: true }),
       queryClient.invalidateQueries({ queryKey: ['indexing', 'llm-metrics', category], exact: true }),
       queryClient.invalidateQueries({ queryKey: ['indexing', 'domain-checklist'] }),
       queryClient.invalidateQueries({ queryKey: ['catalog', category, 'indexing'], exact: true }),
       queryClient.invalidateQueries({ queryKey: ['indexlab', 'runs'], exact: true }),
+      queryClient.invalidateQueries({ queryKey: ['runtime-ops'] }),
       // Refresh any active run-level containers even if run selection changed recently.
       queryClient.invalidateQueries({ queryKey: ['indexlab', 'run'] })
     ];
@@ -3772,7 +4010,8 @@ export function IndexingPage() {
         queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', selectedIndexLabRunId, 'phase08-extraction'], exact: true }),
         queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', selectedIndexLabRunId, 'dynamic-fetch-dashboard'], exact: true }),
         queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', selectedIndexLabRunId, 'evidence-index'] }),
-        queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', selectedIndexLabRunId, 'rounds'], exact: true })
+        queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', selectedIndexLabRunId, 'rounds'], exact: true }),
+        queryClient.invalidateQueries({ queryKey: ['runtime-ops', selectedIndexLabRunId] })
       );
     }
     await Promise.allSettled(refreshes);
@@ -3780,6 +4019,39 @@ export function IndexingPage() {
       queryKey: ['indexlab', 'run'],
       type: 'active'
     });
+  };
+
+  const removeRunScopedQueries = (runId: string) => {
+    const token = String(runId || '').trim();
+    if (!token) return;
+    queryClient.removeQueries({ queryKey: ['indexlab', 'run', token, 'events'], exact: true });
+    queryClient.removeQueries({ queryKey: ['indexlab', 'run', token, 'needset'], exact: true });
+    queryClient.removeQueries({ queryKey: ['indexlab', 'run', token, 'search-profile'], exact: true });
+    queryClient.removeQueries({ queryKey: ['indexlab', 'run', token, 'serp'], exact: true });
+    queryClient.removeQueries({ queryKey: ['indexlab', 'run', token, 'llm-traces'], exact: true });
+    queryClient.removeQueries({ queryKey: ['indexlab', 'run', token, 'phase07-retrieval'], exact: true });
+    queryClient.removeQueries({ queryKey: ['indexlab', 'run', token, 'phase08-extraction'], exact: true });
+    queryClient.removeQueries({ queryKey: ['indexlab', 'run', token, 'dynamic-fetch-dashboard'], exact: true });
+    queryClient.removeQueries({ queryKey: ['indexlab', 'run', token, 'rounds'], exact: true });
+    queryClient.removeQueries({ queryKey: ['runtime-ops', token] });
+  };
+
+  const invalidateRunScopedQueries = (runId: string) => {
+    const token = String(runId || '').trim();
+    if (!token) return Promise.resolve();
+    return Promise.allSettled([
+      queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', token, 'events'], exact: true }),
+      queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', token, 'needset'], exact: true }),
+      queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', token, 'search-profile'], exact: true }),
+      queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', token, 'serp'], exact: true }),
+      queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', token, 'llm-traces'], exact: true }),
+      queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', token, 'phase07-retrieval'], exact: true }),
+      queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', token, 'phase08-extraction'], exact: true }),
+      queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', token, 'dynamic-fetch-dashboard'], exact: true }),
+      queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', token, 'rounds'], exact: true }),
+      queryClient.invalidateQueries({ queryKey: ['runtime-ops', token] }),
+      queryClient.invalidateQueries({ queryKey: ['indexing', 'domain-checklist'] }),
+    ]);
   };
 
   const clearSelectedRunView = () => {
@@ -3791,15 +4063,7 @@ export function IndexingPage() {
       return;
     }
     clearIndexLabRun(runId);
-    queryClient.removeQueries({ queryKey: ['indexlab', 'run', runId, 'events'], exact: true });
-    queryClient.removeQueries({ queryKey: ['indexlab', 'run', runId, 'needset'], exact: true });
-    queryClient.removeQueries({ queryKey: ['indexlab', 'run', runId, 'search-profile'], exact: true });
-    queryClient.removeQueries({ queryKey: ['indexlab', 'run', runId, 'serp'], exact: true });
-    queryClient.removeQueries({ queryKey: ['indexlab', 'run', runId, 'llm-traces'], exact: true });
-    queryClient.removeQueries({ queryKey: ['indexlab', 'run', runId, 'phase07-retrieval'], exact: true });
-    queryClient.removeQueries({ queryKey: ['indexlab', 'run', runId, 'phase08-extraction'], exact: true });
-    queryClient.removeQueries({ queryKey: ['indexlab', 'run', runId, 'dynamic-fetch-dashboard'], exact: true });
-    queryClient.removeQueries({ queryKey: ['indexlab', 'run', runId, 'rounds'], exact: true });
+    removeRunScopedQueries(runId);
     queryClient.removeQueries({ queryKey: ['indexing', 'domain-checklist'] });
     setClearedRunViewId(runId);
     setSelectedLlmTraceId('');
@@ -3811,18 +4075,7 @@ export function IndexingPage() {
     setReplayPending(true);
     try {
       setClearedRunViewId('');
-      await Promise.allSettled([
-        queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', runId, 'events'], exact: true }),
-        queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', runId, 'needset'], exact: true }),
-        queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', runId, 'search-profile'], exact: true }),
-        queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', runId, 'serp'], exact: true }),
-        queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', runId, 'llm-traces'], exact: true }),
-        queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', runId, 'phase07-retrieval'], exact: true }),
-        queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', runId, 'phase08-extraction'], exact: true }),
-        queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', runId, 'dynamic-fetch-dashboard'], exact: true }),
-        queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', runId, 'rounds'], exact: true }),
-        queryClient.invalidateQueries({ queryKey: ['indexing', 'domain-checklist'] })
-      ]);
+      await invalidateRunScopedQueries(runId);
       await queryClient.refetchQueries({
         queryKey: ['indexlab', 'run', runId],
         type: 'active'
@@ -3833,33 +4086,46 @@ export function IndexingPage() {
   };
 
   const runControlPayload = useMemo(() => {
-    const parsedResumeWindowHours = parseRuntimeInt(resumeWindowHours, runtimeDefaults.resumeWindowHours);
-    const parsedReextractAfterHours = parseRuntimeInt(reextractAfterHours, runtimeDefaults.reextractAfterHours);
+    const parsedResumeWindowHours = parseRuntimeInt(resumeWindowHours, runtimeSettingsBaseline.resumeWindowHours);
+    const parsedReextractAfterHours = parseRuntimeInt(reextractAfterHours, runtimeSettingsBaseline.reextractAfterHours);
     return {
       resumeMode,
       resumeWindowHours: Number.isFinite(parsedResumeWindowHours) && parsedResumeWindowHours >= 0
         ? parsedResumeWindowHours
-        : runtimeDefaults.resumeWindowHours,
+        : runtimeSettingsBaseline.resumeWindowHours,
       reextractAfterHours: Number.isFinite(parsedReextractAfterHours) && parsedReextractAfterHours >= 0
         ? parsedReextractAfterHours
-        : runtimeDefaults.reextractAfterHours,
+        : runtimeSettingsBaseline.reextractAfterHours,
       reextractIndexed
     };
-  }, [resumeMode, resumeWindowHours, reextractAfterHours, reextractIndexed]);
+  }, [resumeMode, resumeWindowHours, reextractAfterHours, reextractIndexed, runtimeSettingsBaseline]);
 
-  const startIndexLabMut = useMutation({
-    mutationFn: () => {
-      const parsedConcurrency = parseRuntimeInt(fetchConcurrency, runtimeDefaults.fetchConcurrency);
-      const parsedPerHostMinDelayMs = parseRuntimeInt(perHostMinDelayMs, runtimeDefaults.perHostMinDelayMs);
-      const parsedCrawleeTimeout = parseRuntimeInt(crawleeRequestHandlerTimeoutSecs, runtimeDefaults.crawleeRequestHandlerTimeoutSecs);
-      const parsedRetryBudget = parseRuntimeInt(dynamicFetchRetryBudget, runtimeDefaults.dynamicFetchRetryBudget);
-      const parsedRetryBackoff = parseRuntimeInt(dynamicFetchRetryBackoffMs, runtimeDefaults.dynamicFetchRetryBackoffMs);
-      const parsedScannedPdfOcrMaxPages = parseRuntimeInt(scannedPdfOcrMaxPages, runtimeDefaults.scannedPdfOcrMaxPages);
-      const parsedScannedPdfOcrMaxPairs = parseRuntimeInt(scannedPdfOcrMaxPairs, runtimeDefaults.scannedPdfOcrMaxPairs);
-      const parsedScannedPdfOcrMinChars = parseRuntimeInt(scannedPdfOcrMinCharsPerPage, runtimeDefaults.scannedPdfOcrMinCharsPerPage);
-      const parsedScannedPdfOcrMinLines = parseRuntimeInt(scannedPdfOcrMinLinesPerPage, runtimeDefaults.scannedPdfOcrMinLinesPerPage);
-      const parsedScannedPdfOcrMinConfidence = parseRuntimeFloat(scannedPdfOcrMinConfidence, runtimeDefaults.scannedPdfOcrMinConfidence);
+  type StartIndexLabMutationVariables = {
+    requestedRunId: string;
+  };
+  type StartIndexLabMutationContext = {
+    previousRunId: string;
+  };
+
+  const startIndexLabMut = useMutation<
+    ProcessStatus,
+    Error,
+    StartIndexLabMutationVariables,
+    StartIndexLabMutationContext
+  >({
+    mutationFn: ({ requestedRunId }) => {
+      const parsedConcurrency = parseRuntimeInt(fetchConcurrency, runtimeSettingsBaseline.fetchConcurrency);
+      const parsedPerHostMinDelayMs = parseRuntimeInt(perHostMinDelayMs, runtimeSettingsBaseline.perHostMinDelayMs);
+      const parsedCrawleeTimeout = parseRuntimeInt(crawleeRequestHandlerTimeoutSecs, runtimeSettingsBaseline.crawleeRequestHandlerTimeoutSecs);
+      const parsedRetryBudget = parseRuntimeInt(dynamicFetchRetryBudget, runtimeSettingsBaseline.dynamicFetchRetryBudget);
+      const parsedRetryBackoff = parseRuntimeInt(dynamicFetchRetryBackoffMs, runtimeSettingsBaseline.dynamicFetchRetryBackoffMs);
+      const parsedScannedPdfOcrMaxPages = parseRuntimeInt(scannedPdfOcrMaxPages, runtimeSettingsBaseline.scannedPdfOcrMaxPages);
+      const parsedScannedPdfOcrMaxPairs = parseRuntimeInt(scannedPdfOcrMaxPairs, runtimeSettingsBaseline.scannedPdfOcrMaxPairs);
+      const parsedScannedPdfOcrMinChars = parseRuntimeInt(scannedPdfOcrMinCharsPerPage, runtimeSettingsBaseline.scannedPdfOcrMinCharsPerPage);
+      const parsedScannedPdfOcrMinLines = parseRuntimeInt(scannedPdfOcrMinLinesPerPage, runtimeSettingsBaseline.scannedPdfOcrMinLinesPerPage);
+      const parsedScannedPdfOcrMinConfidence = parseRuntimeFloat(scannedPdfOcrMinConfidence, runtimeSettingsBaseline.scannedPdfOcrMinConfidence);
       return api.post<ProcessStatus>('/process/start', {
+        requestedRunId: String(requestedRunId || '').trim(),
         category,
         mode: 'indexlab',
         replaceRunning: true,
@@ -3903,25 +4169,47 @@ export function IndexingPage() {
         llmModelWrite,
         llmTokensWrite,
         llmFallbackEnabled,
-        ...(llmKnobsInitialized ? {
-          llmPlanFallbackModel: llmFallbackPlanModel,
-          llmExtractFallbackModel: llmFallbackExtractModel,
-          llmValidateFallbackModel: llmFallbackValidateModel,
-          llmWriteFallbackModel: llmFallbackWriteModel,
-          llmTokensPlanFallback,
-          llmTokensExtractFallback,
-          llmTokensValidateFallback,
-          llmTokensWriteFallback
-        } : {}),
+        llmPlanFallbackModel: llmFallbackPlanModel,
+        llmExtractFallbackModel: llmFallbackExtractModel,
+        llmValidateFallbackModel: llmFallbackValidateModel,
+        llmWriteFallbackModel: llmFallbackWriteModel,
+        llmTokensPlanFallback,
+        llmTokensExtractFallback,
+        llmTokensValidateFallback,
+        llmTokensWriteFallback,
         ...runControlPayload
       });
     },
-    onMutate: () => {
+    onMutate: ({ requestedRunId }) => {
+      const previousRunId = String(selectedIndexLabRunId || '').trim();
+      const optimisticRunId = String(requestedRunId || '').trim();
       clearProcessOutput();
-      setSelectedIndexLabRunId('');
       setClearedRunViewId('');
+      setSelectedLlmTraceId('');
+      if (previousRunId) {
+        clearIndexLabRun(previousRunId);
+        removeRunScopedQueries(previousRunId);
+      }
+      if (optimisticRunId) {
+        setSelectedIndexLabRunId(optimisticRunId);
+        removeRunScopedQueries(optimisticRunId);
+      }
+      queryClient.removeQueries({ queryKey: ['indexing', 'domain-checklist'] });
+      queryClient.invalidateQueries({ queryKey: ['indexlab', 'runs'], exact: true });
+      queryClient.invalidateQueries({ queryKey: ['runtime-ops'] });
+      return { previousRunId };
     },
-    onSuccess: refreshAll
+    onError: (_error, _variables, context) => {
+      setSelectedIndexLabRunId(String(context?.previousRunId || '').trim());
+    },
+    onSuccess: (status, variables) => {
+      const resolvedRunId = String(status?.run_id || status?.runId || variables?.requestedRunId || '').trim();
+      if (resolvedRunId) {
+        setSelectedIndexLabRunId(resolvedRunId);
+      }
+      publishProcessStatus(status);
+      void refreshAll();
+    }
   });
 
   const stopMut = useMutation({
@@ -3932,7 +4220,10 @@ export function IndexingPage() {
       }
       return first;
     },
-    onSuccess: refreshAll
+    onSuccess: (status) => {
+      publishProcessStatus(status);
+      void refreshAll();
+    }
   });
 
   const startSearxngMut = useMutation({
@@ -3944,7 +4235,7 @@ export function IndexingPage() {
     ? 'running'
     : (processStatus?.exitCode === 0 && processStatus?.endedAt ? 'completed' : (processStatus?.exitCode !== null && processStatus?.exitCode !== undefined ? 'failed' : 'idle'));
   const busy = startIndexLabMut.isPending || stopMut.isPending || startSearxngMut.isPending || replayPending;
-  const runtimeSettingsReady = Boolean(runtimeSettingsData) && !runtimeSettingsLoading;
+  const runtimeSettingsReady = runtimeSettingsAuthorityReady && !runtimeSettingsLoading;
   const canRunSingle = !isAll && !!singleProductId && runtimeSettingsReady;
 
   const actionError =
@@ -3971,47 +4262,43 @@ export function IndexingPage() {
     }
     collapseBatch(batch);
   };
+  const handleRunIndexLab = () => {
+    startIndexLabMut.mutate({
+      requestedRunId: buildRequestedRunId(),
+    });
+  };
 
   return (
     <div className="space-y-4 flex flex-col">
-      <OverviewPanel
-        collapsed={panelCollapsed.overview}
-        onToggle={() => togglePanel('overview')}
-        category={category}
-        processStateLabel={processStateLabel}
-        processStatus={processStatus}
+      <PickerPanel
+        collapsed={panelCollapsed.picker}
+        onToggle={() => togglePanel('picker')}
+        isAll={isAll}
+        busy={busy}
         processRunning={processRunning}
-        selectedIndexLabRun={selectedIndexLabRun}
-        selectedRunLiveDuration={selectedRunLiveDuration}
-        runtimeActivity={runtimeActivity}
-        llmActivity={llmActivity}
-        pendingLlmTotal={pendingLlmTotal}
-        pendingLlmPeak={pendingLlmPeak}
-        pendingLlmRows={pendingLlmRows}
-        activityNowMs={activityNowMs}
-        activePendingLlm={activePendingLlm}
-        pendingPromptPretty={pendingPromptPretty}
-        pendingPromptPhase={pendingPromptPhase}
-        pendingPromptIsJson={pendingPromptIsJson}
-        lastReceivedResponseTrace={lastReceivedResponseTrace}
-        lastReceivedResponseEvent={lastReceivedResponseEvent}
-        lastReceivedResponsePretty={lastReceivedResponsePretty}
-        lastReceivedPhase={lastReceivedPhase}
-        lastReceivedResponseIsJson={lastReceivedResponseIsJson}
-        pipelineSteps={pipelineSteps}
-      />
-
-      <PanelControlsPanel
-        containerStatuses={containerStatuses}
-        onOpenAll={() => setAllPanels(false)}
-        onCloseAll={() => setAllPanels(true)}
-        persistKey={`indexing:panelControls:open:${category}`}
-      />
-
-      <SessionDataPanel
+        singleBrand={singleBrand}
+        onBrandChange={setSingleBrand}
+        singleModel={singleModel}
+        onModelChange={setSingleModel}
+        singleProductId={singleProductId}
+        onProductIdChange={setSingleProductId}
+        brandOptions={brandOptions}
+        modelOptions={modelOptions}
+        variantOptions={variantOptions}
+        selectedCatalogProduct={selectedCatalogProduct}
+        displayVariant={displayVariant}
+        selectedAmbiguityMeter={selectedAmbiguityMeter}
+        runtimeSettingsReady={runtimeSettingsReady}
+        canRunSingle={canRunSingle}
+        onRunIndexLab={handleRunIndexLab}
+        stopForceKill={stopForceKill}
+        onStopForceKillChange={setStopForceKill}
+        onStopProcess={(opts) => stopMut.mutate(opts)}
+        stopPending={stopMut.isPending}
         selectedIndexLabRunId={selectedIndexLabRunId}
-        sessionCrawledCells={sessionCrawledCells}
-        persistKey={`indexing:sessionData:open:${category}`}
+        onClearSelectedRunView={clearSelectedRunView}
+        onReplaySelectedRunView={replaySelectedRunView}
+        productPickerActivity={productPickerActivity}
       />
 
       <LlmOutputPanel
@@ -4260,7 +4547,7 @@ export function IndexingPage() {
         onLlmFallbackWriteModelChange={(model) => { setLlmFallbackWriteModel(model); setLlmTokensWriteFallback(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
         llmTokensWriteFallback={llmTokensWriteFallback}
         onLlmTokensWriteFallbackChange={(v) => { setLlmTokensWriteFallback(v); setRuntimeSettingsDirty(true); }}
-        llmModelOptions={llmModelOptions}
+        llmModelOptions={llmModelOptionsWithCurrent}
         llmTokenPresetOptions={llmTokenPresetOptions}
         resolveModelTokenDefaults={resolveModelTokenDefaults}
         clampTokenForModel={clampTokenForModel}
@@ -4285,13 +4572,6 @@ export function IndexingPage() {
         searxngStatus={searxngStatus}
         searxngStatusErrorMessage={searxngStatusErrorMessage}
         onStartSearxng={() => startSearxngMut.mutate()}
-        stopForceKill={stopForceKill}
-        onStopForceKillChange={setStopForceKill}
-        onStopProcess={(opts) => stopMut.mutate(opts)}
-        stopPending={stopMut.isPending}
-        selectedIndexLabRunId={selectedIndexLabRunId}
-        onClearSelectedRunView={clearSelectedRunView}
-        onReplaySelectedRunView={replaySelectedRunView}
         runtimeSettingsReady={runtimeSettingsReady}
         runtimeSettingsDirty={runtimeSettingsDirty}
         runtimeAutoSave={runtimeAutoSave}
@@ -4300,30 +4580,6 @@ export function IndexingPage() {
         runtimeSettingsSaving={runtimeSettingsSaving}
         runtimeSettingsSaveState={runtimeSettingsSaveState}
         runtimeSettingsSaveMessage={runtimeSettingsSaveMessage}
-      />
-
-      <PickerPanel
-        collapsed={panelCollapsed.picker}
-        onToggle={() => togglePanel('picker')}
-        isAll={isAll}
-        busy={busy}
-        processRunning={processRunning}
-        singleBrand={singleBrand}
-        onBrandChange={setSingleBrand}
-        singleModel={singleModel}
-        onModelChange={setSingleModel}
-        singleProductId={singleProductId}
-        onProductIdChange={setSingleProductId}
-        brandOptions={brandOptions}
-        modelOptions={modelOptions}
-        variantOptions={variantOptions}
-        selectedCatalogProduct={selectedCatalogProduct}
-        displayVariant={displayVariant}
-        selectedAmbiguityMeter={selectedAmbiguityMeter}
-        runtimeSettingsReady={runtimeSettingsReady}
-        canRunSingle={canRunSingle}
-        onRunIndexLab={() => startIndexLabMut.mutate()}
-        productPickerActivity={productPickerActivity}
       />
 
       <SearchProfilePanel
@@ -4352,6 +4608,49 @@ export function IndexingPage() {
         indexlabSummary={indexlabSummary}
         eventStreamActivity={eventStreamActivity}
         processRunning={processRunning}
+        persistScope={normalizeToken(category) || 'all'}
+        overviewContent={(
+          <OverviewPanel
+            embedded
+            category={category}
+            processStateLabel={processStateLabel}
+            processStatus={processStatus}
+            processRunning={processRunning}
+            selectedIndexLabRun={selectedIndexLabRun}
+            selectedRunLiveDuration={selectedRunLiveDuration}
+            runtimeActivity={runtimeActivity}
+            llmActivity={llmActivity}
+            pendingLlmTotal={pendingLlmTotal}
+            pendingLlmPeak={pendingLlmPeak}
+            pendingLlmRows={pendingLlmRows}
+            activityNowMs={activityNowMs}
+            activePendingLlm={activePendingLlm}
+            pendingPromptPretty={pendingPromptPretty}
+            pendingPromptPhase={pendingPromptPhase}
+            pendingPromptIsJson={pendingPromptIsJson}
+            lastReceivedResponseTrace={lastReceivedResponseTrace}
+            lastReceivedResponseEvent={lastReceivedResponseEvent}
+            lastReceivedResponsePretty={lastReceivedResponsePretty}
+            lastReceivedPhase={lastReceivedPhase}
+            lastReceivedResponseIsJson={lastReceivedResponseIsJson}
+            pipelineSteps={pipelineSteps}
+          />
+        )}
+        panelControlsContent={(
+          <PanelControlsPanel
+            embedded
+            containerStatuses={containerStatuses}
+            onOpenAll={() => setAllPanels(false)}
+            onCloseAll={() => setAllPanels(true)}
+          />
+        )}
+        sessionDataContent={(
+          <SessionDataPanel
+            embedded
+            selectedIndexLabRunId={selectedIndexLabRunId}
+            sessionCrawledCells={sessionCrawledCells}
+          />
+        )}
       />
 
       <NeedSetPanel

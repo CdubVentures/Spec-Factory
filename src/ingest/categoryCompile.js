@@ -71,6 +71,58 @@ function normalizeToken(value) {
   return normalizeText(value).toLowerCase();
 }
 
+function parseSerialDate(value) {
+  const token = normalizeText(value);
+  if (!/^\d{5}$/.test(token)) {
+    return null;
+  }
+  const parsed = Number(token);
+  if (!Number.isFinite(parsed) || parsed < 10000 || parsed > 60000) {
+    return null;
+  }
+  return parsed;
+}
+
+function serialDateToIso(value) {
+  const serial = asInt(value, -1);
+  if (serial < 0) {
+    return '';
+  }
+  // Spreadsheet 1900 date system (with leap-year offset) maps from 1899-12-30.
+  const utcMs = Date.UTC(1899, 11, 30) + (serial * 24 * 60 * 60 * 1000);
+  const date = new Date(utcMs);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return date.toISOString().slice(0, 10);
+}
+
+function isDateLikeFieldKey(fieldKey = '') {
+  return /date|year|release|launch/i.test(normalizeFieldKey(fieldKey));
+}
+
+function normalizeSourceMode(value = '') {
+  return normalizeToken(value || 'sheet') === 'scratch' ? 'scratch' : 'sheet';
+}
+
+function isSheetBackedMode(row = {}) {
+  return normalizeSourceMode(row?.mode) === 'sheet';
+}
+
+function findComponentSourceRowByType(rows = [], componentType = '') {
+  const normalizedType = normalizeFieldKey(componentType);
+  if (!normalizedType) {
+    return null;
+  }
+  const matchingRows = toArray(rows).filter((row) => (
+    normalizeFieldKey(row?.component_type || row?.type || '') === normalizedType
+  ));
+  if (!matchingRows.length) {
+    return null;
+  }
+  return matchingRows.find((row) => isSheetBackedMode(row)) || matchingRows[0];
+}
+
 const REVIEW_REQUIRED_LEVELS = new Set(['identity', 'required', 'critical', 'expected', 'optional', 'editorial', 'commerce']);
 const REVIEW_AVAILABILITY_LEVELS = new Set(['always', 'expected', 'sometimes', 'rare', 'editorial_only']);
 const REVIEW_DIFFICULTY_LEVELS = new Set(['easy', 'medium', 'hard', 'instrumented']);
@@ -206,7 +258,7 @@ function parseRange(value) {
   };
 }
 
-function parseWorkbookRangeRef(value) {
+function parseSourceRangeRef(value) {
   const text = String(value || '').trim();
   if (!text) {
     return null;
@@ -351,15 +403,15 @@ function readZipEntries(buffer) {
   return entries;
 }
 
-function readZipEntryBuffer(workbookBuffer, zipEntry) {
+function readZipEntryBuffer(sourceBuffer, zipEntry) {
   const localHeaderOffset = zipEntry.localHeaderOffset;
-  if (workbookBuffer.readUInt32LE(localHeaderOffset) !== 0x04034b50) {
+  if (sourceBuffer.readUInt32LE(localHeaderOffset) !== 0x04034b50) {
     throw new Error(`zip_local_header_invalid:${zipEntry.fileName}`);
   }
-  const fileNameLength = workbookBuffer.readUInt16LE(localHeaderOffset + 26);
-  const extraLength = workbookBuffer.readUInt16LE(localHeaderOffset + 28);
+  const fileNameLength = sourceBuffer.readUInt16LE(localHeaderOffset + 26);
+  const extraLength = sourceBuffer.readUInt16LE(localHeaderOffset + 28);
   const dataStart = localHeaderOffset + 30 + fileNameLength + extraLength;
-  const compressedBuffer = workbookBuffer.subarray(dataStart, dataStart + zipEntry.compressedSize);
+  const compressedBuffer = sourceBuffer.subarray(dataStart, dataStart + zipEntry.compressedSize);
   if (zipEntry.compressionMethod === 0) {
     return compressedBuffer;
   }
@@ -369,12 +421,12 @@ function readZipEntryBuffer(workbookBuffer, zipEntry) {
   throw new Error(`zip_compression_unsupported:${zipEntry.compressionMethod}`);
 }
 
-function readZipEntryText(workbookBuffer, entries, entryName) {
+function readZipEntryText(sourceBuffer, entries, entryName) {
   const entry = entries.get(entryName);
   if (!entry) {
     return null;
   }
-  return readZipEntryBuffer(workbookBuffer, entry).toString('utf8');
+  return readZipEntryBuffer(sourceBuffer, entry).toString('utf8');
 }
 
 function parseXml(text) {
@@ -403,16 +455,16 @@ function normalizeSheetTarget(value) {
   return token;
 }
 
-function loadSheetDescriptors({ workbookBuffer, entries }) {
-  const workbookXml = readZipEntryText(workbookBuffer, entries, 'xl/workbook.xml');
-  if (!workbookXml) {
-    throw new Error('workbook_xml_missing');
+function loadSheetDescriptors({ sourceBuffer, entries }) {
+  const sourceManifestXml = readZipEntryText(sourceBuffer, entries, 'xl/workbook.xml');
+  if (!sourceManifestXml) {
+    throw new Error('source_manifest_xml_missing');
   }
-  const relsXml = readZipEntryText(workbookBuffer, entries, 'xl/_rels/workbook.xml.rels');
+  const relsXml = readZipEntryText(sourceBuffer, entries, 'xl/_rels/workbook.xml.rels');
   if (!relsXml) {
-    throw new Error('workbook_rels_missing');
+    throw new Error('source_manifest_rels_missing');
   }
-  const workbookDoc = parseXml(workbookXml);
+  const sourceManifestDoc = parseXml(sourceManifestXml);
   const relsDoc = parseXml(relsXml);
 
   const relationships = new Map();
@@ -426,7 +478,7 @@ function loadSheetDescriptors({ workbookBuffer, entries }) {
   }
 
   const out = [];
-  for (const sheet of asArray(workbookDoc?.workbook?.sheets?.sheet)) {
+  for (const sheet of asArray(sourceManifestDoc?.workbook?.sheets?.sheet)) {
     const name = normalizeText(sheet?.name);
     const relId = normalizeText(sheet?.id);
     if (!name || !relId) {
@@ -445,14 +497,14 @@ function loadSheetDescriptors({ workbookBuffer, entries }) {
   return out;
 }
 
-function loadDefinedNames({ workbookBuffer, entries }) {
-  const workbookXml = readZipEntryText(workbookBuffer, entries, 'xl/workbook.xml');
-  if (!workbookXml) {
+function loadDefinedNames({ sourceBuffer, entries }) {
+  const sourceManifestXml = readZipEntryText(sourceBuffer, entries, 'xl/workbook.xml');
+  if (!sourceManifestXml) {
     return [];
   }
-  const workbookDoc = parseXml(workbookXml);
+  const sourceManifestDoc = parseXml(sourceManifestXml);
   const names = [];
-  for (const row of asArray(workbookDoc?.workbook?.definedNames?.definedName)) {
+  for (const row of asArray(sourceManifestDoc?.workbook?.definedNames?.definedName)) {
     const name = normalizeText(row?.name);
     const rangeText = normalizeText(
       row?.['#text'] ??
@@ -462,7 +514,7 @@ function loadDefinedNames({ workbookBuffer, entries }) {
     if (!name || !rangeText) {
       continue;
     }
-    const parsed = parseWorkbookRangeRef(rangeText);
+    const parsed = parseSourceRangeRef(rangeText);
     names.push({
       name,
       range: rangeText,
@@ -472,8 +524,8 @@ function loadDefinedNames({ workbookBuffer, entries }) {
   return names;
 }
 
-function loadSharedStrings({ workbookBuffer, entries }) {
-  const sharedXml = readZipEntryText(workbookBuffer, entries, 'xl/sharedStrings.xml');
+function loadSharedStrings({ sourceBuffer, entries }) {
+  const sharedXml = readZipEntryText(sourceBuffer, entries, 'xl/sharedStrings.xml');
   if (!sharedXml) {
     return [];
   }
@@ -481,8 +533,8 @@ function loadSharedStrings({ workbookBuffer, entries }) {
   return asArray(sharedDoc?.sst?.si).map((entry) => xmlText(entry).trim());
 }
 
-function loadSheetCellMap({ workbookBuffer, entries, sheetPath, sharedStrings }) {
-  const sheetXml = readZipEntryText(workbookBuffer, entries, sheetPath);
+function loadSheetCellMap({ sourceBuffer, entries, sheetPath, sharedStrings }) {
+  const sheetXml = readZipEntryText(sourceBuffer, entries, sheetPath);
   if (!sheetXml) {
     throw new Error(`sheet_xml_missing:${sheetPath}`);
   }
@@ -916,27 +968,28 @@ async function loadTooltipLibrary({ categoryRoot, map = {} }) {
   };
 }
 
-export async function introspectWorkbook({
-  workbookPath,
+export async function introspectFieldStudioSource({
+  fieldStudioSourcePath = '',
   previewRows = 20,
   previewCols = 8
 }) {
-  const resolvedWorkbook = path.resolve(String(workbookPath || '').trim());
-  if (!resolvedWorkbook) {
-    throw new Error('workbook_path_required');
+  const rawFieldStudioSourcePath = String(fieldStudioSourcePath || '').trim();
+  if (!rawFieldStudioSourcePath) {
+    throw new Error('field_studio_source_path_required');
   }
-  const buffer = await fs.readFile(resolvedWorkbook);
-  const workbookHash = hashBuffer(buffer);
+  const resolvedFieldStudioSourcePath = path.resolve(rawFieldStudioSourcePath);
+  const buffer = await fs.readFile(resolvedFieldStudioSourcePath);
+  const fieldStudioSourceHash = hashBuffer(buffer);
   const entries = readZipEntries(buffer);
-  const descriptors = loadSheetDescriptors({ workbookBuffer: buffer, entries });
-  const sharedStrings = loadSharedStrings({ workbookBuffer: buffer, entries });
-  const definedNames = loadDefinedNames({ workbookBuffer: buffer, entries });
+  const descriptors = loadSheetDescriptors({ sourceBuffer: buffer, entries });
+  const sharedStrings = loadSharedStrings({ sourceBuffer: buffer, entries });
+  const definedNames = loadDefinedNames({ sourceBuffer: buffer, entries });
 
   const sheets = [];
   const sheetDataByName = new Map();
   for (const descriptor of descriptors) {
     const loaded = loadSheetCellMap({
-      workbookBuffer: buffer,
+      sourceBuffer: buffer,
       entries,
       sheetPath: descriptor.sheetPath,
       sharedStrings
@@ -986,7 +1039,7 @@ export async function introspectWorkbook({
 
   const suggestedMap = {
     version: 1,
-    workbook_path: resolvedWorkbook,
+    field_studio_source_path: resolvedFieldStudioSourcePath,
     sheet_roles: sheets.map((sheet) => ({
       sheet: sheet.name,
       role: (sheet.detected_roles || [])[0] || 'ignore'
@@ -1279,8 +1332,8 @@ export async function introspectWorkbook({
   return {
     version: 1,
     generated_at: nowIso(),
-    workbook_path: resolvedWorkbook,
-    workbook_hash: workbookHash,
+    field_studio_source_path: resolvedFieldStudioSourcePath,
+    field_studio_source_hash: fieldStudioSourceHash,
     sheet_count: sheets.length,
     named_ranges: simpleNamedRanges,
     sheets,
@@ -1295,7 +1348,7 @@ function normalizeSheetRoleRow(row = {}) {
   };
 }
 
-function normalizeWorkbookMap(map = {}, { warnings = null } = {}) {
+function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
   const sheetRoles = toArray(map.sheet_roles).map((row) => normalizeSheetRoleRow(row));
   const keySourceRaw = isObject(map.key_source) ? map.key_source : {};
   const keyListRaw = isObject(map.key_list) ? map.key_list : {};
@@ -1349,7 +1402,7 @@ function normalizeWorkbookMap(map = {}, { warnings = null } = {}) {
     : {};
   const dataListsRaw = toArray(map.data_lists).filter((row) => isObject(row));
   const enumRowsRaw = dataListsRaw.length > 0
-    ? dataListsRaw.filter((row) => normalizeToken(row.mode || 'workbook') !== 'scratch')
+    ? dataListsRaw.filter((row) => normalizeSourceMode(row.mode) === 'sheet')
     : (toArray(map.enum_lists).length > 0 ? toArray(map.enum_lists) : toArray(map.enum_sources));
   const enumLists = [];
   for (const row of enumRowsRaw) {
@@ -1421,7 +1474,7 @@ function normalizeWorkbookMap(map = {}, { warnings = null } = {}) {
         : rowManualValues;
       return {
         field,
-        mode: normalizeToken(row.mode || 'workbook') === 'scratch' ? 'scratch' : 'workbook',
+        mode: normalizeSourceMode(row.mode),
         sheet: normalizeText(row.sheet),
         value_column: normalizeText(row.value_column || row.column || '').toUpperCase(),
         header_row: asInt(row.header_row, 0),
@@ -1443,7 +1496,7 @@ function normalizeWorkbookMap(map = {}, { warnings = null } = {}) {
       }
       return {
         field,
-        mode: 'workbook',
+        mode: 'sheet',
         sheet: row.sheet,
         value_column: row.value_column,
         header_row: asInt(row.header_row, 0),
@@ -1516,13 +1569,13 @@ function normalizeWorkbookMap(map = {}, { warnings = null } = {}) {
       .map((entry) => {
         const fieldKey = normalizeFieldKey(entry.field_key || '');
         const legacyKey = normalizeFieldKey(entry.key || entry.property_key || '');
-        const propType = ['number', 'string'].includes(normalizeToken(entry.type)) ? normalizeToken(entry.type) : 'string';
+        const propType = ['number', 'integer', 'string'].includes(normalizeToken(entry.type)) ? normalizeToken(entry.type) : 'string';
         const rawPolicy = normalizeToken(entry.variance_policy || 'authoritative');
         const NUMERIC_ONLY = ['upper_bound', 'lower_bound', 'range'];
-        const coerced = propType !== 'number' && NUMERIC_ONLY.includes(rawPolicy);
+        const coerced = !isNumericContractType(propType) && NUMERIC_ONLY.includes(rawPolicy);
         const effectivePolicy = coerced ? 'authoritative' : rawPolicy;
         if (coerced && warnings) {
-          warnings.push(`component_sources: variance_policy '${entry.variance_policy}' on string property '${fieldKey || legacyKey || '?'}' coerced to 'authoritative' (numeric policies require type 'number')`);
+          warnings.push(`component_sources: variance_policy '${entry.variance_policy}' on string property '${fieldKey || legacyKey || '?'}' coerced to 'authoritative' (numeric policies require type 'number' or 'integer')`);
         }
         return {
           key: fieldKey || legacyKey,
@@ -1573,7 +1626,9 @@ function normalizeWorkbookMap(map = {}, { warnings = null } = {}) {
     const stopAfterBlankPrimary = Math.max(1, asInt(row.stop_after_blank_primary || row.stop_after_blank_names, 10));
     const rowPriority = normalizeReviewPriority(row.priority || row.review_priority);
     const rowAiAssist = normalizeReviewAiAssist(row.ai_assist);
+    const rowMode = normalizeSourceMode(row.mode);
     return {
+      mode: rowMode,
       sheet: normalizeText(row.sheet),
       component_type: normalizeToken(row.component_type || row.type || guessComponentType(row.sheet)),
       primary_identifier_column: primaryIdentifierColumn,
@@ -1634,7 +1689,7 @@ function normalizeWorkbookMap(map = {}, { warnings = null } = {}) {
 
   return {
     version: asInt(map.version, 1),
-    workbook_path: normalizeText(map.workbook_path || ''),
+    field_studio_source_path: normalizeText(map.field_studio_source_path || ''),
     sheet_roles: sheetRoles.filter((row) => row.sheet),
     key_list: hasKeyList ? keyList : null,
     key_source: hasKeyList
@@ -1682,6 +1737,7 @@ function normalizeWorkbookMap(map = {}, { warnings = null } = {}) {
     component_sources: componentSheets
       .filter((row) => row.sheet || row.component_type)
       .map((row) => ({
+        mode: row.mode,
         sheet: row.sheet,
         type: row.component_type,
         component_type: row.component_type,
@@ -1747,15 +1803,15 @@ function isEmptyExpectations(expectations = {}) {
     && isEmptyArrayValue(expectations.deep_fields);
 }
 
-function mergeWorkbookMapDefaults(baseMap = {}, suggestedMap = {}) {
-  const base = normalizeWorkbookMap(baseMap);
-  const suggested = normalizeWorkbookMap(suggestedMap);
+function mergeFieldStudioMapDefaults(baseMap = {}, suggestedMap = {}) {
+  const base = normalizeFieldStudioMap(baseMap);
+  const suggested = normalizeFieldStudioMap(suggestedMap);
   const merged = {
     ...base
   };
 
-  if (!normalizeText(merged.workbook_path) && normalizeText(suggested.workbook_path)) {
-    merged.workbook_path = suggested.workbook_path;
+  if (!normalizeText(merged.field_studio_source_path) && normalizeText(suggested.field_studio_source_path)) {
+    merged.field_studio_source_path = suggested.field_studio_source_path;
   }
   if (!merged.key_list && suggested.key_list) {
     merged.key_list = suggested.key_list;
@@ -1786,15 +1842,15 @@ function mergeWorkbookMapDefaults(baseMap = {}, suggestedMap = {}) {
     merged.expectations = suggested.expectations;
   }
 
-  return normalizeWorkbookMap(merged);
+  return normalizeFieldStudioMap(merged);
 }
 
-export function validateWorkbookMap(map = {}, options = {}) {
+export function validateFieldStudioMap(map = {}, options = {}) {
   const errors = [];
   const warnings = [];
   const rawMap = isObject(map) ? map : {};
   const rawKeyListProvided = isObject(rawMap.key_list) || isObject(rawMap.key_source);
-  const normalized = normalizeWorkbookMap(map, { warnings });
+  const normalized = normalizeFieldStudioMap(map, { warnings });
   const sheetNames = new Set(toArray(options.sheetNames).map((name) => normalizeText(name)));
   const checkSheet = (sheet, label) => {
     if (!sheet) {
@@ -1808,18 +1864,18 @@ export function validateWorkbookMap(map = {}, options = {}) {
   const normalizedComponentRows = toArray(normalized.component_sources).length > 0
     ? toArray(normalized.component_sources)
     : toArray(normalized.component_sheets);
-  const hasWorkbookComponentRows = normalizedComponentRows.some((row) => Boolean(normalizeText(row?.sheet)));
-  const hasWorkbookDataLists = toArray(normalized.data_lists).some((row) => {
-    const mode = normalizeToken(row?.mode || 'workbook');
-    if (mode === 'scratch') {
+  const hasSheetBackedComponentRows = normalizedComponentRows.some((row) => normalizeSourceMode(row?.mode) === 'sheet');
+  const hasSheetBackedDataLists = toArray(normalized.data_lists).some((row) => {
+    const mode = normalizeSourceMode(row?.mode);
+    if (mode !== 'sheet') {
       return false;
     }
     return Boolean(normalizeText(row?.sheet));
   });
   const requiresKeyList = Boolean(normalized.product_table?.sheet)
-    || Boolean(normalizeText(normalized.workbook_path))
-    || hasWorkbookComponentRows
-    || hasWorkbookDataLists;
+    || Boolean(normalizeText(normalized.field_studio_source_path))
+    || hasSheetBackedComponentRows
+    || hasSheetBackedDataLists;
 
   if (!normalized.key_list || !normalized.key_list.sheet) {
     if (rawKeyListProvided || requiresKeyList) {
@@ -1889,7 +1945,8 @@ export function validateWorkbookMap(map = {}, options = {}) {
   for (const row of normalizedComponentRows) {
     const roles = isObject(row.roles) ? row.roles : {};
     const sheetToken = normalizeText(row.sheet);
-    const isSheetBacked = Boolean(sheetToken);
+    const mode = normalizeSourceMode(row.mode);
+    const isSheetBacked = mode === 'sheet';
     const componentType = normalizeFieldKey(row.component_type || row.type || '');
     const primaryIdentifierColumn = normalizeText(
       roles.primary_identifier
@@ -1903,6 +1960,9 @@ export function validateWorkbookMap(map = {}, options = {}) {
     const stopAfterBlankPrimary = Math.max(1, asInt(row.stop_after_blank_primary || row.stop_after_blank_names, 10));
 
     checkSheet(row.sheet, 'component_sources');
+    if (isSheetBacked && !sheetToken) {
+      errors.push(`component_sources: sheet is required when mode=sheet for type '${componentType || '?'}'`);
+    }
     if (!componentType) {
       errors.push(`component_sources: type is required for sheet '${row.sheet}'`);
     }
@@ -1951,7 +2011,7 @@ export function validateWorkbookMap(map = {}, options = {}) {
       if (isSheetBacked && !colToIndex(prop.column || '')) {
         errors.push(`component_sources: invalid property mapping column '${prop.column}' for sheet '${row.sheet}'`);
       }
-      if (prop.type && !['string', 'number'].includes(normalizeToken(prop.type))) {
+      if (prop.type && !['string', 'number', 'integer'].includes(normalizeToken(prop.type))) {
         errors.push(`component_sources: invalid property mapping type '${prop.type}' for sheet '${row.sheet}'`);
       }
       if (prop.variance_policy && !VALID_VARIANCE_POLICIES.includes(normalizeToken(prop.variance_policy))) {
@@ -1980,13 +2040,96 @@ export function validateWorkbookMap(map = {}, options = {}) {
   };
 }
 
-function sheetByName(workbook, sheetName) {
-  return workbook?.sheetMap?.get(String(sheetName || '')) || null;
+function normalizeKeyMigrationMap(keyMap = {}) {
+  if (!isObject(keyMap)) {
+    return {};
+  }
+  const out = {};
+  for (const [rawFrom, rawTo] of Object.entries(keyMap)) {
+    const from = normalizeFieldKey(rawFrom || '');
+    const to = normalizeFieldKey(rawTo || '');
+    if (!from || !to || from === to) {
+      continue;
+    }
+    out[from] = to;
+  }
+  return out;
 }
 
-function pullKeyRowsFromMap(workbook, map) {
+function reconcileKeyMigrationsForFieldSet(keyMap = {}, fieldKeys = [], warnings = null) {
+  const map = normalizeKeyMigrationMap(keyMap);
+  const fieldSet = new Set(
+    toArray(fieldKeys)
+      .map((value) => normalizeFieldKey(value))
+      .filter(Boolean)
+  );
+  const out = {};
+  for (const [from, to] of Object.entries(map)) {
+    const fromInFields = fieldSet.has(from);
+    const toInFields = fieldSet.has(to);
+    if (toInFields) {
+      out[from] = to;
+      continue;
+    }
+    if (fromInFields && !toInFields) {
+      // Keep migration targets grounded to real generated keys.
+      out[to] = from;
+      if (Array.isArray(warnings)) {
+        warnings.push(`key_migrations: reversed '${from} -> ${to}' to '${to} -> ${from}' because '${to}' is not a generated field key`);
+      }
+      continue;
+    }
+    if (Array.isArray(warnings)) {
+      warnings.push(`key_migrations: dropped '${from} -> ${to}' because neither key is a generated field key`);
+    }
+  }
+  return out;
+}
+
+function findKeyMigrationCycle(keyMap = {}) {
+  const map = normalizeKeyMigrationMap(keyMap);
+  const nodes = Object.keys(map);
+  if (nodes.length === 0) {
+    return null;
+  }
+  const visiting = new Set();
+  const visited = new Set();
+
+  const walk = (node, path = []) => {
+    if (visiting.has(node)) {
+      const idx = path.indexOf(node);
+      if (idx >= 0) {
+        return [...path.slice(idx), node];
+      }
+      return [node, node];
+    }
+    if (visited.has(node)) {
+      return null;
+    }
+    visiting.add(node);
+    const next = map[node];
+    const cycle = next ? walk(next, [...path, node]) : null;
+    visiting.delete(node);
+    visited.add(node);
+    return cycle;
+  };
+
+  for (const node of nodes) {
+    const cycle = walk(node, []);
+    if (cycle) {
+      return cycle;
+    }
+  }
+  return null;
+}
+
+function sheetByName(sourceContext, sheetName) {
+  return sourceContext?.sheetMap?.get(String(sheetName || '')) || null;
+}
+
+function pullKeyRowsFromMap(sourceContext, map) {
   const keyList = map.key_list || {};
-  let sheet = sheetByName(workbook, keyList.sheet);
+  let sheet = sheetByName(sourceContext, keyList.sheet);
   if (!sheet) {
     // continue for named ranges where sheet can be resolved from range metadata
     if (keyList.source !== 'named_range') {
@@ -2008,7 +2151,7 @@ function pullKeyRowsFromMap(workbook, map) {
   };
 
   if (keyList.source === 'named_range') {
-    const namedRanges = isObject(workbook?.namedRanges) ? workbook.namedRanges : {};
+    const namedRanges = isObject(sourceContext?.namedRanges) ? sourceContext.namedRanges : {};
     const requestedName = normalizeText(keyList.named_range || '');
     let named = null;
     if (requestedName) {
@@ -2022,7 +2165,7 @@ function pullKeyRowsFromMap(workbook, map) {
     if (!named || !named.sheet || !named.startColumn || !named.endColumn || !named.startRow || !named.endRow) {
       return out;
     }
-    sheet = sheetByName(workbook, named.sheet);
+    sheet = sheetByName(sourceContext, named.sheet);
     if (!sheet) {
       return out;
     }
@@ -2068,9 +2211,9 @@ function pullKeyRowsFromMap(workbook, map) {
   return unique;
 }
 
-function pullMatrixSamples(workbook, map, keyRows) {
+function pullMatrixSamples(sourceContext, map, keyRows) {
   const productTable = map.product_table || {};
-  const sheet = sheetByName(workbook, productTable.sheet);
+  const sheet = sheetByName(sourceContext, productTable.sheet);
   if (!sheet) {
     return {
       byField: {},
@@ -2121,9 +2264,9 @@ function pullMatrixSamples(workbook, map, keyRows) {
   };
 }
 
-function pullRowTableSamples(workbook, map, keyRows) {
+function pullRowTableSamples(sourceContext, map, keyRows) {
   const productTable = map.product_table || {};
-  const sheet = sheetByName(workbook, productTable.sheet);
+  const sheet = sheetByName(sourceContext, productTable.sheet);
   if (!sheet) {
     return {
       byField: {},
@@ -2247,10 +2390,10 @@ function shouldKeepEnumBucket({ requestedBucket = '', headerBucket = '', row = {
   return '';
 }
 
-function pullEnumLists(workbook, map) {
+function pullEnumLists(sourceContext, map) {
   const out = {};
   for (const row of toArray(map.enum_lists)) {
-    const sheet = sheetByName(workbook, row.sheet);
+    const sheet = sheetByName(sourceContext, row.sheet);
     if (!sheet || !row.field) {
       continue;
     }
@@ -2350,13 +2493,16 @@ function deriveSafeAliases(name = '') {
   return orderedUniqueStrings(out).filter((alias) => alias.toLowerCase() !== base.toLowerCase());
 }
 
-function pullComponentDbs(workbook, map) {
+function pullComponentDbs(sourceContext, map) {
   const out = {};
   const sourceAssertions = [];
   const sourceStats = {};
   const sourceRows = toArray(map.component_sources).length > 0 ? toArray(map.component_sources) : toArray(map.component_sheets);
   for (const row of sourceRows) {
-    const sheet = sheetByName(workbook, row.sheet);
+    if (!isSheetBackedMode(row)) {
+      continue;
+    }
+    const sheet = sheetByName(sourceContext, row.sheet);
     if (!sheet) {
       continue;
     }
@@ -2376,10 +2522,10 @@ function pullComponentDbs(workbook, map) {
       .map((entry) => {
         const fieldKey = normalizeFieldKey(entry.field_key || '');
         const legacyKey = normalizeFieldKey(entry.key || entry.property_key || '');
-        const propType = ['number', 'string'].includes(normalizeToken(entry.type)) ? normalizeToken(entry.type) : 'string';
+        const propType = ['number', 'integer', 'string'].includes(normalizeToken(entry.type)) ? normalizeToken(entry.type) : 'string';
         const rawPolicy = normalizeToken(entry.variance_policy || 'authoritative');
         const NUMERIC_ONLY = ['upper_bound', 'lower_bound', 'range'];
-        const effectivePolicy = propType !== 'number' && NUMERIC_ONLY.includes(rawPolicy) ? 'authoritative' : rawPolicy;
+        const effectivePolicy = !isNumericContractType(propType) && NUMERIC_ONLY.includes(rawPolicy) ? 'authoritative' : rawPolicy;
         return {
           key: fieldKey || legacyKey,
           column: normalizeText(entry.column || entry.col || '').toUpperCase(),
@@ -2449,17 +2595,24 @@ function pullComponentDbs(workbook, map) {
       const properties = {};
       if (propertyMappings.length > 0) {
         for (const mapping of propertyMappings) {
-          const value = normalizeWhitespace(getCell(sheet, mapping.column, idx));
+          const rawCellValue = getCell(sheet, mapping.column, idx);
+          const value = normalizeWhitespace(rawCellValue);
           if (!value) {
             continue;
           }
           // Use field_key as canonical property name when available, fall back to legacy key
           const propKey = mapping.field_key || mapping.key;
-          if (mapping.type === 'number') {
+          if (isNumericContractType(mapping.type)) {
             const numericValue = asNumber(value);
             properties[propKey] = numericValue === null ? value : numericValue;
           } else {
-            properties[propKey] = value;
+            const serialDate = isDateLikeFieldKey(propKey) ? parseSerialDate(value) : null;
+            if (serialDate !== null) {
+              const isoDate = serialDateToIso(serialDate);
+              properties[propKey] = isoDate || value;
+            } else {
+              properties[propKey] = value;
+            }
           }
         }
       }
@@ -2542,6 +2695,11 @@ function inferUnitByField(key) {
   return '';
 }
 
+function isNumericContractType(type) {
+  const token = normalizeToken(type);
+  return token === 'number' || token === 'integer';
+}
+
 function inferParseTemplate({ key, type, shape, enumValues = [], componentType = '' }) {
   const token = normalizeFieldKey(key);
   if (componentType) {
@@ -2553,7 +2711,7 @@ function inferParseTemplate({ key, type, shape, enumValues = [], componentType =
   if (shape === 'range') {
     return 'range_number';
   }
-  if (shape === 'list' && type === 'number') {
+  if (shape === 'list' && isNumericContractType(type)) {
     return 'list_of_numbers_with_unit';
   }
   if (shape === 'list' && type === 'string') {
@@ -2563,7 +2721,7 @@ function inferParseTemplate({ key, type, shape, enumValues = [], componentType =
     }
     return 'list_of_tokens_delimited';
   }
-  if (type === 'number') {
+  if (isNumericContractType(type)) {
     if (inferUnitByField(token)) {
       return 'number_with_unit';
     }
@@ -2930,10 +3088,11 @@ function buildSearchHints({
   return sortDeep(hints);
 }
 
-function buildWorkbookTabsSummary({
-  workbook,
+function buildSourceTabsSummary({
+  sourceDoc,
   map
 } = {}) {
+  void sourceDoc;
   const summary = {};
   const keySheet = normalizeText(map?.key_list?.sheet || '');
   const enumSheets = stableSortStrings(toArray(map?.enum_lists).map((row) => normalizeText(row?.sheet || '')).filter(Boolean));
@@ -2942,7 +3101,8 @@ function buildWorkbookTabsSummary({
       ? toArray(map?.component_sources)
       : toArray(map?.component_sheets)
   ).filter((row) => isObject(row));
-  const componentSheets = stableSortStrings(componentRows.map((row) => normalizeText(row.sheet || '')).filter(Boolean));
+  const sheetBackedComponentRows = componentRows.filter((row) => isSheetBackedMode(row));
+  const componentSheets = stableSortStrings(sheetBackedComponentRows.map((row) => normalizeText(row.sheet || '')).filter(Boolean));
   const knownSheetSet = new Set([
     keySheet,
     ...enumSheets,
@@ -2972,7 +3132,7 @@ function buildWorkbookTabsSummary({
       };
       continue;
     }
-    const componentRow = componentRows.find((row) => normalizeText(row.sheet || '') === sheetName);
+    const componentRow = sheetBackedComponentRows.find((row) => normalizeText(row.sheet || '') === sheetName);
     const componentType = normalizeFieldKey(componentRow?.component_type || componentRow?.type || '');
     summary[sheetName] = {
       role: componentType ? `component_db:${componentType}` : 'component_db',
@@ -2986,7 +3146,7 @@ function buildWorkbookTabsSummary({
 function buildEnumBucketSummary({
   map,
   enumLists,
-  workbook
+  sourceContext
 } = {}) {
   const out = {};
   const enumRows = toArray(map?.enum_lists).filter((row) => isObject(row));
@@ -3001,11 +3161,11 @@ function buildEnumBucketSummary({
       continue;
     }
     out[requestedBucket] = {
-      excel: {
+      field_studio: {
         sheet: normalizeText(row.sheet || ''),
         column: normalizeText(row.value_column || row.column || ''),
         header_row: asInt(row.header_row, 1),
-        start_row: asInt(row.row_start, 2)
+        row_start: asInt(row.row_start, 2)
       },
       values
     };
@@ -3013,7 +3173,7 @@ function buildEnumBucketSummary({
 
   const enumSheets = stableSortStrings(enumRows.map((row) => normalizeText(row.sheet || '')).filter(Boolean));
   for (const sheetName of enumSheets) {
-    const sheet = sheetByName(workbook, sheetName);
+    const sheet = sheetByName(sourceContext, sheetName);
     if (!sheet) {
       continue;
     }
@@ -3055,6 +3215,19 @@ function buildEnumBucketSummary({
 }
 
 function buildPropertyConstraintsFromMap(map, fieldKey) {
+  const meta = resolveComponentPropertyMetaFromMap(map, fieldKey);
+  if (!meta) {
+    return [];
+  }
+  return meta.constraints;
+}
+
+function resolveComponentPropertyMetaFromMap(map, fieldKey) {
+  const normalizedFieldKey = normalizeFieldKey(fieldKey);
+  if (!normalizedFieldKey) {
+    return null;
+  }
+  const numericOnlyPolicies = new Set(['upper_bound', 'lower_bound', 'range']);
   const sources = toArray(map?.component_sources).length > 0
     ? toArray(map.component_sources)
     : toArray(map?.component_sheets);
@@ -3064,12 +3237,26 @@ function buildPropertyConstraintsFromMap(map, fieldKey) {
     for (const entry of toArray(rolesBlock.properties)) {
       if (!isObject(entry)) continue;
       const entryKey = normalizeFieldKey(entry.field_key || entry.key || entry.property_key || '');
-      if (entryKey === fieldKey && Array.isArray(entry.constraints) && entry.constraints.length > 0) {
-        return entry.constraints.filter(Boolean);
+      if (entryKey !== normalizedFieldKey) {
+        continue;
+      }
+      const entryTypeToken = normalizeToken(entry.type);
+      const type = ['number', 'integer', 'string'].includes(entryTypeToken)
+        ? entryTypeToken
+        : 'string';
+      const rawPolicy = normalizeToken(entry.variance_policy || 'authoritative') || 'authoritative';
+      const variancePolicy = !isNumericContractType(type) && numericOnlyPolicies.has(rawPolicy)
+        ? 'authoritative'
+        : rawPolicy;
+      return {
+        type,
+        unit: normalizeText(entry.unit || ''),
+        variance_policy: variancePolicy,
+        constraints: Array.isArray(entry.constraints) ? entry.constraints.filter(Boolean) : [],
       }
     }
   }
-  return [];
+  return null;
 }
 
 function applyKeyLevelConstraintsToEntities(componentDb, fieldsRuntime) {
@@ -3132,7 +3319,8 @@ function buildComponentSourceSummary({
     const makerColumn = normalizeText(
       rolesBlock.maker || ''
     ) || null;
-    const excelBlock = {
+    const sourceBlock = {
+      mode: normalizeSourceMode(row.mode),
       sheet: normalizeText(row.sheet),
       header_row: asInt(row.header_row, 1),
       first_data_row: asInt(row.first_data_row || row.row_start, 2),
@@ -3160,22 +3348,22 @@ function buildComponentSourceSummary({
       numeric_only_ratio: Number(stats.numeric_only_ratio ?? 0),
       first_20_names: toArray(stats.first_20_names).slice(0, 20),
       first_20_all_numeric: Boolean(stats.first_20_all_numeric),
-      stop_after_blank_primary: Math.max(1, asInt(stats.stop_after_blank_primary, excelBlock.stop_after_blank_primary)),
-      stop_after_blank_names: Math.max(1, asInt(stats.stop_after_blank_names, excelBlock.stop_after_blank_names))
+      stop_after_blank_primary: Math.max(1, asInt(stats.stop_after_blank_primary, sourceBlock.stop_after_blank_primary)),
+      stop_after_blank_names: Math.max(1, asInt(stats.stop_after_blank_names, sourceBlock.stop_after_blank_names))
     };
 
     out[componentType] = {
       type: componentType,
-      sheet: excelBlock.sheet,
+      sheet: sourceBlock.sheet,
       roles: {
-        primary_identifier: excelBlock.primary_identifier_column || null,
-        maker: excelBlock.maker_column,
-        aliases: excelBlock.alias_columns,
-        links: excelBlock.link_columns,
-        properties: excelBlock.property_mappings
+        primary_identifier: sourceBlock.primary_identifier_column || null,
+        maker: sourceBlock.maker_column,
+        aliases: sourceBlock.alias_columns,
+        links: sourceBlock.link_columns,
+        properties: sourceBlock.property_mappings
       },
-      name_column: excelBlock.primary_identifier_column || null,
-      excel: excelBlock,
+      name_column: sourceBlock.primary_identifier_column || null,
+      field_studio: sourceBlock,
       entity_count: entries.length,
       sample_entities: sampleEntities,
       preview_stats: previewStats
@@ -3521,7 +3709,7 @@ function parseRulesForTemplate(template, { unit = '', enumValues = [], component
   if (template === 'list_numbers_or_ranges_with_unit') {
     return {
       delimiters: [',', '/', '|', ';'],
-      separators: ['-', 'to', '–'],
+      separators: ['-', 'to', 'â€“'],
       unit: unit || ''
     };
   }
@@ -3532,7 +3720,7 @@ function parseRulesForTemplate(template, { unit = '', enumValues = [], component
   }
   if (template === 'range_number') {
     return {
-      separators: ['-', 'to', '–'],
+      separators: ['-', 'to', 'â€“'],
       unit: unit || ''
     };
   }
@@ -3880,9 +4068,7 @@ function buildStudioFieldRule({
         const cSources = toArray(map?.component_sources).length > 0
           ? toArray(map.component_sources)
           : toArray(map?.component_sheets);
-        const cRow = cSources.find(
-          entry => normalizeFieldKey(entry?.component_type || entry?.type || '') === nestedComponent.type
-        );
+        const cRow = findComponentSourceRowByType(cSources, nestedComponent.type);
         return toArray(isObject(cRow?.roles) ? cRow.roles.properties : [])
           .map(entry => normalizeFieldKey(entry?.field_key || entry?.key || entry?.property_key || ''))
           .filter(Boolean);
@@ -3961,7 +4147,7 @@ function buildStudioFieldRule({
   const dataEntrySamples = toArray(samples)
     .map((value) => normalizeText(value))
     .filter(Boolean);
-  const defaultExcelHints = {
+  const defaultFieldStudioHints = {
     dataEntry: {
       sheet: keySheet || null,
       key_cell: keySheet && keyColumn && keyRow > 0 ? `${keyColumn}${keyRow}` : null,
@@ -3969,13 +4155,13 @@ function buildStudioFieldRule({
       sample_values: dataEntrySamples
     }
   };
-  const existingExcelHints = isObject(rule.excel_hints) ? rule.excel_hints : {};
-  const existingDataEntryHints = isObject(existingExcelHints.dataEntry) ? existingExcelHints.dataEntry : {};
-  const excelHints = {
-    ...defaultExcelHints,
-    ...existingExcelHints,
+  const existingFieldStudioHints = isObject(rule.field_studio_hints) ? rule.field_studio_hints : {};
+  const existingDataEntryHints = isObject(existingFieldStudioHints.dataEntry) ? existingFieldStudioHints.dataEntry : {};
+  const fieldStudioHints = {
+    ...defaultFieldStudioHints,
+    ...existingFieldStudioHints,
     dataEntry: {
-      ...defaultExcelHints.dataEntry,
+      ...defaultFieldStudioHints.dataEntry,
       ...existingDataEntryHints,
       sample_values: toArray(existingDataEntryHints.sample_values).length
         ? toArray(existingDataEntryHints.sample_values).map((value) => normalizeText(value)).filter(Boolean)
@@ -3984,8 +4170,8 @@ function buildStudioFieldRule({
   };
   if (source?.type === 'known_values') {
     const enumRow = toArray(map?.enum_lists).find((entry) => normalizeFieldKey(entry?.field || entry?.bucket || '') === normalizeFieldKey(source.ref || key));
-    if (enumRow && !isObject(excelHints.enum_column)) {
-      excelHints.enum_column = {
+    if (enumRow && !isObject(fieldStudioHints.enum_column)) {
+      fieldStudioHints.enum_column = {
         sheet: normalizeText(enumRow.sheet || ''),
         header: normalizeFieldKey(enumRow.field || enumRow.bucket || '')
       };
@@ -3993,9 +4179,9 @@ function buildStudioFieldRule({
   }
   if (source?.type === 'component_db') {
     const componentRows = toArray(map?.component_sources).length > 0 ? toArray(map.component_sources) : toArray(map?.component_sheets);
-    const componentRow = componentRows.find((entry) => normalizeFieldKey(entry?.component_type || entry?.type || '') === normalizeFieldKey(source.ref || ''));
-    if (componentRow && !normalizeText(excelHints.component_sheet || '')) {
-      excelHints.component_sheet = normalizeText(componentRow.sheet || '') || null;
+    const componentRow = findComponentSourceRowByType(componentRows, normalizeFieldKey(source.ref || ''));
+    if (componentRow && !normalizeText(fieldStudioHints.component_sheet || '')) {
+      fieldStudioHints.component_sheet = normalizeText(componentRow.sheet || '') || null;
     }
   }
 
@@ -4120,7 +4306,7 @@ function buildStudioFieldRule({
     enum: nestedEnum,
     evidence: nestedEvidence,
     evidence_required: nestedEvidence.required !== false,
-    excel_hints: excelHints,
+    field_studio_hints: fieldStudioHints,
     field_key: key,
     group: normalizeFieldKey(uiOut.group || inferGroup(key)),
     key,
@@ -4140,6 +4326,10 @@ function buildStudioFieldRule({
     unknown_reason_default: normalizeText(rule.unknown_reason_default || '') || 'not_found_after_search',
     value_form: canonicalValueForm
   };
+  const variancePolicy = normalizeToken(rule.variance_policy || '');
+  if (variancePolicy) {
+    out.variance_policy = variancePolicy;
+  }
   if (normalizedConsumers) {
     out.consumers = normalizedConsumers;
   }
@@ -4158,6 +4348,29 @@ function declaredComponentTypesFromMap(map = {}) {
       .map((row) => normalizeFieldKey(row?.component_type || row?.type || ''))
       .filter(Boolean)
   );
+}
+
+function declaredComponentPropertyKeysFromMap(map = {}) {
+  const rows = toArray(map?.component_sources).length > 0
+    ? toArray(map.component_sources)
+    : toArray(map?.component_sheets);
+  const out = new Set();
+  for (const row of rows) {
+    if (!isObject(row)) {
+      continue;
+    }
+    const roles = isObject(row.roles) ? row.roles : {};
+    for (const prop of toArray(roles.properties)) {
+      if (!isObject(prop)) {
+        continue;
+      }
+      const key = normalizeFieldKey(prop.field_key || prop.key || prop.property_key || '');
+      if (key) {
+        out.add(key);
+      }
+    }
+  }
+  return out;
 }
 
 function inferComponentTypeForField(fieldKey = '', componentTypes = new Set()) {
@@ -4482,7 +4695,7 @@ function buildCompileValidation({ fields, knownValues, enumLists, componentDb, m
       warnings.push(`field ${fieldKey}: enum_policy=open but parse_rules is empty`);
     }
   }
-  // ── Component DB data quality validation ─────────────────────────
+  // â”€â”€ Component DB data quality validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   for (const [componentType, items] of Object.entries(componentDb || {})) {
     if (!Array.isArray(items) || items.length === 0) continue;
 
@@ -4494,33 +4707,48 @@ function buildCompileValidation({ fields, knownValues, enumLists, componentDb, m
       }
     }
 
-    // Check completeness: warn if entities are missing properties that others have
-    for (const entity of items) {
-      const entityProps = isObject(entity.properties) ? entity.properties : {};
-      const missing = [];
-      for (const pk of allPropKeys) {
+    // Summarize property coverage to avoid high-volume per-entity warning spam.
+    for (const pk of allPropKeys) {
+      let presentCount = 0;
+      let missingCount = 0;
+      const missingExamples = [];
+      for (const entity of items) {
+        const entityProps = isObject(entity.properties) ? entity.properties : {};
         const val = entityProps[pk];
-        if (val === undefined || val === null || val === '') missing.push(pk);
+        const hasValue = !(val === undefined || val === null || val === '');
+        if (hasValue) {
+          presentCount += 1;
+          continue;
+        }
+        missingCount += 1;
+        if (missingExamples.length < 3) {
+          missingExamples.push(entity.name || '?');
+        }
       }
-      if (missing.length > 0 && missing.length < allPropKeys.size) {
-        warnings.push(`component_db.${componentType}: "${entity.name || '?'}" missing properties: ${missing.join(', ')}`);
+      if (missingCount === 0) {
+        continue;
       }
+      if (presentCount === 0) {
+        warnings.push(`component_db.${componentType}: property "${pk}" has no populated values across ${items.length} entities`);
+        continue;
+      }
+      const coveragePct = Number(((presentCount / items.length) * 100).toFixed(1));
+      warnings.push(
+        `component_db.${componentType}: property "${pk}" coverage ${presentCount}/${items.length} (${coveragePct}%), missing ${missingCount}; examples: ${missingExamples.join(', ')}`
+      );
     }
 
-    // Check for Excel serial dates (5-digit numbers) in date-like properties
-    const dateProps = [...allPropKeys].filter(k => /date|year|release|launch/i.test(k));
+    // Check for serial dates (5-digit numbers) in date-like properties
+    const dateProps = [...allPropKeys].filter((k) => isDateLikeFieldKey(k));
     for (const entity of items) {
       const entityProps = isObject(entity.properties) ? entity.properties : {};
       for (const dp of dateProps) {
         const val = entityProps[dp];
         if (val !== undefined && val !== null && val !== '') {
           const s = String(val).trim();
-          // Detect Excel serial dates: 5-digit numbers between 10000 and 60000
-          if (/^\d{5}$/.test(s)) {
-            const num = Number(s);
-            if (num >= 10000 && num <= 60000) {
-              warnings.push(`component_db.${componentType}: "${entity.name || '?'}" property "${dp}" looks like an Excel serial date (${s}) — convert to ISO date`);
-            }
+          const serialDate = parseSerialDate(s);
+          if (serialDate !== null) {
+            warnings.push(`component_db.${componentType}: "${entity.name || '?'}" property "${dp}" looks like a serial date (${s}) â€” convert to ISO date`);
           }
         }
       }
@@ -4614,31 +4842,18 @@ function diffFieldRuleSets(previousRules = {}, currentRules = {}) {
 
 async function writeControlPlaneSnapshot({
   controlPlaneRoot,
-  workbookMap = null,
-  draft = null,
-  fieldRulesDraft = null,
+  fieldStudioMap = null,
   fieldRulesFull = null,
-  uiFieldCatalogDraft = null,
   note = ''
 } = {}) {
   const versionId = snapshotVersionId();
   const versionRoot = path.join(controlPlaneRoot, '_versions', versionId);
   await fs.mkdir(versionRoot, { recursive: true });
-  if (isObject(workbookMap)) {
-    await writeJsonStable(path.join(versionRoot, 'field_studio_map.json'), workbookMap);
-    await writeJsonStable(path.join(versionRoot, 'workbook_map.json'), workbookMap);
-  }
-  if (isObject(draft)) {
-    await writeJsonStable(path.join(versionRoot, 'draft.json'), draft);
-  }
-  if (isObject(fieldRulesDraft)) {
-    await writeJsonStable(path.join(versionRoot, 'field_rules_draft.json'), fieldRulesDraft);
+  if (isObject(fieldStudioMap)) {
+    await writeJsonStable(path.join(versionRoot, 'field_studio_map.json'), fieldStudioMap);
   }
   if (isObject(fieldRulesFull)) {
     await writeJsonStable(path.join(versionRoot, 'field_rules.full.json'), fieldRulesFull);
-  }
-  if (isObject(uiFieldCatalogDraft)) {
-    await writeJsonStable(path.join(versionRoot, 'ui_field_catalog_draft.json'), uiFieldCatalogDraft);
   }
   const noteText = normalizeText(note) || 'category-compile';
   await fs.writeFile(path.join(versionRoot, 'notes.txt'), `${noteText}\n`, 'utf8');
@@ -4648,12 +4863,8 @@ async function writeControlPlaneSnapshot({
     created_at: nowIso(),
     note: noteText,
     files: {
-      field_studio_map: isObject(workbookMap),
-      workbook_map: isObject(workbookMap),
-      draft: isObject(draft),
-      field_rules_draft: isObject(fieldRulesDraft),
+      field_studio_map: isObject(fieldStudioMap),
       field_rules_full: isObject(fieldRulesFull),
-      ui_field_catalog_draft: isObject(uiFieldCatalogDraft)
     }
   });
   return {
@@ -4675,16 +4886,14 @@ async function readJsonIfExists(filePath) {
 }
 
 const FIELD_STUDIO_MAP_FILE_NAME = 'field_studio_map.json';
-const LEGACY_WORKBOOK_MAP_FILE_NAME = 'workbook_map.json';
 
 function resolveControlPlaneMapPaths(controlPlaneRoot) {
   return {
     fieldStudioPath: path.join(controlPlaneRoot, FIELD_STUDIO_MAP_FILE_NAME),
-    legacyWorkbookPath: path.join(controlPlaneRoot, LEGACY_WORKBOOK_MAP_FILE_NAME),
   };
 }
 
-export async function loadWorkbookMap({
+export async function loadFieldStudioMap({
   category,
   config = {},
   mapPath = null
@@ -4695,8 +4904,8 @@ export async function loadWorkbookMap({
   const mapPaths = mapPath
     ? [path.resolve(mapPath)]
     : (() => {
-      const { fieldStudioPath, legacyWorkbookPath } = resolveControlPlaneMapPaths(controlPlaneRoot);
-      return [fieldStudioPath, legacyWorkbookPath];
+      const { fieldStudioPath } = resolveControlPlaneMapPaths(controlPlaneRoot);
+      return [fieldStudioPath];
     })();
 
   for (const filePath of mapPaths) {
@@ -4704,66 +4913,70 @@ export async function loadWorkbookMap({
     if (!loaded) continue;
     return {
       file_path: filePath,
-      map: normalizeWorkbookMap(loaded)
+      map: normalizeFieldStudioMap(loaded)
     };
   }
   return null;
 }
 
-export async function saveWorkbookMap({
+export async function saveFieldStudioMap({
   category,
-  workbookMap,
+  fieldStudioMap = null,
+  workbookMap = null,
   config = {},
   mapPath = null
-}) {
+} = {}) {
   const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
   const categoryRoot = path.join(helperRoot, category);
   const controlPlaneRoot = path.join(categoryRoot, '_control_plane');
-  const {
-    fieldStudioPath,
-    legacyWorkbookPath,
-  } = resolveControlPlaneMapPaths(controlPlaneRoot);
+  const { fieldStudioPath } = resolveControlPlaneMapPaths(controlPlaneRoot);
   const filePath = mapPath ? path.resolve(mapPath) : fieldStudioPath;
-  const normalized = normalizeWorkbookMap(workbookMap || {});
+  const incomingMap = isObject(fieldStudioMap)
+    ? fieldStudioMap
+    : (isObject(workbookMap) ? workbookMap : {});
+  const normalized = normalizeFieldStudioMap(incomingMap);
   await writeJsonStable(filePath, normalized);
-  if (!mapPath) {
-    if (filePath !== legacyWorkbookPath) {
-      await writeJsonStable(legacyWorkbookPath, normalized);
-    }
-    if (filePath !== fieldStudioPath) {
-      await writeJsonStable(fieldStudioPath, normalized);
-    }
+  if (!mapPath && filePath !== fieldStudioPath) {
+    await writeJsonStable(fieldStudioPath, normalized);
   }
   const snapshot = await writeControlPlaneSnapshot({
     controlPlaneRoot,
-    workbookMap: normalized,
+    fieldStudioMap: normalized,
     note: 'save-field-studio-map'
   });
   return {
     file_path: filePath,
     map_hash: hashJson(normalized),
-    workbook_map: normalized,
+    field_studio_map: normalized,
     version_snapshot: snapshot
   };
 }
 
-export async function extractWorkbookContext({ workbookPath, workbookMap, category = '' }) {
-  const resolvedWorkbook = path.resolve(String(workbookPath || '').trim());
-  if (!resolvedWorkbook || !(await fileExists(resolvedWorkbook))) {
-    throw new Error(`workbook_not_found:${resolvedWorkbook}`);
+export async function extractFieldStudioContext({
+  fieldStudioSourcePath,
+  fieldStudioMap,
+  workbookMap,
+  category = ''
+}) {
+  const resolvedFieldStudioSourcePath = path.resolve(String(fieldStudioSourcePath || '').trim());
+  if (!resolvedFieldStudioSourcePath || !(await fileExists(resolvedFieldStudioSourcePath))) {
+    throw new Error(`field_studio_source_not_found:${resolvedFieldStudioSourcePath}`);
   }
-  const map = normalizeWorkbookMap(workbookMap || {});
+  const incomingMap = isObject(fieldStudioMap)
+    ? fieldStudioMap
+    : (isObject(workbookMap) ? workbookMap : {});
+  const map = normalizeFieldStudioMap(incomingMap);
 
-  // Open workbook (same pattern as compileCategoryWorkbook)
-  const introspect = await introspectWorkbook({ workbookPath: resolvedWorkbook, previewRows: 0, previewCols: 0 });
-  const workbookBuffer = await fs.readFile(resolvedWorkbook);
-  const entries = readZipEntries(workbookBuffer);
-  const descriptors = loadSheetDescriptors({ workbookBuffer, entries });
-  const sharedStrings = loadSharedStrings({ workbookBuffer, entries });
+  // Open field-studio source archive (same pattern as compileCategoryFieldStudio)
+  const introspect = await introspectFieldStudioSource({ fieldStudioSourcePath: resolvedFieldStudioSourcePath, previewRows: 0, previewCols: 0 });
+  const sourceBuffer = await fs.readFile(resolvedFieldStudioSourcePath);
+  const entries = readZipEntries(sourceBuffer);
+  const descriptors = loadSheetDescriptors({ sourceBuffer, entries });
+  const sharedStrings = loadSharedStrings({ sourceBuffer, entries });
   const sheetMap = new Map();
   for (const descriptor of descriptors) {
     const sheetLoaded = loadSheetCellMap({
-      workbookBuffer,
+      sourceBuffer,
       entries,
       sheetPath: descriptor.sheetPath,
       sharedStrings
@@ -4775,7 +4988,7 @@ export async function extractWorkbookContext({ workbookPath, workbookMap, catego
       maxCol: sheetLoaded.maxCol
     });
   }
-  const workbook = {
+  const sourceContext = {
     sheetMap,
     namedRanges: Object.fromEntries(
       toArray(introspect.named_ranges)
@@ -4794,9 +5007,9 @@ export async function extractWorkbookContext({ workbookPath, workbookMap, catego
   };
 
   // Pull key rows + add group column
-  const extractedKeyRows = pullKeyRowsFromMap(workbook, map);
+  const extractedKeyRows = pullKeyRowsFromMap(sourceContext, map);
   const keyList = map.key_list || {};
-  const keySheet = sheetByName(workbook, keyList.sheet);
+  const keySheet = sheetByName(sourceContext, keyList.sheet);
   const keyColIndex = colToIndex(keyList.column || 'B');
   const groupColLabel = keyColIndex && keyColIndex > 1 ? indexToCol(keyColIndex - 1) : '';
   let lastGroup = '';
@@ -4816,14 +5029,14 @@ export async function extractWorkbookContext({ workbookPath, workbookMap, catego
   let samples = { byField: {}, columns: [] };
   if (map.product_table?.sheet) {
     if (map.product_table.layout === 'rows') {
-      samples = pullRowTableSamples(workbook, map, extractedKeyRows);
+      samples = pullRowTableSamples(sourceContext, map, extractedKeyRows);
     } else {
-      samples = pullMatrixSamples(workbook, map, extractedKeyRows);
+      samples = pullMatrixSamples(sourceContext, map, extractedKeyRows);
     }
   }
 
   // Pull enum lists + component dbs
-  const enums = pullEnumLists(workbook, map);
+  const enums = pullEnumLists(sourceContext, map);
   // Merge manual_enum_values into pulled enum lists
   const manualEnumValues1 = isObject(map.manual_enum_values) ? map.manual_enum_values : {};
   for (const [field, values] of Object.entries(manualEnumValues1)) {
@@ -4833,7 +5046,7 @@ export async function extractWorkbookContext({ workbookPath, workbookMap, catego
     const manual = toArray(values).map((v) => String(v).trim()).filter(Boolean);
     enums[nf] = orderedUniqueStrings([...existing, ...manual]);
   }
-  const componentPull = pullComponentDbs(workbook, map);
+  const componentPull = pullComponentDbs(sourceContext, map);
   const componentDb = componentPull.componentDb || {};
 
   // Build component summary with aliases and source config
@@ -4866,7 +5079,7 @@ export async function extractWorkbookContext({ workbookPath, workbookMap, catego
   const tooltipPath = normalizeText(map.tooltip_source?.path || '');
   const componentSourcesRaw = toArray(map.component_sources).length > 0 ? toArray(map.component_sources) : toArray(map.component_sheets);
   const mapSummary = {
-    workbook_path: resolvedWorkbook,
+    field_studio_source_path: resolvedFieldStudioSourcePath,
     product_sheet: normalizeText(pt.sheet || ''),
     layout: normalizeText(pt.layout || 'matrix'),
     brand_row: asInt(pt.brand_row, 3),
@@ -4894,12 +5107,165 @@ export async function extractWorkbookContext({ workbookPath, workbookMap, catego
   };
 }
 
-export async function compileCategoryWorkbook({
+function normalizeKnownValuesFieldsDoc(knownValuesDoc = {}) {
+  if (!isObject(knownValuesDoc)) {
+    return {};
+  }
+  if (isObject(knownValuesDoc.fields)) {
+    const out = {};
+    for (const [fieldKeyRaw, valuesRaw] of Object.entries(knownValuesDoc.fields)) {
+      const fieldKey = normalizeFieldKey(fieldKeyRaw);
+      if (!fieldKey) continue;
+      out[fieldKey] = orderedUniqueStrings(
+        toArray(valuesRaw).map((value) => normalizeText(value)).filter(Boolean)
+      );
+    }
+    return out;
+  }
+  if (isObject(knownValuesDoc.enums)) {
+    const out = {};
+    for (const [fieldKeyRaw, enumBlock] of Object.entries(knownValuesDoc.enums)) {
+      const fieldKey = normalizeFieldKey(fieldKeyRaw);
+      if (!fieldKey) continue;
+      const values = toArray(enumBlock?.values)
+        .map((value) => (isObject(value) ? normalizeText(value.value || value.canonical || '') : normalizeText(value)))
+        .filter(Boolean);
+      out[fieldKey] = orderedUniqueStrings(values);
+    }
+    return out;
+  }
+  return {};
+}
+
+async function loadGeneratedComponentDbForCompile(generatedRoot) {
+  const componentRoot = path.join(generatedRoot, 'component_db');
+  let entries = [];
+  try {
+    entries = await fs.readdir(componentRoot, { withFileTypes: true });
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      return {};
+    }
+    throw error;
+  }
+
+  const out = {};
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.toLowerCase().endsWith('.json')) {
+      continue;
+    }
+    const payload = await readJsonIfExists(path.join(componentRoot, entry.name));
+    if (!isObject(payload)) {
+      continue;
+    }
+    const componentType = normalizeFieldKey(payload.component_type || path.basename(entry.name, '.json'));
+    if (!componentType) {
+      continue;
+    }
+    const rows = toArray(payload.items)
+      .map((row) => {
+        if (!isObject(row)) return null;
+        const name = normalizeText(row.name || row.canonical_name || '');
+        if (!name) return null;
+        const normalized = {
+          ...row,
+          name,
+        };
+        if (normalizeText(row?.maker || '')) {
+          normalized.maker = normalizeText(row.maker);
+        }
+        if (Array.isArray(row?.aliases)) {
+          normalized.aliases = orderedUniqueStrings(row.aliases.map((value) => normalizeText(value)).filter(Boolean));
+        }
+        if (Array.isArray(row?.links)) {
+          normalized.links = orderedUniqueStrings(row.links.map((value) => normalizeText(value)).filter(Boolean));
+        }
+        if (!isObject(row?.properties)) {
+          normalized.properties = {};
+        }
+        return normalized;
+      })
+      .filter(Boolean);
+    out[componentType] = rows;
+  }
+  return out;
+}
+
+function buildFallbackKeyRows({
+  map = {},
+  baselineFieldRules = null,
+  baselineUiFieldCatalog = null
+} = {}) {
+  const labelByKey = {};
+  const orderedBaselineKeys = [];
+  const seenBaseline = new Set();
+
+  for (const row of toArray(baselineUiFieldCatalog?.fields)) {
+    if (!isObject(row)) continue;
+    const key = normalizeFieldKey(row.key || row.canonical_key || '');
+    if (!key || seenBaseline.has(key)) continue;
+    seenBaseline.add(key);
+    orderedBaselineKeys.push(key);
+    const label = normalizeText(row.label || row.display_name || '');
+    if (label) {
+      labelByKey[key] = label;
+    }
+  }
+
+  const baselineFields = isObject(baselineFieldRules?.fields) ? baselineFieldRules.fields : {};
+  for (const [fieldKeyRaw, rule] of Object.entries(baselineFields)) {
+    const key = normalizeFieldKey(fieldKeyRaw);
+    if (!key) continue;
+    if (!seenBaseline.has(key)) {
+      seenBaseline.add(key);
+      orderedBaselineKeys.push(key);
+    }
+    if (!labelByKey[key]) {
+      labelByKey[key] = normalizeText(rule?.ui?.label || rule?.label || '') || titleFromKey(key);
+    }
+  }
+
+  const selectedKeys = toArray(map?.selected_keys).map((key) => normalizeFieldKey(key)).filter(Boolean);
+  const mapOverrideKeys = Object.keys(isObject(map?.field_overrides) ? map.field_overrides : {})
+    .map((key) => normalizeFieldKey(key))
+    .filter(Boolean);
+  for (const [fieldKeyRaw, rule] of Object.entries(isObject(map?.field_overrides) ? map.field_overrides : {})) {
+    const key = normalizeFieldKey(fieldKeyRaw);
+    if (!key || labelByKey[key]) continue;
+    labelByKey[key] = normalizeText(rule?.ui?.label || rule?.label || '') || titleFromKey(key);
+  }
+
+  const orderedKeys = [];
+  const seen = new Set();
+  const pushKey = (rawKey) => {
+    const key = normalizeFieldKey(rawKey);
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    orderedKeys.push(key);
+  };
+
+  if (selectedKeys.length > 0) {
+    for (const key of selectedKeys) pushKey(key);
+  } else {
+    for (const key of orderedBaselineKeys) pushKey(key);
+    for (const key of mapOverrideKeys) pushKey(key);
+  }
+
+  return orderedKeys.map((key) => ({
+    row: 0,
+    key,
+    label: labelByKey[key] || titleFromKey(key),
+  }));
+}
+
+export async function compileCategoryFieldStudio({
   category,
-  workbookPath = '',
+  fieldStudioSourcePath = '',
+  fieldStudioMap = null,
   workbookMap = null,
   config = {},
-  mapPath = null
+  mapPath = null,
+  forceSourceExtraction = false
 }) {
   if (!normalizeText(category)) {
     throw new Error('category_required');
@@ -4908,53 +5274,90 @@ export async function compileCategoryWorkbook({
   const categoryRoot = path.join(helperRoot, category);
   const controlPlaneRoot = path.join(categoryRoot, '_control_plane');
   const generatedRoot = path.join(categoryRoot, '_generated');
-  const controlMap = workbookMap
-    ? { map: normalizeWorkbookMap(workbookMap), file_path: mapPath ? path.resolve(mapPath) : null }
-    : await loadWorkbookMap({ category, config, mapPath });
+  const { fieldStudioPath: controlPlaneFieldStudioMapPath } = resolveControlPlaneMapPaths(controlPlaneRoot);
+  const providedMap = isObject(fieldStudioMap)
+    ? fieldStudioMap
+    : (isObject(workbookMap) ? workbookMap : null);
+  const controlMap = providedMap
+    ? { map: normalizeFieldStudioMap(providedMap), file_path: mapPath ? path.resolve(mapPath) : null }
+    : await loadFieldStudioMap({ category, config, mapPath });
   if (!controlMap?.map) {
-    throw new Error('workbook_map_missing');
+    throw new Error('field_studio_map_missing');
   }
+  const resolvedControlMapPath = normalizeText(mapPath)
+    ? path.resolve(String(mapPath))
+    : controlPlaneFieldStudioMapPath;
 
-  const resolvedWorkbook = normalizeText(workbookPath)
-    ? path.resolve(workbookPath)
+  const resolvedFieldStudioSourcePath = normalizeText(fieldStudioSourcePath)
+    ? path.resolve(fieldStudioSourcePath)
     : path.resolve(
-      controlMap.map.workbook_path || path.join(categoryRoot, `${category}Data.xlsm`)
+      controlMap.map.field_studio_source_path
+      || path.join(categoryRoot, `${category}Data.xlsm`)
     );
-  if (!(await fileExists(resolvedWorkbook))) {
-    throw new Error(`workbook_not_found:${resolvedWorkbook}`);
+  const fieldStudioSourceExists = await fileExists(resolvedFieldStudioSourcePath);
+  const preferFieldStudioCompile = Boolean(config?.preferFieldStudioCompile) && !forceSourceExtraction;
+  const fieldStudioSourceAvailable = fieldStudioSourceExists && !preferFieldStudioCompile;
+  const compileMode = fieldStudioSourceAvailable
+    ? (forceSourceExtraction ? 'field_studio_fallback' : 'field_studio_extracted')
+    : 'field_studio';
+
+  let sourceIntrospection = null;
+  let sheetNames = [];
+  if (fieldStudioSourceAvailable) {
+    sourceIntrospection = await introspectFieldStudioSource({
+      fieldStudioSourcePath: resolvedFieldStudioSourcePath,
+      previewRows: 20,
+      previewCols: 10
+    });
+    sheetNames = sourceIntrospection.sheets.map((sheet) => sheet.name);
   }
 
-  const workbook = await introspectWorkbook({
-    workbookPath: resolvedWorkbook,
-    previewRows: 20,
-    previewCols: 10
-  });
-  const sheetNames = workbook.sheets.map((sheet) => sheet.name);
-  const mapValidation = validateWorkbookMap(controlMap.map, { sheetNames });
+  const mapValidation = fieldStudioSourceAvailable
+    ? validateFieldStudioMap(controlMap.map, { sheetNames })
+    : {
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: normalizeFieldStudioMap(controlMap.map)
+    };
+  if (!fieldStudioSourceExists) {
+    mapValidation.warnings.push(`field_studio_source_not_found:${resolvedFieldStudioSourcePath}; using app-native compile fallback from saved map + generated artifacts`);
+  } else if (preferFieldStudioCompile) {
+    mapValidation.warnings.push(`field_studio_source_available:${resolvedFieldStudioSourcePath}; compile_mode=field_studio`);
+  }
   if (!mapValidation.valid) {
     return {
       category,
       compiled: false,
-      workbook_path: resolvedWorkbook,
-      workbook_hash: workbook.workbook_hash,
-      map_path: controlMap.file_path,
+      field_studio_source_path: resolvedFieldStudioSourcePath,
+      field_studio_source_hash: sourceIntrospection?.field_studio_source_hash || null,
+      map_path: resolvedControlMapPath,
       map_hash: hashJson(mapValidation.normalized),
       errors: mapValidation.errors,
       warnings: mapValidation.warnings
     };
   }
-  const mergedMap = mergeWorkbookMapDefaults(
-    mapValidation.normalized,
-    workbook?.suggested_map || {}
-  );
-  const mergedValidation = validateWorkbookMap(mergedMap, { sheetNames });
+  const mergedMap = fieldStudioSourceAvailable
+    ? mergeFieldStudioMapDefaults(
+      mapValidation.normalized,
+      sourceIntrospection?.suggested_map || {}
+    )
+    : mapValidation.normalized;
+  const mergedValidation = fieldStudioSourceAvailable
+    ? validateFieldStudioMap(mergedMap, { sheetNames })
+    : {
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: normalizeFieldStudioMap(mergedMap)
+    };
   if (!mergedValidation.valid) {
     return {
       category,
       compiled: false,
-      workbook_path: resolvedWorkbook,
-      workbook_hash: workbook.workbook_hash,
-      map_path: controlMap.file_path,
+      field_studio_source_path: resolvedFieldStudioSourcePath,
+      field_studio_source_hash: sourceIntrospection?.field_studio_source_hash || null,
+      map_path: resolvedControlMapPath,
       map_hash: hashJson(mergedValidation.normalized),
       errors: mergedValidation.errors,
       warnings: [...mapValidation.warnings, ...mergedValidation.warnings]
@@ -4964,6 +5367,34 @@ export async function compileCategoryWorkbook({
   const mapWarnings = [...mapValidation.warnings, ...mergedValidation.warnings];
   const mapHash = hashJson(map);
   const previousCompileReport = await readJsonIfExists(path.join(generatedRoot, '_compile_report.json'));
+  const selectedKeyCount = toArray(map.selected_keys)
+    .map((field) => normalizeFieldKey(field))
+    .filter(Boolean)
+    .length;
+  const previousMapHash = normalizeText(previousCompileReport?.field_studio_map_hash || '');
+  const shouldPreserveSourceFallback = Boolean(
+    !forceSourceExtraction
+    && preferFieldStudioCompile
+    && fieldStudioSourceExists
+    && normalizeToken(previousCompileReport?.compile_mode || '').endsWith('_fallback')
+    && (
+      previousMapHash === mapHash
+      || selectedKeyCount === 0
+    )
+  );
+  if (shouldPreserveSourceFallback) {
+    return compileCategoryFieldStudio({
+      category,
+      fieldStudioSourcePath: resolvedFieldStudioSourcePath,
+      fieldStudioMap: map,
+      config: {
+        ...config,
+        preferFieldStudioCompile: false
+      },
+      mapPath: resolvedControlMapPath,
+      forceSourceExtraction: true
+    });
+  }
   const previousGeneratedFieldRules = await readJsonIfExists(path.join(generatedRoot, 'field_rules.json'));
   const previousTimestamp = normalizeText(
     previousGeneratedFieldRules?.generated_at
@@ -4971,119 +5402,152 @@ export async function compileCategoryWorkbook({
     || previousCompileReport?.generated_at
     || ''
   );
+  const fieldStudioSourceHash = fieldStudioSourceAvailable
+    ? (sourceIntrospection?.field_studio_source_hash || null)
+    : null;
   const canReuseTimestamp = Boolean(
     previousTimestamp
-    && previousCompileReport?.workbook_hash === workbook.workbook_hash
-    && previousCompileReport?.workbook_map_hash === mapHash
+    && (previousCompileReport?.field_studio_source_hash || null) === fieldStudioSourceHash
+    && previousMapHash === mapHash
   );
   const compileTimestamp = canReuseTimestamp ? previousTimestamp : nowIso();
   const baselineCandidates = [
-    path.join(categoryRoot, 'field_rules.json'),
-    path.join(categoryRoot, 'field_rules_sample.json')
+    { source: 'authoring', path: path.join(categoryRoot, 'field_rules.json') },
+    { source: 'authoring', path: path.join(categoryRoot, 'field_rules_sample.json') },
+    { source: 'generated', path: path.join(generatedRoot, 'field_rules.json') },
+    { source: 'control_plane', path: path.join(controlPlaneRoot, 'field_rules.full.json') }
   ];
   let baselineFieldRules = null;
-  for (const candidatePath of baselineCandidates) {
-    const candidate = await readJsonIfExists(candidatePath);
+  let baselineFieldRulesSource = '';
+  for (const candidateRow of baselineCandidates) {
+    const candidate = await readJsonIfExists(candidateRow.path);
     if (isObject(candidate) && isObject(candidate.fields)) {
       baselineFieldRules = candidate;
+      baselineFieldRulesSource = candidateRow.source;
       break;
     }
   }
-  const draftPayload = await readJsonIfExists(path.join(controlPlaneRoot, 'field_rules_draft.json'));
-  const pendingRenamesPayload = await readJsonIfExists(path.join(controlPlaneRoot, 'pending_renames.json'));
-  const pendingRenames = isObject(pendingRenamesPayload?.renames) ? pendingRenamesPayload.renames : {};
-  if (Object.keys(pendingRenames).length > 0) {
-    const renameKey = (k) => pendingRenames[k] || k;
-    if (Array.isArray(map.selected_keys)) {
-      map.selected_keys = map.selected_keys.map(renameKey);
-    }
-    if (isObject(map.field_overrides)) {
-      const renamedOverrides = {};
-      for (const [k, v] of Object.entries(map.field_overrides)) {
-        renamedOverrides[renameKey(k)] = v;
-      }
-      map.field_overrides = renamedOverrides;
-    }
-    for (const entry of toArray(map.enum_lists)) {
-      if (isObject(entry) && entry.field) entry.field = renameKey(entry.field);
-    }
-    for (const entry of toArray(map.data_lists)) {
-      if (isObject(entry) && entry.field) entry.field = renameKey(entry.field);
-    }
-    for (const src of toArray(map.component_sources)) {
-      if (isObject(src) && isObject(src.roles)) {
-        for (const prop of toArray(src.roles.properties)) {
-          if (isObject(prop) && prop.field_key) prop.field_key = renameKey(prop.field_key);
-        }
-      }
-    }
-  }
-  const draftFieldOverridesRaw = isObject(draftPayload?.fields) ? draftPayload.fields : {};
   const baselineFieldOverrides = isObject(baselineFieldRules?.fields) ? baselineFieldRules.fields : {};
-  const mapFieldOverrides = Object.keys(baselineFieldOverrides).length > 0
+  const mapFieldOverrides = baselineFieldRulesSource === 'authoring'
     ? {}
     : (isObject(map.field_overrides) ? map.field_overrides : {});
-  const hasEditedDraftRules = Object.values(draftFieldOverridesRaw).some((rule) => isObject(rule) && rule._edited === true);
-  const draftFieldOverrides = hasEditedDraftRules
-    ? Object.fromEntries(
-      Object.entries(draftFieldOverridesRaw).filter(([, rule]) => isObject(rule) && rule._edited === true)
-    )
-    : {};
+  const draftFieldOverrides = {};
   const effectiveFieldOverrides = {
     ...baselineFieldOverrides,
     ...mapFieldOverrides,
     ...draftFieldOverrides
   };
 
-  const workbookBuffer = await fs.readFile(resolvedWorkbook);
-  const entries = readZipEntries(workbookBuffer);
-  const descriptors = loadSheetDescriptors({ workbookBuffer, entries });
-  const sharedStrings = loadSharedStrings({ workbookBuffer, entries });
-  const sheetMap = new Map();
-  for (const descriptor of descriptors) {
-    const sheetLoaded = loadSheetCellMap({
-      workbookBuffer,
-      entries,
-      sheetPath: descriptor.sheetPath,
-      sharedStrings
-    });
-    sheetMap.set(descriptor.name, {
-      name: descriptor.name,
-      cells: sheetLoaded.cells,
-      maxRow: sheetLoaded.maxRow,
-      maxCol: sheetLoaded.maxCol
-    });
-  }
-  const workbookForCompile = {
-    sheetMap,
-    namedRanges: Object.fromEntries(
-      toArray(workbook.named_ranges)
-        .filter((row) => isObject(row) && normalizeText(row.name))
-        .map((row) => [
-          normalizeText(row.name),
-          {
-            sheet: normalizeText(row.sheet),
-            startColumn: normalizeText(row.start_column || row.startColumn).toUpperCase(),
-            endColumn: normalizeText(row.end_column || row.endColumn).toUpperCase(),
-            startRow: asInt(row.row_start || row.startRow, 0),
-            endRow: asInt(row.row_end || row.endRow, 0)
-          }
-        ])
-    )
+  let sourceContextForCompile = {
+    sheetMap: new Map(),
+    namedRanges: {}
   };
+  if (fieldStudioSourceAvailable) {
+    const sourceBuffer = await fs.readFile(resolvedFieldStudioSourcePath);
+    const entries = readZipEntries(sourceBuffer);
+    const descriptors = loadSheetDescriptors({ sourceBuffer, entries });
+    const sharedStrings = loadSharedStrings({ sourceBuffer, entries });
+    const sheetMap = new Map();
+    for (const descriptor of descriptors) {
+      const sheetLoaded = loadSheetCellMap({
+        sourceBuffer,
+        entries,
+        sheetPath: descriptor.sheetPath,
+        sharedStrings
+      });
+      sheetMap.set(descriptor.name, {
+        name: descriptor.name,
+        cells: sheetLoaded.cells,
+        maxRow: sheetLoaded.maxRow,
+        maxCol: sheetLoaded.maxCol
+      });
+    }
+    sourceContextForCompile = {
+      sheetMap,
+      namedRanges: Object.fromEntries(
+        toArray(sourceIntrospection?.named_ranges)
+          .filter((row) => isObject(row) && normalizeText(row.name))
+          .map((row) => [
+            normalizeText(row.name),
+            {
+              sheet: normalizeText(row.sheet),
+              startColumn: normalizeText(row.start_column || row.startColumn).toUpperCase(),
+              endColumn: normalizeText(row.end_column || row.endColumn).toUpperCase(),
+              startRow: asInt(row.row_start || row.startRow, 0),
+              endRow: asInt(row.row_end || row.endRow, 0)
+            }
+          ])
+      )
+    };
+  }
 
-  const extractedKeyRows = pullKeyRowsFromMap(workbookForCompile, map);
+  const previousUiFieldCatalog = await readJsonIfExists(path.join(generatedRoot, 'ui_field_catalog.json'));
+  const previousKnownValuesArtifact = await readJsonIfExists(path.join(generatedRoot, 'known_values.json'));
+  const extractedKeyRows = fieldStudioSourceAvailable
+    ? pullKeyRowsFromMap(sourceContextForCompile, map)
+    : buildFallbackKeyRows({
+      map,
+      baselineFieldRules,
+      baselineUiFieldCatalog: previousUiFieldCatalog
+    });
   const selectedKeySet = new Set(toArray(map.selected_keys).map((field) => normalizeFieldKey(field)).filter(Boolean));
+  const componentPropertyKeySet = declaredComponentPropertyKeysFromMap(map);
+  const extractedKeySet = new Set(extractedKeyRows.map((row) => normalizeFieldKey(row.key)).filter(Boolean));
+  const declaredOnlyKeyRows = [...componentPropertyKeySet]
+    .filter((key) => !extractedKeySet.has(key))
+    .sort((a, b) => a.localeCompare(b))
+    .map((key) => ({
+      row: 0,
+      label: titleFromKey(key),
+      key,
+    }));
+  const candidateKeyRows = [...extractedKeyRows, ...declaredOnlyKeyRows];
   const keyRows = selectedKeySet.size > 0
-    ? extractedKeyRows.filter((row) => selectedKeySet.has(normalizeFieldKey(row.key)))
-    : extractedKeyRows;
+    ? candidateKeyRows.filter((row) => (
+      selectedKeySet.has(normalizeFieldKey(row.key))
+      || componentPropertyKeySet.has(normalizeFieldKey(row.key))
+    ))
+    : candidateKeyRows;
+  if (!keyRows.length && !fieldStudioSourceAvailable && fieldStudioSourceExists && !forceSourceExtraction) {
+    const fallbackResult = await compileCategoryFieldStudio({
+      category,
+      fieldStudioSourcePath: resolvedFieldStudioSourcePath,
+      fieldStudioMap: map,
+      config: {
+        ...config,
+        preferFieldStudioCompile: false
+      },
+      mapPath: resolvedControlMapPath,
+      forceSourceExtraction: true
+    });
+    const fallbackWarning = 'field_studio_compile_missing_keys_fallback_to_source_extraction';
+    const normalizedWarnings = orderedUniqueStrings([
+      ...toArray(fallbackResult?.warnings),
+      fallbackWarning
+    ]);
+    const normalizedCompileReport = isObject(fallbackResult?.compile_report)
+      ? {
+        ...fallbackResult.compile_report,
+        compile_mode: 'field_studio_fallback',
+        warnings: orderedUniqueStrings([
+          ...toArray(fallbackResult.compile_report.warnings),
+          fallbackWarning
+        ])
+      }
+      : fallbackResult?.compile_report;
+    return {
+      ...(isObject(fallbackResult) ? fallbackResult : {}),
+      warnings: normalizedWarnings,
+      ...(normalizedCompileReport ? { compile_report: normalizedCompileReport } : {})
+    };
+  }
   if (!keyRows.length) {
     return {
       category,
       compiled: false,
-      workbook_path: resolvedWorkbook,
-      workbook_hash: workbook.workbook_hash,
-      map_path: controlMap.file_path,
+      field_studio_source_path: resolvedFieldStudioSourcePath,
+      field_studio_source_hash: fieldStudioSourceHash,
+      map_path: resolvedControlMapPath,
       map_hash: mapHash,
       errors: [selectedKeySet.size > 0 ? 'selected_keys_filtered_all_extracted_keys' : 'no_keys_extracted_from_key_list'],
       warnings: mapValidation.warnings
@@ -5094,14 +5558,16 @@ export async function compileCategoryWorkbook({
     byField: {},
     columns: []
   };
-  if (map.product_table?.sheet) {
+  if (fieldStudioSourceAvailable && map.product_table?.sheet) {
     if (map.product_table.layout === 'rows') {
-      samples = pullRowTableSamples(workbookForCompile, map, keyRows);
+      samples = pullRowTableSamples(sourceContextForCompile, map, keyRows);
     } else {
-      samples = pullMatrixSamples(workbookForCompile, map, keyRows);
+      samples = pullMatrixSamples(sourceContextForCompile, map, keyRows);
     }
   }
-  const enumLists = pullEnumLists(workbookForCompile, map);
+  const enumLists = fieldStudioSourceAvailable
+    ? pullEnumLists(sourceContextForCompile, map)
+    : normalizeKnownValuesFieldsDoc(previousKnownValuesArtifact);
   // Merge manual_enum_values into pulled enum lists
   const manualEnumValues2 = isObject(map.manual_enum_values) ? map.manual_enum_values : {};
   for (const [field, values] of Object.entries(manualEnumValues2)) {
@@ -5111,7 +5577,7 @@ export async function compileCategoryWorkbook({
     const manual = toArray(values).map((v) => String(v).trim()).filter(Boolean);
     enumLists[nf] = orderedUniqueStrings([...existing, ...manual]);
   }
-  for (const overrides of [baselineFieldOverrides, draftFieldOverrides]) {
+  for (const overrides of [baselineFieldOverrides, mapFieldOverrides, draftFieldOverrides]) {
     if (!isObject(overrides)) continue;
     for (const [field, ruleDraft] of Object.entries(overrides)) {
       const nf = normalizeFieldKey(field);
@@ -5122,7 +5588,13 @@ export async function compileCategoryWorkbook({
       enumLists[nf] = orderedUniqueStrings([...toArray(enumLists[nf]), ...vals]);
     }
   }
-  const componentPull = pullComponentDbs(workbookForCompile, map);
+  const componentPull = fieldStudioSourceAvailable
+    ? pullComponentDbs(sourceContextForCompile, map)
+    : {
+      componentDb: await loadGeneratedComponentDbForCompile(generatedRoot),
+      sourceAssertions: [],
+      sourceStats: {}
+    };
   const componentDb = componentPull.componentDb || {};
   const componentSourceAssertions = toArray(componentPull.sourceAssertions);
   const componentSourceStats = isObject(componentPull.sourceStats) ? componentPull.sourceStats : {};
@@ -5203,11 +5675,15 @@ export async function compileCategoryWorkbook({
       || baselineFieldOverrides?.[field]
       || baselineFieldOverrides?.[rawAliasField]
       || null;
-    if (isObject(baselineRule) && !isObject(editedOverride) && !isObject(mapOverride)) {
+    const componentPropertyMeta = resolveComponentPropertyMetaFromMap(map, outputField);
+    if (isObject(baselineRule) && !isObject(editedOverride) && !isObject(mapOverride) && !componentPropertyMeta) {
       const passthrough = JSON.parse(JSON.stringify(baselineRule));
       passthrough.key = outputField;
+      if (outputField !== field) {
+        keyMigrations[field] = outputField;
+      }
       const passthroughCanonical = normalizeFieldKey(passthrough.canonical_key || '');
-      if (passthroughCanonical && passthroughCanonical !== outputField) {
+      if (passthroughCanonical && passthroughCanonical !== outputField && passthroughCanonical !== field) {
         keyMigrations[outputField] = passthroughCanonical;
       }
       enforceExpectationPriority({
@@ -5216,18 +5692,45 @@ export async function compileCategoryWorkbook({
         expectations
       });
       fieldsRuntime[outputField] = passthrough;
-      fieldsStudio[outputField] = passthrough;
-      const passUi = isObject(passthrough.ui) ? passthrough.ui : {};
-      const passPriority = isObject(passthrough.priority) ? passthrough.priority : {};
-      const passContract = isObject(passthrough.contract) ? passthrough.contract : {};
+      fieldsStudio[outputField] = buildStudioFieldRule({
+        category,
+        key: outputField,
+        rule: passthrough,
+        row,
+        map,
+        samples: samples.byField[sourceField] || [],
+        enumLists,
+        componentDb
+      });
+      const passthroughForUi = mergeFieldOverride(draft, passthrough);
+      const passUi = isObject(passthroughForUi.ui) ? passthroughForUi.ui : {};
+      const passPriority = isObject(passthroughForUi.priority) ? passthroughForUi.priority : {};
+      const passContract = isObject(passthroughForUi.contract) ? passthroughForUi.contract : {};
+      const passAliases = stableSortStrings([
+        ...toArray(draft.aliases || []),
+        ...toArray(passthroughForUi.aliases || [])
+      ]);
+      const passRequestedCanonical = normalizeFieldKey(passthroughForUi.canonical_key || '');
+      const passCanonicalTarget = (
+        passRequestedCanonical
+        && passRequestedCanonical !== outputField
+        && passRequestedCanonical !== field
+      )
+        ? passRequestedCanonical
+        : '';
+      const passSurfaces = (
+        isObject(passthroughForUi.surfaces) && Object.keys(passthroughForUi.surfaces).length > 0
+      )
+        ? passthroughForUi.surfaces
+        : (isObject(draft.surfaces) ? draft.surfaces : {});
       uiFieldCatalogRows.push({
         key: outputField,
-        canonical_key: passthrough.canonical_key || outputField,
+        canonical_key: passCanonicalTarget || outputField,
         label: passUi.label || titleFromKey(outputField),
         group: passUi.group || 'general',
         order: passUi.order || order,
         tooltip_md: passUi.tooltip_md || '',
-        aliases: orderedUniqueStrings(toArray(passthrough.aliases || [])),
+        aliases: passAliases,
         short_label: normalizeText(passUi.short_label || '') || null,
         prefix: normalizeText(passUi.prefix || '') || null,
         suffix: normalizeText(passUi.suffix || '') || null,
@@ -5246,8 +5749,8 @@ export async function compileCategoryWorkbook({
         effort: asInt(passPriority.effort ?? passthrough.effort, 5),
         type: normalizeToken(passContract.type || passthrough.type || 'string') || 'string',
         shape: normalizeToken(passContract.shape || passthrough.shape || 'scalar') || 'scalar',
-        unit: normalizeText(passContract.unit || passthrough.unit || ''),
-        surfaces: isObject(passthrough.surfaces) ? passthrough.surfaces : {}
+        unit: normalizeText(passContract.unit || passthroughForUi.unit || ''),
+        surfaces: passSurfaces
       });
       order += 1;
       continue;
@@ -5257,15 +5760,38 @@ export async function compileCategoryWorkbook({
       : draft;
     const merged = mergeFieldOverride(baseForMerge, override);
     const requestedCanonical = normalizeFieldKey(merged.canonical_key || '');
+    const canonicalTarget = requestedCanonical && requestedCanonical !== outputField && requestedCanonical !== field
+      ? requestedCanonical
+      : '';
     if (outputField !== field) {
       keyMigrations[field] = outputField;
       merged.aliases = stableSortStrings([...(merged.aliases || []), field, outputField]);
     }
-    if (requestedCanonical && requestedCanonical !== outputField) {
-      keyMigrations[outputField] = requestedCanonical;
+    if (canonicalTarget) {
+      keyMigrations[outputField] = canonicalTarget;
     }
     merged.key = outputField;
-    merged.canonical_key = requestedCanonical || null;
+    merged.canonical_key = canonicalTarget || null;
+    if (componentPropertyMeta) {
+      merged.type = componentPropertyMeta.type;
+      const existingContract = isObject(merged.contract) ? merged.contract : {};
+      merged.contract = {
+        ...existingContract,
+        type: componentPropertyMeta.type
+      };
+      if (isNumericContractType(componentPropertyMeta.type)) {
+        merged.unit = componentPropertyMeta.unit || merged.unit || '';
+      } else {
+        merged.unit = componentPropertyMeta.unit || '';
+      }
+      merged.variance_policy = componentPropertyMeta.variance_policy || 'authoritative';
+      if (!Array.isArray(merged.constraints) || merged.constraints.length === 0) {
+        merged.constraints = componentPropertyMeta.constraints;
+      }
+      if (!isNumericContractType(componentPropertyMeta.type) && normalizeToken(merged.round || '') !== 'none') {
+        merged.round = 'none';
+      }
+    }
     if (!Array.isArray(merged.constraints)) {
       merged.constraints = buildPropertyConstraintsFromMap(map, outputField);
     }
@@ -5297,6 +5823,20 @@ export async function compileCategoryWorkbook({
         type: 'known_values',
         ref: field
       };
+    }
+    if (componentPropertyMeta && isNumericContractType(componentPropertyMeta.type) && enumValues.length > 0) {
+      merged.enum_policy = 'closed';
+      merged.enum_source = {
+        type: 'known_values',
+        ref: field
+      };
+      merged.vocab = {
+        ...(merged.vocab || {}),
+        mode: 'closed',
+        allow_new: false,
+        known_values: stableSortStrings(enumValues),
+      };
+      merged.new_value_policy = null;
     }
     if ((merged.type === 'boolean' || merged.parse_template === 'boolean_yes_no_unknown') && !toArray(enumLists[field]).length && !toArray(enumLists.yes_no).length) {
       enumLists.yes_no = ['yes', 'no'];
@@ -5397,6 +5937,36 @@ export async function compileCategoryWorkbook({
         enumValues: mergedEnumValues,
         componentType
       });
+    }
+    const scalarNumericParseTemplates = new Set([
+      'number_with_unit',
+      'integer_with_unit',
+      'range_number',
+    ]);
+    const isMergedNumericType = isNumericContractType(mergedType);
+    if (!isMergedNumericType && scalarNumericParseTemplates.has(mergedParseTemplate)) {
+      mergedParseTemplate = normalizeFieldKey(outputField).includes('date') ? 'date_field' : 'text_field';
+      merged.parse_rules = {};
+    }
+    if (
+      isMergedNumericType
+      && ['text_field', 'string', 'enum_string', 'date_field'].includes(mergedParseTemplate)
+    ) {
+      mergedParseTemplate = inferParseTemplate({
+        key: outputField,
+        type: mergedType,
+        shape: mergedShape,
+        enumValues: mergedEnumValues,
+        componentType,
+      });
+    }
+    if (
+      isMergedNumericType
+      && !normalizeText(merged.unit || '')
+      && ['number_with_unit', 'integer_with_unit'].includes(mergedParseTemplate)
+    ) {
+      mergedParseTemplate = 'integer_field';
+      merged.parse_rules = {};
     }
     merged.parse_template = canonicalParseTemplate(mergedParseTemplate);
     if (!isObject(merged.parse)) {
@@ -5500,60 +6070,31 @@ export async function compileCategoryWorkbook({
     });
     order += 1;
   }
+  const reconciledKeyMigrations = reconcileKeyMigrationsForFieldSet(
+    keyMigrations,
+    Object.keys(fieldsRuntime),
+    mapWarnings
+  );
+  for (const key of Object.keys(keyMigrations)) {
+    delete keyMigrations[key];
+  }
+  Object.assign(keyMigrations, reconciledKeyMigrations);
 
-  const fieldRulesDraft = {
-    version: 1,
-    category,
-    generated_at: compileTimestamp,
-    workbook_map_hash: mapHash,
-    selected_keys: stableSortStrings(keyRows.map((row) => row.key)),
-    expectations: {
-      required_fields: stableSortStrings(toArray(map.expectations?.required_fields)),
-      critical_fields: stableSortStrings(toArray(map.expectations?.critical_fields)),
-      expected_easy_fields: stableSortStrings(toArray(map.expectations?.expected_easy_fields)),
-      expected_sometimes_fields: stableSortStrings(toArray(map.expectations?.expected_sometimes_fields)),
-      deep_fields: stableSortStrings(toArray(map.expectations?.deep_fields))
-    },
-    fields: fieldsStudio
-  };
-
-  const uiFieldCatalogDraft = {
-    version: 1,
-    category,
-    generated_at: compileTimestamp,
-    fields: uiFieldCatalogRows
-      .map((row) => ({
-        key: row.key,
-        canonical_key: row.canonical_key,
-        label: row.label,
-        short_label: row.short_label,
-        group: row.group,
-        order: row.order,
-        tooltip_md: row.tooltip_md,
-        tooltip_key: row.tooltip_key,
-        tooltip_source: row.tooltip_source,
-        guidance_md: row.guidance_md,
-        prefix: row.prefix,
-        suffix: row.suffix,
-        placeholder: row.placeholder,
-        input_control: row.input_control,
-        display_mode: row.display_mode,
-        display_decimals: row.display_decimals,
-        array_handling: row.array_handling,
-        aliases: row.aliases,
-        examples: row.examples.length ? row.examples : toArray(samples.byField?.[row.key]).slice(0, 8)
-      }))
-      .sort((a, b) => (asInt(a.order, 0) - asInt(b.order, 0)) || a.key.localeCompare(b.key))
-  };
-  const combinedDraft = {
-    version: 1,
-    category,
-    generated_at: compileTimestamp,
-    workbook_map_hash: mapHash,
-    selected_keys: stableSortStrings(keyRows.map((row) => normalizeFieldKey(row.key))),
-    fields: fieldsStudio,
-    ui_field_catalog: toArray(uiFieldCatalogDraft.fields)
-  };
+  const keyMigrationCycle = findKeyMigrationCycle(keyMigrations);
+  if (keyMigrationCycle) {
+    return {
+      category,
+      compiled: false,
+      field_studio_source_path: resolvedFieldStudioSourcePath,
+      field_studio_source_hash: fieldStudioSourceHash,
+      map_path: resolvedControlMapPath,
+      map_hash: mapHash,
+      errors: [
+        `key_migrations: cycle detected (${keyMigrationCycle.join(' -> ')})`
+      ],
+      warnings: mapWarnings
+    };
+  }
 
   const validation = buildCompileValidation({
     fields: fieldsRuntime,
@@ -5656,15 +6197,19 @@ export async function compileCategoryWorkbook({
   const keyRange = normalizeText(map?.key_list?.sheet)
     ? `${normalizeText(map?.key_list?.sheet)}!${keySourceRange}`
     : keySourceRange;
-  const workbookTabs = buildWorkbookTabsSummary({
-    workbook,
-    map
-  });
-  const enumBuckets = buildEnumBucketSummary({
-    map,
-    enumLists,
-    workbook: workbookForCompile
-  });
+  const sourceTabs = fieldStudioSourceAvailable
+    ? buildSourceTabsSummary({
+      sourceDoc: sourceIntrospection,
+      map
+    })
+    : sortDeep(isObject(baselineFieldRules?.source_tabs) ? baselineFieldRules.source_tabs : {});
+  const enumBuckets = fieldStudioSourceAvailable
+    ? buildEnumBucketSummary({
+      map,
+      enumLists,
+      sourceContext: sourceContextForCompile
+    })
+    : sortDeep(isObject(baselineFieldRules?.enum_buckets) ? baselineFieldRules.enum_buckets : {});
   const componentDbSources = buildComponentSourceSummary({
     map,
     componentDb,
@@ -5691,21 +6236,26 @@ export async function compileCategoryWorkbook({
         'Canonical runtime contract used by ingestion and extraction.'
       ],
     parse_templates: sortDeep(parseTemplates),
-    source_workbook: normalizeText(baselineFieldRules?.source_workbook || '') || path.basename(resolvedWorkbook),
+    source_context: normalizeText(baselineFieldRules?.source_context || '')
+      || (compileMode === 'field_studio' ? 'field_studio_map' : 'field_studio_source'),
     version: normalizeText(baselineFieldRules?.version || '') || `field_rules_${normalizeFieldKey(category) || category}_compiled_v1`,
-    workbook_tabs: sortDeep(isObject(baselineFieldRules?.workbook_tabs) ? baselineFieldRules.workbook_tabs : workbookTabs)
+    source_tabs: sortDeep(
+      isObject(baselineFieldRules?.source_tabs)
+        ? baselineFieldRules.source_tabs
+        : sourceTabs
+    )
   };
 
   const fieldRulesFull = sortDeep({
     version: 1,
     category,
     generated_at: compileTimestamp,
-    source_workbook: path.basename(resolvedWorkbook),
-    workbook: {
-      path: resolvedWorkbook,
-      hash: workbook.workbook_hash
+    source_context: compileMode === 'field_studio' ? 'field_studio_map' : 'field_studio_source',
+    field_studio_source: {
+      path: fieldStudioSourceAvailable ? resolvedFieldStudioSourcePath : '',
+      hash: fieldStudioSourceHash
     },
-    workbook_map_hash: mapHash,
+    field_studio_map_hash: mapHash,
     key_source: {
       sheet: normalizeText(map?.key_list?.sheet || ''),
       range: keySourceRange
@@ -5721,7 +6271,7 @@ export async function compileCategoryWorkbook({
       exclude_fields: ['id', 'brand', 'model', 'base_model', 'category', 'sku'],
       preserve_existing_fields: false
     },
-    workbook_tabs: workbookTabs,
+    source_tabs: sourceTabs,
     enum_buckets: enumBuckets,
     component_db_sources: componentDbSources,
     parse_templates: parseTemplates,
@@ -5761,7 +6311,7 @@ export async function compileCategoryWorkbook({
   }
 
   const previousHash = previousCompileReport?.artifacts?.field_rules?.hash || null;
-  const currentHash = hashBuffer(Buffer.from(JSON.stringify(fieldRulesCanonical, null, 2), 'utf8'));
+  const currentHash = hashBuffer(Buffer.from(`${JSON.stringify(fieldRulesCanonical, null, 2)}\n`, 'utf8'));
   const changed = Boolean(previousHash && previousHash !== currentHash);
   const fieldDiff = diffFieldRuleSets(previousGeneratedFieldRules, fieldRulesCanonical);
   const componentSourceCount = toArray(map.component_sources).length > 0
@@ -5773,11 +6323,12 @@ export async function compileCategoryWorkbook({
     category,
     generated_at: compileTimestamp,
     compiled_at: compileTimestamp,
+    compile_mode: compileMode,
     compiled: validation.errors.length === 0,
-    workbook_path: resolvedWorkbook,
-    workbook_hash: workbook.workbook_hash,
-    workbook_map_path: controlMap.file_path || null,
-    workbook_map_hash: mapHash,
+    field_studio_source_path: fieldStudioSourceAvailable ? resolvedFieldStudioSourcePath : '',
+    field_studio_source_hash: fieldStudioSourceHash,
+    field_studio_map_path: resolvedControlMapPath,
+    field_studio_map_hash: mapHash,
     counts: {
       fields: Object.keys(fieldsRuntime).length,
       identity: identityKeys.length,
@@ -5806,21 +6357,9 @@ export async function compileCategoryWorkbook({
       fields: fieldDiff
     },
     artifacts: {
-      field_rules_draft: {
-        path: path.join(controlPlaneRoot, 'field_rules_draft.json'),
-        hash: hashJson(fieldRulesDraft)
-      },
-      draft: {
-        path: path.join(controlPlaneRoot, 'draft.json'),
-        hash: hashJson(combinedDraft)
-      },
       field_rules_full: {
         path: path.join(controlPlaneRoot, 'field_rules.full.json'),
         hash: hashJson(fieldRulesFull)
-      },
-      ui_field_catalog_draft: {
-        path: path.join(controlPlaneRoot, 'ui_field_catalog_draft.json'),
-        hash: hashJson(uiFieldCatalogDraft)
       },
       field_rules: {
         path: path.join(generatedRoot, 'field_rules.json'),
@@ -5849,29 +6388,15 @@ export async function compileCategoryWorkbook({
   };
 
   await fs.mkdir(controlPlaneRoot, { recursive: true });
-  const {
-    fieldStudioPath: controlPlaneFieldStudioMapPath,
-    legacyWorkbookPath: controlPlaneLegacyWorkbookMapPath,
-  } = resolveControlPlaneMapPaths(controlPlaneRoot);
-  const controlMapPath = controlMap.file_path || controlPlaneFieldStudioMapPath;
-  await writeJsonStable(controlMapPath, map);
-  if (controlMapPath !== controlPlaneLegacyWorkbookMapPath) {
-    await writeJsonStable(controlPlaneLegacyWorkbookMapPath, map);
-  }
-  if (controlMapPath !== controlPlaneFieldStudioMapPath) {
+  await writeJsonStable(resolvedControlMapPath, map);
+  if (resolvedControlMapPath !== controlPlaneFieldStudioMapPath) {
     await writeJsonStable(controlPlaneFieldStudioMapPath, map);
   }
-  await writeJsonStable(path.join(controlPlaneRoot, 'draft.json'), combinedDraft);
-  await writeJsonStable(path.join(controlPlaneRoot, 'field_rules_draft.json'), fieldRulesDraft);
   await writeJsonStable(path.join(controlPlaneRoot, 'field_rules.full.json'), fieldRulesFull);
-  await writeJsonStable(path.join(controlPlaneRoot, 'ui_field_catalog_draft.json'), uiFieldCatalogDraft);
   const controlPlaneSnapshot = await writeControlPlaneSnapshot({
     controlPlaneRoot,
-    workbookMap: map,
-    draft: combinedDraft,
-    fieldRulesDraft,
+    fieldStudioMap: map,
     fieldRulesFull,
-    uiFieldCatalogDraft,
     note: 'category-compile'
   });
   compileReport.artifacts.control_plane_version = {
@@ -5883,9 +6408,9 @@ export async function compileCategoryWorkbook({
     return {
       category,
       compiled: false,
-      workbook_path: resolvedWorkbook,
-      workbook_hash: workbook.workbook_hash,
-      map_path: controlMap.file_path,
+      field_studio_source_path: resolvedFieldStudioSourcePath,
+      field_studio_source_hash: fieldStudioSourceHash,
+      map_path: resolvedControlMapPath,
       map_hash: mapHash,
       selected_key_count: keyRows.length,
       errors: compileReport.errors,
@@ -5907,9 +6432,9 @@ export async function compileCategoryWorkbook({
     return {
       category,
       compiled: false,
-      workbook_path: resolvedWorkbook,
-      workbook_hash: workbook.workbook_hash,
-      map_path: controlMap.file_path,
+      field_studio_source_path: resolvedFieldStudioSourcePath,
+      field_studio_source_hash: fieldStudioSourceHash,
+      map_path: resolvedControlMapPath,
       map_hash: mapHash,
       selected_key_count: keyRows.length,
       errors: compileReport.errors,
@@ -6021,16 +6546,12 @@ export async function compileCategoryWorkbook({
 
   await writeJsonStable(path.join(generatedRoot, '_compile_report.json'), compileReport);
 
-  if (Object.keys(pendingRenames).length > 0) {
-    await fs.rm(path.join(controlPlaneRoot, 'pending_renames.json'), { force: true });
-  }
-
   return {
     category,
     compiled: true,
-    workbook_path: resolvedWorkbook,
-    workbook_hash: workbook.workbook_hash,
-    map_path: controlMap.file_path,
+    field_studio_source_path: fieldStudioSourceAvailable ? resolvedFieldStudioSourcePath : '',
+    field_studio_source_hash: fieldStudioSourceHash,
+    map_path: resolvedControlMapPath,
     map_hash: mapHash,
     generated_root: generatedRoot,
     field_count: Object.keys(fieldsRuntime).length,

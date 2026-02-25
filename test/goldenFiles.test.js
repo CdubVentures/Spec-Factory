@@ -3,55 +3,62 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { compileRules } from '../src/field-rules/compiler.js';
 import {
   buildAccuracyReport,
   createGoldenFixture,
-  createGoldenFromExcel,
+  createGoldenFromCatalog,
   renderAccuracyReportMarkdown,
   validateGoldenFixtures
 } from '../src/testing/goldenFiles.js';
 
-function mouseWorkbookPath() {
-  return path.resolve('helper_files', 'mouse', 'mouseData.xlsm');
+async function writeJson(filePath, payload) {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
 }
 
-function buildMouseWorkbookMap(workbookPath) {
-  return {
+async function seedCatalogFixtures(helperRoot) {
+  const categoryRoot = path.join(helperRoot, 'mouse');
+  await writeJson(path.join(categoryRoot, '_generated', 'field_rules.json'), {
     version: 1,
-    workbook_path: workbookPath,
-    sheet_roles: [
-      { sheet: 'dataEntry', role: 'product_table' },
-      { sheet: 'dataEntry', role: 'field_key_list' }
-    ],
-    key_list: {
-      sheet: 'dataEntry',
-      source: 'column_range',
-      column: 'B',
-      row_start: 9,
-      row_end: 83
+    fields: {
+      connection: { type: 'string', required: 'required' },
+      weight: { type: 'number', required: 'required' },
+      dpi: { type: 'number', required: 'recommended' }
     },
-    product_table: {
-      sheet: 'dataEntry',
-      layout: 'matrix',
-      brand_row: 3,
-      model_row: 4,
-      variant_row: 5,
-      value_col_start: 'C',
-      value_col_end: '',
-      sample_columns: 18
-    },
-    expectations: {
-      required_fields: ['connection', 'weight', 'dpi'],
-      critical_fields: ['polling_rate'],
-      expected_easy_fields: ['side_buttons'],
-      expected_sometimes_fields: ['sensor'],
-      deep_fields: ['release_date']
-    },
-    enum_lists: [],
-    component_sheets: [],
-    field_overrides: {}
-  };
+    schema: {}
+  });
+  await writeJson(path.join(categoryRoot, '_control_plane', 'product_catalog.json'), {
+    _version: 1,
+    products: {
+      'mouse-acme-m100': { brand: 'Acme', model: 'M100', variant: '' },
+      'mouse-acme-m200': { brand: 'Acme', model: 'M200', variant: '' },
+      'mouse-acme-m300': { brand: 'Acme', model: 'M300', variant: '' }
+    }
+  });
+  await writeJson(path.join(categoryRoot, '_overrides', 'mouse-acme-m100.overrides.json'), {
+    product_id: 'mouse-acme-m100',
+    overrides: {
+      connection: { value: 'wireless' },
+      weight: { value: '54' },
+      dpi: { value: '26000' }
+    }
+  });
+  await writeJson(path.join(categoryRoot, '_overrides', 'mouse-acme-m200.overrides.json'), {
+    product_id: 'mouse-acme-m200',
+    overrides: {
+      connection: { value: 'wired' },
+      weight: { value: '59' },
+      dpi: { value: '19000' }
+    }
+  });
+  await writeJson(path.join(categoryRoot, '_overrides', 'mouse-acme-m300.overrides.json'), {
+    product_id: 'mouse-acme-m300',
+    overrides: {
+      connection: { value: 'wireless' },
+      weight: { value: '62' },
+      dpi: { value: '12000' }
+    }
+  });
 }
 
 function makeStorage({ category, productId, fields }) {
@@ -107,26 +114,13 @@ test('createGoldenFixture writes expected fixture and manifest rows', async () =
   }
 });
 
-test('createGoldenFromExcel creates a bounded batch and validateGoldenFixtures passes', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase2-golden-excel-'));
+test('createGoldenFromCatalog creates a bounded batch and validateGoldenFixtures passes', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase2-golden-catalog-'));
   const helperRoot = path.join(root, 'helper_files');
-  const categoriesRoot = path.join(root, 'categories');
   const goldenRoot = path.join(root, 'fixtures', 'golden');
   try {
-    const workbookPath = mouseWorkbookPath();
-    const workbookMap = buildMouseWorkbookMap(workbookPath);
-    const compiled = await compileRules({
-      category: 'mouse',
-      workbookPath,
-      workbookMap,
-      config: {
-        helperFilesRoot: helperRoot,
-        categoriesRoot
-      }
-    });
-    assert.equal(compiled.compiled, true);
-
-    const created = await createGoldenFromExcel({
+    await seedCatalogFixtures(helperRoot);
+    const created = await createGoldenFromCatalog({
       category: 'mouse',
       count: 3,
       config: {

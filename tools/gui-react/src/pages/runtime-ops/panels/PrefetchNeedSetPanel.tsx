@@ -4,7 +4,10 @@ import { usePersistedNullableTab } from '../../../stores/tabStore';
 import type { PrefetchNeedSetData, PrefetchNeedSetNeed } from '../types';
 import { identityStatusBadgeClass, identityStatusTooltip, needsetReasonBadgeClass, pctString, tierLabel } from '../helpers';
 import { ScoreBar } from '../components/ScoreBar';
+import { StatCard } from '../components/StatCard';
+import { ProgressRing } from '../components/ProgressRing';
 import { DrawerShell, DrawerSection } from '../../../components/common/DrawerShell';
+import { Tip } from '../../../components/common/Tip';
 
 interface PrefetchNeedSetPanelProps {
   data: PrefetchNeedSetData;
@@ -48,56 +51,7 @@ function requiredLevelBadgeClass(level: string): string {
   }
 }
 
-const RING_SIZE = 80;
-const RING_STROKE = 8;
-const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
-function ProgressRing({ satisfied, total }: { satisfied: number; total: number }) {
-  const pct = total > 0 ? satisfied / total : 0;
-  const offset = RING_CIRCUMFERENCE * (1 - pct);
-
-  return (
-    <div className="relative flex items-center justify-center" style={{ width: RING_SIZE, height: RING_SIZE }}>
-      <svg width={RING_SIZE} height={RING_SIZE} className="-rotate-90">
-        <circle
-          cx={RING_SIZE / 2}
-          cy={RING_SIZE / 2}
-          r={RING_RADIUS}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={RING_STROKE}
-          className="text-gray-200 dark:text-gray-700"
-        />
-        <circle
-          cx={RING_SIZE / 2}
-          cy={RING_SIZE / 2}
-          r={RING_RADIUS}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={RING_STROKE}
-          strokeDasharray={RING_CIRCUMFERENCE}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className="text-emerald-500 transition-all duration-500"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{satisfied}</span>
-        <span className="text-[9px] text-gray-400 dark:text-gray-500 -mt-0.5">/ {total}</span>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 min-w-[7rem]">
-      <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</div>
-      <div className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-0.5">{value}</div>
-    </div>
-  );
-}
 
 function NeedDetailDrawer({ need, onClose }: { need: PrefetchNeedSetNeed; onClose: () => void }) {
   const score = typeof need.need_score === 'number' ? need.need_score : 0;
@@ -112,6 +66,9 @@ function NeedDetailDrawer({ need, onClose }: { need: PrefetchNeedSetNeed; onClos
     <DrawerShell
       title={fieldKey(need)}
       subtitle={`Required: ${requiredLevel(need)} | Status: ${need.status ?? '-'}`}
+      maxHeight="none"
+      className="max-h-none"
+      scrollContent={false}
       onClose={onClose}
     >
       <DrawerSection title="Score Breakdown">
@@ -278,10 +235,13 @@ export function PrefetchNeedSetPanel({ data, persistScope }: PrefetchNeedSetPane
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden flex-1 min-w-0">
+    <div className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">NeedSet</h3>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+          NeedSet
+          <Tip text="The NeedSet ranks every spec field by how urgently it needs more evidence. Fields with missing values, low confidence, or tier deficits score highest." />
+        </h3>
         <Tooltip.Root delayDuration={200}>
           <Tooltip.Trigger asChild>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium cursor-help ${identityStatusBadgeClass(identityStatus)}`}>
@@ -304,7 +264,7 @@ export function PrefetchNeedSetPanel({ data, persistScope }: PrefetchNeedSetPane
       {/* B) Hero Card — Progress Ring + Top 5 */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div className="flex items-start gap-5">
-          <ProgressRing satisfied={satisfied} total={data.total_fields} />
+          <ProgressRing numerator={satisfied} denominator={data.total_fields} variant="fraction" size={80} strokeWidth={8} />
           <div className="flex-1 min-w-0">
             <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
               Field Coverage — {satisfied} satisfied, {data.needset_size} remaining
@@ -380,7 +340,7 @@ export function PrefetchNeedSetPanel({ data, persistScope }: PrefetchNeedSetPane
       {/* C) Needs Table */}
       {sortedNeeds.length > 0 && (
         <div className="border border-gray-200 dark:border-gray-700 rounded overflow-hidden min-w-0">
-          <div className="overflow-x-auto">
+          <div className={`overflow-x-auto overflow-y-auto ${selectedNeed ? 'max-h-[50vh]' : 'max-h-none'}`}>
             <table className="w-full text-xs table-fixed">
               <colgroup>
                 <col className="w-[22%]" />
@@ -498,7 +458,7 @@ export function PrefetchNeedSetPanel({ data, persistScope }: PrefetchNeedSetPane
         <summary className="cursor-pointer text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           Debug: Raw NeedSet JSON
         </summary>
-        <pre className="mt-2 text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-3 overflow-x-auto max-h-60 whitespace-pre-wrap break-all text-gray-600 dark:text-gray-400">
+        <pre className="mt-2 text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-3 overflow-x-auto overflow-y-auto max-h-60 whitespace-pre-wrap break-all text-gray-600 dark:text-gray-400">
           {JSON.stringify(data, null, 2)}
         </pre>
       </details>

@@ -82,7 +82,7 @@ export async function seedKnownValues(helperRoot, category) {
 }
 
 export async function seedWorkbookMap(helperRoot, category) {
-  await writeJson(path.join(helperRoot, category, '_control_plane', 'workbook_map.json'), {
+  await writeJson(path.join(helperRoot, category, '_control_plane', 'field_studio_map.json'), {
     manual_enum_values: {},
     manual_enum_timestamps: {},
   });

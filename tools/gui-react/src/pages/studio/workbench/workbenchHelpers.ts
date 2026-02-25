@@ -1,6 +1,8 @@
 // ── Workbench helpers: nested accessors + row builder ────────────────
 import { humanizeField } from '../../../utils/fieldNormalize';
 import type { WorkbenchRow } from './workbenchTypes';
+import { parseIntegerInput } from '../numericInputHelpers';
+import { STUDIO_NUMERIC_KNOB_BOUNDS } from '../studioNumericKnobBounds';
 
 // ── Nested accessor helpers (shared with KeyNavigatorTab) ────────────
 export function getN(obj: Record<string, unknown>, path: string): unknown {
@@ -17,7 +19,9 @@ export function strN(obj: Record<string, unknown>, path: string, fallback = ''):
 
 export function numN(obj: Record<string, unknown>, path: string, fallback = 0): number {
   const v = getN(obj, path);
-  return typeof v === 'number' ? v : (parseInt(String(v), 10) || fallback);
+  if (typeof v === 'number') return v;
+  const parsed = parseIntegerInput(v);
+  return parsed === null ? fallback : parsed;
 }
 
 export function boolN(obj: Record<string, unknown>, path: string, fallback = false): boolean {
@@ -147,7 +151,11 @@ export function buildWorkbenchRows(
       knownValuesCount: (kv[key] || []).length,
 
       evidenceRequired: boolN(r, 'evidence.required', boolN(r, 'evidence_required', true)),
-      minEvidenceRefs: numN(r, 'evidence.min_evidence_refs', numN(r, 'min_evidence_refs', 1)),
+      minEvidenceRefs: numN(
+        r,
+        'evidence.min_evidence_refs',
+        numN(r, 'min_evidence_refs', STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback),
+      ),
       tierPreference: arrN(r, 'evidence.tier_preference').join(', '),
       conflictPolicy: strN(r, 'evidence.conflict_policy', 'resolve_by_tier_else_unknown'),
 

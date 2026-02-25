@@ -2,20 +2,37 @@
   "category": "monitor",
   "component_db_sources": {},
   "enum_buckets": {},
+  "field_studio_map_hash": "58196c3a1b05e995b3d258cbf94fcf61256633162f0e3949ebed39a00f4ec9dd",
+  "field_studio_source": {
+    "hash": null,
+    "path": ""
+  },
   "fields": {
     "affiliate_links": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Affiliate Links",
         "affiliate_links"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "affiliate_links",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -38,26 +55,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "affiliate_links",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B26",
-          "row": 26,
-          "sample_values": [
-            "Affiliate Links",
-            "string",
-            "list",
-            "commerce",
-            "sometimes",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter commerce field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "affiliate_links",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -69,6 +79,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -115,21 +126,33 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "base_model": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Base Model",
         "base_model"
       ],
-      "canonical_key": null,
+      "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "base_model",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -152,26 +175,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "base_model",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B5",
-          "row": 5,
-          "sample_values": [
-            "Base Model",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "base_model",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -183,6 +199,7 @@
         "publish_gate": true,
         "required_level": "identity"
       },
+      "required_level": "identity",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -229,20 +246,32 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "brand": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "brand"
       ],
-      "canonical_key": null,
+      "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "brand",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -265,26 +294,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "brand",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B2",
-          "row": 2,
-          "sample_values": [
-            "Brand",
-            "string",
-            "scalar",
-            "required",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "brand",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -296,6 +318,7 @@
         "publish_gate": true,
         "required_level": "identity"
       },
+      "required_level": "identity",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -342,15 +365,23 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "cable_length": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Cable Length",
         "cable_length"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -358,6 +389,10 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "cable_length",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -380,26 +415,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "cable_length",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B19",
-          "row": 19,
-          "sample_values": [
-            "Cable Length",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter connectivity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "dimensions",
       "key": "cable_length",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -411,6 +439,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -457,21 +486,33 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "cable_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Cable Type",
         "cable_type"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "cable_type",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -494,26 +535,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "cable_type",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B18",
-          "row": 18,
-          "sample_values": [
-            "Cable Type",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter connectivity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "cable_type",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -525,6 +559,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -571,20 +606,32 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "category": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "category"
       ],
-      "canonical_key": null,
+      "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "category",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -607,26 +654,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "category",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B9",
-          "row": 9,
-          "sample_values": [
-            "Category",
-            "string",
-            "scalar",
-            "required",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "category",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -638,6 +678,7 @@
         "publish_gate": true,
         "required_level": "identity"
       },
+      "required_level": "identity",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -684,14 +725,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "color": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "color"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -704,6 +753,10 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "medium",
+      "display_name": "color",
+      "effort": 6,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -726,26 +779,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "color",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B15",
-          "row": 15,
-          "sample_values": [
-            "Color",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter physical field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "appearance",
       "key": "color",
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -763,6 +809,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -809,14 +856,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "list"
+      "unknown_reason_default": "not_found_after_search"
     },
     "connection": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "connection"
       ],
-      "canonical_key": null,
+      "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -829,6 +884,10 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "medium",
+      "display_name": "connection",
+      "effort": 6,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -851,26 +910,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "connection",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B16",
-          "row": 16,
-          "sample_values": [
-            "Connection",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter connectivity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "connectivity",
       "key": "connection",
+      "output_shape": "list",
       "parse": {
         "template": "mode_tagged_list"
       },
@@ -882,6 +934,7 @@
         "publish_gate": true,
         "required_level": "required"
       },
+      "required_level": "required",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -928,20 +981,32 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "list"
+      "unknown_reason_default": "not_found_after_search"
     },
     "cons": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "cons"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "cons",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -964,26 +1029,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "cons",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B22",
-          "row": 22,
-          "sample_values": [
-            "Cons",
-            "string",
-            "list",
-            "editorial",
-            "editorial_only",
-            "easy",
-            "3",
-            "1",
-            "editorial_not_generated",
-            "Starter editorial field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "cons",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -995,6 +1053,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -1041,21 +1100,33 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "feature_image": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Feature Image",
         "feature_image"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "feature_image",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -1078,26 +1149,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "feature_image",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B29",
-          "row": 29,
-          "sample_values": [
-            "Feature Image",
-            "string",
-            "scalar",
-            "optional",
-            "sometimes",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter media field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "feature_image",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -1109,6 +1173,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -1155,21 +1220,33 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "gallery_images": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Gallery Images",
         "gallery_images"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "gallery_images",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -1192,26 +1269,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "gallery_images",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B30",
-          "row": 30,
-          "sample_values": [
-            "Gallery Images",
-            "string",
-            "list",
-            "optional",
-            "sometimes",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter media field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "gallery_images",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -1223,6 +1293,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -1269,20 +1340,32 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "gtin": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "gtin"
       ],
-      "canonical_key": null,
+      "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "gtin",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -1305,26 +1388,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "gtin",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B8",
-          "row": 8,
-          "sample_values": [
-            "Gtin",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "gtin",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -1336,6 +1412,7 @@
         "publish_gate": true,
         "required_level": "identity"
       },
+      "required_level": "identity",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -1382,14 +1459,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "height": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "height"
       ],
-      "canonical_key": null,
+      "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1397,6 +1482,10 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "height",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -1419,26 +1508,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "height",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B13",
-          "row": 13,
-          "sample_values": [
-            "Height",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter physical field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "dimensions",
       "key": "height",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -1450,6 +1532,7 @@
         "publish_gate": true,
         "required_level": "required"
       },
+      "required_level": "required",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -1496,20 +1579,32 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "images": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "images"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "images",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -1532,26 +1627,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "images",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B27",
-          "row": 27,
-          "sample_values": [
-            "Images",
-            "string",
-            "list",
-            "commerce",
-            "sometimes",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter commerce field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "images",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -1563,6 +1651,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -1609,21 +1698,33 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "key_takeaway": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Key Takeaway",
         "key_takeaway"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "key_takeaway",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -1646,26 +1747,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "key_takeaway",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B24",
-          "row": 24,
-          "sample_values": [
-            "Key Takeaway",
-            "string",
-            "scalar",
-            "editorial",
-            "editorial_only",
-            "easy",
-            "3",
-            "1",
-            "editorial_not_generated",
-            "Starter editorial field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "key_takeaway",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -1677,6 +1771,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -1723,14 +1818,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "length": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "length"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1738,6 +1841,10 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "length",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -1760,26 +1867,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "length",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B11",
-          "row": 11,
-          "sample_values": [
-            "Length",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter physical field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "dimensions",
       "key": "length",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -1791,6 +1891,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -1837,20 +1938,32 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "material": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "material"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "material",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -1873,26 +1986,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "material",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B14",
-          "row": 14,
-          "sample_values": [
-            "Material",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter physical field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "material",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -1904,6 +2010,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -1950,20 +2057,32 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "model": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "model"
       ],
-      "canonical_key": null,
+      "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "model",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -1986,26 +2105,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "model",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B3",
-          "row": 3,
-          "sample_values": [
-            "Model",
-            "string",
-            "scalar",
-            "required",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "model",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -2017,6 +2129,7 @@
         "publish_gate": true,
         "required_level": "identity"
       },
+      "required_level": "identity",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -2063,20 +2176,32 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "mpn": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "mpn"
       ],
-      "canonical_key": null,
+      "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "mpn",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -2099,26 +2224,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "mpn",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B7",
-          "row": 7,
-          "sample_values": [
-            "Mpn",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "mpn",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -2130,6 +2248,7 @@
         "publish_gate": true,
         "required_level": "identity"
       },
+      "required_level": "identity",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -2176,21 +2295,33 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "overall_score": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Overall Score",
         "overall_score"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "overall_score",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -2213,26 +2344,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "overall_score",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B20",
-          "row": 20,
-          "sample_values": [
-            "Overall Score",
-            "number",
-            "scalar",
-            "editorial",
-            "editorial_only",
-            "easy",
-            "4",
-            "1",
-            "editorial_not_generated",
-            "Starter editorial field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "overall_score",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -2244,6 +2368,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -2290,15 +2415,23 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "price_range": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Price Range",
         "price_range"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2306,6 +2439,10 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "price_range",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -2328,26 +2465,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "price_range",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B25",
-          "row": 25,
-          "sample_values": [
-            "Price Range",
-            "string",
-            "scalar",
-            "commerce",
-            "sometimes",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter commerce field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "price_range",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -2359,6 +2489,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -2405,20 +2536,32 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "pros": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "pros"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "pros",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -2441,26 +2584,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "pros",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B21",
-          "row": 21,
-          "sample_values": [
-            "Pros",
-            "string",
-            "list",
-            "editorial",
-            "editorial_only",
-            "easy",
-            "3",
-            "1",
-            "editorial_not_generated",
-            "Starter editorial field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "pros",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -2472,6 +2608,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -2518,20 +2655,32 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "sku": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "sku"
       ],
-      "canonical_key": null,
+      "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "sku",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -2554,26 +2703,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "sku",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B6",
-          "row": 6,
-          "sample_values": [
-            "Sku",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "sku",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -2585,6 +2727,7 @@
         "publish_gate": true,
         "required_level": "identity"
       },
+      "required_level": "identity",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -2631,20 +2774,32 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "variant": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "variant"
       ],
-      "canonical_key": null,
+      "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "hard",
+      "display_name": "variant",
+      "effort": 9,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -2667,26 +2822,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "variant",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B4",
-          "row": 4,
-          "sample_values": [
-            "Variant",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "variant",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -2698,6 +2846,7 @@
         "publish_gate": true,
         "required_level": "identity"
       },
+      "required_level": "identity",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -2744,20 +2893,32 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "verdict": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "verdict"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "verdict",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -2780,26 +2941,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "verdict",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B23",
-          "row": 23,
-          "sample_values": [
-            "Verdict",
-            "string",
-            "scalar",
-            "editorial",
-            "editorial_only",
-            "easy",
-            "3",
-            "1",
-            "editorial_not_generated",
-            "Starter editorial field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "verdict",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -2811,6 +2965,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -2857,14 +3012,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "weight": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "weight"
       ],
-      "canonical_key": null,
+      "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2872,6 +3035,10 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "weight",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -2894,26 +3061,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "weight",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B10",
-          "row": 10,
-          "sample_values": [
-            "Weight",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter physical field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "dimensions",
       "key": "weight",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -2925,6 +3085,7 @@
         "publish_gate": true,
         "required_level": "required"
       },
+      "required_level": "required",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -2971,14 +3132,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "width": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "width"
       ],
-      "canonical_key": null,
+      "availability": "expected",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2986,6 +3155,10 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "width",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -3008,26 +3181,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "width",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B12",
-          "row": 12,
-          "sample_values": [
-            "Width",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter physical field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "dimensions",
       "key": "width",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -3039,6 +3205,7 @@
         "publish_gate": true,
         "required_level": "required"
       },
+      "required_level": "required",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -3085,21 +3252,33 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "wireless_technology": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Wireless Technology",
         "wireless_technology"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "wireless_technology",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -3122,26 +3301,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "wireless_technology",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B17",
-          "row": 17,
-          "sample_values": [
-            "Wireless Technology",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter connectivity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "connectivity",
       "key": "wireless_technology",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -3153,6 +3325,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -3199,21 +3372,33 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "youtube_url": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Youtube Url",
         "youtube_url"
       ],
-      "canonical_key": null,
+      "availability": "sometimes",
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "youtube_url",
+      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -3236,26 +3421,19 @@
           "tier3"
         ]
       },
-      "excel_hints": {
+      "evidence_required": true,
+      "field_key": "youtube_url",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B28",
-          "row": 28,
-          "sample_values": [
-            "Youtube Url",
-            "url",
-            "scalar",
-            "optional",
-            "sometimes",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter media field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
+      "group": "general",
       "key": "youtube_url",
+      "output_shape": "scalar",
       "parse": {
         "template": "text_field"
       },
@@ -3267,6 +3445,7 @@
         "publish_gate": false,
         "required_level": "expected"
       },
+      "required_level": "expected",
       "search_hints": {
         "domain_hints": [
           "manufacturer",
@@ -3313,10 +3492,10 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-02-13T06:42:18.218Z",
+  "generated_at": "2026-02-25T08:51:44.810Z",
   "global": {
     "availability_levels": [
       "expected",
@@ -3610,14 +3789,8 @@
       "width"
     ]
   },
-  "source_workbook": "field_catalog.xlsx",
-  "version": 1,
-  "workbook": {
-    "hash": "fe3054c17b139286dd8fc345db3445f7e8f276ecb6dc859ceb3fa9060156efd9",
-    "path": "C:\\Users\\Chris\\Desktop\\spec-harvester - og\\helper_files\\monitor\\_source\\field_catalog.xlsx"
-  },
-  "workbook_map_hash": "c4ac4f6267c02b9c9ff1edd69e6b38aecb99ac8d37ec152d93ae4acc4835397f",
-  "workbook_tabs": {
+  "source_context": "field_studio_map",
+  "source_tabs": {
     "data_values": {
       "notes": "Observed values across products; can be used for suggestion/inference but not strict enums.",
       "role": "observed value samples (optional)"
@@ -3626,5 +3799,6 @@
       "notes": "Column B holds field keys; columns C+ hold product values.",
       "role": "field_keys + optional product-table sampling"
     }
-  }
+  },
+  "version": 1
 }

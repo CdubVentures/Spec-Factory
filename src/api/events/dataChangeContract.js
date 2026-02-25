@@ -1,7 +1,6 @@
 import { recordDataChangeBroadcast } from '../../observability/dataPropagationCounters.js';
 
 export const DATA_CHANGE_EVENT_DOMAIN_MAP = Object.freeze({
-  'studio-drafts-saved': ['studio', 'review-layout', 'labels', 'product', 'review'],
   'field-studio-map-saved': ['studio', 'mapping', 'review-layout'],
   'process-completed': ['studio', 'review-layout', 'component', 'enum'],
   'catalog-seed': ['catalog', 'queue', 'identity'],
@@ -105,7 +104,7 @@ function normalizedVersion(version) {
   const syncVersionRaw = source.specdb_sync_version;
   const syncVersion = Number(syncVersionRaw);
   return {
-    draft_hash: normalizedString(source.draft_hash) || null,
+    map_hash: normalizedString(source.map_hash) || null,
     compiled_hash: normalizedString(source.compiled_hash) || null,
     specdb_sync_version: Number.isFinite(syncVersion) ? Math.trunc(syncVersion) : null,
     updated_at: normalizedString(source.updated_at) || null,
@@ -212,15 +211,15 @@ function isStringArray(value) {
 
 function isVersionObject(value) {
   if (!value || typeof value !== 'object') return false;
-  if (!Object.hasOwn(value, 'draft_hash')) return false;
+  if (!Object.hasOwn(value, 'map_hash')) return false;
   if (!Object.hasOwn(value, 'compiled_hash')) return false;
   if (!Object.hasOwn(value, 'specdb_sync_version')) return false;
   if (!Object.hasOwn(value, 'updated_at')) return false;
-  const draftHashValid = value.draft_hash === null || typeof value.draft_hash === 'string';
+  const mapHashValid = value.map_hash === null || typeof value.map_hash === 'string';
   const compiledHashValid = value.compiled_hash === null || typeof value.compiled_hash === 'string';
   const updatedAtValid = value.updated_at === null || typeof value.updated_at === 'string';
   const syncVersionValid = value.specdb_sync_version === null || Number.isFinite(Number(value.specdb_sync_version));
-  return draftHashValid && compiledHashValid && updatedAtValid && syncVersionValid;
+  return mapHashValid && compiledHashValid && updatedAtValid && syncVersionValid;
 }
 
 function isEntitiesObject(value) {

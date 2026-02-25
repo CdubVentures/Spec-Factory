@@ -1,4 +1,5 @@
 import { getDataPropagationCountersSnapshot } from '../../observability/dataPropagationCounters.js';
+import { getSettingsPersistenceCountersSnapshot } from '../../observability/settingsPersistenceCounters.js';
 
 function normalizedToken(value) {
   return String(value || '').trim();
@@ -33,18 +34,18 @@ function toSessionState(sessionRules) {
   const source = sessionRules && typeof sessionRules === 'object' ? sessionRules : {};
   return {
     compiledAt: normalizedTimestamp(source.compiledAt),
-    draftSavedAt: normalizedTimestamp(source.draftSavedAt),
+    mapSavedAt: normalizedTimestamp(source.mapSavedAt),
     compileStale: Boolean(source.compileStale),
   };
 }
 
 function toVersionPayload({ sessionState, syncState }) {
-  const draftHash = sessionState.draftSavedAt ? `draft:${sessionState.draftSavedAt}` : null;
+  const mapHash = sessionState.mapSavedAt ? `map:${sessionState.mapSavedAt}` : null;
   const compiledHash = sessionState.compiledAt ? `compiled:${sessionState.compiledAt}` : null;
   const syncVersion = toSyncVersion(syncState.specdb_sync_version);
-  const updatedAt = syncState.last_sync_at || sessionState.draftSavedAt || sessionState.compiledAt || null;
+  const updatedAt = syncState.last_sync_at || sessionState.mapSavedAt || sessionState.compiledAt || null;
   return {
-    draft_hash: draftHash,
+    map_hash: mapHash,
     compiled_hash: compiledHash,
     specdb_sync_version: syncVersion,
     updated_at: updatedAt,
@@ -58,7 +59,7 @@ export function buildAuthorityVersionToken(snapshotOrVersion) {
       : snapshotOrVersion)
     : {};
   return [
-    normalizedToken(source.draft_hash) || 'none',
+    normalizedToken(source.map_hash) || 'none',
     normalizedToken(source.compiled_hash) || 'none',
     String(toSyncVersion(source.specdb_sync_version)),
     normalizedToken(source.updated_at) || '',
@@ -80,7 +81,7 @@ function uniqueSortedTokens(values) {
 
 function resolveChangedDomains({ sessionState, syncState }) {
   const domains = ['studio', 'review-layout'];
-  if (sessionState.draftSavedAt) {
+  if (sessionState.mapSavedAt) {
     domains.push('labels');
   }
   if (sessionState.compileStale) {
@@ -98,6 +99,7 @@ function resolveChangedDomains({ sessionState, syncState }) {
 
 function buildObservabilityForCategory(category) {
   const snapshot = getDataPropagationCountersSnapshot();
+  const settingsSnapshot = getSettingsPersistenceCountersSnapshot();
   const normalizedCategory = normalizedToken(category).toLowerCase();
   const queueByCategory = snapshot?.queue_cleanup?.by_category || {};
   return {
@@ -123,6 +125,7 @@ function buildObservabilityForCategory(category) {
         last_failure_reason: '',
       },
     },
+    settings_persistence: settingsSnapshot,
   };
 }
 
@@ -159,7 +162,7 @@ export function buildAuthoritySnapshotPayload({
     compile_stale: resolvedSessionState.compileStale,
     source_timestamps: {
       compiled_at: resolvedSessionState.compiledAt,
-      draft_saved_at: resolvedSessionState.draftSavedAt,
+      map_saved_at: resolvedSessionState.mapSavedAt,
       specdb_sync_at: resolvedSyncState.last_sync_at,
     },
     specdb_sync: {

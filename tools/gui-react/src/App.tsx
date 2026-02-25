@@ -26,6 +26,7 @@ const ReviewPage = lazyNamedPage(() => import('./pages/review/ReviewPage'), 'Rev
 const ComponentReviewPage = lazyNamedPage(() => import('./pages/component-review/ComponentReviewPage'), 'ComponentReviewPage');
 const TestModePage = lazyNamedPage(() => import('./pages/test-mode/TestModePage'), 'TestModePage');
 const IndexingPage = lazyNamedPage(() => import('./pages/indexing/IndexingPage'), 'IndexingPage');
+const PipelineSettingsPage = lazyNamedPage(() => import('./pages/pipeline-settings/PipelineSettingsPage'), 'PipelineSettingsPage');
 const RuntimeOpsPage = lazyNamedPage(() => import('./pages/runtime-ops/RuntimeOpsPage'), 'RuntimeOpsPage');
 const StoragePage = lazyNamedPage(() => import('./pages/storage/StoragePage'), 'StoragePage');
 
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="product" element={wrap(ProductPage)} />
             <Route path="llm-settings" element={wrap(LlmSettingsPage)} />
             <Route path="indexing" element={wrap(IndexingPage)} />
+            <Route path="pipeline-settings" element={wrap(PipelineSettingsPage)} />
             <Route path="billing" element={wrap(BillingPage)} />
             <Route path="studio" element={wrap(StudioPage)} />
             <Route path="review" element={wrap(ReviewPage)} />

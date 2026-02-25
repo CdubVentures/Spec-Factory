@@ -1,9 +1,9 @@
-import { useMemo, useState, useEffect } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMemo, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client';
 import { usePersistedToggle } from '../../../stores/collapseStore';
 import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
-import { useRuntimeSettingsAuthority } from '../../../stores/runtimeSettingsAuthority';
+import { useRuntimeSettingsAuthority, readRuntimeSettingsSnapshot } from '../../../stores/runtimeSettingsAuthority';
 import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse, PrefetchLiveSettings } from '../types';
 import { getRefetchInterval } from '../helpers';
 import { WorkerSubTabs } from './WorkerSubTabs';
@@ -19,7 +19,6 @@ import { PrefetchSearchResultsPanel } from './PrefetchSearchResultsPanel';
 import { PrefetchUrlPredictorPanel } from './PrefetchUrlPredictorPanel';
 import { PrefetchSerpTriagePanel } from './PrefetchSerpTriagePanel';
 import { PrefetchDomainClassifierPanel } from './PrefetchDomainClassifierPanel';
-import { shouldAutoStopOnSearchResults } from './workersTabAutoStopHelpers.js';
 import { buildBusyPrefetchTabs } from './prefetchTabBusyHelpers.js';
 
 interface WorkersTabProps {
@@ -30,10 +29,6 @@ interface WorkersTabProps {
   category: string;
   isRunning: boolean;
   wsUrl?: string;
-}
-
-interface ProcessStatus {
-  running: boolean;
 }
 
 const PREFETCH_TAB_KEYS = [
@@ -48,10 +43,26 @@ const PREFETCH_TAB_KEYS = [
   'domain_classifier',
 ] as const satisfies ReadonlyArray<PrefetchTabKey>;
 
+function toOptionalPositiveInt(value: unknown): number | undefined {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
+  return parsed;
+}
+
+function toOptionalBoolean(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') return value;
+  return undefined;
+}
+
+function toOptionalString(value: unknown): string | undefined {
+  const token = String(value ?? '').trim();
+  return token ? token : undefined;
+}
+
 export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, category, isRunning, wsUrl }: WorkersTabProps) {
+  const queryClient = useQueryClient();
   const [poolFilter, setPoolFilter] = usePersistedTab<string>(`runtimeOps:workers:poolFilter:${category}`, 'all');
   const [drawerOpen, toggleDrawerOpen] = usePersistedToggle(`runtimeOps:workers:drawer:${category}`, true);
-  const [autoStopRunId, setAutoStopRunId] = useState<string | null>(null);
   const [prefetchTab, setPrefetchTab] = usePersistedNullableTab<PrefetchTabKey>(
     `runtimeOps:workers:prefetchTab:${category}`,
     null,
@@ -65,52 +76,48 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
     refetchInterval: getRefetchInterval(isRunning, prefetchTab === null, 3000, 15000),
   });
 
-  const stopMut = useMutation({
-    mutationFn: async () => {
-      const first = await api.post<ProcessStatus>('/process/stop', { force: false });
-      if (first?.running) {
-        return api.post<ProcessStatus>('/process/stop', { force: false });
-      }
-      return first;
-    },
-    onError: () => {
-      setAutoStopRunId(null);
-    },
-  });
-
-  useEffect(() => {
-    if (autoStopRunId && autoStopRunId !== runId) {
-      setAutoStopRunId(null);
-    }
-  }, [autoStopRunId, runId]);
-
-  const shouldAutoStop = shouldAutoStopOnSearchResults({
-    isRunning,
-    isPrefetchActive: prefetchTab !== null,
-    hasStopBeenRequested: stopMut.isPending || autoStopRunId === runId,
-    searchResults: prefetchData?.search_results,
-  });
-
-  useEffect(() => {
-    if (!shouldAutoStop) return;
-    setAutoStopRunId(runId);
-    stopMut.mutate();
-  }, [runId, shouldAutoStop, stopMut]);
-
   const { settings: rawSettings } = useRuntimeSettingsAuthority({
     payload: {},
     dirty: false,
     autoSaveEnabled: false,
   });
 
-  const liveSettings = useMemo((): PrefetchLiveSettings => ({
-    phase2LlmEnabled: Boolean(rawSettings?.phase2LlmEnabled),
-    phase3LlmTriageEnabled: Boolean(rawSettings?.phase3LlmTriageEnabled),
-    searchProvider: String(rawSettings?.searchProvider ?? ''),
-    discoveryEnabled: Boolean(rawSettings?.discoveryEnabled),
-    dynamicCrawleeEnabled: Boolean(rawSettings?.dynamicCrawleeEnabled),
-    scannedPdfOcrEnabled: Boolean(rawSettings?.scannedPdfOcrEnabled),
-  }), [rawSettings]);
+  const runtimeSettingsSnapshot = useMemo(() => {
+    if (rawSettings && typeof rawSettings === 'object') return rawSettings as Record<string, unknown>;
+    return readRuntimeSettingsSnapshot(queryClient);
+  }, [queryClient, rawSettings]);
+
+  const liveSettings = useMemo((): PrefetchLiveSettings | undefined => {
+    if (!runtimeSettingsSnapshot) return undefined;
+    return {
+      profile: toOptionalString(runtimeSettingsSnapshot.profile),
+      phase2LlmEnabled: toOptionalBoolean(runtimeSettingsSnapshot.phase2LlmEnabled),
+      phase3LlmTriageEnabled: toOptionalBoolean(runtimeSettingsSnapshot.phase3LlmTriageEnabled),
+      searchProvider: toOptionalString(runtimeSettingsSnapshot.searchProvider),
+      discoveryEnabled: toOptionalBoolean(runtimeSettingsSnapshot.discoveryEnabled),
+      dynamicCrawleeEnabled: toOptionalBoolean(runtimeSettingsSnapshot.dynamicCrawleeEnabled),
+      scannedPdfOcrEnabled: toOptionalBoolean(runtimeSettingsSnapshot.scannedPdfOcrEnabled),
+      maxPagesPerDomain: toOptionalPositiveInt(runtimeSettingsSnapshot.maxPagesPerDomain),
+      discoveryResultsPerQuery: toOptionalPositiveInt(runtimeSettingsSnapshot.discoveryResultsPerQuery),
+      discoveryMaxDiscovered: toOptionalPositiveInt(runtimeSettingsSnapshot.discoveryMaxDiscovered),
+      serpTriageMaxUrls: toOptionalPositiveInt(runtimeSettingsSnapshot.serpTriageMaxUrls),
+      uberMaxUrlsPerDomain: toOptionalPositiveInt(runtimeSettingsSnapshot.uberMaxUrlsPerDomain),
+    };
+  }, [runtimeSettingsSnapshot]);
+
+  const disabledPrefetchTabs = useMemo(() => {
+    const set = new Set<PrefetchTabKey>();
+    if (liveSettings?.phase2LlmEnabled === false) {
+      set.add('brand_resolver');
+      set.add('search_planner');
+      set.add('url_predictor');
+    }
+    if (liveSettings?.phase3LlmTriageEnabled === false) {
+      set.add('serp_triage');
+      set.add('domain_classifier');
+    }
+    return set;
+  }, [liveSettings?.phase2LlmEnabled, liveSettings?.phase3LlmTriageEnabled]);
 
   const pools = useMemo(() => {
     const set = new Set(workers.map((w) => w.pool));
@@ -162,7 +169,7 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <PrefetchTabRow activeTab={prefetchTab} onSelectTab={handleSelectPrefetchTab} busyTabs={busyPrefetchTabs} />
+      <PrefetchTabRow activeTab={prefetchTab} onSelectTab={handleSelectPrefetchTab} busyTabs={busyPrefetchTabs} disabledTabs={disabledPrefetchTabs} />
 
       <div className="px-4 py-2 flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <label className="text-xs text-gray-500 dark:text-gray-400">Pool:</label>
@@ -219,7 +226,7 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
   );
 }
 
-function renderPrefetchPanel(tab: PrefetchTabKey, data: PreFetchPhasesResponse | undefined, persistScope: string, liveSettings: PrefetchLiveSettings) {
+function renderPrefetchPanel(tab: PrefetchTabKey, data: PreFetchPhasesResponse | undefined, persistScope: string, liveSettings: PrefetchLiveSettings | undefined) {
   const emptyNeedset = { needset_size: 0, total_fields: 0, identity_lock_state: { status: 'unlocked', confidence: 0 }, needs: [], reason_counts: {}, required_level_counts: {}, snapshots: [] };
   const emptyProfile = { query_count: 0, provider: '', llm_query_planning: false, identity_aliases: [], variant_guard_terms: [], query_rows: [], query_guard: {} };
 
@@ -229,7 +236,7 @@ function renderPrefetchPanel(tab: PrefetchTabKey, data: PreFetchPhasesResponse |
     case 'search_profile':
       return <PrefetchSearchProfilePanel data={data?.search_profile ?? emptyProfile} searchPlans={data?.search_plans} persistScope={persistScope} liveSettings={liveSettings} />;
     case 'brand_resolver':
-      return <PrefetchBrandResolverPanel calls={data?.llm_calls?.brand_resolver ?? []} brandResolution={data?.brand_resolution} persistScope={persistScope} />;
+      return <PrefetchBrandResolverPanel calls={data?.llm_calls?.brand_resolver ?? []} brandResolution={data?.brand_resolution} persistScope={persistScope} liveSettings={liveSettings} />;
     case 'search_planner':
       return (
         <PrefetchSearchPlannerPanel
@@ -252,11 +259,11 @@ function renderPrefetchPanel(tab: PrefetchTabKey, data: PreFetchPhasesResponse |
     case 'search_results':
       return <PrefetchSearchResultsPanel results={data?.search_results ?? []} searchResultDetails={data?.search_result_details} searchPlans={data?.search_plans} persistScope={persistScope} liveSettings={liveSettings} />;
     case 'url_predictor':
-      return <PrefetchUrlPredictorPanel calls={data?.llm_calls?.url_predictor ?? []} urlPredictions={data?.url_predictions} />;
+      return <PrefetchUrlPredictorPanel calls={data?.llm_calls?.url_predictor ?? []} urlPredictions={data?.url_predictions} persistScope={persistScope} liveSettings={liveSettings} />;
     case 'serp_triage':
       return <PrefetchSerpTriagePanel calls={data?.llm_calls?.serp_triage ?? []} serpTriage={data?.serp_triage} persistScope={persistScope} liveSettings={liveSettings} />;
     case 'domain_classifier':
-      return <PrefetchDomainClassifierPanel calls={data?.llm_calls?.domain_classifier ?? []} domainHealth={data?.domain_health} />;
+      return <PrefetchDomainClassifierPanel calls={data?.llm_calls?.domain_classifier ?? []} domainHealth={data?.domain_health} persistScope={persistScope} liveSettings={liveSettings} />;
     default:
       return null;
   }

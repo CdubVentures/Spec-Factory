@@ -1,8 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import type { LlmRouteResponse, LlmRouteRow } from '../types/llmSettings';
 import { autoSaveFingerprint } from './autoSaveFingerprint';
+import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from './settingsManifest';
+import { createSettingsOptimisticMutationContract } from './settingsMutationContract';
+import { publishSettingsPropagation } from './settingsPropagationContract';
 
 interface LlmSettingsSavePayload {
   rows: LlmRouteRow[];
@@ -18,6 +21,7 @@ interface LlmSettingsSaveResult {
 interface LlmSettingsAuthorityOptions {
   category: string;
   enabled: boolean;
+  autoQueryEnabled?: boolean;
   rows: LlmRouteRow[];
   dirty: boolean;
   autoSaveEnabled: boolean;
@@ -38,9 +42,21 @@ interface LlmSettingsAuthorityResult {
   resetDefaults: () => void;
 }
 
+export function llmSettingsRoutesQueryKey(category: string) {
+  return ['llm-settings-routes', category] as const;
+}
+
+export function readLlmSettingsBootstrapRows(queryClient: QueryClient, category: string): LlmRouteRow[] {
+  const cached = queryClient.getQueryData<unknown>(llmSettingsRoutesQueryKey(category));
+  if (!cached || typeof cached !== 'object' || Array.isArray(cached)) return [];
+  const rows = (cached as { rows?: unknown }).rows;
+  return Array.isArray(rows) ? rows as LlmRouteRow[] : [];
+}
+
 export function useLlmSettingsAuthority({
   category,
   enabled,
+  autoQueryEnabled = true,
   rows,
   dirty,
   autoSaveEnabled,
@@ -51,43 +67,68 @@ export function useLlmSettingsAuthority({
   onError,
 }: LlmSettingsAuthorityOptions): LlmSettingsAuthorityResult {
   const queryClient = useQueryClient();
-  const queryKey = ['llm-settings-routes', category] as const;
+  const queryKey = llmSettingsRoutesQueryKey(category);
   const lastAutoSavedFingerprintRef = useRef('');
   const lastAutoSaveAttemptFingerprintRef = useRef('');
+  const pendingAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rowsFingerprint = autoSaveFingerprint(rows);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey,
     queryFn: () => api.get<LlmRouteResponse>(`/llm-settings/${category}/routes`),
-    enabled,
+    enabled: enabled && autoQueryEnabled,
   });
 
-  const saveMutation = useMutation({
-    mutationFn: (payload: LlmSettingsSavePayload) =>
-      api.put<LlmRouteResponse>(`/llm-settings/${category}/routes`, { rows: payload.rows }),
-    onSuccess: (response, payload) => {
-      const rows = Array.isArray(response?.rows) ? response.rows : [];
-      const next: LlmRouteResponse = {
+  const saveMutation = useMutation(
+    createSettingsOptimisticMutationContract<
+      LlmSettingsSavePayload,
+      LlmRouteResponse,
+      LlmRouteResponse,
+      { persisted: LlmSettingsSaveResult; response: LlmRouteResponse }
+    >({
+      queryClient,
+      queryKey,
+      mutationFn: (payload) =>
+        api.put<LlmRouteResponse>(`/llm-settings/${category}/routes`, { rows: payload.rows }),
+      toOptimisticData: (payload, previousData) => ({
+        category: previousData?.category || category,
+        scope: previousData?.scope ?? null,
+        rows: payload.rows,
+        ok: true,
+        rejected: {},
+      }),
+      toAppliedData: (response, _payload, previousData) => ({
         ...(response || {}),
-        rows,
-      };
-      const rejected = response?.rejected && typeof response.rejected === 'object'
-        ? response.rejected as Record<string, string>
-        : {};
-      queryClient.setQueryData(queryKey, next);
-      const persisted: LlmSettingsSaveResult = {
-        ok: response?.ok !== false && Object.keys(rejected).length === 0,
-        rows,
-        rejected,
-      };
-      const savedFingerprint = autoSaveFingerprint(payload.rows);
-      lastAutoSavedFingerprintRef.current = savedFingerprint;
-      lastAutoSaveAttemptFingerprintRef.current = savedFingerprint;
-      onPersisted?.(persisted, payload);
-      onSaveSuccess?.(response, payload);
-    },
-    onError,
-  });
+        category: (typeof response?.category === 'string' && response.category.trim())
+          ? response.category
+          : (previousData?.category || category),
+        scope: response?.scope ?? previousData?.scope ?? null,
+        rows: Array.isArray(response?.rows) ? response.rows : [],
+      }),
+      toPersistedResult: (response, _payload, _previousData, appliedData) => {
+        const rejected = response?.rejected && typeof response.rejected === 'object'
+          ? response.rejected as Record<string, string>
+          : {};
+        return {
+          persisted: {
+            ok: response?.ok !== false && Object.keys(rejected).length === 0,
+            rows: Array.isArray(appliedData.rows) ? appliedData.rows : [],
+            rejected,
+          },
+          response,
+        };
+      },
+      onPersisted: (result, payload) => {
+        const savedFingerprint = autoSaveFingerprint(payload.rows);
+        lastAutoSavedFingerprintRef.current = savedFingerprint;
+        lastAutoSaveAttemptFingerprintRef.current = savedFingerprint;
+        publishSettingsPropagation({ domain: 'llm', category });
+        onPersisted?.(result.persisted, payload);
+        onSaveSuccess?.(result.response, payload);
+      },
+      onError,
+    }),
+  );
 
   const resetMutation = useMutation({
     mutationFn: () => api.post<LlmRouteResponse>(`/llm-settings/${category}/routes/reset`),
@@ -106,10 +147,39 @@ export function useLlmSettingsAuthority({
     const nextRows = rows;
     lastAutoSaveAttemptFingerprintRef.current = rowsFingerprint;
     const timer = setTimeout(() => {
+      pendingAutoSaveTimerRef.current = null;
       saveMutate({ rows: nextRows, version: editVersion });
-    }, 700);
-    return () => clearTimeout(timer);
+    }, SETTINGS_AUTOSAVE_DEBOUNCE_MS.llmRoutes);
+    pendingAutoSaveTimerRef.current = timer;
+    return () => {
+      clearTimeout(timer);
+      if (pendingAutoSaveTimerRef.current === timer) {
+        pendingAutoSaveTimerRef.current = null;
+      }
+    };
   }, [enabled, autoSaveEnabled, dirty, rowsFingerprint, rows, editVersion, saveMutate, resetMutation.isPending, saveMutation.isPending]);
+
+  useEffect(() => () => {
+    if (pendingAutoSaveTimerRef.current) {
+      clearTimeout(pendingAutoSaveTimerRef.current);
+      pendingAutoSaveTimerRef.current = null;
+    }
+    if (!enabled || !autoSaveEnabled || !dirty || saveMutation.isPending || resetMutation.isPending) return;
+    if (!rowsFingerprint) return;
+    if (rowsFingerprint === lastAutoSavedFingerprintRef.current) return;
+    lastAutoSaveAttemptFingerprintRef.current = rowsFingerprint;
+    saveMutate({ rows, version: editVersion });
+  }, [
+    enabled,
+    autoSaveEnabled,
+    dirty,
+    rowsFingerprint,
+    rows,
+    editVersion,
+    saveMutate,
+    saveMutation.isPending,
+    resetMutation.isPending,
+  ]);
 
   async function reload() {
     const result = await refetch();

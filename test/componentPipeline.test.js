@@ -1,4 +1,4 @@
-// ── Component Pipeline Integration Tests ─────────────────────────────
+// â”€â”€ Component Pipeline Integration Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Validates all 8 audit fixes from the component pipeline review.
 // Each test targets a specific fix and verifies the behavior end-to-end.
 
@@ -9,9 +9,9 @@ import os from 'node:os';
 import path from 'node:path';
 
 import {
-  compileCategoryWorkbook,
-  saveWorkbookMap,
-  validateWorkbookMap
+  compileCategoryFieldStudio,
+  saveFieldStudioMap,
+  validateFieldStudioMap
 } from '../src/ingest/categoryCompile.js';
 import {
   appendEnumCurationSuggestions,
@@ -26,11 +26,11 @@ import {
 import { buildPromptFieldContracts } from '../src/llm/extractCandidatesLLM.js';
 import { suggestionFilePath } from '../src/review/suggestions.js';
 
-function mouseWorkbookPath() {
+function mouseFieldStudioSourcePath() {
   return path.resolve('helper_files', 'mouse', 'mouseData.xlsm');
 }
 
-// ── Helper: create a temp helper_files structure with component DB + overrides ──
+// â”€â”€ Helper: create a temp helper_files structure with component DB + overrides â”€â”€
 async function setupTempHelper(tempRoot, category = 'mouse') {
   const helperRoot = path.join(tempRoot, 'helper_files');
   const catRoot = path.join(helperRoot, category);
@@ -142,9 +142,9 @@ async function createSeededSpecDb({ tempRoot, helperRoot, category = 'mouse' }) 
 }
 
 
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Fix #1: Component overrides consumed by compiler and runtime
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 test('Fix #1: component overrides are merged into review payloads', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'comp-fix1-'));
@@ -163,7 +163,7 @@ test('Fix #1: component overrides are merged into review payloads', async () => 
       JSON.stringify(override, null, 2)
     );
 
-    // Build review payloads — they should show the override
+    // Build review payloads â€” they should show the override
     const payload = await buildComponentReviewPayloads({
       config: { helperFilesRoot: helperRoot },
       category: 'mouse',
@@ -186,22 +186,22 @@ test('Fix #1: component overrides are merged into review payloads', async () => 
 });
 
 
-// ══════════════════════════════════════════════════════════════════════
-// Fix #2: Enum overrides persist to workbook_map manual_enum_values
-// (This is an API endpoint test — we test the mechanism by verifying
-//  that manual_enum_values in workbook_map feeds into compilation)
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Fix #2: Enum overrides persist to field_studio_map manual_enum_values
+// (This is an API endpoint test â€” we test the mechanism by verifying
+//  that manual_enum_values in field_studio_map feeds into compilation)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-test('Fix #2: manual_enum_values in workbook_map are included in compiled known_values', async () => {
+test('Fix #2: manual_enum_values in field_studio_map are included in compiled known_values', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'comp-fix2-'));
   const helperRoot = path.join(tempRoot, 'helper_files');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
 
   try {
-    const workbookPath = mouseWorkbookPath();
-    const workbookMap = {
+    const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+    const fieldStudioMap = {
       version: 1,
-      workbook_path: workbookPath,
+      field_studio_source_path: fieldStudioSourcePath,
       sheet_roles: [
         { sheet: 'dataEntry', role: 'product_table' },
         { sheet: 'dataEntry', role: 'field_key_list' }
@@ -232,15 +232,15 @@ test('Fix #2: manual_enum_values in workbook_map are included in compiled known_
       }
     };
 
-    await saveWorkbookMap({
+    await saveFieldStudioMap({
       category: 'mouse',
-      workbookMap,
+      fieldStudioMap,
       config: { helperFilesRoot: helperRoot }
     });
 
-    const result = await compileCategoryWorkbook({
+    const result = await compileCategoryFieldStudio({
       category: 'mouse',
-      workbookPath,
+      fieldStudioSourcePath: fieldStudioSourcePath,
       config: { helperFilesRoot: helperRoot }
     });
     assert.equal(result.compiled, true, 'Compilation should succeed');
@@ -262,9 +262,9 @@ test('Fix #2: manual_enum_values in workbook_map are included in compiled known_
 });
 
 
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Fix #3: LLM receives component entity names
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 test('Fix #3: buildPromptFieldContracts includes component entity names', () => {
   const categoryConfig = {
@@ -308,9 +308,9 @@ test('Fix #3: buildPromptFieldContracts includes component entity names', () => 
 });
 
 
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Fix #4: LLM receives known_values in enum options
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 test('Fix #4: buildPromptFieldContracts merges known_values into enumOptions', () => {
   const categoryConfig = {
@@ -324,7 +324,7 @@ test('Fix #4: buildPromptFieldContracts merges known_values into enumOptions', (
         form_factor: {
           description: 'Mouse shape',
           type: 'string'
-          // no inline enum — values should come from known_values only
+          // no inline enum â€” values should come from known_values only
         }
       }
     }
@@ -350,9 +350,9 @@ test('Fix #4: buildPromptFieldContracts merges known_values into enumOptions', (
 });
 
 
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Fix #5: Component suggestions created for unknowns
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 test('Fix #5: appendComponentCurationSuggestions writes to components.json', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'comp-fix5-'));
@@ -394,7 +394,7 @@ test('Fix #5: appendComponentCurationSuggestions writes to components.json', asy
     assert.equal(content.suggestions[0].value, 'New Unknown Sensor X');
     assert.equal(content.suggestions[0].status, 'pending');
 
-    // Append same suggestion again — should be deduped
+    // Append same suggestion again â€” should be deduped
     const result2 = await appendComponentCurationSuggestions({
       config: { helperFilesRoot: helperRoot },
       category: 'mouse',
@@ -417,10 +417,10 @@ test('Fix #5: appendComponentCurationSuggestions writes to components.json', asy
 });
 
 
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Fix #6: Confidence weighted by fuzzy match score
-// (Tested via ComponentResolver — we test the math directly)
-// ══════════════════════════════════════════════════════════════════════
+// (Tested via ComponentResolver â€” we test the math directly)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 test('Fix #6: confidence is weighted by match score (math verification)', () => {
   // The formula: confidence = baseConf * (0.85 + 0.15 * matchScore)
@@ -442,13 +442,13 @@ test('Fix #6: confidence is weighted by match score (math verification)', () => 
 });
 
 
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Fix #7: Compile-time data quality validation
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 test('Fix #7: compile validation warns about Excel serial dates and missing properties', async () => {
   // Test the validation logic directly with synthetic component data
-  // by importing validateWorkbookMap which calls buildCompileValidation internally.
+  // by importing validateFieldStudioMap which calls buildCompileValidation internally.
   // We verify the validation code runs without error on the live compiled output.
   const genRoot = path.resolve('helper_files', 'mouse', '_generated');
   const reportPath = path.join(genRoot, '_compile_report.json');
@@ -458,7 +458,7 @@ test('Fix #7: compile validation warns about Excel serial dates and missing prop
     report = JSON.parse(await fs.readFile(reportPath, 'utf8'));
   } catch {
     // If no compile report exists, the test is inconclusive but not failing
-    assert.ok(true, 'No compile report found — skipping (run compile first)');
+    assert.ok(true, 'No compile report found â€” skipping (run compile first)');
     return;
   }
 
@@ -482,9 +482,9 @@ test('Fix #7: compile validation warns about Excel serial dates and missing prop
 });
 
 
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Fix #8: Consolidated suggestion file paths
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 test('Fix #8: suggestion file paths are consolidated (enum + component)', () => {
   const config = { helperFilesRoot: '/tmp/test_helpers' };
@@ -515,9 +515,9 @@ test('Fix #8: suggestion file paths are consolidated (enum + component)', () => 
 });
 
 
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Fix #8 bonus: Enum review reads both suggestion formats
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 test('Fix #8: buildEnumReviewPayloads reads curation suggestion format', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'comp-fix8-'));
@@ -565,3 +565,4 @@ test('Fix #8: buildEnumReviewPayloads reads curation suggestion format', async (
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
+

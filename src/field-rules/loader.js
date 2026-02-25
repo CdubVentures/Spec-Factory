@@ -145,43 +145,10 @@ async function dirJsonSignature(dirPath, label) {
   return `${label}:${parts.join(',') || CACHE_MISSING}`;
 }
 
-function draftPath(helperRoot, category) {
-  return path.join(helperRoot, category, '_control_plane', 'field_rules_draft.json');
-}
-
-function mergeDraftRules(compiledRules, draftRules) {
-  const compiled = isObject(compiledRules) ? compiledRules : {};
-  const draft = isObject(draftRules) ? draftRules : {};
-  const merged = {};
-  const mergedFieldNames = new Set([
-    ...Object.keys(compiled.fields || {}),
-    ...Object.keys(draft)
-  ]);
-  for (const fieldName of mergedFieldNames) {
-    const compiledField = isObject(compiled.fields?.[fieldName]) ? compiled.fields[fieldName] : {};
-    const draftField = isObject(draft[fieldName]) ? draft[fieldName] : {};
-    const compiledUi = isObject(compiledField.ui) ? compiledField.ui : {};
-    const draftUi = isObject(draftField.ui) ? draftField.ui : {};
-    merged[fieldName] = {
-      ...compiledField,
-      ...draftField,
-      ui: {
-        ...compiledUi,
-        ...draftUi,
-      },
-    };
-  }
-  return {
-    ...compiled,
-    fields: merged
-  };
-}
-
 async function buildFieldRulesSignature(helperRoot, category) {
   const generatedRoot = path.join(helperRoot, category, '_generated');
   const componentRoot = path.join(generatedRoot, 'component_db');
   const overrideDir = path.join(helperRoot, category, '_overrides', 'components');
-  const draftRulesPath = draftPath(helperRoot, category);
 
   const [
     fieldRulesSig,
@@ -198,8 +165,7 @@ async function buildFieldRulesSignature(helperRoot, category) {
     statSignature(path.join(generatedRoot, 'cross_validation_rules.json'), 'cross_validation_rules'),
     statSignature(path.join(generatedRoot, 'ui_field_catalog.json'), 'ui_field_catalog'),
     dirJsonSignature(componentRoot, 'component_db'),
-    dirJsonSignature(overrideDir, 'component_overrides'),
-    statSignature(draftRulesPath, 'field_rules_draft')
+    dirJsonSignature(overrideDir, 'component_overrides')
   ]);
 
   return [
@@ -456,11 +422,6 @@ export async function loadFieldRules(category, options = {}) {
     readJsonIfExists(path.join(generatedRoot, 'ui_field_catalog.json')),
     readComponentDbs(path.join(generatedRoot, 'component_db'))
   ]);
-  const draftPayload = await readJsonIfExists(draftPath(helperRoot, resolvedCategory));
-  const mergedRules = mergeDraftRules(
-    rulesRaw,
-    isObject(draftPayload?.fields) ? draftPayload.fields : {}
-  );
 
   // Merge component overrides into loaded component DBs at runtime
   try {
@@ -513,7 +474,7 @@ export async function loadFieldRules(category, options = {}) {
     if (err?.code !== 'ENOENT') { /* overrides dir doesn't exist, that's fine */ }
   }
 
-  const rules = isObject(mergedRules) ? mergedRules : (isObject(rulesRaw) ? rulesRaw : {});
+  const rules = isObject(rulesRaw) ? rulesRaw : {};
   const knownValues = normalizeKnownValues(knownRaw || {});
   const parseTemplates = normalizeParseTemplates(parseRaw || {}, rules);
   const crossValidation = normalizeCrossValidation(crossRaw || {}, rules);

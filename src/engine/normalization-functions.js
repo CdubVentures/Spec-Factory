@@ -156,7 +156,7 @@ function parseLatencyList(value) {
   return out;
 }
 
-function parseDateExcel(value) {
+function parseDateSerial(value) {
   if (typeof value === 'number' && Number.isFinite(value)) {
     const date = new Date((value - 25569) * 86400 * 1000);
     return date.toISOString().split('T')[0];
@@ -198,7 +198,7 @@ export const NORMALIZATION_FUNCTIONS = {
   parse_dimension_list: parseDimensionList,
   normalize_color_list: normalizeColorList,
   parse_latency_list: parseLatencyList,
-  parse_date_excel: parseDateExcel,
+  parse_date_serial: parseDateSerial,
   normalize_boolean: normalizeBoolean
 };
 
@@ -210,7 +210,7 @@ export {
   parseDimensionList,
   normalizeColorList,
   parseLatencyList,
-  parseDateExcel,
+  parseDateSerial,
   normalizeBoolean,
   parseBoolean,
   parseDate,

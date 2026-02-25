@@ -25,14 +25,14 @@ function makeCtx(overrides = {}) {
         mergedFieldOrder: [],
         labels: {},
         compiledAt: null,
-        draftSavedAt: null,
+        mapSavedAt: null,
         compileStale: false,
       }),
       invalidateSessionCache: () => {},
     },
-    loadWorkbookMap: async () => ({ file_path: '', map: {} }),
-    saveWorkbookMap: async () => ({ ok: true }),
-    validateWorkbookMap: (map) => ({ valid: true, errors: [], warnings: [], normalized: map }),
+    loadFieldStudioMap: async () => ({ file_path: '', map: {} }),
+    saveFieldStudioMap: async () => ({ ok: true }),
+    validateFieldStudioMap: (map) => ({ valid: true, errors: [], warnings: [], normalized: map }),
     invalidateFieldRulesCache: () => {},
     buildFieldLabelsMap: () => ({}),
     storage: {},
@@ -139,10 +139,10 @@ test('studio field-studio-map PUT emits data-change event for live propagation',
       },
       field_mapping: [{ key: 'dpi' }],
     }),
-    saveWorkbookMap: async ({ category, workbookMap }) => ({
+    saveFieldStudioMap: async ({ category, fieldStudioMap }) => ({
       ok: true,
       category,
-      workbookMap,
+      fieldStudioMap,
     }),
     broadcastWs: (channel, payload) => {
       emitted.push({ channel, payload });
@@ -177,7 +177,7 @@ test('studio field-studio-map PUT rejects destructive empty overwrite by default
       data_lists: [],
       enum_lists: [],
     }),
-    loadWorkbookMap: async () => ({
+    loadFieldStudioMap: async () => ({
       file_path: 'helper_files/mouse/_control_plane/field_studio_map.json',
       map: {
         version: 2,
@@ -185,7 +185,7 @@ test('studio field-studio-map PUT rejects destructive empty overwrite by default
         data_lists: [{ field: 'dpi', values: ['3200'] }],
       },
     }),
-    saveWorkbookMap: async () => {
+    saveFieldStudioMap: async () => {
       saveCalled = true;
       return { ok: true };
     },
@@ -219,7 +219,7 @@ test('studio field-studio-map GET prefers control-plane payload over legacy part
         field_mapping: [{ key: 'dpi' }],
       },
     }),
-    loadWorkbookMap: async () => ({
+    loadFieldStudioMap: async () => ({
       file_path: 'helper_files/mouse/_control_plane/field_studio_map.json',
       map: {
         version: 2,
@@ -248,10 +248,10 @@ test('studio field-studio-map GET prefers control-plane payload over legacy part
 
 test('studio field-studio-map GET prefers valid control-plane map over richer invalid user-settings map', async () => {
   const handler = registerStudioRoutes(makeCtx({
-    validateWorkbookMap: (map) => {
+    validateFieldStudioMap: (map) => {
       const payload = map && typeof map === 'object' ? map : {};
       const errors = [];
-      const workbookBacked = Boolean(payload.workbook_path);
+      const workbookBacked = Boolean(payload.field_studio_source_path);
       const hasKeyList = Boolean(payload?.key_list?.sheet);
       if (workbookBacked && !hasKeyList) {
         errors.push('key_list: sheet is required');
@@ -278,7 +278,7 @@ test('studio field-studio-map GET prefers valid control-plane map over richer in
       file_path: '',
       map: {
         version: 2,
-        workbook_path: 'C:/tmp/mouseData.xlsm',
+        field_studio_source_path: 'C:/tmp/mouseData.xlsm',
         component_sources: [
           {
             component_type: 'sensor',
@@ -306,7 +306,7 @@ test('studio field-studio-map GET prefers valid control-plane map over richer in
         ],
       },
     }),
-    loadWorkbookMap: async () => ({
+    loadFieldStudioMap: async () => ({
       file_path: 'helper_files/mouse/_control_plane/field_studio_map.json',
       map: {
         version: 2,

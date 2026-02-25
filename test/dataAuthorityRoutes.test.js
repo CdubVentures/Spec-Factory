@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerDataAuthorityRoutes } from '../src/api/routes/dataAuthorityRoutes.js';
 import { resetDataPropagationCounters } from '../src/observability/dataPropagationCounters.js';
+import { resetSettingsPersistenceCounters } from '../src/observability/settingsPersistenceCounters.js';
 import { emitDataChange } from '../src/api/events/dataChangeContract.js';
 
 function makeCtx(overrides = {}) {
@@ -13,7 +14,7 @@ function makeCtx(overrides = {}) {
     sessionCache: {
       getSessionRules: async () => ({
         compiledAt: '2026-02-23T11:00:00.000Z',
-        draftSavedAt: '2026-02-23T12:00:00.000Z',
+        mapSavedAt: '2026-02-23T12:00:00.000Z',
         compileStale: false,
       }),
     },
@@ -34,6 +35,7 @@ function makeCtx(overrides = {}) {
 
 test('data authority snapshot returns canonical version payload and changed domains', async () => {
   resetDataPropagationCounters();
+  resetSettingsPersistenceCounters();
   emitDataChange({
     broadcastWs: () => {},
     event: 'catalog-product-update',
@@ -62,6 +64,8 @@ test('data authority snapshot returns canonical version payload and changed doma
   assert.equal(result.body.observability.data_change.total, 1);
   assert.equal(result.body.observability.data_change.category_count, 1);
   assert.ok(result.body.observability.queue_cleanup);
+  assert.ok(result.body.observability.settings_persistence);
+  assert.equal(typeof result.body.observability.settings_persistence.writes?.attempt_total, 'number');
 });
 
 test('data authority snapshot falls back to unknown sync state when specdb is unavailable', async () => {
@@ -70,7 +74,7 @@ test('data authority snapshot falls back to unknown sync state when specdb is un
     sessionCache: {
       getSessionRules: async () => ({
         compiledAt: null,
-        draftSavedAt: null,
+        mapSavedAt: null,
         compileStale: true,
       }),
     },

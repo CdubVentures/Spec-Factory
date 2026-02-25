@@ -1,66 +1,55 @@
 {
   "artifacts": {
     "control_plane_version": {
-      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\_control_plane\\_versions\\20260224T232724Z",
-      "version_id": "20260224T232724Z"
-    },
-    "draft": {
-      "hash": "e29fddf3ddc2cc1de38f90b2c29b0b5c9506784164679eb91ceedb82b457ffd0",
-      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\_control_plane\\draft.json"
+      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\_control_plane\\_versions\\20260225T185055Z",
+      "version_id": "20260225T185055Z"
     },
     "field_rules": {
       "changed": true,
-      "hash": "6673ff7d81f24cab31bcccfb787f25430db115f35c75cd34421dc919b58ff1cb",
+      "hash": "3980e081282ef4c3e4412cb97f67bd41d5d1eeadd567c01687c4106dba5ea505",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\_generated\\field_rules.json"
     },
-    "field_rules_draft": {
-      "hash": "2b50c8bdf07c34daeb78d6e06ed7e8fd116a26f6568d4e413eedacb58a310e0e",
-      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\_control_plane\\field_rules_draft.json"
-    },
     "field_rules_full": {
-      "hash": "611187c7c375e2988341dd42361368ef5f0a095e9ca4382131af36a4e78724bd",
+      "hash": "439ef17e16da7f7ecc0a3d245a2ca3f1a94689f5cf102a868a7a38e75327519a",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\_control_plane\\field_rules.full.json"
     },
     "field_rules_runtime": {
-      "bytes": 268878,
-      "hash": "6673ff7d81f24cab31bcccfb787f25430db115f35c75cd34421dc919b58ff1cb",
+      "bytes": 296107,
+      "hash": "3980e081282ef4c3e4412cb97f67bd41d5d1eeadd567c01687c4106dba5ea505",
       "identical_to_field_rules": true,
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\_generated\\field_rules.runtime.json"
     },
     "key_migrations": {
-      "hash": "676aa4c3f4adef768577bd6224cf8f842941c08e6521b0d167cd20c421717ce5",
+      "hash": "f5ac63ffd0e1d4ec3c25ebb185ffa9c1f9b23a22d79c6bfc36974aa781095fe5",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\_generated\\key_migrations.json"
     },
     "known_values": {
-      "hash": "543a8926d62750ed49fa67592279a08c44af882296457fc795161357d16bd4b4",
+      "hash": "f059890c3d2a8b32f84b2d5424011ed2f34ca8e3b49a4295095d35a8d2b8ce14",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\_generated\\known_values.json"
     },
     "ui_field_catalog": {
-      "hash": "38121aff1090a2a26759496b15850d49346e5ac6bd18edd9953f2763c5eefe6f",
+      "hash": "db02caa7468c9f8007a84f2a175864743df99137d3a725738f820b6c1129e012",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\_generated\\ui_field_catalog.json"
-    },
-    "ui_field_catalog_draft": {
-      "hash": "b4b2696cc7d7cb3e9401b39759efa932545ed24d8e6b1b7a72fd8cf8c6687a7c",
-      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\_control_plane\\ui_field_catalog_draft.json"
     }
   },
   "category": "mouse",
+  "compile_mode": "field_studio",
   "compiled": true,
-  "compiled_at": "2026-02-24T22:51:45.113Z",
+  "compiled_at": "2026-02-25T18:50:55.275Z",
   "counts": {
-    "component_types": 0,
+    "component_types": 4,
     "critical": 1,
     "deep": 8,
-    "enums": 13,
-    "expected_easy": 44,
+    "enums": 14,
+    "expected_easy": 49,
     "expected_sometimes": 8,
-    "fields": 75,
+    "fields": 80,
     "identity": 1,
     "required": 13
   },
   "diff": {
     "changed": true,
-    "current_hash": "b7b5e40ce094ca82876c3eb4beb70d712967243ce654c8951c3eb68f85b14846",
+    "current_hash": "3980e081282ef4c3e4412cb97f67bd41d5d1eeadd567c01687c4106dba5ea505",
     "fields": {
       "added_count": 0,
       "added_keys": [],
@@ -69,22 +58,35 @@
       "removed_count": 0,
       "removed_keys": []
     },
-    "previous_hash": "6673ff7d81f24cab31bcccfb787f25430db115f35c75cd34421dc919b58ff1cb"
+    "previous_hash": "1402b045da4e18f2b2d560c86877ece547290da17e85f3ec0af854b2b080346b"
   },
   "errors": [],
-  "generated_at": "2026-02-24T22:51:45.113Z",
+  "field_studio_map_hash": "d03026bc6fffad5222b5fa3280b80cdc93cd6a6af51d42694d15bd01c02bf3d0",
+  "field_studio_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\_control_plane\\field_studio_map.json",
+  "field_studio_source_hash": null,
+  "field_studio_source_path": "",
+  "generated_at": "2026-02-25T18:50:55.275Z",
   "source_summary": {
     "component_sheets": 4,
     "component_sources": 4,
     "enum_lists": 0,
-    "key_rows": 75,
-    "sampled_product_columns": 342,
-    "sampled_values": 4803
+    "key_rows": 80,
+    "sampled_product_columns": 0,
+    "sampled_values": 0
   },
   "version": 1,
-  "warnings": [],
-  "workbook_hash": "8383ddb04030edd39344c901672f06c1d117a3b42ea9531678c4111e5e6be5ee",
-  "workbook_map_hash": "e6ade5f1eaeca55a0f01fc7810c751aa814fa7fd2f5f4ca631acea26ffc9100c",
-  "workbook_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\_control_plane\\field_studio_map.json",
-  "workbook_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\mouseData.xlsm"
+  "warnings": [
+    "field_studio_source_available:C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\mouseData.xlsm; compile_mode=field_studio",
+    "key_migrations: reversed 'lngth -> length' to 'length -> lngth' because 'length' is not a generated field key",
+    "component_db.encoder: property \"encoder_steps\" coverage 38/40 (95%), missing 2; examples: Magnetic Encoder, Optical Encoder",
+    "component_db.sensor: property \"acceleration\" coverage 111/116 (95.7%), missing 5; examples: PAW3392, PMW3367, PAW3393",
+    "component_db.sensor: property \"dpi\" coverage 111/116 (95.7%), missing 5; examples: PAW3392, PMW3367, PAW3393",
+    "component_db.sensor: property \"ips\" coverage 111/116 (95.7%), missing 5; examples: PAW3392, PMW3367, PAW3393",
+    "component_db.sensor: property \"sensor_type\" coverage 111/116 (95.7%), missing 5; examples: PAW3392, PMW3367, PAW3393",
+    "component_db.sensor: property \"flawless_sensor\" coverage 5/116 (4.3%), missing 111; examples: Focus Pro 45K, PAW3950 Ti, PAW3950 Max",
+    "component_db.sensor: property \"sensor_date\" coverage 28/116 (24.1%), missing 88; examples: Focus Pro 45K, PAW3950 Ti, PAW3950 Max",
+    "component_db.switch: property \"switch_life_span\" coverage 91/106 (85.8%), missing 15; examples: Light Blade, Optical Switches, Crispy Pink",
+    "component_db.switch: property \"click_force\" coverage 60/106 (56.6%), missing 46; examples: ROG Micro Switch, ROG Micro Switch II, Light Blade",
+    "component_db.switch: property \"releasing_force\" coverage 39/106 (36.8%), missing 67; examples: ROG Micro Switch, ROG Micro Switch II, Light Blade"
+  ]
 }

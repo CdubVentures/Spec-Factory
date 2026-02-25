@@ -1,0 +1,53 @@
+flowchart TB
+  subgraph J["JSON authority sources"]
+    J1["user-settings.json"]
+    J2["field_studio_map.json"]
+    J5["product_catalog.json"]
+    J6["_generated/field_rules.json"]
+    J7["_generated/known_values.json"]
+    J8["_generated/component_db/*.json"]
+    J9["_suggestions/*.json"]
+    J10["_queue/{category}/state.json"]
+  end
+
+  subgraph S["Service layer"]
+    S1["loadCategoryConfig"]
+    S2["sessionCache.getSessionRules"]
+    S3["studioRoutes + review payload builders"]
+    S4["compile -> seedSpecDb"]
+  end
+
+  subgraph D["SpecDb SQL projections"]
+    D1["data_authority_sync"]
+    D2["source_strategy"]
+    D3["product_queue"]
+    D4["item/component/list/source/key-review tables"]
+  end
+
+  subgraph API["API views"]
+    API1["/studio/{category}/payload"]
+    API2["/studio/{category}/field-studio-map"]
+    API4["/data-authority/{category}/snapshot"]
+    API5["/source-strategy"]
+  end
+
+  J6 --> S1
+  J7 --> S1
+  J8 --> S1
+  J2 --> S2
+  J6 --> S2
+  J1 --> S3
+  J2 --> S3
+  J5 --> S3
+  J9 --> S4
+  J10 --> S4
+  S1 --> S2
+  S2 --> API1
+  S2 --> API2
+  S3 --> API2
+  S4 --> D1
+  S4 --> D2
+  S4 --> D3
+  S4 --> D4
+  D1 --> API4
+  D2 --> API5

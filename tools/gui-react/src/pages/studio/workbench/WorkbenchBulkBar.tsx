@@ -1,5 +1,7 @@
 // ── Bulk edit floating bar for selected rows ─────────────────────────
 import { useState } from 'react';
+import { parseBoundedIntInput } from '../numericInputHelpers';
+import { STUDIO_NUMERIC_KNOB_BOUNDS } from '../studioNumericKnobBounds';
 
 interface Props {
   selectedCount: number;
@@ -28,7 +30,15 @@ export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
     if (bulkTemplate) onApply('parse.template', bulkTemplate);
     if (bulkPolicy) onApply('enum.policy', bulkPolicy);
     if (bulkPubGate !== null) onApply('priority.publish_gate', bulkPubGate);
-    if (bulkMinRefs !== '') onApply('evidence.min_evidence_refs', parseInt(bulkMinRefs, 10) || 0);
+    if (bulkMinRefs !== '') onApply(
+      'evidence.min_evidence_refs',
+      parseBoundedIntInput(
+        bulkMinRefs,
+        STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.min,
+        STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.max,
+        STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback,
+      ),
+    );
     // Reset
     setBulkRequired('');
     setBulkTemplate('');
@@ -74,8 +84,8 @@ export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
         Min Refs:
         <input
           type="number"
-          min={0}
-          max={10}
+          min={STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.min}
+          max={STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.max}
           className={`${selCls} w-14`}
           value={bulkMinRefs}
           onChange={(e) => setBulkMinRefs(e.target.value)}

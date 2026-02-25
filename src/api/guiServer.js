@@ -2,6 +2,7 @@ import http from 'node:http';
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createReadStream } from 'node:fs';
 import { spawn, exec as execCb } from 'node:child_process';
 import { WebSocketServer } from 'ws';
@@ -31,7 +32,11 @@ import { componentReviewPath } from '../engine/curationSuggestions.js';
 import { runComponentReviewBatch } from '../pipeline/componentReviewBatch.js';
 import { invalidateFieldRulesCache } from '../field-rules/loader.js';
 import { createSessionCache } from '../field-rules/sessionCache.js';
-import { loadWorkbookMap, saveWorkbookMap, validateWorkbookMap } from '../ingest/categoryCompile.js';
+import {
+  loadFieldStudioMap,
+  saveFieldStudioMap,
+  validateFieldStudioMap
+} from '../ingest/categoryCompile.js';
 import { llmRoutingSnapshot } from '../llm/routing.js';
 import { buildTrafficLight } from '../validator/trafficLight.js';
 import { buildRoundSummaryFromEvents } from './roundSummary.js';
@@ -42,7 +47,7 @@ import { buildComponentIdentifier } from '../utils/componentIdentifier.js';
 import {
   buildComponentReviewSyntheticCandidateId
 } from '../utils/candidateIdentifier.js';
-import { generateTestSourceResults, buildDeterministicSourceResults, buildSeedComponentDB, TEST_CASES, analyzeContract, buildTestProducts, getScenarioDefs, buildValidationChecks, loadComponentIdentityPoolsFromWorkbook } from '../testing/testDataProvider.js';
+import { generateTestSourceResults, buildDeterministicSourceResults, buildSeedComponentDB, TEST_CASES, analyzeContract, buildTestProducts, getScenarioDefs, buildValidationChecks, loadComponentIdentityPools } from '../testing/testDataProvider.js';
 import { runTestProduct } from '../testing/testRunner.js';
 import { registerInfraRoutes } from './routes/infraRoutes.js';
 import { registerConfigRoutes } from './routes/configRoutes.js';
@@ -85,7 +90,7 @@ import {
   addProductsBulk as catalogAddProductsBulk,
   updateProduct as catalogUpdateProduct,
   removeProduct as catalogRemoveProduct,
-  seedFromWorkbook as catalogSeedFromWorkbook
+  seedFromCatalog as catalogSeedFromCatalog
 } from '../catalog/productCatalog.js';
 import { reconcileOrphans } from '../catalog/reconciler.js';
 import {
@@ -134,6 +139,40 @@ import {
   listIndexLabRuns,
   buildIndexingDomainChecklist,
 } from './routes/indexlabDataBuilders.js';
+
+const GUI_SERVER_FILE_PATH = fileURLToPath(import.meta.url);
+const PROJECT_ROOT = path.resolve(path.dirname(GUI_SERVER_FILE_PATH), '..', '..');
+
+function resolveProjectPath(value, fallback = '') {
+  const raw = String(value ?? '').trim();
+  const token = raw || String(fallback ?? '').trim();
+  if (!token) return PROJECT_ROOT;
+  return path.isAbsolute(token) ? path.resolve(token) : path.resolve(PROJECT_ROOT, token);
+}
+
+function parseBooleanToken(value, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return value !== 0;
+  const token = String(value).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(token)) return true;
+  if (['0', 'false', 'no', 'off'].includes(token)) return false;
+  return fallback;
+}
+
+function assertNoShadowHelperRuntime({ helperRoot, launchCwd = process.cwd() } = {}) {
+  const canonicalHelperRoot = path.resolve(String(helperRoot || 'helper_files'));
+  const launchHelperRoot = path.resolve(String(launchCwd || process.cwd()), 'helper_files');
+  if (canonicalHelperRoot === launchHelperRoot) return;
+  const shadowRuntimeRoot = path.join(launchHelperRoot, '_runtime');
+  if (!fsSync.existsSync(shadowRuntimeRoot)) return;
+  throw new Error([
+    'shadow_helper_runtime_detected',
+    `launch_runtime=${shadowRuntimeRoot}`,
+    `canonical_helper_root=${canonicalHelperRoot}`,
+    'Remove the launch-cwd helper_files shadow path or set HELPER_FILES_ROOT to the canonical project location.',
+  ].join(';'));
+}
 
 // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // helpers: toInt, toFloat, toUnitRatio, hasKnownValue → ./helpers/requestHelpers.js
@@ -193,20 +232,26 @@ const PORT = toInt(argVal('port', '8788'), 8788);
 const isLocal = args.includes('--local');
 
 // â”€â”€ Config + Storage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-loadDotEnvFile();
+if (!loadDotEnvFile()) {
+  loadDotEnvFile(path.join(PROJECT_ROOT, '.env'));
+}
 const config = loadConfig({
   ...(isLocal ? { localMode: true } : {}),
   ...(argVal('local-input-root', '') ? { localInputRoot: argVal('local-input-root', '') } : {}),
   ...(argVal('local-output-root', '') ? { localOutputRoot: argVal('local-output-root', '') } : {}),
   ...(argVal('output-mode', '') ? { outputMode: argVal('output-mode', '') } : {}),
 });
-const userSettings = loadUserSettingsSync({ helperFilesRoot: config.helperFilesRoot || 'helper_files' });
+config.helperFilesRoot = resolveProjectPath(config.helperFilesRoot, 'helper_files');
+config.localOutputRoot = resolveProjectPath(config.localOutputRoot, 'out');
+config.localInputRoot = resolveProjectPath(config.localInputRoot, 'fixtures/s3');
+const OUTPUT_ROOT = resolveProjectPath(config.localOutputRoot, 'out');
+const HELPER_ROOT = resolveProjectPath(config.helperFilesRoot, 'helper_files');
+const INDEXLAB_ROOT = resolveProjectPath(argVal('indexlab-root', ''), 'artifacts/indexlab');
+const LAUNCH_CWD = path.resolve(process.cwd());
+assertNoShadowHelperRuntime({ helperRoot: HELPER_ROOT, launchCwd: LAUNCH_CWD });
+const userSettings = loadUserSettingsSync({ helperFilesRoot: HELPER_ROOT });
 applyRuntimeSettingsToConfig(config, userSettings.runtime);
 applyConvergenceSettingsToConfig(config, userSettings.convergence);
-const storage = createStorage(config);
-const OUTPUT_ROOT = path.resolve(config.localOutputRoot || 'out');
-const HELPER_ROOT = path.resolve(config.helperFilesRoot || 'helper_files');
-const INDEXLAB_ROOT = path.resolve(argVal('indexlab-root', 'artifacts/indexlab'));
 
 function envToken(name, fallback = '') {
   const value = String(process.env[name] || '').trim();
@@ -214,13 +259,11 @@ function envToken(name, fallback = '') {
 }
 
 function envBool(name, fallback = false) {
-  const raw = process.env[name];
-  if (raw === undefined || raw === null || raw === '') return fallback;
-  const token = String(raw).trim().toLowerCase();
-  if (['1', 'true', 'yes', 'on'].includes(token)) return true;
-  if (['0', 'false', 'no', 'off'].includes(token)) return false;
-  return fallback;
+  return parseBooleanToken(process.env[name], fallback);
 }
+
+config.settingsCanonicalOnlyWrites = envBool('SETTINGS_CANONICAL_ONLY_WRITES', false);
+const storage = createStorage(config);
 
 function resolveRunDataDestinationType() {
   const explicit = envToken('RUN_DATA_STORAGE_DESTINATION_TYPE', '').toLowerCase();
@@ -259,6 +302,7 @@ const sessionCache = createSessionCache({
   readJsonIfExists: safeReadJson,
   writeFile: (filePath, data) => fs.writeFile(filePath, data),
   mkdir: (dirPath, opts) => fs.mkdir(dirPath, opts),
+  statFile: (filePath) => fs.stat(filePath),
   helperRoot: HELPER_ROOT,
 });
 
@@ -1556,6 +1600,7 @@ let lastProcessSnapshot = {
   pid: null,
   command: null,
   startedAt: null,
+  runId: null,
   exitCode: null,
   endedAt: null
 };
@@ -1565,13 +1610,34 @@ function isProcessRunning() {
   return Boolean(childProc && childProc.exitCode === null);
 }
 
+function normalizeRunIdToken(value) {
+  const token = String(value || '').trim();
+  if (!token) return '';
+  if (!/^[A-Za-z0-9._-]{8,96}$/.test(token)) return '';
+  return token;
+}
+
+function extractRunIdFromCliArgs(cliArgs = []) {
+  const args = Array.isArray(cliArgs) ? cliArgs : [];
+  for (let idx = 0; idx < args.length; idx += 1) {
+    const token = String(args[idx] || '');
+    if (token === '--run-id') {
+      return normalizeRunIdToken(args[idx + 1]);
+    }
+  }
+  return '';
+}
+
 function processStatus() {
   const running = isProcessRunning();
   const active = running ? childProc : null;
+  const runId = normalizeRunIdToken(active?._runId || lastProcessSnapshot.runId || relocatingRunId || '');
   return {
     running,
     relocating: Boolean(relocatingRunId),
     relocatingRunId: relocatingRunId || null,
+    run_id: runId || null,
+    runId: runId || null,
     pid: active?.pid || lastProcessSnapshot.pid || null,
     command: active?._cmd || lastProcessSnapshot.command || null,
     startedAt: active?._startedAt || lastProcessSnapshot.startedAt || null,
@@ -1582,7 +1648,7 @@ function processStatus() {
 
 const SEARXNG_CONTAINER_NAME = 'spec-harvester-searxng';
 const SEARXNG_DEFAULT_BASE_URL = 'http://127.0.0.1:8080';
-const SEARXNG_COMPOSE_PATH = path.resolve('tools', 'searxng', 'docker-compose.yml');
+const SEARXNG_COMPOSE_PATH = resolveProjectPath(path.join('tools', 'searxng', 'docker-compose.yml'));
 
 function normalizeUrlToken(value, fallback = SEARXNG_DEFAULT_BASE_URL) {
   const raw = String(value || '').trim() || String(fallback || '').trim();
@@ -1815,6 +1881,7 @@ function startProcess(cmd, cliArgs, envOverrides = {}) {
   if (isProcessRunning()) {
     throw new Error('process_already_running');
   }
+  const runId = extractRunIdFromCliArgs(cliArgs);
   childLog = [];
   const runtimeEnv = {
     ...process.env,
@@ -1832,10 +1899,12 @@ function startProcess(cmd, cliArgs, envOverrides = {}) {
   });
   child._cmd = `node ${cmd} ${cliArgs.join(' ')}`;
   child._startedAt = new Date().toISOString();
+  child._runId = runId || null;
   lastProcessSnapshot = {
     pid: child.pid || null,
     command: child._cmd,
     startedAt: child._startedAt,
+    runId: child._runId || null,
     exitCode: null,
     endedAt: null
   };
@@ -1863,6 +1932,7 @@ function startProcess(cmd, cliArgs, envOverrides = {}) {
       pid: child.pid || lastProcessSnapshot.pid,
       command: child._cmd || lastProcessSnapshot.command,
       startedAt: child._startedAt || lastProcessSnapshot.startedAt,
+      runId: child._runId || lastProcessSnapshot.runId || null,
       exitCode: resolvedExitCode,
       endedAt: new Date().toISOString()
     };
@@ -1916,7 +1986,9 @@ function startProcess(cmd, cliArgs, envOverrides = {}) {
     }
   });
   childProc = child;
-  return processStatus();
+  const status = processStatus();
+  broadcastWs('process-status', status);
+  return status;
 }
 
 function waitForProcessExit(proc = childProc, timeoutMs = 7000) {
@@ -2044,12 +2116,14 @@ async function stopProcess(timeoutMs = 8000, options = {}) {
   const runningProc = childProc;
   if (!runningProc || runningProc.exitCode !== null) {
     const orphanStop = await stopOrphanIndexLabProcesses(timeoutMs);
-    return {
+    const status = {
       ...processStatus(),
       stop_attempted: Boolean(orphanStop.attempted || force),
       stop_confirmed: true,
       orphan_killed: orphanStop.killed
     };
+    broadcastWs('process-status', status);
+    return status;
   }
 
   try { runningProc.kill('SIGTERM'); } catch { /* ignore */ }
@@ -2080,12 +2154,14 @@ async function stopProcess(timeoutMs = 8000, options = {}) {
     }
   }
 
-  return {
+  const status = {
     ...processStatus(),
     stop_attempted: true,
     stop_confirmed: Boolean(exited || runningProc.exitCode !== null || orphanKilled > 0),
     orphan_killed: orphanKilled
   };
+  broadcastWs('process-status', status);
+  return status;
 }
 
 // â”€â”€ Route Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -2099,7 +2175,6 @@ const CATEGORY_SEGMENT_SCOPES = new Set([
   'learning',
   'studio',
   'data-authority',
-  'workbook',
   'review',
   'review-components',
 ]);
@@ -2268,8 +2343,8 @@ async function patchCompiledComponentDb(category, componentType, entityName, pro
 
 // â”€â”€ Static assets root (needed by route context) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const DIST_ROOT = process.env.__GUI_DIST_ROOT
-  ? path.resolve(process.env.__GUI_DIST_ROOT)
-  : path.resolve('tools/gui-react/dist');
+  ? resolveProjectPath(process.env.__GUI_DIST_ROOT)
+  : resolveProjectPath(path.join('tools', 'gui-react', 'dist'));
 
 // â”€â”€ Route Handler Registration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const routeCtx = {
@@ -2317,13 +2392,13 @@ const routeCtx = {
   catalogAddProductsBulk: catalogAddProductsBulk,
   catalogUpdateProduct,
   catalogRemoveProduct,
-  catalogSeedFromWorkbook: catalogSeedFromWorkbook,
+  catalogSeedFromCatalog: catalogSeedFromCatalog,
   upsertQueueProduct,
   readJsonlEvents,
   loadCategoryConfig,
-  loadWorkbookMap,
-  saveWorkbookMap,
-  validateWorkbookMap,
+  loadFieldStudioMap,
+  saveFieldStudioMap,
+  validateFieldStudioMap,
   buildFieldLabelsMap,
   cleanVariant,
   slugify,
@@ -2417,7 +2492,7 @@ const routeCtx = {
   buildDeterministicSourceResults,
   buildSeedComponentDB,
   buildValidationChecks,
-  loadComponentIdentityPoolsFromWorkbook,
+  loadComponentIdentityPools,
   runTestProduct,
   purgeTestModeCategoryState,
   resetTestModeSharedReviewState,
@@ -2678,7 +2753,20 @@ server.on('upgrade', (req, socket, head) => {
       ws.on('message', (msg) => {
         try {
           const data = JSON.parse(msg.toString());
-          if (data.subscribe) ws._channels = data.subscribe;
+          if (data.subscribe) {
+            ws._channels = data.subscribe;
+            if (Array.isArray(data.subscribe) && data.subscribe.includes('process-status')) {
+              try {
+                ws.send(JSON.stringify({
+                  channel: 'process-status',
+                  data: processStatus(),
+                  ts: new Date().toISOString(),
+                }));
+              } catch {
+                // ignore socket send failure
+              }
+            }
+          }
           if (data.category) ws._category = data.category;
           if (data.productId) ws._productId = data.productId;
           if (data.screencast_subscribe && childProc) {
@@ -2702,6 +2790,12 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(msg);
   console.log(`[gui-server] API:     http://localhost:${PORT}/api/v1/health`);
   console.log(`[gui-server] WS:      ws://localhost:${PORT}/ws`);
+  console.log(`[gui-server] Project: ${PROJECT_ROOT}`);
+  console.log(`[gui-server] CWD:     ${LAUNCH_CWD}`);
+  console.log(`[gui-server] Helper:  ${HELPER_ROOT}`);
+  console.log(`[gui-server] Output:  ${OUTPUT_ROOT}`);
+  console.log(`[gui-server] IndexLab:${INDEXLAB_ROOT}`);
+  console.log(`[gui-server] Canonical settings writes only: ${config.settingsCanonicalOnlyWrites ? 'ON' : 'OFF'}`);
   console.log(`[gui-server] Static:  ${DIST_ROOT}`);
   try {
     const distFiles = fsSync.readdirSync(path.join(DIST_ROOT, 'assets'));

@@ -17,7 +17,7 @@ import path from 'node:path';
 import { createStorage } from '../src/s3/storage.js';
 import {
   analyzeContract,
-  loadComponentIdentityPoolsFromWorkbook,
+  loadComponentIdentityPools,
   buildSeedComponentDB,
   buildTestProducts,
   buildDeterministicSourceResults,
@@ -252,7 +252,7 @@ test('Contract-Driven End-to-End Test', async (t) => {
     const contractAnalysis = await analyzeContract(HELPER_ROOT, CATEGORY);
     const scenarioDefs = contractAnalysis.scenarioDefs;
     const componentTypes = (contractAnalysis?._raw?.componentTypes || []).map((ct) => ct.type);
-    const identityPoolsByType = await loadComponentIdentityPoolsFromWorkbook({
+    const identityPoolsByType = await loadComponentIdentityPools({
       componentTypes,
       strict: true,
     });
@@ -295,7 +295,7 @@ test('Contract-Driven End-to-End Test', async (t) => {
 
     // 5. Write support files
     await writeJson(
-      path.join(config.helperFilesRoot, CATEGORY, '_control_plane', 'workbook_map.json'),
+      path.join(config.helperFilesRoot, CATEGORY, '_control_plane', 'field_studio_map.json'),
       { manual_enum_values: {}, manual_enum_timestamps: {} }
     );
     const openPKCatalogs = (contractAnalysis._raw.knownValuesCatalogs || [])
@@ -625,13 +625,13 @@ test('Contract-Driven End-to-End Test', async (t) => {
           await fs.readFile(path.join(HELPER_ROOT, CATEGORY, '_generated', 'field_rules.json'), 'utf8')
         );
         const workbookMap = JSON.parse(
-          await fs.readFile(path.join(HELPER_ROOT, CATEGORY, '_control_plane', 'workbook_map.json'), 'utf8')
+          await fs.readFile(path.join(HELPER_ROOT, CATEGORY, '_control_plane', 'field_studio_map.json'), 'utf8')
         );
         const dbSources = fieldRulesJson.component_db_sources || {};
         const wmSources = (workbookMap.component_db_sources || []);
         const allPropertyMappings = [
           ...Object.values(dbSources).flatMap(src =>
-            (src.roles?.properties || src.excel?.property_mappings || [])
+            (src.roles?.properties || src.property_mappings || [])
           ),
           ...wmSources.flatMap(src =>
             (src.roles?.properties || [])

@@ -5,13 +5,20 @@
   "field_count": 29,
   "fields": {
     "affiliate_links": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Affiliate Links",
         "affiliate_links"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -45,26 +52,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "affiliate_links",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B26",
-          "row": 26,
-          "sample_values": [
-            "Affiliate Links",
-            "string",
-            "list",
-            "commerce",
-            "sometimes",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter commerce field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "affiliate_links",
       "group": "general",
       "key": "affiliate_links",
       "output_shape": "scalar",
@@ -126,17 +122,23 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "base_model": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Base Model",
         "base_model"
       ],
       "availability": "expected",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -170,26 +172,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "base_model",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B5",
-          "row": 5,
-          "sample_values": [
-            "Base Model",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "base_model",
       "group": "general",
       "key": "base_model",
       "output_shape": "scalar",
@@ -251,16 +242,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "brand": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "brand"
       ],
       "availability": "expected",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -294,26 +291,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "brand",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B2",
-          "row": 2,
-          "sample_values": [
-            "Brand",
-            "string",
-            "scalar",
-            "required",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "brand",
       "group": "general",
       "key": "brand",
       "output_shape": "scalar",
@@ -375,17 +361,23 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "cable_length": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Cable Length",
         "cable_length"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -420,26 +412,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "cable_length",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B19",
-          "row": 19,
-          "sample_values": [
-            "Cable Length",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter connectivity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "cable_length",
       "group": "dimensions",
       "key": "cable_length",
       "output_shape": "scalar",
@@ -501,17 +482,23 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "cable_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Cable Type",
         "cable_type"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -545,26 +532,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "cable_type",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B18",
-          "row": 18,
-          "sample_values": [
-            "Cable Type",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter connectivity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "cable_type",
       "group": "general",
       "key": "cable_type",
       "output_shape": "scalar",
@@ -626,16 +602,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "category": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "category"
       ],
       "availability": "expected",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -669,26 +651,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "category",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B9",
-          "row": 9,
-          "sample_values": [
-            "Category",
-            "string",
-            "scalar",
-            "required",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "category",
       "group": "general",
       "key": "category",
       "output_shape": "scalar",
@@ -750,16 +721,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "color": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "color"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -799,26 +776,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "color",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B15",
-          "row": 15,
-          "sample_values": [
-            "Color",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter physical field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "color",
       "group": "appearance",
       "key": "color",
       "output_shape": "list",
@@ -886,16 +852,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "list"
+      "unknown_reason_default": "not_found_after_search"
     },
     "connection": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "connection"
       ],
       "availability": "expected",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -935,26 +907,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "connection",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B16",
-          "row": 16,
-          "sample_values": [
-            "Connection",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter connectivity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "connection",
       "group": "connectivity",
       "key": "connection",
       "output_shape": "list",
@@ -1016,16 +977,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "list"
+      "unknown_reason_default": "not_found_after_search"
     },
     "cons": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "cons"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1059,26 +1026,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "cons",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B22",
-          "row": 22,
-          "sample_values": [
-            "Cons",
-            "string",
-            "list",
-            "editorial",
-            "editorial_only",
-            "easy",
-            "3",
-            "1",
-            "editorial_not_generated",
-            "Starter editorial field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "cons",
       "group": "general",
       "key": "cons",
       "output_shape": "scalar",
@@ -1140,17 +1096,23 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "feature_image": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Feature Image",
         "feature_image"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1184,26 +1146,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "feature_image",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B29",
-          "row": 29,
-          "sample_values": [
-            "Feature Image",
-            "string",
-            "scalar",
-            "optional",
-            "sometimes",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter media field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "feature_image",
       "group": "general",
       "key": "feature_image",
       "output_shape": "scalar",
@@ -1265,17 +1216,23 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "gallery_images": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Gallery Images",
         "gallery_images"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1309,26 +1266,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "gallery_images",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B30",
-          "row": 30,
-          "sample_values": [
-            "Gallery Images",
-            "string",
-            "list",
-            "optional",
-            "sometimes",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter media field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "gallery_images",
       "group": "general",
       "key": "gallery_images",
       "output_shape": "scalar",
@@ -1390,16 +1336,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "gtin": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "gtin"
       ],
       "availability": "expected",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1433,26 +1385,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "gtin",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B8",
-          "row": 8,
-          "sample_values": [
-            "Gtin",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "gtin",
       "group": "general",
       "key": "gtin",
       "output_shape": "scalar",
@@ -1514,16 +1455,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "height": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "height"
       ],
       "availability": "expected",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1558,26 +1505,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "height",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B13",
-          "row": 13,
-          "sample_values": [
-            "Height",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter physical field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "height",
       "group": "dimensions",
       "key": "height",
       "output_shape": "scalar",
@@ -1639,16 +1575,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "images": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "images"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1682,26 +1624,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "images",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B27",
-          "row": 27,
-          "sample_values": [
-            "Images",
-            "string",
-            "list",
-            "commerce",
-            "sometimes",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter commerce field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "images",
       "group": "general",
       "key": "images",
       "output_shape": "scalar",
@@ -1763,17 +1694,23 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "key_takeaway": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Key Takeaway",
         "key_takeaway"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1807,26 +1744,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "key_takeaway",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B24",
-          "row": 24,
-          "sample_values": [
-            "Key Takeaway",
-            "string",
-            "scalar",
-            "editorial",
-            "editorial_only",
-            "easy",
-            "3",
-            "1",
-            "editorial_not_generated",
-            "Starter editorial field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "key_takeaway",
       "group": "general",
       "key": "key_takeaway",
       "output_shape": "scalar",
@@ -1888,16 +1814,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "length": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "length"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -1932,26 +1864,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "length",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B11",
-          "row": 11,
-          "sample_values": [
-            "Length",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter physical field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "length",
       "group": "dimensions",
       "key": "length",
       "output_shape": "scalar",
@@ -2013,16 +1934,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "material": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "material"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2056,26 +1983,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "material",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B14",
-          "row": 14,
-          "sample_values": [
-            "Material",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter physical field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "material",
       "group": "general",
       "key": "material",
       "output_shape": "scalar",
@@ -2137,16 +2053,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "model": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "model"
       ],
       "availability": "expected",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2180,26 +2102,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "model",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B3",
-          "row": 3,
-          "sample_values": [
-            "Model",
-            "string",
-            "scalar",
-            "required",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "model",
       "group": "general",
       "key": "model",
       "output_shape": "scalar",
@@ -2261,16 +2172,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "mpn": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "mpn"
       ],
       "availability": "expected",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2304,26 +2221,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "mpn",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B7",
-          "row": 7,
-          "sample_values": [
-            "Mpn",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "mpn",
       "group": "general",
       "key": "mpn",
       "output_shape": "scalar",
@@ -2385,17 +2291,23 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "overall_score": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Overall Score",
         "overall_score"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2429,26 +2341,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "overall_score",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B20",
-          "row": 20,
-          "sample_values": [
-            "Overall Score",
-            "number",
-            "scalar",
-            "editorial",
-            "editorial_only",
-            "easy",
-            "4",
-            "1",
-            "editorial_not_generated",
-            "Starter editorial field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "overall_score",
       "group": "general",
       "key": "overall_score",
       "output_shape": "scalar",
@@ -2510,17 +2411,23 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "price_range": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Price Range",
         "price_range"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2555,26 +2462,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "price_range",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B25",
-          "row": 25,
-          "sample_values": [
-            "Price Range",
-            "string",
-            "scalar",
-            "commerce",
-            "sometimes",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter commerce field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "price_range",
       "group": "general",
       "key": "price_range",
       "output_shape": "scalar",
@@ -2636,16 +2532,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "pros": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "pros"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2679,26 +2581,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "pros",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B21",
-          "row": 21,
-          "sample_values": [
-            "Pros",
-            "string",
-            "list",
-            "editorial",
-            "editorial_only",
-            "easy",
-            "3",
-            "1",
-            "editorial_not_generated",
-            "Starter editorial field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "pros",
       "group": "general",
       "key": "pros",
       "output_shape": "scalar",
@@ -2760,16 +2651,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "sku": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "sku"
       ],
       "availability": "expected",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2803,26 +2700,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "sku",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B6",
-          "row": 6,
-          "sample_values": [
-            "Sku",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "sku",
       "group": "general",
       "key": "sku",
       "output_shape": "scalar",
@@ -2884,16 +2770,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "variant": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "variant"
       ],
       "availability": "expected",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -2927,26 +2819,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "variant",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B4",
-          "row": 4,
-          "sample_values": [
-            "Variant",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter identity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "variant",
       "group": "general",
       "key": "variant",
       "output_shape": "scalar",
@@ -3008,16 +2889,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "verdict": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "verdict"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3051,26 +2938,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "verdict",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B23",
-          "row": 23,
-          "sample_values": [
-            "Verdict",
-            "string",
-            "scalar",
-            "editorial",
-            "editorial_only",
-            "easy",
-            "3",
-            "1",
-            "editorial_not_generated",
-            "Starter editorial field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "verdict",
       "group": "general",
       "key": "verdict",
       "output_shape": "scalar",
@@ -3132,16 +3008,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "weight": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "weight"
       ],
       "availability": "expected",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3176,26 +3058,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "weight",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B10",
-          "row": 10,
-          "sample_values": [
-            "Weight",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter physical field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "weight",
       "group": "dimensions",
       "key": "weight",
       "output_shape": "scalar",
@@ -3257,16 +3128,22 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "width": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "width"
       ],
       "availability": "expected",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3301,26 +3178,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "width",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B12",
-          "row": 12,
-          "sample_values": [
-            "Width",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter physical field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "width",
       "group": "dimensions",
       "key": "width",
       "output_shape": "scalar",
@@ -3382,17 +3248,23 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "wireless_technology": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Wireless Technology",
         "wireless_technology"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3426,26 +3298,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "wireless_technology",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B17",
-          "row": 17,
-          "sample_values": [
-            "Wireless Technology",
-            "string",
-            "scalar",
-            "expected",
-            "expected",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter connectivity field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "wireless_technology",
       "group": "connectivity",
       "key": "wireless_technology",
       "output_shape": "scalar",
@@ -3507,17 +3368,23 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     },
     "youtube_url": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Youtube Url",
         "youtube_url"
       ],
       "availability": "sometimes",
-      "canonical_key": null,
       "component": null,
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "string",
@@ -3551,26 +3418,15 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "youtube_url",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B28",
-          "row": 28,
-          "sample_values": [
-            "Youtube Url",
-            "url",
-            "scalar",
-            "optional",
-            "sometimes",
-            "easy",
-            "3",
-            "1",
-            "not_found_after_search",
-            "Starter media field"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "field_catalog"
         }
       },
-      "field_key": "youtube_url",
       "group": "general",
       "key": "youtube_url",
       "output_shape": "scalar",
@@ -3632,11 +3488,10 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "scalar"
+      "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-02-13T06:42:18.218Z",
+  "generated_at": "2026-02-25T08:51:44.810Z",
   "key_range": "field_catalog!B2:B2000",
   "notes": [
     "Generated by Field Rules Studio compiler.",
@@ -3805,9 +3660,9 @@
       ]
     }
   },
-  "source_workbook": "field_catalog.xlsx",
-  "version": "field_rules_monitor_compiled_v1",
-  "workbook_tabs": {
+  "publish_gate": "required_complete",
+  "source_context": "field_studio_map",
+  "source_tabs": {
     "data_values": {
       "notes": "Observed values across products; can be used for suggestion/inference but not strict enums.",
       "role": "observed value samples (optional)"
@@ -3816,5 +3671,6 @@
       "notes": "Column B holds field keys; columns C+ hold product values.",
       "role": "field_keys + optional product-table sampling"
     }
-  }
+  },
+  "version": "field_rules_monitor_compiled_v1"
 }

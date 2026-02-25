@@ -3,6 +3,8 @@ import type { PrefetchLlmCall, SearchPlanPass, PrefetchLiveSettings, PrefetchSea
 import { llmCallStatusBadgeClass, formatMs } from '../helpers';
 import { VerticalStepper, Step } from '../components/VerticalStepper';
 import { formatTooltip, UiTooltip, TooltipBadge } from '../components/PrefetchTooltip';
+import { StatCard } from '../components/StatCard';
+import { Tip } from '../../../components/common/Tip';
 
 interface PrefetchSearchPlannerPanelProps {
   calls: PrefetchLlmCall[];
@@ -126,21 +128,6 @@ function normalizeQuery(query: string): string {
 
 const DEFAULT_VISIBLE_QUERIES = 6;
 
-function StatCard({ label, value, tip }: { label: string; value: string | number; tip?: string }) {
-  return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 min-w-[8rem]">
-      <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-        {label}
-        {tip && (
-          <UiTooltip text={tip}>
-            <span className="ml-1 text-gray-400 dark:text-gray-400">?</span>
-          </UiTooltip>
-        )}
-      </div>
-      <div className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-0.5">{value}</div>
-    </div>
-  );
-}
 
 function TagList({
   items,
@@ -238,6 +225,7 @@ export function PrefetchSearchPlannerPanel({
   searchResults,
   liveSettings,
 }: PrefetchSearchPlannerPanelProps) {
+  const plannerEnabledLive = liveSettings?.phase2LlmEnabled;
   const [expandedPassQueries, setExpandedPassQueries] = useState<Record<string, boolean>>({});
   const plans = searchPlans || [];
   const executedQueryTokens = useMemo(() => new Set(
@@ -319,8 +307,18 @@ export function PrefetchSearchPlannerPanel({
     return (
       <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Search Planner</h3>
-        <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">
-          No search planner calls yet. This step either has not run or ran without LLM tracing.
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+          <div className="text-3xl opacity-60">&#128506;</div>
+          <div className="text-sm font-medium text-gray-600 dark:text-gray-300">Waiting for search plan</div>
+          <p className="text-xs text-gray-400 dark:text-gray-500 max-w-md leading-relaxed">
+            Search plans will appear after the Planner LLM generates targeted queries across multiple passes
+            (Primary, Fast, Reason, Validate) to close missing field coverage gaps identified by the NeedSet.
+          </p>
+          {liveSettings?.phase2LlmEnabled !== undefined && (
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${liveSettings.phase2LlmEnabled ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+              LLM Planner: {liveSettings.phase2LlmEnabled ? 'Enabled' : 'Disabled'}
+            </span>
+          )}
         </div>
       </div>
     );
@@ -329,15 +327,18 @@ export function PrefetchSearchPlannerPanel({
   return (
     <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Search Planner</h3>
-        {liveSettings && (
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+          Search Planner
+          <Tip text="The Search Planner LLM generates targeted queries in multiple passes (Primary, Fast, Reason, Validate) to close missing field coverage gaps identified by the NeedSet." />
+        </h3>
+        {plannerEnabledLive !== undefined && (
           <TooltipBadge
             className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-              liveSettings.phase2LlmEnabled
+              plannerEnabledLive
                 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
                 : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
             }`}
-            tooltip={liveSettings.phase2LlmEnabled
+            tooltip={plannerEnabledLive
               ? formatTooltip({
                 what: 'Planner LLM is enabled.',
                 effect: 'Planner can add query ideas before search runs.',
@@ -349,7 +350,7 @@ export function PrefetchSearchPlannerPanel({
                 setBy: 'Runtime Settings > LLM Planner (phase2LlmEnabled / llmPlanDiscoveryQueries).',
               })}
           >
-            LLM Planner: {liveSettings.phase2LlmEnabled ? 'ON' : 'OFF'}
+            LLM Planner: {plannerEnabledLive ? 'ON' : 'OFF'}
           </TooltipBadge>
         )}
         {hasCalls && (
@@ -816,12 +817,12 @@ export function PrefetchSearchPlannerPanel({
                     </div>
                   )}
                   {call.prompt_preview && (
-                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
                       {call.prompt_preview}
                     </pre>
                   )}
                   {call.response_preview && (
-                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
                       {call.response_preview}
                     </pre>
                   )}

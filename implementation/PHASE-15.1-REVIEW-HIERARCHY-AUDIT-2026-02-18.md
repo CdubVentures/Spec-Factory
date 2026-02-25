@@ -29,7 +29,7 @@
 
 ## Acceptance Criteria
 
-- Synthetic/manual/workbook candidate IDs are canonical and collision-safe.
+- Synthetic/manual/field-studio candidate IDs are canonical and collision-safe.
 - Grid, component, and enum surfaces generate matching synthetic IDs between UI and API.
 - `confirm` only clears pending AI for lane/context.
 - `accept` only selects candidate/value for lane/context.
@@ -42,7 +42,7 @@
 - Review APIs (`src/api/guiServer.js`)
 - Grid and component/enum payload builders (`src/review/reviewGridData.js`, `src/review/componentReviewData.js`)
 - Override workflow (`src/review/overrideWorkflow.js`)
-- Catalog workbook seeding (`src/catalog/productCatalog.js`)
+- Catalog field-studio seeding (`src/catalog/productCatalog.js`)
 - Frontend review surfaces (`tools/gui-react/src/pages/review`, `tools/gui-react/src/pages/component-review`)
 
 ## Edge Cases Covered

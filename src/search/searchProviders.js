@@ -122,34 +122,6 @@ export async function searchBing({
   }));
 }
 
-export async function searchGoogleCse({
-  key,
-  cx,
-  query,
-  limit = 10
-}) {
-  if (!key || !cx || !query) {
-    return [];
-  }
-  const url = new URL('https://www.googleapis.com/customsearch/v1');
-  url.searchParams.set('key', key);
-  url.searchParams.set('cx', cx);
-  url.searchParams.set('q', query);
-  url.searchParams.set('num', String(Math.min(10, Math.max(1, limit))));
-  const response = await fetch(url);
-  if (!response.ok) {
-    return [];
-  }
-  const payload = await response.json();
-  return (payload.items || []).map((item) => ({
-    url: item.link,
-    title: item.title || '',
-    snippet: item.snippet || '',
-    provider: 'google',
-    query
-  }));
-}
-
 function dedupeResults(rows = []) {
   const out = [];
   const seen = new Set();
@@ -162,6 +134,69 @@ function dedupeResults(rows = []) {
     out.push(row);
   }
   return out;
+}
+
+const DUCKDUCKGO_BOT_CHALLENGE_SIGNALS = [
+  'anomaly',
+  'botnet',
+  'challenge',
+  'captcha',
+  'automated traffic',
+  'automated requests',
+  'verify you are human',
+  'prove you are human'
+];
+
+function hasDuckduckgoResultMarkup(html = '') {
+  const token = String(html || '');
+  if (!token) {
+    return false;
+  }
+  return /class="[^"]*result__a[^"]*"/i.test(token) || /class="result-link"/i.test(token);
+}
+
+function isDuckduckgoBotChallengeResponse({ status = 0, html = '' }) {
+  const token = String(html || '');
+  if (!token) {
+    return false;
+  }
+  const hasResults = hasDuckduckgoResultMarkup(token);
+  if ((status === 202 || status === 403 || status === 429) && !hasResults) {
+    return true;
+  }
+  const lower = token.toLowerCase();
+  const hasChallengeSignal = DUCKDUCKGO_BOT_CHALLENGE_SIGNALS.some((signal) => lower.includes(signal));
+  return hasChallengeSignal && !hasResults;
+}
+
+function createDuckduckgoProviderError(code, message, status = null) {
+  const error = new Error(message);
+  error.code = code;
+  if (status != null) {
+    error.status = status;
+  }
+  return error;
+}
+
+function shouldFallbackDuckduckgoToSearxng(error) {
+  if (!error) {
+    return false;
+  }
+  const code = String(error.code || '').trim().toLowerCase();
+  if (code === 'duckduckgo_bot_challenge' || code === 'duckduckgo_http_error') {
+    return true;
+  }
+  const name = String(error.name || '').trim();
+  return name === 'AbortError' || name === 'TypeError';
+}
+
+const LOCAL_SEARXNG_FALLBACK_BASE_URL = 'http://127.0.0.1:8080';
+
+function duckduckgoFallbackSearxngTimeoutMs(config = {}) {
+  return Math.max(
+    800,
+    Math.min(8_000, Number(config.searxngTimeoutMs || 4_000))
+  );
 }
 
 function searxngBaseUrl(config = {}) {
@@ -181,7 +216,9 @@ export async function searchSearxng({
   baseUrl,
   query,
   limit = 10,
-  timeoutMs = 8_000
+  timeoutMs = 8_000,
+  engines = '',
+  provider = 'searxng'
 }) {
   if (!baseUrl || !query) {
     return [];
@@ -191,6 +228,10 @@ export async function searchSearxng({
   url.searchParams.set('format', 'json');
   url.searchParams.set('language', 'en');
   url.searchParams.set('safesearch', '0');
+  const normalizedEngines = String(engines || '').trim();
+  if (normalizedEngines) {
+    url.searchParams.set('engines', normalizedEngines);
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), Math.max(100, Number(timeoutMs || 8_000)));
@@ -207,7 +248,7 @@ export async function searchSearxng({
       url: item.url,
       title: item.title || '',
       snippet: item.content || item.snippet || '',
-      provider: 'searxng',
+      provider: String(provider || 'searxng').trim() || 'searxng',
       query
     }));
   } finally {
@@ -360,10 +401,21 @@ export async function searchDuckduckgo({
         'accept-language': 'en-US,en;q=0.9'
       }
     });
-    if (!response.ok) {
-      return [];
-    }
     const html = await response.text();
+    if (isDuckduckgoBotChallengeResponse({ status: response.status, html })) {
+      throw createDuckduckgoProviderError(
+        'duckduckgo_bot_challenge',
+        `DuckDuckGo returned a bot challenge for query "${query}"`,
+        response.status
+      );
+    }
+    if (!response.ok) {
+      throw createDuckduckgoProviderError(
+        'duckduckgo_http_error',
+        `DuckDuckGo request failed with status ${response.status}`,
+        response.status
+      );
+    }
     return parseDuckduckgoHtml(html, query, limit);
   } finally {
     clearTimeout(timeout);
@@ -377,15 +429,15 @@ export async function runSearchProviders({
   logger
 }) {
   const provider = normalizeProvider(config.searchProvider);
-  const googleCseDisabled = Boolean(config.disableGoogleCse);
   if (provider === 'none') {
     return [];
   }
 
+  const searxBase = searxngBaseUrl(config);
   if (provider === 'searxng') {
     try {
       const rows = await searchSearxng({
-        baseUrl: searxngBaseUrl(config),
+        baseUrl: searxBase,
         query,
         limit,
         timeoutMs: config.searxngTimeoutMs
@@ -415,6 +467,57 @@ export async function runSearchProviders({
         query,
         message: error.message
       });
+      if (shouldFallbackDuckduckgoToSearxng(error)) {
+        const fallbackBase = searxBase || LOCAL_SEARXNG_FALLBACK_BASE_URL;
+        const fallbackTimeoutMs = duckduckgoFallbackSearxngTimeoutMs(config);
+        try {
+          const fallbackRows = await searchSearxng({
+            baseUrl: fallbackBase,
+            query,
+            limit,
+            timeoutMs: fallbackTimeoutMs
+          });
+          if (fallbackRows.length > 0) {
+            logger?.info?.('search_provider_fallback_used', {
+              from_provider: 'duckduckgo',
+              to_provider: 'searxng',
+              query,
+              reason: String(error.code || error.name || 'duckduckgo_failed').trim() || 'duckduckgo_failed'
+            });
+          }
+          return dedupeResults(fallbackRows);
+        } catch (fallbackError) {
+          logger?.warn?.('search_provider_failed', {
+            provider: 'searxng',
+            query,
+            message: fallbackError.message,
+            fallback_from: 'duckduckgo'
+          });
+        }
+      }
+      return [];
+    }
+  }
+  if (provider === 'google') {
+    if (!searxBase) {
+      return [];
+    }
+    try {
+      const rows = await searchSearxng({
+        baseUrl: searxBase,
+        query,
+        limit,
+        timeoutMs: config.searxngTimeoutMs,
+        engines: 'google',
+        provider: 'google'
+      });
+      return dedupeResults(rows);
+    } catch (error) {
+      logger?.warn?.('search_provider_failed', {
+        provider: 'google',
+        query,
+        message: error.message
+      });
       return [];
     }
   }
@@ -440,28 +543,62 @@ export async function runSearchProviders({
     }
   }
 
-  if (provider === 'google' || provider === 'dual') {
-    if (!googleCseDisabled && config.googleCseKey && config.googleCseCx) {
-      tasks.push(
-        searchGoogleCse({
-          key: config.googleCseKey,
-          cx: config.googleCseCx,
-          query,
-          limit
-        }).catch((error) => {
-          logger?.warn?.('search_provider_failed', {
-            provider: 'google',
-            query,
-            message: error.message
-          });
-          return [];
-        })
-      );
-    }
-  }
-
   if (!tasks.length && provider === 'dual') {
-    const searxBase = searxngBaseUrl(config);
+    if (!searxBase && config.duckduckgoEnabled !== false) {
+      let duckduckgoRows = [];
+      let duckduckgoError = null;
+      try {
+        duckduckgoRows = await searchDuckduckgo({
+          baseUrl: duckduckgoBaseUrl(config),
+          query,
+          limit,
+          timeoutMs: config.duckduckgoTimeoutMs
+        });
+      } catch (error) {
+        duckduckgoError = error;
+        logger?.warn?.('search_provider_failed', {
+          provider: 'duckduckgo',
+          query,
+          message: error.message
+        });
+      }
+
+      if (duckduckgoRows.length > 0) {
+        return dedupeResults(duckduckgoRows);
+      }
+      if (duckduckgoError && !shouldFallbackDuckduckgoToSearxng(duckduckgoError)) {
+        return [];
+      }
+
+      try {
+        const fallbackRows = await searchSearxng({
+          baseUrl: LOCAL_SEARXNG_FALLBACK_BASE_URL,
+          query,
+          limit,
+          timeoutMs: duckduckgoFallbackSearxngTimeoutMs(config)
+        });
+        if (fallbackRows.length > 0) {
+          logger?.info?.('search_provider_fallback_used', {
+            from_provider: 'dual',
+            to_provider: 'searxng',
+            query,
+            reason: duckduckgoError
+              ? String(duckduckgoError.code || duckduckgoError.name || 'duckduckgo_failed').trim() || 'duckduckgo_failed'
+              : 'duckduckgo_empty'
+          });
+        }
+        return dedupeResults(fallbackRows);
+      } catch (error) {
+        logger?.warn?.('search_provider_failed', {
+          provider: 'searxng',
+          query,
+          message: error.message,
+          fallback_from: 'dual'
+        });
+        return [];
+      }
+    }
+
     const fallbackTasks = [];
     if (searxBase) {
       fallbackTasks.push(
@@ -517,10 +654,11 @@ export function searchProviderAvailability(config) {
   const bingReady = Boolean(config.bingSearchEndpoint && config.bingSearchKey);
   const googleReady = !googleCseDisabled && Boolean(config.googleCseKey && config.googleCseCx);
   const searxngReady = Boolean(searxngBaseUrl(config));
+  const googleSearchReady = searxngReady;
   const duckduckgoReady = config.duckduckgoEnabled !== false;
   const activeProviders = activeProvidersForConfig(provider, {
     bingReady,
-    googleReady,
+    googleReady: googleSearchReady,
     searxngReady,
     duckduckgoReady
   });
@@ -540,6 +678,7 @@ export function searchProviderAvailability(config) {
     provider,
     bing_ready: bingReady,
     google_ready: googleReady,
+    google_search_ready: googleSearchReady,
     google_cse_disabled: googleCseDisabled,
     searxng_ready: searxngReady,
     duckduckgo_ready: duckduckgoReady,
@@ -549,7 +688,7 @@ export function searchProviderAvailability(config) {
     fallback_reason: fallbackReason,
     internet_ready:
       (provider === 'bing' && bingReady) ||
-      (provider === 'google' && googleReady) ||
+      (provider === 'google' && googleSearchReady) ||
       (provider === 'searxng' && searxngReady) ||
       (provider === 'duckduckgo' && duckduckgoReady) ||
       (provider === 'dual' && (bingReady || googleReady || searxngReady || duckduckgoReady))

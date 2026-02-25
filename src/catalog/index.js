@@ -5,7 +5,7 @@ export {
   addProductsBulk,
   updateProduct,
   removeProduct,
-  seedFromWorkbook,
+  seedFromCatalog,
   listProducts
 } from './productCatalog.js';
 export {
@@ -18,7 +18,7 @@ export {
   getBrandsForCategory,
   findBrandByAlias,
   seedBrandsFromActiveFiltering,
-  seedBrandsFromWorkbook,
+  seedBrandsFromCatalog,
   renameBrand,
   getBrandImpactAnalysis,
   appendBrandRenameLog
@@ -44,10 +44,10 @@ export {
 export { generateIdentifier, nextAvailableId } from './productIdentity.js';
 export { slugify, buildProductId } from './slugify.js';
 export {
-  loadWorkbookProducts,
-  loadWorkbookProductsWithFields,
+  loadCatalogProducts,
+  loadCatalogProductsWithFields,
   discoverCategoriesLocal
-} from './workbookProductLoader.js';
+} from './catalogProductLoader.js';
 export {
   loadActiveFilteringData,
   discoverCategories

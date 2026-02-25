@@ -35,7 +35,7 @@ helper_files/
 - `activeFiltering.json`: fixed filename for product helper rows (brand/model/variant + optional URLs/keys).
 - `field_rules.json`: category field contract baseline (optional if generating from studio).
 - `hbs_tooltips<Category>.js`: tooltip bank for `tooltip_key` resolution (optional).
-- workbook (`.xlsm`/`.xlsx`): seed data for mapping + contract drafting in the studio.
+- field-studio source spreadsheet (`.xlsm`/`.xlsx`): seed data for mapping + contract drafting in the studio.
 
 Notes:
 

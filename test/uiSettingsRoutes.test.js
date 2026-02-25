@@ -61,7 +61,7 @@ test('ui-settings GET returns durable autosave defaults', async (t) => {
   const result = await handler(['ui-settings'], new URLSearchParams(), 'GET', {}, {});
   assert.equal(result.status, 200);
   assert.equal(result.body.studioAutoSaveAllEnabled, false);
-  assert.equal(result.body.studioAutoSaveEnabled, false);
+  assert.equal(result.body.studioAutoSaveEnabled, true);
   assert.equal(result.body.studioAutoSaveMapEnabled, true);
   assert.equal(result.body.runtimeAutoSaveEnabled, true);
   assert.equal(result.body.storageAutoSaveEnabled, false);
@@ -93,11 +93,13 @@ test('ui-settings PUT persists autosave toggles and emits settings data-change',
   assert.equal(putResult.status, 200);
   assert.equal(putResult.body.ok, true);
   assert.equal(putResult.body.studioAutoSaveAllEnabled, true);
-  assert.equal(putResult.body.studioAutoSaveEnabled, false);
-  assert.equal(putResult.body.studioAutoSaveMapEnabled, false);
+  assert.equal(putResult.body.studioAutoSaveEnabled, true);
+  assert.equal(putResult.body.studioAutoSaveMapEnabled, true);
   assert.equal(putResult.body.runtimeAutoSaveEnabled, false);
   assert.equal(putResult.body.storageAutoSaveEnabled, true);
   assert.equal(putResult.body.llmSettingsAutoSaveEnabled, false);
+  assert.equal(putResult.body.applied.studioAutoSaveEnabled, true);
+  assert.equal(putResult.body.applied.studioAutoSaveMapEnabled, true);
   assert.equal(Object.hasOwn(putResult.body, 'unknownKeyShouldBeIgnored'), false);
 
   const getResult = await handler(['ui-settings'], new URLSearchParams(), 'GET', {}, {});
@@ -116,7 +118,41 @@ test('ui-settings PUT persists autosave toggles and emits settings data-change',
   const raw = await fs.readFile(userSettingsPath, 'utf8');
   const saved = JSON.parse(raw);
   assert.equal(saved.ui.studioAutoSaveAllEnabled, true);
+  assert.equal(saved.ui.studioAutoSaveEnabled, true);
+  assert.equal(saved.ui.studioAutoSaveMapEnabled, true);
   assert.equal(saved.ui.storageAutoSaveEnabled, true);
   assert.equal(saved.ui.runtimeAutoSaveEnabled, false);
   assert.equal(saved.ui.llmSettingsAutoSaveEnabled, false);
+});
+
+test('ui-settings PUT enforces field-studio-map autosave implies key navigator autosave', async (t) => {
+  const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-ui-settings-shared-autosave-'));
+  t.after(async () => {
+    await fs.rm(helperRoot, { recursive: true, force: true });
+  });
+  const handler = registerConfigRoutes(makeCtx({
+    config: { helperFilesRoot: helperRoot },
+    HELPER_ROOT: helperRoot,
+    readJsonBody: async () => ({
+      studioAutoSaveAllEnabled: false,
+      studioAutoSaveEnabled: false,
+      studioAutoSaveMapEnabled: true,
+      runtimeAutoSaveEnabled: true,
+      storageAutoSaveEnabled: false,
+      llmSettingsAutoSaveEnabled: true,
+    }),
+  }));
+
+  const putResult = await handler(['ui-settings'], new URLSearchParams(), 'PUT', {}, {});
+  assert.equal(putResult.status, 200);
+  assert.equal(putResult.body.studioAutoSaveAllEnabled, false);
+  assert.equal(putResult.body.studioAutoSaveMapEnabled, true);
+  assert.equal(putResult.body.studioAutoSaveEnabled, true);
+  assert.equal(putResult.body.applied.studioAutoSaveMapEnabled, true);
+  assert.equal(putResult.body.applied.studioAutoSaveEnabled, true);
+
+  const getResult = await handler(['ui-settings'], new URLSearchParams(), 'GET', {}, {});
+  assert.equal(getResult.status, 200);
+  assert.equal(getResult.body.studioAutoSaveMapEnabled, true);
+  assert.equal(getResult.body.studioAutoSaveEnabled, true);
 });

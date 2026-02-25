@@ -44,6 +44,7 @@ function createRow(query) {
     order_metric: 0,
     order_metric_label: '',
     order_justification: '',
+    order_priority_breakdown: null,
     status: 'planned',
   };
 }
@@ -87,28 +88,26 @@ function computePlannedPriorityScore(row) {
   const hasFast = passTokens.some((value) => value.includes('fast'));
   const hasFieldRules = row.hint_sources.some((source) => normalizeToken(source).startsWith('field_rules.'));
   const hasDomainConstraint = row.source_hosts.length > 0 || row.domain_hints.length > 0 || /\bsite:\s*[a-z0-9.-]+/i.test(row.query);
-  const score = (
-    (hasValidate ? 28 : 0)
-    + (hasReason ? 20 : 0)
-    + (hasPrimary ? 14 : 0)
-    + (hasFast ? 8 : 0)
-    + Math.min(24, row.target_fields.length * 4)
-    + Math.min(10, row.attempts * 2)
-    + (hasFieldRules ? 8 : 0)
-    + (hasDomainConstraint ? 6 : 0)
-  );
-  return Math.max(0, score);
+  const passType = (hasValidate ? 28 : 0) + (hasReason ? 20 : 0) + (hasPrimary ? 14 : 0) + (hasFast ? 8 : 0);
+  const targetCoverage = Math.min(24, row.target_fields.length * 4);
+  const attempts = Math.min(10, row.attempts * 2);
+  const constraints = (hasFieldRules ? 8 : 0) + (hasDomainConstraint ? 6 : 0);
+  const total = Math.max(0, passType + targetCoverage + attempts + constraints);
+  return { total, passType, targetCoverage, attempts, constraints };
 }
 
 function selectedByTooltip(row) {
   if (row.selected_by === 'planner') {
     const passText = row.planner_passes.length > 0 ? row.planner_passes.join(', ') : 'planner pass';
-    return `Selected by the LLM search planner (${passText}) to improve coverage for missing fields and add better search angles.`;
+    return `Selected by the LLM search planner (${passText}) to close missing field coverage with higher-value search angles.`;
   }
   return 'Selected by deterministic search-profile rules (identity, field hints, and query templates), not by the LLM planner.';
 }
 
 function orderJustification(row, firstSentMs) {
+  const priority = computePlannedPriorityScore(row);
+  row.order_priority_breakdown = priority;
+
   if (row.execution_order != null && row.sent_ts) {
     const sentMs = parseTsMs(row.sent_ts);
     const deltaSec = sentMs > 0 && firstSentMs > 0 ? Math.max(0, (sentMs - firstSentMs) / 1000) : 0;
@@ -120,10 +119,9 @@ function orderJustification(row, firstSentMs) {
     return;
   }
 
-  const priorityScore = computePlannedPriorityScore(row);
-  row.order_metric = priorityScore;
-  row.order_metric_label = `P${priorityScore}`;
-  row.order_justification = `${row.order_metric_label}. Not sent yet. Ranked by planned priority score from pass type, target coverage, and constraints.`;
+  row.order_metric = priority.total;
+  row.order_metric_label = `P${priority.total}`;
+  row.order_justification = `${row.order_metric_label} = pass ${priority.passType} + target ${priority.targetCoverage} + attempts ${priority.attempts} (from ${row.attempts} logged attempts) + constraints ${priority.constraints}. Not sent yet.`;
 }
 
 export function queryJourneyStatusLabel(status) {

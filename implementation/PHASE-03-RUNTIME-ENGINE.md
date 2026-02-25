@@ -141,7 +141,7 @@ Step 7: RANGE CHECK
 Step 8: CUSTOM NORMALIZATION
   - If normalization_fn defined, run named function
   - Named functions in normalization_functions.js:
-    strip_unit_suffix, parse_date_excel, parse_polling_list,
+    strip_unit_suffix, parse_date_serial, parse_polling_list,
     parse_dimension_list, normalize_color_list, parse_latency_list,
     normalize_boolean_string, parse_price_range, etc.
 
@@ -383,8 +383,8 @@ const NORMALIZATION_FUNCTIONS = {
   },
 
   // ─── DATES ───
-  parse_date_excel: (val) => {
-    // Excel serial date → ISO date string
+  parse_date_serial: (val) => {
+    // spreadsheet serial date → ISO date string
     if (typeof val === 'number') {
       const date = new Date((val - 25569) * 86400 * 1000);
       return date.toISOString().split('T')[0];

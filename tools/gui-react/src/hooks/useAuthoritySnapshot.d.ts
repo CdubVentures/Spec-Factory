@@ -2,7 +2,7 @@ export type AuthoritySnapshot = {
   category: string;
   authority_version: string;
   version: {
-    draft_hash: string | null;
+    map_hash: string | null;
     compiled_hash: string | null;
     specdb_sync_version: number | null;
     updated_at: string | null;
@@ -11,7 +11,7 @@ export type AuthoritySnapshot = {
   compile_stale: boolean;
   source_timestamps: {
     compiled_at: string | null;
-    draft_saved_at: string | null;
+    map_saved_at: string | null;
     specdb_sync_at: string | null;
   };
   specdb_sync: {

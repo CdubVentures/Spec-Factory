@@ -28,7 +28,7 @@ export function registerTestModeRoutes(ctx) {
     buildDeterministicSourceResults,
     buildSeedComponentDB,
     buildValidationChecks,
-    loadComponentIdentityPoolsFromWorkbook,
+    loadComponentIdentityPools,
     runTestProduct,
     runComponentReviewBatch,
     purgeTestModeCategoryState,
@@ -91,7 +91,7 @@ export function registerTestModeRoutes(ctx) {
       const componentTypes = (sourceAnalysis?.summary?.componentTypes || [])
         .map((row) => String(row?.type || '').trim())
         .filter(Boolean);
-      const identityPoolsByType = await loadComponentIdentityPoolsFromWorkbook({
+      const identityPoolsByType = await loadComponentIdentityPools({
         componentTypes,
         strict: true,
       });

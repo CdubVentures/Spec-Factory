@@ -74,7 +74,7 @@ Stage 1: DISCOVER
   - Read existing _generated/ artifacts for diffing
 
 Stage 2: PARSE
-  - Read field_catalog.xlsx using ExcelJS
+  - Read field catalog authority artifacts from canonical JSON sources
     - Sheet "fields": field_key, display_name, group, data_type, output_shape, unit, etc.
     - Sheet "enums": enum_name, canonical_value, aliases (comma-separated)
     - Sheet "parse_patterns": field_key, regex, group_index, unit, convert_fn
@@ -98,7 +98,7 @@ Stage 3: VALIDATE SOURCE
 Stage 4: TRANSFORM
   - Normalize all field keys to snake_case
   - Expand alias strings into arrays
-  - Convert Excel dates to ISO-8601
+  - Convert spreadsheet dates to ISO-8601
   - Build alias lookup maps (reverse index: alias → canonical)
   - Compute derived fields (e.g., field_count)
   - Resolve shared enums/patterns from _shared/
@@ -223,11 +223,11 @@ fixtures/golden/<category>/
 #### Golden-File CLI Commands
 
 ```bash
-# Create golden file from existing Excel data
+# Create golden file from existing spreadsheet data
 node src/cli/spec.js create-golden --category mouse --product-id mouse-razer-viper-v3-pro
 
-# Batch-create golden files from Excel (first N products)
-node src/cli/spec.js create-golden --category mouse --from-excel --count 50
+# Batch-create golden files from spreadsheet (first N products)
+node src/cli/spec.js create-golden --category mouse --from-spreadsheet --count 50
 
 # Run golden-file validation (field rules only — no crawling)
 node src/cli/spec.js test-golden --category mouse
@@ -391,7 +391,7 @@ This enables:
 
 | Tool | Purpose | Install |
 |------|---------|---------|
-| **ExcelJS** | Read authoring .xlsx files | `npm install exceljs` |
+| **Node fs/path** | Read authoring JSON artifacts | Built-in |
 | **AJV + ajv-formats** | JSON Schema validation | `npm install ajv ajv-formats` |
 | **Zod** | Runtime schema validation | `npm install zod` |
 | **zod-to-json-schema** | Export Zod → JSON Schema | `npm install zod-to-json-schema` |
@@ -422,7 +422,7 @@ This enables:
 3. ☐ `compile-rules --watch` detects file changes and recompiles within 1 second
 4. ☐ `compile-rules --dry-run` shows diff without writing
 5. ☐ `validate-rules` catches all schema violations with clear error messages
-6. ☐ 50 golden files created from existing mouse Excel data
+6. ☐ 50 golden files created from existing mouse spreadsheet data
 7. ☐ `test-golden --category mouse` validates all 50 fixtures against field_rules
 8. ☐ `accuracy-report` produces field-level precision/recall metrics
 9. ☐ key_migrations.json correctly transforms legacy field names

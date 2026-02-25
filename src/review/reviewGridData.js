@@ -71,7 +71,18 @@ async function readOverrideFile(filePath) {
   return null;
 }
 
-function parseExcelRowFromCell(cell) {
+async function readJsonIfExists(filePath) {
+  try {
+    const raw = await fs.readFile(filePath, 'utf8');
+    const parsed = JSON.parse(raw);
+    return isObject(parsed) ? parsed : null;
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+  return null;
+}
+
+function parseFieldStudioRowFromCell(cell) {
   const text = String(cell || '').trim().toUpperCase();
   const match = text.match(/[A-Z]+(\d+)/);
   if (!match) {
@@ -81,13 +92,13 @@ function parseExcelRowFromCell(cell) {
   return Number.isFinite(row) ? row : null;
 }
 
-function extractExcelHints(rule = {}) {
+function extractFieldStudioHints(rule = {}) {
   const blocks = [
-    rule.excel_hints,
-    rule.excel
+    rule.field_studio_hints,
+    rule.field_studio
   ].filter(isObject);
   for (const block of blocks) {
-    for (const key of ['dataEntry', 'dataentry']) {
+    for (const key of ['dataEntry', 'dataentry', 'source']) {
       if (isObject(block[key])) {
         return block[key];
       }
@@ -100,20 +111,6 @@ function extractExcelHints(rule = {}) {
     }
   }
   return {};
-}
-
-function inferWorkbookPath(helperRoot, category) {
-  const direct = path.join(helperRoot, category, `${category}Data.xlsm`);
-  return direct;
-}
-
-async function fileExists(filePath) {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function reviewKeys(storage, category, productId) {
@@ -301,8 +298,8 @@ export async function buildReviewLayout({
   const projected = projectFieldRulesForConsumer({ fields: mergedFields }, 'review');
   const fields = isObject(projected?.fields) ? projected.fields : mergedFields;
   const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
-  const workbookPath = inferWorkbookPath(helperRoot, category);
-  const workbookExists = await fileExists(workbookPath);
+  const mapPath = path.join(helperRoot, category, '_control_plane', 'field_studio_map.json');
+  const studioMap = await readJsonIfExists(mapPath);
 
   const compiledFieldList = categoryConfig.fieldOrder || Object.keys(fields || {});
   const fieldSource = Array.isArray(fieldOrderOverride) && fieldOrderOverride.length > 0
@@ -332,11 +329,11 @@ export async function buildReviewLayout({
   for (const field of fieldSource) {
     const rule = isObject(fields[field]) ? fields[field] : {};
     const ui = isObject(rule.ui) ? rule.ui : {};
-    const excel = extractExcelHints(rule);
-    const excelRow = toInt(excel.row, parseExcelRowFromCell(excel.key_cell));
+    const sourceHints = extractFieldStudioHints(rule);
+    const sourceRow = toInt(sourceHints.row, parseFieldStudioRowFromCell(sourceHints.key_cell));
     const positionalGroup = positionalGroupMap.get(normalizeField(field));
     rows.push({
-      excel_row: excelRow > 0 ? excelRow : null,
+      source_row: sourceRow > 0 ? sourceRow : null,
       group: positionalGroup || String(ui.group || '').trim(),
       key: normalizeField(field),
       label: String(ui.label || field),
@@ -354,8 +351,8 @@ export async function buildReviewLayout({
     });
   } else {
     rows.sort((a, b) => {
-      const aRow = a.excel_row === null ? Number.MAX_SAFE_INTEGER : a.excel_row;
-      const bRow = b.excel_row === null ? Number.MAX_SAFE_INTEGER : b.excel_row;
+      const aRow = a.source_row === null ? Number.MAX_SAFE_INTEGER : a.source_row;
+      const bRow = b.source_row === null ? Number.MAX_SAFE_INTEGER : b.source_row;
       if (aRow !== bRow) {
         return aRow - bRow;
       }
@@ -376,18 +373,33 @@ export async function buildReviewLayout({
     delete row._order;
   }
 
-  const excelRows = rows.map((row) => row.excel_row).filter((value) => Number.isFinite(value));
-  const minRow = excelRows.length > 0 ? Math.min(...excelRows) : 9;
-  const maxRow = excelRows.length > 0 ? Math.max(...excelRows) : 83;
+  const sourceRows = rows.map((row) => row.source_row).filter((value) => Number.isFinite(value));
+  const minRow = sourceRows.length > 0 ? Math.min(...sourceRows) : 9;
+  const maxRow = sourceRows.length > 0 ? Math.max(...sourceRows) : 83;
+  const keyList = isObject(studioMap?.key_list) ? studioMap.key_list : {};
+  const productTable = isObject(studioMap?.product_table) ? studioMap.product_table : {};
+  const keyColumn = String(keyList.column || 'B').trim().toUpperCase() || 'B';
+  const keyRowStart = toInt(keyList.row_start, 0);
+  const keyRowEnd = toInt(keyList.row_end, 0);
+  const sheet = String(keyList.sheet || 'dataEntry').trim() || 'dataEntry';
+  const keyRange = keyRowStart > 0 && keyRowEnd >= keyRowStart
+    ? `${keyColumn}${keyRowStart}:${keyColumn}${keyRowEnd}`
+    : `${keyColumn}${minRow}:${keyColumn}${maxRow}`;
+  const brandRow = toInt(productTable.brand_row, 3) || 3;
+  const modelRow = toInt(productTable.model_row, 4) || 4;
+  const sourcePath = String(studioMap?.field_studio_source_path || '').trim();
   return {
     category,
-    excel: {
-      workbook: workbookExists ? path.basename(workbookPath) : `${category}Data.xlsm`,
-      workbook_path: workbookExists ? workbookPath : '',
-      sheet: 'dataEntry',
-      key_range: `B${minRow}:B${maxRow}`,
-      brand_key_cell: 'B3',
-      model_key_cell: 'B4'
+    field_studio: {
+      map_path: mapPath,
+      has_map: isObject(studioMap),
+      source_name: sourcePath ? path.basename(sourcePath) : '',
+      source_path: sourcePath,
+      key_column: keyColumn,
+      key_range: keyRange,
+      sheet,
+      brand_key_cell: `${keyColumn}${brandRow}`,
+      model_key_cell: `${keyColumn}${modelRow}`
     },
     rows
   };
@@ -414,7 +426,7 @@ export async function readLatestArtifacts(storage, category, productId) {
 
 function dbSourceLabel(source) {
   const token = normalizeToken(source);
-  if (token === 'component_db' || token === 'known_values' || token === 'workbook' || token === 'reference') return 'Reference';
+  if (token === 'component_db' || token === 'known_values' || token === 'reference') return 'Reference';
   if (token === 'pipeline') return 'Pipeline';
   if (token === 'user') return 'user';
   return String(source || '').trim();
@@ -422,7 +434,7 @@ function dbSourceLabel(source) {
 
 function dbSourceMethod(source) {
   const token = normalizeToken(source);
-  if (token === 'component_db' || token === 'known_values' || token === 'workbook') return 'workbook_import';
+  if (token === 'component_db' || token === 'known_values' || token === 'reference') return 'contract_import';
   if (token === 'pipeline') return 'pipeline_extract';
   if (token === 'user') return 'manual_override';
   return null;
@@ -546,7 +558,7 @@ export function buildFieldState({
     // No candidate rows exist yet; preserve selected value as a synthetic candidate for slot provenance.
     const provenanceHost = String(provenanceRow.host || '').trim();
     const provenanceSourceToken = normalizeToken(provenanceRow.source || provenanceRow.source_id || '');
-    const fallbackSourceToken = provenanceSourceToken || (provenanceHost ? '' : 'workbook');
+    const fallbackSourceToken = provenanceSourceToken || (provenanceHost ? '' : 'reference');
     const fallbackSource = fallbackSourceToken
       ? (dbSourceLabel(fallbackSourceToken) || fallbackSourceToken)
       : '';
@@ -567,8 +579,8 @@ export function buildFieldState({
       method: dbSourceMethod(fallbackSourceToken) || 'selected_value',
       evidence: {
         ...baseEvidence,
-        quote: category ? `Imported from ${category}Data.xlsm` : baseEvidence.quote,
-        snippet_text: category ? `Imported from ${category}Data.xlsm` : baseEvidence.snippet_text,
+        quote: category ? `Imported from ${category} Field Studio contract` : baseEvidence.quote,
+        snippet_text: category ? `Imported from ${category} Field Studio contract` : baseEvidence.snippet_text,
         retrieved_at: summary.generated_at || baseEvidence.retrieved_at,
         source_id: fallbackSourceToken || baseEvidence.source_id || '',
       },

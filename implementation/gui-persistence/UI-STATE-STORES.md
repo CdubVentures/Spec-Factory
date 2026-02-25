@@ -7,14 +7,14 @@ UI state persistence is split into three stores plus session-scoped page helpers
 1. `collapseStore` for boolean expand/collapse toggles.
 2. `tabStore` for tab/scope/preset selections.
 3. `indexlabStore` for Indexing Lab picker selections (brand/model/variant/run).
-4. `workbenchSessionState` for Field Contract workbook table state (columns/filter/sort/selection/drawer row).
+4. `workbenchSessionState` for Field Contract session table state (columns/filter/sort/selection/drawer row).
 5. `reviewGridSessionState` for Review Grid state (sort mode, flagged-only filter, brand filter mode + selected brands).
 6. `DataTable` optional session persistence for table search and sort when `persistKey` is provided.
 
 Session-scoped stores persist to `sessionStorage`, so user preferences survive refreshes, tab navigation, and route transitions within the same browser session.
 
 Global autosave settings are an exception:
-- Studio auto-save all/workbook/mapping
+- Studio auto-save all/key-navigator/mapping
 - Runtime auto-save
 - Storage auto-save
 - LLM settings auto-save
@@ -164,8 +164,8 @@ Examples:
 - `indexing:runtime:routeSnapshot`
 - `indexing:runtime:resumePolicy`
 - `indexing:runtime:convergenceTuning`
-- `indexing:panelControls:open:{category}`
-- `indexing:sessionData:open:{category}`
+- `indexing:eventStream:nested:{category}:panelControls`
+- `indexing:eventStream:nested:{category}:sessionData`
 
 ### Runtime Ops
 
@@ -238,7 +238,6 @@ Examples:
 - `catalog:brands:addDraft:categories:{category}` (default empty)
 - `catalog:brands:addDraft:website:{category}` (default empty)
 - `runtimeOps:tab:main` (default `overview`)
-- `runtimeOps:run:{category}` (default first visible run)
 - `runtimeOps:workers:poolFilter:{category}` (default `all`)
 - `runtimeOps:workers:prefetchTab:{category}` (default `null`)
 - `runtimeOps:workers:drawerTab:{category}` (default `documents`)
@@ -276,7 +275,7 @@ Examples:
 - `studio:workbench:drawerTab` (default `contract`)
 - `studio:workbench:enumSourceTab:{category}:{fieldKey}` (default from enum source)
 - `studio:workbench:presetTab` (default `minimal`)
-- `studio:workbench:sessionState:{category}` (Field Contract workbook session state)
+- `studio:workbench:sessionState:{category}` (Field Contract session state)
 - `review:grid:sessionState:{category}` (Review Grid sort/filter/brand state)
 - `componentReview:enumField:{category}` (default first enum field for category)
 - `componentReview:table:{category}:{componentType}` (Component Review table search + sort state)
@@ -322,7 +321,7 @@ Notes:
 - Main app top navigation is route-driven (`HashRouter`) and is not stored in `tab-store`.
 - Component Review sub-tabs are category-scoped to avoid stale cross-category selection.
 - Runtime/studio/storage autosave keys are centralized in `useUiStore` and are synchronized to `/api/v1/ui-settings` at app bootstrap/runtime.
-- LLM settings auto-save remains category-scoped in `useUiStore` session state.
+- LLM settings auto-save is global in `useUiStore` session state (`llmSettings:autoSaveEnabled`) and is synchronized to `/api/v1/ui-settings`.
 
 ---
 
@@ -335,7 +334,7 @@ Keep these as local component state:
   Persist only workflow-critical drawers/modals where returning to in-progress state is expected.
 - Temporary form visibility.
 - Temporary inline edit state.
-- Data-selection pointers such as specific drawer row IDs, unless the feature explicitly scopes those IDs by category/session key and prunes stale IDs on data reload (Field Contract workbook).
+- Data-selection pointers such as specific drawer row IDs, unless the feature explicitly scopes those IDs by category/session key and prunes stale IDs on data reload (Field Contract session state).
 
 Rule: if state identity depends on dynamic data row identity, do not persist globally.
 

@@ -2,12 +2,14 @@ import { useMemo } from 'react';
 import { usePersistedToggle } from '../../../stores/collapseStore';
 import { usePersistedNullableTab } from '../../../stores/tabStore';
 import type { PrefetchSearchResult, SearchResultDetail, SerpResultRow, SearchPlanPass, PrefetchLiveSettings } from '../types';
-import { formatMs, triageDecisionBadgeClass, pctString } from '../helpers';
+import { formatMs, triageDecisionBadgeClass } from '../helpers';
 import { ScoreBar } from '../components/ScoreBar';
 import { StackedScoreBar } from '../components/StackedScoreBar';
 import { KanbanLane, KanbanCard } from '../components/KanbanLane';
 import { DrawerShell, DrawerSection } from '../../../components/common/DrawerShell';
 import { Tip } from '../../../components/common/Tip';
+import { StatCard } from '../components/StatCard';
+import { ProgressRing } from '../components/ProgressRing';
 import {
   computeDecisionCounts,
   computeTopDomains,
@@ -21,6 +23,7 @@ import {
   extractSiteScope,
   providerDisplayLabel,
   enrichResultDomains,
+  resolveDomainCapSummary,
 } from './searchResultsHelpers.js';
 
 interface PrefetchSearchResultsPanelProps {
@@ -31,49 +34,7 @@ interface PrefetchSearchResultsPanelProps {
   liveSettings?: PrefetchLiveSettings;
 }
 
-function StatCard({ label, value, tip }: { label: string; value: string | number; tip?: string }) {
-  return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 min-w-[8rem]">
-      <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-        {label}{tip && <Tip text={tip} />}
-      </div>
-      <div className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-0.5">{value}</div>
-    </div>
-  );
-}
 
-const RING_SIZE = 64;
-const RING_STROKE = 6;
-const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
-
-function ProgressRing({ numerator, denominator, label }: { numerator: number; denominator: number; label: string }) {
-  const pct = denominator > 0 ? Math.min(1, numerator / denominator) : 0;
-  const colorClass = pct >= 0.7 ? 'text-emerald-500' : pct >= 0.4 ? 'text-yellow-500' : 'text-red-400';
-
-  return (
-    <div className="text-center shrink-0">
-      <div className="relative flex items-center justify-center" style={{ width: RING_SIZE, height: RING_SIZE }}>
-        <svg width={RING_SIZE} height={RING_SIZE} className="-rotate-90">
-          <circle
-            cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_RADIUS}
-            fill="none" stroke="currentColor" className="text-gray-200 dark:text-gray-700" strokeWidth={RING_STROKE}
-          />
-          <circle
-            cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_RADIUS}
-            fill="none" stroke="currentColor" className={colorClass} strokeWidth={RING_STROKE}
-            strokeDasharray={`${pct * RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
-            strokeDashoffset={0} strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-900 dark:text-gray-100">
-          {pctString(pct)}
-        </div>
-      </div>
-      <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{label}</div>
-    </div>
-  );
-}
 
 interface ResultDetailDrawerProps {
   result: SerpResultRow;
@@ -257,6 +218,29 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
     ? new Set(details.flatMap((d) => d.results.map((r) => r.domain))).size
     : 0;
   const totalDeduped = details.reduce((sum, d) => sum + d.dedupe_count, 0);
+  const domainCapSummary = useMemo(() => {
+    if (!liveSettings) {
+      return {
+        value: 'hydrating',
+        tooltip: 'Runtime settings are still hydrating. Domain cap details will appear once settings are available.',
+      };
+    }
+    const hasRuntimeSnapshot = Boolean(
+      liveSettings.profile !== undefined
+      || liveSettings.maxPagesPerDomain !== undefined
+      || liveSettings.discoveryResultsPerQuery !== undefined
+      || liveSettings.discoveryMaxDiscovered !== undefined
+      || liveSettings.serpTriageMaxUrls !== undefined
+      || liveSettings.uberMaxUrlsPerDomain !== undefined,
+    );
+    if (!hasRuntimeSnapshot) {
+      return {
+        value: 'hydrating',
+        tooltip: 'Runtime settings are still hydrating. Domain cap details will appear once settings are available.',
+      };
+    }
+    return resolveDomainCapSummary(liveSettings);
+  }, [liveSettings]);
 
   const decisions = computeDecisionCounts(details);
   const totalDetailResults = details.reduce((sum, d) => sum + d.results.length, 0);
@@ -278,7 +262,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
       <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
           Search Results
-          <Tip text="Search Results shows what came back from the search providers. Each query is sent to a provider like SearXNG, and the raw results are deduped and triaged into Keep/Maybe/Drop decisions based on relevance scoring." />
+          <Tip text="Search Results shows what came back from configured providers (Google, Bing, DuckDuckGo, SearXNG, or Dual). Raw results are deduped and triaged into Keep/Maybe/Drop decisions based on relevance scoring." />
         </h3>
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="text-3xl text-gray-300 dark:text-gray-600 mb-3">&#128270;</div>
@@ -291,7 +275,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
             ranked URLs that are then deduped and triaged.
           </div>
           <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-3">
-            Provider: <span className="font-mono">{providerDisplayLabel(liveSettings?.searchProvider) || 'SEARXNG_BASE_URL'}</span>
+            Provider: <span className="font-mono">{providerDisplayLabel(liveSettings?.searchProvider) || (liveSettings ? 'Not set' : 'runtime settings hydrating')}</span>
           </div>
         </div>
       </div>
@@ -304,7 +288,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
       <div className="flex items-center gap-2">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
           Search Results
-          <Tip text="Search Results shows what came back from the search providers. Each query is sent to a provider like SearXNG, and the raw results are deduped and triaged into Keep/Maybe/Drop decisions based on relevance scoring." />
+          <Tip text="Search Results shows what came back from configured providers (Google, Bing, DuckDuckGo, SearXNG, or Dual). Raw results are deduped and triaged into Keep/Maybe/Drop decisions based on relevance scoring." />
         </h3>
         {isComplete && (
           <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
@@ -435,6 +419,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                   numerator={decisions.keep}
                   denominator={totalDetailResults}
                   label="Keep Rate"
+                  strokeWidth={6}
                 />
               )}
             </div>
@@ -449,6 +434,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
           <StatCard label="Total Results" value={totalResults} tip="Raw result count before any deduplication or triage. This is the sum of results returned by each provider for each query." />
           {uniqueUrlCount > 0 && <StatCard label="Unique URLs" value={uniqueUrlCount} tip="Distinct URLs remaining after cross-query deduplication. The same URL often appears in results for multiple queries." />}
           {uniqueDomains > 0 && <StatCard label="Unique Domains" value={uniqueDomains} tip="How many different websites contributed results. More domain diversity generally means better evidence coverage." />}
+          <StatCard label="Domain Cap" value={domainCapSummary.value} tip={domainCapSummary.tooltip} />
           {totalDeduped > 0 && <StatCard label="Deduped" value={totalDeduped} tip="URLs that appeared in multiple queries and were collapsed into a single entry. Higher dedupe counts suggest overlapping queries." />}
           {decisions.keep > 0 && <StatCard label="Kept" value={decisions.keep} tip="Results that passed triage and will proceed to fetching. These URLs are expected to contain relevant spec information." />}
           {filteredCount > 0 && <StatCard label="Dropped" value={filteredCount} tip="Results removed during triage because they scored below the relevance threshold or matched a skip pattern (e.g. forums, shopping carts)." />}
@@ -721,7 +707,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
           <summary className="cursor-pointer text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
             Debug: Raw Search Results
           </summary>
-          <pre className="mt-2 text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-3 overflow-x-auto max-h-60 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+          <pre className="mt-2 text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-3 overflow-x-auto overflow-y-auto max-h-60 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
             {JSON.stringify(details, null, 2)}
           </pre>
         </details>

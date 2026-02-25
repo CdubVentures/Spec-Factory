@@ -226,8 +226,18 @@ async function loadEnabledSourceStrategyRows({ config = {}, category = '' } = {}
   }
 }
 
-export async function runProduct({ storage, config, s3Key, jobOverride = null, roundContext = null }) {
-  const runId = buildRunId();
+export async function runProduct({
+  storage,
+  config,
+  s3Key,
+  jobOverride = null,
+  roundContext = null,
+  runIdOverride = '',
+}) {
+  const normalizedRunIdOverride = String(runIdOverride || '').trim();
+  const runId = /^[A-Za-z0-9._-]{8,96}$/.test(normalizedRunIdOverride)
+    ? normalizedRunIdOverride
+    : buildRunId();
   const logger = new EventLogger({
     storage,
     runtimeEventsKey: config.runtimeEventsKey || '_runtime/events.jsonl',

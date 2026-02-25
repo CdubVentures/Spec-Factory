@@ -26,9 +26,24 @@ test('settings authority bootstrap composes runtime, convergence, and autosave s
   assert.equal(settingsAuthorityText.includes('useConvergenceSettingsAuthority'), true, 'settings authority should compose convergence settings authority slice');
   assert.equal(settingsAuthorityText.includes('runtimeAutoSaveEnabled'), true, 'settings authority should include runtime autosave state');
   assert.equal(settingsAuthorityText.includes('llmSettingsAutoSaveEnabled'), true, 'settings authority should include llm autosave state');
-  assert.equal(settingsAuthorityText.includes('runtime.reload()'), true, 'settings authority bootstrap should trigger runtime settings hydrate/reload');
-  assert.equal(settingsAuthorityText.includes('convergence.reload()'), true, 'settings authority bootstrap should trigger convergence settings hydrate/reload');
+  assert.equal(settingsAuthorityText.includes('uiSettingsPersistState'), true, 'settings authority should include ui settings persistence status in canonical snapshot');
+  assert.equal(settingsAuthorityText.includes('uiSettingsPersistMessage'), true, 'settings authority should include ui settings persistence error details in canonical snapshot');
+  assert.equal(settingsAuthorityText.includes("setUiSettingsPersistState('saving')"), true, 'settings authority should mark ui settings status as saving when autosave persistence starts');
+  assert.equal(settingsAuthorityText.includes("setUiSettingsPersistState('error')"), true, 'settings authority should mark ui settings status as error on persistence failure');
+  assert.equal(settingsAuthorityText.includes('onPersisted: () => {'), true, 'settings authority should consume ui settings persisted callback for status clearing');
+  assert.equal(settingsAuthorityText.includes('runSettingsStartupHydrationPipeline'), true, 'settings authority should use a unified startup hydration pipeline');
+  assert.equal(settingsAuthorityText.includes('runCategoryScopedSettingsHydrationPipeline'), true, 'settings authority should use a category-scoped hydration pipeline for category changes');
+  assert.equal(settingsAuthorityText.includes('isSettingsAuthoritySnapshotReady'), true, 'settings authority should expose a shared readiness selector');
+  assert.equal(settingsAuthorityText.includes('runtimeReload: runtimeReloadRef.current'), true, 'startup hydration pipeline should include runtime reload in the pipeline contract');
+  assert.equal(settingsAuthorityText.includes('convergenceReload: convergenceReloadRef.current'), true, 'startup hydration pipeline should include convergence reload in the pipeline contract');
+  assert.equal(settingsAuthorityText.includes('uiReload: uiReloadRef.current'), true, 'startup hydration pipeline should include ui-settings reload in the pipeline contract');
+  assert.equal(settingsAuthorityText.includes('enabled: false'), true, 'settings authority bootstrap should disable auto-query mode and hydrate through the shared pipeline');
   assert.equal(appShellText.includes('useSettingsAuthorityBootstrap'), true, 'App shell should bootstrap settings authority once at app startup');
+  assert.equal(appShellText.includes('useSettingsAuthorityStore'), true, 'App shell should read canonical settings snapshot from shared authority store');
+  assert.equal(appShellText.includes('isSettingsAuthoritySnapshotReady'), true, 'App shell should evaluate settings readiness through shared selector');
+  assert.equal(appShellText.includes('Hydrating settings...'), true, 'App shell should block first paint until settings hydration is ready');
+  assert.equal(appShellText.includes('Saving autosave preference changes...'), true, 'App shell should expose ui settings save-in-progress status');
+  assert.equal(appShellText.includes('Failed to persist autosave preference changes. UI reverted to last persisted values.'), true, 'App shell should expose ui settings persistence failure status');
 });
 
 test('settings matrix wiring uses shared authority paths across surfaces', () => {
@@ -40,10 +55,12 @@ test('settings matrix wiring uses shared authority paths across surfaces', () =>
   const studioPageText = readText(STUDIO_PAGE);
 
   assert.equal(indexingPageText.includes('useRuntimeSettingsAuthority'), true, 'Indexing page should subscribe to runtime settings authority');
+  assert.equal(indexingPageText.includes('useSettingsAuthorityStore'), true, 'Indexing page should read readiness from settings authority store');
   assert.equal(indexingPageText.includes('/runtime-settings'), false, 'Indexing page should not directly own runtime settings endpoint');
 
   assert.equal(indexingPageText.includes('useConvergenceSettingsAuthority'), true, 'Indexing page should subscribe to convergence settings authority');
   assert.equal(pipelineSettingsText.includes('useConvergenceSettingsAuthority'), true, 'Pipeline settings page should subscribe to convergence settings authority');
+  assert.equal(pipelineSettingsText.includes('useSettingsAuthorityStore'), true, 'Pipeline settings page should read readiness from settings authority store');
   assert.equal(indexingPageText.includes('/convergence-settings'), false, 'Indexing page should not directly own convergence settings endpoint');
   assert.equal(pipelineSettingsText.includes('/convergence-settings'), false, 'Pipeline settings page should not directly own convergence settings endpoint');
   assert.equal(indexingPageText.includes('reloadConvergenceSettings'), true, 'Indexing page should expose convergence reload through authority hook');
@@ -53,6 +70,8 @@ test('settings matrix wiring uses shared authority paths across surfaces', () =>
   assert.equal(uiStoreText.includes('llmSettings:autoSave:'), false, 'uiStore should not use category-scoped llm autosave keys');
   assert.equal(llmSettingsPageText.includes('llmSettingsAutoSaveEnabled'), true, 'LLM settings page should subscribe to llm autosave state from uiStore');
   assert.equal(llmSettingsPageText.includes('setLlmSettingsAutoSaveEnabled'), true, 'LLM settings page should write llm autosave state through uiStore');
+  assert.equal(llmSettingsPageText.includes('useSettingsAuthorityStore'), true, 'LLM settings page should read readiness from settings authority store');
+  assert.equal(llmSettingsPageText.includes('llmSettingsReady'), true, 'LLM settings page should gate controls on shared llm readiness state');
   assert.equal(llmSettingsPageText.includes('llmSettings:autoSave:'), false, 'LLM settings page should not directly own llm autosave key string');
   assert.equal(llmSettingsAuthorityText.includes('/llm-settings/'), true, 'LLM settings authority should own llm settings route usage');
   assert.equal(llmSettingsPageText.includes('useLlmSettingsAuthority'), true, 'LLM settings page should subscribe to llm settings authority');

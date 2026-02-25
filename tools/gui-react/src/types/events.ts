@@ -13,6 +13,8 @@ export interface ProcessStatus {
   running: boolean;
   relocating?: boolean;
   relocatingRunId?: string | null;
+  run_id?: string | null;
+  runId?: string | null;
   pid?: number;
   command?: string;
   startedAt?: string;

@@ -21,6 +21,9 @@ test('convergence settings are owned by a shared authority module', () => {
   assert.equal(authorityText.includes('/convergence-settings'), true, 'authority module should own convergence settings API route usage');
   assert.equal(indexingPageText.includes('useConvergenceSettingsAuthority'), true, 'Indexing page should use shared convergence settings authority');
   assert.equal(pipelineSettingsText.includes('useConvergenceSettingsAuthority'), true, 'Pipeline Settings page should use shared convergence settings authority');
+  assert.equal(pipelineSettingsText.includes('useSettingsAuthorityStore'), true, 'Pipeline Settings page should read readiness from shared settings authority snapshot');
+  assert.equal(pipelineSettingsText.includes('const convergenceHydrated = convergenceSettingsReady && !isLoading;'), true, 'Pipeline settings should gate control readiness on shared convergence snapshot readiness');
+  assert.equal(pipelineSettingsText.includes('const sourceStrategyHydrated = isAll || (sourceStrategySettingsReady && !sourceStrategyLoading);'), true, 'Pipeline settings should gate source strategy rendering on shared source-strategy snapshot readiness');
   assert.equal(indexingPageText.includes('/convergence-settings'), false, 'Indexing page should not directly read/write convergence settings endpoint');
   assert.equal(pipelineSettingsText.includes('/convergence-settings'), false, 'Pipeline Settings page should not directly read/write convergence settings endpoint');
 });

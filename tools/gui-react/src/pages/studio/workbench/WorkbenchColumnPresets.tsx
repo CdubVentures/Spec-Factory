@@ -16,6 +16,7 @@ interface Props {
   autoSaveEnabled: boolean;
   setAutoSaveEnabled: (v: boolean) => void;
   autoSaveLocked: boolean;
+  autoSaveLockReason?: string;
 }
 
 export function WorkbenchColumnPresets({
@@ -31,6 +32,7 @@ export function WorkbenchColumnPresets({
   autoSaveEnabled,
   setAutoSaveEnabled,
   autoSaveLocked,
+  autoSaveLockReason,
 }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
@@ -123,7 +125,9 @@ export function WorkbenchColumnPresets({
             : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
         } ${autoSaveLocked ? 'opacity-80 cursor-not-allowed' : ''}`}
       >
-        {autoSaveLocked ? 'Auto-save On (Locked by Auto-save ALL)' : (autoSaveEnabled ? 'Auto-save On' : 'Auto-save Off')}
+        {autoSaveLocked
+          ? `Auto-save On (Locked by ${autoSaveLockReason || 'Auto-save ALL'})`
+          : (autoSaveEnabled ? 'Auto-save On' : 'Auto-save Off')}
         {saving && (
           <span
             className="absolute inline-block h-2 w-2 rounded-full bg-gray-400 animate-pulse border border-white/90 shadow-sm"

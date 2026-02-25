@@ -69,7 +69,14 @@ describe('buildQueryJourneyRows', () => {
     assert.equal(byQuery.get('results query')?.status, 'results_received');
     assert.match(String(byQuery.get('planned-only query')?.order_metric_label || ''), /^P\d+/);
     assert.match(String(byQuery.get('planned-only query')?.order_justification || ''), /Not sent yet/i);
+    assert.match(String(byQuery.get('planned-only query')?.order_justification || ''), /logged attempts/i);
+    const plannedBreakdown = byQuery.get('planned-only query')?.order_priority_breakdown;
+    assert.equal(Boolean(plannedBreakdown), true);
+    assert.equal(typeof plannedBreakdown?.passType, 'number');
+    assert.equal(typeof plannedBreakdown?.targetCoverage, 'number');
+    assert.equal(typeof plannedBreakdown?.constraints, 'number');
     assert.match(String(byQuery.get('results query')?.order_justification || ''), /runtime timestamp ordering|First query sent/i);
+    assert.equal(Boolean(byQuery.get('results query')?.order_priority_breakdown), true);
     assert.equal(queryJourneyStatusLabel('results_received'), 'Results received');
   });
 });

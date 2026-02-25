@@ -4,21 +4,21 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  compileCategoryWorkbook,
-  introspectWorkbook,
-  loadWorkbookMap,
-  saveWorkbookMap,
-  validateWorkbookMap
+  compileCategoryFieldStudio,
+  introspectFieldStudioSource,
+  loadFieldStudioMap,
+  saveFieldStudioMap,
+  validateFieldStudioMap
 } from '../src/ingest/categoryCompile.js';
 
-function mouseWorkbookPath() {
+function mouseFieldStudioSourcePath() {
   return path.resolve('helper_files', 'mouse', 'mouseData.xlsm');
 }
 
-function buildMouseWorkbookMap(workbookPath) {
+function buildMouseFieldStudioMap(fieldStudioSourcePath) {
   return {
     version: 1,
-    workbook_path: workbookPath,
+    field_studio_source_path: fieldStudioSourcePath,
     sheet_roles: [
       { sheet: 'dataEntry', role: 'product_table' },
       { sheet: 'dataEntry', role: 'field_key_list' }
@@ -73,8 +73,8 @@ function assertSubsetDeep(expected, actual, pathLabel = 'root') {
   assert.equal(actual, expected, `${pathLabel} mismatch`);
 }
 
-test('validateWorkbookMap reports key_list errors', () => {
-  const checked = validateWorkbookMap({
+test('validateFieldStudioMap reports key_list errors', () => {
+  const checked = validateFieldStudioMap({
     version: 1,
     sheet_roles: [],
     key_list: {
@@ -89,8 +89,8 @@ test('validateWorkbookMap reports key_list errors', () => {
   );
 });
 
-test('validateWorkbookMap accepts named_range key source', () => {
-  const checked = validateWorkbookMap({
+test('validateFieldStudioMap accepts named_range key source', () => {
+  const checked = validateFieldStudioMap({
     version: 1,
     sheet_roles: [{ sheet: 'dataEntry', role: 'field_key_list' }],
     key_list: {
@@ -104,10 +104,10 @@ test('validateWorkbookMap accepts named_range key source', () => {
   assert.equal(checked.valid, true);
 });
 
-test('validateWorkbookMap accepts scratch-only maps without key_list and blank property columns', () => {
-  const checked = validateWorkbookMap({
+test('validateFieldStudioMap accepts scratch-only maps without key_list and blank property columns', () => {
+  const checked = validateFieldStudioMap({
     version: 2,
-    workbook_path: '',
+    field_studio_source_path: '',
     key_list: null,
     product_table: null,
     data_lists: [
@@ -123,6 +123,7 @@ test('validateWorkbookMap accepts scratch-only maps without key_list and blank p
     ],
     component_sources: [
       {
+        mode: 'scratch',
         type: 'switch',
         sheet: '',
         header_row: 1,
@@ -151,10 +152,42 @@ test('validateWorkbookMap accepts scratch-only maps without key_list and blank p
   );
 });
 
-test('validateWorkbookMap still requires key_list for workbook-backed component maps', () => {
-  const checked = validateWorkbookMap({
+test('validateFieldStudioMap rejects component_sources sheet mode without sheet binding', () => {
+  const checked = validateFieldStudioMap({
+    version: 2,
+    field_studio_source_path: '',
+    key_list: null,
+    product_table: null,
+    component_sources: [
+      {
+        type: 'switch',
+        sheet: '',
+        header_row: 1,
+        first_data_row: 2,
+        roles: {
+          primary_identifier: 'A',
+          maker: '',
+          aliases: [],
+          links: [],
+          properties: [
+            { field_key: 'switch_type', column: '', type: 'string', variance_policy: 'authoritative' },
+          ],
+        },
+      },
+    ],
+  });
+
+  assert.equal(checked.valid, false);
+  assert.equal(
+    checked.errors.some((row) => String(row).includes('component_sources: sheet is required when mode=sheet')),
+    true,
+  );
+});
+
+test('validateFieldStudioMap still requires key_list for field-studio-source-backed component maps', () => {
+  const checked = validateFieldStudioMap({
     version: 1,
-    workbook_path: 'C:/tmp/sample.xlsx',
+    field_studio_source_path: 'C:/tmp/sample.xlsx',
     component_sources: [
       {
         type: 'switch',
@@ -181,26 +214,26 @@ test('validateWorkbookMap still requires key_list for workbook-backed component 
   );
 });
 
-test('compileCategoryWorkbook accepts component_reference when component types are declared in map sources (app-driven)', async () => {
+test('compileCategoryFieldStudio accepts component_reference when component types are declared in map sources (app-driven)', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-component-ref-map-types-'));
   const helperRoot = path.join(tempRoot, 'helper_files');
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
-  const sourceWorkbookPath = mouseWorkbookPath();
-  const localWorkbookPath = path.join(categoryRoot, 'mouseData.xlsm');
-  await fs.copyFile(sourceWorkbookPath, localWorkbookPath);
-  const workbookMap = buildMouseWorkbookMap(localWorkbookPath);
-  workbookMap.component_sources = [
-    { component_type: 'sensor', sheet: '', roles: { properties: [] } },
-    { component_type: 'switch', sheet: '', roles: { properties: [] } },
-    { component_type: 'encoder', sheet: '', roles: { properties: [] } },
-    { component_type: 'material', sheet: '', roles: { properties: [] } },
+  const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const localFieldStudioSourcePath = path.join(categoryRoot, 'mouseData.xlsm');
+  await fs.copyFile(sourceFieldStudioSourcePath, localFieldStudioSourcePath);
+  const fieldStudioMap = buildMouseFieldStudioMap(localFieldStudioSourcePath);
+  fieldStudioMap.component_sources = [
+    { component_type: 'sensor', mode: 'scratch', sheet: '', roles: { properties: [] } },
+    { component_type: 'switch', mode: 'scratch', sheet: '', roles: { properties: [] } },
+    { component_type: 'encoder', mode: 'scratch', sheet: '', roles: { properties: [] } },
+    { component_type: 'material', mode: 'scratch', sheet: '', roles: { properties: [] } },
   ];
 
   try {
-    await saveWorkbookMap({
+    await saveFieldStudioMap({
       category: 'mouse',
-      workbookMap,
+      fieldStudioMap,
       config: {
         helperFilesRoot: helperRoot,
       },
@@ -208,22 +241,10 @@ test('compileCategoryWorkbook accepts component_reference when component types a
 
     const controlPlaneRoot = path.join(categoryRoot, '_control_plane');
     await fs.mkdir(controlPlaneRoot, { recursive: true });
-    await fs.writeFile(
-      path.join(controlPlaneRoot, 'field_rules_draft.json'),
-      JSON.stringify({
-        fields: {
-          sensor: { _edited: true, parse: { template: 'component_reference' } },
-          switch: { _edited: true, parse: { template: 'component_reference' } },
-          encoder: { _edited: true, parse: { template: 'component_reference' } },
-          material: { _edited: true, parse: { template: 'component_reference' } },
-        },
-      }, null, 2),
-      'utf8',
-    );
 
-    const result = await compileCategoryWorkbook({
+    const result = await compileCategoryFieldStudio({
       category: 'mouse',
-      workbookPath: localWorkbookPath,
+      fieldStudioSourcePath: localFieldStudioSourcePath,
       config: {
         helperFilesRoot: helperRoot,
       },
@@ -235,9 +256,9 @@ test('compileCategoryWorkbook accepts component_reference when component types a
   }
 });
 
-test('introspectWorkbook returns sheet metadata for mouse workbook fixture', async () => {
-  const introspection = await introspectWorkbook({
-    workbookPath: mouseWorkbookPath(),
+test('introspectFieldStudioSource returns sheet metadata for mouse field-studio source fixture', async () => {
+  const introspection = await introspectFieldStudioSource({
+    fieldStudioSourcePath: mouseFieldStudioSourcePath(),
     previewRows: 8,
     previewCols: 6
   });
@@ -249,29 +270,31 @@ test('introspectWorkbook returns sheet metadata for mouse workbook fixture', asy
   );
 });
 
-test('saveWorkbookMap writes field studio control map and legacy workbook map mirror', async () => {
+test('saveFieldStudioMap writes canonical field studio control map', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-field-studio-map-save-'));
   const helperRoot = path.join(tempRoot, 'helper_files');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
-  const workbookPath = mouseWorkbookPath();
-  const workbookMap = buildMouseWorkbookMap(workbookPath);
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
 
   try {
-    const saved = await saveWorkbookMap({
+    const saved = await saveFieldStudioMap({
       category: 'mouse',
-      workbookMap,
+      fieldStudioMap,
       config: { helperFilesRoot: helperRoot },
     });
 
     const controlPlane = path.join(helperRoot, 'mouse', '_control_plane');
     const fieldStudioPath = path.join(controlPlane, 'field_studio_map.json');
-    const workbookPathLegacy = path.join(controlPlane, 'workbook_map.json');
 
     assert.equal(saved.file_path, fieldStudioPath);
     assert.equal(await fs.stat(fieldStudioPath).then(() => true).catch(() => false), true);
-    assert.equal(await fs.stat(workbookPathLegacy).then(() => true).catch(() => false), true);
+    const mapFiles = (await fs.readdir(controlPlane))
+      .filter((name) => name.endsWith('_map.json'))
+      .sort();
+    assert.deepEqual(mapFiles, ['field_studio_map.json']);
 
-    const loaded = await loadWorkbookMap({
+    const loaded = await loadFieldStudioMap({
       category: 'mouse',
       config: { helperFilesRoot: helperRoot },
     });
@@ -282,7 +305,7 @@ test('saveWorkbookMap writes field studio control map and legacy workbook map mi
   }
 });
 
-test('loadWorkbookMap prefers field studio map when both control maps exist', async () => {
+test('loadFieldStudioMap only reads canonical field studio map', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-field-studio-map-load-'));
   const helperRoot = path.join(tempRoot, 'helper_files');
   const controlPlane = path.join(helperRoot, 'mouse', '_control_plane');
@@ -290,17 +313,24 @@ test('loadWorkbookMap prefers field studio map when both control maps exist', as
 
   try {
     await fs.writeFile(
-      path.join(controlPlane, 'workbook_map.json'),
+      path.join(controlPlane, 'legacy_map.json'),
       JSON.stringify({ version: 1, sheet_roles: [] }, null, 2),
       'utf8',
     );
+
+    const legacyOnly = await loadFieldStudioMap({
+      category: 'mouse',
+      config: { helperFilesRoot: helperRoot },
+    });
+    assert.equal(legacyOnly, null);
+
     await fs.writeFile(
       path.join(controlPlane, 'field_studio_map.json'),
       JSON.stringify({ version: 1, sheet_roles: [{ sheet: 'dataEntry', role: 'field_key_list' }] }, null, 2),
       'utf8',
     );
 
-    const loaded = await loadWorkbookMap({
+    const loaded = await loadFieldStudioMap({
       category: 'mouse',
       config: { helperFilesRoot: helperRoot },
     });
@@ -314,26 +344,64 @@ test('loadWorkbookMap prefers field studio map when both control maps exist', as
   }
 });
 
-test('compileCategoryWorkbook writes deterministic generated artifacts', async () => {
+test('compileCategoryFieldStudio does not write legacy field studio map mirror', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-field-studio-map-compile-only-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
+
+  try {
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+
+    const controlPlane = path.join(helperRoot, 'mouse', '_control_plane');
+    const fieldStudioPath = path.join(controlPlane, 'field_studio_map.json');
+
+    const compileResult = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: fieldStudioSourcePath,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+
+    assert.equal(compileResult.compiled, true, JSON.stringify(compileResult.errors || []));
+    assert.equal(await fs.stat(fieldStudioPath).then(() => true).catch(() => false), true);
+    const mapFiles = (await fs.readdir(controlPlane))
+      .filter((name) => name.endsWith('_map.json'))
+      .sort();
+    assert.deepEqual(mapFiles, ['field_studio_map.json']);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('compileCategoryFieldStudio writes deterministic generated artifacts', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-'));
   const helperRoot = path.join(tempRoot, 'helper_files');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
-  const workbookPath = mouseWorkbookPath();
-  const workbookMap = buildMouseWorkbookMap(workbookPath);
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
 
   try {
-    const saved = await saveWorkbookMap({
+    const saved = await saveFieldStudioMap({
       category: 'mouse',
-      workbookMap,
+      fieldStudioMap,
       config: {
         helperFilesRoot: helperRoot
       }
     });
     assert.equal(Boolean(saved.file_path), true);
 
-    const first = await compileCategoryWorkbook({
+    const first = await compileCategoryFieldStudio({
       category: 'mouse',
-      workbookPath,
+      fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
         helperFilesRoot: helperRoot
       }
@@ -375,9 +443,9 @@ test('compileCategoryWorkbook writes deterministic generated artifacts', async (
     assert.equal(first.compile_report?.artifacts?.field_rules_runtime?.identical_to_field_rules, true);
     assert.equal(typeof first.compile_report?.diff?.fields?.changed_count, 'number');
 
-    const second = await compileCategoryWorkbook({
+    const second = await compileCategoryFieldStudio({
       category: 'mouse',
-      workbookPath,
+      fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
         helperFilesRoot: helperRoot
       }
@@ -393,53 +461,373 @@ test('compileCategoryWorkbook writes deterministic generated artifacts', async (
     assert.equal(secondFieldRulesRuntimeRaw, firstFieldRulesRaw);
     assert.equal(secondKnownValuesRaw, firstKnownValuesRaw);
     assert.equal(secondUiCatalogRaw, firstUiCatalogRaw);
+    assert.equal(second.compile_report?.diff?.changed, false);
+    assert.equal(second.compile_report?.diff?.fields?.changed_count, 0);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
 
-test('compileCategoryWorkbook preserves edited consumers overrides in generated field rules', async () => {
+test('compileCategoryFieldStudio falls back to app-native compile when field studio source is missing', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-app-native-fallback-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  const categoryRoot = path.join(helperRoot, 'mouse');
+  await fs.mkdir(categoryRoot, { recursive: true });
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
+
+  try {
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: { helperFilesRoot: helperRoot },
+    });
+
+    const baselineCompile = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: fieldStudioSourcePath,
+      config: { helperFilesRoot: helperRoot },
+    });
+    assert.equal(baselineCompile.compiled, true);
+    assert.equal(baselineCompile.field_count > 0, true);
+    assert.equal(typeof baselineCompile.field_studio_source_hash, 'string');
+    assert.equal(Object.hasOwn(baselineCompile, 'workbook_hash'), false);
+    assert.equal(baselineCompile.compile_report?.compile_mode, 'field_studio_extracted');
+
+    const missingFieldStudioSourcePath = path.join(categoryRoot, 'missing-field-studio-source.xlsm');
+    const fallbackMap = {
+      ...fieldStudioMap,
+      field_studio_source_path: missingFieldStudioSourcePath,
+    };
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap: fallbackMap,
+      config: { helperFilesRoot: helperRoot },
+    });
+
+    const fallbackCompile = await compileCategoryFieldStudio({
+      category: 'mouse',
+      config: { helperFilesRoot: helperRoot },
+    });
+    assert.equal(fallbackCompile.compiled, true, JSON.stringify(fallbackCompile.errors || []));
+    assert.equal(fallbackCompile.field_studio_source_hash, null);
+    assert.equal(Object.hasOwn(fallbackCompile, 'workbook_hash'), false);
+    assert.equal(fallbackCompile.field_count, baselineCompile.field_count);
+    assert.equal(fallbackCompile.compile_report?.compile_mode, 'field_studio');
+    assert.equal(
+      (fallbackCompile.warnings || []).some((warning) => String(warning).includes('app-native compile fallback')),
+      true,
+      `expected app-native fallback warning, got: ${JSON.stringify(fallbackCompile.warnings || [])}`
+    );
+
+    const generatedRoot = path.join(categoryRoot, '_generated');
+    assert.equal(await fs.stat(path.join(generatedRoot, 'field_rules.json')).then(() => true).catch(() => false), true);
+    assert.equal(await fs.stat(path.join(generatedRoot, 'component_db', 'sensors.json')).then(() => true).catch(() => false), true);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('compileCategoryFieldStudio ignores sheet column bindings on scratch component sources', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-scratch-guard-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const workbookModeSensorSource = {
+    type: 'sensor',
+    mode: 'sheet',
+    sheet: 'sensors',
+    header_row: 1,
+    first_data_row: 2,
+    stop_after_blank_primary: 10,
+    roles: {
+      primary_identifier: 'C',
+      maker: 'B',
+      aliases: [],
+      links: ['J'],
+      properties: [
+        {
+          column: 'F',
+          field_key: 'dpi',
+          type: 'number',
+          unit: 'dpi',
+          variance_policy: 'upper_bound',
+        },
+      ],
+    },
+  };
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
+  fieldStudioMap.component_sources = [workbookModeSensorSource];
+
+  try {
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+    const baseline = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: fieldStudioSourcePath,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+    assert.equal(baseline.compiled, true);
+    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+    const baselineSensors = JSON.parse(await fs.readFile(path.join(generatedRoot, 'component_db', 'sensors.json'), 'utf8'));
+    const baselineSensorCount = Array.isArray(baselineSensors.items) ? baselineSensors.items.length : 0;
+
+    fieldStudioMap.component_sources = [
+      workbookModeSensorSource,
+      {
+        type: 'sensor',
+        mode: 'scratch',
+        sheet: 'sensors',
+        header_row: 1,
+        first_data_row: 2,
+        stop_after_blank_primary: 10,
+        roles: {
+          primary_identifier: 'A',
+          maker: '',
+          aliases: [],
+          links: [],
+          properties: [],
+        },
+      },
+    ];
+
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+    const withScratch = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: fieldStudioSourcePath,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+    assert.equal(withScratch.compiled, true, JSON.stringify(withScratch.errors || []));
+    const scratchSensors = JSON.parse(await fs.readFile(path.join(generatedRoot, 'component_db', 'sensors.json'), 'utf8'));
+    const scratchSensorCount = Array.isArray(scratchSensors.items) ? scratchSensors.items.length : 0;
+    assert.equal(scratchSensorCount, baselineSensorCount);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('compileCategoryFieldStudio includes component property keys even when missing from extracted key list', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-component-prop-keys-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  const categoryRoot = path.join(helperRoot, 'mouse');
+  await fs.mkdir(categoryRoot, { recursive: true });
+  const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const localFieldStudioSourcePath = path.join(categoryRoot, 'mouseData.xlsm');
+  await fs.copyFile(sourceFieldStudioSourcePath, localFieldStudioSourcePath);
+  const fieldStudioMap = buildMouseFieldStudioMap(localFieldStudioSourcePath);
+  fieldStudioMap.selected_keys = ['sensor'];
+  fieldStudioMap.component_sources = [
+    {
+      type: 'encoder',
+      mode: 'sheet',
+      sheet: 'encoder',
+      auto_derive_aliases: true,
+      header_row: 1,
+      first_data_row: 2,
+      stop_after_blank_primary: 10,
+      roles: {
+        primary_identifier: 'C',
+        maker: 'B',
+        aliases: [],
+        links: ['G'],
+        properties: [
+          {
+            column: 'E',
+            field_key: 'encoder_steps',
+            type: 'number',
+            unit: '',
+            variance_policy: 'authoritative',
+            constraints: [],
+          },
+        ],
+      },
+    },
+  ];
+
+  try {
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+    const result = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: localFieldStudioSourcePath,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+    assert.equal(result.compiled, true, JSON.stringify(result.errors || []));
+
+    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+    const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
+    assert.equal(Boolean(fieldRules?.fields?.encoder_steps), true, 'encoder_steps should be materialized from component_sources roles.properties');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('compileCategoryFieldStudio rejects cyclic key migration maps', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-key-cycle-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  const categoryRoot = path.join(helperRoot, 'mouse');
+  await fs.mkdir(categoryRoot, { recursive: true });
+  const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const localFieldStudioSourcePath = path.join(categoryRoot, 'mouseData.xlsm');
+  await fs.copyFile(sourceFieldStudioSourcePath, localFieldStudioSourcePath);
+  const fieldStudioMap = buildMouseFieldStudioMap(localFieldStudioSourcePath);
+  fieldStudioMap.selected_keys = ['connection', 'weight'];
+  fieldStudioMap.field_overrides = {
+    connection: {
+      canonical_key: 'weight',
+      ui: {
+        label: 'connection',
+      },
+    },
+    weight: {
+      canonical_key: 'connection',
+      ui: {
+        label: 'weight',
+      },
+    },
+  };
+
+  try {
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+
+    const result = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: localFieldStudioSourcePath,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+
+    assert.equal(result.compiled, false);
+    assert.equal(
+      (result.errors || []).some((row) => String(row).includes('key_migrations: cycle detected')),
+      true,
+    );
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('compileCategoryFieldStudio keeps key migrations aligned to generated field keys', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-key-map-align-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  const categoryRoot = path.join(helperRoot, 'mouse');
+  await fs.mkdir(categoryRoot, { recursive: true });
+  const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const localFieldStudioSourcePath = path.join(categoryRoot, 'mouseData.xlsm');
+  await fs.copyFile(sourceFieldStudioSourcePath, localFieldStudioSourcePath);
+  const fieldStudioMap = buildMouseFieldStudioMap(localFieldStudioSourcePath);
+  fieldStudioMap.selected_keys = ['lngth'];
+  fieldStudioMap.field_overrides = {
+    ...(fieldStudioMap.field_overrides || {}),
+    lngth: {
+      canonical_key: 'length',
+      ui: {
+        label: 'Length',
+      },
+    },
+  };
+
+  try {
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+
+    const result = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: localFieldStudioSourcePath,
+      config: {
+        helperFilesRoot: helperRoot,
+      },
+    });
+    assert.equal(result.compiled, true, JSON.stringify(result.errors || []));
+
+    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+    const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
+    const keyMigrations = JSON.parse(await fs.readFile(path.join(generatedRoot, 'key_migrations.json'), 'utf8'));
+    const keyMap = keyMigrations?.key_map || {};
+
+    assert.equal(Boolean(fieldRules?.fields?.lngth), true, 'fixture should still compile lngth field key');
+    assert.equal(keyMap.length, 'lngth', 'canonical alias should migrate to generated key');
+    assert.equal(Object.prototype.hasOwnProperty.call(keyMap, 'lngth'), false, 'migration target must be a real generated key');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('compileCategoryFieldStudio preserves saved map field_overrides consumers in generated field rules', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-consumers-'));
   const helperRoot = path.join(tempRoot, 'helper_files');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
-  const workbookPath = mouseWorkbookPath();
-  const workbookMap = buildMouseWorkbookMap(workbookPath);
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
 
   try {
-    await saveWorkbookMap({
+    await saveFieldStudioMap({
       category: 'mouse',
-      workbookMap,
+      fieldStudioMap,
       config: {
         helperFilesRoot: helperRoot
       }
     });
 
-    const draftPath = path.join(helperRoot, 'mouse', '_control_plane', 'field_rules_draft.json');
-    await fs.mkdir(path.dirname(draftPath), { recursive: true });
-    await fs.writeFile(
-      draftPath,
-      JSON.stringify({
-        fields: {
-          connection: {
-            _edited: true,
-            consumers: {
-              'contract.type': {
-                seed: false
-              },
-              'enum.policy': {
-                indexlab: false,
-                review: false
-              }
-            }
+    fieldStudioMap.field_overrides = {
+      ...(fieldStudioMap.field_overrides || {}),
+      connection: {
+        consumers: {
+          'contract.type': {
+            seed: false
+          },
+          'enum.policy': {
+            indexlab: false,
+            review: false
           }
         }
-      }, null, 2),
-      'utf8'
-    );
-
-    const result = await compileCategoryWorkbook({
+      }
+    };
+    await saveFieldStudioMap({
       category: 'mouse',
-      workbookPath,
+      fieldStudioMap,
+      config: {
+        helperFilesRoot: helperRoot
+      }
+    });
+
+    const result = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
         helperFilesRoot: helperRoot
       }
@@ -469,14 +857,14 @@ test('compileCategoryWorkbook preserves edited consumers overrides in generated 
   }
 });
 
-test('compileCategoryWorkbook bootstraps generated artifacts from workbook + tooltip bank when field_rules.json is absent', async () => {
+test('compileCategoryFieldStudio bootstraps generated artifacts from field studio source + tooltip bank when field_rules.json is absent', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-bootstrap-'));
   const helperRoot = path.join(tempRoot, 'helper_files');
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
-  const sourceWorkbookPath = mouseWorkbookPath();
-  const localWorkbookPath = path.join(categoryRoot, 'mouseData.xlsm');
-  await fs.copyFile(sourceWorkbookPath, localWorkbookPath);
+  const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const localFieldStudioSourcePath = path.join(categoryRoot, 'mouseData.xlsm');
+  await fs.copyFile(sourceFieldStudioSourcePath, localFieldStudioSourcePath);
 
   const sourceTooltipPath = path.resolve('helper_files', 'mouse', 'hbs_tooltipsMouse.js');
   try {
@@ -486,18 +874,18 @@ test('compileCategoryWorkbook bootstraps generated artifacts from workbook + too
     // tooltip bank is optional; compile should still succeed.
   }
 
-  const workbookMap = buildMouseWorkbookMap(localWorkbookPath);
+  const fieldStudioMap = buildMouseFieldStudioMap(localFieldStudioSourcePath);
   try {
-    await saveWorkbookMap({
+    await saveFieldStudioMap({
       category: 'mouse',
-      workbookMap,
+      fieldStudioMap,
       config: {
         helperFilesRoot: helperRoot
       }
     });
-    const result = await compileCategoryWorkbook({
+    const result = await compileCategoryFieldStudio({
       category: 'mouse',
-      workbookPath: localWorkbookPath,
+      fieldStudioSourcePath: localFieldStudioSourcePath,
       config: {
         helperFilesRoot: helperRoot
       }
@@ -528,28 +916,28 @@ test('compileCategoryWorkbook bootstraps generated artifacts from workbook + too
   }
 });
 
-test('compileCategoryWorkbook hard-fails invalid override contract', async () => {
+test('compileCategoryFieldStudio hard-fails invalid override contract', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-invalid-'));
   const helperRoot = path.join(tempRoot, 'helper_files');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
-  const workbookPath = mouseWorkbookPath();
-  const workbookMap = buildMouseWorkbookMap(workbookPath);
-  workbookMap.field_overrides = {
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
+  fieldStudioMap.field_overrides = {
     connection: {
       type: 'made_up_type'
     }
   };
   try {
-    await saveWorkbookMap({
+    await saveFieldStudioMap({
       category: 'mouse',
-      workbookMap,
+      fieldStudioMap,
       config: {
         helperFilesRoot: helperRoot
       }
     });
-    const result = await compileCategoryWorkbook({
+    const result = await compileCategoryFieldStudio({
       category: 'mouse',
-      workbookPath,
+      fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
         helperFilesRoot: helperRoot
       }
@@ -564,25 +952,25 @@ test('compileCategoryWorkbook hard-fails invalid override contract', async () =>
   }
 });
 
-test('compileCategoryWorkbook honors selected_keys scope from workbook map', async () => {
+test('compileCategoryFieldStudio honors selected_keys scope from field studio map', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-selected-'));
   const helperRoot = path.join(tempRoot, 'helper_files');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
-  const workbookPath = mouseWorkbookPath();
-  const workbookMap = buildMouseWorkbookMap(workbookPath);
-  workbookMap.selected_keys = ['connection', 'weight'];
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
+  fieldStudioMap.selected_keys = ['connection', 'weight'];
 
   try {
-    await saveWorkbookMap({
+    await saveFieldStudioMap({
       category: 'mouse',
-      workbookMap,
+      fieldStudioMap,
       config: {
         helperFilesRoot: helperRoot
       }
     });
-    const result = await compileCategoryWorkbook({
+    const result = await compileCategoryFieldStudio({
       category: 'mouse',
-      workbookPath,
+      fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
         helperFilesRoot: helperRoot
       }
@@ -599,13 +987,13 @@ test('compileCategoryWorkbook honors selected_keys scope from workbook map', asy
   }
 });
 
-test('compileCategoryWorkbook applies workbook_map field_overrides for latency/force fields', async () => {
+test('compileCategoryFieldStudio applies field_studio_map field_overrides for latency/force fields', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-overrides-'));
   const helperRoot = path.join(tempRoot, 'helper_files');
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
-  const workbookPath = mouseWorkbookPath();
-  const workbookMap = buildMouseWorkbookMap(workbookPath);
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
   const inlineOverrides = {
     click_latency: {
       priority: { required_level: 'expected', availability: 'sometimes', difficulty: 'hard', effort: 8 },
@@ -653,19 +1041,19 @@ test('compileCategoryWorkbook applies workbook_map field_overrides for latency/f
       parse: { template: 'number_with_unit', unit: 'gf', unit_accepts: ['gf', 'g'], strict_unit_required: true }
     }
   };
-  workbookMap.field_overrides = inlineOverrides;
+  fieldStudioMap.field_overrides = inlineOverrides;
 
   try {
-    await saveWorkbookMap({
+    await saveFieldStudioMap({
       category: 'mouse',
-      workbookMap,
+      fieldStudioMap,
       config: {
         helperFilesRoot: helperRoot
       }
     });
-    const result = await compileCategoryWorkbook({
+    const result = await compileCategoryFieldStudio({
       category: 'mouse',
-      workbookPath,
+      fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
         helperFilesRoot: helperRoot
       }
@@ -694,13 +1082,13 @@ test('compileCategoryWorkbook applies workbook_map field_overrides for latency/f
   }
 });
 
-test('FRC-05-B — buildStudioFieldRule emits constraints for component property fields', async () => {
+test('FRC-05-B Ã¢â‚¬â€ buildStudioFieldRule emits constraints for component property fields', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-frc05b-'));
   const helperRoot = path.join(tempRoot, 'helper_files');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
-  const workbookPath = mouseWorkbookPath();
-  const workbookMap = buildMouseWorkbookMap(workbookPath);
-  workbookMap.component_sources = [
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
+  fieldStudioMap.component_sources = [
     {
       type: 'sensor',
       sheet: 'sensors',
@@ -736,14 +1124,14 @@ test('FRC-05-B — buildStudioFieldRule emits constraints for component property
   ];
 
   try {
-    await saveWorkbookMap({
+    await saveFieldStudioMap({
       category: 'mouse',
-      workbookMap,
+      fieldStudioMap,
       config: { helperFilesRoot: helperRoot }
     });
-    const result = await compileCategoryWorkbook({
+    const result = await compileCategoryFieldStudio({
       category: 'mouse',
-      workbookPath,
+      fieldStudioSourcePath: fieldStudioSourcePath,
       config: { helperFilesRoot: helperRoot }
     });
     assert.equal(result.compiled, true);
@@ -756,7 +1144,7 @@ test('FRC-05-B — buildStudioFieldRule emits constraints for component property
     assert.ok(Array.isArray(sensorDate.constraints),
       'sensor_date.constraints should be an array (buildStudioFieldRule must emit constraints)');
     assert.deepStrictEqual(sensorDate.constraints, ['sensor_date <= release_date'],
-      'sensor_date constraints should carry through from workbook_map component_sources');
+      'sensor_date constraints should carry through from field_studio_map component_sources');
 
     const dpi = fieldRules.fields?.dpi;
     assert.ok(dpi, 'dpi field should exist');
@@ -768,13 +1156,13 @@ test('FRC-05-B — buildStudioFieldRule emits constraints for component property
   }
 });
 
-test('FRC-05-C — buildStudioFieldRule auto-derives property_keys from component_sources', async () => {
+test('FRC-05-C Ã¢â‚¬â€ buildStudioFieldRule auto-derives property_keys from component_sources', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-frc05c-'));
   const helperRoot = path.join(tempRoot, 'helper_files');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
-  const workbookPath = mouseWorkbookPath();
-  const workbookMap = buildMouseWorkbookMap(workbookPath);
-  workbookMap.component_sources = [
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
+  fieldStudioMap.component_sources = [
     {
       type: 'sensor',
       sheet: 'sensors',
@@ -810,14 +1198,14 @@ test('FRC-05-C — buildStudioFieldRule auto-derives property_keys from componen
   ];
 
   try {
-    await saveWorkbookMap({
+    await saveFieldStudioMap({
       category: 'mouse',
-      workbookMap,
+      fieldStudioMap,
       config: { helperFilesRoot: helperRoot }
     });
-    const result = await compileCategoryWorkbook({
+    const result = await compileCategoryFieldStudio({
       category: 'mouse',
-      workbookPath,
+      fieldStudioSourcePath: fieldStudioSourcePath,
       config: { helperFilesRoot: helperRoot }
     });
     assert.equal(result.compiled, true);
@@ -843,7 +1231,203 @@ test('FRC-05-C — buildStudioFieldRule auto-derives property_keys from componen
   }
 });
 
-test('FRC-05-D — compiler coerces string property variance_policy to authoritative', () => {
+test('FRC-05-F Ã¢â‚¬â€ component property type and variance_policy propagate to generated field rules', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-frc05f-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
+  fieldStudioMap.component_sources = [
+    {
+      type: 'sensor',
+      sheet: 'sensors',
+      auto_derive_aliases: true,
+      header_row: 1,
+      first_data_row: 2,
+      stop_after_blank_primary: 10,
+      roles: {
+        primary_identifier: 'C',
+        maker: 'B',
+        aliases: [],
+        links: ['J'],
+        properties: [
+          {
+            column: 'F',
+            field_key: 'dpi',
+            type: 'number',
+            unit: 'dpi',
+            variance_policy: 'upper_bound',
+            constraints: [],
+          },
+          {
+            column: 'I',
+            field_key: 'sensor_date',
+            type: 'string',
+            unit: '',
+            variance_policy: 'authoritative',
+            constraints: ['sensor_date <= release_date'],
+          },
+        ],
+      },
+    },
+  ];
+
+  try {
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: { helperFilesRoot: helperRoot },
+    });
+    const result = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: fieldStudioSourcePath,
+      config: { helperFilesRoot: helperRoot },
+    });
+    assert.equal(result.compiled, true);
+
+    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+    const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
+
+    assert.equal(fieldRules?.fields?.dpi?.variance_policy, 'upper_bound');
+    assert.equal(fieldRules?.fields?.sensor_date?.variance_policy, 'authoritative');
+    assert.equal(fieldRules?.fields?.sensor_date?.data_type, 'string');
+    assert.equal(fieldRules?.fields?.sensor_date?.contract?.type, 'string');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+
+test('FRC-05-G - component integer properties normalize parse_template to integer_field', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-frc05g-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
+  fieldStudioMap.component_sources = [
+    {
+      type: 'sensor',
+      sheet: 'sensors',
+      auto_derive_aliases: true,
+      header_row: 1,
+      first_data_row: 2,
+      stop_after_blank_primary: 10,
+      roles: {
+        primary_identifier: 'C',
+        maker: 'B',
+        aliases: [],
+        links: ['J'],
+        properties: [
+          {
+            column: 'F',
+            field_key: 'dpi',
+            type: 'number',
+            unit: 'dpi',
+            variance_policy: 'upper_bound',
+            constraints: []
+          },
+          {
+            column: 'A',
+            field_key: 'sensor_rank',
+            type: 'integer',
+            unit: '',
+            variance_policy: 'authoritative',
+            constraints: []
+          }
+        ]
+      }
+    }
+  ];
+
+  try {
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: { helperFilesRoot: helperRoot }
+    });
+    const result = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: fieldStudioSourcePath,
+      config: { helperFilesRoot: helperRoot }
+    });
+    assert.equal(result.compiled, true);
+
+    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+    const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
+    assert.equal(fieldRules?.fields?.sensor_rank?.parse_template || fieldRules?.fields?.sensor_rank?.parse?.template, 'integer_field');
+    assert.equal(fieldRules?.fields?.sensor_rank?.contract?.type, 'integer');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+test('FRC-05-H - numeric component properties with known values compile as closed enum', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-frc05h-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
+  fieldStudioMap.component_sources = [
+    {
+      type: 'encoder',
+      sheet: 'encoder',
+      auto_derive_aliases: true,
+      header_row: 1,
+      first_data_row: 2,
+      stop_after_blank_primary: 10,
+      roles: {
+        primary_identifier: 'C',
+        maker: 'B',
+        aliases: [],
+        links: ['G'],
+        properties: [
+          {
+            column: 'E',
+            field_key: 'encoder_steps',
+            type: 'number',
+            unit: '',
+            variance_policy: 'authoritative',
+            constraints: []
+          }
+        ]
+      }
+    }
+  ];
+  fieldStudioMap.data_lists = [
+    {
+      field: 'encoder_steps',
+      mode: 'scratch',
+      sheet: '',
+      value_column: '',
+      header_row: 0,
+      row_start: 2,
+      row_end: 0,
+      normalize: 'lower_trim',
+      delimiter: '',
+      manual_values: ['16', '20', '24']
+    }
+  ];
+
+  try {
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: { helperFilesRoot: helperRoot }
+    });
+    const result = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: fieldStudioSourcePath,
+      config: { helperFilesRoot: helperRoot }
+    });
+    assert.equal(result.compiled, true);
+
+    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+    const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
+    assert.equal(fieldRules?.fields?.encoder_steps?.enum?.policy, 'closed');
+    assert.equal(fieldRules?.fields?.encoder_steps?.enum?.source, 'data_lists.encoder_steps');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});test('FRC-05-D Ã¢â‚¬â€ compiler coerces string property variance_policy to authoritative', () => {
   const rawMap = {
     component_sources: [
       {
@@ -867,7 +1451,7 @@ test('FRC-05-D — compiler coerces string property variance_policy to authorita
     ]
   };
 
-  const result = validateWorkbookMap(rawMap);
+  const result = validateFieldStudioMap(rawMap);
 
   const warnings = result.warnings || [];
   const coercionWarnings = warnings.filter(w => w.includes('variance_policy') && w.includes('authoritative'));
@@ -897,15 +1481,15 @@ test('FRC-05-D — compiler coerces string property variance_policy to authorita
     'default string property with lower_bound should be coerced to authoritative');
 });
 
-test('FRC-05-E — mouse sensor component policies remain numeric upper_bound for dpi/ips/acceleration', async () => {
-  const loaded = await loadWorkbookMap({
+test('FRC-05-E Ã¢â‚¬â€ mouse sensor component policies remain numeric upper_bound for dpi/ips/acceleration', async () => {
+  const loaded = await loadFieldStudioMap({
     category: 'mouse'
   });
-  assert.ok(loaded?.map, 'mouse workbook map should load');
+  assert.ok(loaded?.map, 'mouse field studio map should load');
 
   const sources = Array.isArray(loaded.map.component_sources) ? loaded.map.component_sources : [];
   const sensorSource = sources.find((row) => String(row?.type || row?.component_type || '').toLowerCase() === 'sensor');
-  assert.ok(sensorSource, 'mouse workbook map should define a sensor component source');
+  assert.ok(sensorSource, 'mouse field studio map should define a sensor component source');
 
   const props = Array.isArray(sensorSource?.roles?.properties) ? sensorSource.roles.properties : [];
   const findProp = (key) => props.find((prop) => (prop?.field_key || prop?.key) === key);
@@ -917,13 +1501,13 @@ test('FRC-05-E — mouse sensor component policies remain numeric upper_bound fo
 
   for (const requirement of requiredPolicies) {
     const prop = findProp(requirement.key);
-    assert.ok(prop, `sensor property '${requirement.key}' should exist in workbook map`);
+    assert.ok(prop, `sensor property '${requirement.key}' should exist in field studio map`);
     assert.equal(prop.type, 'number', `${requirement.key} should stay typed as number`);
     assert.equal(prop.unit, requirement.unit, `${requirement.key} unit should stay '${requirement.unit}'`);
     assert.equal(prop.variance_policy, 'upper_bound', `${requirement.key} variance policy should stay upper_bound`);
   }
 
-  const validated = validateWorkbookMap(loaded.map);
+  const validated = validateFieldStudioMap(loaded.map);
   const driftWarnings = (validated.warnings || []).filter((warning) => (
     warning.includes('coerced to \'authoritative\'')
     && (warning.includes('dpi') || warning.includes('ips') || warning.includes('acceleration'))
@@ -935,42 +1519,158 @@ test('FRC-05-E — mouse sensor component policies remain numeric upper_bound fo
   );
 });
 
-test('compileCategoryWorkbook merges enum.additional_values from field rule drafts into known_values', async () => {
+test('compileCategoryFieldStudio converts spreadsheet serial dates in date-like component properties to ISO date', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-component-date-serial-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
+  fieldStudioMap.component_sources = [
+    {
+      type: 'sensor',
+      sheet: 'sensors',
+      auto_derive_aliases: true,
+      header_row: 1,
+      first_data_row: 2,
+      stop_after_blank_primary: 10,
+      roles: {
+        primary_identifier: 'C',
+        maker: 'B',
+        aliases: [],
+        links: ['J'],
+        properties: [
+          {
+            column: 'I',
+            field_key: 'sensor_date',
+            type: 'string',
+            unit: '',
+            variance_policy: 'authoritative',
+            constraints: [],
+          },
+        ],
+      },
+    },
+  ];
+
+  try {
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: { helperFilesRoot: helperRoot },
+    });
+    const result = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: fieldStudioSourcePath,
+      config: { helperFilesRoot: helperRoot },
+    });
+    assert.equal(result.compiled, true);
+
+    const sensorsPath = path.join(helperRoot, 'mouse', '_generated', 'component_db', 'sensors.json');
+    const sensorsDb = JSON.parse(await fs.readFile(sensorsPath, 'utf8'));
+    const items = Array.isArray(sensorsDb.items) ? sensorsDb.items : [];
+    const serialDates = items.filter((item) => /^\d{5}$/.test(String(item?.properties?.sensor_date || '').trim()));
+    assert.equal(serialDates.length, 0, 'sensor_date should not remain as spreadsheet serial date in component_db output');
+
+    const isoDates = items.filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(String(item?.properties?.sensor_date || '').trim()));
+    assert.ok(isoDates.length > 0, 'sensor_date should be normalized to ISO date for serial date source values');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('compileCategoryFieldStudio summarizes component property coverage warnings instead of per-entity missing lists', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-component-warning-summary-'));
+  const helperRoot = path.join(tempRoot, 'helper_files');
+  await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
+  fieldStudioMap.component_sources = [
+    {
+      type: 'sensor',
+      sheet: 'sensors',
+      auto_derive_aliases: true,
+      header_row: 1,
+      first_data_row: 2,
+      stop_after_blank_primary: 10,
+      roles: {
+        primary_identifier: 'C',
+        maker: 'B',
+        aliases: [],
+        links: ['J'],
+        properties: [
+          { column: 'F', field_key: 'dpi', type: 'number', unit: 'dpi', variance_policy: 'upper_bound', constraints: [] },
+          { column: 'I', field_key: 'sensor_date', type: 'string', unit: '', variance_policy: 'authoritative', constraints: [] },
+          { column: 'P', field_key: 'flawless_sensor', type: 'string', unit: '', variance_policy: 'authoritative', constraints: [] },
+        ],
+      },
+    },
+  ];
+
+  try {
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: { helperFilesRoot: helperRoot },
+    });
+    const result = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: fieldStudioSourcePath,
+      config: { helperFilesRoot: helperRoot },
+    });
+    assert.equal(result.compiled, true);
+    const warnings = Array.isArray(result.warnings) ? result.warnings : [];
+    const perEntityMissingWarnings = warnings.filter((warning) => String(warning).includes('missing properties:'));
+    assert.equal(
+      perEntityMissingWarnings.length,
+      0,
+      `missing warnings should be summarized by property coverage, got: ${JSON.stringify(perEntityMissingWarnings.slice(0, 5))}`
+    );
+    const coverageWarnings = warnings.filter((warning) => (
+      String(warning).includes('property "')
+      && String(warning).includes('coverage')
+    ));
+    assert.ok(
+      coverageWarnings.length > 0,
+      'expected property-coverage warnings when component properties are sparse'
+    );
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('compileCategoryFieldStudio merges enum.additional_values from saved map field_overrides into known_values', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-enum-addval-'));
   const helperRoot = path.join(tempRoot, 'helper_files');
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
-  const workbookPath = mouseWorkbookPath();
-  const workbookMap = buildMouseWorkbookMap(workbookPath);
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
 
   try {
-    await saveWorkbookMap({
+    await saveFieldStudioMap({
       category: 'mouse',
-      workbookMap,
+      fieldStudioMap,
       config: { helperFilesRoot: helperRoot }
     });
 
-    const controlPlane = path.join(categoryRoot, '_control_plane');
-    await fs.mkdir(controlPlane, { recursive: true });
-    await fs.writeFile(
-      path.join(controlPlane, 'field_rules_draft.json'),
-      JSON.stringify({
-        draft_saved_at: new Date().toISOString(),
-        fields: {
-          connection: {
-            _edited: true,
-            enum: {
-              policy: 'open_prefer_known',
-              additional_values: ['bluetooth_5_3', 'usb_c_dongle']
-            }
-          }
+    fieldStudioMap.field_overrides = {
+      ...(fieldStudioMap.field_overrides || {}),
+      connection: {
+        enum: {
+          policy: 'open_prefer_known',
+          additional_values: ['bluetooth_5_3', 'usb_c_dongle']
         }
-      })
-    );
-
-    const result = await compileCategoryWorkbook({
+      }
+    };
+    await saveFieldStudioMap({
       category: 'mouse',
-      workbookPath,
+      fieldStudioMap,
+      config: { helperFilesRoot: helperRoot }
+    });
+
+    const result = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath: fieldStudioSourcePath,
       config: { helperFilesRoot: helperRoot }
     });
     assert.equal(result.compiled, true);
@@ -993,3 +1693,7 @@ test('compileCategoryWorkbook merges enum.additional_values from field rule draf
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
+
+
+
+

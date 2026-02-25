@@ -9,7 +9,7 @@ function toOptionalObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : null;
 }
 
-function isLegacyWorkbookOnlyCompileError(errorText) {
+function isLegacyMapOnlyCompileError(errorText) {
   const text = String(errorText || '').trim();
   if (!text) return false;
   if (text === 'key_list: sheet is required') return true;
@@ -19,10 +19,10 @@ function isLegacyWorkbookOnlyCompileError(errorText) {
 function canBypassLegacyCompileValidation(outcome) {
   if (!outcome || outcome.valid) return false;
   if (!Array.isArray(outcome.errors) || outcome.errors.length === 0) return false;
-  return outcome.errors.every((errorText) => isLegacyWorkbookOnlyCompileError(errorText));
+  return outcome.errors.every((errorText) => isLegacyMapOnlyCompileError(errorText));
 }
 
-export function getWorkbookMapValidationOutcome(result) {
+export function getFieldStudioMapValidationOutcome(result) {
   const payload = toOptionalObject(result) || {};
   const errors = toStringArray(payload.errors);
   const warnings = toStringArray(payload.warnings);
@@ -44,8 +44,8 @@ export function getWorkbookMapValidationOutcome(result) {
   };
 }
 
-export function assertWorkbookMapValidationOrThrow({ result, actionLabel = 'save', allowLegacyCompileBypass = false }) {
-  const outcome = getWorkbookMapValidationOutcome(result);
+export function assertFieldStudioMapValidationOrThrow({ result, actionLabel = 'save', allowLegacyCompileBypass = false }) {
+  const outcome = getFieldStudioMapValidationOutcome(result);
   if (outcome.valid) return outcome;
   if (allowLegacyCompileBypass && actionLabel === 'compile' && canBypassLegacyCompileValidation(outcome)) {
     return {
@@ -53,7 +53,7 @@ export function assertWorkbookMapValidationOrThrow({ result, actionLabel = 'save
       valid: true,
       warnings: [
         ...outcome.warnings,
-        'legacy workbook validation mismatch ignored for compile preflight; compile will run and enforce runtime validation',
+        'legacy map validation mismatch ignored for compile preflight; compile will run and enforce runtime validation',
       ],
     };
   }
@@ -65,7 +65,7 @@ export function assertWorkbookMapValidationOrThrow({ result, actionLabel = 'save
   throw new Error(`Field Studio map validation failed before ${actionLabel}: ${detail}${suffix}`);
 }
 
-export function resolveWorkbookMapPayloadForSave({ result, fallback }) {
-  const outcome = getWorkbookMapValidationOutcome(result);
+export function resolveFieldStudioMapPayloadForSave({ result, fallback }) {
+  const outcome = getFieldStudioMapValidationOutcome(result);
   return toOptionalObject(outcome.normalized) || fallback;
 }

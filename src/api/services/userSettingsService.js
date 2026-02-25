@@ -2,133 +2,78 @@ import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { normalizeRunDataStorageSettings } from './runDataRelocationService.js';
+import {
+  CONVERGENCE_SETTINGS_KEYS,
+  CONVERGENCE_SETTINGS_VALUE_TYPES,
+  migrateUserSettingsDocument,
+  readUserSettingsDocumentMeta,
+  RUNTIME_SETTINGS_KEYS,
+  RUNTIME_SETTINGS_VALUE_TYPES,
+  SETTINGS_DOCUMENT_SCHEMA_VERSION,
+  UI_SETTINGS_DEFAULTS,
+  USER_SETTINGS_FILE,
+  validateUserSettingsSnapshot,
+} from './settingsContract.js';
+import {
+  recordSettingsMigration,
+  recordSettingsStaleRead,
+  recordSettingsWriteAttempt,
+  recordSettingsWriteOutcome,
+} from '../../observability/settingsPersistenceCounters.js';
+const RUNTIME_KEYS_TO_PERSIST = new Set(RUNTIME_SETTINGS_KEYS);
+const CONVERGENCE_KEYS_TO_PERSIST = new Set(CONVERGENCE_SETTINGS_KEYS);
+let userSettingsPersistQueue = Promise.resolve();
 
-const USER_SETTINGS_FILE = 'user-settings.json';
-const USER_SETTINGS_VERSION = 1;
-const UI_SETTINGS_DEFAULTS = Object.freeze({
-  studioAutoSaveAllEnabled: false,
-  studioAutoSaveEnabled: false,
-  studioAutoSaveMapEnabled: true,
-  runtimeAutoSaveEnabled: true,
-  storageAutoSaveEnabled: false,
-  llmSettingsAutoSaveEnabled: true,
-});
-
-const RUNTIME_SETTINGS_KEYS_FOR_SNAPSHOT = [
-  'runProfile',
-  'searchProvider',
-  'llmModelPlan',
-  'llmModelTriage',
-  'llmModelFast',
-  'llmModelReasoning',
-  'llmModelExtract',
-  'llmModelValidate',
-  'llmModelWrite',
-  'llmPlanFallbackModel',
-  'llmExtractFallbackModel',
-  'llmValidateFallbackModel',
-  'llmWriteFallbackModel',
-  'indexingResumeMode',
-  'concurrency',
-  'indexingResumeMaxAgeHours',
-  'indexingReextractAfterHours',
-  'scannedPdfOcrBackend',
-  'scannedPdfOcrMaxPages',
-  'scannedPdfOcrMaxPairs',
-  'scannedPdfOcrMinCharsPerPage',
-  'scannedPdfOcrMinLinesPerPage',
-  'scannedPdfOcrMinConfidence',
-  'crawleeRequestHandlerTimeoutSecs',
-  'dynamicFetchRetryBudget',
-  'dynamicFetchRetryBackoffMs',
-  'llmMaxOutputTokensPlan',
-  'llmMaxOutputTokensTriage',
-  'llmMaxOutputTokensFast',
-  'llmMaxOutputTokensReasoning',
-  'llmMaxOutputTokensExtract',
-  'llmMaxOutputTokensValidate',
-  'llmMaxOutputTokensWrite',
-  'llmMaxOutputTokensPlanFallback',
-  'llmMaxOutputTokensExtractFallback',
-  'llmMaxOutputTokensValidateFallback',
-  'llmMaxOutputTokensWriteFallback',
-  'discoveryEnabled',
-  'llmPlanDiscoveryQueries',
-  'llmSerpRerankEnabled',
-  'llmFallbackEnabled',
-  'indexingReextractEnabled',
-  'scannedPdfOcrEnabled',
-  'scannedPdfOcrPromoteCandidates',
-  'dynamicFetchPolicyMapJson',
-  'dynamicFetchPolicyMap',
-  'dynamicCrawleeEnabled',
-  'crawleeHeadless',
-];
-
-const RUNTIME_KEYS_TO_PERSIST = new Set(RUNTIME_SETTINGS_KEYS_FOR_SNAPSHOT);
-
-const CONVERGENCE_SETTING_KEYS = [
-  'convergenceMaxRounds',
-  'convergenceNoProgressLimit',
-  'convergenceMaxLowQualityRounds',
-  'convergenceLowQualityConfidence',
-  'convergenceMaxDispatchQueries',
-  'convergenceMaxTargetFields',
-  'needsetEvidenceDecayDays',
-  'needsetEvidenceDecayFloor',
-  'needsetCapIdentityLocked',
-  'needsetCapIdentityProvisional',
-  'needsetCapIdentityConflict',
-  'needsetCapIdentityUnlocked',
-  'consensusLlmWeightTier1',
-  'consensusLlmWeightTier2',
-  'consensusLlmWeightTier3',
-  'consensusLlmWeightTier4',
-  'consensusTier1Weight',
-  'consensusTier2Weight',
-  'consensusTier3Weight',
-  'consensusTier4Weight',
-  'serpTriageMinScore',
-  'serpTriageMaxUrls',
-  'serpTriageEnabled',
-  'retrievalMaxHitsPerField',
-  'retrievalMaxPrimeSources',
-  'retrievalIdentityFilterEnabled',
-  'laneConcurrencySearch',
-  'laneConcurrencyFetch',
-  'laneConcurrencyParse',
-  'laneConcurrencyLlm',
-];
-
-const CONVERGENCE_KEYS_TO_PERSIST = new Set(CONVERGENCE_SETTING_KEYS);
-
-function normalizeFilePath(filePath) {
-  return path.resolve(String(filePath || '') || path.resolve('helper_files', '_runtime', USER_SETTINGS_FILE));
+function isMissingFileError(error) {
+  const code = String(error?.code || '').trim().toUpperCase();
+  return code === 'ENOENT' || code === 'ENOTDIR';
 }
 
-function readJsonFileSync(filePath) {
+function buildInvalidUserSettingsError(filePath, reason = 'invalid_json') {
+  const error = new Error('user_settings_invalid_json');
+  error.code = 'user_settings_invalid_json';
+  error.reason = reason;
+  error.filePath = filePath;
+  return error;
+}
+
+function parseJsonObject(raw, filePath, { strict = false } = {}) {
+  let parsed = null;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    if (!strict) return {};
+    throw buildInvalidUserSettingsError(filePath, 'parse_failed');
+  }
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    return parsed;
+  }
+  if (!strict) return {};
+  throw buildInvalidUserSettingsError(filePath, 'object_required');
+}
+
+function readJsonFileSync(filePath, { strict = false } = {}) {
   try {
     const raw = fsSync.readFileSync(filePath, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed;
+    return parseJsonObject(raw, filePath, { strict });
+  } catch (error) {
+    if (!strict || isMissingFileError(error)) {
+      return {};
     }
-  } catch {
-    // ignore
+    throw error;
   }
-  return {};
 }
 
-function readJsonFile(filePath) {
-  return fs.readFile(filePath, 'utf8')
-    .then((raw) => {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        return parsed;
-      }
+async function readJsonFile(filePath, { strict = false } = {}) {
+  try {
+    const raw = await fs.readFile(filePath, 'utf8');
+    return parseJsonObject(raw, filePath, { strict });
+  } catch (error) {
+    if (!strict || isMissingFileError(error)) {
       return {};
-    })
-    .catch(() => ({}));
+    }
+    throw error;
+  }
 }
 
 function asRecord(value) {
@@ -139,14 +84,69 @@ function normalizeCategoryToken(value) {
   return String(value || '').trim();
 }
 
+function coerceBoolean(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return value !== 0;
+  const token = String(value ?? '').trim().toLowerCase();
+  if (!token) return undefined;
+  if (['1', 'true', 'yes', 'on'].includes(token)) return true;
+  if (['0', 'false', 'no', 'off'].includes(token)) return false;
+  return undefined;
+}
+
+function coerceInteger(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return Math.trunc(value);
+  const token = String(value ?? '').trim();
+  if (!token) return undefined;
+  const parsed = Number.parseInt(token, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function coerceNumber(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const token = String(value ?? '').trim();
+  if (!token) return undefined;
+  const parsed = Number.parseFloat(token);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function sanitizeTypedSettingValue(value, typeToken) {
+  if (typeToken === 'boolean') return coerceBoolean(value);
+  if (typeToken === 'integer') return coerceInteger(value);
+  if (typeToken === 'number') return coerceNumber(value);
+  if (typeToken === 'string') {
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    return undefined;
+  }
+  if (typeToken === 'object') return value && typeof value === 'object' && !Array.isArray(value) ? asRecord(value) : undefined;
+  if (typeToken === 'string_or_null') {
+    if (value === null) return null;
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    return undefined;
+  }
+  return undefined;
+}
+
+function sanitizeSectionByTypeMap(raw, typeMap) {
+  const source = asRecord(raw);
+  const normalized = {};
+  for (const [key, typeToken] of Object.entries(typeMap || {})) {
+    if (!Object.hasOwn(source, key)) continue;
+    const sanitized = sanitizeTypedSettingValue(source[key], typeToken);
+    if (sanitized === undefined) continue;
+    normalized[key] = sanitized;
+  }
+  return normalized;
+}
+
 function sanitizeRuntimeSettings(raw) {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
-  return asRecord(raw);
+  return sanitizeSectionByTypeMap(raw, RUNTIME_SETTINGS_VALUE_TYPES);
 }
 
 function sanitizeConvergenceSettings(raw) {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
-  return asRecord(raw);
+  return sanitizeSectionByTypeMap(raw, CONVERGENCE_SETTINGS_VALUE_TYPES);
 }
 
 function sanitizeStudioSettings(raw) {
@@ -211,15 +211,23 @@ function sanitizeStorageSettings(raw) {
 function resolveBooleanSetting(source, key, fallback) {
   if (!source || typeof source !== 'object') return Boolean(fallback);
   if (!Object.hasOwn(source, key)) return Boolean(fallback);
-  return Boolean(source[key]);
+  const normalized = coerceBoolean(source[key]);
+  return normalized === undefined ? Boolean(fallback) : normalized;
 }
 
 function sanitizeUiSettings(raw, fallback = UI_SETTINGS_DEFAULTS) {
   const source = asRecord(raw);
+  const studioAutoSaveAllEnabled = resolveBooleanSetting(source, 'studioAutoSaveAllEnabled', fallback.studioAutoSaveAllEnabled);
+  const studioAutoSaveMapEnabled = studioAutoSaveAllEnabled
+    ? true
+    : resolveBooleanSetting(source, 'studioAutoSaveMapEnabled', fallback.studioAutoSaveMapEnabled);
+  const studioAutoSaveEnabled = studioAutoSaveAllEnabled || studioAutoSaveMapEnabled
+    ? true
+    : resolveBooleanSetting(source, 'studioAutoSaveEnabled', fallback.studioAutoSaveEnabled);
   return {
-    studioAutoSaveAllEnabled: resolveBooleanSetting(source, 'studioAutoSaveAllEnabled', fallback.studioAutoSaveAllEnabled),
-    studioAutoSaveEnabled: resolveBooleanSetting(source, 'studioAutoSaveEnabled', fallback.studioAutoSaveEnabled),
-    studioAutoSaveMapEnabled: resolveBooleanSetting(source, 'studioAutoSaveMapEnabled', fallback.studioAutoSaveMapEnabled),
+    studioAutoSaveAllEnabled,
+    studioAutoSaveEnabled,
+    studioAutoSaveMapEnabled,
     runtimeAutoSaveEnabled: resolveBooleanSetting(source, 'runtimeAutoSaveEnabled', fallback.runtimeAutoSaveEnabled),
     storageAutoSaveEnabled: resolveBooleanSetting(source, 'storageAutoSaveEnabled', fallback.storageAutoSaveEnabled),
     llmSettingsAutoSaveEnabled: resolveBooleanSetting(source, 'llmSettingsAutoSaveEnabled', fallback.llmSettingsAutoSaveEnabled),
@@ -231,25 +239,9 @@ function resolveRuntimeRoot(helperFilesRoot = 'helper_files') {
   return path.join(helperRoot, '_runtime');
 }
 
-function readLegacySettingsSync(runtimeRoot) {
-  return {
-    runtime: readJsonFileSync(path.join(runtimeRoot, 'settings.json')),
-    convergence: readJsonFileSync(path.join(runtimeRoot, 'convergence-settings.json')),
-    storage: readJsonFileSync(path.join(runtimeRoot, 'storage-settings.json')),
-  };
-}
-
-function readLegacySettings(runtimeRoot) {
-  return Promise.all([
-    readJsonFile(path.join(runtimeRoot, 'settings.json')),
-    readJsonFile(path.join(runtimeRoot, 'convergence-settings.json')),
-    readJsonFile(path.join(runtimeRoot, 'storage-settings.json')),
-  ]).then(([runtime, convergence, storage]) => ({ runtime, convergence, storage }));
-}
-
 function buildUserSettingsSnapshot(runtime, convergence, storage, studio = {}, ui = UI_SETTINGS_DEFAULTS) {
   return {
-    schemaVersion: USER_SETTINGS_VERSION,
+    schemaVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
     runtime: asRecord(runtime),
     convergence: asRecord(convergence),
     storage: asRecord(storage),
@@ -269,6 +261,42 @@ function resolvePersistenceSections(payload) {
   };
 }
 
+function recordUserSettingsMigrationTelemetry(rawPayload) {
+  const meta = readUserSettingsDocumentMeta(rawPayload);
+  if (!meta.stale) return;
+  recordSettingsStaleRead({
+    section: 'user-settings',
+    reason: 'schema_version_outdated',
+    fromVersion: meta.schemaVersion,
+    toVersion: meta.targetSchemaVersion,
+  });
+  recordSettingsMigration({
+    fromVersion: meta.schemaVersion,
+    toVersion: meta.targetSchemaVersion,
+  });
+}
+
+function recordSnapshotValidationTelemetry(snapshot, reasonPrefix = 'snapshot_validation_failed') {
+  const validation = validateUserSettingsSnapshot(snapshot);
+  if (validation.valid) return;
+  const keywordToken = String(validation.errors?.[0]?.keyword || 'unknown').trim().toLowerCase();
+  recordSettingsStaleRead({
+    section: 'user-settings',
+    reason: `${reasonPrefix}_${keywordToken}`,
+    fromVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
+    toVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
+  });
+}
+
+function assertValidSnapshot(snapshot) {
+  const validation = validateUserSettingsSnapshot(snapshot);
+  if (validation.valid) return;
+  const error = new Error('user_settings_snapshot_validation_failed');
+  error.code = 'user_settings_snapshot_validation_failed';
+  error.validationErrors = validation.errors;
+  throw error;
+}
+
 export function readStudioMapFromUserSettings(payload, category = '') {
   const section = sanitizeStudioSettings(asRecord(payload).studio);
   const key = normalizeCategoryToken(category);
@@ -283,51 +311,37 @@ export function readStudioMapFromUserSettings(payload, category = '') {
   };
 }
 
-export function loadUserSettingsSync({ helperFilesRoot = 'helper_files' } = {}) {
+export function loadUserSettingsSync({ helperFilesRoot = 'helper_files', strictRead = false } = {}) {
   const runtimeRoot = resolveRuntimeRoot(helperFilesRoot);
-  const legacy = readLegacySettingsSync(runtimeRoot);
-  const userSettingsRaw = readJsonFileSync(path.join(runtimeRoot, USER_SETTINGS_FILE));
+  const userPayload = readJsonFileSync(path.join(runtimeRoot, USER_SETTINGS_FILE), { strict: strictRead });
+  recordUserSettingsMigrationTelemetry(userPayload);
+  const userSettingsRaw = migrateUserSettingsDocument(userPayload);
 
-  return buildUserSettingsSnapshot(
-    {
-      ...sanitizeRuntimeSettings(legacy.runtime),
-      ...sanitizeRuntimeSettings(userSettingsRaw.runtime),
-    },
-    {
-      ...sanitizeConvergenceSettings(legacy.convergence),
-      ...sanitizeConvergenceSettings(userSettingsRaw.convergence),
-    },
-    {
-      ...sanitizeStorageSettings(legacy.storage),
-      ...sanitizeStorageSettings(userSettingsRaw.storage),
-    },
+  const snapshot = buildUserSettingsSnapshot(
+    sanitizeRuntimeSettings(userSettingsRaw.runtime),
+    sanitizeConvergenceSettings(userSettingsRaw.convergence),
+    sanitizeStorageSettings(userSettingsRaw.storage),
     sanitizeStudioSettings(userSettingsRaw.studio),
     sanitizeUiSettings(userSettingsRaw.ui),
   );
+  recordSnapshotValidationTelemetry(snapshot);
+  return snapshot;
 }
 
-export async function loadUserSettings({ helperFilesRoot = 'helper_files' } = {}) {
+export async function loadUserSettings({ helperFilesRoot = 'helper_files', strictRead = false } = {}) {
   const runtimeRoot = resolveRuntimeRoot(helperFilesRoot);
-  const [legacy, userRaw] = await Promise.all([
-    readLegacySettings(runtimeRoot),
-    readJsonFile(path.join(runtimeRoot, USER_SETTINGS_FILE)),
-  ]);
-  return buildUserSettingsSnapshot(
-    {
-      ...sanitizeRuntimeSettings(legacy.runtime),
-      ...sanitizeRuntimeSettings(userRaw.runtime),
-    },
-    {
-      ...sanitizeConvergenceSettings(legacy.convergence),
-      ...sanitizeConvergenceSettings(userRaw.convergence),
-    },
-    {
-      ...sanitizeStorageSettings(legacy.storage),
-      ...sanitizeStorageSettings(userRaw.storage),
-    },
-    sanitizeStudioSettings(userRaw.studio),
-    sanitizeUiSettings(userRaw.ui),
+  const userRaw = await readJsonFile(path.join(runtimeRoot, USER_SETTINGS_FILE), { strict: strictRead });
+  recordUserSettingsMigrationTelemetry(userRaw);
+  const userSettingsRaw = migrateUserSettingsDocument(userRaw);
+  const snapshot = buildUserSettingsSnapshot(
+    sanitizeRuntimeSettings(userSettingsRaw.runtime),
+    sanitizeConvergenceSettings(userSettingsRaw.convergence),
+    sanitizeStorageSettings(userSettingsRaw.storage),
+    sanitizeStudioSettings(userSettingsRaw.studio),
+    sanitizeUiSettings(userSettingsRaw.ui),
   );
+  recordSnapshotValidationTelemetry(snapshot);
+  return snapshot;
 }
 
 function pickRuntimeSnapshotFromConfig(config = {}) {
@@ -351,8 +365,42 @@ function pickConvergenceSnapshotFromConfig(config = {}) {
 }
 
 async function writeUserSettingsFile(filePath, payload) {
+  const dirPath = path.dirname(filePath);
+  const tempPath = path.join(
+    dirPath,
+    `${USER_SETTINGS_FILE}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  );
   await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  const body = `${JSON.stringify(payload, null, 2)}\n`;
+  try {
+    await fs.writeFile(tempPath, body, 'utf8');
+    await fs.rename(tempPath, filePath);
+  } catch (error) {
+    await fs.rm(tempPath, { force: true }).catch(() => {});
+    throw error;
+  }
+}
+
+function enqueueUserSettingsPersist(task) {
+  const nextTask = userSettingsPersistQueue.then(task, task);
+  userSettingsPersistQueue = nextTask.catch(() => {});
+  return nextTask;
+}
+
+function resolveRequestedSections({
+  runtime = null,
+  convergence = null,
+  storage = null,
+  studio = null,
+  ui = null,
+} = {}) {
+  const sections = [];
+  if (runtime !== null) sections.push('runtime');
+  if (convergence !== null) sections.push('convergence');
+  if (storage !== null) sections.push('storage');
+  if (studio !== null) sections.push('studio');
+  if (ui !== null) sections.push('ui');
+  return sections.length > 0 ? sections : ['runtime', 'convergence', 'storage', 'studio', 'ui'];
 }
 
 export async function persistUserSettingsSections({
@@ -363,25 +411,55 @@ export async function persistUserSettingsSections({
   studio = null,
   ui = null,
 } = {}) {
-  const runtimeRoot = resolveRuntimeRoot(helperFilesRoot);
-  const existing = await loadUserSettings({ helperFilesRoot });
-  const sections = {
-    runtime: runtime === null ? existing.runtime : sanitizeRuntimeSettings(runtime),
-    convergence: convergence === null ? existing.convergence : sanitizeConvergenceSettings(convergence),
-    storage: storage === null ? existing.storage : sanitizeStorageSettings(storage),
-    studio: studio === null ? existing.studio : sanitizeStudioSettings(studio),
-    ui: ui === null ? existing.ui : sanitizeUiSettings(ui),
-  };
-  const payload = buildUserSettingsSnapshot(
-    sections.runtime,
-    sections.convergence,
-    sections.storage,
-    sections.studio,
-    sections.ui,
-  );
-  const filePath = path.join(runtimeRoot, USER_SETTINGS_FILE);
-  await writeUserSettingsFile(filePath, payload);
-  return payload;
+  const requestedSections = resolveRequestedSections({
+    runtime,
+    convergence,
+    storage,
+    studio,
+    ui,
+  });
+  recordSettingsWriteAttempt({
+    sections: requestedSections,
+    target: USER_SETTINGS_FILE,
+  });
+
+  return enqueueUserSettingsPersist(async () => {
+    const runtimeRoot = resolveRuntimeRoot(helperFilesRoot);
+    try {
+      const existing = await loadUserSettings({ helperFilesRoot, strictRead: true });
+      const sections = {
+        runtime: runtime === null ? existing.runtime : sanitizeRuntimeSettings(runtime),
+        convergence: convergence === null ? existing.convergence : sanitizeConvergenceSettings(convergence),
+        storage: storage === null ? existing.storage : sanitizeStorageSettings(storage),
+        studio: studio === null ? existing.studio : sanitizeStudioSettings(studio),
+        ui: ui === null ? existing.ui : sanitizeUiSettings(ui),
+      };
+      const payload = buildUserSettingsSnapshot(
+        sections.runtime,
+        sections.convergence,
+        sections.storage,
+        sections.studio,
+        sections.ui,
+      );
+      assertValidSnapshot(payload);
+      const filePath = path.join(runtimeRoot, USER_SETTINGS_FILE);
+      await writeUserSettingsFile(filePath, payload);
+      recordSettingsWriteOutcome({
+        sections: requestedSections,
+        target: USER_SETTINGS_FILE,
+        success: true,
+      });
+      return payload;
+    } catch (error) {
+      recordSettingsWriteOutcome({
+        sections: requestedSections,
+        target: USER_SETTINGS_FILE,
+        success: false,
+        reason: error?.code || error?.message || 'user_settings_persist_failed',
+      });
+      throw error;
+    }
+  });
 }
 
 export function snapshotRuntimeSettings(config = {}) {

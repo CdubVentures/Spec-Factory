@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { extractExcelSeedData, loadCategoryFieldRules } from '../ingest/excelSeed.js';
+import { extractCatalogSeedData, loadGeneratedFieldRules } from '../ingest/catalogSeed.js';
 import { ruleRequiredLevel } from '../engine/ruleAccessors.js';
 
 function isObject(value) {
@@ -73,15 +73,6 @@ async function readJsonIfExists(filePath) {
   }
 }
 
-async function fileExists(filePath) {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function toNumberIfFinite(value) {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
@@ -116,38 +107,6 @@ function categoryGoldenRoot(category, config = {}) {
 
 function manifestPath(category, config = {}) {
   return path.join(categoryGoldenRoot(category, config), 'manifest.json');
-}
-
-async function resolveWorkbookPathFromMap({
-  workbookPath = '',
-  helperRoot = '',
-  category = ''
-}) {
-  const token = normalizeText(workbookPath);
-  if (!token) {
-    return '';
-  }
-  if (path.isAbsolute(token)) {
-    return token;
-  }
-  const normalizedCategory = normalizeCategory(category);
-  const candidates = [
-    path.resolve(token),
-    path.resolve(helperRoot, normalizedCategory, token),
-    path.resolve(helperRoot, token),
-    path.resolve(process.cwd(), token)
-  ];
-  const seen = new Set();
-  for (const candidate of candidates) {
-    if (!candidate || seen.has(candidate)) {
-      continue;
-    }
-    seen.add(candidate);
-    if (await fileExists(candidate)) {
-      return candidate;
-    }
-  }
-  return path.resolve(helperRoot, normalizedCategory, path.basename(token));
 }
 
 function defaultManifest(category) {
@@ -408,7 +367,7 @@ async function listGoldenCasesWithPayload(category, config = {}) {
   };
 }
 
-export async function createGoldenFromExcel({
+export async function createGoldenFromCatalog({
   category,
   count = 50,
   productId = '',
@@ -418,55 +377,21 @@ export async function createGoldenFromExcel({
   if (!normalizedCategory) {
     throw new Error('category_required');
   }
-  const fieldRules = await loadCategoryFieldRules(normalizedCategory, config);
+  const fieldRules = await loadGeneratedFieldRules(normalizedCategory, config);
   if (!fieldRules?.value || !isObject(fieldRules.value.fields)) {
     throw new Error(`field_rules_not_found:${normalizedCategory}`);
   }
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
-  const workbookMapPath = path.join(
-    helperRoot,
-    normalizedCategory,
-    '_control_plane',
-    'workbook_map.json'
-  );
-  const workbookMap = await readJsonIfExists(workbookMapPath);
-  const resolvedWorkbookPath = await resolveWorkbookPathFromMap({
-    workbookPath: normalizeText(workbookMap?.workbook_path || ''),
-    helperRoot,
-    category: normalizedCategory
-  });
-  const excelOverride = isObject(workbookMap)
-    ? {
-      workbook: resolvedWorkbookPath || normalizeText(workbookMap.workbook_path || ''),
-      sheet: normalizeText(workbookMap?.key_list?.sheet || workbookMap?.product_table?.sheet || 'dataEntry') || 'dataEntry',
-      field_label_column: normalizeText(workbookMap?.key_list?.column || 'B') || 'B',
-      field_row_start: Number.parseInt(String(workbookMap?.key_list?.row_start || '9'), 10) || 9,
-      field_row_end: Number.parseInt(String(workbookMap?.key_list?.row_end || '83'), 10) || 83,
-      brand_row: Number.parseInt(String(workbookMap?.product_table?.brand_row || '3'), 10) || 3,
-      model_row: Number.parseInt(String(workbookMap?.product_table?.model_row || '4'), 10) || 4,
-      variant_row: Number.parseInt(String(workbookMap?.product_table?.variant_row || '5'), 10) || 5,
-      data_column_start: normalizeText(workbookMap?.product_table?.value_col_start || 'C') || 'C',
-      data_column_end: normalizeText(workbookMap?.product_table?.value_col_end || '')
-    }
-    : {};
-  const fieldRulesForSeed = {
-    ...fieldRules.value,
-    excel: {
-      ...(isObject(fieldRules.value.excel) ? fieldRules.value.excel : {}),
-      ...excelOverride
-    }
-  };
   const fieldOrder = Object.keys(fieldRules.value.fields)
     .map((value) => normalizeFieldKey(value))
     .filter(Boolean);
-  const extracted = await extractExcelSeedData({
+  const extracted = await extractCatalogSeedData({
     category: normalizedCategory,
     config,
-    fieldRules: fieldRulesForSeed,
+    fieldRules: fieldRules.value,
     fieldOrder
   });
   if (!extracted.enabled) {
-    throw new Error(`excel_seed_unavailable:${extracted.error || 'unknown'}`);
+    throw new Error(`catalog_seed_unavailable:${extracted.error || 'unknown'}`);
   }
 
   const chosen = [];
@@ -517,7 +442,8 @@ export async function createGoldenFromExcel({
   const listing = await listGoldenCasesWithPayload(normalizedCategory, config);
   return {
     category: normalizedCategory,
-    workbook_path: extracted.workbook_path,
+    catalog_path: extracted.catalog_path || '',
+    field_studio_source_path: extracted.field_studio_source_path || '',
     parser: extracted.parser || 'unknown',
     products_seen: extracted.products.length,
     created_count: createdCount,
@@ -537,7 +463,7 @@ export async function validateGoldenFixtures({
   }
 
   const listing = await listGoldenCasesWithPayload(normalizedCategory, config);
-  const fieldRules = await loadCategoryFieldRules(normalizedCategory, config);
+  const fieldRules = await loadGeneratedFieldRules(normalizedCategory, config);
   const fieldKeySet = new Set(
     Object.keys(isObject(fieldRules?.value?.fields) ? fieldRules.value.fields : {})
       .map((field) => normalizeFieldKey(field))
@@ -620,7 +546,7 @@ export async function buildAccuracyReport({
   }
 
   const listing = await listGoldenCasesWithPayload(normalizedCategory, config);
-  const fieldRules = await loadCategoryFieldRules(normalizedCategory, config);
+  const fieldRules = await loadGeneratedFieldRules(normalizedCategory, config);
   const rulesByField = isObject(fieldRules?.value?.fields) ? fieldRules.value.fields : {};
   const chosenCases = maxCases > 0
     ? listing.cases.slice(0, Math.max(1, Number.parseInt(String(maxCases), 10) || 1))

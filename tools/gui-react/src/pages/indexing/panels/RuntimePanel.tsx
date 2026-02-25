@@ -8,7 +8,8 @@ import {
 } from '../helpers';
 import type { SearxngStatusResponse } from '../types';
 import { usePersistedToggle } from '../../../stores/collapseStore';
-import type { ConvergenceKnobGroup } from '../../../stores/settingsManifest';
+import { SETTINGS_AUTOSAVE_DEBOUNCE_MS, type ConvergenceKnobGroup } from '../../../stores/settingsManifest';
+import { CONVERGENCE_SETTING_DEFAULTS } from '../../../stores/convergenceSettingsAuthority';
 
 interface LlmRouteSnapshotRow {
   role: string;
@@ -150,14 +151,6 @@ interface RuntimePanelProps {
   searxngStatusErrorMessage: string;
   onStartSearxng: () => void;
 
-  stopForceKill: boolean;
-  onStopForceKillChange: (value: boolean) => void;
-  onStopProcess: (opts: { force: boolean }) => void;
-  stopPending: boolean;
-  selectedIndexLabRunId: string;
-  onClearSelectedRunView: () => void;
-  onReplaySelectedRunView: () => void;
-
   runtimeSettingsReady: boolean;
   runtimeSettingsDirty: boolean;
   runtimeAutoSave: boolean;
@@ -288,13 +281,6 @@ export function RuntimePanel({
   searxngStatus,
   searxngStatusErrorMessage,
   onStartSearxng,
-  stopForceKill,
-  onStopForceKillChange,
-  onStopProcess,
-  stopPending,
-  selectedIndexLabRunId,
-  onClearSelectedRunView,
-  onReplaySelectedRunView,
   runtimeSettingsReady,
   runtimeSettingsDirty,
   runtimeAutoSave,
@@ -315,6 +301,7 @@ export function RuntimePanel({
   const [convergenceTuningOpen, , setConvergenceTuningOpen] = usePersistedToggle('indexing:runtime:convergenceTuning', false);
   const plannerTriageLocked = !discoveryEnabled;
   const runtimeSettingsLocked = !runtimeSettingsReady;
+  const runtimeAutoSaveDelaySeconds = (SETTINGS_AUTOSAVE_DEBOUNCE_MS.runtime / 1000).toFixed(1);
 
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-3" style={{ order: 30 }}>
@@ -350,7 +337,7 @@ export function RuntimePanel({
                 ? 'text-rose-600 dark:text-rose-300'
                 : runtimeSettingsSaveState === 'partial'
                 ? 'text-amber-600 dark:text-amber-400'
-                : runtimeSettingsDirty && !runtimeAutoSave
+                : runtimeSettingsDirty
                 ? 'text-amber-600 dark:text-amber-400'
                 : 'text-gray-500 dark:text-gray-400'
             }`}
@@ -363,8 +350,8 @@ export function RuntimePanel({
               ? (runtimeSettingsSaveMessage || 'Failed to save runtime settings.')
               : runtimeSettingsSaveState === 'partial'
               ? runtimeSettingsSaveMessage
-              : runtimeSettingsDirty && !runtimeAutoSave
-              ? 'unsaved'
+              : runtimeSettingsDirty
+              ? (runtimeAutoSave ? 'unsaved (auto-save pending)' : 'unsaved')
               : runtimeSettingsSaveState === 'ok'
               ? (runtimeSettingsSaveMessage || 'saved')
               : ''}
@@ -374,7 +361,7 @@ export function RuntimePanel({
             disabled={runtimeSettingsLocked}
             className={`px-3 py-1.5 text-sm rounded border ${runtimeAutoSave ? 'bg-blue-700 text-white border-blue-800 ring-1 ring-inset ring-blue-900/40' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}
             style={runtimeAutoSave ? { boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' } : undefined}
-            title="When enabled, runtime settings are automatically saved to the server 1.5 seconds after any change."
+            title={`When enabled, runtime settings are automatically saved to the server ${runtimeAutoSaveDelaySeconds} seconds after any change.`}
           >
             Auto-Save
           </button>
@@ -650,7 +637,7 @@ export function RuntimePanel({
         </div>
         <div className="rounded border border-gray-300 dark:border-gray-600 px-2 py-2">
           <div className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 dark:text-gray-200">planner max tokens<Tip text="Max output tokens for planner calls." /></div>
-          <select value={llmTokensPlan} onChange={(e) => onLlmTokensPlanChange(clampTokenForModel(phase2LlmModel, Number.parseInt(e.target.value, 10) || llmTokensPlan))} disabled={isAll || busy || !discoveryEnabled || !phase2LlmEnabled} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for planner calls.">
+          <select value={llmTokensPlan} onChange={(e) => onLlmTokensPlanChange(clampTokenForModel(phase2LlmModel, Number.parseInt(e.target.value, 10)))} disabled={isAll || busy || !discoveryEnabled || !phase2LlmEnabled} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for planner calls.">
             {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(phase2LlmModel).max_output_tokens; const disabled = token > cap; return (<option key={`phase2-token:${token}`} value={token} disabled={disabled}>planner tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
           </select>
           {llmTokensPlan > resolveModelTokenDefaults(phase2LlmModel).max_output_tokens && (
@@ -670,7 +657,7 @@ export function RuntimePanel({
         </div>
         <div className="rounded border border-gray-300 dark:border-gray-600 px-2 py-2">
           <div className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 dark:text-gray-200">triage max tokens<Tip text="Max output tokens for triage calls." /></div>
-          <select value={llmTokensTriage} onChange={(e) => onLlmTokensTriageChange(clampTokenForModel(phase3LlmModel, Number.parseInt(e.target.value, 10) || llmTokensTriage))} disabled={isAll || busy || !discoveryEnabled || !phase3LlmTriageEnabled} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for triage calls.">
+          <select value={llmTokensTriage} onChange={(e) => onLlmTokensTriageChange(clampTokenForModel(phase3LlmModel, Number.parseInt(e.target.value, 10)))} disabled={isAll || busy || !discoveryEnabled || !phase3LlmTriageEnabled} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for triage calls.">
             {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(phase3LlmModel).max_output_tokens; const disabled = token > cap; return (<option key={`phase3-token:${token}`} value={token} disabled={disabled}>triage tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
           </select>
           {llmTokensTriage > resolveModelTokenDefaults(phase3LlmModel).max_output_tokens && (
@@ -703,7 +690,7 @@ export function RuntimePanel({
         </div>
         <div className="rounded border border-gray-300 dark:border-gray-600 px-2 py-2">
           <div className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 dark:text-gray-200">fast pass max tokens<Tip text="Max output tokens for fast LLM passes." /></div>
-          <select value={llmTokensFast} onChange={(e) => onLlmTokensFastChange(clampTokenForModel(llmModelFast, Number.parseInt(e.target.value, 10) || llmTokensFast))} disabled={isAll || busy} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for fast LLM passes.">
+          <select value={llmTokensFast} onChange={(e) => onLlmTokensFastChange(clampTokenForModel(llmModelFast, Number.parseInt(e.target.value, 10)))} disabled={isAll || busy} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for fast LLM passes.">
             {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmModelFast).max_output_tokens; const disabled = token > cap; return (<option key={`fast-token:${token}`} value={token} disabled={disabled}>fast tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
           </select>
           {llmTokensFast > resolveModelTokenDefaults(llmModelFast).max_output_tokens && (
@@ -718,7 +705,7 @@ export function RuntimePanel({
         </div>
         <div className="rounded border border-gray-300 dark:border-gray-600 px-2 py-2">
           <div className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 dark:text-gray-200">reasoning max tokens<Tip text="Max output tokens for reasoning passes." /></div>
-          <select value={llmTokensReasoning} onChange={(e) => onLlmTokensReasoningChange(clampTokenForModel(llmModelReasoning, Number.parseInt(e.target.value, 10) || llmTokensReasoning))} disabled={isAll || busy} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for reasoning passes.">
+          <select value={llmTokensReasoning} onChange={(e) => onLlmTokensReasoningChange(clampTokenForModel(llmModelReasoning, Number.parseInt(e.target.value, 10)))} disabled={isAll || busy} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for reasoning passes.">
             {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmModelReasoning).max_output_tokens; const disabled = token > cap; return (<option key={`reasoning-token:${token}`} value={token} disabled={disabled}>reasoning tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
           </select>
           {llmTokensReasoning > resolveModelTokenDefaults(llmModelReasoning).max_output_tokens && (
@@ -729,7 +716,7 @@ export function RuntimePanel({
         <select value={llmModelExtract} onChange={(e) => onLlmModelExtractChange(e.target.value)} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Primary route model for extract role.">
           {llmModelOptions.map((model) => (<option key={`extract:${model}`} value={model}>extract role model: {model}</option>))}
         </select>
-        <select value={llmTokensExtract} onChange={(e) => onLlmTokensExtractChange(clampTokenForModel(llmModelExtract, Number.parseInt(e.target.value, 10) || llmTokensExtract))} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for extract role calls.">
+        <select value={llmTokensExtract} onChange={(e) => onLlmTokensExtractChange(clampTokenForModel(llmModelExtract, Number.parseInt(e.target.value, 10)))} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for extract role calls.">
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmModelExtract).max_output_tokens; const disabled = token > cap; return (<option key={`extract-token:${token}`} value={token} disabled={disabled}>extract tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
         {llmTokensExtract > resolveModelTokenDefaults(llmModelExtract).max_output_tokens && (
@@ -739,7 +726,7 @@ export function RuntimePanel({
         <select value={llmModelValidate} onChange={(e) => onLlmModelValidateChange(e.target.value)} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Primary route model for validate role.">
           {llmModelOptions.map((model) => (<option key={`validate:${model}`} value={model}>validate role model: {model}</option>))}
         </select>
-        <select value={llmTokensValidate} onChange={(e) => onLlmTokensValidateChange(clampTokenForModel(llmModelValidate, Number.parseInt(e.target.value, 10) || llmTokensValidate))} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for validate role calls.">
+        <select value={llmTokensValidate} onChange={(e) => onLlmTokensValidateChange(clampTokenForModel(llmModelValidate, Number.parseInt(e.target.value, 10)))} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for validate role calls.">
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmModelValidate).max_output_tokens; const disabled = token > cap; return (<option key={`validate-token:${token}`} value={token} disabled={disabled}>validate tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
         {llmTokensValidate > resolveModelTokenDefaults(llmModelValidate).max_output_tokens && (
@@ -749,7 +736,7 @@ export function RuntimePanel({
         <select value={llmModelWrite} onChange={(e) => onLlmModelWriteChange(e.target.value)} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Primary route model for write/summary role.">
           {llmModelOptions.map((model) => (<option key={`write:${model}`} value={model}>write role model: {model}</option>))}
         </select>
-        <select value={llmTokensWrite} onChange={(e) => onLlmTokensWriteChange(clampTokenForModel(llmModelWrite, Number.parseInt(e.target.value, 10) || llmTokensWrite))} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for write role calls.">
+        <select value={llmTokensWrite} onChange={(e) => onLlmTokensWriteChange(clampTokenForModel(llmModelWrite, Number.parseInt(e.target.value, 10)))} disabled={isAll || busy} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Max output tokens for write role calls.">
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmModelWrite).max_output_tokens; const disabled = token > cap; return (<option key={`write-token:${token}`} value={token} disabled={disabled}>write tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
         {llmTokensWrite > resolveModelTokenDefaults(llmModelWrite).max_output_tokens && (
@@ -784,7 +771,7 @@ export function RuntimePanel({
           <option value="">fallback plan: none</option>
           {llmModelOptions.map((model) => (<option key={`fplan:${model}`} value={model}>fallback plan: {model}</option>))}
         </select>
-        <select value={llmTokensPlanFallback} onChange={(e) => onLlmTokensPlanFallbackChange(clampTokenForModel(llmFallbackPlanModel || phase2LlmModel, Number.parseInt(e.target.value, 10) || llmTokensPlanFallback))} disabled={isAll || busy || !llmFallbackEnabled} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Fallback max output tokens for plan role.">
+        <select value={llmTokensPlanFallback} onChange={(e) => onLlmTokensPlanFallbackChange(clampTokenForModel(llmFallbackPlanModel || phase2LlmModel, Number.parseInt(e.target.value, 10)))} disabled={isAll || busy || !llmFallbackEnabled} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Fallback max output tokens for plan role.">
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmFallbackPlanModel || phase2LlmModel).max_output_tokens; const disabled = token > cap; return (<option key={`fplan-token:${token}`} value={token} disabled={disabled}>fallback plan tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
         </div>
@@ -797,7 +784,7 @@ export function RuntimePanel({
           <option value="">fallback extract: none</option>
           {llmModelOptions.map((model) => (<option key={`fextract:${model}`} value={model}>fallback extract: {model}</option>))}
         </select>
-        <select value={llmTokensExtractFallback} onChange={(e) => onLlmTokensExtractFallbackChange(clampTokenForModel(llmFallbackExtractModel || llmModelExtract, Number.parseInt(e.target.value, 10) || llmTokensExtractFallback))} disabled={isAll || busy || !llmFallbackEnabled} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Fallback max output tokens for extract role.">
+        <select value={llmTokensExtractFallback} onChange={(e) => onLlmTokensExtractFallbackChange(clampTokenForModel(llmFallbackExtractModel || llmModelExtract, Number.parseInt(e.target.value, 10)))} disabled={isAll || busy || !llmFallbackEnabled} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Fallback max output tokens for extract role.">
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmFallbackExtractModel || llmModelExtract).max_output_tokens; const disabled = token > cap; return (<option key={`fextract-token:${token}`} value={token} disabled={disabled}>fallback extract tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
         </div>
@@ -810,7 +797,7 @@ export function RuntimePanel({
           <option value="">fallback validate: none</option>
           {llmModelOptions.map((model) => (<option key={`fvalidate:${model}`} value={model}>fallback validate: {model}</option>))}
         </select>
-        <select value={llmTokensValidateFallback} onChange={(e) => onLlmTokensValidateFallbackChange(clampTokenForModel(llmFallbackValidateModel || llmModelValidate, Number.parseInt(e.target.value, 10) || llmTokensValidateFallback))} disabled={isAll || busy || !llmFallbackEnabled} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Fallback max output tokens for validate role.">
+        <select value={llmTokensValidateFallback} onChange={(e) => onLlmTokensValidateFallbackChange(clampTokenForModel(llmFallbackValidateModel || llmModelValidate, Number.parseInt(e.target.value, 10)))} disabled={isAll || busy || !llmFallbackEnabled} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Fallback max output tokens for validate role.">
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmFallbackValidateModel || llmModelValidate).max_output_tokens; const disabled = token > cap; return (<option key={`fvalidate-token:${token}`} value={token} disabled={disabled}>fallback validate tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
         </div>
@@ -823,7 +810,7 @@ export function RuntimePanel({
           <option value="">fallback write: none</option>
           {llmModelOptions.map((model) => (<option key={`fwrite:${model}`} value={model}>fallback write: {model}</option>))}
         </select>
-        <select value={llmTokensWriteFallback} onChange={(e) => onLlmTokensWriteFallbackChange(clampTokenForModel(llmFallbackWriteModel || llmModelWrite, Number.parseInt(e.target.value, 10) || llmTokensWriteFallback))} disabled={isAll || busy || !llmFallbackEnabled} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Fallback max output tokens for write role.">
+        <select value={llmTokensWriteFallback} onChange={(e) => onLlmTokensWriteFallbackChange(clampTokenForModel(llmFallbackWriteModel || llmModelWrite, Number.parseInt(e.target.value, 10)))} disabled={isAll || busy || !llmFallbackEnabled} className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Fallback max output tokens for write role.">
           {llmTokenPresetOptions.map((token) => { const cap = resolveModelTokenDefaults(llmFallbackWriteModel || llmModelWrite).max_output_tokens; const disabled = token > cap; return (<option key={`fwrite-token:${token}`} value={token} disabled={disabled}>fallback write tokens: {token}{disabled ? ' (model max)' : ''}</option>); })}
         </select>
         </div>
@@ -965,15 +952,20 @@ export function RuntimePanel({
                 <div className="space-y-2">
                   {group.knobs.map((knob) => {
                     if (knob.type === 'bool') {
+                      const defaultValue = CONVERGENCE_SETTING_DEFAULTS[knob.key as keyof typeof CONVERGENCE_SETTING_DEFAULTS];
+                      const boolValue = typeof convergenceSettings[knob.key] === 'boolean'
+                        ? (convergenceSettings[knob.key] as boolean)
+                        : (typeof defaultValue === 'boolean' ? defaultValue : false);
                       return (
                         <label key={knob.key} className="flex items-center gap-2 text-[11px] text-gray-700 dark:text-gray-200">
-                          <input type="checkbox" checked={Boolean(convergenceSettings[knob.key])} onChange={(e) => onConvergenceKnobUpdate(knob.key, e.target.checked)} />
+                          <input type="checkbox" checked={boolValue} onChange={(e) => onConvergenceKnobUpdate(knob.key, e.target.checked)} />
                           {knob.label}
                           {'tip' in knob && knob.tip ? <Tip text={knob.tip} /> : null}
                         </label>
                       );
                     }
-                    const fallback = knob.min;
+                    const defaultValue = CONVERGENCE_SETTING_DEFAULTS[knob.key as keyof typeof CONVERGENCE_SETTING_DEFAULTS];
+                    const fallback = typeof defaultValue === 'number' ? defaultValue : knob.min;
                     const numValue = typeof convergenceSettings[knob.key] === 'number'
                       ? (convergenceSettings[knob.key] as number)
                       : fallback;
@@ -1023,18 +1015,6 @@ export function RuntimePanel({
           </div>
         )}
       </div>
-      <div className="grid grid-cols-3 items-start gap-2">
-        <div className="space-y-1">
-          <button onClick={() => onStopProcess({ force: stopForceKill })} disabled={stopPending} className="w-full h-10 inline-flex items-center justify-center px-3 text-sm rounded bg-red-600 hover:bg-red-700 text-white disabled:opacity-40" title={stopForceKill ? 'Force kill process tree if needed.' : 'Graceful stop request.'}>Stop Process</button>
-          <label className="inline-flex items-center gap-2 text-[11px] text-gray-600 dark:text-gray-300">
-            <input type="checkbox" checked={stopForceKill} onChange={(e) => onStopForceKillChange(e.target.checked)} disabled={stopPending} />
-            force kill (hard stop)
-            <Tip text="When enabled, Stop Process uses forced kill behavior if graceful stop hangs." />
-          </label>
-        </div>
-        <button onClick={onClearSelectedRunView} disabled={isAll || busy || !selectedIndexLabRunId} className="w-full h-10 self-start inline-flex items-center justify-center px-3 text-sm rounded bg-gray-700 hover:bg-gray-800 text-white disabled:opacity-40" title="Clear only selected run containers from the current view.">Clear Selected View</button>
-        <button onClick={onReplaySelectedRunView} disabled={isAll || busy || !selectedIndexLabRunId} className="w-full h-10 self-start inline-flex items-center justify-center px-3 text-sm rounded bg-emerald-700 hover:bg-emerald-800 text-white disabled:opacity-40" title="Replay selected run from persisted events/artifacts.">Replay Selected Run</button>
-          </div>
         </>
       ) : null}
     </div>

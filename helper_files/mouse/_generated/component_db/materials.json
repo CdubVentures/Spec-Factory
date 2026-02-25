@@ -1,0 +1,23 @@
+{
+  "category": "mouse",
+  "component_type": "material",
+  "generated_at": "2026-02-25T18:50:55.275Z",
+  "items": [
+    {
+      "name": "metal",
+      "properties": {}
+    },
+    {
+      "name": "plastic",
+      "properties": {}
+    },
+    {
+      "aliases": [
+        "carbonfiber"
+      ],
+      "name": "carbon fiber",
+      "properties": {}
+    }
+  ],
+  "version": 1
+}

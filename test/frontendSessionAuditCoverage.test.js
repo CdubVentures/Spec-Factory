@@ -16,7 +16,8 @@ test('runtime ops control state is session-scoped', () => {
   const fallbacksTab = readText('tools/gui-react/src/pages/runtime-ops/panels/FallbacksTab.tsx');
   const queueTab = readText('tools/gui-react/src/pages/runtime-ops/panels/QueueTab.tsx');
 
-  assert.equal(runtimeOpsPage.includes('runtimeOps:run:'), true, 'runtime run selection should be session-scoped');
+  assert.equal(runtimeOpsPage.includes('useIndexLabStore'), true, 'runtime run selection should use shared indexlab authority state');
+  assert.equal(runtimeOpsPage.includes('runtimeOps:run:'), false, 'runtime run selection should not use an independent runtime-ops persisted key');
   assert.equal(workersTab.includes('runtimeOps:workers:poolFilter:'), true, 'worker pool filter should be session-scoped');
   assert.equal(workersTab.includes('runtimeOps:workers:prefetchTab:'), true, 'worker prefetch tab should be session-scoped');
   assert.equal(workerDrawer.includes('runtimeOps:workers:drawerTab:'), true, 'worker drawer tab should be session-scoped');
@@ -57,6 +58,16 @@ test('sidebar product selector chain is session-scoped by category', () => {
   assert.equal(sidebar.includes('sidebar:product:variant:'), true, 'sidebar variant selection should be session-scoped');
 });
 
+test('app header task drawer state is session-scoped', () => {
+  const appShell = readText('tools/gui-react/src/components/layout/AppShell.tsx');
+
+  assert.equal(appShell.includes('appShell:header:taskDrawer:open'), true, 'header task drawer open state should be session-scoped');
+  assert.equal(appShell.includes('Open Field Test tab'), true, 'header task drawer should expose Field Test tab label inside drawer');
+  assert.equal(appShell.includes('appShell:fieldTest:returnPath'), true, 'field test should persist last non-test path for restore');
+  assert.equal(appShell.includes('appShell:fieldTest:returnCategory'), true, 'field test should persist last non-test category for restore');
+  assert.equal(appShell.includes('handleFieldTestToggle'), true, 'field test button should toggle back to previous tab when active');
+});
+
 test('major catalog and product tables persist search/sort per session', () => {
   const overviewPage = readText('tools/gui-react/src/pages/overview/OverviewPage.tsx');
   const productPage = readText('tools/gui-react/src/pages/product/ProductPage.tsx');
@@ -85,6 +96,16 @@ test('indexing runtime nested section toggles are session-scoped', () => {
   assert.equal(runtimePanel.includes('indexing:runtime:routeSnapshot'), true, 'route snapshot section should be session-scoped');
   assert.equal(runtimePanel.includes('indexing:runtime:resumePolicy'), true, 'resume policy section should be session-scoped');
   assert.equal(runtimePanel.includes('indexing:runtime:convergenceTuning'), true, 'convergence tuning section should be session-scoped');
+});
+
+test('indexing event stream nested watch toggles are session-scoped and default closed', () => {
+  const eventStreamPanel = readText('tools/gui-react/src/pages/indexing/panels/EventStreamPanel.tsx');
+
+  assert.equal(eventStreamPanel.includes('nestedPersistScope'), true, 'event stream nested toggles should share a persisted scope token');
+  assert.equal(eventStreamPanel.includes('usePersistedToggle(`indexing:eventStream:nested:${nestedPersistScope}:overview`, false)'), true, 'indexing lab nested watch toggle should be session-scoped and default closed');
+  assert.equal(eventStreamPanel.includes('usePersistedToggle(`indexing:eventStream:nested:${nestedPersistScope}:panelControls`, false)'), true, 'panel controls nested watch toggle should be session-scoped and default closed');
+  assert.equal(eventStreamPanel.includes('usePersistedToggle(`indexing:eventStream:nested:${nestedPersistScope}:sessionData`, false)'), true, 'session data nested watch toggle should be session-scoped and default closed');
+  assert.equal(eventStreamPanel.includes('usePersistedToggle(`indexing:eventStream:nested:${nestedPersistScope}:eventFeed`, false)'), true, 'event stream feed nested watch toggle should be session-scoped and default closed');
 });
 
 test('studio key navigator selection and nested sections are session-scoped', () => {

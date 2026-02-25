@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  getWorkbookMapValidationOutcome,
-  assertWorkbookMapValidationOrThrow,
-  resolveWorkbookMapPayloadForSave,
+  getFieldStudioMapValidationOutcome,
+  assertFieldStudioMapValidationOrThrow,
+  resolveFieldStudioMapPayloadForSave,
 } from '../tools/gui-react/src/pages/studio/mapValidationPreflight.js';
 
-test('getWorkbookMapValidationOutcome prefers explicit valid flag', () => {
-  const result = getWorkbookMapValidationOutcome({
+test('getFieldStudioMapValidationOutcome prefers explicit valid flag', () => {
+  const result = getFieldStudioMapValidationOutcome({
     valid: true,
     errors: ['should be ignored when valid=true'],
     warnings: ['warn'],
@@ -21,8 +21,8 @@ test('getWorkbookMapValidationOutcome prefers explicit valid flag', () => {
   assert.deepEqual(result.normalized, { key_list: { sheet: 'Data' } });
 });
 
-test('getWorkbookMapValidationOutcome falls back to ok flag', () => {
-  const result = getWorkbookMapValidationOutcome({
+test('getFieldStudioMapValidationOutcome falls back to ok flag', () => {
+  const result = getFieldStudioMapValidationOutcome({
     ok: false,
     errors: [],
     warnings: [],
@@ -32,8 +32,8 @@ test('getWorkbookMapValidationOutcome falls back to ok flag', () => {
   assert.deepEqual(result.errors, []);
 });
 
-test('getWorkbookMapValidationOutcome infers invalid when errors exist and no explicit flags', () => {
-  const result = getWorkbookMapValidationOutcome({
+test('getFieldStudioMapValidationOutcome infers invalid when errors exist and no explicit flags', () => {
+  const result = getFieldStudioMapValidationOutcome({
     errors: ['key_list: sheet is required'],
   });
 
@@ -41,9 +41,9 @@ test('getWorkbookMapValidationOutcome infers invalid when errors exist and no ex
   assert.deepEqual(result.errors, ['key_list: sheet is required']);
 });
 
-test('assertWorkbookMapValidationOrThrow throws concise preflight error for hard failures', () => {
+test('assertFieldStudioMapValidationOrThrow throws concise preflight error for hard failures', () => {
   assert.throws(
-    () => assertWorkbookMapValidationOrThrow({
+    () => assertFieldStudioMapValidationOrThrow({
       result: {
         valid: false,
         errors: ['e1', 'e2', 'e3', 'e4'],
@@ -54,8 +54,8 @@ test('assertWorkbookMapValidationOrThrow throws concise preflight error for hard
   );
 });
 
-test('assertWorkbookMapValidationOrThrow allows legacy workbook-only failures during compile when explicitly enabled', () => {
-  const outcome = assertWorkbookMapValidationOrThrow({
+test('assertFieldStudioMapValidationOrThrow allows legacy map-only failures during compile when explicitly enabled', () => {
+  const outcome = assertFieldStudioMapValidationOrThrow({
     result: {
       valid: false,
       errors: [
@@ -71,14 +71,14 @@ test('assertWorkbookMapValidationOrThrow allows legacy workbook-only failures du
 
   assert.equal(outcome.valid, true);
   assert.equal(
-    outcome.warnings.some((warning) => warning.includes('legacy workbook validation mismatch')),
+    outcome.warnings.some((warning) => warning.includes('legacy map validation mismatch')),
     true,
   );
 });
 
-test('assertWorkbookMapValidationOrThrow does not bypass legacy errors for save mapping', () => {
+test('assertFieldStudioMapValidationOrThrow does not bypass legacy errors for save mapping', () => {
   assert.throws(
-    () => assertWorkbookMapValidationOrThrow({
+    () => assertFieldStudioMapValidationOrThrow({
       result: {
         valid: false,
         errors: [
@@ -93,9 +93,9 @@ test('assertWorkbookMapValidationOrThrow does not bypass legacy errors for save 
   );
 });
 
-test('assertWorkbookMapValidationOrThrow does not bypass when non-legacy errors are present', () => {
+test('assertFieldStudioMapValidationOrThrow does not bypass when non-legacy errors are present', () => {
   assert.throws(
-    () => assertWorkbookMapValidationOrThrow({
+    () => assertFieldStudioMapValidationOrThrow({
       result: {
         valid: false,
         errors: [
@@ -111,9 +111,9 @@ test('assertWorkbookMapValidationOrThrow does not bypass when non-legacy errors 
   );
 });
 
-test('resolveWorkbookMapPayloadForSave prefers normalized payload when available', () => {
+test('resolveFieldStudioMapPayloadForSave prefers normalized payload when available', () => {
   const fallback = { tooltip_source: { path: 'raw.json' } };
-  const payload = resolveWorkbookMapPayloadForSave({
+  const payload = resolveFieldStudioMapPayloadForSave({
     result: {
       valid: true,
       normalized: { tooltip_source: { path: 'normalized.json' } },

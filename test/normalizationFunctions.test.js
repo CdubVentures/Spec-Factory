@@ -6,7 +6,7 @@ import {
   parseLatencyList,
   parsePollingList,
   normalizeColorList,
-  parseDateExcel,
+  parseDateSerial,
   normalizeBoolean,
   stripUnitSuffix
 } from '../src/engine/normalization-functions.js';
@@ -38,9 +38,9 @@ test('parseLatencyList extracts mode/value tuples', () => {
   ]);
 });
 
-test('parseDateExcel converts serial dates and keeps string passthrough', () => {
-  assert.equal(parseDateExcel(45292), '2024-01-01');
-  assert.equal(parseDateExcel('2026-01-01'), '2026-01-01');
+test('parseDateSerial converts serial dates and keeps string passthrough', () => {
+  assert.equal(parseDateSerial(45292), '2024-01-01');
+  assert.equal(parseDateSerial('2026-01-01'), '2026-01-01');
 });
 
 test('normalizeBoolean follows canonical boolean coercion semantics', () => {

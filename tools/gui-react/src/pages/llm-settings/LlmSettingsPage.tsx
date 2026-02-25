@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { usePersistedTab } from '../../stores/tabStore';
 import { useUiStore } from '../../stores/uiStore';
-import { useLlmSettingsAuthority } from '../../stores/llmSettingsAuthority';
+import { useLlmSettingsAuthority, readLlmSettingsBootstrapRows } from '../../stores/llmSettingsAuthority';
+import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore';
 import { Spinner } from '../../components/common/Spinner';
 import type { LlmRouteRow, LlmScope } from '../../types/llmSettings';
 import { LLM_ROUTE_PRESET_LIMITS, LLM_SETTING_LIMITS } from '../../stores/settingsManifest';
@@ -58,7 +60,8 @@ const MIN_EVIDENCE_BOUNDS = LLM_SETTING_LIMITS.minEvidenceRefs;
 const MAX_TOKEN_STEP = MAX_TOKEN_BOUNDS.step ?? 1;
 
 function clampToRange(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, value));
+  const safeValue = Number.isFinite(value) ? value : min;
+  return Math.max(min, Math.min(max, safeValue));
 }
 
 const PROMPT_FLAG_FIELDS: Array<keyof LlmRouteRow> = [
@@ -79,7 +82,8 @@ const PROMPT_FLAG_FIELDS: Array<keyof LlmRouteRow> = [
 ];
 
 function toEffortBand(effort: number) {
-  const n = clampToRange(effort || 3, EFFORT_BOUNDS.min, EFFORT_BOUNDS.max);
+  const parsedEffort = Number.isFinite(effort) ? effort : EFFORT_BOUNDS.min;
+  const n = clampToRange(parsedEffort, EFFORT_BOUNDS.min, EFFORT_BOUNDS.max);
   if (n <= 3) return '1-3';
   if (n <= 6) return '4-6';
   if (n <= 8) return '7-8';
@@ -253,10 +257,16 @@ function tagCls(kind: 'required' | 'difficulty' | 'availability' | 'effort', val
 }
 
 export function LlmSettingsPage() {
+  const queryClient = useQueryClient();
   const category = useUiStore((s) => s.category);
   const autoSaveEnabled = useUiStore((s) => s.llmSettingsAutoSaveEnabled);
   const setAutoSaveEnabled = useUiStore((s) => s.setLlmSettingsAutoSaveEnabled);
   const isAll = category === 'all';
+  const llmSettingsReady = useSettingsAuthorityStore((s) => s.snapshot.llmSettingsReady);
+  const llmSettingsBootstrapRows = useMemo(
+    () => readLlmSettingsBootstrapRows(queryClient, category),
+    [queryClient, category],
+  );
   const [activeScope, setActiveScope] = usePersistedTab<LlmScope>(
     'llmSettings:scope:main',
     'field',
@@ -267,8 +277,10 @@ export function LlmSettingsPage() {
     `llmSettings:selectedRoute:${scopeStateKey}`,
     '',
   );
-  const [rows, setRows] = useState<LlmRouteRow[]>([]);
-  const [defaultRowsByKey, setDefaultRowsByKey] = useState<Record<string, LlmRouteRow>>({});
+  const [rows, setRows] = useState<LlmRouteRow[]>(() => llmSettingsBootstrapRows);
+  const [defaultRowsByKey, setDefaultRowsByKey] = useState<Record<string, LlmRouteRow>>(
+    () => Object.fromEntries(llmSettingsBootstrapRows.map((row) => [row.route_key, row])),
+  );
   const [dirty, setDirty] = useState(false);
   const [sortBy, setSortBy] = usePersistedTab<SortBy>(
     `llmSettings:sortBy:${scopeStateKey}`,
@@ -350,10 +362,15 @@ export function LlmSettingsPage() {
       setLastSavedAt(new Date().toLocaleTimeString());
     },
   });
+  const llmHydrated = isAll || (llmSettingsReady && !isLoading);
 
   useEffect(() => {
-    setDefaultRowsByKey({});
-  }, [category]);
+    setRows(llmSettingsBootstrapRows);
+    setDefaultRowsByKey(Object.fromEntries(llmSettingsBootstrapRows.map((row) => [row.route_key, row])));
+    setDirty(false);
+    setSaveStatus({ kind: 'idle', message: '' });
+    setLastSavedAt(null);
+  }, [category, llmSettingsBootstrapRows]);
 
   useEffect(() => {
     if (!data?.rows) return;
@@ -364,11 +381,6 @@ export function LlmSettingsPage() {
       return Object.fromEntries((data.rows || []).map((row) => [row.route_key, row]));
     });
   }, [data]);
-
-  useEffect(() => {
-    if (!dirty) return;
-    setSaveStatus((current) => (current.kind === 'idle' ? current : { kind: 'idle', message: '' }));
-  }, [dirty]);
 
   const scopeRows = useMemo(
     () => rows.filter((row) => row.scope === activeScope),
@@ -490,7 +502,7 @@ export function LlmSettingsPage() {
     return <p className="text-gray-500 mt-8 text-center">Select a specific category to manage LLM settings.</p>;
   }
 
-  if (isLoading && rows.length === 0) {
+  if (!llmHydrated && rows.length === 0) {
     return <Spinner className="h-6 w-6" />;
   }
 
@@ -507,20 +519,21 @@ export function LlmSettingsPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => { void reload(); }}
+              disabled={!llmHydrated || isSaving || isResetting}
               className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               Reload
             </button>
             <button
               onClick={resetDefaults}
-              disabled={isResetting}
+              disabled={!llmHydrated || isResetting}
               className="px-3 py-1.5 text-xs border border-amber-300 text-amber-700 rounded hover:bg-amber-50 disabled:opacity-50"
             >
               {isResetting ? 'Resetting...' : 'Reset Defaults'}
             </button>
             <button
               onClick={save}
-              disabled={!dirty || isSaving}
+              disabled={!llmHydrated || !dirty || isSaving}
               className="px-3 py-1.5 text-xs bg-accent text-white rounded hover:bg-blue-700 disabled:opacity-50"
             >
               {isSaving ? 'Saving...' : autoSaveEnabled ? 'Save Now' : 'Save LLM Settings'}
@@ -542,8 +555,10 @@ export function LlmSettingsPage() {
               ? 'Saving...'
               : saveStatus.kind === 'error' || saveStatus.kind === 'partial'
               ? saveStatus.message
+              : !llmHydrated
+              ? 'Loading persisted LLM settings...'
               : dirty
-              ? 'Unsaved changes.'
+              ? (autoSaveEnabled ? 'Unsaved (auto-save pending).' : 'Unsaved changes.')
               : 'All changes saved.'}
             {lastSavedAt ? ` Last save: ${lastSavedAt}` : ''}
           </div>
@@ -766,7 +781,7 @@ export function LlmSettingsPage() {
                       max={EFFORT_BOUNDS.max}
                       value={selectedRow.effort}
                       onChange={(e) => updateSelected({
-                        effort: clampToRange(Number.parseInt(e.target.value, 10) || EFFORT_BOUNDS.min, EFFORT_BOUNDS.min, EFFORT_BOUNDS.max),
+                        effort: clampToRange(Number.parseInt(e.target.value, 10), EFFORT_BOUNDS.min, EFFORT_BOUNDS.max),
                       })}
                     />
                     <div className="text-[10px] text-gray-500 mt-1">Band: {selectedRow.effort_band}</div>
@@ -852,7 +867,7 @@ export function LlmSettingsPage() {
                         step={MAX_TOKEN_STEP}
                         value={selectedRow.max_tokens}
                         onChange={(e) => updateSelected({
-                          max_tokens: clampToRange(Number.parseInt(e.target.value, 10) || MAX_TOKEN_BOUNDS.min, MAX_TOKEN_BOUNDS.min, MAX_TOKEN_BOUNDS.max),
+                          max_tokens: clampToRange(Number.parseInt(e.target.value, 10), MAX_TOKEN_BOUNDS.min, MAX_TOKEN_BOUNDS.max),
                         })}
                       />
                     </div>
@@ -872,7 +887,7 @@ export function LlmSettingsPage() {
                         value={selectedRow.llm_output_min_evidence_refs_required}
                         onChange={(e) => updateSelected({
                           llm_output_min_evidence_refs_required: clampToRange(
-                            Number.parseInt(e.target.value, 10) || MIN_EVIDENCE_BOUNDS.min,
+                            Number.parseInt(e.target.value, 10),
                             MIN_EVIDENCE_BOUNDS.min,
                             MIN_EVIDENCE_BOUNDS.max,
                           ),

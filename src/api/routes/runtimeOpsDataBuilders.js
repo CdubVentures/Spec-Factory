@@ -1115,7 +1115,11 @@ export function buildPreFetchPhases(events, meta, artifacts) {
     }
 
     if (type === 'search_started') {
+      const scope = String(payload.scope || '').trim().toLowerCase();
       const query = String(payload.query || '').trim();
+      if (!query && scope !== 'query') {
+        continue;
+      }
       searchPending[query] = {
         query,
         provider: String(payload.provider || '').trim(),
@@ -1125,7 +1129,11 @@ export function buildPreFetchPhases(events, meta, artifacts) {
     }
 
     if (type === 'search_finished') {
+      const scope = String(payload.scope || '').trim().toLowerCase();
       const query = String(payload.query || '').trim();
+      if (!query && scope !== 'query') {
+        continue;
+      }
       const pending = searchPending[query];
       const startedTs = pending ? pending.started_ts : '';
       const durationMs = startedTs ? parseTsMs(ts) - parseTsMs(startedTs) : 0;
@@ -1302,6 +1310,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
         query_guard: artProfile.query_guard && typeof artProfile.query_guard === 'object' ? artProfile.query_guard : {},
         hint_source_counts: artProfile.hint_source_counts && typeof artProfile.hint_source_counts === 'object' ? artProfile.hint_source_counts : {},
         field_rule_gate_counts: artProfile.field_rule_gate_counts && typeof artProfile.field_rule_gate_counts === 'object' ? artProfile.field_rule_gate_counts : {},
+        field_rule_hint_counts_by_field: artProfile.field_rule_hint_counts_by_field && typeof artProfile.field_rule_hint_counts_by_field === 'object' ? artProfile.field_rule_hint_counts_by_field : {},
         generated_at: String(artProfile.generated_at || '').trim(),
         product_id: String(artProfile.product_id || '').trim(),
         source: String(artProfile.source || '').trim(),
@@ -1322,6 +1331,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
         query_guard: {},
         hint_source_counts: {},
         field_rule_gate_counts: {},
+        field_rule_hint_counts_by_field: {},
         generated_at: '',
         product_id: '',
         source: '',

@@ -9,7 +9,7 @@ import {
 
 test('createDataChangePayload builds canonical data-change shape', () => {
   const payload = createDataChangePayload({
-    event: 'studio-drafts-saved',
+    event: 'field-studio-map-saved',
     category: ' Mouse ',
     entities: {
       productIds: [' mouse-razer-viper ', ''],
@@ -18,14 +18,14 @@ test('createDataChangePayload builds canonical data-change shape', () => {
   });
 
   assert.equal(payload.type, 'data-change');
-  assert.equal(payload.event, 'studio-drafts-saved');
+  assert.equal(payload.event, 'field-studio-map-saved');
   assert.equal(payload.category, 'mouse');
   assert.deepEqual(payload.categories, ['mouse']);
-  assert.deepEqual(payload.domains, ['studio', 'review-layout', 'labels', 'product']);
+  assert.deepEqual(payload.domains, ['studio', 'mapping', 'review-layout']);
   assert.deepEqual(payload.entities.productIds, ['mouse-razer-viper']);
   assert.deepEqual(payload.entities.fieldKeys, ['dpi']);
   assert.deepEqual(payload.version, {
-    draft_hash: null,
+    map_hash: null,
     compiled_hash: null,
     specdb_sync_version: null,
     updated_at: null,

@@ -22,7 +22,7 @@ Build a 24/7, evidence-first "Spec Factory" that can publish 15–20 products pe
 
 A multi-format output system that:
 - Merges ProductRecord + Overrides into a final published record
-- Outputs to multiple formats: JSON, Excel, CSV, SQLite, API-ready JSON, Markdown
+- Outputs to multiple formats: JSON, spreadsheet, CSV, SQLite, API-ready JSON, Markdown
 - Applies final normalization and formatting per output format
 - Generates diff reports (what changed since last publish)
 - Supports incremental publishing (only changed products)
@@ -38,7 +38,7 @@ OUTPUT FORMAT MATRIX:
 ├─────────────────┼────────────────────────────────────────────────────┤
 │ JSON (full)     │ API consumption, front-end rendering, internal    │
 │ JSON (compact)  │ Lightweight API responses, mobile apps (lists stay arrays) │
-│ Excel (.xlsx)   │ Human review, sharing, manual analysis            │
+│ spreadsheet (.xlsx)   │ Human review, sharing, manual analysis            │
 │ CSV             │ Data import, spreadsheet tools, flat file exchange│
 │ SQLite          │ Local queryable database, analytics               │
 │ Markdown        │ Documentation, changelog, product pages           │
@@ -99,7 +99,7 @@ Overrides (Phase 8)
 │  STAGE 3: FORMAT TRANSFORM                       │
 │  - Generate each requested output format         │
 │  - Apply format-specific normalization           │
-│  - Excel: proper column widths, conditional fmt  │
+│  - spreadsheet: proper column widths, conditional fmt  │
 │  - JSON-LD: schema.org Product mapping           │
 │  - Markdown: table formatting                    │
 └────────────────────┬────────────────────────────┘
@@ -144,7 +144,7 @@ output/
 │   │   │       └── ...
 │   │   └── ...
 │   ├── exports/
-│   │   ├── all_products.xlsx          # Complete Excel workbook
+│   │   ├── all_products.xlsx          # Complete field-studio source spreadsheet
 │   │   ├── all_products.csv           # Flat CSV
 │   │   ├── all_products.sqlite        # SQLite database
 │   │   ├── comparison_table.html      # Product comparison HTML
@@ -216,10 +216,10 @@ output/
 }
 ```
 
-### Excel Output
+### spreadsheet Output
 
 ```javascript
-// Generate a comprehensive Excel workbook using ExcelJS
+// Generate a comprehensive field-studio source export bundle
 // Sheets:
 //   1. "Products" — one row per product, one column per field
 //   2. "Field Metadata" — field_key, display_name, type, unit, required_level
@@ -395,7 +395,7 @@ node src/cli/spec.js llm-metrics --model gemini_flash --period month
 
 | Tool | Purpose | Install |
 |------|---------|---------|
-| **ExcelJS** | Generate formatted Excel workbooks | `npm install exceljs` |
+| **Node fs/path** | Generate canonical JSON export manifests | Built-in |
 | **csv-stringify** | Generate CSV output | `npm install csv-stringify` |
 | **better-sqlite3** | SQLite output + metrics storage | `npm install better-sqlite3` |
 | **marked** | Markdown rendering for product pages | `npm install marked` |
@@ -424,8 +424,8 @@ node src/cli/spec.js llm-metrics --model gemini_flash --period month
 2. ☐ Final validation catches any fields that became invalid after override
 3. ☐ JSON full output contains all fields with metadata
 4. ☐ JSON compact output is flat key-value for easy consumption
-5. ☐ Excel output has conditional formatting by confidence level
-6. ☐ CSV output is importable into Google Sheets/Excel
+5. ☐ spreadsheet output has conditional formatting by confidence level
+6. ☐ CSV output is importable into Google Sheets/spreadsheet
 7. ☐ SQLite output queryable with standard SQL
 8. ☐ JSON-LD output validates against schema.org Product
 9. ☐ Version history maintained (≥3 previous versions archived)

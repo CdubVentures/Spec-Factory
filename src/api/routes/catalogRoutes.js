@@ -16,7 +16,7 @@ export function registerCatalogRoutes(ctx) {
     catalogAddProductsBulk,
     catalogUpdateProduct,
     catalogRemoveProduct,
-    catalogSeedFromWorkbook,
+    catalogSeedFromCatalog,
     upsertQueueProduct,
     loadProductCatalog,
     readJsonlEvents,
@@ -32,7 +32,6 @@ export function registerCatalogRoutes(ctx) {
     saveQueueState,
     getSpecDb,
   } = ctx;
-
   function resolveSpecDb(category) {
     if (!getSpecDb) return null;
     const cat = String(category || '').trim().toLowerCase();
@@ -172,9 +171,12 @@ export function registerCatalogRoutes(ctx) {
 
       // POST /api/v1/catalog/{cat}/products/seed
       if (parts[3] === 'seed' && method === 'POST') {
+        if (typeof catalogSeedFromCatalog !== 'function') {
+          return jsonRes(res, 500, { ok: false, error: 'catalog_seed_handler_missing' });
+        }
         const body = await readJsonBody(req).catch(() => ({}));
         const mode = body.mode === 'full' ? 'full' : 'identity';
-        const result = await catalogSeedFromWorkbook({
+        const result = await catalogSeedFromCatalog({
           config,
           category,
           mode,

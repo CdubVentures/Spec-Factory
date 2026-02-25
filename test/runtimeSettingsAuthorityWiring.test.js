@@ -22,9 +22,10 @@ test('runtime settings are owned by a shared authority module', () => {
 
   assert.equal(authorityText.includes('/runtime-settings'), true, 'runtime settings authority should own runtime settings API route usage');
   assert.equal(indexingPageText.includes('useRuntimeSettingsAuthority'), true, 'Indexing page should use runtime settings authority');
+  assert.equal(indexingPageText.includes('useSettingsAuthorityStore'), true, 'Indexing page should read runtime readiness from shared settings authority snapshot');
   assert.equal(indexingPageText.includes('/runtime-settings'), false, 'Indexing page should not directly read/write runtime settings endpoint');
   assert.equal(indexingPageText.includes('/api/v1/runtime-settings'), false, 'Indexing page should not directly call runtime settings API URL');
-  assert.equal(indexingPageText.includes('const runtimeSettingsReady = Boolean(runtimeSettingsData) && !runtimeSettingsLoading;'), true, 'Indexing page should lock run start until runtime settings hydrate');
+  assert.equal(indexingPageText.includes('const runtimeSettingsReady = runtimeSettingsAuthorityReady && !runtimeSettingsLoading;'), true, 'Indexing page should lock run start until runtime settings hydrate through shared authority readiness');
   assert.equal(indexingPageText.includes('const canRunSingle = !isAll && !!singleProductId && runtimeSettingsReady;'), true, 'Run readiness should include runtime settings hydration');
   assert.match(
     indexingPageText,

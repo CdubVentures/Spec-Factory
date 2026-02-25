@@ -18,6 +18,16 @@ import {
 } from '../studioConstants';
 import { useFieldRulesStore } from '../useFieldRulesStore';
 import { SystemBadges } from './SystemBadges';
+import {
+  clampNumber,
+  parseBoundedFloatInput,
+  parseBoundedIntInput,
+  parseOptionalPositiveIntInput,
+} from '../numericInputHelpers';
+import {
+  STUDIO_COMPONENT_MATCH_DEFAULTS,
+  STUDIO_NUMERIC_KNOB_BOUNDS,
+} from '../studioNumericKnobBounds';
 import type { DownstreamSystem } from './systemMapping';
 import type { DrawerTab } from './workbenchTypes';
 import type { EnumEntry, ComponentDbResponse, ComponentSource, ComponentSourceProperty } from '../../../types/studio';
@@ -267,6 +277,7 @@ type BadgeSlot = React.ComponentType<{ p: string }>;
 // ── Contract Tab ─────────────────────────────────────────────────────
 function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: Record<string, unknown>; onUpdate: (path: string, val: unknown) => void; B: BadgeSlot }) {
   const tooltipMd = strN(rule, 'ui.tooltip_md');
+  const contractDeferredLocked = true;
 
   return (
     <div className="space-y-3">
@@ -300,23 +311,39 @@ function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: 
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Unknown Token<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.unknown_token} /></span><B p="contract.unknown_token" /></div>
-          <ComboSelect value={strN(rule, 'contract.unknown_token', 'unk')} onChange={(v) => onUpdate('contract.unknown_token', v)} options={UNKNOWN_TOKENS} placeholder="unk" />
+          <ComboSelect value={strN(rule, 'contract.unknown_token', 'unk')} onChange={(v) => onUpdate('contract.unknown_token', v)} options={UNKNOWN_TOKENS} placeholder="unk" disabled={contractDeferredLocked} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Rounding<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.rounding_decimals} /></span><B p="contract.rounding.decimals" /></div>
-          <input className={`${inputCls} w-full`} type="number" min={0} max={6} value={numN(rule, 'contract.rounding.decimals', 0)} onChange={(e) => onUpdate('contract.rounding.decimals', parseInt(e.target.value, 10) || 0)} />
+          <input
+            className={`${inputCls} w-full`}
+            type="number"
+            min={STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.min}
+            max={STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.max}
+            value={numN(rule, 'contract.rounding.decimals', 0)}
+            onChange={(e) => onUpdate(
+              'contract.rounding.decimals',
+              parseBoundedIntInput(
+                e.target.value,
+                STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.min,
+                STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.max,
+                STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.fallback,
+              ),
+            )}
+          />
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Rounding Mode<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.rounding_mode} /></span><B p="contract.rounding.mode" /></div>
-          <select className={`${selectCls} w-full`} value={strN(rule, 'contract.rounding.mode', 'nearest')} onChange={(e) => onUpdate('contract.rounding.mode', e.target.value)}>
+          <select className={`${selectCls} w-full`} value={strN(rule, 'contract.rounding.mode', 'nearest')} onChange={(e) => onUpdate('contract.rounding.mode', e.target.value)} disabled={contractDeferredLocked}>
             <option value="nearest">nearest</option>
             <option value="floor">floor</option>
             <option value="ceil">ceil</option>
           </select>
         </div>
       </div>
+      <div className="text-xs text-red-600">Deferred: runtime wiring in progress</div>
 
       <h4 className="text-xs font-semibold text-gray-500 mt-4">Priority & Effort</h4>
       <div className="grid grid-cols-2 gap-3">
@@ -355,7 +382,22 @@ function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: 
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Effort (1-10)<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.effort} /></span><B p="priority.effort" /></div>
-          <input className={`${inputCls} w-full`} type="number" min={1} max={10} value={numN(rule, 'priority.effort', numN(rule, 'effort', 3))} onChange={(e) => onUpdate('priority.effort', parseInt(e.target.value, 10) || 1)} />
+          <input
+            className={`${inputCls} w-full`}
+            type="number"
+            min={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min}
+            max={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max}
+            value={numN(rule, 'priority.effort', numN(rule, 'effort', 3))}
+            onChange={(e) => onUpdate(
+              'priority.effort',
+              parseBoundedIntInput(
+                e.target.value,
+                STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min,
+                STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max,
+                STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.fallback,
+              ),
+            )}
+          />
         </div>
       </div>
       <div className="flex gap-4">
@@ -425,11 +467,44 @@ function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: 
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className={`${labelCls} flex items-center`}><span>Max Calls<Tip text={STUDIO_TIPS.ai_max_calls} style={{ position: 'relative', left: '-3px', top: '-4px' }} /></span><B p="ai_assist.max_calls" /></div>
-                <input className={`${inputCls} w-full`} type="number" min={1} max={10} value={explicitCalls || ''} onChange={(e) => onUpdate('ai_assist.max_calls', parseInt(e.target.value, 10) || null)} placeholder={`auto (${derivedCalls})`} />
+                <input
+                  className={`${inputCls} w-full`}
+                  type="number"
+                  min={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min}
+                  max={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max}
+                  value={explicitCalls || ''}
+                  onChange={(e) => {
+                    const parsed = parseOptionalPositiveIntInput(e.target.value);
+                    onUpdate(
+                      'ai_assist.max_calls',
+                      parsed === null
+                        ? null
+                        : clampNumber(parsed, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max),
+                    );
+                  }}
+                  placeholder={`auto (${derivedCalls})`}
+                />
               </div>
               <div>
                 <div className={`${labelCls} flex items-center`}><span>Max Tokens<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.ai_max_tokens} /></span><B p="ai_assist.max_tokens" /></div>
-                <input className={`${inputCls} w-full`} type="number" min={256} max={65536} step={1024} value={numN(rule, 'ai_assist.max_tokens', 0) || ''} onChange={(e) => onUpdate('ai_assist.max_tokens', parseInt(e.target.value, 10) || null)} placeholder={`auto (${effectiveMode === 'off' ? '0' : effectiveMode === 'advisory' ? '4096' : effectiveMode === 'planner' ? '8192' : '16384'})`} />
+                <input
+                  className={`${inputCls} w-full`}
+                  type="number"
+                  min={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min}
+                  max={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max}
+                  step={1024}
+                  value={numN(rule, 'ai_assist.max_tokens', 0) || ''}
+                  onChange={(e) => {
+                    const parsed = parseOptionalPositiveIntInput(e.target.value);
+                    onUpdate(
+                      'ai_assist.max_tokens',
+                      parsed === null
+                        ? null
+                        : clampNumber(parsed, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max),
+                    );
+                  }}
+                  placeholder={`auto (${effectiveMode === 'off' ? '0' : effectiveMode === 'advisory' ? '4096' : effectiveMode === 'planner' ? '8192' : '16384'})`}
+                />
               </div>
             </div>
 
@@ -466,7 +541,11 @@ function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: 
               const enumPolicy = strN(rule, 'enum.policy', strN(rule, 'enum_policy', 'open'));
               const enumSource = strN(rule, 'enum.source', strN(rule, 'enum_source'));
               const evidenceReq = boolN(rule, 'evidence.evidence_required', boolN(rule, 'evidence_required'));
-              const minRefs = numN(rule, 'evidence.min_evidence_refs', numN(rule, 'min_evidence_refs', 1));
+              const minRefs = numN(
+                rule,
+                'evidence.min_evidence_refs',
+                numN(rule, 'min_evidence_refs', STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback),
+              );
               const parseTemplate = strN(rule, 'parse.template', strN(rule, 'parse_template'));
               const componentType = strN(rule, 'component.type', strN(rule, 'component_type'));
 
@@ -678,7 +757,11 @@ function EvidenceTab({ rule, onUpdate, B }: { rule: Record<string, unknown>; onU
   const pubGate = boolN(rule, 'priority.publish_gate', boolN(rule, 'publish_gate'));
   const blockUnk = boolN(rule, 'priority.block_publish_when_unk', boolN(rule, 'block_publish_when_unk'));
   const evReq = boolN(rule, 'evidence.required', boolN(rule, 'evidence_required', true));
-  const minRefs = numN(rule, 'evidence.min_evidence_refs', numN(rule, 'min_evidence_refs', 1));
+  const minRefs = numN(
+    rule,
+    'evidence.min_evidence_refs',
+    numN(rule, 'min_evidence_refs', STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback),
+  );
 
   return (
     <div className="space-y-3">
@@ -692,7 +775,22 @@ function EvidenceTab({ rule, onUpdate, B }: { rule: Record<string, unknown>; onU
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Min Evidence Refs<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.min_evidence_refs} /></span><B p="evidence.min_evidence_refs" /></div>
-          <input className={`${inputCls} w-full`} type="number" min={0} max={10} value={minRefs} onChange={(e) => onUpdate('evidence.min_evidence_refs', parseInt(e.target.value, 10) || 0)} />
+          <input
+            className={`${inputCls} w-full`}
+            type="number"
+            min={STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.min}
+            max={STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.max}
+            value={minRefs}
+            onChange={(e) => onUpdate(
+              'evidence.min_evidence_refs',
+              parseBoundedIntInput(
+                e.target.value,
+                STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.min,
+                STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.max,
+                STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback,
+              ),
+            )}
+          />
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Conflict Policy<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.conflict_policy} /></span><B p="evidence.conflict_policy" /></div>
@@ -846,27 +944,79 @@ function DepsTab({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Fuzzy Threshold<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_fuzzy_threshold} /></span><B p="component.match.fuzzy_threshold" /></div>
-                  <input type="number" min={0} max={1} step={0.05} className={`${selectCls} w-full`}
-                    value={numN(rule, 'component.match.fuzzy_threshold', 0.75)}
-                    onChange={(e) => onUpdate('component.match.fuzzy_threshold', parseFloat(e.target.value) || 0.75)} />
+                  <input
+                    type="number"
+                    min={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min}
+                    max={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max}
+                    step={0.05}
+                    className={`${selectCls} w-full`}
+                    value={numN(rule, 'component.match.fuzzy_threshold', STUDIO_COMPONENT_MATCH_DEFAULTS.fuzzyThreshold)}
+                    onChange={(e) => onUpdate(
+                      'component.match.fuzzy_threshold',
+                      parseBoundedFloatInput(
+                        e.target.value,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max,
+                        STUDIO_COMPONENT_MATCH_DEFAULTS.fuzzyThreshold,
+                      ),
+                    )} />
                 </div>
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Name Weight<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_name_weight} /></span><B p="component.match.name_weight" /></div>
-                  <input type="number" min={0} max={1} step={0.05} className={`${selectCls} w-full`}
-                    value={numN(rule, 'component.match.name_weight', 0.4)}
-                    onChange={(e) => onUpdate('component.match.name_weight', parseFloat(e.target.value) || 0.4)} />
+                  <input
+                    type="number"
+                    min={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min}
+                    max={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max}
+                    step={0.05}
+                    className={`${selectCls} w-full`}
+                    value={numN(rule, 'component.match.name_weight', STUDIO_COMPONENT_MATCH_DEFAULTS.nameWeight)}
+                    onChange={(e) => onUpdate(
+                      'component.match.name_weight',
+                      parseBoundedFloatInput(
+                        e.target.value,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max,
+                        STUDIO_COMPONENT_MATCH_DEFAULTS.nameWeight,
+                      ),
+                    )} />
                 </div>
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Auto-Accept<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_auto_accept_score} /></span><B p="component.match.auto_accept_score" /></div>
-                  <input type="number" min={0} max={1} step={0.05} className={`${selectCls} w-full`}
-                    value={numN(rule, 'component.match.auto_accept_score', 0.95)}
-                    onChange={(e) => onUpdate('component.match.auto_accept_score', parseFloat(e.target.value) || 0.95)} />
+                  <input
+                    type="number"
+                    min={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min}
+                    max={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max}
+                    step={0.05}
+                    className={`${selectCls} w-full`}
+                    value={numN(rule, 'component.match.auto_accept_score', STUDIO_COMPONENT_MATCH_DEFAULTS.autoAcceptScore)}
+                    onChange={(e) => onUpdate(
+                      'component.match.auto_accept_score',
+                      parseBoundedFloatInput(
+                        e.target.value,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max,
+                        STUDIO_COMPONENT_MATCH_DEFAULTS.autoAcceptScore,
+                      ),
+                    )} />
                 </div>
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Flag Review<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_flag_review_score} /></span><B p="component.match.flag_review_score" /></div>
-                  <input type="number" min={0} max={1} step={0.05} className={`${selectCls} w-full`}
-                    value={numN(rule, 'component.match.flag_review_score', 0.65)}
-                    onChange={(e) => onUpdate('component.match.flag_review_score', parseFloat(e.target.value) || 0.65)} />
+                  <input
+                    type="number"
+                    min={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min}
+                    max={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max}
+                    step={0.05}
+                    className={`${selectCls} w-full`}
+                    value={numN(rule, 'component.match.flag_review_score', STUDIO_COMPONENT_MATCH_DEFAULTS.flagReviewScore)}
+                    onChange={(e) => onUpdate(
+                      'component.match.flag_review_score',
+                      parseBoundedFloatInput(
+                        e.target.value,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max,
+                        STUDIO_COMPONENT_MATCH_DEFAULTS.flagReviewScore,
+                      ),
+                    )} />
                 </div>
               </div>
               {/* Property Matching */}
@@ -874,9 +1024,22 @@ function DepsTab({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Prop Weight<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_property_weight} /></span><B p="component.match.property_weight" /></div>
-                  <input type="number" min={0} max={1} step={0.05} className={`${selectCls} w-full`}
-                    value={numN(rule, 'component.match.property_weight', 0.6)}
-                    onChange={(e) => onUpdate('component.match.property_weight', parseFloat(e.target.value) || 0.6)} />
+                  <input
+                    type="number"
+                    min={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min}
+                    max={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max}
+                    step={0.05}
+                    className={`${selectCls} w-full`}
+                    value={numN(rule, 'component.match.property_weight', STUDIO_COMPONENT_MATCH_DEFAULTS.propertyWeight)}
+                    onChange={(e) => onUpdate(
+                      'component.match.property_weight',
+                      parseBoundedFloatInput(
+                        e.target.value,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max,
+                        STUDIO_COMPONENT_MATCH_DEFAULTS.propertyWeight,
+                      ),
+                    )} />
                 </div>
                 <div className="col-span-2">
                   <div className={labelCls}>Property Keys<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_property_keys} /></div>

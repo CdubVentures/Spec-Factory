@@ -1,35 +1,46 @@
-import { describe, it, beforeEach, mock } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 const COMPILED_FIELDS = {
   dpi_max: { type: 'number', label: 'DPI Max', ui: { label: 'Max DPI', group: 'sensor' } },
-  weight: { type: 'number', label: 'Weight', ui: { label: 'Weight (g)' } },
+  weight: { type: 'number', label: 'Weight', ui: { label: 'Weight (g)', group: 'physical' } },
 };
 const COMPILED_ORDER = ['dpi_max', 'weight'];
 
-const DRAFT_PAYLOAD = {
-  fields: {
+const MAP_DOC = {
+  selected_keys: ['dpi_max', 'polling_rate', 'weight'],
+  field_overrides: {
     dpi_max: { ui: { label: 'Maximum DPI' } },
-    polling_rate: { type: 'number', label: 'Polling Rate', ui: { label: 'Polling Rate (Hz)' } },
+    polling_rate: { type: 'number', label: 'Polling Rate', ui: { label: 'Polling Rate (Hz)', group: 'sensor' } },
   },
-  fieldOrder: ['__grp::sensor', 'dpi_max', 'polling_rate', 'weight'],
 };
 
-function makeDeps({ draftPayload = DRAFT_PAYLOAD, compiledFields = COMPILED_FIELDS, compiledOrder = COMPILED_ORDER, fsWriteCalls = [], manifest = null } = {}) {
-  let diskDraft = draftPayload ? JSON.parse(JSON.stringify(draftPayload)) : null;
+function makeDeps({
+  mapDoc = MAP_DOC,
+  compiledFields = COMPILED_FIELDS,
+  compiledOrder = COMPILED_ORDER,
+  manifest = null,
+  mapMtimeIso = '2026-02-20T12:00:00.000Z',
+  fsWriteCalls = [],
+} = {}) {
+  let diskMap = mapDoc ? JSON.parse(JSON.stringify(mapDoc)) : null;
   let readCount = 0;
 
   const readJsonIfExists = async (filePath) => {
     readCount += 1;
-    if (filePath.includes('manifest.json')) {
+    if (String(filePath).includes('manifest.json')) {
       return manifest ? JSON.parse(JSON.stringify(manifest)) : null;
     }
-    return diskDraft ? JSON.parse(JSON.stringify(diskDraft)) : null;
+    if (String(filePath).includes('field_studio_map.json')) {
+      return diskMap ? JSON.parse(JSON.stringify(diskMap)) : null;
+    }
+    return null;
   };
 
-  const writeFile = async (_filePath, data) => {
-    diskDraft = JSON.parse(data);
-    fsWriteCalls.push({ path: _filePath, data: diskDraft });
+  const writeFile = async (filePath, data) => {
+    const parsed = JSON.parse(data);
+    diskMap = parsed;
+    fsWriteCalls.push({ path: filePath, data: parsed });
   };
 
   const mkdir = async () => {};
@@ -39,7 +50,19 @@ function makeDeps({ draftPayload = DRAFT_PAYLOAD, compiledFields = COMPILED_FIEL
     fieldOrder: [...compiledOrder],
   });
 
-  return { readJsonIfExists, writeFile, mkdir, loadCategoryConfig, getReadCount: () => readCount, fsWriteCalls };
+  const statFile = async () => ({
+    mtime: new Date(mapMtimeIso),
+  });
+
+  return {
+    readJsonIfExists,
+    writeFile,
+    mkdir,
+    statFile,
+    loadCategoryConfig,
+    getReadCount: () => readCount,
+    fsWriteCalls,
+  };
 }
 
 async function createCache(deps) {
@@ -49,192 +72,109 @@ async function createCache(deps) {
     readJsonIfExists: deps.readJsonIfExists,
     writeFile: deps.writeFile,
     mkdir: deps.mkdir,
+    statFile: deps.statFile,
     helperRoot: 'helper_files',
   });
 }
 
 describe('sessionCache', () => {
-  it('returns merged compiled+draft fields on first call', async () => {
+  it('returns merged compiled + saved map field overrides', async () => {
     const deps = makeDeps();
     const cache = await createCache(deps);
     const result = await cache.getSessionRules('mouse');
 
     assert.ok(result.mergedFields.dpi_max, 'dpi_max should exist');
-    assert.ok(result.mergedFields.polling_rate, 'polling_rate should exist from draft');
-    assert.ok(result.mergedFields.weight, 'weight should exist from compiled');
-
-    assert.equal(result.mergedFields.dpi_max.ui.label, 'Maximum DPI', 'draft ui.label wins');
-    assert.equal(result.mergedFields.dpi_max.ui.group, 'sensor', 'compiled ui.group preserved');
-    assert.equal(result.mergedFields.dpi_max.type, 'number', 'compiled type preserved');
+    assert.ok(result.mergedFields.polling_rate, 'polling_rate should exist from saved docs');
+    assert.ok(result.mergedFields.weight, 'weight should exist from compiled rules');
+    assert.equal(result.mergedFields.dpi_max.ui.label, 'Maximum DPI', 'saved docs override label');
+    assert.equal(result.mergedFields.dpi_max.type, 'number', 'compiled type should be preserved');
   });
 
-  it('returns correct mergedFieldOrder from draft', async () => {
+  it('builds grouped field order from selected_keys + ui.group', async () => {
     const deps = makeDeps();
     const cache = await createCache(deps);
     const result = await cache.getSessionRules('mouse');
 
-    assert.deepEqual(result.mergedFieldOrder, ['__grp::sensor', 'dpi_max', 'polling_rate', 'weight']);
-  });
-
-  it('cleanFieldOrder filters __grp:: markers', async () => {
-    const deps = makeDeps();
-    const cache = await createCache(deps);
-    const result = await cache.getSessionRules('mouse');
-
+    assert.deepEqual(
+      result.mergedFieldOrder,
+      ['__grp::sensor', 'dpi_max', 'polling_rate', '__grp::physical', 'weight']
+    );
     assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'polling_rate', 'weight']);
-    assert.ok(!result.cleanFieldOrder.some(k => k.startsWith('__grp::')));
   });
 
-  it('labels derived correctly from merged fields', async () => {
+  it('labels are derived from merged fields', async () => {
     const deps = makeDeps();
     const cache = await createCache(deps);
     const result = await cache.getSessionRules('mouse');
 
-    assert.equal(result.labels.dpi_max, 'Maximum DPI', 'draft label wins');
-    assert.equal(result.labels.weight, 'Weight (g)', 'compiled label preserved');
-    assert.equal(result.labels.polling_rate, 'Polling Rate (Hz)', 'draft-only field label');
+    assert.equal(result.labels.dpi_max, 'Maximum DPI');
+    assert.equal(result.labels.polling_rate, 'Polling Rate (Hz)');
+    assert.equal(result.labels.weight, 'Weight (g)');
   });
 
-  it('second call returns cached (no re-read)', async () => {
+  it('second call returns cache hit until invalidated', async () => {
     const deps = makeDeps();
     const cache = await createCache(deps);
 
     await cache.getSessionRules('mouse');
     const readsBefore = deps.getReadCount();
-
     await cache.getSessionRules('mouse');
-    assert.equal(deps.getReadCount(), readsBefore, 'should not re-read from disk on cache hit');
-  });
-
-  it('invalidateSessionCache clears, next call re-reads', async () => {
-    const deps = makeDeps();
-    const cache = await createCache(deps);
-
-    await cache.getSessionRules('mouse');
-    const readsAfterFirst = deps.getReadCount();
+    assert.equal(deps.getReadCount(), readsBefore);
 
     cache.invalidateSessionCache('mouse');
-
     await cache.getSessionRules('mouse');
-    assert.ok(deps.getReadCount() > readsAfterFirst, 'should re-read after invalidation');
+    assert.ok(deps.getReadCount() > readsBefore);
   });
 
-  it('invalidateSessionCache with no args clears all categories', async () => {
-    const deps = makeDeps();
-    const cache = await createCache(deps);
-
-    await cache.getSessionRules('mouse');
-    await cache.getSessionRules('monitor');
-    const readsAfterBoth = deps.getReadCount();
-
-    cache.invalidateSessionCache();
-
-    await cache.getSessionRules('mouse');
-    await cache.getSessionRules('monitor');
-    assert.ok(deps.getReadCount() > readsAfterBoth + 1, 'should re-read both categories');
-  });
-
-  it('updateSessionRules updates cache and writes to disk', async () => {
+  it('updateSessionRules writes map docs and updates cache', async () => {
     const fsWriteCalls = [];
     const deps = makeDeps({ fsWriteCalls });
     const cache = await createCache(deps);
 
-    await cache.getSessionRules('mouse');
-
     await cache.updateSessionRules('mouse', {
       fields: { dpi_max: { ui: { label: 'Updated DPI Label' } } },
-      fieldOrder: ['dpi_max', 'weight'],
+      fieldOrder: ['__grp::sensor', 'dpi_max', 'weight'],
     });
 
-    assert.ok(fsWriteCalls.length > 0, 'should write to disk');
-
+    assert.ok(fsWriteCalls.length >= 1);
     const result = await cache.getSessionRules('mouse');
     assert.equal(result.mergedFields.dpi_max.ui.label, 'Updated DPI Label');
+    assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'weight']);
   });
 
-  it('returns draftFields and draftFieldOrder separately', async () => {
-    const deps = makeDeps();
-    const cache = await createCache(deps);
-    const result = await cache.getSessionRules('mouse');
-
-    assert.ok(result.draftFields, 'should expose draftFields');
-    assert.ok(result.draftFieldOrder, 'should expose draftFieldOrder');
-    assert.deepEqual(result.draftFieldOrder, ['__grp::sensor', 'dpi_max', 'polling_rate', 'weight']);
-  });
-
-  it('handles no draft file gracefully', async () => {
-    const deps = makeDeps({ draftPayload: null });
-    const cache = await createCache(deps);
-    const result = await cache.getSessionRules('mouse');
-
-    assert.deepEqual(result.mergedFields, COMPILED_FIELDS);
-    assert.deepEqual(result.mergedFieldOrder, COMPILED_ORDER);
-    assert.deepEqual(result.cleanFieldOrder, COMPILED_ORDER);
-    assert.equal(result.draftFields, null);
-    assert.equal(result.draftFieldOrder, null);
-  });
-
-  it('compileStale is true when draft is newer than compiled', async () => {
+  it('compileStale is true when map docs are newer than compiled manifest', async () => {
     const deps = makeDeps({
-      draftPayload: { ...DRAFT_PAYLOAD, draft_saved_at: '2026-02-20T12:00:00.000Z' },
       manifest: { generated_at: '2026-02-19T12:00:00.000Z' },
+      mapMtimeIso: '2026-02-20T12:00:00.000Z',
     });
     const cache = await createCache(deps);
     const result = await cache.getSessionRules('mouse');
 
     assert.equal(result.compileStale, true);
     assert.equal(result.compiledAt, '2026-02-19T12:00:00.000Z');
-    assert.equal(result.draftSavedAt, '2026-02-20T12:00:00.000Z');
+    assert.equal(result.mapSavedAt, '2026-02-20T12:00:00.000Z');
   });
 
-  it('compileStale is false when compiled is newer than draft', async () => {
+  it('compileStale is false when compiled manifest is newer than map docs', async () => {
     const deps = makeDeps({
-      draftPayload: { ...DRAFT_PAYLOAD, draft_saved_at: '2026-02-19T12:00:00.000Z' },
-      manifest: { generated_at: '2026-02-20T12:00:00.000Z' },
+      manifest: { generated_at: '2026-02-21T12:00:00.000Z' },
+      mapMtimeIso: '2026-02-20T12:00:00.000Z',
+    });
+    const cache = await createCache(deps);
+    const result = await cache.getSessionRules('mouse');
+    assert.equal(result.compileStale, false);
+  });
+
+  it('compileStale is false when no map docs exist', async () => {
+    const deps = makeDeps({
+      mapDoc: null,
+      manifest: { generated_at: '2026-02-21T12:00:00.000Z' },
     });
     const cache = await createCache(deps);
     const result = await cache.getSessionRules('mouse');
 
     assert.equal(result.compileStale, false);
-  });
-
-  it('compileStale is false when no draft exists', async () => {
-    const deps = makeDeps({
-      draftPayload: null,
-      manifest: { generated_at: '2026-02-20T12:00:00.000Z' },
-    });
-    const cache = await createCache(deps);
-    const result = await cache.getSessionRules('mouse');
-
-    assert.equal(result.compileStale, false);
-    assert.equal(result.compiledAt, '2026-02-20T12:00:00.000Z');
-    assert.equal(result.draftSavedAt, null);
-  });
-
-  it('compileStale is true when draft exists but no manifest', async () => {
-    const deps = makeDeps({
-      draftPayload: { ...DRAFT_PAYLOAD, draft_saved_at: '2026-02-20T12:00:00.000Z' },
-      manifest: null,
-    });
-    const cache = await createCache(deps);
-    const result = await cache.getSessionRules('mouse');
-
-    assert.equal(result.compileStale, true);
-    assert.equal(result.compiledAt, null);
-  });
-
-  it('updateSessionRules writes draft_saved_at timestamp', async () => {
-    const fsWriteCalls = [];
-    const deps = makeDeps({ fsWriteCalls });
-    const cache = await createCache(deps);
-
-    await cache.updateSessionRules('mouse', {
-      fields: { dpi_max: { ui: { label: 'Test' } } },
-    });
-
-    assert.ok(fsWriteCalls.length > 0);
-    const written = fsWriteCalls[0].data;
-    assert.ok(written.draft_saved_at, 'draft_saved_at should be written');
-    assert.ok(!isNaN(Date.parse(written.draft_saved_at)), 'draft_saved_at should be valid ISO date');
+    assert.equal(result.mapSavedAt, null);
+    assert.deepEqual(result.cleanFieldOrder, COMPILED_ORDER);
   });
 });

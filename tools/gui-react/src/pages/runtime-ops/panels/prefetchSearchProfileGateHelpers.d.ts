@@ -42,6 +42,8 @@ export interface GateSummary {
 
 export interface FieldRuleGateCountRow {
   value_count?: number;
+  total_value_count?: number;
+  effective_value_count?: number;
   enabled_field_count?: number;
   disabled_field_count?: number;
   status?: string;
@@ -51,9 +53,18 @@ export interface NormalizedFieldRuleGateCount {
   key: string;
   label: string;
   valueCount: number;
+  totalValueCount: number;
+  effectiveValueCount: number;
   enabledFieldCount: number;
   disabledFieldCount: number;
   status: 'active' | 'off' | 'zero';
+}
+
+export interface ResolvedFieldRuleRowGateCount {
+  status: 'active' | 'off' | 'zero';
+  value: number;
+  total: number;
+  effective: number;
 }
 
 export function sourceHostFromRow(row?: GateQueryRow): string;
@@ -70,3 +81,32 @@ export function querySourceLabel(row?: GateQueryRow): string;
 export function querySourceChipClass(source?: string): string;
 export function buildGateSummary(queryRows?: GateQueryRow[], hintSourceCounts?: Record<string, number>): GateSummary;
 export function normalizeFieldRuleGateCounts(gateCounts?: Record<string, FieldRuleGateCountRow>): NormalizedFieldRuleGateCount[];
+export function resolveFieldRuleHintCountForRowGate(options?: {
+  perFieldHintCounts?: {
+    query_terms?: {
+      value_count?: number;
+      total_value_count?: number;
+      effective_value_count?: number;
+      status?: string;
+    };
+    domain_hints?: {
+      value_count?: number;
+      total_value_count?: number;
+      effective_value_count?: number;
+      status?: string;
+    };
+    preferred_content_types?: {
+      value_count?: number;
+      total_value_count?: number;
+      effective_value_count?: number;
+      status?: string;
+    };
+  } | null;
+  gateKey?: 'query_terms' | 'domain_hints' | 'preferred_content_types' | string;
+  fallbackGate?: {
+    valueCount?: number;
+    totalValueCount?: number;
+    effectiveValueCount?: number;
+    status?: string;
+  } | null;
+}): ResolvedFieldRuleRowGateCount;

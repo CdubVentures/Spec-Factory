@@ -1,4 +1,4 @@
-export type WorkbookMapValidationResponse = {
+export type FieldStudioMapValidationResponse = {
   valid?: boolean;
   ok?: boolean;
   errors?: string[];
@@ -6,24 +6,24 @@ export type WorkbookMapValidationResponse = {
   normalized?: Record<string, unknown> | null;
 };
 
-export type WorkbookMapValidationOutcome = {
+export type FieldStudioMapValidationOutcome = {
   valid: boolean;
   errors: string[];
   warnings: string[];
   normalized: Record<string, unknown> | null;
 };
 
-export declare function getWorkbookMapValidationOutcome(
+export declare function getFieldStudioMapValidationOutcome(
   result: unknown,
-): WorkbookMapValidationOutcome;
+): FieldStudioMapValidationOutcome;
 
-export declare function assertWorkbookMapValidationOrThrow(args: {
+export declare function assertFieldStudioMapValidationOrThrow(args: {
   result: unknown;
   actionLabel?: string;
   allowLegacyCompileBypass?: boolean;
-}): WorkbookMapValidationOutcome;
+}): FieldStudioMapValidationOutcome;
 
-export declare function resolveWorkbookMapPayloadForSave(args: {
+export declare function resolveFieldStudioMapPayloadForSave(args: {
   result: unknown;
   fallback: Record<string, unknown>;
 }): Record<string, unknown>;

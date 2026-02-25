@@ -12,7 +12,7 @@ import {
   getBrandsForCategory,
   findBrandByAlias,
   seedBrandsFromActiveFiltering,
-  seedBrandsFromWorkbook
+  seedBrandsFromCatalog
 } from '../src/catalog/brandRegistry.js';
 
 async function tmpConfig() {
@@ -273,14 +273,14 @@ test('findBrandByAlias: returns null for unknown brand', async () => {
   }
 });
 
-// --- seedBrandsFromWorkbook ---
-// Note: seedBrandsFromWorkbook calls loadWorkbookProducts internally.
-// Without a real workbook, it gracefully returns empty results.
+// --- seedBrandsFromCatalog ---
+// Note: seedBrandsFromCatalog reads app-native catalog/override sources.
+// Without those files, it gracefully returns empty results.
 
-test('seedBrandsFromWorkbook: handles empty helper_files gracefully', async () => {
+test('seedBrandsFromCatalog: handles empty helper_files gracefully', async () => {
   const config = await tmpConfig();
   try {
-    const result = await seedBrandsFromWorkbook({ config });
+    const result = await seedBrandsFromCatalog({ config });
     assert.equal(result.ok, true);
     assert.equal(result.seeded, 0);
   } finally {
@@ -288,16 +288,16 @@ test('seedBrandsFromWorkbook: handles empty helper_files gracefully', async () =
   }
 });
 
-test('seedBrandsFromWorkbook: scans categories without workbooks gracefully', async () => {
+test('seedBrandsFromCatalog: scans categories without catalogs gracefully', async () => {
   const config = await tmpConfig();
   try {
-    // Create category dirs without workbooks
+    // Create category dirs without catalog sources
     const mouseDir = path.join(config.helperFilesRoot, 'mouse');
     const kbDir = path.join(config.helperFilesRoot, 'keyboard');
     await fs.mkdir(path.join(mouseDir, '_control_plane'), { recursive: true });
     await fs.mkdir(path.join(kbDir, '_control_plane'), { recursive: true });
 
-    const result = await seedBrandsFromWorkbook({ config });
+    const result = await seedBrandsFromCatalog({ config });
     assert.equal(result.ok, true);
     assert.equal(result.seeded, 0);
     assert.equal(result.categories_scanned, 2);
@@ -306,7 +306,7 @@ test('seedBrandsFromWorkbook: scans categories without workbooks gracefully', as
   }
 });
 
-test('seedBrandsFromWorkbook: single category mode only scans that category', async () => {
+test('seedBrandsFromCatalog: single category mode only scans that category', async () => {
   const config = await tmpConfig();
   try {
     const mouseDir = path.join(config.helperFilesRoot, 'mouse');
@@ -314,7 +314,7 @@ test('seedBrandsFromWorkbook: single category mode only scans that category', as
     await fs.mkdir(path.join(mouseDir, '_control_plane'), { recursive: true });
     await fs.mkdir(path.join(kbDir, '_control_plane'), { recursive: true });
 
-    const result = await seedBrandsFromWorkbook({ config, category: 'mouse' });
+    const result = await seedBrandsFromCatalog({ config, category: 'mouse' });
     assert.equal(result.ok, true);
     assert.equal(result.categories_scanned, 1);
   } finally {
@@ -322,7 +322,7 @@ test('seedBrandsFromWorkbook: single category mode only scans that category', as
   }
 });
 
-test('seedBrandsFromWorkbook: category=all scans all categories', async () => {
+test('seedBrandsFromCatalog: category=all scans all categories', async () => {
   const config = await tmpConfig();
   try {
     const mouseDir = path.join(config.helperFilesRoot, 'mouse');
@@ -330,7 +330,7 @@ test('seedBrandsFromWorkbook: category=all scans all categories', async () => {
     await fs.mkdir(path.join(mouseDir, '_control_plane'), { recursive: true });
     await fs.mkdir(path.join(kbDir, '_control_plane'), { recursive: true });
 
-    const result = await seedBrandsFromWorkbook({ config, category: 'all' });
+    const result = await seedBrandsFromCatalog({ config, category: 'all' });
     assert.equal(result.ok, true);
     assert.equal(result.categories_scanned, 2);
   } finally {

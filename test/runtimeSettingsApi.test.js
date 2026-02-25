@@ -70,8 +70,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   t.after(() => { if (_proc && !_proc.killed) _proc.kill('SIGTERM'); });
   t.after(async () => {
     const runtimeDir = path.join(process.cwd(), 'helper_files', '_runtime');
-    await fs.rm(path.join(runtimeDir, 'settings.json'), { force: true }).catch(() => {});
-    await fs.rm(path.join(runtimeDir, 'convergence-settings.json'), { force: true }).catch(() => {});
+    await fs.rm(path.join(runtimeDir, 'user-settings.json'), { force: true }).catch(() => {});
   });
 
   _baseUrl = `http://127.0.0.1:${_port}/api/v1`;
@@ -197,8 +196,8 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.deepEqual(body.applied, {});
   });
 
-  await t.test('PUT persists runtime settings to disk and file contains cfgKey values', async () => {
-    const payload = { llmModelExtract: 'test-persist-model-xyz', fetchConcurrency: 7 };
+  await t.test('PUT persists runtime settings to canonical user-settings snapshot', async () => {
+    const payload = { llmModelExtract: 'test-persist-model-xyz', fetchConcurrency: 7, perHostMinDelayMs: 1234 };
     const putRes = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -208,17 +207,30 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const putBody = await putRes.json();
     assert.equal(putBody.applied.llmModelExtract, 'test-persist-model-xyz');
     assert.equal(putBody.applied.fetchConcurrency, 7);
+    assert.equal(putBody.applied.perHostMinDelayMs, 1234);
 
-    const settingsPath = path.join(process.cwd(), 'helper_files', '_runtime', 'settings.json');
-    const saved = await readJsonFileUntil(
-      settingsPath,
-      (json) => json && json.llmModelExtract === 'test-persist-model-xyz' && json.concurrency === 7,
+    const userSettingsPath = path.join(process.cwd(), 'helper_files', '_runtime', 'user-settings.json');
+    const userSettings = await readJsonFileUntil(
+      userSettingsPath,
+      (json) => (
+        json
+        && json.runtime
+        && json.runtime.llmModelExtract === 'test-persist-model-xyz'
+        && json.runtime.concurrency === 7
+        && json.runtime.perHostMinDelayMs === 1234
+      ),
     );
-    assert.equal(saved.llmModelExtract, 'test-persist-model-xyz');
-    assert.equal(saved.concurrency, 7);
+    assert.equal(userSettings.runtime.llmModelExtract, 'test-persist-model-xyz');
+    assert.equal(userSettings.runtime.concurrency, 7);
+    assert.equal(userSettings.runtime.perHostMinDelayMs, 1234);
+
+    const legacySettingsExists = await fs.access(path.join(process.cwd(), 'helper_files', '_runtime', 'settings.json'))
+      .then(() => true)
+      .catch(() => false);
+    assert.equal(legacySettingsExists, false, 'legacy settings.json should not be written');
   });
 
-  await t.test('PUT persists convergence settings to disk', async () => {
+  await t.test('PUT persists convergence settings to canonical user-settings snapshot', async () => {
     const payload = { convergenceMaxRounds: 12, serpTriageEnabled: false };
     const putRes = await fetch(`${_baseUrl}/convergence-settings`, {
       method: 'PUT',
@@ -230,10 +242,22 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(putBody.applied.convergenceMaxRounds, 12);
     assert.equal(putBody.applied.serpTriageEnabled, false);
 
-    const settingsPath = path.join(process.cwd(), 'helper_files', '_runtime', 'convergence-settings.json');
-    const raw = await fs.readFile(settingsPath, 'utf8');
-    const saved = JSON.parse(raw);
-    assert.equal(saved.convergenceMaxRounds, 12);
-    assert.equal(saved.serpTriageEnabled, false);
+    const userSettingsPath = path.join(process.cwd(), 'helper_files', '_runtime', 'user-settings.json');
+    const userSettings = await readJsonFileUntil(
+      userSettingsPath,
+      (json) => (
+        json
+        && json.convergence
+        && json.convergence.convergenceMaxRounds === 12
+        && json.convergence.serpTriageEnabled === false
+      ),
+    );
+    assert.equal(userSettings.convergence.convergenceMaxRounds, 12);
+    assert.equal(userSettings.convergence.serpTriageEnabled, false);
+
+    const legacyConvergenceExists = await fs.access(path.join(process.cwd(), 'helper_files', '_runtime', 'convergence-settings.json'))
+      .then(() => true)
+      .catch(() => false);
+    assert.equal(legacyConvergenceExists, false, 'legacy convergence-settings.json should not be written');
   });
 });

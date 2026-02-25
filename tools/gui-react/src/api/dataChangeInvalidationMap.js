@@ -26,7 +26,6 @@ function normalizedArray(values, normalizeValue) {
 const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   studio: Object.freeze([
     ['studio', CATEGORY_TOKEN],
-    ['studio-drafts', CATEGORY_TOKEN],
     ['studio-config', CATEGORY_TOKEN],
     ['studio-tooltip-bank', CATEGORY_TOKEN],
     ['studio-known-values', CATEGORY_TOKEN],
@@ -169,7 +168,6 @@ export const KNOWN_DATA_CHANGE_DOMAINS = Object.freeze([
 ]);
 
 export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
-  'studio-drafts-saved': ['studio', 'review-layout', 'labels', 'product', 'review'],
   'field-studio-map-saved': ['studio', 'mapping', 'review-layout'],
   'process-completed': ['studio', 'review-layout', 'component', 'enum'],
   'catalog-seed': ['catalog', 'queue', 'identity'],
@@ -223,7 +221,6 @@ const FALLBACK_QUERY_TEMPLATES = Object.freeze([
   ['brands'],
   ['brand-impact'],
   ['studio', CATEGORY_TOKEN],
-  ['studio-drafts', CATEGORY_TOKEN],
   ['studio-config', CATEGORY_TOKEN],
   ['studio-tooltip-bank', CATEGORY_TOKEN],
   ['studio-known-values', CATEGORY_TOKEN],

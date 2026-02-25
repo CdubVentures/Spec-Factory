@@ -6,6 +6,9 @@ export function resolveRunActiveScope({
   processRunning = false,
   selectedRunStatus = '',
 } = {}) {
+  if (processRunning) {
+    return true;
+  }
   const status = normalizeStatus(selectedRunStatus);
   if (status === 'running') {
     return true;
@@ -20,5 +23,5 @@ export function resolveRunActiveScope({
   ) {
     return false;
   }
-  return Boolean(processRunning);
+  return false;
 }

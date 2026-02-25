@@ -1139,7 +1139,7 @@ export async function buildCompiledHelperContract({
 }) {
   const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
   const categoryRoot = helperData?.category_root || path.join(helperRoot, category);
-  const workbookPath = helperData?.excel_seed?.workbook_path || '';
+  const sourceSeedPath = helperData?.catalog_seed?.catalog_path || '';
   const useSupportiveData = false;
   const filtersModule = {};
   const versusModule = {};
@@ -1179,7 +1179,7 @@ export async function buildCompiledHelperContract({
     normalizationRules: derivedRules.normalization
   });
   const sourceFiles = [
-    workbookPath,
+    sourceSeedPath,
     helperData?.schema_file || null,
     helperData?.field_rules_file || null,
   ]

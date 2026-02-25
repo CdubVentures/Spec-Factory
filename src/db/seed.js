@@ -290,11 +290,10 @@ async function collectListSeedRows(fieldRules, config, category) {
   const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
   const controlPlaneRoot = path.join(helperRoot, category, '_control_plane');
   const fieldStudioMapPath = path.join(controlPlaneRoot, 'field_studio_map.json');
-  const controlMapPath = path.join(controlPlaneRoot, 'workbook_map.json');
-  const controlMap = await readJsonIfExists(fieldStudioMapPath) || await readJsonIfExists(controlMapPath);
-  const manualEnumTimestamps = isObject(controlMap?.manual_enum_timestamps) ? controlMap.manual_enum_timestamps : {};
-  if (isObject(controlMap?.manual_enum_values)) {
-    for (const [fieldKey, values] of Object.entries(controlMap.manual_enum_values)) {
+  const fieldStudioMap = await readJsonIfExists(fieldStudioMapPath);
+  const manualEnumTimestamps = isObject(fieldStudioMap?.manual_enum_timestamps) ? fieldStudioMap.manual_enum_timestamps : {};
+  if (isObject(fieldStudioMap?.manual_enum_values)) {
+    for (const [fieldKey, values] of Object.entries(fieldStudioMap.manual_enum_values)) {
       if (!Array.isArray(values)) continue;
       for (const value of values) {
         const trimmed = String(value || '').trim();

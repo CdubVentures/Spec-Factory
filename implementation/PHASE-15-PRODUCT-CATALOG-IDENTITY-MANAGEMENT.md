@@ -11,7 +11,7 @@
 
 Delivered in code:
 
-- Canonical candidate ID generation is now centralized for synthetic/manual/workbook flows.
+- Canonical candidate ID generation is now centralized for synthetic/manual/field-studio flows.
   - Backend: `src/utils/candidateIdentifier.js`
   - Frontend: `tools/gui-react/src/utils/candidateIdentifier.ts`
 - Review hierarchy and lane behavior are SQL-backed and context-driven:
@@ -60,7 +60,7 @@ out/final/{cat}/{productId}/  (published output)
 Build product identity management in three phases:
 
 1. **Phase 1:** Brand registry + GUI + fix the duplicate files
-2. **Phase 2:** Model & variant CRUD per category + workbook import
+2. **Phase 2:** Model & variant CRUD per category + field-studio import
 3. **Phase 3:** Production source integration — pull what's live on the site, flag discrepancies, use it as the canonical product list going forward
 
 ---
@@ -153,7 +153,7 @@ This gives one connected graph from item values to evidence, then out to shared 
 ```
 TODAY (broken):
   activeFiltering.json ──READ──→ syncJobsFromActiveFiltering ──→ input job files
-  Excel workbook ──READ──→ syncJobsFromExcelSeed ──→ MORE input job files (duplicates!)
+  field-studio source spreadsheet ──READ──→ syncJobsFromCatalogSeed ──→ MORE input job files (duplicates!)
 
 AFTER PHASE 15:
   Phase 1-2: product_catalog.json ──→ sync to input job files (single path)
@@ -191,7 +191,7 @@ activeFiltering.json is NOT deprecated — it remains a valid input for seeding 
 
 **Wire into (modify existing files):**
 - `src/helperFiles/index.js` → `syncJobsFromActiveFiltering()` calls gate before creating job
-- `src/ingest/excelSeed.js` → `syncJobsFromExcelSeed()` calls gate before creating job
+- `src/ingest/catalogSeed.js` → `syncJobsFromCatalogSeed()` calls gate before creating job
 - `src/queue/queueState.js` → `syncQueueFromInputs()` calls gate before adding to queue
 
 **Tests:** `test/identityGate.test.js`
@@ -201,7 +201,7 @@ activeFiltering.json is NOT deprecated — it remains a valid input for seeding 
 - Falls back to activeFiltering when no catalog exists
 
 **Acceptance:**
-- `syncJobsFromExcelSeed` can never create variant duplicates again
+- `syncJobsFromCatalogSeed` can never create variant duplicates again
 - Every rejection logged with reason
 - Zero regressions — gate is additive, existing products are not removed
 
@@ -229,7 +229,7 @@ activeFiltering.json is NOT deprecated — it remains a valid input for seeding 
 - `{ dryRun: true }` → returns report
 - `{ dryRun: false }` → deletes orphans, returns report
 
-**GUI:** "Reconcile" button on Workbook Context tab products panel. Shows orphan list, user confirms before deletion.
+**GUI:** "Reconcile" button on Field Studio Context tab products panel. Shows orphan list, user confirms before deletion.
 
 **Acceptance:**
 - `product-reconcile --category mouse --apply` reduces 690 → 342 input files
@@ -344,7 +344,7 @@ export function findBrandByAlias(registry, query)
 |------|--------|
 | `src/api/guiServer.js` | Add brand CRUD endpoints + reconcile endpoint |
 | `src/helperFiles/index.js` | Wire identity gate into syncJobsFromActiveFiltering |
-| `src/ingest/excelSeed.js` | Wire identity gate into syncJobsFromExcelSeed |
+| `src/ingest/catalogSeed.js` | Wire identity gate into syncJobsFromCatalogSeed |
 | `src/queue/queueState.js` | Wire identity gate into syncQueueFromInputs |
 | `src/cli/spec.js` | Add `product-reconcile` command |
 | `tools/gui-react/src/pages/studio/StudioPage.tsx` | Add Brands tab |
@@ -361,7 +361,7 @@ export function findBrandByAlias(registry, query)
 
 # PHASE 15.2 — MODEL & VARIANT MANAGEMENT
 
-**Goal:** Per-category product CRUD. Add models and variants through the GUI. Import from workbook.
+**Goal:** Per-category product CRUD. Add models and variants through the GUI. Import from field-studio.
 
 **Depends on:** Phase 15.1 (brand registry must exist for brand dropdown).
 
@@ -421,7 +421,7 @@ export async function syncCatalogToInputFiles({ config, category, storage })
 
 ## 15.2B — Product Management GUI
 
-**New component:** `tools/gui-react/src/pages/studio/ProductCatalogTab.tsx`
+**New component:** `tools/gui-react/src/pages/product/ProductPage.tsx`
 
 **Location in GUI:** New "Products" tab in the Studio page (per-category, like other studio tabs).
 
@@ -467,15 +467,15 @@ export async function syncCatalogToInputFiles({ config, category, storage })
 
 ---
 
-## 15.2C — Import from Workbook
+## 15.2C — Import from Field Studio Source
 
-**What:** "Import Products from Workbook" button on the Products tab (or Workbook Context tab).
+**What:** "Import Products from Field Studio Source" button on the Products tab (or Field Studio Context tab).
 
-**API:** `POST /api/v1/catalog/{cat}/import/workbook`
+**API:** `POST /api/v1/catalog/{cat}/import/field-studio`
 
 **Flow:**
-1. User clicks "Import from Workbook"
-2. Backend reads Excel Rows 3-5 (brand, model, variant) for all product columns
+1. User clicks "Import from Field Studio Source"
+2. Backend reads spreadsheet Rows 3-5 (brand, model, variant) for all product columns
 3. Backend normalizes:
    - Empty/placeholder variants → stripped
    - Brands matched against brand registry (exact + alias match)
@@ -518,8 +518,8 @@ export async function syncCatalogToInputFiles({ config, category, storage })
 | `helper_files/{cat}/_control_plane/product_catalog.json` | Data | Per-category product list (created on first seed/add) |
 | `src/catalog/productCatalog.js` | Module | Product CRUD + sync operations |
 | `test/productCatalog.test.js` | Test | Product catalog unit tests |
-| `tools/gui-react/src/pages/studio/ProductCatalogTab.tsx` | React | Product management UI |
-| `tools/gui-react/src/components/dialogs/ImportWorkbookDialog.tsx` | React | Import diff preview + confirm |
+| `tools/gui-react/src/pages/product/ProductPage.tsx` | React | Product management UI |
+| `tools/gui-react/src/pages/product/PipelineProgress.tsx` | React | Import/compile progress + confirm |
 | `tools/gui-react/src/components/dialogs/AddProductDialog.tsx` | React | Add product form |
 
 ### Modified Files
@@ -534,7 +534,7 @@ export async function syncCatalogToInputFiles({ config, category, storage })
 1. User can add a product with brand dropdown + model + variant in the GUI
 2. Adding a product creates the input job file and queue entry immediately
 3. Deleting a product removes job file and queue entry (preserves output)
-4. Import from Workbook shows diff preview with variant warnings
+4. Import from Field Studio Source shows diff preview with variant warnings
 5. Seed from activeFiltering creates catalog with all 342 products
 6. Pipeline uses product_catalog.json when it exists, falls back to activeFiltering
 7. Zero regressions
@@ -772,7 +772,7 @@ export async function applyProductionSync({ config, category, storage, actions }
 | `src/ingest/categoryCompile.js` | Add production cross-validation to compile report |
 | `src/cli/spec.js` | Add `production-sync` command |
 | `tools/gui-react/src/pages/studio/StudioPage.tsx` | Add source config + sync button to Products tab |
-| `tools/gui-react/src/pages/studio/ProductCatalogTab.tsx` | Add status badges for production sync |
+| `tools/gui-react/src/pages/product/FieldStatusTable.tsx` | Add status badges for production sync |
 
 ### Phase 15.3 Acceptance Criteria
 1. User can configure S3 bucket/key for production product source
@@ -822,7 +822,7 @@ Phase 15.1 (Brand Registry + Cleanup)
 Phase 15.2 (Model & Variant CRUD)
   15.2A Product Catalog (API) ───┐
   15.2B Product Manager (GUI) ───┤──→ Full product CRUD in GUI
-  15.2C Import from Workbook ────┘
+  15.2C Import from Field Studio Source ────┘
          │
          ▼
 Phase 15.3 (Production Source)

@@ -379,6 +379,19 @@ test('new structured fields coexist with existing fields in buildPreFetchPhases'
   assert.ok(Array.isArray(result.domain_health), 'new domain_health present');
 });
 
+test('search stage boundary events do not create blank query failure rows', () => {
+  const events = [
+    makeEvent('search_started', { scope: 'stage', trigger: 'run_started' }, { ts: '2026-02-20T00:00:00.000Z' }),
+    makeEvent('search_started', { scope: 'query', query: 'Razer Viper V3 Pro specs', provider: 'google', worker_id: 'search-1' }, { ts: '2026-02-20T00:00:01.000Z' }),
+    makeEvent('search_finished', { scope: 'query', query: 'Razer Viper V3 Pro specs', provider: 'google', result_count: 0, worker_id: 'search-1' }, { ts: '2026-02-20T00:00:02.000Z' }),
+    makeEvent('search_finished', { scope: 'stage', reason: 'first_fetch_started' }, { ts: '2026-02-20T00:00:46.000Z' }),
+  ];
+  const result = buildPreFetchPhases(events, makeMeta(), {});
+  assert.equal(result.search_results.length, 1);
+  assert.equal(result.search_results[0].query, 'Razer Viper V3 Pro specs');
+  assert.equal(result.search_results.some((row) => !String(row.query || '').trim()), false);
+});
+
 test('brand_resolved event passes through reasoning array', () => {
   const events = [
     makeEvent('brand_resolved', {

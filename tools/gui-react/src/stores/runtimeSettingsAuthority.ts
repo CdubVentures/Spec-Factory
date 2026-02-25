@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { autoSaveFingerprint } from './autoSaveFingerprint';
+import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from './settingsManifest';
+import { createSettingsOptimisticMutationContract } from './settingsMutationContract';
+import { publishSettingsPropagation } from './settingsPropagationContract';
 
 export type RuntimeSettings = Record<string, string | number | boolean>;
 
@@ -15,6 +18,7 @@ interface RuntimeSettingsAuthorityOptions {
   payload: RuntimeSettings;
   dirty: boolean;
   autoSaveEnabled: boolean;
+  enabled?: boolean;
   onPersisted?: (result: RuntimeSettingsPersistResult) => void;
   onError?: (error: Error | unknown) => void;
 }
@@ -27,8 +31,33 @@ interface RuntimeSettingsAuthorityResult {
   saveNow: () => void;
 }
 
+export const RUNTIME_SETTINGS_QUERY_KEY = ['runtime-settings'] as const;
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+export function readRuntimeSettingsSnapshot(queryClient: QueryClient): RuntimeSettings | undefined {
+  const cached = queryClient.getQueryData<unknown>(RUNTIME_SETTINGS_QUERY_KEY);
+  if (!isObject(cached)) return undefined;
+  const settings: RuntimeSettings = {};
+  for (const [key, value] of Object.entries(cached)) {
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      settings[key] = value;
+    }
+  }
+  return settings;
+}
+
+export function readRuntimeSettingsBootstrap<T extends object>(
+  queryClient: QueryClient,
+  defaults: T,
+): T {
+  const snapshot = readRuntimeSettingsSnapshot(queryClient);
+  return {
+    ...defaults,
+    ...(snapshot || {}),
+  } as T;
 }
 
 function normalizeRejected(value: unknown): Record<string, string> {
@@ -64,6 +93,7 @@ export function useRuntimeSettingsAuthority({
   payload,
   dirty,
   autoSaveEnabled,
+  enabled = true,
   onPersisted,
   onError,
 }: RuntimeSettingsAuthorityOptions): RuntimeSettingsAuthorityResult {
@@ -71,8 +101,9 @@ export function useRuntimeSettingsAuthority({
   const payloadFingerprint = autoSaveFingerprint(payload);
 
   const { data: settings, isLoading, refetch } = useQuery({
-    queryKey: ['runtime-settings'],
+    queryKey: RUNTIME_SETTINGS_QUERY_KEY,
     queryFn: () => api.get<RuntimeSettings>('/runtime-settings'),
+    enabled,
   });
 
   const payloadRef = useRef(payload);
@@ -87,10 +118,17 @@ export function useRuntimeSettingsAuthority({
   autoSaveEnabledRef.current = autoSaveEnabled;
 
   const applyRuntimeSaveResult = (result: RuntimeSettingsPersistResult, emitState = true) => {
-    queryClient.setQueryData(['runtime-settings'], result.applied);
+    queryClient.setQueryData(RUNTIME_SETTINGS_QUERY_KEY, result.applied);
     if (emitState) {
       onPersisted?.(result);
     }
+  };
+
+  const recordPersistSuccess = (nextPayload: RuntimeSettings) => {
+    const savedFingerprint = autoSaveFingerprint(nextPayload);
+    lastAutoSavedFingerprintRef.current = savedFingerprint;
+    lastAutoSaveAttemptFingerprintRef.current = savedFingerprint;
+    publishSettingsPropagation({ domain: 'runtime' });
   };
 
   const persistRuntimeSettings = async (nextPayload: RuntimeSettings, emitState = true) => {
@@ -102,12 +140,10 @@ export function useRuntimeSettingsAuthority({
       const result = normalizeRuntimeSaveResult(
         response,
         nextPayload,
-        queryClient.getQueryData<RuntimeSettings>(['runtime-settings']) || nextPayload,
+        queryClient.getQueryData<RuntimeSettings>(RUNTIME_SETTINGS_QUERY_KEY) || nextPayload,
       );
       applyRuntimeSaveResult(result, emitState);
-      const savedFingerprint = autoSaveFingerprint(nextPayload);
-      lastAutoSavedFingerprintRef.current = savedFingerprint;
-      lastAutoSaveAttemptFingerprintRef.current = savedFingerprint;
+      recordPersistSuccess(nextPayload);
       return result;
     } catch (error) {
       if (emitState) {
@@ -119,22 +155,32 @@ export function useRuntimeSettingsAuthority({
     }
   };
 
-  const saveMutation = useMutation({
-    mutationFn: (nextPayload: RuntimeSettings) =>
-      api.put<{ ok: boolean; applied: RuntimeSettings; rejected?: Record<string, string> }>('/runtime-settings', nextPayload),
-    onSuccess: (response, nextPayload) => {
-      const result = normalizeRuntimeSaveResult(
-        response,
-        nextPayload,
-        queryClient.getQueryData<RuntimeSettings>(['runtime-settings']) || nextPayload,
-      );
-      applyRuntimeSaveResult(result);
-      const savedFingerprint = autoSaveFingerprint(nextPayload);
-      lastAutoSavedFingerprintRef.current = savedFingerprint;
-      lastAutoSaveAttemptFingerprintRef.current = savedFingerprint;
-    },
-    onError,
-  });
+  const saveMutation = useMutation(
+    createSettingsOptimisticMutationContract<
+      RuntimeSettings,
+      { ok: boolean; applied: RuntimeSettings; rejected?: Record<string, string> },
+      RuntimeSettings,
+      RuntimeSettingsPersistResult
+    >({
+      queryClient,
+      queryKey: RUNTIME_SETTINGS_QUERY_KEY,
+      mutationFn: (nextPayload) =>
+        api.put<{ ok: boolean; applied: RuntimeSettings; rejected?: Record<string, string> }>(
+          '/runtime-settings',
+          nextPayload,
+        ),
+      toOptimisticData: (nextPayload) => nextPayload,
+      toAppliedData: (response, nextPayload, previousData) =>
+        normalizeRuntimeSaveResult(response, nextPayload, previousData || nextPayload).applied,
+      toPersistedResult: (response, nextPayload, previousData) =>
+        normalizeRuntimeSaveResult(response, nextPayload, previousData || nextPayload),
+      onPersisted: (result, nextPayload) => {
+        applyRuntimeSaveResult(result);
+        recordPersistSuccess(nextPayload);
+      },
+      onError,
+    }),
+  );
   const saveMutate = saveMutation.mutate;
 
   useEffect(() => {
@@ -145,7 +191,7 @@ export function useRuntimeSettingsAuthority({
     lastAutoSaveAttemptFingerprintRef.current = payloadFingerprint;
     const timer = setTimeout(() => {
       saveMutate(nextPayload);
-    }, 1500);
+    }, SETTINGS_AUTOSAVE_DEBOUNCE_MS.runtime);
     return () => clearTimeout(timer);
   }, [autoSaveEnabled, dirty, payloadFingerprint, saveMutate]);
 
@@ -164,7 +210,7 @@ export function useRuntimeSettingsAuthority({
   async function reload() {
     const result = await refetch();
     if (result.data) {
-      queryClient.setQueryData(['runtime-settings'], result.data);
+      queryClient.setQueryData(RUNTIME_SETTINGS_QUERY_KEY, result.data);
       const loadedFingerprint = autoSaveFingerprint(result.data);
       lastAutoSavedFingerprintRef.current = loadedFingerprint;
       lastAutoSaveAttemptFingerprintRef.current = loadedFingerprint;

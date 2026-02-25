@@ -9,7 +9,7 @@ import {
   addProduct,
   updateProduct,
   removeProduct,
-  seedFromWorkbook,
+  seedFromCatalog,
   listProducts
 } from '../src/catalog/productCatalog.js';
 
@@ -299,15 +299,14 @@ test('removeProduct: returns error for non-existent product', async () => {
   }
 });
 
-// --- seedFromWorkbook ---
-// Note: seedFromWorkbook calls loadWorkbookProducts/loadWorkbookProductsWithFields internally.
-// Since those read from the actual workbook (which may not be present in the test environment),
-// we test the function's graceful handling of missing workbook data.
+// --- seedFromCatalog ---
+// Note: seedFromCatalog reads app-native catalog + override sources.
+// These tests cover graceful behavior when no catalog/override files are present.
 
-test('seedFromWorkbook: handles missing workbook gracefully', async () => {
+test('seedFromCatalog: handles missing catalog gracefully', async () => {
   const config = await tmpConfig();
   try {
-    const result = await seedFromWorkbook({ config, category: 'mouse' });
+    const result = await seedFromCatalog({ config, category: 'mouse' });
     assert.equal(result.ok, true);
     assert.equal(result.seeded, 0);
     assert.equal(result.fields_imported, 0);
@@ -316,10 +315,10 @@ test('seedFromWorkbook: handles missing workbook gracefully', async () => {
   }
 });
 
-test('seedFromWorkbook: handles missing workbook in full mode gracefully', async () => {
+test('seedFromCatalog: handles missing catalog in full mode gracefully', async () => {
   const config = await tmpConfig();
   try {
-    const result = await seedFromWorkbook({ config, category: 'mouse', mode: 'full' });
+    const result = await seedFromCatalog({ config, category: 'mouse', mode: 'full' });
     assert.equal(result.ok, true);
     assert.equal(result.seeded, 0);
     assert.equal(result.fields_imported, 0);
@@ -328,10 +327,10 @@ test('seedFromWorkbook: handles missing workbook in full mode gracefully', async
   }
 });
 
-test('seedFromWorkbook: rejects missing category', async () => {
+test('seedFromCatalog: rejects missing category', async () => {
   const config = await tmpConfig();
   try {
-    const result = await seedFromWorkbook({ config, category: '' });
+    const result = await seedFromCatalog({ config, category: '' });
     assert.equal(result.ok, false);
     assert.equal(result.error, 'category_required');
   } finally {

@@ -1,9 +1,9 @@
-# PHASE 8 OF 10 — DATA REVIEW GRID GUI & HUMAN-IN-THE-LOOP OVERRIDES (EXCEL-FIRST)
+# PHASE 8 OF 10 — DATA REVIEW GRID GUI & HUMAN-IN-THE-LOOP OVERRIDES (FIELD-STUDIO-FIRST)
 
-**Version:** v2 (Excel-native grid)  
+**Version:** v2 (field-studio-native grid)  
 **Scope:** Localhost Review Workstation (NOT a dashboard)  
 **Category baseline:** `mouse`  
-**Excel source of truth:** `mouseData.xlsm` → `dataEntry` tab  
+**Field Studio source of truth:** `mouseData.xlsm` → `dataEntry` tab  
 **Key range (universal contract):** `dataEntry!B9:B83` (75 keys)
 
 ---
@@ -20,7 +20,7 @@ This interface must let a reviewer complete a product in **30–60 seconds**.
 - Phase 7: ProductRecord output (must include candidates + provenance)
 - Phase 3: FieldRulesEngine (re-validate on every override)
 - Phase 1: `field_rules.json` and `ui_field_catalog.json`
-- Excel layout contract (this doc): `mouseData.xlsm` → `dataEntry` tab
+- spreadsheet layout contract (this doc): `mouseData.xlsm` → `dataEntry` tab
 
 ---
 
@@ -35,16 +35,16 @@ Build a 24/7, evidence-first "Spec Factory" that can publish **15–20 products/
 
 ---
 
-## THE CORE IDEA: THE UI IS A CLONE OF THE EXCEL ENTRY MATRIX
+## THE CORE IDEA: THE UI IS A DETERMINISTIC VIEW OF THE FIELD-STUDIO LAYOUT CONTRACT
 
-### Excel layout contract (MUST MATCH)
+### spreadsheet layout contract (MUST MATCH)
 
-The Review Grid must mirror the Excel entry model exactly:
+The Review Grid must mirror the spreadsheet entry model exactly:
 
-- **Each PRODUCT is a column** (Excel: `dataEntry` columns **C+**)
-- **Each FIELD is a row** (Excel: `dataEntry` column **B**)
+- **Each PRODUCT is a column** (spreadsheet: `dataEntry` columns **C+**)
+- **Each FIELD is a row** (spreadsheet: `dataEntry` column **B**)
 - **Brand/Model are pinned at the top of each product column header**
-- The grid rows are shown in **the same order as Excel** (no re-sorting)
+- The grid rows are shown in **the same order as spreadsheet** (no re-sorting)
 
 #### Mouse category: the authoritative field order
 
@@ -54,14 +54,14 @@ The Review Grid must mirror the Excel entry model exactly:
   - These are the exact 75 keys the harvester must populate (because they are selected in Field Rules).
   - The UI must render these rows in this exact order.
 
-> **Universal rule (for every category):** the Field Rules selection defines the Excel key range to review.  
+> **Universal rule (for every category):** the Field Rules selection defines the spreadsheet key range to review.  
 > For mouse, that range is fixed to `dataEntry!B9:B83`.
 
 ---
 
 ## DELIVERABLES (PHASE 8)
 
-### Deliverable 8A — Review Grid (Excel-order workstation)
+### Deliverable 8A — Review Grid (spreadsheet-order workstation)
 
 A React (localhost) app that:
 - Displays a dense matrix: **rows = keys**, **columns = products**
@@ -70,7 +70,7 @@ A React (localhost) app that:
   - Model (second line)
   - Status pills (confidence/coverage/flags)
 - **Row header** shows:
-  - Group label (from Excel `dataEntry!A{row}`; blanks inherit previous)
+  - Group label (from spreadsheet `dataEntry!A{row}`; blanks inherit previous)
   - Field label (from `ui_field_catalog.json`; fallback to the key)
 - **Cell** displays the selected value (colored by confidence / conflict)
 - **Cell dropdown** exposes **ALL candidates** (not only the selected one)
@@ -128,20 +128,20 @@ A queue interface that:
 
 ---
 
-## EXCEL → UI MAPPING TABLE (MUST IMPLEMENT)
+## FIELD-STUDIO -> UI MAPPING TABLE (MUST IMPLEMENT)
 
-| Excel (mouseData.xlsm → dataEntry) | Meaning | UI representation |
+| field-studio layout row contract | Meaning | UI representation |
 |---|---|---|
 | **Columns C+** | Each column is a product | Each grid column = one product |
 | **Row 3** (`A3=Brand`, `B3=brand`) | Brand key (header) | Pinned in product column header (line 1) |
 | **Row 4** (`B4=model`) | Model key (header) | Pinned in product column header (line 2) |
-| **Column B** | Field keys | Grid rows (row order = Excel order) |
+| **Column B** | Field keys | Grid rows (row order = spreadsheet order) |
 | **Rows 9–83** (`B9:B83`) | Keys the harvester must populate | These are the ONLY required review rows for mouse Phase 8 grid |
 | **Column A** (row group labels) | Visual grouping | Group headers in row label lane; blank = inherit previous group |
 
 ---
 
-## UI LAYOUT (EXCEL-LIKE)
+## UI LAYOUT (CONTRACT-DRIVEN)
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────┐
@@ -168,17 +168,17 @@ Click a cell → Candidate Drawer (right) with candidates + evidence + select/ov
 
 ## DATA CONTRACTS (BACKEND API)
 
-### 1) Layout API (Excel-order rows)
+### 1) Layout API (spreadsheet-order rows)
 
 **GET** `/api/layout/:category`
 
-Returns the canonical row list in Excel order (B9–B83 for mouse) plus labels and grouping.
+Returns the canonical row list in spreadsheet order (B9–B83 for mouse) plus labels and grouping.
 
 ```jsonc
 {
   "category": "mouse",
-  "excel": {
-    "workbook": "mouseData.xlsm",
+  "spreadsheet": {
+    "field-studio": "mouseData.xlsm",
     "sheet": "dataEntry",
     "key_range": "B9:B83",
     "brand_key_cell": "B3",
@@ -186,7 +186,7 @@ Returns the canonical row list in Excel order (B9–B83 for mouse) plus labels a
   },
   "rows": [
     {
-      "excel_row": 9,
+      "layout_row": 9,
       "group": "SORT",
       "key": "release_date",
       "label": "Release date",
@@ -348,12 +348,12 @@ Manual entries MUST include evidence; create `manual_snp_*` ids so evidence audi
 
 ---
 
-## ACCEPTANCE CRITERIA (EXCEL-FIRST)
+## ACCEPTANCE CRITERIA (FIELD-STUDIO-FIRST)
 
 1. ☐ Grid row order matches `dataEntry!B9:B83` exactly (mouse)  
 2. ☐ Product columns correspond to queue products (C+ behavior)  
 3. ☐ Brand + Model are pinned at top of each product column header  
-4. ☐ Row group labels mirror Excel column A behavior (blank inherits previous)  
+4. ☐ Row group labels mirror spreadsheet column A behavior (blank inherits previous)  
 5. ☐ Confidence coloring matches thresholds and conflict/validation status  
 6. ☐ Clicking a cell shows ALL candidates (value, score, tier, source)  
 7. ☐ Evidence URL opens; evidence panel highlights `quote_span` within `snippet_text`  
@@ -372,10 +372,10 @@ Manual entries MUST include evidence; create `manual_snp_*` ids so evidence audi
 
 To make this universal across categories:
 - Every category defines:
-  - workbook name + sheet (usually `dataEntry`)
+  - field-studio name + sheet (usually `dataEntry`)
   - key range (like `B9:B83`)
   - identity header keys (brand/model row cells, or identity mapping)
-- The compiler generates `excel_layout.json` during Phase 2 so UI never guesses.
+- The compiler generates deterministic layout metadata during Phase 2 so UI never guesses.
 - The Review Grid renders purely from:
   1) `/api/layout/:category` (row order + labels)
   2) `/api/review/queue`

@@ -21,4 +21,4 @@ server:
   limiter: false
   public_instance: false
   image_proxy: false
-  method: "POST"   # or "GET"
+  method: "GET"   # or "POST"

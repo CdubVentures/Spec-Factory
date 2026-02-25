@@ -61,7 +61,7 @@ function LlmCallCard({ call, index }: { call: PrefetchLlmCall; index: number }) 
           {call.prompt_preview && (
             <div>
               <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase mb-0.5">Prompt</div>
-              <pre className="text-[11px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto max-h-40 whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+              <pre className="text-[11px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-40 whitespace-pre-wrap text-gray-700 dark:text-gray-300">
                 {call.prompt_preview}
               </pre>
             </div>
@@ -69,7 +69,7 @@ function LlmCallCard({ call, index }: { call: PrefetchLlmCall; index: number }) 
           {call.response_preview && (
             <div>
               <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase mb-0.5">Response</div>
-              <pre className="text-[11px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto max-h-40 whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+              <pre className="text-[11px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-40 whitespace-pre-wrap text-gray-700 dark:text-gray-300">
                 {call.response_preview}
               </pre>
             </div>

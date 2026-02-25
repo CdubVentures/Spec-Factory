@@ -328,9 +328,9 @@ export function registerStudioRoutes(ctx) {
     fs,
     path,
     sessionCache,
-    loadWorkbookMap,
-    saveWorkbookMap,
-    validateWorkbookMap,
+    loadFieldStudioMap,
+    saveFieldStudioMap,
+    validateFieldStudioMap,
     invalidateFieldRulesCache,
     buildFieldLabelsMap,
     getSpecDbReady,
@@ -343,6 +343,11 @@ export function registerStudioRoutes(ctx) {
     cleanVariant,
     runEnumConsistencyReview = runEnumConsistencyReviewDefault,
   } = ctx;
+  const hasStudioMapHandlers = (
+    typeof loadFieldStudioMap === 'function'
+    && typeof saveFieldStudioMap === 'function'
+    && typeof validateFieldStudioMap === 'function'
+  );
 
   const helperFilesRoot = config?.helperFilesRoot || HELPER_ROOT || 'helper_files';
 
@@ -373,7 +378,7 @@ export function registerStudioRoutes(ctx) {
         uiFieldCatalog: catConfig.uiFieldCatalog || null,
         guardrails: catConfig.guardrails || null,
         compiledAt: session.compiledAt,
-        draftSavedAt: session.draftSavedAt,
+        mapSavedAt: session.mapSavedAt,
         compileStale: session.compileStale,
       });
     }
@@ -605,6 +610,9 @@ export function registerStudioRoutes(ctx) {
 
     // Studio map GET
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'field-studio-map' && method === 'GET') {
+      if (!hasStudioMapHandlers) {
+        return jsonRes(res, 500, { error: 'studio_map_handlers_missing' });
+      }
       const category = parts[1];
       let settingsMap = null;
       try {
@@ -615,22 +623,25 @@ export function registerStudioRoutes(ctx) {
 
       let controlPlaneMap = null;
       try {
-        controlPlaneMap = await loadWorkbookMap({ category, config });
+        controlPlaneMap = await loadFieldStudioMap({ category, config });
       } catch (err) {
-        const preferred = choosePreferredStudioMap(settingsMap, null, { validateMap: validateWorkbookMap });
+        const preferred = choosePreferredStudioMap(settingsMap, null, { validateMap: validateFieldStudioMap });
         if (preferred) return jsonRes(res, 200, preferred);
         return jsonRes(res, 200, { file_path: '', map: {}, error: err.message });
       }
 
-      const preferred = choosePreferredStudioMap(settingsMap, controlPlaneMap, { validateMap: validateWorkbookMap });
+      const preferred = choosePreferredStudioMap(settingsMap, controlPlaneMap, { validateMap: validateFieldStudioMap });
       return jsonRes(res, 200, preferred || { file_path: '', map: {} });
     }
 
     // Studio map PUT (save)
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'field-studio-map' && method === 'PUT') {
+      if (!hasStudioMapHandlers) {
+        return jsonRes(res, 500, { error: 'studio_map_handlers_missing' });
+      }
       const category = parts[1];
       const body = await readJsonBody(req);
-      const validation = validateWorkbookMap(body, { category });
+      const validation = validateFieldStudioMap(body, { category });
       if (!validation?.valid) {
         return jsonRes(res, 400, {
           error: 'invalid_field_studio_map',
@@ -645,7 +656,7 @@ export function registerStudioRoutes(ctx) {
       try {
         const incomingSummary = summarizeStudioMapPayload(normalizedFieldStudioMap);
         if (!incomingSummary.has_mapping_payload && params.get('allowEmptyOverwrite') !== 'true') {
-          const existingMap = await loadWorkbookMap({ category, config }).catch(() => null);
+          const existingMap = await loadFieldStudioMap({ category, config }).catch(() => null);
           const existingSummary = summarizeStudioMapPayload(existingMap?.map);
           if (existingSummary.has_mapping_payload) {
             return jsonRes(res, 409, {
@@ -656,7 +667,7 @@ export function registerStudioRoutes(ctx) {
             });
           }
         }
-        const result = await saveWorkbookMap({ category, workbookMap: normalizedFieldStudioMap, config });
+        const result = await saveFieldStudioMap({ category, fieldStudioMap: normalizedFieldStudioMap, config });
         const currentSettings = await loadUserSettings({ helperFilesRoot });
         const existingStudio = currentSettings && typeof currentSettings.studio === 'object' && !Array.isArray(currentSettings.studio)
           ? currentSettings.studio
@@ -667,8 +678,8 @@ export function registerStudioRoutes(ctx) {
             ...existingStudio,
             [category]: {
               file_path: typeof result.file_path === 'string' ? result.file_path : '',
-              map: result.workbook_map && typeof result.workbook_map === 'object'
-                ? result.workbook_map
+              map: result.field_studio_map && typeof result.field_studio_map === 'object'
+                ? result.field_studio_map
                 : normalizedFieldStudioMap,
               map_hash: result.map_hash,
               version_snapshot: result.version_snapshot,
@@ -694,9 +705,12 @@ export function registerStudioRoutes(ctx) {
 
     // Studio map validate
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'validate-field-studio-map' && method === 'POST') {
+      if (!hasStudioMapHandlers) {
+        return jsonRes(res, 500, { error: 'studio_map_handlers_missing' });
+      }
       const category = parts[1];
       const body = await readJsonBody(req);
-      const result = validateWorkbookMap(body, { category });
+      const result = validateFieldStudioMap(body, { category });
       return jsonRes(res, 200, result);
     }
 
@@ -706,7 +720,6 @@ export function registerStudioRoutes(ctx) {
       const catRoot = path.join(HELPER_ROOT, category);
       const mapData = (
         await safeReadJson(path.join(catRoot, '_control_plane', 'field_studio_map.json'))
-        || await safeReadJson(path.join(catRoot, '_control_plane', 'workbook_map.json'))
       );
       const tooltipPath = mapData?.tooltip_source?.path || '';
       const tooltipFiles = [];
@@ -733,43 +746,6 @@ export function registerStudioRoutes(ctx) {
       return jsonRes(res, 200, { entries: tooltipEntries, files: tooltipFiles, configuredPath: tooltipPath });
     }
 
-    // Studio save drafts
-    if (parts[0] === 'studio' && parts[1] && parts[2] === 'save-drafts' && method === 'POST') {
-      const category = parts[1];
-      const body = await readJsonBody(req);
-      const catRoot = path.join(HELPER_ROOT, category);
-      const controlPlane = path.join(catRoot, '_control_plane');
-      await fs.mkdir(controlPlane, { recursive: true });
-      if (body.fieldRulesDraft) {
-        const draftFile = path.join(controlPlane, 'field_rules_draft.json');
-        const existing = (await safeReadJson(draftFile)) || {};
-        const merged = { ...existing, ...body.fieldRulesDraft, draft_saved_at: new Date().toISOString() };
-        await fs.writeFile(draftFile, JSON.stringify(merged, null, 2));
-      }
-      if (body.uiFieldCatalogDraft) {
-        await fs.writeFile(path.join(controlPlane, 'ui_field_catalog_draft.json'), JSON.stringify(body.uiFieldCatalogDraft, null, 2));
-      }
-      if (body.renames && typeof body.renames === 'object' && Object.keys(body.renames).length > 0) {
-        const renamesPath = path.join(controlPlane, 'pending_renames.json');
-        const existing = (await safeReadJson(renamesPath)) || { renames: {} };
-        if (!existing.renames || typeof existing.renames !== 'object') existing.renames = {};
-        Object.assign(existing.renames, body.renames);
-        existing.timestamp = new Date().toISOString();
-        await fs.writeFile(renamesPath, JSON.stringify(existing, null, 2));
-      }
-      sessionCache.invalidateSessionCache(category);
-      if (typeof invalidateFieldRulesCache === 'function') {
-        invalidateFieldRulesCache(category);
-      }
-      reviewLayoutByCategory.delete(category);
-      emitDataChange({
-        broadcastWs,
-        event: 'studio-drafts-saved',
-        category,
-      });
-      return jsonRes(res, 200, { ok: true });
-    }
-
     // Studio cache invalidation
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'invalidate-cache' && method === 'POST') {
       const category = parts[1];
@@ -777,17 +753,6 @@ export function registerStudioRoutes(ctx) {
       invalidateFieldRulesCache(category);
       reviewLayoutByCategory.delete(category);
       return jsonRes(res, 200, { ok: true });
-    }
-
-    // Studio field rules draft GET
-    if (parts[0] === 'studio' && parts[1] && parts[2] === 'drafts' && method === 'GET') {
-      const category = parts[1];
-      const controlPlane = path.join(HELPER_ROOT, category, '_control_plane');
-      const [fieldRulesDraft, uiFieldCatalogDraft] = await Promise.all([
-        safeReadJson(path.join(controlPlane, 'field_rules_draft.json')),
-        safeReadJson(path.join(controlPlane, 'ui_field_catalog_draft.json')),
-      ]);
-      return jsonRes(res, 200, { fieldRulesDraft, uiFieldCatalogDraft });
     }
 
     // Studio generated artifacts list

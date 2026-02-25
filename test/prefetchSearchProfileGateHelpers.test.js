@@ -6,6 +6,7 @@ import {
   buildGateSummary,
   fieldRulesCountForSource,
   normalizeFieldRuleGateCounts,
+  resolveFieldRuleHintCountForRowGate,
 } from '../tools/gui-react/src/pages/runtime-ops/panels/prefetchSearchProfileGateHelpers.js';
 
 describe('getQueryGateFlags', () => {
@@ -132,18 +133,24 @@ describe('normalizeFieldRuleGateCounts', () => {
     const rows = normalizeFieldRuleGateCounts({
       'search_hints.query_terms': {
         value_count: 3,
+        total_value_count: 5,
+        effective_value_count: 3,
         enabled_field_count: 1,
         disabled_field_count: 0,
         status: 'active',
       },
       'search_hints.domain_hints': {
         value_count: 0,
+        total_value_count: 4,
+        effective_value_count: 0,
         enabled_field_count: 0,
         disabled_field_count: 2,
         status: 'off',
       },
       'search_hints.preferred_content_types': {
         value_count: 0,
+        total_value_count: 2,
+        effective_value_count: 0,
         enabled_field_count: 2,
         disabled_field_count: 0,
         status: 'zero',
@@ -155,11 +162,13 @@ describe('normalizeFieldRuleGateCounts', () => {
         key: row.key,
         status: row.status,
         valueCount: row.valueCount,
+        effectiveValueCount: row.effectiveValueCount,
+        totalValueCount: row.totalValueCount,
       })),
       [
-        { key: 'search_hints.query_terms', status: 'active', valueCount: 3 },
-        { key: 'search_hints.domain_hints', status: 'off', valueCount: 0 },
-        { key: 'search_hints.preferred_content_types', status: 'zero', valueCount: 0 },
+        { key: 'search_hints.query_terms', status: 'active', valueCount: 3, effectiveValueCount: 3, totalValueCount: 5 },
+        { key: 'search_hints.domain_hints', status: 'off', valueCount: 0, effectiveValueCount: 0, totalValueCount: 4 },
+        { key: 'search_hints.preferred_content_types', status: 'zero', valueCount: 0, effectiveValueCount: 0, totalValueCount: 2 },
       ],
     );
   });
@@ -177,5 +186,41 @@ describe('normalizeFieldRuleGateCounts', () => {
     assert.equal(Boolean(queryTermsRow), true);
     assert.equal(queryTermsRow?.status, 'zero');
     assert.equal(queryTermsRow?.valueCount, 0);
+    assert.equal(queryTermsRow?.effectiveValueCount, 0);
+    assert.equal(queryTermsRow?.totalValueCount, 0);
+  });
+});
+
+describe('resolveFieldRuleHintCountForRowGate', () => {
+  it('uses per-field counts when present', () => {
+    const result = resolveFieldRuleHintCountForRowGate({
+      perFieldHintCounts: {
+        query_terms: { value_count: 2, total_value_count: 5, effective_value_count: 2, status: 'active' },
+      },
+      gateKey: 'query_terms',
+      fallbackGate: { valueCount: 99, status: 'active' },
+    });
+
+    assert.deepEqual(result, { status: 'active', value: 2, total: 5, effective: 2 });
+  });
+
+  it('does not leak global fallback values when per-field counts are missing', () => {
+    const result = resolveFieldRuleHintCountForRowGate({
+      perFieldHintCounts: null,
+      gateKey: 'query_terms',
+      fallbackGate: { valueCount: 16, status: 'active' },
+    });
+
+    assert.deepEqual(result, { status: 'zero', value: 0, total: 0, effective: 0 });
+  });
+
+  it('returns off when fallback gate is explicitly off', () => {
+    const result = resolveFieldRuleHintCountForRowGate({
+      perFieldHintCounts: undefined,
+      gateKey: 'domain_hints',
+      fallbackGate: { valueCount: 0, status: 'off' },
+    });
+
+    assert.deepEqual(result, { status: 'off', value: 0, total: 0, effective: 0 });
   });
 });

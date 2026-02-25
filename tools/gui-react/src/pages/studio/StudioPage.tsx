@@ -32,12 +32,24 @@ import DraggableKeyList from './DraggableKeyList';
 import { invalidateFieldRulesQueries } from './invalidateFieldRulesQueries';
 import { useStudioPersistenceAuthority } from './studioPersistenceAuthority';
 import { 
-  assertWorkbookMapValidationOrThrow,
+  assertFieldStudioMapValidationOrThrow,
 } from './mapValidationPreflight.js';
 import { useAuthoritySnapshot } from '../../hooks/useAuthoritySnapshot.js';
 import { buildAuthorityVersionToken } from '../../hooks/authoritySnapshotHelpers.js';
 import BulkPasteGrid, { type BulkGridRow } from '../../components/common/BulkPasteGrid';
 import { autoSaveFingerprint } from '../../stores/autoSaveFingerprint';
+import { SETTINGS_AUTOSAVE_DEBOUNCE_MS, SETTINGS_AUTOSAVE_STATUS_MS } from '../../stores/settingsManifest';
+import {
+  clampNumber,
+  parseBoundedFloatInput,
+  parseBoundedIntInput,
+  parseIntegerInput,
+  parseOptionalPositiveIntInput,
+} from './numericInputHelpers';
+import {
+  STUDIO_COMPONENT_MATCH_DEFAULTS,
+  STUDIO_NUMERIC_KNOB_BOUNDS,
+} from './studioNumericKnobBounds';
 import {
   selectCls, inputCls, labelCls,
   UNITS, UNKNOWN_TOKENS, GROUPS, COMPONENT_TYPES,
@@ -51,7 +63,6 @@ import type {
   FieldStudioMapResponse,
   StudioConfig,
   TooltipBankResponse,
-  DraftsResponse,
   ArtifactEntry,
   ComponentSource,
   ComponentSourceProperty,
@@ -198,7 +209,12 @@ function normalizePriorityProfile(value: unknown): Required<PriorityProfile> {
   const required_level = String(input.required_level || DEFAULT_PRIORITY_PROFILE.required_level);
   const availability = String(input.availability || DEFAULT_PRIORITY_PROFILE.availability);
   const difficulty = String(input.difficulty || DEFAULT_PRIORITY_PROFILE.difficulty);
-  const effortRaw = Number.parseInt(String(input.effort ?? DEFAULT_PRIORITY_PROFILE.effort), 10);
+  const effort = parseBoundedIntInput(
+    input.effort,
+    STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min,
+    STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max,
+    DEFAULT_PRIORITY_PROFILE.effort,
+  );
   return {
     required_level: PRIORITY_REQUIRED_LEVELS.includes(required_level)
       ? required_level
@@ -209,7 +225,7 @@ function normalizePriorityProfile(value: unknown): Required<PriorityProfile> {
     difficulty: PRIORITY_DIFFICULTY_LEVELS.includes(difficulty)
       ? difficulty
       : DEFAULT_PRIORITY_PROFILE.difficulty,
-    effort: Math.max(1, Math.min(10, Number.isFinite(effortRaw) ? effortRaw : DEFAULT_PRIORITY_PROFILE.effort)),
+    effort,
   };
 }
 
@@ -308,13 +324,27 @@ function normalizeAiAssistConfig(value: unknown): Required<AiAssistConfig> {
   const input = (value && typeof value === 'object') ? value as Record<string, unknown> : {};
   const modeToken = String(input.mode || '').trim().toLowerCase();
   const strategyToken = String(input.model_strategy || 'auto').trim().toLowerCase();
-  const maxCallsRaw = Number.parseInt(String(input.max_calls ?? ''), 10);
-  const maxTokensRaw = Number.parseInt(String(input.max_tokens ?? ''), 10);
+  const maxCallsRaw = parseOptionalPositiveIntInput(input.max_calls);
+  const maxTokensRaw = parseOptionalPositiveIntInput(input.max_tokens);
+  const maxCalls = maxCallsRaw === null
+    ? null
+    : clampNumber(
+      maxCallsRaw,
+      STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min,
+      STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max,
+    );
+  const maxTokens = maxTokensRaw === null
+    ? null
+    : clampNumber(
+      maxTokensRaw,
+      STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min,
+      STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max,
+    );
   return {
     mode: AI_MODES.includes(modeToken) ? modeToken : null,
     model_strategy: AI_MODEL_STRATEGIES.includes(strategyToken) ? strategyToken : 'auto',
-    max_calls: Number.isFinite(maxCallsRaw) && maxCallsRaw > 0 ? Math.max(1, Math.min(10, maxCallsRaw)) : null,
-    max_tokens: Number.isFinite(maxTokensRaw) && maxTokensRaw > 0 ? Math.max(256, Math.min(65536, maxTokensRaw)) : null,
+    max_calls: maxCalls,
+    max_tokens: maxTokens,
     reasoning_note: String(input.reasoning_note || ''),
   };
 }
@@ -391,8 +421,12 @@ export function StudioPage() {
   const setAutoSaveEnabled = useUiStore((s) => s.setAutoSaveEnabled);
   const autoSaveMapEnabled = useUiStore((s) => s.autoSaveMapEnabled);
   const setAutoSaveMapEnabled = useUiStore((s) => s.setAutoSaveMapEnabled);
-  const effectiveAutoSaveEnabled = autoSaveAllEnabled || autoSaveEnabled;
+  const autoSaveWorkbookLocked = autoSaveAllEnabled || autoSaveMapEnabled;
+  const autoSaveWorkbookLockReason = autoSaveAllEnabled ? 'Auto-save ALL' : (autoSaveMapEnabled ? 'Auto-save Mapping' : '');
+  const effectiveAutoSaveEnabled = autoSaveAllEnabled || autoSaveMapEnabled || autoSaveEnabled;
   const effectiveAutoSaveMapEnabled = autoSaveAllEnabled || autoSaveMapEnabled;
+  const studioDocsAutoSaveDelaySeconds = (SETTINGS_AUTOSAVE_DEBOUNCE_MS.studioDocs / 1000).toFixed(1);
+  const studioMapAutoSaveDelaySeconds = (SETTINGS_AUTOSAVE_DEBOUNCE_MS.studioMap / 1000).toFixed(1);
   const hydrated = useRef(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saved'>('idle');
   const [authorityConflictVersion, setAuthorityConflictVersion] = useState('');
@@ -414,12 +448,6 @@ export function StudioPage() {
     queryKey: ['studio-tooltip-bank', category],
     queryFn: () => api.get<TooltipBankResponse>(`/studio/${category}/tooltip-bank`),
     enabled: activeTab === 'mapping',
-  });
-
-  const { data: drafts } = useQuery({
-    queryKey: ['studio-drafts', category],
-    queryFn: () => api.get<DraftsResponse>(`/studio/${category}/drafts`),
-    enabled: activeTab === 'contract' || activeTab === 'keys',
   });
 
   const { data: artifacts } = useQuery({
@@ -469,7 +497,7 @@ export function StudioPage() {
         `/studio/${category}/validate-field-studio-map`,
         currentMap?.map || {},
       );
-      assertWorkbookMapValidationOrThrow({
+      assertFieldStudioMapValidationOrThrow({
         result: validation,
         actionLabel: 'compile',
         allowLegacyCompileBypass: true,
@@ -500,7 +528,6 @@ export function StudioPage() {
       queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
       queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
       queryClient.invalidateQueries({ queryKey: ['studio-known-values', category] });
-      queryClient.invalidateQueries({ queryKey: ['studio-drafts', category] });
     },
   });
 
@@ -539,9 +566,9 @@ export function StudioPage() {
 
   // â"€â"€ Field Rules Store: centralized editable state â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const fieldRulesStore = useFieldRulesStore();
-  const { saveMapMut, saveDraftsMut } = useStudioPersistenceAuthority({
+  const { saveMapMut, saveStudioDocsMut } = useStudioPersistenceAuthority({
     category,
-    onDraftsSaved: () => {
+    onStudioDocsSaved: () => {
       fieldRulesStore.clearRenames();
       invalidateFieldRulesQueries(queryClient, category);
     },
@@ -550,10 +577,10 @@ export function StudioPage() {
   const authorityVersionRef = useRef('');
   const ignoredConflictVersionRef = useRef('');
   const fallbackAuthorityVersion = buildAuthorityVersionToken({
-    draft_hash: studio?.draftSavedAt ? `draft:${studio?.draftSavedAt}` : null,
+    map_hash: studio?.mapSavedAt ? `map:${studio?.mapSavedAt}` : null,
     compiled_hash: studio?.compiledAt ? `compiled:${studio?.compiledAt}` : null,
     specdb_sync_version: 0,
-    updated_at: studio?.draftSavedAt || studio?.compiledAt || null,
+    updated_at: studio?.mapSavedAt || studio?.compiledAt || null,
   });
   const { authorityVersionToken: snapshotAuthorityVersion } = useAuthoritySnapshot({
     category,
@@ -622,57 +649,130 @@ export function StudioPage() {
 
   const storeRules = fieldRulesStore.initialized ? fieldRulesStore.editedRules : rules;
   const storeFieldOrder = fieldRulesStore.initialized ? fieldRulesStore.editedFieldOrder : fieldOrder;
-  const lastDraftAutoSaveFingerprintRef = useRef('');
-  const lastDraftAutoSaveAttemptFingerprintRef = useRef('');
-  const saveDrafts = saveDraftsMut.mutate;
+  const lastStudioAutoSaveFingerprintRef = useRef('');
+  const lastStudioAutoSaveAttemptFingerprintRef = useRef('');
+  const saveStudioDocs = saveStudioDocsMut.mutate;
 
-  const buildDraftPersistPayload = useCallback((snap: {
+  const stripEditedFlagFromRules = useCallback((ruleMap: Record<string, Record<string, unknown>>) => {
+    const cleaned: Record<string, Record<string, unknown>> = {};
+    for (const [key, rule] of Object.entries(ruleMap || {})) {
+      const nextRule = { ...(rule || {}) } as Record<string, unknown>;
+      delete nextRule._edited;
+      cleaned[key] = nextRule;
+    }
+    return cleaned;
+  }, []);
+
+  const applyRenamesToStudioMap = useCallback((inputMap: StudioConfig, renames: Record<string, string>) => {
+    if (!renames || Object.keys(renames).length === 0) return inputMap;
+    const renameKey = (value: string) => renames[value] || value;
+    const nextMap: StudioConfig = { ...inputMap };
+
+    if (Array.isArray(nextMap.selected_keys)) {
+      nextMap.selected_keys = nextMap.selected_keys.map((key) => renameKey(String(key || '')));
+    }
+    if (nextMap.field_overrides && typeof nextMap.field_overrides === 'object') {
+      const renamedOverrides: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(nextMap.field_overrides)) {
+        renamedOverrides[renameKey(key)] = value;
+      }
+      nextMap.field_overrides = renamedOverrides;
+    }
+    if (nextMap.manual_enum_values && typeof nextMap.manual_enum_values === 'object') {
+      const renamedManualValues: Record<string, string[]> = {};
+      for (const [key, values] of Object.entries(nextMap.manual_enum_values)) {
+        renamedManualValues[renameKey(key)] = Array.isArray(values) ? values : [];
+      }
+      nextMap.manual_enum_values = renamedManualValues;
+    }
+    if (Array.isArray(nextMap.enum_lists)) {
+      nextMap.enum_lists = nextMap.enum_lists.map((entry) => {
+        if (!entry || typeof entry !== 'object') return entry;
+        const field = renameKey(String(entry.field || ''));
+        return { ...entry, field };
+      });
+    }
+    if (Array.isArray(nextMap.data_lists)) {
+      nextMap.data_lists = nextMap.data_lists.map((entry: Record<string, unknown>) => {
+        if (!entry || typeof entry !== 'object') return entry;
+        const field = renameKey(String(entry.field || ''));
+        return { ...entry, field };
+      });
+    }
+    if (Array.isArray(nextMap.component_sources)) {
+      nextMap.component_sources = nextMap.component_sources.map((source) => {
+        if (!source || typeof source !== 'object') return source;
+        const roles = source.roles && typeof source.roles === 'object' ? source.roles : {};
+        const properties = Array.isArray(roles.properties)
+          ? roles.properties.map((property: ComponentSourceProperty) => {
+            if (!property || typeof property !== 'object') return property;
+            const fieldKey = renameKey(String(property.field_key || ''));
+            return { ...property, field_key: fieldKey };
+          })
+          : roles.properties;
+        return {
+          ...source,
+          roles: {
+            ...roles,
+            properties,
+          },
+        } as ComponentSource;
+      });
+    }
+    return nextMap;
+  }, []);
+
+  const buildStudioPersistMap = useCallback((snap: {
     rules: Record<string, Record<string, unknown>>;
     fieldOrder: string[];
     renames: Record<string, string>;
-  }) => ({
-    fieldRulesDraft: {
-      ...(Object.keys(snap.rules).length > 0 ? { fields: snap.rules } : {}),
-      ...(snap.fieldOrder.length > 0 ? { fieldOrder: snap.fieldOrder } : {}),
-    },
-    ...(Object.keys(snap.renames).length > 0 ? { renames: snap.renames } : {}),
-  }), []);
+  }) => {
+    const selectedKeys = snap.fieldOrder
+      .map((key) => String(key || '').trim())
+      .filter((key) => key && !key.startsWith('__grp::'));
+    const withStudioDocs: StudioConfig = {
+      ...wbMap,
+      selected_keys: selectedKeys,
+      field_overrides: stripEditedFlagFromRules(snap.rules),
+    };
+    return applyRenamesToStudioMap(withStudioDocs, snap.renames);
+  }, [wbMap, stripEditedFlagFromRules, applyRenamesToStudioMap]);
 
   const saveFromStore = useCallback((options?: { force?: boolean }) => {
     const force = options?.force === true;
     const snap = useFieldRulesStore.getState().getSnapshot();
-    const payload = buildDraftPersistPayload(snap);
+    const payload = buildStudioPersistMap(snap);
     const nextFingerprint = autoSaveFingerprint(payload);
-    if (!force && nextFingerprint && nextFingerprint === lastDraftAutoSaveFingerprintRef.current) {
+    if (!force && nextFingerprint && nextFingerprint === lastStudioAutoSaveFingerprintRef.current) {
       return;
     }
-    if (!force && nextFingerprint && nextFingerprint === lastDraftAutoSaveAttemptFingerprintRef.current) {
+    if (!force && nextFingerprint && nextFingerprint === lastStudioAutoSaveAttemptFingerprintRef.current) {
       return;
     }
     if (nextFingerprint) {
-      lastDraftAutoSaveAttemptFingerprintRef.current = nextFingerprint;
+      lastStudioAutoSaveAttemptFingerprintRef.current = nextFingerprint;
     }
-    saveDrafts(payload, {
+    saveStudioDocs(payload, {
       onSuccess: () => {
-        lastDraftAutoSaveFingerprintRef.current = nextFingerprint;
-        lastDraftAutoSaveAttemptFingerprintRef.current = nextFingerprint;
+        lastStudioAutoSaveFingerprintRef.current = nextFingerprint;
+        lastStudioAutoSaveAttemptFingerprintRef.current = nextFingerprint;
         if (effectiveAutoSaveEnabled) {
           setAutoSaveStatus('saved');
-          setTimeout(() => setAutoSaveStatus('idle'), 2000);
+          setTimeout(() => setAutoSaveStatus('idle'), SETTINGS_AUTOSAVE_STATUS_MS.studioSavedIndicatorReset);
         }
       },
     });
-  }, [saveDrafts, effectiveAutoSaveEnabled, buildDraftPersistPayload]);
+  }, [saveStudioDocs, effectiveAutoSaveEnabled, buildStudioPersistMap]);
 
   // Mark hydration complete after store has been initialized from server data
   useEffect(() => {
     if (!fieldRulesStore.initialized) return;
     const snap = useFieldRulesStore.getState().getSnapshot();
-    const hydratedFingerprint = autoSaveFingerprint(buildDraftPersistPayload(snap));
-    lastDraftAutoSaveFingerprintRef.current = hydratedFingerprint;
-    lastDraftAutoSaveAttemptFingerprintRef.current = hydratedFingerprint;
+    const hydratedFingerprint = autoSaveFingerprint(buildStudioPersistMap(snap));
+    lastStudioAutoSaveFingerprintRef.current = hydratedFingerprint;
+    lastStudioAutoSaveAttemptFingerprintRef.current = hydratedFingerprint;
     hydrated.current = true;
-  }, [fieldRulesStore.initialized, buildDraftPersistPayload, authoritySnapshotVersion]);
+  }, [fieldRulesStore.initialized, buildStudioPersistMap, authoritySnapshotVersion]);
 
   // Debounced auto-save
   const editedRules = fieldRulesStore.editedRules;
@@ -680,14 +780,31 @@ export function StudioPage() {
   useEffect(() => {
     if (!effectiveAutoSaveEnabled || !fieldRulesStore.initialized || !hydrated.current || authorityConflictVersion) return;
     const snap = useFieldRulesStore.getState().getSnapshot();
-    const nextFingerprint = autoSaveFingerprint(buildDraftPersistPayload(snap));
+    const nextFingerprint = autoSaveFingerprint(buildStudioPersistMap(snap));
     if (!nextFingerprint) return;
-    if (nextFingerprint === lastDraftAutoSaveFingerprintRef.current) return;
-    if (nextFingerprint === lastDraftAutoSaveAttemptFingerprintRef.current) return;
-    const timer = setTimeout(saveFromStore, 1500);
+    if (nextFingerprint === lastStudioAutoSaveFingerprintRef.current) return;
+    if (nextFingerprint === lastStudioAutoSaveAttemptFingerprintRef.current) return;
+    const timer = setTimeout(saveFromStore, SETTINGS_AUTOSAVE_DEBOUNCE_MS.studioDocs);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveAutoSaveEnabled, editedRules, editedFieldOrder, saveFromStore, authorityConflictVersion, buildDraftPersistPayload]);
+  }, [effectiveAutoSaveEnabled, editedRules, editedFieldOrder, saveFromStore, authorityConflictVersion, buildStudioPersistMap]);
+
+  useEffect(() => () => {
+    if (!effectiveAutoSaveEnabled || !fieldRulesStore.initialized || !hydrated.current || authorityConflictVersion) return;
+    if (saveStudioDocsMut.isPending) return;
+    const snap = useFieldRulesStore.getState().getSnapshot();
+    const nextFingerprint = autoSaveFingerprint(buildStudioPersistMap(snap));
+    if (!nextFingerprint) return;
+    if (nextFingerprint === lastStudioAutoSaveFingerprintRef.current) return;
+    saveFromStore({ force: true });
+  }, [
+    effectiveAutoSaveEnabled,
+    fieldRulesStore.initialized,
+    authorityConflictVersion,
+    saveStudioDocsMut.isPending,
+    saveFromStore,
+    buildStudioPersistMap,
+  ]);
 
   const hasUnsavedChanges = useMemo(
     () => Object.values(fieldRulesStore.editedRules).some((r: any) => r?._edited),
@@ -702,7 +819,7 @@ export function StudioPage() {
     setAuthorityConflictDetectedAt('');
     hydrated.current = false;
   }, [rules, fieldOrder, fieldRulesStore, authoritySnapshotVersion]);
-  const keepLocalDraftForAuthorityConflict = useCallback(() => {
+  const keepLocalChangesForAuthorityConflict = useCallback(() => {
     if (authorityConflictVersion) {
       ignoredConflictVersionRef.current = authorityConflictVersion;
     }
@@ -744,20 +861,33 @@ export function StudioPage() {
     : 0;
 
   const saveStatus = (() => {
-    if (saveDraftsMut.isPending) {
-      return { label: 'Savingâ€¦', dot: 'bg-gray-400', text: 'text-gray-500', border: 'border-gray-200 dark:border-gray-600' };
+    if (saveStudioDocsMut.isPending) {
+      return { label: 'Saving...', dot: 'bg-gray-400', text: 'text-gray-500', border: 'border-gray-200 dark:border-gray-600' };
+    }
+    if (saveStudioDocsMut.isError) {
+      return {
+        label: (saveStudioDocsMut.error as Error)?.message || 'Save failed',
+        dot: 'bg-red-500',
+        text: 'text-red-600 dark:text-red-400',
+        border: 'border-red-200 dark:border-red-700/60',
+      };
+    }
+    if (!fieldRulesStore.initialized) {
+      return null;
+    }
+    if (hasUnsavedChanges) {
+      return {
+        label: effectiveAutoSaveEnabled ? 'Unsaved (auto-save pending)' : 'Unsaved',
+        dot: 'bg-amber-500',
+        text: 'text-amber-600 dark:text-amber-400',
+        border: 'border-amber-200 dark:border-amber-700/60',
+      };
     }
     if (effectiveAutoSaveEnabled) {
       if (autoSaveStatus === 'saved') {
         return { label: 'Auto-saved', dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400', border: 'border-green-200 dark:border-green-700/60' };
       }
       return { label: 'Up to date', dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400', border: 'border-green-200 dark:border-green-700/60' };
-    }
-    if (!fieldRulesStore.initialized) {
-      return null;
-    }
-    if (hasUnsavedChanges) {
-      return { label: 'Unsaved', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-700/60' };
     }
     return { label: 'All saved', dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400', border: 'border-green-200 dark:border-green-700/60' };
   })();
@@ -843,7 +973,7 @@ export function StudioPage() {
                 Server rules changed while local edits are unsaved
               </div>
               <div className="text-xs text-amber-700/90 dark:text-amber-200 mt-1">
-                Choose whether to load the latest authority snapshot or keep your local draft edits.
+                Choose whether to load the latest authority snapshot or keep your local unsaved changes.
               </div>
               <div className="text-[11px] text-amber-700/80 dark:text-amber-300 mt-1">
                 Snapshot: {authorityConflictVersion}{authorityConflictDetectedAt ? ` | detected ${new Date(authorityConflictDetectedAt).toLocaleString()}` : ''}
@@ -857,10 +987,10 @@ export function StudioPage() {
                 Load Server Snapshot
               </button>
               <button
-                onClick={keepLocalDraftForAuthorityConflict}
+                onClick={keepLocalChangesForAuthorityConflict}
                 className={`${btnSecondary} h-9 min-h-9 px-3`}
               >
-                Keep Local Draft
+                Keep Local Changes
               </button>
             </div>
           </div>
@@ -872,12 +1002,12 @@ export function StudioPage() {
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => saveFromStore({ force: true })}
-            disabled={saveDraftsMut.isPending || effectiveAutoSaveEnabled}
+            disabled={saveStudioDocsMut.isPending || effectiveAutoSaveEnabled}
             className={`${btnSecondary} relative h-11 min-h-11 text-sm rounded inline-flex items-center justify-center overflow-visible whitespace-nowrap ${actionBtnWidth}`}
           >
             <span className="w-full text-center font-medium truncate">Save Edits</span>
             <span className="absolute top-0 right-0 -ml-1 translate-x-1/2 -translate-y-1/2">
-              <Tip text={'Save Edits (manual)\n\nWrite your edits to draft only (fast iteration).\nDraft changes are merged on top of compiled rules.'} />
+              <Tip text={'Save Edits (manual)\n\nWrites your field-rule edits into saved Field Studio docs (map selected_keys + field_overrides).'} />
             </span>
             <Tooltip.Root>
               <Tooltip.Trigger asChild>
@@ -910,27 +1040,31 @@ export function StudioPage() {
           >
             <span className="w-full text-center font-medium truncate">{autoSaveAllEnabled ? 'Auto-save ALL On' : 'Auto-save ALL Off'}</span>
             <span className="absolute top-0 right-0 -ml-1 translate-x-1/2 -translate-y-1/2">
-              <Tip text={'Auto-save ALL\n\nWhen enabled, workbook and mapping auto-save are locked on.\nThis applies to all Field Rules Studio edits.'} />
+              <Tip text={'Auto-save ALL\n\nWhen enabled, contract and mapping auto-save are locked on.\nThis applies to all Field Rules Studio edits.'} />
             </span>
           </button>
 
           <button
             onClick={() => {
-              if (autoSaveAllEnabled) return;
-              setAutoSaveEnabled(!autoSaveEnabled);
+              if (autoSaveWorkbookLocked) return;
+              setAutoSaveEnabled(!effectiveAutoSaveEnabled);
             }}
-            disabled={autoSaveAllEnabled}
+            disabled={autoSaveWorkbookLocked}
             className={`${btnSecondary} relative h-11 min-h-11 text-sm rounded inline-flex items-center justify-center overflow-visible whitespace-nowrap ${actionBtnWidth} transition-colors ${
               effectiveAutoSaveEnabled
                 ? 'bg-accent/10 text-accent border-accent/40 shadow-inner dark:bg-accent/20 dark:border-accent/50'
                 : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            } ${autoSaveAllEnabled ? 'opacity-80 cursor-not-allowed' : ''}`}
+            } ${autoSaveWorkbookLocked ? 'opacity-80 cursor-not-allowed' : ''}`}
           >
-            <span className="w-full text-center font-medium truncate">{autoSaveAllEnabled ? 'Auto-save On (Locked by Auto-save ALL)' : (autoSaveEnabled ? 'Auto-save On' : 'Auto-save Off')}</span>
+            <span className="w-full text-center font-medium truncate">
+              {autoSaveWorkbookLocked
+                ? `Auto-save On (Locked by ${autoSaveWorkbookLockReason || 'Auto-save ALL'})`
+                : (effectiveAutoSaveEnabled ? 'Auto-save On' : 'Auto-save Off')}
+            </span>
             <span className="absolute top-0 right-0 -ml-1 translate-x-1/2 -translate-y-1/2">
-              <Tip text={autoSaveAllEnabled
-                ? 'Locked by Auto-save ALL.\n\nDisable Auto-save ALL to control this toggle manually.'
-                : 'Auto-save\n\nWhen enabled, saves are automatically persisted after 1.5s of inactivity.\nAuto-save applies to all field rule and catalog edits.'}
+              <Tip text={autoSaveWorkbookLocked
+                ? `Locked by ${autoSaveWorkbookLockReason || 'Auto-save ALL'}.\n\nDisable it to control this toggle manually.`
+                : `Auto-save\n\nWhen enabled, saves are automatically persisted after ${studioDocsAutoSaveDelaySeconds}s of inactivity.\nAuto-save applies to all field rule and catalog edits.`}
               />
             </span>
           </button>
@@ -948,7 +1082,7 @@ export function StudioPage() {
             <span className="absolute top-0 right-0 -ml-1 translate-x-1/2 -translate-y-1/2">
               <Tip text={
                 'Compile & Generate Artifacts\n\n'
-                + 'Reads your Field Studio map + draft edits and generates production artifacts:\n\n'
+                + 'Reads your saved Field Studio docs and generates production artifacts:\n\n'
                 + '\u2022 field_rules.json \u2014 compiled field definitions\n'
                 + '\u2022 component_db/*.json \u2014 component databases\n'
                 + '\u2022 known_values.json \u2014 enum / known value lists\n'
@@ -957,7 +1091,7 @@ export function StudioPage() {
                 + '\u2022 Edit in Studio \u2192 Save Edits (fast preview)\n'
                 + '\u2022 Ready to finalize \u2192 Compile (generates files)\n\n'
                 + 'Status values:\n'
-                + '\u2022 "Not compiled" \u2014 draft edits are newer than compile.\n'
+                + '\u2022 "Not compiled" \u2014 saved docs are newer than compile.\n'
                 + '\u2022 "Compiled" \u2014 artifacts are up to date.'
               } />
             </span>
@@ -1069,15 +1203,16 @@ export function StudioPage() {
           selectedKey={selectedKey}
           onSelectKey={setSelectedKey}
           onSave={() => saveFromStore({ force: true })}
-          saving={saveDraftsMut.isPending}
-          saveSuccess={saveDraftsMut.isSuccess}
+          saving={saveStudioDocsMut.isPending}
+          saveSuccess={saveStudioDocsMut.isSuccess}
           knownValues={knownValuesRes?.fields || {}}
           enumLists={enumListsWithValues}
           componentDb={componentDbRes || {}}
           componentSources={(wbMap.component_sources || []) as ComponentSource[]}
           autoSaveEnabled={effectiveAutoSaveEnabled}
           setAutoSaveEnabled={setAutoSaveEnabled}
-          autoSaveLocked={autoSaveAllEnabled}
+          autoSaveLocked={autoSaveWorkbookLocked}
+          autoSaveLockReason={autoSaveWorkbookLockReason}
           onRunEnumConsistency={(fieldKey, options) => enumConsistencyMut.mutateAsync({
             field: fieldKey,
             apply: options?.reviewEnabled !== false,
@@ -1100,11 +1235,12 @@ export function StudioPage() {
           wbMap={wbMap}
           guardrails={studio?.guardrails as Record<string, unknown> | undefined}
           onSave={() => saveFromStore({ force: true })}
-          saving={saveDraftsMut.isPending}
-          saveSuccess={saveDraftsMut.isSuccess}
+          saving={saveStudioDocsMut.isPending}
+          saveSuccess={saveStudioDocsMut.isSuccess}
           autoSaveEnabled={effectiveAutoSaveEnabled}
           setAutoSaveEnabled={setAutoSaveEnabled}
-          autoSaveLocked={autoSaveAllEnabled}
+          autoSaveLocked={autoSaveWorkbookLocked}
+          autoSaveLockReason={autoSaveWorkbookLockReason}
         />
       ) : null}
 
@@ -1171,6 +1307,7 @@ function MappingStudioTab({
   const [showTooltipSource, toggleTooltipSource] = usePersistedToggle('studio:drawer:tooltipSource', false);
   const [showComponentSourceMapping, toggleComponentSourceMapping] = usePersistedToggle('studio:drawer:componentSourceMapping', false);
   const [showEnumSection, toggleEnumSection] = usePersistedToggle('studio:drawer:enumSection', false);
+  const studioMapAutoSaveDelaySeconds = (SETTINGS_AUTOSAVE_DEBOUNCE_MS.studioMap / 1000).toFixed(1);
 
   const mapSeedVersion = useMemo(() => {
     const componentSourceCount = Array.isArray(wbMap.component_sources) ? wbMap.component_sources.length : 0;
@@ -1302,9 +1439,19 @@ function MappingStudioTab({
     const timer = setTimeout(() => {
       onSaveMap(nextMap);
       lastMapAutoSaveFingerprintRef.current = nextFingerprint;
-    }, 1500);
+    }, SETTINGS_AUTOSAVE_DEBOUNCE_MS.studioMap);
     return () => clearTimeout(timer);
   }, [autoSaveMapEnabled, tooltipPath, compSources, dataLists, assembleMap, onSaveMap]);
+
+  useEffect(() => () => {
+    if (!autoSaveMapEnabled || !mapHydrated.current || saving) return;
+    const nextMap = assembleMap();
+    const nextFingerprint = autoSaveFingerprint(nextMap);
+    if (!nextFingerprint) return;
+    if (nextFingerprint === lastMapAutoSaveFingerprintRef.current) return;
+    onSaveMap(nextMap);
+    lastMapAutoSaveFingerprintRef.current = nextFingerprint;
+  }, [autoSaveMapEnabled, saving, tooltipPath, compSources, dataLists, assembleMap, onSaveMap]);
 
   // â"€â"€ Component source handlers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   function addComponentSource() {
@@ -1406,7 +1553,7 @@ function MappingStudioTab({
           <span className="absolute top-0 right-0 -ml-1 translate-x-1/2 -translate-y-1/2">
             <Tip text={autoSaveMapLocked
               ? 'Locked by Auto-save ALL.\n\nDisable Auto-save ALL to control this toggle manually.'
-              : 'Auto-save Mapping\n\nWhen enabled, mapping changes are automatically\nsaved after 1.5s of inactivity.\n\nWhat gets saved:\n\u2022 Tooltip source configuration\n\u2022 Component source mappings\n\u2022 Enum / data list definitions\n\nDefault: on. Setting persists across sessions.'}
+              : `Auto-save Mapping\n\nWhen enabled, mapping changes are automatically\nsaved after ${studioMapAutoSaveDelaySeconds}s of inactivity.\n\nWhat gets saved:\n\u2022 Tooltip source configuration\n\u2022 Component source mappings\n\u2022 Enum / data list definitions\n\nDefault: on. Setting persists across sessions.`}
             />
           </span>
         </button>
@@ -2295,11 +2442,18 @@ function EditableDataList({
               <label className={labelCls}>Effort (1-10) <Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.effort} /></label>
               <input
                 type="number"
-                min={1}
-                max={10}
+                min={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min}
+                max={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max}
                 className={inputCls + ' w-full'}
                 value={listPriority.effort}
-                onChange={(e) => updatePriority({ effort: Math.max(1, Math.min(10, parseInt(e.target.value, 10) || 1)) })}
+                onChange={(e) => updatePriority({
+                  effort: parseBoundedIntInput(
+                    e.target.value,
+                    STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min,
+                    STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max,
+                    STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.fallback,
+                  ),
+                })}
               />
             </div>
           </div>
@@ -2383,10 +2537,17 @@ function EditableDataList({
                 <input
                   className={inputCls + ' w-full'}
                   type="number"
-                  min={1}
-                  max={10}
+                  min={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min}
+                  max={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max}
                   value={explicitCalls || ''}
-                  onChange={(e) => updateAiAssist({ max_calls: parseInt(e.target.value, 10) || null })}
+                  onChange={(e) => {
+                    const parsed = parseOptionalPositiveIntInput(e.target.value);
+                    updateAiAssist({
+                      max_calls: parsed === null
+                        ? null
+                        : clampNumber(parsed, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max),
+                    });
+                  }}
                   placeholder={`auto (${derivedCalls})`}
                 />
               </div>
@@ -2395,11 +2556,18 @@ function EditableDataList({
                 <input
                   className={inputCls + ' w-full'}
                   type="number"
-                  min={256}
-                  max={65536}
+                  min={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min}
+                  max={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max}
                   step={1024}
                   value={listAiAssist.max_tokens || ''}
-                  onChange={(e) => updateAiAssist({ max_tokens: parseInt(e.target.value, 10) || null })}
+                  onChange={(e) => {
+                    const parsed = parseOptionalPositiveIntInput(e.target.value);
+                    updateAiAssist({
+                      max_tokens: parsed === null
+                        ? null
+                        : clampNumber(parsed, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max),
+                    });
+                  }}
                   placeholder={`auto (${effectiveMode === 'off' ? '0' : effectiveMode === 'advisory' ? '4096' : effectiveMode === 'planner' ? '8192' : '16384'})`}
                 />
               </div>
@@ -2822,10 +2990,17 @@ function EditableComponentSource({
               <input
                 className={`${inputCls} w-full`}
                 type="number"
-                min={1}
-                max={10}
+                min={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min}
+                max={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max}
                 value={sourcePriority.effort}
-                onChange={(e) => updatePriority({ effort: Math.max(1, Math.min(10, parseInt(e.target.value, 10) || 1)) })}
+                onChange={(e) => updatePriority({
+                  effort: parseBoundedIntInput(
+                    e.target.value,
+                    STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min,
+                    STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max,
+                    STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.fallback,
+                  ),
+                })}
               />
             </div>
           </div>
@@ -2909,10 +3084,17 @@ function EditableComponentSource({
                 <input
                   className={`${inputCls} w-full`}
                   type="number"
-                  min={1}
-                  max={10}
+                  min={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min}
+                  max={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max}
                   value={explicitCalls || ''}
-                  onChange={(e) => updateAiAssist({ max_calls: parseInt(e.target.value, 10) || null })}
+                  onChange={(e) => {
+                    const parsed = parseOptionalPositiveIntInput(e.target.value);
+                    updateAiAssist({
+                      max_calls: parsed === null
+                        ? null
+                        : clampNumber(parsed, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max),
+                    });
+                  }}
                   placeholder={`auto (${derivedCalls})`}
                 />
               </div>
@@ -2921,11 +3103,18 @@ function EditableComponentSource({
                 <input
                   className={`${inputCls} w-full`}
                   type="number"
-                  min={256}
-                  max={65536}
+                  min={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min}
+                  max={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max}
                   step={1024}
                   value={sourceAiAssist.max_tokens || ''}
-                  onChange={(e) => updateAiAssist({ max_tokens: parseInt(e.target.value, 10) || null })}
+                  onChange={(e) => {
+                    const parsed = parseOptionalPositiveIntInput(e.target.value);
+                    updateAiAssist({
+                      max_tokens: parsed === null
+                        ? null
+                        : clampNumber(parsed, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max),
+                    });
+                  }}
                   placeholder={`auto (${effectiveMode === 'off' ? '0' : effectiveMode === 'advisory' ? '4096' : effectiveMode === 'planner' ? '8192' : '16384'})`}
                 />
               </div>
@@ -3314,7 +3503,9 @@ function strN(obj: Record<string, unknown>, path: string, fallback = ''): string
 }
 function numN(obj: Record<string, unknown>, path: string, fallback = 0): number {
   const v = getN(obj, path);
-  return typeof v === 'number' ? v : (parseInt(String(v), 10) || fallback);
+  if (typeof v === 'number') return v;
+  const parsed = parseIntegerInput(v);
+  return parsed === null ? fallback : parsed;
 }
 function boolN(obj: Record<string, unknown>, path: string, fallback = false): boolean {
   const v = getN(obj, path);
@@ -3392,6 +3583,7 @@ function KeyNavigatorTab({
   autoSaveEnabled,
   setAutoSaveEnabled,
   autoSaveLocked,
+  autoSaveLockReason,
   onRunEnumConsistency,
   enumConsistencyPending,
 }: {
@@ -3408,6 +3600,7 @@ function KeyNavigatorTab({
   autoSaveEnabled: boolean;
   setAutoSaveEnabled: (v: boolean) => void;
   autoSaveLocked: boolean;
+  autoSaveLockReason?: string;
   onRunEnumConsistency: (fieldKey: string, options?: { formatGuidance?: string; reviewEnabled?: boolean }) => Promise<unknown>;
   enumConsistencyPending: boolean;
 }) {
@@ -3416,6 +3609,7 @@ function KeyNavigatorTab({
     addKey, removeKey, renameKey, bulkAddKeys,
     reorder, addGroup, removeGroup, renameGroup,
   } = useFieldRulesStore();
+  const contractDeferredLocked = true;
 
   // Add key UI state
   const [showAddForm, setShowAddForm] = useState(false);
@@ -3841,7 +4035,9 @@ function KeyNavigatorTab({
                           : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
                       } ${autoSaveLocked ? 'opacity-80 cursor-not-allowed' : ''}`}
                     >
-                      {autoSaveLocked ? 'Auto-save On (Locked by Auto-save ALL)' : (autoSaveEnabled ? 'Auto-save On' : 'Auto-save Off')}
+                      {autoSaveLocked
+                        ? `Auto-save On (Locked by ${autoSaveLockReason || 'Auto-save ALL'})`
+                        : (autoSaveEnabled ? 'Auto-save On' : 'Auto-save Off')}
                       {saving && (
                         <span
                           className="absolute inline-block h-2 w-2 rounded-full bg-gray-400 animate-pulse border border-white/90 shadow-sm"
@@ -3944,17 +4140,33 @@ function KeyNavigatorTab({
                 </div>
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Unknown Token<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.unknown_token} /></span><B p="contract.unknown_token" /></div>
-                  <ComboSelect value={strN(currentRule, 'contract.unknown_token', 'unk')} onChange={(v) => updateField(selectedKey, 'contract.unknown_token', v)} options={UNKNOWN_TOKENS} placeholder="unk" />
+                  <ComboSelect value={strN(currentRule, 'contract.unknown_token', 'unk')} onChange={(v) => updateField(selectedKey, 'contract.unknown_token', v)} options={UNKNOWN_TOKENS} placeholder="unk" disabled={contractDeferredLocked} />
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-3">
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Rounding Decimals<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.rounding_decimals} /></span><B p="contract.rounding.decimals" /></div>
-                  <input className={`${inputCls} w-full`} type="number" min={0} max={6} value={numN(currentRule, 'contract.rounding.decimals', 0)} onChange={(e) => updateField(selectedKey, 'contract.rounding.decimals', parseInt(e.target.value, 10) || 0)} />
+                  <input
+                    className={`${inputCls} w-full`}
+                    type="number"
+                    min={STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.min}
+                    max={STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.max}
+                    value={numN(currentRule, 'contract.rounding.decimals', 0)}
+                    onChange={(e) => updateField(
+                      selectedKey,
+                      'contract.rounding.decimals',
+                      parseBoundedIntInput(
+                        e.target.value,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.min,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.max,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.fallback,
+                      ),
+                    )}
+                  />
                 </div>
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Rounding Mode<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.rounding_mode} /></span><B p="contract.rounding.mode" /></div>
-                  <select className={`${selectCls} w-full`} value={strN(currentRule, 'contract.rounding.mode', 'nearest')} onChange={(e) => updateField(selectedKey, 'contract.rounding.mode', e.target.value)}>
+                  <select className={`${selectCls} w-full`} value={strN(currentRule, 'contract.rounding.mode', 'nearest')} onChange={(e) => updateField(selectedKey, 'contract.rounding.mode', e.target.value)} disabled={contractDeferredLocked}>
                     <option value="nearest">nearest</option>
                     <option value="floor">floor</option>
                     <option value="ceil">ceil</option>
@@ -3962,11 +4174,12 @@ function KeyNavigatorTab({
                 </div>
                 <div className="flex items-end">
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={boolN(currentRule, 'contract.unknown_reason_required', true)} onChange={(e) => updateField(selectedKey, 'contract.unknown_reason_required', e.target.checked)} className="rounded border-gray-300" />
+                    <input type="checkbox" checked={boolN(currentRule, 'contract.unknown_reason_required', true)} onChange={(e) => updateField(selectedKey, 'contract.unknown_reason_required', e.target.checked)} className="rounded border-gray-300" disabled={contractDeferredLocked} />
                     <span className="text-xs text-gray-500">Require unknown reason<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.require_unknown_reason} /></span>
                   </label>
                 </div>
               </div>
+              <div className="text-xs text-red-600">Deferred: runtime wiring in progress</div>
             </Section>
 
             {/* â"€â"€ Priority â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
@@ -4009,7 +4222,23 @@ function KeyNavigatorTab({
                 </div>
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Effort (1-10)<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.effort} /></span><B p="priority.effort" /></div>
-                  <input className={`${inputCls} w-full`} type="number" min={1} max={10} value={numN(currentRule, 'priority.effort', numN(currentRule, 'effort', 3))} onChange={(e) => updateField(selectedKey, 'priority.effort', parseInt(e.target.value, 10) || 1)} />
+                  <input
+                    className={`${inputCls} w-full`}
+                    type="number"
+                    min={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min}
+                    max={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max}
+                    value={numN(currentRule, 'priority.effort', numN(currentRule, 'effort', 3))}
+                    onChange={(e) => updateField(
+                      selectedKey,
+                      'priority.effort',
+                      parseBoundedIntInput(
+                        e.target.value,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max,
+                        STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.fallback,
+                      ),
+                    )}
+                  />
                 </div>
               </div>
               <div className="flex gap-6">
@@ -4078,11 +4307,46 @@ function KeyNavigatorTab({
                       </div>
                       <div>
                         <div className={`${labelCls} flex items-center`}><span>Max Calls<Tip text={STUDIO_TIPS.ai_max_calls} style={{ position: 'relative', left: '-3px', top: '-4px' }} /></span><B p="ai_assist.max_calls" /></div>
-                        <input className={`${inputCls} w-full`} type="number" min={1} max={10} value={explicitCalls || ''} onChange={(e) => updateField(selectedKey, 'ai_assist.max_calls', parseInt(e.target.value, 10) || null)} placeholder={`auto (${derivedCalls})`} />
+                        <input
+                          className={`${inputCls} w-full`}
+                          type="number"
+                          min={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min}
+                          max={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max}
+                          value={explicitCalls || ''}
+                          onChange={(e) => {
+                            const parsed = parseOptionalPositiveIntInput(e.target.value);
+                            updateField(
+                              selectedKey,
+                              'ai_assist.max_calls',
+                              parsed === null
+                                ? null
+                                : clampNumber(parsed, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max),
+                            );
+                          }}
+                          placeholder={`auto (${derivedCalls})`}
+                        />
                       </div>
                       <div>
                         <div className={`${labelCls} flex items-center`}><span>Max Tokens<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.ai_max_tokens} /></span><B p="ai_assist.max_tokens" /></div>
-                        <input className={`${inputCls} w-full`} type="number" min={256} max={65536} step={1024} value={numN(currentRule, 'ai_assist.max_tokens', 0) || ''} onChange={(e) => updateField(selectedKey, 'ai_assist.max_tokens', parseInt(e.target.value, 10) || null)} placeholder={`auto (${effectiveMode === 'off' ? '0' : effectiveMode === 'advisory' ? '4096' : effectiveMode === 'planner' ? '8192' : '16384'})`} />
+                        <input
+                          className={`${inputCls} w-full`}
+                          type="number"
+                          min={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min}
+                          max={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max}
+                          step={1024}
+                          value={numN(currentRule, 'ai_assist.max_tokens', 0) || ''}
+                          onChange={(e) => {
+                            const parsed = parseOptionalPositiveIntInput(e.target.value);
+                            updateField(
+                              selectedKey,
+                              'ai_assist.max_tokens',
+                              parsed === null
+                                ? null
+                                : clampNumber(parsed, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max),
+                            );
+                          }}
+                          placeholder={`auto (${effectiveMode === 'off' ? '0' : effectiveMode === 'advisory' ? '4096' : effectiveMode === 'planner' ? '8192' : '16384'})`}
+                        />
                       </div>
                     </div>
 
@@ -4133,7 +4397,11 @@ function KeyNavigatorTab({
                       const enumPolicy = strN(currentRule, 'enum.policy', strN(currentRule, 'enum_policy', 'open'));
                       const enumSource = strN(currentRule, 'enum.source', strN(currentRule, 'enum_source'));
                       const evidenceReq = boolN(currentRule, 'evidence.evidence_required', boolN(currentRule, 'evidence_required'));
-                      const minRefs = numN(currentRule, 'evidence.min_evidence_refs', numN(currentRule, 'min_evidence_refs', 1));
+                      const minRefs = numN(
+                        currentRule,
+                        'evidence.min_evidence_refs',
+                        numN(currentRule, 'min_evidence_refs', STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback),
+                      );
                       const parseTemplate = strN(currentRule, 'parse.template', strN(currentRule, 'parse_template'));
                       const componentType = strN(currentRule, 'component.type', strN(currentRule, 'component_type'));
 
@@ -4416,34 +4684,86 @@ function KeyNavigatorTab({
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <div className={`${labelCls} flex items-center`}><span>Fuzzy Threshold<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_fuzzy_threshold} /></span><B p="component.match.fuzzy_threshold" /></div>
-                          <input type="number" min={0} max={1} step={0.05}
+                          <input
+                            type="number"
+                            min={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min}
+                            max={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max}
+                            step={0.05}
                             className={`${selectCls} w-full`}
-                            value={numN(currentRule, 'component.match.fuzzy_threshold', 0.75)}
-                            onChange={(e) => updateField(selectedKey, 'component.match.fuzzy_threshold', parseFloat(e.target.value) || 0.75)}
+                            value={numN(currentRule, 'component.match.fuzzy_threshold', STUDIO_COMPONENT_MATCH_DEFAULTS.fuzzyThreshold)}
+                            onChange={(e) => updateField(
+                              selectedKey,
+                              'component.match.fuzzy_threshold',
+                              parseBoundedFloatInput(
+                                e.target.value,
+                                STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min,
+                                STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max,
+                                STUDIO_COMPONENT_MATCH_DEFAULTS.fuzzyThreshold,
+                              ),
+                            )}
                           />
                         </div>
                         <div>
                           <div className={`${labelCls} flex items-center`}><span>Name Weight<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_name_weight} /></span><B p="component.match.name_weight" /></div>
-                          <input type="number" min={0} max={1} step={0.05}
+                          <input
+                            type="number"
+                            min={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min}
+                            max={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max}
+                            step={0.05}
                             className={`${selectCls} w-full`}
-                            value={numN(currentRule, 'component.match.name_weight', 0.4)}
-                            onChange={(e) => updateField(selectedKey, 'component.match.name_weight', parseFloat(e.target.value) || 0.4)}
+                            value={numN(currentRule, 'component.match.name_weight', STUDIO_COMPONENT_MATCH_DEFAULTS.nameWeight)}
+                            onChange={(e) => updateField(
+                              selectedKey,
+                              'component.match.name_weight',
+                              parseBoundedFloatInput(
+                                e.target.value,
+                                STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min,
+                                STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max,
+                                STUDIO_COMPONENT_MATCH_DEFAULTS.nameWeight,
+                              ),
+                            )}
                           />
                         </div>
                         <div>
                           <div className={`${labelCls} flex items-center`}><span>Auto-Accept Score<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_auto_accept_score} /></span><B p="component.match.auto_accept_score" /></div>
-                          <input type="number" min={0} max={1} step={0.05}
+                          <input
+                            type="number"
+                            min={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min}
+                            max={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max}
+                            step={0.05}
                             className={`${selectCls} w-full`}
-                            value={numN(currentRule, 'component.match.auto_accept_score', 0.95)}
-                            onChange={(e) => updateField(selectedKey, 'component.match.auto_accept_score', parseFloat(e.target.value) || 0.95)}
+                            value={numN(currentRule, 'component.match.auto_accept_score', STUDIO_COMPONENT_MATCH_DEFAULTS.autoAcceptScore)}
+                            onChange={(e) => updateField(
+                              selectedKey,
+                              'component.match.auto_accept_score',
+                              parseBoundedFloatInput(
+                                e.target.value,
+                                STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min,
+                                STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max,
+                                STUDIO_COMPONENT_MATCH_DEFAULTS.autoAcceptScore,
+                              ),
+                            )}
                           />
                         </div>
                         <div>
                           <div className={`${labelCls} flex items-center`}><span>Flag Review Score<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_flag_review_score} /></span><B p="component.match.flag_review_score" /></div>
-                          <input type="number" min={0} max={1} step={0.05}
+                          <input
+                            type="number"
+                            min={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min}
+                            max={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max}
+                            step={0.05}
                             className={`${selectCls} w-full`}
-                            value={numN(currentRule, 'component.match.flag_review_score', 0.65)}
-                            onChange={(e) => updateField(selectedKey, 'component.match.flag_review_score', parseFloat(e.target.value) || 0.65)}
+                            value={numN(currentRule, 'component.match.flag_review_score', STUDIO_COMPONENT_MATCH_DEFAULTS.flagReviewScore)}
+                            onChange={(e) => updateField(
+                              selectedKey,
+                              'component.match.flag_review_score',
+                              parseBoundedFloatInput(
+                                e.target.value,
+                                STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min,
+                                STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max,
+                                STUDIO_COMPONENT_MATCH_DEFAULTS.flagReviewScore,
+                              ),
+                            )}
                           />
                         </div>
                       </div>
@@ -4452,10 +4772,23 @@ function KeyNavigatorTab({
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <div className={`${labelCls} flex items-center`}><span>Property Weight<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_property_weight} /></span><B p="component.match.property_weight" /></div>
-                          <input type="number" min={0} max={1} step={0.05}
+                          <input
+                            type="number"
+                            min={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min}
+                            max={STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max}
+                            step={0.05}
                             className={`${selectCls} w-full`}
-                            value={numN(currentRule, 'component.match.property_weight', 0.6)}
-                            onChange={(e) => updateField(selectedKey, 'component.match.property_weight', parseFloat(e.target.value) || 0.6)}
+                            value={numN(currentRule, 'component.match.property_weight', STUDIO_COMPONENT_MATCH_DEFAULTS.propertyWeight)}
+                            onChange={(e) => updateField(
+                              selectedKey,
+                              'component.match.property_weight',
+                              parseBoundedFloatInput(
+                                e.target.value,
+                                STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min,
+                                STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.max,
+                                STUDIO_COMPONENT_MATCH_DEFAULTS.propertyWeight,
+                              ),
+                            )}
                           />
                         </div>
                         <div className="col-span-2">
@@ -4551,7 +4884,27 @@ function KeyNavigatorTab({
                 <div className="space-y-2">
                   <div>
                     <div className={`${labelCls} flex items-center`}><span>Min Evidence Refs<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.min_evidence_refs} /></span><B p="evidence.min_evidence_refs" /></div>
-                    <input className={`${inputCls} w-full`} type="number" min={0} max={10} value={numN(currentRule, 'evidence.min_evidence_refs', numN(currentRule, 'min_evidence_refs', 1))} onChange={(e) => updateField(selectedKey, 'evidence.min_evidence_refs', parseInt(e.target.value, 10) || 0)} />
+                    <input
+                      className={`${inputCls} w-full`}
+                      type="number"
+                      min={STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.min}
+                      max={STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.max}
+                      value={numN(
+                        currentRule,
+                        'evidence.min_evidence_refs',
+                        numN(currentRule, 'min_evidence_refs', STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback),
+                      )}
+                      onChange={(e) => updateField(
+                        selectedKey,
+                        'evidence.min_evidence_refs',
+                        parseBoundedIntInput(
+                          e.target.value,
+                          STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.min,
+                          STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.max,
+                          STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback,
+                        ),
+                      )}
+                    />
                   </div>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={boolN(currentRule, 'evidence.required', boolN(currentRule, 'evidence_required', true))} onChange={(e) => updateField(selectedKey, 'evidence.required', e.target.checked)} className="rounded border-gray-300" />
@@ -5048,6 +5401,7 @@ function CompileReportsTab({
     </div>
   );
 }
+
 
 
 

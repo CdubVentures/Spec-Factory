@@ -109,7 +109,7 @@ Frontend propagation + review UI:
 
 ## Data authority model (authoritative behavior)
 
-1. Authoring sources (workbook map, drafts, generated artifacts) define category authority.
+1. Authoring sources (field-studio map, drafts, generated artifacts) define category authority.
 2. Mutation routes emit typed `data-change` events with category scope.
 3. WebSocket server filters by category (`dataChangeMatchesCategory`).
 4. Frontend subscribers invalidate query families from `domains` mapping.

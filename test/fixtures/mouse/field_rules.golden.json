@@ -10603,9 +10603,9 @@
       ]
     }
   },
-  "source_workbook": "mouseData.xlsm",
+  "source_context": "field_studio_map",
   "version": "field_rules_mouse_compiled_v1",
-  "workbook_tabs": {
+  "source_tabs": {
     "data_lists": {
       "notes": "Columns contain canonical lists for form_factor/shape/hump/front_flare/etc.",
       "role": "enum buckets (canonical values)"

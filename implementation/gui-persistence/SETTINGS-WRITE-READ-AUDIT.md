@@ -1,6 +1,6 @@
 # Settings Write/Read Audit
 
-Audit date: 2026-02-24
+Audit date: 2026-02-25
 
 Latest full-knob audit artifact:
 
@@ -21,7 +21,7 @@ This audit maps frontend settings/save/autosave controls to:
 It separates:
 
 - config settings (should become single authoritative settings store)
-- authoring settings/data (studio map + drafts)
+- authoring settings/data (studio map docs)
 - session UI preferences (collapse/tab/filter state)
 
 ## Baseline Status
@@ -47,8 +47,8 @@ Commands used:
 
 | Surface | Frontend writers | Save mode | API route | Backend persistence target | Frontend read path | Live propagation |
 |---|---|---|---|---|---|---|
-| Field Studio map (mapping contract) | `tools/gui-react/src/pages/studio/StudioPage.tsx` (`MappingStudioTab`) via `tools/gui-react/src/pages/studio/studioPersistenceAuthority.ts` | Manual + autosave (1.5s) | `PUT /api/v1/studio/:category/field-studio-map` | `_control_plane/field_studio_map.json` and `_control_plane/workbook_map.json` (both written by `saveWorkbookMap`) | `GET /api/v1/studio/:category/field-studio-map` | `field-studio-map-saved` -> domains `studio,mapping,review-layout` |
-| Field rules drafts | `tools/gui-react/src/pages/studio/StudioPage.tsx` (`KeyNavigatorTab`, `FieldRulesWorkbench`) via `tools/gui-react/src/pages/studio/studioPersistenceAuthority.ts` | Manual + autosave (1.5s) | `POST /api/v1/studio/:category/save-drafts` | `_control_plane/field_rules_draft.json`, `pending_renames.json`, optional `ui_field_catalog_draft.json` | `GET /api/v1/studio/:category/drafts` and merged payload reads | `studio-drafts-saved` -> domains `studio,review-layout,labels,product` |
+| Field Studio map (mapping contract) | `tools/gui-react/src/pages/studio/StudioPage.tsx` (`MappingStudioTab`) via `tools/gui-react/src/pages/studio/studioPersistenceAuthority.ts` | Manual + autosave (1.5s) | `PUT /api/v1/studio/:category/field-studio-map` | `_control_plane/field_studio_map.json` (written by `saveFieldStudioMap`) | `GET /api/v1/studio/:category/field-studio-map` | `field-studio-map-saved` -> domains `studio,mapping,review-layout` |
+| Field Studio docs (key navigator/workbench) | `tools/gui-react/src/pages/studio/StudioPage.tsx` (`KeyNavigatorTab`, `FieldRulesWorkbench`) via `tools/gui-react/src/pages/studio/studioPersistenceAuthority.ts` | Manual + autosave (1.5s) | `PUT /api/v1/studio/:category/field-studio-map` | `_control_plane/field_studio_map.json` (`selected_keys` + `field_overrides`) | `GET /api/v1/studio/:category/payload` merged reads + `GET /api/v1/studio/:category/field-studio-map` | `field-studio-map-saved` -> domains `studio,mapping,review-layout` |
 
 ## Session-Scoped UI Preference Stores
 
@@ -99,6 +99,33 @@ These are not "settings files", but are save/autosave paths that mutate authorit
 
 - The page persists destination/credentials config and browse-path session state independently of the shared authority slices.
 
+5. Storage page save/autosave paths are hydration-gated (resolved).
+
+- `tools/gui-react/src/pages/storage/StoragePage.tsx` now gates save/autosave until first server hydration settles.
+- Regression guard: `test/storageSettingsHydrationGate.test.js`.
+
+6. LLM dormant-key audit artifact drift is resolved.
+
+- `implementation/gui-persistence/llm-route-field-usage-audit.json` is now generated from source by `scripts/generate-llm-route-field-usage-audit.js`.
+- Regression guard `test/llmRouteFieldUsageAudit.test.js` enforces artifact parity and allows only derived `effort_band` as dormant.
+
+7. Studio autosave status parity is resolved for saved map-doc writes.
+
+- `tools/gui-react/src/pages/studio/StudioPage.tsx` now reports save status in deterministic order: pending -> error -> unsaved -> autosave idle.
+- Autosave-on dirty state no longer renders `Up to date`; it renders `Unsaved (auto-save pending)` until persistence succeeds.
+- Regression guard: `test/studioAutosaveStatusParity.test.js`.
+
+8. Backend settings route write-order race is resolved.
+
+- `src/api/routes/configRoutes.js` now awaits persistence writes for `/runtime-settings`, `/convergence-settings`, and `/storage-settings` before returning success.
+- This prevents older async writes from finishing after newer saves and overwriting persisted snapshots with stale values.
+- Regression guard: `test/runtimeSettingsApi.test.js`.
+
+9. LLM autosave status parity is resolved in header save-state text.
+
+- `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` now shows `Unsaved (auto-save pending).` when autosave is enabled and edits are dirty.
+- Regression guard: `test/llmSettingsAutosaveStatusParity.test.js`.
+
 ## Initial Migration Target (Authority Model)
 
 1. Introduce one `settingsAuthorityStore` in frontend:
@@ -114,7 +141,7 @@ These are not "settings files", but are save/autosave paths that mutate authorit
 - llm route settings metadata/state
 - autosave preferences
 
-3. Keep domain authoring payloads (studio map/drafts) category-scoped:
+3. Keep domain authoring payloads (studio map docs) category-scoped:
 
 - still use dedicated endpoints
 - but route save/autosave state and preferences through the same authority store contract
@@ -130,4 +157,4 @@ These are not "settings files", but are save/autosave paths that mutate authorit
 - `tools/gui-react/src/stores/runtimeSettingsAuthority.ts` owns runtime settings read/write/autosave.
 - `tools/gui-react/src/stores/convergenceSettingsAuthority.ts` owns convergence settings read/write across Indexing + Pipeline Settings.
 - `tools/gui-react/src/stores/llmSettingsAuthority.ts` owns LLM route matrix read/write/reset/autosave.
-- `tools/gui-react/src/pages/studio/studioPersistenceAuthority.ts` owns Studio map + draft write routes (manual + autosave callers).
+- `tools/gui-react/src/pages/studio/studioPersistenceAuthority.ts` owns Studio map-doc write route (manual + autosave callers).

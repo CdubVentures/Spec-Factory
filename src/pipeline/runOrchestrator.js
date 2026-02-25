@@ -112,14 +112,16 @@ export async function orchestrateRound({
   config,
   s3Key,
   jobOverride,
-  roundContext
+  roundContext,
+  runIdOverride = ''
 }) {
   return runProductFn({
     storage,
     config,
     s3Key,
     jobOverride,
-    roundContext
+    roundContext,
+    runIdOverride
   });
 }
 
@@ -272,6 +274,7 @@ export async function runConvergenceLoop({
   config,
   s3Key,
   job = {},
+  initialRunId = '',
   maxRounds,
   mode = 'balanced',
   logger = null
@@ -401,7 +404,8 @@ export async function runConvergenceLoop({
       storage,
       config,
       s3Key,
-      roundContext
+      roundContext,
+      runIdOverride: round === 0 ? String(initialRunId || '').trim() : '',
     });
 
     finalResult = roundResult;

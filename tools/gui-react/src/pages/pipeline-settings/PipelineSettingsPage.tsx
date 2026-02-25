@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useConvergenceSettingsAuthority } from '../../stores/convergenceSettingsAuthority';
-import { CONVERGENCE_KNOB_GROUPS } from '../../stores/settingsManifest';
+import { useState } from 'react';
+import { CONVERGENCE_KNOB_GROUPS, CONVERGENCE_SETTING_DEFAULTS, useConvergenceSettingsAuthority } from '../../stores/convergenceSettingsAuthority';
 import { useSourceStrategyAuthority, type SourceStrategyRow } from '../../stores/sourceStrategyAuthority';
 import { useUiStore } from '../../stores/uiStore';
+import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore';
 
 const cardCls = 'bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 p-4';
 const inputCls = 'px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 w-full';
@@ -17,11 +17,15 @@ function KnobInput({
   onChange: (v: number | boolean) => void;
 }) {
   if (knob.type === 'bool') {
+    const fallback = CONVERGENCE_SETTING_DEFAULTS[knob.key as keyof typeof CONVERGENCE_SETTING_DEFAULTS];
+    const boolValue = typeof value === 'boolean'
+      ? value
+      : (typeof fallback === 'boolean' ? fallback : false);
     return (
       <label className="flex items-center gap-2 text-xs">
         <input
           type="checkbox"
-          checked={Boolean(value)}
+          checked={boolValue}
           onChange={(e) => onChange(e.target.checked)}
         />
         <span>{knob.label}</span>
@@ -29,7 +33,8 @@ function KnobInput({
     );
   }
 
-  const fallback = knob.min;
+  const defaultValue = CONVERGENCE_SETTING_DEFAULTS[knob.key as keyof typeof CONVERGENCE_SETTING_DEFAULTS];
+  const fallback = typeof defaultValue === 'number' ? defaultValue : knob.min;
   const numValue = typeof value === 'number' ? value : fallback;
   const step = 'step' in knob ? knob.step : 1;
 
@@ -140,6 +145,9 @@ function SourceStrategyTable({
 
 export function PipelineSettingsPage() {
   const category = useUiStore((s) => s.category);
+  const isAll = category === 'all';
+  const convergenceSettingsReady = useSettingsAuthorityStore((s) => s.snapshot.convergenceReady);
+  const sourceStrategySettingsReady = useSettingsAuthorityStore((s) => s.snapshot.sourceStrategyReady);
   const [sourceStrategySaveState, setSourceStrategySaveState] = useState<{
     kind: 'idle' | 'ok' | 'error';
     message: string;
@@ -190,6 +198,7 @@ export function PipelineSettingsPage() {
     deleteRow,
   } = useSourceStrategyAuthority({
     category,
+    enabled: !isAll,
     onError: (error) => {
       setSourceStrategySaveState({
         kind: 'error',
@@ -204,16 +213,8 @@ export function PipelineSettingsPage() {
     },
   });
 
-  useEffect(() => {
-    if (dirty && saveStatus.kind !== 'idle') {
-      setSaveStatus({ kind: 'idle', message: '' });
-    }
-  }, [dirty, saveStatus.kind]);
-
-  useEffect(() => {
-    if (!sourceStrategySaving) return;
-    setSourceStrategySaveState({ kind: 'idle', message: '' });
-  }, [sourceStrategySaving]);
+  const convergenceHydrated = convergenceSettingsReady && !isLoading;
+  const sourceStrategyHydrated = isAll || (sourceStrategySettingsReady && !sourceStrategyLoading);
 
   return (
     <div className="space-y-4">
@@ -228,13 +229,14 @@ export function PipelineSettingsPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => { void reload(); }}
+              disabled={!convergenceHydrated || isSaving}
               className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               Reload
             </button>
             <button
               onClick={save}
-              disabled={!dirty || isSaving}
+              disabled={!convergenceHydrated || !dirty || isSaving}
               className="px-3 py-1.5 text-xs bg-accent text-white rounded hover:bg-blue-700 disabled:opacity-50"
             >
               {isSaving ? 'Saving...' : 'Save Settings'}
@@ -262,7 +264,7 @@ export function PipelineSettingsPage() {
         </p>
       </div>
 
-      {isLoading ? (
+      {!convergenceHydrated ? (
         <p className="text-xs text-gray-500">Loading settings...</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -286,10 +288,10 @@ export function PipelineSettingsPage() {
 
       <div className={cardCls}>
         <div className="text-xs text-gray-700 dark:text-gray-300 mb-2">
-          {sourceStrategySaveState.kind === 'error'
-            ? sourceStrategySaveState.message
-            : sourceStrategySaving
-              ? 'Updating source strategy...'
+          {sourceStrategySaving
+            ? 'Updating source strategy...'
+            : sourceStrategySaveState.kind === 'error'
+              ? sourceStrategySaveState.message
               : sourceStrategySaveState.kind === 'ok'
                 ? sourceStrategySaveState.message
                 : ''}
@@ -298,19 +300,23 @@ export function PipelineSettingsPage() {
         <p className="text-[11px] text-gray-500 mb-3">
           Configurable source table — replaces hardcoded adapters. LLM predicts URLs for enabled sources.
         </p>
-        <SourceStrategyTable
-          rows={sourceStrategyRows}
-          isLoading={sourceStrategyLoading}
-          isSaving={sourceStrategySaving}
-          onToggleRow={(row) => {
-            setSourceStrategySaveState({ kind: 'idle', message: '' });
-            toggleEnabled(row);
-          }}
-          onDeleteRow={(id) => {
-            setSourceStrategySaveState({ kind: 'idle', message: '' });
-            deleteRow(id);
-          }}
-        />
+        {isAll ? (
+          <p className="text-xs text-gray-500">Select a specific category to manage source strategy rows.</p>
+        ) : !sourceStrategyHydrated ? (
+          <p className="text-xs text-gray-500">Loading source strategy...</p>
+        ) : (
+          <SourceStrategyTable
+            rows={sourceStrategyRows}
+            isLoading={sourceStrategyLoading}
+            isSaving={sourceStrategySaving}
+            onToggleRow={(row) => {
+              toggleEnabled(row);
+            }}
+            onDeleteRow={(id) => {
+              deleteRow(id);
+            }}
+          />
+        )}
       </div>
     </div>
   );

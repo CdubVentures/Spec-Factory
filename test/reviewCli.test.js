@@ -50,7 +50,7 @@ async function seedHelperArtifacts(helperRoot) {
         difficulty: 'easy',
         effort: 2,
         contract: { type: 'number', shape: 'scalar', unit: 'g' },
-        excel: {
+        field_studio_hints: {
           dataEntry: { sheet: 'dataEntry', row: 9, key_cell: 'B9' }
         },
         ui: { label: 'Weight', group: 'General', order: 9 }

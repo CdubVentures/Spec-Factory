@@ -28,7 +28,7 @@ export function buildAuthorityVersionToken(snapshot) {
   const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
   const version = source.version && typeof source.version === 'object' ? source.version : source;
   return [
-    normalizedToken(version.draft_hash) || 'none',
+    normalizedToken(version.map_hash) || 'none',
     normalizedToken(version.compiled_hash) || 'none',
     String(normalizedSyncVersion(version.specdb_sync_version)),
     normalizedToken(version.updated_at) || '',

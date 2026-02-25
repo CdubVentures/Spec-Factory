@@ -1,4 +1,4 @@
-import type { PrefetchSearchResult, SearchResultDetail, SearchPlanPass } from '../types';
+import type { PrefetchSearchResult, SearchResultDetail, SearchPlanPass, PrefetchLiveSettings } from '../types';
 
 export interface DecisionCounts {
   keep: number;
@@ -98,3 +98,17 @@ export declare function extractSiteScope(
 export declare function providerDisplayLabel(
   provider: string | undefined,
 ): string;
+
+export interface DomainCapSummary {
+  value: string;
+  tooltip: string;
+  profile: string;
+  queryCap: number;
+  discoveredCap: number;
+  triageCap: number;
+  uberDomainFloor: number;
+}
+
+export declare function resolveDomainCapSummary(
+  liveSettings: Partial<PrefetchLiveSettings>,
+): DomainCapSummary;

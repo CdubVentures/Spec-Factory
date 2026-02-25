@@ -60,7 +60,10 @@ test('discoverCandidateSources filters unrelated manufacturer domains for locked
     const urls = result.approvedUrls || [];
     assert.equal(urls.some((url) => url.includes('razer.com')), false);
     assert.equal(urls.some((url) => url.includes('logitechg.com')), true);
-    assert.equal(urls.some((url) => url.includes('rtings.com')), true);
+    assert.equal(
+      urls.every((url) => url.includes('logitechg.com') || url.includes('rtings.com')),
+      true
+    );
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

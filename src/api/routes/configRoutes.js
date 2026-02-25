@@ -16,6 +16,15 @@ import {
   snapshotStorageSettings,
   snapshotUiSettings,
 } from '../services/userSettingsService.js';
+import {
+  CONVERGENCE_SETTINGS_ROUTE_PUT,
+  RUNTIME_SETTINGS_ROUTE_GET,
+  RUNTIME_SETTINGS_ROUTE_PUT,
+} from '../services/settingsContract.js';
+import {
+  recordSettingsWriteAttempt,
+  recordSettingsWriteOutcome,
+} from '../../observability/settingsPersistenceCounters.js';
 
 export function registerConfigRoutes(ctx) {
   const {
@@ -48,17 +57,64 @@ export function registerConfigRoutes(ctx) {
     normalizeRunDataStorageSettings(runDataStorageState, runDataStorageState),
   );
   const helperFilesRoot = HELPER_ROOT || config?.helperFilesRoot || 'helper_files';
+  const canonicalOnlySettingsWrites = (
+    (typeof config?.settingsCanonicalOnlyWrites === 'boolean')
+      ? config.settingsCanonicalOnlyWrites
+      : (() => {
+          const raw = process.env.SETTINGS_CANONICAL_ONLY_WRITES;
+          if (raw === undefined || raw === null || raw === '') return false;
+          const token = String(raw).trim().toLowerCase();
+          if (['1', 'true', 'yes', 'on'].includes(token)) return true;
+          if (['0', 'false', 'no', 'off'].includes(token)) return false;
+          return false;
+        })()
+  );
   const initialUserSettings = loadUserSettingsSync({ helperFilesRoot });
   const uiSettingsState = snapshotUiSettings(initialUserSettings?.ui || {});
 
-  async function persistSettingsFile(filename, snapshot) {
-    const dir = path.join(HELPER_ROOT || 'helper_files', '_runtime');
+  async function persistLegacySettingsFile(filename, snapshot) {
+    if (canonicalOnlySettingsWrites) return;
+    const dir = path.join(helperFilesRoot, '_runtime');
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(
       path.join(dir, filename),
       JSON.stringify(snapshot, null, 2) + '\n',
       'utf8',
     );
+  }
+
+  function captureConfigValues(source, keys) {
+    const snapshot = {};
+    for (const key of keys) {
+      snapshot[key] = source[key];
+    }
+    return snapshot;
+  }
+
+  function restoreConfigValues(target, snapshot) {
+    for (const [key, value] of Object.entries(snapshot || {})) {
+      if (value === undefined) {
+        delete target[key];
+      } else {
+        target[key] = value;
+      }
+    }
+  }
+
+  function recordRouteWriteAttempt(section, target) {
+    recordSettingsWriteAttempt({
+      sections: [section],
+      target,
+    });
+  }
+
+  function recordRouteWriteOutcome(section, target, success, reason = '') {
+    recordSettingsWriteOutcome({
+      sections: [section],
+      target,
+      success,
+      reason,
+    });
   }
 
   return async function handleConfigRoutes(parts, params, method, req, res) {
@@ -84,13 +140,21 @@ export function registerConfigRoutes(ctx) {
         applied[key] = enabled;
       }
       const snapshot = snapshotUiSettings(uiSettingsState);
+      const appliedSnapshot = {};
+      for (const key of Object.keys(applied)) {
+        if (!Object.prototype.hasOwnProperty.call(snapshot, key)) continue;
+        appliedSnapshot[key] = snapshot[key];
+      }
       Object.assign(uiSettingsState, snapshot);
+      recordRouteWriteAttempt('ui', 'ui-settings-route');
       try {
         await persistUserSettingsSections({
           helperFilesRoot,
           ui: snapshot,
         });
+        recordRouteWriteOutcome('ui', 'ui-settings-route', true);
       } catch {
+        recordRouteWriteOutcome('ui', 'ui-settings-route', false, 'ui_settings_persist_failed');
         return jsonRes(res, 500, { error: 'ui_settings_persist_failed' });
       }
       emitDataChange({
@@ -99,10 +163,10 @@ export function registerConfigRoutes(ctx) {
         domains: ['settings'],
         meta: {
           section: 'ui',
-          applied,
+          applied: appliedSnapshot,
         },
       });
-      return jsonRes(res, 200, { ok: true, ...snapshot, applied });
+      return jsonRes(res, 200, { ok: true, ...snapshot, applied: appliedSnapshot });
     }
 
     if (
@@ -151,12 +215,25 @@ export function registerConfigRoutes(ctx) {
           return jsonRes(res, 400, { error: message });
         }
       }
+      const previousStorageSnapshot = snapshotStorageSettings(runDataStorageState);
       Object.assign(runDataStorageState, normalized, { updatedAt: new Date().toISOString() });
       const storageSnapshot = snapshotStorageSettings(runDataStorageState);
-      persistUserSettingsSections({
-        helperFilesRoot,
-        storage: storageSnapshot,
-      }).catch(() => {});
+      recordRouteWriteAttempt('storage', 'storage-settings-route');
+      try {
+        await persistLegacySettingsFile(
+          'storage-settings.json',
+          sanitizeRunDataStorageSettingsForResponse(runDataStorageState),
+        );
+        await persistUserSettingsSections({
+          helperFilesRoot,
+          storage: storageSnapshot,
+        });
+        recordRouteWriteOutcome('storage', 'storage-settings-route', true);
+      } catch {
+        recordRouteWriteOutcome('storage', 'storage-settings-route', false, 'storage_settings_persist_failed');
+        Object.assign(runDataStorageState, previousStorageSnapshot);
+        return jsonRes(res, 500, { ok: false, error: 'storage_settings_persist_failed' });
+      }
       emitDataChange({
         broadcastWs,
         event: 'storage-settings-updated',
@@ -176,7 +253,6 @@ export function registerConfigRoutes(ctx) {
           destinationType: runDataStorageState.destinationType,
         },
       });
-      persistSettingsFile('storage-settings.json', sanitizeRunDataStorageSettingsForResponse(runDataStorageState)).catch(() => {});
       return jsonRes(res, 200, {
         ok: true,
         ...sanitizeRunDataStorageSettingsForResponse(storageSnapshot),
@@ -372,25 +448,11 @@ export function registerConfigRoutes(ctx) {
     // PUT /api/v1/convergence-settings
     if (parts[0] === 'convergence-settings' && method === 'PUT') {
       const body = await readJsonBody(req).catch(() => ({}));
-      const INT_KEYS = new Set([
-        'convergenceMaxRounds', 'convergenceNoProgressLimit', 'convergenceMaxLowQualityRounds',
-        'convergenceMaxDispatchQueries', 'convergenceMaxTargetFields',
-        'needsetEvidenceDecayDays',
-        'serpTriageMinScore', 'serpTriageMaxUrls',
-        'retrievalMaxHitsPerField', 'retrievalMaxPrimeSources',
-        'laneConcurrencySearch', 'laneConcurrencyFetch', 'laneConcurrencyParse', 'laneConcurrencyLlm'
-      ]);
-      const FLOAT_KEYS = new Set([
-        'convergenceLowQualityConfidence', 'needsetEvidenceDecayFloor',
-        'needsetCapIdentityLocked', 'needsetCapIdentityProvisional', 'needsetCapIdentityConflict',
-        'needsetCapIdentityUnlocked',
-        'consensusLlmWeightTier1', 'consensusLlmWeightTier2', 'consensusLlmWeightTier3', 'consensusLlmWeightTier4',
-        'consensusTier1Weight', 'consensusTier2Weight', 'consensusTier3Weight', 'consensusTier4Weight'
-      ]);
-      const BOOL_KEYS = new Set([
-        'serpTriageEnabled', 'retrievalIdentityFilterEnabled'
-      ]);
+      const INT_KEYS = new Set(CONVERGENCE_SETTINGS_ROUTE_PUT.intKeys);
+      const FLOAT_KEYS = new Set(CONVERGENCE_SETTINGS_ROUTE_PUT.floatKeys);
+      const BOOL_KEYS = new Set(CONVERGENCE_SETTINGS_ROUTE_PUT.boolKeys);
       const ALL_KEYS = new Set([...INT_KEYS, ...FLOAT_KEYS, ...BOOL_KEYS]);
+      const previousConvergenceValues = captureConfigValues(config, ALL_KEYS);
       const applied = {};
       const rejected = {};
       for (const [key, value] of Object.entries(body || {})) {
@@ -413,12 +475,25 @@ export function registerConfigRoutes(ctx) {
           applied[key] = b;
         }
       }
+      const convergenceSnapshot = snapshotConvergenceSettings(config);
+      recordRouteWriteAttempt('convergence', 'convergence-settings-route');
+      try {
+        await persistLegacySettingsFile('convergence-settings.json', convergenceSnapshot);
+        await persistUserSettingsSections({
+          helperFilesRoot,
+          convergence: convergenceSnapshot,
+        });
+        recordRouteWriteOutcome('convergence', 'convergence-settings-route', true);
+      } catch {
+        recordRouteWriteOutcome('convergence', 'convergence-settings-route', false, 'convergence_settings_persist_failed');
+        restoreConfigValues(config, previousConvergenceValues);
+        return jsonRes(res, 500, { ok: false, error: 'convergence_settings_persist_failed' });
+      }
       emitDataChange({
         broadcastWs,
         event: 'convergence-settings-updated',
         meta: { applied },
       });
-      const convergenceSnapshot = snapshotConvergenceSettings(config);
       emitDataChange({
         broadcastWs,
         event: 'user-settings-updated',
@@ -428,72 +503,16 @@ export function registerConfigRoutes(ctx) {
           applied,
         },
       });
-      persistSettingsFile('convergence-settings.json', convergenceSnapshot).catch(() => {});
-      persistUserSettingsSections({
-        helperFilesRoot,
-        convergence: convergenceSnapshot,
-      }).catch(() => {});
       return jsonRes(res, 200, { ok: true, applied, ...(Object.keys(rejected).length > 0 ? { rejected } : {}) });
     }
 
     // GET /api/v1/runtime-settings
     if (parts[0] === 'runtime-settings' && method === 'GET') {
-      const STRING_MAP = {
-        profile: 'runProfile',
-        searchProvider: 'searchProvider',
-        phase2LlmModel: 'llmModelPlan',
-        phase3LlmModel: 'llmModelTriage',
-        llmModelFast: 'llmModelFast',
-        llmModelReasoning: 'llmModelReasoning',
-        llmModelExtract: 'llmModelExtract',
-        llmModelValidate: 'llmModelValidate',
-        llmModelWrite: 'llmModelWrite',
-        llmFallbackPlanModel: 'llmPlanFallbackModel',
-        llmFallbackExtractModel: 'llmExtractFallbackModel',
-        llmFallbackValidateModel: 'llmValidateFallbackModel',
-        llmFallbackWriteModel: 'llmWriteFallbackModel',
-        resumeMode: 'indexingResumeMode',
-        scannedPdfOcrBackend: 'scannedPdfOcrBackend',
-        dynamicFetchPolicyMapJson: 'dynamicFetchPolicyMapJson',
-      };
-      const INT_MAP = {
-        fetchConcurrency: 'concurrency',
-        perHostMinDelayMs: 'perHostMinDelayMs',
-        llmTokensPlan: 'llmMaxOutputTokensPlan',
-        llmTokensTriage: 'llmMaxOutputTokensTriage',
-        llmTokensFast: 'llmMaxOutputTokensFast',
-        llmTokensReasoning: 'llmMaxOutputTokensReasoning',
-        llmTokensExtract: 'llmMaxOutputTokensExtract',
-        llmTokensValidate: 'llmMaxOutputTokensValidate',
-        llmTokensWrite: 'llmMaxOutputTokensWrite',
-        llmTokensPlanFallback: 'llmMaxOutputTokensPlanFallback',
-        llmTokensExtractFallback: 'llmMaxOutputTokensExtractFallback',
-        llmTokensValidateFallback: 'llmMaxOutputTokensValidateFallback',
-        llmTokensWriteFallback: 'llmMaxOutputTokensWriteFallback',
-        resumeWindowHours: 'indexingResumeMaxAgeHours',
-        reextractAfterHours: 'indexingReextractAfterHours',
-        scannedPdfOcrMaxPages: 'scannedPdfOcrMaxPages',
-        scannedPdfOcrMaxPairs: 'scannedPdfOcrMaxPairs',
-        scannedPdfOcrMinCharsPerPage: 'scannedPdfOcrMinCharsPerPage',
-        scannedPdfOcrMinLinesPerPage: 'scannedPdfOcrMinLinesPerPage',
-        crawleeRequestHandlerTimeoutSecs: 'crawleeRequestHandlerTimeoutSecs',
-        dynamicFetchRetryBudget: 'dynamicFetchRetryBudget',
-        dynamicFetchRetryBackoffMs: 'dynamicFetchRetryBackoffMs',
-      };
-      const FLOAT_MAP = {
-        scannedPdfOcrMinConfidence: 'scannedPdfOcrMinConfidence',
-      };
-      const BOOL_MAP = {
-        discoveryEnabled: 'discoveryEnabled',
-        phase2LlmEnabled: 'llmPlanDiscoveryQueries',
-        phase3LlmTriageEnabled: 'llmSerpRerankEnabled',
-        llmFallbackEnabled: 'llmFallbackEnabled',
-        reextractIndexed: 'indexingReextractEnabled',
-        scannedPdfOcrEnabled: 'scannedPdfOcrEnabled',
-        scannedPdfOcrPromoteCandidates: 'scannedPdfOcrPromoteCandidates',
-        dynamicCrawleeEnabled: 'dynamicCrawleeEnabled',
-        crawleeHeadless: 'crawleeHeadless',
-      };
+      const STRING_MAP = RUNTIME_SETTINGS_ROUTE_GET.stringMap;
+      const INT_MAP = RUNTIME_SETTINGS_ROUTE_GET.intMap;
+      const FLOAT_MAP = RUNTIME_SETTINGS_ROUTE_GET.floatMap;
+      const BOOL_MAP = RUNTIME_SETTINGS_ROUTE_GET.boolMap;
+      const DYNAMIC_FETCH_POLICY_MAP_JSON_KEY = RUNTIME_SETTINGS_ROUTE_GET.dynamicFetchPolicyMapJsonKey;
       const settings = {};
       for (const [feKey, cfgKey] of Object.entries(STRING_MAP)) {
         settings[feKey] = String(config[cfgKey] ?? '');
@@ -506,11 +525,11 @@ export function registerConfigRoutes(ctx) {
         settings[feKey] = Number.isFinite(v) ? v : 0;
       }
       if (typeof config.dynamicFetchPolicyMapJson === 'string') {
-        settings.dynamicFetchPolicyMapJson = config.dynamicFetchPolicyMapJson;
+        settings[DYNAMIC_FETCH_POLICY_MAP_JSON_KEY] = config.dynamicFetchPolicyMapJson;
       } else if (config.dynamicFetchPolicyMap && typeof config.dynamicFetchPolicyMap === 'object') {
-        settings.dynamicFetchPolicyMapJson = JSON.stringify(config.dynamicFetchPolicyMap);
+        settings[DYNAMIC_FETCH_POLICY_MAP_JSON_KEY] = JSON.stringify(config.dynamicFetchPolicyMap);
       } else {
-        settings.dynamicFetchPolicyMapJson = '';
+        settings[DYNAMIC_FETCH_POLICY_MAP_JSON_KEY] = '';
       }
       for (const [feKey, cfgKey] of Object.entries(BOOL_MAP)) {
         settings[feKey] = Boolean(config[cfgKey]);
@@ -521,64 +540,22 @@ export function registerConfigRoutes(ctx) {
     // PUT /api/v1/runtime-settings
     if (parts[0] === 'runtime-settings' && method === 'PUT') {
       const body = await readJsonBody(req).catch(() => ({}));
-      const STRING_ENUM_MAP = {
-        profile: { cfgKey: 'runProfile', allowed: ['fast', 'standard', 'thorough'] },
-        resumeMode: { cfgKey: 'indexingResumeMode', allowed: ['auto', 'force_resume', 'start_over'] },
-        scannedPdfOcrBackend: { cfgKey: 'scannedPdfOcrBackend', allowed: ['auto', 'tesseract', 'none'] },
-        searchProvider: { cfgKey: 'searchProvider', allowed: ['none', 'google', 'bing', 'searxng', 'duckduckgo', 'dual'] },
-      };
-      const STRING_FREE_MAP = {
-        phase2LlmModel: 'llmModelPlan',
-        phase3LlmModel: 'llmModelTriage',
-        llmModelFast: 'llmModelFast',
-        llmModelReasoning: 'llmModelReasoning',
-        llmModelExtract: 'llmModelExtract',
-        llmModelValidate: 'llmModelValidate',
-        llmModelWrite: 'llmModelWrite',
-        llmFallbackPlanModel: 'llmPlanFallbackModel',
-        llmFallbackExtractModel: 'llmExtractFallbackModel',
-        llmFallbackValidateModel: 'llmValidateFallbackModel',
-        llmFallbackWriteModel: 'llmWriteFallbackModel',
-      };
-      const DYNAMIC_FETCH_POLICY_MAP_JSON_KEY = 'dynamicFetchPolicyMapJson';
-      const INT_RANGE_MAP = {
-        fetchConcurrency: { cfgKey: 'concurrency', min: 1, max: 64 },
-        perHostMinDelayMs: { cfgKey: 'perHostMinDelayMs', min: 0, max: 120000 },
-        llmTokensPlan: { cfgKey: 'llmMaxOutputTokensPlan', min: 128, max: 262144 },
-        llmTokensTriage: { cfgKey: 'llmMaxOutputTokensTriage', min: 128, max: 262144 },
-        llmTokensFast: { cfgKey: 'llmMaxOutputTokensFast', min: 128, max: 262144 },
-        llmTokensReasoning: { cfgKey: 'llmMaxOutputTokensReasoning', min: 128, max: 262144 },
-        llmTokensExtract: { cfgKey: 'llmMaxOutputTokensExtract', min: 128, max: 262144 },
-        llmTokensValidate: { cfgKey: 'llmMaxOutputTokensValidate', min: 128, max: 262144 },
-        llmTokensWrite: { cfgKey: 'llmMaxOutputTokensWrite', min: 128, max: 262144 },
-        llmTokensPlanFallback: { cfgKey: 'llmMaxOutputTokensPlanFallback', min: 128, max: 262144 },
-        llmTokensExtractFallback: { cfgKey: 'llmMaxOutputTokensExtractFallback', min: 128, max: 262144 },
-        llmTokensValidateFallback: { cfgKey: 'llmMaxOutputTokensValidateFallback', min: 128, max: 262144 },
-        llmTokensWriteFallback: { cfgKey: 'llmMaxOutputTokensWriteFallback', min: 128, max: 262144 },
-        resumeWindowHours: { cfgKey: 'indexingResumeMaxAgeHours', min: 1, max: 8760 },
-        reextractAfterHours: { cfgKey: 'indexingReextractAfterHours', min: 1, max: 8760 },
-        scannedPdfOcrMaxPages: { cfgKey: 'scannedPdfOcrMaxPages', min: 1, max: 100 },
-        scannedPdfOcrMaxPairs: { cfgKey: 'scannedPdfOcrMaxPairs', min: 50, max: 20000 },
-        scannedPdfOcrMinCharsPerPage: { cfgKey: 'scannedPdfOcrMinCharsPerPage', min: 1, max: 500 },
-        scannedPdfOcrMinLinesPerPage: { cfgKey: 'scannedPdfOcrMinLinesPerPage', min: 1, max: 100 },
-        crawleeRequestHandlerTimeoutSecs: { cfgKey: 'crawleeRequestHandlerTimeoutSecs', min: 0, max: 300 },
-        dynamicFetchRetryBudget: { cfgKey: 'dynamicFetchRetryBudget', min: 0, max: 5 },
-        dynamicFetchRetryBackoffMs: { cfgKey: 'dynamicFetchRetryBackoffMs', min: 0, max: 30000 },
-      };
-      const FLOAT_RANGE_MAP = {
-        scannedPdfOcrMinConfidence: { cfgKey: 'scannedPdfOcrMinConfidence', min: 0, max: 1 },
-      };
-      const BOOL_MAP = {
-        discoveryEnabled: 'discoveryEnabled',
-        phase2LlmEnabled: 'llmPlanDiscoveryQueries',
-        phase3LlmTriageEnabled: 'llmSerpRerankEnabled',
-        llmFallbackEnabled: 'llmFallbackEnabled',
-        reextractIndexed: 'indexingReextractEnabled',
-        scannedPdfOcrEnabled: 'scannedPdfOcrEnabled',
-        scannedPdfOcrPromoteCandidates: 'scannedPdfOcrPromoteCandidates',
-        dynamicCrawleeEnabled: 'dynamicCrawleeEnabled',
-        crawleeHeadless: 'crawleeHeadless',
-      };
+      const STRING_ENUM_MAP = RUNTIME_SETTINGS_ROUTE_PUT.stringEnumMap;
+      const STRING_FREE_MAP = RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap;
+      const DYNAMIC_FETCH_POLICY_MAP_JSON_KEY = RUNTIME_SETTINGS_ROUTE_PUT.dynamicFetchPolicyMapJsonKey;
+      const INT_RANGE_MAP = RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap;
+      const FLOAT_RANGE_MAP = RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap;
+      const BOOL_MAP = RUNTIME_SETTINGS_ROUTE_PUT.boolMap;
+      const runtimeRollbackKeys = new Set([
+        ...Object.values(STRING_ENUM_MAP).map((entry) => entry.cfgKey),
+        ...Object.values(STRING_FREE_MAP),
+        ...Object.values(INT_RANGE_MAP).map((entry) => entry.cfgKey),
+        ...Object.values(FLOAT_RANGE_MAP).map((entry) => entry.cfgKey),
+        ...Object.values(BOOL_MAP),
+        'dynamicFetchPolicyMap',
+        'dynamicFetchPolicyMapJson',
+      ]);
+      const previousRuntimeValues = captureConfigValues(config, runtimeRollbackKeys);
 
       const applied = {};
       const rejected = {};
@@ -637,12 +614,25 @@ export function registerConfigRoutes(ctx) {
         }
       }
 
+      const runtimeSnapshot = snapshotRuntimeSettings(config);
+      recordRouteWriteAttempt('runtime', 'runtime-settings-route');
+      try {
+        await persistLegacySettingsFile('settings.json', runtimeSnapshot);
+        await persistUserSettingsSections({
+          helperFilesRoot,
+          runtime: runtimeSnapshot,
+        });
+        recordRouteWriteOutcome('runtime', 'runtime-settings-route', true);
+      } catch {
+        recordRouteWriteOutcome('runtime', 'runtime-settings-route', false, 'runtime_settings_persist_failed');
+        restoreConfigValues(config, previousRuntimeValues);
+        return jsonRes(res, 500, { ok: false, error: 'runtime_settings_persist_failed' });
+      }
       emitDataChange({
         broadcastWs,
         event: 'runtime-settings-updated',
         meta: { applied },
       });
-      const runtimeSnapshot = snapshotRuntimeSettings(config);
       emitDataChange({
         broadcastWs,
         event: 'user-settings-updated',
@@ -652,11 +642,6 @@ export function registerConfigRoutes(ctx) {
           applied,
         },
       });
-      persistUserSettingsSections({
-        helperFilesRoot,
-        runtime: runtimeSnapshot,
-      }).catch(() => {});
-      persistSettingsFile('settings.json', runtimeSnapshot).catch(() => {});
       return jsonRes(res, 200, { ok: true, applied, ...(Object.keys(rejected).length > 0 ? { rejected } : {}) });
     }
 

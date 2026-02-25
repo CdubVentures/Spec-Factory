@@ -14,9 +14,10 @@ function makeJsonResponse(payload, ok = true) {
   };
 }
 
-function makeTextResponse(payload, ok = true) {
+function makeTextResponse(payload, ok = true, status = ok ? 200 : 500) {
   return {
     ok,
+    status,
     async text() {
       return payload;
     }
@@ -37,7 +38,7 @@ test('searchProviderAvailability includes searxng readiness', () => {
   assert.equal(available.internet_ready, true);
 });
 
-test('searchProviderAvailability reports Google CSE disabled when configured', () => {
+test('searchProviderAvailability reports Google CSE disabled while keeping Google search-ready via SearXNG', () => {
   const available = searchProviderAvailability({
     searchProvider: 'dual',
     googleCseKey: 'abc',
@@ -47,7 +48,8 @@ test('searchProviderAvailability reports Google CSE disabled when configured', (
   });
   assert.equal(available.google_cse_disabled, true);
   assert.equal(available.google_ready, false);
-  assert.equal(available.active_providers.includes('google'), false);
+  assert.equal(available.google_search_ready, true);
+  assert.equal(available.active_providers.includes('google'), true);
 });
 
 test('runSearchProviders returns searxng results for searxng provider', async () => {
@@ -137,6 +139,178 @@ test('runSearchProviders returns parsed duckduckgo results for duckduckgo provid
   }
 });
 
+test('runSearchProviders duckduckgo falls back to searxng on DDG challenge responses', async () => {
+  const originalFetch = global.fetch;
+  let calls = 0;
+  global.fetch = async (url) => {
+    calls += 1;
+    const token = String(url || '');
+    if (token.includes('format=json')) {
+      return makeJsonResponse({
+        results: [
+          {
+            url: 'https://example.com/fallback-spec',
+            title: 'Fallback Spec',
+            content: 'Fallback result from SearXNG'
+          }
+        ]
+      });
+    }
+    return makeTextResponse(
+      '<html><head><title>DuckDuckGo</title></head><body><script src="/anomaly.js"></script><div>challenge</div></body></html>',
+      true,
+      202
+    );
+  };
+
+  try {
+    const rows = await runSearchProviders({
+      config: {
+        searchProvider: 'duckduckgo',
+        duckduckgoEnabled: true,
+        duckduckgoTimeoutMs: 5_000,
+        searxngBaseUrl: 'http://127.0.0.1:8080',
+        searxngTimeoutMs: 5_000
+      },
+      query: 'viper v3 pro',
+      limit: 5
+    });
+
+    assert.equal(calls, 2);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].provider, 'searxng');
+    assert.equal(rows[0].url, 'https://example.com/fallback-spec');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('runSearchProviders duckduckgo uses local searxng fallback when base URL is unset', async () => {
+  const originalFetch = global.fetch;
+  let calls = 0;
+  global.fetch = async (url) => {
+    calls += 1;
+    const token = String(url || '');
+    if (token.includes('127.0.0.1:8080/search') && token.includes('format=json')) {
+      return makeJsonResponse({
+        results: [
+          {
+            url: 'https://example.com/local-fallback-spec',
+            title: 'Local Fallback Spec',
+            content: 'Fallback result from local SearXNG'
+          }
+        ]
+      });
+    }
+    return makeTextResponse(
+      '<html><head><title>DuckDuckGo</title></head><body><script src="/anomaly.js"></script><div>challenge</div></body></html>',
+      true,
+      202
+    );
+  };
+
+  try {
+    const rows = await runSearchProviders({
+      config: {
+        searchProvider: 'duckduckgo',
+        duckduckgoEnabled: true,
+        duckduckgoTimeoutMs: 5_000
+      },
+      query: 'viper v3 pro',
+      limit: 5
+    });
+
+    assert.equal(calls, 2);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].provider, 'searxng');
+    assert.equal(rows[0].url, 'https://example.com/local-fallback-spec');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('runSearchProviders uses SearXNG Google engine for google provider', async () => {
+  const originalFetch = global.fetch;
+  let calls = 0;
+  global.fetch = async (url) => {
+    calls += 1;
+    const token = String(url || '');
+    assert.equal(token.includes('format=json'), true);
+    assert.equal(token.includes('engines=google'), true);
+    assert.equal(token.includes('q=razer+viper+v3+pro') || token.includes('q=razer%20viper%20v3%20pro'), true);
+    return makeJsonResponse({
+      results: [
+        {
+          url: 'https://www.razer.com/gaming-mice/razer-viper-v3-pro',
+          title: 'Razer Viper V3 Pro',
+          content: 'Official product page'
+        }
+      ]
+    });
+  };
+
+  try {
+    const rows = await runSearchProviders({
+      config: {
+        searchProvider: 'google',
+        searxngBaseUrl: 'http://127.0.0.1:8080',
+        googleCseKey: '',
+        googleCseCx: '',
+        searchCacheTtlSeconds: 0
+      },
+      query: 'razer viper v3 pro',
+      limit: 5
+    });
+
+    assert.equal(calls, 1);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].provider, 'google');
+    assert.equal(rows[0].url, 'https://www.razer.com/gaming-mice/razer-viper-v3-pro');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('runSearchProviders google provider never calls Google CSE API endpoint', async () => {
+  const originalFetch = global.fetch;
+  let calledGoogleApi = false;
+  global.fetch = async (url) => {
+    const token = String(url || '');
+    if (token.includes('googleapis.com/customsearch')) {
+      calledGoogleApi = true;
+      return makeJsonResponse({ items: [] });
+    }
+    return makeJsonResponse({
+      results: [
+        {
+          url: 'https://example.com/spec',
+          title: 'Spec',
+          content: 'details'
+        }
+      ]
+    });
+  };
+
+  try {
+    const rows = await runSearchProviders({
+      config: {
+        searchProvider: 'google',
+        searxngBaseUrl: 'http://127.0.0.1:8080',
+        googleCseKey: 'legacy-key',
+        googleCseCx: 'legacy-cx'
+      },
+      query: 'viper specs',
+      limit: 5
+    });
+
+    assert.equal(calledGoogleApi, false);
+    assert.equal(rows.length > 0, true);
+    assert.equal(rows[0].provider, 'google');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test('runSearchProviders dual mode falls back to searxng when bing/google are unavailable', async () => {
   const originalFetch = global.fetch;
   let calls = 0;
@@ -209,6 +383,55 @@ test('runSearchProviders dual mode falls back to duckduckgo when bing/google/sea
     assert.equal(calls, 1);
     assert.equal(rows.length, 1);
     assert.equal(rows[0].provider, 'duckduckgo');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('runSearchProviders dual mode uses local searxng fallback when DDG is challenged and searxng base is unset', async () => {
+  const originalFetch = global.fetch;
+  let calls = 0;
+  global.fetch = async (url) => {
+    calls += 1;
+    const token = String(url || '');
+    if (token.includes('127.0.0.1:8080/search') && token.includes('format=json')) {
+      return makeJsonResponse({
+        results: [
+          {
+            url: 'https://example.com/dual-local-fallback',
+            title: 'Dual Local Fallback',
+            content: 'Recovered from DDG challenge'
+          }
+        ]
+      });
+    }
+    return makeTextResponse(
+      '<html><head><title>DuckDuckGo</title></head><body><script src="/anomaly.js"></script><div>challenge</div></body></html>',
+      true,
+      202
+    );
+  };
+
+  try {
+    const rows = await runSearchProviders({
+      config: {
+        searchProvider: 'dual',
+        bingSearchEndpoint: '',
+        bingSearchKey: '',
+        googleCseKey: '',
+        googleCseCx: '',
+        searxngBaseUrl: '',
+        duckduckgoEnabled: true,
+        searchCacheTtlSeconds: 0
+      },
+      query: 'g pro x superlight 2',
+      limit: 6
+    });
+
+    assert.equal(calls, 2);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].provider, 'searxng');
+    assert.equal(rows[0].url, 'https://example.com/dual-local-fallback');
   } finally {
     global.fetch = originalFetch;
   }

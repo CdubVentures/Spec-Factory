@@ -12,7 +12,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { slugify, buildProductId } from './slugify.js';
 import { normalizeProductIdentity } from './identityDedup.js';
-import { loadWorkbookProducts, loadWorkbookProductsWithFields } from './workbookProductLoader.js';
+import { loadCatalogProducts, loadCatalogProductsWithFields } from './catalogProductLoader.js';
 import { generateIdentifier, nextAvailableId } from './productIdentity.js';
 import { migrateProductArtifacts, appendRenameLog } from './artifactMigration.js';
 import { buildUserFieldOverrideCandidateId } from '../utils/candidateIdentifier.js';
@@ -499,15 +499,15 @@ export async function removeProduct({
 }
 
 /**
- * Seed catalog from the Excel workbook.
- * Reads products (and optionally field values) from the workbook configured via Mapping Studio.
- * Imports all products that don't already exist in the catalog.
+ * Seed catalog from app-owned product docs.
+ * Reads products (and optionally field values) from control-plane catalog and
+ * per-product overrides. Imports products that do not yet exist in catalog.
  *
  * @param {object} opts
  * @param {string} opts.mode - 'identity' (default): brand/model/variant only.
  *                             'full': also imports field values as overrides with confidence 0.99.
  */
-export async function seedFromWorkbook({
+export async function seedFromCatalog({
   config,
   category,
   mode = 'identity',
@@ -519,11 +519,11 @@ export async function seedFromWorkbook({
 
   const isFullMode = mode === 'full';
   const products = isFullMode
-    ? await loadWorkbookProductsWithFields({ category: cat, config })
-    : await loadWorkbookProducts({ category: cat, config });
+    ? await loadCatalogProductsWithFields({ category: cat, config })
+    : await loadCatalogProducts({ category: cat, config });
 
   if (!products || products.length === 0) {
-    return { ok: true, seeded: 0, skipped: 0, total: 0, fields_imported: 0, message: 'no_workbook_data' };
+    return { ok: true, seeded: 0, skipped: 0, total: 0, fields_imported: 0, message: 'no_catalog_data' };
   }
 
   const catalog = await loadProductCatalog(config, cat);
@@ -568,7 +568,7 @@ export async function seedFromWorkbook({
         status: 'active',
         seed_urls: [],
         added_at: nowIso(),
-        added_by: isFullMode ? 'workbook_import' : 'seed'
+        added_by: isFullMode ? 'catalog_import' : 'seed'
       };
     }
 
@@ -609,15 +609,17 @@ export async function seedFromWorkbook({
       for (const [field, value] of Object.entries(row.canonical_fields)) {
         const trimmed = String(value ?? '').trim();
         if (!trimmed) continue;
-        // Don't overwrite manual user edits (only replace workbook_import or missing entries)
+        // Don't overwrite manual user edits (only replace catalog imports or missing entries)
         const prev = existingOverrides[field];
-        if (prev && prev.override_source !== 'workbook_import') continue;
+        const prevSource = String(prev?.override_source || '').trim();
+        const replaceableImportSource = prevSource === 'catalog_import' || prevSource.endsWith('_import');
+        if (prev && !replaceableImportSource) continue;
         overrides[field] = {
           field,
-          override_source: 'workbook_import',
+          override_source: 'catalog_import',
           candidate_index: null,
           override_value: trimmed,
-          override_reason: 'Imported from workbook',
+          override_reason: 'Imported from catalog',
           override_provenance: null,
           overridden_by: null,
           overridden_at: setAt,
@@ -630,9 +632,9 @@ export async function seedFromWorkbook({
           value: trimmed,
           confidence: 0.99,
           source: {
-            host: 'workbook.local',
+            host: 'catalog.local',
             source_id: null,
-            method: 'workbook_import',
+            method: 'catalog_import',
             tier: 1,
             evidence_key: null
           },

@@ -6,6 +6,7 @@ import path from 'node:path';
 const UI_STORE = path.resolve('tools/gui-react/src/stores/uiStore.ts');
 const UI_SETTINGS_AUTHORITY = path.resolve('tools/gui-react/src/stores/uiSettingsAuthority.ts');
 const SETTINGS_AUTHORITY = path.resolve('tools/gui-react/src/stores/settingsAuthority.ts');
+const APP_SHELL = path.resolve('tools/gui-react/src/components/layout/AppShell.tsx');
 const STUDIO_PAGE = path.resolve('tools/gui-react/src/pages/studio/StudioPage.tsx');
 const FIELD_RULES_WORKBENCH = path.resolve('tools/gui-react/src/pages/studio/workbench/FieldRulesWorkbench.tsx');
 const STORAGE_PAGE = path.resolve('tools/gui-react/src/pages/storage/StoragePage.tsx');
@@ -27,7 +28,22 @@ test('ui autosave authority exists and owns /ui-settings route usage', () => {
 test('settings bootstrap composes ui settings authority', () => {
   const text = readText(SETTINGS_AUTHORITY);
   assert.equal(text.includes('useUiSettingsAuthority'), true, 'settings bootstrap should compose ui settings authority');
-  assert.equal(text.includes('reloadUiSettings()'), true, 'settings bootstrap should reload ui settings at app startup');
+  assert.equal(text.includes('runSettingsStartupHydrationPipeline'), true, 'settings bootstrap should use shared startup hydration pipeline');
+  assert.equal(text.includes('uiReload: uiReloadRef.current'), true, 'settings bootstrap pipeline should include ui-settings reload');
+  assert.equal(text.includes('uiSettingsPersistState'), true, 'settings bootstrap snapshot should include ui settings persistence status');
+  assert.equal(text.includes('uiSettingsPersistMessage'), true, 'settings bootstrap snapshot should include ui settings persistence error details');
+  assert.equal(text.includes('onError: (error) => {'), true, 'settings bootstrap should consume ui settings persistence errors');
+  assert.equal(text.includes("setUiSettingsPersistState('saving')"), true, 'settings bootstrap should mark ui settings saves as in-flight');
+  assert.equal(text.includes("setUiSettingsPersistState('error')"), true, 'settings bootstrap should mark ui settings save failures');
+});
+
+test('app shell surfaces ui settings persistence status for autosave toggles', () => {
+  const text = readText(APP_SHELL);
+  assert.equal(text.includes('useSettingsAuthorityStore'), true, 'App shell should read settings snapshot from shared authority store');
+  assert.equal(text.includes('settingsSnapshot.uiSettingsPersistState === \'saving\''), true, 'App shell should render ui settings saving status');
+  assert.equal(text.includes('Saving autosave preference changes...'), true, 'App shell should show ui settings save-in-progress text');
+  assert.equal(text.includes('settingsSnapshot.uiSettingsPersistState === \'error\''), true, 'App shell should render ui settings save failure status');
+  assert.equal(text.includes('Failed to persist autosave preference changes. UI reverted to last persisted values.'), true, 'App shell should show ui settings save failure text');
 });
 
 test('ui store owns global autosave toggles used by studio/runtime/storage surfaces', () => {
@@ -40,11 +56,13 @@ test('ui store owns global autosave toggles used by studio/runtime/storage surfa
   assert.equal(text.includes('llmSettingsAutoSaveEnabled'), true, 'ui store should expose llm settings autosave toggle state');
   assert.equal(text.includes('llmSettings:autoSaveEnabled'), true, 'ui store should persist a global llm autosave key');
   assert.equal(text.includes('llmSettings:autoSave:'), false, 'ui store should not use category-scoped llm autosave keys');
+  assert.equal(text.includes('normalizeStudioAutoSaveState'), true, 'ui store should normalize studio autosave relationships');
+  assert.equal(text.includes('autoSaveAllEnabled || autoSaveMapEnabled'), true, 'ui store should enforce map/key-navigator autosave implies key/workbench autosave');
 });
 
-test('studio page locks workbook + mapping autosave controls when auto-save-all is enabled', () => {
+test('studio page locks key-navigator + mapping autosave controls when auto-save-all is enabled', () => {
   const text = readText(STUDIO_PAGE);
-  assert.equal(text.includes('effectiveAutoSaveEnabled'), true, 'studio page should derive effective workbook autosave');
+  assert.equal(text.includes('effectiveAutoSaveEnabled'), true, 'studio page should derive effective key-navigator autosave');
   assert.equal(text.includes('effectiveAutoSaveMapEnabled'), true, 'studio page should derive effective mapping autosave');
   assert.equal(text.includes('autoSaveAllEnabled'), true, 'studio page should read auto-save-all toggle');
   assert.equal(text.includes('setAutoSaveAllEnabled'), true, 'studio page should write auto-save-all toggle');
@@ -52,11 +70,19 @@ test('studio page locks workbook + mapping autosave controls when auto-save-all 
   assert.equal(text.includes('Locked by Auto-save ALL'), true, 'studio page should indicate lock state on child autosave controls');
 });
 
-test('studio page propagates auto-save-all lock to key navigator + field contract tab controls', () => {
+test('studio page propagates shared autosave lock to key navigator + field contract tab controls', () => {
   const text = readText(STUDIO_PAGE);
   assert.equal(text.includes('autoSaveMapLocked={autoSaveAllEnabled}'), true, 'mapping tab should receive lock state from auto-save-all');
-  assert.equal(text.includes('autoSaveEnabled={effectiveAutoSaveEnabled}'), true, 'key/workbook tabs should receive effective auto-save state');
-  assert.equal(text.includes('autoSaveLocked={autoSaveAllEnabled}'), true, 'key/workbook tabs should receive lock state from auto-save-all');
+  assert.equal(text.includes('autoSaveEnabled={effectiveAutoSaveEnabled}'), true, 'key/studio tabs should receive effective auto-save state');
+  assert.equal(text.includes('autoSaveLocked={autoSaveWorkbookLocked}'), true, 'key/studio tabs should receive shared lock state');
+  assert.equal(text.includes('autoSaveLockReason={autoSaveWorkbookLockReason}'), true, 'key/studio tabs should receive lock reason for autosave ownership');
+});
+
+test('ui settings authority normalizes shared studio autosave invariants', () => {
+  const text = readText(UI_SETTINGS_AUTHORITY);
+  assert.equal(text.includes('const studioAutoSaveAllEnabled'), true, 'ui settings authority should normalize studio auto-save-all state');
+  assert.equal(text.includes('const studioAutoSaveMapEnabled = studioAutoSaveAllEnabled'), true, 'ui settings authority should lock map autosave on when auto-save-all is enabled');
+  assert.equal(text.includes('const studioAutoSaveEnabled = (studioAutoSaveAllEnabled || studioAutoSaveMapEnabled)'), true, 'ui settings authority should enforce map autosave implies key/workbench autosave');
 });
 
 test('key navigator change handlers gate save commits behind autosave state', () => {
@@ -97,8 +123,8 @@ test('autosave authorities avoid retry polling by tracking last attempted finger
   assert.equal(storageText.includes('payloadFingerprint === lastAutoSaveAttemptFingerprintRef.current'), true, 'storage autosave should suppress unchanged retries');
   assert.equal(llmText.includes('lastAutoSaveAttemptFingerprintRef'), true, 'llm autosave should track last attempted fingerprint');
   assert.equal(llmText.includes('rowsFingerprint === lastAutoSaveAttemptFingerprintRef.current'), true, 'llm autosave should suppress unchanged retries');
-  assert.equal(studioText.includes('lastDraftAutoSaveAttemptFingerprintRef'), true, 'studio autosave should track last attempted draft fingerprint');
-  assert.equal(studioText.includes('nextFingerprint === lastDraftAutoSaveAttemptFingerprintRef.current'), true, 'studio autosave should suppress unchanged retries');
+  assert.equal(studioText.includes('lastStudioAutoSaveAttemptFingerprintRef'), true, 'studio autosave should track last attempted docs fingerprint');
+  assert.equal(studioText.includes('nextFingerprint === lastStudioAutoSaveAttemptFingerprintRef.current'), true, 'studio autosave should suppress unchanged retries');
 });
 
 test('manual studio save can force retry after a failed autosave attempt', () => {

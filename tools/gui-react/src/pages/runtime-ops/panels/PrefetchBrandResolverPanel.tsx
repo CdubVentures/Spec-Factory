@@ -1,14 +1,17 @@
 import { useMemo } from 'react';
 import { usePersistedNullableTab } from '../../../stores/tabStore';
-import type { PrefetchLlmCall, BrandResolutionData, BrandCandidate } from '../types';
+import type { PrefetchLlmCall, BrandResolutionData, BrandCandidate, PrefetchLiveSettings } from '../types';
 import { llmCallStatusBadgeClass, formatMs, pctString } from '../helpers';
 import { ScoreBar } from '../components/ScoreBar';
+import { StatCard } from '../components/StatCard';
 import { DrawerShell, DrawerSection } from '../../../components/common/DrawerShell';
+import { Tip } from '../../../components/common/Tip';
 
 interface PrefetchBrandResolverPanelProps {
   calls: PrefetchLlmCall[];
   brandResolution?: BrandResolutionData | null;
   persistScope: string;
+  liveSettings?: PrefetchLiveSettings;
 }
 
 const SKIP_REASON_LABELS: Record<string, string> = {
@@ -38,14 +41,6 @@ function confidenceColorClass(confidence: number): string {
   return 'text-red-400';
 }
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 min-w-[8rem]">
-      <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</div>
-      <div className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-0.5">{value}</div>
-    </div>
-  );
-}
 
 function buildReasoningBullets(br: BrandResolutionData): string[] {
   const reasoning = br.reasoning ?? [];
@@ -109,7 +104,7 @@ function CandidateDrawer({ candidate, call, onClose }: { candidate: BrandCandida
   );
 }
 
-export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScope }: PrefetchBrandResolverPanelProps) {
+export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScope, liveSettings }: PrefetchBrandResolverPanelProps) {
   const br = brandResolution;
   const candidateValues = useMemo(
     () => (br?.candidates ?? []).map((candidate) => candidate.name),
@@ -141,9 +136,18 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
     return (
       <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Brand Resolver</h3>
-        <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">
-          Waiting for brand resolution to start. This step identifies the official brand website
-          so searches can prioritize manufacturer pages.
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+          <div className="text-3xl opacity-60">&#128270;</div>
+          <div className="text-sm font-medium text-gray-600 dark:text-gray-300">Waiting for brand resolution</div>
+          <p className="text-xs text-gray-400 dark:text-gray-500 max-w-md leading-relaxed">
+            Brand resolution will appear after the LLM identifies the official manufacturer domain and aliases.
+            This allows search queries to use targeted site: filters for higher-quality Tier 1 sources.
+          </p>
+          {liveSettings?.phase2LlmEnabled !== undefined && (
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${liveSettings.phase2LlmEnabled ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+              LLM: {liveSettings.phase2LlmEnabled ? 'Enabled' : 'Disabled'}
+            </span>
+          )}
         </div>
       </div>
     );
@@ -153,7 +157,10 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
     <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
       {/* A) Header */}
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Brand Resolver</h3>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+          Brand Resolver
+          <Tip text="The Brand Resolver identifies the official manufacturer domain and aliases so search queries can use targeted site: filters for higher-quality sources." />
+        </h3>
         {status && (
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusBadgeClass(status)}`}>
             {status === 'resolved_empty' ? 'no domain found' : status}
@@ -162,6 +169,15 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
         {!status && calls.length > 0 && (
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${llmCallStatusBadgeClass(calls[0].status)}`}>
             {calls[0].status}
+          </span>
+        )}
+        {liveSettings?.phase2LlmEnabled !== undefined && (
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+            liveSettings.phase2LlmEnabled
+              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+              : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+          }`}>
+            LLM: {liveSettings.phase2LlmEnabled ? 'ON' : 'OFF'}
           </span>
         )}
         {source.text && (
@@ -267,12 +283,12 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
       {/* C) StatCards Row */}
       {hasStructured && (isResolved || isResolvedEmpty) && (
         <div className="flex items-center gap-3 flex-wrap">
-          <StatCard label="Confidence" value={pctString(br!.confidence)} />
-          <StatCard label="Aliases" value={br!.aliases.length} />
-          <StatCard label="Candidates" value={br!.candidates.length} />
-          <StatCard label="LLM Calls" value={calls.length} />
-          {totalTokens > 0 && <StatCard label="Tokens" value={totalTokens.toLocaleString()} />}
-          {totalDuration > 0 && <StatCard label="Duration" value={formatMs(totalDuration)} />}
+          <StatCard label="Confidence" value={pctString(br!.confidence)} tip="LLM confidence that the resolved brand and domain are correct. Below 70% triggers a low-confidence warning." />
+          <StatCard label="Aliases" value={br!.aliases.length} tip="Known alternate names for this brand (e.g. 'Razer Inc', 'razer.com'). Used to match search results to the manufacturer." />
+          <StatCard label="Candidates" value={br!.candidates.length} tip="Candidate manufacturer domains considered by the LLM before selecting the best match." />
+          <StatCard label="LLM Calls" value={calls.length} tip="Number of LLM calls made during brand resolution. Usually one call unless retries were needed." />
+          {totalTokens > 0 && <StatCard label="Tokens" value={totalTokens.toLocaleString()} tip="LLM tokens consumed (input + output) across all brand resolution calls." />}
+          {totalDuration > 0 && <StatCard label="Duration" value={formatMs(totalDuration)} tip="Wall-clock time for the brand resolution step." />}
         </div>
       )}
 
@@ -367,13 +383,13 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
                 {call.prompt_preview && (
                   <div className="mt-2">
                     <div className="text-[10px] font-medium text-gray-400 uppercase">Prompt</div>
-                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">{call.prompt_preview}</pre>
+                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">{call.prompt_preview}</pre>
                   </div>
                 )}
                 {call.response_preview && (
                   <div className="mt-1">
                     <div className="text-[10px] font-medium text-gray-400 uppercase">Response</div>
-                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">{call.response_preview}</pre>
+                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">{call.response_preview}</pre>
                   </div>
                 )}
               </div>
@@ -389,7 +405,7 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
             Debug: Raw JSON
           </summary>
           <div className="mt-2">
-            <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto max-h-40 whitespace-pre-wrap text-gray-600 dark:text-gray-400">{JSON.stringify(br, null, 2)}</pre>
+            <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-40 whitespace-pre-wrap text-gray-600 dark:text-gray-400">{JSON.stringify(br, null, 2)}</pre>
           </div>
         </details>
       )}

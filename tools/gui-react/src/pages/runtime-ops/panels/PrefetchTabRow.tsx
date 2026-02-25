@@ -6,6 +6,7 @@ interface PrefetchTabRowProps {
   activeTab: PrefetchTabKey | null;
   onSelectTab: (tab: PrefetchTabKey | null) => void;
   busyTabs?: Set<PrefetchTabKey>;
+  disabledTabs?: Set<PrefetchTabKey>;
 }
 
 const TABS: { key: PrefetchTabKey; label: string; color: string; tip: string }[] = [
@@ -43,7 +44,7 @@ const TABS: { key: PrefetchTabKey; label: string; color: string; tip: string }[]
     key: 'search_results',
     label: 'Search Results',
     color: 'bg-purple-500',
-    tip: 'Raw results returned by Google or SearXNG for each query.\nShows how many results came back and which search provider was used.',
+    tip: 'Raw results returned by configured providers for each query.\nSupports Google, Bing, DuckDuckGo, SearXNG, and Dual mode, including provider usage counts.',
   },
   {
     key: 'url_predictor',
@@ -65,7 +66,7 @@ const TABS: { key: PrefetchTabKey; label: string; color: string; tip: string }[]
   },
 ];
 
-export function PrefetchTabRow({ activeTab, onSelectTab, busyTabs }: PrefetchTabRowProps) {
+export function PrefetchTabRow({ activeTab, onSelectTab, busyTabs, disabledTabs }: PrefetchTabRowProps) {
   return (
     <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto bg-gray-50 dark:bg-gray-800/50">
       <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mr-1 shrink-0">
@@ -74,6 +75,7 @@ export function PrefetchTabRow({ activeTab, onSelectTab, busyTabs }: PrefetchTab
       {TABS.map((t) => {
         const isSelected = activeTab === t.key;
         const isBusy = busyTabs?.has(t.key) ?? false;
+        const isDisabled = disabledTabs?.has(t.key) ?? false;
         return (
           <Tooltip.Root key={t.key} delayDuration={300}>
             <Tooltip.Trigger asChild>
@@ -82,12 +84,15 @@ export function PrefetchTabRow({ activeTab, onSelectTab, busyTabs }: PrefetchTab
                 onClick={() => onSelectTab(isSelected ? null : t.key)}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-t text-xs whitespace-nowrap border-b-2 transition-colors ${
                   isSelected
-                    ? `bg-white dark:bg-gray-800 ${prefetchTabAccent(t.key)} shadow-sm text-gray-900 dark:text-gray-100`
-                    : 'border-transparent hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+                    ? `bg-white dark:bg-gray-800 ${prefetchTabAccent(t.key)} shadow-sm ${isDisabled ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`
+                    : isDisabled
+                      ? 'border-transparent text-gray-300 dark:text-gray-600'
+                      : 'border-transparent hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
                 }`}
               >
-                <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${t.color} ${isBusy ? 'animate-dot-bounce' : ''}`} />
+                <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${isDisabled ? 'bg-gray-300 dark:bg-gray-600' : t.color} ${isBusy && !isDisabled ? 'animate-dot-bounce' : ''}`} />
                 {t.label}
+                {isDisabled && <span className="text-[9px] text-gray-300 dark:text-gray-600 ml-0.5">OFF</span>}
               </button>
             </Tooltip.Trigger>
             <Tooltip.Portal>
@@ -96,7 +101,7 @@ export function PrefetchTabRow({ activeTab, onSelectTab, busyTabs }: PrefetchTab
                 sideOffset={6}
                 side="bottom"
               >
-                {t.tip}
+                {isDisabled ? `${t.tip}\n\nLLM is disabled for this step.` : t.tip}
                 <Tooltip.Arrow className="fill-white dark:fill-gray-900" />
               </Tooltip.Content>
             </Tooltip.Portal>

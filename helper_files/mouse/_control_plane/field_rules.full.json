@@ -2,27 +2,62 @@
   "category": "mouse",
   "component_db_sources": {
     "encoder": {
-      "entity_count": 0,
-      "excel": {
+      "entity_count": 40,
+      "field_studio": {
         "alias_columns": [],
         "auto_derive_aliases": true,
         "first_data_row": 2,
         "header_row": 1,
-        "link_columns": [],
-        "maker_column": "YES",
-        "primary_identifier_column": "A",
-        "property_columns": [],
-        "property_mappings": [],
-        "sheet": "",
+        "link_columns": [
+          "G"
+        ],
+        "maker_column": "B",
+        "mode": "sheet",
+        "primary_identifier_column": "C",
+        "property_columns": [
+          "D",
+          "E",
+          "F"
+        ],
+        "property_mappings": [
+          {
+            "column": "D",
+            "constraints": [],
+            "field_key": "encoder_type",
+            "key": "encoder_type",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "E",
+            "constraints": [],
+            "field_key": "encoder_steps",
+            "key": "encoder_steps",
+            "type": "number",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "F",
+            "constraints": [],
+            "field_key": "encoder_life_span",
+            "key": "encoder_life_span",
+            "type": "number",
+            "unit": "",
+            "variance_policy": "authoritative"
+          }
+        ],
+        "sheet": "encoder",
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
-      "name_column": "A",
+      "name_column": "C",
       "preview_stats": {
-        "entity_count": 0,
+        "entity_count": 40,
         "first_20_all_numeric": false,
         "first_20_names": [],
-        "non_blank_names": 0,
+        "non_blank_names": 40,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
         "scanned_rows": 0,
@@ -31,37 +66,79 @@
       },
       "roles": {
         "aliases": [],
-        "links": [],
-        "maker": "YES",
-        "primary_identifier": "A",
-        "properties": []
+        "links": [
+          "G"
+        ],
+        "maker": "B",
+        "primary_identifier": "C",
+        "properties": [
+          {
+            "column": "D",
+            "constraints": [],
+            "field_key": "encoder_type",
+            "key": "encoder_type",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "E",
+            "constraints": [],
+            "field_key": "encoder_steps",
+            "key": "encoder_steps",
+            "type": "number",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "F",
+            "constraints": [],
+            "field_key": "encoder_life_span",
+            "key": "encoder_life_span",
+            "type": "number",
+            "unit": "",
+            "variance_policy": "authoritative"
+          }
+        ]
       },
-      "sample_entities": [],
-      "sheet": "",
+      "sample_entities": [
+        "Encoder",
+        "Encoder",
+        "Black",
+        "Brown",
+        "E10A2",
+        "Encoder",
+        "Green",
+        "Pink",
+        "Teal",
+        "Encoder"
+      ],
+      "sheet": "encoder",
       "type": "encoder"
     },
     "material": {
-      "entity_count": 0,
-      "excel": {
+      "entity_count": 3,
+      "field_studio": {
         "alias_columns": [],
         "auto_derive_aliases": true,
         "first_data_row": 2,
         "header_row": 1,
         "link_columns": [],
         "maker_column": null,
-        "primary_identifier_column": "A",
+        "mode": "sheet",
+        "primary_identifier_column": "B",
         "property_columns": [],
         "property_mappings": [],
-        "sheet": "",
+        "sheet": "material",
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
-      "name_column": "A",
+      "name_column": "B",
       "preview_stats": {
-        "entity_count": 0,
+        "entity_count": 3,
         "first_20_all_numeric": false,
         "first_20_names": [],
-        "non_blank_names": 0,
+        "non_blank_names": 3,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
         "scanned_rows": 0,
@@ -72,35 +149,106 @@
         "aliases": [],
         "links": [],
         "maker": null,
-        "primary_identifier": "A",
+        "primary_identifier": "B",
         "properties": []
       },
-      "sample_entities": [],
-      "sheet": "",
+      "sample_entities": [
+        "metal",
+        "plastic",
+        "carbon fiber"
+      ],
+      "sheet": "material",
       "type": "material"
     },
     "sensor": {
-      "entity_count": 0,
-      "excel": {
+      "entity_count": 116,
+      "field_studio": {
         "alias_columns": [],
         "auto_derive_aliases": true,
         "first_data_row": 2,
         "header_row": 1,
-        "link_columns": [],
-        "maker_column": "YES",
-        "primary_identifier_column": "A",
-        "property_columns": [],
-        "property_mappings": [],
-        "sheet": "",
+        "link_columns": [
+          "J"
+        ],
+        "maker_column": "B",
+        "mode": "sheet",
+        "primary_identifier_column": "C",
+        "property_columns": [
+          "D",
+          "E",
+          "F",
+          "G",
+          "H",
+          "I"
+        ],
+        "property_mappings": [
+          {
+            "column": "D",
+            "constraints": [],
+            "field_key": "flawless_sensor",
+            "key": "flawless_sensor",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "E",
+            "constraints": [],
+            "field_key": "sensor_type",
+            "key": "sensor_type",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "F",
+            "constraints": [],
+            "field_key": "dpi",
+            "key": "dpi",
+            "type": "number",
+            "unit": "dpi",
+            "variance_policy": "upper_bound"
+          },
+          {
+            "column": "G",
+            "constraints": [],
+            "field_key": "ips",
+            "key": "ips",
+            "type": "number",
+            "unit": "ips",
+            "variance_policy": "upper_bound"
+          },
+          {
+            "column": "H",
+            "constraints": [],
+            "field_key": "acceleration",
+            "key": "acceleration",
+            "type": "number",
+            "unit": "g",
+            "variance_policy": "upper_bound"
+          },
+          {
+            "column": "I",
+            "constraints": [
+              "sensor_date <= release_date"
+            ],
+            "field_key": "sensor_date",
+            "key": "sensor_date",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          }
+        ],
+        "sheet": "sensors",
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
-      "name_column": "A",
+      "name_column": "C",
       "preview_stats": {
-        "entity_count": 0,
+        "entity_count": 116,
         "first_20_all_numeric": false,
         "first_20_names": [],
-        "non_blank_names": 0,
+        "non_blank_names": 116,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
         "scanned_rows": 0,
@@ -109,37 +257,152 @@
       },
       "roles": {
         "aliases": [],
-        "links": [],
-        "maker": "YES",
-        "primary_identifier": "A",
-        "properties": []
+        "links": [
+          "J"
+        ],
+        "maker": "B",
+        "primary_identifier": "C",
+        "properties": [
+          {
+            "column": "D",
+            "constraints": [],
+            "field_key": "flawless_sensor",
+            "key": "flawless_sensor",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "E",
+            "constraints": [],
+            "field_key": "sensor_type",
+            "key": "sensor_type",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "F",
+            "constraints": [],
+            "field_key": "dpi",
+            "key": "dpi",
+            "type": "number",
+            "unit": "dpi",
+            "variance_policy": "upper_bound"
+          },
+          {
+            "column": "G",
+            "constraints": [],
+            "field_key": "ips",
+            "key": "ips",
+            "type": "number",
+            "unit": "ips",
+            "variance_policy": "upper_bound"
+          },
+          {
+            "column": "H",
+            "constraints": [],
+            "field_key": "acceleration",
+            "key": "acceleration",
+            "type": "number",
+            "unit": "g",
+            "variance_policy": "upper_bound"
+          },
+          {
+            "column": "I",
+            "constraints": [
+              "sensor_date <= release_date"
+            ],
+            "field_key": "sensor_date",
+            "key": "sensor_date",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          }
+        ]
       },
-      "sample_entities": [],
-      "sheet": "",
+      "sample_entities": [
+        "Focus Pro 45K",
+        "HERO 2",
+        "PAW3950 Ti",
+        "PAW3950 Max",
+        "AimPoint Pro (PixArt PAW3950)",
+        "XERO",
+        "Focus Pro Gen-2",
+        "MARKSMAN S",
+        "XS-1",
+        "BAMF 3.0"
+      ],
+      "sheet": "sensors",
       "type": "sensor"
     },
     "switch": {
-      "entity_count": 0,
-      "excel": {
+      "entity_count": 106,
+      "field_studio": {
         "alias_columns": [],
         "auto_derive_aliases": true,
         "first_data_row": 2,
         "header_row": 1,
-        "link_columns": [],
-        "maker_column": "YES",
-        "primary_identifier_column": "A",
-        "property_columns": [],
-        "property_mappings": [],
-        "sheet": "",
+        "link_columns": [
+          "H"
+        ],
+        "maker_column": "B",
+        "mode": "sheet",
+        "primary_identifier_column": "C",
+        "property_columns": [
+          "D",
+          "E",
+          "F",
+          "G"
+        ],
+        "property_mappings": [
+          {
+            "column": "D",
+            "constraints": [],
+            "field_key": "switch_type",
+            "key": "switch_type",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "E",
+            "constraints": [],
+            "field_key": "switch_life_span",
+            "key": "switch_life_span",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "F",
+            "constraints": [],
+            "field_key": "click_force",
+            "key": "click_force",
+            "type": "number",
+            "unit": "g",
+            "variance_policy": "override_allowed"
+          },
+          {
+            "column": "G",
+            "constraints": [],
+            "field_key": "releasing_force",
+            "key": "releasing_force",
+            "type": "number",
+            "unit": "g",
+            "variance_policy": "authoritative"
+          }
+        ],
+        "sheet": "switches",
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
-      "name_column": "A",
+      "name_column": "C",
       "preview_stats": {
-        "entity_count": 0,
+        "entity_count": 106,
         "first_20_all_numeric": false,
         "first_20_names": [],
-        "non_blank_names": 0,
+        "non_blank_names": 106,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
         "scanned_rows": 0,
@@ -148,17 +411,72 @@
       },
       "roles": {
         "aliases": [],
-        "links": [],
-        "maker": "YES",
-        "primary_identifier": "A",
-        "properties": []
+        "links": [
+          "H"
+        ],
+        "maker": "B",
+        "primary_identifier": "C",
+        "properties": [
+          {
+            "column": "D",
+            "constraints": [],
+            "field_key": "switch_type",
+            "key": "switch_type",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "E",
+            "constraints": [],
+            "field_key": "switch_life_span",
+            "key": "switch_life_span",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "F",
+            "constraints": [],
+            "field_key": "click_force",
+            "key": "click_force",
+            "type": "number",
+            "unit": "g",
+            "variance_policy": "override_allowed"
+          },
+          {
+            "column": "G",
+            "constraints": [],
+            "field_key": "releasing_force",
+            "key": "releasing_force",
+            "type": "number",
+            "unit": "g",
+            "variance_policy": "authoritative"
+          }
+        ]
       },
-      "sample_entities": [],
-      "sheet": "",
+      "sample_entities": [
+        "ROG Micro Switch",
+        "ROG Micro Switch II",
+        "Light Blade",
+        "Optical Switches",
+        "SwiftLight",
+        "Blue Ghost Optical",
+        "Fog Blue Optical",
+        "Advanced Optical Switch",
+        "Black Shell White Dot",
+        "Mouse Switches"
+      ],
+      "sheet": "switches",
       "type": "switch"
     }
   },
   "enum_buckets": {},
+  "field_studio_map_hash": "d03026bc6fffad5222b5fa3280b80cdc93cd6a6af51d42694d15bd01c02bf3d0",
+  "field_studio_source": {
+    "hash": null,
+    "path": ""
+  },
   "fields": {
     "acceleration": {
       "ai_assist": {
@@ -182,12 +500,12 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
+        "type": "number",
         "unit": "g",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "integer",
+      "data_type": "number",
       "difficulty": "easy",
       "display_name": "Max Acceleration",
       "effort": 3,
@@ -214,7 +532,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "acceleration",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B57",
           "note": "acceleration",
@@ -228,12 +547,10 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "acceleration",
       "group": "sensor_performance",
       "key": "acceleration",
       "output_shape": "scalar",
       "parse": {
-        "allow_unitless": true,
         "strict_unit_required": false,
         "template": "number_with_unit",
         "unit": "g",
@@ -299,7 +616,8 @@
         "tooltip_md": "Define 'Max Acceleration' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search"
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "upper_bound"
     },
     "adjustable_scroll_wheel": {
       "ai_assist": {
@@ -346,7 +664,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "adjustable_scroll_wheel",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B80",
           "row": 80,
@@ -359,7 +678,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "adjustable_scroll_wheel",
       "group": "buttons_features",
       "key": "adjustable_scroll_wheel",
       "output_shape": "scalar",
@@ -438,7 +756,6 @@
       "contract": {
         "shape": "scalar",
         "type": "string",
-        "unit": "g",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
@@ -469,7 +786,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "adjustable_weight",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B26",
           "note": "construction",
@@ -483,7 +801,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "adjustable_weight",
       "group": "construction",
       "key": "adjustable_weight",
       "output_shape": "scalar",
@@ -602,7 +919,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "battery_hours",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B25",
           "note": "MUST BE WHOLE NUMBER",
@@ -616,7 +934,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "battery_hours",
       "group": "connectivity",
       "key": "battery_hours",
       "output_shape": "scalar",
@@ -737,7 +1054,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "bluetooth",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B21",
           "row": 21,
@@ -750,7 +1068,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "bluetooth",
       "group": "connectivity",
       "key": "bluetooth",
       "output_shape": "scalar",
@@ -859,7 +1176,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "cable_type",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B22",
           "row": 22,
@@ -872,7 +1190,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "cable_type",
       "group": "connectivity",
       "key": "cable_type",
       "output_shape": "scalar",
@@ -986,7 +1303,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "click_force",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B72",
           "note": "click_force (fail safe js) MUST BE FILLED IN",
@@ -1000,7 +1318,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "click_force",
       "group": "switches",
       "key": "click_force",
       "output_shape": "scalar",
@@ -1073,7 +1390,8 @@
         "tooltip_md": "Define 'Click Force' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search"
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "override_allowed"
     },
     "click_latency": {
       "ai_assist": {
@@ -1125,7 +1443,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "click_latency",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B70",
           "note": "(fail safe js) MUST BE FILLED IN",
@@ -1139,7 +1458,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "click_latency",
       "group": "switches",
       "key": "click_latency",
       "output_shape": "scalar",
@@ -1299,7 +1617,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "click_latency_list",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B71",
           "row": 71,
@@ -1312,7 +1631,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "click_latency_list",
       "group": "switches",
       "key": "click_latency_list",
       "output_shape": "list",
@@ -1456,7 +1774,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "coating",
+      "field_studio_hints": {
         "data_lists": {
           "column": "W",
           "header": "coating",
@@ -1479,7 +1798,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "coating",
       "group": "construction",
       "key": "coating",
       "output_shape": "list",
@@ -1601,7 +1919,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "colors",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B13",
           "note": "general features",
@@ -1615,7 +1934,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "colors",
       "group": "general",
       "key": "colors",
       "output_shape": "list",
@@ -1734,7 +2052,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "computer_side_connector",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B19",
           "row": 19,
@@ -1747,7 +2066,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "computer_side_connector",
       "group": "connectivity",
       "key": "computer_side_connector",
       "output_shape": "scalar",
@@ -1837,7 +2155,12 @@
         "match": {
           "strategy": "alias"
         },
-        "policy": "closed",
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open_prefer_known",
         "source": "data_lists.connection"
       },
       "evidence": {
@@ -1851,7 +2174,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "connection",
+      "field_studio_hints": {
         "data_lists": {
           "column": "P",
           "header": "connection",
@@ -1876,7 +2200,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "connection",
       "group": "connectivity",
       "key": "connection",
       "output_shape": "scalar",
@@ -1991,7 +2314,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "connectivity",
+      "field_studio_hints": {
         "data_lists": {
           "column": "Q",
           "header": "connectivity",
@@ -2014,7 +2338,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "connectivity",
       "group": "connectivity",
       "key": "connectivity",
       "output_shape": "list",
@@ -2135,7 +2458,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "debounce",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B69",
           "row": 69,
@@ -2148,7 +2472,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "debounce",
       "group": "switches",
       "key": "debounce",
       "output_shape": "scalar",
@@ -2268,7 +2591,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "design",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B14",
           "row": 14,
@@ -2281,7 +2605,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "design",
       "group": "general",
       "key": "design",
       "output_shape": "list",
@@ -2397,7 +2720,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "discontinued",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B10",
           "row": 10,
@@ -2405,7 +2729,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "discontinued",
       "group": "general",
       "key": "discontinued",
       "output_shape": "scalar",
@@ -2487,21 +2810,17 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "range": {
-          "max": 100000,
-          "min": 50
-        },
         "rounding": {
           "decimals": 0,
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
+        "type": "number",
         "unit": "dpi",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "integer",
+      "data_type": "number",
       "difficulty": "medium",
       "display_name": "Max DPI",
       "effort": 6,
@@ -2528,7 +2847,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "dpi",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B55",
           "note": "dpi",
@@ -2542,12 +2862,10 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "dpi",
       "group": "sensor_performance",
       "key": "dpi",
       "output_shape": "scalar",
       "parse": {
-        "allow_unitless": true,
         "strict_unit_required": false,
         "template": "number_with_unit",
         "unit": "dpi",
@@ -2614,7 +2932,8 @@
         "tooltip_md": "Max DPI (or max CPI) as integer. Do not list steps; store maximum unless field_rules later adds a steps field.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search"
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "upper_bound"
     },
     "encoder": {
       "ai_assist": {
@@ -2626,7 +2945,34 @@
       },
       "aliases": [],
       "availability": "sometimes",
-      "component": null,
+      "component": {
+        "ai": {
+          "context_level": "properties",
+          "mode": "off",
+          "model_strategy": "auto",
+          "reasoning_note": ""
+        },
+        "allow_new_components": true,
+        "match": {
+          "auto_accept_score": 0.95,
+          "flag_review_score": 0.65,
+          "fuzzy_threshold": 0.75,
+          "name_weight": 0.4,
+          "property_keys": [
+            "encoder_type",
+            "encoder_steps",
+            "encoder_life_span"
+          ],
+          "property_weight": 0.6
+        },
+        "priority": {
+          "difficulty": "medium",
+          "effort": 5
+        },
+        "require_identity_evidence": true,
+        "source": "component_db.encoder",
+        "type": "encoder"
+      },
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2648,7 +2994,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "component_db.encoder"
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -2661,20 +3007,17 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "encoder",
+      "field_studio_hints": {
         "component_db": "encoder",
         "component_sheet": "encoder",
         "dataEntry": {
           "key_cell": "B73",
           "row": 73,
-          "sample_values": [
-            "Black",
-            "Black"
-          ],
+          "sample_values": [],
           "sheet": "dataEntry"
         }
       },
-      "field_key": "encoder",
       "group": "encoder",
       "key": "encoder",
       "output_shape": "scalar",
@@ -2784,21 +3127,18 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "encoder_brand",
+      "field_studio_hints": {
         "component_db": "encoder",
         "component_field": "brand",
         "dataEntry": {
           "key_cell": "B74",
           "row": 74,
-          "sample_values": [
-            "kailh",
-            "kailh"
-          ],
+          "sample_values": [],
           "sheet": "dataEntry"
         },
         "related_to": "encoder"
       },
-      "field_key": "encoder_brand",
       "group": "encoder",
       "key": "encoder_brand",
       "output_shape": "scalar",
@@ -2862,6 +3202,127 @@
       },
       "unknown_reason_default": "not_found_after_search"
     },
+    "encoder_life_span": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "Encoder Life Span",
+        "encoder_life_span"
+      ],
+      "availability": "sometimes",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "shape": "scalar",
+        "type": "number",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "number",
+      "difficulty": "easy",
+      "display_name": "Encoder Life Span",
+      "effort": 3,
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open",
+        "source": null
+      },
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "encoder_life_span",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "general",
+      "key": "encoder_life_span",
+      "output_shape": "scalar",
+      "parse": {
+        "template": "integer_field"
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "expected"
+      },
+      "required_level": "expected",
+      "search_hints": {
+        "domain_hints": [
+          "manufacturer",
+          "support",
+          "manual",
+          "pdf"
+        ],
+        "preferred_content_types": [
+          "support",
+          "manual",
+          "spec",
+          "pdf",
+          "product_page"
+        ],
+        "preferred_tiers": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ],
+        "query_templates": [
+          "{brand} {model} {field}",
+          "{brand} {model} specifications {field}",
+          "{brand} {model} manual pdf {field}",
+          "{brand} {model} datasheet {field}"
+        ],
+        "query_terms": [
+          "Encoder Life Span"
+        ]
+      },
+      "ui": {
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "general",
+        "guidance_md": null,
+        "input_control": "text",
+        "label": "Encoder Life Span",
+        "order": 76,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "",
+        "tooltip_source": null
+      },
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
+    },
     "encoder_link": {
       "ai_assist": {
         "max_calls": null,
@@ -2907,7 +3368,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "encoder_link",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B75",
           "row": 75,
@@ -2916,7 +3378,6 @@
         },
         "related_to": "encoder"
       },
-      "field_key": "encoder_link",
       "group": "encoder",
       "key": "encoder_link",
       "output_shape": "scalar",
@@ -2980,6 +3441,243 @@
       },
       "unknown_reason_default": "not_found_after_search"
     },
+    "encoder_steps": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "Encoder Steps",
+        "encoder_steps"
+      ],
+      "availability": "sometimes",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "shape": "scalar",
+        "type": "number",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "number",
+      "difficulty": "easy",
+      "display_name": "Encoder Steps",
+      "effort": 3,
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "policy": "closed",
+        "source": "data_lists.encoder_steps"
+      },
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "encoder_steps",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "general",
+      "key": "encoder_steps",
+      "output_shape": "scalar",
+      "parse": {
+        "template": "integer_field"
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "expected"
+      },
+      "required_level": "expected",
+      "search_hints": {
+        "domain_hints": [
+          "manufacturer",
+          "support",
+          "manual",
+          "pdf"
+        ],
+        "preferred_content_types": [
+          "support",
+          "manual",
+          "spec",
+          "pdf",
+          "product_page"
+        ],
+        "preferred_tiers": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ],
+        "query_templates": [
+          "{brand} {model} {field}",
+          "{brand} {model} specifications {field}",
+          "{brand} {model} manual pdf {field}",
+          "{brand} {model} datasheet {field}"
+        ],
+        "query_terms": [
+          "Encoder Steps"
+        ]
+      },
+      "ui": {
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "general",
+        "guidance_md": null,
+        "input_control": "text",
+        "label": "Encoder Steps",
+        "order": 77,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "",
+        "tooltip_source": null
+      },
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
+    },
+    "encoder_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "Encoder Type",
+        "encoder_type"
+      ],
+      "availability": "sometimes",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "shape": "scalar",
+        "type": "string",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "Encoder Type",
+      "effort": 3,
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open",
+        "source": null
+      },
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "encoder_type",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "general",
+      "key": "encoder_type",
+      "output_shape": "scalar",
+      "parse": {
+        "template": "text_field"
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "expected"
+      },
+      "required_level": "expected",
+      "search_hints": {
+        "domain_hints": [
+          "manufacturer",
+          "support",
+          "manual",
+          "pdf"
+        ],
+        "preferred_content_types": [
+          "support",
+          "manual",
+          "spec",
+          "pdf",
+          "product_page"
+        ],
+        "preferred_tiers": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ],
+        "query_templates": [
+          "{brand} {model} {field}",
+          "{brand} {model} specifications {field}",
+          "{brand} {model} manual pdf {field}",
+          "{brand} {model} datasheet {field}"
+        ],
+        "query_terms": [
+          "Encoder Type"
+        ]
+      },
+      "ui": {
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "general",
+        "guidance_md": null,
+        "input_control": "text",
+        "label": "Encoder Type",
+        "order": 78,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "",
+        "tooltip_source": null
+      },
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
+    },
     "feet_material": {
       "ai_assist": {
         "max_calls": null,
@@ -3006,7 +3704,12 @@
         "match": {
           "strategy": "alias"
         },
-        "policy": "closed",
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open_prefer_known",
         "source": "data_lists.feet_material"
       },
       "evidence": {
@@ -3020,7 +3723,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "feet_material",
+      "field_studio_hints": {
         "data_lists": {
           "column": "U",
           "header": "feet_material",
@@ -3044,7 +3748,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "feet_material",
       "group": "construction",
       "key": "feet_material",
       "output_shape": "scalar",
@@ -3153,7 +3856,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "flawless_sensor",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B50",
           "row": 50,
@@ -3166,7 +3870,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "flawless_sensor",
       "group": "sensor_performance",
       "key": "flawless_sensor",
       "output_shape": "scalar",
@@ -3228,7 +3931,8 @@
         "tooltip_md": "Define 'Flawless Sensor' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search"
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
     },
     "form_factor": {
       "ai_assist": {
@@ -3256,7 +3960,12 @@
         "match": {
           "strategy": "alias"
         },
-        "policy": "closed",
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open_prefer_known",
         "source": "data_lists.form_factor"
       },
       "evidence": {
@@ -3270,7 +3979,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "form_factor",
+      "field_studio_hints": {
         "data_lists": {
           "column": "D",
           "header": "form_factor",
@@ -3295,7 +4005,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "form_factor",
       "group": "ergonomics",
       "key": "form_factor",
       "output_shape": "scalar",
@@ -3385,7 +4094,12 @@
         "match": {
           "strategy": "alias"
         },
-        "policy": "closed",
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open_prefer_known",
         "source": "data_lists.front_flare"
       },
       "evidence": {
@@ -3399,7 +4113,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "front_flare",
+      "field_studio_hints": {
         "data_lists": {
           "column": "G",
           "header": "front_flare",
@@ -3423,7 +4138,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "front_flare",
       "group": "ergonomics",
       "key": "front_flare",
       "output_shape": "scalar",
@@ -3538,7 +4252,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "grip",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B41",
           "row": 41,
@@ -3551,7 +4266,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "grip",
       "group": "ergonomics",
       "key": "grip",
       "output_shape": "list",
@@ -3672,7 +4386,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "hand_size",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B42",
           "row": 42,
@@ -3685,7 +4400,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "hand_size",
       "group": "ergonomics",
       "key": "hand_size",
       "output_shape": "list",
@@ -3800,7 +4514,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "hardware_acceleration",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B61",
           "row": 61,
@@ -3813,7 +4528,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "hardware_acceleration",
       "group": "sensor_performance",
       "key": "hardware_acceleration",
       "output_shape": "scalar",
@@ -3931,7 +4645,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "height",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B35",
           "note": "Size (mandatory data pt.)",
@@ -3945,12 +4660,10 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "height",
       "group": "dimensions",
       "key": "height",
       "output_shape": "scalar",
       "parse": {
-        "allow_unitless": true,
         "strict_unit_required": true,
         "template": "number_with_unit",
         "unit": "mm",
@@ -4070,7 +4783,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "honeycomb_frame",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B29",
           "row": 29,
@@ -4083,7 +4797,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "honeycomb_frame",
       "group": "construction",
       "key": "honeycomb_frame",
       "output_shape": "scalar",
@@ -4192,7 +4905,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "hot_swappable",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B68",
           "row": 68,
@@ -4205,7 +4919,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "hot_swappable",
       "group": "switches",
       "key": "hot_swappable",
       "output_shape": "scalar",
@@ -4295,7 +5008,12 @@
         "match": {
           "strategy": "alias"
         },
-        "policy": "closed",
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open_prefer_known",
         "source": "data_lists.hump"
       },
       "evidence": {
@@ -4309,7 +5027,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "hump",
+      "field_studio_hints": {
         "data_lists": {
           "column": "F",
           "header": "hump",
@@ -4333,7 +5052,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "hump",
       "group": "ergonomics",
       "key": "hump",
       "output_shape": "scalar",
@@ -4419,12 +5137,12 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
+        "type": "number",
         "unit": "ips",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "integer",
+      "data_type": "number",
       "difficulty": "easy",
       "display_name": "Max IPS",
       "effort": 3,
@@ -4451,7 +5169,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "ips",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B56",
           "row": 56,
@@ -4464,12 +5183,10 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "ips",
       "group": "sensor_performance",
       "key": "ips",
       "output_shape": "scalar",
       "parse": {
-        "allow_unitless": true,
         "strict_unit_required": false,
         "template": "number_with_unit",
         "unit": "ips",
@@ -4535,7 +5252,8 @@
         "tooltip_md": "Define 'Max IPS' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search"
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "upper_bound"
     },
     "lift": {
       "ai_assist": {
@@ -4594,7 +5312,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "lift",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B58",
           "note": "lift (fail safe js)",
@@ -4608,12 +5327,10 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "lift",
       "group": "sensor_performance",
       "key": "lift",
       "output_shape": "list",
       "parse": {
-        "allow_unitless": true,
         "delimiters": [
           ",",
           "/",
@@ -4750,7 +5467,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "lift_settings",
+      "field_studio_hints": {
         "data_lists": {
           "column": "V",
           "header": "lift_notes",
@@ -4769,7 +5487,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "lift_settings",
       "group": "sensor_performance",
       "key": "lift_settings",
       "output_shape": "list",
@@ -4891,7 +5608,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "lighting",
+      "field_studio_hints": {
         "data_lists": {
           "column": "T",
           "header": "lighting",
@@ -4914,7 +5632,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "lighting",
       "group": "general",
       "key": "lighting",
       "output_shape": "list",
@@ -5040,7 +5757,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "lngth",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B33",
           "note": "Size (mandatory data pt.)",
@@ -5054,12 +5772,10 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "lngth",
       "group": "dimensions",
       "key": "lngth",
       "output_shape": "scalar",
       "parse": {
-        "allow_unitless": true,
         "strict_unit_required": true,
         "template": "number_with_unit",
         "unit": "mm",
@@ -5145,7 +5861,30 @@
       },
       "aliases": [],
       "availability": "expected",
-      "component": null,
+      "component": {
+        "ai": {
+          "context_level": "properties",
+          "mode": "off",
+          "model_strategy": "auto",
+          "reasoning_note": ""
+        },
+        "allow_new_components": true,
+        "match": {
+          "auto_accept_score": 0.95,
+          "flag_review_score": 0.65,
+          "fuzzy_threshold": 0.75,
+          "name_weight": 0.4,
+          "property_keys": [],
+          "property_weight": 0.6
+        },
+        "priority": {
+          "difficulty": "medium",
+          "effort": 5
+        },
+        "require_identity_evidence": true,
+        "source": "component_db.material",
+        "type": "material"
+      },
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5167,7 +5906,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "component_db.material"
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -5180,7 +5919,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "material",
+      "field_studio_hints": {
         "component_db": "material",
         "component_sheet": "material",
         "dataEntry": {
@@ -5195,7 +5935,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "material",
       "group": "construction",
       "key": "material",
       "output_shape": "scalar",
@@ -5305,7 +6044,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "mcu",
+      "field_studio_hints": {
         "data_lists": {
           "column": "L",
           "header": "mcu",
@@ -5329,7 +6069,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "mcu",
       "group": "electronics",
       "key": "mcu",
       "output_shape": "scalar",
@@ -5438,7 +6177,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "mcu_link",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B44",
           "row": 44,
@@ -5449,7 +6189,6 @@
         },
         "related_to": "mcu"
       },
-      "field_key": "mcu_link",
       "group": "electronics",
       "key": "mcu_link",
       "output_shape": "scalar",
@@ -5563,7 +6302,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "middle_buttons",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B77",
           "row": 77,
@@ -5576,12 +6316,10 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "middle_buttons",
       "group": "buttons_features",
       "key": "middle_buttons",
       "output_shape": "scalar",
       "parse": {
-        "allow_unitless": true,
         "strict_unit_required": false,
         "template": "number_with_unit",
         "unit": "none"
@@ -5688,7 +6426,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "motion_sync",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B60",
           "row": 60,
@@ -5701,7 +6440,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "motion_sync",
       "group": "sensor_performance",
       "key": "motion_sync",
       "output_shape": "scalar",
@@ -5810,7 +6548,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "mouse_side_connector",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B20",
           "row": 20,
@@ -5823,7 +6562,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "mouse_side_connector",
       "group": "connectivity",
       "key": "mouse_side_connector",
       "output_shape": "scalar",
@@ -5932,7 +6670,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "nvidia_reflex",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B63",
           "row": 63,
@@ -5945,7 +6684,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "nvidia_reflex",
       "group": "sensor_performance",
       "key": "nvidia_reflex",
       "output_shape": "scalar",
@@ -6054,7 +6792,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "onboard_memory",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B81",
           "row": 81,
@@ -6067,7 +6806,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "onboard_memory",
       "group": "buttons_features",
       "key": "onboard_memory",
       "output_shape": "scalar",
@@ -6181,7 +6919,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "onboard_memory_value",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B82",
           "row": 82,
@@ -6194,7 +6933,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "onboard_memory_value",
       "group": "buttons_features",
       "key": "onboard_memory_value",
       "output_shape": "scalar",
@@ -6305,7 +7043,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "paracord",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B23",
           "row": 23,
@@ -6318,7 +7057,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "paracord",
       "group": "connectivity",
       "key": "paracord",
       "output_shape": "scalar",
@@ -6407,10 +7145,6 @@
           "min_items": 0,
           "sort": "none"
         },
-        "range": {
-          "max": 10000,
-          "min": 10
-        },
         "shape": "list",
         "type": "number",
         "unit": "Hz",
@@ -6444,7 +7178,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "polling_rate",
+      "field_studio_hints": {
         "data_lists": {
           "column": "R",
           "header": "polling",
@@ -6469,7 +7204,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "polling_rate",
       "group": "sensor_performance",
       "key": "polling_rate",
       "output_shape": "list",
@@ -6565,7 +7299,6 @@
       "contract": {
         "shape": "scalar",
         "type": "string",
-        "unit": "usd",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
@@ -6596,7 +7329,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "price_range",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B12",
           "note": "SORT & Filter (fail safe js)",
@@ -6610,12 +7344,10 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "price_range",
       "group": "general",
       "key": "price_range",
       "output_shape": "scalar",
       "parse": {
-        "allow_unitless": true,
         "template": "text_field"
       },
       "priority": {
@@ -6720,7 +7452,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "profile_switching",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B83",
           "row": 83,
@@ -6733,7 +7466,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "profile_switching",
       "group": "buttons_features",
       "key": "profile_switching",
       "output_shape": "scalar",
@@ -6847,7 +7579,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "programmable_buttons",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B78",
           "row": 78,
@@ -6860,12 +7593,10 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "programmable_buttons",
       "group": "buttons_features",
       "key": "programmable_buttons",
       "output_shape": "scalar",
       "parse": {
-        "allow_unitless": true,
         "strict_unit_required": false,
         "template": "number_with_unit",
         "unit": "none"
@@ -6972,7 +7703,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "release_date",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B9",
           "note": "SORT",
@@ -6986,7 +7718,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "release_date",
       "group": "general",
       "key": "release_date",
       "output_shape": "scalar",
@@ -7056,6 +7787,130 @@
       },
       "unknown_reason_default": "not_found_after_search"
     },
+    "releasing_force": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "Releasing Force",
+        "releasing_force"
+      ],
+      "availability": "sometimes",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "shape": "scalar",
+        "type": "number",
+        "unit": "g",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "number",
+      "difficulty": "easy",
+      "display_name": "Releasing Force",
+      "effort": 3,
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open",
+        "source": null
+      },
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "releasing_force",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "general",
+      "key": "releasing_force",
+      "output_shape": "scalar",
+      "parse": {
+        "strict_unit_required": false,
+        "template": "integer_with_unit",
+        "unit": "g"
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "expected"
+      },
+      "required_level": "expected",
+      "search_hints": {
+        "domain_hints": [
+          "manufacturer",
+          "support",
+          "manual",
+          "pdf"
+        ],
+        "preferred_content_types": [
+          "support",
+          "manual",
+          "spec",
+          "pdf",
+          "product_page"
+        ],
+        "preferred_tiers": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ],
+        "query_templates": [
+          "{brand} {model} {field}",
+          "{brand} {model} specifications {field}",
+          "{brand} {model} manual pdf {field}",
+          "{brand} {model} datasheet {field}"
+        ],
+        "query_terms": [
+          "Releasing Force"
+        ]
+      },
+      "ui": {
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "general",
+        "guidance_md": null,
+        "input_control": "text",
+        "label": "Releasing Force",
+        "order": 79,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "",
+        "tooltip_source": null
+      },
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
+    },
     "rgb": {
       "ai_assist": {
         "max_calls": null,
@@ -7101,7 +7956,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "rgb",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B16",
           "row": 16,
@@ -7114,7 +7970,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "rgb",
       "group": "general",
       "key": "rgb",
       "output_shape": "scalar",
@@ -7188,7 +8043,37 @@
       },
       "aliases": [],
       "availability": "expected",
-      "component": null,
+      "component": {
+        "ai": {
+          "context_level": "properties",
+          "mode": "off",
+          "model_strategy": "auto",
+          "reasoning_note": ""
+        },
+        "allow_new_components": true,
+        "match": {
+          "auto_accept_score": 0.95,
+          "flag_review_score": 0.65,
+          "fuzzy_threshold": 0.75,
+          "name_weight": 0.4,
+          "property_keys": [
+            "flawless_sensor",
+            "sensor_type",
+            "dpi",
+            "ips",
+            "acceleration",
+            "sensor_date"
+          ],
+          "property_weight": 0.6
+        },
+        "priority": {
+          "difficulty": "medium",
+          "effort": 5
+        },
+        "require_identity_evidence": true,
+        "source": "component_db.sensor",
+        "type": "sensor"
+      },
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7210,7 +8095,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "component_db.sensor"
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -7223,7 +8108,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "sensor",
+      "field_studio_hints": {
         "component_db": "sensor",
         "component_sheet": "sensors",
         "dataEntry": {
@@ -7243,7 +8129,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "sensor",
       "group": "sensor_performance",
       "key": "sensor",
       "output_shape": "scalar",
@@ -7353,7 +8238,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "sensor_brand",
+      "field_studio_hints": {
         "component_db": "sensor",
         "component_field": "Brand",
         "dataEntry": {
@@ -7369,7 +8255,6 @@
         },
         "related_to": "sensor"
       },
-      "field_key": "sensor_brand",
       "group": "sensor_performance",
       "key": "sensor_brand",
       "output_shape": "scalar",
@@ -7453,12 +8338,12 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
+        "type": "string",
         "unit": "year",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "integer",
+      "data_type": "string",
       "difficulty": "easy",
       "display_name": "Sensor Date",
       "effort": 3,
@@ -7485,7 +8370,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "sensor_date",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B47",
           "note": "HAS CONDTIONAL FORMULA vs R.Date",
@@ -7499,7 +8385,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "sensor_date",
       "group": "sensor_performance",
       "key": "sensor_date",
       "output_shape": "scalar",
@@ -7566,7 +8451,8 @@
         "tooltip_md": "Define 'Sensor Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search"
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
     },
     "sensor_latency": {
       "ai_assist": {
@@ -7618,7 +8504,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "sensor_latency",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B51",
           "note": "respoe time (fail safe js) MUST BE FILLED IN",
@@ -7632,7 +8519,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "sensor_latency",
       "group": "sensor_performance",
       "key": "sensor_latency",
       "output_shape": "scalar",
@@ -7792,7 +8678,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "sensor_latency_list",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B52",
           "row": 52,
@@ -7805,7 +8692,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "sensor_latency_list",
       "group": "sensor_performance",
       "key": "sensor_latency_list",
       "output_shape": "list",
@@ -7943,7 +8829,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "sensor_link",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B48",
           "row": 48,
@@ -7957,7 +8844,6 @@
         },
         "related_to": "sensor"
       },
-      "field_key": "sensor_link",
       "group": "sensor_performance",
       "key": "sensor_link",
       "output_shape": "scalar",
@@ -8047,7 +8933,12 @@
         "match": {
           "strategy": "alias"
         },
-        "policy": "closed",
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open_prefer_known",
         "source": "data_lists.sensor_type"
       },
       "evidence": {
@@ -8061,7 +8952,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "sensor_type",
+      "field_studio_hints": {
         "data_lists": {
           "column": "H",
           "header": "sensor_type",
@@ -8085,7 +8977,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "sensor_type",
       "group": "sensor_performance",
       "key": "sensor_type",
       "output_shape": "scalar",
@@ -8147,7 +9038,8 @@
         "tooltip_md": "Define 'Sensor Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search"
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
     },
     "shape": {
       "ai_assist": {
@@ -8175,7 +9067,12 @@
         "match": {
           "strategy": "alias"
         },
-        "policy": "closed",
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open_prefer_known",
         "source": "data_lists.shape"
       },
       "evidence": {
@@ -8189,7 +9086,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "shape",
+      "field_studio_hints": {
         "data_lists": {
           "column": "E",
           "header": "shape",
@@ -8213,7 +9111,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "shape",
       "group": "ergonomics",
       "key": "shape",
       "output_shape": "scalar",
@@ -8327,7 +9224,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "shift_latency",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B53",
           "note": "delay between DPI cycling",
@@ -8341,7 +9239,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "shift_latency",
       "group": "sensor_performance",
       "key": "shift_latency",
       "output_shape": "scalar",
@@ -8460,7 +9357,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "side_buttons",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B76",
           "row": 76,
@@ -8473,12 +9371,10 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "side_buttons",
       "group": "buttons_features",
       "key": "side_buttons",
       "output_shape": "scalar",
       "parse": {
-        "allow_unitless": true,
         "strict_unit_required": false,
         "template": "number_with_unit",
         "unit": "none"
@@ -8585,7 +9481,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "silent_clicks",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B30",
           "row": 30,
@@ -8598,7 +9495,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "silent_clicks",
       "group": "construction",
       "key": "silent_clicks",
       "output_shape": "scalar",
@@ -8707,7 +9603,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "sku",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B11",
           "row": 11,
@@ -8720,7 +9617,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "sku",
       "group": "general",
       "key": "sku",
       "output_shape": "scalar",
@@ -8829,7 +9725,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "smoothing",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B62",
           "row": 62,
@@ -8842,7 +9739,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "smoothing",
       "group": "sensor_performance",
       "key": "smoothing",
       "output_shape": "scalar",
@@ -8916,7 +9812,35 @@
       },
       "aliases": [],
       "availability": "expected",
-      "component": null,
+      "component": {
+        "ai": {
+          "context_level": "properties",
+          "mode": "off",
+          "model_strategy": "auto",
+          "reasoning_note": ""
+        },
+        "allow_new_components": true,
+        "match": {
+          "auto_accept_score": 0.95,
+          "flag_review_score": 0.65,
+          "fuzzy_threshold": 0.75,
+          "name_weight": 0.4,
+          "property_keys": [
+            "switch_type",
+            "switch_life_span",
+            "click_force",
+            "releasing_force"
+          ],
+          "property_weight": 0.6
+        },
+        "priority": {
+          "difficulty": "medium",
+          "effort": 5
+        },
+        "require_identity_evidence": true,
+        "source": "component_db.switch",
+        "type": "switch"
+      },
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8938,7 +9862,7 @@
           "suggestion_target": "_suggestions/enums.json"
         },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "component_db.switch"
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -8951,7 +9875,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "switch",
+      "field_studio_hints": {
         "component_db": "switch",
         "component_sheet": "switches",
         "dataEntry": {
@@ -8971,7 +9896,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "switch",
       "group": "switches",
       "key": "switch",
       "output_shape": "scalar",
@@ -9081,7 +10005,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "switch_brand",
+      "field_studio_hints": {
         "component_db": "switch",
         "component_field": "switch_brand",
         "dataEntry": {
@@ -9097,7 +10022,6 @@
         },
         "related_to": "switch"
       },
-      "field_key": "switch_brand",
       "group": "switches",
       "key": "switch_brand",
       "output_shape": "scalar",
@@ -9161,6 +10085,127 @@
       },
       "unknown_reason_default": "not_found_after_search"
     },
+    "switch_life_span": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "Switch Life Span",
+        "switch_life_span"
+      ],
+      "availability": "sometimes",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "shape": "scalar",
+        "type": "string",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "Switch Life Span",
+      "effort": 3,
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open",
+        "source": null
+      },
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "switch_life_span",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "controls",
+      "key": "switch_life_span",
+      "output_shape": "scalar",
+      "parse": {
+        "template": "text_field"
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "expected"
+      },
+      "required_level": "expected",
+      "search_hints": {
+        "domain_hints": [
+          "manufacturer",
+          "support",
+          "manual",
+          "pdf"
+        ],
+        "preferred_content_types": [
+          "support",
+          "manual",
+          "spec",
+          "pdf",
+          "product_page"
+        ],
+        "preferred_tiers": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ],
+        "query_templates": [
+          "{brand} {model} {field}",
+          "{brand} {model} specifications {field}",
+          "{brand} {model} manual pdf {field}",
+          "{brand} {model} datasheet {field}"
+        ],
+        "query_terms": [
+          "Switch Life Span"
+        ]
+      },
+      "ui": {
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "controls",
+        "guidance_md": null,
+        "input_control": "text",
+        "label": "Switch Life Span",
+        "order": 80,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "",
+        "tooltip_source": null
+      },
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
+    },
     "switch_type": {
       "ai_assist": {
         "max_calls": null,
@@ -9187,7 +10232,12 @@
         "match": {
           "strategy": "alias"
         },
-        "policy": "closed",
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open_prefer_known",
         "source": "data_lists.switch_type"
       },
       "evidence": {
@@ -9201,7 +10251,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "switch_type",
+      "field_studio_hints": {
         "data_lists": {
           "column": "S",
           "header": "switch_type",
@@ -9226,7 +10277,6 @@
           "sheet": "data_lists"
         }
       },
-      "field_key": "switch_type",
       "group": "switches",
       "key": "switch_type",
       "output_shape": "scalar",
@@ -9288,7 +10338,8 @@
         "tooltip_md": "Define 'Switch Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search"
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
     },
     "switches_link": {
       "ai_assist": {
@@ -9339,24 +10390,12 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "switches_link",
+      "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B67",
-          "row": 67,
-          "sample_values": [
-            "https://www.mouser.com/ProductDetail/Omron-Electronics/D2FC-F-7N20M?qs=17ckDYBRdek0%2FvhX1fLcuQ%3D%3D",
-            "https://www.amazon.com/Acinkeety-Transparent-Switch-Microswitch-Million/dp/B0CMQRMTN8?&linkCode=ll1&tag=eggear-20&linkId=c0844220fc8fd56d9e1870ad75c86ffb&language=en_US&ref_=as_li_ss_tl",
-            "https://rog.asus.com/us/articles/gaming-keyboards-gaming-mice/guide-how-to-replace-the-switches-in-your-rog-gladius-iii-gaming-mouse/",
-            "https://rog.asus.com/us/articles/gaming-keyboards-gaming-mice/guide-how-to-replace-the-switches-in-your-rog-gladius-iii-gaming-mouse/",
-            "https://rog.asus.com/us/articles/gaming-keyboards-gaming-mice/guide-how-to-replace-the-switches-in-your-rog-gladius-iii-gaming-mouse/",
-            "https://rog.asus.com/us/articles/gaming-keyboards-gaming-mice/guide-how-to-replace-the-switches-in-your-rog-gladius-iii-gaming-mouse/",
-            "https://rog.asus.com/us/articles/gaming-keyboards-gaming-mice/guide-how-to-replace-the-switches-in-your-rog-gladius-iii-gaming-mouse/",
-            "https://rog.asus.com/us/articles/gaming-keyboards-gaming-mice/guide-how-to-replace-the-switches-in-your-rog-gladius-iii-gaming-mouse/",
-            "https://rog.asus.com/us/articles/gaming-keyboards-gaming-mice/guide-how-to-replace-the-switches-in-your-rog-gladius-iii-gaming-mouse/",
-            "https://rog.asus.com/us/articles/gaming-keyboards-gaming-mice/guide-how-to-replace-the-switches-in-your-rog-gladius-iii-gaming-mouse/",
-            "https://www.logitechg.com/en-us/discover/technology/lightforce",
-            "https://www.logitechg.com/en-us/discover/technology/lightforce"
-          ],
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
           "sheet": "dataEntry"
         },
         "key_column": "B",
@@ -9366,7 +10405,6 @@
           "https://www.mouser.com/ProductDetail/Omron-Electronics/D2FC-F-7N20M?qs=17ckDYBRdek0%2FvhX1fLcuQ%3D%3D"
         ]
       },
-      "field_key": "switches_link",
       "group": "controls",
       "key": "switches_link",
       "output_shape": "scalar",
@@ -9484,7 +10522,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "thumb_rest",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B40",
           "row": 40,
@@ -9497,7 +10536,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "thumb_rest",
       "group": "ergonomics",
       "key": "thumb_rest",
       "output_shape": "scalar",
@@ -9606,7 +10644,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "tilt_scroll_wheel",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B79",
           "row": 79,
@@ -9619,7 +10658,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "tilt_scroll_wheel",
       "group": "buttons_features",
       "key": "tilt_scroll_wheel",
       "output_shape": "scalar",
@@ -9701,10 +10739,6 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "range": {
-          "max": 500,
-          "min": 1
-        },
         "rounding": {
           "decimals": 1,
           "mode": "nearest"
@@ -9742,7 +10776,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "weight",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B31",
           "note": "weight (mandatory data pt.)",
@@ -9756,12 +10791,10 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "weight",
       "group": "construction",
       "key": "weight",
       "output_shape": "scalar",
       "parse": {
-        "allow_unitless": true,
         "strict_unit_required": false,
         "template": "number_with_unit",
         "unit": "g",
@@ -9887,7 +10920,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "width",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B34",
           "note": "Size (mandatory data pt.)",
@@ -9901,12 +10935,10 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "width",
       "group": "dimensions",
       "key": "width",
       "output_shape": "scalar",
       "parse": {
-        "allow_unitless": true,
         "strict_unit_required": true,
         "template": "number_with_unit",
         "unit": "mm",
@@ -10026,7 +11058,8 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_key": "wireless_charging",
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B24",
           "row": 24,
@@ -10039,7 +11072,6 @@
           "sheet": "dataEntry"
         }
       },
-      "field_key": "wireless_charging",
       "group": "connectivity",
       "key": "wireless_charging",
       "output_shape": "scalar",
@@ -10104,7 +11136,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-02-24T22:51:45.113Z",
+  "generated_at": "2026-02-25T18:50:55.275Z",
   "global": {
     "availability_levels": [
       "expected",
@@ -10149,9 +11181,8 @@
     ]
   },
   "key_migrations_suggested": {
-    "lngth": "length",
-    "switch_link": "switches_link",
-    "switches_link": "switch_link"
+    "length": "lngth",
+    "switch_link": "switches_link"
   },
   "key_source": {
     "range": "B9:B83",
@@ -10182,6 +11213,17 @@
       "2.5",
       "n/a",
       "unk"
+    ],
+    "encoder_steps": [
+      "16",
+      "18",
+      "20",
+      "24",
+      "25",
+      "26",
+      "30",
+      "5",
+      "59"
     ],
     "feet_material": [
       "Glass",
@@ -10484,6 +11526,9 @@
       "computer_side_connector",
       "design",
       "discontinued",
+      "encoder_life_span",
+      "encoder_steps",
+      "encoder_type",
       "feet_material",
       "flawless_sensor",
       "form_factor",
@@ -10507,6 +11552,7 @@
       "price_range",
       "profile_switching",
       "programmable_buttons",
+      "releasing_force",
       "rgb",
       "sensor_date",
       "sensor_link",
@@ -10514,6 +11560,7 @@
       "shape",
       "silent_clicks",
       "smoothing",
+      "switch_life_span",
       "switch_type",
       "switches_link",
       "thumb_rest",
@@ -10553,7 +11600,10 @@
       "dpi",
       "encoder",
       "encoder_brand",
+      "encoder_life_span",
       "encoder_link",
+      "encoder_steps",
+      "encoder_type",
       "feet_material",
       "flawless_sensor",
       "form_factor",
@@ -10585,6 +11635,7 @@
       "profile_switching",
       "programmable_buttons",
       "release_date",
+      "releasing_force",
       "rgb",
       "sensor",
       "sensor_brand",
@@ -10601,6 +11652,7 @@
       "smoothing",
       "switch",
       "switch_brand",
+      "switch_life_span",
       "switch_type",
       "switches_link",
       "thumb_rest",
@@ -10626,14 +11678,8 @@
       "width"
     ]
   },
-  "source_workbook": "mouseData.xlsm",
-  "version": 1,
-  "workbook": {
-    "hash": "8383ddb04030edd39344c901672f06c1d117a3b42ea9531678c4111e5e6be5ee",
-    "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\mouse\\mouseData.xlsm"
-  },
-  "workbook_map_hash": "e6ade5f1eaeca55a0f01fc7810c751aa814fa7fd2f5f4ca631acea26ffc9100c",
-  "workbook_tabs": {
+  "source_context": "field_studio_map",
+  "source_tabs": {
     "data_values": {
       "notes": "Observed values across products; can be used for suggestion/inference but not strict enums.",
       "role": "observed value samples (optional)"
@@ -10641,6 +11687,23 @@
     "dataEntry": {
       "notes": "Column B holds field keys; columns C+ hold product values.",
       "role": "field_keys + optional product-table sampling"
+    },
+    "encoder": {
+      "notes": "Entity source sheet mapped by column roles (primary identifier, maker, aliases, links, properties).",
+      "role": "component_db:encoder"
+    },
+    "material": {
+      "notes": "Entity source sheet mapped by column roles (primary identifier, maker, aliases, links, properties).",
+      "role": "component_db:material"
+    },
+    "sensors": {
+      "notes": "Entity source sheet mapped by column roles (primary identifier, maker, aliases, links, properties).",
+      "role": "component_db:sensor"
+    },
+    "switches": {
+      "notes": "Entity source sheet mapped by column roles (primary identifier, maker, aliases, links, properties).",
+      "role": "component_db:switch"
     }
-  }
+  },
+  "version": 1
 }

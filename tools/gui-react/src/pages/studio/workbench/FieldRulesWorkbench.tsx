@@ -27,6 +27,7 @@ interface Props {
   autoSaveEnabled: boolean;
   setAutoSaveEnabled: (v: boolean) => void;
   autoSaveLocked: boolean;
+  autoSaveLockReason?: string;
 }
 
 const PRESET_TAB_IDS = [
@@ -82,6 +83,7 @@ export function FieldRulesWorkbench({
   autoSaveEnabled,
   setAutoSaveEnabled,
   autoSaveLocked,
+  autoSaveLockReason,
 }: Props) {
   const { editedRules, editedFieldOrder, updateField } = useFieldRulesStore();
 
@@ -248,6 +250,7 @@ export function FieldRulesWorkbench({
           autoSaveEnabled={autoSaveEnabled}
           setAutoSaveEnabled={setAutoSaveEnabled}
           autoSaveLocked={autoSaveLocked}
+          autoSaveLockReason={autoSaveLockReason}
         />
 
         <WorkbenchTable

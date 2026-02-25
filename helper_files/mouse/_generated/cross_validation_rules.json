@@ -1,40 +1,7 @@
 {
   "category": "mouse",
-  "generated_at": "2026-02-24T22:51:45.113Z",
+  "generated_at": "2026-02-25T18:50:55.275Z",
   "rules": [
-    {
-      "check": {
-        "max": 100000,
-        "min": 50,
-        "on_fail": "reject_candidate",
-        "type": "range"
-      },
-      "description": "dpi must stay within configured plausible range",
-      "rule_id": "dpi_plausibility",
-      "trigger_field": "dpi"
-    },
-    {
-      "check": {
-        "max": 10000,
-        "min": 10,
-        "on_fail": "reject_candidate",
-        "type": "range"
-      },
-      "description": "polling_rate must stay within configured plausible range",
-      "rule_id": "polling_rate_plausibility",
-      "trigger_field": "polling_rate"
-    },
-    {
-      "check": {
-        "max": 500,
-        "min": 1,
-        "on_fail": "reject_candidate",
-        "type": "range"
-      },
-      "description": "weight must stay within configured plausible range",
-      "rule_id": "weight_plausibility",
-      "trigger_field": "weight"
-    },
     {
       "condition": "connection IN ['wireless','hybrid','bluetooth']",
       "description": "Wireless products should provide battery_hours",

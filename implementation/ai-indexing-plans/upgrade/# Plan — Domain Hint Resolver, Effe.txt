@@ -1,0 +1,361 @@
+# Plan — Domain Hint Resolver, Effective Hosts, and Query Scoring QA
+
+Owner: Chris (Spec Factory)
+
+## 0) Executive Summary
+
+Your current behavior treats `domain_hints` as usable only when they look like a host (contain `.`). That makes valid intent tokens (e.g., `retailer`, `lab`, `database`, `manufacturer`) silently ineffective, which cascades into:
+
+* **Domain panel = 0/Y** despite valid intent
+* Query scoring selecting “first query” based on incomplete signals
+* Poor pass diversity (many near-duplicate queries)
+
+This plan implements a **typed hint system** + a deterministic **EffectiveHostPlan** that downstream stages use for:
+
+* host constraints (`site:` / host preference)
+* query intent modifiers (`manual`, `pdf`, `support`)
+* scoring features (coverage, source alignment, diversity)
+
+Result: **predictable, explainable selection of the first query** and better early-pass yield.
+
+---
+
+## 1) Goals (What “Optimal” Means)
+
+1. **No silent drops**: every hint token becomes either (a) resolved host(s), (b) content intent(s), or (c) an explicit unresolved warning.
+2. **Domain never stuck** when intent is valid: tier tokens expand to real hosts.
+3. **First-selected query is explainable**: a top-1 choice that is best per scoring + aligns to NeedSet.
+4. **Pass diversity by construction**: avoid 30 near-duplicate queries in Pass 1.
+5. **Evidence-first**: prioritize queries likely to produce citations for missing critical keys.
+
+Non-goals (for this iteration):
+
+* Building a full crawler/domain classifier
+* Solving CAPTCHA / anti-bot
+* Long-term multi-run learning redesign (we’ll constrain learning so it can’t override correctness)
+
+---
+
+## 2) Current State (Recap)
+
+* Search profile rows are generated in `queryBuilder.js`.
+* `query_terms` and `preferred_content_types` are used only when gates are enabled.
+* `domain_hints` are only treated as host hints if they look like domains (contain `.`).
+* Host-constrained site rows come from:
+
+  * brand-matched manufacturer hosts
+  * plus dotted `domain_hints`
+* Row metadata includes:
+
+  * `hint_source`
+  * `source_host` for site queries
+
+---
+
+## 3) Target State (What It Should Be)
+
+### 3.1 Typed Hint Classes
+
+We treat all hints as one of three kinds:
+
+**A) Explicit host hints** (dotted):
+
+* `rtings.com`, `techpowerup.com`, `support.logitech.com`
+
+**B) Tier tokens** (expand to hosts from `sources.json`):
+
+* `manufacturer`, `retailer`, `lab`, `database`, `community`
+
+**C) Content intent tokens** (query modifiers / content filters; not domains):
+
+* `support`, `manual`, `pdf`, `datasheet`, `drivers`, `firmware`, `specsheet`
+
+### 3.2 One “Truth Object”: EffectiveHostPlan
+
+Every run produces a deterministic object used by query generation + scoring + UI:
+
+**EffectiveHostPlan**
+
+* `manufacturer_hosts[]` (brand-resolved)
+* `tier_hosts: { retailer[] , lab[] , database[] , community[] }`
+* `explicit_hosts[]` (from dotted domain_hints)
+* `content_intents[]` (support/manual/pdf etc)
+* `unresolved_tokens[]` (must appear in UI/logs)
+* `host_groups[]` (for diversity + scoring)
+* `explain[]` (why each host is included: token, tier, source, confidence)
+
+---
+
+## 4) Design Details
+
+### 4.1 DomainHintResolver (New Module)
+
+**Inputs**
+
+* `domain_hints[]` from rules/search profile
+* `brand_resolver` output (manufacturer domains / canonical brand)
+* `sources.json` tiers (retailer/lab/database/community)
+* optional: `learned_host_yield` stats (used later as a bounded modifier)
+
+**Outputs**
+
+* `resolved_explicit_hosts[]`
+* `resolved_tier_hosts: { manufacturer[], retailer[], lab[], database[], community[] }`
+* `content_intents[]`
+* `unresolved_tokens[]`
+* `explain[]`
+
+**Classification Rules**
+
+1. If token contains a dot and parses as a domain → explicit host.
+2. Else if token in tier-token set → expand from sources.json tiers.
+3. Else if token in content-intent set → add to intents.
+4. Else → unresolved.
+
+**Expansion Rules**
+
+* `manufacturer` expands primarily from brand resolver’s manufacturer domains.
+
+  * fallback: if brand resolver yields none, optionally fall back to sources.json manufacturer tier if present.
+* `retailer/lab/database/community` expand from sources.json tiers.
+* Deduplicate hosts and normalize (lowercase, strip protocol, strip paths).
+* Cap max hosts per tier group (to avoid query explosion). Example:
+
+  * labs: 8
+  * databases: 8
+  * retailers: 8
+  * manufacturer: 4–6 (brand-specific)
+
+**Explain Metadata**
+Each host entry carries:
+
+* `host`
+* `origin_token`
+* `group` (manufacturer|retailer|lab|database|community|explicit)
+* `hint_source` (field_rules.search_hints | deterministic | learned)
+* `confidence` (HIGH for brand-resolved manufacturer, MED for tier lists, LOW for learned)
+
+### 4.2 Content Intents (Keep as Intent, Not Domain)
+
+Intents modify query construction and/or apply content filters:
+
+* `manual` → add terms like “user manual”, “owner’s manual”, “documentation”
+* `pdf` → add `filetype:pdf` where supported, otherwise add `.pdf`/"PDF" token boosts
+* `support` → add “support”, “downloads”, “drivers”, “FAQ”
+* `datasheet` → add “datasheet”, “spec sheet”, “technical specifications”
+
+Optional (recommended) **soft boosts** (not hard constraints):
+
+* If intent includes `support`, boost URLs/hosts that contain `support.` or paths like `/support` `/downloads`.
+
+---
+
+## 5) Implementation Plan (Step-by-Step)
+
+### Step 1 — Add Resolver Module
+
+Create:
+
+* `src/search/domainHintResolver.js` (or TypeScript equivalent)
+
+Export:
+
+* `resolveDomainHints({ domainHints, brandHosts, sources, learnedStats, hintSource }) => EffectiveHostPlan`
+
+### Step 2 — Update Query Builder to Use EffectiveHostPlan
+
+In `queryBuilder.js`:
+
+* Replace “dot-only domain_hints” logic with:
+
+  1. build EffectiveHostPlan once
+  2. generate rows from host groups + intents
+
+Row generation should include:
+
+* `row.host_group` (manufacturer|retailer|lab|database|community|explicit)
+* `row.source_host` (host if host-constrained)
+* `row.content_intents[]`
+* `row.hint_source`
+* `row.explain` pointer (or small copy)
+
+### Step 3 — Seed Tier Hosts into Host-Constrained Generation
+
+Ensure tier hosts can generate site rows even if manufacturer host list exists.
+
+* This prevents “Domain stuck at 0/Y” when the user intends lab/database.
+
+### Step 4 — Add Diversity Groups and Query Budgets Per Pass
+
+Implement deterministic pass templates:
+
+* **Pass 1**: broad/high yield with guaranteed multi-group coverage
+
+  * manufacturer + database + lab, minimal retailer
+* **Pass 2**: driven by missing critical keys
+
+  * more intent modifiers (manual/pdf/datasheet)
+* **Pass 3+**: isolates / conflict resolution
+
+  * stronger constraints, fewer queries
+
+Add simple policy:
+
+* Always include at least N queries from distinct `host_groups` in Pass 1.
+
+### Step 5 — Scoring: Make “First Selected Query” Trustworthy
+
+Add/confirm scoring features:
+
+1. **NeedSet key coverage** (high weight)
+2. **Source alignment** (preferred hosts/groups per key)
+3. **Evidence likelihood** (manufacturer/lab/database typically > retailer for hard specs)
+4. **Diversity penalty** (cluster near-duplicates; penalize same-group repetition)
+5. **Learning modifier bounded** (cannot override deterministic rank unless confidence threshold)
+
+Add a debug object for every candidate query:
+
+* `score_total`
+* contributions per feature
+* which keys it targets
+* which host_group it covers
+
+### Step 6 — UI/Panel Instrumentation
+
+For each Prefetch panel:
+
+* Show key inputs + outputs (human-readable; not raw JSON blobs)
+
+**NeedSet panel**
+
+* missing/low-confidence keys sorted by priority
+
+**Brand Resolver panel**
+
+* canonical brand, manufacturer hosts
+
+**Search Profiler panel**
+
+* domain_hints tokens + content intents
+
+**Search Planner panel**
+
+* candidate query pool (top N)
+
+**Query Journey panel**
+
+* selected query + score breakdown
+* why it beat #2 and #3
+
+**Search Results panel**
+
+* SERP snapshot summary + domain distribution
+
+**New: Resolver Debug widget (recommended)**
+
+* resolved hosts by group
+* unresolved tokens (red)
+* explain lines (“token X expanded to host Y via sources.json tier Z”)
+
+### Step 7 — Learning Reset Controls
+
+Add a deterministic control to:
+
+* clear per-pass learned query/host winners
+* clear parsed-url memory (for test runs)
+
+This ensures you can cold-run Pass 1 and objectively evaluate selection.
+
+---
+
+## 6) Testing Strategy (Must-Haves)
+
+### 6.1 Unit Tests: DomainHintResolver
+
+Test cases:
+
+* dotted domains are accepted and normalized
+* `manufacturer` expands from brand hosts
+* `lab/retailer/database` expand from sources.json
+* `support/manual/pdf` become intents only
+* unknown token goes to unresolved
+* dedupe + caps applied
+
+### 6.2 Integration Tests: Query Builder Rows
+
+* given a fixed NeedSet/SearchProfile + sources.json fixture:
+
+  * rows include expected host groups
+  * no silent drops
+  * Domain panel counts match resolved host groups
+
+### 6.3 Regression: “First Selected Query” Consistency
+
+* fixed candidate pool + fixed scoring weights
+
+  * top-1 query should match expected golden output
+
+### 6.4 Live Test Checklist (Matches Your Workflow)
+
+* stop after Search Results loads
+* inspect: EffectiveHostPlan, candidate pool, scoring breakdown
+* verify: selected query is best-scoring and best-choice
+
+---
+
+## 7) Prompts (Operational QA)
+
+### 7.1 Shadow Audit Prompt (Scoring Correctness)
+
+Use this prompt in the Scoring QA stage:
+
+**Prompt:**
+"Validate that the first-selected query is the best choice. Re-rank the candidate pool using the provided scoring breakdown, check diversity, check NeedSet coverage, and compare against SERP snapshot. If FAIL, propose minimal scoring changes (weights/features) to make the correct query win. Output a ranked table with score contributions and a PASS/FAIL verdict."
+
+### 7.2 Query Diversity Prompt (Pass 1)
+
+**Prompt:**
+"Given the NeedSet and EffectiveHostPlan, propose Pass-1 queries that cover manufacturer + lab + database groups, avoid near-duplicates, and maximize evidence likelihood for missing critical keys. Return 12–20 queries with a brief reason per query and assigned host_group."
+
+---
+
+## 8) Rollout Plan (Safe + Reversible)
+
+1. Add feature flag:
+
+* `ENABLE_DOMAIN_HINT_RESOLVER`
+
+2. Run side-by-side:
+
+* old method vs new EffectiveHostPlan method
+* log differences in:
+
+  * resolved host counts
+  * selected top-1 query
+  * SERP domain distribution
+
+3. Default to new after regression passes.
+
+---
+
+## 9) Acceptance Criteria (Definition of Done)
+
+* Tier tokens (`retailer/lab/database/manufacturer`) always resolve to hosts OR show as unresolved (never ignored).
+* Domain panel never shows 0/Y when tier intent exists and sources.json has entries.
+* Query Journey displays score breakdown and explains why top-1 won.
+* Pass 1 produces multi-group query diversity (not synonym spam).
+* Learning can be reset and does not override deterministic correctness.
+
+---
+
+## 10) Answer to “Is this best / professional?”
+
+Yes—this is the standard, professional approach for an evidence-first, pass-based search pipeline:
+
+* typed hints (host vs tier vs intent)
+* deterministic expansion into an effective host plan
+* explainable scoring with visible breakdowns
+* diversity enforced by design
+* learning constrained so it improves yield without hijacking correctness
+
+If you implement only one thing first: **DomainHintResolver + EffectiveHostPlan + UI surfacing of unresolved tokens**. That immediately fixes “Domain stuck at 0/Y” and makes the rest of the system debuggable.

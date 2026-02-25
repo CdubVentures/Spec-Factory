@@ -1,6 +1,5 @@
 export {
   searchBing,
-  searchGoogleCse,
   searchSearxng,
   searchDuckduckgo,
   runSearchProviders,

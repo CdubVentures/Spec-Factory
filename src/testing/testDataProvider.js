@@ -1,4 +1,4 @@
-﻿/**
+/**
  * testDataProvider.js â€” Contract-driven synthetic source data generator for test mode v2.
  *
  * Auto-generates ALL test scenarios from the actual imported field rules contract.
@@ -12,7 +12,6 @@
 import { callLlmWithRouting } from '../llm/routing.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import ExcelJS from 'exceljs';
 
 // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -35,8 +34,6 @@ function singularize(word) {
   if (word.endsWith('s') && !word.endsWith('ss')) return word.slice(0, -1);
   return word;
 }
-
-const DEFAULT_COMPONENT_POOL_WORKBOOK = path.resolve('implementation', 'grid-rules', 'component-identity-pools-10-tabs.xlsx');
 
 function stableTextHash(text) {
   const input = String(text || '');
@@ -130,28 +127,54 @@ function getIdentityPool(identityPoolsByType, typeName) {
   return { names, brands };
 }
 
-function excelCellToText(value) {
-  if (value == null) return '';
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return String(value).trim();
+const IDENTITY_POOL_NAME_PARTS = [
+  'Alpha',
+  'Beta',
+  'Gamma',
+  'Delta',
+  'Epsilon',
+  'Zeta',
+  'Eta',
+  'Theta',
+  'Iota',
+  'Kappa',
+  'Lambda',
+  'Mu',
+  'Nu',
+  'Xi',
+  'Omicron',
+  'Pi'
+];
+
+function buildDeterministicIdentityPool(typeName) {
+  const token = singularize(normLower(typeName) || 'component') || 'component';
+  const label = capitalize(token);
+  const names = [];
+  const brands = [];
+  const nameCount = 36;
+  const brandCount = 10;
+
+  for (let index = 0; index < nameCount; index += 1) {
+    const part = IDENTITY_POOL_NAME_PARTS[index % IDENTITY_POOL_NAME_PARTS.length];
+    const round = Math.floor(index / IDENTITY_POOL_NAME_PARTS.length) + 1;
+    names.push(`${label} ${part} ${String(round).padStart(2, '0')}`);
   }
-  if (typeof value === 'object') {
-    if (Array.isArray(value.richText)) {
-      const text = value.richText.map((part) => String(part?.text || '')).join('');
-      return text.trim();
-    }
-    if (value.text != null) return String(value.text).trim();
-    if (value.result != null) return excelCellToText(value.result);
+  for (let index = 0; index < brandCount; index += 1) {
+    const code = String.fromCharCode(65 + (index % 26));
+    brands.push(`${label} Labs ${code}`);
   }
-  return '';
+
+  return {
+    source: 'app_generated',
+    names: uniqueCaseInsensitive(names),
+    brands: uniqueCaseInsensitive(brands),
+  };
 }
 
-export async function loadComponentIdentityPoolsFromWorkbook({
-  workbookPath = DEFAULT_COMPONENT_POOL_WORKBOOK,
+export async function loadComponentIdentityPools({
   componentTypes = [],
   strict = false,
 } = {}) {
-  const resolvedPath = path.resolve(String(workbookPath || DEFAULT_COMPONENT_POOL_WORKBOOK));
   const normalizedTypes = [...new Set(
     toArr(componentTypes)
       .map((typeName) => String(typeName || '').trim())
@@ -162,63 +185,13 @@ export async function loadComponentIdentityPoolsFromWorkbook({
     return {};
   }
 
-  try {
-    await fs.access(resolvedPath);
-  } catch {
-    if (strict) {
-      throw new Error(`identity pool load failed: workbook not found at ${resolvedPath}`);
-    }
-    return {};
-  }
-
-  const workbook = new ExcelJS.Workbook();
-  try {
-    await workbook.xlsx.readFile(resolvedPath);
-  } catch {
-    if (strict) {
-      throw new Error(`identity pool load failed: workbook unreadable at ${resolvedPath}`);
-    }
-    return {};
-  }
-
-  const sheets = workbook.worksheets || [];
-  if (sheets.length === 0) {
-    if (strict) throw new Error(`identity pool load failed: workbook has no sheets (${resolvedPath})`);
-    return {};
-  }
-  if (strict && sheets.length < normalizedTypes.length) {
-    throw new Error(
-      `identity pool load failed: workbook has ${sheets.length} sheets for ${normalizedTypes.length} component types`
-    );
-  }
-
   const poolsByType = {};
-  for (let index = 0; index < normalizedTypes.length; index += 1) {
-    const typeName = normalizedTypes[index];
-    const sheet = sheets[index] || null;
-    if (!sheet) {
-      if (strict) throw new Error(`identity pool load failed: missing sheet for component type '${typeName}'`);
-      continue;
+  for (const typeName of normalizedTypes) {
+    const pool = buildDeterministicIdentityPool(typeName);
+    if (strict && pool.names.length === 0) {
+      throw new Error(`identity pool load failed: no generated names for component type '${typeName}'`);
     }
-    const names = [];
-    const brands = [];
-    for (let rowIndex = 4; rowIndex <= sheet.rowCount; rowIndex += 1) {
-      const row = sheet.getRow(rowIndex);
-      const name = excelCellToText(row.getCell(2).value);
-      const brand = excelCellToText(row.getCell(4).value);
-      if (name) names.push(name);
-      if (brand) brands.push(brand);
-    }
-    const dedupedNames = uniqueCaseInsensitive(names);
-    const dedupedBrands = uniqueCaseInsensitive(brands);
-    if (strict && dedupedNames.length === 0) {
-      throw new Error(`identity pool load failed: sheet '${sheet.name}' has no component names for '${typeName}'`);
-    }
-    poolsByType[typeName] = {
-      sheetName: String(sheet?.name || '').trim(),
-      names: dedupedNames,
-      brands: dedupedBrands,
-    };
+    poolsByType[typeName] = pool;
   }
 
   return poolsByType;
@@ -428,7 +401,7 @@ export async function analyzeContract(helperRoot, category) {
 
     // Also get property keys and variance policies from field_rules component_db_sources
     const dbSource = fieldRules.component_db_sources?.[type] || fieldRules.component_db_sources?.[singularize(type)] || {};
-    const propMappings = toArr(dbSource.roles?.properties || dbSource.excel?.property_mappings);
+    const propMappings = toArr(dbSource.roles?.properties);
     const propKeys = propMappings.map(p => p.key).filter(Boolean);
     const varianceDetails = propMappings.map(p => ({
       key: p.key,
@@ -2085,7 +2058,7 @@ export function buildBaseValues(contractAnalysis, scenarioIdx = 0, options = {})
     if ((type === 'number' || type === 'integer') && rangeConstraints[key]) {
       const range = rangeConstraints[key];
       const mid = (range.min + range.max) / 2;
-      // Add Â±5-15% offset per scenario so pipeline values differ from workbook defaults
+      // Add Â±5-15% offset per scenario so pipeline values differ from canonical defaults
       const offsets = [0, 0.08, -0.06, 0.12, -0.10, 0.15, -0.08, 0.05, 0.10, -0.12];
       const offset = offsets[scenarioIdx % offsets.length] || 0;
       values[key] = String(Math.round(mid * (1 + offset)));
@@ -2096,7 +2069,7 @@ export function buildBaseValues(contractAnalysis, scenarioIdx = 0, options = {})
     if (type === 'number' || type === 'integer') {
       const defaults = { weight: 85, dpi: 26000, ips: 650, acceleration: 50, height: 40, width: 68, lngth: 125, polling_rate: 1000, battery_hours: 70, click_force: 55, lift_off_distance: 1.5, cable_length: 1.8 };
       const base = defaults[key] || 100;
-      // Offsets create variation across products so pipeline candidates differ from workbook
+      // Offsets create variation across products so pipeline candidates differ from baseline
       const offsets = [0, 0.08, -0.06, 0.12, -0.10, 0.15, -0.08, 0.05, 0.10, -0.12];
       const offset = offsets[scenarioIdx % offsets.length] || 0;
       values[key] = String(Math.round(base * (1 + offset) * 100) / 100);
@@ -3020,5 +2993,3 @@ function isUnk(val) {
   const s = String(val).trim().toLowerCase();
   return s === '' || s === 'unk' || s === 'unknown' || s === 'n/a';
 }
-
-

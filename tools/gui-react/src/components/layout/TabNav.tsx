@@ -16,12 +16,12 @@ const CATALOG_TABS: TabDef[] = [
   { path: '/categories', label: 'Categories' },
   { path: '/catalog', label: 'Catalog', disabledOnTest: true },
   { path: '/product', label: 'Selected Product', dividerAfter: true },
-  { path: '/studio', label: 'Field Rules Studio', disabledOnAll: true, disabledOnTest: true },
-  { path: '/test-mode', label: 'Field Test', dividerAfter: true },
+  { path: '/studio', label: 'Field Rules Studio', disabledOnAll: true, disabledOnTest: true, dividerAfter: true },
 ];
 
 const OPS_TABS: TabDef[] = [
   { path: '/indexing', label: 'Indexing Lab', disabledOnAll: true, disabledOnTest: true },
+  { path: '/pipeline-settings', label: 'Pipeline Settings', disabledOnAll: true, disabledOnTest: true },
   { path: '/runtime-ops', label: 'Runtime Ops', disabledOnTest: true },
   { path: '/llm-settings', label: 'Review LLM', disabledOnAll: true, dividerBefore: true },
   { path: '/review', label: 'Review Grid', disabledOnAll: true },

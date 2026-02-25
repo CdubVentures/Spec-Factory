@@ -1,4 +1,6 @@
+import type { ReactNode } from 'react';
 import { Tip } from '../../../components/common/Tip';
+import { usePersistedToggle } from '../../../stores/collapseStore';
 import { ActivityGauge, formatNumber, formatDateTime } from '../helpers';
 import type { IndexLabRunSummary } from '../types';
 
@@ -83,6 +85,10 @@ interface EventStreamPanelProps {
   indexlabSummary: IndexlabSummaryShape;
   eventStreamActivity: { currentPerMin: number; peakPerMin: number };
   processRunning: boolean;
+  persistScope?: string;
+  overviewContent?: ReactNode;
+  panelControlsContent?: ReactNode;
+  sessionDataContent?: ReactNode;
 }
 
 export function EventStreamPanel({
@@ -99,7 +105,48 @@ export function EventStreamPanel({
   indexlabSummary,
   eventStreamActivity,
   processRunning,
+  persistScope = 'global',
+  overviewContent,
+  panelControlsContent,
+  sessionDataContent,
 }: EventStreamPanelProps) {
+  const nestedPersistScope = String(persistScope || 'global').trim() || 'global';
+  const [overviewOpen, , setOverviewOpen] = usePersistedToggle(`indexing:eventStream:nested:${nestedPersistScope}:overview`, false);
+  const [panelControlsOpen, , setPanelControlsOpen] = usePersistedToggle(`indexing:eventStream:nested:${nestedPersistScope}:panelControls`, false);
+  const [sessionDataOpen, , setSessionDataOpen] = usePersistedToggle(`indexing:eventStream:nested:${nestedPersistScope}:sessionData`, false);
+  const [eventFeedOpen, , setEventFeedOpen] = usePersistedToggle(`indexing:eventStream:nested:${nestedPersistScope}:eventFeed`, false);
+
+  const renderNestedSection = (
+    key: string,
+    label: string,
+    open: boolean,
+    setOpen: (value: boolean) => void,
+    content: ReactNode,
+    tipText: string,
+  ) => (
+    <details
+      key={key}
+      open={open}
+      onToggle={(event) => {
+        const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
+        if (nextOpen !== open) setOpen(nextOpen);
+      }}
+      className="group rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/20 p-2"
+    >
+      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 text-xs">
+        <span className="inline-flex items-center font-semibold text-gray-900 dark:text-gray-100">
+          <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 text-[10px] leading-none text-gray-700 dark:border-gray-600 dark:text-gray-200 mr-1">
+            <span className="group-open:hidden">+</span>
+            <span className="hidden group-open:inline">-</span>
+          </span>
+          {label}
+          <Tip text={tipText} />
+        </span>
+      </summary>
+      <div className="mt-2">{content}</div>
+    </details>
+  );
+
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-3" style={{ order: 40 }}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -136,7 +183,51 @@ export function EventStreamPanel({
         </div>
       </div>
       {!collapsed ? (
-        <>
+        <div className="space-y-2">
+          {renderNestedSection(
+            'indexing-lab-overview',
+            'Indexing Lab Overview',
+            overviewOpen,
+            setOverviewOpen,
+            overviewContent || <div className="text-xs text-gray-500 dark:text-gray-400">overview unavailable</div>,
+            'One-click run path and high-level phase activity.',
+          )}
+          {renderNestedSection(
+            'panel-controls',
+            'Panel Controls',
+            panelControlsOpen,
+            setPanelControlsOpen,
+            panelControlsContent || <div className="text-xs text-gray-500 dark:text-gray-400">panel controls unavailable</div>,
+            'Open or close dashboard containers and inspect panel state.',
+          )}
+          {renderNestedSection(
+            'session-data',
+            'Session Data',
+            sessionDataOpen,
+            setSessionDataOpen,
+            sessionDataContent || <div className="text-xs text-gray-500 dark:text-gray-400">session summary unavailable</div>,
+            'Run-level summary for crawl/fetch/phase progression signals.',
+          )}
+
+          <details
+            open={eventFeedOpen}
+            onToggle={(event) => {
+              const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
+              if (nextOpen !== eventFeedOpen) setEventFeedOpen(nextOpen);
+            }}
+            className="group rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/20 p-2"
+          >
+            <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="inline-flex items-center font-semibold text-gray-900 dark:text-gray-100">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 text-[10px] leading-none text-gray-700 dark:border-gray-600 dark:text-gray-200 mr-1">
+                  <span className="group-open:hidden">+</span>
+                  <span className="hidden group-open:inline">-</span>
+                </span>
+                Indexing Lab Event Feed
+                <Tip text="Stage timeline and URL fetch outcomes from run events." />
+              </span>
+            </summary>
+            <div className="mt-2 space-y-3">
 
       {selectedIndexLabRun ? (
         <div className="text-xs text-gray-600 dark:text-gray-300 rounded border border-gray-200 dark:border-gray-700 p-2">
@@ -361,7 +452,9 @@ export function EventStreamPanel({
           </tbody>
         </table>
       </div>
-        </>
+            </div>
+          </details>
+        </div>
       ) : null}
     </div>
   );

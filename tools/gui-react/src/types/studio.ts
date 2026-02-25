@@ -30,7 +30,7 @@ export interface StudioPayload {
   uiFieldCatalog: Record<string, unknown> | null;
   guardrails?: Record<string, unknown>;
   compiledAt?: string | null;
-  draftSavedAt?: string | null;
+  mapSavedAt?: string | null;
   compileStale?: boolean;
 }
 
@@ -103,18 +103,10 @@ export interface FieldStudioMapResponse {
   error?: string;
 }
 
-// Backward-compatible alias
-export type WorkbookMapResponse = FieldStudioMapResponse;
-
 export interface TooltipBankResponse {
   entries: Record<string, unknown>;
   files: string[];
   configuredPath: string;
-}
-
-export interface DraftsResponse {
-  fieldRulesDraft: Record<string, unknown> | null;
-  uiFieldCatalogDraft: Record<string, unknown> | null;
 }
 
 export interface ArtifactEntry {

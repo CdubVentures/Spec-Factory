@@ -400,7 +400,9 @@ function buildPlanOnlyResults({ categoryConfig, queries, variables, maxQueries =
 }
 
 function dedupeQueryRows(rows = [], limit = 24) {
-  const cap = Math.max(1, Number(limit || 24));
+  const parsedLimit = Number(limit);
+  const hasCap = Number.isFinite(parsedLimit) && parsedLimit > 0;
+  const cap = hasCap ? Math.max(1, Math.floor(parsedLimit)) : Number.POSITIVE_INFINITY;
   const out = [];
   const rejectLog = [];
   const seen = new Map();
@@ -421,6 +423,19 @@ function dedupeQueryRows(rows = [], limit = 24) {
     if (seen.has(normalized)) {
       const existing = out[seen.get(normalized)];
       existing.sources = uniqueTokens([...(existing.sources || []), source], 8);
+      existing.target_fields = uniqueTokens([
+        ...toArray(existing.target_fields),
+        ...toArray(row?.target_fields)
+      ], 16);
+      if (!existing.doc_hint) {
+        existing.doc_hint = String(row?.doc_hint || '').trim();
+      }
+      if (!existing.domain_hint) {
+        existing.domain_hint = String(row?.domain_hint || '').trim().toLowerCase();
+      }
+      if (!existing.hint_source) {
+        existing.hint_source = String(row?.hint_source || '').trim();
+      }
       rejectLog.push({
         query,
         source,
@@ -442,7 +457,11 @@ function dedupeQueryRows(rows = [], limit = 24) {
     }
     out.push({
       query,
-      sources: uniqueTokens([source], 8)
+      sources: uniqueTokens([source], 8),
+      target_fields: uniqueTokens(toArray(row?.target_fields), 16),
+      doc_hint: String(row?.doc_hint || '').trim(),
+      domain_hint: String(row?.domain_hint || '').trim().toLowerCase(),
+      hint_source: String(row?.hint_source || '').trim()
     });
     seen.set(normalized, out.length - 1);
   }
@@ -452,13 +471,18 @@ function dedupeQueryRows(rows = [], limit = 24) {
   };
 }
 
-function prioritizeQueryRows(rows = [], variables = {}) {
+function prioritizeQueryRows(rows = [], variables = {}, missingFields = []) {
   const brand = String(variables.brand || '').trim().toLowerCase();
   const model = String(variables.model || '').trim().toLowerCase();
   const brandToken = brand.replace(/\s+/g, '');
+  const missingFieldSet = new Set(toArray(missingFields).map((field) => String(field || '').trim()).filter(Boolean));
   const ranked = [...(rows || [])].map((row) => {
     const query = String(row?.query || '').trim();
     const text = String(query || '').toLowerCase();
+    const targetFields = toArray(row?.target_fields)
+      .map((field) => String(field || '').trim())
+      .filter(Boolean);
+    const targetedMissingCount = targetFields.filter((field) => missingFieldSet.has(field)).length;
     let score = 0;
     if (text.includes('site:')) score += 6;
     if (/manual|datasheet|support|spec|technical|pdf/.test(text)) score += 5;
@@ -466,6 +490,9 @@ function prioritizeQueryRows(rows = [], variables = {}) {
     if (brand && text.includes(brand)) score += 2;
     if (model && text.includes(model)) score += 2;
     if (/rtings|techpowerup/.test(text)) score += 1;
+    if (targetedMissingCount > 0) score += Math.min(6, targetedMissingCount * 3);
+    if (String(row?.domain_hint || '').includes('.')) score += 2;
+    if (String(row?.doc_hint || '').trim()) score += 1;
     return {
       ...row,
       query,
@@ -1012,6 +1039,13 @@ export async function discoverCandidateSources({
   });
   const baseQueries = toArray(searchProfileBase?.base_templates);
   const targetedQueries = toArray(searchProfileBase?.queries);
+  const profileQueryRowsByQuery = new Map(
+    toArray(searchProfileBase?.query_rows).map((row) => {
+      const token = String(row?.query || '').trim().toLowerCase();
+      return [token, row];
+    })
+  );
+  const resolveProfileQueryRow = (query) => profileQueryRowsByQuery.get(String(query || '').trim().toLowerCase()) || null;
   const llmQueries = await planDiscoveryQueriesLLM({
     job,
     categoryConfig,
@@ -1074,33 +1108,55 @@ export async function discoverCandidateSources({
   );
   const llmQueryRows = toArray(llmQueries).map((row) => {
     if (row && typeof row === 'object' && !Array.isArray(row)) {
-      return { query: String(row.query || '').trim(), source: 'llm', target_fields: toArray(row.target_fields) };
+      return {
+        query: String(row.query || '').trim(),
+        source: 'llm',
+        target_fields: toArray(row.target_fields)
+      };
     }
     return { query: String(row || '').trim(), source: 'llm', target_fields: [] };
   });
   const queryCandidates = [
     ...baseQueries.map((query) => ({ query, source: 'base_template', target_fields: [] })),
-    ...targetedQueries.map((query) => ({ query, source: 'targeted', target_fields: [] })),
+    ...targetedQueries.map((query) => {
+      const profileRow = resolveProfileQueryRow(query);
+      return {
+        query,
+        source: 'targeted',
+        target_fields: toArray(profileRow?.target_fields),
+        doc_hint: String(profileRow?.doc_hint || '').trim(),
+        domain_hint: String(profileRow?.domain_hint || '').trim(),
+        hint_source: String(profileRow?.hint_source || '').trim()
+      };
+    }),
     ...llmQueryRows,
     ...toArray(uberSearchPlan?.queries).map((query) => ({ query, source: 'uber', target_fields: [] })),
     ...extraQueries.map((query) => ({ query, source: 'runtime_extra', target_fields: [] }))
   ];
   const mergedQueryCap = Math.max(queryLimit, 6);
-  const mergedQueries = dedupeQueryRows(queryCandidates, mergedQueryCap);
-  const rankedQueries = prioritizeQueryRows(mergedQueries.rows, variables);
+  const mergedQueries = dedupeQueryRows(queryCandidates, null);
+  const rankedQueries = prioritizeQueryRows(mergedQueries.rows, variables, missingFields);
+  const rankedCappedQueries = rankedQueries.slice(0, mergedQueryCap);
+  const rankedCapRejectLog = rankedQueries.slice(mergedQueryCap).map((row) => ({
+    query: String(row?.query || '').trim(),
+    source: toArray(row?.sources),
+    reason: 'max_query_cap',
+    stage: 'pre_execution_rank_cap',
+    detail: `cap:${mergedQueryCap}`
+  }));
   const guardedQueries = enforceIdentityQueryGuard({
-    rows: rankedQueries,
+    rows: rankedCappedQueries,
     variables,
     variantGuardTerms: toArray(searchProfileBase?.variant_guard_terms)
   });
   let queries = guardedQueries.rows.map((row) => String(row?.query || '').trim()).filter(Boolean);
-  if (!queries.length && rankedQueries.length > 0) {
-    const fallback = String(rankedQueries[0]?.query || '').trim();
+  if (!queries.length && rankedCappedQueries.length > 0) {
+    const fallback = String(rankedCappedQueries[0]?.query || '').trim();
     if (fallback) {
       queries = [fallback];
       guardedQueries.rejectLog.push({
         query: fallback,
-        source: toArray(rankedQueries[0]?.sources),
+        source: toArray(rankedCappedQueries[0]?.sources),
         reason: 'guard_fallback_retained',
         stage: 'pre_execution_guard',
         detail: 'all_queries_rejected'
@@ -1110,6 +1166,7 @@ export async function discoverCandidateSources({
   const queryRejectLogCombined = [
     ...toArray(searchProfileBase?.query_reject_log),
     ...toArray(mergedQueries.rejectLog),
+    ...toArray(rankedCapRejectLog),
     ...toArray(guardedQueries.rejectLog)
   ].slice(0, 300);
   const searchProfileKeys = buildSearchProfileKeys({
@@ -1726,55 +1783,81 @@ export async function discoverCandidateSources({
     fieldYieldMap: learning.fieldYield
   });
   let reranked = deterministicReranked;
+  const uniqueDomains = [...new Set(
+    [...byUrl.values()].map((row) => normalizeHost(row.host || '')).filter(Boolean)
+  )];
+  const domainClassificationRows = [];
   let domainSafetyResults = null;
-  if (config.llmEnabled && hasLlmRouteApiKey(config, { role: 'triage' })) {
+  if (uniqueDomains.length > 0 && config.llmEnabled && hasLlmRouteApiKey(config, { role: 'triage' })) {
     try {
-      const uniqueDomains = [...new Set(
-        [...byUrl.values()].map((r) => normalizeHost(r.host || '')).filter(Boolean)
-      )];
-      if (uniqueDomains.length > 0) {
-        const domainSafetyCallLlm = createDomainSafetyCallLlm({
-          callRoutedLlmFn: callLlmWithRouting,
-          config
+      const domainSafetyCallLlm = createDomainSafetyCallLlm({
+        callRoutedLlmFn: callLlmWithRouting,
+        config
+      });
+      domainSafetyResults = await classifyDomains({
+        domains: uniqueDomains,
+        category: variables.category,
+        config,
+        callLlmFn: domainSafetyCallLlm,
+        storage
+      });
+      const unsafeCount = [...(domainSafetyResults?.values?.() || [])].filter((v) => !v.safe).length;
+      if (unsafeCount > 0) {
+        logger?.info?.('domain_safety_gate', {
+          total: uniqueDomains.length,
+          unsafe: unsafeCount
         });
-        domainSafetyResults = await classifyDomains({
-          domains: uniqueDomains,
-          category: variables.category,
-          config,
-          callLlmFn: domainSafetyCallLlm,
-          storage
-        });
-        const unsafeCount = [...(domainSafetyResults?.values?.() || [])].filter((v) => !v.safe).length;
-        if (unsafeCount > 0) {
-          logger?.info?.('domain_safety_gate', {
-            total: uniqueDomains.length,
-            unsafe: unsafeCount
+      }
+      if (domainSafetyResults && typeof domainSafetyResults.entries === 'function') {
+        for (const [domain, info] of domainSafetyResults.entries()) {
+          domainClassificationRows.push({
+            domain: String(domain || '').trim(),
+            role: String(info?.role || info?.source_type || '').trim(),
+            safety_class: info?.safe ? 'safe' : 'blocked',
+            budget_score: Number.isFinite(Number(info?.budget_score)) ? Number(info.budget_score) : (info?.safe ? 80 : 10),
+            cooldown_remaining: 0,
+            success_rate: 0,
+            avg_latency_ms: 0,
+            notes: String(info?.reason || '').trim()
           });
-        }
-        if (domainSafetyResults && typeof domainSafetyResults.entries === 'function') {
-          const classificationRows = [];
-          for (const [domain, info] of domainSafetyResults.entries()) {
-            classificationRows.push({
-              domain: String(domain || '').trim(),
-              role: String(info?.role || info?.source_type || '').trim(),
-              safety_class: info?.safe ? 'safe' : 'blocked',
-              budget_score: Number.isFinite(Number(info?.budget_score)) ? Number(info.budget_score) : (info?.safe ? 80 : 10),
-              cooldown_remaining: 0,
-              success_rate: 0,
-              avg_latency_ms: 0,
-              notes: String(info?.reason || '').trim()
-            });
-          }
-          if (classificationRows.length > 0) {
-            logger?.info?.('domains_classified', {
-              classifications: classificationRows.slice(0, 50)
-            });
-          }
         }
       }
     } catch {
       // domain safety classification is non-essential
     }
+  }
+  if (domainClassificationRows.length === 0 && uniqueDomains.length > 0) {
+    for (const domain of uniqueDomains) {
+      const blocked = isDeniedHost(domain, categoryConfig);
+      const approved = !blocked && isApprovedHost(domain, categoryConfig);
+      const tier = Number(resolveTierForHost(domain, categoryConfig) || 0);
+      const baseScore = blocked
+        ? 10
+        : approved
+          ? 90
+          : tier === 1
+            ? 80
+            : tier === 2
+              ? 70
+              : tier === 3
+                ? 60
+                : 50;
+      domainClassificationRows.push({
+        domain,
+        role: String(inferRoleForHost(domain, categoryConfig) || '').trim(),
+        safety_class: blocked ? 'blocked' : (approved ? 'safe' : 'caution'),
+        budget_score: baseScore,
+        cooldown_remaining: 0,
+        success_rate: 0,
+        avg_latency_ms: 0,
+        notes: blocked ? 'category_denylist' : 'deterministic_fallback'
+      });
+    }
+  }
+  if (domainClassificationRows.length > 0) {
+    logger?.info?.('domains_classified', {
+      classifications: domainClassificationRows.slice(0, 50)
+    });
   }
 
   const triageEnabledSetting = config.serpTriageEnabled !== false;
@@ -1785,6 +1868,7 @@ export async function discoverCandidateSources({
     && (uberMode || (config.llmEnabled && config.llmSerpRerankEnabled)),
   );
   let llmTriageApplied = false;
+  let deterministicTriageApplied = false;
   if (llmTriageEnabled) {
     const llmReranked = await rerankSerpResults({
       config,
@@ -1826,7 +1910,44 @@ export async function discoverCandidateSources({
       });
     }
   }
-  const discoveredCap = llmTriageEnabled
+  if (triageEnabledSetting && !llmTriageApplied && deterministicReranked.length > 0) {
+    const thresholdFiltered = deterministicReranked.filter(
+      (row) => Number.parseFloat(String(row?.score ?? 0)) >= triageMinScore
+    );
+    const triageSelected = (thresholdFiltered.length > 0 ? thresholdFiltered : deterministicReranked)
+      .slice(0, triageMaxUrls);
+    const selectedUrlSet = new Set(triageSelected.map((row) => String(row?.url || '').trim()).filter(Boolean));
+    reranked = triageSelected;
+    deterministicTriageApplied = true;
+    logger?.info?.('serp_triage_completed', {
+      query: '',
+      kept_count: triageSelected.length,
+      dropped_count: Math.max(0, deterministicReranked.length - triageSelected.length),
+      triage_min_score: triageMinScore,
+      triage_max_urls: triageMaxUrls,
+      candidates: deterministicReranked.slice(0, 40).map((row) => {
+        const url = String(row?.url || '').trim();
+        const score = Number.parseFloat(String(row?.score ?? 0)) || 0;
+        return {
+          url,
+          title: String(row?.title || '').trim(),
+          domain: String(row?.host || '').trim(),
+          snippet: String(row?.snippet || '').trim().slice(0, 300),
+          score,
+          decision: selectedUrlSet.has(url) ? 'keep' : 'drop',
+          rationale: 'deterministic_rerank',
+          score_components: {
+            base_relevance: score,
+            tier_boost: 0,
+            identity_match: 0,
+            penalties: 0
+          }
+        };
+      })
+    });
+  }
+  const triageApplied = llmTriageApplied || deterministicTriageApplied;
+  const discoveredCap = triageApplied
     ? Math.max(1, Math.min(discoveryCap, triageMaxUrls))
     : discoveryCap;
   const discovered = reranked.slice(0, discoveredCap);

@@ -19,6 +19,7 @@ const REVIEW_PAGE = path.resolve('tools/gui-react/src/pages/review/ReviewPage.ts
 const COMPONENT_SUBTAB = path.resolve('tools/gui-react/src/pages/component-review/ComponentSubTab.tsx');
 const ENUM_SUBTAB = path.resolve('tools/gui-react/src/pages/component-review/EnumSubTab.tsx');
 const DATA_TABLE = path.resolve('tools/gui-react/src/components/common/DataTable.tsx');
+const SETTINGS_PROPAGATION_CONTRACT = path.resolve('tools/gui-react/src/stores/settingsPropagationContract.ts');
 const GUI_SRC_ROOT = path.resolve('tools/gui-react/src');
 
 function readText(filePath) {
@@ -166,8 +167,20 @@ test('component review nested state is session-scoped', () => {
 
 test('GUI source has no localStorage persistence', () => {
   const sourceFiles = walkGuiSource(GUI_SRC_ROOT);
-  const sourceText = sourceFiles.map(readText).join('\n');
-  assert.equal(sourceText.includes('localStorage'), false, 'GUI source should not persist UI state via localStorage');
+  const persistenceFiles = sourceFiles.filter((filePath) => path.resolve(filePath) !== SETTINGS_PROPAGATION_CONTRACT);
+  const persistenceSourceText = persistenceFiles.map(readText).join('\n');
+  assert.equal(
+    persistenceSourceText.includes('localStorage'),
+    false,
+    'GUI source should not persist UI state via localStorage',
+  );
+
+  const propagationText = readText(SETTINGS_PROPAGATION_CONTRACT);
+  assert.equal(
+    propagationText.includes('localStorage'),
+    true,
+    'settings propagation transport may use localStorage events for cross-tab invalidation',
+  );
 });
 
 test('documented toggle and tab keys are implemented in GUI source', () => {

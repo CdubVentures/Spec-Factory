@@ -258,14 +258,9 @@ export function SearchProfilePanel({
           </button>
           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Search Profile (Phase 02)</span>
           <Tip text="Deterministic aliases and field-targeted query templates with hint provenance." />
-          {sp?.status && (
+          {sp?.status && sp.status !== 'executed' && (
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusBadgeClass(sp.status)}`}>
               {sp.status}
-            </span>
-          )}
-          {sp && (
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${llmPlannerActive ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'}`}>
-              LLM Planner {llmPlannerActive ? 'ON' : 'OFF'}
             </span>
           )}
           {provider && (

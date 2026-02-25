@@ -38,14 +38,14 @@ function studioCtx(overrides = {}) {
         mergedFieldOrder: [],
         labels: {},
         compiledAt: null,
-        draftSavedAt: null,
+        mapSavedAt: null,
         compileStale: false,
       }),
       invalidateSessionCache: () => {},
     },
-    loadWorkbookMap: async () => ({ file_path: '', map: {} }),
-    saveWorkbookMap: async () => ({ ok: true }),
-    validateWorkbookMap: () => ({ ok: true, errors: [] }),
+    loadFieldStudioMap: async () => ({ file_path: '', map: {} }),
+    saveFieldStudioMap: async () => ({ ok: true }),
+    validateFieldStudioMap: () => ({ ok: true, errors: [] }),
     invalidateFieldRulesCache: () => {},
     buildFieldLabelsMap: () => ({}),
     storage: {},
@@ -76,7 +76,7 @@ function catalogCtx(overrides = {}) {
     catalogAddProductsBulk: async () => ({ ok: true, created: 0 }),
     catalogUpdateProduct: async () => ({ ok: true, productId: 'mouse-razer-viper', product: {} }),
     catalogRemoveProduct: async () => ({ ok: true, removed: true }),
-    catalogSeedFromWorkbook: async () => ({ ok: true, seeded: 0 }),
+    catalogSeedFromCatalog: async () => ({ ok: true, seeded: 0 }),
     upsertQueueProduct: async () => ({ ok: true }),
     loadProductCatalog: async () => ({ products: {} }),
     readJsonlEvents: async () => [],
@@ -120,43 +120,15 @@ function brandCtx(overrides = {}) {
   return { ...ctx, ...overrides };
 }
 
-test('propagation matrix: field rename draft save invalidates studio + review-layout + labels', async () => {
+test('propagation matrix: legacy draft-save route has been removed', async () => {
   const emitted = [];
   const handler = registerStudioRoutes(studioCtx({
-    readJsonBody: async () => ({
-      fieldRulesDraft: {
-        fields: {
-          max_dpi: { type: 'number' },
-        },
-      },
-      renames: {
-        dpi_max: 'max_dpi',
-      },
-    }),
     broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
   }));
 
   const result = await handler(['studio', 'mouse', 'save-drafts'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 200);
-  assert.equal(emitted.length, 1);
-  assert.equal(emitted[0].channel, 'data-change');
-
-  const event = emitted[0].payload;
-  assert.equal(event.event, 'studio-drafts-saved');
-  assert.equal(event.category, 'mouse');
-
-  const categories = resolveDataChangeScopedCategories(event, 'keyboard');
-  assert.deepEqual(categories, ['mouse']);
-  const queryKeys = resolveDataChangeInvalidationQueryKeys({
-    message: event,
-    categories,
-    fallbackCategory: 'mouse',
-  });
-
-  assert.equal(hasQueryKey(queryKeys, ['studio', 'mouse']), true);
-  assert.equal(hasQueryKey(queryKeys, ['reviewLayout', 'mouse']), true);
-  assert.equal(hasQueryKey(queryKeys, ['componentReviewLayout', 'mouse']), true);
-  assert.equal(hasQueryKey(queryKeys, ['fieldLabels', 'mouse']), true);
+  assert.equal(result, false);
+  assert.equal(emitted.length, 0);
 });
 
 test('propagation matrix: compile completion emits versioned process-completed and invalidates enum/component readers', async () => {

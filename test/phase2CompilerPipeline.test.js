@@ -20,7 +20,7 @@ function mouseWorkbookPath() {
 function buildMouseWorkbookMap(workbookPath) {
   return {
     version: 1,
-    workbook_path: workbookPath,
+    field_studio_source_path: workbookPath,
     sheet_roles: [
       { sheet: 'dataEntry', role: 'product_table' },
       { sheet: 'dataEntry', role: 'field_key_list' }
@@ -64,8 +64,8 @@ test('compileRulesAll discovers and compiles initialized categories', async () =
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const single = await compileRules({
       category: 'mouse',
-      workbookPath,
-      workbookMap,
+      fieldStudioSourcePath: workbookPath,
+      fieldStudioMap: workbookMap,
       config: { helperFilesRoot: helperRoot, categoriesRoot }
     });
     assert.equal(single.compiled, true);
@@ -112,8 +112,8 @@ test('readCompileReport returns report and rulesDiff classifies change safety', 
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
-      workbookPath,
-      workbookMap,
+      fieldStudioSourcePath: workbookPath,
+      fieldStudioMap: workbookMap,
       config: { helperFilesRoot: helperRoot, categoriesRoot }
     });
     assert.equal(compiled.compiled, true);
@@ -152,8 +152,8 @@ test('compileRules emits key_migrations with semver metadata and migration list'
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
-      workbookPath,
-      workbookMap,
+      fieldStudioSourcePath: workbookPath,
+      fieldStudioMap: workbookMap,
       config: { helperFilesRoot: helperRoot, categoriesRoot }
     });
     assert.equal(compiled.compiled, true);
@@ -178,8 +178,8 @@ test('watchCompileRules runs initial compile and stops on maxEvents', async () =
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
-      workbookPath,
-      workbookMap,
+      fieldStudioSourcePath: workbookPath,
+      fieldStudioMap: workbookMap,
       config: { helperFilesRoot: helperRoot, categoriesRoot }
     });
     assert.equal(compiled.compiled, true);
@@ -202,3 +202,4 @@ test('watchCompileRules runs initial compile and stops on maxEvents', async () =
     await fs.rm(root, { recursive: true, force: true });
   }
 });
+

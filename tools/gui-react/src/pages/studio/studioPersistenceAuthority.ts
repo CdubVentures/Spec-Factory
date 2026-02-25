@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import {
-  assertWorkbookMapValidationOrThrow,
-  resolveWorkbookMapPayloadForSave,
+  assertFieldStudioMapValidationOrThrow,
+  resolveFieldStudioMapPayloadForSave,
 } from './mapValidationPreflight.js';
 import type { StudioConfig } from '../../types/studio';
 
@@ -16,41 +16,43 @@ interface FieldStudioMapValidationResponse {
 
 interface StudioPersistenceAuthorityOptions {
   category: string;
-  onDraftsSaved?: () => void;
+  onStudioDocsSaved?: () => void;
 }
 
 export function useStudioPersistenceAuthority({
   category,
-  onDraftsSaved,
+  onStudioDocsSaved,
 }: StudioPersistenceAuthorityOptions) {
   const queryClient = useQueryClient();
 
+  const persistStudioMap = async (body: StudioConfig) => {
+    const validation = await api.post<FieldStudioMapValidationResponse>(`/studio/${category}/validate-field-studio-map`, body);
+    const payload = resolveFieldStudioMapPayloadForSave({
+      result: assertFieldStudioMapValidationOrThrow({
+        result: validation,
+        actionLabel: 'save mapping',
+      }),
+      fallback: body,
+    }) as StudioConfig;
+    return api.put<unknown>(`/studio/${category}/field-studio-map`, payload);
+  };
+
   const saveMapMut = useMutation({
-    mutationFn: async (body: StudioConfig) => {
-      const validation = await api.post<FieldStudioMapValidationResponse>(`/studio/${category}/validate-field-studio-map`, body);
-      const payload = resolveWorkbookMapPayloadForSave({
-        result: assertWorkbookMapValidationOrThrow({
-          result: validation,
-          actionLabel: 'save mapping',
-        }),
-        fallback: body,
-      }) as StudioConfig;
-      return api.put<unknown>(`/studio/${category}/field-studio-map`, payload);
-    },
+    mutationFn: (body: StudioConfig) => persistStudioMap(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['studio-config', category] });
     },
   });
 
-  const saveDraftsMut = useMutation({
-    mutationFn: (body: Record<string, unknown>) => api.post<unknown>(`/studio/${category}/save-drafts`, body),
+  const saveStudioDocsMut = useMutation({
+    mutationFn: (body: StudioConfig) => persistStudioMap(body),
     onSuccess: () => {
-      onDraftsSaved?.();
+      onStudioDocsSaved?.();
     },
   });
 
   return {
     saveMapMut,
-    saveDraftsMut,
+    saveStudioDocsMut,
   };
 }

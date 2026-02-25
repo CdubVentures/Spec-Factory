@@ -140,21 +140,97 @@ test('buildSearchProfile emits field rule gate counts with off vs zero states', 
   const counts = profile.field_rule_gate_counts || {};
   assert.deepEqual(counts['search_hints.query_terms'], {
     value_count: 1,
+    total_value_count: 1,
+    effective_value_count: 1,
     enabled_field_count: 1,
     disabled_field_count: 0,
     status: 'active'
   });
   assert.deepEqual(counts['search_hints.domain_hints'], {
     value_count: 0,
+    total_value_count: 0,
+    effective_value_count: 0,
     enabled_field_count: 0,
     disabled_field_count: 1,
     status: 'off'
   });
   assert.deepEqual(counts['search_hints.preferred_content_types'], {
     value_count: 0,
+    total_value_count: 0,
+    effective_value_count: 0,
     enabled_field_count: 1,
     disabled_field_count: 0,
     status: 'zero'
   });
+  const byField = profile.field_rule_hint_counts_by_field || {};
+  assert.deepEqual(byField.polling_rate?.query_terms, {
+    value_count: 1,
+    total_value_count: 1,
+    effective_value_count: 1,
+    status: 'active'
+  });
+  assert.deepEqual(byField.sensor?.domain_hints, {
+    value_count: 0,
+    total_value_count: 0,
+    effective_value_count: 0,
+    status: 'off'
+  });
+  assert.deepEqual(byField.dpi?.preferred_content_types, {
+    value_count: 0,
+    total_value_count: 0,
+    effective_value_count: 0,
+    status: 'zero'
+  });
   assert.equal(profile.queries.some((query) => query.includes('site:rtings.com')), false);
+});
+
+test('buildSearchProfile keeps token-only domain_hints as 0/N effective counts', () => {
+  const profile = buildSearchProfile({
+    job: {
+      category: 'mouse',
+      identityLock: {
+        brand: 'Razer',
+        model: 'Viper V3 Pro',
+        variant: ''
+      }
+    },
+    categoryConfig: {
+      category: 'mouse',
+      fieldOrder: ['weight'],
+      sourceHosts: [
+        { host: 'razer.com', tierName: 'manufacturer' }
+      ],
+      searchTemplates: [],
+      fieldRules: {
+        fields: {
+          weight: {
+            search_hints: {
+              query_terms: ['weight'],
+              domain_hints: ['manufacturer', 'support', 'manual', 'pdf'],
+              preferred_content_types: ['spec']
+            }
+          }
+        }
+      }
+    },
+    missingFields: ['weight'],
+    maxQueries: 24
+  });
+
+  const counts = profile.field_rule_gate_counts || {};
+  assert.deepEqual(counts['search_hints.domain_hints'], {
+    value_count: 0,
+    total_value_count: 4,
+    effective_value_count: 0,
+    enabled_field_count: 1,
+    disabled_field_count: 0,
+    status: 'zero'
+  });
+  assert.deepEqual(profile.field_rule_hint_counts_by_field?.weight?.domain_hints, {
+    value_count: 0,
+    total_value_count: 4,
+    effective_value_count: 0,
+    status: 'zero'
+  });
+  assert.equal(profile.queries.some((query) => query.includes('site:razer.com')), true);
 });

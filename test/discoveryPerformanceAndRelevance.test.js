@@ -172,6 +172,98 @@ test('discoverCandidateSources with logger emits search profile events without c
   }
 });
 
+test('discoverCandidateSources emits deterministic triage and domain-classifier events when LLM triage is unavailable', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-deterministic-triage-events-'));
+  const config = makeConfig(tempRoot, {
+    discoveryMaxQueries: 2,
+    discoveryQueryConcurrency: 1,
+    searchProvider: 'searxng',
+    llmEnabled: false,
+    serpTriageEnabled: true,
+    serpTriageMaxUrls: 2
+  });
+  const storage = createStorage(config);
+  const categoryConfig = {
+    category: 'mouse',
+    sourceHosts: [
+      { host: 'rtings.com', tier: 2, tierName: 'review', role: 'review' },
+      { host: 'asus.com', tier: 1, tierName: 'manufacturer', role: 'manufacturer' }
+    ],
+    denylist: [],
+    searchTemplates: ['{brand} {model} specs', '{brand} {model} support'],
+    fieldOrder: []
+  };
+  const job = {
+    ...makeJob(),
+    identityLock: {
+      brand: 'Asus',
+      model: 'ROG Strix Impact III',
+      variant: ''
+    }
+  };
+  const events = [];
+  const logger = {
+    info(name, payload = {}) {
+      events.push({ name, payload });
+    }
+  };
+
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: true,
+    async json() {
+      return {
+        results: [
+          {
+            url: 'https://www.asus.com/us/accessories/mice-and-mouse-pads/rog-strix-impact-iii/',
+            title: 'ASUS ROG Strix Impact III',
+            content: 'Official specs and support page'
+          },
+          {
+            url: 'https://www.rtings.com/mouse/reviews/asus/rog-strix-impact-iii',
+            title: 'ASUS ROG Strix Impact III review',
+            content: 'Measurements and testing notes'
+          }
+        ]
+      };
+    }
+  });
+
+  try {
+    const result = await discoverCandidateSources({
+      config,
+      storage,
+      categoryConfig,
+      job,
+      runId: 'run-deterministic-triage-events',
+      logger,
+      planningHints: {},
+      llmContext: {}
+    });
+
+    const triageEvent = events.find((event) => event.name === 'serp_triage_completed');
+    assert.equal(Boolean(triageEvent), true, 'expected deterministic triage event');
+    assert.equal(Array.isArray(triageEvent?.payload?.candidates), true);
+    assert.equal((triageEvent?.payload?.candidates || []).length > 0, true);
+    assert.equal((triageEvent?.payload?.kept_count || 0) > 0, true);
+
+    const domainClassifierEvent = events.find((event) => event.name === 'domains_classified');
+    assert.equal(Boolean(domainClassifierEvent), true, 'expected deterministic domain-classifier event');
+    assert.equal(Array.isArray(domainClassifierEvent?.payload?.classifications), true);
+    assert.equal((domainClassifierEvent?.payload?.classifications || []).length > 0, true);
+
+    const notes = (domainClassifierEvent?.payload?.classifications || [])
+      .map((row) => String(row?.notes || '').trim())
+      .filter(Boolean);
+    assert.equal(notes.includes('deterministic_fallback'), true);
+
+    assert.equal((result.approvedUrls || []).length > 0, true);
+  } finally {
+    global.fetch = originalFetch;
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('discoverCandidateSources emits plan-only search result events when internet provider is unavailable', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-plan-only-events-'));
   const config = makeConfig(tempRoot, {

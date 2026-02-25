@@ -67,7 +67,7 @@ Speed and cost improvements:
 - LLM cache warm-up (pre-cache common brand patterns)
 - Incremental re-crawl (only fetch changed pages)
 - Spec table template caching (brand-specific CSS selectors)
-- Batch publishing (publish 20 products in one Excel file)
+- Batch publishing (publish 20 products in one spreadsheet file)
 - Database indexing for SQLite output
 
 ---

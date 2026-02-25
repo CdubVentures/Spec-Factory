@@ -12,15 +12,59 @@ interface SessionCrawledCell {
 interface SessionDataPanelProps {
   selectedIndexLabRunId: string;
   sessionCrawledCells: SessionCrawledCell[];
-  persistKey: string;
+  persistKey?: string;
+  embedded?: boolean;
 }
 
 export function SessionDataPanel({
   selectedIndexLabRunId,
   sessionCrawledCells,
-  persistKey,
+  persistKey = 'indexing:sessionData:open',
+  embedded = false,
 }: SessionDataPanelProps) {
   const [open, , setOpen] = usePersistedToggle(persistKey, true);
+  const body = (
+    <div className={`${embedded ? '' : 'mt-2 '}grid grid-cols-1 xl:grid-cols-1 gap-2 text-xs`}>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        {sessionCrawledCells.slice(0, 5).map((cell) => (
+          <div key={`session-craweds:top:${cell.key}`} className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
+            <div className="text-gray-500 dark:text-gray-400 flex items-center">
+              {cell.label}
+              <Tip text={cell.tooltip} />
+            </div>
+            <div className={`font-semibold ${cell.placeholder ? 'text-amber-700 dark:text-amber-300' : 'text-gray-900 dark:text-gray-100'}`}>
+              {cell.value}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        {sessionCrawledCells.slice(5).map((cell) => (
+          <div key={`session-craweds:extra:${cell.key}`} className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
+            <div className="text-gray-500 dark:text-gray-400 flex items-center">
+              {cell.label}
+              <Tip text={cell.tooltip} />
+            </div>
+            <div className={`font-semibold ${cell.placeholder ? 'text-amber-700 dark:text-amber-300' : 'text-gray-900 dark:text-gray-100'}`}>
+              {cell.value}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className="space-y-1">
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          run {selectedIndexLabRunId || '-'}
+        </div>
+        {body}
+      </div>
+    );
+  }
+
   return (
     <details
       open={open}
@@ -44,34 +88,7 @@ export function SessionDataPanel({
           run {selectedIndexLabRunId || '-'}
         </span>
       </summary>
-      <div className="mt-2 grid grid-cols-1 xl:grid-cols-1 gap-2 text-xs">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          {sessionCrawledCells.slice(0, 5).map((cell) => (
-            <div key={`session-craweds:top:${cell.key}`} className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
-              <div className="text-gray-500 dark:text-gray-400 flex items-center">
-                {cell.label}
-                <Tip text={cell.tooltip} />
-              </div>
-              <div className={`font-semibold ${cell.placeholder ? 'text-amber-700 dark:text-amber-300' : 'text-gray-900 dark:text-gray-100'}`}>
-                {cell.value}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          {sessionCrawledCells.slice(5).map((cell) => (
-            <div key={`session-craweds:extra:${cell.key}`} className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
-              <div className="text-gray-500 dark:text-gray-400 flex items-center">
-                {cell.label}
-                <Tip text={cell.tooltip} />
-              </div>
-              <div className={`font-semibold ${cell.placeholder ? 'text-amber-700 dark:text-amber-300' : 'text-gray-900 dark:text-gray-100'}`}>
-                {cell.value}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {body}
     </details>
   );
 }

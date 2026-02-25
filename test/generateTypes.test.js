@@ -13,7 +13,7 @@ function mouseWorkbookPath() {
 function buildMouseWorkbookMap(workbookPath) {
   return {
     version: 1,
-    workbook_path: workbookPath,
+    field_studio_source_path: workbookPath,
     sheet_roles: [
       { sheet: 'dataEntry', role: 'product_table' },
       { sheet: 'dataEntry', role: 'field_key_list' }
@@ -58,8 +58,8 @@ test('generateTypesForCategory writes Zod and TS artifacts from field rules', as
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
-      workbookPath,
-      workbookMap,
+      fieldStudioSourcePath: workbookPath,
+      fieldStudioMap: workbookMap,
       config: {
         helperFilesRoot: helperRoot,
         categoriesRoot
@@ -88,3 +88,4 @@ test('generateTypesForCategory writes Zod and TS artifacts from field rules', as
     await fs.rm(root, { recursive: true, force: true });
   }
 });
+

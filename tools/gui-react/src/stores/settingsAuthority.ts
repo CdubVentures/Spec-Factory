@@ -1,14 +1,17 @@
-import { useEffect, useRef } from 'react';
-import { useConvergenceSettingsAuthority } from './convergenceSettingsAuthority';
-import { useRuntimeSettingsAuthority } from './runtimeSettingsAuthority';
-import { useStorageSettingsAuthority } from './storageSettingsAuthority';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { readConvergenceSettingsSnapshot, useConvergenceSettingsAuthority } from './convergenceSettingsAuthority';
+import { readRuntimeSettingsSnapshot, useRuntimeSettingsAuthority } from './runtimeSettingsAuthority';
+import { readStorageSettingsSnapshot, useStorageSettingsAuthority } from './storageSettingsAuthority';
 import { useSourceStrategyAuthority } from './sourceStrategyAuthority';
-import { useLlmSettingsAuthority } from './llmSettingsAuthority';
-import { useUiSettingsAuthority } from './uiSettingsAuthority';
-import { STORAGE_SETTING_DEFAULTS } from './settingsManifest';
+import { llmSettingsRoutesQueryKey, useLlmSettingsAuthority } from './llmSettingsAuthority';
+import { readUiSettingsSnapshot, useUiSettingsAuthority } from './uiSettingsAuthority';
+import { SETTINGS_AUTOSAVE_DEBOUNCE_MS, STORAGE_SETTING_DEFAULTS } from './settingsManifest';
 import type { LlmRouteRow } from '../types/llmSettings';
 import { useUiStore } from './uiStore';
 import { autoSaveFingerprint } from './autoSaveFingerprint';
+import { useSettingsAuthorityStore } from './settingsAuthorityStore';
+import { subscribeSettingsPropagation, type SettingsPropagationEvent } from './settingsPropagationContract';
 
 export interface SettingsAuthoritySnapshot {
   category: string;
@@ -18,25 +21,90 @@ export interface SettingsAuthoritySnapshot {
   sourceStrategyReady: boolean;
   llmSettingsReady: boolean;
   uiSettingsReady: boolean;
+  uiSettingsPersistState: 'idle' | 'saving' | 'error';
+  uiSettingsPersistMessage: string;
   autoSaveAllEnabled: boolean;
   storageAutoSaveEnabled: boolean;
   runtimeAutoSaveEnabled: boolean;
   llmSettingsAutoSaveEnabled: boolean;
 }
 
+export function isSettingsAuthoritySnapshotReady(
+  snapshot: SettingsAuthoritySnapshot | null | undefined,
+): boolean {
+  if (!snapshot) return false;
+  const baseReady = (
+    snapshot.runtimeReady
+    && snapshot.convergenceReady
+    && snapshot.storageReady
+    && snapshot.uiSettingsReady
+  );
+  if (!baseReady) return false;
+  const category = String(snapshot.category || '').trim().toLowerCase();
+  if (!category || category === 'all') {
+    return true;
+  }
+  return snapshot.sourceStrategyReady && snapshot.llmSettingsReady;
+}
+
 const EMPTY_RUNTIME_PAYLOAD = {};
 const EMPTY_STORAGE_PAYLOAD = {
   enabled: STORAGE_SETTING_DEFAULTS.enabled,
-  destinationType: 'local' as const,
-  localDirectory: '',
+  destinationType: STORAGE_SETTING_DEFAULTS.destinationType,
+  localDirectory: STORAGE_SETTING_DEFAULTS.localDirectory,
   s3Region: STORAGE_SETTING_DEFAULTS.s3Region,
   s3Bucket: STORAGE_SETTING_DEFAULTS.s3Bucket,
   s3Prefix: STORAGE_SETTING_DEFAULTS.s3Prefix,
-  s3AccessKeyId: '',
+  s3AccessKeyId: STORAGE_SETTING_DEFAULTS.s3AccessKeyId,
 };
 const EMPTY_LLM_ROWS: LlmRouteRow[] = [];
 
+interface SettingsHydrationPipelineOptions {
+  category: string;
+  runtimeReload: () => Promise<unknown>;
+  convergenceReload: () => Promise<unknown>;
+  storageReload: () => Promise<unknown>;
+  sourceStrategyReload: () => Promise<unknown>;
+  llmReload: () => Promise<void>;
+  uiReload: () => Promise<unknown>;
+}
+
+async function runSettingsStartupHydrationPipeline({
+  category,
+  runtimeReload,
+  convergenceReload,
+  storageReload,
+  sourceStrategyReload,
+  llmReload,
+  uiReload,
+}: SettingsHydrationPipelineOptions) {
+  const reloadTasks: Promise<unknown>[] = [
+    runtimeReload(),
+    convergenceReload(),
+    storageReload(),
+    uiReload(),
+  ];
+  if (category !== 'all') {
+    reloadTasks.push(sourceStrategyReload());
+    reloadTasks.push(llmReload());
+  }
+  await Promise.allSettled(reloadTasks);
+}
+
+async function runCategoryScopedSettingsHydrationPipeline({
+  category,
+  sourceStrategyReload,
+  llmReload,
+}: Pick<SettingsHydrationPipelineOptions, 'category' | 'sourceStrategyReload' | 'llmReload'>) {
+  if (category === 'all') return;
+  await Promise.allSettled([
+    sourceStrategyReload(),
+    llmReload(),
+  ]);
+}
+
 export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
+  const queryClient = useQueryClient();
   const category = useUiStore((s) => s.category);
   const autoSaveAllEnabled = useUiStore((s) => s.autoSaveAllEnabled);
   const autoSaveEnabled = useUiStore((s) => s.autoSaveEnabled);
@@ -50,37 +118,76 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const setRuntimeAutoSaveEnabled = useUiStore((s) => s.setRuntimeAutoSaveEnabled);
   const setStorageAutoSaveEnabled = useUiStore((s) => s.setStorageAutoSaveEnabled);
   const setLlmSettingsAutoSaveEnabled = useUiStore((s) => s.setLlmSettingsAutoSaveEnabled);
+  const [uiSettingsPersistState, setUiSettingsPersistState] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [uiSettingsPersistMessage, setUiSettingsPersistMessage] = useState('');
 
   const runtime = useRuntimeSettingsAuthority({
     payload: EMPTY_RUNTIME_PAYLOAD,
     dirty: false,
     autoSaveEnabled: false,
+    enabled: false,
   });
-  const convergence = useConvergenceSettingsAuthority();
+  const convergence = useConvergenceSettingsAuthority({
+    enabled: false,
+  });
   const storage = useStorageSettingsAuthority({
     payload: EMPTY_STORAGE_PAYLOAD,
     dirty: false,
     autoSaveEnabled: false,
+    enabled: false,
   });
-  const sourceStrategy = useSourceStrategyAuthority({ category });
+  const sourceStrategy = useSourceStrategyAuthority({
+    category,
+    enabled: category !== 'all',
+    autoQueryEnabled: false,
+  });
   const llm = useLlmSettingsAuthority({
     category,
     enabled: category !== 'all',
+    autoQueryEnabled: false,
     rows: EMPTY_LLM_ROWS,
     dirty: false,
     autoSaveEnabled: false,
     editVersion: 0,
   });
-  const uiSettings = useUiSettingsAuthority();
+  const uiSettings = useUiSettingsAuthority({
+    enabled: false,
+    onPersisted: () => {
+      setUiSettingsPersistState('idle');
+      setUiSettingsPersistMessage('');
+    },
+    onError: (error) => {
+      setUiSettingsPersistState('error');
+      setUiSettingsPersistMessage(error instanceof Error ? error.message : 'Failed to save autosave settings.');
+    },
+  });
   const uiSettingsLoading = uiSettings.isLoading;
   const uiSettingsData = uiSettings.settings;
   const reloadUiSettings = uiSettings.reload;
   const saveUiSettings = uiSettings.saveNow;
 
-  const bootstrappedRef = useRef(false);
+  const startupHydratedRef = useRef(false);
+  const hydratedCategoryRef = useRef<string | null>(null);
+  const startupHydrationRunIdRef = useRef(0);
   const uiSettingsHydratedRef = useRef(false);
   const skipNextUiPersistRef = useRef(false);
   const lastUiAutosaveFingerprintRef = useRef('');
+  const lastAppliedServerUiFingerprintRef = useRef('');
+  const runtimeReloadRef = useRef(runtime.reload);
+  const convergenceReloadRef = useRef(convergence.reload);
+  const storageReloadRef = useRef(storage.reload);
+  const sourceStrategyReloadRef = useRef(sourceStrategy.reload);
+  const llmReloadRef = useRef(llm.reload);
+  const uiReloadRef = useRef(reloadUiSettings);
+  const hydrateAuthoritySnapshot = useSettingsAuthorityStore((s) => s.hydrateOnce);
+  const patchAuthoritySnapshot = useSettingsAuthorityStore((s) => s.patchSnapshot);
+
+  runtimeReloadRef.current = runtime.reload;
+  convergenceReloadRef.current = convergence.reload;
+  storageReloadRef.current = storage.reload;
+  sourceStrategyReloadRef.current = sourceStrategy.reload;
+  llmReloadRef.current = llm.reload;
+  uiReloadRef.current = reloadUiSettings;
 
   const uiAutoSavePayload = {
     studioAutoSaveAllEnabled: autoSaveAllEnabled,
@@ -91,43 +198,109 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     llmSettingsAutoSaveEnabled,
   };
 
-  useEffect(() => {
-    if (!uiSettingsData) return;
-    lastUiAutosaveFingerprintRef.current = autoSaveFingerprint(uiSettingsData);
-  }, [uiSettingsData]);
-  useEffect(() => {
-    if (bootstrappedRef.current) return;
-    bootstrappedRef.current = true;
-    void runtime.reload();
-    void convergence.reload();
-    void storage.reload();
-    void sourceStrategy.reload();
-    void reloadUiSettings();
-    if (category !== 'all') {
-      void llm.reload();
-    }
-  }, [runtime, convergence, storage, sourceStrategy, category, llm, reloadUiSettings]);
+  const hasRuntimeSnapshot = readRuntimeSettingsSnapshot(queryClient) !== undefined;
+  const hasConvergenceSnapshot = readConvergenceSettingsSnapshot(queryClient) !== undefined;
+  const hasStorageSnapshot = readStorageSettingsSnapshot(queryClient) !== undefined;
+  const hasUiSettingsSnapshot = readUiSettingsSnapshot(queryClient) !== undefined;
+  const hasSourceStrategySnapshot = category === 'all'
+    ? true
+    : queryClient.getQueryData(['source-strategy', category]) !== undefined;
+  const hasLlmSettingsSnapshot = category === 'all'
+    ? true
+    : queryClient.getQueryData(llmSettingsRoutesQueryKey(category)) !== undefined;
+
+  const authoritySnapshot = useMemo<SettingsAuthoritySnapshot>(() => ({
+    category,
+    runtimeReady: hasRuntimeSnapshot,
+    convergenceReady: hasConvergenceSnapshot,
+    storageReady: hasStorageSnapshot,
+    sourceStrategyReady: hasSourceStrategySnapshot,
+    llmSettingsReady: hasLlmSettingsSnapshot,
+    uiSettingsReady: hasUiSettingsSnapshot,
+    uiSettingsPersistState,
+    uiSettingsPersistMessage,
+    autoSaveAllEnabled,
+    storageAutoSaveEnabled,
+    runtimeAutoSaveEnabled,
+    llmSettingsAutoSaveEnabled,
+  }), [
+    category,
+    hasRuntimeSnapshot,
+    hasConvergenceSnapshot,
+    hasStorageSnapshot,
+    hasSourceStrategySnapshot,
+    hasLlmSettingsSnapshot,
+    hasUiSettingsSnapshot,
+    uiSettingsPersistState,
+    uiSettingsPersistMessage,
+    autoSaveAllEnabled,
+    storageAutoSaveEnabled,
+    runtimeAutoSaveEnabled,
+    llmSettingsAutoSaveEnabled,
+  ]);
 
   useEffect(() => {
-    if (uiSettingsHydratedRef.current) return;
+    const runId = ++startupHydrationRunIdRef.current;
+    let cancelled = false;
+
+    const hydrate = async () => {
+      if (!startupHydratedRef.current) {
+        await runSettingsStartupHydrationPipeline({
+          category,
+          runtimeReload: runtimeReloadRef.current,
+          convergenceReload: convergenceReloadRef.current,
+          storageReload: storageReloadRef.current,
+          sourceStrategyReload: sourceStrategyReloadRef.current,
+          llmReload: llmReloadRef.current,
+          uiReload: uiReloadRef.current,
+        });
+        if (cancelled || runId !== startupHydrationRunIdRef.current) return;
+        startupHydratedRef.current = true;
+        hydratedCategoryRef.current = category;
+        return;
+      }
+      if (hydratedCategoryRef.current === category) return;
+      await runCategoryScopedSettingsHydrationPipeline({
+        category,
+        sourceStrategyReload: sourceStrategyReloadRef.current,
+        llmReload: llmReloadRef.current,
+      });
+      if (cancelled || runId !== startupHydrationRunIdRef.current) return;
+      hydratedCategoryRef.current = category;
+    };
+
+    void hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, [category]);
+
+  useEffect(() => {
     if (uiSettingsLoading) return;
     const serverSettings = uiSettingsData;
-    if (serverSettings) {
-      skipNextUiPersistRef.current = true;
-      if (serverSettings.studioAutoSaveAllEnabled) {
-        setAutoSaveEnabled(serverSettings.studioAutoSaveEnabled);
-        setAutoSaveMapEnabled(serverSettings.studioAutoSaveMapEnabled);
-      } else {
-        setAutoSaveAllEnabled(false);
-        setAutoSaveEnabled(serverSettings.studioAutoSaveEnabled);
-        setAutoSaveMapEnabled(serverSettings.studioAutoSaveMapEnabled);
-      }
-      setRuntimeAutoSaveEnabled(serverSettings.runtimeAutoSaveEnabled);
-      setStorageAutoSaveEnabled(serverSettings.storageAutoSaveEnabled);
-      setLlmSettingsAutoSaveEnabled(serverSettings.llmSettingsAutoSaveEnabled);
-      setAutoSaveAllEnabled(serverSettings.studioAutoSaveAllEnabled);
+    if (!serverSettings) return;
+    const serverFingerprint = autoSaveFingerprint(serverSettings);
+    if (serverFingerprint && serverFingerprint === lastAppliedServerUiFingerprintRef.current) {
+      uiSettingsHydratedRef.current = true;
+      lastUiAutosaveFingerprintRef.current = serverFingerprint;
+      return;
     }
+    skipNextUiPersistRef.current = true;
+    if (serverSettings.studioAutoSaveAllEnabled) {
+      setAutoSaveEnabled(serverSettings.studioAutoSaveEnabled);
+      setAutoSaveMapEnabled(serverSettings.studioAutoSaveMapEnabled);
+    } else {
+      setAutoSaveAllEnabled(false);
+      setAutoSaveEnabled(serverSettings.studioAutoSaveEnabled);
+      setAutoSaveMapEnabled(serverSettings.studioAutoSaveMapEnabled);
+    }
+    setRuntimeAutoSaveEnabled(serverSettings.runtimeAutoSaveEnabled);
+    setStorageAutoSaveEnabled(serverSettings.storageAutoSaveEnabled);
+    setLlmSettingsAutoSaveEnabled(serverSettings.llmSettingsAutoSaveEnabled);
+    setAutoSaveAllEnabled(serverSettings.studioAutoSaveAllEnabled);
     uiSettingsHydratedRef.current = true;
+    lastAppliedServerUiFingerprintRef.current = serverFingerprint;
+    lastUiAutosaveFingerprintRef.current = serverFingerprint;
   }, [
     uiSettingsLoading,
     uiSettingsData,
@@ -140,6 +313,61 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   ]);
 
   useEffect(() => {
+    const handlePropagationEvent = (event: SettingsPropagationEvent) => {
+      switch (event.domain) {
+        case 'runtime': {
+          void runtimeReloadRef.current();
+          return;
+        }
+        case 'convergence': {
+          void convergenceReloadRef.current();
+          return;
+        }
+        case 'storage': {
+          void storageReloadRef.current();
+          return;
+        }
+        case 'ui': {
+          void uiReloadRef.current();
+          return;
+        }
+        case 'llm': {
+          const scopedCategory = String(event.category || '').trim();
+          if (!scopedCategory || scopedCategory.toLowerCase() === 'all') {
+            if (category !== 'all') {
+              void llmReloadRef.current();
+            }
+            return;
+          }
+          queryClient.invalidateQueries({ queryKey: llmSettingsRoutesQueryKey(scopedCategory) });
+          if (category !== 'all' && scopedCategory === category) {
+            void llmReloadRef.current();
+          }
+          return;
+        }
+        case 'source-strategy': {
+          const scopedCategory = String(event.category || '').trim();
+          if (!scopedCategory || scopedCategory.toLowerCase() === 'all') {
+            if (category !== 'all') {
+              void sourceStrategyReloadRef.current();
+            }
+            return;
+          }
+          queryClient.invalidateQueries({ queryKey: ['source-strategy', scopedCategory] });
+          if (category !== 'all' && scopedCategory === category) {
+            void sourceStrategyReloadRef.current();
+          }
+          return;
+        }
+        default:
+          return;
+      }
+    };
+
+    return subscribeSettingsPropagation(handlePropagationEvent);
+  }, [category, queryClient]);
+
+  useEffect(() => {
     if (!uiSettingsHydratedRef.current) return;
     if (skipNextUiPersistRef.current) {
       skipNextUiPersistRef.current = false;
@@ -148,26 +376,21 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     const nextFingerprint = autoSaveFingerprint(uiAutoSavePayload);
     if (nextFingerprint && nextFingerprint === lastUiAutosaveFingerprintRef.current) return;
     const timer = setTimeout(() => {
+      setUiSettingsPersistState('saving');
+      setUiSettingsPersistMessage('');
       saveUiSettings(uiAutoSavePayload);
       lastUiAutosaveFingerprintRef.current = nextFingerprint;
-    }, 250);
+    }, SETTINGS_AUTOSAVE_DEBOUNCE_MS.uiSettings);
     return () => clearTimeout(timer);
   }, [
     uiAutoSavePayload,
     saveUiSettings,
   ]);
 
-  return {
-    category,
-    runtimeReady: !runtime.isLoading,
-    convergenceReady: !convergence.isLoading,
-    storageReady: !storage.isLoading,
-    sourceStrategyReady: !sourceStrategy.isLoading,
-    llmSettingsReady: category === 'all' ? true : !llm.isLoading,
-    uiSettingsReady: !uiSettingsLoading,
-    autoSaveAllEnabled,
-    storageAutoSaveEnabled,
-    runtimeAutoSaveEnabled,
-    llmSettingsAutoSaveEnabled,
-  };
+  useEffect(() => {
+    hydrateAuthoritySnapshot(authoritySnapshot);
+    patchAuthoritySnapshot(authoritySnapshot);
+  }, [hydrateAuthoritySnapshot, patchAuthoritySnapshot, authoritySnapshot]);
+
+  return authoritySnapshot;
 }

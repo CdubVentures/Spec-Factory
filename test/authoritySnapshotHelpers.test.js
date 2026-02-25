@@ -15,7 +15,7 @@ function hasQueryKey(keys, expected) {
 test('buildAuthorityVersionToken composes canonical authority version string', () => {
   const token = buildAuthorityVersionToken({
     version: {
-      draft_hash: 'draft:2026-02-23T12:00:00.000Z',
+      map_hash: 'map:2026-02-23T12:00:00.000Z',
       compiled_hash: 'compiled:2026-02-23T11:00:00.000Z',
       specdb_sync_version: 7,
       updated_at: '2026-02-23T12:05:00.000Z',
@@ -24,7 +24,7 @@ test('buildAuthorityVersionToken composes canonical authority version string', (
 
   assert.equal(
     token,
-    'draft:2026-02-23T12:00:00.000Z|compiled:2026-02-23T11:00:00.000Z|7|2026-02-23T12:05:00.000Z',
+    'map:2026-02-23T12:00:00.000Z|compiled:2026-02-23T11:00:00.000Z|7|2026-02-23T12:05:00.000Z',
   );
 });
 

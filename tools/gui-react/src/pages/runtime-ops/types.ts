@@ -352,9 +352,24 @@ export interface PrefetchSearchProfileAlias {
 
 export interface PrefetchFieldRuleGateCount {
   value_count?: number;
+  total_value_count?: number;
+  effective_value_count?: number;
   enabled_field_count?: number;
   disabled_field_count?: number;
   status?: string;
+}
+
+export interface PrefetchFieldRuleHintCount {
+  value_count?: number;
+  total_value_count?: number;
+  effective_value_count?: number;
+  status?: string;
+}
+
+export interface PrefetchFieldRuleHintCountsByField {
+  query_terms?: PrefetchFieldRuleHintCount;
+  domain_hints?: PrefetchFieldRuleHintCount;
+  preferred_content_types?: PrefetchFieldRuleHintCount;
 }
 
 export interface PrefetchSearchProfileData {
@@ -371,6 +386,7 @@ export interface PrefetchSearchProfileData {
   query_guard: Record<string, number>;
   hint_source_counts?: Record<string, number>;
   field_rule_gate_counts?: Record<string, PrefetchFieldRuleGateCount>;
+  field_rule_hint_counts_by_field?: Record<string, PrefetchFieldRuleHintCountsByField>;
   generated_at?: string;
   product_id?: string;
   source?: string;
@@ -513,12 +529,18 @@ export interface DomainHealthRow {
 // ── Live Settings (from /api/v1/runtime-settings) ──
 
 export interface PrefetchLiveSettings {
-  phase2LlmEnabled: boolean;
-  phase3LlmTriageEnabled: boolean;
-  searchProvider: string;
-  discoveryEnabled: boolean;
-  dynamicCrawleeEnabled: boolean;
-  scannedPdfOcrEnabled: boolean;
+  profile?: string;
+  phase2LlmEnabled?: boolean;
+  phase3LlmTriageEnabled?: boolean;
+  searchProvider?: string;
+  discoveryEnabled?: boolean;
+  dynamicCrawleeEnabled?: boolean;
+  scannedPdfOcrEnabled?: boolean;
+  maxPagesPerDomain?: number;
+  discoveryResultsPerQuery?: number;
+  discoveryMaxDiscovered?: number;
+  serpTriageMaxUrls?: number;
+  uberMaxUrlsPerDomain?: number;
 }
 
 // ── Pre-Fetch Phases Response ──

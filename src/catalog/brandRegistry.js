@@ -11,7 +11,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { slugify } from './slugify.js';
-import { loadWorkbookProducts, discoverCategoriesLocal } from './workbookProductLoader.js';
+import { loadCatalogProducts, discoverCategoriesLocal } from './catalogProductLoader.js';
 import { generateIdentifier } from './productIdentity.js';
 import { loadProductCatalog, updateProduct as catalogUpdateProduct } from './productCatalog.js';
 import { loadActiveFilteringData } from './activeFilteringLoader.js';
@@ -426,14 +426,13 @@ export async function seedBrandsFromActiveFiltering({ config, category = 'all', 
 }
 
 /**
- * Seed brands from workbook data.
- * If `category` is provided (and not 'all'), only scan that single category's workbook.
+ * Seed brands from app-owned catalog data.
+ * If `category` is provided (and not 'all'), only scan that category.
  * If `category` is 'all' or omitted, scan all category directories.
- * Reads product identities from the Excel workbook configured via Mapping Studio.
  * Extracts unique brands, infers category membership, writes registry.
  * Skips brands that already exist (merges categories).
  */
-export async function seedBrandsFromWorkbook({ config, category = 'all', extraCategories = [] }) {
+export async function seedBrandsFromCatalog({ config, category = 'all', extraCategories = [] }) {
   const root = config?.helperFilesRoot || 'helper_files';
 
   let categories;
@@ -453,10 +452,10 @@ export async function seedBrandsFromWorkbook({ config, category = 'all', extraCa
   }
 
   const registry = await loadBrandRegistry(config);
-  const brandMap = new Map(); // slug → { canonical, cats }
+  const brandMap = new Map(); // slug -> { canonical, cats }
 
   for (const category of categories) {
-    const products = await loadWorkbookProducts({ category, config });
+    const products = await loadCatalogProducts({ category, config });
     if (!products || products.length === 0) continue;
 
     for (const row of products) {

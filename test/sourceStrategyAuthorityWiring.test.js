@@ -22,6 +22,11 @@ test('source strategy authority is category-scoped end-to-end', () => {
     'source strategy authority options should require category',
   );
   assert.equal(
+    sourceAuthorityText.includes('enabled?: boolean;'),
+    true,
+    'source strategy authority options should support enabled guard for all-scope disablement',
+  );
+  assert.equal(
     sourceAuthorityText.includes("['source-strategy', category]"),
     true,
     'source strategy query key should be category-scoped',
@@ -30,6 +35,11 @@ test('source strategy authority is category-scoped end-to-end', () => {
     sourceAuthorityText.includes('const categoryQuery = `?category=${encodeURIComponent(category)}`;'),
     true,
     'source strategy authority should build encoded category query param',
+  );
+  assert.equal(
+    sourceAuthorityText.includes('enabled: enabled && autoQueryEnabled,'),
+    true,
+    'source strategy query should respect enabled guard',
   );
   assert.equal(
     sourceAuthorityText.includes('/source-strategy${categoryQuery}'),
@@ -48,9 +58,9 @@ test('source strategy authority is category-scoped end-to-end', () => {
   );
 
   assert.equal(
-    /useSourceStrategyAuthority\(\{\s*category\s*\}\)/.test(settingsAuthorityText),
+    /useSourceStrategyAuthority\(\{\s*category,\s*enabled:\s*category !== 'all'/.test(settingsAuthorityText),
     true,
-    'settings bootstrap should pass active category to source strategy authority',
+    'settings bootstrap should pass active category and all-scope enable guard to source strategy authority',
   );
   assert.equal(
     pipelineSettingsPageText.includes('const category = useUiStore((s) => s.category);'),
@@ -61,5 +71,15 @@ test('source strategy authority is category-scoped end-to-end', () => {
     /useSourceStrategyAuthority\(\{\s*category,/.test(pipelineSettingsPageText),
     true,
     'pipeline settings page should pass active category into source strategy authority',
+  );
+  assert.equal(
+    pipelineSettingsPageText.includes('enabled: !isAll,'),
+    true,
+    'pipeline settings page should disable source strategy authority while category scope is all',
+  );
+  assert.equal(
+    pipelineSettingsPageText.includes('Select a specific category to manage source strategy rows.'),
+    true,
+    'pipeline settings page should display explicit category-required state for source strategy in all scope',
   );
 });

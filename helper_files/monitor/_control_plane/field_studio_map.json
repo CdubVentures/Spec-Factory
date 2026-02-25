@@ -12,6 +12,7 @@
     "required_fields": []
   },
   "field_overrides": {},
+  "field_studio_source_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\helper_files\\monitor\\_source\\field_catalog.xlsx",
   "identity": {
     "anti_merge_rules": [],
     "min_identifiers": 2
@@ -74,6 +75,5 @@
   },
   "ui_defaults": {},
   "version": 1,
-  "version_note": "",
-  "workbook_path": "C:\\Users\\Chris\\Desktop\\spec-harvester - og\\helper_files\\monitor\\_source\\field_catalog.xlsx"
+  "version_note": ""
 }

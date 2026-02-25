@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useUiStore } from '../../stores/uiStore';
 import { usePersistedNullableTab, usePersistedTab } from '../../stores/tabStore';
+import { useIndexLabStore } from '../../stores/indexlabStore';
 import { getRefetchInterval } from './helpers';
 import { resolveRunActiveScope } from './runActivityScopeHelpers.js';
 import { MetricsRail } from './panels/MetricsRail';
@@ -25,6 +26,9 @@ import type {
 
 interface ProcessStatus {
   running: boolean;
+  run_id?: string | null;
+  runId?: string | null;
+  startedAt?: string | null;
 }
 
 interface IndexLabRunsResponse {
@@ -54,6 +58,8 @@ const inactiveTabCls = 'border-transparent text-gray-600 dark:text-gray-400 hove
 
 export function RuntimeOpsPage() {
   const category = useUiStore((s) => s.category);
+  const selectedRunId = useIndexLabStore((s) => s.pickerRunId);
+  const setSelectedRunId = useIndexLabStore((s) => s.setPickerRunId);
   const [activeTab, setActiveTab] = usePersistedTab<RuntimeOpsTab>(
     'runtimeOps:tab:main',
     'overview',
@@ -67,14 +73,15 @@ export function RuntimeOpsPage() {
   }, []);
 
   const { data: processStatus } = useQuery({
-    queryKey: ['processStatus', 'runtime-ops'],
+    queryKey: ['processStatus'],
     queryFn: () => api.get<ProcessStatus>('/process/status'),
     refetchInterval: 1500,
   });
   const isRunning = Boolean(processStatus?.running);
+  const processStatusRunId = String(processStatus?.run_id || processStatus?.runId || '').trim();
 
   const { data: runsResp } = useQuery({
-    queryKey: ['indexlab', 'runs', 'runtime-ops'],
+    queryKey: ['indexlab', 'runs'],
     queryFn: () => api.get<IndexLabRunsResponse>('/indexlab/runs?limit=40'),
     refetchInterval: getRefetchInterval(isRunning, false, 3000, 15000),
   });
@@ -84,21 +91,27 @@ export function RuntimeOpsPage() {
     if (category === 'all') return rows;
     return rows.filter((r) => r.category === category);
   }, [runsResp, category]);
-  const runIdValidValues = useMemo(
-    () => ['', ...runs.map((r) => r.run_id)],
-    [runs],
-  );
-  const [selectedRunId, setSelectedRunId] = usePersistedTab<string>(
-    `runtimeOps:run:${category}`,
-    '',
-    { validValues: runIdValidValues },
-  );
-
-  const hasRuns = runs.length > 0;
-  const effectiveRunId = selectedRunId || runs[0]?.run_id || '';
+  const effectiveRunId = selectedRunId || processStatusRunId || runs[0]?.run_id || '';
+  const runOptions = useMemo(() => {
+    const rows = [...runs];
+    if (effectiveRunId && !rows.some((row) => row.run_id === effectiveRunId)) {
+      rows.unshift({
+        run_id: effectiveRunId,
+        category,
+        started_at: String(processStatus?.startedAt || ''),
+        status: isRunning ? 'running' : 'starting',
+      });
+    }
+    return rows;
+  }, [runs, effectiveRunId, category, processStatus?.startedAt, isRunning]);
+  const hasRuns = runOptions.length > 0;
+  useEffect(() => {
+    if (!effectiveRunId || selectedRunId === effectiveRunId) return;
+    setSelectedRunId(effectiveRunId);
+  }, [effectiveRunId, selectedRunId, setSelectedRunId]);
   const selectedRun = useMemo(
-    () => runs.find((run) => run.run_id === effectiveRunId) ?? null,
-    [runs, effectiveRunId],
+    () => runOptions.find((run) => run.run_id === effectiveRunId) ?? null,
+    [runOptions, effectiveRunId],
   );
   const isSelectedRunActive = resolveRunActiveScope({
     processRunning: isRunning,
@@ -213,7 +226,7 @@ export function RuntimeOpsPage() {
               onChange={(e) => setSelectedRunId(e.target.value)}
               className="text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 max-w-[16rem] truncate"
             >
-              {runs.map((r) => (
+              {runOptions.map((r) => (
                 <option key={r.run_id} value={r.run_id}>
                   {r.run_id} ({r.status})
                 </option>

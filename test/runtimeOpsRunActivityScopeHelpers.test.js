@@ -2,28 +2,32 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveRunActiveScope } from '../tools/gui-react/src/pages/runtime-ops/runActivityScopeHelpers.js';
 
-test('resolveRunActiveScope prefers selected run status when known', () => {
+test('resolveRunActiveScope stays active while process is running', () => {
   assert.equal(
     resolveRunActiveScope({ processRunning: false, selectedRunStatus: 'running' }),
     true
   );
   assert.equal(
     resolveRunActiveScope({ processRunning: true, selectedRunStatus: 'completed' }),
-    false
+    true
   );
   assert.equal(
     resolveRunActiveScope({ processRunning: true, selectedRunStatus: 'failed' }),
-    false
+    true
   );
 });
 
-test('resolveRunActiveScope falls back to process state when selected run status is unknown', () => {
+test('resolveRunActiveScope falls back to selected run status when process is not running', () => {
   assert.equal(
     resolveRunActiveScope({ processRunning: true, selectedRunStatus: '' }),
     true
   );
   assert.equal(
     resolveRunActiveScope({ processRunning: false, selectedRunStatus: null }),
+    false
+  );
+  assert.equal(
+    resolveRunActiveScope({ processRunning: false, selectedRunStatus: 'completed' }),
     false
   );
 });

@@ -1,4 +1,5 @@
 import { emitDataChange } from '../events/dataChangeContract.js';
+import { buildRunId } from '../../utils/common.js';
 
 export function registerInfraRoutes(ctx) {
   const {
@@ -174,7 +175,12 @@ export function registerInfraRoutes(ctx) {
         });
       }
 
-      const cliArgs = ['indexlab', '--local'];
+      const rawRequestedRunId = String(body?.requestedRunId || body?.runId || '').trim();
+      const requestedRunId = /^[A-Za-z0-9._-]{8,96}$/.test(rawRequestedRunId)
+        ? rawRequestedRunId
+        : buildRunId();
+
+      const cliArgs = ['indexlab', '--local', '--run-id', requestedRunId];
 
       cliArgs.push('--category', cat);
 
@@ -439,7 +445,11 @@ export function registerInfraRoutes(ctx) {
           }
         }
         const status = startProcess('src/cli/spec.js', cliArgs, envOverrides);
-        return jsonRes(res, 200, status);
+        return jsonRes(res, 200, {
+          ...status,
+          run_id: String(status?.run_id || status?.runId || requestedRunId || ''),
+          runId: String(status?.runId || status?.run_id || requestedRunId || ''),
+        });
       } catch (err) {
         return jsonRes(res, 409, { error: err.message });
       }
