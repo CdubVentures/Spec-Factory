@@ -21,6 +21,7 @@ import {
   extractSiteScope,
   providerDisplayLabel,
   enrichResultDomains,
+  resolveDomainCapSummary,
 } from './searchResultsHelpers.js';
 
 interface PrefetchSearchResultsPanelProps {
@@ -257,6 +258,10 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
     ? new Set(details.flatMap((d) => d.results.map((r) => r.domain))).size
     : 0;
   const totalDeduped = details.reduce((sum, d) => sum + d.dedupe_count, 0);
+  const domainCapSummary = useMemo(
+    () => resolveDomainCapSummary(liveSettings || {}),
+    [liveSettings],
+  );
 
   const decisions = computeDecisionCounts(details);
   const totalDetailResults = details.reduce((sum, d) => sum + d.results.length, 0);
@@ -449,6 +454,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
           <StatCard label="Total Results" value={totalResults} tip="Raw result count before any deduplication or triage. This is the sum of results returned by each provider for each query." />
           {uniqueUrlCount > 0 && <StatCard label="Unique URLs" value={uniqueUrlCount} tip="Distinct URLs remaining after cross-query deduplication. The same URL often appears in results for multiple queries." />}
           {uniqueDomains > 0 && <StatCard label="Unique Domains" value={uniqueDomains} tip="How many different websites contributed results. More domain diversity generally means better evidence coverage." />}
+          <StatCard label="Domain Cap" value={domainCapSummary.value} tip={domainCapSummary.tooltip} />
           {totalDeduped > 0 && <StatCard label="Deduped" value={totalDeduped} tip="URLs that appeared in multiple queries and were collapsed into a single entry. Higher dedupe counts suggest overlapping queries." />}
           {decisions.keep > 0 && <StatCard label="Kept" value={decisions.keep} tip="Results that passed triage and will proceed to fetching. These URLs are expected to contain relevant spec information." />}
           {filteredCount > 0 && <StatCard label="Dropped" value={filteredCount} tip="Results removed during triage because they scored below the relevance threshold or matched a skip pattern (e.g. forums, shopping carts)." />}
@@ -721,7 +727,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
           <summary className="cursor-pointer text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
             Debug: Raw Search Results
           </summary>
-          <pre className="mt-2 text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-3 overflow-x-auto max-h-60 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+          <pre className="mt-2 text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-3 overflow-x-auto overflow-y-auto max-h-60 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
             {JSON.stringify(details, null, 2)}
           </pre>
         </details>

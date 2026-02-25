@@ -77,6 +77,38 @@ const NEEDSET_SORT_KEYS = [
 ] as const;
 const NEEDSET_SORT_DIRS = ['asc', 'desc'] as const;
 
+interface RuntimeSettingsNumericBaseline {
+  fetchConcurrency: number;
+  perHostMinDelayMs: number;
+  crawleeRequestHandlerTimeoutSecs: number;
+  dynamicFetchRetryBudget: number;
+  dynamicFetchRetryBackoffMs: number;
+  scannedPdfOcrMaxPages: number;
+  scannedPdfOcrMaxPairs: number;
+  scannedPdfOcrMinCharsPerPage: number;
+  scannedPdfOcrMinLinesPerPage: number;
+  scannedPdfOcrMinConfidence: number;
+  resumeWindowHours: number;
+  reextractAfterHours: number;
+}
+
+function runtimeSettingsBaselineEqual(a: RuntimeSettingsNumericBaseline, b: RuntimeSettingsNumericBaseline) {
+  return (
+    a.fetchConcurrency === b.fetchConcurrency
+    && a.perHostMinDelayMs === b.perHostMinDelayMs
+    && a.crawleeRequestHandlerTimeoutSecs === b.crawleeRequestHandlerTimeoutSecs
+    && a.dynamicFetchRetryBudget === b.dynamicFetchRetryBudget
+    && a.dynamicFetchRetryBackoffMs === b.dynamicFetchRetryBackoffMs
+    && a.scannedPdfOcrMaxPages === b.scannedPdfOcrMaxPages
+    && a.scannedPdfOcrMaxPairs === b.scannedPdfOcrMaxPairs
+    && a.scannedPdfOcrMinCharsPerPage === b.scannedPdfOcrMinCharsPerPage
+    && a.scannedPdfOcrMinLinesPerPage === b.scannedPdfOcrMinLinesPerPage
+    && a.scannedPdfOcrMinConfidence === b.scannedPdfOcrMinConfidence
+    && a.resumeWindowHours === b.resumeWindowHours
+    && a.reextractAfterHours === b.reextractAfterHours
+  );
+}
+
 export function IndexingPage() {
   const category = useUiStore((s) => s.category);
   const runtimeAutoSaveEnabled = useUiStore((s) => s.runtimeAutoSaveEnabled);
@@ -205,6 +237,128 @@ export function IndexingPage() {
   const [convergenceSettingsSaveMessage, setConvergenceSettingsSaveMessage] = useState('');
   const [runtimeSettingsSaveState, setRuntimeSettingsSaveState] = useState<'idle' | 'ok' | 'partial' | 'error'>('idle');
   const [runtimeSettingsSaveMessage, setRuntimeSettingsSaveMessage] = useState('');
+  const [runtimeSettingsFallbackBaseline, setRuntimeSettingsFallbackBaseline] = useState(() => ({
+    fetchConcurrency: runtimeDefaults.fetchConcurrency,
+    perHostMinDelayMs: runtimeDefaults.perHostMinDelayMs,
+    crawleeRequestHandlerTimeoutSecs: runtimeDefaults.crawleeRequestHandlerTimeoutSecs,
+    dynamicFetchRetryBudget: runtimeDefaults.dynamicFetchRetryBudget,
+    dynamicFetchRetryBackoffMs: runtimeDefaults.dynamicFetchRetryBackoffMs,
+    scannedPdfOcrMaxPages: runtimeDefaults.scannedPdfOcrMaxPages,
+    scannedPdfOcrMaxPairs: runtimeDefaults.scannedPdfOcrMaxPairs,
+    scannedPdfOcrMinCharsPerPage: runtimeDefaults.scannedPdfOcrMinCharsPerPage,
+    scannedPdfOcrMinLinesPerPage: runtimeDefaults.scannedPdfOcrMinLinesPerPage,
+    scannedPdfOcrMinConfidence: runtimeDefaults.scannedPdfOcrMinConfidence,
+    resumeWindowHours: runtimeDefaults.resumeWindowHours,
+    reextractAfterHours: runtimeDefaults.reextractAfterHours,
+  }));
+  const runtimeStringHydrationBindings = useMemo(() => ([
+    {
+      key: 'profile',
+      apply: (value: string) => setProfile(value as 'fast' | 'standard' | 'thorough'),
+    },
+    {
+      key: 'searchProvider',
+      allowEmpty: true,
+      apply: (value: string) => setSearchProvider(value as 'none' | 'google' | 'bing' | 'searxng' | 'duckduckgo' | 'dual'),
+    },
+    {
+      key: 'phase2LlmModel',
+      apply: (value: string) => setPhase2LlmModel(value),
+    },
+    {
+      key: 'phase3LlmModel',
+      apply: (value: string) => setPhase3LlmModel(value),
+    },
+    {
+      key: 'llmModelFast',
+      apply: (value: string) => setLlmModelFast(value),
+    },
+    {
+      key: 'llmModelReasoning',
+      apply: (value: string) => setLlmModelReasoning(value),
+    },
+    {
+      key: 'llmModelExtract',
+      apply: (value: string) => setLlmModelExtract(value),
+    },
+    {
+      key: 'llmModelValidate',
+      apply: (value: string) => setLlmModelValidate(value),
+    },
+    {
+      key: 'llmModelWrite',
+      apply: (value: string) => setLlmModelWrite(value),
+    },
+    {
+      key: 'llmFallbackPlanModel',
+      allowEmpty: true,
+      apply: (value: string) => setLlmFallbackPlanModel(value),
+    },
+    {
+      key: 'llmFallbackExtractModel',
+      allowEmpty: true,
+      apply: (value: string) => setLlmFallbackExtractModel(value),
+    },
+    {
+      key: 'llmFallbackValidateModel',
+      allowEmpty: true,
+      apply: (value: string) => setLlmFallbackValidateModel(value),
+    },
+    {
+      key: 'llmFallbackWriteModel',
+      allowEmpty: true,
+      apply: (value: string) => setLlmFallbackWriteModel(value),
+    },
+    {
+      key: 'resumeMode',
+      apply: (value: string) => setResumeMode(value as 'auto' | 'force_resume' | 'start_over'),
+    },
+    {
+      key: 'scannedPdfOcrBackend',
+      apply: (value: string) => setScannedPdfOcrBackend(value as 'auto' | 'tesseract' | 'none'),
+    },
+    {
+      key: 'dynamicFetchPolicyMapJson',
+      allowEmpty: true,
+      apply: (value: string) => setDynamicFetchPolicyMapJson(value),
+    },
+  ]), []);
+  const runtimeNumberHydrationBindings = useMemo(() => ([
+    { key: 'fetchConcurrency', apply: (value: number) => setFetchConcurrency(String(value)) },
+    { key: 'perHostMinDelayMs', apply: (value: number) => setPerHostMinDelayMs(String(value)) },
+    { key: 'llmTokensPlan', apply: (value: number) => setLlmTokensPlan(value) },
+    { key: 'llmTokensTriage', apply: (value: number) => setLlmTokensTriage(value) },
+    { key: 'llmTokensFast', apply: (value: number) => setLlmTokensFast(value) },
+    { key: 'llmTokensReasoning', apply: (value: number) => setLlmTokensReasoning(value) },
+    { key: 'llmTokensExtract', apply: (value: number) => setLlmTokensExtract(value) },
+    { key: 'llmTokensValidate', apply: (value: number) => setLlmTokensValidate(value) },
+    { key: 'llmTokensWrite', apply: (value: number) => setLlmTokensWrite(value) },
+    { key: 'llmTokensPlanFallback', apply: (value: number) => setLlmTokensPlanFallback(value) },
+    { key: 'llmTokensExtractFallback', apply: (value: number) => setLlmTokensExtractFallback(value) },
+    { key: 'llmTokensValidateFallback', apply: (value: number) => setLlmTokensValidateFallback(value) },
+    { key: 'llmTokensWriteFallback', apply: (value: number) => setLlmTokensWriteFallback(value) },
+    { key: 'resumeWindowHours', apply: (value: number) => setResumeWindowHours(String(value)) },
+    { key: 'reextractAfterHours', apply: (value: number) => setReextractAfterHours(String(value)) },
+    { key: 'scannedPdfOcrMaxPages', apply: (value: number) => setScannedPdfOcrMaxPages(String(value)) },
+    { key: 'scannedPdfOcrMaxPairs', apply: (value: number) => setScannedPdfOcrMaxPairs(String(value)) },
+    { key: 'scannedPdfOcrMinCharsPerPage', apply: (value: number) => setScannedPdfOcrMinCharsPerPage(String(value)) },
+    { key: 'scannedPdfOcrMinLinesPerPage', apply: (value: number) => setScannedPdfOcrMinLinesPerPage(String(value)) },
+    { key: 'scannedPdfOcrMinConfidence', apply: (value: number) => setScannedPdfOcrMinConfidence(String(value)) },
+    { key: 'crawleeRequestHandlerTimeoutSecs', apply: (value: number) => setCrawleeRequestHandlerTimeoutSecs(String(value)) },
+    { key: 'dynamicFetchRetryBudget', apply: (value: number) => setDynamicFetchRetryBudget(String(value)) },
+    { key: 'dynamicFetchRetryBackoffMs', apply: (value: number) => setDynamicFetchRetryBackoffMs(String(value)) },
+  ]), []);
+  const runtimeBooleanHydrationBindings = useMemo(() => ([
+    { key: 'discoveryEnabled', apply: (value: boolean) => setDiscoveryEnabled(value) },
+    { key: 'phase2LlmEnabled', apply: (value: boolean) => setPhase2LlmEnabled(value) },
+    { key: 'phase3LlmTriageEnabled', apply: (value: boolean) => setPhase3LlmTriageEnabled(value) },
+    { key: 'llmFallbackEnabled', apply: (value: boolean) => setLlmFallbackEnabled(value) },
+    { key: 'reextractIndexed', apply: (value: boolean) => setReextractIndexed(value) },
+    { key: 'scannedPdfOcrEnabled', apply: (value: boolean) => setScannedPdfOcrEnabled(value) },
+    { key: 'scannedPdfOcrPromoteCandidates', apply: (value: boolean) => setScannedPdfOcrPromoteCandidates(value) },
+    { key: 'dynamicCrawleeEnabled', apply: (value: boolean) => setDynamicCrawleeEnabled(value) },
+    { key: 'crawleeHeadless', apply: (value: boolean) => setCrawleeHeadless(value) },
+  ]), []);
 
   const { data: indexingLlmConfig } = useQuery({
     queryKey: ['indexing', 'llm-config'],
@@ -677,8 +831,8 @@ export function IndexingPage() {
     llmFallbackWriteModel,
     resumeMode,
     scannedPdfOcrBackend,
-    fetchConcurrency: parseRuntimeInt(fetchConcurrency, runtimeDefaults.fetchConcurrency),
-    perHostMinDelayMs: parseRuntimeInt(perHostMinDelayMs, runtimeDefaults.perHostMinDelayMs),
+    fetchConcurrency: parseRuntimeInt(fetchConcurrency, runtimeSettingsFallbackBaseline.fetchConcurrency),
+    perHostMinDelayMs: parseRuntimeInt(perHostMinDelayMs, runtimeSettingsFallbackBaseline.perHostMinDelayMs),
     llmTokensPlan: clampTokenForModel(phase2LlmModel, llmTokensPlan),
     llmTokensTriage: clampTokenForModel(phase3LlmModel, llmTokensTriage),
     llmTokensFast: clampTokenForModel(llmModelFast, llmTokensFast),
@@ -690,16 +844,16 @@ export function IndexingPage() {
     llmTokensExtractFallback: clampTokenForModel(llmFallbackExtractModel || llmModelExtract, llmTokensExtractFallback),
     llmTokensValidateFallback: clampTokenForModel(llmFallbackValidateModel || llmModelValidate, llmTokensValidateFallback),
     llmTokensWriteFallback: clampTokenForModel(llmFallbackWriteModel || llmModelWrite, llmTokensWriteFallback),
-    resumeWindowHours: parseRuntimeInt(resumeWindowHours, runtimeDefaults.resumeWindowHours),
-    reextractAfterHours: parseRuntimeInt(reextractAfterHours, runtimeDefaults.reextractAfterHours),
-    scannedPdfOcrMaxPages: parseRuntimeInt(scannedPdfOcrMaxPages, runtimeDefaults.scannedPdfOcrMaxPages),
-    scannedPdfOcrMaxPairs: parseRuntimeInt(scannedPdfOcrMaxPairs, runtimeDefaults.scannedPdfOcrMaxPairs),
-    scannedPdfOcrMinCharsPerPage: parseRuntimeInt(scannedPdfOcrMinCharsPerPage, runtimeDefaults.scannedPdfOcrMinCharsPerPage),
-    scannedPdfOcrMinLinesPerPage: parseRuntimeInt(scannedPdfOcrMinLinesPerPage, runtimeDefaults.scannedPdfOcrMinLinesPerPage),
-    scannedPdfOcrMinConfidence: parseRuntimeFloat(scannedPdfOcrMinConfidence, runtimeDefaults.scannedPdfOcrMinConfidence),
-    crawleeRequestHandlerTimeoutSecs: parseRuntimeInt(crawleeRequestHandlerTimeoutSecs, runtimeDefaults.crawleeRequestHandlerTimeoutSecs),
-    dynamicFetchRetryBudget: parseRuntimeInt(dynamicFetchRetryBudget, runtimeDefaults.dynamicFetchRetryBudget),
-    dynamicFetchRetryBackoffMs: parseRuntimeInt(dynamicFetchRetryBackoffMs, runtimeDefaults.dynamicFetchRetryBackoffMs),
+    resumeWindowHours: parseRuntimeInt(resumeWindowHours, runtimeSettingsFallbackBaseline.resumeWindowHours),
+    reextractAfterHours: parseRuntimeInt(reextractAfterHours, runtimeSettingsFallbackBaseline.reextractAfterHours),
+    scannedPdfOcrMaxPages: parseRuntimeInt(scannedPdfOcrMaxPages, runtimeSettingsFallbackBaseline.scannedPdfOcrMaxPages),
+    scannedPdfOcrMaxPairs: parseRuntimeInt(scannedPdfOcrMaxPairs, runtimeSettingsFallbackBaseline.scannedPdfOcrMaxPairs),
+    scannedPdfOcrMinCharsPerPage: parseRuntimeInt(scannedPdfOcrMinCharsPerPage, runtimeSettingsFallbackBaseline.scannedPdfOcrMinCharsPerPage),
+    scannedPdfOcrMinLinesPerPage: parseRuntimeInt(scannedPdfOcrMinLinesPerPage, runtimeSettingsFallbackBaseline.scannedPdfOcrMinLinesPerPage),
+    scannedPdfOcrMinConfidence: parseRuntimeFloat(scannedPdfOcrMinConfidence, runtimeSettingsFallbackBaseline.scannedPdfOcrMinConfidence),
+    crawleeRequestHandlerTimeoutSecs: parseRuntimeInt(crawleeRequestHandlerTimeoutSecs, runtimeSettingsFallbackBaseline.crawleeRequestHandlerTimeoutSecs),
+    dynamicFetchRetryBudget: parseRuntimeInt(dynamicFetchRetryBudget, runtimeSettingsFallbackBaseline.dynamicFetchRetryBudget),
+    dynamicFetchRetryBackoffMs: parseRuntimeInt(dynamicFetchRetryBackoffMs, runtimeSettingsFallbackBaseline.dynamicFetchRetryBackoffMs),
     dynamicFetchPolicyMapJson: String(dynamicFetchPolicyMapJson || '').trim(),
     discoveryEnabled,
     phase2LlmEnabled,
@@ -745,6 +899,53 @@ export function IndexingPage() {
       setRuntimeSettingsSaveMessage(error instanceof Error ? error.message : 'Runtime settings save failed.');
     },
   });
+
+  const runtimeSettingsBaseline = useMemo(() => ({
+    fetchConcurrency: Number.isFinite(Number(runtimeSettingsData?.fetchConcurrency))
+      ? Number(runtimeSettingsData?.fetchConcurrency)
+      : runtimeDefaults.fetchConcurrency,
+    perHostMinDelayMs: Number.isFinite(Number(runtimeSettingsData?.perHostMinDelayMs))
+      ? Number(runtimeSettingsData?.perHostMinDelayMs)
+      : runtimeDefaults.perHostMinDelayMs,
+    crawleeRequestHandlerTimeoutSecs: Number.isFinite(Number(runtimeSettingsData?.crawleeRequestHandlerTimeoutSecs))
+      ? Number(runtimeSettingsData?.crawleeRequestHandlerTimeoutSecs)
+      : runtimeDefaults.crawleeRequestHandlerTimeoutSecs,
+    dynamicFetchRetryBudget: Number.isFinite(Number(runtimeSettingsData?.dynamicFetchRetryBudget))
+      ? Number(runtimeSettingsData?.dynamicFetchRetryBudget)
+      : runtimeDefaults.dynamicFetchRetryBudget,
+    dynamicFetchRetryBackoffMs: Number.isFinite(Number(runtimeSettingsData?.dynamicFetchRetryBackoffMs))
+      ? Number(runtimeSettingsData?.dynamicFetchRetryBackoffMs)
+      : runtimeDefaults.dynamicFetchRetryBackoffMs,
+    scannedPdfOcrMaxPages: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMaxPages))
+      ? Number(runtimeSettingsData?.scannedPdfOcrMaxPages)
+      : runtimeDefaults.scannedPdfOcrMaxPages,
+    scannedPdfOcrMaxPairs: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMaxPairs))
+      ? Number(runtimeSettingsData?.scannedPdfOcrMaxPairs)
+      : runtimeDefaults.scannedPdfOcrMaxPairs,
+    scannedPdfOcrMinCharsPerPage: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMinCharsPerPage))
+      ? Number(runtimeSettingsData?.scannedPdfOcrMinCharsPerPage)
+      : runtimeDefaults.scannedPdfOcrMinCharsPerPage,
+    scannedPdfOcrMinLinesPerPage: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMinLinesPerPage))
+      ? Number(runtimeSettingsData?.scannedPdfOcrMinLinesPerPage)
+      : runtimeDefaults.scannedPdfOcrMinLinesPerPage,
+    scannedPdfOcrMinConfidence: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMinConfidence))
+      ? Number(runtimeSettingsData?.scannedPdfOcrMinConfidence)
+      : runtimeDefaults.scannedPdfOcrMinConfidence,
+    resumeWindowHours: Number.isFinite(Number(runtimeSettingsData?.resumeWindowHours))
+      ? Number(runtimeSettingsData?.resumeWindowHours)
+      : runtimeDefaults.resumeWindowHours,
+    reextractAfterHours: Number.isFinite(Number(runtimeSettingsData?.reextractAfterHours))
+      ? Number(runtimeSettingsData?.reextractAfterHours)
+      : runtimeDefaults.reextractAfterHours,
+  }), [runtimeDefaults, runtimeSettingsData]);
+
+  useEffect(() => {
+    setRuntimeSettingsFallbackBaseline((previous) => (
+      runtimeSettingsBaselineEqual(previous, runtimeSettingsBaseline)
+        ? previous
+        : runtimeSettingsBaseline
+    ));
+  }, [runtimeSettingsBaseline]);
 
   const selectedRunLlmMetrics = useMemo(() => {
     const runs = Array.isArray(indexingLlmMetrics?.by_run) ? indexingLlmMetrics.by_run : [];
@@ -963,57 +1164,32 @@ export function IndexingPage() {
 
   useEffect(() => {
     if (!runtimeSettingsData || !llmKnobsInitialized || runtimeSettingsDirty) return;
-    const d = runtimeSettingsData;
-    if (typeof d.profile === 'string' && d.profile) setProfile(d.profile as typeof profile);
-    if (typeof d.searchProvider === 'string') setSearchProvider(d.searchProvider as typeof searchProvider);
-    if (typeof d.phase2LlmModel === 'string' && d.phase2LlmModel) setPhase2LlmModel(d.phase2LlmModel as string);
-    if (typeof d.phase3LlmModel === 'string' && d.phase3LlmModel) setPhase3LlmModel(d.phase3LlmModel as string);
-    if (typeof d.llmModelFast === 'string' && d.llmModelFast) setLlmModelFast(d.llmModelFast as string);
-    if (typeof d.llmModelReasoning === 'string' && d.llmModelReasoning) setLlmModelReasoning(d.llmModelReasoning as string);
-    if (typeof d.llmModelExtract === 'string' && d.llmModelExtract) setLlmModelExtract(d.llmModelExtract as string);
-    if (typeof d.llmModelValidate === 'string' && d.llmModelValidate) setLlmModelValidate(d.llmModelValidate as string);
-    if (typeof d.llmModelWrite === 'string' && d.llmModelWrite) setLlmModelWrite(d.llmModelWrite as string);
-    if (typeof d.llmFallbackPlanModel === 'string') setLlmFallbackPlanModel(d.llmFallbackPlanModel as string);
-    if (typeof d.llmFallbackExtractModel === 'string') setLlmFallbackExtractModel(d.llmFallbackExtractModel as string);
-    if (typeof d.llmFallbackValidateModel === 'string') setLlmFallbackValidateModel(d.llmFallbackValidateModel as string);
-    if (typeof d.llmFallbackWriteModel === 'string') setLlmFallbackWriteModel(d.llmFallbackWriteModel as string);
-    if (typeof d.resumeMode === 'string' && d.resumeMode) setResumeMode(d.resumeMode as typeof resumeMode);
-    if (typeof d.scannedPdfOcrBackend === 'string' && d.scannedPdfOcrBackend) setScannedPdfOcrBackend(d.scannedPdfOcrBackend as typeof scannedPdfOcrBackend);
-    if (typeof d.fetchConcurrency === 'number') setFetchConcurrency(String(d.fetchConcurrency));
-    if (typeof d.perHostMinDelayMs === 'number') setPerHostMinDelayMs(String(d.perHostMinDelayMs));
-    if (typeof d.llmTokensPlan === 'number') setLlmTokensPlan(d.llmTokensPlan as number);
-    if (typeof d.llmTokensTriage === 'number') setLlmTokensTriage(d.llmTokensTriage as number);
-    if (typeof d.llmTokensFast === 'number') setLlmTokensFast(d.llmTokensFast as number);
-    if (typeof d.llmTokensReasoning === 'number') setLlmTokensReasoning(d.llmTokensReasoning as number);
-    if (typeof d.llmTokensExtract === 'number') setLlmTokensExtract(d.llmTokensExtract as number);
-    if (typeof d.llmTokensValidate === 'number') setLlmTokensValidate(d.llmTokensValidate as number);
-    if (typeof d.llmTokensWrite === 'number') setLlmTokensWrite(d.llmTokensWrite as number);
-    if (typeof d.llmTokensPlanFallback === 'number') setLlmTokensPlanFallback(d.llmTokensPlanFallback as number);
-    if (typeof d.llmTokensExtractFallback === 'number') setLlmTokensExtractFallback(d.llmTokensExtractFallback as number);
-    if (typeof d.llmTokensValidateFallback === 'number') setLlmTokensValidateFallback(d.llmTokensValidateFallback as number);
-    if (typeof d.llmTokensWriteFallback === 'number') setLlmTokensWriteFallback(d.llmTokensWriteFallback as number);
-    if (typeof d.resumeWindowHours === 'number') setResumeWindowHours(String(d.resumeWindowHours));
-    if (typeof d.reextractAfterHours === 'number') setReextractAfterHours(String(d.reextractAfterHours));
-    if (typeof d.scannedPdfOcrMaxPages === 'number') setScannedPdfOcrMaxPages(String(d.scannedPdfOcrMaxPages));
-    if (typeof d.scannedPdfOcrMaxPairs === 'number') setScannedPdfOcrMaxPairs(String(d.scannedPdfOcrMaxPairs));
-    if (typeof d.scannedPdfOcrMinCharsPerPage === 'number') setScannedPdfOcrMinCharsPerPage(String(d.scannedPdfOcrMinCharsPerPage));
-    if (typeof d.scannedPdfOcrMinLinesPerPage === 'number') setScannedPdfOcrMinLinesPerPage(String(d.scannedPdfOcrMinLinesPerPage));
-    if (typeof d.scannedPdfOcrMinConfidence === 'number') setScannedPdfOcrMinConfidence(String(d.scannedPdfOcrMinConfidence));
-    if (typeof d.crawleeRequestHandlerTimeoutSecs === 'number') setCrawleeRequestHandlerTimeoutSecs(String(d.crawleeRequestHandlerTimeoutSecs));
-    if (typeof d.dynamicFetchRetryBudget === 'number') setDynamicFetchRetryBudget(String(d.dynamicFetchRetryBudget));
-    if (typeof d.dynamicFetchRetryBackoffMs === 'number') setDynamicFetchRetryBackoffMs(String(d.dynamicFetchRetryBackoffMs));
-    if (typeof d.dynamicFetchPolicyMapJson === 'string') setDynamicFetchPolicyMapJson(d.dynamicFetchPolicyMapJson);
-    if (typeof d.discoveryEnabled === 'boolean') setDiscoveryEnabled(d.discoveryEnabled as boolean);
-    if (typeof d.phase2LlmEnabled === 'boolean') setPhase2LlmEnabled(d.phase2LlmEnabled as boolean);
-    if (typeof d.phase3LlmTriageEnabled === 'boolean') setPhase3LlmTriageEnabled(d.phase3LlmTriageEnabled as boolean);
-    if (typeof d.llmFallbackEnabled === 'boolean') setLlmFallbackEnabled(d.llmFallbackEnabled as boolean);
-    if (typeof d.reextractIndexed === 'boolean') setReextractIndexed(d.reextractIndexed as boolean);
-    if (typeof d.scannedPdfOcrEnabled === 'boolean') setScannedPdfOcrEnabled(d.scannedPdfOcrEnabled as boolean);
-    if (typeof d.scannedPdfOcrPromoteCandidates === 'boolean') setScannedPdfOcrPromoteCandidates(d.scannedPdfOcrPromoteCandidates as boolean);
-    if (typeof d.dynamicCrawleeEnabled === 'boolean') setDynamicCrawleeEnabled(d.dynamicCrawleeEnabled as boolean);
-    if (typeof d.crawleeHeadless === 'boolean') setCrawleeHeadless(d.crawleeHeadless as boolean);
+    const d = runtimeSettingsData as Record<string, unknown>;
+    for (const binding of runtimeStringHydrationBindings) {
+      const value = d[binding.key];
+      if (typeof value !== 'string') continue;
+      if (!binding.allowEmpty && !value) continue;
+      binding.apply(value);
+    }
+    for (const binding of runtimeNumberHydrationBindings) {
+      const value = d[binding.key];
+      if (typeof value !== 'number') continue;
+      binding.apply(value);
+    }
+    for (const binding of runtimeBooleanHydrationBindings) {
+      const value = d[binding.key];
+      if (typeof value !== 'boolean') continue;
+      binding.apply(value);
+    }
     setRuntimeSettingsDirty(false);
-  }, [runtimeSettingsData, runtimeSettingsDirty, llmKnobsInitialized]);
+  }, [
+    runtimeSettingsData,
+    runtimeSettingsDirty,
+    llmKnobsInitialized,
+    runtimeStringHydrationBindings,
+    runtimeNumberHydrationBindings,
+    runtimeBooleanHydrationBindings,
+  ]);
 
   useEffect(() => {
     if (previousCategoryRef.current === category) return;
@@ -3833,32 +4009,32 @@ export function IndexingPage() {
   };
 
   const runControlPayload = useMemo(() => {
-    const parsedResumeWindowHours = parseRuntimeInt(resumeWindowHours, runtimeDefaults.resumeWindowHours);
-    const parsedReextractAfterHours = parseRuntimeInt(reextractAfterHours, runtimeDefaults.reextractAfterHours);
+    const parsedResumeWindowHours = parseRuntimeInt(resumeWindowHours, runtimeSettingsBaseline.resumeWindowHours);
+    const parsedReextractAfterHours = parseRuntimeInt(reextractAfterHours, runtimeSettingsBaseline.reextractAfterHours);
     return {
       resumeMode,
       resumeWindowHours: Number.isFinite(parsedResumeWindowHours) && parsedResumeWindowHours >= 0
         ? parsedResumeWindowHours
-        : runtimeDefaults.resumeWindowHours,
+        : runtimeSettingsBaseline.resumeWindowHours,
       reextractAfterHours: Number.isFinite(parsedReextractAfterHours) && parsedReextractAfterHours >= 0
         ? parsedReextractAfterHours
-        : runtimeDefaults.reextractAfterHours,
+        : runtimeSettingsBaseline.reextractAfterHours,
       reextractIndexed
     };
-  }, [resumeMode, resumeWindowHours, reextractAfterHours, reextractIndexed]);
+  }, [resumeMode, resumeWindowHours, reextractAfterHours, reextractIndexed, runtimeSettingsBaseline]);
 
   const startIndexLabMut = useMutation({
     mutationFn: () => {
-      const parsedConcurrency = parseRuntimeInt(fetchConcurrency, runtimeDefaults.fetchConcurrency);
-      const parsedPerHostMinDelayMs = parseRuntimeInt(perHostMinDelayMs, runtimeDefaults.perHostMinDelayMs);
-      const parsedCrawleeTimeout = parseRuntimeInt(crawleeRequestHandlerTimeoutSecs, runtimeDefaults.crawleeRequestHandlerTimeoutSecs);
-      const parsedRetryBudget = parseRuntimeInt(dynamicFetchRetryBudget, runtimeDefaults.dynamicFetchRetryBudget);
-      const parsedRetryBackoff = parseRuntimeInt(dynamicFetchRetryBackoffMs, runtimeDefaults.dynamicFetchRetryBackoffMs);
-      const parsedScannedPdfOcrMaxPages = parseRuntimeInt(scannedPdfOcrMaxPages, runtimeDefaults.scannedPdfOcrMaxPages);
-      const parsedScannedPdfOcrMaxPairs = parseRuntimeInt(scannedPdfOcrMaxPairs, runtimeDefaults.scannedPdfOcrMaxPairs);
-      const parsedScannedPdfOcrMinChars = parseRuntimeInt(scannedPdfOcrMinCharsPerPage, runtimeDefaults.scannedPdfOcrMinCharsPerPage);
-      const parsedScannedPdfOcrMinLines = parseRuntimeInt(scannedPdfOcrMinLinesPerPage, runtimeDefaults.scannedPdfOcrMinLinesPerPage);
-      const parsedScannedPdfOcrMinConfidence = parseRuntimeFloat(scannedPdfOcrMinConfidence, runtimeDefaults.scannedPdfOcrMinConfidence);
+      const parsedConcurrency = parseRuntimeInt(fetchConcurrency, runtimeSettingsBaseline.fetchConcurrency);
+      const parsedPerHostMinDelayMs = parseRuntimeInt(perHostMinDelayMs, runtimeSettingsBaseline.perHostMinDelayMs);
+      const parsedCrawleeTimeout = parseRuntimeInt(crawleeRequestHandlerTimeoutSecs, runtimeSettingsBaseline.crawleeRequestHandlerTimeoutSecs);
+      const parsedRetryBudget = parseRuntimeInt(dynamicFetchRetryBudget, runtimeSettingsBaseline.dynamicFetchRetryBudget);
+      const parsedRetryBackoff = parseRuntimeInt(dynamicFetchRetryBackoffMs, runtimeSettingsBaseline.dynamicFetchRetryBackoffMs);
+      const parsedScannedPdfOcrMaxPages = parseRuntimeInt(scannedPdfOcrMaxPages, runtimeSettingsBaseline.scannedPdfOcrMaxPages);
+      const parsedScannedPdfOcrMaxPairs = parseRuntimeInt(scannedPdfOcrMaxPairs, runtimeSettingsBaseline.scannedPdfOcrMaxPairs);
+      const parsedScannedPdfOcrMinChars = parseRuntimeInt(scannedPdfOcrMinCharsPerPage, runtimeSettingsBaseline.scannedPdfOcrMinCharsPerPage);
+      const parsedScannedPdfOcrMinLines = parseRuntimeInt(scannedPdfOcrMinLinesPerPage, runtimeSettingsBaseline.scannedPdfOcrMinLinesPerPage);
+      const parsedScannedPdfOcrMinConfidence = parseRuntimeFloat(scannedPdfOcrMinConfidence, runtimeSettingsBaseline.scannedPdfOcrMinConfidence);
       return api.post<ProcessStatus>('/process/start', {
         category,
         mode: 'indexlab',

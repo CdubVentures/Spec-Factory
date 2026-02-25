@@ -689,6 +689,23 @@ export function StudioPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveAutoSaveEnabled, editedRules, editedFieldOrder, saveFromStore, authorityConflictVersion, buildDraftPersistPayload]);
 
+  useEffect(() => () => {
+    if (!effectiveAutoSaveEnabled || !fieldRulesStore.initialized || !hydrated.current || authorityConflictVersion) return;
+    if (saveDraftsMut.isPending) return;
+    const snap = useFieldRulesStore.getState().getSnapshot();
+    const nextFingerprint = autoSaveFingerprint(buildDraftPersistPayload(snap));
+    if (!nextFingerprint) return;
+    if (nextFingerprint === lastDraftAutoSaveFingerprintRef.current) return;
+    saveFromStore({ force: true });
+  }, [
+    effectiveAutoSaveEnabled,
+    fieldRulesStore.initialized,
+    authorityConflictVersion,
+    saveDraftsMut.isPending,
+    saveFromStore,
+    buildDraftPersistPayload,
+  ]);
+
   const hasUnsavedChanges = useMemo(
     () => Object.values(fieldRulesStore.editedRules).some((r: any) => r?._edited),
     [fieldRulesStore.editedRules],
@@ -745,19 +762,32 @@ export function StudioPage() {
 
   const saveStatus = (() => {
     if (saveDraftsMut.isPending) {
-      return { label: 'Savingâ€¦', dot: 'bg-gray-400', text: 'text-gray-500', border: 'border-gray-200 dark:border-gray-600' };
+      return { label: 'Saving...', dot: 'bg-gray-400', text: 'text-gray-500', border: 'border-gray-200 dark:border-gray-600' };
+    }
+    if (saveDraftsMut.isError) {
+      return {
+        label: (saveDraftsMut.error as Error)?.message || 'Save failed',
+        dot: 'bg-red-500',
+        text: 'text-red-600 dark:text-red-400',
+        border: 'border-red-200 dark:border-red-700/60',
+      };
+    }
+    if (!fieldRulesStore.initialized) {
+      return null;
+    }
+    if (hasUnsavedChanges) {
+      return {
+        label: effectiveAutoSaveEnabled ? 'Unsaved (auto-save pending)' : 'Unsaved',
+        dot: 'bg-amber-500',
+        text: 'text-amber-600 dark:text-amber-400',
+        border: 'border-amber-200 dark:border-amber-700/60',
+      };
     }
     if (effectiveAutoSaveEnabled) {
       if (autoSaveStatus === 'saved') {
         return { label: 'Auto-saved', dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400', border: 'border-green-200 dark:border-green-700/60' };
       }
       return { label: 'Up to date', dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400', border: 'border-green-200 dark:border-green-700/60' };
-    }
-    if (!fieldRulesStore.initialized) {
-      return null;
-    }
-    if (hasUnsavedChanges) {
-      return { label: 'Unsaved', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-700/60' };
     }
     return { label: 'All saved', dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400', border: 'border-green-200 dark:border-green-700/60' };
   })();
@@ -1305,6 +1335,16 @@ function MappingStudioTab({
     }, 1500);
     return () => clearTimeout(timer);
   }, [autoSaveMapEnabled, tooltipPath, compSources, dataLists, assembleMap, onSaveMap]);
+
+  useEffect(() => () => {
+    if (!autoSaveMapEnabled || !mapHydrated.current || saving) return;
+    const nextMap = assembleMap();
+    const nextFingerprint = autoSaveFingerprint(nextMap);
+    if (!nextFingerprint) return;
+    if (nextFingerprint === lastMapAutoSaveFingerprintRef.current) return;
+    onSaveMap(nextMap);
+    lastMapAutoSaveFingerprintRef.current = nextFingerprint;
+  }, [autoSaveMapEnabled, saving, tooltipPath, compSources, dataLists, assembleMap, onSaveMap]);
 
   // â"€â"€ Component source handlers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   function addComponentSource() {
@@ -3416,6 +3456,7 @@ function KeyNavigatorTab({
     addKey, removeKey, renameKey, bulkAddKeys,
     reorder, addGroup, removeGroup, renameGroup,
   } = useFieldRulesStore();
+  const contractDeferredLocked = true;
 
   // Add key UI state
   const [showAddForm, setShowAddForm] = useState(false);
@@ -3944,7 +3985,7 @@ function KeyNavigatorTab({
                 </div>
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Unknown Token<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.unknown_token} /></span><B p="contract.unknown_token" /></div>
-                  <ComboSelect value={strN(currentRule, 'contract.unknown_token', 'unk')} onChange={(v) => updateField(selectedKey, 'contract.unknown_token', v)} options={UNKNOWN_TOKENS} placeholder="unk" />
+                  <ComboSelect value={strN(currentRule, 'contract.unknown_token', 'unk')} onChange={(v) => updateField(selectedKey, 'contract.unknown_token', v)} options={UNKNOWN_TOKENS} placeholder="unk" disabled={contractDeferredLocked} />
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-3">
@@ -3954,7 +3995,7 @@ function KeyNavigatorTab({
                 </div>
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Rounding Mode<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.rounding_mode} /></span><B p="contract.rounding.mode" /></div>
-                  <select className={`${selectCls} w-full`} value={strN(currentRule, 'contract.rounding.mode', 'nearest')} onChange={(e) => updateField(selectedKey, 'contract.rounding.mode', e.target.value)}>
+                  <select className={`${selectCls} w-full`} value={strN(currentRule, 'contract.rounding.mode', 'nearest')} onChange={(e) => updateField(selectedKey, 'contract.rounding.mode', e.target.value)} disabled={contractDeferredLocked}>
                     <option value="nearest">nearest</option>
                     <option value="floor">floor</option>
                     <option value="ceil">ceil</option>
@@ -3962,11 +4003,12 @@ function KeyNavigatorTab({
                 </div>
                 <div className="flex items-end">
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={boolN(currentRule, 'contract.unknown_reason_required', true)} onChange={(e) => updateField(selectedKey, 'contract.unknown_reason_required', e.target.checked)} className="rounded border-gray-300" />
+                    <input type="checkbox" checked={boolN(currentRule, 'contract.unknown_reason_required', true)} onChange={(e) => updateField(selectedKey, 'contract.unknown_reason_required', e.target.checked)} className="rounded border-gray-300" disabled={contractDeferredLocked} />
                     <span className="text-xs text-gray-500">Require unknown reason<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.require_unknown_reason} /></span>
                   </label>
                 </div>
               </div>
+              <div className="text-xs text-red-600">Deferred: runtime wiring in progress</div>
             </Section>
 
             {/* â"€â"€ Priority â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
@@ -5048,6 +5090,7 @@ function CompileReportsTab({
     </div>
   );
 }
+
 
 
 

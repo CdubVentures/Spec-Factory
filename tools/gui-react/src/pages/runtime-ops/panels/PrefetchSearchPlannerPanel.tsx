@@ -816,12 +816,12 @@ export function PrefetchSearchPlannerPanel({
                     </div>
                   )}
                   {call.prompt_preview && (
-                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
                       {call.prompt_preview}
                     </pre>
                   )}
                   {call.response_preview && (
-                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
                       {call.response_preview}
                     </pre>
                   )}

@@ -58,3 +58,9 @@ Columns:
 - Approve / disable queries
 - Add query manually
 - Export SearchProfile
+
+---
+
+## IDX gate implementation note
+- Runtime + UI handling for prefetch IDX gates is documented in:
+  - `implementation/ai-indexing-plans/row-1-gui/idx-gates-runbook.md`

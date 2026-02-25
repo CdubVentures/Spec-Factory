@@ -14,6 +14,7 @@ import {
   querySourceChipClass,
   buildGateSummary,
   normalizeFieldRuleGateCounts,
+  resolveFieldRuleHintCountForRowGate,
 } from './prefetchSearchProfileGateHelpers.js';
 import { formatTooltip, TooltipBadge } from '../components/PrefetchTooltip';
 
@@ -73,6 +74,19 @@ function gateBadgePillClass(active: boolean): string {
   return `px-2 py-0.5 rounded-full text-[10px] font-medium ${gateBadgeClass(active)}`;
 }
 
+function gateZeroRatioReason(gateKey: string): string {
+  if (gateKey === 'search_hints.query_terms') {
+    return '0/Y means no query terms are configured on enabled fields.';
+  }
+  if (gateKey === 'search_hints.domain_hints') {
+    return '0/Y means domain hints exist but are not usable host patterns. Examples of usable host patterns: `example.com`, `support.example.com`.';
+  }
+  if (gateKey === 'search_hints.preferred_content_types') {
+    return '0/Y means no preferred content types are configured on enabled fields.';
+  }
+  return '0/Y means no effective values are available for this gate on enabled fields.';
+}
+
 function QueryDetailDrawer({
   row,
   onClose,
@@ -89,7 +103,14 @@ function QueryDetailDrawer({
   const source = querySourceLabel(row);
 
   return (
-    <DrawerShell title="Query Detail" subtitle={row.query} onClose={onClose}>
+    <DrawerShell
+      title="Query Detail"
+      subtitle={row.query}
+      maxHeight="none"
+      className="max-h-none"
+      scrollContent={false}
+      onClose={onClose}
+    >
       <DrawerSection title="Query">
         <div className="font-mono text-xs text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 rounded p-2">{row.query}</div>
       </DrawerSection>
@@ -190,10 +211,9 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
     () => normalizeFieldRuleGateCounts(data.field_rule_gate_counts),
     [data.field_rule_gate_counts],
   );
-  const fieldRuleGateCountsByKey = useMemo(
-    () => new Map(fieldRuleGateCounts.map((row) => [row.key, row])),
-    [fieldRuleGateCounts],
-  );
+  const effectiveGateCounts = useMemo(() => {
+    return new Map(fieldRuleGateCounts.map((row) => [row.key, row]));
+  }, [fieldRuleGateCounts]);
 
   const totalTargetFieldRows = allTargetFields.length;
   const providerLabel = toChipLabel(liveProvider || data.provider);
@@ -222,7 +242,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
     });
 
   return (
-    <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
+    <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1 min-h-0">
       <div className="flex items-center gap-2">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Search Profile</h3>
         {providerLabel && <Chip label={providerLabel} />}
@@ -240,7 +260,11 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
             Field Rules
           </TooltipBadge>
           {fieldRuleGateCounts.map((gate) => {
-            const displayValue = gate.status === 'off' ? 'OFF' : String(gate.valueCount);
+            const displayTotal = Math.max(gate.totalValueCount, gate.effectiveValueCount);
+            const displayValue = gate.status === 'off' ? 'OFF' : `${gate.effectiveValueCount}/${displayTotal}`;
+            const zeroReason = gate.effectiveValueCount === 0
+              ? gateZeroRatioReason(gate.key)
+              : '';
             const tooltip = gate.status === 'off'
               ? formatTooltip({
                 what: `${gate.label} is disabled by consumer gate settings for this run context.`,
@@ -248,10 +272,10 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
                 setBy: 'Enable the corresponding IDX gate in Field Rules to activate this key.',
               })
               : formatTooltip({
-                what: `${gate.label} has ${gate.valueCount} configured value${gate.valueCount === 1 ? '' : 's'}.`,
-                effect: gate.valueCount > 0
+                what: `${gate.label} is using ${gate.effectiveValueCount} of ${displayTotal} configured value${displayTotal === 1 ? '' : 's'}.`,
+                effect: gate.effectiveValueCount > 0
                   ? 'Configured values are available for query planning.'
-                  : 'Gate key is enabled but currently has zero configured values.',
+                  : zeroReason,
                 setBy: 'Populate search_hints values in Field Rules for this key when needed.',
               });
             return (
@@ -307,7 +331,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
       )}
 
       {data.query_rows.length > 0 && (
-        <div className="border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+        <div className={`border border-gray-200 dark:border-gray-700 rounded overflow-hidden overflow-x-auto overflow-y-auto ${selectedQuery ? 'max-h-[50vh]' : 'max-h-none'}`}>
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400">
@@ -322,32 +346,37 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
             <tbody>
               {data.query_rows.map((r, i) => {
                 const isLlm = searchPlans && searchPlans.length > 0 && searchPlans.some((p) => p.queries_generated.includes(r.query));
-                const rowGates = showGateBadges ? getQueryGateFlags(r, hintSourceCounts) : null;
-                const queryTermsActive = rowGates?.queryTerms ?? false;
-                const domainHintsActive = rowGates?.domainHints ?? false;
-                const contentTypeActive = rowGates?.contentTypes ?? false;
-                const sourceHostActive = rowGates?.sourceHost ?? false;
-                const queryTermsGate = fieldRuleGateCountsByKey.get('search_hints.query_terms');
-                const domainHintsGate = fieldRuleGateCountsByKey.get('search_hints.domain_hints');
-                const contentTypesGate = fieldRuleGateCountsByKey.get('search_hints.preferred_content_types');
-                const queryTermsCountLabel = queryTermsGate
-                  ? (queryTermsGate.status === 'off' ? 'OFF' : String(queryTermsGate.valueCount))
-                  : '';
-                const domainHintsCountLabel = domainHintsGate
-                  ? (domainHintsGate.status === 'off' ? 'OFF' : String(domainHintsGate.valueCount))
-                  : '';
-                const contentTypesCountLabel = contentTypesGate
-                  ? (contentTypesGate.status === 'off' ? 'OFF' : String(contentTypesGate.valueCount))
-                  : '';
-                const queryTermsBadgeOn = queryTermsGate
-                  ? (queryTermsGate.status === 'active' && queryTermsActive)
-                  : queryTermsActive;
-                const domainHintsBadgeOn = domainHintsGate
-                  ? (domainHintsGate.status === 'active' && domainHintsActive)
-                  : domainHintsActive;
-                const contentTypesBadgeOn = contentTypesGate
-                  ? (contentTypesGate.status === 'active' && contentTypeActive)
-                  : contentTypeActive;
+                const queryTermsGate = effectiveGateCounts.get('search_hints.query_terms');
+                const domainHintsGate = effectiveGateCounts.get('search_hints.domain_hints');
+                const contentTypesGate = effectiveGateCounts.get('search_hints.preferred_content_types');
+                const primaryTargetField = String(r.target_fields?.[0] || '').trim();
+                const perFieldHintCounts = primaryTargetField
+                  ? data.field_rule_hint_counts_by_field?.[primaryTargetField]
+                  : undefined;
+                const resolveCount = (
+                  key: 'query_terms' | 'domain_hints' | 'preferred_content_types',
+                  fallback: { status: string; valueCount: number } | undefined,
+                ) => resolveFieldRuleHintCountForRowGate({
+                  perFieldHintCounts,
+                  gateKey: key,
+                  fallbackGate: fallback,
+                });
+                const queryTermsInfo = resolveCount('query_terms', queryTermsGate);
+                const domainHintsInfo = resolveCount('domain_hints', domainHintsGate);
+                const contentTypesInfo = resolveCount('preferred_content_types', contentTypesGate);
+                const toRatioLabel = (info: { status: string; effective: number; total: number }) => {
+                  if (info.status === 'off') {
+                    return 'OFF';
+                  }
+                  const total = Math.max(info.total, info.effective);
+                  return `${info.effective}/${total}`;
+                };
+                const queryTermsCountLabel = toRatioLabel(queryTermsInfo);
+                const domainHintsCountLabel = toRatioLabel(domainHintsInfo);
+                const contentTypesCountLabel = toRatioLabel(contentTypesInfo);
+                const queryTermsBadgeOn = queryTermsInfo.status === 'active';
+                const domainHintsBadgeOn = domainHintsInfo.status === 'active';
+                const contentTypesBadgeOn = contentTypesInfo.status === 'active';
                 const source = querySourceLabel(r);
                 return (
                   <tr
@@ -379,14 +408,6 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
                           </span>
                           <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${gateBadgeClass(contentTypesBadgeOn)}`}>
                             Content{contentTypesCountLabel ? ` ${contentTypesCountLabel}` : ''}
-                          </span>
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${gateBadgeClass(sourceHostActive)}`}>
-                            Source
-                          </span>
-                        </div>
-                        <div className="mt-1">
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${querySourceChipClass(source)}`}>
-                            Source: {source}
                           </span>
                         </div>
                       </td>
@@ -422,7 +443,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
         <summary className="cursor-pointer text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           Debug: Raw SearchProfile JSON
         </summary>
-        <pre className="mt-2 text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-3 overflow-x-auto max-h-60 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+        <pre className="mt-2 text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-3 overflow-x-auto overflow-y-auto max-h-60 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
           {JSON.stringify(data, null, 2)}
         </pre>
       </details>

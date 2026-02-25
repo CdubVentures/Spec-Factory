@@ -7,6 +7,7 @@ interface ComboSelectProps {
   options: string[];
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 /**
@@ -19,6 +20,7 @@ export function ComboSelect({
   options,
   placeholder,
   className = 'w-full',
+  disabled = false,
 }: ComboSelectProps) {
   const listId = useId();
 
@@ -30,6 +32,7 @@ export function ComboSelect({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        disabled={disabled}
       />
       <datalist id={listId}>
         {options.map((opt) => (

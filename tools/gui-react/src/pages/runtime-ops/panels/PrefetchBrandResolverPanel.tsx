@@ -367,13 +367,13 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
                 {call.prompt_preview && (
                   <div className="mt-2">
                     <div className="text-[10px] font-medium text-gray-400 uppercase">Prompt</div>
-                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">{call.prompt_preview}</pre>
+                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">{call.prompt_preview}</pre>
                   </div>
                 )}
                 {call.response_preview && (
                   <div className="mt-1">
                     <div className="text-[10px] font-medium text-gray-400 uppercase">Response</div>
-                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">{call.response_preview}</pre>
+                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">{call.response_preview}</pre>
                   </div>
                 )}
               </div>
@@ -389,7 +389,7 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
             Debug: Raw JSON
           </summary>
           <div className="mt-2">
-            <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto max-h-40 whitespace-pre-wrap text-gray-600 dark:text-gray-400">{JSON.stringify(br, null, 2)}</pre>
+            <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-40 whitespace-pre-wrap text-gray-600 dark:text-gray-400">{JSON.stringify(br, null, 2)}</pre>
           </div>
         </details>
       )}

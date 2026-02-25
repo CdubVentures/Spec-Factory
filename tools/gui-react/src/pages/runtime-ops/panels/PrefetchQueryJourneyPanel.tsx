@@ -49,7 +49,14 @@ function QueryJourneyDrawer({
   onClose: () => void;
 }) {
   return (
-    <DrawerShell title="Query Journey Detail" subtitle={row.query} onClose={onClose}>
+    <DrawerShell
+      title="Query Journey Detail"
+      subtitle={row.query}
+      maxHeight="none"
+      className="max-h-none"
+      scrollContent={false}
+      onClose={onClose}
+    >
       <DrawerSection title="Lifecycle">
         <div className="flex items-center gap-2 flex-wrap text-xs">
           <span className={`px-2 py-0.5 rounded-full font-medium ${queryJourneyStatusBadgeClass(row.status)}`}>
@@ -75,6 +82,22 @@ function QueryJourneyDrawer({
         <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
           Order justification: {row.order_justification}
         </div>
+        {row.order_priority_breakdown && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200">
+              pass {row.order_priority_breakdown.passType}
+            </span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+              target {row.order_priority_breakdown.targetCoverage}
+            </span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+              attempts {row.order_priority_breakdown.attempts}
+            </span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+              constraints {row.order_priority_breakdown.constraints}
+            </span>
+          </div>
+        )}
       </DrawerSection>
 
       <DrawerSection title="Coverage Targets">
@@ -95,7 +118,7 @@ function QueryJourneyDrawer({
           <div className="font-mono">{row.sent_count}</div>
           <div className="text-gray-500">Results count</div>
           <div className="font-mono">{row.result_count}</div>
-          <div className="text-gray-500">Attempts</div>
+          <div className="text-gray-500">Attempts (logged)</div>
           <div className="font-mono">{row.attempts}</div>
           <div className="text-gray-500">First sent</div>
           <div className="font-mono">{row.sent_ts ? relativeTime(row.sent_ts) : '-'}</div>
@@ -156,7 +179,7 @@ export function PrefetchQueryJourneyPanel({
 
   if (journeyRows.length === 0) {
     return (
-      <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
+      <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1 min-h-0">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Query Journey</h3>
         <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">
           No query lifecycle data yet. This view appears once search profile/planner/results data is available.
@@ -196,20 +219,35 @@ export function PrefetchQueryJourneyPanel({
           </div>
         )}
         <div className="mt-2 text-xs text-gray-600 dark:text-gray-300">
-          <span className="font-medium">How ranking works:</span> Sent queries are ordered by first send timestamp (shown as <span className="font-mono">T+seconds</span> in justification). Unsent queries are ranked afterward by planned priority score (<span className="font-mono">Pscore</span>) from pass type, target coverage, and constraints.
+          <span className="font-medium">How ranking works:</span> Sent queries are ordered by first send timestamp (shown as <span className="font-mono">T+seconds</span> in justification). Unsent queries are ranked afterward by planned priority score (<span className="font-mono">Pscore</span>) from pass type, target coverage, logged attempts, and constraints.
+        </div>
+        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Pscore formula: <span className="font-mono">pass + target + attempts + constraints</span>.
+        </div>
+        <div className="mt-2 text-xs text-gray-600 dark:text-gray-300 space-y-1">
+          <div>Pass (0-70): Validate +28, Reason +20, Primary +14, Fast +8.</div>
+          <div>Target (0-24): +4 per target field, capped at +24.</div>
+          <div>Attempts (0-10): +2 per logged attempt from search profile (<span className="font-mono">query_rows.attempts</span>), capped at +10.</div>
+          <div>Attempts is a retry boost: previously searched queries can rank higher when coverage is still incomplete.</div>
+          <div>Constraints (0-14): +8 for field-rule hints + +6 for site/domain-constrained queries.</div>
         </div>
       </div>
 
-      <div className="border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+      <div className={`border border-gray-200 dark:border-gray-700 rounded overflow-hidden overflow-x-auto overflow-y-auto ${selectedRow ? 'max-h-[50vh]' : 'max-h-none'}`}>
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400">
               <th className="text-right px-2 py-2 font-medium w-12">Order</th>
               <th className="text-left px-2 py-2 font-medium">Query</th>
-              <th className="text-left px-2 py-2 font-medium">Selected By</th>
+              <th className="text-left px-2 py-2 font-medium">Selected By<Tip text={'Who picked this query.\nPlanner = chosen by LLM pass to close missing coverage.\nDeterministic = generated by fixed search-profile rules.'} /></th>
               <th className="text-left px-2 py-2 font-medium">Justification</th>
               <th className="text-left px-2 py-2 font-medium">Target Fields</th>
               <th className="text-left px-2 py-2 font-medium">Status</th>
+              <th className="text-right px-2 py-2 font-medium">Pscore<Tip text={'Total planned priority score.\nFor unsent queries: higher Pscore ranks earlier.\nFor sent queries: shown for context only.'} /></th>
+              <th className="text-right px-2 py-2 font-medium">Pass<Tip text={'Pass-type points.\nValidate +28, Reason +20, Primary +14, Fast +8.\nMax 70.'} /></th>
+              <th className="text-right px-2 py-2 font-medium">Target<Tip text={'Coverage points.\n+4 per targeted field, capped at +24.'} /></th>
+              <th className="text-right px-2 py-2 font-medium">Attempts<Tip text={'Attempts points from logged query attempts.\n+2 per logged attempt from search profile query_rows.attempts.\nMax +10.\nThis is a retry boost, so previously searched queries can stay high when coverage is incomplete.'} /></th>
+              <th className="text-right px-2 py-2 font-medium">Constraints<Tip text={'Constraint points.\n+8 for field-rule hints.\n+6 for site/domain constrained query text.\nMax +14.'} /></th>
               <th className="text-right px-2 py-2 font-medium">Results</th>
             </tr>
           </thead>
@@ -258,6 +296,21 @@ export function PrefetchQueryJourneyPanel({
                   <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${queryJourneyStatusBadgeClass(row.status)}`}>
                     {queryJourneyStatusLabel(row.status)}
                   </span>
+                </td>
+                <td className="px-2 py-1.5 text-right font-mono text-sky-700 dark:text-sky-300">
+                  {row.order_priority_breakdown ? `P${row.order_priority_breakdown.total}` : '-'}
+                </td>
+                <td className="px-2 py-1.5 text-right font-mono text-gray-600 dark:text-gray-300">
+                  {row.order_priority_breakdown ? row.order_priority_breakdown.passType : '-'}
+                </td>
+                <td className="px-2 py-1.5 text-right font-mono text-gray-600 dark:text-gray-300">
+                  {row.order_priority_breakdown ? row.order_priority_breakdown.targetCoverage : '-'}
+                </td>
+                <td className="px-2 py-1.5 text-right font-mono text-gray-600 dark:text-gray-300">
+                  {row.order_priority_breakdown ? `${row.order_priority_breakdown.attempts} (${row.attempts}x)` : '-'}
+                </td>
+                <td className="px-2 py-1.5 text-right font-mono text-gray-600 dark:text-gray-300">
+                  {row.order_priority_breakdown ? row.order_priority_breakdown.constraints : '-'}
                 </td>
                 <td className="px-2 py-1.5 text-right font-mono">{row.result_count}</td>
               </tr>

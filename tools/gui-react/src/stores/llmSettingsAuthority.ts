@@ -54,6 +54,7 @@ export function useLlmSettingsAuthority({
   const queryKey = ['llm-settings-routes', category] as const;
   const lastAutoSavedFingerprintRef = useRef('');
   const lastAutoSaveAttemptFingerprintRef = useRef('');
+  const pendingAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rowsFingerprint = autoSaveFingerprint(rows);
 
   const { data, isLoading, refetch } = useQuery({
@@ -106,10 +107,39 @@ export function useLlmSettingsAuthority({
     const nextRows = rows;
     lastAutoSaveAttemptFingerprintRef.current = rowsFingerprint;
     const timer = setTimeout(() => {
+      pendingAutoSaveTimerRef.current = null;
       saveMutate({ rows: nextRows, version: editVersion });
     }, 700);
-    return () => clearTimeout(timer);
+    pendingAutoSaveTimerRef.current = timer;
+    return () => {
+      clearTimeout(timer);
+      if (pendingAutoSaveTimerRef.current === timer) {
+        pendingAutoSaveTimerRef.current = null;
+      }
+    };
   }, [enabled, autoSaveEnabled, dirty, rowsFingerprint, rows, editVersion, saveMutate, resetMutation.isPending, saveMutation.isPending]);
+
+  useEffect(() => () => {
+    if (pendingAutoSaveTimerRef.current) {
+      clearTimeout(pendingAutoSaveTimerRef.current);
+      pendingAutoSaveTimerRef.current = null;
+    }
+    if (!enabled || !autoSaveEnabled || !dirty || saveMutation.isPending || resetMutation.isPending) return;
+    if (!rowsFingerprint) return;
+    if (rowsFingerprint === lastAutoSavedFingerprintRef.current) return;
+    lastAutoSaveAttemptFingerprintRef.current = rowsFingerprint;
+    saveMutate({ rows, version: editVersion });
+  }, [
+    enabled,
+    autoSaveEnabled,
+    dirty,
+    rowsFingerprint,
+    rows,
+    editVersion,
+    saveMutate,
+    saveMutation.isPending,
+    resetMutation.isPending,
+  ]);
 
   async function reload() {
     const result = await refetch();

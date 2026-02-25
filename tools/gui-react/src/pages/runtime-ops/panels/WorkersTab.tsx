@@ -48,6 +48,12 @@ const PREFETCH_TAB_KEYS = [
   'domain_classifier',
 ] as const satisfies ReadonlyArray<PrefetchTabKey>;
 
+function toOptionalPositiveInt(value: unknown): number | undefined {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
+  return parsed;
+}
+
 export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, category, isRunning, wsUrl }: WorkersTabProps) {
   const [poolFilter, setPoolFilter] = usePersistedTab<string>(`runtimeOps:workers:poolFilter:${category}`, 'all');
   const [drawerOpen, toggleDrawerOpen] = usePersistedToggle(`runtimeOps:workers:drawer:${category}`, true);
@@ -104,12 +110,18 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
   });
 
   const liveSettings = useMemo((): PrefetchLiveSettings => ({
+    profile: String(rawSettings?.profile ?? ''),
     phase2LlmEnabled: Boolean(rawSettings?.phase2LlmEnabled),
     phase3LlmTriageEnabled: Boolean(rawSettings?.phase3LlmTriageEnabled),
     searchProvider: String(rawSettings?.searchProvider ?? ''),
     discoveryEnabled: Boolean(rawSettings?.discoveryEnabled),
     dynamicCrawleeEnabled: Boolean(rawSettings?.dynamicCrawleeEnabled),
     scannedPdfOcrEnabled: Boolean(rawSettings?.scannedPdfOcrEnabled),
+    maxPagesPerDomain: toOptionalPositiveInt(rawSettings?.maxPagesPerDomain),
+    discoveryResultsPerQuery: toOptionalPositiveInt(rawSettings?.discoveryResultsPerQuery),
+    discoveryMaxDiscovered: toOptionalPositiveInt(rawSettings?.discoveryMaxDiscovered),
+    serpTriageMaxUrls: toOptionalPositiveInt(rawSettings?.serpTriageMaxUrls),
+    uberMaxUrlsPerDomain: toOptionalPositiveInt(rawSettings?.uberMaxUrlsPerDomain),
   }), [rawSettings]);
 
   const pools = useMemo(() => {

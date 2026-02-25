@@ -7,6 +7,9 @@ interface DrawerShellProps {
   subtitle?: string;
   onClose: () => void;
   width?: number;
+  maxHeight?: number | string;
+  className?: string;
+  scrollContent?: boolean;
   children: ReactNode;
 }
 
@@ -23,20 +26,27 @@ interface DrawerSectionProps {
   bodyClassName?: string;
 }
 
-export function DrawerShell({ title, subtitle, onClose, width, children }: DrawerShellProps) {
+export function DrawerShell({ title, subtitle, onClose, width, maxHeight, className, scrollContent = true, children }: DrawerShellProps) {
+  const style = width || maxHeight !== undefined
+    ? {
+      ...(width ? { width } : {}),
+      ...(maxHeight !== undefined ? { maxHeight } : {}),
+    }
+    : undefined;
+
   return (
     <div
-      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-y-auto max-h-[calc(100vh-280px)] min-w-0"
-      style={width ? { width } : undefined}
+      className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg max-h-[calc(100vh-280px)] min-w-0 shrink-0 flex flex-col overflow-hidden ${className || ''}`}
+      style={style}
     >
-      <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex justify-between items-center z-10">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex justify-between items-center shrink-0">
         <div>
           <h3 className="font-semibold text-sm">{title}</h3>
           {subtitle && <p className="text-[10px] text-gray-400">{subtitle}</p>}
         </div>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
       </div>
-      <div className="p-4 space-y-4">
+      <div className={scrollContent ? 'p-4 space-y-4 flex-1 min-h-0 overflow-y-auto' : 'p-4 space-y-4'}>
         {children}
       </div>
     </div>

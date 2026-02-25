@@ -99,6 +99,33 @@ These are not "settings files", but are save/autosave paths that mutate authorit
 
 - The page persists destination/credentials config and browse-path session state independently of the shared authority slices.
 
+5. Storage page save/autosave paths are hydration-gated (resolved).
+
+- `tools/gui-react/src/pages/storage/StoragePage.tsx` now gates save/autosave until first server hydration settles.
+- Regression guard: `test/storageSettingsHydrationGate.test.js`.
+
+6. LLM dormant-key audit artifact drift is resolved.
+
+- `implementation/gui-persistence/llm-route-field-usage-audit.json` is now generated from source by `scripts/generate-llm-route-field-usage-audit.js`.
+- Regression guard `test/llmRouteFieldUsageAudit.test.js` enforces artifact parity and allows only derived `effort_band` as dormant.
+
+7. Studio autosave status parity is resolved for draft saves.
+
+- `tools/gui-react/src/pages/studio/StudioPage.tsx` now reports save status in deterministic order: pending -> error -> unsaved -> autosave idle.
+- Autosave-on dirty state no longer renders `Up to date`; it renders `Unsaved (auto-save pending)` until persistence succeeds.
+- Regression guard: `test/studioAutosaveStatusParity.test.js`.
+
+8. Backend settings route write-order race is resolved.
+
+- `src/api/routes/configRoutes.js` now awaits persistence writes for `/runtime-settings`, `/convergence-settings`, and `/storage-settings` before returning success.
+- This prevents older async writes from finishing after newer saves and overwriting persisted snapshots with stale values.
+- Regression guard: `test/runtimeSettingsApi.test.js`.
+
+9. LLM autosave status parity is resolved in header save-state text.
+
+- `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` now shows `Unsaved (auto-save pending).` when autosave is enabled and edits are dirty.
+- Regression guard: `test/llmSettingsAutosaveStatusParity.test.js`.
+
 ## Initial Migration Target (Authority Model)
 
 1. Introduce one `settingsAuthorityStore` in frontend:

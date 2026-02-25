@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-02-25T00:17:35.280Z",
+  "total_keys": 84,
+  "ok_keys": 63,
+  "gap_keys": 21,
+  "issue_counts": {
+    "component_property_key_missing_generated_field_contract": 5,
+    "component_property_map_not_bound_to_workbook": 13,
+    "component_reference_without_component_db_rows": 4,
+    "data_list_missing_known_values_bucket": 3,
+    "generated_extra_not_selected": 1,
+    "selected_key_missing_in_generated": 1
+  },
+  "component_db_file_count": 0,
+  "component_db_rows_by_type": {},
+  "selected_key_count": 75,
+  "generated_field_count": 75,
+  "ui_catalog_count": 75,
+  "parse_template_count": 75,
+  "known_values_bucket_count": 13
+}

@@ -380,9 +380,9 @@ function lookupFieldRule(categoryConfig, field) {
 }
 
 const SEARCH_HINT_GATE_SPECS = [
-  { key: 'search_hints.query_terms', path: ['search_hints', 'query_terms'] },
-  { key: 'search_hints.domain_hints', path: ['search_hints', 'domain_hints'] },
-  { key: 'search_hints.preferred_content_types', path: ['search_hints', 'preferred_content_types'] }
+  { key: 'search_hints.query_terms', name: 'query_terms', path: ['search_hints', 'query_terms'] },
+  { key: 'search_hints.domain_hints', name: 'domain_hints', path: ['search_hints', 'domain_hints'] },
+  { key: 'search_hints.preferred_content_types', name: 'preferred_content_types', path: ['search_hints', 'preferred_content_types'] }
 ];
 
 function countHintValues(value) {
@@ -396,6 +396,14 @@ function countHintValues(value) {
   return token ? 1 : 0;
 }
 
+function countEffectiveDomainHintValues(value) {
+  const rows = Array.isArray(value) ? value : [value];
+  return rows
+    .map((entry) => String(entry || '').trim().toLowerCase())
+    .filter((entry) => entry.includes('.'))
+    .length;
+}
+
 function buildFieldRuleGateCounts(categoryConfig = {}) {
   const fieldRules = categoryConfig?.fieldRules?.fields;
   if (!isObject(fieldRules)) {
@@ -405,6 +413,7 @@ function buildFieldRuleGateCounts(categoryConfig = {}) {
   const out = {};
   for (const spec of SEARCH_HINT_GATE_SPECS) {
     let valueCount = 0;
+    let totalValueCount = 0;
     let enabledFieldCount = 0;
     let disabledFieldCount = 0;
     for (const rule of Object.values(fieldRules)) {
@@ -419,19 +428,64 @@ function buildFieldRuleGateCounts(categoryConfig = {}) {
         continue;
       }
       enabledFieldCount += 1;
-      valueCount += countHintValues(readPathValue(rule, spec.path));
+      const hintValue = readPathValue(rule, spec.path);
+      const rawCount = countHintValues(hintValue);
+      const effectiveCount = spec.name === 'domain_hints'
+        ? countEffectiveDomainHintValues(hintValue)
+        : rawCount;
+      valueCount += effectiveCount;
+      totalValueCount += rawCount;
     }
     const status = disabledFieldCount > 0 && enabledFieldCount === 0
       ? 'off'
       : (valueCount > 0 ? 'active' : 'zero');
-    out[spec.key] = {
+    const gateRow = {
       value_count: valueCount,
       enabled_field_count: enabledFieldCount,
       disabled_field_count: disabledFieldCount,
       status
     };
+    gateRow.total_value_count = totalValueCount;
+    gateRow.effective_value_count = valueCount;
+    out[spec.key] = gateRow;
   }
 
+  return out;
+}
+
+function buildFieldRuleHintCountsByField(categoryConfig = {}) {
+  const fieldRules = categoryConfig?.fieldRules?.fields;
+  if (!isObject(fieldRules)) {
+    return {};
+  }
+
+  const out = {};
+  for (const [fieldKey, rule] of Object.entries(fieldRules)) {
+    if (!isObject(rule)) continue;
+    const row = {};
+    for (const spec of SEARCH_HINT_GATE_SPECS) {
+      const gate = resolveConsumerGate(rule, spec.key, 'indexlab');
+      const hasPath = hasPathValue(rule, spec.path);
+      const hintValue = gate.enabled && hasPath
+        ? readPathValue(rule, spec.path)
+        : undefined;
+      const rawValueCount = gate.enabled && hasPath
+        ? countHintValues(hintValue)
+        : 0;
+      const valueCount = spec.name === 'domain_hints'
+        ? countEffectiveDomainHintValues(hintValue)
+        : rawValueCount;
+      row[spec.name] = {
+        value_count: valueCount,
+        status: gate.enabled
+          ? (valueCount > 0 ? 'active' : 'zero')
+          : 'off'
+      };
+      row[spec.name].total_value_count = rawValueCount;
+      row[spec.name].effective_value_count = valueCount;
+    }
+    out[fieldKey] = row;
+  }
   return out;
 }
 
@@ -888,7 +942,8 @@ export function buildSearchProfile({
     field_target_queries: toFieldTargetMap(boundedRows),
     doc_hint_queries: toDocHintRows(boundedRows),
     hint_source_counts: hintSourceCounts,
-    field_rule_gate_counts: buildFieldRuleGateCounts(categoryConfig)
+    field_rule_gate_counts: buildFieldRuleGateCounts(categoryConfig),
+    field_rule_hint_counts_by_field: buildFieldRuleHintCountsByField(categoryConfig)
   };
 }
 

@@ -122,34 +122,6 @@ export async function searchBing({
   }));
 }
 
-export async function searchGoogleCse({
-  key,
-  cx,
-  query,
-  limit = 10
-}) {
-  if (!key || !cx || !query) {
-    return [];
-  }
-  const url = new URL('https://www.googleapis.com/customsearch/v1');
-  url.searchParams.set('key', key);
-  url.searchParams.set('cx', cx);
-  url.searchParams.set('q', query);
-  url.searchParams.set('num', String(Math.min(10, Math.max(1, limit))));
-  const response = await fetch(url);
-  if (!response.ok) {
-    return [];
-  }
-  const payload = await response.json();
-  return (payload.items || []).map((item) => ({
-    url: item.link,
-    title: item.title || '',
-    snippet: item.snippet || '',
-    provider: 'google',
-    query
-  }));
-}
-
 function dedupeResults(rows = []) {
   const out = [];
   const seen = new Set();
@@ -181,7 +153,9 @@ export async function searchSearxng({
   baseUrl,
   query,
   limit = 10,
-  timeoutMs = 8_000
+  timeoutMs = 8_000,
+  engines = '',
+  provider = 'searxng'
 }) {
   if (!baseUrl || !query) {
     return [];
@@ -191,6 +165,10 @@ export async function searchSearxng({
   url.searchParams.set('format', 'json');
   url.searchParams.set('language', 'en');
   url.searchParams.set('safesearch', '0');
+  const normalizedEngines = String(engines || '').trim();
+  if (normalizedEngines) {
+    url.searchParams.set('engines', normalizedEngines);
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), Math.max(100, Number(timeoutMs || 8_000)));
@@ -207,7 +185,7 @@ export async function searchSearxng({
       url: item.url,
       title: item.title || '',
       snippet: item.content || item.snippet || '',
-      provider: 'searxng',
+      provider: String(provider || 'searxng').trim() || 'searxng',
       query
     }));
   } finally {
@@ -377,15 +355,15 @@ export async function runSearchProviders({
   logger
 }) {
   const provider = normalizeProvider(config.searchProvider);
-  const googleCseDisabled = Boolean(config.disableGoogleCse);
   if (provider === 'none') {
     return [];
   }
 
+  const searxBase = searxngBaseUrl(config);
   if (provider === 'searxng') {
     try {
       const rows = await searchSearxng({
-        baseUrl: searxngBaseUrl(config),
+        baseUrl: searxBase,
         query,
         limit,
         timeoutMs: config.searxngTimeoutMs
@@ -418,6 +396,29 @@ export async function runSearchProviders({
       return [];
     }
   }
+  if (provider === 'google') {
+    if (!searxBase) {
+      return [];
+    }
+    try {
+      const rows = await searchSearxng({
+        baseUrl: searxBase,
+        query,
+        limit,
+        timeoutMs: config.searxngTimeoutMs,
+        engines: 'google',
+        provider: 'google'
+      });
+      return dedupeResults(rows);
+    } catch (error) {
+      logger?.warn?.('search_provider_failed', {
+        provider: 'google',
+        query,
+        message: error.message
+      });
+      return [];
+    }
+  }
 
   const tasks = [];
   if (provider === 'bing' || provider === 'dual') {
@@ -440,28 +441,7 @@ export async function runSearchProviders({
     }
   }
 
-  if (provider === 'google' || provider === 'dual') {
-    if (!googleCseDisabled && config.googleCseKey && config.googleCseCx) {
-      tasks.push(
-        searchGoogleCse({
-          key: config.googleCseKey,
-          cx: config.googleCseCx,
-          query,
-          limit
-        }).catch((error) => {
-          logger?.warn?.('search_provider_failed', {
-            provider: 'google',
-            query,
-            message: error.message
-          });
-          return [];
-        })
-      );
-    }
-  }
-
   if (!tasks.length && provider === 'dual') {
-    const searxBase = searxngBaseUrl(config);
     const fallbackTasks = [];
     if (searxBase) {
       fallbackTasks.push(
@@ -517,10 +497,11 @@ export function searchProviderAvailability(config) {
   const bingReady = Boolean(config.bingSearchEndpoint && config.bingSearchKey);
   const googleReady = !googleCseDisabled && Boolean(config.googleCseKey && config.googleCseCx);
   const searxngReady = Boolean(searxngBaseUrl(config));
+  const googleSearchReady = searxngReady;
   const duckduckgoReady = config.duckduckgoEnabled !== false;
   const activeProviders = activeProvidersForConfig(provider, {
     bingReady,
-    googleReady,
+    googleReady: googleSearchReady,
     searxngReady,
     duckduckgoReady
   });
@@ -540,6 +521,7 @@ export function searchProviderAvailability(config) {
     provider,
     bing_ready: bingReady,
     google_ready: googleReady,
+    google_search_ready: googleSearchReady,
     google_cse_disabled: googleCseDisabled,
     searxng_ready: searxngReady,
     duckduckgo_ready: duckduckgoReady,
@@ -549,7 +531,7 @@ export function searchProviderAvailability(config) {
     fallback_reason: fallbackReason,
     internet_ready:
       (provider === 'bing' && bingReady) ||
-      (provider === 'google' && googleReady) ||
+      (provider === 'google' && googleSearchReady) ||
       (provider === 'searxng' && searxngReady) ||
       (provider === 'duckduckgo' && duckduckgoReady) ||
       (provider === 'dual' && (bingReady || googleReady || searxngReady || duckduckgoReady))

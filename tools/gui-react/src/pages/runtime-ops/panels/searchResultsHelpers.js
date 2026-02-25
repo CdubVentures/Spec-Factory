@@ -259,6 +259,85 @@ export function extractSiteScope(query) {
   return match ? match[1] : null;
 }
 
+function normalizeProfileToken(profile) {
+  const token = String(profile || '').trim().toLowerCase();
+  if (token === 'fast' || token === 'standard' || token === 'thorough') {
+    return token;
+  }
+  return 'standard';
+}
+
+function toPositiveInt(value, fallback = 0) {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return parsed;
+}
+
+function profileCapDefaults(profile) {
+  if (profile === 'fast') {
+    return {
+      domainCapValue: '2',
+      domainCapSource: 'fast profile clamp',
+      queryCap: 6,
+      discoveredCap: 60,
+    };
+  }
+  if (profile === 'thorough') {
+    return {
+      domainCapValue: '>=8',
+      domainCapSource: 'thorough profile floor',
+      queryCap: 20,
+      discoveredCap: 300,
+    };
+  }
+  return {
+    domainCapValue: 'env',
+    domainCapSource: 'MAX_PAGES_PER_DOMAIN (default 2)',
+    queryCap: 10,
+    discoveredCap: 80,
+  };
+}
+
+export function resolveDomainCapSummary(liveSettings = {}) {
+  const profile = normalizeProfileToken(liveSettings?.profile);
+  const defaults = profileCapDefaults(profile);
+  const maxPagesPerDomain = toPositiveInt(liveSettings?.maxPagesPerDomain, 0);
+  const discoveryResultsPerQuery = toPositiveInt(liveSettings?.discoveryResultsPerQuery, defaults.queryCap);
+  const discoveryMaxDiscovered = toPositiveInt(liveSettings?.discoveryMaxDiscovered, defaults.discoveredCap);
+  const serpTriageMaxUrls = toPositiveInt(liveSettings?.serpTriageMaxUrls, 12);
+  const uberMaxUrlsPerDomain = toPositiveInt(liveSettings?.uberMaxUrlsPerDomain, 6);
+  const value = maxPagesPerDomain > 0 ? String(maxPagesPerDomain) : defaults.domainCapValue;
+  const source = maxPagesPerDomain > 0 ? 'runtime maxPagesPerDomain knob' : defaults.domainCapSource;
+  const profileLabel = profile.charAt(0).toUpperCase() + profile.slice(1);
+  const tooltip = [
+    'Domain cap controls how many pages per host can advance from search into fetch/parse.',
+    '',
+    `Current profile: ${profileLabel}.`,
+    `Current domain cap display: ${value} (${source}).`,
+    '',
+    'How caps work:',
+    '- Fast profile: clamps discovery results/query to 6 and max pages/domain to 2.',
+    '- Standard profile: uses configured env/runtime knobs (DISCOVERY_RESULTS_PER_QUERY, MAX_PAGES_PER_DOMAIN).',
+    '- Thorough profile: raises floors to at least 20 results/query and at least 8 pages/domain.',
+    `- Discovery total cap keeps up to ${discoveryMaxDiscovered} URLs overall (DISCOVERY_MAX_DISCOVERED).`,
+    `- SERP triage cap keeps up to ${serpTriageMaxUrls} URLs after triage (SERP_TRIAGE_MAX_URLS).`,
+    `- Uber convergence rounds can raise per-domain floor to max(3, UBER_MAX_URLS_PER_DOMAIN=${uberMaxUrlsPerDomain}).`,
+    '',
+    `Current results/query cap for this profile is ${discoveryResultsPerQuery} before dedupe and triage.`,
+  ].join('\n');
+  return {
+    value,
+    tooltip,
+    profile,
+    queryCap: discoveryResultsPerQuery,
+    discoveredCap: discoveryMaxDiscovered,
+    triageCap: serpTriageMaxUrls,
+    uberDomainFloor: uberMaxUrlsPerDomain,
+  };
+}
+
 const PROVIDER_LABELS = {
   google: 'Google',
   bing: 'Bing',

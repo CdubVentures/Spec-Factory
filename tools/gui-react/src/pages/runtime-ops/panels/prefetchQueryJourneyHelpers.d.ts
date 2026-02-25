@@ -27,6 +27,13 @@ export interface QueryJourneyRow {
   order_metric: number;
   order_metric_label: string;
   order_justification: string;
+  order_priority_breakdown: {
+    total: number;
+    passType: number;
+    targetCoverage: number;
+    attempts: number;
+    constraints: number;
+  } | null;
   status: 'planned' | 'sent' | 'results_received' | 'observed';
 }
 

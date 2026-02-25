@@ -259,7 +259,7 @@ export function NeedSetPanel({
         </table>
       </div>
 
-      <div className="rounded border border-gray-200 dark:border-gray-700 p-2 overflow-x-auto">
+      <div className="rounded border border-gray-200 dark:border-gray-700 p-2 overflow-x-auto overflow-y-auto max-h-[28rem]">
         <table className="min-w-full text-xs">
           <thead>
             <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">

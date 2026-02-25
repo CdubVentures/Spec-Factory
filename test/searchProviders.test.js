@@ -37,7 +37,7 @@ test('searchProviderAvailability includes searxng readiness', () => {
   assert.equal(available.internet_ready, true);
 });
 
-test('searchProviderAvailability reports Google CSE disabled when configured', () => {
+test('searchProviderAvailability reports Google CSE disabled while keeping Google search-ready via SearXNG', () => {
   const available = searchProviderAvailability({
     searchProvider: 'dual',
     googleCseKey: 'abc',
@@ -47,7 +47,8 @@ test('searchProviderAvailability reports Google CSE disabled when configured', (
   });
   assert.equal(available.google_cse_disabled, true);
   assert.equal(available.google_ready, false);
-  assert.equal(available.active_providers.includes('google'), false);
+  assert.equal(available.google_search_ready, true);
+  assert.equal(available.active_providers.includes('google'), true);
 });
 
 test('runSearchProviders returns searxng results for searxng provider', async () => {
@@ -132,6 +133,88 @@ test('runSearchProviders returns parsed duckduckgo results for duckduckgo provid
     assert.equal(rows.length, 1);
     assert.equal(rows[0].provider, 'duckduckgo');
     assert.equal(rows[0].url, 'https://example.com/spec-page');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('runSearchProviders uses SearXNG Google engine for google provider', async () => {
+  const originalFetch = global.fetch;
+  let calls = 0;
+  global.fetch = async (url) => {
+    calls += 1;
+    const token = String(url || '');
+    assert.equal(token.includes('format=json'), true);
+    assert.equal(token.includes('engines=google'), true);
+    assert.equal(token.includes('q=razer+viper+v3+pro') || token.includes('q=razer%20viper%20v3%20pro'), true);
+    return makeJsonResponse({
+      results: [
+        {
+          url: 'https://www.razer.com/gaming-mice/razer-viper-v3-pro',
+          title: 'Razer Viper V3 Pro',
+          content: 'Official product page'
+        }
+      ]
+    });
+  };
+
+  try {
+    const rows = await runSearchProviders({
+      config: {
+        searchProvider: 'google',
+        searxngBaseUrl: 'http://127.0.0.1:8080',
+        googleCseKey: '',
+        googleCseCx: '',
+        searchCacheTtlSeconds: 0
+      },
+      query: 'razer viper v3 pro',
+      limit: 5
+    });
+
+    assert.equal(calls, 1);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].provider, 'google');
+    assert.equal(rows[0].url, 'https://www.razer.com/gaming-mice/razer-viper-v3-pro');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('runSearchProviders google provider never calls Google CSE API endpoint', async () => {
+  const originalFetch = global.fetch;
+  let calledGoogleApi = false;
+  global.fetch = async (url) => {
+    const token = String(url || '');
+    if (token.includes('googleapis.com/customsearch')) {
+      calledGoogleApi = true;
+      return makeJsonResponse({ items: [] });
+    }
+    return makeJsonResponse({
+      results: [
+        {
+          url: 'https://example.com/spec',
+          title: 'Spec',
+          content: 'details'
+        }
+      ]
+    });
+  };
+
+  try {
+    const rows = await runSearchProviders({
+      config: {
+        searchProvider: 'google',
+        searxngBaseUrl: 'http://127.0.0.1:8080',
+        googleCseKey: 'legacy-key',
+        googleCseCx: 'legacy-cx'
+      },
+      query: 'viper specs',
+      limit: 5
+    });
+
+    assert.equal(calledGoogleApi, false);
+    assert.equal(rows.length > 0, true);
+    assert.equal(rows[0].provider, 'google');
   } finally {
     global.fetch = originalFetch;
   }

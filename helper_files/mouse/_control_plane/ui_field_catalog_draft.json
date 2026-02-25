@@ -1576,7 +1576,7 @@
         "switches_link"
       ],
       "array_handling": "none",
-      "canonical_key": "switch_link",
+      "canonical_key": "switches_link",
       "display_decimals": 0,
       "display_mode": "all",
       "examples": [],
@@ -2024,6 +2024,30 @@
       "tooltip_source": null
     },
     {
+      "aliases": [
+        "Encoder Life Span",
+        "encoder_life_span"
+      ],
+      "array_handling": "none",
+      "canonical_key": "encoder_life_span",
+      "display_decimals": 0,
+      "display_mode": "all",
+      "examples": [],
+      "group": "general",
+      "guidance_md": null,
+      "input_control": "text",
+      "key": "encoder_life_span",
+      "label": "Encoder Life Span",
+      "order": 76,
+      "placeholder": "unk",
+      "prefix": null,
+      "short_label": null,
+      "suffix": null,
+      "tooltip_key": null,
+      "tooltip_md": "",
+      "tooltip_source": null
+    },
+    {
       "aliases": [],
       "array_handling": "none",
       "canonical_key": "side_buttons",
@@ -2052,6 +2076,30 @@
       "tooltip_key": "side_buttons",
       "tooltip_md": "Count of side buttons (excluding main clicks and wheel).",
       "tooltip_source": "hbs_tooltipsMouse.js"
+    },
+    {
+      "aliases": [
+        "Encoder Steps",
+        "encoder_steps"
+      ],
+      "array_handling": "none",
+      "canonical_key": "encoder_steps",
+      "display_decimals": 0,
+      "display_mode": "all",
+      "examples": [],
+      "group": "general",
+      "guidance_md": null,
+      "input_control": "text",
+      "key": "encoder_steps",
+      "label": "Encoder Steps",
+      "order": 77,
+      "placeholder": "unk",
+      "prefix": null,
+      "short_label": null,
+      "suffix": null,
+      "tooltip_key": null,
+      "tooltip_md": "",
+      "tooltip_source": null
     },
     {
       "aliases": [],
@@ -2084,6 +2132,30 @@
       "tooltip_source": "hbs_tooltipsMouse.js"
     },
     {
+      "aliases": [
+        "Encoder Type",
+        "encoder_type"
+      ],
+      "array_handling": "none",
+      "canonical_key": "encoder_type",
+      "display_decimals": 0,
+      "display_mode": "all",
+      "examples": [],
+      "group": "general",
+      "guidance_md": null,
+      "input_control": "text",
+      "key": "encoder_type",
+      "label": "Encoder Type",
+      "order": 78,
+      "placeholder": "unk",
+      "prefix": null,
+      "short_label": null,
+      "suffix": null,
+      "tooltip_key": null,
+      "tooltip_md": "",
+      "tooltip_source": null
+    },
+    {
       "aliases": [],
       "array_handling": "none",
       "canonical_key": "programmable_buttons",
@@ -2112,6 +2184,30 @@
       "tooltip_key": "programmable_buttons",
       "tooltip_md": "Define 'Programmable Buttons' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js"
+    },
+    {
+      "aliases": [
+        "Releasing Force",
+        "releasing_force"
+      ],
+      "array_handling": "none",
+      "canonical_key": "releasing_force",
+      "display_decimals": 0,
+      "display_mode": "all",
+      "examples": [],
+      "group": "general",
+      "guidance_md": null,
+      "input_control": "text",
+      "key": "releasing_force",
+      "label": "Releasing Force",
+      "order": 79,
+      "placeholder": "unk",
+      "prefix": null,
+      "short_label": null,
+      "suffix": null,
+      "tooltip_key": null,
+      "tooltip_md": "",
+      "tooltip_source": null
     },
     {
       "aliases": [],
@@ -2172,6 +2268,30 @@
       "tooltip_key": "adjustable_scroll_wheel",
       "tooltip_md": "Define 'Adjustable Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js"
+    },
+    {
+      "aliases": [
+        "Switch Life Span",
+        "switch_life_span"
+      ],
+      "array_handling": "none",
+      "canonical_key": "switch_life_span",
+      "display_decimals": 0,
+      "display_mode": "all",
+      "examples": [],
+      "group": "controls",
+      "guidance_md": null,
+      "input_control": "text",
+      "key": "switch_life_span",
+      "label": "Switch Life Span",
+      "order": 80,
+      "placeholder": "unk",
+      "prefix": null,
+      "short_label": null,
+      "suffix": null,
+      "tooltip_key": null,
+      "tooltip_md": "",
+      "tooltip_source": null
     },
     {
       "aliases": [],
@@ -2264,6 +2384,6 @@
       "tooltip_source": "hbs_tooltipsMouse.js"
     }
   ],
-  "generated_at": "2026-02-24T22:51:45.113Z",
+  "generated_at": "2026-02-25T01:08:39.477Z",
   "version": 1
 }

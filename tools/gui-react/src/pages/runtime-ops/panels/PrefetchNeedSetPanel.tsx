@@ -112,6 +112,9 @@ function NeedDetailDrawer({ need, onClose }: { need: PrefetchNeedSetNeed; onClos
     <DrawerShell
       title={fieldKey(need)}
       subtitle={`Required: ${requiredLevel(need)} | Status: ${need.status ?? '-'}`}
+      maxHeight="none"
+      className="max-h-none"
+      scrollContent={false}
       onClose={onClose}
     >
       <DrawerSection title="Score Breakdown">
@@ -278,7 +281,7 @@ export function PrefetchNeedSetPanel({ data, persistScope }: PrefetchNeedSetPane
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden flex-1 min-w-0">
+    <div className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
       {/* Header */}
       <div className="flex items-center gap-2">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">NeedSet</h3>
@@ -380,7 +383,7 @@ export function PrefetchNeedSetPanel({ data, persistScope }: PrefetchNeedSetPane
       {/* C) Needs Table */}
       {sortedNeeds.length > 0 && (
         <div className="border border-gray-200 dark:border-gray-700 rounded overflow-hidden min-w-0">
-          <div className="overflow-x-auto">
+          <div className={`overflow-x-auto overflow-y-auto ${selectedNeed ? 'max-h-[50vh]' : 'max-h-none'}`}>
             <table className="w-full text-xs table-fixed">
               <colgroup>
                 <col className="w-[22%]" />
@@ -498,7 +501,7 @@ export function PrefetchNeedSetPanel({ data, persistScope }: PrefetchNeedSetPane
         <summary className="cursor-pointer text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           Debug: Raw NeedSet JSON
         </summary>
-        <pre className="mt-2 text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-3 overflow-x-auto max-h-60 whitespace-pre-wrap break-all text-gray-600 dark:text-gray-400">
+        <pre className="mt-2 text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-3 overflow-x-auto overflow-y-auto max-h-60 whitespace-pre-wrap break-all text-gray-600 dark:text-gray-400">
           {JSON.stringify(data, null, 2)}
         </pre>
       </details>

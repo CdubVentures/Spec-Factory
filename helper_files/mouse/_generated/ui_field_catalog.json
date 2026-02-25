@@ -1464,8 +1464,8 @@
       "tooltip_key": null,
       "tooltip_md": "Define 'Sensor Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": null,
-      "type": "integer",
-      "unit": "year"
+      "type": "string",
+      "unit": ""
     },
     {
       "aliases": [],
@@ -1771,7 +1771,7 @@
       "tooltip_key": "dpi",
       "tooltip_md": "Max DPI (or max CPI) as integer. Do not list steps; store maximum unless field_rules later adds a steps field.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "integer",
+      "type": "number",
       "unit": "dpi"
     },
     {
@@ -1812,7 +1812,7 @@
       "tooltip_key": "ips",
       "tooltip_md": "Define 'Max IPS' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "integer",
+      "type": "number",
       "unit": "ips"
     },
     {
@@ -1853,7 +1853,7 @@
       "tooltip_key": "acceleration",
       "tooltip_md": "Define 'Max Acceleration' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "integer",
+      "type": "number",
       "unit": "g"
     },
     {
@@ -1943,7 +1943,7 @@
       ],
       "array_handling": "none",
       "availability": "sometimes",
-      "canonical_key": "switch_link",
+      "canonical_key": "switches_link",
       "difficulty": "easy",
       "display_decimals": 0,
       "display_mode": "all",
@@ -2418,7 +2418,7 @@
       "tooltip_md": "Define 'Click Force' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
       "type": "number",
-      "unit": "gf"
+      "unit": "g"
     },
     {
       "aliases": [],
@@ -2532,6 +2532,46 @@
       "unit": ""
     },
     {
+      "aliases": [
+        "Encoder Life Span",
+        "encoder_life_span"
+      ],
+      "array_handling": "none",
+      "availability": "sometimes",
+      "canonical_key": "encoder_life_span",
+      "difficulty": "easy",
+      "display_decimals": 0,
+      "display_mode": "all",
+      "effort": 3,
+      "examples": [],
+      "group": "general",
+      "guidance_md": null,
+      "input_control": "text",
+      "key": "encoder_life_span",
+      "label": "Encoder Life Span",
+      "order": 76,
+      "placeholder": "unk",
+      "prefix": null,
+      "required_level": "expected",
+      "shape": "scalar",
+      "short_label": null,
+      "suffix": null,
+      "surfaces": {
+        "filters": false,
+        "hide_if_unk": true,
+        "hub_cards": false,
+        "radar": false,
+        "spec_table": true,
+        "versus": false,
+        "xxl": false
+      },
+      "tooltip_key": null,
+      "tooltip_md": "",
+      "tooltip_source": null,
+      "type": "number",
+      "unit": ""
+    },
+    {
       "aliases": [],
       "array_handling": "none",
       "availability": "expected",
@@ -2567,6 +2607,46 @@
       "tooltip_source": "hbs_tooltipsMouse.js",
       "type": "integer",
       "unit": "none"
+    },
+    {
+      "aliases": [
+        "Encoder Steps",
+        "encoder_steps"
+      ],
+      "array_handling": "none",
+      "availability": "sometimes",
+      "canonical_key": "encoder_steps",
+      "difficulty": "easy",
+      "display_decimals": 0,
+      "display_mode": "all",
+      "effort": 3,
+      "examples": [],
+      "group": "general",
+      "guidance_md": null,
+      "input_control": "text",
+      "key": "encoder_steps",
+      "label": "Encoder Steps",
+      "order": 77,
+      "placeholder": "unk",
+      "prefix": null,
+      "required_level": "expected",
+      "shape": "scalar",
+      "short_label": null,
+      "suffix": null,
+      "surfaces": {
+        "filters": false,
+        "hide_if_unk": true,
+        "hub_cards": false,
+        "radar": false,
+        "spec_table": true,
+        "versus": false,
+        "xxl": false
+      },
+      "tooltip_key": null,
+      "tooltip_md": "",
+      "tooltip_source": null,
+      "type": "number",
+      "unit": ""
     },
     {
       "aliases": [],
@@ -2606,6 +2686,46 @@
       "unit": "none"
     },
     {
+      "aliases": [
+        "Encoder Type",
+        "encoder_type"
+      ],
+      "array_handling": "none",
+      "availability": "sometimes",
+      "canonical_key": "encoder_type",
+      "difficulty": "easy",
+      "display_decimals": 0,
+      "display_mode": "all",
+      "effort": 3,
+      "examples": [],
+      "group": "general",
+      "guidance_md": null,
+      "input_control": "text",
+      "key": "encoder_type",
+      "label": "Encoder Type",
+      "order": 78,
+      "placeholder": "unk",
+      "prefix": null,
+      "required_level": "expected",
+      "shape": "scalar",
+      "short_label": null,
+      "suffix": null,
+      "surfaces": {
+        "filters": false,
+        "hide_if_unk": true,
+        "hub_cards": false,
+        "radar": false,
+        "spec_table": true,
+        "versus": false,
+        "xxl": false
+      },
+      "tooltip_key": null,
+      "tooltip_md": "",
+      "tooltip_source": null,
+      "type": "string",
+      "unit": ""
+    },
+    {
       "aliases": [],
       "array_handling": "none",
       "availability": "expected",
@@ -2641,6 +2761,46 @@
       "tooltip_source": "hbs_tooltipsMouse.js",
       "type": "integer",
       "unit": "none"
+    },
+    {
+      "aliases": [
+        "Releasing Force",
+        "releasing_force"
+      ],
+      "array_handling": "none",
+      "availability": "sometimes",
+      "canonical_key": "releasing_force",
+      "difficulty": "easy",
+      "display_decimals": 0,
+      "display_mode": "all",
+      "effort": 3,
+      "examples": [],
+      "group": "general",
+      "guidance_md": null,
+      "input_control": "text",
+      "key": "releasing_force",
+      "label": "Releasing Force",
+      "order": 79,
+      "placeholder": "unk",
+      "prefix": null,
+      "required_level": "expected",
+      "shape": "scalar",
+      "short_label": null,
+      "suffix": null,
+      "surfaces": {
+        "filters": false,
+        "hide_if_unk": true,
+        "hub_cards": false,
+        "radar": false,
+        "spec_table": true,
+        "versus": false,
+        "xxl": false
+      },
+      "tooltip_key": null,
+      "tooltip_md": "",
+      "tooltip_source": null,
+      "type": "number",
+      "unit": "g"
     },
     {
       "aliases": [],
@@ -2713,6 +2873,46 @@
       "tooltip_key": "adjustable_scroll_wheel",
       "tooltip_md": "Define 'Adjustable Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
+      "type": "string",
+      "unit": ""
+    },
+    {
+      "aliases": [
+        "Switch Life Span",
+        "switch_life_span"
+      ],
+      "array_handling": "none",
+      "availability": "sometimes",
+      "canonical_key": "switch_life_span",
+      "difficulty": "easy",
+      "display_decimals": 0,
+      "display_mode": "all",
+      "effort": 3,
+      "examples": [],
+      "group": "controls",
+      "guidance_md": null,
+      "input_control": "text",
+      "key": "switch_life_span",
+      "label": "Switch Life Span",
+      "order": 80,
+      "placeholder": "unk",
+      "prefix": null,
+      "required_level": "expected",
+      "shape": "scalar",
+      "short_label": null,
+      "suffix": null,
+      "surfaces": {
+        "filters": false,
+        "hide_if_unk": true,
+        "hub_cards": false,
+        "radar": false,
+        "spec_table": true,
+        "versus": false,
+        "xxl": false
+      },
+      "tooltip_key": null,
+      "tooltip_md": "",
+      "tooltip_source": null,
       "type": "string",
       "unit": ""
     },
@@ -2828,6 +3028,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-02-24T22:51:45.113Z",
+  "generated_at": "2026-02-25T01:08:39.477Z",
   "version": 1
 }

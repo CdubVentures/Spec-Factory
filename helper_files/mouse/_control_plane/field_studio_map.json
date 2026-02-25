@@ -13,6 +13,7 @@
       "component_type": "sensor",
       "first_data_row": 2,
       "header_row": 1,
+      "mode": "workbook",
       "priority": {
         "availability": "expected",
         "difficulty": "medium",
@@ -21,12 +22,14 @@
       },
       "roles": {
         "aliases": [],
-        "links": [],
-        "maker": "YES",
-        "primary_identifier": "A",
+        "links": [
+          "J"
+        ],
+        "maker": "B",
+        "primary_identifier": "C",
         "properties": [
           {
-            "column": "",
+            "column": "D",
             "constraints": [],
             "field_key": "flawless_sensor",
             "key": "flawless_sensor",
@@ -35,7 +38,7 @@
             "variance_policy": "authoritative"
           },
           {
-            "column": "",
+            "column": "E",
             "constraints": [],
             "field_key": "sensor_type",
             "key": "sensor_type",
@@ -44,34 +47,34 @@
             "variance_policy": "authoritative"
           },
           {
-            "column": "",
+            "column": "F",
             "constraints": [],
             "field_key": "dpi",
             "key": "dpi",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
+            "type": "number",
+            "unit": "dpi",
+            "variance_policy": "upper_bound"
           },
           {
-            "column": "",
+            "column": "G",
             "constraints": [],
             "field_key": "ips",
             "key": "ips",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
+            "type": "number",
+            "unit": "ips",
+            "variance_policy": "upper_bound"
           },
           {
-            "column": "",
+            "column": "H",
             "constraints": [],
             "field_key": "acceleration",
             "key": "acceleration",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
+            "type": "number",
+            "unit": "g",
+            "variance_policy": "upper_bound"
           },
           {
-            "column": "",
+            "column": "I",
             "constraints": [
               "sensor_date <= release_date"
             ],
@@ -83,7 +86,7 @@
           }
         ]
       },
-      "sheet": "",
+      "sheet": "sensors",
       "start_row": 2,
       "stop_after_blank_primary": 10,
       "type": "sensor"
@@ -100,6 +103,7 @@
       "component_type": "switch",
       "first_data_row": 2,
       "header_row": 1,
+      "mode": "workbook",
       "priority": {
         "availability": "expected",
         "difficulty": "hard",
@@ -108,12 +112,14 @@
       },
       "roles": {
         "aliases": [],
-        "links": [],
-        "maker": "YES",
-        "primary_identifier": "A",
+        "links": [
+          "H"
+        ],
+        "maker": "B",
+        "primary_identifier": "C",
         "properties": [
           {
-            "column": "",
+            "column": "D",
             "constraints": [],
             "field_key": "switch_type",
             "key": "switch_type",
@@ -122,7 +128,7 @@
             "variance_policy": "authoritative"
           },
           {
-            "column": "",
+            "column": "E",
             "constraints": [],
             "field_key": "switch_life_span",
             "key": "switch_life_span",
@@ -131,26 +137,26 @@
             "variance_policy": "authoritative"
           },
           {
-            "column": "",
+            "column": "F",
             "constraints": [],
             "field_key": "click_force",
             "key": "click_force",
-            "type": "string",
-            "unit": "",
+            "type": "number",
+            "unit": "g",
             "variance_policy": "override_allowed"
           },
           {
-            "column": "",
+            "column": "G",
             "constraints": [],
             "field_key": "releasing_force",
             "key": "releasing_force",
-            "type": "string",
-            "unit": "",
+            "type": "number",
+            "unit": "g",
             "variance_policy": "authoritative"
           }
         ]
       },
-      "sheet": "",
+      "sheet": "switches",
       "start_row": 2,
       "stop_after_blank_primary": 10,
       "type": "switch"
@@ -167,6 +173,7 @@
       "component_type": "encoder",
       "first_data_row": 2,
       "header_row": 1,
+      "mode": "workbook",
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
@@ -175,12 +182,14 @@
       },
       "roles": {
         "aliases": [],
-        "links": [],
-        "maker": "YES",
-        "primary_identifier": "A",
+        "links": [
+          "G"
+        ],
+        "maker": "B",
+        "primary_identifier": "C",
         "properties": [
           {
-            "column": "",
+            "column": "D",
             "constraints": [],
             "field_key": "encoder_type",
             "key": "encoder_type",
@@ -189,26 +198,26 @@
             "variance_policy": "authoritative"
           },
           {
-            "column": "",
+            "column": "E",
             "constraints": [],
             "field_key": "encoder_steps",
             "key": "encoder_steps",
-            "type": "string",
+            "type": "number",
             "unit": "",
             "variance_policy": "authoritative"
           },
           {
-            "column": "",
+            "column": "F",
             "constraints": [],
             "field_key": "encoder_life_span",
             "key": "encoder_life_span",
-            "type": "string",
+            "type": "number",
             "unit": "",
             "variance_policy": "authoritative"
           }
         ]
       },
-      "sheet": "",
+      "sheet": "encoder",
       "start_row": 2,
       "stop_after_blank_primary": 10,
       "type": "encoder"
@@ -225,6 +234,7 @@
       "component_type": "material",
       "first_data_row": 2,
       "header_row": 1,
+      "mode": "workbook",
       "priority": {
         "availability": "expected",
         "difficulty": "easy",
@@ -235,10 +245,10 @@
         "aliases": [],
         "links": [],
         "maker": "",
-        "primary_identifier": "A",
+        "primary_identifier": "B",
         "properties": []
       },
-      "sheet": "",
+      "sheet": "material",
       "start_row": 2,
       "stop_after_blank_primary": 10,
       "type": "material"

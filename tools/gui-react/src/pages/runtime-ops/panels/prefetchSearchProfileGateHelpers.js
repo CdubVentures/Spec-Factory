@@ -44,12 +44,19 @@ export function normalizeFieldRuleGateCounts(gateCounts = {}) {
     const row = gateCounts[key];
     const normalizedRow = row && typeof row === 'object' ? row : {};
     const valueCount = Math.max(0, toInt(normalizedRow.value_count, 0));
+    const effectiveValueCount = Math.max(0, toInt(normalizedRow.effective_value_count, valueCount));
+    const totalValueCount = Math.max(
+      effectiveValueCount,
+      Math.max(0, toInt(normalizedRow.total_value_count, effectiveValueCount)),
+    );
     const enabledFieldCount = Math.max(0, toInt(normalizedRow.enabled_field_count, 0));
     const disabledFieldCount = Math.max(0, toInt(normalizedRow.disabled_field_count, 0));
     return {
       key,
       label: FIELD_RULE_GATE_LABELS[key] || key,
       valueCount,
+      totalValueCount,
+      effectiveValueCount,
       enabledFieldCount,
       disabledFieldCount,
       status: normalizeGateStatus({
@@ -60,6 +67,39 @@ export function normalizeFieldRuleGateCounts(gateCounts = {}) {
       }),
     };
   });
+}
+
+function normalizeRowGateStatus(valueCount, statusToken = '') {
+  const token = String(statusToken || '').trim().toLowerCase();
+  if (token === 'off') return 'off';
+  if (token === 'active' || token === 'on') {
+    return valueCount > 0 ? 'active' : 'zero';
+  }
+  return valueCount > 0 ? 'active' : 'zero';
+}
+
+export function resolveFieldRuleHintCountForRowGate({
+  perFieldHintCounts,
+  gateKey = '',
+  fallbackGate,
+} = {}) {
+  const key = String(gateKey || '').trim();
+  const rowValue = perFieldHintCounts && typeof perFieldHintCounts === 'object'
+    ? perFieldHintCounts[key]
+    : null;
+  if (rowValue && typeof rowValue === 'object') {
+    const value = Math.max(0, toInt(rowValue.value_count, 0));
+    const effective = Math.max(0, toInt(rowValue.effective_value_count, value));
+    const total = Math.max(effective, Math.max(0, toInt(rowValue.total_value_count, effective)));
+    const status = normalizeRowGateStatus(value, rowValue.status);
+    return { status, value, total, effective };
+  }
+
+  const fallbackStatus = String(fallbackGate?.status || '').trim().toLowerCase();
+  if (fallbackStatus === 'off') {
+    return { status: 'off', value: 0, total: 0, effective: 0 };
+  }
+  return { status: 'zero', value: 0, total: 0, effective: 0 };
 }
 
 export function sourceHostFromRow(row = {}) {

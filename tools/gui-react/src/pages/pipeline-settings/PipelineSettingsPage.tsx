@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useConvergenceSettingsAuthority } from '../../stores/convergenceSettingsAuthority';
-import { CONVERGENCE_KNOB_GROUPS } from '../../stores/settingsManifest';
+import { CONVERGENCE_KNOB_GROUPS, useConvergenceSettingsAuthority } from '../../stores/convergenceSettingsAuthority';
 import { useSourceStrategyAuthority, type SourceStrategyRow } from '../../stores/sourceStrategyAuthority';
 import { useUiStore } from '../../stores/uiStore';
 

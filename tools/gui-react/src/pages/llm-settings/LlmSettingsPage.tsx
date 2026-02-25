@@ -543,7 +543,7 @@ export function LlmSettingsPage() {
               : saveStatus.kind === 'error' || saveStatus.kind === 'partial'
               ? saveStatus.message
               : dirty
-              ? 'Unsaved changes.'
+              ? (autoSaveEnabled ? 'Unsaved (auto-save pending).' : 'Unsaved changes.')
               : 'All changes saved.'}
             {lastSavedAt ? ` Last save: ${lastSavedAt}` : ''}
           </div>

@@ -350,7 +350,7 @@ export function RuntimePanel({
                 ? 'text-rose-600 dark:text-rose-300'
                 : runtimeSettingsSaveState === 'partial'
                 ? 'text-amber-600 dark:text-amber-400'
-                : runtimeSettingsDirty && !runtimeAutoSave
+                : runtimeSettingsDirty
                 ? 'text-amber-600 dark:text-amber-400'
                 : 'text-gray-500 dark:text-gray-400'
             }`}
@@ -363,8 +363,8 @@ export function RuntimePanel({
               ? (runtimeSettingsSaveMessage || 'Failed to save runtime settings.')
               : runtimeSettingsSaveState === 'partial'
               ? runtimeSettingsSaveMessage
-              : runtimeSettingsDirty && !runtimeAutoSave
-              ? 'unsaved'
+              : runtimeSettingsDirty
+              ? (runtimeAutoSave ? 'unsaved (auto-save pending)' : 'unsaved')
               : runtimeSettingsSaveState === 'ok'
               ? (runtimeSettingsSaveMessage || 'saved')
               : ''}

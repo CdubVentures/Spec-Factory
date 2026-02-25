@@ -267,6 +267,7 @@ type BadgeSlot = React.ComponentType<{ p: string }>;
 // ── Contract Tab ─────────────────────────────────────────────────────
 function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: Record<string, unknown>; onUpdate: (path: string, val: unknown) => void; B: BadgeSlot }) {
   const tooltipMd = strN(rule, 'ui.tooltip_md');
+  const contractDeferredLocked = true;
 
   return (
     <div className="space-y-3">
@@ -300,7 +301,7 @@ function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: 
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Unknown Token<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.unknown_token} /></span><B p="contract.unknown_token" /></div>
-          <ComboSelect value={strN(rule, 'contract.unknown_token', 'unk')} onChange={(v) => onUpdate('contract.unknown_token', v)} options={UNKNOWN_TOKENS} placeholder="unk" />
+          <ComboSelect value={strN(rule, 'contract.unknown_token', 'unk')} onChange={(v) => onUpdate('contract.unknown_token', v)} options={UNKNOWN_TOKENS} placeholder="unk" disabled={contractDeferredLocked} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -310,13 +311,14 @@ function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: 
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Rounding Mode<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.rounding_mode} /></span><B p="contract.rounding.mode" /></div>
-          <select className={`${selectCls} w-full`} value={strN(rule, 'contract.rounding.mode', 'nearest')} onChange={(e) => onUpdate('contract.rounding.mode', e.target.value)}>
+          <select className={`${selectCls} w-full`} value={strN(rule, 'contract.rounding.mode', 'nearest')} onChange={(e) => onUpdate('contract.rounding.mode', e.target.value)} disabled={contractDeferredLocked}>
             <option value="nearest">nearest</option>
             <option value="floor">floor</option>
             <option value="ceil">ceil</option>
           </select>
         </div>
       </div>
+      <div className="text-xs text-red-600">Deferred: runtime wiring in progress</div>
 
       <h4 className="text-xs font-semibold text-gray-500 mt-4">Priority & Effort</h4>
       <div className="grid grid-cols-2 gap-3">

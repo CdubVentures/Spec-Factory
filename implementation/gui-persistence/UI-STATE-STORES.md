@@ -322,7 +322,7 @@ Notes:
 - Main app top navigation is route-driven (`HashRouter`) and is not stored in `tab-store`.
 - Component Review sub-tabs are category-scoped to avoid stale cross-category selection.
 - Runtime/studio/storage autosave keys are centralized in `useUiStore` and are synchronized to `/api/v1/ui-settings` at app bootstrap/runtime.
-- LLM settings auto-save remains category-scoped in `useUiStore` session state.
+- LLM settings auto-save is global in `useUiStore` session state (`llmSettings:autoSaveEnabled`) and is synchronized to `/api/v1/ui-settings`.
 
 ---
 

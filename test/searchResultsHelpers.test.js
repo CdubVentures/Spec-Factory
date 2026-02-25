@@ -17,6 +17,7 @@ import {
   providerDisplayLabel,
   parseDomainFromUrl,
   enrichResultDomains,
+  resolveDomainCapSummary,
 } from '../tools/gui-react/src/pages/runtime-ops/panels/searchResultsHelpers.js';
 
 function makeResult(overrides = {}) {
@@ -711,5 +712,43 @@ describe('enrichResultDomains', () => {
     ];
     const enriched = enrichResultDomains(details);
     assert.equal(enriched[0].results[0].domain, 'amazon.com');
+  });
+});
+
+// â”€â”€ resolveDomainCapSummary â”€â”€
+
+describe('resolveDomainCapSummary', () => {
+  it('uses fast profile clamps when explicit knobs are not present', () => {
+    const summary = resolveDomainCapSummary({ profile: 'fast' });
+    assert.equal(summary.value, '2');
+    assert.equal(summary.queryCap, 6);
+    assert.equal(summary.discoveredCap, 60);
+    assert.match(summary.tooltip, /Fast profile: clamps discovery results\/query to 6 and max pages\/domain to 2\./);
+  });
+
+  it('uses thorough profile floors when explicit knobs are not present', () => {
+    const summary = resolveDomainCapSummary({ profile: 'thorough' });
+    assert.equal(summary.value, '>=8');
+    assert.equal(summary.queryCap, 20);
+    assert.equal(summary.discoveredCap, 300);
+    assert.match(summary.tooltip, /Thorough profile: raises floors to at least 20 results\/query and at least 8 pages\/domain\./);
+  });
+
+  it('prefers explicit knob values when provided', () => {
+    const summary = resolveDomainCapSummary({
+      profile: 'standard',
+      maxPagesPerDomain: 5,
+      discoveryResultsPerQuery: 14,
+      discoveryMaxDiscovered: 140,
+      serpTriageMaxUrls: 18,
+      uberMaxUrlsPerDomain: 9,
+    });
+    assert.equal(summary.value, '5');
+    assert.equal(summary.queryCap, 14);
+    assert.equal(summary.discoveredCap, 140);
+    assert.equal(summary.triageCap, 18);
+    assert.equal(summary.uberDomainFloor, 9);
+    assert.match(summary.tooltip, /Current domain cap display: 5/);
+    assert.match(summary.tooltip, /SERP triage cap keeps up to 18 URLs after triage/);
   });
 });

@@ -71,6 +71,54 @@ function normalizeToken(value) {
   return normalizeText(value).toLowerCase();
 }
 
+function parseExcelSerialDate(value) {
+  const token = normalizeText(value);
+  if (!/^\d{5}$/.test(token)) {
+    return null;
+  }
+  const parsed = Number(token);
+  if (!Number.isFinite(parsed) || parsed < 10000 || parsed > 60000) {
+    return null;
+  }
+  return parsed;
+}
+
+function excelSerialDateToIso(value) {
+  const serial = asInt(value, -1);
+  if (serial < 0) {
+    return '';
+  }
+  // Excel 1900 date system (with leap-year offset) maps from 1899-12-30.
+  const utcMs = Date.UTC(1899, 11, 30) + (serial * 24 * 60 * 60 * 1000);
+  const date = new Date(utcMs);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return date.toISOString().slice(0, 10);
+}
+
+function isDateLikeFieldKey(fieldKey = '') {
+  return /date|year|release|launch/i.test(normalizeFieldKey(fieldKey));
+}
+
+function isWorkbookMode(row = {}) {
+  return normalizeToken(row?.mode || 'workbook') !== 'scratch';
+}
+
+function findComponentSourceRowByType(rows = [], componentType = '') {
+  const normalizedType = normalizeFieldKey(componentType);
+  if (!normalizedType) {
+    return null;
+  }
+  const matchingRows = toArray(rows).filter((row) => (
+    normalizeFieldKey(row?.component_type || row?.type || '') === normalizedType
+  ));
+  if (!matchingRows.length) {
+    return null;
+  }
+  return matchingRows.find((row) => isWorkbookMode(row)) || matchingRows[0];
+}
+
 const REVIEW_REQUIRED_LEVELS = new Set(['identity', 'required', 'critical', 'expected', 'optional', 'editorial', 'commerce']);
 const REVIEW_AVAILABILITY_LEVELS = new Set(['always', 'expected', 'sometimes', 'rare', 'editorial_only']);
 const REVIEW_DIFFICULTY_LEVELS = new Set(['easy', 'medium', 'hard', 'instrumented']);
@@ -1516,13 +1564,13 @@ function normalizeWorkbookMap(map = {}, { warnings = null } = {}) {
       .map((entry) => {
         const fieldKey = normalizeFieldKey(entry.field_key || '');
         const legacyKey = normalizeFieldKey(entry.key || entry.property_key || '');
-        const propType = ['number', 'string'].includes(normalizeToken(entry.type)) ? normalizeToken(entry.type) : 'string';
+        const propType = ['number', 'integer', 'string'].includes(normalizeToken(entry.type)) ? normalizeToken(entry.type) : 'string';
         const rawPolicy = normalizeToken(entry.variance_policy || 'authoritative');
         const NUMERIC_ONLY = ['upper_bound', 'lower_bound', 'range'];
-        const coerced = propType !== 'number' && NUMERIC_ONLY.includes(rawPolicy);
+        const coerced = !isNumericContractType(propType) && NUMERIC_ONLY.includes(rawPolicy);
         const effectivePolicy = coerced ? 'authoritative' : rawPolicy;
         if (coerced && warnings) {
-          warnings.push(`component_sources: variance_policy '${entry.variance_policy}' on string property '${fieldKey || legacyKey || '?'}' coerced to 'authoritative' (numeric policies require type 'number')`);
+          warnings.push(`component_sources: variance_policy '${entry.variance_policy}' on string property '${fieldKey || legacyKey || '?'}' coerced to 'authoritative' (numeric policies require type 'number' or 'integer')`);
         }
         return {
           key: fieldKey || legacyKey,
@@ -1573,7 +1621,9 @@ function normalizeWorkbookMap(map = {}, { warnings = null } = {}) {
     const stopAfterBlankPrimary = Math.max(1, asInt(row.stop_after_blank_primary || row.stop_after_blank_names, 10));
     const rowPriority = normalizeReviewPriority(row.priority || row.review_priority);
     const rowAiAssist = normalizeReviewAiAssist(row.ai_assist);
+    const rowMode = normalizeToken(row.mode || 'workbook') === 'scratch' ? 'scratch' : 'workbook';
     return {
+      mode: rowMode,
       sheet: normalizeText(row.sheet),
       component_type: normalizeToken(row.component_type || row.type || guessComponentType(row.sheet)),
       primary_identifier_column: primaryIdentifierColumn,
@@ -1682,6 +1732,7 @@ function normalizeWorkbookMap(map = {}, { warnings = null } = {}) {
     component_sources: componentSheets
       .filter((row) => row.sheet || row.component_type)
       .map((row) => ({
+        mode: row.mode,
         sheet: row.sheet,
         type: row.component_type,
         component_type: row.component_type,
@@ -1808,7 +1859,7 @@ export function validateWorkbookMap(map = {}, options = {}) {
   const normalizedComponentRows = toArray(normalized.component_sources).length > 0
     ? toArray(normalized.component_sources)
     : toArray(normalized.component_sheets);
-  const hasWorkbookComponentRows = normalizedComponentRows.some((row) => Boolean(normalizeText(row?.sheet)));
+  const hasWorkbookComponentRows = normalizedComponentRows.some((row) => normalizeToken(row?.mode || 'workbook') !== 'scratch');
   const hasWorkbookDataLists = toArray(normalized.data_lists).some((row) => {
     const mode = normalizeToken(row?.mode || 'workbook');
     if (mode === 'scratch') {
@@ -1889,7 +1940,8 @@ export function validateWorkbookMap(map = {}, options = {}) {
   for (const row of normalizedComponentRows) {
     const roles = isObject(row.roles) ? row.roles : {};
     const sheetToken = normalizeText(row.sheet);
-    const isSheetBacked = Boolean(sheetToken);
+    const mode = normalizeToken(row.mode || 'workbook') === 'scratch' ? 'scratch' : 'workbook';
+    const isSheetBacked = mode !== 'scratch';
     const componentType = normalizeFieldKey(row.component_type || row.type || '');
     const primaryIdentifierColumn = normalizeText(
       roles.primary_identifier
@@ -1903,6 +1955,9 @@ export function validateWorkbookMap(map = {}, options = {}) {
     const stopAfterBlankPrimary = Math.max(1, asInt(row.stop_after_blank_primary || row.stop_after_blank_names, 10));
 
     checkSheet(row.sheet, 'component_sources');
+    if (isSheetBacked && !sheetToken) {
+      errors.push(`component_sources: sheet is required when mode=workbook for type '${componentType || '?'}'`);
+    }
     if (!componentType) {
       errors.push(`component_sources: type is required for sheet '${row.sheet}'`);
     }
@@ -1951,7 +2006,7 @@ export function validateWorkbookMap(map = {}, options = {}) {
       if (isSheetBacked && !colToIndex(prop.column || '')) {
         errors.push(`component_sources: invalid property mapping column '${prop.column}' for sheet '${row.sheet}'`);
       }
-      if (prop.type && !['string', 'number'].includes(normalizeToken(prop.type))) {
+      if (prop.type && !['string', 'number', 'integer'].includes(normalizeToken(prop.type))) {
         errors.push(`component_sources: invalid property mapping type '${prop.type}' for sheet '${row.sheet}'`);
       }
       if (prop.variance_policy && !VALID_VARIANCE_POLICIES.includes(normalizeToken(prop.variance_policy))) {
@@ -1978,6 +2033,59 @@ export function validateWorkbookMap(map = {}, options = {}) {
     warnings,
     normalized
   };
+}
+
+function normalizeKeyMigrationMap(keyMap = {}) {
+  if (!isObject(keyMap)) {
+    return {};
+  }
+  const out = {};
+  for (const [rawFrom, rawTo] of Object.entries(keyMap)) {
+    const from = normalizeFieldKey(rawFrom || '');
+    const to = normalizeFieldKey(rawTo || '');
+    if (!from || !to || from === to) {
+      continue;
+    }
+    out[from] = to;
+  }
+  return out;
+}
+
+function findKeyMigrationCycle(keyMap = {}) {
+  const map = normalizeKeyMigrationMap(keyMap);
+  const nodes = Object.keys(map);
+  if (nodes.length === 0) {
+    return null;
+  }
+  const visiting = new Set();
+  const visited = new Set();
+
+  const walk = (node, path = []) => {
+    if (visiting.has(node)) {
+      const idx = path.indexOf(node);
+      if (idx >= 0) {
+        return [...path.slice(idx), node];
+      }
+      return [node, node];
+    }
+    if (visited.has(node)) {
+      return null;
+    }
+    visiting.add(node);
+    const next = map[node];
+    const cycle = next ? walk(next, [...path, node]) : null;
+    visiting.delete(node);
+    visited.add(node);
+    return cycle;
+  };
+
+  for (const node of nodes) {
+    const cycle = walk(node, []);
+    if (cycle) {
+      return cycle;
+    }
+  }
+  return null;
 }
 
 function sheetByName(workbook, sheetName) {
@@ -2356,6 +2464,9 @@ function pullComponentDbs(workbook, map) {
   const sourceStats = {};
   const sourceRows = toArray(map.component_sources).length > 0 ? toArray(map.component_sources) : toArray(map.component_sheets);
   for (const row of sourceRows) {
+    if (!isWorkbookMode(row)) {
+      continue;
+    }
     const sheet = sheetByName(workbook, row.sheet);
     if (!sheet) {
       continue;
@@ -2376,10 +2487,10 @@ function pullComponentDbs(workbook, map) {
       .map((entry) => {
         const fieldKey = normalizeFieldKey(entry.field_key || '');
         const legacyKey = normalizeFieldKey(entry.key || entry.property_key || '');
-        const propType = ['number', 'string'].includes(normalizeToken(entry.type)) ? normalizeToken(entry.type) : 'string';
+        const propType = ['number', 'integer', 'string'].includes(normalizeToken(entry.type)) ? normalizeToken(entry.type) : 'string';
         const rawPolicy = normalizeToken(entry.variance_policy || 'authoritative');
         const NUMERIC_ONLY = ['upper_bound', 'lower_bound', 'range'];
-        const effectivePolicy = propType !== 'number' && NUMERIC_ONLY.includes(rawPolicy) ? 'authoritative' : rawPolicy;
+        const effectivePolicy = !isNumericContractType(propType) && NUMERIC_ONLY.includes(rawPolicy) ? 'authoritative' : rawPolicy;
         return {
           key: fieldKey || legacyKey,
           column: normalizeText(entry.column || entry.col || '').toUpperCase(),
@@ -2449,17 +2560,24 @@ function pullComponentDbs(workbook, map) {
       const properties = {};
       if (propertyMappings.length > 0) {
         for (const mapping of propertyMappings) {
-          const value = normalizeWhitespace(getCell(sheet, mapping.column, idx));
+          const rawCellValue = getCell(sheet, mapping.column, idx);
+          const value = normalizeWhitespace(rawCellValue);
           if (!value) {
             continue;
           }
           // Use field_key as canonical property name when available, fall back to legacy key
           const propKey = mapping.field_key || mapping.key;
-          if (mapping.type === 'number') {
+          if (isNumericContractType(mapping.type)) {
             const numericValue = asNumber(value);
             properties[propKey] = numericValue === null ? value : numericValue;
           } else {
-            properties[propKey] = value;
+            const serialDate = isDateLikeFieldKey(propKey) ? parseExcelSerialDate(value) : null;
+            if (serialDate !== null) {
+              const isoDate = excelSerialDateToIso(serialDate);
+              properties[propKey] = isoDate || value;
+            } else {
+              properties[propKey] = value;
+            }
           }
         }
       }
@@ -2542,6 +2660,11 @@ function inferUnitByField(key) {
   return '';
 }
 
+function isNumericContractType(type) {
+  const token = normalizeToken(type);
+  return token === 'number' || token === 'integer';
+}
+
 function inferParseTemplate({ key, type, shape, enumValues = [], componentType = '' }) {
   const token = normalizeFieldKey(key);
   if (componentType) {
@@ -2553,7 +2676,7 @@ function inferParseTemplate({ key, type, shape, enumValues = [], componentType =
   if (shape === 'range') {
     return 'range_number';
   }
-  if (shape === 'list' && type === 'number') {
+  if (shape === 'list' && isNumericContractType(type)) {
     return 'list_of_numbers_with_unit';
   }
   if (shape === 'list' && type === 'string') {
@@ -2563,7 +2686,7 @@ function inferParseTemplate({ key, type, shape, enumValues = [], componentType =
     }
     return 'list_of_tokens_delimited';
   }
-  if (type === 'number') {
+  if (isNumericContractType(type)) {
     if (inferUnitByField(token)) {
       return 'number_with_unit';
     }
@@ -2942,7 +3065,8 @@ function buildWorkbookTabsSummary({
       ? toArray(map?.component_sources)
       : toArray(map?.component_sheets)
   ).filter((row) => isObject(row));
-  const componentSheets = stableSortStrings(componentRows.map((row) => normalizeText(row.sheet || '')).filter(Boolean));
+  const workbookComponentRows = componentRows.filter((row) => isWorkbookMode(row));
+  const componentSheets = stableSortStrings(workbookComponentRows.map((row) => normalizeText(row.sheet || '')).filter(Boolean));
   const knownSheetSet = new Set([
     keySheet,
     ...enumSheets,
@@ -2972,7 +3096,7 @@ function buildWorkbookTabsSummary({
       };
       continue;
     }
-    const componentRow = componentRows.find((row) => normalizeText(row.sheet || '') === sheetName);
+    const componentRow = workbookComponentRows.find((row) => normalizeText(row.sheet || '') === sheetName);
     const componentType = normalizeFieldKey(componentRow?.component_type || componentRow?.type || '');
     summary[sheetName] = {
       role: componentType ? `component_db:${componentType}` : 'component_db',
@@ -3055,6 +3179,19 @@ function buildEnumBucketSummary({
 }
 
 function buildPropertyConstraintsFromMap(map, fieldKey) {
+  const meta = resolveComponentPropertyMetaFromMap(map, fieldKey);
+  if (!meta) {
+    return [];
+  }
+  return meta.constraints;
+}
+
+function resolveComponentPropertyMetaFromMap(map, fieldKey) {
+  const normalizedFieldKey = normalizeFieldKey(fieldKey);
+  if (!normalizedFieldKey) {
+    return null;
+  }
+  const numericOnlyPolicies = new Set(['upper_bound', 'lower_bound', 'range']);
   const sources = toArray(map?.component_sources).length > 0
     ? toArray(map.component_sources)
     : toArray(map?.component_sheets);
@@ -3064,12 +3201,26 @@ function buildPropertyConstraintsFromMap(map, fieldKey) {
     for (const entry of toArray(rolesBlock.properties)) {
       if (!isObject(entry)) continue;
       const entryKey = normalizeFieldKey(entry.field_key || entry.key || entry.property_key || '');
-      if (entryKey === fieldKey && Array.isArray(entry.constraints) && entry.constraints.length > 0) {
-        return entry.constraints.filter(Boolean);
+      if (entryKey !== normalizedFieldKey) {
+        continue;
+      }
+      const entryTypeToken = normalizeToken(entry.type);
+      const type = ['number', 'integer', 'string'].includes(entryTypeToken)
+        ? entryTypeToken
+        : 'string';
+      const rawPolicy = normalizeToken(entry.variance_policy || 'authoritative') || 'authoritative';
+      const variancePolicy = !isNumericContractType(type) && numericOnlyPolicies.has(rawPolicy)
+        ? 'authoritative'
+        : rawPolicy;
+      return {
+        type,
+        unit: normalizeText(entry.unit || ''),
+        variance_policy: variancePolicy,
+        constraints: Array.isArray(entry.constraints) ? entry.constraints.filter(Boolean) : [],
       }
     }
   }
-  return [];
+  return null;
 }
 
 function applyKeyLevelConstraintsToEntities(componentDb, fieldsRuntime) {
@@ -3521,7 +3672,7 @@ function parseRulesForTemplate(template, { unit = '', enumValues = [], component
   if (template === 'list_numbers_or_ranges_with_unit') {
     return {
       delimiters: [',', '/', '|', ';'],
-      separators: ['-', 'to', '–'],
+      separators: ['-', 'to', 'â€“'],
       unit: unit || ''
     };
   }
@@ -3532,7 +3683,7 @@ function parseRulesForTemplate(template, { unit = '', enumValues = [], component
   }
   if (template === 'range_number') {
     return {
-      separators: ['-', 'to', '–'],
+      separators: ['-', 'to', 'â€“'],
       unit: unit || ''
     };
   }
@@ -3880,9 +4031,7 @@ function buildStudioFieldRule({
         const cSources = toArray(map?.component_sources).length > 0
           ? toArray(map.component_sources)
           : toArray(map?.component_sheets);
-        const cRow = cSources.find(
-          entry => normalizeFieldKey(entry?.component_type || entry?.type || '') === nestedComponent.type
-        );
+        const cRow = findComponentSourceRowByType(cSources, nestedComponent.type);
         return toArray(isObject(cRow?.roles) ? cRow.roles.properties : [])
           .map(entry => normalizeFieldKey(entry?.field_key || entry?.key || entry?.property_key || ''))
           .filter(Boolean);
@@ -3993,7 +4142,7 @@ function buildStudioFieldRule({
   }
   if (source?.type === 'component_db') {
     const componentRows = toArray(map?.component_sources).length > 0 ? toArray(map.component_sources) : toArray(map?.component_sheets);
-    const componentRow = componentRows.find((entry) => normalizeFieldKey(entry?.component_type || entry?.type || '') === normalizeFieldKey(source.ref || ''));
+    const componentRow = findComponentSourceRowByType(componentRows, normalizeFieldKey(source.ref || ''));
     if (componentRow && !normalizeText(excelHints.component_sheet || '')) {
       excelHints.component_sheet = normalizeText(componentRow.sheet || '') || null;
     }
@@ -4140,6 +4289,10 @@ function buildStudioFieldRule({
     unknown_reason_default: normalizeText(rule.unknown_reason_default || '') || 'not_found_after_search',
     value_form: canonicalValueForm
   };
+  const variancePolicy = normalizeToken(rule.variance_policy || '');
+  if (variancePolicy) {
+    out.variance_policy = variancePolicy;
+  }
   if (normalizedConsumers) {
     out.consumers = normalizedConsumers;
   }
@@ -4158,6 +4311,29 @@ function declaredComponentTypesFromMap(map = {}) {
       .map((row) => normalizeFieldKey(row?.component_type || row?.type || ''))
       .filter(Boolean)
   );
+}
+
+function declaredComponentPropertyKeysFromMap(map = {}) {
+  const rows = toArray(map?.component_sources).length > 0
+    ? toArray(map.component_sources)
+    : toArray(map?.component_sheets);
+  const out = new Set();
+  for (const row of rows) {
+    if (!isObject(row)) {
+      continue;
+    }
+    const roles = isObject(row.roles) ? row.roles : {};
+    for (const prop of toArray(roles.properties)) {
+      if (!isObject(prop)) {
+        continue;
+      }
+      const key = normalizeFieldKey(prop.field_key || prop.key || prop.property_key || '');
+      if (key) {
+        out.add(key);
+      }
+    }
+  }
+  return out;
 }
 
 function inferComponentTypeForField(fieldKey = '', componentTypes = new Set()) {
@@ -4482,7 +4658,7 @@ function buildCompileValidation({ fields, knownValues, enumLists, componentDb, m
       warnings.push(`field ${fieldKey}: enum_policy=open but parse_rules is empty`);
     }
   }
-  // ── Component DB data quality validation ─────────────────────────
+  // â”€â”€ Component DB data quality validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   for (const [componentType, items] of Object.entries(componentDb || {})) {
     if (!Array.isArray(items) || items.length === 0) continue;
 
@@ -4494,33 +4670,48 @@ function buildCompileValidation({ fields, knownValues, enumLists, componentDb, m
       }
     }
 
-    // Check completeness: warn if entities are missing properties that others have
-    for (const entity of items) {
-      const entityProps = isObject(entity.properties) ? entity.properties : {};
-      const missing = [];
-      for (const pk of allPropKeys) {
+    // Summarize property coverage to avoid high-volume per-entity warning spam.
+    for (const pk of allPropKeys) {
+      let presentCount = 0;
+      let missingCount = 0;
+      const missingExamples = [];
+      for (const entity of items) {
+        const entityProps = isObject(entity.properties) ? entity.properties : {};
         const val = entityProps[pk];
-        if (val === undefined || val === null || val === '') missing.push(pk);
+        const hasValue = !(val === undefined || val === null || val === '');
+        if (hasValue) {
+          presentCount += 1;
+          continue;
+        }
+        missingCount += 1;
+        if (missingExamples.length < 3) {
+          missingExamples.push(entity.name || '?');
+        }
       }
-      if (missing.length > 0 && missing.length < allPropKeys.size) {
-        warnings.push(`component_db.${componentType}: "${entity.name || '?'}" missing properties: ${missing.join(', ')}`);
+      if (missingCount === 0) {
+        continue;
       }
+      if (presentCount === 0) {
+        warnings.push(`component_db.${componentType}: property "${pk}" has no populated values across ${items.length} entities`);
+        continue;
+      }
+      const coveragePct = Number(((presentCount / items.length) * 100).toFixed(1));
+      warnings.push(
+        `component_db.${componentType}: property "${pk}" coverage ${presentCount}/${items.length} (${coveragePct}%), missing ${missingCount}; examples: ${missingExamples.join(', ')}`
+      );
     }
 
     // Check for Excel serial dates (5-digit numbers) in date-like properties
-    const dateProps = [...allPropKeys].filter(k => /date|year|release|launch/i.test(k));
+    const dateProps = [...allPropKeys].filter((k) => isDateLikeFieldKey(k));
     for (const entity of items) {
       const entityProps = isObject(entity.properties) ? entity.properties : {};
       for (const dp of dateProps) {
         const val = entityProps[dp];
         if (val !== undefined && val !== null && val !== '') {
           const s = String(val).trim();
-          // Detect Excel serial dates: 5-digit numbers between 10000 and 60000
-          if (/^\d{5}$/.test(s)) {
-            const num = Number(s);
-            if (num >= 10000 && num <= 60000) {
-              warnings.push(`component_db.${componentType}: "${entity.name || '?'}" property "${dp}" looks like an Excel serial date (${s}) — convert to ISO date`);
-            }
+          const serialDate = parseExcelSerialDate(s);
+          if (serialDate !== null) {
+            warnings.push(`component_db.${componentType}: "${entity.name || '?'}" property "${dp}" looks like an Excel serial date (${s}) â€” convert to ISO date`);
           }
         }
       }
@@ -5074,9 +5265,23 @@ export async function compileCategoryWorkbook({
 
   const extractedKeyRows = pullKeyRowsFromMap(workbookForCompile, map);
   const selectedKeySet = new Set(toArray(map.selected_keys).map((field) => normalizeFieldKey(field)).filter(Boolean));
+  const componentPropertyKeySet = declaredComponentPropertyKeysFromMap(map);
+  const extractedKeySet = new Set(extractedKeyRows.map((row) => normalizeFieldKey(row.key)).filter(Boolean));
+  const declaredOnlyKeyRows = [...componentPropertyKeySet]
+    .filter((key) => !extractedKeySet.has(key))
+    .sort((a, b) => a.localeCompare(b))
+    .map((key) => ({
+      row: 0,
+      label: titleFromKey(key),
+      key,
+    }));
+  const candidateKeyRows = [...extractedKeyRows, ...declaredOnlyKeyRows];
   const keyRows = selectedKeySet.size > 0
-    ? extractedKeyRows.filter((row) => selectedKeySet.has(normalizeFieldKey(row.key)))
-    : extractedKeyRows;
+    ? candidateKeyRows.filter((row) => (
+      selectedKeySet.has(normalizeFieldKey(row.key))
+      || componentPropertyKeySet.has(normalizeFieldKey(row.key))
+    ))
+    : candidateKeyRows;
   if (!keyRows.length) {
     return {
       category,
@@ -5203,11 +5408,12 @@ export async function compileCategoryWorkbook({
       || baselineFieldOverrides?.[field]
       || baselineFieldOverrides?.[rawAliasField]
       || null;
-    if (isObject(baselineRule) && !isObject(editedOverride) && !isObject(mapOverride)) {
+    const componentPropertyMeta = resolveComponentPropertyMetaFromMap(map, outputField);
+    if (isObject(baselineRule) && !isObject(editedOverride) && !isObject(mapOverride) && !componentPropertyMeta) {
       const passthrough = JSON.parse(JSON.stringify(baselineRule));
       passthrough.key = outputField;
       const passthroughCanonical = normalizeFieldKey(passthrough.canonical_key || '');
-      if (passthroughCanonical && passthroughCanonical !== outputField) {
+      if (passthroughCanonical && passthroughCanonical !== outputField && passthroughCanonical !== field) {
         keyMigrations[outputField] = passthroughCanonical;
       }
       enforceExpectationPriority({
@@ -5257,15 +5463,38 @@ export async function compileCategoryWorkbook({
       : draft;
     const merged = mergeFieldOverride(baseForMerge, override);
     const requestedCanonical = normalizeFieldKey(merged.canonical_key || '');
+    const canonicalTarget = requestedCanonical && requestedCanonical !== outputField && requestedCanonical !== field
+      ? requestedCanonical
+      : '';
     if (outputField !== field) {
       keyMigrations[field] = outputField;
       merged.aliases = stableSortStrings([...(merged.aliases || []), field, outputField]);
     }
-    if (requestedCanonical && requestedCanonical !== outputField) {
-      keyMigrations[outputField] = requestedCanonical;
+    if (canonicalTarget) {
+      keyMigrations[outputField] = canonicalTarget;
     }
     merged.key = outputField;
-    merged.canonical_key = requestedCanonical || null;
+    merged.canonical_key = canonicalTarget || null;
+    if (componentPropertyMeta) {
+      merged.type = componentPropertyMeta.type;
+      const existingContract = isObject(merged.contract) ? merged.contract : {};
+      merged.contract = {
+        ...existingContract,
+        type: componentPropertyMeta.type
+      };
+      if (isNumericContractType(componentPropertyMeta.type)) {
+        merged.unit = componentPropertyMeta.unit || merged.unit || '';
+      } else {
+        merged.unit = componentPropertyMeta.unit || '';
+      }
+      merged.variance_policy = componentPropertyMeta.variance_policy || 'authoritative';
+      if (!Array.isArray(merged.constraints) || merged.constraints.length === 0) {
+        merged.constraints = componentPropertyMeta.constraints;
+      }
+      if (!isNumericContractType(componentPropertyMeta.type) && normalizeToken(merged.round || '') !== 'none') {
+        merged.round = 'none';
+      }
+    }
     if (!Array.isArray(merged.constraints)) {
       merged.constraints = buildPropertyConstraintsFromMap(map, outputField);
     }
@@ -5297,6 +5526,20 @@ export async function compileCategoryWorkbook({
         type: 'known_values',
         ref: field
       };
+    }
+    if (componentPropertyMeta && isNumericContractType(componentPropertyMeta.type) && enumValues.length > 0) {
+      merged.enum_policy = 'closed';
+      merged.enum_source = {
+        type: 'known_values',
+        ref: field
+      };
+      merged.vocab = {
+        ...(merged.vocab || {}),
+        mode: 'closed',
+        allow_new: false,
+        known_values: stableSortStrings(enumValues),
+      };
+      merged.new_value_policy = null;
     }
     if ((merged.type === 'boolean' || merged.parse_template === 'boolean_yes_no_unknown') && !toArray(enumLists[field]).length && !toArray(enumLists.yes_no).length) {
       enumLists.yes_no = ['yes', 'no'];
@@ -5397,6 +5640,36 @@ export async function compileCategoryWorkbook({
         enumValues: mergedEnumValues,
         componentType
       });
+    }
+    const scalarNumericParseTemplates = new Set([
+      'number_with_unit',
+      'integer_with_unit',
+      'range_number',
+    ]);
+    const isMergedNumericType = isNumericContractType(mergedType);
+    if (!isMergedNumericType && scalarNumericParseTemplates.has(mergedParseTemplate)) {
+      mergedParseTemplate = normalizeFieldKey(outputField).includes('date') ? 'date_field' : 'text_field';
+      merged.parse_rules = {};
+    }
+    if (
+      isMergedNumericType
+      && ['text_field', 'string', 'enum_string', 'date_field'].includes(mergedParseTemplate)
+    ) {
+      mergedParseTemplate = inferParseTemplate({
+        key: outputField,
+        type: mergedType,
+        shape: mergedShape,
+        enumValues: mergedEnumValues,
+        componentType,
+      });
+    }
+    if (
+      isMergedNumericType
+      && !normalizeText(merged.unit || '')
+      && ['number_with_unit', 'integer_with_unit'].includes(mergedParseTemplate)
+    ) {
+      mergedParseTemplate = 'integer_field';
+      merged.parse_rules = {};
     }
     merged.parse_template = canonicalParseTemplate(mergedParseTemplate);
     if (!isObject(merged.parse)) {
@@ -5499,6 +5772,21 @@ export async function compileCategoryWorkbook({
       surfaces: isObject(merged.surfaces) ? merged.surfaces : {}
     });
     order += 1;
+  }
+  const keyMigrationCycle = findKeyMigrationCycle(keyMigrations);
+  if (keyMigrationCycle) {
+    return {
+      category,
+      compiled: false,
+      workbook_path: resolvedWorkbook,
+      workbook_hash: workbook.workbook_hash,
+      map_path: controlMap.file_path,
+      map_hash: mapHash,
+      errors: [
+        `key_migrations: cycle detected (${keyMigrationCycle.join(' -> ')})`
+      ],
+      warnings: mapWarnings
+    };
   }
 
   const fieldRulesDraft = {
@@ -5761,7 +6049,7 @@ export async function compileCategoryWorkbook({
   }
 
   const previousHash = previousCompileReport?.artifacts?.field_rules?.hash || null;
-  const currentHash = hashBuffer(Buffer.from(JSON.stringify(fieldRulesCanonical, null, 2), 'utf8'));
+  const currentHash = hashBuffer(Buffer.from(`${JSON.stringify(fieldRulesCanonical, null, 2)}\n`, 'utf8'));
   const changed = Boolean(previousHash && previousHash !== currentHash);
   const fieldDiff = diffFieldRuleSets(previousGeneratedFieldRules, fieldRulesCanonical);
   const componentSourceCount = toArray(map.component_sources).length > 0
@@ -6041,3 +6329,4 @@ export async function compileCategoryWorkbook({
     control_plane_version: controlPlaneSnapshot
   };
 }
+

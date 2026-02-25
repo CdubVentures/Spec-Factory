@@ -52,13 +52,31 @@ export function registerConfigRoutes(ctx) {
   const uiSettingsState = snapshotUiSettings(initialUserSettings?.ui || {});
 
   async function persistSettingsFile(filename, snapshot) {
-    const dir = path.join(HELPER_ROOT || 'helper_files', '_runtime');
+    const dir = path.join(helperFilesRoot, '_runtime');
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(
       path.join(dir, filename),
       JSON.stringify(snapshot, null, 2) + '\n',
       'utf8',
     );
+  }
+
+  function captureConfigValues(source, keys) {
+    const snapshot = {};
+    for (const key of keys) {
+      snapshot[key] = source[key];
+    }
+    return snapshot;
+  }
+
+  function restoreConfigValues(target, snapshot) {
+    for (const [key, value] of Object.entries(snapshot || {})) {
+      if (value === undefined) {
+        delete target[key];
+      } else {
+        target[key] = value;
+      }
+    }
   }
 
   return async function handleConfigRoutes(parts, params, method, req, res) {
@@ -151,12 +169,22 @@ export function registerConfigRoutes(ctx) {
           return jsonRes(res, 400, { error: message });
         }
       }
+      const previousStorageSnapshot = snapshotStorageSettings(runDataStorageState);
       Object.assign(runDataStorageState, normalized, { updatedAt: new Date().toISOString() });
       const storageSnapshot = snapshotStorageSettings(runDataStorageState);
-      persistUserSettingsSections({
-        helperFilesRoot,
-        storage: storageSnapshot,
-      }).catch(() => {});
+      try {
+        await persistUserSettingsSections({
+          helperFilesRoot,
+          storage: storageSnapshot,
+        });
+        await persistSettingsFile(
+          'storage-settings.json',
+          sanitizeRunDataStorageSettingsForResponse(runDataStorageState),
+        );
+      } catch {
+        Object.assign(runDataStorageState, previousStorageSnapshot);
+        return jsonRes(res, 500, { ok: false, error: 'storage_settings_persist_failed' });
+      }
       emitDataChange({
         broadcastWs,
         event: 'storage-settings-updated',
@@ -176,7 +204,6 @@ export function registerConfigRoutes(ctx) {
           destinationType: runDataStorageState.destinationType,
         },
       });
-      persistSettingsFile('storage-settings.json', sanitizeRunDataStorageSettingsForResponse(runDataStorageState)).catch(() => {});
       return jsonRes(res, 200, {
         ok: true,
         ...sanitizeRunDataStorageSettingsForResponse(storageSnapshot),
@@ -391,6 +418,7 @@ export function registerConfigRoutes(ctx) {
         'serpTriageEnabled', 'retrievalIdentityFilterEnabled'
       ]);
       const ALL_KEYS = new Set([...INT_KEYS, ...FLOAT_KEYS, ...BOOL_KEYS]);
+      const previousConvergenceValues = captureConfigValues(config, ALL_KEYS);
       const applied = {};
       const rejected = {};
       for (const [key, value] of Object.entries(body || {})) {
@@ -413,12 +441,22 @@ export function registerConfigRoutes(ctx) {
           applied[key] = b;
         }
       }
+      const convergenceSnapshot = snapshotConvergenceSettings(config);
+      try {
+        await persistSettingsFile('convergence-settings.json', convergenceSnapshot);
+        await persistUserSettingsSections({
+          helperFilesRoot,
+          convergence: convergenceSnapshot,
+        });
+      } catch {
+        restoreConfigValues(config, previousConvergenceValues);
+        return jsonRes(res, 500, { ok: false, error: 'convergence_settings_persist_failed' });
+      }
       emitDataChange({
         broadcastWs,
         event: 'convergence-settings-updated',
         meta: { applied },
       });
-      const convergenceSnapshot = snapshotConvergenceSettings(config);
       emitDataChange({
         broadcastWs,
         event: 'user-settings-updated',
@@ -428,11 +466,6 @@ export function registerConfigRoutes(ctx) {
           applied,
         },
       });
-      persistSettingsFile('convergence-settings.json', convergenceSnapshot).catch(() => {});
-      persistUserSettingsSections({
-        helperFilesRoot,
-        convergence: convergenceSnapshot,
-      }).catch(() => {});
       return jsonRes(res, 200, { ok: true, applied, ...(Object.keys(rejected).length > 0 ? { rejected } : {}) });
     }
 
@@ -459,6 +492,11 @@ export function registerConfigRoutes(ctx) {
       const INT_MAP = {
         fetchConcurrency: 'concurrency',
         perHostMinDelayMs: 'perHostMinDelayMs',
+        maxPagesPerDomain: 'maxPagesPerDomain',
+        uberMaxUrlsPerDomain: 'uberMaxUrlsPerDomain',
+        discoveryResultsPerQuery: 'discoveryResultsPerQuery',
+        discoveryMaxDiscovered: 'discoveryMaxDiscovered',
+        serpTriageMaxUrls: 'serpTriageMaxUrls',
         llmTokensPlan: 'llmMaxOutputTokensPlan',
         llmTokensTriage: 'llmMaxOutputTokensTriage',
         llmTokensFast: 'llmMaxOutputTokensFast',
@@ -579,6 +617,16 @@ export function registerConfigRoutes(ctx) {
         dynamicCrawleeEnabled: 'dynamicCrawleeEnabled',
         crawleeHeadless: 'crawleeHeadless',
       };
+      const runtimeRollbackKeys = new Set([
+        ...Object.values(STRING_ENUM_MAP).map((entry) => entry.cfgKey),
+        ...Object.values(STRING_FREE_MAP),
+        ...Object.values(INT_RANGE_MAP).map((entry) => entry.cfgKey),
+        ...Object.values(FLOAT_RANGE_MAP).map((entry) => entry.cfgKey),
+        ...Object.values(BOOL_MAP),
+        'dynamicFetchPolicyMap',
+        'dynamicFetchPolicyMapJson',
+      ]);
+      const previousRuntimeValues = captureConfigValues(config, runtimeRollbackKeys);
 
       const applied = {};
       const rejected = {};
@@ -637,12 +685,22 @@ export function registerConfigRoutes(ctx) {
         }
       }
 
+      const runtimeSnapshot = snapshotRuntimeSettings(config);
+      try {
+        await persistUserSettingsSections({
+          helperFilesRoot,
+          runtime: runtimeSnapshot,
+        });
+        await persistSettingsFile('settings.json', runtimeSnapshot);
+      } catch {
+        restoreConfigValues(config, previousRuntimeValues);
+        return jsonRes(res, 500, { ok: false, error: 'runtime_settings_persist_failed' });
+      }
       emitDataChange({
         broadcastWs,
         event: 'runtime-settings-updated',
         meta: { applied },
       });
-      const runtimeSnapshot = snapshotRuntimeSettings(config);
       emitDataChange({
         broadcastWs,
         event: 'user-settings-updated',
@@ -652,11 +710,6 @@ export function registerConfigRoutes(ctx) {
           applied,
         },
       });
-      persistUserSettingsSections({
-        helperFilesRoot,
-        runtime: runtimeSnapshot,
-      }).catch(() => {});
-      persistSettingsFile('settings.json', runtimeSnapshot).catch(() => {});
       return jsonRes(res, 200, { ok: true, applied, ...(Object.keys(rejected).length > 0 ? { rejected } : {}) });
     }
 

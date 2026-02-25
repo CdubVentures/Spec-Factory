@@ -30,14 +30,14 @@ Tracking rule: every phase must be checked off only after tests are green and ev
 - [x] Make the canonical source of truth a single `user-settings.json` model that includes category-mapping studio config and all runtime/convergence/llm/storage settings.
 - [ ] Define deterministic generation pipeline where all derived config artifacts are generated from `user-settings.json`, not vice versa.
 
-### Settings audit gap log (2026-02-24)
+### Settings audit gap log (2026-02-25)
 - [x] `Storage settings` mutations now persist and restore on restart through the settings authority write/read path.
 - [x] Runtime persistence no longer uses fallback coercion that overwrites explicit low/falsy values.
 - [x] Convergence slider fallbacks in `PipelineSettingsPage` and `RuntimePanel` now use schema-derived minima (`knob.min`) instead of hardcoded `0`.
 - [x] Runtime `dynamicFetchPolicyMapJson` is now part of the persisted runtime payload and write schema.
 - [x] Convergence knob definitions remain duplicated across `pipeline-settings` and authority modules.
 - [ ] Canonical defaults manifest is not the single initialization source for all settings surfaces.
-- [ ] Failed autosave/error outcome handling is not fully surfaced as persisted-state truth in all settings surfaces.
+- [ ] Failed autosave/error outcome handling is not fully surfaced as persisted-state truth in all settings surfaces (Studio + runtime panel + LLM status parity resolved; remaining broader cross-surface coverage still open).
 - [x] LLM route-matrix editor knobs now affect runtime extraction behavior (field-policy mapping, evidence source mode, model ladder/tokens, studio prompt flags, insufficient-evidence action).
 - [x] LLM autosave mode is now global durable state (`llmSettingsAutoSaveEnabled`) persisted via `/ui-settings` and hydrated from `user-settings.json`.
 - [x] GUI API bootstrap now initializes `config` before settings hydration (`src/api/guiServer.js`).
@@ -57,6 +57,23 @@ Tracking rule: every phase must be checked off only after tests are green and ev
 - [x] Studio map GET now deterministically selects the richer source between `user-settings` and control-plane map files, preventing legacy partial `user-settings` map payloads from masking complete category maps.
 - [x] Indexing `Run IndexLab` is now hydration-gated on runtime settings authority load, preventing pre-hydration defaults from overriding persisted runtime settings.
 - [x] Runtime panel settings controls now hard-lock until runtime settings hydrate, preventing pre-hydration edits from writing default drift.
+- [x] Deferred Studio contract knobs (`contract.unknown_token`, `contract.rounding.mode`, `contract.unknown_reason_required`) are now locked in Key Navigator + Workbench Drawer with explicit `Deferred: runtime wiring in progress` labels.
+- [x] `StoragePage` autosave/manual save are now hydration-gated; writes stay disabled until initial storage-settings hydration settles.
+- [x] `implementation/gui-persistence/llm-route-field-usage-audit.json` is now generated from source with a deterministic audit script (`scripts/generate-llm-route-field-usage-audit.js`) and regression-guarded by `test/llmRouteFieldUsageAudit.test.js`; only derived `effort_band` remains dormant by design.
+- [x] Studio save status now prioritizes `saveDraftsMut` error and unsaved-pending state before autosave idle labels, preventing false `Up to date`/`Auto-saved` indicators while edits are unsaved or save failed.
+- [x] LLM settings header now distinguishes autosave dirty state (`Unsaved (auto-save pending).`) from manual-save dirty state.
+- [x] Runtime/convergence/storage settings routes now await persistence writes before returning success, preventing out-of-order stale snapshot overwrites during rapid successive saves.
+- [x] Runtime/convergence/storage settings routes now return `500` with explicit error codes and rollback in-memory state when persistence writes fail (`runtime_settings_persist_failed`, `convergence_settings_persist_failed`, `storage_settings_persist_failed`).
+- [x] LLM settings autosave now flushes pending dirty payload on unmount, so debounce-window edits are not dropped on navigation/reload.
+- [x] Studio drafts + map autosave now flush pending dirty payload on unmount, so debounce-window edits are not dropped on navigation/reload.
+- [x] Convergence duplicate controls now have explicit cross-surface wiring coverage proving shared authority ownership + canonical knob-key propagation in both Runtime and Pipeline surfaces.
+- [x] Runtime settings hydration in `IndexingPage` now uses binding-driven key maps (string/number/boolean) instead of hand-written per-key branches, reducing selector drift risk across save/load/read paths.
+- [x] Indexing run-control/start payload fallbacks now derive from hydrated runtime authority baseline (`runtimeSettingsData`) rather than hardcoded `runtimeDefaults` once hydration is available.
+- [x] Settings endpoint ownership matrix now includes `/source-strategy`, ensuring source-strategy controls remain authority-owned and page surfaces cannot bypass persistence adapters directly.
+- [x] Runtime autosave payload serialization now uses an authority-synced numeric fallback baseline (`runtimeSettingsFallbackBaseline`) instead of direct `runtimeDefaults` numeric fallbacks after hydration.
+- [x] Runtime + storage autosave authorities now have explicit unmount-flush regression coverage, matching LLM/studio debounce-window durability guarantees.
+- [x] Storage page save-state labels now have explicit parity coverage for autosave-pending vs manual unsaved truth (`Unsaved changes queued for auto save.` vs `Unsaved changes.`).
+- [x] Runtime Ops `WorkersTab` now has explicit propagation coverage proving downstream prefetch surfaces consume runtime knobs from shared runtime authority snapshot (`liveSettings`) rather than endpoint-local reads.
 
 ### Frontend settings control audit (2026-02-24)
 - Persistence authority coverage for knobs: `tools/gui-react/src/stores/runtimeSettingsAuthority.ts`, `tools/gui-react/src/stores/convergenceSettingsAuthority.ts`, `tools/gui-react/src/stores/storageSettingsAuthority.ts`, `tools/gui-react/src/stores/llmSettingsAuthority.ts`, `tools/gui-react/src/stores/sourceStrategyAuthority.ts`, `tools/gui-react/src/stores/settingsAuthority.ts`.
@@ -79,6 +96,15 @@ Tracking rule: every phase must be checked off only after tests are green and ev
   - Source strategy table mutations are now consumed by runtime discovery via category-scoped SpecDb reads in run execution.
   - Planner/Triage runtime section is non-interactive and force-collapsed while `discoveryEnabled=false`, with a visible blocked-state reason.
   - Studio `Auto-save ALL` lock propagation is consistent across tab1/tab2/tab3 autosave controls and status labels.
+  - Deferred Studio contract knobs are non-editable across Key Navigator + Workbench Drawer until runtime wiring is complete.
+  - Endpoint ownership check is clean: settings routes (`/runtime-settings`, `/convergence-settings`, `/storage-settings`, `/ui-settings`, `/llm-settings/*`, `/source-strategy*`) are referenced from authority modules, not page components.
+  - Storage autosave/manual save paths are hydration-gated in `StoragePage`, preventing pre-hydration default writes.
+  - Studio header save status now reports `Save failed` / `Unsaved (auto-save pending)` before `Up to date`, so autosave failure/dirty truth is visible.
+  - LLM header save status now reports autosave dirty state explicitly (`Unsaved (auto-save pending).`) instead of generic dirty text.
+  - Backend settings route writes now await persistence completion (`/runtime-settings`, `/convergence-settings`, `/storage-settings`) before returning success.
+  - Indexing run-control and run-start payload fallbacks are authority-derived post-hydration, not `runtimeDefaults`-derived, preventing hardcoded runtime drift during launches.
+  - Runtime autosave payload numeric serialization fallbacks are authority-synced post-hydration, preventing invalid numeric input fallback from drifting to hardcoded defaults.
+  - Runtime Ops downstream prefetch panels consume `liveSettings` derived from runtime authority snapshot in `WorkersTab`, so runtime knob values propagate outside primary settings pages.
 
 ### Phase 3 - Single authoritative store foundation
 - [ ] Implement a single settings authority store module with: hydrate-once, subscribe/select, patch update, and reset APIs.
@@ -124,7 +150,7 @@ Tracking rule: every phase must be checked off only after tests are green and ev
   - Read/hydrate: `tools/gui-react/src/stores/runtimeSettingsAuthority.ts` + `tools/gui-react/src/components/layout/AppShell.tsx` bootstrap (no fixed `refetchInterval` polling).
   - Persist on reload: route-backed read/write exists.
   - Globality: partial; bootstrap available, with runtime run-start and runtime panel controls locked until runtime settings hydration completes.
-  - Hardcoded risk: low; local fallback/default render state still exists pre-hydration, but runtime edits/run payload emission are hydration-gated.
+  - Hardcoded risk: low; local fallback/default render state still exists pre-hydration, while post-hydration run payload fallbacks now derive from authority snapshot baseline.
 
 - Convergence settings (`/convergence-settings`)
   - Writer: `tools/gui-react/src/stores/convergenceSettingsAuthority.ts` → `useConvergenceSettingsAuthority`.
@@ -140,7 +166,7 @@ Tracking rule: every phase must be checked off only after tests are green and ev
   - Read/hydrate: authority query with AppShell bootstrap path plus page-level reads (no fixed `refetchInterval` polling).
   - Persist on reload: route-backed read/write exists.
   - Globality: now bootstrapped at app startup through AppShell.
-  - Hardcoded risk: medium; local defaults/guards can mask fresh server state until hydrate completes.
+  - Hardcoded risk: medium; local defaults render pre-hydration, but autosave/manual save are now hydration-gated.
 
 - UI autosave settings (`/ui-settings`)
   - Writer: `tools/gui-react/src/stores/settingsAuthority.ts` via `tools/gui-react/src/stores/uiSettingsAuthority.ts`.
@@ -172,12 +198,13 @@ Tracking rule: every phase must be checked off only after tests are green and ev
   - Read/hydrate: page reads dedicated studio endpoints.
   - Persist on reload: route-backed persistence exists for map/drafts.
   - Globality: partial; domain-specific and does not yet use a shared app-shell settings pipeline.
+  - Deferred knobs: `contract.unknown_token`, `contract.rounding.mode`, and `contract.unknown_reason_required` are intentionally locked in Studio UI pending runtime wiring.
   - Hardcoded risk: low.
 
-### Phase 6 follow-up status (2026-02-24)
+### Phase 6 follow-up status (2026-02-25)
 - [ ] Complete migration of all settings reads to pure authority selectors (remaining local initialization mirrors/fallbacks).
-- [ ] Replace local duplicated defaults with authority-derived defaults across all setting consumers.
-- [ ] Add explicit cross-surface propagation tests for shared settings keys.
+- [ ] Replace local duplicated defaults with authority-derived defaults across all setting consumers. *(runtime hydration branch drift reduced by binding-driven mapping; local mirror defaults still remain in `IndexingPage` state initialization)*
+- [x] Add explicit cross-surface propagation tests for shared settings keys.
 - [x] Ensure source-strategy authority is category-scoped end-to-end (UI query key, route params, and runtime consumption).
 - [x] Ensure converged settings keys marked in manifest are all wired into runtime behavior (no persistence-only dead knobs).
 
@@ -361,7 +388,7 @@ Grid and field contract:
 - `test/reviewOverrideWorkflow.test.js`
 - `test/phase1FieldRulesLoader.test.js`
 
-Audit execution snapshot (2026-02-24):
+Audit execution snapshot (2026-02-25):
 - Data authority suite: 30/30 passing.
 - Grid suite: all targeted tests passing except `test/reviewLaneContractGui.test.js`.
 - Current GUI failure: Playwright timeout waiting for visible `mouse_contract_lane_matrix_gui` option while option exists but is hidden.
@@ -380,6 +407,71 @@ Audit execution snapshot (2026-02-24):
   - `test/settingsAuthorityMatrixWiring.test.js`
   - `test/runtimeSettingsApi.test.js`
   - `test/storageSettingsRoutes.test.js`
+- Settings persistence failure + unmount flush coverage (latest local run): 8/8 passing.
+  - `test/configRoutesPersistenceFailure.test.js`
+  - `test/llmSettingsAutosaveFlushOnUnmount.test.js`
+  - `test/studioAutosaveFlushOnUnmount.test.js`
+  - `test/runtimeSettingsAutosaveFlushOnUnmount.test.js`
+  - `test/storageSettingsAutosaveFlushOnUnmount.test.js`
+- Convergence cross-surface propagation wiring coverage (latest local run): 1/1 passing.
+  - `test/convergenceCrossSurfacePropagationWiring.test.js`
+- Settings endpoint authority ownership matrix coverage (latest local run): 2/2 passing.
+  - `test/settingsEndpointAuthorityOwnershipMatrix.test.js`
+- Runtime settings hydration binding wiring coverage (latest local run): 1/1 passing.
+  - `test/runtimeSettingsHydrationBindingWiring.test.js`
+- Runtime run payload baseline wiring coverage (latest local run): 1/1 passing.
+  - `test/runtimeRunPayloadBaselineWiring.test.js`
+- Runtime autosave payload baseline wiring coverage (latest local run): 1/1 passing.
+  - `test/runtimeAutosavePayloadBaselineWiring.test.js`
+- Runtime Ops settings propagation wiring coverage (latest local run): 1/1 passing.
+  - `test/runtimeOpsSettingsPropagationWiring.test.js`
+- Full settings persistence revalidation suite (latest local run): 95/95 passing.
+  - `test/runtimeSettingsApi.test.js`
+  - `test/storageSettingsRoutes.test.js`
+  - `test/sourceStrategyCategoryScope.test.js`
+  - `test/sourceStrategyAuthorityWiring.test.js`
+  - `test/convergenceRuntimeKnobWiring.test.js`
+  - `test/dataChangeInvalidationMap.test.js`
+  - `test/uiSettingsRoutes.test.js`
+  - `test/userSettingsService.test.js`
+  - `test/runtimeSettingsAuthorityWiring.test.js`
+  - `test/convergenceSettingsAuthorityWiring.test.js`
+  - `test/llmSettingsAuthorityWiring.test.js`
+  - `test/settingsAuthorityMatrixWiring.test.js`
+  - `test/uiAutosaveAuthorityWiring.test.js`
+  - `test/studioPersistenceAuthorityWiring.test.js`
+  - `test/guiPersistenceSessionScope.test.js`
+  - `test/frontendSessionAuditCoverage.test.js`
+  - `test/storageSettingsHydrationGate.test.js`
+  - `test/studioDeferredKnobLock.test.js`
+  - `test/llmRouteFieldUsageAudit.test.js`
+  - `test/studioAutosaveStatusParity.test.js`
+  - `test/runtimePanelAutosaveStatusParity.test.js`
+  - `test/llmSettingsAutosaveStatusParity.test.js`
+  - `test/storageAutosaveStatusParity.test.js`
+  - `test/configRoutesPersistenceFailure.test.js`
+  - `test/llmSettingsAutosaveFlushOnUnmount.test.js`
+  - `test/studioAutosaveFlushOnUnmount.test.js`
+  - `test/runtimeSettingsAutosaveFlushOnUnmount.test.js`
+  - `test/storageSettingsAutosaveFlushOnUnmount.test.js`
+  - `test/convergenceCrossSurfacePropagationWiring.test.js`
+  - `test/runtimeOpsSettingsPropagationWiring.test.js`
+  - `test/settingsEndpointAuthorityOwnershipMatrix.test.js`
+  - `test/runtimeSettingsHydrationBindingWiring.test.js`
+  - `test/runtimeRunPayloadBaselineWiring.test.js`
+  - `test/runtimeAutosavePayloadBaselineWiring.test.js`
+- Studio deferred knob lock coverage (latest local run): 1/1 passing.
+  - `test/studioDeferredKnobLock.test.js`
+- Storage hydration gate coverage (latest local run): 1/1 passing.
+  - `test/storageSettingsHydrationGate.test.js`
+- Studio autosave status parity coverage (latest local run): 1/1 passing.
+  - `test/studioAutosaveStatusParity.test.js`
+- Runtime panel autosave status parity coverage (latest local run): 1/1 passing.
+  - `test/runtimePanelAutosaveStatusParity.test.js`
+- LLM settings autosave status parity coverage (latest local run): 1/1 passing.
+  - `test/llmSettingsAutosaveStatusParity.test.js`
+- Storage autosave status parity coverage (latest local run): 1/1 passing.
+  - `test/storageAutosaveStatusParity.test.js`
 - Adjacent runtime/discovery regression suites touched by these changes: 62/62 passing.
   - `test/convergenceLoop.test.js`
   - `test/phase07PrimeSourcesBuilder.test.js`
