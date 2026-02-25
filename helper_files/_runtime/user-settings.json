@@ -4,15 +4,15 @@
   "convergence": {},
   "storage": {
     "enabled": true,
-    "destinationType": "local",
-    "localDirectory": "C:\\Users\\Chris\\AppData\\Local\\Temp\\spec-factory-storage-local-create-lCONaG\\new-run-storage-root",
+    "destinationType": "s3",
+    "localDirectory": "",
     "s3Region": "us-east-2",
-    "s3Bucket": "",
+    "s3Bucket": "my-spec-harvester-data",
     "s3Prefix": "spec-factory-runs",
-    "s3AccessKeyId": "",
-    "s3SecretAccessKey": "",
+    "s3AccessKeyId": "AKIA_TEST",
+    "s3SecretAccessKey": "secret",
     "s3SessionToken": "",
-    "updatedAt": "2026-02-25T21:10:47.123Z"
+    "updatedAt": "2026-02-25T21:25:41.403Z"
   },
   "studio": {
     "mouse": {
@@ -31,7 +31,7 @@
         ]
       },
       "file_path": "",
-      "updated_at": "2026-02-25T21:10:47.225Z"
+      "updated_at": "2026-02-25T21:25:41.390Z"
     }
   },
   "ui": {

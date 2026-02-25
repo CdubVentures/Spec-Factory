@@ -141,6 +141,38 @@ function buildRequestedRunId(date = new Date()) {
   return `${stamp}-${randomHex(3)}`;
 }
 
+interface RuntimeSettingsNumericBaseline {
+  fetchConcurrency: number;
+  perHostMinDelayMs: number;
+  crawleeRequestHandlerTimeoutSecs: number;
+  dynamicFetchRetryBudget: number;
+  dynamicFetchRetryBackoffMs: number;
+  scannedPdfOcrMaxPages: number;
+  scannedPdfOcrMaxPairs: number;
+  scannedPdfOcrMinCharsPerPage: number;
+  scannedPdfOcrMinLinesPerPage: number;
+  scannedPdfOcrMinConfidence: number;
+  resumeWindowHours: number;
+  reextractAfterHours: number;
+}
+
+function runtimeSettingsBaselineEqual(a: RuntimeSettingsNumericBaseline, b: RuntimeSettingsNumericBaseline) {
+  return (
+    a.fetchConcurrency === b.fetchConcurrency
+    && a.perHostMinDelayMs === b.perHostMinDelayMs
+    && a.crawleeRequestHandlerTimeoutSecs === b.crawleeRequestHandlerTimeoutSecs
+    && a.dynamicFetchRetryBudget === b.dynamicFetchRetryBudget
+    && a.dynamicFetchRetryBackoffMs === b.dynamicFetchRetryBackoffMs
+    && a.scannedPdfOcrMaxPages === b.scannedPdfOcrMaxPages
+    && a.scannedPdfOcrMaxPairs === b.scannedPdfOcrMaxPairs
+    && a.scannedPdfOcrMinCharsPerPage === b.scannedPdfOcrMinCharsPerPage
+    && a.scannedPdfOcrMinLinesPerPage === b.scannedPdfOcrMinLinesPerPage
+    && a.scannedPdfOcrMinConfidence === b.scannedPdfOcrMinConfidence
+    && a.resumeWindowHours === b.resumeWindowHours
+    && a.reextractAfterHours === b.reextractAfterHours
+  );
+}
+
 export function IndexingPage() {
   const category = useUiStore((s) => s.category);
   const runtimeAutoSaveEnabled = useUiStore((s) => s.runtimeAutoSaveEnabled);

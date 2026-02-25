@@ -106,14 +106,14 @@ test('studio numeric knob parsing uses shared bounded helpers and preserves low/
   );
 
   assert.equal(
-    studioPageText.includes("'component.match.fuzzy_threshold',\n                              parseBoundedFloatInput(")
+    /['"]component\.match\.fuzzy_threshold['"],\s*parseBoundedFloatInput\(/s.test(studioPageText)
       && studioPageText.includes('STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min')
       && studioPageText.includes('STUDIO_COMPONENT_MATCH_DEFAULTS.fuzzyThreshold'),
     true,
     'StudioPage component-match knobs should use bounded float parsing so 0 is preserved',
   );
   assert.equal(
-    workbenchDrawerText.includes("'component.match.fuzzy_threshold',\n                      parseBoundedFloatInput(")
+    /['"]component\.match\.fuzzy_threshold['"],\s*parseBoundedFloatInput\(/s.test(workbenchDrawerText)
       && workbenchDrawerText.includes('STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min')
       && workbenchDrawerText.includes('STUDIO_COMPONENT_MATCH_DEFAULTS.fuzzyThreshold'),
     true,

@@ -49,6 +49,12 @@ function toOptionalPositiveInt(value: unknown): number | undefined {
   return parsed;
 }
 
+function toOptionalPositiveInt(value: unknown): number | undefined {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
+  return parsed;
+}
+
 function toOptionalBoolean(value: unknown): boolean | undefined {
   if (typeof value === 'boolean') return value;
   return undefined;

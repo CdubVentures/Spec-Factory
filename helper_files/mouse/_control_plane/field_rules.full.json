@@ -60,7 +60,7 @@
         "non_blank_names": 40,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
-        "scanned_rows": 0,
+        "scanned_rows": 46,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
@@ -141,7 +141,7 @@
         "non_blank_names": 3,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
-        "scanned_rows": 0,
+        "scanned_rows": 13,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
@@ -405,7 +405,7 @@
         "non_blank_names": 106,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
-        "scanned_rows": 0,
+        "scanned_rows": 114,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },

@@ -96,7 +96,7 @@ test('runtime llm token fallback wiring derives defaults from authority/bootstra
     'Token default resolution should use shared token-cap parser',
   );
   assert.equal(
-    text.includes('Math.max(\n    LLM_MIN_OUTPUT_TOKENS,\n    Math.min(LLM_MAX_OUTPUT_TOKENS, parsed),\n  )'),
+    /Math\.max\(\s*LLM_MIN_OUTPUT_TOKENS,\s*Math\.min\(LLM_MAX_OUTPUT_TOKENS,\s*parsed\),\s*\)/s.test(text),
     true,
     'Shared token-cap parser should enforce min/max bounds using shared limits',
   );
