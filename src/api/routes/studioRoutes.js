@@ -668,14 +668,9 @@ export function registerStudioRoutes(ctx) {
           }
         }
         const result = await saveFieldStudioMap({ category, fieldStudioMap: normalizedFieldStudioMap, config });
-        const currentSettings = await loadUserSettings({ helperFilesRoot });
-        const existingStudio = currentSettings && typeof currentSettings.studio === 'object' && !Array.isArray(currentSettings.studio)
-          ? currentSettings.studio
-          : {};
         await persistUserSettingsSections({
           helperFilesRoot,
-          studio: {
-            ...existingStudio,
+          studioPatch: {
             [category]: {
               file_path: typeof result.file_path === 'string' ? result.file_path : '',
               map: result.field_studio_map && typeof result.field_studio_map === 'object'

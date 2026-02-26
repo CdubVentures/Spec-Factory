@@ -28,13 +28,14 @@ Tracking rule: every phase must be checked off only after tests are green and ev
 - [x] Define update contract: single write API, autosave debounce rules, optimistic update behavior, rollback behavior. *(autosave debounce/status timing contract remains centralized in `tools/gui-react/src/stores/settingsManifest.ts`; optimistic update + rollback semantics are now centralized in `tools/gui-react/src/stores/settingsMutationContract.ts` and consumed by runtime/convergence/storage/ui/llm/source-strategy authorities.)*
 - [x] Define propagation contract for cross-surface updates (same-tab, cross-tab, websocket/event invalidation where needed). *(same-tab propagation remains authority/query-cache + invalidation based; cross-tab settings propagation is now explicit through `tools/gui-react/src/stores/settingsPropagationContract.ts` storage-event bus; bootstrap subscribers in `settingsAuthority.ts` route domain events to scoped reload/invalidation.)*
 - [x] Make the canonical source of truth a single `user-settings.json` model that includes category-mapping studio config and all runtime/convergence/llm/storage settings.
-- [ ] Define deterministic generation pipeline where all derived config artifacts are generated from `user-settings.json`, not vice versa.
+- [x] Define deterministic generation pipeline where all derived config artifacts are generated from `user-settings.json`, not vice versa. *(implemented via `deriveSettingsArtifactsFromUserSettings` + `persistCanonicalSections`; config route writes now persist canonical sections first, then derive/apply runtime/convergence/storage/ui artifacts from the persisted `user-settings.json` snapshot.)*
 
 ### Settings audit gap log (2026-02-25)
 - [x] `Storage settings` mutations now persist and restore on restart through the settings authority write/read path.
 - [x] Runtime persistence no longer uses fallback coercion that overwrites explicit low/falsy values.
 - [x] Convergence slider + toggle fallbacks in `PipelineSettingsPage` and `RuntimePanel` now use canonical defaults (`CONVERGENCE_SETTING_DEFAULTS`) instead of schema minima/implicit false coercion.
 - [x] Runtime `dynamicFetchPolicyMapJson` is now part of the persisted runtime payload and write schema.
+- [x] Runtime/convergence/storage/ui route writes now use a canonical-first persistence pipeline (`persistCanonicalSections`) that re-derives in-memory config/state from persisted `user-settings.json` via `deriveSettingsArtifactsFromUserSettings`, eliminating route-local dual-write drift.
 - [x] Canonical backend settings contract is now centralized in `src/api/services/settingsContract.js` (schema version, migration rules, canonical key sets, UI defaults, precedence contract).
 - [x] Runtime + convergence route validation contracts are now centralized in `src/api/services/settingsContract.js` and consumed by `src/api/routes/configRoutes.js` (no duplicate route-local knob-map literals).
 - [x] `user-settings` runtime/convergence trust boundaries now apply canonical typed sanitization (`RUNTIME_SETTINGS_VALUE_TYPES`, `CONVERGENCE_SETTINGS_VALUE_TYPES`) before merge/apply, preventing non-coercible stale types from mutating live config.
@@ -62,9 +63,11 @@ Tracking rule: every phase must be checked off only after tests are green and ev
 - [x] `IndexingPage` runtime LLM token preset/profile/default parsing now normalizes via a shared limit-aware parser (`parseRuntimeLlmTokenCap`) using manifest min/max (`LLM_SETTING_LIMITS.maxTokens.{min,max}`), preventing out-of-contract token caps from drifting UI/runtime clamp behavior.
 - [x] `RuntimePanel` LLM token-select handlers now pass parsed values directly into shared `clampTokenForModel` (no local `|| llmTokens*` fallback), so invalid selection fallback behavior is owned by the shared clamp/default contract; regression-covered in `test/runtimeLlmTokenFallbackWiring.test.js`.
 - [x] `LlmSettingsPage` slider handlers now pass parsed values directly into shared `clampToRange` (no local `|| ...min` fallback branches), clamp fallback for non-finite values is centralized in `clampToRange` (`safeValue`), and effort-band fallback no longer uses hardcoded `3` (`toEffortBand` now uses bounds-driven fallback); regression-covered in `test/llmSettingsRangeClampWiring.test.js`.
+- [x] `LlmSettingsPage` route-preset min-evidence fallback now derives from shared bounds (`MIN_EVIDENCE_BOUNDS.min/max`) instead of hardcoded `1/0` literals, preserving explicit `0` semantics and preventing preset fallback drift; regression-covered in `test/llmSettingsRangeClampWiring.test.js`.
 - [x] Studio + Workbench numeric knob handlers now use shared bounded parse helpers (`numericInputHelpers`) and shared bounds/defaults contract (`studioNumericKnobBounds`) instead of local `parseInt/parseFloat ... ||` fallbacks or duplicated literals; `WorkbenchBulkBar` evidence-ref bulk writes now use the same bounded helper/contract; Studio map normalization (`normalizePriorityProfile`, `normalizeAiAssistConfig`) now clamps through shared bounds contract; min-evidence fallback reads in Key Navigator + Workbench (including Workbench row projection) now use shared `evidenceMinRefs.fallback` (no local `... || 1` literals); `component.match.*` controls preserve explicit `0` values and nullable AI knobs keep deterministic null-vs-bounded semantics; regression-covered in `test/studioNumericInputClampWiring.test.js`.
 - [x] LLM settings save-status flow no longer clears `error`/`partial` state to `idle` on dirty edits; failed persistence truth remains visible ahead of generic unsaved labels.
 - [x] Storage and Source Strategy save-status flows now preserve persistence outcome truth on local edits (no edit-triggered state wipe), with explicit saving/error/unsaved precedence in UI labels.
+- [x] Runtime panel runtime/convergence save-status labels now use explicit clean-state text (`all changes saved.`) instead of blank idle state, and runtime saving label no longer uses non-ASCII ellipsis text that could render as mojibake.
 - [x] Failed autosave/error outcome handling is now surfaced as persisted-state truth across settings surfaces, including global `/ui-settings` autosave-toggle persistence (`uiSettingsPersistState` + `uiSettingsPersistMessage`) with AppShell saving/error banners.
 - [x] LLM route-matrix editor knobs now affect runtime extraction behavior (field-policy mapping, evidence source mode, model ladder/tokens, studio prompt flags, insufficient-evidence action).
 - [x] LLM autosave mode is now global durable state (`llmSettingsAutoSaveEnabled`) persisted via `/ui-settings` and hydrated from `user-settings.json`.
@@ -75,14 +78,17 @@ Tracking rule: every phase must be checked off only after tests are green and ev
 - [x] Global autosave-mode toggles (studio all/contract/map, runtime, storage) now persist through `/ui-settings` into `user-settings.json` and hydrate on app bootstrap.
 - [x] Field Rules Studio `Auto-save ALL` now hard-locks Mapping Studio (tab1), Key Navigator (tab2), and Field Contract (tab3) autosave toggles to ON with explicit locked-state labels.
 - [x] Studio nested writers under Key Navigator and Field Contract now respect autosave ownership (autosave-gated save path) and no longer bypass autosave mode with unconditional save commits.
+- [x] Studio map persistence now uses queued in-service `studioPatch` merges in `persistUserSettingsSections`, so category map saves no longer depend on caller-side stale read/merge and concurrent category saves cannot clobber each other (regression-covered in `test/settingsPersistenceTelemetry.test.js` and `test/studioRoutesPropagation.test.js`).
 - [x] `Storage settings` now persist from `StoragePage` through `useStorageSettingsAuthority` and are restored via the settings authority write/read pipeline.
 - [x] `WorkersTab` no longer reads `/runtime-settings` directly (`useQuery`) and now consumes runtime settings via authority hook/snapshot.
+- [x] `WorkersTab` runtime-settings consumption now uses a dedicated reader authority hook (`useRuntimeSettingsReader`) instead of invoking write-authority in placeholder read-only mode (`payload: {}`, `dirty: false`, `autoSaveEnabled: false`), reducing component-level ad-hoc settings initialization and separating read/write contracts.
+- [x] Settings bootstrap hydration now reads runtime/convergence/storage/source-strategy/llm snapshots through dedicated reader hooks (`useRuntimeSettingsReader`, `useConvergenceSettingsReader`, `useStorageSettingsReader`, `useSourceStrategyReader`, `useLlmSettingsReader`) instead of instantiating write-authority hooks in disabled pseudo-read mode, reducing read/write coupling and expansion risk in authority bootstrap orchestration.
+- [x] Settings bootstrap readiness checks now read source-strategy/llm snapshots through authority-owned reader helpers (`readSourceStrategySnapshot`, `readLlmSettingsSnapshot`) and no longer keep dead bootstrap fallback payload constants, reducing stale selector/key drift in global settings readiness state.
+- [x] Settings bootstrap source-strategy propagation invalidation now uses shared query-key helper (`sourceStrategyQueryKey`) instead of route-local literal query-key arrays, reducing stale invalidation-key drift risk.
 - [x] Canonical settings model now includes category-studio mapping as a first-class persisted key in `user-settings.json`.
 - [x] Runtime planner/triage UI now hard-locks closed when discovery is disabled and shows an explicit red blocked reason badge.
 - [x] Field Rules Studio now recovers from stale session UI state by auto-selecting the first valid key, clearing invalid group filters, and seeding mapping from map payload shape (not only `version`).
 - [x] Studio map read path now ignores missing/empty `user-settings` studio entries so canonical field-studio maps load instead of blank map payloads.
-- [x] Review grid layout/source metadata now emits canonical field-studio naming (no `excel` layout block, fallback source token now `reference`, method token `contract_import`). *(validated by `test/reviewGridData.test.js`, `test/reviewLaneContractApi.test.js`, `test/reviewLaneContractGui.test.js`, `test/studioRoutesPropagation.test.js`, and `test/reviewCli.test.js`.)*
-- [x] Compiler dry-run/source bootstrap now prefers canonical map source key `field_studio_source_path` (with legacy `workbook_path` fallback only for compatibility).
 - [x] Autosave for runtime/storage/llm/studio now tracks last attempted payload fingerprints so unchanged failed payloads do not retry-loop; manual save paths can still force retry.
 - [x] Settings authority reads for runtime/storage/convergence/ui no longer use fixed query polling intervals; hydration/refresh uses bootstrap reload plus invalidation.
 - [x] Studio map GET now deterministically selects the richer source between `user-settings` and control-plane map files, preventing legacy partial `user-settings` map payloads from masking complete category maps.
@@ -103,6 +109,7 @@ Tracking rule: every phase must be checked off only after tests are green and ev
 - [x] Indexing run-control/start payload fallbacks now derive from hydrated runtime authority baseline (`runtimeSettingsData`) rather than hardcoded `runtimeDefaults` once hydration is available.
 - [x] Settings endpoint ownership matrix now includes `/source-strategy`, ensuring source-strategy controls remain authority-owned and page surfaces cannot bypass persistence adapters directly.
 - [x] Runtime autosave payload serialization now uses an authority-synced numeric fallback baseline (`runtimeSettingsFallbackBaseline`) instead of direct `runtimeDefaults` numeric fallbacks after hydration.
+- [x] Runtime numeric fallback-baseline derivation/equality now lives in runtime authority helpers (`readRuntimeSettingsNumericBaseline`, `runtimeSettingsNumericBaselineEqual`) instead of duplicated `IndexingPage` per-key baseline branches, reducing component-local mirror drift.
 - [x] Runtime + storage autosave authorities now have explicit unmount-flush regression coverage, matching LLM/studio debounce-window durability guarantees.
 - [x] Storage page save-state labels now have explicit parity coverage for autosave-pending vs manual unsaved truth (`Unsaved changes queued for auto save.` vs `Unsaved changes.`).
 - [x] Runtime Ops `WorkersTab` now has explicit propagation coverage proving downstream prefetch surfaces consume runtime knobs from shared runtime authority snapshot (`liveSettings`) rather than endpoint-local reads.
@@ -145,9 +152,6 @@ Tracking rule: every phase must be checked off only after tests are green and ev
 - [x] Strict settings/autosave matrix revalidation (latest local run): 161/161 passing.
 - [x] Focused settings route/contract/persistence suites revalidated after canonical-only migration updates: 32/32 passing.
 - [x] Mouse tab3 parity now has explicit regression coverage (`test/mouseTab3GeneratedParity.test.js`) asserting selected keys, field overrides, and component-property keys resolve into generated field rules (with key migrations).
-- [x] Compiler now emits canonical `field_studio_hints` only (no legacy `excel_hints` output), and review hint extraction reads canonical field-studio hints only (no `rule.excel*` fallback reads) (`test/fieldStudioHintsCanonicalWiring.test.js`).
-- [x] Runtime compile/review no-excel trace gate now blocks `excel_hints`/`rule.excel*` contract drift and enforces thin legacy shim re-export shape for `excelSeed`/`excelCategorySync` (`test/noLegacyRuntimeTraceGate.test.js`).
-- [x] Full compile/generated/test-compiler audit rerun evidence captured (`implementation/field-rules-studio/audits/2026-02-25-full-compile-generated-test-compiler-audit.md`): compile/validate/dry-run/rules-diff stable for `mouse/keyboard/monitor`; compiler + contract-driven suites green (`63/63` and `220/220`) with canonical hint/trace guard regressions green (`10/10`).
 - [x] Mouse key authority matrix + tab3 coverage artifacts refreshed with current key migration state (`implementation/field-rules-studio/audits/2026-02-25-mouse-key-authority-matrix.csv`, `implementation/field-rules-studio/audits/2026-02-25-mouse-key-authority-matrix-summary.json`, `implementation/field-rules-studio/audits/2026-02-25-mouse-tab3-coverage-refresh.json`).
 
 ### Frontend settings control audit (2026-02-24)
@@ -188,11 +192,11 @@ Tracking rule: every phase must be checked off only after tests are green and ev
 - [x] Add persistence adapters for backend + local cache with schema validation at trust boundaries. *(`userSettingsService` now validates canonical snapshot envelope with AJV via `validateUserSettingsSnapshot` before `user-settings.json` writes; runtime/convergence typed sanitizers enforce trust boundaries on load/merge/apply.)*
 - [x] Add migration/version handling for stored settings so old payloads are upgraded deterministically. *(`readUserSettingsDocumentMeta` + `migrateUserSettingsDocument` now provide deterministic schema-version upgrade path; stale schema versions emit migration telemetry.)*
 - [x] Add telemetry/log hooks for setting-write success/failure and stale-read detection. *(`settingsPersistenceCounters` now records route-level + file-level write outcomes and stale-read/migration detections; exposed in data authority observability snapshots.)*
-- [ ] Add a generator-safe contract: every writer writes the canonical settings model, and every generated file derives from this model.
+- [x] Add a generator-safe contract: every writer writes the canonical settings model, and every generated file derives from this model. *(canonical-first route persistence is now regression-guarded by `test/settingsCanonicalGenerationContractWiring.test.js`, plus runtime canonical write durability remains covered by `test/runtimeSettingsApi.test.js` and `test/settingsCanonicalOnlyWrites.test.js`.)*
 
 ### Phase 4 - Bootstrap and load path unification
 - [x] Route app startup through one hydration pipeline that resolves settings once and publishes globally (runtime + convergence + storage + source-strategy + active-category llm). *(implemented via `runSettingsStartupHydrationPipeline` + `runCategoryScopedSettingsHydrationPipeline` in `tools/gui-react/src/stores/settingsAuthority.ts` with pipeline-owned reload calls and global snapshot publication.)*
-- [ ] Remove per-component ad hoc initialization that bypasses the authority store.
+- [x] Remove per-component ad hoc initialization that bypasses the authority store. *(unused `RuntimeSettingsFlowCard` bootstrap path was removed from `pipeline-settings`; regression-guarded by `test/settingsAdHocInitializationWiring.test.js` to prevent reintroduction of local runtime bootstrap wiring outside authority-owned surfaces.)*
 - [x] Ensure first paint and post-hydration behavior are deterministic (no hardcoded fallback drift). *(settings readiness selector `isSettingsAuthoritySnapshotReady` now gates first content paint in `AppShell`; delayed hydration falls back to explicit degraded-mode banner instead of silent fallback-state rendering.)*
 - [x] Validate reload behavior: changes survive restart and load into all consumers immediately. *(full GUI reload/persistence matrix rerun on 2026-02-25 passed `7/7`: studio autosave, storage, llm routes, runtime->runtime-ops propagation, convergence runtime panel, source strategy, and convergence cross-surface sync.)*
 
@@ -203,16 +207,16 @@ Tracking rule: every phase must be checked off only after tests are green and ev
 - [x] Add tests for every writer path proving persisted value is present after reload. *(covered by GUI persistence tests: studio/ui autosave, runtime, convergence, storage, llm, and source-strategy.)*
 
 ### Phase 6 - Migrate all settings readers/consumers
-- [ ] Replace component-local mirrors and hardcoded constants with store selectors.
+- [x] Replace component-local mirrors and hardcoded constants with store selectors. *(`IndexingPage`, `StoragePage`, and `LlmSettingsPage` bootstrap reads now use authority-owned selector hooks `useRuntimeSettingsBootstrap`, `useStorageSettingsBootstrap`, and `useLlmSettingsBootstrapRows` instead of page-local query-client bootstrap reads; wiring is regression-guarded by `test/runtimeSettingsInitialBootstrapWiring.test.js`, `test/storageSettingsInitialBootstrapWiring.test.js`, and `test/llmSettingsInitialBootstrapWiring.test.js`.)*
 - [x] Ensure all duplicated setting surfaces subscribe to the same key and stay in sync live. *(convergence cross-surface GUI parity + runtime ops shared runtime snapshot propagation coverage.)*
 - [x] Validate non-UI consumers (api payload builders, backend-triggered flows, derived displays) consume authority values. *(runtime key coverage matrix + convergence runtime wiring + runtime ops propagation wiring.)*
-- [ ] Remove stale selector logic and dead fallback branches once parity is proven.
+- [x] Remove stale selector logic and dead fallback branches once parity is proven. *(convergence knob render/update fallback branches are now centralized in shared authority helpers `readConvergenceKnobValue` + `parseConvergenceNumericInput`, with cross-surface wiring/default-contract parity guarded by `test/convergenceCrossSurfacePropagationWiring.test.js` and `test/convergenceDefaultsManifestWiring.test.js`.)*
 
 ### Phase 7 - Hardcoded behavior elimination audit
-- [ ] Audit for hardcoded setting-dependent behavior and replace with derived authority values.
-- [ ] Audit conditional UI logic to ensure it reacts to live settings updates without refresh hacks.
-- [ ] Audit save success states to ensure UI reflects actual persistence result, not assumed success.
-- [ ] Document and remove obsolete constants that conflict with authority contract.
+- [x] Audit for hardcoded setting-dependent behavior and replace with derived authority values. *(runtime/storage enum knobs now derive from shared option contract `SETTINGS_OPTION_VALUES` in `src/shared/settingsDefaults.js`; frontend `settingsManifest` + `RuntimePanel` + `StoragePage` render mapped authority-owned option arrays instead of hardcoded literals; backend runtime enum validation in `src/api/services/settingsContract.js` reads the same shared option contract; regression-covered by `test/runtimeOptionContractWiring.test.js`.)*
+- [x] Audit conditional UI logic to ensure it reacts to live settings updates without refresh hacks. *(live settings reactivity is now regression-guarded by `test/settingsLiveUpdateReactivityWiring.test.js`, asserting propagation-based invalidation/reload and authority-snapshot gating across AppShell/Indexing/Pipeline/Storage/LLM pages with no `window.location.reload` refresh hacks.)*
+- [x] Audit save success states to ensure UI reflects actual persistence result, not assumed success. *(settings save-status truth matrix now enforces persistence-outcome-first precedence across storage/llm/runtime/convergence/studio surfaces via `test/settingsSaveStatusTruthMatrixWiring.test.js`; runtime/convergence panel clean-state labels are explicit and persisted-outcome branches remain precedence-guarded.)*
+- [x] Document and remove obsolete constants that conflict with authority contract. *(removed page-local runtime/storage option literal sources and local union aliases in favor of shared manifest option types/constants (`RuntimeProfile`, `RuntimeSearchProvider`, `RuntimeResumeMode`, `RuntimeOcrBackend`, `StorageDestinationOption`); shared JS/TS contract now documented via `src/shared/settingsDefaults.{js,d.ts}` and consumed across frontend/backend settings paths.)*
 
 ### Phase 8 - End-to-end validation matrix
 - [x] Build a settings persistence matrix: setting key x writer surface x reload x duplicate surface sync x backend reflection.
@@ -308,7 +312,6 @@ Tracks dated completion evidence for Phase 6 without duplicating phase numbering
 - `component-slot-fill-rules.md`
 - `flag-rules.md`
 - `test-mode-data-coverage.md`
-- `component-identity-pools-10-tabs.xlsx` (seed pool input)
 
 `implementation/field-rules-studio/contracts/`
 - `component-system-architecture.md`
@@ -320,8 +323,6 @@ Tracks dated completion evidence for Phase 6 without duplicating phase numbering
 - `test-contract-map.md`
 
 `implementation/field-rules-studio/audits/`
-- `2026-02-25-full-compile-generated-test-compiler-audit.md`
-- `2026-02-25-full-audit-refresh.md`
 
 ### Runtime modules
 

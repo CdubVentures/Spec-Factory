@@ -113,3 +113,15 @@ export const SETTINGS_DEFAULTS = Object.freeze({
     }),
   }),
 });
+
+export const SETTINGS_OPTION_VALUES = Object.freeze({
+  runtime: Object.freeze({
+    profile: Object.freeze(['fast', 'standard', 'thorough']),
+    searchProvider: Object.freeze(['none', 'google', 'bing', 'searxng', 'duckduckgo', 'dual']),
+    resumeMode: Object.freeze(['auto', 'force_resume', 'start_over']),
+    scannedPdfOcrBackend: Object.freeze(['auto', 'tesseract', 'none']),
+  }),
+  storage: Object.freeze({
+    destinationType: Object.freeze(['local', 's3']),
+  }),
+});

@@ -2,7 +2,11 @@ import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { create } from 'zustand';
 import { api } from '../api/client';
-import { CONVERGENCE_SETTING_DEFAULTS } from './settingsManifest';
+import {
+  CONVERGENCE_SETTING_DEFAULTS,
+  type ConvergenceKnob,
+  type ConvergenceNumericKnob,
+} from './settingsManifest';
 import { createSettingsOptimisticMutationContract } from './settingsMutationContract';
 import { publishSettingsPropagation } from './settingsPropagationContract';
 export { CONVERGENCE_KNOB_GROUPS, CONVERGENCE_SETTING_DEFAULTS } from './settingsManifest';
@@ -28,6 +32,16 @@ interface ConvergenceSettingsAuthorityOptions {
   onError?: (error: Error | unknown) => void;
 }
 
+interface ConvergenceSettingsReaderOptions {
+  enabled?: boolean;
+}
+
+interface ConvergenceSettingsReaderResult {
+  settings: ConvergenceSettings | undefined;
+  isLoading: boolean;
+  reload: () => Promise<ConvergenceSettings | undefined>;
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
@@ -47,6 +61,37 @@ function normalizeConvergenceSettings(source: unknown): ConvergenceSettings {
   return normalized;
 }
 
+function readConvergenceDefault(knob: ConvergenceKnob): number | boolean {
+  const fallback = CONVERGENCE_SETTING_DEFAULTS[knob.key as keyof typeof CONVERGENCE_SETTING_DEFAULTS];
+  if (knob.type === 'bool') {
+    return typeof fallback === 'boolean' ? fallback : false;
+  }
+  return typeof fallback === 'number' ? fallback : knob.min;
+}
+
+export function readConvergenceKnobValue(
+  settings: ConvergenceSettings | undefined,
+  knob: ConvergenceKnob,
+): number | boolean {
+  const value = settings?.[knob.key];
+  if (knob.type === 'bool') {
+    return typeof value === 'boolean' ? value : readConvergenceDefault(knob);
+  }
+  return typeof value === 'number' && Number.isFinite(value) ? value : readConvergenceDefault(knob);
+}
+
+export function parseConvergenceNumericInput(
+  knob: ConvergenceNumericKnob,
+  rawValue: string,
+  fallbackValue: number,
+): number {
+  const parsed = knob.type === 'float'
+    ? Number.parseFloat(rawValue)
+    : Number.parseInt(rawValue, 10);
+  if (Number.isFinite(parsed)) return parsed;
+  return Number.isFinite(fallbackValue) ? fallbackValue : knob.min;
+}
+
 const useConvergenceSettingsStore = create<ConvergenceSettingsState>((set) => ({
   settings: { ...CONVERGENCE_SETTING_DEFAULTS },
   dirty: false,
@@ -62,6 +107,31 @@ export function readConvergenceSettingsSnapshot(queryClient: QueryClient): Conve
   const cached = queryClient.getQueryData<unknown>(['convergence-settings']);
   if (!isObject(cached)) return undefined;
   return normalizeConvergenceSettings(cached);
+}
+
+export function useConvergenceSettingsReader({
+  enabled = true,
+}: ConvergenceSettingsReaderOptions = {}): ConvergenceSettingsReaderResult {
+  const queryClient = useQueryClient();
+  const { data: settings, isLoading, refetch } = useQuery({
+    queryKey: ['convergence-settings'],
+    queryFn: () => api.get<ConvergenceSettings>('/convergence-settings'),
+    enabled,
+  });
+
+  async function reload() {
+    const result = await refetch();
+    if (!result.data) return undefined;
+    const normalized = normalizeConvergenceSettings(result.data);
+    queryClient.setQueryData(['convergence-settings'], normalized);
+    return normalized;
+  }
+
+  return {
+    settings,
+    isLoading,
+    reload,
+  };
 }
 
 export function useConvergenceSettingsAuthority({

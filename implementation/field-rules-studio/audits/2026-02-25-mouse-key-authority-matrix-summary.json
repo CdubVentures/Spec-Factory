@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-02-25T10:23:43.864Z",
+  "total_keys": 83,
+  "ok_keys": 81,
+  "gap_keys": 2,
+  "issue_counts": {
+    "selected_key_missing_in_generated": 0,
+    "override_key_missing_in_generated": 0,
+    "component_property_key_missing_generated_field_contract": 0,
+    "data_list_missing_known_values_bucket": 2,
+    "generated_extra_not_selected": 0
+  },
+  "selected_key_count": 75,
+  "generated_field_count": 80,
+  "ui_catalog_count": 80,
+  "parse_template_count": 80,
+  "known_values_bucket_count": 14,
+  "notes": [
+    "data_list_missing_known_values_bucket currently includes scratch-list keys that are not generated field contract keys by design."
+  ]
+}

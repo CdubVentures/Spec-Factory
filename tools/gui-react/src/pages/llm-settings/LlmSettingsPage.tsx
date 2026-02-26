@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { usePersistedTab } from '../../stores/tabStore';
 import { useUiStore } from '../../stores/uiStore';
-import { useLlmSettingsAuthority, readLlmSettingsBootstrapRows } from '../../stores/llmSettingsAuthority';
+import { useLlmSettingsAuthority, useLlmSettingsBootstrapRows } from '../../stores/llmSettingsAuthority';
 import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore';
 import { Spinner } from '../../components/common/Spinner';
 import type { LlmRouteRow, LlmScope } from '../../types/llmSettings';
@@ -191,7 +190,11 @@ function applyRoutePreset(row: LlmRouteRow, preset: 'fast' | 'balanced' | 'deep'
       all_sources_confidence_repatch: presetConfig.allSourcesConfidenceRepatch,
       model_ladder_today: presetConfig.modelLadderToday,
       max_tokens: clampToRange(row.max_tokens, presetConfig.maxTokensMin, presetConfig.maxTokensMax),
-      llm_output_min_evidence_refs_required: presetConfig.minEvidenceRefsRequired ?? 1,
+      llm_output_min_evidence_refs_required: clampToRange(
+        presetConfig.minEvidenceRefsRequired ?? MIN_EVIDENCE_BOUNDS.min,
+        MIN_EVIDENCE_BOUNDS.min,
+        MIN_EVIDENCE_BOUNDS.max,
+      ),
     };
   }
   if (preset === 'balanced') {
@@ -213,9 +216,13 @@ function applyRoutePreset(row: LlmRouteRow, preset: 'fast' | 'balanced' | 'deep'
     all_sources_confidence_repatch: presetConfig.allSourcesConfidenceRepatch,
     model_ladder_today: row.model_ladder_today || presetConfig.modelLadderToday,
     max_tokens: clampToRange(row.max_tokens, presetConfig.maxTokensMin, presetConfig.maxTokensMax),
-    llm_output_min_evidence_refs_required: Math.max(
-      presetConfig.minEvidenceRefsRequired || 0,
-      row.llm_output_min_evidence_refs_required || 0,
+    llm_output_min_evidence_refs_required: clampToRange(
+      Math.max(
+        presetConfig.minEvidenceRefsRequired ?? MIN_EVIDENCE_BOUNDS.min,
+        row.llm_output_min_evidence_refs_required ?? MIN_EVIDENCE_BOUNDS.min,
+      ),
+      MIN_EVIDENCE_BOUNDS.min,
+      MIN_EVIDENCE_BOUNDS.max,
     ),
   };
 }
@@ -257,16 +264,12 @@ function tagCls(kind: 'required' | 'difficulty' | 'availability' | 'effort', val
 }
 
 export function LlmSettingsPage() {
-  const queryClient = useQueryClient();
   const category = useUiStore((s) => s.category);
   const autoSaveEnabled = useUiStore((s) => s.llmSettingsAutoSaveEnabled);
   const setAutoSaveEnabled = useUiStore((s) => s.setLlmSettingsAutoSaveEnabled);
   const isAll = category === 'all';
   const llmSettingsReady = useSettingsAuthorityStore((s) => s.snapshot.llmSettingsReady);
-  const llmSettingsBootstrapRows = useMemo(
-    () => readLlmSettingsBootstrapRows(queryClient, category),
-    [queryClient, category],
-  );
+  const llmSettingsBootstrapRows = useLlmSettingsBootstrapRows(category);
   const [activeScope, setActiveScope] = usePersistedTab<LlmScope>(
     'llmSettings:scope:main',
     'field',

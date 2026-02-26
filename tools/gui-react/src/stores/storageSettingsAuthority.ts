@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { autoSaveFingerprint } from './autoSaveFingerprint';
@@ -51,6 +51,16 @@ interface StorageSettingsAuthorityResult {
   isSaving: boolean;
   reload: () => Promise<StorageSettingsResponse | undefined>;
   saveNow: () => void;
+}
+
+interface StorageSettingsReaderOptions {
+  enabled?: boolean;
+}
+
+interface StorageSettingsReaderResult {
+  settings: StorageSettingsResponse | undefined;
+  isLoading: boolean;
+  reload: () => Promise<StorageSettingsResponse | undefined>;
 }
 
 export const STORAGE_SETTINGS_QUERY_KEY = ['storage-settings'] as const;
@@ -151,6 +161,41 @@ export function readStorageSettingsBootstrap(queryClient: QueryClient): StorageS
       ? undefined
       : String(snapshot.stagingTempDirectory),
     updatedAt: snapshot.updatedAt == null ? null : String(snapshot.updatedAt),
+  };
+}
+
+export function useStorageSettingsBootstrap(): StorageSettingsResponse {
+  const queryClient = useQueryClient();
+  return useMemo(
+    () => readStorageSettingsBootstrap(queryClient),
+    [queryClient],
+  );
+}
+
+export function useStorageSettingsReader({
+  enabled = true,
+}: StorageSettingsReaderOptions = {}): StorageSettingsReaderResult {
+  const queryClient = useQueryClient();
+  const { data: settings, isLoading, refetch } = useQuery({
+    queryKey: STORAGE_SETTINGS_QUERY_KEY,
+    queryFn: async () => {
+      const result = await api.get<Record<string, unknown>>('/storage-settings');
+      return sanitizeStorageSettingsResponse(result);
+    },
+    enabled,
+  });
+
+  async function reload() {
+    const result = await refetch();
+    if (!result.data) return undefined;
+    queryClient.setQueryData(STORAGE_SETTINGS_QUERY_KEY, result.data);
+    return result.data;
+  }
+
+  return {
+    settings,
+    isLoading,
+    reload,
   };
 }
 

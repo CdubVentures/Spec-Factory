@@ -121,3 +121,54 @@ test('persistUserSettingsSections fails on invalid user-settings JSON instead of
   const raw = await fs.readFile(userSettingsPath, 'utf8');
   assert.equal(raw, '{ invalid_json');
 });
+
+test('persistUserSettingsSections studioPatch merges per-category updates without clobbering concurrent categories', async () => {
+  const { root } = await makeHelperRoot('settings-telemetry-studio-patch-');
+
+  await Promise.all([
+    persistUserSettingsSections({
+      helperFilesRoot: root,
+      studioPatch: {
+        mouse: {
+          file_path: 'helper_files/mouse/_control_plane/field_studio_map.json',
+          map: { version: 1, component_sources: [{ component_type: 'sensor' }] },
+        },
+      },
+    }),
+    persistUserSettingsSections({
+      helperFilesRoot: root,
+      studioPatch: {
+        keyboard: {
+          file_path: 'helper_files/keyboard/_control_plane/field_studio_map.json',
+          map: { version: 2, component_sources: [{ component_type: 'switch' }] },
+        },
+      },
+    }),
+  ]);
+
+  const snapshot = loadUserSettingsSync({ helperFilesRoot: root, strictRead: true });
+  assert.equal(snapshot.studio.mouse.file_path, 'helper_files/mouse/_control_plane/field_studio_map.json');
+  assert.equal(snapshot.studio.keyboard.file_path, 'helper_files/keyboard/_control_plane/field_studio_map.json');
+  assert.equal(snapshot.studio.mouse.map.version, 1);
+  assert.equal(snapshot.studio.keyboard.map.version, 2);
+});
+
+test('persistUserSettingsSections rejects mixed studio and studioPatch writes', async () => {
+  const { root } = await makeHelperRoot('settings-telemetry-studio-conflict-');
+
+  await assert.rejects(
+    () => persistUserSettingsSections({
+      helperFilesRoot: root,
+      studio: {
+        mouse: { map: { version: 1 } },
+      },
+      studioPatch: {
+        keyboard: { map: { version: 2 } },
+      },
+    }),
+    (error) => {
+      assert.equal(error?.code, 'persist_user_settings_studio_conflict');
+      return true;
+    },
+  );
+});

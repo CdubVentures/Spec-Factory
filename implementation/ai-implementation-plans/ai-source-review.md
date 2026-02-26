@@ -1,7 +1,7 @@
 # AI Source Review
 
 Generated: 2026-02-17
-Field Studio: `implementation/ai-implementation-plans/source-performance-review-ai-matrix.xlsx`
+Field Studio: app-native route matrix in SpecDb (`llm_route_matrix`)
 
 ## Goal
 Define a universal implementation plan for how AI reviews values using source evidence, including:

@@ -1,9 +1,12 @@
 # PHASE 8 OF 10 — DATA REVIEW GRID GUI & HUMAN-IN-THE-LOOP OVERRIDES (FIELD-STUDIO-FIRST)
 
+> Canonicalization update (2026-02-25): Workbook/spreadsheet authoring is retired. Use `_control_plane/field_studio_map.json` plus `_generated/*.json` artifacts as the authoritative contract surface. Any remaining spreadsheet wording in this document is historical context only.
+
+
 **Version:** v2 (field-studio-native grid)  
 **Scope:** Localhost Review Workstation (NOT a dashboard)  
 **Category baseline:** `mouse`  
-**Field Studio source of truth:** `mouseData.xlsm` → `dataEntry` tab  
+**Field Studio source of truth:** `field_studio_map.json` → `dataEntry` tab  
 **Key range (universal contract):** `dataEntry!B9:B83` (75 keys)
 
 ---
@@ -20,7 +23,7 @@ This interface must let a reviewer complete a product in **30–60 seconds**.
 - Phase 7: ProductRecord output (must include candidates + provenance)
 - Phase 3: FieldRulesEngine (re-validate on every override)
 - Phase 1: `field_rules.json` and `ui_field_catalog.json`
-- spreadsheet layout contract (this doc): `mouseData.xlsm` → `dataEntry` tab
+- spreadsheet layout contract (this doc): `field_studio_map.json` → `dataEntry` tab
 
 ---
 
@@ -178,7 +181,7 @@ Returns the canonical row list in spreadsheet order (B9–B83 for mouse) plus la
 {
   "category": "mouse",
   "spreadsheet": {
-    "field-studio": "mouseData.xlsm",
+    "field-studio": "field_studio_map.json",
     "sheet": "dataEntry",
     "key_range": "B9:B83",
     "brand_key_cell": "B3",
@@ -382,4 +385,5 @@ To make this universal across categories:
   3) `/api/products/:id` (selected + candidates + evidence)
 
 No hardcoded mouse-only row lists in the frontend.
+
 

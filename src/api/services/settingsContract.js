@@ -1,5 +1,5 @@
 import Ajv2020 from 'ajv/dist/2020.js';
-import { SETTINGS_DEFAULTS } from '../../shared/settingsDefaults.js';
+import { SETTINGS_DEFAULTS, SETTINGS_OPTION_VALUES } from '../../shared/settingsDefaults.js';
 
 function asRecord(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -242,10 +242,10 @@ export const RUNTIME_SETTINGS_ROUTE_GET = Object.freeze({
 export const RUNTIME_SETTINGS_ROUTE_PUT = Object.freeze({
   dynamicFetchPolicyMapJsonKey: 'dynamicFetchPolicyMapJson',
   stringEnumMap: Object.freeze({
-    profile: Object.freeze({ cfgKey: 'runProfile', allowed: Object.freeze(['fast', 'standard', 'thorough']) }),
-    resumeMode: Object.freeze({ cfgKey: 'indexingResumeMode', allowed: Object.freeze(['auto', 'force_resume', 'start_over']) }),
-    scannedPdfOcrBackend: Object.freeze({ cfgKey: 'scannedPdfOcrBackend', allowed: Object.freeze(['auto', 'tesseract', 'none']) }),
-    searchProvider: Object.freeze({ cfgKey: 'searchProvider', allowed: Object.freeze(['none', 'google', 'bing', 'searxng', 'duckduckgo', 'dual']) }),
+    profile: Object.freeze({ cfgKey: 'runProfile', allowed: SETTINGS_OPTION_VALUES.runtime.profile }),
+    resumeMode: Object.freeze({ cfgKey: 'indexingResumeMode', allowed: SETTINGS_OPTION_VALUES.runtime.resumeMode }),
+    scannedPdfOcrBackend: Object.freeze({ cfgKey: 'scannedPdfOcrBackend', allowed: SETTINGS_OPTION_VALUES.runtime.scannedPdfOcrBackend }),
+    searchProvider: Object.freeze({ cfgKey: 'searchProvider', allowed: SETTINGS_OPTION_VALUES.runtime.searchProvider }),
   }),
   stringFreeMap: Object.freeze({
     phase2LlmModel: 'llmModelPlan',

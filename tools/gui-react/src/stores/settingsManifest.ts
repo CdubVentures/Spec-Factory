@@ -1,4 +1,4 @@
-import { SETTINGS_DEFAULTS } from '../../../../src/shared/settingsDefaults.js';
+import { SETTINGS_DEFAULTS, SETTINGS_OPTION_VALUES } from '../../../../src/shared/settingsDefaults.js';
 
 export interface ConvergenceBoolKnob {
   key: string;
@@ -93,8 +93,8 @@ export const CONVERGENCE_SETTING_DEFAULTS = Object.freeze({
 } satisfies Record<string, number | boolean>);
 
 export interface RuntimeSettingDefaults {
-  profile: 'fast' | 'standard' | 'thorough';
-  searchProvider: string;
+  profile: RuntimeProfile;
+  searchProvider: RuntimeSearchProvider;
   phase2LlmModel: string;
   phase3LlmModel: string;
   llmModelFast: string;
@@ -106,8 +106,8 @@ export interface RuntimeSettingDefaults {
   llmFallbackExtractModel: string;
   llmFallbackValidateModel: string;
   llmFallbackWriteModel: string;
-  resumeMode: 'auto' | 'force_resume' | 'start_over';
-  scannedPdfOcrBackend: 'auto' | 'tesseract' | 'none';
+  resumeMode: RuntimeResumeMode;
+  scannedPdfOcrBackend: RuntimeOcrBackend;
   fetchConcurrency: number;
   perHostMinDelayMs: number;
   llmTokensPlan: number;
@@ -144,13 +144,36 @@ export interface RuntimeSettingDefaults {
   runtimeAutoSaveEnabled: boolean;
 }
 
+export type RuntimeProfile = 'fast' | 'standard' | 'thorough';
+export type RuntimeSearchProvider = 'none' | 'google' | 'bing' | 'searxng' | 'duckduckgo' | 'dual';
+export type RuntimeResumeMode = 'auto' | 'force_resume' | 'start_over';
+export type RuntimeOcrBackend = 'auto' | 'tesseract' | 'none';
+
+export const RUNTIME_PROFILE_OPTIONS = Object.freeze(
+  [...SETTINGS_OPTION_VALUES.runtime.profile] as RuntimeProfile[],
+);
+
+export const RUNTIME_SEARCH_PROVIDER_OPTIONS = Object.freeze(
+  [...SETTINGS_OPTION_VALUES.runtime.searchProvider] as RuntimeSearchProvider[],
+);
+
+export const RUNTIME_RESUME_MODE_OPTIONS = Object.freeze(
+  [...SETTINGS_OPTION_VALUES.runtime.resumeMode] as RuntimeResumeMode[],
+);
+
+export const RUNTIME_OCR_BACKEND_OPTIONS = Object.freeze(
+  [...SETTINGS_OPTION_VALUES.runtime.scannedPdfOcrBackend] as RuntimeOcrBackend[],
+);
+
 export const RUNTIME_SETTING_DEFAULTS: RuntimeSettingDefaults = {
   ...(SETTINGS_DEFAULTS.runtime as unknown as RuntimeSettingDefaults),
 };
 
+export type StorageDestinationOption = 'local' | 's3';
+
 export interface StorageSettingDefaults {
   enabled: boolean;
-  destinationType: 'local' | 's3';
+  destinationType: StorageDestinationOption;
   localDirectory: string;
   s3Region: string;
   s3Bucket: string;
@@ -232,6 +255,10 @@ export const LLM_ROUTE_PRESET_LIMITS = {
 export const STORAGE_SETTING_DEFAULTS: StorageSettingDefaults = {
   ...(SETTINGS_DEFAULTS.storage as StorageSettingDefaults),
 };
+
+export const STORAGE_DESTINATION_OPTIONS = Object.freeze(
+  [...SETTINGS_OPTION_VALUES.storage.destinationType] as StorageDestinationOption[],
+);
 
 export const UI_SETTING_DEFAULTS: UiSettingDefaults = {
   ...(SETTINGS_DEFAULTS.ui as UiSettingDefaults),

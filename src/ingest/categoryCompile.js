@@ -5288,13 +5288,14 @@ export async function compileCategoryFieldStudio({
     ? path.resolve(String(mapPath))
     : controlPlaneFieldStudioMapPath;
 
-  const resolvedFieldStudioSourcePath = normalizeText(fieldStudioSourcePath)
-    ? path.resolve(fieldStudioSourcePath)
-    : path.resolve(
-      controlMap.map.field_studio_source_path
-      || path.join(categoryRoot, `${category}Data.xlsm`)
-    );
-  const fieldStudioSourceExists = await fileExists(resolvedFieldStudioSourcePath);
+  const configuredFieldStudioSourcePath = normalizeText(fieldStudioSourcePath)
+    || normalizeText(controlMap.map.field_studio_source_path);
+  const resolvedFieldStudioSourcePath = configuredFieldStudioSourcePath
+    ? path.resolve(configuredFieldStudioSourcePath)
+    : '';
+  const fieldStudioSourceExists = resolvedFieldStudioSourcePath
+    ? await fileExists(resolvedFieldStudioSourcePath)
+    : false;
   const preferFieldStudioCompile = Boolean(config?.preferFieldStudioCompile) && !forceSourceExtraction;
   const fieldStudioSourceAvailable = fieldStudioSourceExists && !preferFieldStudioCompile;
   const compileMode = fieldStudioSourceAvailable
@@ -5320,9 +5321,9 @@ export async function compileCategoryFieldStudio({
       warnings: [],
       normalized: normalizeFieldStudioMap(controlMap.map)
     };
-  if (!fieldStudioSourceExists) {
+  if (resolvedFieldStudioSourcePath && !fieldStudioSourceExists) {
     mapValidation.warnings.push(`field_studio_source_not_found:${resolvedFieldStudioSourcePath}; using app-native compile fallback from saved map + generated artifacts`);
-  } else if (preferFieldStudioCompile) {
+  } else if (preferFieldStudioCompile && fieldStudioSourceExists) {
     mapValidation.warnings.push(`field_studio_source_available:${resolvedFieldStudioSourcePath}; compile_mode=field_studio`);
   }
   if (!mapValidation.valid) {

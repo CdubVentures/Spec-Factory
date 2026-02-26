@@ -2,9 +2,11 @@
 
 ## Where The Component Matrix Is
 
-- `implementation/ai-implementation-plans/component-review-llm-matrix.xlsx`
-- Existing broader matrix (field + component + list):
-  - `implementation/ai-implementation-plans/source-performance-review-ai-matrix.route-based-4-criteria.xlsx`
+- App-native route matrix in SpecDb: `llm_route_matrix`
+- Managed via category-scoped APIs:
+  - `GET /api/v1/llm-settings/:category/routes`
+  - `PUT /api/v1/llm-settings/:category/routes`
+  - `POST /api/v1/llm-settings/:category/routes/reset`
 
 ## Where The AI Component MD Is
 

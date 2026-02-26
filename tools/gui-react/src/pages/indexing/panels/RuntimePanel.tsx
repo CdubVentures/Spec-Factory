@@ -8,8 +8,22 @@ import {
 } from '../helpers';
 import type { SearxngStatusResponse } from '../types';
 import { usePersistedToggle } from '../../../stores/collapseStore';
-import { SETTINGS_AUTOSAVE_DEBOUNCE_MS, type ConvergenceKnobGroup } from '../../../stores/settingsManifest';
-import { CONVERGENCE_SETTING_DEFAULTS } from '../../../stores/convergenceSettingsAuthority';
+import {
+  RUNTIME_OCR_BACKEND_OPTIONS,
+  RUNTIME_PROFILE_OPTIONS,
+  RUNTIME_RESUME_MODE_OPTIONS,
+  RUNTIME_SEARCH_PROVIDER_OPTIONS,
+  SETTINGS_AUTOSAVE_DEBOUNCE_MS,
+  type ConvergenceKnobGroup,
+  type RuntimeOcrBackend,
+  type RuntimeProfile,
+  type RuntimeResumeMode,
+  type RuntimeSearchProvider,
+} from '../../../stores/settingsManifest';
+import {
+  parseConvergenceNumericInput,
+  readConvergenceKnobValue,
+} from '../../../stores/convergenceSettingsAuthority';
 
 interface LlmRouteSnapshotRow {
   role: string;
@@ -27,12 +41,12 @@ interface RuntimePanelProps {
   processRunning: boolean;
   runtimeActivity: { currentPerMin: number; peakPerMin: number };
 
-  profile: 'fast' | 'standard' | 'thorough';
-  onProfileChange: (value: 'fast' | 'standard' | 'thorough') => void;
+  profile: RuntimeProfile;
+  onProfileChange: (value: RuntimeProfile) => void;
   discoveryEnabled: boolean;
-  onDiscoveryEnabledChange: (enabled: boolean, setSearchProvider: (v: string) => void) => void;
-  searchProvider: string;
-  onSearchProviderChange: (value: string) => void;
+  onDiscoveryEnabledChange: (enabled: boolean, setSearchProvider: (v: RuntimeSearchProvider) => void) => void;
+  searchProvider: RuntimeSearchProvider;
+  onSearchProviderChange: (value: RuntimeSearchProvider) => void;
 
   fetchConcurrency: string;
   onFetchConcurrencyChange: (value: string) => void;
@@ -43,8 +57,8 @@ interface RuntimePanelProps {
   onScannedPdfOcrEnabledChange: (value: boolean) => void;
   scannedPdfOcrPromoteCandidates: boolean;
   onScannedPdfOcrPromoteCandidatesChange: (value: boolean) => void;
-  scannedPdfOcrBackend: 'auto' | 'tesseract' | 'none';
-  onScannedPdfOcrBackendChange: (value: 'auto' | 'tesseract' | 'none') => void;
+  scannedPdfOcrBackend: RuntimeOcrBackend;
+  onScannedPdfOcrBackendChange: (value: RuntimeOcrBackend) => void;
   scannedPdfOcrMaxPages: string;
   onScannedPdfOcrMaxPagesChange: (value: string) => void;
   scannedPdfOcrMaxPairs: string;
@@ -128,8 +142,8 @@ interface RuntimePanelProps {
   clampTokenForModel: (model: string, value: number) => number;
   llmRouteSnapshotRows: LlmRouteSnapshotRow[];
 
-  resumeMode: 'auto' | 'force_resume' | 'start_over';
-  onResumeModeChange: (value: 'auto' | 'force_resume' | 'start_over') => void;
+  resumeMode: RuntimeResumeMode;
+  onResumeModeChange: (value: RuntimeResumeMode) => void;
   resumeWindowHours: string;
   onResumeWindowHoursChange: (value: string) => void;
   reextractAfterHours: string;
@@ -302,6 +316,39 @@ export function RuntimePanel({
   const plannerTriageLocked = !discoveryEnabled;
   const runtimeSettingsLocked = !runtimeSettingsReady;
   const runtimeAutoSaveDelaySeconds = (SETTINGS_AUTOSAVE_DEBOUNCE_MS.runtime / 1000).toFixed(1);
+  const runtimeSettingsEditorMovedToPipeline = true;
+
+  if (runtimeSettingsEditorMovedToPipeline) {
+    return (
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-3" style={{ order: 30 }}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center text-sm font-semibold text-gray-900 dark:text-gray-100">
+            <button
+              onClick={onToggle}
+              className="inline-flex items-center justify-center w-5 h-5 mr-1 text-[10px] rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              title={collapsed ? 'Open panel' : 'Close panel'}
+            >
+              {collapsed ? '+' : '-'}
+            </button>
+            <span>Runtime Settings</span>
+            <Tip text="Runtime and convergence settings moved to Pipeline Settings. Indexing now keeps this panel read-only to prevent setting overlap." />
+          </div>
+          <ActivityGauge
+            label="runtime activity"
+            currentPerMin={runtimeActivity.currentPerMin}
+            peakPerMin={runtimeActivity.peakPerMin}
+            active={processRunning}
+          />
+        </div>
+        {!collapsed ? (
+          <div className="rounded border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+            Runtime and convergence settings now live in <span className="font-semibold">Pipeline Settings</span>.
+            This Indexing panel is read-only in Phase 4 to enforce a single settings writer surface and eliminate overlap.
+          </div>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-3" style={{ order: 30 }}>
@@ -343,7 +390,7 @@ export function RuntimePanel({
             }`}
           >
             {runtimeSettingsSaving
-              ? 'saving…'
+              ? 'saving...'
               : runtimeSettingsLocked
               ? 'loading persisted runtime settings...'
               : runtimeSettingsSaveState === 'error'
@@ -353,8 +400,8 @@ export function RuntimePanel({
               : runtimeSettingsDirty
               ? (runtimeAutoSave ? 'unsaved (auto-save pending)' : 'unsaved')
               : runtimeSettingsSaveState === 'ok'
-              ? (runtimeSettingsSaveMessage || 'saved')
-              : ''}
+              ? (runtimeSettingsSaveMessage || 'all changes saved.')
+              : 'all changes saved.'}
           </span>
           <button
             onClick={() => onRuntimeAutoSaveChange(!runtimeAutoSave)}
@@ -403,14 +450,14 @@ export function RuntimePanel({
           </div>
           <select
             value={profile}
-            onChange={(e) => onProfileChange(e.target.value as 'fast' | 'standard' | 'thorough')}
+            onChange={(e) => onProfileChange(e.target.value as RuntimeProfile)}
             disabled={isAll || busy}
             className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
             title="Run intensity profile."
           >
-            <option value="fast">run profile: fast</option>
-            <option value="standard">run profile: standard</option>
-            <option value="thorough">run profile: thorough</option>
+            {RUNTIME_PROFILE_OPTIONS.map((option) => (
+              <option key={`run-profile:${option}`} value={option}>run profile: {option}</option>
+            ))}
           </select>
         </div>
         <label className="flex items-center gap-2 rounded border border-gray-300 dark:border-gray-600 px-2 py-2 text-xs text-gray-700 dark:text-gray-200">
@@ -432,17 +479,14 @@ export function RuntimePanel({
           </div>
           <select
             value={searchProvider}
-            onChange={(e) => onSearchProviderChange(e.target.value)}
+            onChange={(e) => onSearchProviderChange(e.target.value as RuntimeSearchProvider)}
             disabled={isAll || busy || !discoveryEnabled}
             className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
             title="Search provider used when discovery is enabled."
           >
-            <option value="none">search provider: none</option>
-            <option value="duckduckgo">search provider: duckduckgo</option>
-            <option value="searxng">search provider: searxng</option>
-            <option value="bing">search provider: bing</option>
-            <option value="google">search provider: google</option>
-            <option value="dual">search provider: dual</option>
+            {RUNTIME_SEARCH_PROVIDER_OPTIONS.map((option) => (
+              <option key={`search-provider:${option}`} value={option}>search provider: {option}</option>
+            ))}
           </select>
         </div>
           </div>
@@ -529,10 +573,10 @@ export function RuntimePanel({
         <label className="flex items-center gap-2 rounded border border-gray-300 dark:border-gray-600 px-2 py-2 text-xs text-gray-700 dark:text-gray-200">
           <span>ocr backend</span>
           <Tip text="OCR engine selection. auto uses best available backend, tesseract forces deterministic fallback path." />
-          <select value={scannedPdfOcrBackend} onChange={(e) => onScannedPdfOcrBackendChange(e.target.value as 'auto' | 'tesseract' | 'none')} disabled={isAll || busy || !scannedPdfOcrEnabled} className="ml-auto w-32 px-2 py-1 text-xs border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="SCANNED_PDF_OCR_BACKEND for this run.">
-            <option value="auto">auto</option>
-            <option value="tesseract">tesseract</option>
-            <option value="none">none</option>
+          <select value={scannedPdfOcrBackend} onChange={(e) => onScannedPdfOcrBackendChange(e.target.value as RuntimeOcrBackend)} disabled={isAll || busy || !scannedPdfOcrEnabled} className="ml-auto w-32 px-2 py-1 text-xs border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="SCANNED_PDF_OCR_BACKEND for this run.">
+            {RUNTIME_OCR_BACKEND_OPTIONS.map((option) => (
+              <option key={`ocr-backend:${option}`} value={option}>{option}</option>
+            ))}
           </select>
         </label>
         <label className="flex items-center gap-2 rounded border border-gray-300 dark:border-gray-600 px-2 py-2 text-xs text-gray-700 dark:text-gray-200">
@@ -876,10 +920,10 @@ export function RuntimePanel({
           <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 px-2 pb-2">
         <div className="rounded border border-gray-300 dark:border-gray-600 px-2 py-2">
           <div className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 dark:text-gray-200">resume mode<Tip text="Auto resumes recent state, force resume always reuses prior state, and start over ignores prior run state." /></div>
-          <select value={resumeMode} onChange={(e) => onResumeModeChange(e.target.value as 'auto' | 'force_resume' | 'start_over')} disabled={isAll || busy} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Resume policy.">
-            <option value="auto">auto</option>
-            <option value="force_resume">force resume</option>
-            <option value="start_over">start over</option>
+          <select value={resumeMode} onChange={(e) => onResumeModeChange(e.target.value as RuntimeResumeMode)} disabled={isAll || busy} className="mt-1 w-full px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" title="Resume policy.">
+            {RUNTIME_RESUME_MODE_OPTIONS.map((option) => (
+              <option key={`resume-mode:${option}`} value={option}>{option.replace(/_/g, ' ')}</option>
+            ))}
           </select>
         </div>
         <div className="rounded border border-gray-300 dark:border-gray-600 px-2 py-2">
@@ -942,8 +986,8 @@ export function RuntimePanel({
                   : convergenceDirty
                   ? 'unsaved'
                   : convergenceSettingsSaveState === 'ok'
-                  ? (convergenceSettingsSaveMessage || 'saved')
-                  : ''}
+                  ? (convergenceSettingsSaveMessage || 'all changes saved.')
+                  : 'all changes saved.'}
               </span>
             </div>
             {convergenceKnobGroups.map((group) => (
@@ -951,11 +995,13 @@ export function RuntimePanel({
                 <div className="text-[11px] font-semibold text-gray-700 dark:text-gray-200 mb-2">{group.label}</div>
                 <div className="space-y-2">
                   {group.knobs.map((knob) => {
+                    const knobSetting = convergenceSettings[knob.key];
+                    const knobSettings = typeof knobSetting === 'number' || typeof knobSetting === 'boolean'
+                      ? { [knob.key]: knobSetting }
+                      : undefined;
+                    const resolvedValue = readConvergenceKnobValue(knobSettings, knob);
                     if (knob.type === 'bool') {
-                      const defaultValue = CONVERGENCE_SETTING_DEFAULTS[knob.key as keyof typeof CONVERGENCE_SETTING_DEFAULTS];
-                      const boolValue = typeof convergenceSettings[knob.key] === 'boolean'
-                        ? (convergenceSettings[knob.key] as boolean)
-                        : (typeof defaultValue === 'boolean' ? defaultValue : false);
+                      const boolValue = Boolean(resolvedValue);
                       return (
                         <label key={knob.key} className="flex items-center gap-2 text-[11px] text-gray-700 dark:text-gray-200">
                           <input type="checkbox" checked={boolValue} onChange={(e) => onConvergenceKnobUpdate(knob.key, e.target.checked)} />
@@ -964,11 +1010,7 @@ export function RuntimePanel({
                         </label>
                       );
                     }
-                    const defaultValue = CONVERGENCE_SETTING_DEFAULTS[knob.key as keyof typeof CONVERGENCE_SETTING_DEFAULTS];
-                    const fallback = typeof defaultValue === 'number' ? defaultValue : knob.min;
-                    const numValue = typeof convergenceSettings[knob.key] === 'number'
-                      ? (convergenceSettings[knob.key] as number)
-                      : fallback;
+                    const numValue = typeof resolvedValue === 'number' ? resolvedValue : knob.min;
                     const step = 'step' in knob ? knob.step : 1;
                     return (
                       <div key={knob.key}>
@@ -976,7 +1018,7 @@ export function RuntimePanel({
                           <span className="text-[11px] text-gray-500 dark:text-gray-400 inline-flex items-center">{knob.label}{'tip' in knob && knob.tip ? <Tip text={knob.tip} /> : null}</span>
                           <span className="text-[11px] font-mono text-gray-700 dark:text-gray-300">{knob.type === 'float' ? numValue.toFixed(2) : numValue}</span>
                         </div>
-                        <input type="range" className="w-full" min={knob.min} max={knob.max} step={step} value={numValue} onChange={(e) => { const parsed = knob.type === 'float' ? Number.parseFloat(e.target.value) : Number.parseInt(e.target.value, 10); onConvergenceKnobUpdate(knob.key, Number.isFinite(parsed) ? parsed : fallback); }} />
+                        <input type="range" className="w-full" min={knob.min} max={knob.max} step={step} value={numValue} onChange={(e) => { onConvergenceKnobUpdate(knob.key, parseConvergenceNumericInput(knob, e.target.value, numValue)); }} />
                         <div className="flex justify-between text-[10px] text-gray-400 mt-0"><span>{knob.min}</span><span>{knob.max}</span></div>
                       </div>
                     );

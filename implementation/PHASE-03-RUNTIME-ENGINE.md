@@ -1,5 +1,8 @@
 # PHASE 3 OF 10 — FIELD RULES RUNTIME ENGINE (NO BYPASS)
 
+> Canonicalization update (2026-02-25): Workbook/spreadsheet authoring is retired. Use `_control_plane/field_studio_map.json` plus `_generated/*.json` artifacts as the authoritative contract surface. Any remaining spreadsheet wording in this document is historical context only.
+
+
 ## ROLE & CONTEXT
 
 You are a senior runtime-systems engineer. Phases 1–2 built the authoring and compilation toolchain. This phase builds the **canonical runtime engine** — the single module that every part of the system uses to normalize, validate, and enforce field rules. This is the immune system of the Spec Factory. If a value cannot pass through this engine with valid evidence, it MUST become `unk`. There are no exceptions, no bypass paths, no "just this once."
@@ -597,3 +600,4 @@ This can run locally or nightly.
 3) Scorecards compare modes and highlight deltas.  
 4) Regression gates catch accuracy/coverage regressions before deployment.  
 5) Performance metrics are tracked (runtime, URLs, model tier usage, cost).
+

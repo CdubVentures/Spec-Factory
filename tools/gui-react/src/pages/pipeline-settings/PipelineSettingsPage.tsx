@@ -1,11 +1,16 @@
 import { useState } from 'react';
-import { CONVERGENCE_KNOB_GROUPS, CONVERGENCE_SETTING_DEFAULTS, useConvergenceSettingsAuthority } from '../../stores/convergenceSettingsAuthority';
+import {
+  CONVERGENCE_KNOB_GROUPS,
+  parseConvergenceNumericInput,
+  readConvergenceKnobValue,
+  useConvergenceSettingsAuthority,
+} from '../../stores/convergenceSettingsAuthority';
 import { useSourceStrategyAuthority, type SourceStrategyRow } from '../../stores/sourceStrategyAuthority';
 import { useUiStore } from '../../stores/uiStore';
 import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore';
+import { RuntimeSettingsFlowCard } from './RuntimeSettingsFlowCard';
 
 const cardCls = 'bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 p-4';
-const inputCls = 'px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 w-full';
 
 function KnobInput({
   knob,
@@ -16,16 +21,15 @@ function KnobInput({
   value: number | boolean | undefined;
   onChange: (v: number | boolean) => void;
 }) {
+  const knobSettings = value === undefined ? undefined : { [knob.key]: value };
+
   if (knob.type === 'bool') {
-    const fallback = CONVERGENCE_SETTING_DEFAULTS[knob.key as keyof typeof CONVERGENCE_SETTING_DEFAULTS];
-    const boolValue = typeof value === 'boolean'
-      ? value
-      : (typeof fallback === 'boolean' ? fallback : false);
+    const boolValue = readConvergenceKnobValue(knobSettings, knob);
     return (
       <label className="flex items-center gap-2 text-xs">
         <input
           type="checkbox"
-          checked={boolValue}
+          checked={Boolean(boolValue)}
           onChange={(e) => onChange(e.target.checked)}
         />
         <span>{knob.label}</span>
@@ -33,9 +37,8 @@ function KnobInput({
     );
   }
 
-  const defaultValue = CONVERGENCE_SETTING_DEFAULTS[knob.key as keyof typeof CONVERGENCE_SETTING_DEFAULTS];
-  const fallback = typeof defaultValue === 'number' ? defaultValue : knob.min;
-  const numValue = typeof value === 'number' ? value : fallback;
+  const resolvedValue = readConvergenceKnobValue(knobSettings, knob);
+  const numValue = typeof resolvedValue === 'number' ? resolvedValue : knob.min;
   const step = 'step' in knob ? knob.step : 1;
 
   return (
@@ -54,10 +57,7 @@ function KnobInput({
         step={step}
         value={numValue}
         onChange={(e) => {
-          const parsed = knob.type === 'float'
-            ? Number.parseFloat(e.target.value)
-            : Number.parseInt(e.target.value, 10);
-          onChange(Number.isFinite(parsed) ? parsed : fallback);
+          onChange(parseConvergenceNumericInput(knob, e.target.value, numValue));
         }}
       />
       <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
@@ -218,6 +218,7 @@ export function PipelineSettingsPage() {
 
   return (
     <div className="space-y-4">
+      <RuntimeSettingsFlowCard />
       <div className={cardCls}>
         <div className="flex items-center justify-between">
           <div>

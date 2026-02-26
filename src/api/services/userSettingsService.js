@@ -1,7 +1,10 @@
 import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { normalizeRunDataStorageSettings } from './runDataRelocationService.js';
+import {
+  normalizeRunDataStorageSettings,
+  sanitizeRunDataStorageSettingsForResponse,
+} from './runDataRelocationService.js';
 import {
   CONVERGENCE_SETTINGS_KEYS,
   CONVERGENCE_SETTINGS_VALUE_TYPES,
@@ -141,8 +144,60 @@ function sanitizeSectionByTypeMap(raw, typeMap) {
   return normalized;
 }
 
+function normalizeRuntimeDynamicFetchPolicy(runtimeSettings = {}) {
+  const source = asRecord(runtimeSettings);
+  const normalized = { ...source };
+  const hasJson = Object.hasOwn(normalized, 'dynamicFetchPolicyMapJson');
+  const hasObjectMap = (
+    Object.hasOwn(normalized, 'dynamicFetchPolicyMap')
+    && normalized.dynamicFetchPolicyMap
+    && typeof normalized.dynamicFetchPolicyMap === 'object'
+    && !Array.isArray(normalized.dynamicFetchPolicyMap)
+  );
+  if (!hasJson && !hasObjectMap) {
+    return normalized;
+  }
+
+  const mapValue = hasObjectMap ? asRecord(normalized.dynamicFetchPolicyMap) : {};
+  const mapHasEntries = Object.keys(mapValue).length > 0;
+  if (!hasJson) {
+    normalized.dynamicFetchPolicyMap = mapValue;
+    normalized.dynamicFetchPolicyMapJson = mapHasEntries ? JSON.stringify(mapValue) : '';
+    return normalized;
+  }
+
+  const jsonToken = String(normalized.dynamicFetchPolicyMapJson ?? '').trim();
+  if (!jsonToken) {
+    normalized.dynamicFetchPolicyMapJson = '';
+    normalized.dynamicFetchPolicyMap = mapValue;
+    return normalized;
+  }
+
+  try {
+    const parsed = JSON.parse(jsonToken);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const parsedMap = asRecord(parsed);
+      normalized.dynamicFetchPolicyMap = parsedMap;
+      normalized.dynamicFetchPolicyMapJson = JSON.stringify(parsedMap);
+      return normalized;
+    }
+  } catch {}
+
+  if (hasObjectMap) {
+    normalized.dynamicFetchPolicyMap = mapValue;
+    normalized.dynamicFetchPolicyMapJson = mapHasEntries ? JSON.stringify(mapValue) : '';
+    return normalized;
+  }
+
+  normalized.dynamicFetchPolicyMap = {};
+  normalized.dynamicFetchPolicyMapJson = jsonToken;
+  return normalized;
+}
+
 function sanitizeRuntimeSettings(raw) {
-  return sanitizeSectionByTypeMap(raw, RUNTIME_SETTINGS_VALUE_TYPES);
+  return normalizeRuntimeDynamicFetchPolicy(
+    sanitizeSectionByTypeMap(raw, RUNTIME_SETTINGS_VALUE_TYPES),
+  );
 }
 
 function sanitizeConvergenceSettings(raw) {
@@ -242,9 +297,9 @@ function resolveRuntimeRoot(helperFilesRoot = 'helper_files') {
 function buildUserSettingsSnapshot(runtime, convergence, storage, studio = {}, ui = UI_SETTINGS_DEFAULTS) {
   return {
     schemaVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
-    runtime: asRecord(runtime),
-    convergence: asRecord(convergence),
-    storage: asRecord(storage),
+    runtime: sanitizeRuntimeSettings(runtime),
+    convergence: sanitizeConvergenceSettings(convergence),
+    storage: sanitizeStorageSettings(storage),
     studio: sanitizeStudioSettings(studio),
     ui: sanitizeUiSettings(ui),
   };
@@ -317,13 +372,7 @@ export function loadUserSettingsSync({ helperFilesRoot = 'helper_files', strictR
   recordUserSettingsMigrationTelemetry(userPayload);
   const userSettingsRaw = migrateUserSettingsDocument(userPayload);
 
-  const snapshot = buildUserSettingsSnapshot(
-    sanitizeRuntimeSettings(userSettingsRaw.runtime),
-    sanitizeConvergenceSettings(userSettingsRaw.convergence),
-    sanitizeStorageSettings(userSettingsRaw.storage),
-    sanitizeStudioSettings(userSettingsRaw.studio),
-    sanitizeUiSettings(userSettingsRaw.ui),
-  );
+  const snapshot = deriveSettingsArtifactsFromUserSettings(userSettingsRaw).snapshot;
   recordSnapshotValidationTelemetry(snapshot);
   return snapshot;
 }
@@ -333,13 +382,7 @@ export async function loadUserSettings({ helperFilesRoot = 'helper_files', stric
   const userRaw = await readJsonFile(path.join(runtimeRoot, USER_SETTINGS_FILE), { strict: strictRead });
   recordUserSettingsMigrationTelemetry(userRaw);
   const userSettingsRaw = migrateUserSettingsDocument(userRaw);
-  const snapshot = buildUserSettingsSnapshot(
-    sanitizeRuntimeSettings(userSettingsRaw.runtime),
-    sanitizeConvergenceSettings(userSettingsRaw.convergence),
-    sanitizeStorageSettings(userSettingsRaw.storage),
-    sanitizeStudioSettings(userSettingsRaw.studio),
-    sanitizeUiSettings(userSettingsRaw.ui),
-  );
+  const snapshot = deriveSettingsArtifactsFromUserSettings(userSettingsRaw).snapshot;
   recordSnapshotValidationTelemetry(snapshot);
   return snapshot;
 }
@@ -392,13 +435,14 @@ function resolveRequestedSections({
   convergence = null,
   storage = null,
   studio = null,
+  studioPatch = null,
   ui = null,
 } = {}) {
   const sections = [];
   if (runtime !== null) sections.push('runtime');
   if (convergence !== null) sections.push('convergence');
   if (storage !== null) sections.push('storage');
-  if (studio !== null) sections.push('studio');
+  if (studio !== null || studioPatch !== null) sections.push('studio');
   if (ui !== null) sections.push('ui');
   return sections.length > 0 ? sections : ['runtime', 'convergence', 'storage', 'studio', 'ui'];
 }
@@ -409,13 +453,20 @@ export async function persistUserSettingsSections({
   convergence = null,
   storage = null,
   studio = null,
+  studioPatch = null,
   ui = null,
 } = {}) {
+  if (studio !== null && studioPatch !== null) {
+    const error = new Error('persist_user_settings_studio_conflict');
+    error.code = 'persist_user_settings_studio_conflict';
+    throw error;
+  }
   const requestedSections = resolveRequestedSections({
     runtime,
     convergence,
     storage,
     studio,
+    studioPatch,
     ui,
   });
   recordSettingsWriteAttempt({
@@ -427,20 +478,24 @@ export async function persistUserSettingsSections({
     const runtimeRoot = resolveRuntimeRoot(helperFilesRoot);
     try {
       const existing = await loadUserSettings({ helperFilesRoot, strictRead: true });
+      const existingStudio = sanitizeStudioSettings(existing.studio);
+      let nextStudio = existingStudio;
+      if (studio !== null) {
+        nextStudio = sanitizeStudioSettings(studio);
+      } else if (studioPatch !== null) {
+        nextStudio = sanitizeStudioSettings({
+          ...existingStudio,
+          ...sanitizeStudioSettings(studioPatch),
+        });
+      }
       const sections = {
         runtime: runtime === null ? existing.runtime : sanitizeRuntimeSettings(runtime),
         convergence: convergence === null ? existing.convergence : sanitizeConvergenceSettings(convergence),
         storage: storage === null ? existing.storage : sanitizeStorageSettings(storage),
-        studio: studio === null ? existing.studio : sanitizeStudioSettings(studio),
+        studio: nextStudio,
         ui: ui === null ? existing.ui : sanitizeUiSettings(ui),
       };
-      const payload = buildUserSettingsSnapshot(
-        sections.runtime,
-        sections.convergence,
-        sections.storage,
-        sections.studio,
-        sections.ui,
-      );
+      const payload = deriveSettingsArtifactsFromUserSettings(sections).snapshot;
       assertValidSnapshot(payload);
       const filePath = path.join(runtimeRoot, USER_SETTINGS_FILE);
       await writeUserSettingsFile(filePath, payload);
@@ -499,12 +554,36 @@ export function applyConvergenceSettingsToConfig(config, convergenceSettings = {
 }
 
 export function sanitizeUserSettingsSettings(payload) {
+  return deriveSettingsArtifactsFromUserSettings(payload || {}).snapshot;
+}
+
+export function deriveSettingsArtifactsFromUserSettings(payload = {}) {
   const normalized = resolvePersistenceSections(payload || {});
-  return buildUserSettingsSnapshot(
-    normalized.runtime,
-    normalized.convergence,
-    normalized.storage,
-    normalized.studio,
-    normalized.ui,
+  const runtime = sanitizeRuntimeSettings(normalized.runtime);
+  const convergence = sanitizeConvergenceSettings(normalized.convergence);
+  const storage = sanitizeStorageSettings(normalized.storage);
+  const studio = sanitizeStudioSettings(normalized.studio);
+  const ui = sanitizeUiSettings(normalized.ui);
+  const snapshot = buildUserSettingsSnapshot(
+    runtime,
+    convergence,
+    storage,
+    studio,
+    ui,
   );
+  return {
+    snapshot,
+    sections: {
+      runtime: snapshot.runtime,
+      convergence: snapshot.convergence,
+      storage: snapshot.storage,
+      studio: snapshot.studio,
+      ui: snapshot.ui,
+    },
+    legacy: {
+      runtime: snapshot.runtime,
+      convergence: snapshot.convergence,
+      storage: sanitizeRunDataStorageSettingsForResponse(snapshot.storage),
+    },
+  };
 }

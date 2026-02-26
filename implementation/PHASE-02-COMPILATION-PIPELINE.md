@@ -1,5 +1,8 @@
 # PHASE 2 OF 10 — ARTIFACT COMPILATION PIPELINE & VALIDATION TOOLCHAIN
 
+> Canonicalization update (2026-02-25): Workbook/spreadsheet authoring is retired. Use `_control_plane/field_studio_map.json` plus `_generated/*.json` artifacts as the authoritative contract surface. Any remaining spreadsheet wording in this document is historical context only.
+
+
 ## ROLE & CONTEXT
 
 You are a senior build-systems engineer. Phase 1 defined the schema for field rules and authored the first category (mouse). This phase builds the **automated compilation pipeline** that transforms human-editable authoring files into deterministic, validated runtime artifacts. Think of this as the "build system" for your data contracts — analogous to how a compiler turns source code into executables.
@@ -227,7 +230,7 @@ fixtures/golden/<category>/
 node src/cli/spec.js create-golden --category mouse --product-id mouse-razer-viper-v3-pro
 
 # Batch-create golden files from spreadsheet (first N products)
-node src/cli/spec.js create-golden --category mouse --from-spreadsheet --count 50
+node src/cli/spec.js create-golden --category mouse --from-catalog --count 50
 
 # Run golden-file validation (field rules only — no crawling)
 node src/cli/spec.js test-golden --category mouse
@@ -671,3 +674,4 @@ These are all LOW priority and do not block production use.
 8) Per-field evidence enforcement (evidence_required + min_evidence_refs) works. **(DONE)**
 9) Per-field component matching threshold (enum_fuzzy_threshold) is respected. **(DONE)**
 10) Centralized accessor pattern for all rule properties used across all evidence/extraction consumers. **(DONE)**
+

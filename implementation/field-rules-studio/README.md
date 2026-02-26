@@ -24,5 +24,4 @@ This directory is the canonical home for Field Rules Studio implementation docs,
 - Test-to-contract coverage map:
   - `implementation/field-rules-studio/test-contract-map.md`
 - Latest full audit set:
-  - `implementation/field-rules-studio/audits/2026-02-25-full-compile-generated-test-compiler-audit.md`
-  - `implementation/field-rules-studio/audits/2026-02-25-full-audit-refresh.md`
+  - `implementation/field-rules-studio/audits/2026-02-25-full-compile-generated-test-compiler-audit-rerun.md`

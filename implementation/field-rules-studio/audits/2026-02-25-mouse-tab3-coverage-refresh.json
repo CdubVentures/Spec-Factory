@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-02-25T10:23:08.552Z",
+  "category": "mouse",
+  "generated_field_count": 80,
+  "selected_key_count": 75,
+  "selected_missing_count": 0,
+  "selected_missing": [],
+  "selected_migrated": [
+    "switch_link->switches_link"
+  ],
+  "override_key_count": 76,
+  "override_missing_count": 0,
+  "override_missing": [],
+  "override_migrated": [
+    "switch_link->switches_link"
+  ],
+  "component_property_key_count": 13,
+  "component_property_missing_count": 0,
+  "component_property_missing": [],
+  "data_list_key_count": 15,
+  "data_list_missing_count": 2,
+  "data_list_missing": [
+    "polling",
+    "lift_notes"
+  ]
+}

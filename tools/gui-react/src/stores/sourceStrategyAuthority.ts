@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { createSettingsOptimisticMutationContract } from './settingsMutationContract';
 import { publishSettingsPropagation } from './settingsPropagationContract';
@@ -37,6 +37,60 @@ interface SourceStrategyAuthorityResult {
   deleteRow: (id: number) => void;
 }
 
+interface SourceStrategyReaderOptions {
+  category: string;
+  enabled?: boolean;
+  autoQueryEnabled?: boolean;
+}
+
+interface SourceStrategyReaderResult {
+  rows: SourceStrategyRow[];
+  isLoading: boolean;
+  reload: () => Promise<SourceStrategyRow[] | undefined>;
+}
+
+export function sourceStrategyQueryKey(category: string) {
+  return ['source-strategy', category] as const;
+}
+
+export function readSourceStrategySnapshot(
+  queryClient: QueryClient,
+  category: string,
+): SourceStrategyRow[] | undefined {
+  const cached = queryClient.getQueryData<unknown>(sourceStrategyQueryKey(category));
+  return Array.isArray(cached) ? cached as SourceStrategyRow[] : undefined;
+}
+
+export function useSourceStrategyReader({
+  category,
+  enabled = true,
+  autoQueryEnabled = true,
+}: SourceStrategyReaderOptions): SourceStrategyReaderResult {
+  const queryClient = useQueryClient();
+  const queryKey = sourceStrategyQueryKey(category);
+  const categoryQuery = `?category=${encodeURIComponent(category)}`;
+  const { data: rows = [], isLoading, refetch } = useQuery({
+    queryKey,
+    queryFn: () => api.get<SourceStrategyRow[]>(`/source-strategy${categoryQuery}`),
+    enabled: enabled && autoQueryEnabled,
+  });
+
+  async function reload() {
+    if (!enabled) return undefined;
+    const result = await refetch();
+    if (result.data) {
+      queryClient.setQueryData(queryKey, result.data);
+    }
+    return result.data;
+  }
+
+  return {
+    rows,
+    isLoading: enabled ? isLoading : false,
+    reload,
+  };
+}
+
 export function useSourceStrategyAuthority({
   category,
   enabled = true,
@@ -46,7 +100,7 @@ export function useSourceStrategyAuthority({
   onDeleted,
 }: SourceStrategyAuthorityOptions): SourceStrategyAuthorityResult {
   const queryClient = useQueryClient();
-  const queryKey = ['source-strategy', category] as const;
+  const queryKey = sourceStrategyQueryKey(category);
   const categoryQuery = `?category=${encodeURIComponent(category)}`;
   const { data: rows = [], isLoading, refetch } = useQuery({
     queryKey,

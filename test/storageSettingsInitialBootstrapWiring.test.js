@@ -13,14 +13,19 @@ test('storage settings local state initializes from authority bootstrap cache', 
   const storagePageText = readText(STORAGE_PAGE);
 
   assert.equal(
-    storagePageText.includes('readStorageSettingsBootstrap'),
+    storagePageText.includes('useStorageSettingsBootstrap'),
     true,
-    'StoragePage should import storage bootstrap helper from authority',
+    'StoragePage should import storage bootstrap selector hook from authority',
   );
   assert.equal(
-    storagePageText.includes('const storageSettingsBootstrap = useMemo(() => readStorageSettingsBootstrap(queryClient), [queryClient]);'),
+    storagePageText.includes('const storageSettingsBootstrap = useStorageSettingsBootstrap();'),
     true,
-    'StoragePage bootstrap should read storage settings via shared authority helper',
+    'StoragePage bootstrap should read storage settings via shared authority selector hook',
+  );
+  assert.equal(
+    storagePageText.includes('useQueryClient()'),
+    false,
+    'StoragePage should not directly instantiate query client just for bootstrap reads',
   );
   assert.equal(
     storagePageText.includes("queryClient.getQueryData<Record<string, unknown>>(['storage-settings'])"),

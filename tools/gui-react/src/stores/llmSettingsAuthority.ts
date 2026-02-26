@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import type { LlmRouteResponse, LlmRouteRow } from '../types/llmSettings';
@@ -42,15 +42,70 @@ interface LlmSettingsAuthorityResult {
   resetDefaults: () => void;
 }
 
+interface LlmSettingsReaderOptions {
+  category: string;
+  enabled: boolean;
+  autoQueryEnabled?: boolean;
+}
+
+interface LlmSettingsReaderResult {
+  data: LlmRouteResponse | undefined;
+  isLoading: boolean;
+  reload: () => Promise<void>;
+}
+
 export function llmSettingsRoutesQueryKey(category: string) {
   return ['llm-settings-routes', category] as const;
 }
 
-export function readLlmSettingsBootstrapRows(queryClient: QueryClient, category: string): LlmRouteRow[] {
+export function readLlmSettingsSnapshot(
+  queryClient: QueryClient,
+  category: string,
+): LlmRouteResponse | undefined {
   const cached = queryClient.getQueryData<unknown>(llmSettingsRoutesQueryKey(category));
-  if (!cached || typeof cached !== 'object' || Array.isArray(cached)) return [];
-  const rows = (cached as { rows?: unknown }).rows;
+  if (!cached || typeof cached !== 'object' || Array.isArray(cached)) return undefined;
+  return cached as LlmRouteResponse;
+}
+
+export function readLlmSettingsBootstrapRows(queryClient: QueryClient, category: string): LlmRouteRow[] {
+  const snapshot = readLlmSettingsSnapshot(queryClient, category);
+  if (!snapshot || typeof snapshot !== 'object') return [];
+  const rows = snapshot.rows;
   return Array.isArray(rows) ? rows as LlmRouteRow[] : [];
+}
+
+export function useLlmSettingsBootstrapRows(category: string): LlmRouteRow[] {
+  const queryClient = useQueryClient();
+  return useMemo(
+    () => readLlmSettingsBootstrapRows(queryClient, category),
+    [queryClient, category],
+  );
+}
+
+export function useLlmSettingsReader({
+  category,
+  enabled,
+  autoQueryEnabled = true,
+}: LlmSettingsReaderOptions): LlmSettingsReaderResult {
+  const queryClient = useQueryClient();
+  const queryKey = llmSettingsRoutesQueryKey(category);
+  const { data, isLoading, refetch } = useQuery({
+    queryKey,
+    queryFn: () => api.get<LlmRouteResponse>(`/llm-settings/${category}/routes`),
+    enabled: enabled && autoQueryEnabled,
+  });
+
+  async function reload() {
+    const result = await refetch();
+    if (!result.data) return;
+    queryClient.setQueryData(queryKey, result.data);
+  }
+
+  return {
+    data,
+    isLoading,
+    reload,
+  };
 }
 
 export function useLlmSettingsAuthority({

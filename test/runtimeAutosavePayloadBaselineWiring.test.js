@@ -17,6 +17,21 @@ test('runtime autosave payload fallbacks are authority-derived after hydration',
     true,
     'IndexingPage should keep a runtime autosave fallback baseline that can be updated from hydrated authority settings',
   );
+  assert.equal(
+    indexingPageText.includes('readRuntimeSettingsNumericBaseline'),
+    true,
+    'IndexingPage should derive runtime autosave numeric baselines through shared runtime authority helpers',
+  );
+  assert.equal(
+    indexingPageText.includes('runtimeSettingsNumericBaselineEqual'),
+    true,
+    'IndexingPage should compare runtime numeric baseline snapshots through shared runtime authority helpers',
+  );
+  assert.equal(
+    indexingPageText.includes('function runtimeSettingsBaselineEqual'),
+    false,
+    'IndexingPage should not keep local runtime baseline equality helpers once authority helpers are available',
+  );
 
   const collectStart = indexingPageText.indexOf('const collectRuntimeSettingsPayload = () => ({');
   const collectEnd = indexingPageText.indexOf('const runtimeSettingsPayload = collectRuntimeSettingsPayload();');

@@ -578,7 +578,7 @@ test('DB SEED — SpecDb table verification', async (t) => {
       const coatingVals = db.getListValues('coating');
       assert.ok(coatingVals.length >= 4, `coating should have >= 4 values, got ${coatingVals.length}`);
 
-      // Manual values from workbook_map
+      // Manual values from field_studio_map
       const braidedVal = db.getListValueByFieldAndValue('cable_type', 'Braided');
       assert.ok(braidedVal, 'cable_type should include manual value "Braided"');
       const softTouchVal = db.getListValueByFieldAndValue('coating', 'Soft-touch');
@@ -1098,12 +1098,12 @@ test('ENUM-03: User-added fresh value gets source=manual', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-eco-'));
   try {
     const { config } = await createFullFixture(tempRoot);
-    // 'Braided' is in workbook_map manual_enum_values but not in pipeline suggestions
+    // 'Braided' is in field_studio_map manual_enum_values but not in pipeline suggestions
     const payload = await buildEnumPayloadFromSpecDb(config);
     const cableField = payload.fields.find((f) => f.field === 'cable_type');
     // Need to check if Braided shows up — it's in manual_enum_values but must also be in known_values
     // Actually, manual values are only marked if they're in known_values too.
-    // Braided is only in workbook_map but NOT in known_values → it won't appear in the enum builder
+    // Braided is only in field_studio_map but NOT in known_values → it won't appear in the enum builder
     // It only appears if it's ALSO added to known_values
     // Let me check: seedKnownValues sets cable_type to the KNOWN_VALUE_ENUMS.cable_type.values
     // which are ['USB-C', 'Micro-USB', 'Paracord', 'Rubber'] — no 'Braided'
@@ -1239,7 +1239,7 @@ test('ENUM-10: Enum manual value includes source_timestamp', async () => {
   try {
     const { config } = await createFullFixture(tempRoot);
     const ts = '2026-02-15T15:00:00.000Z';
-    // Override workbook_map with timestamps
+    // Override field_studio_map with timestamps
     await seedWorkbookMap(config.helperFilesRoot, CATEGORY,
       { cable_type: ['Braided'], coating: ['Soft-touch'] },
       { 'cable_type::braided': ts },

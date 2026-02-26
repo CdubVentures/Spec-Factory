@@ -13,19 +13,24 @@ test('llm settings local rows initialize from authority bootstrap cache', () => 
   const llmSettingsPageText = readText(LLM_SETTINGS_PAGE);
 
   assert.equal(
-    llmSettingsPageText.includes('readLlmSettingsBootstrapRows'),
+    llmSettingsPageText.includes('useLlmSettingsBootstrapRows'),
     true,
-    'LlmSettingsPage should import llm bootstrap helper from authority',
+    'LlmSettingsPage should import llm bootstrap selector hook from authority',
   );
   assert.equal(
-    llmSettingsPageText.includes('const llmSettingsBootstrapRows = useMemo('),
+    llmSettingsPageText.includes('const llmSettingsBootstrapRows = useLlmSettingsBootstrapRows(category);'),
     true,
-    'LlmSettingsPage should define a llm settings bootstrap rows memo',
+    'LlmSettingsPage should define llm bootstrap rows from authority selector hook',
   );
   assert.equal(
     llmSettingsPageText.includes('readLlmSettingsBootstrapRows(queryClient, category)'),
-    true,
-    'LlmSettingsPage bootstrap should read llm settings via shared authority helper',
+    false,
+    'LlmSettingsPage should not manually read llm bootstrap rows via local queryClient calls',
+  );
+  assert.equal(
+    llmSettingsPageText.includes('useQueryClient()'),
+    false,
+    'LlmSettingsPage should not directly instantiate query client just for bootstrap reads',
   );
   assert.equal(
     llmSettingsPageText.includes("queryClient.getQueryData<{ rows?: LlmRouteRow[] }>(['llm-settings-routes', category])"),

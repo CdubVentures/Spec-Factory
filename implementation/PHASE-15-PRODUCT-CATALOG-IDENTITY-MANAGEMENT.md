@@ -1,5 +1,8 @@
 # PHASE 15 — PRODUCT CATALOG & IDENTITY MANAGEMENT
 
+> Canonicalization update (2026-02-25): Workbook/spreadsheet authoring is retired. Use `_control_plane/field_studio_map.json` plus `_generated/*.json` artifacts as the authoritative contract surface. Any remaining spreadsheet wording in this document is historical context only.
+
+
 **Order:** After Phase 13 + Improvement Phases 01-02 (dead config fixes complete).
 **Priority:** HIGH — blocks reliable 24/7 operation and GUI usability.
 
@@ -846,3 +849,4 @@ Phase 15.3 (Production Source)
 | S3 pull requires AWS credentials | Source config validates credentials on save. Clear error in GUI if not configured |
 | Reconciler deletes wanted files | Default is dry-run. Diff preview required before deletion. Untracked files are never auto-deleted |
 | Pipeline picks up stale catalog | product_catalog.json has `meta.last_import` timestamp. Daemon logs catalog age on startup |
+

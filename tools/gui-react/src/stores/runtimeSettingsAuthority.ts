@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { autoSaveFingerprint } from './autoSaveFingerprint';
-import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from './settingsManifest';
+import { RUNTIME_SETTING_DEFAULTS, SETTINGS_AUTOSAVE_DEBOUNCE_MS } from './settingsManifest';
 import { createSettingsOptimisticMutationContract } from './settingsMutationContract';
 import { publishSettingsPropagation } from './settingsPropagationContract';
 
@@ -31,10 +31,78 @@ interface RuntimeSettingsAuthorityResult {
   saveNow: () => void;
 }
 
+interface RuntimeSettingsReaderOptions {
+  enabled?: boolean;
+}
+
+interface RuntimeSettingsReaderResult {
+  settings: RuntimeSettings | undefined;
+  isLoading: boolean;
+  reload: () => Promise<RuntimeSettings | undefined>;
+}
+
 export const RUNTIME_SETTINGS_QUERY_KEY = ['runtime-settings'] as const;
+
+const RUNTIME_SETTINGS_NUMERIC_BASELINE_KEYS = [
+  'fetchConcurrency',
+  'perHostMinDelayMs',
+  'crawleeRequestHandlerTimeoutSecs',
+  'dynamicFetchRetryBudget',
+  'dynamicFetchRetryBackoffMs',
+  'scannedPdfOcrMaxPages',
+  'scannedPdfOcrMaxPairs',
+  'scannedPdfOcrMinCharsPerPage',
+  'scannedPdfOcrMinLinesPerPage',
+  'scannedPdfOcrMinConfidence',
+  'resumeWindowHours',
+  'reextractAfterHours',
+] as const;
+
+type RuntimeSettingsNumericBaselineKey = (typeof RUNTIME_SETTINGS_NUMERIC_BASELINE_KEYS)[number];
+type RuntimeSettingsNumericSource = Partial<Record<RuntimeSettingsNumericBaselineKey, unknown>>;
+
+export type RuntimeSettingsNumericBaseline = Record<RuntimeSettingsNumericBaselineKey, number>;
+
+export const RUNTIME_SETTINGS_NUMERIC_BASELINE_DEFAULTS = Object.freeze({
+  fetchConcurrency: RUNTIME_SETTING_DEFAULTS.fetchConcurrency,
+  perHostMinDelayMs: RUNTIME_SETTING_DEFAULTS.perHostMinDelayMs,
+  crawleeRequestHandlerTimeoutSecs: RUNTIME_SETTING_DEFAULTS.crawleeRequestHandlerTimeoutSecs,
+  dynamicFetchRetryBudget: RUNTIME_SETTING_DEFAULTS.dynamicFetchRetryBudget,
+  dynamicFetchRetryBackoffMs: RUNTIME_SETTING_DEFAULTS.dynamicFetchRetryBackoffMs,
+  scannedPdfOcrMaxPages: RUNTIME_SETTING_DEFAULTS.scannedPdfOcrMaxPages,
+  scannedPdfOcrMaxPairs: RUNTIME_SETTING_DEFAULTS.scannedPdfOcrMaxPairs,
+  scannedPdfOcrMinCharsPerPage: RUNTIME_SETTING_DEFAULTS.scannedPdfOcrMinCharsPerPage,
+  scannedPdfOcrMinLinesPerPage: RUNTIME_SETTING_DEFAULTS.scannedPdfOcrMinLinesPerPage,
+  scannedPdfOcrMinConfidence: RUNTIME_SETTING_DEFAULTS.scannedPdfOcrMinConfidence,
+  resumeWindowHours: RUNTIME_SETTING_DEFAULTS.resumeWindowHours,
+  reextractAfterHours: RUNTIME_SETTING_DEFAULTS.reextractAfterHours,
+} satisfies RuntimeSettingsNumericBaseline);
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readNumericSetting(value: unknown, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+export function readRuntimeSettingsNumericBaseline(
+  source: RuntimeSettingsNumericSource | undefined,
+  fallback: RuntimeSettingsNumericBaseline = RUNTIME_SETTINGS_NUMERIC_BASELINE_DEFAULTS,
+): RuntimeSettingsNumericBaseline {
+  const baseline = {} as RuntimeSettingsNumericBaseline;
+  for (const key of RUNTIME_SETTINGS_NUMERIC_BASELINE_KEYS) {
+    baseline[key] = readNumericSetting(source?.[key], fallback[key]);
+  }
+  return baseline;
+}
+
+export function runtimeSettingsNumericBaselineEqual(
+  a: RuntimeSettingsNumericBaseline,
+  b: RuntimeSettingsNumericBaseline,
+) {
+  return RUNTIME_SETTINGS_NUMERIC_BASELINE_KEYS.every((key) => a[key] === b[key]);
 }
 
 export function readRuntimeSettingsSnapshot(queryClient: QueryClient): RuntimeSettings | undefined {
@@ -60,6 +128,14 @@ export function readRuntimeSettingsBootstrap<T extends object>(
   } as T;
 }
 
+export function useRuntimeSettingsBootstrap<T extends object>(defaults: T): T {
+  const queryClient = useQueryClient();
+  return useMemo(
+    () => readRuntimeSettingsBootstrap(queryClient, defaults),
+    [queryClient, defaults],
+  );
+}
+
 function normalizeRejected(value: unknown): Record<string, string> {
   if (!isObject(value)) return {};
   const rejected: Record<string, string> = {};
@@ -67,6 +143,31 @@ function normalizeRejected(value: unknown): Record<string, string> {
     rejected[key] = String(reason || 'rejected');
   }
   return rejected;
+}
+
+export function useRuntimeSettingsReader({
+  enabled = true,
+}: RuntimeSettingsReaderOptions = {}): RuntimeSettingsReaderResult {
+  const queryClient = useQueryClient();
+  const { data: settings, isLoading, refetch } = useQuery({
+    queryKey: RUNTIME_SETTINGS_QUERY_KEY,
+    queryFn: () => api.get<RuntimeSettings>('/runtime-settings'),
+    enabled,
+  });
+
+  async function reload() {
+    const result = await refetch();
+    if (result.data) {
+      queryClient.setQueryData(RUNTIME_SETTINGS_QUERY_KEY, result.data);
+    }
+    return result.data;
+  }
+
+  return {
+    settings,
+    isLoading,
+    reload,
+  };
 }
 
 function normalizeRuntimeSaveResult(

@@ -1,5 +1,8 @@
 # PHASE 9 OF 10 — PUBLISHING PIPELINE, OUTPUT FORMATS & CONTINUOUS ACCURACY MONITORING
 
+> Canonicalization update (2026-02-25): Workbook/spreadsheet authoring is retired. Use `_control_plane/field_studio_map.json` plus `_generated/*.json` artifacts as the authoritative contract surface. Any remaining spreadsheet wording in this document is historical context only.
+
+
 ## ROLE & CONTEXT
 
 You are a senior data-platform engineer building the output layer of a production data pipeline. Phases 1–8 built everything from field rules through extraction, orchestration, and human review. This phase builds the **publishing pipeline** — the system that transforms reviewed ProductRecords into clean, normalized output in multiple formats and continuously monitors accuracy.
@@ -435,3 +438,4 @@ node src/cli/spec.js llm-metrics --model gemini_flash --period month
 13. ☐ Source health check identifies blocked or degraded sources
 14. ☐ LLM cost tracking matches actual API billing within 10%
 15. ☐ Provenance query traces any value back to URL + snippet + quote in <1 second
+

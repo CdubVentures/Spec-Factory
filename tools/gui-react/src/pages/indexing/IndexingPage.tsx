@@ -7,8 +7,20 @@ import { useIndexLabStore } from '../../stores/indexlabStore';
 import { useCollapseStore } from '../../stores/collapseStore';
 import { usePersistedTab } from '../../stores/tabStore';
 import { CONVERGENCE_KNOB_GROUPS, useConvergenceSettingsAuthority } from '../../stores/convergenceSettingsAuthority';
-import { useRuntimeSettingsAuthority, readRuntimeSettingsBootstrap } from '../../stores/runtimeSettingsAuthority';
-import { LLM_SETTING_LIMITS, RUNTIME_SETTING_DEFAULTS } from '../../stores/settingsManifest';
+import {
+  readRuntimeSettingsNumericBaseline,
+  runtimeSettingsNumericBaselineEqual,
+  useRuntimeSettingsBootstrap,
+  useRuntimeSettingsAuthority,
+} from '../../stores/runtimeSettingsAuthority';
+import {
+  LLM_SETTING_LIMITS,
+  RUNTIME_SETTING_DEFAULTS,
+  type RuntimeOcrBackend,
+  type RuntimeProfile,
+  type RuntimeResumeMode,
+  type RuntimeSearchProvider,
+} from '../../stores/settingsManifest';
 import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore';
 import { Tip } from '../../components/common/Tip';
 import type { ProcessStatus } from '../../types/events';
@@ -89,38 +101,6 @@ function parseRuntimeLlmTokenCap(value: unknown): number | null {
   );
 }
 
-interface RuntimeSettingsNumericBaseline {
-  fetchConcurrency: number;
-  perHostMinDelayMs: number;
-  crawleeRequestHandlerTimeoutSecs: number;
-  dynamicFetchRetryBudget: number;
-  dynamicFetchRetryBackoffMs: number;
-  scannedPdfOcrMaxPages: number;
-  scannedPdfOcrMaxPairs: number;
-  scannedPdfOcrMinCharsPerPage: number;
-  scannedPdfOcrMinLinesPerPage: number;
-  scannedPdfOcrMinConfidence: number;
-  resumeWindowHours: number;
-  reextractAfterHours: number;
-}
-
-function runtimeSettingsBaselineEqual(a: RuntimeSettingsNumericBaseline, b: RuntimeSettingsNumericBaseline) {
-  return (
-    a.fetchConcurrency === b.fetchConcurrency
-    && a.perHostMinDelayMs === b.perHostMinDelayMs
-    && a.crawleeRequestHandlerTimeoutSecs === b.crawleeRequestHandlerTimeoutSecs
-    && a.dynamicFetchRetryBudget === b.dynamicFetchRetryBudget
-    && a.dynamicFetchRetryBackoffMs === b.dynamicFetchRetryBackoffMs
-    && a.scannedPdfOcrMaxPages === b.scannedPdfOcrMaxPages
-    && a.scannedPdfOcrMaxPairs === b.scannedPdfOcrMaxPairs
-    && a.scannedPdfOcrMinCharsPerPage === b.scannedPdfOcrMinCharsPerPage
-    && a.scannedPdfOcrMinLinesPerPage === b.scannedPdfOcrMinLinesPerPage
-    && a.scannedPdfOcrMinConfidence === b.scannedPdfOcrMinConfidence
-    && a.resumeWindowHours === b.resumeWindowHours
-    && a.reextractAfterHours === b.reextractAfterHours
-  );
-}
-
 function randomHex(bytes = 3) {
   const safeBytes = Math.max(1, Math.min(16, Number.parseInt(String(bytes || 3), 10) || 3));
   const seeded = new Uint8Array(safeBytes);
@@ -141,38 +121,6 @@ function buildRequestedRunId(date = new Date()) {
   return `${stamp}-${randomHex(3)}`;
 }
 
-interface RuntimeSettingsNumericBaseline {
-  fetchConcurrency: number;
-  perHostMinDelayMs: number;
-  crawleeRequestHandlerTimeoutSecs: number;
-  dynamicFetchRetryBudget: number;
-  dynamicFetchRetryBackoffMs: number;
-  scannedPdfOcrMaxPages: number;
-  scannedPdfOcrMaxPairs: number;
-  scannedPdfOcrMinCharsPerPage: number;
-  scannedPdfOcrMinLinesPerPage: number;
-  scannedPdfOcrMinConfidence: number;
-  resumeWindowHours: number;
-  reextractAfterHours: number;
-}
-
-function runtimeSettingsBaselineEqual(a: RuntimeSettingsNumericBaseline, b: RuntimeSettingsNumericBaseline) {
-  return (
-    a.fetchConcurrency === b.fetchConcurrency
-    && a.perHostMinDelayMs === b.perHostMinDelayMs
-    && a.crawleeRequestHandlerTimeoutSecs === b.crawleeRequestHandlerTimeoutSecs
-    && a.dynamicFetchRetryBudget === b.dynamicFetchRetryBudget
-    && a.dynamicFetchRetryBackoffMs === b.dynamicFetchRetryBackoffMs
-    && a.scannedPdfOcrMaxPages === b.scannedPdfOcrMaxPages
-    && a.scannedPdfOcrMaxPairs === b.scannedPdfOcrMaxPairs
-    && a.scannedPdfOcrMinCharsPerPage === b.scannedPdfOcrMinCharsPerPage
-    && a.scannedPdfOcrMinLinesPerPage === b.scannedPdfOcrMinLinesPerPage
-    && a.scannedPdfOcrMinConfidence === b.scannedPdfOcrMinConfidence
-    && a.resumeWindowHours === b.resumeWindowHours
-    && a.reextractAfterHours === b.reextractAfterHours
-  );
-}
-
 export function IndexingPage() {
   const category = useUiStore((s) => s.category);
   const runtimeAutoSaveEnabled = useUiStore((s) => s.runtimeAutoSaveEnabled);
@@ -184,12 +132,9 @@ export function IndexingPage() {
   const clearIndexLabRun = useIndexLabStore((s) => s.clearRun);
   const queryClient = useQueryClient();
   const runtimeSettingsAuthorityReady = useSettingsAuthorityStore((s) => s.snapshot.runtimeReady);
-  const runtimeSettingsBootstrap = useMemo(
-    () => readRuntimeSettingsBootstrap(queryClient, RUNTIME_SETTING_DEFAULTS),
-    [queryClient],
-  );
+  const runtimeSettingsBootstrap = useRuntimeSettingsBootstrap(RUNTIME_SETTING_DEFAULTS);
 
-  const [profile, setProfile] = useState<'fast' | 'standard' | 'thorough'>(runtimeSettingsBootstrap.profile);
+  const [profile, setProfile] = useState<RuntimeProfile>(runtimeSettingsBootstrap.profile);
   const [fetchConcurrency, setFetchConcurrency] = useState(String(runtimeSettingsBootstrap.fetchConcurrency));
   const [perHostMinDelayMs, setPerHostMinDelayMs] = useState(String(runtimeSettingsBootstrap.perHostMinDelayMs));
   const [dynamicCrawleeEnabled, setDynamicCrawleeEnabled] = useState(runtimeSettingsBootstrap.dynamicCrawleeEnabled);
@@ -200,18 +145,18 @@ export function IndexingPage() {
   const [dynamicFetchPolicyMapJson, setDynamicFetchPolicyMapJson] = useState(runtimeSettingsBootstrap.dynamicFetchPolicyMapJson);
   const [scannedPdfOcrEnabled, setScannedPdfOcrEnabled] = useState(runtimeSettingsBootstrap.scannedPdfOcrEnabled);
   const [scannedPdfOcrPromoteCandidates, setScannedPdfOcrPromoteCandidates] = useState(runtimeSettingsBootstrap.scannedPdfOcrPromoteCandidates);
-  const [scannedPdfOcrBackend, setScannedPdfOcrBackend] = useState<'auto' | 'tesseract' | 'none'>(runtimeSettingsBootstrap.scannedPdfOcrBackend);
+  const [scannedPdfOcrBackend, setScannedPdfOcrBackend] = useState<RuntimeOcrBackend>(runtimeSettingsBootstrap.scannedPdfOcrBackend);
   const [scannedPdfOcrMaxPages, setScannedPdfOcrMaxPages] = useState(String(runtimeSettingsBootstrap.scannedPdfOcrMaxPages));
   const [scannedPdfOcrMaxPairs, setScannedPdfOcrMaxPairs] = useState(String(runtimeSettingsBootstrap.scannedPdfOcrMaxPairs));
   const [scannedPdfOcrMinCharsPerPage, setScannedPdfOcrMinCharsPerPage] = useState(String(runtimeSettingsBootstrap.scannedPdfOcrMinCharsPerPage));
   const [scannedPdfOcrMinLinesPerPage, setScannedPdfOcrMinLinesPerPage] = useState(String(runtimeSettingsBootstrap.scannedPdfOcrMinLinesPerPage));
   const [scannedPdfOcrMinConfidence, setScannedPdfOcrMinConfidence] = useState(String(runtimeSettingsBootstrap.scannedPdfOcrMinConfidence));
-  const [resumeMode, setResumeMode] = useState<'auto' | 'force_resume' | 'start_over'>(runtimeSettingsBootstrap.resumeMode);
+  const [resumeMode, setResumeMode] = useState<RuntimeResumeMode>(runtimeSettingsBootstrap.resumeMode);
   const [resumeWindowHours, setResumeWindowHours] = useState(String(runtimeSettingsBootstrap.resumeWindowHours));
   const [reextractAfterHours, setReextractAfterHours] = useState(String(runtimeSettingsBootstrap.reextractAfterHours));
   const [reextractIndexed, setReextractIndexed] = useState(runtimeSettingsBootstrap.reextractIndexed);
   const [discoveryEnabled, setDiscoveryEnabled] = useState(runtimeSettingsBootstrap.discoveryEnabled);
-  const [searchProvider, setSearchProvider] = useState<'none' | 'google' | 'bing' | 'searxng' | 'duckduckgo' | 'dual'>(runtimeSettingsBootstrap.searchProvider as 'none' | 'google' | 'bing' | 'searxng' | 'duckduckgo' | 'dual');
+  const [searchProvider, setSearchProvider] = useState<RuntimeSearchProvider>(runtimeSettingsBootstrap.searchProvider as RuntimeSearchProvider);
   const [phase2LlmEnabled, setPhase2LlmEnabled] = useState(runtimeSettingsBootstrap.phase2LlmEnabled);
   const [phase2LlmModel, setPhase2LlmModel] = useState(runtimeSettingsBootstrap.phase2LlmModel);
   const [llmTokensPlan, setLlmTokensPlan] = useState(runtimeSettingsBootstrap.llmTokensPlan);
@@ -306,29 +251,18 @@ export function IndexingPage() {
   const [convergenceSettingsSaveMessage, setConvergenceSettingsSaveMessage] = useState('');
   const [runtimeSettingsSaveState, setRuntimeSettingsSaveState] = useState<'idle' | 'ok' | 'partial' | 'error'>('idle');
   const [runtimeSettingsSaveMessage, setRuntimeSettingsSaveMessage] = useState('');
-  const [runtimeSettingsFallbackBaseline, setRuntimeSettingsFallbackBaseline] = useState(() => ({
-    fetchConcurrency: runtimeSettingsBootstrap.fetchConcurrency,
-    perHostMinDelayMs: runtimeSettingsBootstrap.perHostMinDelayMs,
-    crawleeRequestHandlerTimeoutSecs: runtimeSettingsBootstrap.crawleeRequestHandlerTimeoutSecs,
-    dynamicFetchRetryBudget: runtimeSettingsBootstrap.dynamicFetchRetryBudget,
-    dynamicFetchRetryBackoffMs: runtimeSettingsBootstrap.dynamicFetchRetryBackoffMs,
-    scannedPdfOcrMaxPages: runtimeSettingsBootstrap.scannedPdfOcrMaxPages,
-    scannedPdfOcrMaxPairs: runtimeSettingsBootstrap.scannedPdfOcrMaxPairs,
-    scannedPdfOcrMinCharsPerPage: runtimeSettingsBootstrap.scannedPdfOcrMinCharsPerPage,
-    scannedPdfOcrMinLinesPerPage: runtimeSettingsBootstrap.scannedPdfOcrMinLinesPerPage,
-    scannedPdfOcrMinConfidence: runtimeSettingsBootstrap.scannedPdfOcrMinConfidence,
-    resumeWindowHours: runtimeSettingsBootstrap.resumeWindowHours,
-    reextractAfterHours: runtimeSettingsBootstrap.reextractAfterHours,
-  }));
+  const [runtimeSettingsFallbackBaseline, setRuntimeSettingsFallbackBaseline] = useState(() =>
+    readRuntimeSettingsNumericBaseline(runtimeSettingsBootstrap),
+  );
   const runtimeStringHydrationBindings = useMemo(() => ([
     {
       key: 'profile',
-      apply: (value: string) => setProfile(value as 'fast' | 'standard' | 'thorough'),
+      apply: (value: string) => setProfile(value as RuntimeProfile),
     },
     {
       key: 'searchProvider',
       allowEmpty: true,
-      apply: (value: string) => setSearchProvider(value as 'none' | 'google' | 'bing' | 'searxng' | 'duckduckgo' | 'dual'),
+      apply: (value: string) => setSearchProvider(value as RuntimeSearchProvider),
     },
     {
       key: 'phase2LlmModel',
@@ -380,11 +314,11 @@ export function IndexingPage() {
     },
     {
       key: 'resumeMode',
-      apply: (value: string) => setResumeMode(value as 'auto' | 'force_resume' | 'start_over'),
+      apply: (value: string) => setResumeMode(value as RuntimeResumeMode),
     },
     {
       key: 'scannedPdfOcrBackend',
-      apply: (value: string) => setScannedPdfOcrBackend(value as 'auto' | 'tesseract' | 'none'),
+      apply: (value: string) => setScannedPdfOcrBackend(value as RuntimeOcrBackend),
     },
     {
       key: 'dynamicFetchPolicyMapJson',
@@ -1064,48 +998,14 @@ export function IndexingPage() {
     },
   });
 
-  const runtimeSettingsBaseline = useMemo(() => ({
-    fetchConcurrency: Number.isFinite(Number(runtimeSettingsData?.fetchConcurrency))
-      ? Number(runtimeSettingsData?.fetchConcurrency)
-      : runtimeSettingsFallbackBaseline.fetchConcurrency,
-    perHostMinDelayMs: Number.isFinite(Number(runtimeSettingsData?.perHostMinDelayMs))
-      ? Number(runtimeSettingsData?.perHostMinDelayMs)
-      : runtimeSettingsFallbackBaseline.perHostMinDelayMs,
-    crawleeRequestHandlerTimeoutSecs: Number.isFinite(Number(runtimeSettingsData?.crawleeRequestHandlerTimeoutSecs))
-      ? Number(runtimeSettingsData?.crawleeRequestHandlerTimeoutSecs)
-      : runtimeSettingsFallbackBaseline.crawleeRequestHandlerTimeoutSecs,
-    dynamicFetchRetryBudget: Number.isFinite(Number(runtimeSettingsData?.dynamicFetchRetryBudget))
-      ? Number(runtimeSettingsData?.dynamicFetchRetryBudget)
-      : runtimeSettingsFallbackBaseline.dynamicFetchRetryBudget,
-    dynamicFetchRetryBackoffMs: Number.isFinite(Number(runtimeSettingsData?.dynamicFetchRetryBackoffMs))
-      ? Number(runtimeSettingsData?.dynamicFetchRetryBackoffMs)
-      : runtimeSettingsFallbackBaseline.dynamicFetchRetryBackoffMs,
-    scannedPdfOcrMaxPages: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMaxPages))
-      ? Number(runtimeSettingsData?.scannedPdfOcrMaxPages)
-      : runtimeSettingsFallbackBaseline.scannedPdfOcrMaxPages,
-    scannedPdfOcrMaxPairs: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMaxPairs))
-      ? Number(runtimeSettingsData?.scannedPdfOcrMaxPairs)
-      : runtimeSettingsFallbackBaseline.scannedPdfOcrMaxPairs,
-    scannedPdfOcrMinCharsPerPage: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMinCharsPerPage))
-      ? Number(runtimeSettingsData?.scannedPdfOcrMinCharsPerPage)
-      : runtimeSettingsFallbackBaseline.scannedPdfOcrMinCharsPerPage,
-    scannedPdfOcrMinLinesPerPage: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMinLinesPerPage))
-      ? Number(runtimeSettingsData?.scannedPdfOcrMinLinesPerPage)
-      : runtimeSettingsFallbackBaseline.scannedPdfOcrMinLinesPerPage,
-    scannedPdfOcrMinConfidence: Number.isFinite(Number(runtimeSettingsData?.scannedPdfOcrMinConfidence))
-      ? Number(runtimeSettingsData?.scannedPdfOcrMinConfidence)
-      : runtimeSettingsFallbackBaseline.scannedPdfOcrMinConfidence,
-    resumeWindowHours: Number.isFinite(Number(runtimeSettingsData?.resumeWindowHours))
-      ? Number(runtimeSettingsData?.resumeWindowHours)
-      : runtimeSettingsFallbackBaseline.resumeWindowHours,
-    reextractAfterHours: Number.isFinite(Number(runtimeSettingsData?.reextractAfterHours))
-      ? Number(runtimeSettingsData?.reextractAfterHours)
-      : runtimeSettingsFallbackBaseline.reextractAfterHours,
-  }), [runtimeSettingsData, runtimeSettingsFallbackBaseline]);
+  const runtimeSettingsBaseline = useMemo(
+    () => readRuntimeSettingsNumericBaseline(runtimeSettingsData, runtimeSettingsFallbackBaseline),
+    [runtimeSettingsData, runtimeSettingsFallbackBaseline],
+  );
 
   useEffect(() => {
     setRuntimeSettingsFallbackBaseline((previous) => (
-      runtimeSettingsBaselineEqual(previous, runtimeSettingsBaseline)
+      runtimeSettingsNumericBaselineEqual(previous, runtimeSettingsBaseline)
         ? previous
         : runtimeSettingsBaseline
     ));
@@ -4496,7 +4396,7 @@ export function IndexingPage() {
           setRuntimeSettingsDirty(true);
         }}
         searchProvider={searchProvider}
-        onSearchProviderChange={(v) => { setSearchProvider(v as typeof searchProvider); setRuntimeSettingsDirty(true); }}
+        onSearchProviderChange={(v) => { setSearchProvider(v); setRuntimeSettingsDirty(true); }}
         fetchConcurrency={fetchConcurrency}
         onFetchConcurrencyChange={(v) => { setFetchConcurrency(v); setRuntimeSettingsDirty(true); }}
         perHostMinDelayMs={perHostMinDelayMs}

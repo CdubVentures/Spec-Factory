@@ -17,6 +17,9 @@ test('ui autosave defaults are centralized in settings manifest and consumed by 
   const sharedDefaultsText = readText(SHARED_DEFAULTS);
   const uiStoreText = readText(UI_STORE);
   const uiSettingsAuthorityText = readText(UI_SETTINGS_AUTHORITY);
+  const manifestImportsSharedDefaults =
+    settingsManifestText.includes("from '../../../../src/shared/settingsDefaults.js';") &&
+    settingsManifestText.includes('SETTINGS_DEFAULTS');
 
   assert.equal(
     settingsManifestText.includes('export const UI_SETTING_DEFAULTS'),
@@ -24,7 +27,7 @@ test('ui autosave defaults are centralized in settings manifest and consumed by 
     'settings manifest should expose canonical ui autosave defaults',
   );
   assert.equal(
-    settingsManifestText.includes("import { SETTINGS_DEFAULTS } from '../../../../src/shared/settingsDefaults.js';"),
+    manifestImportsSharedDefaults,
     true,
     'settings manifest should import shared defaults',
   );

@@ -9,6 +9,9 @@ import {
   validateRunDataStorageSettings,
 } from '../services/runDataRelocationService.js';
 import {
+  applyConvergenceSettingsToConfig,
+  applyRuntimeSettingsToConfig,
+  deriveSettingsArtifactsFromUserSettings,
   loadUserSettingsSync,
   persistUserSettingsSections,
   snapshotConvergenceSettings,
@@ -70,7 +73,8 @@ export function registerConfigRoutes(ctx) {
         })()
   );
   const initialUserSettings = loadUserSettingsSync({ helperFilesRoot });
-  const uiSettingsState = snapshotUiSettings(initialUserSettings?.ui || {});
+  const initialSettingsArtifacts = deriveSettingsArtifactsFromUserSettings(initialUserSettings);
+  const uiSettingsState = snapshotUiSettings(initialSettingsArtifacts.sections.ui || {});
 
   async function persistLegacySettingsFile(filename, snapshot) {
     if (canonicalOnlySettingsWrites) return;
@@ -83,22 +87,35 @@ export function registerConfigRoutes(ctx) {
     );
   }
 
-  function captureConfigValues(source, keys) {
-    const snapshot = {};
-    for (const key of keys) {
-      snapshot[key] = source[key];
-    }
-    return snapshot;
+  function applyDerivedSettingsArtifacts(artifacts) {
+    if (!artifacts || typeof artifacts !== 'object') return;
+    const sections = artifacts.sections && typeof artifacts.sections === 'object'
+      ? artifacts.sections
+      : {};
+    applyRuntimeSettingsToConfig(config, sections.runtime || {});
+    applyConvergenceSettingsToConfig(config, sections.convergence || {});
+    Object.assign(runDataStorageState, snapshotStorageSettings(sections.storage || {}));
+    Object.assign(uiSettingsState, snapshotUiSettings(sections.ui || {}));
   }
 
-  function restoreConfigValues(target, snapshot) {
-    for (const [key, value] of Object.entries(snapshot || {})) {
-      if (value === undefined) {
-        delete target[key];
-      } else {
-        target[key] = value;
-      }
-    }
+  async function persistCanonicalSections({
+    runtime = null,
+    convergence = null,
+    storage: storageSection = null,
+    ui = null,
+    studio = null,
+  } = {}) {
+    const persisted = await persistUserSettingsSections({
+      helperFilesRoot,
+      runtime,
+      convergence,
+      storage: storageSection,
+      ui,
+      studio,
+    });
+    const artifacts = deriveSettingsArtifactsFromUserSettings(persisted);
+    applyDerivedSettingsArtifacts(artifacts);
+    return artifacts;
   }
 
   function recordRouteWriteAttempt(section, target) {
@@ -132,30 +149,33 @@ export function registerConfigRoutes(ctx) {
         'storageAutoSaveEnabled',
         'llmSettingsAutoSaveEnabled',
       ]);
-      const applied = {};
+      const nextUiSettings = {
+        ...snapshotUiSettings(uiSettingsState),
+      };
+      const appliedKeys = [];
       for (const [key, value] of Object.entries(body || {})) {
         if (!KEY_SET.has(key)) continue;
         const enabled = value === true || value === 'true' || value === 1;
-        uiSettingsState[key] = enabled;
-        applied[key] = enabled;
+        nextUiSettings[key] = enabled;
+        appliedKeys.push(key);
       }
-      const snapshot = snapshotUiSettings(uiSettingsState);
-      const appliedSnapshot = {};
-      for (const key of Object.keys(applied)) {
-        if (!Object.prototype.hasOwnProperty.call(snapshot, key)) continue;
-        appliedSnapshot[key] = snapshot[key];
-      }
-      Object.assign(uiSettingsState, snapshot);
+      const snapshot = snapshotUiSettings(nextUiSettings);
       recordRouteWriteAttempt('ui', 'ui-settings-route');
+      let persistedArtifacts = null;
       try {
-        await persistUserSettingsSections({
-          helperFilesRoot,
+        persistedArtifacts = await persistCanonicalSections({
           ui: snapshot,
         });
         recordRouteWriteOutcome('ui', 'ui-settings-route', true);
       } catch {
         recordRouteWriteOutcome('ui', 'ui-settings-route', false, 'ui_settings_persist_failed');
         return jsonRes(res, 500, { error: 'ui_settings_persist_failed' });
+      }
+      const persistedUiSnapshot = snapshotUiSettings(persistedArtifacts?.sections?.ui || {});
+      const appliedSnapshot = {};
+      for (const key of appliedKeys) {
+        if (!Object.prototype.hasOwnProperty.call(persistedUiSnapshot, key)) continue;
+        appliedSnapshot[key] = persistedUiSnapshot[key];
       }
       emitDataChange({
         broadcastWs,
@@ -166,7 +186,7 @@ export function registerConfigRoutes(ctx) {
           applied: appliedSnapshot,
         },
       });
-      return jsonRes(res, 200, { ok: true, ...snapshot, applied: appliedSnapshot });
+      return jsonRes(res, 200, { ok: true, ...persistedUiSnapshot, applied: appliedSnapshot });
     }
 
     if (
@@ -202,7 +222,8 @@ export function registerConfigRoutes(ctx) {
 
     if (parts[0] === 'storage-settings' && method === 'PUT') {
       const body = await readJsonBody(req).catch(() => ({}));
-      const normalized = normalizeRunDataStorageSettings(body, runDataStorageState);
+      const currentStorageSnapshot = snapshotStorageSettings(runDataStorageState);
+      const normalized = normalizeRunDataStorageSettings(body, currentStorageSnapshot);
       const validationError = validateRunDataStorageSettings(normalized);
       if (validationError) {
         return jsonRes(res, 400, { error: validationError });
@@ -215,23 +236,24 @@ export function registerConfigRoutes(ctx) {
           return jsonRes(res, 400, { error: message });
         }
       }
-      const previousStorageSnapshot = snapshotStorageSettings(runDataStorageState);
-      Object.assign(runDataStorageState, normalized, { updatedAt: new Date().toISOString() });
-      const storageSnapshot = snapshotStorageSettings(runDataStorageState);
+      const storageSnapshot = snapshotStorageSettings({
+        ...currentStorageSnapshot,
+        ...normalized,
+        updatedAt: new Date().toISOString(),
+      });
       recordRouteWriteAttempt('storage', 'storage-settings-route');
+      let persistedArtifacts = null;
       try {
-        await persistLegacySettingsFile(
-          'storage-settings.json',
-          sanitizeRunDataStorageSettingsForResponse(runDataStorageState),
-        );
-        await persistUserSettingsSections({
-          helperFilesRoot,
+        persistedArtifacts = await persistCanonicalSections({
           storage: storageSnapshot,
         });
+        await persistLegacySettingsFile(
+          'storage-settings.json',
+          persistedArtifacts.legacy.storage,
+        );
         recordRouteWriteOutcome('storage', 'storage-settings-route', true);
       } catch {
         recordRouteWriteOutcome('storage', 'storage-settings-route', false, 'storage_settings_persist_failed');
-        Object.assign(runDataStorageState, previousStorageSnapshot);
         return jsonRes(res, 500, { ok: false, error: 'storage_settings_persist_failed' });
       }
       emitDataChange({
@@ -255,7 +277,7 @@ export function registerConfigRoutes(ctx) {
       });
       return jsonRes(res, 200, {
         ok: true,
-        ...sanitizeRunDataStorageSettingsForResponse(storageSnapshot),
+        ...sanitizeRunDataStorageSettingsForResponse(runDataStorageState),
       });
     }
 
@@ -452,7 +474,9 @@ export function registerConfigRoutes(ctx) {
       const FLOAT_KEYS = new Set(CONVERGENCE_SETTINGS_ROUTE_PUT.floatKeys);
       const BOOL_KEYS = new Set(CONVERGENCE_SETTINGS_ROUTE_PUT.boolKeys);
       const ALL_KEYS = new Set([...INT_KEYS, ...FLOAT_KEYS, ...BOOL_KEYS]);
-      const previousConvergenceValues = captureConfigValues(config, ALL_KEYS);
+      const nextConvergenceSnapshot = {
+        ...snapshotConvergenceSettings(config),
+      };
       const applied = {};
       const rejected = {};
       for (const [key, value] of Object.entries(body || {})) {
@@ -461,32 +485,33 @@ export function registerConfigRoutes(ctx) {
           const n = Number.parseInt(String(value ?? ''), 10);
           if (!Number.isFinite(n)) { rejected[key] = 'invalid_integer'; continue; }
           const clamped = Math.max(0, n);
-          config[key] = clamped;
+          nextConvergenceSnapshot[key] = clamped;
           applied[key] = clamped;
         } else if (FLOAT_KEYS.has(key)) {
           const n = Number.parseFloat(String(value ?? ''));
           if (!Number.isFinite(n)) { rejected[key] = 'invalid_float'; continue; }
           const clamped = Math.max(0, Math.min(1, n));
-          config[key] = clamped;
+          nextConvergenceSnapshot[key] = clamped;
           applied[key] = clamped;
         } else if (BOOL_KEYS.has(key)) {
           const b = value === true || value === 'true' || value === 1;
-          config[key] = b;
+          nextConvergenceSnapshot[key] = b;
           applied[key] = b;
         }
       }
-      const convergenceSnapshot = snapshotConvergenceSettings(config);
       recordRouteWriteAttempt('convergence', 'convergence-settings-route');
+      let persistedArtifacts = null;
       try {
-        await persistLegacySettingsFile('convergence-settings.json', convergenceSnapshot);
-        await persistUserSettingsSections({
-          helperFilesRoot,
-          convergence: convergenceSnapshot,
+        persistedArtifacts = await persistCanonicalSections({
+          convergence: nextConvergenceSnapshot,
         });
+        await persistLegacySettingsFile(
+          'convergence-settings.json',
+          persistedArtifacts.legacy.convergence,
+        );
         recordRouteWriteOutcome('convergence', 'convergence-settings-route', true);
       } catch {
         recordRouteWriteOutcome('convergence', 'convergence-settings-route', false, 'convergence_settings_persist_failed');
-        restoreConfigValues(config, previousConvergenceValues);
         return jsonRes(res, 500, { ok: false, error: 'convergence_settings_persist_failed' });
       }
       emitDataChange({
@@ -546,16 +571,9 @@ export function registerConfigRoutes(ctx) {
       const INT_RANGE_MAP = RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap;
       const FLOAT_RANGE_MAP = RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap;
       const BOOL_MAP = RUNTIME_SETTINGS_ROUTE_PUT.boolMap;
-      const runtimeRollbackKeys = new Set([
-        ...Object.values(STRING_ENUM_MAP).map((entry) => entry.cfgKey),
-        ...Object.values(STRING_FREE_MAP),
-        ...Object.values(INT_RANGE_MAP).map((entry) => entry.cfgKey),
-        ...Object.values(FLOAT_RANGE_MAP).map((entry) => entry.cfgKey),
-        ...Object.values(BOOL_MAP),
-        'dynamicFetchPolicyMap',
-        'dynamicFetchPolicyMapJson',
-      ]);
-      const previousRuntimeValues = captureConfigValues(config, runtimeRollbackKeys);
+      const nextRuntimeSnapshot = {
+        ...snapshotRuntimeSettings(config),
+      };
 
       const applied = {};
       const rejected = {};
@@ -565,13 +583,13 @@ export function registerConfigRoutes(ctx) {
           const { cfgKey, allowed } = STRING_ENUM_MAP[key];
           const str = String(value ?? '').trim().toLowerCase();
           if (!allowed.includes(str)) { rejected[key] = 'invalid_enum'; continue; }
-          config[cfgKey] = str;
+          nextRuntimeSnapshot[cfgKey] = str;
           applied[key] = str;
         } else if (key === DYNAMIC_FETCH_POLICY_MAP_JSON_KEY) {
           const normalized = String(value ?? '').trim();
           if (!normalized) {
-            config.dynamicFetchPolicyMapJson = '';
-            config.dynamicFetchPolicyMap = {};
+            nextRuntimeSnapshot.dynamicFetchPolicyMapJson = '';
+            nextRuntimeSnapshot.dynamicFetchPolicyMap = {};
             applied[key] = '';
             continue;
           }
@@ -581,51 +599,49 @@ export function registerConfigRoutes(ctx) {
               rejected[key] = 'invalid_json_object';
               continue;
             }
-            config.dynamicFetchPolicyMap = parsed;
-            config.dynamicFetchPolicyMapJson = JSON.stringify(parsed);
-            applied[key] = config.dynamicFetchPolicyMapJson;
+            nextRuntimeSnapshot.dynamicFetchPolicyMap = parsed;
+            nextRuntimeSnapshot.dynamicFetchPolicyMapJson = JSON.stringify(parsed);
+            applied[key] = nextRuntimeSnapshot.dynamicFetchPolicyMapJson;
           } catch {
             rejected[key] = 'invalid_json_object';
           }
         } else if (key in STRING_FREE_MAP) {
           const cfgKey = STRING_FREE_MAP[key];
           const str = String(value ?? '').trim();
-          config[cfgKey] = str;
+          nextRuntimeSnapshot[cfgKey] = str;
           applied[key] = str;
         } else if (key in INT_RANGE_MAP) {
           const { cfgKey, min, max } = INT_RANGE_MAP[key];
           const n = Number.parseInt(String(value ?? ''), 10);
           if (!Number.isFinite(n)) { rejected[key] = 'invalid_integer'; continue; }
           const clamped = Math.max(min, Math.min(max, n));
-          config[cfgKey] = clamped;
+          nextRuntimeSnapshot[cfgKey] = clamped;
           applied[key] = clamped;
         } else if (key in FLOAT_RANGE_MAP) {
           const { cfgKey, min, max } = FLOAT_RANGE_MAP[key];
           const n = Number.parseFloat(String(value ?? ''));
           if (!Number.isFinite(n)) { rejected[key] = 'invalid_float'; continue; }
           const clamped = Math.max(min, Math.min(max, n));
-          config[cfgKey] = clamped;
+          nextRuntimeSnapshot[cfgKey] = clamped;
           applied[key] = clamped;
         } else if (key in BOOL_MAP) {
           const cfgKey = BOOL_MAP[key];
           const b = value === true || value === 'true' || value === 1;
-          config[cfgKey] = b;
+          nextRuntimeSnapshot[cfgKey] = b;
           applied[key] = b;
         }
       }
 
-      const runtimeSnapshot = snapshotRuntimeSettings(config);
       recordRouteWriteAttempt('runtime', 'runtime-settings-route');
+      let persistedArtifacts = null;
       try {
-        await persistLegacySettingsFile('settings.json', runtimeSnapshot);
-        await persistUserSettingsSections({
-          helperFilesRoot,
-          runtime: runtimeSnapshot,
+        persistedArtifacts = await persistCanonicalSections({
+          runtime: nextRuntimeSnapshot,
         });
+        await persistLegacySettingsFile('settings.json', persistedArtifacts.legacy.runtime);
         recordRouteWriteOutcome('runtime', 'runtime-settings-route', true);
       } catch {
         recordRouteWriteOutcome('runtime', 'runtime-settings-route', false, 'runtime_settings_persist_failed');
-        restoreConfigValues(config, previousRuntimeValues);
         return jsonRes(res, 500, { ok: false, error: 'runtime_settings_persist_failed' });
       }
       emitDataChange({

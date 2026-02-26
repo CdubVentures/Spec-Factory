@@ -18,6 +18,21 @@ test('runtime panel shows dirty status for both manual-save and autosave modes',
     'runtime panel should surface unsaved state for autosave-on and autosave-off modes',
   );
   assert.equal(
+    runtimePanelText.includes("runtimeSettingsSaveMessage || 'all changes saved.'"),
+    true,
+    'runtime panel should show explicit clean-state save status text when no unsaved changes remain',
+  );
+  assert.equal(
+    runtimePanelText.includes("convergenceSettingsSaveMessage || 'all changes saved.'"),
+    true,
+    'convergence save status should show explicit clean-state text when no unsaved changes remain',
+  );
+  assert.equal(
+    runtimePanelText.includes("'saving…'"),
+    false,
+    'runtime panel should avoid non-ascii saving text variants that can render as mojibake',
+  );
+  assert.equal(
     runtimePanelText.includes('runtimeSettingsDirty && !runtimeAutoSave'),
     false,
     'runtime panel should not hide dirty status while autosave is enabled',

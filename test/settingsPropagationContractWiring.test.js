@@ -58,6 +58,6 @@ test('settings bootstrap subscribes to propagation events and reloads relevant a
   assert.equal(text.includes("case 'llm'"), true, 'settings bootstrap should handle llm propagation events');
   assert.equal(text.includes('queryClient.invalidateQueries({ queryKey: llmSettingsRoutesQueryKey(scopedCategory) })'), true, 'settings bootstrap should invalidate scoped llm query keys');
   assert.equal(text.includes("case 'source-strategy'"), true, 'settings bootstrap should handle source-strategy propagation events');
-  assert.equal(text.includes("queryClient.invalidateQueries({ queryKey: ['source-strategy', scopedCategory] })"), true, 'settings bootstrap should invalidate scoped source-strategy query keys');
+  assert.equal(text.includes('sourceStrategyQueryKey'), true, 'settings bootstrap should use shared source-strategy query-key helper');
+  assert.equal(text.includes('queryClient.invalidateQueries({ queryKey: sourceStrategyQueryKey(scopedCategory) })'), true, 'settings bootstrap should invalidate scoped source-strategy query keys');
 });
-

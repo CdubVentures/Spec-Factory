@@ -13,25 +13,30 @@ test('runtime ops workers tab consumes runtime settings through authority and pr
   const workersTabText = readText(WORKERS_TAB);
 
   assert.equal(
-    workersTabText.includes('useRuntimeSettingsAuthority'),
+    workersTabText.includes('useRuntimeSettingsReader'),
     true,
-    'WorkersTab should consume runtime settings via runtime settings authority',
+    'WorkersTab should consume runtime settings via runtime settings reader authority hook',
   );
   assert.equal(
     workersTabText.includes('/runtime-settings'),
     false,
     'WorkersTab should not directly call runtime settings endpoint',
   );
-  assert.match(
-    workersTabText,
-    /useRuntimeSettingsAuthority\(\{[\s\S]*payload: \{\},[\s\S]*dirty: false,[\s\S]*autoSaveEnabled: false,[\s\S]*\}\)/,
-    'WorkersTab should read runtime settings in read-only authority mode',
+  assert.equal(
+    workersTabText.includes('useRuntimeSettingsAuthority({'),
+    false,
+    'WorkersTab should not call runtime writer authority in fake read-only mode',
+  );
+  assert.equal(
+    workersTabText.includes('useRuntimeSettingsReader()'),
+    true,
+    'WorkersTab should use the dedicated runtime settings reader hook',
   );
 
   assert.match(
     workersTabText,
-    /const runtimeSettingsSnapshot = useMemo\(\(\) => \{[\s\S]*readRuntimeSettingsSnapshot\(queryClient\)/,
-    'WorkersTab should derive a runtime settings snapshot from authority data with shared cache-reader fallback',
+    /const \{ settings: runtimeSettingsSnapshot \} = useRuntimeSettingsReader\(\);/,
+    'WorkersTab should read runtime settings snapshot directly from reader authority hook',
   );
   assert.match(
     workersTabText,

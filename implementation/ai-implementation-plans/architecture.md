@@ -1,5 +1,8 @@
 # SpecFactory — Component AI Validation Architecture
 
+> Canonicalization update (2026-02-25): Workbook/spreadsheet authoring is retired. Use `_control_plane/field_studio_map.json` plus `_generated/*.json` artifacts as the authoritative contract surface. Any remaining spreadsheet wording in this document is historical context only.
+
+
 > **Complete system reference for Component Discovery, Tiered Resolution, and AI-Powered Validation**
 >
 > Last updated: 2026-02-16 | Status: Production-ready
@@ -87,7 +90,7 @@ graph TD
 ```mermaid
 flowchart LR
     subgraph COMPILE["Compile Time"]
-        WB["spreadsheet Field Studio<br/>(mouseData.xlsm)"] --> CC["categoryCompile.js"]
+        WB["spreadsheet Field Studio<br/>(field_studio_map.json)"] --> CC["categoryCompile.js"]
         CC --> FRJ["field_rules.json<br/><i>match/ai/priority config</i>"]
         CC --> CDB["component_db/<br/>sensors.json<br/>switches.json<br/>encoders.json<br/>materials.json"]
     end
@@ -336,7 +339,7 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-    A["spreadsheet Field Studio<br/>(mouseData.xlsm)"] --> B["categoryCompile.js<br/>component_sources config"]
+    A["spreadsheet Field Studio<br/>(field_studio_map.json)"] --> B["categoryCompile.js<br/>component_sources config"]
     B --> C["Read sheets:<br/>Sensors, Switches,<br/>Encoders, Materials"]
     C --> D["Parse property_mappings<br/>with type, unit,<br/>variance_policy, constraints"]
     D --> E["Generate component_db/<br/>sensors.json"]
@@ -1379,3 +1382,4 @@ graph TB
 ---
 
 *This document covers the complete Component AI Validation architecture as implemented in the SpecFactory codebase. For questions or updates, refer to the file reference index in Section 16.*
+

@@ -96,7 +96,7 @@ Use these checks when counts look wrong:
 This section is the deterministic test contract for `_test_*` categories.
 
 ### Required test data behavior
-1. Seed pools come from `implementation/grid-rules/component-identity-pools-10-tabs.xlsx`.
+1. Seed pools are app-generated from component types via `src/testing/testDataProvider.js` (`loadComponentIdentityPools` / `buildDeterministicIdentityPool`).
 2. For maker-capable component types, each component type test data must include all three identity lanes for the same component name:
 - `name + maker A`
 - `name + maker B`

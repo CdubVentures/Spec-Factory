@@ -400,3 +400,32 @@ Result:
 Audit verdict: PASS.
 
 All frontend setting knobs that users can save/autosave in audited settings surfaces persist across reload and are wired to global/shared authority state where expected. Downstream runtime consumers were verified by targeted runtime-wiring tests and behavior tests.
+
+## Current Full-Audit Rerun (2026-02-25, Current Workspace)
+
+Fresh full-audit rerun completed in this workspace with explicit persistence + propagation + behavior evidence:
+
+1. Broad frontend settings matrix (authority ownership, autosave, persistence, reload propagation, GUI flows):  
+   `node --test --test-concurrency=1` across all tests matching `settings|persistence|autosave|sourceStrategy|convergence|runtime|storage|llm|studio`  
+   Result: `471/471` passing.
+2. Runtime behavior-effect verification:  
+   `node --test --test-concurrency=1 test/extractCandidatesLLM.test.js test/runtimeHelpers.test.js test/sourceStrategy.test.js test/retrievalIdentityFilter.test.js`  
+   Result: `41/41` passing.
+3. Persistence failure/rollback + canonical durability verification:  
+   `node --test --test-concurrency=1 test/configRoutesPersistenceFailure.test.js test/settingsCanonicalOnlyWrites.test.js test/userSettingsService.test.js test/guiServerRootPathResolution.test.js`  
+   Result: `11/11` passing.
+
+Build verification during this rerun:
+
+- Initial `npm run gui:build` failed with duplicate function implementations:
+  - `tools/gui-react/src/pages/indexing/IndexingPage.tsx`
+  - `tools/gui-react/src/pages/runtime-ops/panels/WorkersTab.tsx`
+- Fix applied:
+  - removed duplicate `RuntimeSettingsNumericBaseline` / `runtimeSettingsBaselineEqual` declarations in `IndexingPage.tsx`.
+  - removed duplicate `toOptionalPositiveInt` declaration in `WorkersTab.tsx`.
+- Post-fix verification:
+  1. `npm run gui:build` -> passing.
+  2. `node --test --test-concurrency=1 test/runtimeSettingsKeyCoverageMatrix.test.js test/runtimeLlmTokenFallbackWiring.test.js` -> `2/2` passing.
+  3. `node --test --test-concurrency=1 test/runtimeOpsSettingsPropagationWiring.test.js test/runtimeOpsGuiSettingsPersistencePropagation.test.js` -> `2/2` passing.
+
+Rerun verdict: PASS.

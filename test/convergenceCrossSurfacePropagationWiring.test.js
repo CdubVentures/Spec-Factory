@@ -29,8 +29,8 @@ test('convergence duplicate surfaces are wired to a shared authority and key con
 
   assert.match(
     pipelinePageText,
-    /import\s*\{\s*CONVERGENCE_KNOB_GROUPS,\s*CONVERGENCE_SETTING_DEFAULTS,\s*useConvergenceSettingsAuthority\s*\}\s*from '\.\.\/\.\.\/stores\/convergenceSettingsAuthority';/,
-    'Pipeline settings should consume convergence knob metadata and defaults from the convergence authority module',
+    /import\s*\{\s*CONVERGENCE_KNOB_GROUPS,[\s\S]*parseConvergenceNumericInput,[\s\S]*readConvergenceKnobValue,[\s\S]*useConvergenceSettingsAuthority[\s\S]*\}\s*from '\.\.\/\.\.\/stores\/convergenceSettingsAuthority';/,
+    'Pipeline settings should consume convergence knob metadata/value resolver helpers from the convergence authority module',
   );
   assert.equal(
     pipelinePageText.includes("from '../../stores/settingsManifest'"),
@@ -47,6 +47,11 @@ test('convergence duplicate surfaces are wired to a shared authority and key con
     runtimePanelText,
     /convergenceKnobGroups\.map[\s\S]*convergenceSettings\[knob\.key\][\s\S]*onConvergenceKnobUpdate\(knob\.key,/,
     'Runtime panel should render and update convergence knobs by canonical knob key from shared metadata',
+  );
+  assert.equal(
+    runtimePanelText.includes('readConvergenceKnobValue'),
+    true,
+    'Runtime panel should use shared convergence value resolver helpers instead of local fallback branches',
   );
   assert.equal(
     indexingPageText.includes('/convergence-settings'),

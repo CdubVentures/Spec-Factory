@@ -58,9 +58,9 @@ test('source strategy authority is category-scoped end-to-end', () => {
   );
 
   assert.equal(
-    /useSourceStrategyAuthority\(\{\s*category,\s*enabled:\s*category !== 'all'/.test(settingsAuthorityText),
+    /useSourceStrategyReader\(\{\s*category,\s*enabled:\s*category !== 'all'/.test(settingsAuthorityText),
     true,
-    'settings bootstrap should pass active category and all-scope enable guard to source strategy authority',
+    'settings bootstrap should pass active category and all-scope enable guard to source strategy reader authority',
   );
   assert.equal(
     pipelineSettingsPageText.includes('const category = useUiStore((s) => s.category);'),

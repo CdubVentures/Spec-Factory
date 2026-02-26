@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { readConvergenceSettingsSnapshot, useConvergenceSettingsAuthority } from './convergenceSettingsAuthority';
-import { readRuntimeSettingsSnapshot, useRuntimeSettingsAuthority } from './runtimeSettingsAuthority';
-import { readStorageSettingsSnapshot, useStorageSettingsAuthority } from './storageSettingsAuthority';
-import { useSourceStrategyAuthority } from './sourceStrategyAuthority';
-import { llmSettingsRoutesQueryKey, useLlmSettingsAuthority } from './llmSettingsAuthority';
+import { readConvergenceSettingsSnapshot, useConvergenceSettingsReader } from './convergenceSettingsAuthority';
+import { readRuntimeSettingsSnapshot, useRuntimeSettingsReader } from './runtimeSettingsAuthority';
+import { readStorageSettingsSnapshot, useStorageSettingsReader } from './storageSettingsAuthority';
+import { readSourceStrategySnapshot, sourceStrategyQueryKey, useSourceStrategyReader } from './sourceStrategyAuthority';
+import { llmSettingsRoutesQueryKey, readLlmSettingsSnapshot, useLlmSettingsReader } from './llmSettingsAuthority';
 import { readUiSettingsSnapshot, useUiSettingsAuthority } from './uiSettingsAuthority';
-import { SETTINGS_AUTOSAVE_DEBOUNCE_MS, STORAGE_SETTING_DEFAULTS } from './settingsManifest';
-import type { LlmRouteRow } from '../types/llmSettings';
+import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from './settingsManifest';
 import { useUiStore } from './uiStore';
 import { autoSaveFingerprint } from './autoSaveFingerprint';
 import { useSettingsAuthorityStore } from './settingsAuthorityStore';
@@ -46,18 +45,6 @@ export function isSettingsAuthoritySnapshotReady(
   }
   return snapshot.sourceStrategyReady && snapshot.llmSettingsReady;
 }
-
-const EMPTY_RUNTIME_PAYLOAD = {};
-const EMPTY_STORAGE_PAYLOAD = {
-  enabled: STORAGE_SETTING_DEFAULTS.enabled,
-  destinationType: STORAGE_SETTING_DEFAULTS.destinationType,
-  localDirectory: STORAGE_SETTING_DEFAULTS.localDirectory,
-  s3Region: STORAGE_SETTING_DEFAULTS.s3Region,
-  s3Bucket: STORAGE_SETTING_DEFAULTS.s3Bucket,
-  s3Prefix: STORAGE_SETTING_DEFAULTS.s3Prefix,
-  s3AccessKeyId: STORAGE_SETTING_DEFAULTS.s3AccessKeyId,
-};
-const EMPTY_LLM_ROWS: LlmRouteRow[] = [];
 
 interface SettingsHydrationPipelineOptions {
   category: string;
@@ -121,34 +108,24 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const [uiSettingsPersistState, setUiSettingsPersistState] = useState<'idle' | 'saving' | 'error'>('idle');
   const [uiSettingsPersistMessage, setUiSettingsPersistMessage] = useState('');
 
-  const runtime = useRuntimeSettingsAuthority({
-    payload: EMPTY_RUNTIME_PAYLOAD,
-    dirty: false,
-    autoSaveEnabled: false,
+  const runtime = useRuntimeSettingsReader({
     enabled: false,
   });
-  const convergence = useConvergenceSettingsAuthority({
+  const convergence = useConvergenceSettingsReader({
     enabled: false,
   });
-  const storage = useStorageSettingsAuthority({
-    payload: EMPTY_STORAGE_PAYLOAD,
-    dirty: false,
-    autoSaveEnabled: false,
+  const storage = useStorageSettingsReader({
     enabled: false,
   });
-  const sourceStrategy = useSourceStrategyAuthority({
+  const sourceStrategy = useSourceStrategyReader({
     category,
     enabled: category !== 'all',
     autoQueryEnabled: false,
   });
-  const llm = useLlmSettingsAuthority({
+  const llm = useLlmSettingsReader({
     category,
     enabled: category !== 'all',
     autoQueryEnabled: false,
-    rows: EMPTY_LLM_ROWS,
-    dirty: false,
-    autoSaveEnabled: false,
-    editVersion: 0,
   });
   const uiSettings = useUiSettingsAuthority({
     enabled: false,
@@ -204,10 +181,10 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const hasUiSettingsSnapshot = readUiSettingsSnapshot(queryClient) !== undefined;
   const hasSourceStrategySnapshot = category === 'all'
     ? true
-    : queryClient.getQueryData(['source-strategy', category]) !== undefined;
+    : readSourceStrategySnapshot(queryClient, category) !== undefined;
   const hasLlmSettingsSnapshot = category === 'all'
     ? true
-    : queryClient.getQueryData(llmSettingsRoutesQueryKey(category)) !== undefined;
+    : readLlmSettingsSnapshot(queryClient, category) !== undefined;
 
   const authoritySnapshot = useMemo<SettingsAuthoritySnapshot>(() => ({
     category,
@@ -353,7 +330,7 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
             }
             return;
           }
-          queryClient.invalidateQueries({ queryKey: ['source-strategy', scopedCategory] });
+          queryClient.invalidateQueries({ queryKey: sourceStrategyQueryKey(scopedCategory) });
           if (category !== 'all' && scopedCategory === category) {
             void sourceStrategyReloadRef.current();
           }

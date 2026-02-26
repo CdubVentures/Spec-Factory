@@ -13,19 +13,24 @@ test('runtime settings local state initializes from authority bootstrap cache, n
   const indexingPageText = readText(INDEXING_PAGE);
 
   assert.equal(
-    indexingPageText.includes('readRuntimeSettingsBootstrap'),
+    indexingPageText.includes('useRuntimeSettingsBootstrap'),
     true,
-    'IndexingPage should import runtime settings bootstrap helper from authority',
+    'IndexingPage should import runtime settings bootstrap selector hook from authority',
+  );
+  assert.equal(
+    indexingPageText.includes('const runtimeSettingsBootstrap = useRuntimeSettingsBootstrap(RUNTIME_SETTING_DEFAULTS);'),
+    true,
+    'IndexingPage bootstrap should read runtime authority snapshot via shared selector hook',
   );
   assert.equal(
     indexingPageText.includes('readRuntimeSettingsBootstrap(queryClient, RUNTIME_SETTING_DEFAULTS)'),
-    true,
-    'IndexingPage bootstrap should read runtime authority snapshot via shared helper',
+    false,
+    'IndexingPage should not manually read runtime bootstrap via local queryClient calls',
   );
   assert.equal(
-    indexingPageText.includes("const [profile, setProfile] = useState<'fast' | 'standard' | 'thorough'>(runtimeSettingsBootstrap.profile);"),
+    indexingPageText.includes('const [profile, setProfile] = useState<RuntimeProfile>(runtimeSettingsBootstrap.profile);'),
     true,
-    'runtime profile local state should initialize from authority bootstrap',
+    'runtime profile local state should initialize from authority bootstrap using shared runtime profile type',
   );
   assert.equal(
     indexingPageText.includes("const [fetchConcurrency, setFetchConcurrency] = useState(String(runtimeSettingsBootstrap.fetchConcurrency));"),

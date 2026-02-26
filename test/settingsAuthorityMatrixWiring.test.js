@@ -22,8 +22,18 @@ test('settings authority bootstrap composes runtime, convergence, and autosave s
   const settingsAuthorityText = readText(SETTINGS_AUTHORITY);
   const appShellText = readText(APP_SHELL);
 
-  assert.equal(settingsAuthorityText.includes('useRuntimeSettingsAuthority'), true, 'settings authority should compose runtime settings authority slice');
-  assert.equal(settingsAuthorityText.includes('useConvergenceSettingsAuthority'), true, 'settings authority should compose convergence settings authority slice');
+  assert.equal(settingsAuthorityText.includes('useRuntimeSettingsReader'), true, 'settings authority should compose runtime settings reader slice for bootstrap hydration');
+  assert.equal(settingsAuthorityText.includes('useConvergenceSettingsReader'), true, 'settings authority should compose convergence settings reader slice for bootstrap hydration');
+  assert.equal(settingsAuthorityText.includes('useRuntimeSettingsAuthority({'), false, 'settings authority bootstrap should not instantiate runtime writer authority for read-only hydration');
+  assert.equal(settingsAuthorityText.includes('useConvergenceSettingsAuthority({'), false, 'settings authority bootstrap should not instantiate convergence writer authority for read-only hydration');
+  assert.equal(settingsAuthorityText.includes('useStorageSettingsReader'), true, 'settings authority should compose storage settings reader slice for bootstrap hydration');
+  assert.equal(settingsAuthorityText.includes('useSourceStrategyReader'), true, 'settings authority should compose source strategy reader slice for bootstrap hydration');
+  assert.equal(settingsAuthorityText.includes('useLlmSettingsReader'), true, 'settings authority should compose llm settings reader slice for bootstrap hydration');
+  assert.equal(settingsAuthorityText.includes('readSourceStrategySnapshot'), true, 'settings authority readiness checks should use source strategy snapshot reader helper');
+  assert.equal(settingsAuthorityText.includes('readLlmSettingsSnapshot'), true, 'settings authority readiness checks should use llm snapshot reader helper');
+  assert.equal(settingsAuthorityText.includes('useStorageSettingsAuthority({'), false, 'settings authority bootstrap should not instantiate storage writer authority for read-only hydration');
+  assert.equal(settingsAuthorityText.includes('useSourceStrategyAuthority({'), false, 'settings authority bootstrap should not instantiate source strategy writer authority for read-only hydration');
+  assert.equal(settingsAuthorityText.includes('useLlmSettingsAuthority({'), false, 'settings authority bootstrap should not instantiate llm writer authority for read-only hydration');
   assert.equal(settingsAuthorityText.includes('runtimeAutoSaveEnabled'), true, 'settings authority should include runtime autosave state');
   assert.equal(settingsAuthorityText.includes('llmSettingsAutoSaveEnabled'), true, 'settings authority should include llm autosave state');
   assert.equal(settingsAuthorityText.includes('uiSettingsPersistState'), true, 'settings authority should include ui settings persistence status in canonical snapshot');

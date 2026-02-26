@@ -1,5 +1,8 @@
 # PHASE 1 OF 10 — CATEGORY SCHEMA & FIELD RULES AUTHORING SYSTEM
 
+> Canonicalization update (2026-02-25): Workbook/spreadsheet authoring is retired. Use `_control_plane/field_studio_map.json` plus `_generated/*.json` artifacts as the authoritative contract surface. Any remaining spreadsheet wording in this document is historical context only.
+
+
 ## ROLE & CONTEXT
 
 You are a senior systems architect building the **Field Rules Studio** — the authoring layer that defines the per-category "field contract" for a 24/7 evidence-first Spec Factory. This is Phase 1 of 10. Nothing else works until this is correct. Every downstream system (crawling, extraction, validation, publishing, human review) reads the artifacts this phase produces.
@@ -1039,3 +1042,4 @@ These are functional (they produce correct results) but represent maintenance de
 7) All critical Studio config knobs are consumed by runtime (8/8 dead configs fixed). **(DONE)**
 8) Centralized accessor pattern for all field rule properties (17 functions, 10 files migrated). **(DONE)**
 9) Orphan properties stripped from compiled output (4 properties removed). **(DONE)**
+

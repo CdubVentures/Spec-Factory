@@ -21,6 +21,21 @@ test('runtime settings are owned by a shared authority module', () => {
   const runtimePanelText = readText(RUNTIME_PANEL);
 
   assert.equal(authorityText.includes('/runtime-settings'), true, 'runtime settings authority should own runtime settings API route usage');
+  assert.equal(
+    authorityText.includes('RUNTIME_SETTINGS_NUMERIC_BASELINE_DEFAULTS'),
+    true,
+    'runtime settings authority should own numeric fallback baseline defaults',
+  );
+  assert.equal(
+    authorityText.includes('readRuntimeSettingsNumericBaseline'),
+    true,
+    'runtime settings authority should expose numeric baseline readers for runtime payload fallback wiring',
+  );
+  assert.equal(
+    authorityText.includes('runtimeSettingsNumericBaselineEqual'),
+    true,
+    'runtime settings authority should expose numeric baseline equality helper for drift-safe updates',
+  );
   assert.equal(indexingPageText.includes('useRuntimeSettingsAuthority'), true, 'Indexing page should use runtime settings authority');
   assert.equal(indexingPageText.includes('useSettingsAuthorityStore'), true, 'Indexing page should read runtime readiness from shared settings authority snapshot');
   assert.equal(indexingPageText.includes('/runtime-settings'), false, 'Indexing page should not directly read/write runtime settings endpoint');

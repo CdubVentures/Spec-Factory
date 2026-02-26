@@ -52,4 +52,29 @@ test('llm settings range handlers rely on shared clamp fallback contract without
     true,
     'Max-token slider should pass parsed values directly into shared clamp helper',
   );
+  assert.equal(
+    text.includes('presetConfig.minEvidenceRefsRequired ?? 1'),
+    false,
+    'Route presets should not use hardcoded min-evidence fallback literals',
+  );
+  assert.equal(
+    text.includes('presetConfig.minEvidenceRefsRequired || 0'),
+    false,
+    'Route presets should not coerce min-evidence defaults through hardcoded zero fallbacks',
+  );
+  assert.equal(
+    text.includes('row.llm_output_min_evidence_refs_required || 0'),
+    false,
+    'Route presets should preserve explicit zero values and use bounds-driven nullish fallback',
+  );
+  assert.equal(
+    text.includes('presetConfig.minEvidenceRefsRequired ?? MIN_EVIDENCE_BOUNDS.min'),
+    true,
+    'Route presets should derive min-evidence fallback from shared settings bounds',
+  );
+  assert.equal(
+    text.includes('row.llm_output_min_evidence_refs_required ?? MIN_EVIDENCE_BOUNDS.min'),
+    true,
+    'Route presets should derive row min-evidence fallback from shared settings bounds',
+  );
 });

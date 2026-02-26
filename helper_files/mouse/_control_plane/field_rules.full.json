@@ -60,7 +60,7 @@
         "non_blank_names": 40,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
-        "scanned_rows": 46,
+        "scanned_rows": 0,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
@@ -141,7 +141,7 @@
         "non_blank_names": 3,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
-        "scanned_rows": 13,
+        "scanned_rows": 0,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
@@ -405,7 +405,7 @@
         "non_blank_names": 106,
         "numeric_only_names": 0,
         "numeric_only_ratio": 0,
-        "scanned_rows": 114,
+        "scanned_rows": 0,
         "stop_after_blank_names": 10,
         "stop_after_blank_primary": 10
       },
@@ -472,7 +472,7 @@
     }
   },
   "enum_buckets": {},
-  "field_studio_map_hash": "d03026bc6fffad5222b5fa3280b80cdc93cd6a6af51d42694d15bd01c02bf3d0",
+  "field_studio_map_hash": "a7b45e1c7cd5bc409189d4b6d14e5ec453998bd3f27c7b80e7af9c570ca01268",
   "field_studio_source": {
     "hash": null,
     "path": ""
@@ -11136,7 +11136,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-02-25T18:50:55.275Z",
+  "generated_at": "2026-02-25T22:43:10.386Z",
   "global": {
     "availability_levels": [
       "expected",

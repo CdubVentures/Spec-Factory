@@ -40,3 +40,21 @@ export interface SharedSettingsDefaults {
 }
 
 export const SETTINGS_DEFAULTS: SharedSettingsDefaults;
+
+export interface SharedRuntimeOptionValues {
+  profile: readonly ['fast', 'standard', 'thorough'];
+  searchProvider: readonly ['none', 'google', 'bing', 'searxng', 'duckduckgo', 'dual'];
+  resumeMode: readonly ['auto', 'force_resume', 'start_over'];
+  scannedPdfOcrBackend: readonly ['auto', 'tesseract', 'none'];
+}
+
+export interface SharedStorageOptionValues {
+  destinationType: readonly ['local', 's3'];
+}
+
+export interface SharedSettingsOptionValues {
+  runtime: SharedRuntimeOptionValues;
+  storage: SharedStorageOptionValues;
+}
+
+export const SETTINGS_OPTION_VALUES: SharedSettingsOptionValues;

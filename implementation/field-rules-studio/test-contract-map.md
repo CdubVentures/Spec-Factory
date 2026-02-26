@@ -19,10 +19,7 @@ This map is for future developers to quickly locate the contract source of truth
 
 ## Audit artifacts
 
-- `implementation/field-rules-studio/audits/2026-02-25-app-native-compile-audit.md`
-- `implementation/field-rules-studio/audits/2026-02-25-compile-generated-audit.md`
-- `implementation/field-rules-studio/audits/2026-02-25-full-audit-refresh.md`
-- `implementation/field-rules-studio/audits/2026-02-25-full-compile-generated-test-compiler-audit.md`
+- `implementation/field-rules-studio/audits/2026-02-25-full-compile-generated-test-compiler-audit-rerun.md`
 - `implementation/field-rules-studio/audits/2026-02-25-mouse-key-authority-matrix.csv`
 - `implementation/field-rules-studio/audits/2026-02-25-mouse-key-authority-matrix-summary.json`
 - `implementation/field-rules-studio/audits/2026-02-25-mouse-tab3-coverage-refresh.json`

@@ -9,7 +9,7 @@ Goal: 6-11 rows per component table, 1-3 non-discovered rows, >=2 linked product
 ## Test Mode Slot-Fill Contract
 
 ### Required test data behavior
-1. Seed pools come from `implementation/grid-rules/component-identity-pools-10-tabs.xlsx`.
+1. Seed pools are app-generated from component types via `src/testing/testDataProvider.js` (`loadComponentIdentityPools` / `buildDeterministicIdentityPool`).
 2. For maker-capable component types, each component type test data must include all three identity lanes for the same component name:
    - `name + maker A`
    - `name + maker B`

@@ -1,5 +1,8 @@
 # PHASE 10 OF 10 — MULTI-CATEGORY EXPANSION, INTEGRATION TESTING & PRODUCTION HARDENING
 
+> Canonicalization update (2026-02-25): Workbook/spreadsheet authoring is retired. Use `_control_plane/field_studio_map.json` plus `_generated/*.json` artifacts as the authoritative contract surface. Any remaining spreadsheet wording in this document is historical context only.
+
+
 ## ROLE & CONTEXT
 
 You are a senior staff engineer responsible for taking a working prototype to production-grade reliability. Phases 1–9 built the complete Spec Factory for the `mouse` category. This final phase proves the system is **category-agnostic** by expanding to at least 2 additional categories (monitor + keyboard), builds comprehensive end-to-end integration tests, and hardens every component for 24/7 unattended operation.
@@ -574,3 +577,4 @@ If all acceptance criteria pass across all 10 phases, you have built:
 ✅ Running **24/7** with self-healing and alerting
 
 **The Spec Factory is operational. 🏭**
+

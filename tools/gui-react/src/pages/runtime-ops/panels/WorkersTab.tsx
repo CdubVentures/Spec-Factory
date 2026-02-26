@@ -1,9 +1,9 @@
 import { useMemo, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client';
 import { usePersistedToggle } from '../../../stores/collapseStore';
 import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
-import { useRuntimeSettingsAuthority, readRuntimeSettingsSnapshot } from '../../../stores/runtimeSettingsAuthority';
+import { useRuntimeSettingsReader } from '../../../stores/runtimeSettingsAuthority';
 import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse, PrefetchLiveSettings } from '../types';
 import { getRefetchInterval } from '../helpers';
 import { WorkerSubTabs } from './WorkerSubTabs';
@@ -49,12 +49,6 @@ function toOptionalPositiveInt(value: unknown): number | undefined {
   return parsed;
 }
 
-function toOptionalPositiveInt(value: unknown): number | undefined {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
-  return parsed;
-}
-
 function toOptionalBoolean(value: unknown): boolean | undefined {
   if (typeof value === 'boolean') return value;
   return undefined;
@@ -66,7 +60,6 @@ function toOptionalString(value: unknown): string | undefined {
 }
 
 export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, category, isRunning, wsUrl }: WorkersTabProps) {
-  const queryClient = useQueryClient();
   const [poolFilter, setPoolFilter] = usePersistedTab<string>(`runtimeOps:workers:poolFilter:${category}`, 'all');
   const [drawerOpen, toggleDrawerOpen] = usePersistedToggle(`runtimeOps:workers:drawer:${category}`, true);
   const [prefetchTab, setPrefetchTab] = usePersistedNullableTab<PrefetchTabKey>(
@@ -82,16 +75,7 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
     refetchInterval: getRefetchInterval(isRunning, prefetchTab === null, 3000, 15000),
   });
 
-  const { settings: rawSettings } = useRuntimeSettingsAuthority({
-    payload: {},
-    dirty: false,
-    autoSaveEnabled: false,
-  });
-
-  const runtimeSettingsSnapshot = useMemo(() => {
-    if (rawSettings && typeof rawSettings === 'object') return rawSettings as Record<string, unknown>;
-    return readRuntimeSettingsSnapshot(queryClient);
-  }, [queryClient, rawSettings]);
+  const { settings: runtimeSettingsSnapshot } = useRuntimeSettingsReader();
 
   const liveSettings = useMemo((): PrefetchLiveSettings | undefined => {
     if (!runtimeSettingsSnapshot) return undefined;

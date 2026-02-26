@@ -968,7 +968,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B57",
           "note": "acceleration",
@@ -1094,7 +1094,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B80",
           "row": 80,
@@ -1211,7 +1211,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B26",
           "note": "construction",
@@ -1338,7 +1338,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B25",
           "note": "MUST BE WHOLE NUMBER",
@@ -1467,7 +1467,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B21",
           "row": 21,
@@ -1583,7 +1583,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B22",
           "row": 22,
@@ -1704,7 +1704,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B72",
           "note": "click_force (fail safe js) MUST BE FILLED IN",
@@ -1837,7 +1837,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B70",
           "note": "(fail safe js) MUST BE FILLED IN",
@@ -2005,7 +2005,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B71",
           "row": 71,
@@ -2156,7 +2156,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "W",
           "header": "coating",
@@ -2295,7 +2295,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B13",
           "note": "general features",
@@ -2422,7 +2422,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B19",
           "row": 19,
@@ -2533,7 +2533,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "P",
           "header": "connection",
@@ -2667,7 +2667,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "Q",
           "header": "connectivity",
@@ -2805,7 +2805,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B69",
           "row": 69,
@@ -2932,7 +2932,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B14",
           "row": 14,
@@ -3055,7 +3055,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B10",
           "row": 10,
@@ -3180,7 +3180,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B55",
           "note": "dpi",
@@ -3312,7 +3312,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "component_db": "encoder",
         "component_sheet": "encoder",
         "dataEntry": {
@@ -3429,7 +3429,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "component_db": "encoder",
         "component_field": "brand",
         "dataEntry": {
@@ -3546,7 +3546,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B75",
           "row": 75,
@@ -3653,7 +3653,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "U",
           "header": "feet_material",
@@ -3780,7 +3780,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B50",
           "row": 50,
@@ -3891,7 +3891,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "D",
           "header": "form_factor",
@@ -4014,7 +4014,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "G",
           "header": "front_flare",
@@ -4147,7 +4147,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B41",
           "row": 41,
@@ -4275,7 +4275,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B42",
           "row": 42,
@@ -4397,7 +4397,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B61",
           "row": 61,
@@ -4522,7 +4522,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B35",
           "note": "Size (mandatory data pt.)",
@@ -4655,7 +4655,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B29",
           "row": 29,
@@ -4771,7 +4771,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B68",
           "row": 68,
@@ -4882,7 +4882,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "F",
           "header": "hump",
@@ -5018,7 +5018,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B56",
           "row": 56,
@@ -5155,7 +5155,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B58",
           "note": "lift (fail safe js)",
@@ -5306,7 +5306,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "V",
           "header": "lift_notes",
@@ -5441,7 +5441,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "T",
           "header": "lighting",
@@ -5584,7 +5584,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B33",
           "note": "Size (mandatory data pt.)",
@@ -5723,7 +5723,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "component_db": "material",
         "component_sheet": "material",
         "dataEntry": {
@@ -5842,7 +5842,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "L",
           "header": "mcu",
@@ -5969,7 +5969,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B44",
           "row": 44,
@@ -6088,7 +6088,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B77",
           "row": 77,
@@ -6207,7 +6207,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B60",
           "row": 60,
@@ -6323,7 +6323,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B20",
           "row": 20,
@@ -6439,7 +6439,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B63",
           "row": 63,
@@ -6555,7 +6555,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B81",
           "row": 81,
@@ -6676,7 +6676,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B82",
           "row": 82,
@@ -6794,7 +6794,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B23",
           "row": 23,
@@ -6927,7 +6927,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "R",
           "header": "polling",
@@ -7073,7 +7073,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B12",
           "note": "SORT & Filter (fail safe js)",
@@ -7191,7 +7191,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B83",
           "row": 83,
@@ -7312,7 +7312,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B78",
           "row": 78,
@@ -7431,7 +7431,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B9",
           "note": "SORT",
@@ -7554,7 +7554,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B16",
           "row": 16,
@@ -7675,7 +7675,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "component_db": "sensor",
         "component_sheet": "sensors",
         "dataEntry": {
@@ -7799,7 +7799,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "component_db": "sensor",
         "component_field": "Brand",
         "dataEntry": {
@@ -7923,7 +7923,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B47",
           "note": "HAS CONDTIONAL FORMULA vs R.Date",
@@ -8050,7 +8050,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B51",
           "note": "respoe time (fail safe js) MUST BE FILLED IN",
@@ -8218,7 +8218,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B52",
           "row": 52,
@@ -8363,7 +8363,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B48",
           "row": 48,
@@ -8475,7 +8475,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "H",
           "header": "sensor_type",
@@ -8597,7 +8597,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "E",
           "header": "shape",
@@ -8729,7 +8729,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B53",
           "note": "delay between DPI cycling",
@@ -8856,7 +8856,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B76",
           "row": 76,
@@ -8975,7 +8975,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B30",
           "row": 30,
@@ -9091,7 +9091,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B11",
           "row": 11,
@@ -9207,7 +9207,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B62",
           "row": 62,
@@ -9328,7 +9328,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "component_db": "switch",
         "component_sheet": "switches",
         "dataEntry": {
@@ -9452,7 +9452,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "component_db": "switch",
         "component_field": "switch_brand",
         "dataEntry": {
@@ -9566,7 +9566,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "data_lists": {
           "column": "S",
           "header": "switch_type",
@@ -9698,7 +9698,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B67",
           "row": 67,
@@ -9837,7 +9837,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B40",
           "row": 40,
@@ -9953,7 +9953,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B79",
           "row": 79,
@@ -10083,7 +10083,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B31",
           "note": "weight (mandatory data pt.)",
@@ -10222,7 +10222,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B34",
           "note": "Size (mandatory data pt.)",
@@ -10355,7 +10355,7 @@
         ]
       },
       "evidence_required": true,
-      "excel_hints": {
+      "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B24",
           "row": 24,
@@ -10636,3 +10636,4 @@
     }
   }
 }
+
