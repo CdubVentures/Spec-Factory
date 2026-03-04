@@ -5,16 +5,28 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createReadStream } from 'node:fs';
 import { spawn, exec as execCb } from 'node:child_process';
-import { WebSocketServer } from 'ws';
-import { watch } from 'chokidar';
 import { loadConfig, loadDotEnvFile } from '../config.js';
+import { CONFIG_MANIFEST_DEFAULTS } from '../core/config/manifest.js';
 import { createStorage } from '../s3/storage.js';
 import { loadCategoryConfig } from '../categories/loader.js';
 import { loadQueueState, saveQueueState, listQueueProducts, upsertQueueProduct, clearQueueByStatus } from '../queue/queueState.js';
-import { buildReviewLayout, buildProductReviewPayload, buildReviewQueue, readLatestArtifacts, buildFieldLabelsMap } from '../review/reviewGridData.js';
-import { buildComponentReviewLayout, buildComponentReviewPayloads, buildEnumReviewPayloads } from '../review/componentReviewData.js';
-import { setOverrideFromCandidate, setManualOverride, buildReviewMetrics } from '../review/overrideWorkflow.js';
-import { applySharedLaneState } from '../review/keyReviewState.js';
+import {
+  buildReviewLayout,
+  buildProductReviewPayload,
+  buildReviewQueue,
+  readLatestArtifacts,
+  buildFieldLabelsMap,
+  buildComponentReviewLayout,
+  buildComponentReviewPayloads,
+  buildEnumReviewPayloads,
+  setOverrideFromCandidate,
+  setManualOverride,
+  buildReviewMetrics,
+  applySharedLaneState,
+  findProductsReferencingComponent,
+  cascadeComponentChange,
+  cascadeEnumChange,
+} from '../features/review-curation/index.js';
 import {
   resolveExplicitPositiveId,
   resolveGridFieldStateForMutation,
@@ -27,7 +39,6 @@ import { handleReviewEnumMutationRoute } from './reviewEnumMutationRoutes.js';
 import { buildLlmMetrics } from '../publish/publishingPipeline.js';
 import { buildSearchHints, buildAnchorsSuggestions, buildKnownValuesSuggestions } from '../learning/learningSuggestionEmitter.js';
 import { SpecDb } from '../db/specDb.js';
-import { findProductsReferencingComponent, cascadeComponentChange, cascadeEnumChange } from '../review/componentImpact.js';
 import { componentReviewPath } from '../engine/curationSuggestions.js';
 import { runComponentReviewBatch } from '../pipeline/componentReviewBatch.js';
 import { invalidateFieldRulesCache } from '../field-rules/loader.js';
@@ -70,7 +81,7 @@ import {
   applyConvergenceSettingsToConfig,
   applyRuntimeSettingsToConfig,
   loadUserSettingsSync,
-} from './services/userSettingsService.js';
+} from '../features/settings-authority/index.js';
 import {
   loadBrandRegistry,
   saveBrandRegistry,
@@ -139,6 +150,20 @@ import {
   listIndexLabRuns,
   buildIndexingDomainChecklist,
 } from './routes/indexlabDataBuilders.js';
+import {
+  createApiPathParser,
+  createApiRouteDispatcher,
+  createApiHttpRequestHandler,
+} from '../app/api/requestDispatch.js';
+import { createGuiApiRouteRegistry } from '../app/api/routeRegistry.js';
+import {
+  createCatalogBuilder,
+  createCompiledComponentDbPatcher,
+} from '../app/api/catalogHelpers.js';
+import { createCategoryAliasResolver } from '../app/api/categoryAlias.js';
+import { createSpecDbRuntime } from '../app/api/specDbRuntime.js';
+import { createProcessRuntime } from '../app/api/processRuntime.js';
+import { createRealtimeBridge } from '../app/api/realtimeBridge.js';
 
 const GUI_SERVER_FILE_PATH = fileURLToPath(import.meta.url);
 const PROJECT_ROOT = path.resolve(path.dirname(GUI_SERVER_FILE_PATH), '..', '..');
@@ -174,20 +199,20 @@ function assertNoShadowHelperRuntime({ helperRoot, launchCwd = process.cwd() } =
   ].join(';'));
 }
 
-// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// helpers: toInt, toFloat, toUnitRatio, hasKnownValue → ./helpers/requestHelpers.js
+// Ã¢â€â‚¬Ã¢â€â‚¬ Helpers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// helpers: toInt, toFloat, toUnitRatio, hasKnownValue â†’ ./helpers/requestHelpers.js
 
-// helper: deriveTrafficLightCounts → ./helpers/requestHelpers.js
+// helper: deriveTrafficLightCounts â†’ ./helpers/requestHelpers.js
 
-// helpers: normalizeModelToken..resolveLlmRoleDefaults → ./helpers/requestHelpers.js
+// helpers: normalizeModelToken..resolveLlmRoleDefaults â†’ ./helpers/requestHelpers.js
 
-// helper: resolveLlmKnobDefaults → ./helpers/requestHelpers.js
+// helper: resolveLlmKnobDefaults â†’ ./helpers/requestHelpers.js
 
-// helpers: resolvePricingForModel..collectLlmModels → ./helpers/requestHelpers.js
+// helpers: resolvePricingForModel..collectLlmModels â†’ ./helpers/requestHelpers.js
 
-// helpers: markEnumSuggestionStatus..safeJoin → ./helpers/requestHelpers.js
+// helpers: markEnumSuggestionStatus..safeJoin â†’ ./helpers/requestHelpers.js
 
-// indexlab data builders: readIndexLabRunEvents..buildIndexingDomainChecklist → ./routes/indexlabDataBuilders.js
+// indexlab data builders: readIndexLabRunEvents..buildIndexingDomainChecklist â†’ ./routes/indexlabDataBuilders.js
 
 function mimeType(ext) {
   const map = {
@@ -198,7 +223,7 @@ function mimeType(ext) {
   return map[ext] || 'application/octet-stream';
 }
 
-// â”€â”€ Catalog helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Catalog helpers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function cleanVariant(v) {
   return canonicalCleanVariant(v);
 }
@@ -222,16 +247,19 @@ function buildProductIdFromParts(category, brand, model, variant) {
 }
 
 
-// â”€â”€ Args â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Args Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 const args = process.argv.slice(2);
 function argVal(name, fallback) {
   const idx = args.indexOf(`--${name}`);
   return idx >= 0 && idx + 1 < args.length ? args[idx + 1] : fallback;
 }
-const PORT = toInt(argVal('port', '8788'), 8788);
+const PORT = toInt(
+  argVal('port', process.env.PORT || CONFIG_MANIFEST_DEFAULTS.PORT || '8788'),
+  Number.parseInt(String(CONFIG_MANIFEST_DEFAULTS.PORT || '8788'), 10) || 8788
+);
 const isLocal = args.includes('--local');
 
-// â”€â”€ Config + Storage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Config + Storage Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 if (!loadDotEnvFile()) {
   loadDotEnvFile(path.join(PROJECT_ROOT, '.env'));
 }
@@ -285,15 +313,6 @@ const runDataStorageState = normalizeRunDataStorageSettings({
   ...userSettings.storage,
 });
 
-initIndexLabDataBuilders({
-  indexLabRoot: INDEXLAB_ROOT,
-  outputRoot: OUTPUT_ROOT,
-  storage,
-  config,
-  getSpecDbReady,
-  isProcessRunning,
-});
-
 const markEnumSuggestionStatusBound = (category, field, value, status = 'accepted') =>
   markEnumSuggestionStatus(category, field, value, status, HELPER_ROOT);
 
@@ -306,111 +325,96 @@ const sessionCache = createSessionCache({
   helperRoot: HELPER_ROOT,
 });
 
-function normalizeCategoryToken(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, '_')
-    .replace(/_+$/g, '');
-}
+const resolveCategoryAlias = createCategoryAliasResolver({
+  helperRoot: HELPER_ROOT,
+  path,
+  existsSync: (targetPath) => fsSync.existsSync(targetPath),
+});
 
-function categoryExists(category) {
-  if (!category) return false;
-  const categoryPath = path.join(HELPER_ROOT, category);
-  return fsSync.existsSync(categoryPath);
-}
+// Ã¢â€â‚¬Ã¢â€â‚¬ Lazy SpecDb Cache Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+const {
+  specDbCache,
+  reviewLayoutByCategory,
+  getSpecDb,
+  getSpecDbReady,
+} = createSpecDbRuntime({
+  resolveCategoryAlias,
+  specDbClass: SpecDb,
+  path,
+  fsSync,
+  syncSpecDbForCategory: syncSpecDbForCategoryService,
+  config,
+  logger: console,
+});
 
-function resolveCategoryAlias(category) {
-  const normalized = normalizeCategoryToken(category);
-  if (!normalized) return normalized;
-  if (normalized.startsWith('_test_')) return normalized;
-  if (!normalized.startsWith('test_')) return normalized;
+let processStatusProvider = () => ({ running: false });
+let forwardScreencastControlProvider = () => false;
 
-  if (categoryExists(normalized)) return normalized;
-  const canonicalTestCategory = `_${normalized}`;
-  if (categoryExists(canonicalTestCategory)) return canonicalTestCategory;
-  return normalized;
-}
+const {
+  broadcastWs,
+  setupWatchers,
+  attachWebSocketUpgrade,
+} = createRealtimeBridge({
+  path,
+  fs,
+  outputRoot: OUTPUT_ROOT,
+  indexLabRoot: INDEXLAB_ROOT,
+  parseNdjson,
+  dataChangeMatchesCategory,
+  processStatus: () => processStatusProvider(),
+  forwardScreencastControl: (options) => forwardScreencastControlProvider(options),
+});
 
-// â”€â”€ Lazy SpecDb Cache â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const specDbCache = new Map();
-const specDbSeedPromises = new Map();
-const reviewLayoutByCategory = new Map();
+// Ã¢â€â‚¬Ã¢â€â‚¬ Process Manager Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+const {
+  getSearxngStatus,
+  startSearxngStack,
+  startProcess,
+  stopProcess,
+  processStatus,
+  isProcessRunning,
+  waitForProcessExit,
+  forwardScreencastControl,
+} = createProcessRuntime({
+  resolveProjectPath,
+  path,
+  fsSync,
+  config,
+  spawn,
+  execCb,
+  broadcastWs,
+  sessionCache,
+  invalidateFieldRulesCache,
+  reviewLayoutByCategory,
+  syncSpecDbForCategory: ({ category }) =>
+    syncSpecDbForCategoryService({
+      category,
+      config,
+      resolveCategoryAlias,
+      getSpecDbReady,
+    }),
+  handleCompileProcessCompletion,
+  handleIndexLabProcessCompletion,
+  runDataStorageState,
+  indexLabRoot: INDEXLAB_ROOT,
+  outputRoot: OUTPUT_ROOT,
+  outputPrefix: config.s3OutputPrefix || 'specs/outputs',
+  getSpecDbReady,
+  resolveCategoryAlias,
+  logger: console,
+});
 
-function getSpecDb(category) {
-  const resolvedCategory = resolveCategoryAlias(category);
-  if (!resolvedCategory) return null;
-  if (specDbCache.has(resolvedCategory)) return specDbCache.get(resolvedCategory);
+processStatusProvider = processStatus;
+forwardScreencastControlProvider = forwardScreencastControl;
 
-  // Strict ID-driven runtime: use only the category-local SpecDb.
-  const primaryPath = path.join('.specfactory_tmp', resolvedCategory, 'spec.sqlite');
-
-  try {
-    fsSync.accessSync(primaryPath);
-    const db = new SpecDb({ dbPath: primaryPath, category: resolvedCategory });
-    // Check if this DB actually has seeded data
-    if (db.isSeeded()) {
-      specDbCache.set(resolvedCategory, db);
-      return db;
-    }
-    // DB exists but is not seeded yet - trigger background seed and return it
-    specDbCache.set(resolvedCategory, db);
-    triggerAutoSeed(resolvedCategory, db);
-    return db;
-  } catch { /* create */ }
-
-  // No DB found - create at the primary path and trigger seed
-  try {
-    fsSync.mkdirSync(path.dirname(primaryPath), { recursive: true });
-    const db = new SpecDb({ dbPath: primaryPath, category: resolvedCategory });
-    specDbCache.set(resolvedCategory, db);
-    triggerAutoSeed(resolvedCategory, db);
-    return db;
-  } catch {
-    specDbCache.set(resolvedCategory, null);
-    return null;
-  }
-}
-
-/** Background auto-seed: loads field rules and seeds the SpecDb */
-function triggerAutoSeed(category, db) {
-  const resolvedCategory = resolveCategoryAlias(category);
-  if (!resolvedCategory) return;
-  if (specDbSeedPromises.has(resolvedCategory)) return;
-  const promise = (async () => {
-    try {
-      const syncResult = await syncSpecDbForCategoryService({
-        category: resolvedCategory,
-        config,
-        resolveCategoryAlias,
-        getSpecDbReady: async () => db,
-      });
-      const syncVersion = Number.parseInt(String(syncResult.specdb_sync_version || ''), 10);
-      const syncVersionText = Number.isFinite(syncVersion) && syncVersion > 0 ? `, version ${syncVersion}` : '';
-      console.log(`[auto-seed] ${resolvedCategory}: ${syncResult.components_seeded} components, ${syncResult.list_values_seeded} list values, ${syncResult.products_seeded} products (${syncResult.duration_ms}ms${syncVersionText})`);
-    } catch (err) {
-      console.error(`[auto-seed] ${resolvedCategory} failed:`, err.message);
-    } finally {
-      specDbSeedPromises.delete(resolvedCategory);
-    }
-  })();
-  specDbSeedPromises.set(resolvedCategory, promise);
-}
-
-async function getSpecDbReady(category) {
-  const resolvedCategory = resolveCategoryAlias(category);
-  const db = getSpecDb(resolvedCategory);
-  if (!db) return null;
-  const pending = specDbSeedPromises.get(resolvedCategory);
-  if (pending) {
-    try {
-      await pending;
-    } catch {
-      // keep best available DB handle; caller validates seeded content.
-    }
-  }
-  return getSpecDb(resolvedCategory);
-}
+initIndexLabDataBuilders({
+  indexLabRoot: INDEXLAB_ROOT,
+  outputRoot: OUTPUT_ROOT,
+  storage,
+  config,
+  getSpecDbReady,
+  isProcessRunning,
+});
 
 function ensureGridKeyReviewState(specDb, category, productId, fieldKey, itemFieldStateId = null) {
   if (!specDb || !productId || !fieldKey) return null;
@@ -944,7 +948,13 @@ async function getReviewFieldRow(category, fieldKey) {
   }
   try {
     const session = await sessionCache.getSessionRules(category);
-    const layout = await buildReviewLayout({ storage, config, category, fieldOrderOverride: session.draftFieldOrder, fieldsOverride: session.draftFields });
+    const layout = await buildReviewLayout({
+      storage,
+      config,
+      category,
+      fieldOrderOverride: session.mergedFieldOrder,
+      fieldsOverride: session.mergedFields,
+    });
     const rowsByKey = new Map((layout.rows || []).map((row) => [String(row.key || ''), row]));
     reviewLayoutByCategory.set(category, { rowsByKey, loadedAt: Date.now() });
     return rowsByKey.get(fieldKey) || null;
@@ -1592,761 +1602,37 @@ async function propagateSharedLaneDecision({
   return { propagated: false };
 }
 
-// â”€â”€ Process Manager â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-let childProc = null;
-let childLog = [];
-const MAX_LOG = 2000;
-let lastProcessSnapshot = {
-  pid: null,
-  command: null,
-  startedAt: null,
-  runId: null,
-  exitCode: null,
-  endedAt: null
-};
-let relocatingRunId = null;
 
-function isProcessRunning() {
-  return Boolean(childProc && childProc.exitCode === null);
-}
+const parsePath = createApiPathParser({ resolveCategoryAlias });
 
-function normalizeRunIdToken(value) {
-  const token = String(value || '').trim();
-  if (!token) return '';
-  if (!/^[A-Za-z0-9._-]{8,96}$/.test(token)) return '';
-  return token;
-}
+// Ã¢â€â‚¬Ã¢â€â‚¬ Catalog builder Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// Catalog builder
+const buildCatalog = createCatalogBuilder({
+  config,
+  storage,
+  getSpecDb,
+  loadQueueState,
+  loadProductCatalog,
+  cleanVariant,
+  catalogKey,
+  path,
+});
 
-function extractRunIdFromCliArgs(cliArgs = []) {
-  const args = Array.isArray(cliArgs) ? cliArgs : [];
-  for (let idx = 0; idx < args.length; idx += 1) {
-    const token = String(args[idx] || '');
-    if (token === '--run-id') {
-      return normalizeRunIdToken(args[idx + 1]);
-    }
-  }
-  return '';
-}
+// Compiled component DB dual-write
+const patchCompiledComponentDb = createCompiledComponentDbPatcher({
+  helperRoot: HELPER_ROOT,
+  listFiles,
+  safeReadJson,
+  fs,
+  path,
+});
 
-function processStatus() {
-  const running = isProcessRunning();
-  const active = running ? childProc : null;
-  const runId = normalizeRunIdToken(active?._runId || lastProcessSnapshot.runId || relocatingRunId || '');
-  return {
-    running,
-    relocating: Boolean(relocatingRunId),
-    relocatingRunId: relocatingRunId || null,
-    run_id: runId || null,
-    runId: runId || null,
-    pid: active?.pid || lastProcessSnapshot.pid || null,
-    command: active?._cmd || lastProcessSnapshot.command || null,
-    startedAt: active?._startedAt || lastProcessSnapshot.startedAt || null,
-    exitCode: running ? null : (lastProcessSnapshot.exitCode ?? null),
-    endedAt: running ? null : (lastProcessSnapshot.endedAt || null)
-  };
-}
-
-const SEARXNG_CONTAINER_NAME = 'spec-harvester-searxng';
-const SEARXNG_DEFAULT_BASE_URL = 'http://127.0.0.1:8080';
-const SEARXNG_COMPOSE_PATH = resolveProjectPath(path.join('tools', 'searxng', 'docker-compose.yml'));
-
-function normalizeUrlToken(value, fallback = SEARXNG_DEFAULT_BASE_URL) {
-  const raw = String(value || '').trim() || String(fallback || '').trim();
-  try {
-    const parsed = new URL(raw);
-    return parsed.toString().replace(/\/+$/, '');
-  } catch {
-    return String(fallback || '').trim().replace(/\/+$/, '');
-  }
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms || 0))));
-}
-
-function runCommandCapture(command, args = [], options = {}) {
-  const timeoutMs = Math.max(1_000, Number.parseInt(String(options.timeoutMs || 20_000), 10) || 20_000);
-  return new Promise((resolve) => {
-    let stdout = '';
-    let stderr = '';
-    let settled = false;
-    let proc = null;
-
-    const finish = (result) => {
-      if (settled) return;
-      settled = true;
-      resolve(result);
-    };
-
-    try {
-      proc = spawn(command, args, {
-        cwd: options.cwd || path.resolve('.'),
-        env: options.env || process.env,
-        stdio: ['ignore', 'pipe', 'pipe']
-      });
-    } catch (error) {
-      finish({
-        ok: false,
-        code: null,
-        stdout,
-        stderr,
-        error: error?.message || String(error || '')
-      });
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      try { proc.kill('SIGTERM'); } catch { /* ignore */ }
-      finish({
-        ok: false,
-        code: null,
-        stdout,
-        stderr: `${stderr}\ncommand_timeout`.trim(),
-        error: 'command_timeout'
-      });
-    }, timeoutMs);
-
-    proc.stdout.on('data', (chunk) => {
-      stdout += String(chunk || '');
-    });
-    proc.stderr.on('data', (chunk) => {
-      stderr += String(chunk || '');
-    });
-    proc.on('error', (error) => {
-      clearTimeout(timer);
-      finish({
-        ok: false,
-        code: null,
-        stdout,
-        stderr,
-        error: error?.message || String(error || '')
-      });
-    });
-    proc.on('exit', (code) => {
-      clearTimeout(timer);
-      finish({
-        ok: code === 0,
-        code: Number.isFinite(code) ? code : null,
-        stdout,
-        stderr
-      });
-    });
-  });
-}
-
-async function probeSearxngHttp(baseUrl) {
-  const normalizedBase = normalizeUrlToken(baseUrl, SEARXNG_DEFAULT_BASE_URL);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 4_000);
-  try {
-    const probe = new URL('/search', `${normalizedBase}/`);
-    probe.searchParams.set('q', 'health');
-    probe.searchParams.set('format', 'json');
-    probe.searchParams.set('language', 'en');
-    probe.searchParams.set('safesearch', '0');
-    const response = await fetch(probe, { signal: controller.signal });
-    return {
-      ok: response.ok,
-      status: response.status
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      status: 0,
-      error: error?.message || String(error || '')
-    };
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function getSearxngStatus() {
-  const baseUrl = normalizeUrlToken(config.searxngBaseUrl || process.env.SEARXNG_BASE_URL || '', SEARXNG_DEFAULT_BASE_URL);
-  const composeFileExists = fsSync.existsSync(SEARXNG_COMPOSE_PATH);
-  const dockerVersion = await runCommandCapture('docker', ['--version'], { timeoutMs: 6_000 });
-  const dockerAvailable = dockerVersion.ok;
-
-  let running = false;
-  let statusText = '';
-  let portsText = '';
-  let containerFound = false;
-  let dockerPsError = '';
-
-  if (dockerAvailable) {
-    const ps = await runCommandCapture(
-      'docker',
-      ['ps', '-a', '--filter', `name=${SEARXNG_CONTAINER_NAME}`, '--format', '{{.Names}}\t{{.Status}}\t{{.Ports}}'],
-      { timeoutMs: 10_000 }
-    );
-    if (ps.ok) {
-      const first = String(ps.stdout || '')
-        .split(/\r?\n/)
-        .map((row) => row.trim())
-        .find(Boolean) || '';
-      if (first) {
-        containerFound = true;
-        const parts = first.split('\t');
-        statusText = String(parts[1] || '').trim();
-        portsText = String(parts[2] || '').trim();
-        running = /^up\b/i.test(statusText);
-      }
-    } else {
-      dockerPsError = String(ps.stderr || ps.error || '').trim();
-    }
-  }
-
-  const httpProbe = running ? await probeSearxngHttp(baseUrl) : { ok: false, status: 0 };
-  const httpReady = Boolean(httpProbe.ok);
-  const canStart = dockerAvailable && composeFileExists;
-  const needsStart = !running;
-
-  let message = '';
-  if (!dockerAvailable) {
-    message = 'docker_not_available';
-  } else if (!composeFileExists) {
-    message = 'compose_file_missing';
-  } else if (needsStart) {
-    message = 'stopped';
-  } else if (!httpReady) {
-    message = 'container_running_http_unready';
-  } else {
-    message = 'ready';
-  }
-
-  return {
-    container_name: SEARXNG_CONTAINER_NAME,
-    compose_path: SEARXNG_COMPOSE_PATH,
-    compose_file_exists: composeFileExists,
-    base_url: baseUrl,
-    docker_available: dockerAvailable,
-    container_found: containerFound,
-    running,
-    status: statusText || (running ? 'Up' : 'Not running'),
-    ports: portsText || '',
-    http_ready: httpReady,
-    http_status: Number(httpProbe.status || 0),
-    can_start: canStart,
-    needs_start: needsStart,
-    message,
-    docker_error: dockerPsError || undefined,
-    http_error: httpProbe?.error || undefined
-  };
-}
-
-async function startSearxngStack() {
-  const composeFileExists = fsSync.existsSync(SEARXNG_COMPOSE_PATH);
-  if (!composeFileExists) {
-    return {
-      ok: false,
-      error: 'compose_file_missing',
-      status: await getSearxngStatus()
-    };
-  }
-
-  const up = await runCommandCapture(
-    'docker',
-    ['compose', '-f', SEARXNG_COMPOSE_PATH, 'up', '-d'],
-    { timeoutMs: 60_000 }
-  );
-  if (!up.ok) {
-    return {
-      ok: false,
-      error: String(up.stderr || up.error || 'docker_compose_up_failed').trim(),
-      status: await getSearxngStatus()
-    };
-  }
-
-  for (let i = 0; i < 10; i += 1) {
-    const status = await getSearxngStatus();
-    if (status.http_ready || status.running) {
-      return {
-        ok: true,
-        started: true,
-        compose_stdout: String(up.stdout || '').trim(),
-        status
-      };
-    }
-    await sleep(800);
-  }
-
-  return {
-    ok: true,
-    started: true,
-    compose_stdout: String(up.stdout || '').trim(),
-    status: await getSearxngStatus()
-  };
-}
-
-function startProcess(cmd, cliArgs, envOverrides = {}) {
-  if (isProcessRunning()) {
-    throw new Error('process_already_running');
-  }
-  const runId = extractRunIdFromCliArgs(cliArgs);
-  childLog = [];
-  const runtimeEnv = {
-    ...process.env,
-    LOCAL_MODE: 'true'
-  };
-  for (const [key, value] of Object.entries(envOverrides || {})) {
-    if (!key) continue;
-    if (value === undefined || value === null || value === '') continue;
-    runtimeEnv[String(key)] = String(value);
-  }
-  const child = spawn('node', [cmd, ...cliArgs], {
-    cwd: path.resolve('.'),
-    stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
-    env: runtimeEnv,
-  });
-  child._cmd = `node ${cmd} ${cliArgs.join(' ')}`;
-  child._startedAt = new Date().toISOString();
-  child._runId = runId || null;
-  lastProcessSnapshot = {
-    pid: child.pid || null,
-    command: child._cmd,
-    startedAt: child._startedAt,
-    runId: child._runId || null,
-    exitCode: null,
-    endedAt: null
-  };
-  child.stdout.on('data', (d) => {
-    const lines = d.toString().split('\n').filter(Boolean);
-    childLog.push(...lines);
-    if (childLog.length > MAX_LOG) childLog.splice(0, childLog.length - MAX_LOG);
-    broadcastWs('process', lines);
-  });
-  child.stderr.on('data', (d) => {
-    const lines = d.toString().split('\n').filter(Boolean);
-    childLog.push(...lines);
-    if (childLog.length > MAX_LOG) childLog.splice(0, childLog.length - MAX_LOG);
-    broadcastWs('process', lines);
-  });
-  child.on('exit', (code, signal) => {
-    const resolvedExitCode = Number.isFinite(code) ? code : null;
-    const resolvedSignal = String(signal || '').trim();
-    broadcastWs(
-      'process',
-      [`[process exited with code ${resolvedExitCode === null ? 'null' : resolvedExitCode}${resolvedSignal ? ` signal ${resolvedSignal}` : ''}]`]
-    );
-    lastProcessSnapshot = {
-      ...lastProcessSnapshot,
-      pid: child.pid || lastProcessSnapshot.pid,
-      command: child._cmd || lastProcessSnapshot.command,
-      startedAt: child._startedAt || lastProcessSnapshot.startedAt,
-      runId: child._runId || lastProcessSnapshot.runId || null,
-      exitCode: resolvedExitCode,
-      endedAt: new Date().toISOString()
-    };
-    if (childProc === child) {
-      childProc = null;
-    }
-    void (async () => {
-      try {
-        if (resolvedExitCode === 0) {
-          await handleCompileProcessCompletion({
-            exitCode: resolvedExitCode,
-            cliArgs,
-            sessionCache,
-            invalidateFieldRulesCache,
-            reviewLayoutByCategory,
-            syncSpecDbForCategory: ({ category }) =>
-              syncSpecDbForCategoryService({
-                category,
-                config,
-                resolveCategoryAlias,
-                getSpecDbReady,
-              }),
-            broadcastWs,
-          });
-        }
-        relocatingRunId = child._runId || 'unknown';
-        broadcastWs('process-status', processStatus());
-        try {
-          await handleIndexLabProcessCompletion({
-            exitCode: resolvedExitCode,
-            cliArgs,
-            startedAt: child._startedAt || '',
-            runDataStorageSettings: runDataStorageState,
-            indexLabRoot: INDEXLAB_ROOT,
-            outputRoot: OUTPUT_ROOT,
-            outputPrefix: config.s3OutputPrefix || 'specs/outputs',
-            broadcastWs,
-          });
-        } finally {
-          relocatingRunId = null;
-          broadcastWs('process-status', processStatus());
-        }
-      } catch (error) {
-        console.error('[process-completion] failed', error);
-      }
-    })();
-  });
-  child.on('message', (msg) => {
-    if (msg && msg.__screencast) {
-      broadcastWs(msg.channel || 'screencast', msg);
-    }
-  });
-  childProc = child;
-  const status = processStatus();
-  broadcastWs('process-status', status);
-  return status;
-}
-
-function waitForProcessExit(proc = childProc, timeoutMs = 7000) {
-  const runningProc = proc;
-  if (!runningProc || runningProc.exitCode !== null) {
-    return Promise.resolve(true);
-  }
-  const limitMs = Math.max(250, Number.parseInt(String(timeoutMs || 7000), 10) || 7000);
-  return new Promise((resolve) => {
-    let finished = false;
-    const onExit = () => {
-      if (finished) return;
-      finished = true;
-      clearTimeout(timer);
-      resolve(true);
-    };
-    const timer = setTimeout(() => {
-      if (finished) return;
-      finished = true;
-      runningProc.off('exit', onExit);
-      resolve(runningProc.exitCode !== null);
-    }, limitMs);
-    runningProc.once('exit', onExit);
-  });
-}
-
-function killWindowsProcessTree(pid) {
-  const safePid = Number.parseInt(String(pid || ''), 10);
-  if (!Number.isFinite(safePid) || safePid <= 0 || process.platform !== 'win32') {
-    return Promise.resolve(false);
-  }
-  return new Promise((resolve) => {
-    execCb(`taskkill /PID ${safePid} /T /F`, (error) => {
-      resolve(!error);
-    });
-  });
-}
-
-function parsePidRows(value) {
-  return [...new Set(
-    String(value || '')
-      .split(/\r?\n/)
-      .map((row) => Number.parseInt(String(row || '').trim(), 10))
-      .filter((pid) => Number.isFinite(pid) && pid > 0)
-  )];
-}
-
-async function findOrphanIndexLabPids() {
-  if (process.platform === 'win32') {
-    const psScript = [
-      "$ErrorActionPreference='SilentlyContinue'",
-      "Get-CimInstance Win32_Process",
-      "| Where-Object {",
-      "  (",
-      "    $_.Name -match '^(node|node\\.exe|cmd\\.exe|powershell\\.exe|pwsh\\.exe)$'",
-      "  )",
-      "  -and $_.CommandLine",
-      "  -and (",
-      "    $_.CommandLine -match 'src[\\\\/]cli[\\\\/](spec|indexlab)\\.js'",
-      "  )",
-      "  -and (",
-      "    $_.CommandLine -match '\\bindexlab\\b'",
-      "    -or $_.CommandLine -match '--mode\\s+indexlab'",
-      "    -or $_.CommandLine -match '--local'",
-      "  )",
-      "}",
-      "| Select-Object -ExpandProperty ProcessId"
-    ].join(' ');
-    const listed = await runCommandCapture(
-      'powershell',
-      ['-NoProfile', '-Command', psScript],
-      { timeoutMs: 8_000 }
-    );
-    if (!listed.ok && !String(listed.stdout || '').trim()) return [];
-    return parsePidRows(listed.stdout);
-  }
-
-  const listed = await runCommandCapture(
-    'sh',
-    ['-lc', "ps -eo pid=,args= | grep -E \"(node|sh|bash).*(src/cli/(spec|indexlab)\\.js).*(indexlab|--mode indexlab|--local)\" | grep -v grep | awk '{print $1}'"],
-    { timeoutMs: 8_000 }
-  );
-  if (!listed.ok && !String(listed.stdout || '').trim()) return [];
-  return parsePidRows(listed.stdout);
-}
-
-async function stopOrphanIndexLabProcesses(timeoutMs = 8000) {
-  const currentPid = Number.parseInt(String(childProc?.pid || 0), 10);
-  const targets = (await findOrphanIndexLabPids())
-    .filter((pid) => !(Number.isFinite(currentPid) && currentPid > 0 && pid === currentPid));
-  if (targets.length === 0) {
-    return {
-      attempted: false,
-      killed: 0,
-      pids: []
-    };
-  }
-
-  let killed = 0;
-  for (const pid of targets) {
-    let ok = false;
-    if (process.platform === 'win32') {
-      ok = await killWindowsProcessTree(pid);
-    } else {
-      const term = await runCommandCapture('kill', ['-TERM', String(pid)], { timeoutMs: Math.min(3_000, timeoutMs) });
-      if (!term.ok) {
-        const force = await runCommandCapture('kill', ['-KILL', String(pid)], { timeoutMs: Math.min(3_000, timeoutMs) });
-        ok = Boolean(force.ok);
-      } else {
-        ok = true;
-      }
-    }
-    if (ok) killed += 1;
-  }
-
-  return {
-    attempted: true,
-    killed,
-    pids: targets
-  };
-}
-
-async function stopProcess(timeoutMs = 8000, options = {}) {
-  const force = Boolean(options?.force);
-  const runningProc = childProc;
-  if (!runningProc || runningProc.exitCode !== null) {
-    const orphanStop = await stopOrphanIndexLabProcesses(timeoutMs);
-    const status = {
-      ...processStatus(),
-      stop_attempted: Boolean(orphanStop.attempted || force),
-      stop_confirmed: true,
-      orphan_killed: orphanStop.killed
-    };
-    broadcastWs('process-status', status);
-    return status;
-  }
-
-  try { runningProc.kill('SIGTERM'); } catch { /* ignore */ }
-  let exited = await waitForProcessExit(runningProc, Math.min(3000, timeoutMs));
-
-  if (!exited && runningProc.exitCode === null) {
-    try { runningProc.kill('SIGKILL'); } catch { /* ignore */ }
-    exited = await waitForProcessExit(runningProc, 2000);
-  }
-
-  if (!exited && runningProc.exitCode === null) {
-    await killWindowsProcessTree(runningProc.pid);
-    exited = await waitForProcessExit(runningProc, Math.max(1000, timeoutMs - 5000));
-  }
-  let orphanKilled = 0;
-  if (!exited && runningProc.exitCode === null) {
-    const orphanStop = await stopOrphanIndexLabProcesses(timeoutMs);
-    orphanKilled = orphanStop.killed;
-    if (orphanStop.killed > 0) {
-      exited = true;
-    }
-  }
-  if (force) {
-    const orphanStop = await stopOrphanIndexLabProcesses(timeoutMs);
-    orphanKilled += Number(orphanStop.killed || 0);
-    if (orphanStop.killed > 0) {
-      exited = true;
-    }
-  }
-
-  const status = {
-    ...processStatus(),
-    stop_attempted: true,
-    stop_confirmed: Boolean(exited || runningProc.exitCode !== null || orphanKilled > 0),
-    orphan_killed: orphanKilled
-  };
-  broadcastWs('process-status', status);
-  return status;
-}
-
-// â”€â”€ Route Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const CATEGORY_SEGMENT_SCOPES = new Set([
-  'catalog',
-  'product',
-  'events',
-  'llm-settings',
-  'queue',
-  'billing',
-  'learning',
-  'studio',
-  'data-authority',
-  'review',
-  'review-components',
-]);
-
-const TEST_MODE_ACTION_SEGMENTS = new Set([
-  'create',
-  'contract-summary',
-  'status',
-  'generate-products',
-  'run',
-  'validate',
-]);
-
-function parsePath(url) {
-  const [pathname, qs] = (url || '/').split('?');
-  const params = new URLSearchParams(qs || '');
-  const parts = pathname
-    .replace(/^\/api\/v1/, '')
-    .split('/')
-    .filter(Boolean)
-    .map((part) => {
-      try { return decodeURIComponent(part); } catch { return part; }
-    });
-
-  if (parts[1] && CATEGORY_SEGMENT_SCOPES.has(parts[0])) {
-    parts[1] = resolveCategoryAlias(parts[1]);
-  }
-  if (parts[0] === 'test-mode' && parts[1] && !TEST_MODE_ACTION_SEGMENTS.has(parts[1])) {
-    parts[1] = resolveCategoryAlias(parts[1]);
-  }
-  if (
-    parts[0] === 'indexing'
-    && (parts[1] === 'domain-checklist' || parts[1] === 'review-metrics')
-    && parts[2]
-  ) {
-    parts[2] = resolveCategoryAlias(parts[2]);
-  }
-
-  return { parts, params, pathname };
-}
-
-// â”€â”€ Catalog builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-async function buildCatalog(category) {
-  const catalog = await loadProductCatalog(config, category);
-  const inputKeys = await storage.listInputKeys(category);
-  const specDb = getSpecDb(category);
-  const queue = await loadQueueState({ storage, category, specDb }).catch(() => ({ state: { products: {} } }));
-  const queueProducts = queue.state?.products || {};
-
-  // Map: normKey â†’ row (for dedup)
-  const seen = new Map();
-
-  // 1. Seed from product_catalog.json (authoritative product list)
-  for (const [pid, entry] of Object.entries(catalog.products || {})) {
-    const brand = String(entry.brand || '').trim();
-    const model = String(entry.model || '').trim();
-    const variant = cleanVariant(entry.variant);
-    if (!brand || !model) continue;
-    const key = catalogKey(brand, model, variant);
-    if (seen.has(key)) continue;
-    seen.set(key, {
-      productId: pid,
-      id: entry.id || 0,
-      identifier: entry.identifier || '',
-      brand,
-      model,
-      variant,
-      status: 'pending',
-      hasFinal: false,
-      validated: false,
-      confidence: 0,
-      coverage: 0,
-      fieldsFilled: 0,
-      fieldsTotal: 0,
-      lastRun: '',
-      inActive: true,
-    });
-  }
-
-  // 2. Merge from storage inputs (enriches existing catalog entries only)
-  for (const inputKey of inputKeys) {
-    const input = await storage.readJsonOrNull(inputKey);
-    if (!input) continue;
-    const existingProductId = input.productId || path.basename(inputKey, '.json').replace(`${category}-`, '');
-    const il = input.identityLock || {};
-    const brand = String(il.brand || input.brand || '').trim();
-    const model = String(il.model || input.model || '').trim();
-    const variant = cleanVariant(il.variant || input.variant);
-    if (!brand || !model) continue;
-
-    const latestBase = storage.resolveOutputKey(category, existingProductId, 'latest');
-    const [summary, normalized, hasFinal] = await Promise.all([
-      storage.readJsonOrNull(`${latestBase}/summary.json`),
-      storage.readJsonOrNull(`${latestBase}/normalized.json`),
-      storage.objectExists(`final/${category}/${existingProductId}/normalized.json`).catch(() => false),
-    ]);
-    const identity = normalized?.identity || {};
-    const qp = queueProducts[existingProductId] || {};
-
-    const resolvedBrand = identity.brand || brand;
-    const resolvedModel = identity.model || model;
-    let resolvedVariant = cleanVariant(identity.variant || variant);
-
-    // Try exact match first, then collapse variant into base product
-    let key = catalogKey(resolvedBrand, resolvedModel, resolvedVariant);
-    if (!seen.has(key) && resolvedVariant) {
-      const keyNoVariant = catalogKey(resolvedBrand, resolvedModel, '');
-      if (seen.has(keyNoVariant)) {
-        resolvedVariant = '';
-        key = keyNoVariant;
-      }
-    }
-
-    // Only enrich products already in the catalog â€” skip orphaned storage inputs
-    if (!seen.has(key)) continue;
-
-    const existing = seen.get(key);
-    Object.assign(existing, {
-      productId: existingProductId,
-      status: qp.status || (summary ? 'complete' : 'pending'),
-      hasFinal,
-      validated: !!(summary?.validated),
-      confidence: summary?.confidence || 0,
-      coverage: (summary?.coverage_overall_percent || 0) / 100,
-      fieldsFilled: summary?.fields_filled || 0,
-      fieldsTotal: summary?.fields_total || 0,
-      lastRun: summary?.lastRun || summary?.generated_at || '',
-      inActive: existing.inActive || !!input.active || !!(input.targets && Object.keys(input.targets).length),
-    });
-  }
-
-  // 3. Sort by brand, model, variant
-  const rows = [...seen.values()];
-  rows.sort((a, b) =>
-    a.brand.localeCompare(b.brand) ||
-    a.model.localeCompare(b.model) ||
-    a.variant.localeCompare(b.variant)
-  );
-  return rows;
-}
-
-// â”€â”€ Compiled component DB dual-write â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-async function patchCompiledComponentDb(category, componentType, entityName, propertyPatch, identityPatch) {
-  const dbDir = path.join(HELPER_ROOT, category, '_generated', 'component_db');
-  const files = await listFiles(dbDir, '.json');
-  for (const f of files) {
-    const fp = path.join(dbDir, f);
-    const data = await safeReadJson(fp);
-    if (data?.component_type !== componentType || !Array.isArray(data.items)) continue;
-    const item = data.items.find(it => it.name === entityName);
-    if (!item) return;
-    if (propertyPatch && typeof propertyPatch === 'object') {
-      if (!item.properties) item.properties = {};
-      Object.assign(item.properties, propertyPatch);
-    }
-    if (identityPatch && typeof identityPatch === 'object') {
-      if (identityPatch.name !== undefined) item.name = identityPatch.name;
-      if (identityPatch.maker !== undefined) item.maker = identityPatch.maker;
-      if (identityPatch.links !== undefined) item.links = identityPatch.links;
-      if (identityPatch.aliases !== undefined) item.aliases = identityPatch.aliases;
-    }
-    await fs.writeFile(fp, JSON.stringify(data, null, 2));
-    return;
-  }
-}
-
-// â”€â”€ Static assets root (needed by route context) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Static assets root (needed by route context) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 const DIST_ROOT = process.env.__GUI_DIST_ROOT
   ? resolveProjectPath(process.env.__GUI_DIST_ROOT)
   : resolveProjectPath(path.join('tools', 'gui-react', 'dist'));
 
-// â”€â”€ Route Handler Registration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Route Handler Registration Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 const routeCtx = {
   jsonRes,
   readJsonBody,
@@ -2499,65 +1785,30 @@ const routeCtx = {
   resetTestModeProductReviewState,
 };
 
-const handleInfraRoutes = registerInfraRoutes(routeCtx);
-const handleConfigRoutes = registerConfigRoutes(routeCtx);
-const handleIndexlabRoutes = registerIndexlabRoutes(routeCtx);
-const handleCatalogRoutes = registerCatalogRoutes(routeCtx);
-const handleBrandRoutes = registerBrandRoutes(routeCtx);
-const handleStudioRoutes = registerStudioRoutes(routeCtx);
-const handleDataAuthorityRoutes = registerDataAuthorityRoutes(routeCtx);
-const handleReviewRoutes = registerReviewRoutes(routeCtx);
-const handleTestModeRoutes = registerTestModeRoutes(routeCtx);
-const handleQueueBillingLearningRoutes = registerQueueBillingLearningRoutes(routeCtx);
-const handleSourceStrategyRoutes = registerSourceStrategyRoutes(routeCtx);
-const handleRuntimeOpsRoutes = registerRuntimeOpsRoutes(routeCtx);
+const { routeHandlers: registeredApiRouteHandlers } = createGuiApiRouteRegistry({
+  routeCtx,
+  registerInfraRoutes,
+  registerConfigRoutes,
+  registerIndexlabRoutes,
+  registerRuntimeOpsRoutes,
+  registerCatalogRoutes,
+  registerBrandRoutes,
+  registerStudioRoutes,
+  registerDataAuthorityRoutes,
+  registerQueueBillingLearningRoutes,
+  registerReviewRoutes,
+  registerTestModeRoutes,
+  registerSourceStrategyRoutes,
+});
 
-// â”€â”€ Route Handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-async function handleApi(req, res) {
-  const { parts, params } = parsePath(req.url);
-  const method = req.method;
-
-  const infraResult = await handleInfraRoutes(parts, params, method, req, res);
-  if (infraResult !== false) return infraResult;
-
-  const configResult = await handleConfigRoutes(parts, params, method, req, res);
-  if (configResult !== false) return configResult;
-
-  const indexlabResult = await handleIndexlabRoutes(parts, params, method, req, res);
-  if (indexlabResult !== false) return indexlabResult;
-
-  const runtimeOpsResult = await handleRuntimeOpsRoutes(parts, params, method, req, res);
-  if (runtimeOpsResult !== false) return runtimeOpsResult;
-
-  const catalogResult = await handleCatalogRoutes(parts, params, method, req, res);
-  if (catalogResult !== false) return catalogResult;
-
-  const brandResult = await handleBrandRoutes(parts, params, method, req, res);
-  if (brandResult !== false) return brandResult;
-
-  const studioResult = await handleStudioRoutes(parts, params, method, req, res);
-  if (studioResult !== false) return studioResult;
-
-  const dataAuthorityResult = await handleDataAuthorityRoutes(parts, params, method, req, res);
-  if (dataAuthorityResult !== false) return dataAuthorityResult;
-
-  const qblResult = await handleQueueBillingLearningRoutes(parts, params, method, req, res);
-  if (qblResult !== false) return qblResult;
-
-  const reviewResult = await handleReviewRoutes(parts, params, method, req, res);
-  if (reviewResult !== false) return reviewResult;
-
-  const testModeResult = await handleTestModeRoutes(parts, params, method, req, res);
-  if (testModeResult !== false) return testModeResult;
-
-  const sourceStrategyResult = await handleSourceStrategyRoutes(parts, params, method, req, res);
-  if (sourceStrategyResult !== false) return sourceStrategyResult;
-
-  return null; // not handled
-}
+// Ã¢â€â‚¬Ã¢â€â‚¬ Route Handler Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+const handleApi = createApiRouteDispatcher({
+  parsePath,
+  routeHandlers: registeredApiRouteHandlers,
+});
 
 
-// â”€â”€ Static File Serving â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Static File Serving Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function serveStatic(req, res) {
   let filePath = path.join(DIST_ROOT, req.url === '/' ? 'index.html' : req.url.split('?')[0]);
   // For SPA, serve index.html for non-file paths
@@ -2584,206 +1835,19 @@ function serveStatic(req, res) {
   stream.pipe(res);
 }
 
-// â”€â”€ WebSocket â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const wsClients = new Set();
+// Ã¢â€â‚¬Ã¢â€â‚¬ WebSocket Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
-function wsToken(value) {
-  return String(value || '').trim().toLowerCase();
-}
 
-function wsEventProductId(evt) {
-  return String(evt?.productId || evt?.product_id || '').trim();
-}
-
-function wsEventMatchesCategory(evt, categoryToken) {
-  if (!categoryToken) return true;
-  const evtCategory = wsToken(evt?.category || evt?.cat || '');
-  if (evtCategory) return evtCategory === categoryToken;
-  const pid = wsToken(wsEventProductId(evt));
-  return pid.startsWith(`${categoryToken}-`);
-}
-
-function wsClientWantsChannel(client, channel) {
-  const channels = Array.isArray(client?._channels) ? client._channels : [];
-  if (channels.length === 0) return true;
-  return channels.includes(channel);
-}
-
-function wsFilterPayload(channel, data, client) {
-  if (channel === 'events' && Array.isArray(data)) {
-    const categoryToken = wsToken(client?._category);
-    const productId = String(client?._productId || '').trim();
-    let rows = data;
-    if (categoryToken) {
-      rows = rows.filter((evt) => wsEventMatchesCategory(evt, categoryToken));
-    }
-    if (productId) {
-      rows = rows.filter((evt) => wsEventProductId(evt) === productId);
-    }
-    return rows.length > 0 ? rows : null;
-  }
-  if (channel === 'indexlab-event' && Array.isArray(data)) {
-    const categoryToken = wsToken(client?._category);
-    const productId = String(client?._productId || '').trim();
-    let rows = data;
-    if (categoryToken) {
-      rows = rows.filter((evt) => wsToken(evt?.category || '') === categoryToken);
-    }
-    if (productId) {
-      rows = rows.filter((evt) => String(evt?.product_id || '').trim() === productId);
-    }
-    return rows.length > 0 ? rows : null;
-  }
-  if (channel === 'data-change' && data && typeof data === 'object') {
-    const categoryToken = wsToken(client?._category);
-    if (!dataChangeMatchesCategory(data, categoryToken)) {
-      return null;
-    }
-  }
-  return data;
-}
-
-function broadcastWs(channel, data) {
-  const timestamp = new Date().toISOString();
-  for (const client of wsClients) {
-    if (client.readyState !== 1) continue; // OPEN
-    if (!wsClientWantsChannel(client, channel)) continue;
-    const filtered = wsFilterPayload(channel, data, client);
-    if (filtered === null || filtered === undefined) continue;
-    try {
-      client.send(JSON.stringify({ channel, data: filtered, ts: timestamp }));
-    } catch {
-      // ignore broken sockets
-    }
-  }
-}
-
-// â”€â”€ File Watchers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function setupWatchers() {
-  const eventsPath = path.join(OUTPUT_ROOT, '_runtime', 'events.jsonl');
-  let lastEventSize = 0;
-  const indexlabOffsets = new Map();
-
-  // Watch events.jsonl for new lines
-  const eventsWatcher = watch(eventsPath, { persistent: true, ignoreInitial: true });
-  eventsWatcher.on('change', async () => {
-    try {
-      const stat = await fs.stat(eventsPath);
-      if (stat.size <= lastEventSize) { lastEventSize = stat.size; return; }
-      const fd = await fs.open(eventsPath, 'r');
-      const buf = Buffer.alloc(stat.size - lastEventSize);
-      await fd.read(buf, 0, buf.length, lastEventSize);
-      await fd.close();
-      lastEventSize = stat.size;
-      const newLines = buf.toString('utf8').split('\n').filter(Boolean);
-      const events = newLines.map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
-      if (events.length > 0) broadcastWs('events', events);
-    } catch { /* ignore */ }
-  });
-
-  const indexlabPattern = path.join(INDEXLAB_ROOT, '*', 'run_events.ndjson');
-  const indexlabWatcher = watch(indexlabPattern, { persistent: true, ignoreInitial: true });
-
-  const publishIndexLabDelta = async (filePath) => {
-    try {
-      const stat = await fs.stat(filePath);
-      const key = path.resolve(filePath);
-      const previousSize = indexlabOffsets.get(key) || 0;
-      if (stat.size < previousSize) {
-        indexlabOffsets.set(key, 0);
-      }
-      const start = Math.max(0, Math.min(previousSize, stat.size));
-      if (stat.size <= start) {
-        indexlabOffsets.set(key, stat.size);
-        return;
-      }
-      const fd = await fs.open(filePath, 'r');
-      const buf = Buffer.alloc(stat.size - start);
-      await fd.read(buf, 0, buf.length, start);
-      await fd.close();
-      indexlabOffsets.set(key, stat.size);
-      const rows = parseNdjson(buf.toString('utf8'));
-      if (rows.length > 0) {
-        broadcastWs('indexlab-event', rows);
-      }
-    } catch {
-      // ignore watcher errors
-    }
-  };
-
-  indexlabWatcher.on('add', publishIndexLabDelta);
-  indexlabWatcher.on('change', publishIndexLabDelta);
-}
-
-// â”€â”€ HTTP Server â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const server = http.createServer(async (req, res) => {
-  corsHeaders(res);
-
-  if (req.method === 'OPTIONS') {
-    res.statusCode = 204;
-    res.end();
-    return;
-  }
-
-  // API routes
-  if (req.url.startsWith('/api/v1/') || req.url === '/health') {
-    try {
-      const handled = await handleApi(req, res);
-      if (handled === null) {
-        jsonRes(res, 404, { error: 'not_found' });
-      }
-    } catch (err) {
-      console.error('[gui-server] API error:', err.message);
-      jsonRes(res, 500, { error: 'internal', message: err.message });
-    }
-    return;
-  }
-
-  // Static files
-  serveStatic(req, res);
+// Ã¢â€â‚¬Ã¢â€â‚¬ HTTP Server Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+const handleHttpRequest = createApiHttpRequestHandler({
+  corsHeaders,
+  handleApi,
+  jsonRes,
+  serveStatic,
 });
 
-// WebSocket server
-const wss = new WebSocketServer({ noServer: true });
-
-server.on('upgrade', (req, socket, head) => {
-  if (req.url === '/ws' || req.url?.startsWith('/ws?')) {
-    wss.handleUpgrade(req, socket, head, (ws) => {
-      wsClients.add(ws);
-      ws.on('message', (msg) => {
-        try {
-          const data = JSON.parse(msg.toString());
-          if (data.subscribe) {
-            ws._channels = data.subscribe;
-            if (Array.isArray(data.subscribe) && data.subscribe.includes('process-status')) {
-              try {
-                ws.send(JSON.stringify({
-                  channel: 'process-status',
-                  data: processStatus(),
-                  ts: new Date().toISOString(),
-                }));
-              } catch {
-                // ignore socket send failure
-              }
-            }
-          }
-          if (data.category) ws._category = data.category;
-          if (data.productId) ws._productId = data.productId;
-          if (data.screencast_subscribe && childProc) {
-            try { childProc.send({ type: 'screencast_subscribe', worker_id: data.screencast_subscribe }); } catch { /* ignore */ }
-          }
-          if (data.screencast_unsubscribe && childProc) {
-            try { childProc.send({ type: 'screencast_unsubscribe' }); } catch { /* ignore */ }
-          }
-        } catch { /* ignore */ }
-      });
-      ws.on('close', () => wsClients.delete(ws));
-      ws.on('error', () => wsClients.delete(ws));
-    });
-  } else {
-    socket.destroy();
-  }
-});
+const server = http.createServer(handleHttpRequest);
+attachWebSocketUpgrade(server);
 
 server.listen(PORT, '0.0.0.0', () => {
   const msg = `[gui-server] running on http://localhost:${PORT}`;

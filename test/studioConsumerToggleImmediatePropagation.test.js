@@ -14,19 +14,19 @@ function readText(filePath) {
 test('key navigator consumer toggles route through the autosave-gated save path', () => {
   const studioPageText = readText(STUDIO_PAGE);
 
-  assert.equal(
-    studioPageText.includes('const saveIfAutoSaveEnabled = useCallback(() => {'),
-    true,
+  assert.match(
+    studioPageText,
+    /const saveIfAutoSaveEnabled\s*=\s*useCallback\(\(\)\s*=>\s*\{/,
     'key navigator should define an autosave-gated save callback',
   );
-  assert.equal(
-    studioPageText.includes('if (!autoSaveEnabled) return;'),
-    true,
+  assert.match(
+    studioPageText,
+    /if\s*\(!autoSaveEnabled\)\s*return;?/,
     'key navigator autosave-gated callback should no-op when autosave is off',
   );
   assert.match(
     studioPageText,
-    /const handleConsumerToggle[\s\S]*updateField\(selectedKey,\s*'consumers'[\s\S]*saveIfAutoSaveEnabled\(\)/,
+    /const handleConsumerToggle[\s\S]*updateField\(\s*selectedKey,\s*["']consumers["'][\s\S]*saveIfAutoSaveEnabled\(\)/,
     'key navigator consumer toggle handler should call autosave-gated save callback after updating consumers',
   );
 });
@@ -35,19 +35,19 @@ test('workbench drawer consumer toggles route through the autosave-gated save pa
   const workbenchDrawerText = readText(WORKBENCH_DRAWER);
   const fieldRulesWorkbenchText = readText(FIELD_RULES_WORKBENCH);
 
-  assert.equal(
-    fieldRulesWorkbenchText.includes('const saveIfAutoSaveEnabled = useCallback(() => {'),
-    true,
+  assert.match(
+    fieldRulesWorkbenchText,
+    /const saveIfAutoSaveEnabled\s*=\s*useCallback\(\(\)\s*=>\s*\{/,
     'field rules workbench should define an autosave-gated immediate commit callback',
   );
-  assert.equal(
-    fieldRulesWorkbenchText.includes('onCommitImmediate={saveIfAutoSaveEnabled}'),
-    true,
+  assert.match(
+    fieldRulesWorkbenchText,
+    /onCommitImmediate=\{saveIfAutoSaveEnabled\}/,
     'field rules workbench should pass autosave-gated callback to workbench drawer immediate commit',
   );
   assert.match(
     workbenchDrawerText,
-    /const handleConsumerToggle[\s\S]*update\('consumers'[\s\S]*onCommitImmediate\(\)/,
+    /const handleConsumerToggle[\s\S]*update\(\s*["']consumers["'][\s\S]*onCommitImmediate\(\)/,
     'workbench drawer consumer toggle handler should call onCommitImmediate() after updating consumers',
   );
 });

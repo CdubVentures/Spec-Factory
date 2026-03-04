@@ -131,11 +131,11 @@ export function EventStreamPanel({
         const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
         if (nextOpen !== open) setOpen(nextOpen);
       }}
-      className="group rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/20 p-2"
+      className="group sf-surface-elevated p-2"
     >
       <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 text-xs">
-        <span className="inline-flex items-center font-semibold text-gray-900 dark:text-gray-100">
-          <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 text-[10px] leading-none text-gray-700 dark:border-gray-600 dark:text-gray-200 mr-1">
+        <span className="inline-flex items-center font-semibold sf-text-primary">
+          <span className="inline-flex h-4 w-4 items-center justify-center sf-icon-button sf-text-caption leading-none mr-1">
             <span className="group-open:hidden">+</span>
             <span className="hidden group-open:inline">-</span>
           </span>
@@ -148,12 +148,12 @@ export function EventStreamPanel({
   );
 
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-3" style={{ order: 40 }}>
+    <div className="sf-surface-panel p-3 space-y-3" style={{ order: 40 }}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <div className="flex items-center text-sm font-semibold sf-text-primary">
           <button
             onClick={onToggle}
-            className="inline-flex items-center justify-center w-5 h-5 mr-1 text-[10px] rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="inline-flex items-center justify-center w-5 h-5 mr-1 sf-text-caption sf-icon-button"
             title={collapsed ? 'Open panel' : 'Close panel'}
           >
             {collapsed ? '+' : '-'}
@@ -165,7 +165,7 @@ export function EventStreamPanel({
           <select
             value={selectedIndexLabRunId}
             onChange={(e) => onRunIdChange(e.target.value)}
-            className="px-2 py-1 text-xs border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
+            className="sf-select sf-text-caption max-w-[22rem]"
           >
             <option value="">select run</option>
             {indexlabRuns.map((row) => (
@@ -189,7 +189,7 @@ export function EventStreamPanel({
             'Indexing Lab Overview',
             overviewOpen,
             setOverviewOpen,
-            overviewContent || <div className="text-xs text-gray-500 dark:text-gray-400">overview unavailable</div>,
+            overviewContent || <div className="text-xs sf-text-muted">overview unavailable</div>,
             'One-click run path and high-level phase activity.',
           )}
           {renderNestedSection(
@@ -197,7 +197,7 @@ export function EventStreamPanel({
             'Panel Controls',
             panelControlsOpen,
             setPanelControlsOpen,
-            panelControlsContent || <div className="text-xs text-gray-500 dark:text-gray-400">panel controls unavailable</div>,
+            panelControlsContent || <div className="text-xs sf-text-muted">panel controls unavailable</div>,
             'Open or close dashboard containers and inspect panel state.',
           )}
           {renderNestedSection(
@@ -205,7 +205,7 @@ export function EventStreamPanel({
             'Session Data',
             sessionDataOpen,
             setSessionDataOpen,
-            sessionDataContent || <div className="text-xs text-gray-500 dark:text-gray-400">session summary unavailable</div>,
+            sessionDataContent || <div className="text-xs sf-text-muted">session summary unavailable</div>,
             'Run-level summary for crawl/fetch/phase progression signals.',
           )}
 
@@ -215,11 +215,11 @@ export function EventStreamPanel({
               const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
               if (nextOpen !== eventFeedOpen) setEventFeedOpen(nextOpen);
             }}
-            className="group rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/20 p-2"
+            className="group sf-surface-elevated p-2"
           >
             <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 text-xs">
-              <span className="inline-flex items-center font-semibold text-gray-900 dark:text-gray-100">
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 text-[10px] leading-none text-gray-700 dark:border-gray-600 dark:text-gray-200 mr-1">
+              <span className="inline-flex items-center font-semibold sf-text-primary">
+                <span className="inline-flex h-4 w-4 items-center justify-center sf-icon-button sf-text-caption leading-none mr-1">
                   <span className="group-open:hidden">+</span>
                   <span className="hidden group-open:inline">-</span>
                 </span>
@@ -230,7 +230,7 @@ export function EventStreamPanel({
             <div className="mt-2 space-y-3">
 
       {selectedIndexLabRun ? (
-        <div className="text-xs text-gray-600 dark:text-gray-300 rounded border border-gray-200 dark:border-gray-700 p-2">
+        <div className="text-xs sf-text-muted sf-surface-elevated p-2">
           run: <span className="font-mono">{selectedIndexLabRun.run_id}</span>
           {selectedIndexLabRun.product_id ? <span className="font-mono"> | product {selectedIndexLabRun.product_id}</span> : null}
           {selectedIndexLabRun.started_at ? <span> | started {formatDateTime(selectedIndexLabRun.started_at)}</span> : null}
@@ -241,98 +241,98 @@ export function EventStreamPanel({
           {selectedIndexLabRun.phase_cursor ? <span> | cursor {selectedIndexLabRun.phase_cursor}</span> : null}
           {selectedRunIdentityFingerprintShort ? <span> | fp {selectedRunIdentityFingerprintShort}</span> : null}
           <span> | status {selectedIndexLabRun.status || 'unknown'}</span>
-          <div className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">{selectedRunStartupSummary}</div>
+          <div className="mt-1 sf-text-label sf-text-muted">{selectedRunStartupSummary}</div>
           {runViewCleared ? (
-            <div className="mt-1 text-[11px] text-amber-600 dark:text-amber-300">
+            <div className="mt-1 sf-text-label sf-status-text-warning">
               selected run view is cleared; click Replay Selected Run to repopulate from persisted artifacts.
             </div>
           ) : null}
         </div>
       ) : (
-        <div className="text-xs text-gray-500 dark:text-gray-400">no indexlab run selected</div>
+        <div className="text-xs sf-text-muted">no indexlab run selected</div>
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-12 gap-2">
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">checked</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">checked</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.pages_checked)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">fetched ok</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">fetched ok</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.fetched_ok)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">404</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">404</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.fetched_404)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">blocked</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">blocked</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.fetched_blocked)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">fetch errors</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">fetch errors</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.fetched_error)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">parsed</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">parsed</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.parse_completed)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">indexed</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">indexed</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.indexed_docs)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">fields filled</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">fields filled</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.fields_filled)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">json-ld</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">json-ld</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.structured_json_ld || 0)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">microdata</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">microdata</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.structured_microdata || 0)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">opengraph</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">opengraph</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.structured_opengraph || 0)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">struct cands</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">struct cands</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.structured_candidates || 0)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">pdf docs</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">pdf docs</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.pdf_docs_parsed || 0)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">pdf pairs</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">pdf pairs</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.pdf_pairs_total || 0)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">scanned docs</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">scanned docs</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.scanned_pdf_docs_detected || 0)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
-          <div className="text-gray-500 dark:text-gray-400">scanned ocr pairs</div>
+        <div className="sf-surface-elevated px-2 py-1 text-xs">
+          <div className="sf-text-muted">scanned ocr pairs</div>
           <div className="font-semibold">{formatNumber(indexlabSummary.counters.scanned_pdf_ocr_pairs || 0)}</div>
         </div>
       </div>
 
-      <div className="rounded border border-gray-200 dark:border-gray-700 p-2">
-        <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">Stage Timeline</div>
+      <div className="sf-surface-elevated p-2">
+        <div className="text-xs font-semibold sf-text-primary">Stage Timeline</div>
         <div className="mt-2 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 text-xs">
           {(['search', 'fetch', 'parse', 'index'] as const).map((stage) => {
             const row = indexlabSummary.stageWindows[stage];
             const hasStart = Boolean(row.started_at);
             const hasEnd = Boolean(row.ended_at);
             return (
-              <div key={stage} className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
+              <div key={stage} className="sf-surface-elevated px-2 py-1">
                 <div className="font-semibold">{stage}</div>
-                <div className="text-gray-500 dark:text-gray-400">
+                <div className="sf-text-muted">
                   {hasStart ? `start ${formatDateTime(row.started_at)}` : 'start -'}
                 </div>
-                <div className="text-gray-500 dark:text-gray-400">
+                <div className="sf-text-muted">
                   {hasEnd ? `end ${formatDateTime(row.ended_at)}` : (hasStart ? 'running' : 'not started')}
                 </div>
               </div>
@@ -341,49 +341,49 @@ export function EventStreamPanel({
         </div>
       </div>
 
-      <div className="rounded border border-gray-200 dark:border-gray-700 p-2 overflow-x-auto">
-        <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+      <div className="sf-surface-elevated p-2 overflow-x-auto">
+        <div className="text-xs font-semibold sf-text-primary">
           Recent URL Jobs ({formatNumber(indexlabSummary.recentJobs.length)} shown)
         </div>
-        <table className="mt-2 min-w-full text-xs">
+        <table className="mt-2 min-w-full text-xs sf-table-shell">
           <thead>
-            <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">url<Tip text="Source URL represented by this job row." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">status<Tip text="Final fetch outcome class for this URL row (ok/404/blocked/error)." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">fetcher<Tip text="Transport/execution path used for fetch (http/playwright/crawlee/etc)." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">tries<Tip text="Total attempts used to fetch this URL (initial + retries)." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">retry<Tip text="Retry count used after the initial fetch attempt." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">policy<Tip text="Matched dynamic fetch policy host and whether an override was applied." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">static dom<Tip text="Static DOM parser mode and accepted/rejected candidate counts for this URL." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">json-ld<Tip text="Structured JSON-LD nodes detected for this URL during parse." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">microdata<Tip text="Structured Microdata nodes detected for this URL during parse." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">opengraph<Tip text="OpenGraph key count detected for this URL during parse." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">struct cands<Tip text="Structured candidates accepted by identity gate for this URL." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">pdf docs<Tip text="Phase 06 text-PDF documents parsed for this URL row." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">pdf backend<Tip text="Selected PDF parser backend for this URL (pdfplumber/pymupdf/camelot)." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">pdf pairs<Tip text="Extracted normalized PDF pairs for this URL (kv + table)." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">scanned docs<Tip text="Scanned/image-only PDF docs detected and OCR attempted/succeeded for this URL." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">scanned backend<Tip text="OCR backend selected for scanned PDF handling on this URL." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">scanned pairs<Tip text="OCR-derived pairs for scanned PDFs (total with kv/table split, low-confidence and error counts)." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">article policy<Tip text="Article extractor policy mode and matched domain override used for this URL." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">http<Tip text="HTTP status code observed for this URL fetch." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">fetch ms<Tip text="Network/fetch duration in milliseconds for the URL job." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">parse ms<Tip text="Parse/extraction duration for the URL job when parse_finished is emitted." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">article<Tip text="Main article extraction method used for this URL (readability/fallback)." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">article q<Tip text="Article extraction quality score (0-100)." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">low<Tip text="Whether article extraction marked this URL as low quality." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">started<Tip text="Timestamp when fetch for this URL started." /></span></th>
-              <th className="py-1 pr-3"><span className="inline-flex items-center gap-1">finished<Tip text="Timestamp when this URL job reached its latest completion state." /></span></th>
+            <tr className="sf-table-head border-b sf-border-soft">
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">url<Tip text="Source URL represented by this job row." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">status<Tip text="Final fetch outcome class for this URL row (ok/404/blocked/error)." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">fetcher<Tip text="Transport/execution path used for fetch (http/playwright/crawlee/etc)." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">tries<Tip text="Total attempts used to fetch this URL (initial + retries)." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">retry<Tip text="Retry count used after the initial fetch attempt." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">policy<Tip text="Matched dynamic fetch policy host and whether an override was applied." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">static dom<Tip text="Static DOM parser mode and accepted/rejected candidate counts for this URL." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">json-ld<Tip text="Structured JSON-LD nodes detected for this URL during parse." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">microdata<Tip text="Structured Microdata nodes detected for this URL during parse." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">opengraph<Tip text="OpenGraph key count detected for this URL during parse." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">struct cands<Tip text="Structured candidates accepted by identity gate for this URL." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">pdf docs<Tip text="Phase 06 text-PDF documents parsed for this URL row." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">pdf backend<Tip text="Selected PDF parser backend for this URL (pdfplumber/pymupdf/camelot)." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">pdf pairs<Tip text="Extracted normalized PDF pairs for this URL (kv + table)." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">scanned docs<Tip text="Scanned/image-only PDF docs detected and OCR attempted/succeeded for this URL." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">scanned backend<Tip text="OCR backend selected for scanned PDF handling on this URL." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">scanned pairs<Tip text="OCR-derived pairs for scanned PDFs (total with kv/table split, low-confidence and error counts)." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">article policy<Tip text="Article extractor policy mode and matched domain override used for this URL." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">http<Tip text="HTTP status code observed for this URL fetch." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">fetch ms<Tip text="Network/fetch duration in milliseconds for the URL job." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">parse ms<Tip text="Parse/extraction duration for the URL job when parse_finished is emitted." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">article<Tip text="Main article extraction method used for this URL (readability/fallback)." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">article q<Tip text="Article extraction quality score (0-100)." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">low<Tip text="Whether article extraction marked this URL as low quality." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">started<Tip text="Timestamp when fetch for this URL started." /></span></th>
+              <th className="sf-table-head-cell"><span className="inline-flex items-center gap-1">finished<Tip text="Timestamp when this URL job reached its latest completion state." /></span></th>
             </tr>
           </thead>
           <tbody>
             {indexlabSummary.recentJobs.length === 0 && (
               <tr>
-                <td className="py-2 text-gray-500 dark:text-gray-400" colSpan={26}>no url jobs yet</td>
+                <td className="py-2 sf-table-empty-state" colSpan={26}>no url jobs yet</td>
               </tr>
             )}
             {indexlabSummary.recentJobs.map((row) => (
-              <tr key={row.url} className="border-b border-gray-100 dark:border-gray-800">
+              <tr key={row.url} className="sf-table-row border-b sf-border-soft">
                 <td className="py-1 pr-3 font-mono truncate max-w-[32rem]" title={row.url}>{row.url}</td>
                 <td className="py-1 pr-3">{row.status}</td>
                 <td className="py-1 pr-3">{row.fetcher_kind || '-'}</td>
@@ -442,7 +442,7 @@ export function EventStreamPanel({
                 <td className="py-1 pr-3">{Number.isFinite(Number(row.article_quality_score)) ? formatNumber(Number(row.article_quality_score || 0), 1) : '-'}</td>
                 <td className="py-1 pr-3">
                   {row.article_low_quality ? (
-                    <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">yes</span>
+                    <span className="px-1.5 py-0.5 sf-chip-warning">yes</span>
                   ) : 'no'}
                 </td>
                 <td className="py-1 pr-3">{formatDateTime(row.started_at)}</td>

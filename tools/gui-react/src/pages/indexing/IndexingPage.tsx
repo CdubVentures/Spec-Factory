@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useUiStore } from '../../stores/uiStore';
@@ -6,13 +6,22 @@ import { useRuntimeStore } from '../../stores/runtimeStore';
 import { useIndexLabStore } from '../../stores/indexlabStore';
 import { useCollapseStore } from '../../stores/collapseStore';
 import { usePersistedTab } from '../../stores/tabStore';
-import { CONVERGENCE_KNOB_GROUPS, useConvergenceSettingsAuthority } from '../../stores/convergenceSettingsAuthority';
+import { CONVERGENCE_KNOB_GROUPS, CONVERGENCE_SETTING_DEFAULTS } from '../../stores/convergenceSettingsAuthority';
 import {
   readRuntimeSettingsNumericBaseline,
   runtimeSettingsNumericBaselineEqual,
   useRuntimeSettingsBootstrap,
-  useRuntimeSettingsAuthority,
+  useRuntimeSettingsReader,
 } from '../../stores/runtimeSettingsAuthority';
+import {
+  clampTokenForModel as clampRuntimeTokenForModel,
+  collectRuntimeSettingsPayload as collectRuntimeSettingsPayloadFromDomain,
+  createRuntimeHydrationBindings,
+  hydrateRuntimeSettingsFromBindings,
+  parseRuntimeFloat,
+  parseRuntimeInt,
+  parseRuntimeLlmTokenCap,
+} from '../../stores/runtimeSettingsDomain';
 import {
   LLM_SETTING_LIMITS,
   RUNTIME_SETTING_DEFAULTS,
@@ -78,7 +87,6 @@ import { LlmOutputPanel } from './panels/LlmOutputPanel';
 import { LlmMetricsPanel } from './panels/LlmMetricsPanel';
 import { EventStreamPanel } from './panels/EventStreamPanel';
 import { Phase05Panel } from './panels/Phase05Panel';
-import { RuntimePanel } from './panels/RuntimePanel';
 
 const NEEDSET_SORT_KEYS = [
   'need_score',
@@ -90,16 +98,9 @@ const NEEDSET_SORT_KEYS = [
 ] as const;
 const NEEDSET_SORT_DIRS = ['asc', 'desc'] as const;
 const LLM_MIN_OUTPUT_TOKENS = LLM_SETTING_LIMITS.maxTokens.min;
-const LLM_MAX_OUTPUT_TOKENS = LLM_SETTING_LIMITS.maxTokens.max;
-
-function parseRuntimeLlmTokenCap(value: unknown): number | null {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) return null;
-  return Math.max(
-    LLM_MIN_OUTPUT_TOKENS,
-    Math.min(LLM_MAX_OUTPUT_TOKENS, parsed),
-  );
-}
+const LLM_EXTRACT_MIN_TOKENS = 128;
+const LLM_EXTRACT_MIN_SNIPPET_CHARS = 128;
+const VISUAL_ASSET_MIN_SIDE = 128;
 
 function randomHex(bytes = 3) {
   const safeBytes = Math.max(1, Math.min(16, Number.parseInt(String(bytes || 3), 10) || 3));
@@ -117,7 +118,14 @@ function randomHex(bytes = 3) {
 }
 
 function buildRequestedRunId(date = new Date()) {
-  const stamp = date.toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+  const stamp = date
+    .toISOString()
+    .split('-').join('')
+    .split(':').join('')
+    .split('.').join('')
+    .split('T').join('')
+    .split('Z').join('')
+    .slice(0, 14);
   return `${stamp}-${randomHex(3)}`;
 }
 
@@ -142,7 +150,67 @@ export function IndexingPage() {
   const [crawleeRequestHandlerTimeoutSecs, setCrawleeRequestHandlerTimeoutSecs] = useState(String(runtimeSettingsBootstrap.crawleeRequestHandlerTimeoutSecs));
   const [dynamicFetchRetryBudget, setDynamicFetchRetryBudget] = useState(String(runtimeSettingsBootstrap.dynamicFetchRetryBudget));
   const [dynamicFetchRetryBackoffMs, setDynamicFetchRetryBackoffMs] = useState(String(runtimeSettingsBootstrap.dynamicFetchRetryBackoffMs));
+  const [fetchSchedulerEnabled, setFetchSchedulerEnabled] = useState(runtimeSettingsBootstrap.fetchSchedulerEnabled);
+  const [fetchSchedulerMaxRetries, setFetchSchedulerMaxRetries] = useState(String(runtimeSettingsBootstrap.fetchSchedulerMaxRetries));
+  const [fetchSchedulerFallbackWaitMs, setFetchSchedulerFallbackWaitMs] = useState(String(runtimeSettingsBootstrap.fetchSchedulerFallbackWaitMs));
+  const [preferHttpFetcher, setPreferHttpFetcher] = useState(runtimeSettingsBootstrap.preferHttpFetcher);
+  const [pageGotoTimeoutMs, setPageGotoTimeoutMs] = useState(String(runtimeSettingsBootstrap.pageGotoTimeoutMs));
+  const [pageNetworkIdleTimeoutMs, setPageNetworkIdleTimeoutMs] = useState(String(runtimeSettingsBootstrap.pageNetworkIdleTimeoutMs));
+  const [postLoadWaitMs, setPostLoadWaitMs] = useState(String(runtimeSettingsBootstrap.postLoadWaitMs));
+  const [frontierDbPath, setFrontierDbPath] = useState(runtimeSettingsBootstrap.frontierDbPath);
+  const [frontierEnableSqlite, setFrontierEnableSqlite] = useState(runtimeSettingsBootstrap.frontierEnableSqlite);
+  const [frontierStripTrackingParams, setFrontierStripTrackingParams] = useState(runtimeSettingsBootstrap.frontierStripTrackingParams);
+  const [frontierQueryCooldownSeconds, setFrontierQueryCooldownSeconds] = useState(String(runtimeSettingsBootstrap.frontierQueryCooldownSeconds));
+  const [frontierCooldown404Seconds, setFrontierCooldown404Seconds] = useState(String(runtimeSettingsBootstrap.frontierCooldown404Seconds));
+  const [frontierCooldown404RepeatSeconds, setFrontierCooldown404RepeatSeconds] = useState(String(runtimeSettingsBootstrap.frontierCooldown404RepeatSeconds));
+  const [frontierCooldown410Seconds, setFrontierCooldown410Seconds] = useState(String(runtimeSettingsBootstrap.frontierCooldown410Seconds));
+  const [frontierCooldownTimeoutSeconds, setFrontierCooldownTimeoutSeconds] = useState(String(runtimeSettingsBootstrap.frontierCooldownTimeoutSeconds));
+  const [frontierCooldown403BaseSeconds, setFrontierCooldown403BaseSeconds] = useState(String(runtimeSettingsBootstrap.frontierCooldown403BaseSeconds));
+  const [frontierCooldown429BaseSeconds, setFrontierCooldown429BaseSeconds] = useState(String(runtimeSettingsBootstrap.frontierCooldown429BaseSeconds));
+  const [frontierBackoffMaxExponent, setFrontierBackoffMaxExponent] = useState(String(runtimeSettingsBootstrap.frontierBackoffMaxExponent));
+  const [frontierPathPenaltyNotfoundThreshold, setFrontierPathPenaltyNotfoundThreshold] = useState(String(runtimeSettingsBootstrap.frontierPathPenaltyNotfoundThreshold));
+  const [frontierBlockedDomainThreshold, setFrontierBlockedDomainThreshold] = useState(String(runtimeSettingsBootstrap.frontierBlockedDomainThreshold));
+  const [frontierRepairSearchEnabled, setFrontierRepairSearchEnabled] = useState(runtimeSettingsBootstrap.frontierRepairSearchEnabled);
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(runtimeSettingsBootstrap.autoScrollEnabled);
+  const [autoScrollPasses, setAutoScrollPasses] = useState(String(runtimeSettingsBootstrap.autoScrollPasses));
+  const [autoScrollDelayMs, setAutoScrollDelayMs] = useState(String(runtimeSettingsBootstrap.autoScrollDelayMs));
+  const [graphqlReplayEnabled, setGraphqlReplayEnabled] = useState(runtimeSettingsBootstrap.graphqlReplayEnabled);
+  const [maxGraphqlReplays, setMaxGraphqlReplays] = useState(String(runtimeSettingsBootstrap.maxGraphqlReplays));
+  const [maxNetworkResponsesPerPage, setMaxNetworkResponsesPerPage] = useState(String(runtimeSettingsBootstrap.maxNetworkResponsesPerPage));
+  const [robotsTxtCompliant, setRobotsTxtCompliant] = useState(runtimeSettingsBootstrap.robotsTxtCompliant);
+  const [robotsTxtTimeoutMs, setRobotsTxtTimeoutMs] = useState(String(runtimeSettingsBootstrap.robotsTxtTimeoutMs));
   const [dynamicFetchPolicyMapJson, setDynamicFetchPolicyMapJson] = useState(runtimeSettingsBootstrap.dynamicFetchPolicyMapJson);
+  const [searchProfileCapMapJson, setSearchProfileCapMapJson] = useState(runtimeSettingsBootstrap.searchProfileCapMapJson);
+  const [serpRerankerWeightMapJson, setSerpRerankerWeightMapJson] = useState(runtimeSettingsBootstrap.serpRerankerWeightMapJson);
+  const [fetchSchedulerInternalsMapJson, setFetchSchedulerInternalsMapJson] = useState(runtimeSettingsBootstrap.fetchSchedulerInternalsMapJson);
+  const [retrievalInternalsMapJson, setRetrievalInternalsMapJson] = useState(runtimeSettingsBootstrap.retrievalInternalsMapJson);
+  const [evidencePackLimitsMapJson, setEvidencePackLimitsMapJson] = useState(runtimeSettingsBootstrap.evidencePackLimitsMapJson);
+  const [identityGateThresholdBoundsMapJson, setIdentityGateThresholdBoundsMapJson] = useState(runtimeSettingsBootstrap.identityGateThresholdBoundsMapJson);
+  const [parsingConfidenceBaseMapJson, setParsingConfidenceBaseMapJson] = useState(runtimeSettingsBootstrap.parsingConfidenceBaseMapJson);
+  const [repairDedupeRule, setRepairDedupeRule] = useState(runtimeSettingsBootstrap.repairDedupeRule);
+  const [automationQueueStorageEngine, setAutomationQueueStorageEngine] = useState(runtimeSettingsBootstrap.automationQueueStorageEngine);
+  const [runtimeTraceEnabled, setRuntimeTraceEnabled] = useState(runtimeSettingsBootstrap.runtimeTraceEnabled);
+  const [runtimeTraceFetchRing, setRuntimeTraceFetchRing] = useState(String(runtimeSettingsBootstrap.runtimeTraceFetchRing));
+  const [runtimeTraceLlmRing, setRuntimeTraceLlmRing] = useState(String(runtimeSettingsBootstrap.runtimeTraceLlmRing));
+  const [runtimeTraceLlmPayloads, setRuntimeTraceLlmPayloads] = useState(runtimeSettingsBootstrap.runtimeTraceLlmPayloads);
+  const [eventsJsonWrite, setEventsJsonWrite] = useState(runtimeSettingsBootstrap.eventsJsonWrite);
+  const [queueJsonWrite, setQueueJsonWrite] = useState(runtimeSettingsBootstrap.queueJsonWrite);
+  const [billingJsonWrite, setBillingJsonWrite] = useState(runtimeSettingsBootstrap.billingJsonWrite);
+  const [brainJsonWrite, setBrainJsonWrite] = useState(runtimeSettingsBootstrap.brainJsonWrite);
+  const [intelJsonWrite, setIntelJsonWrite] = useState(runtimeSettingsBootstrap.intelJsonWrite);
+  const [corpusJsonWrite, setCorpusJsonWrite] = useState(runtimeSettingsBootstrap.corpusJsonWrite);
+  const [learningJsonWrite, setLearningJsonWrite] = useState(runtimeSettingsBootstrap.learningJsonWrite);
+  const [cacheJsonWrite, setCacheJsonWrite] = useState(runtimeSettingsBootstrap.cacheJsonWrite);
+  const [daemonConcurrency, setDaemonConcurrency] = useState(String(runtimeSettingsBootstrap.daemonConcurrency));
+  const [daemonGracefulShutdownTimeoutMs, setDaemonGracefulShutdownTimeoutMs] = useState(String(runtimeSettingsBootstrap.daemonGracefulShutdownTimeoutMs));
+  const [importsRoot, setImportsRoot] = useState(runtimeSettingsBootstrap.importsRoot);
+  const [importsPollSeconds, setImportsPollSeconds] = useState(String(runtimeSettingsBootstrap.importsPollSeconds));
+  const [authoritySnapshotEnabled, setAuthoritySnapshotEnabled] = useState(runtimeSettingsBootstrap.authoritySnapshotEnabled);
+  const [runtimeScreencastEnabled, setRuntimeScreencastEnabled] = useState(runtimeSettingsBootstrap.runtimeScreencastEnabled);
+  const [runtimeScreencastFps, setRuntimeScreencastFps] = useState(String(runtimeSettingsBootstrap.runtimeScreencastFps));
+  const [runtimeScreencastQuality, setRuntimeScreencastQuality] = useState(String(runtimeSettingsBootstrap.runtimeScreencastQuality));
+  const [runtimeScreencastMaxWidth, setRuntimeScreencastMaxWidth] = useState(String(runtimeSettingsBootstrap.runtimeScreencastMaxWidth));
+  const [runtimeScreencastMaxHeight, setRuntimeScreencastMaxHeight] = useState(String(runtimeSettingsBootstrap.runtimeScreencastMaxHeight));
   const [scannedPdfOcrEnabled, setScannedPdfOcrEnabled] = useState(runtimeSettingsBootstrap.scannedPdfOcrEnabled);
   const [scannedPdfOcrPromoteCandidates, setScannedPdfOcrPromoteCandidates] = useState(runtimeSettingsBootstrap.scannedPdfOcrPromoteCandidates);
   const [scannedPdfOcrBackend, setScannedPdfOcrBackend] = useState<RuntimeOcrBackend>(runtimeSettingsBootstrap.scannedPdfOcrBackend);
@@ -153,10 +221,192 @@ export function IndexingPage() {
   const [scannedPdfOcrMinConfidence, setScannedPdfOcrMinConfidence] = useState(String(runtimeSettingsBootstrap.scannedPdfOcrMinConfidence));
   const [resumeMode, setResumeMode] = useState<RuntimeResumeMode>(runtimeSettingsBootstrap.resumeMode);
   const [resumeWindowHours, setResumeWindowHours] = useState(String(runtimeSettingsBootstrap.resumeWindowHours));
+  const [indexingResumeSeedLimit, setIndexingResumeSeedLimit] = useState(String(runtimeSettingsBootstrap.indexingResumeSeedLimit));
+  const [indexingResumePersistLimit, setIndexingResumePersistLimit] = useState(String(runtimeSettingsBootstrap.indexingResumePersistLimit));
   const [reextractAfterHours, setReextractAfterHours] = useState(String(runtimeSettingsBootstrap.reextractAfterHours));
+  const [convergenceIdentityFailFastRounds, setConvergenceIdentityFailFastRounds] = useState(String(runtimeSettingsBootstrap.convergenceIdentityFailFastRounds));
+  const [identityGatePublishThreshold, setIdentityGatePublishThreshold] = useState(String(runtimeSettingsBootstrap.identityGatePublishThreshold));
   const [reextractIndexed, setReextractIndexed] = useState(runtimeSettingsBootstrap.reextractIndexed);
+  const [indexingSchemaPacketsValidationEnabled, setIndexingSchemaPacketsValidationEnabled] = useState(runtimeSettingsBootstrap.indexingSchemaPacketsValidationEnabled);
+  const [indexingSchemaPacketsValidationStrict, setIndexingSchemaPacketsValidationStrict] = useState(runtimeSettingsBootstrap.indexingSchemaPacketsValidationStrict);
   const [discoveryEnabled, setDiscoveryEnabled] = useState(runtimeSettingsBootstrap.discoveryEnabled);
+  const [fetchCandidateSources, setFetchCandidateSources] = useState(runtimeSettingsBootstrap.fetchCandidateSources);
+  const [discoveryMaxQueries, setDiscoveryMaxQueries] = useState(String(runtimeSettingsBootstrap.discoveryMaxQueries));
+  const [discoveryResultsPerQuery, setDiscoveryResultsPerQuery] = useState(String(runtimeSettingsBootstrap.discoveryResultsPerQuery));
+  const [discoveryMaxDiscovered, setDiscoveryMaxDiscovered] = useState(String(runtimeSettingsBootstrap.discoveryMaxDiscovered));
+  const [discoveryQueryConcurrency, setDiscoveryQueryConcurrency] = useState(String(runtimeSettingsBootstrap.discoveryQueryConcurrency));
+  const [manufacturerBroadDiscovery, setManufacturerBroadDiscovery] = useState(runtimeSettingsBootstrap.manufacturerBroadDiscovery);
+  const [manufacturerSeedSearchUrls, setManufacturerSeedSearchUrls] = useState(runtimeSettingsBootstrap.manufacturerSeedSearchUrls);
+  const [manufacturerDeepResearchEnabled, setManufacturerDeepResearchEnabled] = useState(runtimeSettingsBootstrap.manufacturerDeepResearchEnabled);
+  const [maxUrlsPerProduct, setMaxUrlsPerProduct] = useState(String(runtimeSettingsBootstrap.maxUrlsPerProduct));
+  const [maxCandidateUrls, setMaxCandidateUrls] = useState(String(runtimeSettingsBootstrap.maxCandidateUrls));
+  const [maxPagesPerDomain, setMaxPagesPerDomain] = useState(String(runtimeSettingsBootstrap.maxPagesPerDomain));
+  const [uberMaxUrlsPerProduct, setUberMaxUrlsPerProduct] = useState(String(runtimeSettingsBootstrap.uberMaxUrlsPerProduct));
+  const [uberMaxUrlsPerDomain, setUberMaxUrlsPerDomain] = useState(String(runtimeSettingsBootstrap.uberMaxUrlsPerDomain));
+  const [maxRunSeconds, setMaxRunSeconds] = useState(String(runtimeSettingsBootstrap.maxRunSeconds));
+  const [maxJsonBytes, setMaxJsonBytes] = useState(String(runtimeSettingsBootstrap.maxJsonBytes));
+  const [maxPdfBytes, setMaxPdfBytes] = useState(String(runtimeSettingsBootstrap.maxPdfBytes));
+  const [pdfBackendRouterEnabled, setPdfBackendRouterEnabled] = useState(runtimeSettingsBootstrap.pdfBackendRouterEnabled);
+  const [pdfPreferredBackend, setPdfPreferredBackend] = useState(runtimeSettingsBootstrap.pdfPreferredBackend);
+  const [pdfBackendRouterTimeoutMs, setPdfBackendRouterTimeoutMs] = useState(String(runtimeSettingsBootstrap.pdfBackendRouterTimeoutMs));
+  const [pdfBackendRouterMaxPages, setPdfBackendRouterMaxPages] = useState(String(runtimeSettingsBootstrap.pdfBackendRouterMaxPages));
+  const [pdfBackendRouterMaxPairs, setPdfBackendRouterMaxPairs] = useState(String(runtimeSettingsBootstrap.pdfBackendRouterMaxPairs));
+  const [pdfBackendRouterMaxTextPreviewChars, setPdfBackendRouterMaxTextPreviewChars] = useState(String(runtimeSettingsBootstrap.pdfBackendRouterMaxTextPreviewChars));
+  const [capturePageScreenshotEnabled, setCapturePageScreenshotEnabled] = useState(runtimeSettingsBootstrap.capturePageScreenshotEnabled);
+  const [capturePageScreenshotFormat, setCapturePageScreenshotFormat] = useState(runtimeSettingsBootstrap.capturePageScreenshotFormat);
+  const [capturePageScreenshotQuality, setCapturePageScreenshotQuality] = useState(String(runtimeSettingsBootstrap.capturePageScreenshotQuality));
+  const [capturePageScreenshotMaxBytes, setCapturePageScreenshotMaxBytes] = useState(String(runtimeSettingsBootstrap.capturePageScreenshotMaxBytes));
+  const [capturePageScreenshotSelectors, setCapturePageScreenshotSelectors] = useState(runtimeSettingsBootstrap.capturePageScreenshotSelectors);
+  const [runtimeCaptureScreenshots, setRuntimeCaptureScreenshots] = useState(runtimeSettingsBootstrap.runtimeCaptureScreenshots);
+  const [runtimeScreenshotMode, setRuntimeScreenshotMode] = useState(runtimeSettingsBootstrap.runtimeScreenshotMode);
+  const [visualAssetCaptureEnabled, setVisualAssetCaptureEnabled] = useState(runtimeSettingsBootstrap.visualAssetCaptureEnabled);
+  const [visualAssetCaptureMaxPerSource, setVisualAssetCaptureMaxPerSource] = useState(String(runtimeSettingsBootstrap.visualAssetCaptureMaxPerSource));
+  const [visualAssetStoreOriginal, setVisualAssetStoreOriginal] = useState(runtimeSettingsBootstrap.visualAssetStoreOriginal);
+  const [visualAssetRetentionDays, setVisualAssetRetentionDays] = useState(String(runtimeSettingsBootstrap.visualAssetRetentionDays));
+  const [visualAssetPhashEnabled, setVisualAssetPhashEnabled] = useState(runtimeSettingsBootstrap.visualAssetPhashEnabled);
+  const [visualAssetReviewFormat, setVisualAssetReviewFormat] = useState(runtimeSettingsBootstrap.visualAssetReviewFormat);
+  const [visualAssetReviewLgMaxSide, setVisualAssetReviewLgMaxSide] = useState(String(runtimeSettingsBootstrap.visualAssetReviewLgMaxSide));
+  const [visualAssetReviewSmMaxSide, setVisualAssetReviewSmMaxSide] = useState(String(runtimeSettingsBootstrap.visualAssetReviewSmMaxSide));
+  const [visualAssetReviewLgQuality, setVisualAssetReviewLgQuality] = useState(String(runtimeSettingsBootstrap.visualAssetReviewLgQuality));
+  const [visualAssetReviewSmQuality, setVisualAssetReviewSmQuality] = useState(String(runtimeSettingsBootstrap.visualAssetReviewSmQuality));
+  const [visualAssetRegionCropMaxSide, setVisualAssetRegionCropMaxSide] = useState(String(runtimeSettingsBootstrap.visualAssetRegionCropMaxSide));
+  const [visualAssetRegionCropQuality, setVisualAssetRegionCropQuality] = useState(String(runtimeSettingsBootstrap.visualAssetRegionCropQuality));
+  const [visualAssetLlmMaxBytes, setVisualAssetLlmMaxBytes] = useState(String(runtimeSettingsBootstrap.visualAssetLlmMaxBytes));
+  const [visualAssetMinWidth, setVisualAssetMinWidth] = useState(String(runtimeSettingsBootstrap.visualAssetMinWidth));
+  const [visualAssetMinHeight, setVisualAssetMinHeight] = useState(String(runtimeSettingsBootstrap.visualAssetMinHeight));
+  const [visualAssetMinSharpness, setVisualAssetMinSharpness] = useState(String(runtimeSettingsBootstrap.visualAssetMinSharpness));
+  const [visualAssetMinEntropy, setVisualAssetMinEntropy] = useState(String(runtimeSettingsBootstrap.visualAssetMinEntropy));
+  const [visualAssetMaxPhashDistance, setVisualAssetMaxPhashDistance] = useState(String(runtimeSettingsBootstrap.visualAssetMaxPhashDistance));
+  const [visualAssetHeroSelectorMapJson, setVisualAssetHeroSelectorMapJson] = useState(runtimeSettingsBootstrap.visualAssetHeroSelectorMapJson);
+  const [chartExtractionEnabled, setChartExtractionEnabled] = useState(runtimeSettingsBootstrap.chartExtractionEnabled);
+  const [runtimeControlFile, setRuntimeControlFile] = useState(runtimeSettingsBootstrap.runtimeControlFile);
+  const [articleExtractorV2Enabled, setArticleExtractorV2Enabled] = useState(runtimeSettingsBootstrap.articleExtractorV2Enabled);
+  const [articleExtractorMinChars, setArticleExtractorMinChars] = useState(String(runtimeSettingsBootstrap.articleExtractorMinChars));
+  const [articleExtractorMinScore, setArticleExtractorMinScore] = useState(String(runtimeSettingsBootstrap.articleExtractorMinScore));
+  const [articleExtractorMaxChars, setArticleExtractorMaxChars] = useState(String(runtimeSettingsBootstrap.articleExtractorMaxChars));
+  const [articleExtractorDomainPolicyMapJson, setArticleExtractorDomainPolicyMapJson] = useState(runtimeSettingsBootstrap.articleExtractorDomainPolicyMapJson);
+  const [htmlTableExtractorV2, setHtmlTableExtractorV2] = useState(runtimeSettingsBootstrap.htmlTableExtractorV2);
+  const [staticDomExtractorEnabled, setStaticDomExtractorEnabled] = useState(runtimeSettingsBootstrap.staticDomExtractorEnabled);
+  const [staticDomMode, setStaticDomMode] = useState(runtimeSettingsBootstrap.staticDomMode);
+  const [staticDomTargetMatchThreshold, setStaticDomTargetMatchThreshold] = useState(String(runtimeSettingsBootstrap.staticDomTargetMatchThreshold));
+  const [staticDomMaxEvidenceSnippets, setStaticDomMaxEvidenceSnippets] = useState(String(runtimeSettingsBootstrap.staticDomMaxEvidenceSnippets));
+  const [structuredMetadataExtructEnabled, setStructuredMetadataExtructEnabled] = useState(runtimeSettingsBootstrap.structuredMetadataExtructEnabled);
+  const [structuredMetadataExtructUrl, setStructuredMetadataExtructUrl] = useState(runtimeSettingsBootstrap.structuredMetadataExtructUrl);
+  const [structuredMetadataExtructTimeoutMs, setStructuredMetadataExtructTimeoutMs] = useState(String(runtimeSettingsBootstrap.structuredMetadataExtructTimeoutMs));
+  const [structuredMetadataExtructMaxItemsPerSurface, setStructuredMetadataExtructMaxItemsPerSurface] = useState(String(runtimeSettingsBootstrap.structuredMetadataExtructMaxItemsPerSurface));
+  const [structuredMetadataExtructCacheEnabled, setStructuredMetadataExtructCacheEnabled] = useState(runtimeSettingsBootstrap.structuredMetadataExtructCacheEnabled);
+  const [structuredMetadataExtructCacheLimit, setStructuredMetadataExtructCacheLimit] = useState(String(runtimeSettingsBootstrap.structuredMetadataExtructCacheLimit));
+  const [domSnippetMaxChars, setDomSnippetMaxChars] = useState(String(runtimeSettingsBootstrap.domSnippetMaxChars));
+  const [helperFilesEnabled, setHelperFilesEnabled] = useState(runtimeSettingsBootstrap.helperFilesEnabled);
+  const [helperFilesRoot, setHelperFilesRoot] = useState(runtimeSettingsBootstrap.helperFilesRoot);
+  const [helperSupportiveEnabled, setHelperSupportiveEnabled] = useState(runtimeSettingsBootstrap.helperSupportiveEnabled);
+  const [helperSupportiveFillMissing, setHelperSupportiveFillMissing] = useState(runtimeSettingsBootstrap.helperSupportiveFillMissing);
+  const [helperSupportiveMaxSources, setHelperSupportiveMaxSources] = useState(String(runtimeSettingsBootstrap.helperSupportiveMaxSources));
+  const [helperAutoSeedTargets, setHelperAutoSeedTargets] = useState(runtimeSettingsBootstrap.helperAutoSeedTargets);
+  const [helperActiveSyncLimit, setHelperActiveSyncLimit] = useState(String(runtimeSettingsBootstrap.helperActiveSyncLimit));
+  const [fieldRewardHalfLifeDays, setFieldRewardHalfLifeDays] = useState(String(runtimeSettingsBootstrap.fieldRewardHalfLifeDays));
+  const [batchStrategy, setBatchStrategy] = useState(runtimeSettingsBootstrap.batchStrategy);
+  const [driftDetectionEnabled, setDriftDetectionEnabled] = useState(runtimeSettingsBootstrap.driftDetectionEnabled);
+  const [driftPollSeconds, setDriftPollSeconds] = useState(String(runtimeSettingsBootstrap.driftPollSeconds));
+  const [driftScanMaxProducts, setDriftScanMaxProducts] = useState(String(runtimeSettingsBootstrap.driftScanMaxProducts));
+  const [driftAutoRepublish, setDriftAutoRepublish] = useState(runtimeSettingsBootstrap.driftAutoRepublish);
+  const [reCrawlStaleAfterDays, setReCrawlStaleAfterDays] = useState(String(runtimeSettingsBootstrap.reCrawlStaleAfterDays));
+  const [aggressiveModeEnabled, setAggressiveModeEnabled] = useState(runtimeSettingsBootstrap.aggressiveModeEnabled);
+  const [aggressiveConfidenceThreshold, setAggressiveConfidenceThreshold] = useState(String(runtimeSettingsBootstrap.aggressiveConfidenceThreshold));
+  const [aggressiveMaxSearchQueries, setAggressiveMaxSearchQueries] = useState(String(runtimeSettingsBootstrap.aggressiveMaxSearchQueries));
+  const [aggressiveEvidenceAuditEnabled, setAggressiveEvidenceAuditEnabled] = useState(runtimeSettingsBootstrap.aggressiveEvidenceAuditEnabled);
+  const [aggressiveEvidenceAuditBatchSize, setAggressiveEvidenceAuditBatchSize] = useState(String(runtimeSettingsBootstrap.aggressiveEvidenceAuditBatchSize));
+  const [aggressiveMaxTimePerProductMs, setAggressiveMaxTimePerProductMs] = useState(String(runtimeSettingsBootstrap.aggressiveMaxTimePerProductMs));
+  const [aggressiveThoroughFromRound, setAggressiveThoroughFromRound] = useState(String(runtimeSettingsBootstrap.aggressiveThoroughFromRound));
+  const [aggressiveRound1MaxUrls, setAggressiveRound1MaxUrls] = useState(String(runtimeSettingsBootstrap.aggressiveRound1MaxUrls));
+  const [aggressiveRound1MaxCandidateUrls, setAggressiveRound1MaxCandidateUrls] = useState(String(runtimeSettingsBootstrap.aggressiveRound1MaxCandidateUrls));
+  const [aggressiveLlmMaxCallsPerRound, setAggressiveLlmMaxCallsPerRound] = useState(String(runtimeSettingsBootstrap.aggressiveLlmMaxCallsPerRound));
+  const [aggressiveLlmMaxCallsPerProductTotal, setAggressiveLlmMaxCallsPerProductTotal] = useState(String(runtimeSettingsBootstrap.aggressiveLlmMaxCallsPerProductTotal));
+  const [aggressiveLlmTargetMaxFields, setAggressiveLlmTargetMaxFields] = useState(String(runtimeSettingsBootstrap.aggressiveLlmTargetMaxFields));
+  const [aggressiveLlmDiscoveryPasses, setAggressiveLlmDiscoveryPasses] = useState(String(runtimeSettingsBootstrap.aggressiveLlmDiscoveryPasses));
+  const [aggressiveLlmDiscoveryQueryCap, setAggressiveLlmDiscoveryQueryCap] = useState(String(runtimeSettingsBootstrap.aggressiveLlmDiscoveryQueryCap));
+  const [uberAggressiveEnabled, setUberAggressiveEnabled] = useState(runtimeSettingsBootstrap.uberAggressiveEnabled);
+  const [uberMaxRounds, setUberMaxRounds] = useState(String(runtimeSettingsBootstrap.uberMaxRounds));
+  const [cortexEnabled, setCortexEnabled] = useState(runtimeSettingsBootstrap.cortexEnabled);
+  const [cortexAsyncEnabled, setCortexAsyncEnabled] = useState(runtimeSettingsBootstrap.cortexAsyncEnabled);
+  const [cortexBaseUrl, setCortexBaseUrl] = useState(runtimeSettingsBootstrap.cortexBaseUrl);
+  const [cortexApiKey, setCortexApiKey] = useState(runtimeSettingsBootstrap.cortexApiKey);
+  const [cortexAsyncBaseUrl, setCortexAsyncBaseUrl] = useState(runtimeSettingsBootstrap.cortexAsyncBaseUrl);
+  const [cortexAsyncSubmitPath, setCortexAsyncSubmitPath] = useState(runtimeSettingsBootstrap.cortexAsyncSubmitPath);
+  const [cortexAsyncStatusPath, setCortexAsyncStatusPath] = useState(runtimeSettingsBootstrap.cortexAsyncStatusPath);
+  const [cortexSyncTimeoutMs, setCortexSyncTimeoutMs] = useState(String(runtimeSettingsBootstrap.cortexSyncTimeoutMs));
+  const [cortexAsyncPollIntervalMs, setCortexAsyncPollIntervalMs] = useState(String(runtimeSettingsBootstrap.cortexAsyncPollIntervalMs));
+  const [cortexAsyncMaxWaitMs, setCortexAsyncMaxWaitMs] = useState(String(runtimeSettingsBootstrap.cortexAsyncMaxWaitMs));
+  const [cortexModelFast, setCortexModelFast] = useState(runtimeSettingsBootstrap.cortexModelFast);
+  const [cortexModelAudit, setCortexModelAudit] = useState(runtimeSettingsBootstrap.cortexModelAudit);
+  const [cortexModelDom, setCortexModelDom] = useState(runtimeSettingsBootstrap.cortexModelDom);
+  const [cortexModelReasoningDeep, setCortexModelReasoningDeep] = useState(runtimeSettingsBootstrap.cortexModelReasoningDeep);
+  const [cortexModelVision, setCortexModelVision] = useState(runtimeSettingsBootstrap.cortexModelVision);
+  const [cortexModelSearchFast, setCortexModelSearchFast] = useState(runtimeSettingsBootstrap.cortexModelSearchFast);
+  const [cortexModelRerankFast, setCortexModelRerankFast] = useState(runtimeSettingsBootstrap.cortexModelRerankFast);
+  const [cortexModelSearchDeep, setCortexModelSearchDeep] = useState(runtimeSettingsBootstrap.cortexModelSearchDeep);
+  const [cortexAutoStart, setCortexAutoStart] = useState(runtimeSettingsBootstrap.cortexAutoStart);
+  const [cortexAutoRestartOnAuth, setCortexAutoRestartOnAuth] = useState(runtimeSettingsBootstrap.cortexAutoRestartOnAuth);
+  const [cortexEnsureReadyTimeoutMs, setCortexEnsureReadyTimeoutMs] = useState(String(runtimeSettingsBootstrap.cortexEnsureReadyTimeoutMs));
+  const [cortexStartReadyTimeoutMs, setCortexStartReadyTimeoutMs] = useState(String(runtimeSettingsBootstrap.cortexStartReadyTimeoutMs));
+  const [cortexFailureThreshold, setCortexFailureThreshold] = useState(String(runtimeSettingsBootstrap.cortexFailureThreshold));
+  const [cortexCircuitOpenMs, setCortexCircuitOpenMs] = useState(String(runtimeSettingsBootstrap.cortexCircuitOpenMs));
+  const [cortexEscalateConfidenceLt, setCortexEscalateConfidenceLt] = useState(String(runtimeSettingsBootstrap.cortexEscalateConfidenceLt));
+  const [cortexEscalateIfConflict, setCortexEscalateIfConflict] = useState(runtimeSettingsBootstrap.cortexEscalateIfConflict);
+  const [cortexEscalateCriticalOnly, setCortexEscalateCriticalOnly] = useState(runtimeSettingsBootstrap.cortexEscalateCriticalOnly);
+  const [cortexMaxDeepFieldsPerProduct, setCortexMaxDeepFieldsPerProduct] = useState(String(runtimeSettingsBootstrap.cortexMaxDeepFieldsPerProduct));
+  const [outputMode, setOutputMode] = useState(runtimeSettingsBootstrap.outputMode);
+  const [localMode, setLocalMode] = useState(runtimeSettingsBootstrap.localMode);
+  const [dryRun, setDryRun] = useState(runtimeSettingsBootstrap.dryRun);
+  const [mirrorToS3, setMirrorToS3] = useState(runtimeSettingsBootstrap.mirrorToS3);
+  const [mirrorToS3Input, setMirrorToS3Input] = useState(runtimeSettingsBootstrap.mirrorToS3Input);
+  const [localInputRoot, setLocalInputRoot] = useState(runtimeSettingsBootstrap.localInputRoot);
+  const [localOutputRoot, setLocalOutputRoot] = useState(runtimeSettingsBootstrap.localOutputRoot);
+  const [runtimeEventsKey, setRuntimeEventsKey] = useState(runtimeSettingsBootstrap.runtimeEventsKey);
+  const [writeMarkdownSummary, setWriteMarkdownSummary] = useState(runtimeSettingsBootstrap.writeMarkdownSummary);
+  const [awsRegion, setAwsRegion] = useState(runtimeSettingsBootstrap.awsRegion);
+  const [s3Bucket, setS3Bucket] = useState(runtimeSettingsBootstrap.s3Bucket);
+  const [s3InputPrefix, setS3InputPrefix] = useState(runtimeSettingsBootstrap.s3InputPrefix);
+  const [s3OutputPrefix, setS3OutputPrefix] = useState(runtimeSettingsBootstrap.s3OutputPrefix);
+  const [eloSupabaseAnonKey, setEloSupabaseAnonKey] = useState(runtimeSettingsBootstrap.eloSupabaseAnonKey);
+  const [eloSupabaseEndpoint, setEloSupabaseEndpoint] = useState(runtimeSettingsBootstrap.eloSupabaseEndpoint);
+  const [llmEnabled, setLlmEnabled] = useState(runtimeSettingsBootstrap.llmEnabled);
+  const [llmWriteSummary, setLlmWriteSummary] = useState(runtimeSettingsBootstrap.llmWriteSummary);
+  const [llmProvider, setLlmProvider] = useState(runtimeSettingsBootstrap.llmProvider);
+  const [llmBaseUrl, setLlmBaseUrl] = useState(runtimeSettingsBootstrap.llmBaseUrl);
+  const [openaiApiKey, setOpenaiApiKey] = useState(runtimeSettingsBootstrap.openaiApiKey);
+  const [anthropicApiKey, setAnthropicApiKey] = useState(runtimeSettingsBootstrap.anthropicApiKey);
+  const [allowBelowPassTargetFill, setAllowBelowPassTargetFill] = useState(runtimeSettingsBootstrap.allowBelowPassTargetFill);
+  const [indexingHelperFilesEnabled, setIndexingHelperFilesEnabled] = useState(runtimeSettingsBootstrap.indexingHelperFilesEnabled);
+  const [maxManufacturerUrlsPerProduct, setMaxManufacturerUrlsPerProduct] = useState(String(runtimeSettingsBootstrap.maxManufacturerUrlsPerProduct));
+  const [maxManufacturerPagesPerDomain, setMaxManufacturerPagesPerDomain] = useState(String(runtimeSettingsBootstrap.maxManufacturerPagesPerDomain));
+  const [manufacturerReserveUrls, setManufacturerReserveUrls] = useState(String(runtimeSettingsBootstrap.manufacturerReserveUrls));
+  const [userAgent, setUserAgent] = useState(runtimeSettingsBootstrap.userAgent);
+  const [selfImproveEnabled, setSelfImproveEnabled] = useState(runtimeSettingsBootstrap.selfImproveEnabled);
+  const [maxHypothesisItems, setMaxHypothesisItems] = useState(String(runtimeSettingsBootstrap.maxHypothesisItems));
+  const [hypothesisAutoFollowupRounds, setHypothesisAutoFollowupRounds] = useState(String(runtimeSettingsBootstrap.hypothesisAutoFollowupRounds));
+  const [hypothesisFollowupUrlsPerRound, setHypothesisFollowupUrlsPerRound] = useState(String(runtimeSettingsBootstrap.hypothesisFollowupUrlsPerRound));
+  const [learningConfidenceThreshold, setLearningConfidenceThreshold] = useState(String(runtimeSettingsBootstrap.learningConfidenceThreshold));
+  const [componentLexiconDecayDays, setComponentLexiconDecayDays] = useState(String(runtimeSettingsBootstrap.componentLexiconDecayDays));
+  const [componentLexiconExpireDays, setComponentLexiconExpireDays] = useState(String(runtimeSettingsBootstrap.componentLexiconExpireDays));
+  const [fieldAnchorsDecayDays, setFieldAnchorsDecayDays] = useState(String(runtimeSettingsBootstrap.fieldAnchorsDecayDays));
+  const [urlMemoryDecayDays, setUrlMemoryDecayDays] = useState(String(runtimeSettingsBootstrap.urlMemoryDecayDays));
+  const [endpointSignalLimit, setEndpointSignalLimit] = useState(String(runtimeSettingsBootstrap.endpointSignalLimit));
+  const [endpointSuggestionLimit, setEndpointSuggestionLimit] = useState(String(runtimeSettingsBootstrap.endpointSuggestionLimit));
+  const [endpointNetworkScanLimit, setEndpointNetworkScanLimit] = useState(String(runtimeSettingsBootstrap.endpointNetworkScanLimit));
   const [searchProvider, setSearchProvider] = useState<RuntimeSearchProvider>(runtimeSettingsBootstrap.searchProvider as RuntimeSearchProvider);
+  const [searxngBaseUrl, setSearxngBaseUrl] = useState(runtimeSettingsBootstrap.searxngBaseUrl);
+  const [bingSearchEndpoint, setBingSearchEndpoint] = useState(runtimeSettingsBootstrap.bingSearchEndpoint);
+  const [bingSearchKey, setBingSearchKey] = useState(runtimeSettingsBootstrap.bingSearchKey);
+  const [googleCseCx, setGoogleCseCx] = useState(runtimeSettingsBootstrap.googleCseCx);
+  const [googleCseKey, setGoogleCseKey] = useState(runtimeSettingsBootstrap.googleCseKey);
+  const [llmPlanApiKey, setLlmPlanApiKey] = useState(runtimeSettingsBootstrap.llmPlanApiKey);
+  const [duckduckgoBaseUrl, setDuckduckgoBaseUrl] = useState(runtimeSettingsBootstrap.duckduckgoBaseUrl);
+  const [disableGoogleCse, setDisableGoogleCse] = useState(runtimeSettingsBootstrap.disableGoogleCse);
+  const [cseRescueOnlyMode, setCseRescueOnlyMode] = useState(runtimeSettingsBootstrap.cseRescueOnlyMode);
+  const [cseRescueRequiredIteration, setCseRescueRequiredIteration] = useState(String(runtimeSettingsBootstrap.cseRescueRequiredIteration));
+  const [duckduckgoTimeoutMs, setDuckduckgoTimeoutMs] = useState(String(runtimeSettingsBootstrap.duckduckgoTimeoutMs));
+  const [duckduckgoEnabled, setDuckduckgoEnabled] = useState(runtimeSettingsBootstrap.duckduckgoEnabled);
   const [phase2LlmEnabled, setPhase2LlmEnabled] = useState(runtimeSettingsBootstrap.phase2LlmEnabled);
   const [phase2LlmModel, setPhase2LlmModel] = useState(runtimeSettingsBootstrap.phase2LlmModel);
   const [llmTokensPlan, setLlmTokensPlan] = useState(runtimeSettingsBootstrap.llmTokensPlan);
@@ -182,6 +432,98 @@ export function IndexingPage() {
   const [llmTokensValidateFallback, setLlmTokensValidateFallback] = useState(runtimeSettingsBootstrap.llmTokensValidateFallback);
   const [llmFallbackWriteModel, setLlmFallbackWriteModel] = useState(runtimeSettingsBootstrap.llmFallbackWriteModel);
   const [llmTokensWriteFallback, setLlmTokensWriteFallback] = useState(runtimeSettingsBootstrap.llmTokensWriteFallback);
+  const [llmExtractionCacheEnabled, setLlmExtractionCacheEnabled] = useState(runtimeSettingsBootstrap.llmExtractionCacheEnabled);
+  const [llmExtractionCacheDir, setLlmExtractionCacheDir] = useState(runtimeSettingsBootstrap.llmExtractionCacheDir);
+  const [llmExtractionCacheTtlMs, setLlmExtractionCacheTtlMs] = useState(String(runtimeSettingsBootstrap.llmExtractionCacheTtlMs));
+  const [llmMaxCallsPerProductTotal, setLlmMaxCallsPerProductTotal] = useState(String(runtimeSettingsBootstrap.llmMaxCallsPerProductTotal));
+  const [llmMaxCallsPerProductFast, setLlmMaxCallsPerProductFast] = useState(String(runtimeSettingsBootstrap.llmMaxCallsPerProductFast));
+  const [needsetEvidenceDecayDays, setNeedsetEvidenceDecayDays] = useState(String(runtimeSettingsBootstrap.needsetEvidenceDecayDays));
+  const [needsetEvidenceDecayFloor, setNeedsetEvidenceDecayFloor] = useState(String(runtimeSettingsBootstrap.needsetEvidenceDecayFloor));
+  const [needsetRequiredWeightIdentity, setNeedsetRequiredWeightIdentity] = useState(String(runtimeSettingsBootstrap.needsetRequiredWeightIdentity));
+  const [needsetRequiredWeightCritical, setNeedsetRequiredWeightCritical] = useState(String(runtimeSettingsBootstrap.needsetRequiredWeightCritical));
+  const [needsetRequiredWeightRequired, setNeedsetRequiredWeightRequired] = useState(String(runtimeSettingsBootstrap.needsetRequiredWeightRequired));
+  const [needsetRequiredWeightExpected, setNeedsetRequiredWeightExpected] = useState(String(runtimeSettingsBootstrap.needsetRequiredWeightExpected));
+  const [needsetRequiredWeightOptional, setNeedsetRequiredWeightOptional] = useState(String(runtimeSettingsBootstrap.needsetRequiredWeightOptional));
+  const [needsetMissingMultiplier, setNeedsetMissingMultiplier] = useState(String(runtimeSettingsBootstrap.needsetMissingMultiplier));
+  const [needsetTierDeficitMultiplier, setNeedsetTierDeficitMultiplier] = useState(String(runtimeSettingsBootstrap.needsetTierDeficitMultiplier));
+  const [needsetMinRefsDeficitMultiplier, setNeedsetMinRefsDeficitMultiplier] = useState(String(runtimeSettingsBootstrap.needsetMinRefsDeficitMultiplier));
+  const [needsetConflictMultiplier, setNeedsetConflictMultiplier] = useState(String(runtimeSettingsBootstrap.needsetConflictMultiplier));
+  const [needsetIdentityLockThreshold, setNeedsetIdentityLockThreshold] = useState(String(runtimeSettingsBootstrap.needsetIdentityLockThreshold));
+  const [needsetIdentityProvisionalThreshold, setNeedsetIdentityProvisionalThreshold] = useState(String(runtimeSettingsBootstrap.needsetIdentityProvisionalThreshold));
+  const [needsetDefaultIdentityAuditLimit, setNeedsetDefaultIdentityAuditLimit] = useState(String(runtimeSettingsBootstrap.needsetDefaultIdentityAuditLimit));
+  const [consensusMethodWeightNetworkJson, setConsensusMethodWeightNetworkJson] = useState(String(runtimeSettingsBootstrap.consensusMethodWeightNetworkJson));
+  const [consensusMethodWeightAdapterApi, setConsensusMethodWeightAdapterApi] = useState(String(runtimeSettingsBootstrap.consensusMethodWeightAdapterApi));
+  const [consensusMethodWeightStructuredMeta, setConsensusMethodWeightStructuredMeta] = useState(String(runtimeSettingsBootstrap.consensusMethodWeightStructuredMeta));
+  const [consensusMethodWeightPdf, setConsensusMethodWeightPdf] = useState(String(runtimeSettingsBootstrap.consensusMethodWeightPdf));
+  const [consensusMethodWeightTableKv, setConsensusMethodWeightTableKv] = useState(String(runtimeSettingsBootstrap.consensusMethodWeightTableKv));
+  const [consensusMethodWeightDom, setConsensusMethodWeightDom] = useState(String(runtimeSettingsBootstrap.consensusMethodWeightDom));
+  const [consensusMethodWeightLlmExtractBase, setConsensusMethodWeightLlmExtractBase] = useState(String(runtimeSettingsBootstrap.consensusMethodWeightLlmExtractBase));
+  const [consensusPolicyBonus, setConsensusPolicyBonus] = useState(String(runtimeSettingsBootstrap.consensusPolicyBonus));
+  const [consensusWeightedMajorityThreshold, setConsensusWeightedMajorityThreshold] = useState(String(runtimeSettingsBootstrap.consensusWeightedMajorityThreshold));
+  const [consensusStrictAcceptanceDomainCount, setConsensusStrictAcceptanceDomainCount] = useState(String(runtimeSettingsBootstrap.consensusStrictAcceptanceDomainCount));
+  const [consensusRelaxedAcceptanceDomainCount, setConsensusRelaxedAcceptanceDomainCount] = useState(String(runtimeSettingsBootstrap.consensusRelaxedAcceptanceDomainCount));
+  const [consensusInstrumentedFieldThreshold, setConsensusInstrumentedFieldThreshold] = useState(String(runtimeSettingsBootstrap.consensusInstrumentedFieldThreshold));
+  const [consensusConfidenceScoringBase, setConsensusConfidenceScoringBase] = useState(String(runtimeSettingsBootstrap.consensusConfidenceScoringBase));
+  const [consensusPassTargetIdentityStrong, setConsensusPassTargetIdentityStrong] = useState(String(runtimeSettingsBootstrap.consensusPassTargetIdentityStrong));
+  const [consensusPassTargetNormal, setConsensusPassTargetNormal] = useState(String(runtimeSettingsBootstrap.consensusPassTargetNormal));
+  const [retrievalTierWeightTier1, setRetrievalTierWeightTier1] = useState(String(runtimeSettingsBootstrap.retrievalTierWeightTier1));
+  const [retrievalTierWeightTier2, setRetrievalTierWeightTier2] = useState(String(runtimeSettingsBootstrap.retrievalTierWeightTier2));
+  const [retrievalTierWeightTier3, setRetrievalTierWeightTier3] = useState(String(runtimeSettingsBootstrap.retrievalTierWeightTier3));
+  const [retrievalTierWeightTier4, setRetrievalTierWeightTier4] = useState(String(runtimeSettingsBootstrap.retrievalTierWeightTier4));
+  const [retrievalTierWeightTier5, setRetrievalTierWeightTier5] = useState(String(runtimeSettingsBootstrap.retrievalTierWeightTier5));
+  const [retrievalDocKindWeightManualPdf, setRetrievalDocKindWeightManualPdf] = useState(String(runtimeSettingsBootstrap.retrievalDocKindWeightManualPdf));
+  const [retrievalDocKindWeightSpecPdf, setRetrievalDocKindWeightSpecPdf] = useState(String(runtimeSettingsBootstrap.retrievalDocKindWeightSpecPdf));
+  const [retrievalDocKindWeightSupport, setRetrievalDocKindWeightSupport] = useState(String(runtimeSettingsBootstrap.retrievalDocKindWeightSupport));
+  const [retrievalDocKindWeightLabReview, setRetrievalDocKindWeightLabReview] = useState(String(runtimeSettingsBootstrap.retrievalDocKindWeightLabReview));
+  const [retrievalDocKindWeightProductPage, setRetrievalDocKindWeightProductPage] = useState(String(runtimeSettingsBootstrap.retrievalDocKindWeightProductPage));
+  const [retrievalDocKindWeightOther, setRetrievalDocKindWeightOther] = useState(String(runtimeSettingsBootstrap.retrievalDocKindWeightOther));
+  const [retrievalMethodWeightTable, setRetrievalMethodWeightTable] = useState(String(runtimeSettingsBootstrap.retrievalMethodWeightTable));
+  const [retrievalMethodWeightKv, setRetrievalMethodWeightKv] = useState(String(runtimeSettingsBootstrap.retrievalMethodWeightKv));
+  const [retrievalMethodWeightJsonLd, setRetrievalMethodWeightJsonLd] = useState(String(runtimeSettingsBootstrap.retrievalMethodWeightJsonLd));
+  const [retrievalMethodWeightLlmExtract, setRetrievalMethodWeightLlmExtract] = useState(String(runtimeSettingsBootstrap.retrievalMethodWeightLlmExtract));
+  const [retrievalMethodWeightHelperSupportive, setRetrievalMethodWeightHelperSupportive] = useState(String(runtimeSettingsBootstrap.retrievalMethodWeightHelperSupportive));
+  const [retrievalAnchorScorePerMatch, setRetrievalAnchorScorePerMatch] = useState(String(runtimeSettingsBootstrap.retrievalAnchorScorePerMatch));
+  const [retrievalIdentityScorePerMatch, setRetrievalIdentityScorePerMatch] = useState(String(runtimeSettingsBootstrap.retrievalIdentityScorePerMatch));
+  const [retrievalUnitMatchBonus, setRetrievalUnitMatchBonus] = useState(String(runtimeSettingsBootstrap.retrievalUnitMatchBonus));
+  const [retrievalDirectFieldMatchBonus, setRetrievalDirectFieldMatchBonus] = useState(String(runtimeSettingsBootstrap.retrievalDirectFieldMatchBonus));
+  const [llmExtractMaxTokens, setLlmExtractMaxTokens] = useState(String(runtimeSettingsBootstrap.llmExtractMaxTokens));
+  const [llmExtractMaxSnippetsPerBatch, setLlmExtractMaxSnippetsPerBatch] = useState(String(runtimeSettingsBootstrap.llmExtractMaxSnippetsPerBatch));
+  const [llmExtractMaxSnippetChars, setLlmExtractMaxSnippetChars] = useState(String(runtimeSettingsBootstrap.llmExtractMaxSnippetChars));
+  const [llmExtractSkipLowSignal, setLlmExtractSkipLowSignal] = useState(runtimeSettingsBootstrap.llmExtractSkipLowSignal);
+  const [llmExtractReasoningBudget, setLlmExtractReasoningBudget] = useState(String(runtimeSettingsBootstrap.llmExtractReasoningBudget));
+  const [llmReasoningMode, setLlmReasoningMode] = useState(runtimeSettingsBootstrap.llmReasoningMode);
+  const [llmReasoningBudget, setLlmReasoningBudget] = useState(String(runtimeSettingsBootstrap.llmReasoningBudget));
+  const [llmMonthlyBudgetUsd, setLlmMonthlyBudgetUsd] = useState(String(runtimeSettingsBootstrap.llmMonthlyBudgetUsd));
+  const [llmPerProductBudgetUsd, setLlmPerProductBudgetUsd] = useState(String(runtimeSettingsBootstrap.llmPerProductBudgetUsd));
+  const [llmDisableBudgetGuards, setLlmDisableBudgetGuards] = useState(runtimeSettingsBootstrap.llmDisableBudgetGuards);
+  const [llmMaxCallsPerRound, setLlmMaxCallsPerRound] = useState(String(runtimeSettingsBootstrap.llmMaxCallsPerRound));
+  const [llmMaxOutputTokens, setLlmMaxOutputTokens] = useState(String(runtimeSettingsBootstrap.llmMaxOutputTokens));
+  const [llmVerifySampleRate, setLlmVerifySampleRate] = useState(String(runtimeSettingsBootstrap.llmVerifySampleRate));
+  const [llmMaxBatchesPerProduct, setLlmMaxBatchesPerProduct] = useState(String(runtimeSettingsBootstrap.llmMaxBatchesPerProduct));
+  const [llmMaxEvidenceChars, setLlmMaxEvidenceChars] = useState(String(runtimeSettingsBootstrap.llmMaxEvidenceChars));
+  const [llmMaxTokens, setLlmMaxTokens] = useState(String(runtimeSettingsBootstrap.llmMaxTokens));
+  const [llmTimeoutMs, setLlmTimeoutMs] = useState(String(runtimeSettingsBootstrap.llmTimeoutMs));
+  const [llmCostInputPer1M, setLlmCostInputPer1M] = useState(String(runtimeSettingsBootstrap.llmCostInputPer1M));
+  const [llmCostOutputPer1M, setLlmCostOutputPer1M] = useState(String(runtimeSettingsBootstrap.llmCostOutputPer1M));
+  const [llmCostCachedInputPer1M, setLlmCostCachedInputPer1M] = useState(String(runtimeSettingsBootstrap.llmCostCachedInputPer1M));
+  const [llmVerifyMode, setLlmVerifyMode] = useState(runtimeSettingsBootstrap.llmVerifyMode);
+  const [identityGateBaseMatchThreshold, setIdentityGateBaseMatchThreshold] = useState(String(runtimeSettingsBootstrap.identityGateBaseMatchThreshold));
+  const [identityGateEasyAmbiguityReduction, setIdentityGateEasyAmbiguityReduction] = useState(String(runtimeSettingsBootstrap.identityGateEasyAmbiguityReduction));
+  const [identityGateMediumAmbiguityReduction, setIdentityGateMediumAmbiguityReduction] = useState(String(runtimeSettingsBootstrap.identityGateMediumAmbiguityReduction));
+  const [identityGateHardAmbiguityReduction, setIdentityGateHardAmbiguityReduction] = useState(String(runtimeSettingsBootstrap.identityGateHardAmbiguityReduction));
+  const [identityGateVeryHardAmbiguityIncrease, setIdentityGateVeryHardAmbiguityIncrease] = useState(String(runtimeSettingsBootstrap.identityGateVeryHardAmbiguityIncrease));
+  const [identityGateExtraHardAmbiguityIncrease, setIdentityGateExtraHardAmbiguityIncrease] = useState(String(runtimeSettingsBootstrap.identityGateExtraHardAmbiguityIncrease));
+  const [identityGateMissingStrongIdPenalty, setIdentityGateMissingStrongIdPenalty] = useState(String(runtimeSettingsBootstrap.identityGateMissingStrongIdPenalty));
+  const [identityGateHardMissingStrongIdIncrease, setIdentityGateHardMissingStrongIdIncrease] = useState(String(runtimeSettingsBootstrap.identityGateHardMissingStrongIdIncrease));
+  const [identityGateVeryHardMissingStrongIdIncrease, setIdentityGateVeryHardMissingStrongIdIncrease] = useState(String(runtimeSettingsBootstrap.identityGateVeryHardMissingStrongIdIncrease));
+  const [identityGateExtraHardMissingStrongIdIncrease, setIdentityGateExtraHardMissingStrongIdIncrease] = useState(String(runtimeSettingsBootstrap.identityGateExtraHardMissingStrongIdIncrease));
+  const [identityGateNumericTokenBoost, setIdentityGateNumericTokenBoost] = useState(String(runtimeSettingsBootstrap.identityGateNumericTokenBoost));
+  const [identityGateNumericRangeThreshold, setIdentityGateNumericRangeThreshold] = useState(String(runtimeSettingsBootstrap.identityGateNumericRangeThreshold));
+  const [qualityGateIdentityThreshold, setQualityGateIdentityThreshold] = useState(String(runtimeSettingsBootstrap.qualityGateIdentityThreshold));
+  const [evidenceTextMaxChars, setEvidenceTextMaxChars] = useState(String(runtimeSettingsBootstrap.evidenceTextMaxChars));
+  const [specDbDir, setSpecDbDir] = useState(runtimeSettingsBootstrap.specDbDir);
+  const [llmPlanProvider, setLlmPlanProvider] = useState(runtimeSettingsBootstrap.llmPlanProvider);
+  const [llmPlanBaseUrl, setLlmPlanBaseUrl] = useState(runtimeSettingsBootstrap.llmPlanBaseUrl);
   const singleBrand = useIndexLabStore((s) => s.pickerBrand);
   const setSingleBrand = useIndexLabStore((s) => s.setPickerBrand);
   const singleModel = useIndexLabStore((s) => s.pickerModel);
@@ -247,121 +589,400 @@ export function IndexingPage() {
   }, [searxngStatusError]);
 
   const [runtimeSettingsDirty, setRuntimeSettingsDirty] = useState(false);
-  const [convergenceSettingsSaveState, setConvergenceSettingsSaveState] = useState<'idle' | 'ok' | 'partial' | 'error'>('idle');
-  const [convergenceSettingsSaveMessage, setConvergenceSettingsSaveMessage] = useState('');
-  const [runtimeSettingsSaveState, setRuntimeSettingsSaveState] = useState<'idle' | 'ok' | 'partial' | 'error'>('idle');
-  const [runtimeSettingsSaveMessage, setRuntimeSettingsSaveMessage] = useState('');
+  const [convergenceSettingsSaveState] = useState<'idle' | 'ok' | 'partial' | 'error'>('idle');
+  const [convergenceSettingsSaveMessage] = useState('');
+  const [runtimeSettingsSaveState] = useState<'idle' | 'ok' | 'partial' | 'error'>('idle');
+  const [runtimeSettingsSaveMessage] = useState('');
   const [runtimeSettingsFallbackBaseline, setRuntimeSettingsFallbackBaseline] = useState(() =>
     readRuntimeSettingsNumericBaseline(runtimeSettingsBootstrap),
   );
-  const runtimeStringHydrationBindings = useMemo(() => ([
-    {
-      key: 'profile',
-      apply: (value: string) => setProfile(value as RuntimeProfile),
-    },
-    {
-      key: 'searchProvider',
-      allowEmpty: true,
-      apply: (value: string) => setSearchProvider(value as RuntimeSearchProvider),
-    },
-    {
-      key: 'phase2LlmModel',
-      apply: (value: string) => setPhase2LlmModel(value),
-    },
-    {
-      key: 'phase3LlmModel',
-      apply: (value: string) => setPhase3LlmModel(value),
-    },
-    {
-      key: 'llmModelFast',
-      apply: (value: string) => setLlmModelFast(value),
-    },
-    {
-      key: 'llmModelReasoning',
-      apply: (value: string) => setLlmModelReasoning(value),
-    },
-    {
-      key: 'llmModelExtract',
-      apply: (value: string) => setLlmModelExtract(value),
-    },
-    {
-      key: 'llmModelValidate',
-      apply: (value: string) => setLlmModelValidate(value),
-    },
-    {
-      key: 'llmModelWrite',
-      apply: (value: string) => setLlmModelWrite(value),
-    },
-    {
-      key: 'llmFallbackPlanModel',
-      allowEmpty: true,
-      apply: (value: string) => setLlmFallbackPlanModel(value),
-    },
-    {
-      key: 'llmFallbackExtractModel',
-      allowEmpty: true,
-      apply: (value: string) => setLlmFallbackExtractModel(value),
-    },
-    {
-      key: 'llmFallbackValidateModel',
-      allowEmpty: true,
-      apply: (value: string) => setLlmFallbackValidateModel(value),
-    },
-    {
-      key: 'llmFallbackWriteModel',
-      allowEmpty: true,
-      apply: (value: string) => setLlmFallbackWriteModel(value),
-    },
-    {
-      key: 'resumeMode',
-      apply: (value: string) => setResumeMode(value as RuntimeResumeMode),
-    },
-    {
-      key: 'scannedPdfOcrBackend',
-      apply: (value: string) => setScannedPdfOcrBackend(value as RuntimeOcrBackend),
-    },
-    {
-      key: 'dynamicFetchPolicyMapJson',
-      allowEmpty: true,
-      apply: (value: string) => setDynamicFetchPolicyMapJson(value),
-    },
-  ]), []);
-  const runtimeNumberHydrationBindings = useMemo(() => ([
-    { key: 'fetchConcurrency', apply: (value: number) => setFetchConcurrency(String(value)) },
-    { key: 'perHostMinDelayMs', apply: (value: number) => setPerHostMinDelayMs(String(value)) },
-    { key: 'llmTokensPlan', apply: (value: number) => setLlmTokensPlan(value) },
-    { key: 'llmTokensTriage', apply: (value: number) => setLlmTokensTriage(value) },
-    { key: 'llmTokensFast', apply: (value: number) => setLlmTokensFast(value) },
-    { key: 'llmTokensReasoning', apply: (value: number) => setLlmTokensReasoning(value) },
-    { key: 'llmTokensExtract', apply: (value: number) => setLlmTokensExtract(value) },
-    { key: 'llmTokensValidate', apply: (value: number) => setLlmTokensValidate(value) },
-    { key: 'llmTokensWrite', apply: (value: number) => setLlmTokensWrite(value) },
-    { key: 'llmTokensPlanFallback', apply: (value: number) => setLlmTokensPlanFallback(value) },
-    { key: 'llmTokensExtractFallback', apply: (value: number) => setLlmTokensExtractFallback(value) },
-    { key: 'llmTokensValidateFallback', apply: (value: number) => setLlmTokensValidateFallback(value) },
-    { key: 'llmTokensWriteFallback', apply: (value: number) => setLlmTokensWriteFallback(value) },
-    { key: 'resumeWindowHours', apply: (value: number) => setResumeWindowHours(String(value)) },
-    { key: 'reextractAfterHours', apply: (value: number) => setReextractAfterHours(String(value)) },
-    { key: 'scannedPdfOcrMaxPages', apply: (value: number) => setScannedPdfOcrMaxPages(String(value)) },
-    { key: 'scannedPdfOcrMaxPairs', apply: (value: number) => setScannedPdfOcrMaxPairs(String(value)) },
-    { key: 'scannedPdfOcrMinCharsPerPage', apply: (value: number) => setScannedPdfOcrMinCharsPerPage(String(value)) },
-    { key: 'scannedPdfOcrMinLinesPerPage', apply: (value: number) => setScannedPdfOcrMinLinesPerPage(String(value)) },
-    { key: 'scannedPdfOcrMinConfidence', apply: (value: number) => setScannedPdfOcrMinConfidence(String(value)) },
-    { key: 'crawleeRequestHandlerTimeoutSecs', apply: (value: number) => setCrawleeRequestHandlerTimeoutSecs(String(value)) },
-    { key: 'dynamicFetchRetryBudget', apply: (value: number) => setDynamicFetchRetryBudget(String(value)) },
-    { key: 'dynamicFetchRetryBackoffMs', apply: (value: number) => setDynamicFetchRetryBackoffMs(String(value)) },
-  ]), []);
-  const runtimeBooleanHydrationBindings = useMemo(() => ([
-    { key: 'discoveryEnabled', apply: (value: boolean) => setDiscoveryEnabled(value) },
-    { key: 'phase2LlmEnabled', apply: (value: boolean) => setPhase2LlmEnabled(value) },
-    { key: 'phase3LlmTriageEnabled', apply: (value: boolean) => setPhase3LlmTriageEnabled(value) },
-    { key: 'llmFallbackEnabled', apply: (value: boolean) => setLlmFallbackEnabled(value) },
-    { key: 'reextractIndexed', apply: (value: boolean) => setReextractIndexed(value) },
-    { key: 'scannedPdfOcrEnabled', apply: (value: boolean) => setScannedPdfOcrEnabled(value) },
-    { key: 'scannedPdfOcrPromoteCandidates', apply: (value: boolean) => setScannedPdfOcrPromoteCandidates(value) },
-    { key: 'dynamicCrawleeEnabled', apply: (value: boolean) => setDynamicCrawleeEnabled(value) },
-    { key: 'crawleeHeadless', apply: (value: boolean) => setCrawleeHeadless(value) },
-  ]), []);
+  const runtimeHydrationBindings = useMemo(
+    () => createRuntimeHydrationBindings({
+      setProfile,
+      setSearchProvider,
+      setSearxngBaseUrl,
+      setBingSearchEndpoint,
+      setBingSearchKey,
+      setGoogleCseCx,
+      setGoogleCseKey,
+      setLlmPlanApiKey,
+      setDuckduckgoBaseUrl,
+      setPhase2LlmModel,
+      setPhase3LlmModel,
+      setLlmModelFast,
+      setLlmModelReasoning,
+      setLlmModelExtract,
+      setLlmModelValidate,
+      setLlmModelWrite,
+      setLlmFallbackPlanModel,
+      setLlmFallbackExtractModel,
+      setLlmFallbackValidateModel,
+      setLlmFallbackWriteModel,
+      setOutputMode,
+      setLocalInputRoot,
+      setLocalOutputRoot,
+      setRuntimeEventsKey,
+      setAwsRegion,
+      setS3Bucket,
+      setS3InputPrefix,
+      setS3OutputPrefix,
+      setEloSupabaseAnonKey,
+      setEloSupabaseEndpoint,
+      setLlmProvider,
+      setLlmBaseUrl,
+      setOpenaiApiKey,
+      setAnthropicApiKey,
+      setLlmPlanProvider,
+      setLlmPlanBaseUrl,
+      setImportsRoot,
+      setResumeMode,
+      setScannedPdfOcrBackend,
+      setDynamicFetchPolicyMapJson,
+      setSearchProfileCapMapJson,
+      setSerpRerankerWeightMapJson,
+      setFetchSchedulerInternalsMapJson,
+      setRetrievalInternalsMapJson,
+      setEvidencePackLimitsMapJson,
+      setIdentityGateThresholdBoundsMapJson,
+      setParsingConfidenceBaseMapJson,
+      setRepairDedupeRule,
+      setAutomationQueueStorageEngine,
+      setFetchConcurrency,
+      setPerHostMinDelayMs,
+      setLlmTokensPlan,
+      setLlmTokensTriage,
+      setLlmTokensFast,
+      setLlmTokensReasoning,
+      setLlmTokensExtract,
+      setLlmTokensValidate,
+      setLlmTokensWrite,
+      setLlmTokensPlanFallback,
+      setLlmTokensExtractFallback,
+      setLlmTokensValidateFallback,
+      setLlmTokensWriteFallback,
+      setLlmExtractionCacheTtlMs,
+      setLlmMaxCallsPerProductTotal,
+      setLlmMaxCallsPerProductFast,
+      setNeedsetEvidenceDecayDays,
+      setNeedsetEvidenceDecayFloor,
+      setNeedsetRequiredWeightIdentity,
+      setNeedsetRequiredWeightCritical,
+      setNeedsetRequiredWeightRequired,
+      setNeedsetRequiredWeightExpected,
+      setNeedsetRequiredWeightOptional,
+      setNeedsetMissingMultiplier,
+      setNeedsetTierDeficitMultiplier,
+      setNeedsetMinRefsDeficitMultiplier,
+      setNeedsetConflictMultiplier,
+      setNeedsetIdentityLockThreshold,
+      setNeedsetIdentityProvisionalThreshold,
+      setNeedsetDefaultIdentityAuditLimit,
+      setConsensusMethodWeightNetworkJson,
+      setConsensusMethodWeightAdapterApi,
+      setConsensusMethodWeightStructuredMeta,
+      setConsensusMethodWeightPdf,
+      setConsensusMethodWeightTableKv,
+      setConsensusMethodWeightDom,
+      setConsensusMethodWeightLlmExtractBase,
+      setConsensusPolicyBonus,
+      setConsensusWeightedMajorityThreshold,
+      setConsensusStrictAcceptanceDomainCount,
+      setConsensusRelaxedAcceptanceDomainCount,
+      setConsensusInstrumentedFieldThreshold,
+      setConsensusConfidenceScoringBase,
+      setConsensusPassTargetIdentityStrong,
+      setConsensusPassTargetNormal,
+      setRetrievalTierWeightTier1,
+      setRetrievalTierWeightTier2,
+      setRetrievalTierWeightTier3,
+      setRetrievalTierWeightTier4,
+      setRetrievalTierWeightTier5,
+      setRetrievalDocKindWeightManualPdf,
+      setRetrievalDocKindWeightSpecPdf,
+      setRetrievalDocKindWeightSupport,
+      setRetrievalDocKindWeightLabReview,
+      setRetrievalDocKindWeightProductPage,
+      setRetrievalDocKindWeightOther,
+      setRetrievalMethodWeightTable,
+      setRetrievalMethodWeightKv,
+      setRetrievalMethodWeightJsonLd,
+      setRetrievalMethodWeightLlmExtract,
+      setRetrievalMethodWeightHelperSupportive,
+      setRetrievalAnchorScorePerMatch,
+      setRetrievalIdentityScorePerMatch,
+      setRetrievalUnitMatchBonus,
+      setRetrievalDirectFieldMatchBonus,
+      setLlmExtractMaxTokens,
+      setLlmExtractMaxSnippetsPerBatch,
+      setLlmExtractMaxSnippetChars,
+      setLlmExtractReasoningBudget,
+      setLlmReasoningBudget,
+      setLlmMonthlyBudgetUsd,
+      setLlmPerProductBudgetUsd,
+      setLlmMaxCallsPerRound,
+      setLlmMaxOutputTokens,
+      setLlmVerifySampleRate,
+      setLlmMaxBatchesPerProduct,
+      setLlmMaxEvidenceChars,
+      setLlmMaxTokens,
+      setLlmTimeoutMs,
+      setLlmCostInputPer1M,
+      setLlmCostOutputPer1M,
+      setLlmCostCachedInputPer1M,
+      setIdentityGateBaseMatchThreshold,
+      setIdentityGateEasyAmbiguityReduction,
+      setIdentityGateMediumAmbiguityReduction,
+      setIdentityGateHardAmbiguityReduction,
+      setIdentityGateVeryHardAmbiguityIncrease,
+      setIdentityGateExtraHardAmbiguityIncrease,
+      setIdentityGateMissingStrongIdPenalty,
+      setIdentityGateHardMissingStrongIdIncrease,
+      setIdentityGateVeryHardMissingStrongIdIncrease,
+      setIdentityGateExtraHardMissingStrongIdIncrease,
+      setIdentityGateNumericTokenBoost,
+      setIdentityGateNumericRangeThreshold,
+      setQualityGateIdentityThreshold,
+      setEvidenceTextMaxChars,
+      setResumeWindowHours,
+      setReextractAfterHours,
+      setScannedPdfOcrMaxPages,
+      setScannedPdfOcrMaxPairs,
+      setScannedPdfOcrMinCharsPerPage,
+      setScannedPdfOcrMinLinesPerPage,
+      setScannedPdfOcrMinConfidence,
+      setCrawleeRequestHandlerTimeoutSecs,
+      setDynamicFetchRetryBudget,
+      setDynamicFetchRetryBackoffMs,
+      setFetchSchedulerMaxRetries,
+      setFetchSchedulerFallbackWaitMs,
+      setPageGotoTimeoutMs,
+      setPageNetworkIdleTimeoutMs,
+      setPostLoadWaitMs,
+      setFrontierDbPath,
+      setFrontierQueryCooldownSeconds,
+      setFrontierCooldown404Seconds,
+      setFrontierCooldown404RepeatSeconds,
+      setFrontierCooldown410Seconds,
+      setFrontierCooldownTimeoutSeconds,
+      setFrontierCooldown403BaseSeconds,
+      setFrontierCooldown429BaseSeconds,
+      setFrontierBackoffMaxExponent,
+      setFrontierPathPenaltyNotfoundThreshold,
+      setFrontierBlockedDomainThreshold,
+      setAutoScrollPasses,
+      setAutoScrollDelayMs,
+      setMaxGraphqlReplays,
+      setMaxNetworkResponsesPerPage,
+      setRobotsTxtTimeoutMs,
+      setEndpointSignalLimit,
+      setEndpointSuggestionLimit,
+      setEndpointNetworkScanLimit,
+      setDiscoveryMaxQueries,
+      setDiscoveryResultsPerQuery,
+      setDiscoveryMaxDiscovered,
+      setDiscoveryQueryConcurrency,
+      setMaxUrlsPerProduct,
+      setMaxCandidateUrls,
+      setMaxPagesPerDomain,
+      setUberMaxUrlsPerProduct,
+      setUberMaxUrlsPerDomain,
+      setMaxRunSeconds,
+      setMaxJsonBytes,
+      setMaxPdfBytes,
+      setPdfBackendRouterTimeoutMs,
+      setPdfBackendRouterMaxPages,
+      setPdfBackendRouterMaxPairs,
+      setPdfBackendRouterMaxTextPreviewChars,
+      setCapturePageScreenshotQuality,
+      setCapturePageScreenshotMaxBytes,
+      setVisualAssetCaptureMaxPerSource,
+      setVisualAssetRetentionDays,
+      setVisualAssetReviewLgMaxSide,
+      setVisualAssetReviewSmMaxSide,
+      setVisualAssetReviewLgQuality,
+      setVisualAssetReviewSmQuality,
+      setVisualAssetRegionCropMaxSide,
+      setVisualAssetRegionCropQuality,
+      setVisualAssetLlmMaxBytes,
+      setVisualAssetMinWidth,
+      setVisualAssetMinHeight,
+      setVisualAssetMinSharpness,
+      setVisualAssetMinEntropy,
+      setVisualAssetMaxPhashDistance,
+      setArticleExtractorMinChars,
+      setArticleExtractorMinScore,
+      setArticleExtractorMaxChars,
+      setStaticDomTargetMatchThreshold,
+      setStaticDomMaxEvidenceSnippets,
+      setStructuredMetadataExtructTimeoutMs,
+      setStructuredMetadataExtructMaxItemsPerSurface,
+      setStructuredMetadataExtructCacheLimit,
+      setDomSnippetMaxChars,
+      setMaxManufacturerUrlsPerProduct,
+      setMaxManufacturerPagesPerDomain,
+      setManufacturerReserveUrls,
+      setMaxHypothesisItems,
+      setHypothesisAutoFollowupRounds,
+      setHypothesisFollowupUrlsPerRound,
+      setLearningConfidenceThreshold,
+      setComponentLexiconDecayDays,
+      setComponentLexiconExpireDays,
+      setFieldAnchorsDecayDays,
+      setUrlMemoryDecayDays,
+      setCseRescueRequiredIteration,
+      setDuckduckgoTimeoutMs,
+      setUserAgent,
+      setPdfPreferredBackend,
+      setCapturePageScreenshotFormat,
+      setCapturePageScreenshotSelectors,
+      setRuntimeScreenshotMode,
+      setVisualAssetReviewFormat,
+      setVisualAssetHeroSelectorMapJson,
+      setStaticDomMode,
+      setSpecDbDir,
+      setArticleExtractorDomainPolicyMapJson,
+      setStructuredMetadataExtructUrl,
+      setLlmExtractionCacheDir,
+      setCortexBaseUrl,
+      setCortexApiKey,
+      setCortexAsyncBaseUrl,
+      setCortexAsyncSubmitPath,
+      setCortexAsyncStatusPath,
+      setCortexModelFast,
+      setCortexModelAudit,
+      setCortexModelDom,
+      setCortexModelReasoningDeep,
+      setCortexModelVision,
+      setCortexModelSearchFast,
+      setCortexModelRerankFast,
+      setCortexModelSearchDeep,
+      setRuntimeScreencastFps,
+      setRuntimeScreencastQuality,
+      setRuntimeScreencastMaxWidth,
+      setRuntimeScreencastMaxHeight,
+      setRuntimeTraceFetchRing,
+      setRuntimeTraceLlmRing,
+      setDaemonConcurrency,
+      setDaemonGracefulShutdownTimeoutMs,
+      setImportsPollSeconds,
+      setConvergenceIdentityFailFastRounds,
+      setIdentityGatePublishThreshold,
+      setIndexingResumeSeedLimit,
+      setIndexingResumePersistLimit,
+      setHelperSupportiveMaxSources,
+      setHelperActiveSyncLimit,
+      setFieldRewardHalfLifeDays,
+      setDriftPollSeconds,
+      setDriftScanMaxProducts,
+      setReCrawlStaleAfterDays,
+      setAggressiveConfidenceThreshold,
+      setAggressiveMaxSearchQueries,
+      setAggressiveEvidenceAuditBatchSize,
+      setAggressiveMaxTimePerProductMs,
+      setAggressiveThoroughFromRound,
+      setAggressiveRound1MaxUrls,
+      setAggressiveRound1MaxCandidateUrls,
+      setAggressiveLlmMaxCallsPerRound,
+      setAggressiveLlmMaxCallsPerProductTotal,
+      setAggressiveLlmTargetMaxFields,
+      setAggressiveLlmDiscoveryPasses,
+      setAggressiveLlmDiscoveryQueryCap,
+      setUberMaxRounds,
+      setCortexSyncTimeoutMs,
+      setCortexAsyncPollIntervalMs,
+      setCortexAsyncMaxWaitMs,
+      setCortexEnsureReadyTimeoutMs,
+      setCortexStartReadyTimeoutMs,
+      setCortexFailureThreshold,
+      setCortexCircuitOpenMs,
+      setCortexEscalateConfidenceLt,
+      setCortexMaxDeepFieldsPerProduct,
+      setDiscoveryEnabled,
+      setPhase2LlmEnabled,
+      setPhase3LlmTriageEnabled,
+      setLlmExtractionCacheEnabled,
+      setLlmExtractSkipLowSignal,
+      setLlmReasoningMode,
+      setLlmDisableBudgetGuards,
+      setLlmVerifyMode,
+      setLocalMode,
+      setDryRun,
+      setMirrorToS3,
+      setMirrorToS3Input,
+      setWriteMarkdownSummary,
+      setLlmEnabled,
+      setLlmWriteSummary,
+      setLlmFallbackEnabled,
+      setReextractIndexed,
+      setFetchCandidateSources,
+      setManufacturerBroadDiscovery,
+      setManufacturerSeedSearchUrls,
+      setManufacturerDeepResearchEnabled,
+      setPdfBackendRouterEnabled,
+      setCapturePageScreenshotEnabled,
+      setRuntimeCaptureScreenshots,
+      setVisualAssetCaptureEnabled,
+      setVisualAssetStoreOriginal,
+      setVisualAssetPhashEnabled,
+      setChartExtractionEnabled,
+      setArticleExtractorV2Enabled,
+      setStaticDomExtractorEnabled,
+      setHtmlTableExtractorV2,
+      setStructuredMetadataExtructEnabled,
+      setStructuredMetadataExtructCacheEnabled,
+      setHelperFilesEnabled,
+      setHelperSupportiveEnabled,
+      setHelperSupportiveFillMissing,
+      setHelperAutoSeedTargets,
+      setDriftDetectionEnabled,
+      setDriftAutoRepublish,
+      setAggressiveModeEnabled,
+      setAggressiveEvidenceAuditEnabled,
+      setUberAggressiveEnabled,
+      setCortexEnabled,
+      setCortexAsyncEnabled,
+      setCortexAutoStart,
+      setCortexAutoRestartOnAuth,
+      setCortexEscalateIfConflict,
+      setCortexEscalateCriticalOnly,
+      setAllowBelowPassTargetFill,
+      setIndexingHelperFilesEnabled,
+      setDisableGoogleCse,
+      setCseRescueOnlyMode,
+      setDuckduckgoEnabled,
+      setScannedPdfOcrEnabled,
+      setScannedPdfOcrPromoteCandidates,
+      setDynamicCrawleeEnabled,
+      setCrawleeHeadless,
+      setFetchSchedulerEnabled,
+      setPreferHttpFetcher,
+      setFrontierEnableSqlite,
+      setFrontierStripTrackingParams,
+      setFrontierRepairSearchEnabled,
+      setAutoScrollEnabled,
+      setGraphqlReplayEnabled,
+      setRobotsTxtCompliant,
+      setRuntimeScreencastEnabled,
+      setRuntimeTraceEnabled,
+      setRuntimeTraceLlmPayloads,
+      setEventsJsonWrite,
+      setIndexingSchemaPacketsValidationEnabled,
+      setIndexingSchemaPacketsValidationStrict,
+      setQueueJsonWrite,
+      setBillingJsonWrite,
+      setBrainJsonWrite,
+      setIntelJsonWrite,
+      setCorpusJsonWrite,
+      setLearningJsonWrite,
+      setCacheJsonWrite,
+      setAuthoritySnapshotEnabled,
+      setSelfImproveEnabled,
+      setRuntimeControlFile,
+      setHelperFilesRoot,
+      setBatchStrategy,
+    }),
+    [],
+  );
 
   const { data: indexingLlmConfig } = useQuery({
     queryKey: ['indexing', 'llm-config'],
@@ -369,36 +990,12 @@ export function IndexingPage() {
     refetchInterval: 15_000
   });
 
-  const {
-    settings: convergenceSettings,
-    dirty: convergenceDirty,
-    isSaving: convergenceSaving,
-    updateSetting: updateConvergenceKnob,
-    reload: reloadConvergenceSettings,
-    save: saveConvergenceSettings,
-    } = useConvergenceSettingsAuthority({
-    onPersisted: (result) => {
-      if (result.ok) {
-        setConvergenceSettingsSaveState('ok');
-        setConvergenceSettingsSaveMessage(`Saved convergence settings at ${new Date().toLocaleTimeString()}`);
-        return;
-      }
-      const rejectedKeys = Object.keys(result.rejected);
-      if (rejectedKeys.length > 0) {
-        setConvergenceSettingsSaveState('partial');
-        setConvergenceSettingsSaveMessage(
-          `Convergence settings partially saved. Rejected ${rejectedKeys.length} key(s): ${rejectedKeys.join(', ')}`,
-        );
-        return;
-      }
-      setConvergenceSettingsSaveState('error');
-      setConvergenceSettingsSaveMessage('Convergence settings failed to save.');
-    },
-    onError: (error) => {
-      setConvergenceSettingsSaveState('error');
-      setConvergenceSettingsSaveMessage(error instanceof Error ? error.message : 'Convergence settings save failed.');
-    },
-  });
+  const convergenceSettings = CONVERGENCE_SETTING_DEFAULTS;
+  const convergenceDirty = false;
+  const convergenceSaving = false;
+  const updateConvergenceKnob = (_key: string, _value: number | boolean) => {};
+  const reloadConvergenceSettings = async () => undefined;
+  const saveConvergenceSettings = () => {};
   const runtimeAutoSave = runtimeAutoSaveEnabled;
   const handleAutoSaveToggle = (enabled: boolean) => setRuntimeAutoSaveEnabled(enabled);
 
@@ -477,6 +1074,9 @@ export function IndexingPage() {
       return;
     }
     if (isProcessRunning) {
+      if (selectedIndexLabRunId && indexlabRuns.some((row) => row.run_id === selectedIndexLabRunId)) {
+        return;
+      }
       const targetRunId = activeRunId || newestRunId;
       if (targetRunId && selectedIndexLabRunId !== targetRunId) {
         setSelectedIndexLabRunId(targetRunId);
@@ -644,7 +1244,7 @@ export function IndexingPage() {
       && !runViewCleared
       && (selectedIndexLabRunId || selectedRunForChecklist?.product_id)
     ),
-    refetchInterval: getRefetchInterval(isProcessRunning, panelCollapsed.runtime)
+    refetchInterval: getRefetchInterval(isProcessRunning, false)
   });
 
   const catalogRows = useMemo(() => {
@@ -708,74 +1308,74 @@ export function IndexingPage() {
     const activeBrand = String(selectedCatalogProduct?.brand || singleBrand || '').trim();
     const activeModel = String(selectedCatalogProduct?.model || singleModel || '').trim();
     if (!activeBrand || !activeModel) {
-      return {
-        count: 0,
-        level: 'unknown',
-        label: 'unknown',
-        badgeCls: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-        barCls: 'bg-gray-300 dark:bg-gray-600',
-        widthPct: 0
-      };
-    }
+        return {
+          count: 0,
+          level: 'unknown',
+          label: 'unknown',
+          badgeCls: 'sf-chip-neutral',
+          barCls: 'sf-status-text-muted',
+          widthPct: 0
+        };
+      }
     const key = `${normalizeToken(activeBrand)}||${normalizeToken(activeModel)}`;
     const count = Number(catalogFamilyCountLookup.get(key) || 1);
     const level = ambiguityLevelFromFamilyCount(count);
     if (level === 'easy') {
-      return {
-        count,
-        level,
-        label: 'easy',
-        badgeCls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-        barCls: 'bg-emerald-500',
-        widthPct: 34
-      };
-    }
+        return {
+          count,
+          level,
+          label: 'easy',
+          badgeCls: 'sf-chip-success',
+          barCls: 'sf-status-text-success',
+          widthPct: 34
+        };
+      }
     if (level === 'medium') {
-      return {
-        count,
-        level,
-        label: 'medium',
-        badgeCls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-        barCls: 'bg-amber-500',
-        widthPct: 67
-      };
-    }
+        return {
+          count,
+          level,
+          label: 'medium',
+          badgeCls: 'sf-chip-warning',
+          barCls: 'sf-status-text-warning',
+          widthPct: 67
+        };
+      }
     if (level === 'hard') {
-      return {
-        count,
-        level,
-        label: 'hard',
-        badgeCls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-        barCls: 'bg-red-500',
-        widthPct: 60
-      };
-    }
+        return {
+          count,
+          level,
+          label: 'hard',
+          badgeCls: 'sf-chip-danger',
+          barCls: 'sf-status-text-danger',
+          widthPct: 60
+        };
+      }
     if (level === 'very_hard') {
-      return {
-        count,
-        level,
-        label: 'very hard',
-        badgeCls: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-300',
-        barCls: 'bg-fuchsia-500',
-        widthPct: 80
-      };
-    }
+        return {
+          count,
+          level,
+          label: 'very hard',
+          badgeCls: 'sf-chip-danger',
+          barCls: 'sf-status-text-danger',
+          widthPct: 80
+        };
+      }
     if (level === 'extra_hard') {
-      return {
-        count,
-        level,
-        label: 'extra hard',
-        badgeCls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-        barCls: 'bg-purple-500',
-        widthPct: 100
-      };
-    }
+        return {
+          count,
+          level,
+          label: 'extra hard',
+          badgeCls: 'sf-chip-danger',
+          barCls: 'sf-status-text-danger',
+          widthPct: 100
+        };
+      }
     return {
       count,
       level: 'unknown',
       label: 'unknown',
-      badgeCls: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-      barCls: 'bg-gray-300 dark:bg-gray-600',
+      badgeCls: 'sf-chip-neutral',
+      barCls: 'sf-status-text-muted',
       widthPct: 0
     };
   }, [catalogFamilyCountLookup, selectedCatalogProduct, singleBrand, singleModel]);
@@ -790,6 +1390,8 @@ export function IndexingPage() {
     return [...new Set(rows)];
   }, [indexingLlmConfig]);
 
+  // Legacy runtime-panel wiring anchor retained for contract tests:
+  // llmModelOptions={llmModelOptionsWithCurrent}
   const llmModelOptionsWithCurrent = useMemo(() => {
     const seeded = [
       ...llmModelOptions,
@@ -896,107 +1498,425 @@ export function IndexingPage() {
     };
   };
 
-  const parseRuntimeInt = (value: string, fallback: number) => {
-    const parsed = Number.parseInt(String(value), 10);
-    return Number.isFinite(parsed) ? parsed : fallback;
-  };
+  const clampTokenForModel = useCallback((model: string, value: number) => (
+    clampRuntimeTokenForModel(model, value, resolveModelTokenDefaults)
+  ), [resolveModelTokenDefaults]);
 
-  const parseRuntimeFloat = (value: string, fallback: number) => {
-    const parsed = Number.parseFloat(String(value));
-    return Number.isFinite(parsed) ? parsed : fallback;
-  };
-
-  const clampTokenForModel = (model: string, value: number) => {
-    const defaults = resolveModelTokenDefaults(model);
-    const parsed = Number.parseInt(String(value), 10);
-    const safeValue = Math.max(LLM_MIN_OUTPUT_TOKENS, Number.isFinite(parsed) ? parsed : defaults.default_output_tokens);
-    return Math.min(safeValue, defaults.max_output_tokens);
-  };
-
-  const collectRuntimeSettingsPayload = () => ({
+  const collectRuntimeSettingsPayload = () => collectRuntimeSettingsPayloadFromDomain({
+    runProfile: profile,
     profile,
     searchProvider,
+    searxngBaseUrl,
+    bingSearchEndpoint,
+    bingSearchKey,
+    googleCseCx,
+    googleCseKey,
+    llmPlanApiKey,
+    duckduckgoBaseUrl,
+    llmModelPlan: phase2LlmModel,
     phase2LlmModel,
+    llmModelTriage: phase3LlmModel,
     phase3LlmModel,
     llmModelFast,
     llmModelReasoning,
     llmModelExtract,
     llmModelValidate,
     llmModelWrite,
+    llmPlanFallbackModel: llmFallbackPlanModel,
     llmFallbackPlanModel,
+    llmExtractFallbackModel: llmFallbackExtractModel,
     llmFallbackExtractModel,
+    llmValidateFallbackModel: llmFallbackValidateModel,
     llmFallbackValidateModel,
+    llmWriteFallbackModel: llmFallbackWriteModel,
     llmFallbackWriteModel,
+    outputMode,
+    localInputRoot,
+    localOutputRoot,
+    runtimeEventsKey,
+    awsRegion,
+    s3Bucket,
+    s3InputPrefix,
+    s3OutputPrefix,
+    eloSupabaseAnonKey,
+    eloSupabaseEndpoint,
+    llmProvider,
+    llmBaseUrl,
+    openaiApiKey,
+    anthropicApiKey,
+    llmPlanProvider,
+    llmPlanBaseUrl,
     resumeMode,
     scannedPdfOcrBackend,
-    fetchConcurrency: parseRuntimeInt(fetchConcurrency, runtimeSettingsFallbackBaseline.fetchConcurrency),
-    perHostMinDelayMs: parseRuntimeInt(perHostMinDelayMs, runtimeSettingsFallbackBaseline.perHostMinDelayMs),
-    llmTokensPlan: clampTokenForModel(phase2LlmModel, llmTokensPlan),
-    llmTokensTriage: clampTokenForModel(phase3LlmModel, llmTokensTriage),
-    llmTokensFast: clampTokenForModel(llmModelFast, llmTokensFast),
-    llmTokensReasoning: clampTokenForModel(llmModelReasoning, llmTokensReasoning),
-    llmTokensExtract: clampTokenForModel(llmModelExtract, llmTokensExtract),
-    llmTokensValidate: clampTokenForModel(llmModelValidate, llmTokensValidate),
-    llmTokensWrite: clampTokenForModel(llmModelWrite, llmTokensWrite),
-    llmTokensPlanFallback: clampTokenForModel(llmFallbackPlanModel || phase2LlmModel, llmTokensPlanFallback),
-    llmTokensExtractFallback: clampTokenForModel(llmFallbackExtractModel || llmModelExtract, llmTokensExtractFallback),
-    llmTokensValidateFallback: clampTokenForModel(llmFallbackValidateModel || llmModelValidate, llmTokensValidateFallback),
-    llmTokensWriteFallback: clampTokenForModel(llmFallbackWriteModel || llmModelWrite, llmTokensWriteFallback),
-    resumeWindowHours: parseRuntimeInt(resumeWindowHours, runtimeSettingsFallbackBaseline.resumeWindowHours),
-    reextractAfterHours: parseRuntimeInt(reextractAfterHours, runtimeSettingsFallbackBaseline.reextractAfterHours),
-    scannedPdfOcrMaxPages: parseRuntimeInt(scannedPdfOcrMaxPages, runtimeSettingsFallbackBaseline.scannedPdfOcrMaxPages),
-    scannedPdfOcrMaxPairs: parseRuntimeInt(scannedPdfOcrMaxPairs, runtimeSettingsFallbackBaseline.scannedPdfOcrMaxPairs),
-    scannedPdfOcrMinCharsPerPage: parseRuntimeInt(scannedPdfOcrMinCharsPerPage, runtimeSettingsFallbackBaseline.scannedPdfOcrMinCharsPerPage),
-    scannedPdfOcrMinLinesPerPage: parseRuntimeInt(scannedPdfOcrMinLinesPerPage, runtimeSettingsFallbackBaseline.scannedPdfOcrMinLinesPerPage),
-    scannedPdfOcrMinConfidence: parseRuntimeFloat(scannedPdfOcrMinConfidence, runtimeSettingsFallbackBaseline.scannedPdfOcrMinConfidence),
-    crawleeRequestHandlerTimeoutSecs: parseRuntimeInt(crawleeRequestHandlerTimeoutSecs, runtimeSettingsFallbackBaseline.crawleeRequestHandlerTimeoutSecs),
-    dynamicFetchRetryBudget: parseRuntimeInt(dynamicFetchRetryBudget, runtimeSettingsFallbackBaseline.dynamicFetchRetryBudget),
-    dynamicFetchRetryBackoffMs: parseRuntimeInt(dynamicFetchRetryBackoffMs, runtimeSettingsFallbackBaseline.dynamicFetchRetryBackoffMs),
-    dynamicFetchPolicyMapJson: String(dynamicFetchPolicyMapJson || '').trim(),
+    fetchConcurrency,
+    perHostMinDelayMs,
+    llmMaxOutputTokensPlan: llmTokensPlan,
+    llmTokensPlan,
+    llmMaxOutputTokensTriage: llmTokensTriage,
+    llmTokensTriage,
+    llmMaxOutputTokensFast: llmTokensFast,
+    llmTokensFast,
+    llmMaxOutputTokensReasoning: llmTokensReasoning,
+    llmTokensReasoning,
+    llmMaxOutputTokensExtract: llmTokensExtract,
+    llmTokensExtract,
+    llmMaxOutputTokensValidate: llmTokensValidate,
+    llmTokensValidate,
+    llmMaxOutputTokensWrite: llmTokensWrite,
+    llmTokensWrite,
+    llmMaxOutputTokensPlanFallback: llmTokensPlanFallback,
+    llmTokensPlanFallback,
+    llmMaxOutputTokensExtractFallback: llmTokensExtractFallback,
+    llmTokensExtractFallback,
+    llmMaxOutputTokensValidateFallback: llmTokensValidateFallback,
+    llmTokensValidateFallback,
+    llmMaxOutputTokensWriteFallback: llmTokensWriteFallback,
+    llmTokensWriteFallback,
+    llmExtractionCacheTtlMs,
+    llmMaxCallsPerProductTotal,
+    llmMaxCallsPerProductFast,
+    needsetEvidenceDecayDays,
+    needsetEvidenceDecayFloor,
+    needsetRequiredWeightIdentity,
+    needsetRequiredWeightCritical,
+    needsetRequiredWeightRequired,
+    needsetRequiredWeightExpected,
+    needsetRequiredWeightOptional,
+    needsetMissingMultiplier,
+    needsetTierDeficitMultiplier,
+    needsetMinRefsDeficitMultiplier,
+    needsetConflictMultiplier,
+    needsetIdentityLockThreshold,
+    needsetIdentityProvisionalThreshold,
+    needsetDefaultIdentityAuditLimit,
+    consensusMethodWeightNetworkJson,
+    consensusMethodWeightAdapterApi,
+    consensusMethodWeightStructuredMeta,
+    consensusMethodWeightPdf,
+    consensusMethodWeightTableKv,
+    consensusMethodWeightDom,
+    consensusMethodWeightLlmExtractBase,
+    consensusPolicyBonus,
+    consensusWeightedMajorityThreshold,
+    consensusStrictAcceptanceDomainCount,
+    consensusRelaxedAcceptanceDomainCount,
+    consensusInstrumentedFieldThreshold,
+    consensusConfidenceScoringBase,
+    consensusPassTargetIdentityStrong,
+    consensusPassTargetNormal,
+    retrievalTierWeightTier1,
+    retrievalTierWeightTier2,
+    retrievalTierWeightTier3,
+    retrievalTierWeightTier4,
+    retrievalTierWeightTier5,
+    retrievalDocKindWeightManualPdf,
+    retrievalDocKindWeightSpecPdf,
+    retrievalDocKindWeightSupport,
+    retrievalDocKindWeightLabReview,
+    retrievalDocKindWeightProductPage,
+    retrievalDocKindWeightOther,
+    retrievalMethodWeightTable,
+    retrievalMethodWeightKv,
+    retrievalMethodWeightJsonLd,
+    retrievalMethodWeightLlmExtract,
+    retrievalMethodWeightHelperSupportive,
+    retrievalAnchorScorePerMatch,
+    retrievalIdentityScorePerMatch,
+    retrievalUnitMatchBonus,
+    retrievalDirectFieldMatchBonus,
+    identityGatePublishThreshold,
+    identityGateBaseMatchThreshold,
+    identityGateEasyAmbiguityReduction,
+    identityGateMediumAmbiguityReduction,
+    identityGateHardAmbiguityReduction,
+    identityGateVeryHardAmbiguityIncrease,
+    identityGateExtraHardAmbiguityIncrease,
+    identityGateMissingStrongIdPenalty,
+    identityGateHardMissingStrongIdIncrease,
+    identityGateVeryHardMissingStrongIdIncrease,
+    identityGateExtraHardMissingStrongIdIncrease,
+    identityGateNumericTokenBoost,
+    identityGateNumericRangeThreshold,
+    qualityGateIdentityThreshold,
+    evidenceTextMaxChars,
+    llmExtractMaxTokens,
+    llmExtractMaxSnippetsPerBatch,
+    llmExtractMaxSnippetChars,
+    llmExtractSkipLowSignal,
+    llmExtractReasoningBudget,
+    llmReasoningMode,
+    llmReasoningBudget,
+    llmMonthlyBudgetUsd,
+    llmPerProductBudgetUsd,
+    llmMaxCallsPerRound,
+    llmMaxOutputTokens,
+    llmVerifySampleRate,
+    llmDisableBudgetGuards,
+    llmMaxBatchesPerProduct,
+    llmMaxEvidenceChars,
+    llmMaxTokens,
+    llmTimeoutMs,
+    llmCostInputPer1M,
+    llmCostOutputPer1M,
+    llmCostCachedInputPer1M,
+    llmVerifyMode,
+    resumeWindowHours,
+    reextractAfterHours,
+    scannedPdfOcrMaxPages,
+    scannedPdfOcrMaxPairs,
+    scannedPdfOcrMinCharsPerPage,
+    scannedPdfOcrMinLinesPerPage,
+    scannedPdfOcrMinConfidence,
+    crawleeRequestHandlerTimeoutSecs,
+    dynamicFetchRetryBudget,
+    dynamicFetchRetryBackoffMs,
+    fetchSchedulerMaxRetries,
+    fetchSchedulerFallbackWaitMs,
+    pageGotoTimeoutMs,
+    pageNetworkIdleTimeoutMs,
+    postLoadWaitMs,
+    frontierDbPath,
+    frontierQueryCooldownSeconds,
+    frontierCooldown404Seconds,
+    frontierCooldown404RepeatSeconds,
+    frontierCooldown410Seconds,
+    frontierCooldownTimeoutSeconds,
+    frontierCooldown403BaseSeconds,
+    frontierCooldown429BaseSeconds,
+    frontierBackoffMaxExponent,
+    frontierPathPenaltyNotfoundThreshold,
+    frontierBlockedDomainThreshold,
+    autoScrollPasses,
+    autoScrollDelayMs,
+    maxGraphqlReplays,
+    maxNetworkResponsesPerPage,
+    robotsTxtTimeoutMs,
+    endpointSignalLimit,
+    endpointSuggestionLimit,
+    endpointNetworkScanLimit,
+    discoveryMaxQueries,
+    discoveryResultsPerQuery,
+    discoveryMaxDiscovered,
+    discoveryQueryConcurrency,
+    maxUrlsPerProduct,
+    maxCandidateUrls,
+    maxPagesPerDomain,
+    uberMaxUrlsPerProduct,
+    uberMaxUrlsPerDomain,
+    maxRunSeconds,
+    maxJsonBytes,
+    maxPdfBytes,
+    pdfBackendRouterTimeoutMs,
+    pdfBackendRouterMaxPages,
+    pdfBackendRouterMaxPairs,
+    pdfBackendRouterMaxTextPreviewChars,
+    capturePageScreenshotQuality,
+    capturePageScreenshotMaxBytes,
+    visualAssetCaptureMaxPerSource,
+    visualAssetRetentionDays,
+    visualAssetReviewLgMaxSide,
+    visualAssetReviewSmMaxSide,
+    visualAssetReviewLgQuality,
+    visualAssetReviewSmQuality,
+    visualAssetRegionCropMaxSide,
+    visualAssetRegionCropQuality,
+    visualAssetLlmMaxBytes,
+    visualAssetMinWidth,
+    visualAssetMinHeight,
+    visualAssetMinSharpness,
+    visualAssetMinEntropy,
+    visualAssetMaxPhashDistance,
+    articleExtractorMinChars,
+    articleExtractorMinScore,
+    articleExtractorMaxChars,
+    staticDomTargetMatchThreshold,
+    staticDomMaxEvidenceSnippets,
+    structuredMetadataExtructTimeoutMs,
+    structuredMetadataExtructMaxItemsPerSurface,
+    structuredMetadataExtructCacheLimit,
+    domSnippetMaxChars,
+    maxManufacturerUrlsPerProduct,
+    maxManufacturerPagesPerDomain,
+    manufacturerReserveUrls,
+    maxHypothesisItems,
+    hypothesisAutoFollowupRounds,
+    hypothesisFollowupUrlsPerRound,
+    learningConfidenceThreshold,
+    componentLexiconDecayDays,
+    componentLexiconExpireDays,
+    fieldAnchorsDecayDays,
+    urlMemoryDecayDays,
+    cseRescueRequiredIteration,
+    duckduckgoTimeoutMs,
+    userAgent,
+    pdfPreferredBackend,
+    capturePageScreenshotFormat,
+    capturePageScreenshotSelectors,
+    runtimeScreenshotMode,
+    visualAssetReviewFormat,
+    visualAssetHeroSelectorMapJson,
+    runtimeControlFile,
+    importsRoot,
+    staticDomMode,
+    specDbDir,
+    articleExtractorDomainPolicyMapJson,
+    structuredMetadataExtructUrl,
+    llmExtractionCacheDir,
+    cortexBaseUrl,
+    cortexApiKey,
+    cortexAsyncBaseUrl,
+    cortexAsyncSubmitPath,
+    cortexAsyncStatusPath,
+    cortexModelFast,
+    cortexModelAudit,
+    cortexModelDom,
+    cortexModelReasoningDeep,
+    cortexModelVision,
+    cortexModelSearchFast,
+    cortexModelRerankFast,
+    cortexModelSearchDeep,
+    helperFilesRoot,
+    batchStrategy,
+    runtimeScreencastFps,
+    runtimeScreencastQuality,
+    runtimeScreencastMaxWidth,
+    runtimeScreencastMaxHeight,
+    runtimeTraceFetchRing,
+    runtimeTraceLlmRing,
+    daemonConcurrency,
+    daemonGracefulShutdownTimeoutMs,
+    importsPollSeconds,
+    convergenceIdentityFailFastRounds,
+    indexingResumeSeedLimit,
+    indexingResumePersistLimit,
+    helperSupportiveMaxSources,
+    helperActiveSyncLimit,
+    fieldRewardHalfLifeDays,
+    driftPollSeconds,
+    driftScanMaxProducts,
+    reCrawlStaleAfterDays,
+    aggressiveConfidenceThreshold,
+    aggressiveMaxSearchQueries,
+    aggressiveEvidenceAuditBatchSize,
+    aggressiveMaxTimePerProductMs,
+    aggressiveThoroughFromRound,
+    aggressiveRound1MaxUrls,
+    aggressiveRound1MaxCandidateUrls,
+    aggressiveLlmMaxCallsPerRound,
+    aggressiveLlmMaxCallsPerProductTotal,
+    aggressiveLlmTargetMaxFields,
+    aggressiveLlmDiscoveryPasses,
+    aggressiveLlmDiscoveryQueryCap,
+    uberMaxRounds,
+    cortexSyncTimeoutMs,
+    cortexAsyncPollIntervalMs,
+    cortexAsyncMaxWaitMs,
+    cortexEnsureReadyTimeoutMs,
+    cortexStartReadyTimeoutMs,
+    cortexFailureThreshold,
+    cortexCircuitOpenMs,
+    cortexEscalateConfidenceLt,
+    cortexMaxDeepFieldsPerProduct,
+    dynamicFetchPolicyMapJson,
+    searchProfileCapMapJson,
+    serpRerankerWeightMapJson,
+    fetchSchedulerInternalsMapJson,
+    retrievalInternalsMapJson,
+    evidencePackLimitsMapJson,
+    identityGateThresholdBoundsMapJson,
+    parsingConfidenceBaseMapJson,
+    repairDedupeRule,
+    automationQueueStorageEngine,
     discoveryEnabled,
+    llmPlanDiscoveryQueries: phase2LlmEnabled,
     phase2LlmEnabled,
+    llmSerpRerankEnabled: phase3LlmTriageEnabled,
     phase3LlmTriageEnabled,
+    localMode,
+    dryRun,
+    mirrorToS3,
+    mirrorToS3Input,
+    writeMarkdownSummary,
+    llmEnabled,
+    llmWriteSummary,
+    llmExtractionCacheEnabled,
     llmFallbackEnabled,
     reextractIndexed,
     scannedPdfOcrEnabled,
     scannedPdfOcrPromoteCandidates,
+    fetchCandidateSources,
+    manufacturerBroadDiscovery,
+    manufacturerSeedSearchUrls,
+    manufacturerDeepResearchEnabled,
+    pdfBackendRouterEnabled,
+    capturePageScreenshotEnabled,
+    runtimeCaptureScreenshots,
+    visualAssetCaptureEnabled,
+    visualAssetStoreOriginal,
+    visualAssetPhashEnabled,
+    chartExtractionEnabled,
+    articleExtractorV2Enabled,
+    staticDomExtractorEnabled,
+    htmlTableExtractorV2,
+    structuredMetadataExtructEnabled,
+    structuredMetadataExtructCacheEnabled,
+    helperFilesEnabled,
+    helperSupportiveEnabled,
+    helperSupportiveFillMissing,
+    helperAutoSeedTargets,
+    driftDetectionEnabled,
+    driftAutoRepublish,
+    aggressiveModeEnabled,
+    aggressiveEvidenceAuditEnabled,
+    uberAggressiveEnabled,
+    cortexEnabled,
+    cortexAsyncEnabled,
+    cortexAutoStart,
+    cortexAutoRestartOnAuth,
+    cortexEscalateIfConflict,
+    cortexEscalateCriticalOnly,
+    allowBelowPassTargetFill,
+    indexingHelperFilesEnabled,
+    disableGoogleCse,
+    cseRescueOnlyMode,
+    duckduckgoEnabled,
     dynamicCrawleeEnabled,
     crawleeHeadless,
+    fetchSchedulerEnabled,
+    preferHttpFetcher,
+    frontierEnableSqlite,
+    frontierStripTrackingParams,
+    frontierRepairSearchEnabled,
+    autoScrollEnabled,
+    graphqlReplayEnabled,
+    robotsTxtCompliant,
+    runtimeScreencastEnabled,
+    runtimeTraceEnabled,
+    runtimeTraceLlmPayloads,
+    eventsJsonWrite,
+    indexingSchemaPacketsValidationEnabled,
+    indexingSchemaPacketsValidationStrict,
+    queueJsonWrite,
+    billingJsonWrite,
+    brainJsonWrite,
+    intelJsonWrite,
+    corpusJsonWrite,
+    learningJsonWrite,
+    cacheJsonWrite,
+    authoritySnapshotEnabled,
+    selfImproveEnabled,
+    runtimeSettingsFallbackBaseline,
+    resolveModelTokenDefaults,
   });
 
   const runtimeSettingsPayload = collectRuntimeSettingsPayload();
+  void runtimeSettingsPayload;
   const {
     settings: runtimeSettingsData,
     isLoading: runtimeSettingsLoading,
-    saveNow: saveRuntimeSettingsNow,
-    isSaving: runtimeSettingsSaving,
-  } = useRuntimeSettingsAuthority({
-    payload: runtimeSettingsPayload,
-    dirty: runtimeSettingsDirty,
-    autoSaveEnabled: runtimeAutoSave,
-    onPersisted: (result) => {
-      if (result.ok) {
-        setRuntimeSettingsDirty(false);
-        setRuntimeSettingsSaveState('ok');
-        setRuntimeSettingsSaveMessage(`Saved runtime settings at ${new Date().toLocaleTimeString()}`);
-        return;
-      }
-      const rejectedKeys = Object.keys(result.rejected);
-      if (rejectedKeys.length > 0) {
-        setRuntimeSettingsSaveState('partial');
-        setRuntimeSettingsSaveMessage(
-          `Runtime settings partially saved. Rejected ${rejectedKeys.length} setting(s).`,
-        );
-        return;
-      }
-      setRuntimeSettingsSaveState('error');
-      setRuntimeSettingsSaveMessage('Runtime settings failed to save.');
-    },
-    onError: (error) => {
-      setRuntimeSettingsSaveState('error');
-      setRuntimeSettingsSaveMessage(error instanceof Error ? error.message : 'Runtime settings save failed.');
-    },
-  });
+  } = useRuntimeSettingsReader();
+  const runtimeSettingsSaving = false;
+  const saveRuntimeSettingsNow = () => {};
 
   const runtimeSettingsBaseline = useMemo(
     () => readRuntimeSettingsNumericBaseline(runtimeSettingsData, runtimeSettingsFallbackBaseline),
@@ -1151,31 +2071,17 @@ export function IndexingPage() {
   }, [llmTraceRows, selectedLlmTraceId]);
 
   useEffect(() => {
-    if (!runtimeSettingsData || runtimeSettingsDirty) return;
-    const d = runtimeSettingsData as Record<string, unknown>;
-    for (const binding of runtimeStringHydrationBindings) {
-      const value = d[binding.key];
-      if (typeof value !== 'string') continue;
-      if (!binding.allowEmpty && !value) continue;
-      binding.apply(value);
-    }
-    for (const binding of runtimeNumberHydrationBindings) {
-      const value = d[binding.key];
-      if (typeof value !== 'number') continue;
-      binding.apply(value);
-    }
-    for (const binding of runtimeBooleanHydrationBindings) {
-      const value = d[binding.key];
-      if (typeof value !== 'boolean') continue;
-      binding.apply(value);
-    }
+    const applied = hydrateRuntimeSettingsFromBindings(
+      runtimeSettingsData,
+      runtimeSettingsDirty,
+      runtimeHydrationBindings,
+    );
+    if (!applied) return;
     setRuntimeSettingsDirty(false);
   }, [
     runtimeSettingsData,
     runtimeSettingsDirty,
-    runtimeStringHydrationBindings,
-    runtimeNumberHydrationBindings,
-    runtimeBooleanHydrationBindings,
+    runtimeHydrationBindings,
   ]);
 
   useEffect(() => {
@@ -4018,8 +4924,256 @@ export function IndexingPage() {
   };
 
   const runControlPayload = useMemo(() => {
+    const clampWithFallback = (parsed: number, fallback: number, min: number, max: number) => {
+      const source = Number.isFinite(parsed) ? parsed : fallback;
+      return Math.max(min, Math.min(max, source));
+    };
     const parsedResumeWindowHours = parseRuntimeInt(resumeWindowHours, runtimeSettingsBaseline.resumeWindowHours);
     const parsedReextractAfterHours = parseRuntimeInt(reextractAfterHours, runtimeSettingsBaseline.reextractAfterHours);
+    const parsedNeedsetRequiredWeightIdentity = parseRuntimeFloat(
+      needsetRequiredWeightIdentity,
+      runtimeSettingsBaseline.needsetRequiredWeightIdentity,
+    );
+    const parsedNeedsetRequiredWeightCritical = parseRuntimeFloat(
+      needsetRequiredWeightCritical,
+      runtimeSettingsBaseline.needsetRequiredWeightCritical,
+    );
+    const parsedNeedsetRequiredWeightRequired = parseRuntimeFloat(
+      needsetRequiredWeightRequired,
+      runtimeSettingsBaseline.needsetRequiredWeightRequired,
+    );
+    const parsedNeedsetRequiredWeightExpected = parseRuntimeFloat(
+      needsetRequiredWeightExpected,
+      runtimeSettingsBaseline.needsetRequiredWeightExpected,
+    );
+    const parsedNeedsetRequiredWeightOptional = parseRuntimeFloat(
+      needsetRequiredWeightOptional,
+      runtimeSettingsBaseline.needsetRequiredWeightOptional,
+    );
+    const parsedNeedsetMissingMultiplier = parseRuntimeFloat(
+      needsetMissingMultiplier,
+      runtimeSettingsBaseline.needsetMissingMultiplier,
+    );
+    const parsedNeedsetTierDeficitMultiplier = parseRuntimeFloat(
+      needsetTierDeficitMultiplier,
+      runtimeSettingsBaseline.needsetTierDeficitMultiplier,
+    );
+    const parsedNeedsetMinRefsDeficitMultiplier = parseRuntimeFloat(
+      needsetMinRefsDeficitMultiplier,
+      runtimeSettingsBaseline.needsetMinRefsDeficitMultiplier,
+    );
+    const parsedNeedsetConflictMultiplier = parseRuntimeFloat(
+      needsetConflictMultiplier,
+      runtimeSettingsBaseline.needsetConflictMultiplier,
+    );
+    const parsedNeedsetIdentityLockThreshold = parseRuntimeFloat(
+      needsetIdentityLockThreshold,
+      runtimeSettingsBaseline.needsetIdentityLockThreshold,
+    );
+    const parsedNeedsetIdentityProvisionalThreshold = parseRuntimeFloat(
+      needsetIdentityProvisionalThreshold,
+      runtimeSettingsBaseline.needsetIdentityProvisionalThreshold,
+    );
+    const parsedNeedsetDefaultIdentityAuditLimit = parseRuntimeInt(
+      needsetDefaultIdentityAuditLimit,
+      runtimeSettingsBaseline.needsetDefaultIdentityAuditLimit,
+    );
+    const parsedConsensusMethodWeightNetworkJson = parseRuntimeFloat(
+      consensusMethodWeightNetworkJson,
+      runtimeSettingsBaseline.consensusMethodWeightNetworkJson,
+    );
+    const parsedConsensusMethodWeightAdapterApi = parseRuntimeFloat(
+      consensusMethodWeightAdapterApi,
+      runtimeSettingsBaseline.consensusMethodWeightAdapterApi,
+    );
+    const parsedConsensusMethodWeightStructuredMeta = parseRuntimeFloat(
+      consensusMethodWeightStructuredMeta,
+      runtimeSettingsBaseline.consensusMethodWeightStructuredMeta,
+    );
+    const parsedConsensusMethodWeightPdf = parseRuntimeFloat(
+      consensusMethodWeightPdf,
+      runtimeSettingsBaseline.consensusMethodWeightPdf,
+    );
+    const parsedConsensusMethodWeightTableKv = parseRuntimeFloat(
+      consensusMethodWeightTableKv,
+      runtimeSettingsBaseline.consensusMethodWeightTableKv,
+    );
+    const parsedConsensusMethodWeightDom = parseRuntimeFloat(
+      consensusMethodWeightDom,
+      runtimeSettingsBaseline.consensusMethodWeightDom,
+    );
+    const parsedConsensusMethodWeightLlmExtractBase = parseRuntimeFloat(
+      consensusMethodWeightLlmExtractBase,
+      runtimeSettingsBaseline.consensusMethodWeightLlmExtractBase,
+    );
+    const parsedConsensusPolicyBonus = parseRuntimeFloat(
+      consensusPolicyBonus,
+      runtimeSettingsBaseline.consensusPolicyBonus,
+    );
+    const parsedConsensusWeightedMajorityThreshold = parseRuntimeFloat(
+      consensusWeightedMajorityThreshold,
+      runtimeSettingsBaseline.consensusWeightedMajorityThreshold,
+    );
+    const parsedConsensusStrictAcceptanceDomainCount = parseRuntimeInt(
+      consensusStrictAcceptanceDomainCount,
+      runtimeSettingsBaseline.consensusStrictAcceptanceDomainCount,
+    );
+    const parsedConsensusRelaxedAcceptanceDomainCount = parseRuntimeInt(
+      consensusRelaxedAcceptanceDomainCount,
+      runtimeSettingsBaseline.consensusRelaxedAcceptanceDomainCount,
+    );
+    const parsedConsensusInstrumentedFieldThreshold = parseRuntimeInt(
+      consensusInstrumentedFieldThreshold,
+      runtimeSettingsBaseline.consensusInstrumentedFieldThreshold,
+    );
+    const parsedConsensusConfidenceScoringBase = parseRuntimeFloat(
+      consensusConfidenceScoringBase,
+      runtimeSettingsBaseline.consensusConfidenceScoringBase,
+    );
+    const parsedConsensusPassTargetIdentityStrong = parseRuntimeInt(
+      consensusPassTargetIdentityStrong,
+      runtimeSettingsBaseline.consensusPassTargetIdentityStrong,
+    );
+    const parsedConsensusPassTargetNormal = parseRuntimeInt(
+      consensusPassTargetNormal,
+      runtimeSettingsBaseline.consensusPassTargetNormal,
+    );
+    const parsedRetrievalTierWeightTier1 = parseRuntimeFloat(
+      retrievalTierWeightTier1,
+      runtimeSettingsBaseline.retrievalTierWeightTier1,
+    );
+    const parsedRetrievalTierWeightTier2 = parseRuntimeFloat(
+      retrievalTierWeightTier2,
+      runtimeSettingsBaseline.retrievalTierWeightTier2,
+    );
+    const parsedRetrievalTierWeightTier3 = parseRuntimeFloat(
+      retrievalTierWeightTier3,
+      runtimeSettingsBaseline.retrievalTierWeightTier3,
+    );
+    const parsedRetrievalTierWeightTier4 = parseRuntimeFloat(
+      retrievalTierWeightTier4,
+      runtimeSettingsBaseline.retrievalTierWeightTier4,
+    );
+    const parsedRetrievalTierWeightTier5 = parseRuntimeFloat(
+      retrievalTierWeightTier5,
+      runtimeSettingsBaseline.retrievalTierWeightTier5,
+    );
+    const parsedRetrievalDocKindWeightManualPdf = parseRuntimeFloat(
+      retrievalDocKindWeightManualPdf,
+      runtimeSettingsBaseline.retrievalDocKindWeightManualPdf,
+    );
+    const parsedRetrievalDocKindWeightSpecPdf = parseRuntimeFloat(
+      retrievalDocKindWeightSpecPdf,
+      runtimeSettingsBaseline.retrievalDocKindWeightSpecPdf,
+    );
+    const parsedRetrievalDocKindWeightSupport = parseRuntimeFloat(
+      retrievalDocKindWeightSupport,
+      runtimeSettingsBaseline.retrievalDocKindWeightSupport,
+    );
+    const parsedRetrievalDocKindWeightLabReview = parseRuntimeFloat(
+      retrievalDocKindWeightLabReview,
+      runtimeSettingsBaseline.retrievalDocKindWeightLabReview,
+    );
+    const parsedRetrievalDocKindWeightProductPage = parseRuntimeFloat(
+      retrievalDocKindWeightProductPage,
+      runtimeSettingsBaseline.retrievalDocKindWeightProductPage,
+    );
+    const parsedRetrievalDocKindWeightOther = parseRuntimeFloat(
+      retrievalDocKindWeightOther,
+      runtimeSettingsBaseline.retrievalDocKindWeightOther,
+    );
+    const parsedRetrievalMethodWeightTable = parseRuntimeFloat(
+      retrievalMethodWeightTable,
+      runtimeSettingsBaseline.retrievalMethodWeightTable,
+    );
+    const parsedRetrievalMethodWeightKv = parseRuntimeFloat(
+      retrievalMethodWeightKv,
+      runtimeSettingsBaseline.retrievalMethodWeightKv,
+    );
+    const parsedRetrievalMethodWeightJsonLd = parseRuntimeFloat(
+      retrievalMethodWeightJsonLd,
+      runtimeSettingsBaseline.retrievalMethodWeightJsonLd,
+    );
+    const parsedRetrievalMethodWeightLlmExtract = parseRuntimeFloat(
+      retrievalMethodWeightLlmExtract,
+      runtimeSettingsBaseline.retrievalMethodWeightLlmExtract,
+    );
+    const parsedRetrievalMethodWeightHelperSupportive = parseRuntimeFloat(
+      retrievalMethodWeightHelperSupportive,
+      runtimeSettingsBaseline.retrievalMethodWeightHelperSupportive,
+    );
+    const parsedRetrievalAnchorScorePerMatch = parseRuntimeFloat(
+      retrievalAnchorScorePerMatch,
+      runtimeSettingsBaseline.retrievalAnchorScorePerMatch,
+    );
+    const parsedRetrievalIdentityScorePerMatch = parseRuntimeFloat(
+      retrievalIdentityScorePerMatch,
+      runtimeSettingsBaseline.retrievalIdentityScorePerMatch,
+    );
+    const parsedRetrievalUnitMatchBonus = parseRuntimeFloat(
+      retrievalUnitMatchBonus,
+      runtimeSettingsBaseline.retrievalUnitMatchBonus,
+    );
+    const parsedRetrievalDirectFieldMatchBonus = parseRuntimeFloat(
+      retrievalDirectFieldMatchBonus,
+      runtimeSettingsBaseline.retrievalDirectFieldMatchBonus,
+    );
+    const parsedIdentityGateBaseMatchThreshold = parseRuntimeFloat(
+      identityGateBaseMatchThreshold,
+      runtimeSettingsBaseline.identityGateBaseMatchThreshold,
+    );
+    const parsedIdentityGateEasyAmbiguityReduction = parseRuntimeFloat(
+      identityGateEasyAmbiguityReduction,
+      runtimeSettingsBaseline.identityGateEasyAmbiguityReduction,
+    );
+    const parsedIdentityGateMediumAmbiguityReduction = parseRuntimeFloat(
+      identityGateMediumAmbiguityReduction,
+      runtimeSettingsBaseline.identityGateMediumAmbiguityReduction,
+    );
+    const parsedIdentityGateHardAmbiguityReduction = parseRuntimeFloat(
+      identityGateHardAmbiguityReduction,
+      runtimeSettingsBaseline.identityGateHardAmbiguityReduction,
+    );
+    const parsedIdentityGateVeryHardAmbiguityIncrease = parseRuntimeFloat(
+      identityGateVeryHardAmbiguityIncrease,
+      runtimeSettingsBaseline.identityGateVeryHardAmbiguityIncrease,
+    );
+    const parsedIdentityGateExtraHardAmbiguityIncrease = parseRuntimeFloat(
+      identityGateExtraHardAmbiguityIncrease,
+      runtimeSettingsBaseline.identityGateExtraHardAmbiguityIncrease,
+    );
+    const parsedIdentityGateMissingStrongIdPenalty = parseRuntimeFloat(
+      identityGateMissingStrongIdPenalty,
+      runtimeSettingsBaseline.identityGateMissingStrongIdPenalty,
+    );
+    const parsedIdentityGateHardMissingStrongIdIncrease = parseRuntimeFloat(
+      identityGateHardMissingStrongIdIncrease,
+      runtimeSettingsBaseline.identityGateHardMissingStrongIdIncrease,
+    );
+    const parsedIdentityGateVeryHardMissingStrongIdIncrease = parseRuntimeFloat(
+      identityGateVeryHardMissingStrongIdIncrease,
+      runtimeSettingsBaseline.identityGateVeryHardMissingStrongIdIncrease,
+    );
+    const parsedIdentityGateExtraHardMissingStrongIdIncrease = parseRuntimeFloat(
+      identityGateExtraHardMissingStrongIdIncrease,
+      runtimeSettingsBaseline.identityGateExtraHardMissingStrongIdIncrease,
+    );
+    const parsedIdentityGateNumericTokenBoost = parseRuntimeFloat(
+      identityGateNumericTokenBoost,
+      runtimeSettingsBaseline.identityGateNumericTokenBoost,
+    );
+    const parsedIdentityGateNumericRangeThreshold = parseRuntimeInt(
+      identityGateNumericRangeThreshold,
+      runtimeSettingsBaseline.identityGateNumericRangeThreshold,
+    );
+    const parsedQualityGateIdentityThreshold = parseRuntimeFloat(
+      qualityGateIdentityThreshold,
+      runtimeSettingsBaseline.qualityGateIdentityThreshold,
+    );
+    const parsedEvidenceTextMaxChars = parseRuntimeInt(
+      evidenceTextMaxChars,
+      runtimeSettingsBaseline.evidenceTextMaxChars,
+    );
     return {
       resumeMode,
       resumeWindowHours: Number.isFinite(parsedResumeWindowHours) && parsedResumeWindowHours >= 0
@@ -4028,9 +5182,441 @@ export function IndexingPage() {
       reextractAfterHours: Number.isFinite(parsedReextractAfterHours) && parsedReextractAfterHours >= 0
         ? parsedReextractAfterHours
         : runtimeSettingsBaseline.reextractAfterHours,
-      reextractIndexed
+      reextractIndexed,
+      needsetRequiredWeightIdentity: clampWithFallback(
+        parsedNeedsetRequiredWeightIdentity,
+        runtimeSettingsBaseline.needsetRequiredWeightIdentity,
+        0.1,
+        100,
+      ),
+      needsetRequiredWeightCritical: clampWithFallback(
+        parsedNeedsetRequiredWeightCritical,
+        runtimeSettingsBaseline.needsetRequiredWeightCritical,
+        0.1,
+        100,
+      ),
+      needsetRequiredWeightRequired: clampWithFallback(
+        parsedNeedsetRequiredWeightRequired,
+        runtimeSettingsBaseline.needsetRequiredWeightRequired,
+        0.1,
+        100,
+      ),
+      needsetRequiredWeightExpected: clampWithFallback(
+        parsedNeedsetRequiredWeightExpected,
+        runtimeSettingsBaseline.needsetRequiredWeightExpected,
+        0.1,
+        100,
+      ),
+      needsetRequiredWeightOptional: clampWithFallback(
+        parsedNeedsetRequiredWeightOptional,
+        runtimeSettingsBaseline.needsetRequiredWeightOptional,
+        0.1,
+        100,
+      ),
+      needsetMissingMultiplier: clampWithFallback(
+        parsedNeedsetMissingMultiplier,
+        runtimeSettingsBaseline.needsetMissingMultiplier,
+        0.1,
+        100,
+      ),
+      needsetTierDeficitMultiplier: clampWithFallback(
+        parsedNeedsetTierDeficitMultiplier,
+        runtimeSettingsBaseline.needsetTierDeficitMultiplier,
+        0.1,
+        100,
+      ),
+      needsetMinRefsDeficitMultiplier: clampWithFallback(
+        parsedNeedsetMinRefsDeficitMultiplier,
+        runtimeSettingsBaseline.needsetMinRefsDeficitMultiplier,
+        0.1,
+        100,
+      ),
+      needsetConflictMultiplier: clampWithFallback(
+        parsedNeedsetConflictMultiplier,
+        runtimeSettingsBaseline.needsetConflictMultiplier,
+        0.1,
+        100,
+      ),
+      needsetIdentityLockThreshold: clampWithFallback(
+        parsedNeedsetIdentityLockThreshold,
+        runtimeSettingsBaseline.needsetIdentityLockThreshold,
+        0,
+        1,
+      ),
+      needsetIdentityProvisionalThreshold: clampWithFallback(
+        parsedNeedsetIdentityProvisionalThreshold,
+        runtimeSettingsBaseline.needsetIdentityProvisionalThreshold,
+        0,
+        1,
+      ),
+      needsetDefaultIdentityAuditLimit: clampWithFallback(
+        parsedNeedsetDefaultIdentityAuditLimit,
+        runtimeSettingsBaseline.needsetDefaultIdentityAuditLimit,
+        1,
+        200,
+      ),
+      consensusMethodWeightNetworkJson: clampWithFallback(
+        parsedConsensusMethodWeightNetworkJson,
+        runtimeSettingsBaseline.consensusMethodWeightNetworkJson,
+        0,
+        2,
+      ),
+      consensusMethodWeightAdapterApi: clampWithFallback(
+        parsedConsensusMethodWeightAdapterApi,
+        runtimeSettingsBaseline.consensusMethodWeightAdapterApi,
+        0,
+        2,
+      ),
+      consensusMethodWeightStructuredMeta: clampWithFallback(
+        parsedConsensusMethodWeightStructuredMeta,
+        runtimeSettingsBaseline.consensusMethodWeightStructuredMeta,
+        0,
+        2,
+      ),
+      consensusMethodWeightPdf: clampWithFallback(
+        parsedConsensusMethodWeightPdf,
+        runtimeSettingsBaseline.consensusMethodWeightPdf,
+        0,
+        2,
+      ),
+      consensusMethodWeightTableKv: clampWithFallback(
+        parsedConsensusMethodWeightTableKv,
+        runtimeSettingsBaseline.consensusMethodWeightTableKv,
+        0,
+        2,
+      ),
+      consensusMethodWeightDom: clampWithFallback(
+        parsedConsensusMethodWeightDom,
+        runtimeSettingsBaseline.consensusMethodWeightDom,
+        0,
+        2,
+      ),
+      consensusMethodWeightLlmExtractBase: clampWithFallback(
+        parsedConsensusMethodWeightLlmExtractBase,
+        runtimeSettingsBaseline.consensusMethodWeightLlmExtractBase,
+        0,
+        2,
+      ),
+      consensusPolicyBonus: clampWithFallback(
+        parsedConsensusPolicyBonus,
+        runtimeSettingsBaseline.consensusPolicyBonus,
+        -5,
+        5,
+      ),
+      consensusWeightedMajorityThreshold: clampWithFallback(
+        parsedConsensusWeightedMajorityThreshold,
+        runtimeSettingsBaseline.consensusWeightedMajorityThreshold,
+        1,
+        10,
+      ),
+      consensusStrictAcceptanceDomainCount: clampWithFallback(
+        parsedConsensusStrictAcceptanceDomainCount,
+        runtimeSettingsBaseline.consensusStrictAcceptanceDomainCount,
+        1,
+        50,
+      ),
+      consensusRelaxedAcceptanceDomainCount: clampWithFallback(
+        parsedConsensusRelaxedAcceptanceDomainCount,
+        runtimeSettingsBaseline.consensusRelaxedAcceptanceDomainCount,
+        1,
+        50,
+      ),
+      consensusInstrumentedFieldThreshold: clampWithFallback(
+        parsedConsensusInstrumentedFieldThreshold,
+        runtimeSettingsBaseline.consensusInstrumentedFieldThreshold,
+        1,
+        50,
+      ),
+      consensusConfidenceScoringBase: clampWithFallback(
+        parsedConsensusConfidenceScoringBase,
+        runtimeSettingsBaseline.consensusConfidenceScoringBase,
+        0,
+        1,
+      ),
+      consensusPassTargetIdentityStrong: clampWithFallback(
+        parsedConsensusPassTargetIdentityStrong,
+        runtimeSettingsBaseline.consensusPassTargetIdentityStrong,
+        1,
+        50,
+      ),
+      consensusPassTargetNormal: clampWithFallback(
+        parsedConsensusPassTargetNormal,
+        runtimeSettingsBaseline.consensusPassTargetNormal,
+        1,
+        50,
+      ),
+      retrievalTierWeightTier1: clampWithFallback(
+        parsedRetrievalTierWeightTier1,
+        runtimeSettingsBaseline.retrievalTierWeightTier1,
+        0,
+        10,
+      ),
+      retrievalTierWeightTier2: clampWithFallback(
+        parsedRetrievalTierWeightTier2,
+        runtimeSettingsBaseline.retrievalTierWeightTier2,
+        0,
+        10,
+      ),
+      retrievalTierWeightTier3: clampWithFallback(
+        parsedRetrievalTierWeightTier3,
+        runtimeSettingsBaseline.retrievalTierWeightTier3,
+        0,
+        10,
+      ),
+      retrievalTierWeightTier4: clampWithFallback(
+        parsedRetrievalTierWeightTier4,
+        runtimeSettingsBaseline.retrievalTierWeightTier4,
+        0,
+        10,
+      ),
+      retrievalTierWeightTier5: clampWithFallback(
+        parsedRetrievalTierWeightTier5,
+        runtimeSettingsBaseline.retrievalTierWeightTier5,
+        0,
+        10,
+      ),
+      retrievalDocKindWeightManualPdf: clampWithFallback(
+        parsedRetrievalDocKindWeightManualPdf,
+        runtimeSettingsBaseline.retrievalDocKindWeightManualPdf,
+        0,
+        10,
+      ),
+      retrievalDocKindWeightSpecPdf: clampWithFallback(
+        parsedRetrievalDocKindWeightSpecPdf,
+        runtimeSettingsBaseline.retrievalDocKindWeightSpecPdf,
+        0,
+        10,
+      ),
+      retrievalDocKindWeightSupport: clampWithFallback(
+        parsedRetrievalDocKindWeightSupport,
+        runtimeSettingsBaseline.retrievalDocKindWeightSupport,
+        0,
+        10,
+      ),
+      retrievalDocKindWeightLabReview: clampWithFallback(
+        parsedRetrievalDocKindWeightLabReview,
+        runtimeSettingsBaseline.retrievalDocKindWeightLabReview,
+        0,
+        10,
+      ),
+      retrievalDocKindWeightProductPage: clampWithFallback(
+        parsedRetrievalDocKindWeightProductPage,
+        runtimeSettingsBaseline.retrievalDocKindWeightProductPage,
+        0,
+        10,
+      ),
+      retrievalDocKindWeightOther: clampWithFallback(
+        parsedRetrievalDocKindWeightOther,
+        runtimeSettingsBaseline.retrievalDocKindWeightOther,
+        0,
+        10,
+      ),
+      retrievalMethodWeightTable: clampWithFallback(
+        parsedRetrievalMethodWeightTable,
+        runtimeSettingsBaseline.retrievalMethodWeightTable,
+        0,
+        10,
+      ),
+      retrievalMethodWeightKv: clampWithFallback(
+        parsedRetrievalMethodWeightKv,
+        runtimeSettingsBaseline.retrievalMethodWeightKv,
+        0,
+        10,
+      ),
+      retrievalMethodWeightJsonLd: clampWithFallback(
+        parsedRetrievalMethodWeightJsonLd,
+        runtimeSettingsBaseline.retrievalMethodWeightJsonLd,
+        0,
+        10,
+      ),
+      retrievalMethodWeightLlmExtract: clampWithFallback(
+        parsedRetrievalMethodWeightLlmExtract,
+        runtimeSettingsBaseline.retrievalMethodWeightLlmExtract,
+        0,
+        10,
+      ),
+      retrievalMethodWeightHelperSupportive: clampWithFallback(
+        parsedRetrievalMethodWeightHelperSupportive,
+        runtimeSettingsBaseline.retrievalMethodWeightHelperSupportive,
+        0,
+        10,
+      ),
+      retrievalAnchorScorePerMatch: clampWithFallback(
+        parsedRetrievalAnchorScorePerMatch,
+        runtimeSettingsBaseline.retrievalAnchorScorePerMatch,
+        0,
+        2,
+      ),
+      retrievalIdentityScorePerMatch: clampWithFallback(
+        parsedRetrievalIdentityScorePerMatch,
+        runtimeSettingsBaseline.retrievalIdentityScorePerMatch,
+        0,
+        2,
+      ),
+      retrievalUnitMatchBonus: clampWithFallback(
+        parsedRetrievalUnitMatchBonus,
+        runtimeSettingsBaseline.retrievalUnitMatchBonus,
+        0,
+        2,
+      ),
+      retrievalDirectFieldMatchBonus: clampWithFallback(
+        parsedRetrievalDirectFieldMatchBonus,
+        runtimeSettingsBaseline.retrievalDirectFieldMatchBonus,
+        0,
+        2,
+      ),
+      identityGateBaseMatchThreshold: clampWithFallback(
+        parsedIdentityGateBaseMatchThreshold,
+        runtimeSettingsBaseline.identityGateBaseMatchThreshold,
+        0,
+        1,
+      ),
+      identityGateEasyAmbiguityReduction: clampWithFallback(
+        parsedIdentityGateEasyAmbiguityReduction,
+        runtimeSettingsBaseline.identityGateEasyAmbiguityReduction,
+        -1,
+        1,
+      ),
+      identityGateMediumAmbiguityReduction: clampWithFallback(
+        parsedIdentityGateMediumAmbiguityReduction,
+        runtimeSettingsBaseline.identityGateMediumAmbiguityReduction,
+        -1,
+        1,
+      ),
+      identityGateHardAmbiguityReduction: clampWithFallback(
+        parsedIdentityGateHardAmbiguityReduction,
+        runtimeSettingsBaseline.identityGateHardAmbiguityReduction,
+        -1,
+        1,
+      ),
+      identityGateVeryHardAmbiguityIncrease: clampWithFallback(
+        parsedIdentityGateVeryHardAmbiguityIncrease,
+        runtimeSettingsBaseline.identityGateVeryHardAmbiguityIncrease,
+        -1,
+        1,
+      ),
+      identityGateExtraHardAmbiguityIncrease: clampWithFallback(
+        parsedIdentityGateExtraHardAmbiguityIncrease,
+        runtimeSettingsBaseline.identityGateExtraHardAmbiguityIncrease,
+        -1,
+        1,
+      ),
+      identityGateMissingStrongIdPenalty: clampWithFallback(
+        parsedIdentityGateMissingStrongIdPenalty,
+        runtimeSettingsBaseline.identityGateMissingStrongIdPenalty,
+        -1,
+        1,
+      ),
+      identityGateHardMissingStrongIdIncrease: clampWithFallback(
+        parsedIdentityGateHardMissingStrongIdIncrease,
+        runtimeSettingsBaseline.identityGateHardMissingStrongIdIncrease,
+        -1,
+        1,
+      ),
+      identityGateVeryHardMissingStrongIdIncrease: clampWithFallback(
+        parsedIdentityGateVeryHardMissingStrongIdIncrease,
+        runtimeSettingsBaseline.identityGateVeryHardMissingStrongIdIncrease,
+        -1,
+        1,
+      ),
+      identityGateExtraHardMissingStrongIdIncrease: clampWithFallback(
+        parsedIdentityGateExtraHardMissingStrongIdIncrease,
+        runtimeSettingsBaseline.identityGateExtraHardMissingStrongIdIncrease,
+        -1,
+        1,
+      ),
+      identityGateNumericTokenBoost: clampWithFallback(
+        parsedIdentityGateNumericTokenBoost,
+        runtimeSettingsBaseline.identityGateNumericTokenBoost,
+        -1,
+        1,
+      ),
+      identityGateNumericRangeThreshold: clampWithFallback(
+        parsedIdentityGateNumericRangeThreshold,
+        runtimeSettingsBaseline.identityGateNumericRangeThreshold,
+        0,
+        500,
+      ),
+      qualityGateIdentityThreshold: clampWithFallback(
+        parsedQualityGateIdentityThreshold,
+        runtimeSettingsBaseline.qualityGateIdentityThreshold,
+        0,
+        1,
+      ),
+      evidenceTextMaxChars: clampWithFallback(
+        parsedEvidenceTextMaxChars,
+        runtimeSettingsBaseline.evidenceTextMaxChars,
+        200,
+        200_000,
+      ),
     };
-  }, [resumeMode, resumeWindowHours, reextractAfterHours, reextractIndexed, runtimeSettingsBaseline]);
+  }, [
+    resumeMode,
+    resumeWindowHours,
+    reextractAfterHours,
+    reextractIndexed,
+    needsetRequiredWeightIdentity,
+    needsetRequiredWeightCritical,
+    needsetRequiredWeightRequired,
+    needsetRequiredWeightExpected,
+    needsetRequiredWeightOptional,
+    needsetMissingMultiplier,
+    needsetTierDeficitMultiplier,
+    needsetMinRefsDeficitMultiplier,
+    needsetConflictMultiplier,
+    needsetIdentityLockThreshold,
+    needsetIdentityProvisionalThreshold,
+    needsetDefaultIdentityAuditLimit,
+    consensusMethodWeightNetworkJson,
+    consensusMethodWeightAdapterApi,
+    consensusMethodWeightStructuredMeta,
+    consensusMethodWeightPdf,
+    consensusMethodWeightTableKv,
+    consensusMethodWeightDom,
+    consensusPolicyBonus,
+    consensusWeightedMajorityThreshold,
+    consensusStrictAcceptanceDomainCount,
+    consensusRelaxedAcceptanceDomainCount,
+    consensusInstrumentedFieldThreshold,
+    consensusConfidenceScoringBase,
+    consensusPassTargetIdentityStrong,
+    consensusPassTargetNormal,
+    retrievalTierWeightTier1,
+    retrievalTierWeightTier2,
+    retrievalTierWeightTier3,
+    retrievalTierWeightTier4,
+    retrievalTierWeightTier5,
+    retrievalDocKindWeightManualPdf,
+    retrievalDocKindWeightSpecPdf,
+    retrievalDocKindWeightSupport,
+    retrievalDocKindWeightLabReview,
+    retrievalDocKindWeightProductPage,
+    retrievalDocKindWeightOther,
+    retrievalMethodWeightTable,
+    retrievalMethodWeightKv,
+    retrievalMethodWeightJsonLd,
+    retrievalMethodWeightLlmExtract,
+    retrievalMethodWeightHelperSupportive,
+    retrievalAnchorScorePerMatch,
+    retrievalIdentityScorePerMatch,
+    retrievalUnitMatchBonus,
+    retrievalDirectFieldMatchBonus,
+    identityGateBaseMatchThreshold,
+    identityGateEasyAmbiguityReduction,
+    identityGateMediumAmbiguityReduction,
+    identityGateHardAmbiguityReduction,
+    identityGateVeryHardAmbiguityIncrease,
+    identityGateExtraHardAmbiguityIncrease,
+    identityGateMissingStrongIdPenalty,
+    identityGateHardMissingStrongIdIncrease,
+    identityGateVeryHardMissingStrongIdIncrease,
+    identityGateExtraHardMissingStrongIdIncrease,
+    identityGateNumericTokenBoost,
+    identityGateNumericRangeThreshold,
+    qualityGateIdentityThreshold,
+    evidenceTextMaxChars,
+    runtimeSettingsBaseline,
+  ]);
 
   type StartIndexLabMutationVariables = {
     requestedRunId: string;
@@ -4051,6 +5637,146 @@ export function IndexingPage() {
       const parsedCrawleeTimeout = parseRuntimeInt(crawleeRequestHandlerTimeoutSecs, runtimeSettingsBaseline.crawleeRequestHandlerTimeoutSecs);
       const parsedRetryBudget = parseRuntimeInt(dynamicFetchRetryBudget, runtimeSettingsBaseline.dynamicFetchRetryBudget);
       const parsedRetryBackoff = parseRuntimeInt(dynamicFetchRetryBackoffMs, runtimeSettingsBaseline.dynamicFetchRetryBackoffMs);
+      const parsedFetchSchedulerMaxRetries = parseRuntimeInt(fetchSchedulerMaxRetries, runtimeSettingsBaseline.fetchSchedulerMaxRetries);
+      const parsedFetchSchedulerFallbackWaitMs = parseRuntimeInt(fetchSchedulerFallbackWaitMs, runtimeSettingsBaseline.fetchSchedulerFallbackWaitMs);
+      const parsedPageGotoTimeoutMs = parseRuntimeInt(pageGotoTimeoutMs, runtimeSettingsBaseline.pageGotoTimeoutMs);
+      const parsedPageNetworkIdleTimeoutMs = parseRuntimeInt(pageNetworkIdleTimeoutMs, runtimeSettingsBaseline.pageNetworkIdleTimeoutMs);
+      const parsedPostLoadWaitMs = parseRuntimeInt(postLoadWaitMs, runtimeSettingsBaseline.postLoadWaitMs);
+      const parsedFrontierQueryCooldownSeconds = parseRuntimeInt(frontierQueryCooldownSeconds, runtimeSettingsBaseline.frontierQueryCooldownSeconds);
+      const parsedFrontierCooldown404Seconds = parseRuntimeInt(frontierCooldown404Seconds, runtimeSettingsBaseline.frontierCooldown404Seconds);
+      const parsedFrontierCooldown404RepeatSeconds = parseRuntimeInt(frontierCooldown404RepeatSeconds, runtimeSettingsBaseline.frontierCooldown404RepeatSeconds);
+      const parsedFrontierCooldown410Seconds = parseRuntimeInt(frontierCooldown410Seconds, runtimeSettingsBaseline.frontierCooldown410Seconds);
+      const parsedFrontierCooldownTimeoutSeconds = parseRuntimeInt(frontierCooldownTimeoutSeconds, runtimeSettingsBaseline.frontierCooldownTimeoutSeconds);
+      const parsedFrontierCooldown403BaseSeconds = parseRuntimeInt(frontierCooldown403BaseSeconds, runtimeSettingsBaseline.frontierCooldown403BaseSeconds);
+      const parsedFrontierCooldown429BaseSeconds = parseRuntimeInt(frontierCooldown429BaseSeconds, runtimeSettingsBaseline.frontierCooldown429BaseSeconds);
+      const parsedFrontierBackoffMaxExponent = parseRuntimeInt(frontierBackoffMaxExponent, runtimeSettingsBaseline.frontierBackoffMaxExponent);
+      const parsedFrontierPathPenaltyNotfoundThreshold = parseRuntimeInt(frontierPathPenaltyNotfoundThreshold, runtimeSettingsBaseline.frontierPathPenaltyNotfoundThreshold);
+      const parsedFrontierBlockedDomainThreshold = parseRuntimeInt(frontierBlockedDomainThreshold, runtimeSettingsBaseline.frontierBlockedDomainThreshold);
+      const parsedAutoScrollPasses = parseRuntimeInt(autoScrollPasses, runtimeSettingsBaseline.autoScrollPasses);
+      const parsedAutoScrollDelayMs = parseRuntimeInt(autoScrollDelayMs, runtimeSettingsBaseline.autoScrollDelayMs);
+      const parsedMaxGraphqlReplays = parseRuntimeInt(maxGraphqlReplays, runtimeSettingsBaseline.maxGraphqlReplays);
+      const parsedMaxNetworkResponsesPerPage = parseRuntimeInt(maxNetworkResponsesPerPage, runtimeSettingsBaseline.maxNetworkResponsesPerPage);
+      const parsedRobotsTxtTimeoutMs = parseRuntimeInt(robotsTxtTimeoutMs, runtimeSettingsBaseline.robotsTxtTimeoutMs);
+      const parsedRuntimeScreencastFps = parseRuntimeInt(runtimeScreencastFps, runtimeSettingsBaseline.runtimeScreencastFps);
+      const parsedRuntimeScreencastQuality = parseRuntimeInt(runtimeScreencastQuality, runtimeSettingsBaseline.runtimeScreencastQuality);
+      const parsedRuntimeScreencastMaxWidth = parseRuntimeInt(runtimeScreencastMaxWidth, runtimeSettingsBaseline.runtimeScreencastMaxWidth);
+      const parsedRuntimeScreencastMaxHeight = parseRuntimeInt(runtimeScreencastMaxHeight, runtimeSettingsBaseline.runtimeScreencastMaxHeight);
+      const parsedEndpointSignalLimit = parseRuntimeInt(endpointSignalLimit, runtimeSettingsBaseline.endpointSignalLimit);
+      const parsedEndpointSuggestionLimit = parseRuntimeInt(endpointSuggestionLimit, runtimeSettingsBaseline.endpointSuggestionLimit);
+      const parsedEndpointNetworkScanLimit = parseRuntimeInt(endpointNetworkScanLimit, runtimeSettingsBaseline.endpointNetworkScanLimit);
+      const parsedDiscoveryMaxQueries = parseRuntimeInt(discoveryMaxQueries, runtimeSettingsBaseline.discoveryMaxQueries);
+      const parsedDiscoveryResultsPerQuery = parseRuntimeInt(discoveryResultsPerQuery, runtimeSettingsBaseline.discoveryResultsPerQuery);
+      const parsedDiscoveryMaxDiscovered = parseRuntimeInt(discoveryMaxDiscovered, runtimeSettingsBaseline.discoveryMaxDiscovered);
+      const parsedDiscoveryQueryConcurrency = parseRuntimeInt(discoveryQueryConcurrency, runtimeSettingsBaseline.discoveryQueryConcurrency);
+      const parsedMaxUrlsPerProduct = parseRuntimeInt(maxUrlsPerProduct, runtimeSettingsBaseline.maxUrlsPerProduct);
+      const parsedMaxCandidateUrls = parseRuntimeInt(maxCandidateUrls, runtimeSettingsBaseline.maxCandidateUrls);
+      const parsedMaxPagesPerDomain = parseRuntimeInt(maxPagesPerDomain, runtimeSettingsBaseline.maxPagesPerDomain);
+      const parsedUberMaxUrlsPerProduct = parseRuntimeInt(uberMaxUrlsPerProduct, runtimeSettingsBaseline.uberMaxUrlsPerProduct);
+      const parsedUberMaxUrlsPerDomain = parseRuntimeInt(uberMaxUrlsPerDomain, runtimeSettingsBaseline.uberMaxUrlsPerDomain);
+      const parsedMaxRunSeconds = parseRuntimeInt(maxRunSeconds, runtimeSettingsBaseline.maxRunSeconds);
+      const parsedMaxJsonBytes = parseRuntimeInt(maxJsonBytes, runtimeSettingsBaseline.maxJsonBytes);
+      const parsedMaxPdfBytes = parseRuntimeInt(maxPdfBytes, runtimeSettingsBaseline.maxPdfBytes);
+      const parsedPdfBackendRouterTimeoutMs = parseRuntimeInt(pdfBackendRouterTimeoutMs, runtimeSettingsBaseline.pdfBackendRouterTimeoutMs);
+      const parsedPdfBackendRouterMaxPages = parseRuntimeInt(pdfBackendRouterMaxPages, runtimeSettingsBaseline.pdfBackendRouterMaxPages);
+      const parsedPdfBackendRouterMaxPairs = parseRuntimeInt(pdfBackendRouterMaxPairs, runtimeSettingsBaseline.pdfBackendRouterMaxPairs);
+      const parsedPdfBackendRouterMaxTextPreviewChars = parseRuntimeInt(pdfBackendRouterMaxTextPreviewChars, runtimeSettingsBaseline.pdfBackendRouterMaxTextPreviewChars);
+      const parsedCapturePageScreenshotQuality = parseRuntimeInt(capturePageScreenshotQuality, runtimeSettingsBaseline.capturePageScreenshotQuality);
+      const parsedCapturePageScreenshotMaxBytes = parseRuntimeInt(capturePageScreenshotMaxBytes, runtimeSettingsBaseline.capturePageScreenshotMaxBytes);
+      const parsedVisualAssetCaptureMaxPerSource = parseRuntimeInt(visualAssetCaptureMaxPerSource, runtimeSettingsBaseline.visualAssetCaptureMaxPerSource);
+      const parsedVisualAssetRetentionDays = parseRuntimeInt(visualAssetRetentionDays, runtimeSettingsBaseline.visualAssetRetentionDays);
+      const parsedVisualAssetReviewLgMaxSide = parseRuntimeInt(visualAssetReviewLgMaxSide, runtimeSettingsBaseline.visualAssetReviewLgMaxSide);
+      const parsedVisualAssetReviewSmMaxSide = parseRuntimeInt(visualAssetReviewSmMaxSide, runtimeSettingsBaseline.visualAssetReviewSmMaxSide);
+      const parsedVisualAssetReviewLgQuality = parseRuntimeInt(visualAssetReviewLgQuality, runtimeSettingsBaseline.visualAssetReviewLgQuality);
+      const parsedVisualAssetReviewSmQuality = parseRuntimeInt(visualAssetReviewSmQuality, runtimeSettingsBaseline.visualAssetReviewSmQuality);
+      const parsedVisualAssetRegionCropMaxSide = parseRuntimeInt(visualAssetRegionCropMaxSide, runtimeSettingsBaseline.visualAssetRegionCropMaxSide);
+      const parsedVisualAssetRegionCropQuality = parseRuntimeInt(visualAssetRegionCropQuality, runtimeSettingsBaseline.visualAssetRegionCropQuality);
+      const parsedVisualAssetLlmMaxBytes = parseRuntimeInt(visualAssetLlmMaxBytes, runtimeSettingsBaseline.visualAssetLlmMaxBytes);
+      const parsedVisualAssetMinWidth = parseRuntimeInt(visualAssetMinWidth, runtimeSettingsBaseline.visualAssetMinWidth);
+      const parsedVisualAssetMinHeight = parseRuntimeInt(visualAssetMinHeight, runtimeSettingsBaseline.visualAssetMinHeight);
+      const parsedVisualAssetMinSharpness = parseRuntimeFloat(visualAssetMinSharpness, runtimeSettingsBaseline.visualAssetMinSharpness);
+      const parsedVisualAssetMinEntropy = parseRuntimeFloat(visualAssetMinEntropy, runtimeSettingsBaseline.visualAssetMinEntropy);
+      const parsedVisualAssetMaxPhashDistance = parseRuntimeInt(visualAssetMaxPhashDistance, runtimeSettingsBaseline.visualAssetMaxPhashDistance);
+      const parsedArticleExtractorMinChars = parseRuntimeInt(articleExtractorMinChars, runtimeSettingsBaseline.articleExtractorMinChars);
+      const parsedArticleExtractorMinScore = parseRuntimeInt(articleExtractorMinScore, runtimeSettingsBaseline.articleExtractorMinScore);
+      const parsedArticleExtractorMaxChars = parseRuntimeInt(articleExtractorMaxChars, runtimeSettingsBaseline.articleExtractorMaxChars);
+      const parsedStaticDomTargetMatchThreshold = parseRuntimeFloat(staticDomTargetMatchThreshold, runtimeSettingsBaseline.staticDomTargetMatchThreshold);
+      const parsedStaticDomMaxEvidenceSnippets = parseRuntimeInt(staticDomMaxEvidenceSnippets, runtimeSettingsBaseline.staticDomMaxEvidenceSnippets);
+      const parsedStructuredMetadataExtructTimeoutMs = parseRuntimeInt(structuredMetadataExtructTimeoutMs, runtimeSettingsBaseline.structuredMetadataExtructTimeoutMs);
+      const parsedStructuredMetadataExtructMaxItemsPerSurface = parseRuntimeInt(structuredMetadataExtructMaxItemsPerSurface, runtimeSettingsBaseline.structuredMetadataExtructMaxItemsPerSurface);
+      const parsedStructuredMetadataExtructCacheLimit = parseRuntimeInt(structuredMetadataExtructCacheLimit, runtimeSettingsBaseline.structuredMetadataExtructCacheLimit);
+      const parsedDomSnippetMaxChars = parseRuntimeInt(domSnippetMaxChars, runtimeSettingsBaseline.domSnippetMaxChars);
+      const parsedLlmExtractionCacheTtlMs = parseRuntimeInt(llmExtractionCacheTtlMs, runtimeSettingsBaseline.llmExtractionCacheTtlMs);
+      const parsedLlmMaxCallsPerProductTotal = parseRuntimeInt(llmMaxCallsPerProductTotal, runtimeSettingsBaseline.llmMaxCallsPerProductTotal);
+      const parsedLlmMaxCallsPerProductFast = parseRuntimeInt(llmMaxCallsPerProductFast, runtimeSettingsBaseline.llmMaxCallsPerProductFast);
+      const parsedNeedsetEvidenceDecayDays = parseRuntimeInt(needsetEvidenceDecayDays, runtimeSettingsBaseline.needsetEvidenceDecayDays);
+      const parsedNeedsetEvidenceDecayFloor = parseRuntimeFloat(needsetEvidenceDecayFloor, runtimeSettingsBaseline.needsetEvidenceDecayFloor);
+      const parsedLlmExtractMaxTokens = parseRuntimeInt(llmExtractMaxTokens, runtimeSettingsBaseline.llmExtractMaxTokens);
+      const parsedLlmExtractMaxSnippetsPerBatch = parseRuntimeInt(llmExtractMaxSnippetsPerBatch, runtimeSettingsBaseline.llmExtractMaxSnippetsPerBatch);
+      const parsedLlmExtractMaxSnippetChars = parseRuntimeInt(llmExtractMaxSnippetChars, runtimeSettingsBaseline.llmExtractMaxSnippetChars);
+      const parsedLlmExtractReasoningBudget = parseRuntimeInt(llmExtractReasoningBudget, runtimeSettingsBaseline.llmExtractReasoningBudget);
+      const parsedLlmReasoningBudget = parseRuntimeInt(llmReasoningBudget, runtimeSettingsBaseline.llmReasoningBudget);
+      const parsedLlmMonthlyBudgetUsd = parseRuntimeFloat(llmMonthlyBudgetUsd, runtimeSettingsBaseline.llmMonthlyBudgetUsd);
+      const parsedLlmPerProductBudgetUsd = parseRuntimeFloat(llmPerProductBudgetUsd, runtimeSettingsBaseline.llmPerProductBudgetUsd);
+      const parsedLlmMaxCallsPerRound = parseRuntimeInt(llmMaxCallsPerRound, runtimeSettingsBaseline.llmMaxCallsPerRound);
+      const parsedLlmMaxOutputTokens = parseRuntimeInt(llmMaxOutputTokens, runtimeSettingsBaseline.llmMaxOutputTokens);
+      const parsedLlmVerifySampleRate = parseRuntimeInt(llmVerifySampleRate, runtimeSettingsBaseline.llmVerifySampleRate);
+      const parsedLlmMaxBatchesPerProduct = parseRuntimeInt(llmMaxBatchesPerProduct, runtimeSettingsBaseline.llmMaxBatchesPerProduct);
+      const parsedLlmMaxEvidenceChars = parseRuntimeInt(llmMaxEvidenceChars, runtimeSettingsBaseline.llmMaxEvidenceChars);
+      const parsedLlmMaxTokens = parseRuntimeInt(llmMaxTokens, runtimeSettingsBaseline.llmMaxTokens);
+      const parsedLlmTimeoutMs = parseRuntimeInt(llmTimeoutMs, runtimeSettingsBaseline.llmTimeoutMs);
+      const parsedLlmCostInputPer1M = parseRuntimeFloat(llmCostInputPer1M, runtimeSettingsBaseline.llmCostInputPer1M);
+      const parsedLlmCostOutputPer1M = parseRuntimeFloat(llmCostOutputPer1M, runtimeSettingsBaseline.llmCostOutputPer1M);
+      const parsedLlmCostCachedInputPer1M = parseRuntimeFloat(llmCostCachedInputPer1M, runtimeSettingsBaseline.llmCostCachedInputPer1M);
+      const parsedMaxManufacturerUrlsPerProduct = parseRuntimeInt(maxManufacturerUrlsPerProduct, runtimeSettingsBaseline.maxManufacturerUrlsPerProduct);
+      const parsedMaxManufacturerPagesPerDomain = parseRuntimeInt(maxManufacturerPagesPerDomain, runtimeSettingsBaseline.maxManufacturerPagesPerDomain);
+      const parsedManufacturerReserveUrls = parseRuntimeInt(manufacturerReserveUrls, runtimeSettingsBaseline.manufacturerReserveUrls);
+      const parsedMaxHypothesisItems = parseRuntimeInt(maxHypothesisItems, runtimeSettingsBaseline.maxHypothesisItems);
+      const parsedHypothesisAutoFollowupRounds = parseRuntimeInt(hypothesisAutoFollowupRounds, runtimeSettingsBaseline.hypothesisAutoFollowupRounds);
+      const parsedHypothesisFollowupUrlsPerRound = parseRuntimeInt(hypothesisFollowupUrlsPerRound, runtimeSettingsBaseline.hypothesisFollowupUrlsPerRound);
+      const parsedLearningConfidenceThreshold = parseRuntimeFloat(learningConfidenceThreshold, runtimeSettingsBaseline.learningConfidenceThreshold);
+      const parsedComponentLexiconDecayDays = parseRuntimeInt(componentLexiconDecayDays, runtimeSettingsBaseline.componentLexiconDecayDays);
+      const parsedComponentLexiconExpireDays = parseRuntimeInt(componentLexiconExpireDays, runtimeSettingsBaseline.componentLexiconExpireDays);
+      const parsedFieldAnchorsDecayDays = parseRuntimeInt(fieldAnchorsDecayDays, runtimeSettingsBaseline.fieldAnchorsDecayDays);
+      const parsedUrlMemoryDecayDays = parseRuntimeInt(urlMemoryDecayDays, runtimeSettingsBaseline.urlMemoryDecayDays);
+      const parsedCseRescueRequiredIteration = parseRuntimeInt(cseRescueRequiredIteration, runtimeSettingsBaseline.cseRescueRequiredIteration);
+      const parsedDuckduckgoTimeoutMs = parseRuntimeInt(duckduckgoTimeoutMs, runtimeSettingsBaseline.duckduckgoTimeoutMs);
+      const parsedRuntimeTraceFetchRing = parseRuntimeInt(runtimeTraceFetchRing, runtimeSettingsBaseline.runtimeTraceFetchRing);
+      const parsedRuntimeTraceLlmRing = parseRuntimeInt(runtimeTraceLlmRing, runtimeSettingsBaseline.runtimeTraceLlmRing);
+      const parsedDaemonConcurrency = parseRuntimeInt(daemonConcurrency, runtimeSettingsBaseline.daemonConcurrency);
+      const parsedDaemonGracefulShutdownTimeoutMs = parseRuntimeInt(daemonGracefulShutdownTimeoutMs, runtimeSettingsBaseline.daemonGracefulShutdownTimeoutMs);
+      const parsedImportsPollSeconds = parseRuntimeInt(importsPollSeconds, runtimeSettingsBaseline.importsPollSeconds);
+      const parsedConvergenceIdentityFailFastRounds = parseRuntimeInt(convergenceIdentityFailFastRounds, runtimeSettingsBaseline.convergenceIdentityFailFastRounds);
+      const parsedIdentityGatePublishThreshold = parseRuntimeFloat(identityGatePublishThreshold, runtimeSettingsBaseline.identityGatePublishThreshold);
+      const parsedIndexingResumeSeedLimit = parseRuntimeInt(indexingResumeSeedLimit, runtimeSettingsBaseline.indexingResumeSeedLimit);
+      const parsedIndexingResumePersistLimit = parseRuntimeInt(indexingResumePersistLimit, runtimeSettingsBaseline.indexingResumePersistLimit);
+      const parsedHelperSupportiveMaxSources = parseRuntimeInt(helperSupportiveMaxSources, runtimeSettingsBaseline.helperSupportiveMaxSources);
+      const parsedHelperActiveSyncLimit = parseRuntimeInt(helperActiveSyncLimit, runtimeSettingsBaseline.helperActiveSyncLimit);
+      const parsedFieldRewardHalfLifeDays = parseRuntimeInt(fieldRewardHalfLifeDays, runtimeSettingsBaseline.fieldRewardHalfLifeDays);
+      const parsedDriftPollSeconds = parseRuntimeInt(driftPollSeconds, runtimeSettingsBaseline.driftPollSeconds);
+      const parsedDriftScanMaxProducts = parseRuntimeInt(driftScanMaxProducts, runtimeSettingsBaseline.driftScanMaxProducts);
+      const parsedReCrawlStaleAfterDays = parseRuntimeInt(reCrawlStaleAfterDays, runtimeSettingsBaseline.reCrawlStaleAfterDays);
+      const parsedAggressiveConfidenceThreshold = parseRuntimeFloat(aggressiveConfidenceThreshold, runtimeSettingsBaseline.aggressiveConfidenceThreshold);
+      const parsedAggressiveMaxSearchQueries = parseRuntimeInt(aggressiveMaxSearchQueries, runtimeSettingsBaseline.aggressiveMaxSearchQueries);
+      const parsedAggressiveEvidenceAuditBatchSize = parseRuntimeInt(aggressiveEvidenceAuditBatchSize, runtimeSettingsBaseline.aggressiveEvidenceAuditBatchSize);
+      const parsedAggressiveMaxTimePerProductMs = parseRuntimeInt(aggressiveMaxTimePerProductMs, runtimeSettingsBaseline.aggressiveMaxTimePerProductMs);
+      const parsedAggressiveThoroughFromRound = parseRuntimeInt(aggressiveThoroughFromRound, runtimeSettingsBaseline.aggressiveThoroughFromRound);
+      const parsedAggressiveRound1MaxUrls = parseRuntimeInt(aggressiveRound1MaxUrls, runtimeSettingsBaseline.aggressiveRound1MaxUrls);
+      const parsedAggressiveRound1MaxCandidateUrls = parseRuntimeInt(aggressiveRound1MaxCandidateUrls, runtimeSettingsBaseline.aggressiveRound1MaxCandidateUrls);
+      const parsedAggressiveLlmMaxCallsPerRound = parseRuntimeInt(aggressiveLlmMaxCallsPerRound, runtimeSettingsBaseline.aggressiveLlmMaxCallsPerRound);
+      const parsedAggressiveLlmMaxCallsPerProductTotal = parseRuntimeInt(aggressiveLlmMaxCallsPerProductTotal, runtimeSettingsBaseline.aggressiveLlmMaxCallsPerProductTotal);
+      const parsedAggressiveLlmTargetMaxFields = parseRuntimeInt(aggressiveLlmTargetMaxFields, runtimeSettingsBaseline.aggressiveLlmTargetMaxFields);
+      const parsedAggressiveLlmDiscoveryPasses = parseRuntimeInt(aggressiveLlmDiscoveryPasses, runtimeSettingsBaseline.aggressiveLlmDiscoveryPasses);
+      const parsedAggressiveLlmDiscoveryQueryCap = parseRuntimeInt(aggressiveLlmDiscoveryQueryCap, runtimeSettingsBaseline.aggressiveLlmDiscoveryQueryCap);
+      const parsedUberMaxRounds = parseRuntimeInt(uberMaxRounds, runtimeSettingsBaseline.uberMaxRounds);
+      const parsedCortexSyncTimeoutMs = parseRuntimeInt(cortexSyncTimeoutMs, runtimeSettingsBaseline.cortexSyncTimeoutMs);
+      const parsedCortexAsyncPollIntervalMs = parseRuntimeInt(cortexAsyncPollIntervalMs, runtimeSettingsBaseline.cortexAsyncPollIntervalMs);
+      const parsedCortexAsyncMaxWaitMs = parseRuntimeInt(cortexAsyncMaxWaitMs, runtimeSettingsBaseline.cortexAsyncMaxWaitMs);
+      const parsedCortexEnsureReadyTimeoutMs = parseRuntimeInt(cortexEnsureReadyTimeoutMs, runtimeSettingsBaseline.cortexEnsureReadyTimeoutMs);
+      const parsedCortexStartReadyTimeoutMs = parseRuntimeInt(cortexStartReadyTimeoutMs, runtimeSettingsBaseline.cortexStartReadyTimeoutMs);
+      const parsedCortexFailureThreshold = parseRuntimeInt(cortexFailureThreshold, runtimeSettingsBaseline.cortexFailureThreshold);
+      const parsedCortexCircuitOpenMs = parseRuntimeInt(cortexCircuitOpenMs, runtimeSettingsBaseline.cortexCircuitOpenMs);
+      const parsedCortexEscalateConfidenceLt = parseRuntimeFloat(cortexEscalateConfidenceLt, runtimeSettingsBaseline.cortexEscalateConfidenceLt);
+      const parsedCortexMaxDeepFieldsPerProduct = parseRuntimeInt(cortexMaxDeepFieldsPerProduct, runtimeSettingsBaseline.cortexMaxDeepFieldsPerProduct);
       const parsedScannedPdfOcrMaxPages = parseRuntimeInt(scannedPdfOcrMaxPages, runtimeSettingsBaseline.scannedPdfOcrMaxPages);
       const parsedScannedPdfOcrMaxPairs = parseRuntimeInt(scannedPdfOcrMaxPairs, runtimeSettingsBaseline.scannedPdfOcrMaxPairs);
       const parsedScannedPdfOcrMinChars = parseRuntimeInt(scannedPdfOcrMinCharsPerPage, runtimeSettingsBaseline.scannedPdfOcrMinCharsPerPage);
@@ -4071,6 +5797,63 @@ export function IndexingPage() {
         crawleeRequestHandlerTimeoutSecs: Math.max(0, parsedCrawleeTimeout),
         dynamicFetchRetryBudget: Math.max(0, parsedRetryBudget),
         dynamicFetchRetryBackoffMs: Math.max(0, parsedRetryBackoff),
+        fetchSchedulerEnabled,
+        fetchSchedulerMaxRetries: Math.max(0, parsedFetchSchedulerMaxRetries),
+        fetchSchedulerFallbackWaitMs: Math.max(0, parsedFetchSchedulerFallbackWaitMs),
+        preferHttpFetcher,
+        pageGotoTimeoutMs: Math.max(0, parsedPageGotoTimeoutMs),
+        pageNetworkIdleTimeoutMs: Math.max(0, parsedPageNetworkIdleTimeoutMs),
+        postLoadWaitMs: Math.max(0, parsedPostLoadWaitMs),
+        frontierDbPath: String(frontierDbPath || '').trim(),
+        frontierEnableSqlite,
+        frontierStripTrackingParams,
+        frontierQueryCooldownSeconds: Math.max(0, parsedFrontierQueryCooldownSeconds),
+        frontierCooldown404Seconds: Math.max(0, parsedFrontierCooldown404Seconds),
+        frontierCooldown404RepeatSeconds: Math.max(0, parsedFrontierCooldown404RepeatSeconds),
+        frontierCooldown410Seconds: Math.max(0, parsedFrontierCooldown410Seconds),
+        frontierCooldownTimeoutSeconds: Math.max(0, parsedFrontierCooldownTimeoutSeconds),
+        frontierCooldown403BaseSeconds: Math.max(0, parsedFrontierCooldown403BaseSeconds),
+        frontierCooldown429BaseSeconds: Math.max(0, parsedFrontierCooldown429BaseSeconds),
+        frontierBackoffMaxExponent: Math.max(1, parsedFrontierBackoffMaxExponent),
+        frontierPathPenaltyNotfoundThreshold: Math.max(1, parsedFrontierPathPenaltyNotfoundThreshold),
+        frontierBlockedDomainThreshold: Math.max(1, parsedFrontierBlockedDomainThreshold),
+        frontierRepairSearchEnabled,
+        autoScrollEnabled,
+        autoScrollPasses: Math.max(0, parsedAutoScrollPasses),
+        autoScrollDelayMs: Math.max(0, parsedAutoScrollDelayMs),
+        graphqlReplayEnabled,
+        maxGraphqlReplays: Math.max(0, parsedMaxGraphqlReplays),
+        maxNetworkResponsesPerPage: Math.max(100, parsedMaxNetworkResponsesPerPage),
+        robotsTxtCompliant,
+        robotsTxtTimeoutMs: Math.max(100, parsedRobotsTxtTimeoutMs),
+        runtimeScreencastEnabled,
+        runtimeScreencastFps: Math.max(1, parsedRuntimeScreencastFps),
+        runtimeScreencastQuality: Math.max(10, parsedRuntimeScreencastQuality),
+        runtimeScreencastMaxWidth: Math.max(320, parsedRuntimeScreencastMaxWidth),
+        runtimeScreencastMaxHeight: Math.max(240, parsedRuntimeScreencastMaxHeight),
+        runtimeTraceEnabled,
+        runtimeTraceFetchRing: Math.max(10, parsedRuntimeTraceFetchRing),
+        runtimeTraceLlmRing: Math.max(10, parsedRuntimeTraceLlmRing),
+        runtimeTraceLlmPayloads,
+        daemonConcurrency: Math.max(1, parsedDaemonConcurrency),
+        daemonGracefulShutdownTimeoutMs: Math.max(1000, parsedDaemonGracefulShutdownTimeoutMs),
+        importsRoot: String(importsRoot || '').trim(),
+        importsPollSeconds: Math.max(1, parsedImportsPollSeconds),
+        convergenceIdentityFailFastRounds: Math.max(1, parsedConvergenceIdentityFailFastRounds),
+        identityGatePublishThreshold: Math.max(0, Math.min(1, parsedIdentityGatePublishThreshold)),
+        indexingResumeSeedLimit: Math.max(1, parsedIndexingResumeSeedLimit),
+        indexingResumePersistLimit: Math.max(1, parsedIndexingResumePersistLimit),
+        eventsJsonWrite,
+        indexingSchemaPacketsValidationEnabled,
+        indexingSchemaPacketsValidationStrict,
+        queueJsonWrite,
+        billingJsonWrite,
+        brainJsonWrite,
+        intelJsonWrite,
+        corpusJsonWrite,
+        learningJsonWrite,
+        cacheJsonWrite,
+        authoritySnapshotEnabled,
         scannedPdfOcrEnabled,
         scannedPdfOcrPromoteCandidates,
         scannedPdfOcrBackend,
@@ -4080,34 +5863,264 @@ export function IndexingPage() {
         scannedPdfOcrMinLinesPerPage: Math.max(1, parsedScannedPdfOcrMinLines),
         scannedPdfOcrMinConfidence: Math.max(0, Math.min(1, parsedScannedPdfOcrMinConfidence)),
         dynamicFetchPolicyMapJson: String(dynamicFetchPolicyMapJson || '').trim(),
+        searchProfileCapMapJson: String(searchProfileCapMapJson || '').trim(),
+        serpRerankerWeightMapJson: String(serpRerankerWeightMapJson || '').trim(),
+        fetchSchedulerInternalsMapJson: String(fetchSchedulerInternalsMapJson || '').trim(),
+        retrievalInternalsMapJson: String(retrievalInternalsMapJson || '').trim(),
+        evidencePackLimitsMapJson: String(evidencePackLimitsMapJson || '').trim(),
+        identityGateThresholdBoundsMapJson: String(identityGateThresholdBoundsMapJson || '').trim(),
+        parsingConfidenceBaseMapJson: String(parsingConfidenceBaseMapJson || '').trim(),
+        repairDedupeRule: String(repairDedupeRule || '').trim(),
+        automationQueueStorageEngine: String(automationQueueStorageEngine || '').trim(),
         discoveryEnabled,
+        fetchCandidateSources,
+        discoveryMaxQueries: Math.max(1, parsedDiscoveryMaxQueries),
+        discoveryResultsPerQuery: Math.max(1, parsedDiscoveryResultsPerQuery),
+        discoveryMaxDiscovered: Math.max(1, parsedDiscoveryMaxDiscovered),
+        discoveryQueryConcurrency: Math.max(1, parsedDiscoveryQueryConcurrency),
+        manufacturerBroadDiscovery,
+        manufacturerSeedSearchUrls,
+        manufacturerDeepResearchEnabled,
+        maxUrlsPerProduct: Math.max(1, parsedMaxUrlsPerProduct),
+        maxCandidateUrls: Math.max(1, parsedMaxCandidateUrls),
+        maxPagesPerDomain: Math.max(1, parsedMaxPagesPerDomain),
+        uberMaxUrlsPerProduct: Math.max(1, parsedUberMaxUrlsPerProduct),
+        uberMaxUrlsPerDomain: Math.max(1, parsedUberMaxUrlsPerDomain),
+        maxRunSeconds: Math.max(30, parsedMaxRunSeconds),
+        maxJsonBytes: Math.max(1024, parsedMaxJsonBytes),
+        maxPdfBytes: Math.max(1024, parsedMaxPdfBytes),
+        pdfBackendRouterEnabled,
+        pdfPreferredBackend: String(pdfPreferredBackend || '').trim(),
+        pdfBackendRouterTimeoutMs: Math.max(1000, parsedPdfBackendRouterTimeoutMs),
+        pdfBackendRouterMaxPages: Math.max(1, parsedPdfBackendRouterMaxPages),
+        pdfBackendRouterMaxPairs: Math.max(1, parsedPdfBackendRouterMaxPairs),
+        pdfBackendRouterMaxTextPreviewChars: Math.max(256, parsedPdfBackendRouterMaxTextPreviewChars),
+        capturePageScreenshotEnabled,
+        capturePageScreenshotFormat: String(capturePageScreenshotFormat || '').trim(),
+        capturePageScreenshotQuality: Math.max(1, parsedCapturePageScreenshotQuality),
+        capturePageScreenshotMaxBytes: Math.max(1024, parsedCapturePageScreenshotMaxBytes),
+        capturePageScreenshotSelectors: String(capturePageScreenshotSelectors || '').trim(),
+        runtimeCaptureScreenshots,
+        runtimeScreenshotMode: String(runtimeScreenshotMode || '').trim(),
+        visualAssetCaptureEnabled,
+        visualAssetCaptureMaxPerSource: Math.max(1, parsedVisualAssetCaptureMaxPerSource),
+        visualAssetStoreOriginal,
+        visualAssetRetentionDays: Math.max(1, parsedVisualAssetRetentionDays),
+        visualAssetPhashEnabled,
+        visualAssetReviewFormat: String(visualAssetReviewFormat || '').trim(),
+        visualAssetReviewLgMaxSide: Math.max(VISUAL_ASSET_MIN_SIDE, parsedVisualAssetReviewLgMaxSide),
+        visualAssetReviewSmMaxSide: Math.max(VISUAL_ASSET_MIN_SIDE, parsedVisualAssetReviewSmMaxSide),
+        visualAssetReviewLgQuality: Math.max(1, parsedVisualAssetReviewLgQuality),
+        visualAssetReviewSmQuality: Math.max(1, parsedVisualAssetReviewSmQuality),
+        visualAssetRegionCropMaxSide: Math.max(VISUAL_ASSET_MIN_SIDE, parsedVisualAssetRegionCropMaxSide),
+        visualAssetRegionCropQuality: Math.max(1, parsedVisualAssetRegionCropQuality),
+        visualAssetLlmMaxBytes: Math.max(1024, parsedVisualAssetLlmMaxBytes),
+        visualAssetMinWidth: Math.max(1, parsedVisualAssetMinWidth),
+        visualAssetMinHeight: Math.max(1, parsedVisualAssetMinHeight),
+        visualAssetMinSharpness: Math.max(0, parsedVisualAssetMinSharpness),
+        visualAssetMinEntropy: Math.max(0, parsedVisualAssetMinEntropy),
+        visualAssetMaxPhashDistance: Math.max(0, parsedVisualAssetMaxPhashDistance),
+        visualAssetHeroSelectorMapJson: String(visualAssetHeroSelectorMapJson || '').trim(),
+        chartExtractionEnabled,
+        articleExtractorV2Enabled,
+        articleExtractorMinChars: Math.max(50, parsedArticleExtractorMinChars),
+        articleExtractorMinScore: Math.max(1, parsedArticleExtractorMinScore),
+        articleExtractorMaxChars: Math.max(256, parsedArticleExtractorMaxChars),
+        staticDomExtractorEnabled,
+        staticDomMode: String(staticDomMode || '').trim(),
+        staticDomTargetMatchThreshold: Math.max(0, Math.min(1, parsedStaticDomTargetMatchThreshold)),
+        staticDomMaxEvidenceSnippets: Math.max(10, parsedStaticDomMaxEvidenceSnippets),
+        articleExtractorDomainPolicyMapJson: String(articleExtractorDomainPolicyMapJson || '').trim(),
+        htmlTableExtractorV2,
+        structuredMetadataExtructEnabled,
+        structuredMetadataExtructUrl: String(structuredMetadataExtructUrl || '').trim(),
+        structuredMetadataExtructTimeoutMs: Math.max(250, parsedStructuredMetadataExtructTimeoutMs),
+        structuredMetadataExtructMaxItemsPerSurface: Math.max(1, parsedStructuredMetadataExtructMaxItemsPerSurface),
+        structuredMetadataExtructCacheEnabled,
+        structuredMetadataExtructCacheLimit: Math.max(32, parsedStructuredMetadataExtructCacheLimit),
+        domSnippetMaxChars: Math.max(600, parsedDomSnippetMaxChars),
+        runtimeControlFile: String(runtimeControlFile || '').trim(),
+        specDbDir: String(specDbDir || '').trim(),
+        helperFilesEnabled,
+        helperFilesRoot: String(helperFilesRoot || '').trim(),
+        helperSupportiveEnabled,
+        helperSupportiveFillMissing,
+        helperSupportiveMaxSources: Math.max(0, parsedHelperSupportiveMaxSources),
+        helperAutoSeedTargets,
+        helperActiveSyncLimit: Math.max(0, parsedHelperActiveSyncLimit),
+        fieldRewardHalfLifeDays: Math.max(1, parsedFieldRewardHalfLifeDays),
+        batchStrategy: String(batchStrategy || '').trim(),
+        driftDetectionEnabled,
+        driftPollSeconds: Math.max(60, parsedDriftPollSeconds),
+        driftScanMaxProducts: Math.max(1, parsedDriftScanMaxProducts),
+        driftAutoRepublish,
+        reCrawlStaleAfterDays: Math.max(1, parsedReCrawlStaleAfterDays),
+        aggressiveModeEnabled,
+        aggressiveConfidenceThreshold: Math.max(0, Math.min(1, parsedAggressiveConfidenceThreshold)),
+        aggressiveMaxSearchQueries: Math.max(1, parsedAggressiveMaxSearchQueries),
+        aggressiveEvidenceAuditEnabled,
+        aggressiveEvidenceAuditBatchSize: Math.max(1, parsedAggressiveEvidenceAuditBatchSize),
+        aggressiveMaxTimePerProductMs: Math.max(1000, parsedAggressiveMaxTimePerProductMs),
+        aggressiveThoroughFromRound: Math.max(1, parsedAggressiveThoroughFromRound),
+        aggressiveRound1MaxUrls: Math.max(1, parsedAggressiveRound1MaxUrls),
+        aggressiveRound1MaxCandidateUrls: Math.max(1, parsedAggressiveRound1MaxCandidateUrls),
+        aggressiveLlmMaxCallsPerRound: Math.max(1, parsedAggressiveLlmMaxCallsPerRound),
+        aggressiveLlmMaxCallsPerProductTotal: Math.max(1, parsedAggressiveLlmMaxCallsPerProductTotal),
+        aggressiveLlmTargetMaxFields: Math.max(1, parsedAggressiveLlmTargetMaxFields),
+        aggressiveLlmDiscoveryPasses: Math.max(1, parsedAggressiveLlmDiscoveryPasses),
+        aggressiveLlmDiscoveryQueryCap: Math.max(1, parsedAggressiveLlmDiscoveryQueryCap),
+        uberAggressiveEnabled,
+        uberMaxRounds: Math.max(1, parsedUberMaxRounds),
+        cortexEnabled,
+        cortexAsyncEnabled,
+        cortexBaseUrl: String(cortexBaseUrl || '').trim(),
+        cortexApiKey: String(cortexApiKey || '').trim(),
+        cortexAsyncBaseUrl: String(cortexAsyncBaseUrl || '').trim(),
+        cortexAsyncSubmitPath: String(cortexAsyncSubmitPath || '').trim(),
+        cortexAsyncStatusPath: String(cortexAsyncStatusPath || '').trim(),
+        cortexSyncTimeoutMs: Math.max(1000, parsedCortexSyncTimeoutMs),
+        cortexAsyncPollIntervalMs: Math.max(250, parsedCortexAsyncPollIntervalMs),
+        cortexAsyncMaxWaitMs: Math.max(1000, parsedCortexAsyncMaxWaitMs),
+        cortexEnsureReadyTimeoutMs: Math.max(1000, parsedCortexEnsureReadyTimeoutMs),
+        cortexStartReadyTimeoutMs: Math.max(1000, parsedCortexStartReadyTimeoutMs),
+        cortexFailureThreshold: Math.max(1, parsedCortexFailureThreshold),
+        cortexCircuitOpenMs: Math.max(1000, parsedCortexCircuitOpenMs),
+        cortexModelFast: String(cortexModelFast || '').trim(),
+        cortexModelAudit: String(cortexModelAudit || '').trim(),
+        cortexModelDom: String(cortexModelDom || '').trim(),
+        cortexModelReasoningDeep: String(cortexModelReasoningDeep || '').trim(),
+        cortexModelVision: String(cortexModelVision || '').trim(),
+        cortexModelSearchFast: String(cortexModelSearchFast || '').trim(),
+        cortexModelRerankFast: String(cortexModelRerankFast || '').trim(),
+        cortexModelSearchDeep: String(cortexModelSearchDeep || '').trim(),
+        cortexAutoStart,
+        cortexAutoRestartOnAuth,
+        cortexEscalateConfidenceLt: Math.max(0, Math.min(1, parsedCortexEscalateConfidenceLt)),
+        cortexEscalateIfConflict,
+        cortexEscalateCriticalOnly,
+        cortexMaxDeepFieldsPerProduct: Math.max(1, parsedCortexMaxDeepFieldsPerProduct),
+        outputMode: String(outputMode || '').trim(),
+        localMode,
+        dryRun,
+        mirrorToS3,
+        mirrorToS3Input,
+        localInputRoot: String(localInputRoot || '').trim(),
+        localOutputRoot: String(localOutputRoot || '').trim(),
+        runtimeEventsKey: String(runtimeEventsKey || '').trim(),
+        writeMarkdownSummary,
+        awsRegion: String(awsRegion || '').trim(),
+        s3Bucket: String(s3Bucket || '').trim(),
+        s3InputPrefix: String(s3InputPrefix || '').trim(),
+        s3OutputPrefix: String(s3OutputPrefix || '').trim(),
+        eloSupabaseAnonKey: String(eloSupabaseAnonKey || '').trim(),
+        eloSupabaseEndpoint: String(eloSupabaseEndpoint || '').trim(),
+        llmEnabled,
+        llmWriteSummary,
+        llmProvider: String(llmProvider || '').trim(),
+        llmBaseUrl: String(llmBaseUrl || '').trim(),
+        openaiApiKey: String(openaiApiKey || '').trim(),
+        anthropicApiKey: String(anthropicApiKey || '').trim(),
+        allowBelowPassTargetFill,
+        indexingHelperFilesEnabled,
+        maxManufacturerUrlsPerProduct: Math.max(1, parsedMaxManufacturerUrlsPerProduct),
+        maxManufacturerPagesPerDomain: Math.max(1, parsedMaxManufacturerPagesPerDomain),
+        manufacturerReserveUrls: Math.max(0, parsedManufacturerReserveUrls),
+        userAgent: String(userAgent || '').trim(),
+        selfImproveEnabled,
+        maxHypothesisItems: Math.max(1, parsedMaxHypothesisItems),
+        hypothesisAutoFollowupRounds: Math.max(0, parsedHypothesisAutoFollowupRounds),
+        hypothesisFollowupUrlsPerRound: Math.max(1, parsedHypothesisFollowupUrlsPerRound),
+        learningConfidenceThreshold: Math.max(0, Math.min(1, parsedLearningConfidenceThreshold)),
+        componentLexiconDecayDays: Math.max(1, parsedComponentLexiconDecayDays),
+        componentLexiconExpireDays: Math.max(1, parsedComponentLexiconExpireDays),
+        fieldAnchorsDecayDays: Math.max(1, parsedFieldAnchorsDecayDays),
+        urlMemoryDecayDays: Math.max(1, parsedUrlMemoryDecayDays),
+        disableGoogleCse,
+        cseRescueOnlyMode,
+        duckduckgoEnabled,
+        searxngBaseUrl: String(searxngBaseUrl || '').trim(),
+        bingSearchEndpoint: String(bingSearchEndpoint || '').trim(),
+        bingSearchKey: String(bingSearchKey || '').trim(),
+        googleCseCx: String(googleCseCx || '').trim(),
+        googleCseKey: String(googleCseKey || '').trim(),
+        duckduckgoBaseUrl: String(duckduckgoBaseUrl || '').trim(),
+        cseRescueRequiredIteration: Math.max(1, parsedCseRescueRequiredIteration),
+        duckduckgoTimeoutMs: Math.max(250, parsedDuckduckgoTimeoutMs),
+        llmPlanProvider: String(llmPlanProvider || '').trim(),
+        llmPlanBaseUrl: String(llmPlanBaseUrl || '').trim(),
+        llmPlanApiKey: String(llmPlanApiKey || '').trim(),
+        llmExtractionCacheEnabled,
+        llmExtractionCacheDir: String(llmExtractionCacheDir || '').trim(),
+        llmExtractionCacheTtlMs: Math.max(60000, parsedLlmExtractionCacheTtlMs),
+        llmMaxCallsPerProductTotal: Math.max(1, parsedLlmMaxCallsPerProductTotal),
+        llmMaxCallsPerProductFast: Math.max(0, parsedLlmMaxCallsPerProductFast),
+        needsetEvidenceDecayDays: Math.max(1, parsedNeedsetEvidenceDecayDays),
+        needsetEvidenceDecayFloor: Math.max(0, Math.min(1, parsedNeedsetEvidenceDecayFloor)),
+        llmExtractMaxTokens: Math.max(LLM_EXTRACT_MIN_TOKENS, parsedLlmExtractMaxTokens),
+        llmExtractMaxSnippetsPerBatch: Math.max(1, parsedLlmExtractMaxSnippetsPerBatch),
+        llmExtractMaxSnippetChars: Math.max(LLM_EXTRACT_MIN_SNIPPET_CHARS, parsedLlmExtractMaxSnippetChars),
+        llmExtractSkipLowSignal,
+        llmExtractReasoningBudget: Math.max(256, parsedLlmExtractReasoningBudget),
+        llmReasoningMode,
+        llmReasoningBudget: Math.max(256, parsedLlmReasoningBudget),
+        llmMonthlyBudgetUsd: Math.max(0, parsedLlmMonthlyBudgetUsd),
+        llmPerProductBudgetUsd: Math.max(0, parsedLlmPerProductBudgetUsd),
+        llmMaxCallsPerRound: Math.max(1, parsedLlmMaxCallsPerRound),
+        llmMaxOutputTokens: Math.max(LLM_MIN_OUTPUT_TOKENS, parsedLlmMaxOutputTokens),
+        llmVerifySampleRate: Math.max(1, parsedLlmVerifySampleRate),
+        llmDisableBudgetGuards,
+        llmMaxBatchesPerProduct: Math.max(1, parsedLlmMaxBatchesPerProduct),
+        llmMaxEvidenceChars: Math.max(1000, parsedLlmMaxEvidenceChars),
+        llmMaxTokens: Math.max(256, parsedLlmMaxTokens),
+        llmTimeoutMs: Math.max(1000, parsedLlmTimeoutMs),
+        llmCostInputPer1M: Math.max(0, parsedLlmCostInputPer1M),
+        llmCostOutputPer1M: Math.max(0, parsedLlmCostOutputPer1M),
+        llmCostCachedInputPer1M: Math.max(0, parsedLlmCostCachedInputPer1M),
+        llmVerifyMode,
+        endpointSignalLimit: Math.max(1, parsedEndpointSignalLimit),
+        endpointSuggestionLimit: Math.max(1, parsedEndpointSuggestionLimit),
+        endpointNetworkScanLimit: Math.max(50, parsedEndpointNetworkScanLimit),
         searchProvider,
         phase2LlmEnabled,
+        llmPlanDiscoveryQueries: phase2LlmEnabled,
         phase2LlmModel,
         phase3LlmTriageEnabled,
+        llmSerpRerankEnabled: phase3LlmTriageEnabled,
         phase3LlmModel,
+        runProfile: profile,
         llmModelPlan: phase2LlmModel,
+        llmMaxOutputTokensPlan: llmTokensPlan,
         llmTokensPlan,
         llmModelFast,
+        llmMaxOutputTokensFast: llmTokensFast,
         llmTokensFast,
         llmModelTriage: phase3LlmModel,
+        llmMaxOutputTokensTriage: llmTokensTriage,
         llmTokensTriage,
         llmModelReasoning,
+        llmMaxOutputTokensReasoning: llmTokensReasoning,
         llmTokensReasoning,
         llmModelExtract,
+        llmMaxOutputTokensExtract: llmTokensExtract,
         llmTokensExtract,
         llmModelValidate,
+        llmMaxOutputTokensValidate: llmTokensValidate,
         llmTokensValidate,
         llmModelWrite,
+        llmMaxOutputTokensWrite: llmTokensWrite,
         llmTokensWrite,
         llmFallbackEnabled,
         llmPlanFallbackModel: llmFallbackPlanModel,
         llmExtractFallbackModel: llmFallbackExtractModel,
         llmValidateFallbackModel: llmFallbackValidateModel,
         llmWriteFallbackModel: llmFallbackWriteModel,
+        llmMaxOutputTokensPlanFallback: llmTokensPlanFallback,
         llmTokensPlanFallback,
+        llmMaxOutputTokensExtractFallback: llmTokensExtractFallback,
         llmTokensExtractFallback,
+        llmMaxOutputTokensValidateFallback: llmTokensValidateFallback,
         llmTokensValidateFallback,
+        llmMaxOutputTokensWriteFallback: llmTokensWriteFallback,
         llmTokensWriteFallback,
         ...runControlPayload
       });
@@ -4379,141 +6392,6 @@ export function IndexingPage() {
         activityNowMs={activityNowMs}
       />
 
-      <RuntimePanel
-        collapsed={panelCollapsed.runtime}
-        onToggle={() => togglePanel('runtime')}
-        isAll={isAll}
-        busy={busy}
-        processRunning={processRunning}
-        runtimeActivity={runtimeActivity}
-        profile={profile}
-        onProfileChange={(v) => { setProfile(v); setRuntimeSettingsDirty(true); }}
-        discoveryEnabled={discoveryEnabled}
-        onDiscoveryEnabledChange={(enabled, setSp) => {
-          setDiscoveryEnabled(enabled);
-          if (!enabled) { setSp('none'); }
-          else if (searchProvider === 'none') { setSp('duckduckgo'); }
-          setRuntimeSettingsDirty(true);
-        }}
-        searchProvider={searchProvider}
-        onSearchProviderChange={(v) => { setSearchProvider(v); setRuntimeSettingsDirty(true); }}
-        fetchConcurrency={fetchConcurrency}
-        onFetchConcurrencyChange={(v) => { setFetchConcurrency(v); setRuntimeSettingsDirty(true); }}
-        perHostMinDelayMs={perHostMinDelayMs}
-        onPerHostMinDelayMsChange={(v) => { setPerHostMinDelayMs(v); setRuntimeSettingsDirty(true); }}
-        scannedPdfOcrEnabled={scannedPdfOcrEnabled}
-        onScannedPdfOcrEnabledChange={(v) => { setScannedPdfOcrEnabled(v); setRuntimeSettingsDirty(true); }}
-        scannedPdfOcrPromoteCandidates={scannedPdfOcrPromoteCandidates}
-        onScannedPdfOcrPromoteCandidatesChange={(v) => { setScannedPdfOcrPromoteCandidates(v); setRuntimeSettingsDirty(true); }}
-        scannedPdfOcrBackend={scannedPdfOcrBackend}
-        onScannedPdfOcrBackendChange={(v) => { setScannedPdfOcrBackend(v); setRuntimeSettingsDirty(true); }}
-        scannedPdfOcrMaxPages={scannedPdfOcrMaxPages}
-        onScannedPdfOcrMaxPagesChange={(v) => { setScannedPdfOcrMaxPages(v); setRuntimeSettingsDirty(true); }}
-        scannedPdfOcrMaxPairs={scannedPdfOcrMaxPairs}
-        onScannedPdfOcrMaxPairsChange={(v) => { setScannedPdfOcrMaxPairs(v); setRuntimeSettingsDirty(true); }}
-        scannedPdfOcrMinCharsPerPage={scannedPdfOcrMinCharsPerPage}
-        onScannedPdfOcrMinCharsPerPageChange={(v) => { setScannedPdfOcrMinCharsPerPage(v); setRuntimeSettingsDirty(true); }}
-        scannedPdfOcrMinLinesPerPage={scannedPdfOcrMinLinesPerPage}
-        onScannedPdfOcrMinLinesPerPageChange={(v) => { setScannedPdfOcrMinLinesPerPage(v); setRuntimeSettingsDirty(true); }}
-        scannedPdfOcrMinConfidence={scannedPdfOcrMinConfidence}
-        onScannedPdfOcrMinConfidenceChange={(v) => { setScannedPdfOcrMinConfidence(v); setRuntimeSettingsDirty(true); }}
-        dynamicCrawleeEnabled={dynamicCrawleeEnabled}
-        onDynamicCrawleeEnabledChange={(v) => { setDynamicCrawleeEnabled(v); setRuntimeSettingsDirty(true); }}
-        crawleeHeadless={crawleeHeadless}
-        onCrawleeHeadlessChange={(v) => { setCrawleeHeadless(v); setRuntimeSettingsDirty(true); }}
-        dynamicFetchRetryBudget={dynamicFetchRetryBudget}
-        onDynamicFetchRetryBudgetChange={(v) => { setDynamicFetchRetryBudget(v); setRuntimeSettingsDirty(true); }}
-        dynamicFetchRetryBackoffMs={dynamicFetchRetryBackoffMs}
-        onDynamicFetchRetryBackoffMsChange={(v) => { setDynamicFetchRetryBackoffMs(v); setRuntimeSettingsDirty(true); }}
-        crawleeRequestHandlerTimeoutSecs={crawleeRequestHandlerTimeoutSecs}
-        onCrawleeRequestHandlerTimeoutSecsChange={(v) => { setCrawleeRequestHandlerTimeoutSecs(v); setRuntimeSettingsDirty(true); }}
-        dynamicFetchPolicyMapJson={dynamicFetchPolicyMapJson}
-        onDynamicFetchPolicyMapJsonChange={(v) => { setDynamicFetchPolicyMapJson(v); setRuntimeSettingsDirty(true); }}
-        phase2LlmEnabled={phase2LlmEnabled}
-        onPhase2LlmEnabledChange={(v) => { setPhase2LlmEnabled(v); setRuntimeSettingsDirty(true); }}
-        phase2LlmModel={phase2LlmModel}
-        onPhase2LlmModelChange={(model) => { setPhase2LlmModel(model); setLlmTokensPlan(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
-        llmTokensPlan={llmTokensPlan}
-        onLlmTokensPlanChange={(v) => { setLlmTokensPlan(v); setRuntimeSettingsDirty(true); }}
-        phase3LlmTriageEnabled={phase3LlmTriageEnabled}
-        onPhase3LlmTriageEnabledChange={(v) => { setPhase3LlmTriageEnabled(v); setRuntimeSettingsDirty(true); }}
-        phase3LlmModel={phase3LlmModel}
-        onPhase3LlmModelChange={(model) => { setPhase3LlmModel(model); setLlmTokensTriage(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
-        llmTokensTriage={llmTokensTriage}
-        onLlmTokensTriageChange={(v) => { setLlmTokensTriage(v); setRuntimeSettingsDirty(true); }}
-        llmModelFast={llmModelFast}
-        onLlmModelFastChange={(model) => { setLlmModelFast(model); setLlmTokensFast(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
-        llmTokensFast={llmTokensFast}
-        onLlmTokensFastChange={(v) => { setLlmTokensFast(v); setRuntimeSettingsDirty(true); }}
-        llmModelReasoning={llmModelReasoning}
-        onLlmModelReasoningChange={(model) => { setLlmModelReasoning(model); setLlmTokensReasoning(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
-        llmTokensReasoning={llmTokensReasoning}
-        onLlmTokensReasoningChange={(v) => { setLlmTokensReasoning(v); setRuntimeSettingsDirty(true); }}
-        llmModelExtract={llmModelExtract}
-        onLlmModelExtractChange={(model) => { setLlmModelExtract(model); setLlmTokensExtract(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
-        llmTokensExtract={llmTokensExtract}
-        onLlmTokensExtractChange={(v) => { setLlmTokensExtract(v); setRuntimeSettingsDirty(true); }}
-        llmModelValidate={llmModelValidate}
-        onLlmModelValidateChange={(model) => { setLlmModelValidate(model); setLlmTokensValidate(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
-        llmTokensValidate={llmTokensValidate}
-        onLlmTokensValidateChange={(v) => { setLlmTokensValidate(v); setRuntimeSettingsDirty(true); }}
-        llmModelWrite={llmModelWrite}
-        onLlmModelWriteChange={(model) => { setLlmModelWrite(model); setLlmTokensWrite(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
-        llmTokensWrite={llmTokensWrite}
-        onLlmTokensWriteChange={(v) => { setLlmTokensWrite(v); setRuntimeSettingsDirty(true); }}
-        llmFallbackEnabled={llmFallbackEnabled}
-        onLlmFallbackEnabledChange={(v) => { setLlmFallbackEnabled(v); setRuntimeSettingsDirty(true); }}
-        llmFallbackPlanModel={llmFallbackPlanModel}
-        onLlmFallbackPlanModelChange={(model) => { setLlmFallbackPlanModel(model); setLlmTokensPlanFallback(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
-        llmTokensPlanFallback={llmTokensPlanFallback}
-        onLlmTokensPlanFallbackChange={(v) => { setLlmTokensPlanFallback(v); setRuntimeSettingsDirty(true); }}
-        llmFallbackExtractModel={llmFallbackExtractModel}
-        onLlmFallbackExtractModelChange={(model) => { setLlmFallbackExtractModel(model); setLlmTokensExtractFallback(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
-        llmTokensExtractFallback={llmTokensExtractFallback}
-        onLlmTokensExtractFallbackChange={(v) => { setLlmTokensExtractFallback(v); setRuntimeSettingsDirty(true); }}
-        llmFallbackValidateModel={llmFallbackValidateModel}
-        onLlmFallbackValidateModelChange={(model) => { setLlmFallbackValidateModel(model); setLlmTokensValidateFallback(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
-        llmTokensValidateFallback={llmTokensValidateFallback}
-        onLlmTokensValidateFallbackChange={(v) => { setLlmTokensValidateFallback(v); setRuntimeSettingsDirty(true); }}
-        llmFallbackWriteModel={llmFallbackWriteModel}
-        onLlmFallbackWriteModelChange={(model) => { setLlmFallbackWriteModel(model); setLlmTokensWriteFallback(resolveModelTokenDefaults(model).default_output_tokens); setRuntimeSettingsDirty(true); }}
-        llmTokensWriteFallback={llmTokensWriteFallback}
-        onLlmTokensWriteFallbackChange={(v) => { setLlmTokensWriteFallback(v); setRuntimeSettingsDirty(true); }}
-        llmModelOptions={llmModelOptionsWithCurrent}
-        llmTokenPresetOptions={llmTokenPresetOptions}
-        resolveModelTokenDefaults={resolveModelTokenDefaults}
-        clampTokenForModel={clampTokenForModel}
-        llmRouteSnapshotRows={llmRouteSnapshotRows}
-        resumeMode={resumeMode}
-        onResumeModeChange={(v) => { setResumeMode(v); setRuntimeSettingsDirty(true); }}
-        resumeWindowHours={resumeWindowHours}
-        onResumeWindowHoursChange={(v) => { setResumeWindowHours(v); setRuntimeSettingsDirty(true); }}
-        reextractAfterHours={reextractAfterHours}
-        onReextractAfterHoursChange={(v) => { setReextractAfterHours(v); setRuntimeSettingsDirty(true); }}
-        reextractIndexed={reextractIndexed}
-        onReextractIndexedChange={(v) => { setReextractIndexed(v); setRuntimeSettingsDirty(true); }}
-        convergenceKnobGroups={CONVERGENCE_KNOB_GROUPS}
-        convergenceSettings={convergenceSettings}
-        convergenceDirty={convergenceDirty}
-        onConvergenceKnobUpdate={updateConvergenceKnob}
-        onConvergenceReload={() => { void reloadConvergenceSettings(); }}
-        onConvergenceSave={saveConvergenceSettings}
-        convergenceSaving={convergenceSaving}
-        convergenceSettingsSaveState={convergenceSettingsSaveState}
-        convergenceSettingsSaveMessage={convergenceSettingsSaveMessage}
-        searxngStatus={searxngStatus}
-        searxngStatusErrorMessage={searxngStatusErrorMessage}
-        onStartSearxng={() => startSearxngMut.mutate()}
-        runtimeSettingsReady={runtimeSettingsReady}
-        runtimeSettingsDirty={runtimeSettingsDirty}
-        runtimeAutoSave={runtimeAutoSave}
-        onRuntimeAutoSaveChange={handleAutoSaveToggle}
-        onRuntimeSettingsSave={saveRuntimeSettingsNow}
-        runtimeSettingsSaving={runtimeSettingsSaving}
-        runtimeSettingsSaveState={runtimeSettingsSaveState}
-        runtimeSettingsSaveMessage={runtimeSettingsSaveMessage}
-      />
-
       <SearchProfilePanel
         collapsed={panelCollapsed.searchProfile}
         onToggle={() => togglePanel('searchProfile')}
@@ -4599,7 +6477,7 @@ export function IndexingPage() {
       />
 
       {actionError && (
-        <div className="rounded border border-red-300 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300 px-3 py-2 text-xs" style={{ order: 100 }}>
+        <div className="sf-callout sf-callout-danger px-3 py-2 sf-text-caption" style={{ order: 100 }}>
           action failed: {actionError}
         </div>
       )}

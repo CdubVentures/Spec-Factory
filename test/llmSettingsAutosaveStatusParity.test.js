@@ -13,7 +13,7 @@ test('llm settings status distinguishes autosave-pending unsaved state', () => {
   const llmSettingsText = readText(LLM_SETTINGS_PAGE);
 
   assert.equal(
-    llmSettingsText.includes("autoSaveEnabled ? 'Unsaved (auto-save pending).' : 'Unsaved changes.'"),
+    llmSettingsText.includes("autoSaveEnabled ? 'Unsaved (Auto-Save Pending).' : 'Unsaved changes.'"),
     true,
     'LLM settings dirty status should explicitly show autosave-pending state when autosave is enabled',
   );
@@ -24,7 +24,7 @@ test('llm settings status distinguishes autosave-pending unsaved state', () => {
   );
   assert.match(
     llmSettingsText,
-    /saveStatus\.kind === 'error'[\s\S]*saveStatus\.kind === 'partial'[\s\S]*dirty[\s\S]*'Unsaved \(auto-save pending\)\.'/,
+    /saveStatus\.kind === 'error'[\s\S]*saveStatus\.kind === 'partial'[\s\S]*dirty[\s\S]*'Unsaved \(Auto-Save Pending\)\.'/,
     'LLM settings status precedence should keep error/partial messaging ahead of generic unsaved labels',
   );
 });

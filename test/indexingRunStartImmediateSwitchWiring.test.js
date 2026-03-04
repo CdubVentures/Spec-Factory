@@ -47,4 +47,9 @@ test('indexing run start wiring performs optimistic run-id switch and keeps runs
     true,
     'Run-start and refresh should invalidate runtime-ops query namespace for cross-tab sync',
   );
+  assert.equal(
+    source.includes('if (selectedIndexLabRunId && indexlabRuns.some((row) => row.run_id === selectedIndexLabRunId)) {\n        return;\n      }'),
+    true,
+    'IndexingPage should preserve a valid manual run selection while process is running',
+  );
 });

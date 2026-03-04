@@ -5,7 +5,6 @@ import path from 'node:path';
 
 const SETTINGS_MANIFEST = path.resolve('tools/gui-react/src/stores/settingsManifest.ts');
 const SHARED_DEFAULTS = path.resolve('src/shared/settingsDefaults.js');
-const SETTINGS_AUTHORITY = path.resolve('tools/gui-react/src/stores/settingsAuthority.ts');
 const STORAGE_SETTINGS_AUTHORITY = path.resolve('tools/gui-react/src/stores/storageSettingsAuthority.ts');
 const STORAGE_PAGE = path.resolve('tools/gui-react/src/pages/storage/StoragePage.tsx');
 
@@ -18,7 +17,11 @@ test('storage defaults manifest includes canonical destination and credential ba
   const sharedDefaultsText = readText(SHARED_DEFAULTS);
 
   assert.equal(manifestText.includes('STORAGE_SETTING_DEFAULTS'), true, 'settings manifest should define storage defaults');
-  assert.equal(manifestText.includes("import { SETTINGS_DEFAULTS } from '../../../../src/shared/settingsDefaults.js';"), true, 'settings manifest should import shared defaults');
+  assert.match(
+    manifestText,
+    /import\s*\{[\s\S]*SETTINGS_DEFAULTS[\s\S]*\}\s*from\s*'..\/..\/..\/..\/src\/shared\/settingsDefaults\.js';/,
+    'settings manifest should import shared defaults',
+  );
   assert.equal(manifestText.includes('SETTINGS_DEFAULTS.storage'), true, 'storage defaults should be wired from shared defaults manifest');
 
   assert.equal(sharedDefaultsText.includes("destinationType: 'local'"), true, 'storage destination default should be shared-manifest-owned');
@@ -28,13 +31,10 @@ test('storage defaults manifest includes canonical destination and credential ba
 });
 
 test('storage bootstrap and page form state consume storage defaults manifest', () => {
-  const settingsAuthorityText = readText(SETTINGS_AUTHORITY);
   const storageAuthorityText = readText(STORAGE_SETTINGS_AUTHORITY);
   const storagePageText = readText(STORAGE_PAGE);
 
-  assert.equal(settingsAuthorityText.includes('destinationType: STORAGE_SETTING_DEFAULTS.destinationType'), true, 'settings bootstrap empty storage payload should use storage manifest destination default');
-  assert.equal(settingsAuthorityText.includes('localDirectory: STORAGE_SETTING_DEFAULTS.localDirectory'), true, 'settings bootstrap empty storage payload should use storage manifest local directory default');
-  assert.equal(settingsAuthorityText.includes('s3AccessKeyId: STORAGE_SETTING_DEFAULTS.s3AccessKeyId'), true, 'settings bootstrap empty storage payload should use storage manifest access key default');
+  assert.equal(storagePageText.includes('useStorageSettingsBootstrap()'), true, 'storage page should bootstrap from shared storage authority helper');
 
   assert.equal(storageAuthorityText.includes("localDirectory: readStorageString(raw, 'localDirectory', STORAGE_SETTING_DEFAULTS.localDirectory)"), true, 'storage settings response sanitizer should use storage manifest local directory default');
   assert.equal(storageAuthorityText.includes("s3Bucket: readStorageString(raw, 's3Bucket', STORAGE_SETTING_DEFAULTS.s3Bucket)"), true, 'storage settings response sanitizer should use storage manifest bucket default');

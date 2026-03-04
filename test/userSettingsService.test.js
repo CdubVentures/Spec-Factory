@@ -46,7 +46,7 @@ test('readStudioMapFromUserSettings returns populated map for matching category'
   });
 });
 
-test('sanitizeUserSettingsSettings enforces shared studio autosave invariant', () => {
+test('sanitizeUserSettingsSettings keeps mapping and key/workbench autosave independent when auto-save-all is off', () => {
   const normalized = sanitizeUserSettingsSettings({
     ui: {
       studioAutoSaveAllEnabled: false,
@@ -58,7 +58,7 @@ test('sanitizeUserSettingsSettings enforces shared studio autosave invariant', (
     },
   });
   assert.equal(normalized.ui.studioAutoSaveMapEnabled, true);
-  assert.equal(normalized.ui.studioAutoSaveEnabled, true);
+  assert.equal(normalized.ui.studioAutoSaveEnabled, false);
 });
 
 test('deriveSettingsArtifactsFromUserSettings normalizes runtime dynamic fetch policy object into canonical json', () => {

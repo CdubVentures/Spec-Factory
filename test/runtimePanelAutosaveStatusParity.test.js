@@ -13,17 +13,17 @@ test('runtime panel shows dirty status for both manual-save and autosave modes',
   const runtimePanelText = readText(RUNTIME_PANEL);
 
   assert.equal(
-    runtimePanelText.includes("runtimeAutoSave ? 'unsaved (auto-save pending)' : 'unsaved'"),
+    runtimePanelText.includes("runtimeAutoSave ? 'Unsaved (Auto-Save Pending)' : 'Unsaved'"),
     true,
     'runtime panel should surface unsaved state for autosave-on and autosave-off modes',
   );
   assert.equal(
-    runtimePanelText.includes("runtimeSettingsSaveMessage || 'all changes saved.'"),
+    runtimePanelText.includes("runtimeSettingsSaveMessage || 'All Changes Saved.'"),
     true,
     'runtime panel should show explicit clean-state save status text when no unsaved changes remain',
   );
   assert.equal(
-    runtimePanelText.includes("convergenceSettingsSaveMessage || 'all changes saved.'"),
+    runtimePanelText.includes("convergenceSettingsSaveMessage || 'All Changes Saved.'"),
     true,
     'convergence save status should show explicit clean-state text when no unsaved changes remain',
   );

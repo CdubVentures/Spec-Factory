@@ -10,7 +10,7 @@ function includesAllTokens(haystack, needles) {
   return needles.every((token) => haystack.includes(token));
 }
 
-function tokenOverlapScore(expectedTokens, candidateText) {
+function tokenOverlapScore(expectedTokens, candidateText, numericBoostValue = 0.1) {
   const candidateTokens = tokenize(candidateText);
   if (!expectedTokens.length || !candidateTokens.length) {
     return 0;
@@ -21,8 +21,35 @@ function tokenOverlapScore(expectedTokens, candidateText) {
 
   const expectedNumeric = expectedTokens.filter((token) => /^\d+$/.test(token));
   const matchedNumeric = expectedNumeric.filter((token) => candidateTokens.includes(token));
-  const numericBoost = expectedNumeric.length > 0 && matchedNumeric.length > 0 ? 0.1 : 0;
+  const parsedNumericBoost = Number.parseFloat(String(numericBoostValue ?? 0.1));
+  const safeNumericBoost = Number.isFinite(parsedNumericBoost)
+    ? Math.max(-1, Math.min(1, parsedNumericBoost))
+    : 0.1;
+  const numericBoost = expectedNumeric.length > 0 && matchedNumeric.length > 0 ? safeNumericBoost : 0;
   return Math.min(1, coverage + numericBoost);
+}
+
+function numericFragments(value) {
+  return [...String(value || '').matchAll(/\d+/g)]
+    .map((match) => Number.parseInt(String(match[0] || ''), 10))
+    .filter((num) => Number.isFinite(num));
+}
+
+function minNumericDelta(expectedValue, candidateValues = []) {
+  const expectedNums = numericFragments(expectedValue);
+  if (expectedNums.length === 0) {
+    return null;
+  }
+  let minDelta = Infinity;
+  for (const value of candidateValues) {
+    const candidateNums = numericFragments(value);
+    for (const expected of expectedNums) {
+      for (const candidate of candidateNums) {
+        minDelta = Math.min(minDelta, Math.abs(expected - candidate));
+      }
+    }
+  }
+  return Number.isFinite(minDelta) ? minDelta : null;
 }
 
 function likelyProductSpecificSource(source) {
@@ -65,7 +92,72 @@ function likelyProductSpecificSource(source) {
   return title.includes('spec') || title.includes('support') || title.includes('manual');
 }
 
-function dynamicMatchThreshold(identityLock = {}) {
+const DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG = Object.freeze({
+  identityGateBaseMatchThreshold: 0.8,
+  identityGateThresholdFloor: 0.62,
+  identityGateThresholdCeiling: 0.92,
+  identityGateEasyAmbiguityReduction: -0.15,
+  identityGateMediumAmbiguityReduction: -0.10,
+  identityGateHardAmbiguityReduction: -0.02,
+  identityGateVeryHardAmbiguityIncrease: 0.01,
+  identityGateExtraHardAmbiguityIncrease: 0.03,
+  identityGateMissingStrongIdPenalty: -0.05,
+  identityGateHardMissingStrongIdIncrease: 0.03,
+  identityGateVeryHardMissingStrongIdIncrease: 0.05,
+  identityGateExtraHardMissingStrongIdIncrease: 0.08,
+  identityGateNumericTokenBoost: 0.1,
+  identityGateNumericRangeThreshold: 3,
+});
+
+function toFiniteNumber(value, fallback) {
+  const parsed = Number.parseFloat(String(value ?? ''));
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeIdentityGateDynamicThresholdConfig(input = {}) {
+  const source = input && typeof input === 'object' ? input : {};
+  const thresholdFloor = Math.max(
+    0,
+    Math.min(
+      1,
+      toFiniteNumber(source.identityGateThresholdFloor, DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateThresholdFloor)
+    )
+  );
+  const thresholdCeiling = Math.max(
+    thresholdFloor,
+    Math.min(
+      1,
+      toFiniteNumber(source.identityGateThresholdCeiling, DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateThresholdCeiling)
+    )
+  );
+  return {
+    identityGateBaseMatchThreshold: toFiniteNumber(source.identityGateBaseMatchThreshold, DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateBaseMatchThreshold),
+    identityGateThresholdFloor: thresholdFloor,
+    identityGateThresholdCeiling: thresholdCeiling,
+    identityGateEasyAmbiguityReduction: toFiniteNumber(source.identityGateEasyAmbiguityReduction, DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateEasyAmbiguityReduction),
+    identityGateMediumAmbiguityReduction: toFiniteNumber(source.identityGateMediumAmbiguityReduction, DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateMediumAmbiguityReduction),
+    identityGateHardAmbiguityReduction: toFiniteNumber(source.identityGateHardAmbiguityReduction, DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateHardAmbiguityReduction),
+    identityGateVeryHardAmbiguityIncrease: toFiniteNumber(source.identityGateVeryHardAmbiguityIncrease, DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateVeryHardAmbiguityIncrease),
+    identityGateExtraHardAmbiguityIncrease: toFiniteNumber(source.identityGateExtraHardAmbiguityIncrease, DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateExtraHardAmbiguityIncrease),
+    identityGateMissingStrongIdPenalty: toFiniteNumber(source.identityGateMissingStrongIdPenalty, DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateMissingStrongIdPenalty),
+    identityGateHardMissingStrongIdIncrease: toFiniteNumber(source.identityGateHardMissingStrongIdIncrease, DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateHardMissingStrongIdIncrease),
+    identityGateVeryHardMissingStrongIdIncrease: toFiniteNumber(source.identityGateVeryHardMissingStrongIdIncrease, DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateVeryHardMissingStrongIdIncrease),
+    identityGateExtraHardMissingStrongIdIncrease: toFiniteNumber(source.identityGateExtraHardMissingStrongIdIncrease, DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateExtraHardMissingStrongIdIncrease),
+    identityGateNumericTokenBoost: toFiniteNumber(source.identityGateNumericTokenBoost, DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateNumericTokenBoost),
+    identityGateNumericRangeThreshold: Math.max(
+      0,
+      Math.round(
+        toFiniteNumber(
+          source.identityGateNumericRangeThreshold,
+          DEFAULT_IDENTITY_GATE_DYNAMIC_THRESHOLD_CONFIG.identityGateNumericRangeThreshold
+        )
+      )
+    ),
+  };
+}
+
+function dynamicMatchThreshold(identityLock = {}, thresholdConfig = null) {
+  const cfg = normalizeIdentityGateDynamicThresholdConfig(thresholdConfig || {});
   const hasVariant = str(identityLock.variant) !== '';
   const hasStrongId = str(identityLock.sku) !== '' || str(identityLock.mpn) !== '' || str(identityLock.gtin) !== '';
   const familyModelCount = Math.max(0, Number.parseInt(String(identityLock.family_model_count || 0), 10) || 0);
@@ -91,33 +183,33 @@ function dynamicMatchThreshold(identityLock = {}) {
                     : familyModelCount === 1
                       ? 'easy'
                       : 'unknown';
-  let threshold = 0.8;
+  let threshold = cfg.identityGateBaseMatchThreshold;
   if (!hasVariant) {
     if (ambiguityLevel === 'easy') {
-      threshold -= 0.15;
+      threshold += cfg.identityGateEasyAmbiguityReduction;
     } else if (ambiguityLevel === 'medium') {
-      threshold -= 0.1;
+      threshold += cfg.identityGateMediumAmbiguityReduction;
     } else if (ambiguityLevel === 'hard') {
-      threshold -= 0.02;
+      threshold += cfg.identityGateHardAmbiguityReduction;
     } else if (ambiguityLevel === 'very_hard') {
-      threshold += 0.01;
+      threshold += cfg.identityGateVeryHardAmbiguityIncrease;
     } else if (ambiguityLevel === 'extra_hard') {
-      threshold += 0.03;
+      threshold += cfg.identityGateExtraHardAmbiguityIncrease;
     } else {
-      threshold -= 0.1;
+      threshold += cfg.identityGateMediumAmbiguityReduction;
     }
   }
   if (!hasStrongId) {
-    threshold -= 0.05;
+    threshold += cfg.identityGateMissingStrongIdPenalty;
   }
   if (ambiguityLevel === 'hard') {
-    threshold += 0.03;
+    threshold += cfg.identityGateHardMissingStrongIdIncrease;
   } else if (ambiguityLevel === 'very_hard') {
-    threshold += 0.05;
+    threshold += cfg.identityGateVeryHardMissingStrongIdIncrease;
   } else if (ambiguityLevel === 'extra_hard') {
-    threshold += 0.08;
+    threshold += cfg.identityGateExtraHardMissingStrongIdIncrease;
   }
-  return Math.max(0.62, Math.min(0.92, threshold));
+  return Math.max(cfg.identityGateThresholdFloor, Math.min(cfg.identityGateThresholdCeiling, threshold));
 }
 
 function detectConnectionClass(value) {
@@ -355,7 +447,8 @@ export function buildIdentityCriticalContradictions(sources) {
   return contradictions;
 }
 
-export function evaluateSourceIdentity(source, identityLock = {}) {
+export function evaluateSourceIdentity(source, identityLock = {}, thresholdConfig = null) {
+  const thresholdCfg = normalizeIdentityGateDynamicThresholdConfig(thresholdConfig || {});
   const candidate = source.identityCandidates || {};
   const reasons = [];
   const criticalConflicts = [];
@@ -394,10 +487,17 @@ export function evaluateSourceIdentity(source, identityLock = {}) {
     const modelTokens = tokenize(expectedModel);
     const titleToken = normalizeToken(source.title || '');
     const urlToken = normalizeToken(source.url || '');
-    const candidateModelOverlap = tokenOverlapScore(modelTokens, candidateModelToken);
-    const titleOverlap = tokenOverlapScore(modelTokens, titleToken);
-    const urlOverlap = tokenOverlapScore(modelTokens, urlToken);
+    const candidateModelOverlap = tokenOverlapScore(modelTokens, candidateModelToken, thresholdCfg.identityGateNumericTokenBoost);
+    const titleOverlap = tokenOverlapScore(modelTokens, titleToken, thresholdCfg.identityGateNumericTokenBoost);
+    const urlOverlap = tokenOverlapScore(modelTokens, urlToken, thresholdCfg.identityGateNumericTokenBoost);
     const bestModelOverlap = Math.max(candidateModelOverlap, titleOverlap, urlOverlap);
+    const modelNumericDelta = minNumericDelta(expectedModel, [
+      candidate.model,
+      source.title,
+      source.url
+    ]);
+    const numericRangeThreshold = Math.max(0, Number.parseInt(String(thresholdCfg.identityGateNumericRangeThreshold ?? 3), 10) || 3);
+    const numericRangeOutOfRange = modelNumericDelta !== null && modelNumericDelta > numericRangeThreshold;
 
     if (
       includesAllTokens(candidateModelToken, modelTokens) ||
@@ -420,6 +520,10 @@ export function evaluateSourceIdentity(source, identityLock = {}) {
     } else if (candidateModelToken && likelyProductSpecificSource(source)) {
       criticalConflicts.push('model_mismatch');
       reasonCodes.push('model_mismatch');
+    }
+    if (numericRangeOutOfRange) {
+      reasonCodes.push('model_numeric_range_out_of_range');
+      score = Math.max(0, score - 0.1);
     }
   } else {
     score += 0.1;
@@ -496,7 +600,7 @@ export function evaluateSourceIdentity(source, identityLock = {}) {
   }
 
   score = Math.max(0, Math.min(1, score));
-  const matchThreshold = dynamicMatchThreshold(identityLock);
+  const matchThreshold = dynamicMatchThreshold(identityLock, thresholdCfg);
   const matchedRequiredTokens = requiredTokens.filter((token) => sourceTokenSet.has(token));
   const missingRequiredTokens = requiredTokens.filter((token) => !sourceTokenSet.has(token));
   const matchedNegativeTokens = negativeTokens.filter((token) => sourceTokenSet.has(token));

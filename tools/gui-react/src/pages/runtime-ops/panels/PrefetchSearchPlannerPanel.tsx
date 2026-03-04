@@ -97,11 +97,11 @@ function parsePlannerPayload(promptPreview: string | null): PlannerPromptInput |
 
 function reasonBadgeClass(reason: string): string {
   const normalized = String(reason || '').trim().toLowerCase();
-  if (normalized === 'discovery_planner_primary') return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-  if (normalized === 'discovery_planner_fast') return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
-  if (normalized === 'discovery_planner_reason') return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-  if (normalized === 'discovery_planner_validate') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
-  return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+  if (normalized === 'discovery_planner_primary') return 'sf-chip-info';
+  if (normalized === 'discovery_planner_fast') return 'sf-chip-accent';
+  if (normalized === 'discovery_planner_reason') return 'sf-chip-accent';
+  if (normalized === 'discovery_planner_validate') return 'sf-chip-success';
+  return 'sf-chip-neutral';
 }
 
 function reasonLabel(reason: string): string {
@@ -132,7 +132,7 @@ const DEFAULT_VISIBLE_QUERIES = 6;
 function TagList({
   items,
   prefix,
-  className = 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+  className = 'sf-chip-neutral',
   itemTooltip,
 }: {
   items: string[];
@@ -141,7 +141,7 @@ function TagList({
   itemTooltip?: string | ((item: string) => string);
 }) {
   if (!items.length) {
-    return <div className="text-xs text-gray-400">none</div>;
+    return <div className="sf-text-caption sf-text-subtle">none</div>;
   }
   return (
     <div className="flex flex-wrap gap-1">
@@ -157,21 +157,21 @@ function TagList({
             });
         return (
           <UiTooltip key={`${prefix}:${item}`} text={tipText}>
-            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${className}`}>
+            <span className={`px-1.5 py-0.5 rounded sf-text-caption font-medium ${className}`}>
               {item}
             </span>
           </UiTooltip>
         );
       })}
-      {items.length > 18 && <span className="text-xs text-gray-500">+{items.length - 18} more</span>}
+      {items.length > 18 && <span className="sf-text-caption sf-text-muted">+{items.length - 18} more</span>}
     </div>
   );
 }
 
 function signalBadgeClass(active: boolean): string {
   return active
-    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
-    : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-500';
+    ? 'sf-chip-success'
+    : 'sf-chip-neutral';
 }
 
 function SignalBadge({
@@ -187,7 +187,7 @@ function SignalBadge({
 }) {
   return (
     <TooltipBadge
-      className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${signalBadgeClass(active)}`}
+      className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${signalBadgeClass(active)}`}
       tooltip={active ? tooltipOn : tooltipOff}
     >
       {label}
@@ -208,10 +208,10 @@ function PlannerPassBadge({
 }) {
   const active = count > 0;
   const activeClass = reasonBadgeClass(passKey);
-  const offClass = 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-500';
+  const offClass = 'sf-chip-neutral';
   return (
     <TooltipBadge
-      className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${active ? activeClass : offClass}`}
+      className={`px-2 py-0.5 rounded-full sf-text-label font-medium ${active ? activeClass : offClass}`}
       tooltip={active ? tooltipOn : tooltipOff}
     >
       {reasonLabel(passKey)}: {count}
@@ -306,16 +306,16 @@ export function PrefetchSearchPlannerPanel({
   if (!hasCalls && !hasStructured) {
     return (
       <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Search Planner</h3>
+        <h3 className="text-sm font-semibold sf-text-primary">Search Planner</h3>
         <div className="flex flex-col items-center gap-3 py-12 text-center">
           <div className="text-3xl opacity-60">&#128506;</div>
-          <div className="text-sm font-medium text-gray-600 dark:text-gray-300">Waiting for search plan</div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 max-w-md leading-relaxed">
+          <div className="text-sm font-medium sf-text-muted">Waiting for search plan</div>
+          <p className="max-w-md leading-relaxed sf-text-caption sf-text-subtle">
             Search plans will appear after the Planner LLM generates targeted queries across multiple passes
             (Primary, Fast, Reason, Validate) to close missing field coverage gaps identified by the NeedSet.
           </p>
           {liveSettings?.phase2LlmEnabled !== undefined && (
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${liveSettings.phase2LlmEnabled ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+            <span className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${liveSettings.phase2LlmEnabled ? 'sf-chip-neutral' : 'sf-chip-danger'}`}>
               LLM Planner: {liveSettings.phase2LlmEnabled ? 'Enabled' : 'Disabled'}
             </span>
           )}
@@ -327,16 +327,16 @@ export function PrefetchSearchPlannerPanel({
   return (
     <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+        <h3 className="text-sm font-semibold sf-text-primary">
           Search Planner
           <Tip text="The Search Planner LLM generates targeted queries in multiple passes (Primary, Fast, Reason, Validate) to close missing field coverage gaps identified by the NeedSet." />
         </h3>
         {plannerEnabledLive !== undefined && (
           <TooltipBadge
-            className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+            className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${
               plannerEnabledLive
-                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                ? 'sf-chip-warning'
+                : 'sf-chip-neutral'
             }`}
             tooltip={plannerEnabledLive
               ? formatTooltip({
@@ -355,8 +355,8 @@ export function PrefetchSearchPlannerPanel({
         )}
         {hasCalls && (
           <TooltipBadge
-            className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-              hasFailed ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+            className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${
+              hasFailed ? 'sf-chip-danger' : 'sf-chip-success'
             }`}
             tooltip={hasFailed
               ? formatTooltip({
@@ -377,7 +377,7 @@ export function PrefetchSearchPlannerPanel({
 
       <div className="flex items-center gap-2 flex-wrap">
         <TooltipBadge
-          className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${hasParsed ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}
+          className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${hasParsed ? 'sf-chip-success' : 'sf-chip-neutral'}`}
           tooltip={hasParsed
             ? formatTooltip({
               what: 'Calls with parseable planner prompt payload.',
@@ -393,7 +393,7 @@ export function PrefetchSearchPlannerPanel({
           Parsed prompts: {plannerInputSummary.callCountWithPayload}/{calls.length}
         </TooltipBadge>
         <TooltipBadge
-          className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+          className="px-2 py-0.5 rounded-full sf-text-caption font-medium sf-chip-info"
           tooltip={formatTooltip({
             what: 'Number of emitted planner pass events.',
             effect: 'Shows how many planning passes produced output.',
@@ -469,7 +469,7 @@ export function PrefetchSearchPlannerPanel({
         />
         {reasonSummary.other > 0 && (
           <TooltipBadge
-            className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${reasonBadgeClass('other')}`}
+            className={`px-2 py-0.5 rounded-full sf-text-label font-medium ${reasonBadgeClass('other')}`}
             tooltip={formatTooltip({
               what: 'Planner calls with non-standard reason labels.',
               effect: 'Diagnostic signal only.',
@@ -488,7 +488,7 @@ export function PrefetchSearchPlannerPanel({
         <StatCard label="Input pass names" value={uniquePassNames.length ? uniquePassNames.join(', ') : 'n/a'} tip="Planner output pass labels." />
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap text-xs text-gray-500 dark:text-gray-400">
+      <div className="flex flex-wrap items-center gap-2 sf-text-caption sf-text-muted">
         <span>Signals fed to planner prompt:</span>
         <SignalBadge
           active={plannerSignalState.product}
@@ -549,8 +549,8 @@ export function PrefetchSearchPlannerPanel({
       </div>
 
       {plannerInputSummary.products.length > 0 && (
-        <details className="text-xs">
-          <summary className="cursor-pointer text-gray-500 dark:text-gray-400 font-medium">Product identities passed</summary>
+        <details className="sf-text-caption">
+          <summary className="sf-summary-toggle font-medium">Product identities passed</summary>
           <div className="mt-2">
             <TagList
               items={plannerInputSummary.products}
@@ -565,8 +565,8 @@ export function PrefetchSearchPlannerPanel({
         </details>
       )}
 
-      <details className="text-xs">
-        <summary className="cursor-pointer text-gray-500 dark:text-gray-400 font-medium">
+      <details className="sf-text-caption">
+        <summary className="sf-summary-toggle font-medium">
           Missing critical fields ({plannerInputSummary.missingCriticalFields.length})
         </summary>
         <div className="mt-2">
@@ -582,8 +582,8 @@ export function PrefetchSearchPlannerPanel({
         </div>
       </details>
 
-      <details className="text-xs">
-        <summary className="cursor-pointer text-gray-500 dark:text-gray-400 font-medium">
+      <details className="sf-text-caption">
+        <summary className="sf-summary-toggle font-medium">
           Existing queries ({plannerInputSummary.existingQueries.length})
         </summary>
         <div className="mt-2">
@@ -599,8 +599,8 @@ export function PrefetchSearchPlannerPanel({
         </div>
       </details>
 
-      <details className="text-xs">
-        <summary className="cursor-pointer text-gray-500 dark:text-gray-400 font-medium">
+      <details className="sf-text-caption">
+        <summary className="sf-summary-toggle font-medium">
           Critical fields ({plannerInputSummary.criticalFields.length})
         </summary>
         <div className="mt-2">
@@ -617,7 +617,7 @@ export function PrefetchSearchPlannerPanel({
       </details>
 
       {hasStructured && (
-        <div className="border border-gray-200 dark:border-gray-700 rounded p-2">
+        <div className="rounded border sf-border-default p-2">
           <VerticalStepper>
             {plans.map((plan, i) => {
               const missingFields = plan.missing_critical_fields || [];
@@ -639,12 +639,12 @@ export function PrefetchSearchPlannerPanel({
                   subtitle={plan.stop_condition}
                   isLast={i === plans.length - 1}
                 >
-                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-2">
+                  <div className="mb-2 sf-text-caption sf-text-muted">
                     Inputs for this pass are from planner prompt payload plus pass output artifacts below.
                   </div>
-                  <div className="text-[10px] mb-2">
+                  <div className="sf-text-caption mb-2">
                     <TooltipBadge
-                      className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                      className="px-2 py-0.5 rounded-full sf-chip-neutral"
                       tooltip={
                         String(plan.mode || 'standard').toLowerCase() === 'aggressive'
                           ? formatTooltip({
@@ -662,7 +662,7 @@ export function PrefetchSearchPlannerPanel({
                       Mode: {plan.mode || 'standard'}
                     </TooltipBadge>
                     <TooltipBadge
-                      className="ml-2 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                      className="ml-2 px-2 py-0.5 rounded-full sf-chip-neutral"
                       tooltip={formatTooltip({
                         what: 'Number of queries generated in this pass.',
                         effect: 'Shows output size for this pass.',
@@ -672,7 +672,7 @@ export function PrefetchSearchPlannerPanel({
                       Queries: {plan.queries_generated.length}
                     </TooltipBadge>
                     <TooltipBadge
-                      className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-medium ${reasonBadgeClass(planReason(plan.pass_name, i))}`}
+                      className={`ml-2 px-2 py-0.5 rounded-full sf-text-caption font-medium ${reasonBadgeClass(planReason(plan.pass_name, i))}`}
                       tooltip={formatTooltip({
                         what: 'Planner pass reason label for this pass.',
                         effect: 'Shows which planner path produced this output.',
@@ -682,10 +682,10 @@ export function PrefetchSearchPlannerPanel({
                       Pass reason: {plan.pass_name || `pass-${i + 1}`}
                     </TooltipBadge>
                     <TooltipBadge
-                      className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                      className={`ml-2 px-2 py-0.5 rounded-full sf-text-caption font-medium ${
                         sentToSearchCount > 0
-                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
-                          : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                          ? 'sf-chip-success'
+                          : 'sf-chip-neutral'
                       }`}
                       tooltip={sentToSearchCount > 0
                         ? formatTooltip({
@@ -702,12 +702,12 @@ export function PrefetchSearchPlannerPanel({
                       Sent: {sentToSearchCount}/{plan.queries_generated.length}
                     </TooltipBadge>
                   </div>
-                  <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                  <div className="sf-text-caption sf-text-muted">
                     Profile coverage map entries: {profileCoverage}
                   </div>
                   {missingFields.length > 0 && (
                     <div className="mt-1">
-                      <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Missing critical fields in pass:</div>
+                      <div className="mb-1 sf-text-caption sf-text-muted">Missing critical fields in pass:</div>
                       <TagList
                         items={missingFields}
                         prefix={`plan-missing-${i}`}
@@ -719,7 +719,7 @@ export function PrefetchSearchPlannerPanel({
                       />
                     </div>
                   )}
-                  <div className="mt-2 text-[10px] text-gray-500 dark:text-gray-400">
+                  <div className="mt-2 sf-text-caption sf-text-muted">
                     Rationale: {plan.plan_rationale || 'n/a'}
                   </div>
                   {plan.queries_generated.length > 0 && (
@@ -730,16 +730,16 @@ export function PrefetchSearchPlannerPanel({
                         return (
                           <div
                             key={`${normalizeQuery(query)}-${qi}`}
-                            className={`text-[11px] font-mono rounded px-1.5 py-1 mb-1 ${
+                            className={`sf-text-label font-mono rounded px-1.5 py-1 mb-1 ${
                               sentToSearch
-                                ? 'bg-emerald-50 border border-emerald-200 text-emerald-900 dark:bg-emerald-900/30 dark:border-emerald-700 dark:text-emerald-100'
-                                : 'text-gray-700 dark:text-gray-300'
+                                ? 'sf-callout sf-callout-success'
+                                : 'sf-text-primary'
                             }`}
                           >
                             <span className="mr-1">{qi + 1}.</span>
                             <span>{query}</span>
                             {sentToSearch && (
-                              <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                              <span className="ml-2 px-1.5 py-0.5 rounded sf-text-caption font-medium sf-chip-success">
                                 Sent to search
                               </span>
                             )}
@@ -750,9 +750,9 @@ export function PrefetchSearchPlannerPanel({
                         <button
                           type="button"
                           onClick={() => setExpandedPassQueries((prev) => ({ ...prev, [passRowKey]: !queriesExpanded }))}
-                          className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 dark:text-blue-300 hover:underline"
+                          className="mt-1 inline-flex items-center gap-1 sf-text-label font-semibold sf-link-accent hover:underline"
                         >
-                          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-blue-400 dark:border-blue-500 text-[12px] leading-none">
+                          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full sf-icon-badge text-[12px] leading-none">
                             {queriesExpanded ? '\u2212' : '+'}
                           </span>
                           {queriesExpanded
@@ -770,8 +770,8 @@ export function PrefetchSearchPlannerPanel({
       )}
 
       {hasCalls && (
-        <details className="text-xs">
-          <summary className="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+        <details className="sf-text-caption">
+          <summary className="sf-summary-toggle">
             LLM calls (prompt/response)
           </summary>
           <div className="mt-2 space-y-2">
@@ -781,7 +781,7 @@ export function PrefetchSearchPlannerPanel({
                 <div key={i} className="space-y-1">
                   <div className="flex items-center gap-2">
                     <TooltipBadge
-                      className={`px-1.5 py-0.5 rounded text-[10px] ${llmCallStatusBadgeClass(call.status)}`}
+                      className={`px-1.5 py-0.5 rounded sf-text-caption ${llmCallStatusBadgeClass(call.status)}`}
                       tooltip={formatTooltip({
                         what: 'Status of this planner LLM call.',
                         effect: 'Failed calls do not contribute usable planner output.',
@@ -791,7 +791,7 @@ export function PrefetchSearchPlannerPanel({
                       {call.status}
                     </TooltipBadge>
                     <TooltipBadge
-                      className={`px-1.5 py-0.5 rounded text-[10px] ${reasonBadgeClass(plannerReasonBadgeKey(call.reason))}`}
+                      className={`px-1.5 py-0.5 rounded sf-text-caption ${reasonBadgeClass(plannerReasonBadgeKey(call.reason))}`}
                       tooltip={formatTooltip({
                         what: 'Pass type for this LLM call (Primary/Fast/Reason/Validate).',
                         effect: 'Changes the style of query ideas produced.',
@@ -800,29 +800,29 @@ export function PrefetchSearchPlannerPanel({
                     >
                       {reasonLabel(call.reason)}
                     </TooltipBadge>
-                    <span className="text-[10px] text-gray-500">{call.model || '-'}</span>
-                    <span className="text-[10px] text-gray-500">{call.provider || '-'}</span>
-                    <span className="ml-auto text-[10px] text-gray-500 dark:text-gray-400">
+                    <span className="sf-text-caption sf-text-muted">{call.model || '-'}</span>
+                    <span className="sf-text-caption sf-text-muted">{call.provider || '-'}</span>
+                    <span className="ml-auto sf-text-caption sf-text-muted">
                       {call.tokens ? `${call.tokens.input}+${call.tokens.output} tok` : '-'}
                     </span>
-                    <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                    <span className="sf-text-caption sf-text-muted">
                       {call.duration_ms ? `${formatMs(call.duration_ms)}` : '-'}
                     </span>
                   </div>
                   {parsed && (
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400 pl-1">
+                    <div className="pl-1 sf-text-caption sf-text-muted">
                       <div>Product fields: {parsed.product ? 'present' : 'missing'}</div>
                       <div>Missing critical fields: {parsed.missingCriticalFields?.length || 0}</div>
                       <div>Existing queries: {parsed.existingQueries?.length || 0}</div>
                     </div>
                   )}
                   {call.prompt_preview && (
-                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+                    <pre className="max-h-32 overflow-x-auto overflow-y-auto whitespace-pre-wrap rounded p-2 font-mono sf-text-caption sf-pre-block">
                       {call.prompt_preview}
                     </pre>
                   )}
                   {call.response_preview && (
-                    <pre className="text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-32 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+                    <pre className="max-h-32 overflow-x-auto overflow-y-auto whitespace-pre-wrap rounded p-2 font-mono sf-text-caption sf-pre-block">
                       {call.response_preview}
                     </pre>
                   )}
@@ -833,11 +833,11 @@ export function PrefetchSearchPlannerPanel({
         </details>
       )}
 
-      <details className="text-xs">
-        <summary className="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+      <details className="sf-text-caption">
+        <summary className="sf-summary-toggle">
           What is NOT in the planner prompt
         </summary>
-        <div className="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+        <div className="mt-2 sf-text-label sf-text-muted">
           This panel excludes these because they are applied earlier in search profile generation or execution:
           query_terms, domain_hints, content types, contract-derived hints, source_host, source tiers, and past search history.
         </div>

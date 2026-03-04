@@ -16,7 +16,7 @@ export function StackedScoreBar({ segments, className, showLegend }: StackedScor
 
   return (
     <div className={className || ''}>
-      <div className="h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
+      <div className="h-2.5 sf-meter-track rounded-full overflow-hidden flex">
         {segments.map((seg) => {
           const pct = total > 0 ? (Math.abs(seg.value) / total) * 100 : 0;
           if (pct < 0.5) return null;
@@ -35,7 +35,7 @@ export function StackedScoreBar({ segments, className, showLegend }: StackedScor
           {segments.map((seg) => (
             <div key={seg.label} className="flex items-center gap-1">
               <span className={`inline-block w-2 h-2 rounded-sm ${seg.color}`} />
-              <span className="text-[9px] text-gray-500 dark:text-gray-400">{seg.label}: {seg.value.toFixed(2)}</span>
+              <span className="sf-text-nano sf-text-subtle">{seg.label}: {seg.value.toFixed(2)}</span>
             </div>
           ))}
         </div>

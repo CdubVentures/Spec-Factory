@@ -56,6 +56,12 @@ async function selectCategory(page, category) {
   );
 }
 
+async function openConvergenceSection(page) {
+  const convergenceSectionButton = page.getByRole('button', { name: /Convergence/i }).first();
+  await convergenceSectionButton.waitFor({ state: 'visible', timeout: 20_000 });
+  await convergenceSectionButton.click();
+}
+
 async function seedCategory(helperRoot, category) {
   await seedFieldRules(helperRoot, category);
   await seedComponentDb(helperRoot, category);
@@ -63,22 +69,7 @@ async function seedCategory(helperRoot, category) {
   await seedWorkbookMap(helperRoot, category);
 }
 
-async function ensureDetailsOpen(page, summaryText) {
-  const details = page.locator(`details:has(summary:has-text("${summaryText}"))`).first();
-  await details.waitFor({ state: 'attached', timeout: 25_000 });
-  const isOpen = await details.evaluate((node) => node.hasAttribute('open'));
-  if (isOpen) return details;
-  await details.locator('summary').first().click();
-  await waitForCondition(
-    async () => await details.evaluate((node) => node.hasAttribute('open')),
-    10_000,
-    120,
-    `details_open_${summaryText}`,
-  );
-  return details;
-}
-
-test('GUI convergence tuning knob persists across save and reload in Indexing runtime panel', { timeout: 300_000 }, async () => {
+test('GUI convergence tuning knob persists across save and reload in Pipeline Settings', { timeout: 300_000 }, async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'convergence-settings-gui-'));
   const helperFilesRoot = path.join(tempRoot, 'helper_files');
   const localOutputRoot = path.join(tempRoot, 'out');
@@ -121,21 +112,21 @@ test('GUI convergence tuning knob persists across save and reload in Indexing ru
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
     page = await context.newPage();
-    await page.goto(`${baseUrl}/#/indexing`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${baseUrl}/#/pipeline-settings`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
-
-    await ensureDetailsOpen(page, 'Run Setup and Discovery');
-    const convergenceDetails = await ensureDetailsOpen(page, 'Convergence Tuning');
-
-    const triageEnabledCheckbox = convergenceDetails.locator('label:has-text("Triage Enabled") input[type="checkbox"]').first();
+    await page.waitForSelector('text=Pipeline Settings', { timeout: 20_000 });
+    await openConvergenceSection(page);
+    const serpTriageCard = page.locator('h3:has-text("SERP Triage")').locator('xpath=ancestor::div[contains(@class,"rounded")][1]').first();
+    await serpTriageCard.waitFor({ state: 'visible', timeout: 20_000 });
+    const triageEnabledCheckbox = serpTriageCard.locator('label:has-text("Triage Enabled") input[type="checkbox"]').first();
     await triageEnabledCheckbox.waitFor({ state: 'visible', timeout: 20_000 });
     const targetValue = !(await triageEnabledCheckbox.isChecked());
     if ((await triageEnabledCheckbox.isChecked()) !== targetValue) {
       await triageEnabledCheckbox.click();
     }
 
-    const convergenceSaveButton = convergenceDetails.getByRole('button', { name: 'Save', exact: true }).first();
+    const convergenceSaveButton = page.getByRole('button', { name: 'Save', exact: true }).first();
     await convergenceSaveButton.waitFor({ state: 'visible', timeout: 20_000 });
     await waitForCondition(
       async () => !(await convergenceSaveButton.isDisabled()),
@@ -153,9 +144,14 @@ test('GUI convergence tuning knob persists across save and reload in Indexing ru
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
-    await ensureDetailsOpen(page, 'Run Setup and Discovery');
-    const convergenceAfterReload = await ensureDetailsOpen(page, 'Convergence Tuning');
-    const triageAfterReload = convergenceAfterReload.locator('label:has-text("Triage Enabled") input[type="checkbox"]').first();
+    await page.waitForSelector('text=Pipeline Settings', { timeout: 20_000 });
+    await openConvergenceSection(page);
+    const triageAfterReload = page
+      .locator('h3:has-text("SERP Triage")')
+      .locator('xpath=ancestor::div[contains(@class,"rounded")][1]')
+      .first()
+      .locator('label:has-text("Triage Enabled") input[type="checkbox"]')
+      .first();
     await triageAfterReload.waitFor({ state: 'visible', timeout: 20_000 });
     assert.equal(
       await triageAfterReload.isChecked(),
@@ -183,4 +179,3 @@ test('GUI convergence tuning knob persists across save and reload in Indexing ru
     await fs.rm(tempRoot, { recursive: true, force: true }).catch(() => {});
   }
 });
-

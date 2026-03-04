@@ -69,6 +69,12 @@ function normalizeToken(value) {
     .trim();
 }
 
+function finiteOrFallback(value, fallback) {
+  const parsed = Number(value);
+  if (Number.isFinite(parsed)) return parsed;
+  return fallback;
+}
+
 
 function uniqueStrings(values = [], limit = 24) {
   const out = [];
@@ -94,8 +100,8 @@ function extractHost(url) {
 }
 
 
-function buildTierWeightLookup(tierPreference = []) {
-  const lookup = new Map(DEFAULT_TIER_WEIGHTS);
+function buildTierWeightLookup(tierPreference = [], baseWeights = DEFAULT_TIER_WEIGHTS) {
+  const lookup = new Map(baseWeights);
   const unique = uniqueStrings(
     toArray(tierPreference).map((value) => String(toTierNumber(value) || '')).filter(Boolean),
     8
@@ -155,7 +161,7 @@ function componentHint(fieldRule = {}) {
   return hints.join(' | ');
 }
 
-function collectAnchorTerms({ fieldKey = '', fieldRule = {} } = {}) {
+function collectAnchorTerms({ fieldKey = '', fieldRule = {}, limit = 16 } = {}) {
   const searchHints = isObject(fieldRule.search_hints) ? fieldRule.search_hints : {};
   const ui = isObject(fieldRule.ui) ? fieldRule.ui : {};
   const base = splitFieldTokenVariants(fieldKey);
@@ -173,7 +179,7 @@ function collectAnchorTerms({ fieldKey = '', fieldRule = {} } = {}) {
   ]
     .map((value) => normalizeText(value))
     .filter((value) => value.length > 2);
-  return uniqueStrings([...searchTerms, ...synonyms, ...base, ...labels], 16);
+  return uniqueStrings([...searchTerms, ...synonyms, ...base, ...labels], limit);
 }
 
 function identityTokens(identity = {}) {
@@ -234,7 +240,18 @@ function scoreEvidenceHit({
   anchors = [],
   unitHint = '',
   identity = {},
-  tierWeightLookup = new Map(DEFAULT_TIER_WEIGHTS)
+  tierWeightLookup = new Map(DEFAULT_TIER_WEIGHTS),
+  retrievalDocKindWeights = DOC_KIND_WEIGHTS,
+  retrievalMethodWeights = METHOD_WEIGHTS,
+  retrievalAnchorScorePerMatch = 0.42,
+  retrievalIdentityScorePerMatch = 0.28,
+  retrievalUnitMatchBonus = 0.35,
+  retrievalDirectFieldMatchBonus = 0.65,
+  retrievalEvidenceTierWeightMultiplier = 2.6,
+  retrievalEvidenceDocWeightMultiplier = 1.5,
+  retrievalEvidenceMethodWeightMultiplier = 0.85,
+  retrievalEvidenceRefsLimit = 12,
+  retrievalReasonBadgesLimit = 8
 } = {}) {
   const quote = String(evidence.quote || evidence.snippet_text || '').trim();
   const keyPath = String(evidence.key_path || evidence.keyPath || '').trim();
@@ -256,18 +273,18 @@ function scoreEvidenceHit({
   const directField = normalizeText(String(evidence.origin_field || '')) === normalizeText(fieldKey);
 
   const tierWeight = tier ? (tierWeightLookup.get(tier) || DEFAULT_TIER_WEIGHTS.get(tier) || 0.45) : 0.35;
-  const docWeight = DOC_KIND_WEIGHTS.get(docKind) || DOC_KIND_WEIGHTS.get('other') || 0.55;
-  const methodWeight = METHOD_WEIGHTS.get(method) || 0.85;
+  const docWeight = retrievalDocKindWeights.get(docKind) || retrievalDocKindWeights.get('other') || 0.55;
+  const methodWeight = retrievalMethodWeights.get(method) || 0.85;
 
-  const anchorScore = Math.min(1.8, anchorMatches.length * 0.42);
-  const identityScore = Math.min(1.4, identityMatches.length * 0.28);
-  const unitScore = unitMatch ? 0.35 : 0;
-  const directScore = directField ? 0.65 : 0;
+  const anchorScore = Math.min(1.8, anchorMatches.length * finiteOrFallback(retrievalAnchorScorePerMatch, 0.42));
+  const identityScore = Math.min(1.4, identityMatches.length * finiteOrFallback(retrievalIdentityScorePerMatch, 0.28));
+  const unitScore = unitMatch ? finiteOrFallback(retrievalUnitMatchBonus, 0.35) : 0;
+  const directScore = directField ? finiteOrFallback(retrievalDirectFieldMatchBonus, 0.65) : 0;
 
   const totalScore = Number((
-    (tierWeight * 2.6)
-    + (docWeight * 1.5)
-    + (methodWeight * 0.85)
+    (tierWeight * finiteOrFallback(retrievalEvidenceTierWeightMultiplier, 2.6))
+    + (docWeight * finiteOrFallback(retrievalEvidenceDocWeightMultiplier, 1.5))
+    + (methodWeight * finiteOrFallback(retrievalEvidenceMethodWeightMultiplier, 0.85))
     + anchorScore
     + identityScore
     + unitScore
@@ -300,9 +317,9 @@ function scoreEvidenceHit({
     surface: String(evidence.surface || '').trim() || null,
     quote_preview: sanitizePreview(quote, 320),
     retrieved_at: String(evidence.retrieved_at || '').trim() || null,
-    evidence_refs: uniqueStrings(toArray(evidence.evidence_refs), 12),
+    evidence_refs: uniqueStrings(toArray(evidence.evidence_refs), Math.max(1, Number.parseInt(String(retrievalEvidenceRefsLimit ?? 12), 10) || 12)),
     score: totalScore,
-    reason_badges: uniqueStrings(reasonBadges, 8),
+    reason_badges: uniqueStrings(reasonBadges, Math.max(1, Number.parseInt(String(retrievalReasonBadgesLimit ?? 8), 10) || 8)),
     ranking_features: {
       tier_weight: Number(tierWeight.toFixed(6)),
       doc_kind_weight: Number(docWeight.toFixed(6)),
@@ -543,6 +560,32 @@ export function buildTierAwareFieldRetrieval({
   maxHits = 24,
   ftsQueryFn = null,
   identityFilterEnabled = false,
+  retrievalTierWeightTier1 = 3,
+  retrievalTierWeightTier2 = 2,
+  retrievalTierWeightTier3 = 1,
+  retrievalTierWeightTier4 = 0.65,
+  retrievalTierWeightTier5 = 0.4,
+  retrievalDocKindWeightManualPdf = 1.5,
+  retrievalDocKindWeightSpecPdf = 1.4,
+  retrievalDocKindWeightSupport = 1.1,
+  retrievalDocKindWeightLabReview = 0.95,
+  retrievalDocKindWeightProductPage = 0.75,
+  retrievalDocKindWeightOther = 0.55,
+  retrievalMethodWeightTable = 1.25,
+  retrievalMethodWeightKv = 1.15,
+  retrievalMethodWeightJsonLd = 1.1,
+  retrievalMethodWeightLlmExtract = 0.85,
+  retrievalMethodWeightHelperSupportive = 0.65,
+  retrievalAnchorScorePerMatch = 0.42,
+  retrievalIdentityScorePerMatch = 0.28,
+  retrievalUnitMatchBonus = 0.35,
+  retrievalDirectFieldMatchBonus = 0.65,
+  retrievalEvidenceTierWeightMultiplier = 2.6,
+  retrievalEvidenceDocWeightMultiplier = 1.5,
+  retrievalEvidenceMethodWeightMultiplier = 0.85,
+  retrievalEvidenceRefsLimit = 12,
+  retrievalReasonBadgesLimit = 8,
+  retrievalAnchorsLimit = 6,
   traceEnabled = false
 } = {}) {
   const key = String(fieldKey || '').trim();
@@ -554,10 +597,33 @@ export function buildTierAwareFieldRetrieval({
     };
   }
 
-  const anchors = collectAnchorTerms({ fieldKey: key, fieldRule });
+  const anchors = collectAnchorTerms({
+    fieldKey: key,
+    fieldRule,
+    limit: Math.max(1, Number.parseInt(String(retrievalAnchorsLimit ?? 6), 10) || 6)
+  });
   const unitHint = String(ruleUnit(fieldRule) || '').trim();
   const tierPreference = parseTierPreferenceFromNeedRow(needRow, fieldRule);
-  const tierWeightLookup = buildTierWeightLookup(tierPreference);
+  const tierWeightLookupBase = new Map(DEFAULT_TIER_WEIGHTS);
+  tierWeightLookupBase.set(1, finiteOrFallback(retrievalTierWeightTier1, DEFAULT_TIER_WEIGHTS.get(1)));
+  tierWeightLookupBase.set(2, finiteOrFallback(retrievalTierWeightTier2, DEFAULT_TIER_WEIGHTS.get(2)));
+  tierWeightLookupBase.set(3, finiteOrFallback(retrievalTierWeightTier3, DEFAULT_TIER_WEIGHTS.get(3)));
+  tierWeightLookupBase.set(4, finiteOrFallback(retrievalTierWeightTier4, DEFAULT_TIER_WEIGHTS.get(4)));
+  tierWeightLookupBase.set(5, finiteOrFallback(retrievalTierWeightTier5, DEFAULT_TIER_WEIGHTS.get(5)));
+  const retrievalDocKindWeights = new Map(DOC_KIND_WEIGHTS);
+  retrievalDocKindWeights.set('manual_pdf', finiteOrFallback(retrievalDocKindWeightManualPdf, DOC_KIND_WEIGHTS.get('manual_pdf')));
+  retrievalDocKindWeights.set('spec_pdf', finiteOrFallback(retrievalDocKindWeightSpecPdf, DOC_KIND_WEIGHTS.get('spec_pdf')));
+  retrievalDocKindWeights.set('support', finiteOrFallback(retrievalDocKindWeightSupport, DOC_KIND_WEIGHTS.get('support')));
+  retrievalDocKindWeights.set('lab_review', finiteOrFallback(retrievalDocKindWeightLabReview, DOC_KIND_WEIGHTS.get('lab_review')));
+  retrievalDocKindWeights.set('product_page', finiteOrFallback(retrievalDocKindWeightProductPage, DOC_KIND_WEIGHTS.get('product_page')));
+  retrievalDocKindWeights.set('other', finiteOrFallback(retrievalDocKindWeightOther, DOC_KIND_WEIGHTS.get('other')));
+  const retrievalMethodWeights = new Map(METHOD_WEIGHTS);
+  retrievalMethodWeights.set('table', finiteOrFallback(retrievalMethodWeightTable, METHOD_WEIGHTS.get('table')));
+  retrievalMethodWeights.set('kv', finiteOrFallback(retrievalMethodWeightKv, METHOD_WEIGHTS.get('kv')));
+  retrievalMethodWeights.set('json_ld', finiteOrFallback(retrievalMethodWeightJsonLd, METHOD_WEIGHTS.get('json_ld')));
+  retrievalMethodWeights.set('llm_extract', finiteOrFallback(retrievalMethodWeightLlmExtract, METHOD_WEIGHTS.get('llm_extract')));
+  retrievalMethodWeights.set('helper_supportive', finiteOrFallback(retrievalMethodWeightHelperSupportive, METHOD_WEIGHTS.get('helper_supportive')));
+  const tierWeightLookup = buildTierWeightLookup(tierPreference, tierWeightLookupBase);
   const docHints = uniqueStrings(
     toArray(fieldRule?.search_hints?.preferred_content_types).map((value) => String(value || '').trim()),
     8
@@ -586,7 +652,18 @@ export function buildTierAwareFieldRetrieval({
       anchors,
       unitHint,
       identity,
-      tierWeightLookup
+      tierWeightLookup,
+      retrievalDocKindWeights,
+      retrievalMethodWeights,
+      retrievalAnchorScorePerMatch,
+      retrievalIdentityScorePerMatch,
+      retrievalUnitMatchBonus,
+      retrievalDirectFieldMatchBonus,
+      retrievalEvidenceTierWeightMultiplier,
+      retrievalEvidenceDocWeightMultiplier,
+      retrievalEvidenceMethodWeightMultiplier,
+      retrievalEvidenceRefsLimit,
+      retrievalReasonBadgesLimit
     });
     scored.source_identity_match = row.source_identity_match ?? null;
     scored.source_identity_score = row.source_identity_score ?? null;

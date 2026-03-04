@@ -38,17 +38,17 @@ test('llm settings local rows initialize from authority bootstrap cache', () => 
     'LlmSettingsPage should not read llm settings cache key directly',
   );
   assert.equal(
-    llmSettingsPageText.includes('const [rows, setRows] = useState<LlmRouteRow[]>(() => llmSettingsBootstrapRows);'),
+    llmSettingsPageText.includes('const [rows, setRows] = useState<LlmRouteRow[]>(() => normalizeRowsEffortBand(llmSettingsBootstrapRows));'),
     true,
     'LLM rows local state should initialize from authority bootstrap rows',
   );
   assert.equal(
-    llmSettingsPageText.includes('() => Object.fromEntries(llmSettingsBootstrapRows.map((row) => [row.route_key, row]))'),
+    llmSettingsPageText.includes('() => Object.fromEntries(normalizeRowsEffortBand(llmSettingsBootstrapRows).map((row) => [row.route_key, row]))'),
     true,
     'LLM default rows baseline should initialize from authority bootstrap rows',
   );
   assert.equal(
-    llmSettingsPageText.includes('setRows(llmSettingsBootstrapRows);'),
+    llmSettingsPageText.includes('const normalizedRows = normalizeRowsEffortBand(llmSettingsBootstrapRows);'),
     true,
     'Category transitions should reseed rows from authority bootstrap rows',
   );

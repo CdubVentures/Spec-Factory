@@ -71,11 +71,11 @@ export function BrowserStream({ workerId, wsUrl }: BrowserStreamProps) {
 
   if (!wsUrl) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-900 text-gray-500 text-sm">
+      <div className="flex-1 flex items-center justify-center sf-surface-shell sf-text-subtle text-sm">
         <div className="text-center max-w-md px-4">
           <div className="text-3xl mb-3 opacity-30">{'\uD83C\uDFA5'}</div>
           <div className="mb-2">Browser stream not available</div>
-          <div className="text-xs text-gray-600">
+          <div className="text-xs sf-text-muted">
             The live browser view requires an active run with Playwright fetching.
             Start an IndexLab run to see the browser stream.
           </div>
@@ -87,13 +87,13 @@ export function BrowserStream({ workerId, wsUrl }: BrowserStreamProps) {
   return (
     <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
       {status === 'connecting' && (
-        <div className="text-gray-400 text-sm animate-pulse">Connecting to browser stream...</div>
+        <div className="sf-text-subtle text-sm animate-pulse">Connecting to browser stream...</div>
       )}
 
       {status === 'ended' && (
-        <div className="text-center text-gray-500 text-sm px-4">
+        <div className="text-center sf-text-subtle text-sm px-4">
           <div className="mb-1">Stream ended</div>
-          <div className="text-xs text-gray-600">No active Playwright session for this worker.</div>
+          <div className="text-xs sf-text-muted">No active Playwright session for this worker.</div>
         </div>
       )}
 
@@ -105,12 +105,12 @@ export function BrowserStream({ workerId, wsUrl }: BrowserStreamProps) {
 
       {status === 'live' && (
         <>
-          <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-medium">
+          <div className="absolute top-2 right-2 flex items-center gap-1.5 sf-chip-danger px-2 py-0.5 rounded sf-text-caption font-medium">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
             LIVE
             {activeWorkerId && <span className="ml-1 opacity-80">{activeWorkerId}</span>}
           </div>
-          <div className="absolute bottom-2 left-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded flex items-center gap-3">
+          <div className="absolute bottom-2 left-2 bg-black/70 text-white sf-text-caption px-2 py-0.5 rounded flex items-center gap-3">
             <span>{formatMs(elapsed)}</span>
             {frameSize.width > 0 && <span>{frameSize.width}x{frameSize.height}</span>}
           </div>

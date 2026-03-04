@@ -27,19 +27,19 @@ export function PanelControlsPanel({
   const [open, , setOpen] = usePersistedToggle(persistKey, true);
   const body = (
     <div className={embedded ? 'space-y-2' : 'mt-2 space-y-2'}>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div className="text-gray-600 dark:text-gray-300">Container visibility shortcuts</div>
+      <div className="flex flex-wrap items-center justify-between gap-2 sf-text-caption">
+        <div className="sf-text-muted">Container visibility shortcuts</div>
         <div className="flex items-center gap-2">
           <button
             onClick={onOpenAll}
-            className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="px-2 py-1 sf-icon-button"
             title="Open all containers."
           >
             Open all
           </button>
           <button
             onClick={onCloseAll}
-            className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="px-2 py-1 sf-icon-button"
             title="Close all containers."
           >
             Close all
@@ -48,13 +48,13 @@ export function PanelControlsPanel({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 text-xs">
         {containerStatuses.map((row) => (
-          <div key={`container-status:${row.label}`} className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 flex items-center justify-between gap-2">
-            <div className="text-gray-600 dark:text-gray-300">{row.label}</div>
+          <div key={`container-status:${row.label}`} className="sf-surface-elevated px-2 py-1 flex items-center justify-between gap-2">
+            <div className="sf-text-muted">{row.label}</div>
             <div className="flex items-center gap-2">
               <span className={`px-1.5 py-0.5 rounded ${panelStateChipClasses(row.state)}`}>
                 {row.state}
               </span>
-              <span className="text-gray-500 dark:text-gray-400">{row.detail}</span>
+              <span className="sf-text-subtle">{row.detail}</span>
             </div>
           </div>
         ))}
@@ -71,12 +71,12 @@ export function PanelControlsPanel({
         const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
         if (nextOpen !== open) setOpen(nextOpen);
       }}
-      className="group rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2"
+      className="group sf-surface-panel p-2"
       style={{ order: 15 }}
     >
-      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 text-xs text-gray-700 dark:text-gray-200">
+      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 sf-text-caption sf-text-primary">
         <span className="inline-flex items-center font-semibold">
-          <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 text-[10px] leading-none text-gray-700 dark:border-gray-600 dark:text-gray-200 mr-1">
+          <span className="inline-flex h-4 w-4 items-center justify-center sf-icon-button sf-text-caption leading-none mr-1">
             <span className="group-open:hidden">+</span>
             <span className="hidden group-open:inline">-</span>
           </span>

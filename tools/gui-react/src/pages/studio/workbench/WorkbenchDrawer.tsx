@@ -65,6 +65,27 @@ const DRAWER_TAB_IDS = [
   'preview',
 ] as const satisfies ReadonlyArray<DrawerTab>;
 
+const TEXT_GRAY_400 = 'sf-text-subtle';
+const TEXT_GRAY_500 = 'sf-text-subtle';
+const DRAWER_ICON_BUTTON_CLASS = `${TEXT_GRAY_400} hover:sf-text-muted disabled:opacity-30 text-sm`;
+const DRAWER_CLOSE_BUTTON_CLASS = `${TEXT_GRAY_400} hover:sf-text-muted text-lg leading-none`;
+const FIELD_KEY_BADGE_CLASS = `text-[10px] ${TEXT_GRAY_400} font-mono`;
+const DRAWER_TAB_IDLE_CLASS = `border-transparent ${TEXT_GRAY_500} hover:sf-text-muted`;
+const SECTION_HEADING_CLASS = `text-xs font-semibold ${TEXT_GRAY_500} mt-4`;
+const MUTED_ITALIC_TEXT_CLASS = `text-xs ${TEXT_GRAY_400} italic`;
+const MUTED_LABEL_W12_CLASS = `${TEXT_GRAY_400} w-12`;
+const EFFECTIVE_CONFIG_LABEL_CLASS = `text-[10px] font-semibold ${TEXT_GRAY_400} mb-1`;
+const PREVIEW_LABEL_CLASS = `text-[10px] ${TEXT_GRAY_400} mb-1 font-medium`;
+const MUTED_ITALIC_T10_CLASS = `${TEXT_GRAY_400} italic text-[10px]`;
+const MUTED_TEXT_9_CLASS = `text-[9px] ${TEXT_GRAY_400}`;
+const MUTED_TEXT_XS_CLASS = `text-xs ${TEXT_GRAY_400}`;
+const SUBHEADING_GRAY_CLASS = `text-[11px] font-medium ${TEXT_GRAY_400} mb-1`;
+const DRAWER_SHELL_CLASS = 'border-l sf-border-default sf-surface-shell overflow-y-auto';
+const DRAWER_HEADER_CLASS = 'sticky top-0 z-10 sf-surface-shell border-b sf-border-default px-4 py-3';
+const INFO_SURFACE_CLASS = 'sf-surface-card rounded p-2 border sf-border-default';
+const NEUTRAL_INLINE_BADGE_CLASS = 'text-[9px] px-1 py-0.5 rounded sf-chip-neutral italic font-medium';
+const SOFT_INFO_LINK_CLASS = 'text-[10px] text-accent hover:opacity-80 mt-0.5';
+
 export function WorkbenchDrawer({
   category,
   fieldKey,
@@ -160,23 +181,23 @@ export function WorkbenchDrawer({
   // Required level badge
   const reqLevel = strN(rule, 'priority.required_level', strN(rule, 'required_level', 'expected'));
   const reqColors: Record<string, string> = {
-    identity: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-    required: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-    critical: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-    expected: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-    optional: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+    identity: 'sf-llm-soft-badge',
+    required: 'sf-chip-danger',
+    critical: 'sf-chip-danger',
+    expected: 'sf-chip-info',
+    optional: 'sf-chip-neutral',
   };
 
   return (
-    <div className="border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 340px)' }}>
+    <div className={DRAWER_SHELL_CLASS} style={{ maxHeight: 'calc(100vh - 340px)' }}>
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+      <div className={DRAWER_HEADER_CLASS}>
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <button
               onClick={() => prevKey && onNavigate(prevKey)}
               disabled={!prevKey}
-              className="text-gray-400 hover:text-gray-600 disabled:opacity-30 text-sm"
+              className={DRAWER_ICON_BUTTON_CLASS}
               title="Previous field"
             >
               &#9664;
@@ -184,7 +205,7 @@ export function WorkbenchDrawer({
             <button
               onClick={() => nextKey && onNavigate(nextKey)}
               disabled={!nextKey}
-              className="text-gray-400 hover:text-gray-600 disabled:opacity-30 text-sm"
+              className={DRAWER_ICON_BUTTON_CLASS}
               title="Next field"
             >
               &#9654;
@@ -192,7 +213,7 @@ export function WorkbenchDrawer({
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+            className={DRAWER_CLOSE_BUTTON_CLASS}
             title="Close"
           >
             &#10005;
@@ -201,7 +222,7 @@ export function WorkbenchDrawer({
         <div>
           <h3 className="text-sm font-semibold">{humanizeField(fieldKey)}</h3>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[10px] text-gray-400 font-mono">{fieldKey}</span>
+            <span className={FIELD_KEY_BADGE_CLASS}>{fieldKey}</span>
             <span className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${reqColors[reqLevel] || reqColors.optional}`}>
               {reqLevel}
             </span>
@@ -217,7 +238,7 @@ export function WorkbenchDrawer({
               className={`px-2 py-1 text-[11px] font-medium rounded-t border-b-2 ${
                 activeTab === tab.id
                   ? 'border-accent text-accent'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  : DRAWER_TAB_IDLE_CLASS
               }`}
             >
               {tab.label}
@@ -343,9 +364,9 @@ function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: 
           </select>
         </div>
       </div>
-      <div className="text-xs text-red-600">Deferred: runtime wiring in progress</div>
+      <div className="text-xs sf-status-text-danger">Deferred: runtime wiring in progress</div>
 
-      <h4 className="text-xs font-semibold text-gray-500 mt-4">Priority & Effort</h4>
+      <h4 className={SECTION_HEADING_CLASS}>Priority & Effort</h4>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Required Level<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.required_level} /></span><B p="priority.required_level" /></div>
@@ -402,19 +423,19 @@ function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: 
       </div>
       <div className="flex gap-4">
         <label className="flex items-center gap-2 text-xs cursor-pointer">
-          <input type="checkbox" checked={boolN(rule, 'priority.publish_gate', boolN(rule, 'publish_gate'))} onChange={(e) => onUpdate('priority.publish_gate', e.target.checked)} className="rounded border-gray-300" />
+          <input type="checkbox" checked={boolN(rule, 'priority.publish_gate', boolN(rule, 'publish_gate'))} onChange={(e) => onUpdate('priority.publish_gate', e.target.checked)} className="rounded sf-border-soft" />
           Publish Gate<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.publish_gate} />
           <B p="priority.publish_gate" />
         </label>
         <label className="flex items-center gap-2 text-xs cursor-pointer">
-          <input type="checkbox" checked={boolN(rule, 'priority.block_publish_when_unk', boolN(rule, 'block_publish_when_unk'))} onChange={(e) => onUpdate('priority.block_publish_when_unk', e.target.checked)} className="rounded border-gray-300" />
+          <input type="checkbox" checked={boolN(rule, 'priority.block_publish_when_unk', boolN(rule, 'block_publish_when_unk'))} onChange={(e) => onUpdate('priority.block_publish_when_unk', e.target.checked)} className="rounded sf-border-soft" />
           Block when unk<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.block_publish_when_unk} />
           <B p="priority.block_publish_when_unk" />
         </label>
       </div>
 
       {/* AI Assist */}
-      <h4 className="text-xs font-semibold text-gray-500 mt-4">AI Assist</h4>
+      <h4 className={SECTION_HEADING_CLASS}>AI Assist</h4>
       {(() => {
         const explicitMode = strN(rule, 'ai_assist.mode');
         const strategy = strN(rule, 'ai_assist.model_strategy', 'auto');
@@ -509,27 +530,27 @@ function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: 
             </div>
 
             {/* Effective resolution summary */}
-            <div className="text-[11px] bg-gray-50 dark:bg-gray-800/50 rounded p-2 border border-gray-200 dark:border-gray-700 space-y-1">
-              <div className="text-[10px] font-semibold text-gray-400 mb-1">Effective Config</div>
+            <div className={`text-[11px] ${INFO_SURFACE_CLASS} space-y-1`}>
+              <div className={EFFECTIVE_CONFIG_LABEL_CLASS}>Effective Config</div>
               <div className="flex items-center gap-1.5">
-                <span className="text-gray-400 w-12">Mode:</span>
+                <span className={MUTED_LABEL_W12_CLASS}>Mode:</span>
                 <span className={`px-1 py-0.5 rounded text-[10px] font-medium ${
-                  effectiveMode === 'judge' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
-                  : effectiveMode === 'planner' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                  : effectiveMode === 'advisory' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                  : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                  effectiveMode === 'judge' ? 'sf-llm-soft-badge'
+                  : effectiveMode === 'planner' ? 'sf-chip-info'
+                  : effectiveMode === 'advisory' ? 'sf-chip-success'
+                  : 'sf-chip-neutral'
                 }`}>{effectiveMode}</span>
-                {!explicitMode && <span className="text-gray-400 italic text-[10px]">({rl}{diff !== 'easy' ? `+${diff}` : ''})</span>}
+                {!explicitMode && <span className={MUTED_ITALIC_T10_CLASS}>({rl}{diff !== 'easy' ? `+${diff}` : ''})</span>}
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-gray-400 w-12">Model:</span>
-                <span className="text-gray-600 dark:text-gray-300 font-mono text-[10px]">{effectiveModel.model}</span>
-                {effectiveModel.reasoning && <span className="text-[9px] px-1 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 font-medium">REASONING</span>}
+                <span className={MUTED_LABEL_W12_CLASS}>Model:</span>
+                <span className="sf-text-muted font-mono text-[10px]">{effectiveModel.model}</span>
+                {effectiveModel.reasoning && <span className="text-[9px] px-1 rounded sf-chip-warning font-medium">REASONING</span>}
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-gray-400 w-12">Budget:</span>
-                <span className="text-gray-600 dark:text-gray-300">{effectiveMode === 'off' ? '0' : effectiveCalls} call{effectiveCalls !== 1 ? 's' : ''}</span>
-                {!explicitCalls && effectiveMode !== 'off' && <span className="text-gray-400 italic text-[10px]">(effort {effort})</span>}
+                <span className={MUTED_LABEL_W12_CLASS}>Budget:</span>
+                <span className="sf-text-muted">{effectiveMode === 'off' ? '0' : effectiveCalls} call{effectiveCalls !== 1 ? 's' : ''}</span>
+                {!explicitCalls && effectiveMode !== 'off' && <span className={MUTED_ITALIC_T10_CLASS}>(effort {effort})</span>}
               </div>
             </div>
 
@@ -580,7 +601,7 @@ function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: 
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className={labelCls.replace(' mb-1', '')}>Extraction Guidance<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.ai_reasoning_note} /></span><B p="ai_assist.reasoning_note" />
-                    {!hasExplicit && <span className="text-[9px] px-1 py-0.5 rounded bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 italic font-medium">Auto</span>}
+                    {!hasExplicit && <span className={NEUTRAL_INLINE_BADGE_CLASS}>Auto</span>}
                   </div>
                   <textarea
                     className={`${inputCls} w-full`}
@@ -591,7 +612,7 @@ function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: 
                   />
                   {hasExplicit && (
                     <button
-                      className="text-[10px] text-blue-500 hover:text-blue-700 mt-0.5"
+                      className={SOFT_INFO_LINK_CLASS}
                       onClick={() => onUpdate('ai_assist.reasoning_note', '')}
                     >
                       Clear &amp; revert to auto
@@ -605,7 +626,7 @@ function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: 
       })()}
 
       {/* Tooltip / description preview */}
-      <h4 className="text-xs font-semibold text-gray-500 mt-4">Description & Tooltip</h4>
+      <h4 className={SECTION_HEADING_CLASS}>Description & Tooltip</h4>
       <div>
         <div className={`${labelCls} flex items-center`}><span>Tooltip / Guidance<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.tooltip_guidance} /></span><B p="ui.tooltip_md" /></div>
         <textarea
@@ -617,9 +638,9 @@ function ContractTab({ fieldKey, rule, onUpdate, B }: { fieldKey: string; rule: 
         />
       </div>
       {tooltipMd && (
-        <div className="text-xs bg-gray-50 dark:bg-gray-800/50 rounded p-2 border border-gray-200 dark:border-gray-700">
-          <div className="text-[10px] text-gray-400 mb-1 font-medium">Preview:</div>
-          <div className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{tooltipMd}</div>
+        <div className={`text-xs ${INFO_SURFACE_CLASS}`}>
+          <div className={PREVIEW_LABEL_CLASS}>Preview:</div>
+          <div className="sf-text-muted whitespace-pre-wrap">{tooltipMd}</div>
         </div>
       )}
     </div>
@@ -654,8 +675,8 @@ function ParseTab({ rule, onUpdate, B }: { rule: Record<string, unknown>; onUpda
       {/* Output type derived from template */}
       {pt && (
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-gray-400 font-medium">Output type:</span>
-          <span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-mono">
+          <span className={PREVIEW_LABEL_CLASS}>Output type:</span>
+          <span className="px-1.5 py-0.5 text-[10px] rounded sf-chip-neutral font-mono">
             {pt === 'boolean_yes_no_unk' ? 'boolean'
               : pt === 'number_with_unit' || pt === 'list_of_numbers_with_unit' || pt === 'list_numbers_or_ranges_with_unit' ? 'number'
               : pt === 'url_field' ? 'url'
@@ -681,17 +702,17 @@ function ParseTab({ rule, onUpdate, B }: { rule: Record<string, unknown>; onUpda
           </div>
           <div className="flex flex-wrap gap-4">
             <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" checked={boolN(rule, 'parse.allow_unitless')} onChange={(e) => onUpdate('parse.allow_unitless', e.target.checked)} className="rounded border-gray-300" />
+              <input type="checkbox" checked={boolN(rule, 'parse.allow_unitless')} onChange={(e) => onUpdate('parse.allow_unitless', e.target.checked)} className="rounded sf-border-soft" />
               Allow unitless<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.allow_unitless} />
               <B p="parse.allow_unitless" />
             </label>
             <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" checked={boolN(rule, 'parse.allow_ranges')} onChange={(e) => onUpdate('parse.allow_ranges', e.target.checked)} className="rounded border-gray-300" />
+              <input type="checkbox" checked={boolN(rule, 'parse.allow_ranges')} onChange={(e) => onUpdate('parse.allow_ranges', e.target.checked)} className="rounded sf-border-soft" />
               Allow ranges<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.allow_ranges} />
               <B p="parse.allow_ranges" />
             </label>
             <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" checked={boolN(rule, 'parse.strict_unit_required')} onChange={(e) => onUpdate('parse.strict_unit_required', e.target.checked)} className="rounded border-gray-300" />
+              <input type="checkbox" checked={boolN(rule, 'parse.strict_unit_required')} onChange={(e) => onUpdate('parse.strict_unit_required', e.target.checked)} className="rounded sf-border-soft" />
               Strict unit<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.strict_unit_required} />
               <B p="parse.strict_unit_required" />
             </label>
@@ -699,7 +720,7 @@ function ParseTab({ rule, onUpdate, B }: { rule: Record<string, unknown>; onUpda
         </>
       )}
       {!showUnits && pt && (
-        <div className="text-xs text-gray-400 italic">
+        <div className={MUTED_ITALIC_TEXT_CLASS}>
           Unit settings hidden &mdash; {pt.replace(/_/g, ' ')} template does not use units.
         </div>
       )}
@@ -767,7 +788,7 @@ function EvidenceTab({ rule, onUpdate, B }: { rule: Record<string, unknown>; onU
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <label className="flex items-center gap-2 text-xs cursor-pointer">
-          <input type="checkbox" checked={evReq} onChange={(e) => onUpdate('evidence.required', e.target.checked)} className="rounded border-gray-300" />
+          <input type="checkbox" checked={evReq} onChange={(e) => onUpdate('evidence.required', e.target.checked)} className="rounded sf-border-soft" />
           Evidence Required<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.evidence_required} />
           <B p="evidence.required" />
         </label>
@@ -811,28 +832,28 @@ function EvidenceTab({ rule, onUpdate, B }: { rule: Record<string, unknown>; onU
       </div>
 
       {/* Publish failure summary */}
-      <h4 className="text-xs font-semibold text-gray-500 mt-4">What would fail publish</h4>
-      <div className="text-xs bg-gray-50 dark:bg-gray-800/50 rounded p-2 border border-gray-200 dark:border-gray-700 space-y-1">
+      <h4 className={SECTION_HEADING_CLASS}>What would fail publish</h4>
+      <div className="text-xs sf-bg-surface-soft sf-dk-surface-800a50 rounded p-2 border sf-border-default dark:sf-border-default space-y-1">
         {pubGate && (
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
+            <span className="w-2 h-2 rounded-full sf-dot-danger flex-shrink-0" />
             <span>Publish Gate is ON &mdash; value must be non-unknown to publish</span>
           </div>
         )}
         {blockUnk && (
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
+            <span className="w-2 h-2 rounded-full sf-dot-danger flex-shrink-0" />
             <span>Block when UNK &mdash; unknown token blocks publish</span>
           </div>
         )}
         {evReq && minRefs > 0 && (
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-yellow-500 flex-shrink-0" />
+            <span className="w-2 h-2 rounded-full sf-dot-warning flex-shrink-0" />
             <span>Evidence required &mdash; at least {minRefs} source ref{minRefs > 1 ? 's' : ''} needed</span>
           </div>
         )}
         {!pubGate && !blockUnk && !(evReq && minRefs > 0) && (
-          <div className="text-gray-400 italic">No publish-blocking rules configured</div>
+          <div className={`${TEXT_GRAY_400} italic`}>No publish-blocking rules configured</div>
         )}
       </div>
     </div>
@@ -927,20 +948,20 @@ function DepsTab({
       {strN(rule, 'component.type') && (
         <>
           <div className="flex flex-wrap gap-2 text-xs">
-            <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 font-medium">
+            <span className="px-2 py-0.5 rounded-full sf-review-ai-pending-badge font-medium">
               component_reference
             </span>
-            <span className="text-gray-400">
+            <span className={TEXT_GRAY_400}>
               Parse: <span className="font-mono">{strN(rule, 'parse.template')}</span>
               {' | '}Enum: <span className="font-mono">{strN(rule, 'enum.source')}</span>
             </span>
           </div>
           {/* ── Match Settings ─────────────────────── */}
-          <details className="border border-gray-200 dark:border-gray-700 rounded">
-            <summary className="px-2 py-1 text-xs font-semibold cursor-pointer bg-gray-50 dark:bg-gray-700/50">Match Settings</summary>
+          <details className="border sf-border-default dark:sf-border-default rounded">
+            <summary className="px-2 py-1 text-xs font-semibold cursor-pointer sf-bg-surface-soft sf-dk-surface-700a50">Match Settings</summary>
             <div className="p-2 space-y-2">
               {/* Name Matching */}
-              <div className="text-[11px] font-medium text-gray-400 mb-1">Name Matching</div>
+              <div className={SUBHEADING_GRAY_CLASS}>Name Matching</div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Fuzzy Threshold<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_fuzzy_threshold} /></span><B p="component.match.fuzzy_threshold" /></div>
@@ -1020,7 +1041,7 @@ function DepsTab({
                 </div>
               </div>
               {/* Property Matching */}
-              <div className="text-[11px] font-medium text-gray-400 mb-1 mt-2">Property Matching</div>
+              <div className={`${SUBHEADING_GRAY_CLASS} mt-2`}>Property Matching</div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <div className={`${labelCls} flex items-center`}><span>Prop Weight<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_property_weight} /></span><B p="component.match.property_weight" /></div>
@@ -1077,30 +1098,30 @@ function DepsTab({
                                     ? 'String property — locked to authoritative'
                                     : '';
                           return (
-                            <div key={p.field_key} className="flex items-start gap-1.5 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-[11px]">
-                              <span className="font-medium text-blue-700 dark:text-blue-300 shrink-0">{p.field_key}</span>
+                            <div key={p.field_key} className="flex items-start gap-1.5 px-1.5 py-0.5 rounded border sf-progress-active-shell text-[11px]">
+                              <span className="font-medium sf-status-text-info shrink-0">{p.field_key}</span>
                               <span
-                                className={`text-[9px] px-1 rounded shrink-0 ${vp === 'override_allowed' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300' : isLocked ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500' : 'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300'}`}
+                                className={`text-[9px] px-1 rounded shrink-0 ${vp === 'override_allowed' ? 'sf-chip-teal-strong' : isLocked ? 'sf-bg-surface-soft-strong sf-text-subtle sf-dk-surface-700 dark:sf-text-subtle' : 'sf-chip-info-soft'}`}
                                 title={lockReason || (vp === 'override_allowed' ? 'Products can override this value without triggering review' : `Variance: ${vp}`)}
                               >{vp === 'override_allowed' ? 'override' : vp}</span>
-                              {parseTemplate ? <span className="text-[9px] px-1 rounded bg-gray-50 text-gray-400 dark:bg-gray-800 dark:text-gray-500 shrink-0">{parseTemplate}</span> : null}
-                              {isBool ? <span className="text-[9px] px-1 rounded bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">boolean: yes / no</span> : null}
-                              {isComponentDb ? <span className="text-[9px] px-1 rounded bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 shrink-0 truncate max-w-[120px]" title={enumSrc}>enum.db: {enumSrc.replace(/^component_db\./, '')}</span> : null}
-                              {isExtEnum ? <span className="text-[9px] px-1 rounded bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 shrink-0 truncate max-w-[120px]" title={enumSrc}>enum: {enumSrc.replace(/^(known_values|data_lists)\./, '')}</span> : null}
+                              {parseTemplate ? <span className="text-[9px] px-1 rounded sf-bg-surface-soft sf-text-subtle sf-dk-surface-800 dark:sf-text-subtle shrink-0">{parseTemplate}</span> : null}
+                              {isBool ? <span className="text-[9px] px-1 rounded sf-chip-warning-strong shrink-0">boolean: yes / no</span> : null}
+                              {isComponentDb ? <span className="text-[9px] px-1 rounded sf-review-ai-pending-badge shrink-0 truncate max-w-[120px]" title={enumSrc}>enum.db: {enumSrc.replace(/^component_db\./, '')}</span> : null}
+                              {isExtEnum ? <span className="text-[9px] px-1 rounded sf-review-ai-pending-badge shrink-0 truncate max-w-[120px]" title={enumSrc}>enum: {enumSrc.replace(/^(known_values|data_lists)\./, '')}</span> : null}
                               {!isBool && !hasEnum && isLocked && fieldValues.length > 0 && fieldValues.length <= 6 ? (
                                 <div className="flex flex-wrap gap-0.5">
-                                  <span className="text-[9px] text-gray-400 mr-0.5">manual:</span>
-                                  {fieldValues.map(v => <span key={v} className="text-[9px] px-1 rounded bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">{v}</span>)}
+                                  <span className={`${MUTED_TEXT_9_CLASS} mr-0.5`}>manual:</span>
+                                  {fieldValues.map(v => <span key={v} className="text-[9px] px-1 rounded sf-bg-surface-soft-strong sf-text-subtle sf-dk-surface-700 dark:sf-text-subtle">{v}</span>)}
                                 </div>
                               ) : null}
                               {!isBool && !hasEnum && isLocked && fieldValues.length > 6 ? (
-                                <span className="text-[9px] text-gray-400" title={fieldValues.join(', ')}>manual: {fieldValues.length} values</span>
+                                <span className={MUTED_TEXT_9_CLASS} title={fieldValues.join(', ')}>manual: {fieldValues.length} values</span>
                               ) : null}
                             </div>
                           );
                         })}
                         {derivedProps.length === 0 ? (
-                          <span className="text-xs text-gray-400 italic">No properties mapped — add in Mapping Studio</span>
+                          <span className={MUTED_ITALIC_TEXT_CLASS}>No properties mapped — add in Mapping Studio</span>
                         ) : null}
                       </div>
                     );
@@ -1118,9 +1139,9 @@ function DepsTab({
             <div className="space-y-1">
               {constraints.map((expr, idx) => (
                 <div key={`${expr}-${idx}`} className="flex items-center gap-1">
-                  <code className="flex-1 text-[11px] px-2 py-1 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 break-all">{expr}</code>
+                  <code className="flex-1 text-[11px] px-2 py-1 rounded sf-bg-surface-soft sf-dk-surface-800 border sf-border-default dark:sf-border-default break-all">{expr}</code>
                   <button
-                    className="text-xs px-2 py-1 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    className="text-xs px-2 py-1 rounded border sf-border-default dark:sf-border-default sf-hover-bg-surface-soft dark:hover:bg-gray-800"
                     onClick={() => onUpdate('constraints', constraints.filter((_, i) => i !== idx))}
                     title="Remove constraint"
                   >
@@ -1130,7 +1151,7 @@ function DepsTab({
               ))}
             </div>
           ) : (
-            <div className="text-xs text-gray-400 italic">No constraints configured</div>
+            <div className={MUTED_ITALIC_TEXT_CLASS}>No constraints configured</div>
           )}
           <div className="flex gap-1">
             <input
@@ -1146,7 +1167,7 @@ function DepsTab({
               }}
             />
             <button
-              className="text-xs px-2 py-1 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
+              className="text-xs px-2 py-1 rounded border sf-border-default dark:sf-border-default sf-hover-bg-surface-soft dark:hover:bg-gray-800 disabled:opacity-50"
               onClick={addConstraint}
               disabled={!newConstraint.trim()}
             >
@@ -1159,7 +1180,7 @@ function DepsTab({
                 const isKnownField = Boolean(editedRules[dep]);
                 if (!isKnownField) {
                   return (
-                    <span key={dep} className="px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                    <span key={dep} className="px-1.5 py-0.5 rounded text-[10px] sf-bg-surface-soft-strong sf-text-subtle sf-dk-surface-800 dark:sf-text-subtle">
                       {dep}
                     </span>
                   );
@@ -1167,7 +1188,7 @@ function DepsTab({
                 return (
                   <button
                     key={dep}
-                    className="px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/60"
+                    className="px-1.5 py-0.5 rounded text-[10px] sf-chip-info-strong sf-chip-info-strong-hover"
                     onClick={() => onNavigate(dep)}
                     title={`Open ${dep}`}
                   >
@@ -1210,13 +1231,13 @@ function PreviewTab({
     <div className="space-y-3">
       {/* Source summary */}
       <div className="flex flex-wrap gap-2 text-xs">
-        <span className="text-gray-400 font-medium">Source:</span>
+        <span className={`${TEXT_GRAY_400} font-medium`}>Source:</span>
         {enumSource ? (
-          <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-mono">
+          <span className="px-1.5 py-0.5 rounded sf-bg-surface-soft-strong sf-dk-surface-700 sf-text-muted dark:sf-text-muted font-mono">
             {enumSource}
           </span>
         ) : (
-          <span className="text-gray-400 italic">none</span>
+          <span className={`${TEXT_GRAY_400} italic`}>none</span>
         )}
       </div>
 
@@ -1226,14 +1247,14 @@ function PreviewTab({
         {kv.length > 0 ? (
           <div className="flex flex-wrap gap-1 mt-1 max-h-32 overflow-y-auto">
             {kv.slice(0, 80).map((v) => (
-              <span key={v} className="px-1.5 py-0.5 text-[11px] rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-mono">
+              <span key={v} className="px-1.5 py-0.5 text-[11px] rounded sf-chip-info-strong font-mono">
                 {v}
               </span>
             ))}
-            {kv.length > 80 && <span className="text-xs text-gray-400">+{kv.length - 80} more</span>}
+            {kv.length > 80 && <span className={MUTED_TEXT_XS_CLASS}>+{kv.length - 80} more</span>}
           </div>
         ) : (
-          <span className="text-xs text-gray-400 italic">No known values</span>
+          <span className={MUTED_ITALIC_TEXT_CLASS}>No known values</span>
         )}
       </div>
 
@@ -1245,7 +1266,7 @@ function PreviewTab({
             <div className="max-h-48 overflow-y-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-gray-500">
+                  <tr className="sf-text-subtle">
                     <th className="text-left py-0.5">Name</th>
                     <th className="text-left py-0.5">Maker</th>
                     <th className="text-left py-0.5">Aliases</th>
@@ -1253,27 +1274,27 @@ function PreviewTab({
                 </thead>
                 <tbody>
                   {compEntities.slice(0, 40).map((e, i) => (
-                    <tr key={i} className="border-t border-gray-100 dark:border-gray-800">
+                    <tr key={i} className="sf-border-top-subtle">
                       <td className="py-0.5 font-mono">{e.name}</td>
-                      <td className="py-0.5 text-gray-500">{e.maker || '\u2014'}</td>
-                      <td className="py-0.5 text-gray-400 text-[10px] truncate max-w-[120px]">
+                      <td className="py-0.5 sf-text-subtle">{e.maker || '\u2014'}</td>
+                      <td className="py-0.5 sf-text-subtle text-[10px] truncate max-w-[120px]">
                         {e.aliases?.length > 0 ? e.aliases.join(', ') : '\u2014'}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {compEntities.length > 40 && <span className="text-xs text-gray-400">+{compEntities.length - 40} more</span>}
+              {compEntities.length > 40 && <span className={MUTED_TEXT_XS_CLASS}>+{compEntities.length - 40} more</span>}
             </div>
           ) : (
-            <span className="text-xs text-gray-400 italic">No entities</span>
+            <span className={MUTED_ITALIC_TEXT_CLASS}>No entities</span>
           )}
         </div>
       )}
 
       {/* Raw rule JSON */}
       <details>
-        <summary className="text-xs text-gray-400 cursor-pointer">Full Rule JSON</summary>
+        <summary className={`${MUTED_TEXT_XS_CLASS} cursor-pointer`}>Full Rule JSON</summary>
         <div className="mt-2"><JsonViewer data={rule} maxDepth={3} /></div>
       </details>
     </div>

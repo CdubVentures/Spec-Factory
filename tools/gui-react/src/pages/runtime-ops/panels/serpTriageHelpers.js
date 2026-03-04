@@ -35,9 +35,9 @@ export function computeTriageUniqueDomains(triage) {
 
 export function buildTriageDecisionSegments(counts) {
   return [
-    { label: 'Keep', value: counts.keep, color: 'bg-green-500' },
-    { label: 'Maybe', value: counts.maybe, color: 'bg-yellow-500' },
-    { label: 'Drop', value: counts.drop, color: 'bg-red-500' },
+    { label: 'Keep', value: counts.keep, color: 'sf-metric-fill-success' },
+    { label: 'Maybe', value: counts.maybe, color: 'sf-metric-fill-warning' },
+    { label: 'Drop', value: counts.drop, color: 'sf-metric-fill-danger' },
   ];
 }
 

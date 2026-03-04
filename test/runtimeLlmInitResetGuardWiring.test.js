@@ -12,9 +12,24 @@ test('indexing runtime LLM knobs hydrate from runtime authority without config-d
   const text = readText(indexingPagePath);
 
   assert.equal(
-    text.includes('if (!runtimeSettingsData || runtimeSettingsDirty) return;'),
+    /const applied = hydrateRuntimeSettingsFromBindings\(\s*runtimeSettingsData,\s*runtimeSettingsDirty,\s*runtimeHydrationBindings,\s*\);/s.test(text),
     true,
-    'Runtime LLM hydration should apply only from runtime authority data when not dirty',
+    'Runtime hydration should flow through shared hydration bindings using authority snapshot + dirty guard inputs',
+  );
+  assert.equal(
+    text.includes('if (!applied) return;'),
+    true,
+    'Runtime hydration should skip local state resets when bindings do not apply',
+  );
+  assert.equal(
+    text.includes('setRuntimeSettingsDirty(false);'),
+    true,
+    'Runtime hydration should clear dirty state only after authority snapshot values are applied',
+  );
+  assert.equal(
+    text.includes('if (!runtimeSettingsData || runtimeSettingsDirty) return;'),
+    false,
+    'Hydration dirty-guard logic should live in shared runtime hydration helpers instead of page-local branches',
   );
   assert.equal(
     text.includes('if (!indexingLlmConfig || llmKnobsInitialized) return;'),

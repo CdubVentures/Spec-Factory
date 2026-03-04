@@ -57,7 +57,8 @@ test('ui store owns global autosave toggles used by studio/runtime/storage surfa
   assert.equal(text.includes('llmSettings:autoSaveEnabled'), true, 'ui store should persist a global llm autosave key');
   assert.equal(text.includes('llmSettings:autoSave:'), false, 'ui store should not use category-scoped llm autosave keys');
   assert.equal(text.includes('normalizeStudioAutoSaveState'), true, 'ui store should normalize studio autosave relationships');
-  assert.equal(text.includes('autoSaveAllEnabled || autoSaveMapEnabled'), true, 'ui store should enforce map/key-navigator autosave implies key/workbench autosave');
+  assert.equal(text.includes('const autoSaveEnabled = autoSaveAllEnabled'), true, 'ui store should force key/workbench autosave only when auto-save-all is enabled');
+  assert.equal(text.includes('autoSaveAllEnabled || autoSaveMapEnabled'), false, 'ui store should not force key/workbench autosave from mapping autosave');
 });
 
 test('studio page locks key-navigator + mapping autosave controls when auto-save-all is enabled', () => {
@@ -66,34 +67,61 @@ test('studio page locks key-navigator + mapping autosave controls when auto-save
   assert.equal(text.includes('effectiveAutoSaveMapEnabled'), true, 'studio page should derive effective mapping autosave');
   assert.equal(text.includes('autoSaveAllEnabled'), true, 'studio page should read auto-save-all toggle');
   assert.equal(text.includes('setAutoSaveAllEnabled'), true, 'studio page should write auto-save-all toggle');
-  assert.equal(text.includes('Auto-save ALL'), true, 'studio page should render an auto-save-all control');
-  assert.equal(text.includes('Locked by Auto-save ALL'), true, 'studio page should indicate lock state on child autosave controls');
+  assert.equal(text.includes('Auto-Save All'), true, 'studio page should render an auto-save-all control');
+  assert.equal(text.includes('Auto-Save On (Locked)'), true, 'studio page should indicate concise lock state on child autosave controls');
 });
 
 test('studio page propagates shared autosave lock to key navigator + field contract tab controls', () => {
   const text = readText(STUDIO_PAGE);
   assert.equal(text.includes('autoSaveMapLocked={autoSaveAllEnabled}'), true, 'mapping tab should receive lock state from auto-save-all');
   assert.equal(text.includes('autoSaveEnabled={effectiveAutoSaveEnabled}'), true, 'key/studio tabs should receive effective auto-save state');
-  assert.equal(text.includes('autoSaveLocked={autoSaveWorkbookLocked}'), true, 'key/studio tabs should receive shared lock state');
-  assert.equal(text.includes('autoSaveLockReason={autoSaveWorkbookLockReason}'), true, 'key/studio tabs should receive lock reason for autosave ownership');
+  assert.equal(text.includes('autoSaveLocked={autoSaveAllEnabled}'), true, 'key/studio tabs should receive lock state from auto-save-all only');
+  assert.match(
+    text,
+    /autoSaveLockReason=\{autoSaveAllEnabled\s*\?\s*["']Auto-Save All["']\s*:\s*["']["']\}/,
+    'key/studio tabs should receive lock reason from auto-save-all ownership',
+  );
 });
 
-test('ui settings authority normalizes shared studio autosave invariants', () => {
+test('ui settings authority keeps mapping and key/workbench autosave independent when auto-save-all is off', () => {
   const text = readText(UI_SETTINGS_AUTHORITY);
   assert.equal(text.includes('const studioAutoSaveAllEnabled'), true, 'ui settings authority should normalize studio auto-save-all state');
   assert.equal(text.includes('const studioAutoSaveMapEnabled = studioAutoSaveAllEnabled'), true, 'ui settings authority should lock map autosave on when auto-save-all is enabled');
-  assert.equal(text.includes('const studioAutoSaveEnabled = (studioAutoSaveAllEnabled || studioAutoSaveMapEnabled)'), true, 'ui settings authority should enforce map autosave implies key/workbench autosave');
+  assert.equal(text.includes('const studioAutoSaveEnabled = studioAutoSaveAllEnabled'), true, 'ui settings authority should only force key/workbench autosave when auto-save-all is enabled');
+  assert.equal(text.includes('studioAutoSaveAllEnabled || studioAutoSaveMapEnabled'), false, 'ui settings authority should not force key/workbench autosave from mapping autosave');
+});
+
+test('settings authority preserves local key/workbench autosave-off against legacy coupled server snapshots', () => {
+  const text = readText(SETTINGS_AUTHORITY);
+  assert.equal(
+    text.includes('const shouldPreserveLocalStudioAutoSaveEnabled = ('),
+    true,
+    'settings authority should compute a guard for legacy-coupled ui server snapshots',
+  );
+  assert.equal(
+    text.includes('const nextStudioAutoSaveEnabled = shouldPreserveLocalStudioAutoSaveEnabled'),
+    true,
+    'settings authority should preserve local autosave-off when server snapshot is legacy-coupled',
+  );
 });
 
 test('key navigator change handlers gate save commits behind autosave state', () => {
   const text = readText(STUDIO_PAGE);
   const keyNavigatorStart = text.indexOf('function KeyNavigatorTab');
-  const keyNavigatorEnd = text.indexOf('const currentRule = selectedKey ? (editedRules[selectedKey] || null) : null;');
+  const keyNavigatorEnd = text.indexOf('const B = useCallback(');
   assert.notEqual(keyNavigatorStart, -1, 'key navigator tab source should exist');
-  assert.notEqual(keyNavigatorEnd, -1, 'key navigator tab section marker should exist');
+  assert.notEqual(keyNavigatorEnd, -1, 'key navigator tab end marker should exist');
   const keyNavigatorText = text.slice(keyNavigatorStart, keyNavigatorEnd);
-  assert.equal(keyNavigatorText.includes('const saveIfAutoSaveEnabled = useCallback(() => {'), true, 'key navigator should define autosave-gated saver for change handlers');
-  assert.equal(keyNavigatorText.includes('if (!autoSaveEnabled) return;'), true, 'key navigator autosave-gated saver should no-op when autosave is off');
+  assert.match(
+    keyNavigatorText,
+    /const saveIfAutoSaveEnabled\s*=\s*useCallback\(\(\)\s*=>\s*\{/,
+    'key navigator should define autosave-gated saver for change handlers',
+  );
+  assert.match(
+    keyNavigatorText,
+    /if\s*\(!autoSaveEnabled\)\s*return;?/,
+    'key navigator autosave-gated saver should no-op when autosave is off',
+  );
   assert.equal(keyNavigatorText.includes('reorder(activeItem, overItem);\n    onSave();'), false, 'reorder should not force-save when autosave is off');
 });
 

@@ -20,6 +20,24 @@ import { createDataChangeInvalidationScheduler } from './dataChangeInvalidationS
 import { recordDataChangeInvalidationFlush } from './dataChangeClientObservability.js';
 import { usePersistedToggle } from '../../stores/collapseStore';
 import { usePersistedTab } from '../../stores/tabStore';
+import {
+  SF_THEME_COLOR_PROFILES,
+  SF_THEME_RADIUS_PROFILES,
+  type SfThemeColorProfileId,
+  type SfThemeRadiusProfileId,
+} from '../../stores/uiThemeProfiles';
+
+const THEME_COLOR_LABELS: Record<SfThemeColorProfileId, string> = {
+  light: 'Light',
+  dark: 'Dark',
+};
+
+const THEME_RADIUS_LABELS: Record<SfThemeRadiusProfileId, string> = {
+  tight: 'Tight',
+  standard: 'Standard',
+  relaxed: 'Relaxed',
+  'pill-heavy': 'Pill Heavy',
+};
 
 export function AppShell() {
   useSettingsAuthorityBootstrap();
@@ -29,8 +47,10 @@ export function AppShell() {
   const setCategories = useUiStore((s) => s.setCategories);
   const setCategory = useUiStore((s) => s.setCategory);
   const category = useUiStore((s) => s.category);
-  const darkMode = useUiStore((s) => s.darkMode);
-  const toggleDarkMode = useUiStore((s) => s.toggleDarkMode);
+  const themeColorProfile = useUiStore((s) => s.themeColorProfile);
+  const themeRadiusProfile = useUiStore((s) => s.themeRadiusProfile);
+  const setThemeColorProfile = useUiStore((s) => s.setThemeColorProfile);
+  const setThemeRadiusProfile = useUiStore((s) => s.setThemeRadiusProfile);
   const setProcessStatus = useRuntimeStore((s) => s.setProcessStatus);
   const appendProcessOutput = useRuntimeStore((s) => s.appendProcessOutput);
   const appendEvents = useEventsStore((s) => s.appendEvents);
@@ -171,6 +191,8 @@ export function AppShell() {
   const isRelocating = Boolean(processStatus?.relocating);
   const showIndicator = isRunning || isRelocating;
   const [headerTaskDrawerOpen, toggleHeaderTaskDrawer] = usePersistedToggle('appShell:header:taskDrawer:open', false);
+  const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
+  const settingsPanelRef = useRef<HTMLDivElement | null>(null);
   const fieldTestTabActive = location.pathname.startsWith('/test-mode');
   const [lastMainPath, setLastMainPath] = usePersistedTab<string>('appShell:fieldTest:returnPath', '/');
   const [lastMainCategory, setLastMainCategory] = usePersistedTab<string>('appShell:fieldTest:returnCategory', 'mouse');
@@ -186,6 +208,26 @@ export function AppShell() {
     if (location.pathname) setLastMainPath(location.pathname);
     if (!isTestCategory(category)) setLastMainCategory(category);
   }, [location.pathname, category, setLastMainPath, setLastMainCategory]);
+
+  useEffect(() => {
+    if (!settingsPanelOpen) return;
+    const onWindowMouseDown = (event: MouseEvent) => {
+      const panelRoot = settingsPanelRef.current;
+      if (!panelRoot) return;
+      if (event.target instanceof Node && panelRoot.contains(event.target)) return;
+      setSettingsPanelOpen(false);
+    };
+    const onWindowKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setSettingsPanelOpen(false);
+    };
+    window.addEventListener('mousedown', onWindowMouseDown);
+    window.addEventListener('keydown', onWindowKeyDown);
+    return () => {
+      window.removeEventListener('mousedown', onWindowMouseDown);
+      window.removeEventListener('keydown', onWindowKeyDown);
+    };
+  }, [settingsPanelOpen]);
 
   const handleFieldTestToggle = () => {
     if (fieldTestTabActive) {
@@ -203,39 +245,105 @@ export function AppShell() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      <header className="flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+    <div className="sf-surface-shell sf-shell flex flex-col h-screen">
+      <header className="sf-shell-header z-30 flex items-center justify-between px-4 py-2 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-bold text-gray-900 dark:text-white">Spec Factory</h1>
+          <h1 className="sf-shell-title text-lg font-bold">Spec Factory</h1>
           {showIndicator && (
             <span title={indicatorTitle} className="relative flex items-center justify-center w-5 h-5">
               <svg className="w-5 h-5 animate-spin" viewBox="0 0 20 20" fill="none">
                 <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2"
-                  className={isRunning ? 'text-blue-200 dark:text-blue-900' : 'text-amber-200 dark:text-amber-900'} />
+                  className={isRunning ? 'text-sky-300' : 'text-amber-200'} />
                 <path d="M10 2a8 8 0 0 1 8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                  className={isRunning ? 'text-blue-500 dark:text-blue-400' : 'text-amber-500 dark:text-amber-400'} />
+                  className={isRunning ? 'text-sky-400' : 'text-amber-400'} />
               </svg>
             </span>
           )}
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={toggleDarkMode}
-            className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
-            title="Toggle dark mode"
-          >
-            {darkMode ? '\u2600' : '\u263E'}
-          </button>
+          <div ref={settingsPanelRef} className="relative">
+            <button
+              onClick={() => setSettingsPanelOpen((open) => !open)}
+              className="sf-shell-header-control inline-flex h-8 w-8 items-center justify-center"
+              title={settingsPanelOpen ? 'Close app settings' : 'Open app settings'}
+              aria-label={settingsPanelOpen ? 'Close app settings' : 'Open app settings'}
+              aria-expanded={settingsPanelOpen}
+              aria-controls="app-shell-settings-panel"
+            >
+              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                <circle cx="10" cy="10" r="3" />
+                <path d="M10 1.8v2.2M10 16v2.2M1.8 10H4M16 10h2.2M3.7 3.7l1.6 1.6M14.7 14.7l1.6 1.6M16.3 3.7l-1.6 1.6M5.3 14.7l-1.6 1.6" />
+              </svg>
+            </button>
+            {settingsPanelOpen ? (
+              <section id="app-shell-settings-panel" className="sf-shell-settings-panel absolute right-0 top-10 z-30 w-[320px] rounded p-3 space-y-3">
+                <header className="flex items-start justify-between gap-2">
+                  <div>
+                    <h2 className="sf-shell-settings-title text-sm font-semibold">Settings</h2>
+                    <p className="sf-text-caption sf-status-text-muted mt-0.5">Appearance</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSettingsPanelOpen(false)}
+                    className="rounded sf-icon-button px-2 py-1 sf-text-label"
+                    title="Close app settings"
+                  >
+                    Close
+                  </button>
+                </header>
+                <div className="space-y-3">
+                  <section className="space-y-1.5">
+                    <p className="sf-text-label font-semibold">Theme</p>
+                    <div className="sf-shell-settings-grid grid grid-cols-2 gap-1.5">
+                      {SF_THEME_COLOR_PROFILES.map((themeId) => (
+                        <button
+                          key={themeId}
+                          type="button"
+                          onClick={() => setThemeColorProfile(themeId)}
+                          className={`rounded px-2 py-1.5 sf-text-label font-semibold transition-colors ${
+                            themeColorProfile === themeId
+                              ? 'sf-primary-button'
+                              : 'sf-icon-button'
+                          }`}
+                        >
+                          {THEME_COLOR_LABELS[themeId]}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                  <section className="space-y-1.5">
+                    <p className="sf-text-label font-semibold">Corner Radius</p>
+                    <div className="sf-shell-settings-grid grid grid-cols-2 gap-1.5">
+                      {SF_THEME_RADIUS_PROFILES.map((radiusId) => (
+                        <button
+                          key={radiusId}
+                          type="button"
+                          onClick={() => setThemeRadiusProfile(radiusId)}
+                          className={`rounded px-2 py-1.5 sf-text-label font-semibold transition-colors ${
+                            themeRadiusProfile === radiusId
+                              ? 'sf-primary-button'
+                              : 'sf-icon-button'
+                          }`}
+                        >
+                          {THEME_RADIUS_LABELS[radiusId]}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              </section>
+            ) : null}
+          </div>
           <div className="relative h-8 w-8">
             <div
-              className={`absolute right-0 top-0 z-20 h-8 overflow-hidden rounded-none border border-gray-300 bg-white/95 shadow-sm backdrop-blur transition-[width] duration-300 ease-out dark:border-gray-600 dark:bg-gray-800/95 ${
+              className={`absolute right-0 top-0 z-20 h-8 overflow-hidden rounded-none sf-shell-header-drawer transition-[width] duration-300 ease-out ${
                 headerTaskDrawerOpen ? 'w-36' : 'w-8'
               }`}
             >
               <div className="flex h-full items-stretch">
                 <button
                   onClick={() => toggleHeaderTaskDrawer()}
-                  className="inline-flex h-full w-8 flex-shrink-0 items-center justify-center text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                  className="sf-shell-header-drawer-toggle inline-flex h-8 w-8 flex-shrink-0 items-center justify-center"
                   title={headerTaskDrawerOpen ? 'Close main tab header drawer' : 'Open main tab header drawer'}
                   aria-label={headerTaskDrawerOpen ? 'Close main tab header drawer' : 'Open main tab header drawer'}
                 >
@@ -257,8 +365,8 @@ export function AppShell() {
                     onClick={handleFieldTestToggle}
                     className={`inline-flex h-full min-w-[96px] items-center justify-center rounded-sm border px-3 text-xs font-semibold leading-none whitespace-nowrap transition-all duration-100 ${
                       fieldTestTabActive
-                        ? 'border-cyan-500 bg-cyan-600 text-white shadow-inner translate-y-px ring-1 ring-cyan-900/20 dark:border-cyan-400 dark:bg-cyan-500'
-                        : 'border-gray-300 bg-gray-50 text-gray-800 shadow-sm hover:bg-gray-100 hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700'
+                        ? 'sf-shell-field-test-button-active'
+                        : 'sf-shell-field-test-button-idle'
                     }`}
                     title="Open Field Test tab"
                   >
@@ -273,25 +381,25 @@ export function AppShell() {
       <TabNav />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-auto p-4">
+        <main className="sf-shell-main flex-1 overflow-auto p-4">
           {blockUntilSettingsReady ? (
-            <div className="h-full min-h-[180px] flex items-center justify-center rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <p className="text-sm text-gray-600 dark:text-gray-300">Hydrating settings...</p>
+            <div className="sf-shell-elevated h-full min-h-[180px] flex items-center justify-center">
+              <p className="text-sm text-sf-text-muted">Hydrating settings...</p>
             </div>
           ) : (
             <>
               {!settingsReady && (
-                <div className="mb-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
+                <div className="mb-3 sf-status sf-status-warning sf-shell-warning">
                   Settings are still hydrating. Some controls may remain read-only until reload completes.
                 </div>
               )}
               {settingsSnapshot.uiSettingsPersistState === 'saving' && (
-                <div className="mb-3 rounded border border-blue-300 bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-200">
+                <div className="mb-3 sf-status sf-status-info sf-shell-saving">
                   Saving autosave preference changes...
                 </div>
               )}
               {settingsSnapshot.uiSettingsPersistState === 'error' && (
-                <div className="mb-3 rounded border border-rose-300 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:border-rose-700 dark:bg-rose-900/20 dark:text-rose-200">
+                <div className="mb-3 sf-status sf-status-danger sf-shell-error">
                   Failed to persist autosave preference changes. UI reverted to last persisted values.
                   {settingsSnapshot.uiSettingsPersistMessage
                     ? ` (${settingsSnapshot.uiSettingsPersistMessage})`

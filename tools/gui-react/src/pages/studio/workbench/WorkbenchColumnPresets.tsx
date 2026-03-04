@@ -60,7 +60,7 @@ export function WorkbenchColumnPresets({
             className={`px-2 py-1 text-xs rounded font-medium transition-colors ${
               activePreset === p.id
                 ? 'bg-accent/10 text-accent border border-accent/30'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-transparent'
+                : 'sf-bg-surface-soft-strong sf-text-muted sf-hover-surface-soft-200 sf-dk-hover-surface-700 border border-transparent'
             }`}
           >
             {p.label}
@@ -72,20 +72,20 @@ export function WorkbenchColumnPresets({
       <div className="relative" ref={pickerRef}>
         <button
           onClick={() => setPickerOpen(!pickerOpen)}
-          className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-transparent"
+          className="px-2 py-1 text-xs rounded sf-bg-surface-soft-strong sf-text-muted sf-hover-surface-soft-200 sf-dk-hover-surface-700 border border-transparent"
           title="Pick columns"
         >
           Columns ▾
         </button>
         {pickerOpen && (
-          <div className="absolute z-30 top-full mt-1 left-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg p-2 w-52 max-h-72 overflow-y-auto">
+          <div className="absolute z-30 top-full mt-1 left-0 sf-surface-card rounded shadow-lg p-2 w-52 max-h-72 overflow-y-auto">
             {ALL_COLUMN_IDS_WITH_LABELS.map((col) => (
-              <label key={col.id} className="flex items-center gap-2 py-0.5 text-xs cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 px-1 rounded">
+              <label key={col.id} className="flex items-center gap-2 py-0.5 text-xs cursor-pointer sf-hover-bg-surface-soft-strong px-1 rounded">
                 <input
                   type="checkbox"
                   checked={columnVisibility[col.id] !== false}
                   onChange={() => onToggleColumn(col.id)}
-                  className="rounded border-gray-300"
+                  className="rounded sf-border-soft"
                 />
                 {col.label}
               </label>
@@ -100,7 +100,7 @@ export function WorkbenchColumnPresets({
         placeholder="Filter fields..."
         value={globalFilter}
         onChange={(e) => onGlobalFilter(e.target.value)}
-        className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 w-44 placeholder:text-gray-400"
+        className="w-44 sf-input px-2 py-1 text-xs placeholder:sf-text-subtle"
       />
 
       <div className="flex-1" />
@@ -109,7 +109,9 @@ export function WorkbenchColumnPresets({
       <button
         onClick={onSave}
         disabled={saving || autoSaveEnabled}
-        className="px-3 py-1.5 text-xs font-medium border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+        className={`px-3 py-1.5 text-xs font-medium rounded disabled:opacity-50 transition-colors ${
+          autoSaveEnabled ? 'sf-icon-button' : 'sf-primary-button'
+        }`}
       >
         {saving ? 'Saving…' : 'Save'}
       </button>
@@ -119,24 +121,24 @@ export function WorkbenchColumnPresets({
           setAutoSaveEnabled(!autoSaveEnabled);
         }}
         disabled={autoSaveLocked}
-        className={`relative px-3 py-1.5 text-xs font-medium rounded border transition-colors overflow-visible ${
+        className={`relative px-3 py-1.5 text-xs font-medium rounded transition-colors overflow-visible ${
           autoSaveEnabled
-            ? 'bg-accent/10 text-accent border-accent/40 shadow-inner dark:bg-accent/20 dark:border-accent/50'
-            : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+            ? 'sf-primary-button'
+            : 'sf-action-button'
         } ${autoSaveLocked ? 'opacity-80 cursor-not-allowed' : ''}`}
       >
         {autoSaveLocked
-          ? `Auto-save On (Locked by ${autoSaveLockReason || 'Auto-save ALL'})`
-          : (autoSaveEnabled ? 'Auto-save On' : 'Auto-save Off')}
+          ? 'Auto-Save On (Locked)'
+          : (autoSaveEnabled ? 'Auto-Save On' : 'Auto-Save Off')}
         {saving && (
           <span
-            className="absolute inline-block h-2 w-2 rounded-full bg-gray-400 animate-pulse border border-white/90 shadow-sm"
+            className="absolute inline-block h-2 w-2 rounded-full sf-dot-pending animate-pulse border border-white/90 shadow-sm"
             style={{ right: '2px', bottom: '2px' }}
           />
         )}
         {!saving && saveSuccess && (
           <span
-            className="absolute inline-block h-2 w-2 rounded-full bg-green-500 border border-white/90 shadow-sm"
+            className="absolute inline-block h-2 w-2 rounded-full sf-success-bg-500 border border-white/90 shadow-sm"
             style={{ right: '2px', bottom: '2px' }}
           />
         )}

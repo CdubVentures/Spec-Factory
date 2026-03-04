@@ -20,15 +20,15 @@ test('pipeline settings renders runtime flow card as the phase-3 runtime setting
     'pipeline settings page should import runtime flow card',
   );
   assert.equal(
-    pipelineText.includes('<RuntimeSettingsFlowCard />'),
+    pipelineText.includes('<RuntimeSettingsFlowCard'),
     true,
     'pipeline settings page should render runtime flow card',
   );
 
   assert.equal(
-    flowText.includes('useRuntimeSettingsAuthority({'),
+    flowText.includes('useRuntimeSettingsEditorAdapter<RuntimeDraft>'),
     true,
-    'runtime flow card should persist via runtime settings authority',
+    'runtime flow card should persist through runtime editor adapter',
   );
   assert.equal(
     flowText.includes('readRuntimeSettingsBootstrap('),
@@ -57,6 +57,9 @@ test('runtime flow card keeps runtime step order and enabled-dot semantics', () 
 
   const orderedLabels = [
     'Run Setup',
+    'Runtime Outputs',
+    'Consensus and Learning',
+    'Observability and Trace',
     'Fetch and Render',
     'OCR',
     'Planner and Triage',
@@ -71,14 +74,39 @@ test('runtime flow card keeps runtime step order and enabled-dot semantics', () 
   }
 
   assert.equal(
-    flowText.includes('bg-emerald-500'),
+    flowText.includes('sf-callout-success'),
     true,
-    'enabled runtime steps should render green dot state',
+    'enabled runtime steps should render success callout state',
   );
   assert.equal(
-    flowText.includes('bg-gray-400'),
+    flowText.includes('sf-callout-neutral'),
     true,
-    'disabled runtime steps should render gray dot state',
+    'disabled runtime steps should render neutral callout state',
+  );
+  assert.equal(
+    flowText.includes('function RuntimeStepIcon('),
+    true,
+    'runtime flow sidebar should render explicit per-step icons',
+  );
+  assert.equal(
+    flowText.includes('pointer-events-none select-none'),
+    true,
+    'disabled setting rows should be visibly non-interactive',
+  );
+  assert.equal(
+    flowText.includes('Runtime Sections'),
+    true,
+    'runtime flow should render a sub-step sidebar for section-level navigation',
+  );
+  assert.equal(
+    flowText.includes('runtime-flow-substep-'),
+    true,
+    'runtime flow should expose deterministic sub-step anchor ids for section buttons',
+  );
+  assert.equal(
+    flowText.includes('activeRuntimeSubSteps.length > 1'),
+    true,
+    'runtime flow should only render sub-step sidebar when a step has multiple sections',
   );
 });
 
@@ -88,6 +116,10 @@ test('runtime flow card payload includes full runtime settings key coverage', ()
   const requiredKeys = [
     'profile',
     'searchProvider',
+    'searxngBaseUrl',
+    'bingSearchEndpoint',
+    'googleCseCx',
+    'duckduckgoBaseUrl',
     'phase2LlmModel',
     'phase3LlmModel',
     'llmModelFast',
@@ -124,6 +156,42 @@ test('runtime flow card payload includes full runtime settings key coverage', ()
     'crawleeRequestHandlerTimeoutSecs',
     'dynamicFetchRetryBudget',
     'dynamicFetchRetryBackoffMs',
+    'fetchSchedulerMaxRetries',
+    'fetchSchedulerFallbackWaitMs',
+    'pageGotoTimeoutMs',
+    'pageNetworkIdleTimeoutMs',
+    'postLoadWaitMs',
+    'frontierDbPath',
+    'frontierEnableSqlite',
+    'frontierStripTrackingParams',
+    'frontierQueryCooldownSeconds',
+    'frontierCooldown404Seconds',
+    'frontierCooldown404RepeatSeconds',
+    'frontierCooldown410Seconds',
+    'frontierCooldownTimeoutSeconds',
+    'frontierCooldown403BaseSeconds',
+    'frontierCooldown429BaseSeconds',
+    'frontierBlockedDomainThreshold',
+    'frontierRepairSearchEnabled',
+    'autoScrollEnabled',
+    'autoScrollPasses',
+    'autoScrollDelayMs',
+    'graphqlReplayEnabled',
+    'maxGraphqlReplays',
+    'maxNetworkResponsesPerPage',
+    'robotsTxtCompliant',
+    'robotsTxtTimeoutMs',
+    'runtimeScreencastFps',
+    'runtimeScreencastQuality',
+    'runtimeScreencastMaxWidth',
+    'runtimeScreencastMaxHeight',
+    'endpointSignalLimit',
+    'endpointSuggestionLimit',
+    'endpointNetworkScanLimit',
+    'cseRescueRequiredIteration',
+    'duckduckgoTimeoutMs',
+    'runtimeTraceFetchRing',
+    'runtimeTraceLlmRing',
     'dynamicFetchPolicyMapJson',
     'scannedPdfOcrEnabled',
     'scannedPdfOcrPromoteCandidates',
@@ -134,6 +202,19 @@ test('runtime flow card payload includes full runtime settings key coverage', ()
     'discoveryEnabled',
     'dynamicCrawleeEnabled',
     'crawleeHeadless',
+    'fetchSchedulerEnabled',
+    'preferHttpFetcher',
+    'runtimeScreencastEnabled',
+    'fetchCandidateSources',
+    'manufacturerBroadDiscovery',
+    'manufacturerSeedSearchUrls',
+    'disableGoogleCse',
+    'cseRescueOnlyMode',
+    'duckduckgoEnabled',
+    'runtimeTraceEnabled',
+    'runtimeTraceLlmPayloads',
+    'eventsJsonWrite',
+    'authoritySnapshotEnabled',
   ];
 
   for (const key of requiredKeys) {

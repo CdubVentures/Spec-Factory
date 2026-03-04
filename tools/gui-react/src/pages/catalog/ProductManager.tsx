@@ -12,13 +12,13 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { invalidateFieldRulesQueries } from '../studio/invalidateFieldRulesQueries';
 
 // ── Styles ─────────────────────────────────────────────────────────
-const btnPrimary = 'px-4 py-2 text-sm bg-accent text-white rounded hover:bg-blue-600 disabled:opacity-50';
-const btnSecondary = 'px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50';
-const btnDanger = 'px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50';
-const sectionCls = 'bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 p-4';
-const inputCls = 'px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 placeholder:text-gray-300 dark:placeholder:text-gray-500 placeholder:italic';
-const labelCls = 'text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block';
-const selectCls = 'px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700';
+const btnPrimary = 'px-4 py-2 text-sm sf-primary-button transition-colors disabled:opacity-50';
+const btnSecondary = 'px-3 py-1.5 text-sm sf-icon-button transition-colors disabled:opacity-50';
+const btnDanger = 'px-3 py-1.5 text-sm sf-bg-surface-soft-strong text-white rounded sf-hover-bg-surface-soft-strong disabled:opacity-50';
+const sectionCls = 'bg-white sf-bg-surface-soft rounded border sf-border-default sf-border-default p-4';
+const inputCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft rounded bg-white sf-bg-surface-soft-strong sf-text-subtle dark:placeholder:sf-text-muted placeholder:italic';
+const labelCls = 'text-xs font-medium sf-text-muted sf-text-subtle mb-1 block';
+const selectCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft rounded bg-white sf-bg-surface-soft-strong';
 
 // ── Types ──────────────────────────────────────────────────────────
 interface RenameHistoryEntry {
@@ -208,7 +208,7 @@ const columns: ColumnDef<CatalogProduct, unknown>[] = [
     header: 'Variant',
     cell: ({ getValue }) => {
       const v = getValue() as string;
-      return v ? <span className="text-xs">{v}</span> : <span className="text-gray-400 text-xs italic">—</span>;
+      return v ? <span className="text-xs">{v}</span> : <span className="sf-text-subtle text-xs italic">—</span>;
     },
     size: 100,
   },
@@ -224,7 +224,7 @@ const columns: ColumnDef<CatalogProduct, unknown>[] = [
     size: 90,
     cell: ({ getValue }) => {
       const v = getValue() as string;
-      return v ? <span className="font-mono text-xs" title={v}>{v.length > 6 ? v.slice(0, 6) + '...' : v}</span> : <span className="text-gray-400 text-xs italic">—</span>;
+      return v ? <span className="font-mono text-xs" title={v}>{v.length > 6 ? v.slice(0, 6) + '...' : v}</span> : <span className="sf-text-subtle text-xs italic">—</span>;
     },
   },
   {
@@ -233,8 +233,8 @@ const columns: ColumnDef<CatalogProduct, unknown>[] = [
     cell: ({ getValue }) => {
       const s = getValue() as string;
       const cls = s === 'active'
-        ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300';
+        ? 'sf-bg-surface-soft-strong sf-bg-surface-soft sf-status-text-success sf-status-text-success'
+        : 'sf-bg-surface-soft-strong sf-bg-surface-soft-strong sf-text-muted sf-text-subtle';
       return <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${cls}`}>{s}</span>;
     },
     size: 80,
@@ -244,7 +244,7 @@ const columns: ColumnDef<CatalogProduct, unknown>[] = [
     header: 'URLs',
     cell: ({ getValue }) => {
       const urls = getValue() as string[];
-      return <span className="text-xs text-gray-500">{urls?.length || 0}</span>;
+      return <span className="text-xs sf-text-muted">{urls?.length || 0}</span>;
     },
     size: 50,
   },
@@ -725,7 +725,7 @@ export function ProductManager() {
         <div className={`${sectionCls} flex items-center justify-between`}>
           <div>
             <h3 className="text-sm font-semibold">Product Catalog — {category}</h3>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs sf-text-muted mt-0.5">
               {products.length} product{products.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -746,8 +746,8 @@ export function ProductManager() {
         {bulkResult && (
           <div className={`px-4 py-2 text-sm rounded ${
             (bulkResult.failed ?? 0) > 0 || !bulkResult.ok
-              ? 'bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700'
-              : 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700'
+              ? 'sf-bg-surface-soft sf-bg-surface-soft border sf-border-default sf-border-default'
+              : 'sf-bg-surface-soft sf-bg-surface-soft border sf-border-default sf-border-default'
           }`}>
             Bulk import: added <strong>{bulkResult.created ?? 0}</strong>
             {', '}existing <strong>{bulkResult.skipped_existing ?? 0}</strong>
@@ -761,12 +761,12 @@ export function ProductManager() {
         {/* Migration result banner */}
         {migrationResult?.migration && (
           <div className={`px-4 py-2 text-sm rounded ${migrationResult.migration.ok
-            ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700'
-            : 'bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700'
+            ? 'sf-bg-surface-soft sf-bg-surface-soft border sf-border-default sf-border-default'
+            : 'sf-bg-surface-soft sf-bg-surface-soft border sf-border-default sf-border-default'
           }`}>
             Renamed successfully. Migrated <strong>{migrationResult.migration.migrated_count}</strong> artifact{migrationResult.migration.migrated_count !== 1 ? 's' : ''} to new slug.
             {migrationResult.migration.failed_count > 0 && (
-              <span className="text-amber-700 dark:text-amber-300"> ({migrationResult.migration.failed_count} failed)</span>
+              <span className="sf-status-text-warning sf-status-text-warning"> ({migrationResult.migration.failed_count} failed)</span>
             )}
           </div>
         )}
@@ -789,7 +789,7 @@ export function ProductManager() {
         <div className={`${sectionCls} space-y-4 self-start sticky top-4`}>
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold">{editPid ? 'Edit Product' : 'Add Product'}</h4>
-            <button onClick={closeDrawer} className="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+            <button onClick={closeDrawer} className="sf-text-subtle sf-text-muted text-lg leading-none">&times;</button>
           </div>
 
           {/* Brand */}
@@ -871,62 +871,62 @@ export function ProductManager() {
           </div>
 
           {/* Identity Preview */}
-          <div className="bg-gray-50 dark:bg-gray-900/30 rounded p-2.5 border border-gray-200 dark:border-gray-700 space-y-1.5">
-            <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Identity Preview</div>
+          <div className="sf-bg-surface-soft sf-bg-surface-soft rounded p-2.5 border sf-border-default sf-border-default space-y-1.5">
+            <div className="text-[10px] font-medium sf-text-muted uppercase tracking-wide">Identity Preview</div>
             {editPid ? (
               <>
                 {/* Slug — show diff on rename */}
                 {isRename ? (
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="text-gray-400 w-16">Slug</span>
-                      <span className="font-mono text-red-600 dark:text-red-400 line-through truncate">{editPid}</span>
+                      <span className="sf-text-subtle w-16">Slug</span>
+                      <span className="font-mono sf-status-text-danger sf-status-text-danger line-through truncate">{editPid}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <span className="w-16" />
-                      <span className="font-mono text-green-600 dark:text-green-400 truncate">{newSlugPreview}</span>
+                      <span className="font-mono sf-status-text-success sf-status-text-success truncate">{newSlugPreview}</span>
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-gray-400 w-16">Slug</span>
-                    <span className="font-mono text-gray-600 dark:text-gray-300 truncate">{editPid}</span>
+                    <span className="sf-text-subtle w-16">Slug</span>
+                    <span className="font-mono sf-text-muted sf-text-subtle truncate">{editPid}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-gray-400 w-16">ID#</span>
-                  <span className="font-mono text-gray-600 dark:text-gray-300">
+                  <span className="sf-text-subtle w-16">ID#</span>
+                  <span className="font-mono sf-text-muted sf-text-subtle">
                     {products.find(p => p.productId === editPid)?.id || '—'}
                   </span>
-                  <span className="text-[10px] text-gray-400">(immutable)</span>
+                  <span className="text-[10px] sf-text-subtle">(immutable)</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-gray-400 w-16">Identifier</span>
-                  <span className="font-mono text-gray-600 dark:text-gray-300">
+                  <span className="sf-text-subtle w-16">Identifier</span>
+                  <span className="font-mono sf-text-muted sf-text-subtle">
                     {products.find(p => p.productId === editPid)?.identifier || '—'}
                   </span>
-                  <span className="text-[10px] text-gray-400">(immutable)</span>
+                  <span className="text-[10px] sf-text-subtle">(immutable)</span>
                 </div>
               </>
             ) : (
               <>
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-gray-400 w-16">Slug</span>
-                  <span className="font-mono text-gray-600 dark:text-gray-300 truncate">
+                  <span className="sf-text-subtle w-16">Slug</span>
+                  <span className="font-mono sf-text-muted sf-text-subtle truncate">
                     {formBrand && formModel
                       ? [category, formBrand, formModel, formVariant].filter(Boolean).map(s => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '')).join('-')
                       : '(enter brand + model)'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-gray-400 w-16">ID#</span>
-                  <span className="font-mono text-blue-600 dark:text-blue-400 font-semibold">{nextId}</span>
-                  <span className="text-[10px] text-gray-400">(auto)</span>
+                  <span className="sf-text-subtle w-16">ID#</span>
+                  <span className="font-mono sf-text-muted sf-text-muted font-semibold">{nextId}</span>
+                  <span className="text-[10px] sf-text-subtle">(auto)</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-gray-400 w-16">Identifier</span>
-                  <span className="font-mono text-blue-600 dark:text-blue-400">generated on save</span>
-                  <span className="text-[10px] text-gray-400">(8-char hex)</span>
+                  <span className="sf-text-subtle w-16">Identifier</span>
+                  <span className="font-mono sf-text-muted sf-text-muted">generated on save</span>
+                  <span className="text-[10px] sf-text-subtle">(8-char hex)</span>
                 </div>
               </>
             )}
@@ -936,28 +936,28 @@ export function ProductManager() {
           {editPid && (
             <div className={`rounded border text-xs ${
               isRename
-                ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800'
+                ? 'sf-bg-surface-soft sf-bg-surface-soft sf-border-soft sf-border-default'
                 : hasAnyChange
-                  ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700'
-                  : 'bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700'
+                  ? 'sf-bg-surface-soft sf-bg-surface-soft sf-border-soft sf-border-default'
+                  : 'sf-bg-surface-soft sf-bg-surface-soft sf-border-default sf-border-default'
             }`}>
               {/* Header bar */}
               <div className={`px-3 py-2 border-b flex items-center justify-between ${
-                isRename ? 'border-red-200 dark:border-red-800'
-                  : hasAnyChange ? 'border-amber-200 dark:border-amber-700'
-                  : 'border-gray-200 dark:border-gray-700'
+                isRename ? 'sf-border-default sf-border-default'
+                  : hasAnyChange ? 'sf-border-default sf-border-default'
+                  : 'sf-border-default sf-border-default'
               }`}>
                 <span className={`text-[10px] font-bold uppercase tracking-wide ${
-                  isRename ? 'text-red-600 dark:text-red-400'
-                    : hasAnyChange ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-gray-500 dark:text-gray-400'
+                  isRename ? 'sf-status-text-danger sf-status-text-danger'
+                    : hasAnyChange ? 'sf-status-text-warning sf-status-text-warning'
+                    : 'sf-text-muted sf-text-subtle'
                 }`}>
                   {isRename ? 'Impact — Slug Rename' : hasAnyChange ? 'Downstream Impact' : 'Downstream Dependencies'}
                 </span>
                 <span className={`font-semibold tabular-nums ${
-                  isRename ? 'text-red-700 dark:text-red-300'
-                    : hasAnyChange ? 'text-amber-700 dark:text-amber-300'
-                    : 'text-gray-600 dark:text-gray-400'
+                  isRename ? 'sf-status-text-danger sf-status-text-danger'
+                    : hasAnyChange ? 'sf-status-text-warning sf-status-text-warning'
+                    : 'sf-text-muted sf-text-subtle'
                 }`}>
                   5 linked files
                 </span>
@@ -967,18 +967,18 @@ export function ProductManager() {
                 {/* Rename-specific: slug diff */}
                 {isRename && (
                   <div className="font-mono text-[11px]">
-                    <span className="text-red-600 line-through">{editPid}</span>
+                    <span className="sf-status-text-danger line-through">{editPid}</span>
                     {' → '}
-                    <span className="text-green-700 dark:text-green-400">{newSlugPreview}</span>
+                    <span className="sf-status-text-success sf-status-text-success">{newSlugPreview}</span>
                   </div>
                 )}
 
                 {/* Non-rename changes: summary */}
                 {!isRename && hasAnyChange && (
-                  <div className="space-y-0.5 text-amber-700 dark:text-amber-300 text-[11px]">
+                  <div className="space-y-0.5 sf-status-text-warning sf-status-text-warning text-[11px]">
                     {isStatusChange && (
                       <div>
-                        <p>Status: <span className="font-mono line-through text-red-500">{origStatus}</span> &rarr; <span className="font-mono text-green-600">{formStatus}</span></p>
+                        <p>Status: <span className="font-mono line-through sf-status-text-danger">{origStatus}</span> &rarr; <span className="font-mono sf-status-text-success">{formStatus}</span></p>
                         {formStatus === 'inactive' && <p className="text-[10px] mt-0.5">Inactive products excluded from queue processing and pipeline runs.</p>}
                       </div>
                     )}
@@ -991,28 +991,28 @@ export function ProductManager() {
                 {/* Expandable: affected files */}
                 <details className="group" open={isRename}>
                   <summary className={`cursor-pointer select-none text-[11px] font-medium hover:opacity-80 ${
-                    isRename ? 'text-red-700 dark:text-red-300' : 'text-gray-600 dark:text-gray-300'
+                    isRename ? 'sf-status-text-danger sf-status-text-danger' : 'sf-text-muted sf-text-subtle'
                   }`}>
                     Affected files
                   </summary>
                   <div className={`mt-1 font-mono text-[10px] rounded p-1.5 space-y-0.5 overflow-x-auto ${
                     isRename
-                      ? 'bg-red-100 dark:bg-red-900/40'
-                      : 'bg-white/60 dark:bg-gray-800/60'
+                      ? 'sf-bg-surface-soft-strong sf-bg-surface-soft'
+                      : 'bg-white/60 sf-bg-surface-soft/60'
                   }`}>
                     {isRename ? (
                       <>
-                        <div><span className="text-red-500">-</span> specs/inputs/{category}/products/<span className="text-red-600 font-bold">{editPid}</span>.json</div>
-                        <div><span className="text-green-600">+</span> specs/inputs/{category}/products/<span className="text-green-600 font-bold">{newSlugPreview}</span>.json</div>
-                        <div className={`border-t my-0.5 ${isRename ? 'border-red-200 dark:border-red-800' : 'border-gray-200 dark:border-gray-700'}`} />
-                        <div><span className="text-red-500">-</span> */latest/, */runs/, */review/, */published/ under <span className="font-bold">{editPid}</span></div>
-                        <div><span className="text-green-600">+</span> */latest/, */runs/, */review/, */published/ under <span className="font-bold">{newSlugPreview}</span></div>
-                        <div className={`border-t my-0.5 border-red-200 dark:border-red-800`} />
-                        <div><span className="text-red-500">-</span> _overrides/<span className="font-bold">{editPid}</span>.overrides.json</div>
-                        <div><span className="text-green-600">+</span> _overrides/<span className="font-bold">{newSlugPreview}</span>.overrides.json</div>
-                        <div className={`border-t my-0.5 border-red-200 dark:border-red-800`} />
-                        <div><span className="text-red-500">-</span> _queue/{category}/state.json &rarr; products[<span className="font-bold">{editPid}</span>]</div>
-                        <div><span className="text-green-600">+</span> _queue/{category}/state.json &rarr; products[<span className="font-bold">{newSlugPreview}</span>]</div>
+                        <div><span className="sf-status-text-danger">-</span> specs/inputs/{category}/products/<span className="sf-status-text-danger font-bold">{editPid}</span>.json</div>
+                        <div><span className="sf-status-text-success">+</span> specs/inputs/{category}/products/<span className="sf-status-text-success font-bold">{newSlugPreview}</span>.json</div>
+                        <div className={`border-t my-0.5 ${isRename ? 'sf-border-default sf-border-default' : 'sf-border-default sf-border-default'}`} />
+                        <div><span className="sf-status-text-danger">-</span> */latest/, */runs/, */review/, */published/ under <span className="font-bold">{editPid}</span></div>
+                        <div><span className="sf-status-text-success">+</span> */latest/, */runs/, */review/, */published/ under <span className="font-bold">{newSlugPreview}</span></div>
+                        <div className={`border-t my-0.5 sf-border-default sf-border-default`} />
+                        <div><span className="sf-status-text-danger">-</span> _overrides/<span className="font-bold">{editPid}</span>.overrides.json</div>
+                        <div><span className="sf-status-text-success">+</span> _overrides/<span className="font-bold">{newSlugPreview}</span>.overrides.json</div>
+                        <div className={`border-t my-0.5 sf-border-default sf-border-default`} />
+                        <div><span className="sf-status-text-danger">-</span> _queue/{category}/state.json &rarr; products[<span className="font-bold">{editPid}</span>]</div>
+                        <div><span className="sf-status-text-success">+</span> _queue/{category}/state.json &rarr; products[<span className="font-bold">{newSlugPreview}</span>]</div>
                       </>
                     ) : (
                       <>
@@ -1029,10 +1029,10 @@ export function ProductManager() {
                 {/* Expandable: what happens on rename */}
                 {isRename && (
                   <details className="group">
-                    <summary className="cursor-pointer select-none text-[11px] font-medium text-red-700 dark:text-red-300 hover:opacity-80">
+                    <summary className="cursor-pointer select-none text-[11px] font-medium sf-status-text-danger sf-status-text-danger hover:opacity-80">
                       What will happen
                     </summary>
-                    <ul className="mt-1 ml-3 list-disc space-y-0.5 text-red-700 dark:text-red-300 text-[11px]">
+                    <ul className="mt-1 ml-3 list-disc space-y-0.5 sf-status-text-danger sf-status-text-danger text-[11px]">
                       <li>All output artifacts, run history, and review state <strong>migrated automatically</strong></li>
                       <li>Override files moved to new slug</li>
                       <li>Queue entry updated to new slug</li>
@@ -1040,8 +1040,8 @@ export function ProductManager() {
                       <li>ID# and Identifier remain <strong>unchanged</strong> (immutable)</li>
                     </ul>
                     {isStatusChange && (
-                      <p className="mt-1 text-[11px] text-red-700 dark:text-red-300">
-                        Status: <span className="font-mono line-through text-red-500">{origStatus}</span> &rarr; <span className="font-mono text-green-600">{formStatus}</span>
+                      <p className="mt-1 text-[11px] sf-status-text-danger sf-status-text-danger">
+                        Status: <span className="font-mono line-through sf-status-text-danger">{origStatus}</span> &rarr; <span className="font-mono sf-status-text-success">{formStatus}</span>
                       </p>
                     )}
                   </details>
@@ -1049,7 +1049,7 @@ export function ProductManager() {
 
                 {/* Hint when no changes */}
                 {!hasAnyChange && (
-                  <p className="text-[10px] text-gray-400 pt-0.5">Changing <strong>model</strong> or <strong>variant</strong> triggers a full slug rename and artifact migration. Changing <strong>status</strong> or <strong>seed URLs</strong> takes effect on next pipeline run.</p>
+                  <p className="text-[10px] sf-text-subtle pt-0.5">Changing <strong>model</strong> or <strong>variant</strong> triggers a full slug rename and artifact migration. Changing <strong>status</strong> or <strong>seed URLs</strong> takes effect on next pipeline run.</p>
                 )}
               </div>
             </div>
@@ -1061,8 +1061,8 @@ export function ProductManager() {
             const history = editProduct?.rename_history;
             if (!history || history.length === 0) return null;
             return (
-              <details className="group text-[10px] text-gray-400">
-                <summary className="cursor-pointer select-none font-medium hover:text-gray-600 dark:hover:text-gray-300">
+              <details className="group text-[10px] sf-text-subtle">
+                <summary className="cursor-pointer select-none font-medium sf-text-muted sf-text-muted">
                   Rename History ({history.length})
                 </summary>
                 <div className="mt-1 space-y-0.5 ml-1">
@@ -1080,16 +1080,16 @@ export function ProductManager() {
 
           {/* Rename type-to-confirm (GitHub-style) */}
           {confirmAction === 'rename' && (
-            <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-400 dark:border-red-700 rounded p-3 space-y-2">
-              <div className="text-sm font-bold text-red-800 dark:text-red-200">Confirm slug rename</div>
-              <p className="text-xs text-red-700 dark:text-red-300">
+            <div className="sf-bg-surface-soft sf-bg-surface-soft border-2 sf-border-soft sf-border-default rounded p-3 space-y-2">
+              <div className="text-sm font-bold sf-status-text-danger sf-status-text-danger">Confirm slug rename</div>
+              <p className="text-xs sf-status-text-danger sf-status-text-danger">
                 This will migrate <strong>all</strong> artifacts from the old slug to the new slug.
                 This action rewrites every file path system-wide.
               </p>
-              <p className="text-xs text-red-700 dark:text-red-300">
+              <p className="text-xs sf-status-text-danger sf-status-text-danger">
                 To confirm, type the new slug below:
               </p>
-              <div className="font-mono text-xs bg-red-100 dark:bg-red-900/50 rounded px-2 py-1 text-red-800 dark:text-red-200 select-all">
+              <div className="font-mono text-xs sf-bg-surface-soft-strong sf-bg-surface-soft rounded px-2 py-1 sf-status-text-danger sf-status-text-danger select-all">
                 {renameConfirmPhrase}
               </div>
               <input
@@ -1097,20 +1097,20 @@ export function ProductManager() {
                 value={confirmInput}
                 onChange={(e) => setConfirmInput(e.target.value)}
                 placeholder="Type the new slug to confirm"
-                className="w-full px-2 py-1.5 text-sm font-mono border-2 border-red-300 dark:border-red-600 rounded bg-white dark:bg-gray-800 focus:border-red-500 focus:outline-none"
+                className="w-full px-2 py-1.5 text-sm font-mono border-2 sf-border-soft sf-border-default rounded bg-white sf-bg-surface-soft sf-border-default focus:outline-none"
                 autoFocus
               />
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={handleSave}
                   disabled={confirmInput !== renameConfirmPhrase || isSaving}
-                  className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 text-xs font-semibold sf-bg-surface-soft-strong text-white rounded sf-hover-bg-surface-soft-strong disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {isSaving ? 'Migrating...' : 'I understand, rename this product'}
                 </button>
                 <button
                   onClick={() => { setConfirmAction(null); setConfirmInput(''); }}
-                  className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="px-3 py-1.5 text-xs border sf-border-soft sf-border-soft rounded sf-hover-bg-surface-soft-strong sf-hover-bg-surface-soft-strong"
                 >
                   Cancel
                 </button>
@@ -1120,13 +1120,13 @@ export function ProductManager() {
 
           {/* Save type-to-confirm (GitHub-style) — for non-rename changes */}
           {confirmAction === 'save' && (
-            <div className="bg-amber-50 dark:bg-amber-900/30 border-2 border-amber-400 dark:border-amber-700 rounded p-3 space-y-2">
-              <div className="text-sm font-bold text-amber-800 dark:text-amber-200">Confirm changes</div>
-              <div className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
+            <div className="sf-bg-surface-soft sf-bg-surface-soft border-2 sf-border-soft sf-border-default rounded p-3 space-y-2">
+              <div className="text-sm font-bold sf-status-text-warning sf-status-text-warning">Confirm changes</div>
+              <div className="text-xs sf-status-text-warning sf-status-text-warning space-y-1">
                 <p>You are about to save changes to <strong>{editPid}</strong>:</p>
                 <ul className="list-disc ml-3 space-y-0.5">
                   {isStatusChange && (
-                    <li>Status: <span className="font-mono line-through text-red-500">{origStatus}</span> &rarr; <span className="font-mono text-green-600">{formStatus}</span>
+                    <li>Status: <span className="font-mono line-through sf-status-text-danger">{origStatus}</span> &rarr; <span className="font-mono sf-status-text-success">{formStatus}</span>
                       {formStatus === 'inactive' && <span> — product will be excluded from queue and pipeline</span>}
                     </li>
                   )}
@@ -1135,10 +1135,10 @@ export function ProductManager() {
                   )}
                 </ul>
               </div>
-              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+              <p className="text-xs sf-status-text-warning sf-status-text-warning mt-1">
                 To confirm, type the product slug below:
               </p>
-              <div className="font-mono text-xs bg-amber-100 dark:bg-amber-900/50 rounded px-2 py-1 text-amber-800 dark:text-amber-200 select-all">
+              <div className="font-mono text-xs sf-bg-surface-soft-strong sf-bg-surface-soft rounded px-2 py-1 sf-status-text-warning sf-status-text-warning select-all">
                 {editPid}
               </div>
               <input
@@ -1146,20 +1146,20 @@ export function ProductManager() {
                 value={confirmInput}
                 onChange={(e) => setConfirmInput(e.target.value)}
                 placeholder="Type the product slug to confirm"
-                className="w-full px-2 py-1.5 text-sm font-mono border-2 border-amber-300 dark:border-amber-600 rounded bg-white dark:bg-gray-800 focus:border-amber-500 focus:outline-none"
+                className="w-full sf-input text-sm font-mono"
                 autoFocus
               />
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={handleSave}
                   disabled={confirmInput !== editPid || isSaving}
-                  className="px-3 py-1.5 text-xs font-semibold bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 text-xs font-semibold sf-warning-button-solid disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {isSaving ? 'Saving...' : 'Confirm save'}
                 </button>
                 <button
                   onClick={() => { setConfirmAction(null); setConfirmInput(''); }}
-                  className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="px-3 py-1.5 text-xs border sf-border-soft sf-border-soft rounded sf-hover-bg-surface-soft-strong sf-hover-bg-surface-soft-strong"
                 >
                   Cancel
                 </button>
@@ -1169,9 +1169,9 @@ export function ProductManager() {
 
           {/* Delete type-to-confirm (GitHub-style) */}
           {confirmAction === 'delete' && (
-            <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-400 dark:border-red-700 rounded p-3 space-y-2">
-              <div className="text-sm font-bold text-red-800 dark:text-red-200">Confirm deletion</div>
-              <div className="text-xs text-red-700 dark:text-red-300 space-y-1">
+            <div className="sf-bg-surface-soft sf-bg-surface-soft border-2 sf-border-soft sf-border-default rounded p-3 space-y-2">
+              <div className="text-sm font-bold sf-status-text-danger sf-status-text-danger">Confirm deletion</div>
+              <div className="text-xs sf-status-text-danger sf-status-text-danger space-y-1">
                 <p>This will <strong>permanently delete</strong> this product from the catalog:</p>
                 <ul className="list-disc ml-3 space-y-0.5">
                   <li>Catalog entry will be removed</li>
@@ -1180,10 +1180,10 @@ export function ProductManager() {
                   <li>Output artifacts will remain on disk but become unlinked</li>
                 </ul>
               </div>
-              <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+              <p className="text-xs sf-status-text-danger sf-status-text-danger mt-1">
                 To confirm, type the product slug below:
               </p>
-              <div className="font-mono text-xs bg-red-100 dark:bg-red-900/50 rounded px-2 py-1 text-red-800 dark:text-red-200 select-all">
+              <div className="font-mono text-xs sf-bg-surface-soft-strong sf-bg-surface-soft rounded px-2 py-1 sf-status-text-danger sf-status-text-danger select-all">
                 {deleteConfirmPhrase}
               </div>
               <input
@@ -1191,20 +1191,20 @@ export function ProductManager() {
                 value={confirmInput}
                 onChange={(e) => setConfirmInput(e.target.value)}
                 placeholder="Type the product slug to confirm"
-                className="w-full px-2 py-1.5 text-sm font-mono border-2 border-red-300 dark:border-red-600 rounded bg-white dark:bg-gray-800 focus:border-red-500 focus:outline-none"
+                className="w-full px-2 py-1.5 text-sm font-mono border-2 sf-border-soft sf-border-default rounded bg-white sf-bg-surface-soft sf-border-default focus:outline-none"
                 autoFocus
               />
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => { if (editPid) deleteMut.mutate(editPid); }}
                   disabled={confirmInput !== deleteConfirmPhrase || deleteMut.isPending}
-                  className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 text-xs font-semibold sf-bg-surface-soft-strong text-white rounded sf-hover-bg-surface-soft-strong disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {deleteMut.isPending ? 'Deleting...' : 'I understand, delete this product'}
                 </button>
                 <button
                   onClick={() => { setConfirmAction(null); setConfirmInput(''); }}
-                  className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="px-3 py-1.5 text-xs border sf-border-soft sf-border-soft rounded sf-hover-bg-surface-soft-strong sf-hover-bg-surface-soft-strong"
                 >
                   Cancel
                 </button>
@@ -1214,11 +1214,11 @@ export function ProductManager() {
 
           {/* Error */}
           {saveError && (
-            <p className="text-xs text-red-600">{(saveError as Error).message}</p>
+            <p className="text-xs sf-status-text-danger">{(saveError as Error).message}</p>
           )}
 
           {/* Actions */}
-          <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex gap-2 pt-2 border-t sf-border-default sf-border-default">
             {!confirmAction && (
               <>
                 <button
@@ -1247,16 +1247,16 @@ export function ProductManager() {
       </div>
       {bulkOpen && (
         <div className="fixed inset-0 z-40 bg-black/45 p-4 flex items-start md:items-center justify-center">
-          <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col">
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden bg-white sf-bg-surface-soft rounded border sf-border-default sf-border-default shadow-2xl flex flex-col">
+            <div className="px-4 py-3 border-b sf-border-default sf-border-default flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-semibold">Bulk Paste Models + Variants</h4>
-                <p className="text-xs text-gray-500 mt-0.5">Type or paste <strong>Model</strong> and <strong>Variant</strong> columns (supports tab-separated paste from your spreadsheet tool).</p>
+                <p className="text-xs sf-text-muted mt-0.5">Type or paste <strong>Model</strong> and <strong>Variant</strong> columns (supports tab-separated paste from your spreadsheet tool).</p>
               </div>
               <button
                 onClick={closeBulkModal}
                 disabled={bulkMut.isPending}
-                className="text-gray-400 hover:text-gray-600 text-lg leading-none disabled:opacity-40"
+                className="sf-text-subtle sf-text-muted text-lg leading-none disabled:opacity-40"
                 aria-label="Close bulk import modal"
               >
                 &times;
@@ -1279,7 +1279,7 @@ export function ProductManager() {
                     ))}
                   </select>
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs sf-text-muted">
                   Type or paste from a spreadsheet. Variant can be blank.
                 </div>
               </div>
@@ -1298,17 +1298,17 @@ export function ProductManager() {
               </div>
 
               <div className="flex flex-wrap gap-2 text-xs">
-                <span className="px-2 py-1 rounded bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">Ready: {bulkCounts.ready}</span>
-                <span className="px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">Existing: {bulkCounts.existing}</span>
-                <span className="px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">Duplicates: {bulkCounts.duplicate}</span>
-                <span className="px-2 py-1 rounded bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">Invalid: {bulkCounts.invalid}</span>
-                <span className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">Rows: {bulkPreviewRows.length}</span>
+                <span className="px-2 py-1 rounded sf-bg-surface-soft-strong sf-bg-surface-soft sf-status-text-success sf-status-text-success">Ready: {bulkCounts.ready}</span>
+                <span className="px-2 py-1 rounded sf-bg-surface-soft-strong sf-bg-surface-soft sf-text-muted sf-text-muted">Existing: {bulkCounts.existing}</span>
+                <span className="px-2 py-1 rounded sf-bg-surface-soft-strong sf-bg-surface-soft sf-status-text-warning sf-status-text-warning">Duplicates: {bulkCounts.duplicate}</span>
+                <span className="px-2 py-1 rounded sf-bg-surface-soft-strong sf-bg-surface-soft sf-status-text-danger sf-status-text-danger">Invalid: {bulkCounts.invalid}</span>
+                <span className="px-2 py-1 rounded sf-bg-surface-soft-strong sf-bg-surface-soft-strong sf-text-muted sf-dk-fg-100">Rows: {bulkPreviewRows.length}</span>
               </div>
 
               {bulkPreviewRows.length > 0 && (
-              <div className="border border-gray-200 dark:border-gray-700 rounded overflow-auto max-h-[24vh]">
+              <div className="border sf-border-default sf-border-default rounded overflow-auto max-h-[24vh]">
                 <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-gray-50 dark:bg-gray-900/70 border-b border-gray-200 dark:border-gray-700">
+                  <thead className="sticky top-0 sf-bg-surface-soft sf-dk-surface-900a70 border-b sf-border-default sf-border-default">
                     <tr>
                       <th className="text-left px-2 py-1.5 w-12">#</th>
                       <th className="text-left px-2 py-1.5">Model</th>
@@ -1320,18 +1320,18 @@ export function ProductManager() {
                   <tbody>
                     {bulkPreviewRows.map((row) => {
                       const statusCls = row.status === 'ready'
-                        ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                        ? 'sf-bg-surface-soft-strong sf-bg-surface-soft sf-status-text-success sf-status-text-success'
                         : row.status === 'already_exists'
-                          ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                          ? 'sf-bg-surface-soft-strong sf-bg-surface-soft sf-text-muted sf-text-muted'
                           : row.status === 'duplicate_in_paste'
-                            ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
-                            : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300';
+                            ? 'sf-bg-surface-soft-strong sf-bg-surface-soft sf-status-text-warning sf-status-text-warning'
+                            : 'sf-bg-surface-soft-strong sf-bg-surface-soft sf-status-text-danger sf-status-text-danger';
                       return (
-                        <tr key={`${row.rowNumber}-${row.productId}-${row.raw}`} className="border-b border-gray-100 dark:border-gray-700/50">
-                          <td className="px-2 py-1.5 text-gray-500">{row.rowNumber}</td>
-                          <td className="px-2 py-1.5">{row.model || <span className="italic text-gray-400">â€”</span>}</td>
-                          <td className="px-2 py-1.5">{row.variant || <span className="italic text-gray-400">â€”</span>}</td>
-                          <td className="px-2 py-1.5 font-mono text-[11px] text-gray-600 dark:text-gray-300">{row.productId || <span className="italic text-gray-400">â€”</span>}</td>
+                        <tr key={`${row.rowNumber}-${row.productId}-${row.raw}`} className="border-b sf-border-default/50">
+                          <td className="px-2 py-1.5 sf-text-muted">{row.rowNumber}</td>
+                          <td className="px-2 py-1.5">{row.model || <span className="italic sf-text-subtle">â€”</span>}</td>
+                          <td className="px-2 py-1.5">{row.variant || <span className="italic sf-text-subtle">â€”</span>}</td>
+                          <td className="px-2 py-1.5 font-mono text-[11px] sf-text-muted sf-text-subtle">{row.productId || <span className="italic sf-text-subtle">â€”</span>}</td>
                           <td className="px-2 py-1.5">
                             <span className={`inline-block px-2 py-0.5 rounded-full ${statusCls}`}>{row.reason}</span>
                           </td>
@@ -1344,32 +1344,32 @@ export function ProductManager() {
               )}
 
               {bulkMut.error && (
-                <div className="px-3 py-2 text-xs rounded bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300">
+                <div className="px-3 py-2 text-xs rounded sf-bg-surface-soft sf-bg-surface-soft border sf-border-default sf-border-default sf-status-text-danger sf-status-text-danger">
                   Bulk import failed: {(bulkMut.error as Error).message}
                 </div>
               )}
 
               {bulkMut.data?.results && bulkMut.data.results.length > 0 && (
-                <details className="text-xs border border-gray-200 dark:border-gray-700 rounded">
-                  <summary className="cursor-pointer px-3 py-2 bg-gray-50 dark:bg-gray-900/60 font-medium">
+                <details className="text-xs border sf-border-default sf-border-default rounded">
+                  <summary className="cursor-pointer px-3 py-2 sf-bg-surface-soft sf-dk-surface-900a50 font-medium">
                     Last run details ({bulkMut.data.results.length} rows)
                   </summary>
                   <div className="max-h-40 overflow-auto p-2 space-y-1">
                     {bulkMut.data.results.slice(0, 50).map((row, idx) => (
-                      <div key={`${idx}-${row.index}-${row.productId || ''}`} className="font-mono text-[11px] text-gray-700 dark:text-gray-300">
+                      <div key={`${idx}-${row.index}-${row.productId || ''}`} className="font-mono text-[11px] sf-text-muted sf-text-subtle">
                         {`[${row.index + 1}] ${row.model}${row.variant ? ` | ${row.variant}` : ''} -> ${row.status}${row.reason ? ` (${row.reason})` : ''}`}
                       </div>
                     ))}
                     {bulkMut.data.results.length > 50 && (
-                      <div className="text-gray-500">Showing first 50 rows.</div>
+                      <div className="sf-text-muted">Showing first 50 rows.</div>
                     )}
                   </div>
                 </details>
               )}
             </div>
 
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between gap-2">
-              <div className="text-xs text-gray-500">
+            <div className="px-4 py-3 border-t sf-border-default sf-border-default flex items-center justify-between gap-2">
+              <div className="text-xs sf-text-muted">
                 Ready rows will be added as new products for <strong>{bulkBrand || 'selected brand'}</strong>.
               </div>
               <div className="flex gap-2">
@@ -1395,3 +1395,4 @@ export function ProductManager() {
     </>
   );
 }
+

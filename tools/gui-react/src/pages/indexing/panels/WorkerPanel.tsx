@@ -34,12 +34,13 @@ const LANE_LABELS: Record<string, string> = {
   llm: 'LLM',
 };
 
-const LANE_COLORS: Record<string, string> = {
-  search: 'bg-blue-500',
-  fetch: 'bg-green-500',
-  parse: 'bg-yellow-500',
-  llm: 'bg-purple-500',
-};
+function laneBarColor(name: string): string {
+  if (name === 'search') return 'var(--sf-state-info-fg)';
+  if (name === 'fetch') return 'var(--sf-state-success-fg)';
+  if (name === 'parse') return 'var(--sf-state-warning-fg)';
+  if (name === 'llm') return 'rgb(var(--sf-color-accent-rgb))';
+  return 'rgb(var(--sf-color-text-muted-rgb))';
+}
 
 export function WorkerPanel({
   collapsed,
@@ -52,20 +53,20 @@ export function WorkerPanel({
   const totalActive = lanes.reduce((s, l) => s + l.active, 0);
 
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-3" style={{ order: 58 }}>
+    <div className="sf-surface-panel p-3 space-y-3" style={{ order: 58 }}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <div className="flex items-center text-sm font-semibold sf-text-primary">
           <button
             onClick={onToggle}
-            className="inline-flex items-center justify-center w-5 h-5 mr-1 text-[10px] rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="inline-flex items-center justify-center w-5 h-5 mr-1 sf-text-caption sf-icon-button"
             title={collapsed ? 'Open panel' : 'Close panel'}
           >
             {collapsed ? '+' : '-'}
           </button>
-          <span>Worker Lanes (Phase 11)</span>
+          <span>Worker Lanes</span>
           <Tip text="Per-lane worker queues with independent concurrency, budget enforcement, and pause/resume controls." />
         </div>
-        <div className="ml-auto flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+        <div className="ml-auto flex items-center gap-2 sf-text-caption sf-text-muted">
           {totalActive} active | {totalCompleted} completed
         </div>
       </div>
@@ -75,44 +76,47 @@ export function WorkerPanel({
             {lanes.map((lane) => (
               <div
                 key={lane.name}
-                className="rounded border border-gray-200 dark:border-gray-700 p-2 space-y-1"
+                className="sf-surface-elevated p-2 space-y-1"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                  <span className="sf-text-caption font-semibold sf-text-primary">
                     {LANE_LABELS[lane.name] || lane.name}
                   </span>
                   {lane.paused && (
-                    <span className="text-[10px] px-1 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 font-medium">
+                    <span className="sf-text-caption px-1 py-0.5 rounded sf-chip-warning font-medium">
                       PAUSED
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="flex-1 h-2 rounded bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                  <div className="flex-1 h-2 rounded sf-surface-panel overflow-hidden">
                     <div
-                      className={`h-full rounded ${LANE_COLORS[lane.name] || 'bg-gray-500'}`}
-                      style={{ width: `${lane.concurrency > 0 ? Math.round((lane.active / lane.concurrency) * 100) : 0}%` }}
+                      className="h-full rounded"
+                      style={{
+                        width: `${lane.concurrency > 0 ? Math.round((lane.active / lane.concurrency) * 100) : 0}%`,
+                        backgroundColor: laneBarColor(lane.name),
+                      }}
                     />
                   </div>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                  <span className="sf-text-caption sf-text-muted">
                     {lane.active}/{lane.concurrency}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-1 text-[10px] text-gray-500 dark:text-gray-400">
+                <div className="flex flex-wrap gap-1 sf-text-caption sf-text-muted">
                   <span>Q:{lane.queued}</span>
                   <span>Done:{lane.completed}</span>
                   <span>Fail:{lane.failed}</span>
                   {lane.budget_rejected > 0 && (
-                    <span className="text-red-500">Budget:{lane.budget_rejected}</span>
+                    <span className="sf-status-text-danger">Budget:{lane.budget_rejected}</span>
                   )}
                 </div>
               </div>
             ))}
           </div>
           {budgetSnapshot && (
-            <div className="rounded border border-gray-200 dark:border-gray-700 p-2">
-              <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Budget</div>
-              <div className="flex flex-wrap gap-3 text-[10px] text-gray-600 dark:text-gray-400">
+            <div className="sf-surface-elevated p-2">
+              <div className="sf-text-caption font-semibold sf-text-primary mb-1">Budget</div>
+              <div className="flex flex-wrap gap-3 sf-text-caption sf-text-muted">
                 <span>URLs: {budgetSnapshot.urls}/{budgetSnapshot.budgets?.max_urls_per_product ?? '-'}</span>
                 <span>Queries: {budgetSnapshot.queries}/{budgetSnapshot.budgets?.max_queries_per_product ?? '-'}</span>
                 <span>LLM: {budgetSnapshot.llm_calls}/{budgetSnapshot.budgets?.max_llm_calls_per_product ?? '-'}</span>

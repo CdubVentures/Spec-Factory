@@ -28,6 +28,27 @@ test('convergence defaults are defined in settings manifest', () => {
   assert.equal(sharedDefaultsText.includes('serpTriageEnabled: true'), true, 'convergence serp triage boolean default should be shared-manifest-owned');
   assert.equal(sharedDefaultsText.includes('laneConcurrencyFetch: 4'), true, 'lane concurrency defaults should be shared-manifest-owned');
   assert.equal(sharedDefaultsText.includes('retrievalMaxPrimeSources: 8'), true, 'retrieval defaults should be shared-manifest-owned');
+
+  assert.equal(
+    manifestText.includes("{ key: 'laneConcurrencySearch'"),
+    true,
+    'convergence knob manifest should expose lane concurrency search control',
+  );
+  assert.equal(
+    manifestText.includes("{ key: 'laneConcurrencyFetch'"),
+    true,
+    'convergence knob manifest should expose lane concurrency fetch control',
+  );
+  assert.equal(
+    manifestText.includes("{ key: 'laneConcurrencyParse'"),
+    true,
+    'convergence knob manifest should expose lane concurrency parse control',
+  );
+  assert.equal(
+    manifestText.includes("{ key: 'laneConcurrencyLlm'"),
+    true,
+    'convergence knob manifest should expose lane concurrency llm control',
+  );
 });
 
 test('convergence authority bootstraps and normalizes settings from manifest defaults', () => {
@@ -51,6 +72,11 @@ test('pipeline and runtime convergence controls resolve defaults through shared 
     pipelineText.includes('parseConvergenceNumericInput'),
     true,
     'pipeline numeric controls should parse through shared authority helpers',
+  );
+  assert.equal(
+    pipelineText.includes("label === 'Lane Concurrency'"),
+    true,
+    'pipeline convergence nested sidebar should define an icon branch for lane concurrency group',
   );
   assert.equal(pipelineText.includes('checked={Boolean(value)}'), false, 'pipeline boolean controls should not coerce undefined to false when defaults exist');
   assert.equal(

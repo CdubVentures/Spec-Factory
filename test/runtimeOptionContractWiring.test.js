@@ -119,12 +119,12 @@ test('runtime/storage option values are centralized in shared settings option co
     'runtime panel should render resume mode options from shared manifest options',
   );
   assert.equal(
-    runtimePanelText.includes('<option value="fast">run profile: fast</option>'),
+    runtimePanelText.includes('<option value="fast">Run Profile: fast</option>'),
     false,
     'runtime panel should not hardcode runtime profile option literals',
   );
   assert.equal(
-    runtimePanelText.includes('<option value="none">search provider: none</option>'),
+    runtimePanelText.includes('<option value="none">Search Provider: none</option>'),
     false,
     'runtime panel should not hardcode search-provider option literals',
   );

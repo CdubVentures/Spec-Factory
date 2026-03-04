@@ -84,11 +84,11 @@ function SortableGroupHeader({
       className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors ${!isFirst ? 'mt-3' : ''} ${
         isSelected
           ? 'bg-accent/10 border border-accent/25'
-          : 'hover:bg-gray-50 dark:hover:bg-gray-800 border border-transparent'
+          : 'border border-transparent hover:opacity-90'
       }`}
       onClick={() => { if (!editing) onSelect(group); }}
     >
-      <span className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 select-none text-[10px]"
+      <span className="cursor-grab active:cursor-grabbing sf-text-subtle hover:sf-text-muted dark:hover:sf-text-muted select-none text-[10px]"
         {...attributes} {...listeners}>
         &#x2630;
       </span>
@@ -96,10 +96,10 @@ function SortableGroupHeader({
         <div className="flex-1 flex flex-col gap-0.5">
           <input
             autoFocus
-            className={`w-full text-xs font-semibold uppercase bg-white dark:bg-gray-700 border rounded px-1.5 py-0.5 outline-none ${
+            className={`w-full px-1.5 py-0.5 text-xs font-semibold uppercase rounded sf-input ${
               renameError
-                ? 'border-red-400 focus:border-red-400 focus:ring-1 focus:ring-red-300'
-                : 'border-gray-300 dark:border-gray-600 focus:border-accent focus:ring-1 focus:ring-accent/30'
+                ? 'sf-border-danger-soft focus:sf-border-danger-soft'
+                : 'sf-border-soft focus:border-accent focus:ring-1 focus:ring-accent/30'
             }`}
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
@@ -110,12 +110,12 @@ function SortableGroupHeader({
             onBlur={commitRename}
             onClick={(e) => e.stopPropagation()}
           />
-          {renameError && <span className="text-[9px] text-red-500 leading-tight">{renameError}</span>}
+          {renameError && <span className="text-[9px] sf-status-text-danger leading-tight">{renameError}</span>}
         </div>
       ) : (
         <h4
           className={`text-xs font-semibold uppercase flex-1 ${
-            isSelected ? 'text-accent' : 'text-gray-400'
+            isSelected ? 'text-accent' : 'sf-text-subtle'
           }`}
           onDoubleClick={(e) => { e.stopPropagation(); setEditValue(group); setEditing(true); }}
         >{group}</h4>
@@ -124,12 +124,12 @@ function SortableGroupHeader({
         <div className="flex items-center gap-0.5">
           <button
             onClick={(e) => { e.stopPropagation(); setEditValue(group); setEditing(true); }}
-            className="text-gray-400 hover:text-accent text-[10px] px-1 py-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="px-1 py-0.5 text-[10px] rounded sf-text-subtle hover:text-accent hover:opacity-80"
             title="Rename group"
           >&#9998;</button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(group); }}
-            className="text-gray-400 hover:text-red-500 text-[10px] px-1 py-0.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+            className="px-1 py-0.5 text-[10px] rounded sf-status-text-danger hover:opacity-80"
             title={`Delete group "${group}"`}
           >&#x2715;</button>
         </div>
@@ -163,7 +163,7 @@ function SortableKeyItem({
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-1">
       <span
-        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 select-none text-[10px]"
+        className="cursor-grab active:cursor-grabbing sf-text-subtle hover:sf-text-muted dark:hover:sf-text-muted select-none text-[10px]"
         {...attributes}
         {...listeners}
       >
@@ -174,8 +174,8 @@ function SortableKeyItem({
         className={`block flex-1 text-left px-2 py-1 text-sm rounded ${
           isSelected
             ? 'bg-accent/10 text-accent font-medium'
-            : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-        }${isEdited ? ' border-l-2 border-amber-400' : ''}`}
+            : 'hover:opacity-90'
+        }${isEdited ? ' border-l-2 sf-border-warning-soft' : ''}`}
       >
         {label}
       </button>
@@ -265,9 +265,9 @@ export default function DraggableKeyList({
       </SortableContext>
       <DragOverlay>
         {activeId ? (
-          <div className="bg-white dark:bg-gray-800 shadow-lg rounded px-3 py-1.5 text-sm font-medium border border-accent/30">
+          <div className="sf-surface-elevated shadow-lg rounded px-3 py-1.5 text-sm font-medium border border-accent/30">
             {activeId.startsWith('__grp::') ? (
-              <span className="text-xs font-semibold uppercase text-gray-400">{overlayLabel}</span>
+              <span className="text-xs font-semibold uppercase sf-text-subtle">{overlayLabel}</span>
             ) : (
               overlayLabel
             )}

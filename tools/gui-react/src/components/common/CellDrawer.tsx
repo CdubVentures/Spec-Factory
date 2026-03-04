@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { pct } from '../../utils/formatting';
 import { hasKnownValue } from '../../utils/fieldNormalize';
 import { Spinner } from './Spinner';
+import { ActionTooltip } from './ActionTooltip';
 import {
   DrawerShell,
   DrawerSection,
@@ -62,21 +63,21 @@ function SourceBadge({ candidate }: { candidate: ReviewCandidate }) {
   const tier = candidate.tier;
   const tierLabel = tier != null ? `T${tier}` : '';
   const tierColor = tier === 1
-    ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+    ? 'sf-chip-success'
     : tier === 2
-      ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300';
+      ? 'sf-chip-info'
+      : 'sf-chip-neutral';
 
   return (
     <div className="flex gap-1 items-center flex-wrap">
       {tierLabel && (
-        <span className={`px-1.5 py-0 text-[9px] rounded ${tierColor}`}>{tierLabel}</span>
+        <span className={`px-1.5 py-0 sf-text-nano rounded ${tierColor}`}>{tierLabel}</span>
       )}
       {candidate.source && (
-        <span className="text-[9px] text-gray-400">{candidate.source}</span>
+        <span className="sf-text-nano sf-text-subtle">{candidate.source}</span>
       )}
       {candidate.method && (
-        <span className="text-[9px] text-gray-400">via {candidate.method}</span>
+        <span className="sf-text-nano sf-text-subtle">via {candidate.method}</span>
       )}
     </div>
   );
@@ -99,9 +100,9 @@ function EvidenceSnippet({ candidate }: { candidate: ReviewCandidate }) {
     const after = snippetText.slice(end);
     highlighted = (
       <>
-        <span className="text-gray-500">{before}</span>
-        <mark className="bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 px-0.5 rounded">{match}</mark>
-        <span className="text-gray-500">{after}</span>
+        <span className="sf-evidence-context-text">{before}</span>
+        <mark className="sf-evidence-highlight px-0.5 rounded">{match}</mark>
+        <span className="sf-evidence-context-text">{after}</span>
       </>
     );
   } else if (quote && snippetText) {
@@ -111,24 +112,24 @@ function EvidenceSnippet({ candidate }: { candidate: ReviewCandidate }) {
       const after = snippetText.slice(index + quote.length);
       highlighted = (
         <>
-          <span className="text-gray-500">{before}</span>
-          <mark className="bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 px-0.5 rounded">{quote}</mark>
-          <span className="text-gray-500">{after}</span>
+          <span className="sf-evidence-context-text">{before}</span>
+          <mark className="sf-evidence-highlight px-0.5 rounded">{quote}</mark>
+          <span className="sf-evidence-context-text">{after}</span>
         </>
       );
     }
   }
 
   return (
-    <div className="space-y-1.5 border border-gray-200 dark:border-gray-700 rounded p-2 bg-gray-50 dark:bg-gray-900">
+    <div className="space-y-1.5 rounded p-2 sf-review-evidence-card">
       {evidence.url && (
         <div className="flex items-center gap-1.5">
-          {host && <span className="text-[10px] text-gray-500 shrink-0">{host}</span>}
+          {host && <span className="sf-text-micro sf-evidence-context-text shrink-0">{host}</span>}
           <a
             href={evidence.url}
             target="_blank"
             rel="noreferrer"
-            className="text-accent hover:underline text-[11px] truncate"
+            className="sf-review-link-accent hover:underline sf-text-caption truncate"
             title={evidence.url}
           >
             {evidence.url}
@@ -141,11 +142,11 @@ function EvidenceSnippet({ candidate }: { candidate: ReviewCandidate }) {
         </div>
       )}
       {!snippetText && quote && (
-        <div className="text-[11px] leading-relaxed italic text-gray-600 dark:text-gray-400">
+        <div className="sf-text-caption leading-relaxed italic sf-review-evidence-quote">
           &ldquo;{quote}&rdquo;
         </div>
       )}
-      <div className="flex gap-3 text-[9px] text-gray-400">
+      <div className="flex gap-3 sf-text-nano sf-review-evidence-meta">
         {evidence.snippet_id && <span>snippet: {evidence.snippet_id.slice(0, 8)}</span>}
         {evidence.retrieved_at && <span>{evidence.retrieved_at.slice(0, 10)}</span>}
       </div>
@@ -283,26 +284,23 @@ export function CellDrawer({
   const hasAnyPending = hasPrimary || hasShared;
   const hasCandidateRows = candidates.length > 0;
   const hasMeaningfulCandidates = candidates.some((candidate) => isMeaningfulValue(candidate?.value));
-  const confirmSharedButtonClass = 'bg-purple-600 hover:bg-purple-700';
-  const confirmPrimaryBannerClass = candidateUiContext === 'grid'
-    ? 'text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20'
-    : 'text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20';
-  const confirmSharedBannerClass = 'text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20';
-  const confirmPrimaryBadgeClass = candidateUiContext === 'grid'
-    ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300'
-    : 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300';
-  const confirmSharedBadgeClass = 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300';
+  const confirmSharedButtonClass = 'sf-shared-confirm-button';
+  const confirmPrimaryBannerClass = 'sf-review-ai-pending-banner';
+  const confirmSharedBannerClass = 'sf-review-ai-pending-banner';
+  const confirmPrimaryBadgeClass = 'sf-review-ai-pending-badge';
+  const confirmSharedBadgeClass = 'sf-review-ai-pending-badge';
   const acceptButtonClass = candidateUiContext === 'grid'
-    ? 'bg-accent hover:bg-blue-600'
-    : 'bg-violet-600 hover:bg-violet-700';
+    ? 'sf-item-accept-button'
+    : 'sf-shared-accept-button';
   const acceptCandidateTitle = candidateUiContext === 'grid'
     ? 'Accept this candidate as the grid item value.'
     : 'Accept this candidate as the shared value (component/list/enum).';
   const acceptCurrentTitle = candidateUiContext === 'grid'
     ? 'Accept the current selected grid item value.'
     : 'Accept the current shared value.';
-  const confirmPrimaryTitle = 'AI Confirm item-level review without changing the selected value.';
-  const confirmSharedTitle = 'AI Confirm shared review (component/list/enum) without changing the selected value.';
+  const confirmPrimaryTooltip = 'Confirm item AI review without changing the selected value.';
+  const confirmSharedTooltip = 'Confirm shared AI review without changing the selected value.';
+  const runAiReviewTooltip = 'Run AI Review for this value and update candidate suggestions.';
   // Normalize current value for matching
   const selectedValueToken = currentValueIsMeaningful ? normalizeComparable(currentValue.value) : '';
 
@@ -356,55 +354,58 @@ export function CellDrawer({
         />
         <DrawerBadges badges={badges} />
         {currentValue.overridden && (
-          <div className="mt-1 px-2 py-1 text-[11px] text-center text-blue-600 dark:text-blue-400 font-medium border border-blue-200 dark:border-blue-800 rounded bg-blue-50 dark:bg-blue-900/20">
+          <div className="mt-1 px-2 py-1 text-center font-medium sf-status sf-status-info">
             Overridden (manual)
           </div>
         )}
         {!currentValue.overridden && isCurrentAccepted && !hasAnyPending && (
-          <div className="mt-1 px-2 py-1 text-[11px] text-center text-green-600 dark:text-green-400 font-medium border border-green-200 dark:border-green-800 rounded bg-green-50 dark:bg-green-900/20">
+          <div className="mt-1 px-2 py-1 text-center font-medium sf-status sf-status-success">
             Accepted
           </div>
         )}
         {/* Two-lane AI status banners */}
         {!currentValue.overridden && hasPrimary && (currentValueIsMeaningful || hasMeaningfulCandidates) && (
           <div className={`mt-1 px-2 py-1 text-[11px] font-medium border rounded ${confirmPrimaryBannerClass}`}>
-            Item AI Review: Pending (candidate-scoped)
+            AI Pending
           </div>
         )}
         {!currentValue.overridden && hasShared && (currentValueIsMeaningful || hasMeaningfulCandidates) && (
           <div className={`mt-1 px-2 py-1 text-[11px] font-medium border rounded ${confirmSharedBannerClass}`}>
-            Shared AI Review: Pending (candidate-scoped)
+            AI Pending
           </div>
         )}
         {showPrimaryFallbackAction && (
-          <button
-            onClick={onConfirmPrimary}
-            disabled={isPending}
-            title={confirmPrimaryTitle}
-            className="mt-1 w-full px-2 py-1.5 text-[11px] bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50"
-          >
-            {candidateUiContext === 'grid' ? 'Confirm Item' : 'Confirm'}
-          </button>
+          <ActionTooltip text={confirmPrimaryTooltip}>
+            <button
+              onClick={onConfirmPrimary}
+              disabled={isPending}
+              className="mt-1 w-full px-2 py-1.5 text-[11px] sf-confirm-button-solid transition-colors disabled:opacity-50"
+            >
+              Confirm
+            </button>
+          </ActionTooltip>
         )}
         {showSharedFallbackAction && (
-          <button
-            onClick={onConfirmShared}
-            disabled={isPending}
-            title={confirmSharedTitle}
-            className={`mt-1 w-full px-2 py-1.5 text-[11px] text-white rounded disabled:opacity-50 ${confirmSharedButtonClass}`}
-          >
-            Confirm Shared
-          </button>
+          <ActionTooltip text={confirmSharedTooltip}>
+            <button
+              onClick={onConfirmShared}
+              disabled={isPending}
+              className={`mt-1 w-full px-2 py-1.5 text-[11px] disabled:opacity-50 ${confirmSharedButtonClass}`}
+            >
+              Confirm Shared
+            </button>
+          </ActionTooltip>
         )}
         {!isCurrentAccepted && !currentValue.overridden && onAcceptCurrent && currentValueIsMeaningful && (
-          <button
-            onClick={onAcceptCurrent}
-            disabled={isPending}
-            title={acceptCurrentTitle}
-            className="mt-1 w-full px-2 py-1.5 text-[11px] bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-          >
-            Accept
-          </button>
+          <ActionTooltip text={acceptCurrentTitle}>
+            <button
+              onClick={onAcceptCurrent}
+              disabled={isPending}
+              className="mt-1 w-full px-2 py-1.5 text-[11px] sf-item-accept-button transition-colors disabled:opacity-50"
+            >
+              Accept
+            </button>
+          </ActionTooltip>
         )}
       </DrawerSection>
 
@@ -420,13 +421,15 @@ export function CellDrawer({
       {(candidates.length > 0 || candidatesLoading || onRunAIReview) && (
         <DrawerSection title={`Candidates (${candidatesLoading ? '...' : candidates.length})`}>
           {onRunAIReview && (
-            <button
-              onClick={onRunAIReview}
-              disabled={aiReviewPending}
-              className="w-full mb-2 px-2 py-1.5 text-[11px] font-medium rounded bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50"
-            >
-              {aiReviewPending ? 'Running AI Review...' : 'Run AI Review'}
-            </button>
+            <ActionTooltip text={runAiReviewTooltip}>
+              <button
+                onClick={onRunAIReview}
+                disabled={aiReviewPending}
+                className="w-full mb-2 px-2 py-1.5 text-[11px] font-medium rounded sf-run-ai-button transition-colors disabled:opacity-50"
+              >
+                {aiReviewPending ? 'Running AI Review...' : 'Run AI Review'}
+              </button>
+            </ActionTooltip>
           )}
           {candidatesLoading ? (
             <div className="flex justify-center py-4">
@@ -435,7 +438,7 @@ export function CellDrawer({
           ) : (
             <div className="space-y-2">
               {candidates.length === 0 && (
-                <div className="text-[11px] text-gray-500 dark:text-gray-400 px-1 py-2">
+                <div className="sf-text-caption sf-text-subtle px-1 py-2">
                   No candidates available for this value yet.
                 </div>
               )}
@@ -527,30 +530,30 @@ export function CellDrawer({
                 // Accepting one candidate must not visually accept peer rows that share the same value.
                 const pendingTintClass = (() => {
                   if (isPrimaryTarget) {
-                    return 'border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-900/10';
+                    return 'sf-review-candidate-pending';
                   }
                   if (isSharedTarget) {
-                    return 'border-purple-300 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-900/10';
+                    return 'sf-review-candidate-pending';
                   }
                   return undefined;
                 })();
                 const cardClass = isActiveAccepted
-                  ? 'border-green-400 dark:border-green-600 bg-green-50 dark:bg-green-900/20'
+                  ? 'border sf-review-candidate-accepted'
                   : pendingTintClass;
 
                 const valueClass = isActiveAccepted
-                  ? 'text-green-700 dark:text-green-300 font-bold'
+                  ? 'sf-review-candidate-value-accepted font-bold'
                   : isPrimaryTarget
-                    ? 'text-orange-700 dark:text-orange-300'
+                    ? 'sf-review-candidate-value-pending'
                     : isSharedTarget
-                      ? 'text-purple-700 dark:text-purple-300'
+                      ? 'sf-review-candidate-value-pending'
                       : '';
 
                 return (
                   <DrawerCard key={candidateId ? `${candidateId}::${index}` : `candidate::${index}`} className={cardClass}>
                     <div className="flex items-center gap-2">
                       <span
-                        className={`text-[10px] rounded px-1.5 py-0.5 font-mono ${isCurrentSourceCandidate ? 'bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100' : 'bg-gray-200 dark:bg-gray-700'}`}
+                        className={`sf-text-micro rounded px-1.5 py-0.5 font-mono ${isCurrentSourceCandidate ? 'sf-review-candidate-index-current' : 'sf-review-candidate-index'}`}
                         title={isCurrentSourceCandidate ? 'Source for the current value shown at top.' : undefined}
                       >
                         {index + 1}{isCurrentSourceCandidate ? '*' : ''}
@@ -560,31 +563,31 @@ export function CellDrawer({
                       </span>
                       {showCandidateDebugIds && (
                         <span
-                          className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 max-w-[220px] truncate"
+                          className="px-1.5 py-0.5 rounded sf-text-nano font-mono sf-review-candidate-debug-id max-w-[220px] truncate"
                           title={`candidate_id: ${candidateId}`}
                         >
                           id:{compactId(candidateId)}
                         </span>
                       )}
-                      <span className="text-xs text-gray-400">{pct(candidate.score)}</span>
+                      <span className="text-xs sf-text-subtle">{pct(candidate.score)}</span>
                       {isActiveAccepted && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-200">
+                        <span className="px-1.5 py-0.5 rounded sf-text-nano font-bold sf-chip-success">
                           Accepted
                         </span>
                       )}
-                      {!isGridContext && isSharedAccepted && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">
-                          Accepted Shared
+                      {!isGridContext && isSharedAccepted && !isActiveAccepted && (
+                        <span className="px-1.5 py-0.5 rounded sf-text-nano font-bold sf-chip-success">
+                          Accepted
                         </span>
                       )}
                       {isPrimaryTarget && (
                         <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${confirmPrimaryBadgeClass}`}>
-                          AI Item
+                          AI Pending
                         </span>
                       )}
                       {showSharedBadge && (
                         <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${confirmSharedBadgeClass}`}>
-                          AI Shared Pending
+                          AI Pending
                         </span>
                       )}
                     </div>
@@ -593,12 +596,12 @@ export function CellDrawer({
                     {(candidate.llm_extract_model || candidate.llm_validate_model) && (
                       <div className="flex gap-1 items-center flex-wrap mt-0.5">
                         {candidate.llm_extract_model && (
-                          <span className="px-1 py-0 text-[8px] rounded bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
+                          <span className="px-1 py-0 sf-text-micro rounded sf-review-model-badge">
                             src: {candidate.llm_extract_model}
                           </span>
                         )}
                         {candidate.llm_validate_model && (
-                          <span className="px-1 py-0 text-[8px] rounded bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">
+                          <span className="px-1 py-0 sf-text-micro rounded sf-review-model-badge">
                             rev: {candidate.llm_validate_model}
                           </span>
                         )}
@@ -624,45 +627,49 @@ export function CellDrawer({
                       return (
                         <div className="flex gap-1.5 mt-1">
                           {showPrimaryAcceptAction && (
-                            <button
-                              onClick={handleAcceptPrimary}
-                              disabled={acceptThisCandidateDisabled}
-                              title={acceptThisCandidateTitle}
-                              aria-pressed={isActiveAccepted}
-                              className={`${widthClass} px-2 py-1 text-[11px] text-white rounded disabled:opacity-50 ${isActiveAccepted ? 'bg-green-700 hover:bg-green-700 ring-2 ring-green-300/70 shadow-inner translate-y-px' : acceptButtonClass}`}
-                            >
-                              {candidateUiContext === 'grid' ? 'Accept Item' : 'Accept'}
-                            </button>
+                            <ActionTooltip text={acceptThisCandidateTitle}>
+                              <button
+                                onClick={handleAcceptPrimary}
+                                disabled={acceptThisCandidateDisabled}
+                                aria-pressed={isActiveAccepted}
+                                className={`${widthClass} px-2 py-1 text-[11px] rounded disabled:opacity-50 ${isActiveAccepted ? 'sf-review-accepted-button' : acceptButtonClass}`}
+                              >
+                                {isActiveAccepted ? 'Accepted' : 'Accept'}
+                              </button>
+                            </ActionTooltip>
                           )}
                           {showSharedAcceptAction && (
-                            <button
-                              onClick={handleAcceptShared}
-                              disabled={acceptThisCandidateDisabled}
-                              title="Accept this candidate as the shared value."
-                              className={`${widthClass} px-2 py-1 text-[11px] text-white rounded disabled:opacity-50 ${isSharedAccepted ? 'bg-violet-800 hover:bg-violet-800 ring-2 ring-violet-300/70 shadow-inner translate-y-px' : 'bg-violet-600 hover:bg-violet-700'}`}
-                            >
-                              Accept Shared
-                            </button>
+                            <ActionTooltip text="Accept this candidate as the shared value.">
+                              <button
+                                onClick={handleAcceptShared}
+                                disabled={acceptThisCandidateDisabled}
+                                className={`${widthClass} px-2 py-1 text-[11px] rounded disabled:opacity-50 ${isSharedAccepted ? 'sf-review-accepted-button' : 'sf-shared-accept-button'}`}
+                              >
+                                {isSharedAccepted ? 'Accepted' : 'Accept Shared'}
+                              </button>
+                            </ActionTooltip>
                           )}
                           {showPrimaryAction && (
-                            <button
-                              onClick={handleConfirmPrimary}
-                              disabled={isPending}
-                              title={confirmPrimaryTitle}
-                              className={`${widthClass} px-2 py-1 text-[11px] bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50`}
-                            >
-                              {candidateUiContext === 'grid' ? 'Confirm Item' : 'Confirm'}
-                            </button>
+                            <ActionTooltip text={confirmPrimaryTooltip}>
+                              <button
+                                onClick={handleConfirmPrimary}
+                                disabled={isPending}
+                                className={`${widthClass} px-2 py-1 text-[11px] sf-confirm-button-solid transition-colors disabled:opacity-50`}
+                              >
+                                Confirm
+                              </button>
+                            </ActionTooltip>
                           )}
                           {showSharedAction && (
-                            <button
-                              onClick={handleConfirmShared}
-                              disabled={isPending}
-                              title={confirmSharedTitle}
-                              className={`${widthClass} px-2 py-1 text-[11px] text-white rounded disabled:opacity-50 ${confirmSharedButtonClass}`}
-                            >
-                              Confirm
-                            </button>
+                            <ActionTooltip text={confirmSharedTooltip}>
+                              <button
+                                onClick={handleConfirmShared}
+                                disabled={isPending}
+                                className={`${widthClass} px-2 py-1 text-[11px] rounded disabled:opacity-50 ${confirmSharedButtonClass}`}
+                              >
+                                Confirm
+                              </button>
+                            </ActionTooltip>
                           )}
                         </div>
                       );

@@ -10,7 +10,9 @@ function readText(filePath) {
 test('NeedSet main rows table keeps capped height with internal scroll', () => {
   const source = readText('tools/gui-react/src/pages/indexing/panels/NeedSetPanel.tsx');
 
-  const match = source.match(/<div className="([^"]+)">\s*<table className="min-w-full text-xs">/);
+  const match = source.match(
+    /<div className="([^"]*overflow-x-auto[^"]*overflow-y-auto[^"]*max-h-[^"]*)">[\s\S]*?<table className="min-w-full [^"]*">/,
+  );
   assert.ok(match, 'NeedSet rows table container should exist');
 
   const classes = match[1];

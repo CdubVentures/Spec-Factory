@@ -11,10 +11,12 @@ import { FlagsSection } from '../../components/common/FlagsSection';
 import { BrandFilterBar } from './BrandFilterBar';
 import { MetricRow } from '../../components/common/MetricRow';
 import { Spinner } from '../../components/common/Spinner';
+import { ActionTooltip } from '../../components/common/ActionTooltip';
 import { pct } from '../../utils/formatting';
 import { hasKnownValue } from '../../utils/fieldNormalize';
 import { useFieldLabels } from '../../hooks/useFieldLabels';
 import { useDebouncedCallback } from '../../hooks/useDebounce';
+import { usePersistedToggle } from '../../stores/collapseStore';
 import { readReviewGridSessionState, writeReviewGridSessionState } from './reviewGridSessionState';
 import type { ReviewLayout, ProductReviewPayload, ProductsIndexResponse, CandidateResponse, ReviewCandidate } from '../../types/review';
 import type { CatalogRow } from '../../types/product';
@@ -70,6 +72,7 @@ export function ReviewPage() {
   const queryClient = useQueryClient();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reviewGridHydratedRef = useRef<string>('');
+  const [reviewActionsDrawerOpen, toggleReviewActionsDrawer] = usePersistedToggle('review:top:actionsDrawer:open', false);
   const persistedGridState = useMemo(
     () => readReviewGridSessionState(category),
     [category],
@@ -624,16 +627,6 @@ export function ReviewPage() {
     });
   }, { enableOnFormTags: false }, [activeCell, products, overrideMut, cellMode, optimisticUpdateField]);
 
-  // Finalize All mutation
-  const finalizeAllMut = useMutation({
-    mutationFn: () => api.post(`/review/${category}/finalize-all`, {}),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['catalog', category] });
-      queryClient.invalidateQueries({ queryKey: ['product', category] });
-    },
-  });
-
   // Aggregate metrics — use run-only metrics from server if available
   const metrics = useMemo(() => {
     if (!indexData) return null;
@@ -653,15 +646,30 @@ export function ReviewPage() {
   // Active product for drawer
   const activeProduct = products.find(p => p.product_id === selectedProductId);
   const activeFieldState = activeProduct?.fields[selectedField];
+  const pendingGreenAcceptCount = useMemo(() => {
+    if (!layout || products.length === 0) return 0;
+    let count = 0;
+    for (const product of products) {
+      for (const row of layout.rows) {
+        const state = product.fields[row.key];
+        const slotId = toPositiveId(state?.slot_id);
+        if (state?.selected.color === 'green' && state.needs_review && slotId) {
+          count += 1;
+        }
+      }
+    }
+    return count;
+  }, [layout, products]);
+  const allGreensAccepted = pendingGreenAcceptCount === 0;
 
   if (category === 'all') {
-    return <p className="text-gray-500 mt-8 text-center">Select a specific category from the sidebar to review products.</p>;
+    return <p className="mt-8 text-center sf-status-text-muted">Select a specific category from the sidebar to review products.</p>;
   }
   if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
   if (!layout || !indexData || indexData.total === 0) {
     const hasCatalog = catalogRows && catalogRows.length > 0;
     return (
-      <p className="text-gray-500 mt-8 text-center">
+      <p className="mt-8 text-center sf-status-text-muted">
         {hasCatalog
           ? 'No review data yet. Run products from Indexing Lab first.'
           : 'No products in catalog. Add products from the Catalog tab before reviewing.'}
@@ -689,7 +697,7 @@ export function ReviewPage() {
           <select
             value={sortMode}
             onChange={(e) => setSortMode(e.target.value as SortMode)}
-            className="px-2 py-1 text-[10px] border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+            className="w-auto px-2 py-1 rounded sf-select sf-text-nano"
           >
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>Sort: {opt.label}</option>
@@ -699,41 +707,78 @@ export function ReviewPage() {
           {/* Flagged Only toggle */}
           <button
             onClick={() => setShowOnlyFlagged(!showOnlyFlagged)}
-            className={`px-2 py-1 text-[10px] rounded border ${
+            className={`px-2 py-1 text-[10px] rounded font-medium border transition-colors ${
               showOnlyFlagged
-                ? 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-400 text-yellow-700 dark:text-yellow-300'
-                : 'border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'
+                ? 'sf-chip-info sf-border-default'
+                : 'sf-icon-button'
             }`}
           >
-            Flagged Only
+            Flagged Only {showOnlyFlagged ? 'ON' : 'OFF'}
           </button>
 
-          {saveStatus === 'saving' && <span className="text-[10px] text-blue-500">Saving...</span>}
-          {saveStatus === 'saved' && <span className="text-[10px] text-green-500">Saved</span>}
-          {saveStatus === 'error' && <span className="text-[10px] text-red-500">Save failed</span>}
-          <button
-            onClick={approveAllGreens}
-            className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
-            title="Ctrl+A: Approve all green cells"
-          >
-            Approve Greens
-          </button>
-          {selectedProductId && (
-            <button
-              onClick={() => finalizeMut.mutate(selectedProductId)}
-              disabled={finalizeMut.isPending}
-              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          {saveStatus === 'saving' && <span className="sf-text-nano sf-status-text-info">Saving...</span>}
+          {saveStatus === 'saved' && <span className="sf-text-nano sf-status-text-success">Saved</span>}
+          {saveStatus === 'error' && <span className="sf-text-nano sf-status-text-danger">Save failed</span>}
+          <div className="relative h-7 w-7">
+            <div
+              className={`absolute right-0 top-0 z-20 h-7 overflow-hidden rounded-md sf-review-actions-drawer transition-[width] duration-300 ease-out ${
+                reviewActionsDrawerOpen ? 'w-[20rem]' : 'w-7'
+              }`}
             >
-              Finalize {activeProduct?.identity.brand} {activeProduct?.identity.model}
-            </button>
-          )}
-          <button
-            onClick={() => finalizeAllMut.mutate()}
-            disabled={finalizeAllMut.isPending}
-            className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
-          >
-            {finalizeAllMut.isPending ? 'Finalizing...' : 'Finalize All'}
-          </button>
+              <div className="flex h-full items-stretch">
+                <button
+                  onClick={() => toggleReviewActionsDrawer()}
+                  className="sf-review-actions-drawer-toggle inline-flex h-7 w-7 flex-shrink-0 items-center justify-center"
+                  title={reviewActionsDrawerOpen ? 'Close review action drawer' : 'Open review action drawer'}
+                  aria-label={reviewActionsDrawerOpen ? 'Close review action drawer' : 'Open review action drawer'}
+                >
+                  <svg
+                    className={`h-4 w-4 transition-transform duration-200 ${reviewActionsDrawerOpen ? 'rotate-180' : ''}`}
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+                <div
+                  className={`sf-review-actions-drawer-content flex min-w-0 flex-1 items-center gap-1 px-1 transition-opacity duration-200 ${
+                    reviewActionsDrawerOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+                  }`}
+                >
+                  <ActionTooltip text={allGreensAccepted ? 'All green cells in view are already accepted.' : 'Approve all pending green cells in view. Shortcut: Ctrl+A.'}>
+                    <button
+                      onClick={approveAllGreens}
+                      disabled={allGreensAccepted}
+                      className={`sf-review-actions-drawer-button h-6 flex-1 min-w-0 px-2.5 rounded disabled:opacity-50 ${
+                        allGreensAccepted ? 'sf-success-button-solid' : 'sf-primary-button'
+                      }`}
+                    >
+                      {allGreensAccepted ? 'Approved' : 'Approve'}
+                    </button>
+                  </ActionTooltip>
+                  <ActionTooltip
+                    text={
+                      selectedProductId
+                        ? 'Finalize the selected product and lock the current review decisions.'
+                        : 'Select a product to enable Finalize.'
+                    }
+                  >
+                    <button
+                      onClick={() => {
+                        if (!selectedProductId) return;
+                        finalizeMut.mutate(selectedProductId);
+                      }}
+                      disabled={!selectedProductId || finalizeMut.isPending}
+                      className="sf-review-actions-drawer-button h-6 flex-1 min-w-0 px-2.5 rounded sf-confirm-button-solid disabled:opacity-50"
+                    >
+                      Finalize
+                    </button>
+                  </ActionTooltip>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -741,7 +786,7 @@ export function ReviewPage() {
       <BrandFilterBar brands={indexData.brands} products={indexData.products} />
 
       {/* Keyboard hint */}
-      <div className="text-[10px] text-gray-400 flex flex-wrap gap-x-4 gap-y-0.5">
+      <div className="sf-text-nano sf-text-subtle flex flex-wrap gap-x-4 gap-y-0.5">
         <span>Click: edit + drawer</span>
         <span>F2/type: edit</span>
         <span>Tab/Shift+Tab: flags</span>
@@ -829,7 +874,7 @@ export function ReviewPage() {
               sharedAcceptedCandidateId={null}
               badges={activeFieldState.reason_codes.map((code) => ({
                 label: code,
-                className: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200',
+                className: 'sf-chip-warning',
               }))}
               isCurrentAccepted={isAccepted}
               onAcceptCurrent={canAcceptCurrent ? () => {

@@ -95,51 +95,28 @@ async function seedIndexLabRun(indexLabRoot, runId, category) {
   })}\n`, 'utf8');
 }
 
-async function ensureDetailsOpen(page, summaryText) {
-  const details = page.locator(`details:has(summary:has-text("${summaryText}"))`).first();
-  await details.waitFor({ state: 'attached', timeout: 25_000 });
-  const isOpen = await details.evaluate((node) => node.hasAttribute('open'));
-  if (isOpen) return;
-  await details.locator('summary').first().click();
+async function ensureRuntimeFlowRunSetup(page) {
+  const runtimeFlowCard = page.locator('h3:has-text("Runtime Flow Settings")').first();
+  await runtimeFlowCard.waitFor({ state: 'visible', timeout: 25_000 });
+  const runSetupStep = page.getByRole('button', { name: /Run Setup/i }).first();
+  await runSetupStep.waitFor({ state: 'visible', timeout: 25_000 });
   await waitForCondition(
-    async () => await details.evaluate((node) => node.hasAttribute('open')),
-    10_000,
+    async () => !(await runSetupStep.isDisabled()),
+    20_000,
     120,
-    `details_open_${summaryText}`,
+    'runtime_run_setup_enabled',
   );
-}
-
-async function clickRuntimeSaveIfVisible(page) {
-  const runtimeSave = page.locator(
-    'xpath=//span[normalize-space()="Runtime Settings"]/ancestor::div[contains(@class,"rounded-lg")][1]//button[normalize-space()="Save"]',
-  ).first();
-  if ((await runtimeSave.count()) === 0) return false;
-  if (!(await runtimeSave.isVisible())) return false;
-  await waitForCondition(
-    async () => !(await runtimeSave.isDisabled()),
-    8_000,
-    120,
-    'runtime_save_enabled',
-  );
-  await runtimeSave.click();
-  return true;
+  await runSetupStep.click();
 }
 
 async function ensureSearchProviderValue(page, baseUrl, providerValue) {
-  await ensureDetailsOpen(page, 'Run Setup and Discovery');
-  const discoveryToggle = page.locator('label:has-text("provider discovery") input[type="checkbox"]').first();
-  await discoveryToggle.waitFor({ state: 'visible', timeout: 25_000 });
-  await waitForCondition(
-    async () => !(await discoveryToggle.isDisabled()),
-    20_000,
-    120,
-    'discovery_toggle_enabled',
-  );
-  if (!(await discoveryToggle.isChecked())) {
-    await discoveryToggle.click();
-  }
-
-  const providerSelect = page.locator('select[title="Search provider used when discovery is enabled."]').first();
+  await ensureRuntimeFlowRunSetup(page);
+  const runtimeFlowCard = page.locator(
+    'xpath=//h3[contains(normalize-space(), "Runtime Flow Settings")]/ancestor::div[contains(@class,"rounded")][1]',
+  ).first();
+  const providerSelect = runtimeFlowCard.locator(
+    'xpath=.//select[option[@value="duckduckgo"] and option[@value="searxng"] and option[@value="dual"]]',
+  ).first();
   await providerSelect.waitFor({ state: 'visible', timeout: 25_000 });
   await waitForCondition(
     async () => !(await providerSelect.isDisabled()),
@@ -151,9 +128,16 @@ async function ensureSearchProviderValue(page, baseUrl, providerValue) {
   const current = await providerSelect.inputValue();
   if (current !== providerValue) {
     await providerSelect.selectOption(providerValue);
-    const clickedSave = await clickRuntimeSaveIfVisible(page);
-    if (!clickedSave) {
-      throw new Error('runtime_save_button_not_available_after_provider_change');
+    const runtimeSave = page.getByRole('button', { name: /^Save$/ }).first();
+    const runtimeSaveVisible = await runtimeSave.isVisible().catch(() => false);
+    if (runtimeSaveVisible) {
+      await waitForCondition(
+        async () => !(await runtimeSave.isDisabled()),
+        8_000,
+        120,
+        'runtime_flow_save_enabled',
+      );
+      await runtimeSave.click();
     }
   }
 
@@ -231,9 +215,10 @@ test('GUI runtime search-provider setting persists across reload and propagates 
     context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
     page = await context.newPage();
 
-    await page.goto(`${baseUrl}/#/indexing`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${baseUrl}/#/pipeline-settings`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
+    await page.waitForSelector('text=Pipeline Settings', { timeout: 20_000 });
 
     for (const provider of PROVIDER_MATRIX) {
       await ensureSearchProviderValue(page, baseUrl, provider);
@@ -246,20 +231,27 @@ test('GUI runtime search-provider setting persists across reload and propagates 
       );
 
       await verifyRuntimeOpsProviderBadge(page, provider);
-      await page.getByRole('link', { name: 'Indexing Lab' }).click();
+      await page.getByRole('link', { name: 'Pipeline Settings' }).click();
+      await page.waitForURL(/#\/pipeline-settings/, { timeout: 20_000 });
       await selectCategory(page, CATEGORY);
+      await page.waitForSelector('text=Pipeline Settings', { timeout: 20_000 });
     }
 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
+    await page.waitForSelector('text=Pipeline Settings', { timeout: 20_000 });
 
     await verifyRuntimeOpsProviderBadge(page, 'dual');
 
-    await page.getByRole('link', { name: 'Indexing Lab' }).click();
+    await page.getByRole('link', { name: 'Pipeline Settings' }).click();
+    await page.waitForURL(/#\/pipeline-settings/, { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
-    await ensureDetailsOpen(page, 'Run Setup and Discovery');
-    const providerSelectAfterReload = page.locator('select[title="Search provider used when discovery is enabled."]').first();
+    await page.waitForSelector('text=Pipeline Settings', { timeout: 20_000 });
+    await ensureRuntimeFlowRunSetup(page);
+    const providerSelectAfterReload = page.locator(
+      'xpath=//h3[contains(normalize-space(), "Runtime Flow Settings")]/ancestor::div[contains(@class,"rounded")][1]//select[option[@value="duckduckgo"] and option[@value="searxng"] and option[@value="dual"]]',
+    ).first();
     await providerSelectAfterReload.waitFor({ state: 'visible', timeout: 25_000 });
     assert.equal(await providerSelectAfterReload.inputValue(), 'dual', 'search provider select should remain dual after reload');
 

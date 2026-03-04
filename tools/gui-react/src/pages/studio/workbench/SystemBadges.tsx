@@ -60,27 +60,27 @@ export function SystemBadges({ fieldPath, rule, onToggle }: Props) {
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Content
-                className="z-50 max-w-md px-3 py-2 text-xs leading-snug text-gray-900 bg-white border border-gray-200 rounded shadow-lg dark:text-gray-100 dark:bg-gray-900 dark:border-gray-700"
+                className="z-50 max-w-md px-3 py-2 text-xs leading-snug sf-text-primary bg-white border sf-border-default rounded shadow-lg sf-dk-fg-100 sf-dk-surface-900 dark:sf-border-default"
                 sideOffset={5}
               >
                 <div className="space-y-2">
-                  <div className="font-semibold text-gray-900 dark:text-gray-100">{parsedTip.title}</div>
-                  <div className="text-[11px] text-gray-600 dark:text-gray-300">
+                  <div className="font-semibold sf-text-primary dark:sf-text-primary">{parsedTip.title}</div>
+                  <div className="text-[11px] sf-text-muted dark:sf-text-muted">
                     <span className="font-semibold">Status:</span> {parsedTip.status || (enabled ? 'Enabled' : 'Disabled')}
                   </div>
                   <div className="space-y-1">
-                    <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">When enabled</div>
-                    <div className="text-[11px] text-gray-700 dark:text-gray-200">{parsedTip.whenEnabled}</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wide sf-status-text-success">When enabled</div>
+                    <div className="text-[11px] sf-text-muted dark:sf-text-primary">{parsedTip.whenEnabled}</div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">When disabled</div>
-                    <div className="text-[11px] text-gray-700 dark:text-gray-200">{parsedTip.whenDisabled}</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wide sf-status-text-warning">When disabled</div>
+                    <div className="text-[11px] sf-text-muted dark:sf-text-primary">{parsedTip.whenDisabled}</div>
                   </div>
-                  <div className="pt-1 text-[11px] text-sky-700 dark:text-sky-300 font-medium">
+                  <div className="pt-1 text-[11px] sf-status-text-info font-medium">
                     {parsedTip.action || `Click to ${enabled ? 'disable' : 'enable'}`}
                   </div>
                 </div>
-                <Tooltip.Arrow className="fill-white dark:fill-gray-900" />
+                <Tooltip.Arrow className="sf-tooltip-arrow" />
               </Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>

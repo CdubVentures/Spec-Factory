@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const GUI_PERSISTENCE_DOC = path.resolve('implementation/gui-persistence/UI-STATE-STORES.md');
+const GUI_PERSISTENCE_DOC = path.resolve('implementation/gui-persistence/03-UI-STATE-STORES.md');
 const COLLAPSE_STORE = path.resolve('tools/gui-react/src/stores/collapseStore.ts');
 const TAB_STORE = path.resolve('tools/gui-react/src/stores/tabStore.ts');
 const TEST_MODE_PAGE = path.resolve('tools/gui-react/src/pages/test-mode/TestModePage.tsx');
@@ -91,10 +91,10 @@ test('GUI persistence stores use session storage only', () => {
   assert.equal(tabStoreText.includes('localStorage'), false, 'tabStore must not read/write localStorage');
 });
 
-test('GUI persistence contract documents session-scoped behavior', () => {
+test('GUI persistence contract documents session storage with local autosave exceptions', () => {
   const docText = readText(GUI_PERSISTENCE_DOC);
   assert.equal(docText.includes('sessionStorage'), true, 'contract doc must describe sessionStorage');
-  assert.equal(docText.includes('localStorage'), false, 'contract doc must not describe localStorage persistence');
+  assert.equal(docText.includes('localStorage'), true, 'contract doc must describe localStorage usage for global autosave preferences');
 });
 
 test('test mode stats persistence is session-scoped', () => {
@@ -105,21 +105,22 @@ test('test mode stats persistence is session-scoped', () => {
   assert.equal(pageText.includes('localStorage'), false, 'test mode should not use localStorage for session state');
 });
 
-test('autosave toggles are settings-backed with session fallback mirroring', () => {
+test('autosave toggles are settings-backed with local persistence and legacy session migration', () => {
   const uiStoreText = readText(UI_STORE);
   const indexingPageText = readText(INDEXING_PAGE);
   const llmSettingsPageText = readText(LLM_SETTINGS_PAGE);
   const storagePageText = readText(STORAGE_PAGE);
   const settingsAuthorityText = readText(SETTINGS_AUTHORITY);
   const uiSettingsAuthorityText = readText(UI_SETTINGS_AUTHORITY);
-  assert.equal(uiStoreText.includes('sessionStorage.getItem('), true, 'uiStore should load autosave toggles from sessionStorage');
-  assert.equal(uiStoreText.includes('sessionStorage.setItem('), true, 'uiStore should persist autosave toggles to sessionStorage');
+  assert.equal(uiStoreText.includes('localStorage.getItem('), true, 'uiStore should load autosave toggles from localStorage');
+  assert.equal(uiStoreText.includes('localStorage.setItem('), true, 'uiStore should persist autosave toggles to localStorage');
+  assert.equal(uiStoreText.includes('sessionStorage.getItem('), true, 'uiStore should read legacy autosave keys from sessionStorage for migration');
+  assert.equal(uiStoreText.includes('sessionStorage.removeItem('), true, 'uiStore should clear migrated legacy session autosave keys');
   assert.equal(uiStoreText.includes('indexlab-runtime-autosave'), true, 'uiStore should own runtime autosave key');
   assert.equal(uiStoreText.includes('storage:autoSaveEnabled'), true, 'uiStore should own storage autosave key');
   assert.equal(uiStoreText.includes('studio:autoSaveAllEnabled'), true, 'uiStore should own studio auto-save-all key');
   assert.equal(uiStoreText.includes('llmSettings:autoSaveEnabled'), true, 'uiStore should own a global llm settings autosave key');
   assert.equal(uiStoreText.includes('llmSettings:autoSave:'), false, 'uiStore should not use category-scoped llm autosave keys');
-  assert.equal(uiStoreText.includes('localStorage'), false, 'uiStore should not use localStorage for autosave toggles');
   assert.equal(settingsAuthorityText.includes('useUiSettingsAuthority'), true, 'settings bootstrap should sync ui settings authority');
   assert.equal(uiSettingsAuthorityText.includes('/ui-settings'), true, 'ui settings authority should own ui settings API route usage');
   assert.equal(indexingPageText.includes('runtimeAutoSaveEnabled'), true, 'Indexing page runtime autosave should read from uiStore');
@@ -167,12 +168,22 @@ test('component review nested state is session-scoped', () => {
 
 test('GUI source has no localStorage persistence', () => {
   const sourceFiles = walkGuiSource(GUI_SRC_ROOT);
-  const persistenceFiles = sourceFiles.filter((filePath) => path.resolve(filePath) !== SETTINGS_PROPAGATION_CONTRACT);
+  const persistenceFiles = sourceFiles.filter((filePath) => {
+    const resolvedPath = path.resolve(filePath);
+    return resolvedPath !== SETTINGS_PROPAGATION_CONTRACT && resolvedPath !== UI_STORE;
+  });
   const persistenceSourceText = persistenceFiles.map(readText).join('\n');
   assert.equal(
     persistenceSourceText.includes('localStorage'),
     false,
-    'GUI source should not persist UI state via localStorage',
+    'GUI source should not persist UI state via localStorage outside sanctioned stores',
+  );
+
+  const uiStoreText = readText(UI_STORE);
+  assert.equal(
+    uiStoreText.includes('localStorage'),
+    true,
+    'uiStore should own localStorage persistence for global autosave preferences',
   );
 
   const propagationText = readText(SETTINGS_PROPAGATION_CONTRACT);

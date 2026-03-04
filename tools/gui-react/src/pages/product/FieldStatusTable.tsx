@@ -32,20 +32,29 @@ export function FieldStatusTable({ fields, provenance, trafficMap, getLabel = hu
     {
       accessorKey: 'field',
       header: 'Field',
-      cell: ({ getValue }) => getLabel(getValue() as string),
+      cell: ({ getValue }) => <span className="sf-text-primary">{getLabel(getValue() as string)}</span>,
       size: 180,
     },
-    { accessorKey: 'value', header: 'Value', size: 200 },
+    {
+      accessorKey: 'value',
+      header: 'Value',
+      cell: ({ getValue }) => <span className="sf-text-subtle">{getValue() as string}</span>,
+      size: 200,
+    },
     {
       accessorKey: 'confidence',
       header: 'Confidence',
-      cell: ({ getValue }) => pct(getValue() as number),
+      cell: ({ getValue }) => <span className="sf-text-muted">{pct(getValue() as number)}</span>,
       size: 80,
     },
     {
       accessorKey: 'meetsTarget',
       header: 'Pass',
-      cell: ({ getValue }) => (getValue() ? '\u2714' : '\u2716'),
+      cell: ({ getValue }) => (
+        <span className={getValue() ? 'sf-status-text-success' : 'sf-status-text-danger'}>
+          {getValue() ? '\u2714' : '\u2716'}
+        </span>
+      ),
       size: 50,
     },
   ], [getLabel]);
@@ -76,5 +85,9 @@ export function FieldStatusTable({ fields, provenance, trafficMap, getLabel = hu
     };
   });
 
-  return <DataTable data={rows} columns={columns} searchable maxHeight="max-h-[calc(100vh-420px)]" />;
+  return (
+    <div className="sf-table-shell">
+      <DataTable data={rows} columns={columns} searchable maxHeight="max-h-[calc(100vh-420px)]" />
+    </div>
+  );
 }

@@ -49,14 +49,14 @@ export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
 
   const hasChanges = bulkRequired || bulkTemplate || bulkPolicy || bulkPubGate !== null || bulkMinRefs !== '';
 
-  const selCls = 'px-1.5 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700';
+  const selCls = 'px-1.5 py-1 text-xs border sf-border-soft rounded sf-input';
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl px-4 py-2.5">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 sf-surface-card rounded-lg shadow-xl px-4 py-2.5">
       <span className="text-xs font-semibold text-accent">{selectedCount} selected</span>
-      <span className="text-gray-300 dark:text-gray-600">|</span>
+      <span className="sf-text-muted dark:sf-text-muted">|</span>
 
-      <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+      <label className="flex items-center gap-1.5 text-xs sf-text-muted dark:sf-text-muted">
         Required:
         <select className={selCls} value={bulkRequired} onChange={(e) => setBulkRequired(e.target.value)}>
           <option value="">\u2014</option>
@@ -64,7 +64,7 @@ export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
         </select>
       </label>
 
-      <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+      <label className="flex items-center gap-1.5 text-xs sf-text-muted dark:sf-text-muted">
         Template:
         <select className={selCls} value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)}>
           <option value="">\u2014</option>
@@ -72,7 +72,7 @@ export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
         </select>
       </label>
 
-      <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+      <label className="flex items-center gap-1.5 text-xs sf-text-muted dark:sf-text-muted">
         Policy:
         <select className={selCls} value={bulkPolicy} onChange={(e) => setBulkPolicy(e.target.value)}>
           <option value="">\u2014</option>
@@ -80,7 +80,7 @@ export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
         </select>
       </label>
 
-      <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+      <label className="flex items-center gap-1.5 text-xs sf-text-muted dark:sf-text-muted">
         Min Refs:
         <input
           type="number"
@@ -93,7 +93,7 @@ export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
         />
       </label>
 
-      <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+      <label className="flex items-center gap-1.5 text-xs sf-text-muted dark:sf-text-muted">
         <input
           type="checkbox"
           ref={(el) => { if (el) el.indeterminate = bulkPubGate === null; }}
@@ -103,23 +103,23 @@ export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
             else if (bulkPubGate === true) setBulkPubGate(false);
             else setBulkPubGate(null);
           }}
-          className="rounded border-gray-300"
+          className="rounded sf-border-soft"
         />
         Pub Gate
       </label>
 
-      <span className="text-gray-300 dark:text-gray-600">|</span>
+      <span className="sf-text-muted dark:sf-text-muted">|</span>
 
       <button
         onClick={handleApply}
         disabled={!hasChanges}
-        className="px-3 py-1 text-xs bg-accent text-white rounded hover:bg-blue-600 disabled:opacity-50"
+        className="px-3 py-1 text-xs sf-primary-button disabled:opacity-50"
       >
         Apply
       </button>
       <button
         onClick={onClear}
-        className="px-3 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+        className="px-3 py-1 text-xs sf-icon-button"
       >
         Clear
       </button>

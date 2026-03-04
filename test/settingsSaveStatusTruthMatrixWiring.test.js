@@ -30,12 +30,12 @@ test('settings surfaces show persistence outcome truth before generic clean-stat
   );
   assert.match(
     runtimePanelText,
-    /runtimeSettingsSaving[\s\S]*runtimeSettingsLocked[\s\S]*runtimeSettingsSaveState === 'error'[\s\S]*runtimeSettingsSaveState === 'partial'[\s\S]*runtimeSettingsDirty[\s\S]*all changes saved\./,
+    /runtimeSettingsSaving[\s\S]*runtimeSettingsLocked[\s\S]*runtimeSettingsSaveState === 'error'[\s\S]*runtimeSettingsSaveState === 'partial'[\s\S]*runtimeSettingsDirty[\s\S]*All Changes Saved\./,
     'runtime status should prioritize saving/loading/error/partial/dirty states before clean-state labels',
   );
   assert.match(
     runtimePanelText,
-    /convergenceSaving[\s\S]*convergenceSettingsSaveState === 'error'[\s\S]*convergenceSettingsSaveState === 'partial'[\s\S]*convergenceDirty[\s\S]*all changes saved\./,
+    /convergenceSaving[\s\S]*convergenceSettingsSaveState === 'error'[\s\S]*convergenceSettingsSaveState === 'partial'[\s\S]*convergenceDirty[\s\S]*All Changes Saved\./,
     'convergence status should prioritize saving/error/partial/dirty states before clean-state labels',
   );
   assert.match(

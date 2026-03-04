@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { trafficColor, trafficTextColor, sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../utils/colors';
 import { pct } from '../../utils/formatting';
+import { ActionTooltip } from './ActionTooltip';
 
 interface DrawerShellProps {
   title: string;
@@ -36,17 +37,17 @@ export function DrawerShell({ title, subtitle, onClose, width, maxHeight, classN
 
   return (
     <div
-      className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg max-h-[calc(100vh-280px)] min-w-0 shrink-0 flex flex-col overflow-hidden ${className || ''}`}
+      className={`sf-surface-panel sf-primitive-panel sf-drawer-shell max-h-[calc(100vh-280px)] min-w-0 shrink-0 flex flex-col overflow-hidden ${className || ''}`}
       style={style}
     >
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex justify-between items-center shrink-0">
+      <div className="sf-drawer-header px-4 py-2 flex justify-between items-center shrink-0">
         <div>
-          <h3 className="font-semibold text-sm">{title}</h3>
-          {subtitle && <p className="text-[10px] text-gray-400">{subtitle}</p>}
+          <h3 className="sf-drawer-title font-semibold text-sm">{title}</h3>
+          {subtitle && <p className="sf-drawer-subtitle">{subtitle}</p>}
         </div>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+        <button onClick={onClose} className="sf-drawer-close text-lg leading-none">&times;</button>
       </div>
-      <div className={scrollContent ? 'p-4 space-y-4 flex-1 min-h-0 overflow-y-auto' : 'p-4 space-y-4'}>
+      <div className={scrollContent ? 'sf-drawer-body p-4 space-y-4 flex-1 min-h-0 overflow-y-auto' : 'sf-drawer-body p-4 space-y-4'}>
         {children}
       </div>
     </div>
@@ -58,7 +59,7 @@ export function DrawerSection({ title, meta, children, className, bodyClassName 
     <section className={className}>
       {(title || meta) && (
         <div className="mb-2 flex items-center justify-between gap-2">
-          {title ? <p className="text-xs font-medium text-gray-500">{title}</p> : <span />}
+          {title ? <p className="sf-drawer-section-label text-xs font-medium">{title}</p> : <span />}
           {meta}
         </div>
       )}
@@ -69,7 +70,7 @@ export function DrawerSection({ title, meta, children, className, bodyClassName 
 
 export function DrawerCard({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`border border-gray-200 dark:border-gray-700 rounded p-2 space-y-1.5 ${className || ''}`}>
+    <div className={`sf-drawer-card border p-2 space-y-1.5 ${className || ''}`}>
       {children}
     </div>
   );
@@ -77,7 +78,7 @@ export function DrawerCard({ children, className }: { children: ReactNode; class
 
 export function DrawerActionStack({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`border-t border-gray-200 dark:border-gray-700 pt-3 space-y-2 ${className || ''}`}>
+    <div className={`sf-drawer-action-stack pt-3 space-y-2 ${className || ''}`}>
       {children}
     </div>
   );
@@ -111,16 +112,16 @@ export function DrawerValueRow({ color, value, confidence, source, sourceTimesta
           {value}
         </span>
         {source && (
-          <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${valueSourceBadge[source] || SOURCE_BADGE_FALLBACK}`}>
+          <span className={`sf-text-nano px-1.5 py-0.5 rounded font-medium ${valueSourceBadge[source] || SOURCE_BADGE_FALLBACK}`}>
             {source}
           </span>
         )}
-        <span className="text-xs text-gray-400 ml-auto">
+        <span className="sf-drawer-meta text-xs ml-auto">
           {pct(confidence)}
         </span>
       </div>
       {sourceTimestamp && (
-        <div className="text-[9px] text-gray-400 pl-5">
+        <div className="sf-text-nano sf-drawer-meta pl-5">
           set {formatTimestamp(sourceTimestamp)}
         </div>
       )}
@@ -133,7 +134,7 @@ export function DrawerBadges({ badges }: { badges: Badge[] }) {
   return (
     <div className="flex flex-wrap gap-1">
       {badges.map((badge, index) => (
-        <span key={`${badge.label}-${index}`} className={`px-2 py-0.5 rounded text-[10px] ${badge.className}`}>
+        <span key={`${badge.label}-${index}`} className={`sf-text-caption px-2 py-0.5 rounded ${badge.className}`}>
           {badge.label}
         </span>
       ))}
@@ -146,7 +147,7 @@ const drawerSourceBadgeClass = sourceBadgeClass;
 export function DrawerSourceRow({ source, url }: { source?: string; url?: string }) {
   if (!source && !url) return null;
   return (
-    <div className="flex items-center gap-2 text-[10px]">
+    <div className="sf-text-caption flex items-center gap-2">
       {source && (
         <span className={`px-1.5 py-0.5 rounded font-medium ${drawerSourceBadgeClass[source] || SOURCE_BADGE_FALLBACK}`}>
           {source}
@@ -185,13 +186,13 @@ export function DrawerManualOverride({
 
   return (
     <DrawerActionStack>
-      <p className="text-xs font-medium text-gray-500">{label}</p>
+      <p className="sf-drawer-section-label text-xs font-medium">{label}</p>
       <div className="flex gap-2">
         <input
           type="text"
           value={value}
           onChange={(event) => setValue(event.target.value)}
-          className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+          className="sf-input sf-primitive-input sf-drawer-input flex-1"
           placeholder={placeholder}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
@@ -199,13 +200,15 @@ export function DrawerManualOverride({
             }
           }}
         />
-        <button
-          onClick={apply}
-          disabled={!value.trim() || isPending}
-          className="px-3 py-1 text-sm bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
-        >
-          Apply
-        </button>
+        <ActionTooltip text="Apply this override to the current value.">
+          <button
+            onClick={apply}
+            disabled={!value.trim() || isPending}
+            className="sf-drawer-apply-button px-3 py-1 text-sm disabled:opacity-50"
+          >
+            Apply
+          </button>
+        </ActionTooltip>
       </div>
     </DrawerActionStack>
   );

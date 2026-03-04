@@ -207,12 +207,12 @@ export function querySourceLabel(row = {}) {
 export function querySourceChipClass(source) {
   const normalized = String(source || '').toLowerCase();
   if (normalized.startsWith('field_rules.')) {
-    return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
+    return 'sf-chip-accent';
   }
   if (normalized.startsWith('runtime_bridge')) {
-    return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+    return 'sf-chip-neutral';
   }
-  return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
+  return 'sf-chip-warning';
 }
 
 export function buildGateSummary(queryRows = [], hintSourceCounts = {}) {

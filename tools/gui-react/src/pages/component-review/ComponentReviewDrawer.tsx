@@ -13,6 +13,7 @@ import {
   DrawerBadges,
   DrawerManualOverride,
 } from '../../components/common/DrawerShell';
+import { ActionTooltip } from '../../components/common/ActionTooltip';
 import { CellDrawer } from '../../components/common/CellDrawer';
 import { FlagsSection, FlagsOverviewSection } from '../../components/common/FlagsSection';
 import { PendingAIReviewSection } from '../../components/common/PendingAIReviewSection';
@@ -39,11 +40,11 @@ interface ComponentReviewDrawerProps {
 }
 
 const varianceBadge: Record<string, string> = {
-  authoritative: 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300',
-  upper_bound: 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300',
-  lower_bound: 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300',
-  range: 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300',
-  override_allowed: 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300',
+  authoritative: 'sf-chip-info',
+  upper_bound: 'sf-chip-accent',
+  lower_bound: 'sf-chip-neutral',
+  range: 'sf-chip-info',
+  override_allowed: 'sf-chip-warning',
 };
 
 function toPositiveId(value: unknown): number | undefined {
@@ -64,21 +65,21 @@ function buildPropertyBadges(state: ComponentPropertyState): Array<{ label: stri
   if (state.variance_policy) {
     badges.push({
       label: state.variance_policy,
-      className: varianceBadge[state.variance_policy] || 'bg-gray-100 text-gray-600',
+      className: varianceBadge[state.variance_policy] || 'sf-chip-neutral',
     });
   }
 
   if (state.overridden) {
-    badges.push({ label: 'overridden', className: 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' });
+    badges.push({ label: 'overridden', className: 'sf-chip-warning' });
   }
 
   for (const constraint of state.constraints) {
-    badges.push({ label: constraint, className: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' });
+    badges.push({ label: constraint, className: 'sf-chip-warning' });
   }
 
   for (const reasonCode of state.reason_codes) {
     if (reasonCode === 'manual_override' && state.overridden) continue;
-    badges.push({ label: reasonCode, className: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200' });
+    badges.push({ label: reasonCode, className: 'sf-chip-warning' });
   }
 
   return badges;
@@ -119,7 +120,7 @@ function PropertyCard({
     <DrawerCard>
       <div className="flex items-center gap-2">
         <span className={`inline-block w-3 h-3 rounded-full flex-shrink-0 ${trafficColor(state.selected.color)}`} />
-        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 flex-shrink-0">
+        <span className="text-xs font-medium sf-text-muted flex-shrink-0">
           {getLabel(propKey)}
         </span>
         <span
@@ -128,7 +129,7 @@ function PropertyCard({
         >
           {state.selected.value !== null && state.selected.value !== undefined ? String(state.selected.value) : 'unk'}
         </span>
-        <span className="text-xs text-gray-400 ml-auto flex-shrink-0">
+        <span className="text-xs sf-text-muted ml-auto flex-shrink-0">
           {pct(state.selected.confidence)} conf
         </span>
       </div>
@@ -141,7 +142,7 @@ function PropertyCard({
             setEditing(true);
             setEditValue(String(state.selected.value ?? ''));
           }}
-          className="text-[10px] text-accent hover:underline"
+          className="sf-text-nano sf-link-accent hover:underline"
         >
           Override
         </button>
@@ -157,7 +158,7 @@ function PropertyCard({
                   setEditing(false);
                 }
               }}
-              className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+              className="flex-1 px-2 py-1 text-sm sf-drawer-input"
               autoFocus
             >
               <option value="">Select value...</option>
@@ -175,7 +176,7 @@ function PropertyCard({
                   onOverride(event.target.value);
                   setEditing(false);
                 }}
-                className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                className="flex-1 px-2 py-1 text-sm sf-drawer-input"
                 autoFocus
               >
                 <option value="">Select value...</option>
@@ -189,7 +190,7 @@ function PropertyCard({
                   type="text"
                   value={editValue}
                   onChange={(event) => setEditValue(event.target.value)}
-                  className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                  className="flex-1 px-2 py-1 text-sm sf-drawer-input"
                   placeholder="Custom value..."
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' && editValue) {
@@ -206,7 +207,7 @@ function PropertyCard({
               type="text"
               value={editValue}
               onChange={(event) => setEditValue(event.target.value)}
-              className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+              className="flex-1 px-2 py-1 text-sm sf-drawer-input"
               autoFocus
               placeholder="Enter new value..."
               onKeyDown={(event) => {
@@ -219,16 +220,18 @@ function PropertyCard({
             />
           )}
           {!(state.enum_policy === 'closed' && state.enum_values && state.enum_values.length > 0) && (
-            <button
-              onClick={() => {
-                onOverride(editValue);
-                setEditing(false);
-              }}
-              disabled={!editValue || isPending}
-              className="px-3 py-1 text-sm bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
-            >
-              Apply
-            </button>
+            <ActionTooltip text="Apply this property override value.">
+              <button
+                onClick={() => {
+                  onOverride(editValue);
+                  setEditing(false);
+                }}
+                disabled={!editValue || isPending}
+                className="px-3 py-1 text-sm sf-drawer-apply-button rounded disabled:opacity-50"
+              >
+                Apply
+              </button>
+            </ActionTooltip>
           )}
         </div>
       )}
@@ -255,8 +258,8 @@ function IdentityOverrideRow({
   const [editValue, setEditValue] = useState('');
 
   return (
-    <div className="flex items-center gap-2 text-[11px]">
-      <span className="text-gray-500 dark:text-gray-400 w-12 flex-shrink-0">{label}</span>
+    <div className="flex items-center gap-2 sf-text-label">
+      <span className="sf-text-muted w-12 flex-shrink-0">{label}</span>
       {editing ? (
         <div className="flex gap-1 flex-1 min-w-0">
           <input
@@ -264,7 +267,7 @@ function IdentityOverrideRow({
             autoFocus
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
-            className="flex-1 px-1.5 py-0.5 text-[11px] border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 min-w-0"
+            className="flex-1 px-1.5 py-0.5 sf-text-label sf-drawer-input min-w-0"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && editValue.trim()) {
                 onOverride(property, editValue.trim());
@@ -273,16 +276,18 @@ function IdentityOverrideRow({
               if (e.key === 'Escape') setEditing(false);
             }}
           />
-          <button
-            onClick={() => { onOverride(property, editValue.trim()); setEditing(false); }}
-            disabled={!editValue.trim() || isPending}
-            className="px-2 py-0.5 text-[10px] bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
-          >
-            Save
-          </button>
+          <ActionTooltip text="Confirm and save this identity override.">
+            <button
+              onClick={() => { onOverride(property, editValue.trim()); setEditing(false); }}
+              disabled={!editValue.trim() || isPending}
+              className="px-2 py-0.5 sf-text-nano sf-confirm-button-solid rounded disabled:opacity-50"
+            >
+              Save
+            </button>
+          </ActionTooltip>
           <button
             onClick={() => setEditing(false)}
-            className="text-gray-400 hover:text-gray-600 text-sm"
+            className="sf-summary-toggle text-sm"
           >
             ×
           </button>
@@ -291,14 +296,14 @@ function IdentityOverrideRow({
         <>
           <span className="font-medium truncate min-w-0">{value || '—'}</span>
           {tracked?.overridden && (
-            <span className="text-[9px] text-orange-500 font-bold flex-shrink-0">OVR</span>
+            <span className="sf-text-micro sf-status-text-warning font-bold flex-shrink-0">OVR</span>
           )}
           {tracked && (
-            <span className="text-[9px] text-gray-400 flex-shrink-0">{tracked.source}</span>
+            <span className="sf-text-micro sf-text-muted flex-shrink-0">{tracked.source}</span>
           )}
           <button
             onClick={() => { setEditValue(value); setEditing(true); }}
-            className="text-accent hover:underline text-[10px] ml-auto flex-shrink-0"
+            className="sf-link-accent hover:underline sf-text-nano ml-auto flex-shrink-0"
           >
             Edit
           </button>
@@ -340,7 +345,7 @@ function AliasEditor({
   return (
     <DrawerSection
       title="Aliases"
-      meta={overridden ? <span className="text-[9px] text-orange-500 font-bold">OVR</span> : undefined}
+      meta={overridden ? <span className="sf-text-micro sf-status-text-warning font-bold">OVR</span> : undefined}
     >
       <div className="space-y-1">
         {items.map((alias, i) => (
@@ -348,11 +353,11 @@ function AliasEditor({
             <input
               value={alias}
               onChange={(e) => editAlias(i, e.target.value)}
-              className="flex-1 px-1.5 py-0.5 text-[11px] border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 min-w-0"
+              className="flex-1 px-1.5 py-0.5 sf-text-label sf-drawer-input min-w-0"
             />
             <button
               onClick={() => removeAlias(i)}
-              className="text-red-400 hover:text-red-600 text-xs flex-shrink-0"
+              className="sf-status-text-danger text-xs flex-shrink-0"
               title="Remove alias"
             >
               ×
@@ -364,25 +369,27 @@ function AliasEditor({
             value={newAlias}
             onChange={(e) => setNewAlias(e.target.value)}
             placeholder="Add alias..."
-            className="flex-1 px-1.5 py-0.5 text-[11px] border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 min-w-0"
+            className="flex-1 px-1.5 py-0.5 sf-text-label sf-drawer-input min-w-0"
             onKeyDown={(e) => { if (e.key === 'Enter') addAlias(); }}
           />
           <button
             onClick={addAlias}
             disabled={!newAlias.trim()}
-            className="px-2 py-0.5 text-[11px] text-accent hover:underline disabled:opacity-50 flex-shrink-0"
+            className="px-2 py-0.5 sf-text-label sf-link-accent hover:underline disabled:opacity-50 flex-shrink-0"
           >
             +
           </button>
         </div>
         {dirty && (
-          <button
-            onClick={() => onSave(items)}
-            disabled={isPending}
-            className="px-3 py-1 text-[11px] bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
-          >
-            Save Aliases
-          </button>
+          <ActionTooltip text="Confirm and save alias changes.">
+            <button
+              onClick={() => onSave(items)}
+              disabled={isPending}
+              className="px-3 py-1 sf-text-label sf-confirm-button-solid rounded disabled:opacity-50"
+            >
+              Save Aliases
+            </button>
+          </ActionTooltip>
         )}
       </div>
     </DrawerSection>
@@ -422,7 +429,7 @@ function LinksEditor({
   return (
     <DrawerSection
       title="Links"
-      meta={anyOverridden ? <span className="text-[9px] text-orange-500 font-bold">OVR</span> : undefined}
+      meta={anyOverridden ? <span className="sf-text-micro sf-status-text-warning font-bold">OVR</span> : undefined}
     >
       <div className="space-y-1">
         {items.map((url, i) => (
@@ -430,20 +437,20 @@ function LinksEditor({
             <input
               value={url}
               onChange={(e) => editLink(i, e.target.value)}
-              className="flex-1 px-1.5 py-0.5 text-[11px] border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 min-w-0"
+              className="flex-1 px-1.5 py-0.5 sf-text-label sf-drawer-input min-w-0"
             />
             <a
               href={url}
               target="_blank"
               rel="noreferrer"
-              className="text-accent text-[10px] flex-shrink-0"
+              className="sf-link-accent sf-text-nano flex-shrink-0"
               title="Open link"
             >
               ↗
             </a>
             <button
               onClick={() => removeLink(i)}
-              className="text-red-400 hover:text-red-600 text-xs flex-shrink-0"
+              className="sf-status-text-danger text-xs flex-shrink-0"
               title="Remove link"
             >
               ×
@@ -455,25 +462,27 @@ function LinksEditor({
             value={newLink}
             onChange={(e) => setNewLink(e.target.value)}
             placeholder="Add link..."
-            className="flex-1 px-1.5 py-0.5 text-[11px] border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 min-w-0"
+            className="flex-1 px-1.5 py-0.5 sf-text-label sf-drawer-input min-w-0"
             onKeyDown={(e) => { if (e.key === 'Enter') addLink(); }}
           />
           <button
             onClick={addLink}
             disabled={!newLink.trim()}
-            className="px-2 py-0.5 text-[11px] text-accent hover:underline disabled:opacity-50 flex-shrink-0"
+            className="px-2 py-0.5 sf-text-label sf-link-accent hover:underline disabled:opacity-50 flex-shrink-0"
           >
             +
           </button>
         </div>
         {dirty && (
-          <button
-            onClick={() => onSave(items)}
-            disabled={isPending}
-            className="px-3 py-1 text-[11px] bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
-          >
-            Save Links
-          </button>
+          <ActionTooltip text="Confirm and save link changes.">
+            <button
+              onClick={() => onSave(items)}
+              disabled={isPending}
+              className="px-3 py-1 sf-text-label sf-confirm-button-solid rounded disabled:opacity-50"
+            >
+              Save Links
+            </button>
+          </ActionTooltip>
         )}
       </div>
     </DrawerSection>
@@ -775,12 +784,12 @@ export function ComponentReviewDrawer({
   // Build shared impact section (used by both name/maker and property focused views)
   const impactSection = impactQuery.data && impactQuery.data.total > 0 ? (
     <DrawerSection title="Affected Products">
-      <div className="text-[10px] text-gray-500">
+      <div className="sf-text-nano sf-text-muted">
         {impactQuery.data.total} product{impactQuery.data.total !== 1 ? 's' : ''} use this component
       </div>
       <div className="max-h-[120px] overflow-y-auto space-y-0.5">
         {(impactQuery.data.affected_products || []).slice(0, 20).map((p) => (
-          <div key={p.productId} className="text-[10px] text-gray-400 truncate">{p.productId}</div>
+          <div key={p.productId} className="sf-text-nano sf-text-muted truncate">{p.productId}</div>
         ))}
       </div>
     </DrawerSection>
@@ -807,7 +816,7 @@ export function ComponentReviewDrawer({
     const componentValueId = toPositiveId(slotId);
     return (
       <DrawerSection title="Debug Identity">
-        <div className="text-[10px] text-cyan-700 dark:text-cyan-300 space-y-0.5">
+        <div className="sf-text-nano sf-status-text-info space-y-0.5">
           <div>{`row: ${componentType} | ${item.name} | ${item.maker || '(blank maker)'}`}</div>
           <div>{`componentIdentityId: ${debugComponentIdentityId ?? 'n/a'}`}</div>
           <div>{`componentValueId: ${componentValueId ?? 'n/a'}`}</div>
@@ -1103,10 +1112,10 @@ export function ComponentReviewDrawer({
   const componentIdentityId = debugComponentIdentityId;
 
   const topBadges: Array<{ label: string; className: string }> = [
-    { label: `${item.metrics.property_count} properties`, className: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300' },
+    { label: `${item.metrics.property_count} properties`, className: 'sf-chip-neutral' },
   ];
   if (item.metrics.flags > 0) {
-    topBadges.push({ label: `${item.metrics.flags} flags`, className: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200' });
+    topBadges.push({ label: `${item.metrics.flags} flags`, className: 'sf-chip-warning' });
   }
 
   // "Accept Entire Row" — approves all review items and applies best values as overrides
@@ -1181,18 +1190,20 @@ export function ComponentReviewDrawer({
     <DrawerShell title={item.name} subtitle={subtitle} onClose={onClose}>
       {isSynthetic && (
         <DrawerSection title="New Component">
-          <div className="px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded space-y-2">
-            <div className="text-xs text-purple-700 dark:text-purple-300 font-medium">
+          <div className="px-3 py-2 sf-callout sf-callout-accent rounded space-y-2">
+            <div className="text-xs sf-status-text-info font-medium">
               This component was discovered by the pipeline but doesn't exist in the database yet.
             </div>
-            <button
-              onClick={() => acceptEntireRowMut.mutate()}
-              disabled={acceptEntireRowMut.isPending || overrideMut.isPending}
-              className="w-full px-3 py-2 text-sm font-medium rounded bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
-            >
-              {acceptEntireRowMut.isPending ? 'Accepting...' : 'Accept Entire Row'}
-            </button>
-            <div className="text-[10px] text-purple-400">
+            <ActionTooltip text="Accept all suggested values and approve this entire new component row.">
+              <button
+                onClick={() => acceptEntireRowMut.mutate()}
+                disabled={acceptEntireRowMut.isPending || overrideMut.isPending}
+                className="w-full px-3 py-2 text-sm font-medium rounded sf-primary-button disabled:opacity-50"
+              >
+                {acceptEntireRowMut.isPending ? 'Accepting...' : 'Accept Entire Row'}
+              </button>
+            </ActionTooltip>
+            <div className="sf-text-nano sf-text-muted">
               Approves all review items and accepts best candidate values for every property.
             </div>
           </div>
@@ -1200,18 +1211,20 @@ export function ComponentReviewDrawer({
       )}
       {!isSynthetic && drawerPendingReviewItems.length > 0 && (
         <DrawerSection title="AI Review">
-          <div className="px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded space-y-2">
-            <div className="text-xs text-purple-700 dark:text-purple-300 font-medium">
+          <div className="px-3 py-2 sf-callout sf-callout-accent rounded space-y-2">
+            <div className="text-xs sf-status-text-info font-medium">
               {drawerPendingReviewItems.length} pipeline match{drawerPendingReviewItems.length !== 1 ? 'es' : ''} pending review
             </div>
-            <button
-              onClick={() => acceptEntireRowMut.mutate()}
-              disabled={acceptEntireRowMut.isPending || overrideMut.isPending}
-              className="w-full px-3 py-1.5 text-[11px] font-medium rounded bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
-            >
-              {acceptEntireRowMut.isPending ? 'Accepting...' : 'Accept All Values + Approve'}
-            </button>
-            <div className="text-[10px] text-purple-400">
+            <ActionTooltip text="Accept all best candidate values and approve pending AI review items for this component.">
+              <button
+                onClick={() => acceptEntireRowMut.mutate()}
+                disabled={acceptEntireRowMut.isPending || overrideMut.isPending}
+                className="w-full px-3 py-1.5 sf-text-label font-medium rounded sf-drawer-apply-button disabled:opacity-50"
+              >
+                {acceptEntireRowMut.isPending ? 'Accepting...' : 'Accept All Values + Approve'}
+              </button>
+            </ActionTooltip>
+            <div className="sf-text-nano sf-text-muted">
               Approves review items and accepts best candidate values for every property.
             </div>
           </div>
@@ -1310,12 +1323,12 @@ export function ComponentReviewDrawer({
 
       {impactQuery.data && impactQuery.data.total > 0 && (
         <DrawerSection title="Product Impact">
-          <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs text-blue-700 dark:text-blue-300">
+          <div className="px-3 py-2 sf-callout sf-callout-info rounded text-xs">
             {impactQuery.data.total} product{impactQuery.data.total !== 1 ? 's' : ''} reference this component. Changes will cascade.
           </div>
           <div className="max-h-[100px] overflow-y-auto space-y-0.5 mt-1">
             {(impactQuery.data.affected_products || []).slice(0, 15).map((p) => (
-              <div key={p.productId} className="text-[10px] text-gray-400 truncate">{p.productId}</div>
+              <div key={p.productId} className="sf-text-nano sf-text-muted truncate">{p.productId}</div>
             ))}
           </div>
         </DrawerSection>

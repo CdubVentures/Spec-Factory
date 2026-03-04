@@ -3,6 +3,7 @@ import { useQuery, useMutation, type QueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { DataTable } from '../../components/common/DataTable';
+import { ActionTooltip } from '../../components/common/ActionTooltip';
 import { InlineCellEditor } from '../../components/common/InlineCellEditor';
 import { ReviewValueCell } from '../../components/common/ReviewValueCell';
 import { LinkedProductsList } from '../../components/common/LinkedProductsList';
@@ -363,7 +364,7 @@ export function ComponentSubTab({
               <ComponentEditingCell
                 onCommit={handleCommitEdit}
                 onCancel={cancelComponentEdit}
-                className="w-full px-1 py-0.5 text-[11px] bg-white dark:bg-gray-800 border-0 outline-none ring-2 ring-accent rounded font-semibold"
+                className="w-full px-1 py-0.5 text-[11px] rounded font-semibold sf-component-inline-editor"
               />
             );
           }
@@ -381,7 +382,7 @@ export function ComponentSubTab({
               linkedProductCount={row.original.linked_products?.length ?? 0}
               showSourceCountBadge={debugLinkedProducts}
               sourceCount={row.original.name_tracked?.candidate_count ?? 0}
-              emptyWhenMissing={<span className="font-semibold text-gray-900 dark:text-gray-100">{row.original.name}</span>}
+              emptyWhenMissing={<span className="font-semibold sf-text-primary">{row.original.name}</span>}
             />
           );
         },
@@ -401,7 +402,7 @@ export function ComponentSubTab({
               <ComponentEditingCell
                 onCommit={handleCommitEdit}
                 onCancel={cancelComponentEdit}
-                className="w-full px-1 py-0.5 text-[11px] bg-white dark:bg-gray-800 border-0 outline-none ring-2 ring-accent rounded"
+                className="w-full px-1 py-0.5 text-[11px] rounded sf-component-inline-editor"
               />
             );
           }
@@ -418,7 +419,7 @@ export function ComponentSubTab({
               linkedProductCount={row.original.linked_products?.length ?? 0}
               showSourceCountBadge={debugLinkedProducts}
               sourceCount={row.original.maker_tracked?.candidate_count ?? 0}
-              emptyWhenMissing={<span className="text-gray-700 dark:text-gray-300">{row.original.maker || ''}</span>}
+              emptyWhenMissing={<span className="sf-text-muted">{row.original.maker || ''}</span>}
             />
           );
         },
@@ -431,7 +432,7 @@ export function ComponentSubTab({
         cell: ({ row }) => {
           if (!row.original.discovered) return null;
           return (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium sf-component-origin-chip">
               Discovered
             </span>
           );
@@ -446,7 +447,7 @@ export function ComponentSubTab({
           const aliases = row.original.aliases;
           if (!aliases || aliases.length === 0) return null;
           return (
-            <span className="text-[11px] text-gray-600 dark:text-gray-400 truncate block max-w-[180px]" title={aliases.join(', ')}>
+            <span className="text-[11px] sf-component-alias-text truncate block max-w-[180px]" title={aliases.join(', ')}>
               {aliases.join(', ')}
             </span>
           );
@@ -459,7 +460,7 @@ export function ComponentSubTab({
         accessorFn: (row) => row.linked_products?.length ?? 0,
         cell: ({ row }) => {
           const count = row.original.linked_products?.length ?? 0;
-          if (count === 0) return <span className="text-[10px] text-gray-400">-</span>;
+          if (count === 0) return <span className="text-[10px] sf-text-subtle">-</span>;
           const isExpanded = row.getIsExpanded();
           return (
             <button
@@ -467,11 +468,7 @@ export function ComponentSubTab({
                 e.stopPropagation();
                 row.toggleExpanded();
               }}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                isExpanded
-                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
-              }`}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${isExpanded ? 'sf-component-linked-products-chip-open' : 'sf-component-linked-products-chip'}`}
               title={`${count} linked product${count !== 1 ? 's' : ''} - click to ${isExpanded ? 'collapse' : 'expand'}`}
             >
               <span>{isExpanded ? '\u25BC' : '\u25B6'}</span>
@@ -507,34 +504,34 @@ export function ComponentSubTab({
         id: `prop_${propKey}`,
         size: 160,
         header: () => (
-          <span className="flex flex-col gap-0.5" title={propKey}>
-            <span className="flex items-center gap-1">
-              {getLabel(propKey)}
-              {propAICount > 0 && (
-                <span className="inline-flex items-center gap-0.5 text-[9px] text-purple-600 dark:text-purple-400">
-                  AI {propAICount}
-                </span>
+            <span className="flex flex-col gap-0.5" title={propKey}>
+              <span className="flex items-center gap-1">
+                {getLabel(propKey)}
+                {propAICount > 0 && (
+                  <span className="inline-flex items-center gap-0.5 sf-text-nano sf-component-header-ai-count">
+                    AI {propAICount}
+                  </span>
+                )}
+                {propFlagCount > 0 && (
+                  <span className="inline-flex items-center gap-0.5 sf-text-nano sf-component-header-flag-count">
+                    <FlagIcon className="w-2.5 h-2.5" />
+                    {propFlagCount}
+                  </span>
+                )}
+              </span>
+              {varianceLabel && (
+                <span className="sf-text-micro sf-component-header-meta font-normal leading-tight">{varianceLabel}</span>
               )}
-              {propFlagCount > 0 && (
-                <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-600 dark:text-amber-400">
-                  <FlagIcon className="w-2.5 h-2.5" />
-                  {propFlagCount}
-                </span>
-              )}
+              {constraints.map((expr) => {
+                const opMatch = expr.match(/^(.+?)\s*(<=|>=|!=|==|<|>)\s*(.+)$/);
+                const label = opMatch
+                  ? `${humanizeField(opMatch[1].trim())} ${opMatch[2]} ${humanizeField(opMatch[3].trim())}`
+                  : expr;
+                return (
+                  <span key={expr} className="sf-text-micro sf-component-header-meta font-normal leading-tight">{label}</span>
+                );
+              })}
             </span>
-            {varianceLabel && (
-              <span className="text-[8px] text-gray-500 dark:text-gray-400 font-normal leading-tight">{varianceLabel}</span>
-            )}
-            {constraints.map((expr) => {
-              const opMatch = expr.match(/^(.+?)\s*(<=|>=|!=|==|<|>)\s*(.+)$/);
-              const label = opMatch
-                ? `${humanizeField(opMatch[1].trim())} ${opMatch[2]} ${humanizeField(opMatch[3].trim())}`
-                : expr;
-              return (
-                <span key={expr} className="text-[8px] text-gray-500 dark:text-gray-400 font-normal leading-tight">{label}</span>
-              );
-            })}
-          </span>
         ),
         accessorFn: (row) => {
           const state = row.properties[propKey];
@@ -551,7 +548,7 @@ export function ComponentSubTab({
               <ComponentEditingCell
                 onCommit={handleCommitEdit}
                 onCancel={cancelComponentEdit}
-                className="w-full px-1 py-0.5 text-[11px] bg-white dark:bg-gray-800 border-0 outline-none ring-2 ring-accent rounded"
+                className="w-full px-1 py-0.5 text-[11px] rounded sf-component-inline-editor"
                 enumValues={state?.enum_values}
                 enumPolicy={state?.enum_policy}
               />
@@ -589,14 +586,14 @@ export function ComponentSubTab({
         const isSynthetic = Boolean((row.original as ExtendedComponentReviewItem)._isSynthetic);
         if (isSynthetic) {
           return (
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300" title="Pending AI Review">
+            <span className="px-1.5 py-0.5 rounded sf-text-nano font-bold sf-review-ai-pending-badge" title="Pending AI Review">
               AI
             </span>
           );
         }
-        if (flags === 0) return <span className="text-green-500 text-xs">0</span>;
+        if (flags === 0) return <span className="text-xs sf-status-text-success">0</span>;
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 text-xs rounded hover:bg-amber-200 dark:hover:bg-amber-900/70 cursor-pointer" title="Click to review all flags">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded cursor-pointer sf-component-flag-chip" title="Click to review all flags">
             <FlagIcon className="w-3 h-3" />
             {flags}
           </span>
@@ -612,24 +609,23 @@ export function ComponentSubTab({
         const isSynthetic = Boolean((row.original as ExtendedComponentReviewItem)._isSynthetic);
         const hasPending = isSynthetic || pendingAIByComponent.has(row.original.name.toLowerCase());
         return (
-          <button
-            onClick={(event) => {
-              event.stopPropagation();
-              runComponentAiMut.mutate();
-            }}
-            disabled={runComponentAiMut.isPending}
-            title={hasPending
-              ? 'Run AI review for pending component/list matches (batch run).'
-              : 'Run AI review batch for this category.'
+          <ActionTooltip
+            text={hasPending
+              ? 'Run AI Review for pending component/list matches in this category.'
+              : 'Run AI Review batch for this category.'
             }
-            className={`px-2 py-0.5 text-[10px] font-medium rounded text-white disabled:opacity-50 ${
-              hasPending
-                ? 'bg-purple-600 hover:bg-purple-700'
-                : 'bg-indigo-600 hover:bg-indigo-700'
-            }`}
           >
-            {runComponentAiMut.isPending ? 'Running...' : 'Run AI'}
-          </button>
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                runComponentAiMut.mutate();
+              }}
+              disabled={runComponentAiMut.isPending}
+              className="px-2 py-0.5 text-[10px] font-medium rounded sf-run-ai-button disabled:opacity-50"
+            >
+              {runComponentAiMut.isPending ? 'Running...' : 'Run AI'}
+            </button>
+          </ActionTooltip>
         );
       },
     });
@@ -675,8 +671,8 @@ export function ComponentSubTab({
           maxHeight="max-h-[calc(100vh-320px)]"
           onCellClick={handleCellClick}
           getRowClassName={(row: ExtendedComponentReviewItem) => {
-            if (row._isSynthetic) return 'bg-purple-50 dark:bg-purple-950/30';
-            if (pendingAIByComponent.has(row.name.toLowerCase())) return 'bg-purple-50/50 dark:bg-purple-950/20';
+            if (row._isSynthetic) return 'sf-component-row-pending-ai';
+            if (pendingAIByComponent.has(row.name.toLowerCase())) return 'sf-component-row-pending-ai-soft';
             return '';
           }}
           getCanExpand={(row: ExtendedComponentReviewItem) => (row.linked_products?.length ?? 0) > 0}

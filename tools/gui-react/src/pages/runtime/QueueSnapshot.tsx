@@ -71,7 +71,7 @@ export function QueueSnapshot({ products }: QueueSnapshotProps) {
         <select
           value={selectedPid}
           onChange={(e) => setSelectedPid(e.target.value)}
-          className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 max-w-[220px]"
+          className="sf-select w-auto max-w-[220px] px-2 py-1 text-xs"
         >
           <option value="">-- select product --</option>
           {products.map((p) => (
@@ -84,7 +84,7 @@ export function QueueSnapshot({ products }: QueueSnapshotProps) {
         <button
           onClick={() => selectedPid && retryMut.mutate(selectedPid)}
           disabled={!selectedPid || busy}
-          className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-40"
+          className="px-2 py-1 text-xs sf-primary-button disabled:opacity-40"
           title="Reset to queued with 0 attempts"
         >
           Retry
@@ -93,7 +93,7 @@ export function QueueSnapshot({ products }: QueueSnapshotProps) {
         <button
           onClick={() => selectedPid && pauseMut.mutate(selectedPid)}
           disabled={!selectedPid || busy}
-          className="px-2 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600 disabled:opacity-40"
+          className="px-2 py-1 text-xs sf-warning-button-solid disabled:opacity-40"
           title="Pause this product"
         >
           Pause
@@ -106,12 +106,12 @@ export function QueueSnapshot({ products }: QueueSnapshotProps) {
             max={5}
             value={priorityInput}
             onChange={(e) => setPriorityInput(e.target.value)}
-            className="w-12 px-1 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+            className="w-12 sf-input px-1 py-1 text-xs"
           />
           <button
             onClick={() => selectedPid && priorityMut.mutate({ productId: selectedPid, priority: parseInt(priorityInput, 10) || 3 })}
             disabled={!selectedPid || busy}
-            className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-40"
+            className="px-2 py-1 text-xs sf-run-ai-button disabled:opacity-40"
             title="Set priority (1=highest, 5=lowest)"
           >
             Set Priority
@@ -126,7 +126,7 @@ export function QueueSnapshot({ products }: QueueSnapshotProps) {
               requeueMut.mutate();
             }}
             disabled={exhaustedCount === 0 || busy}
-            className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-40"
+            className="px-2 py-1 text-xs sf-danger-button-solid disabled:opacity-40"
             title={`Requeue all exhausted/failed products (${exhaustedCount})`}
           >
             Requeue Exhausted ({exhaustedCount})
@@ -136,10 +136,10 @@ export function QueueSnapshot({ products }: QueueSnapshotProps) {
 
       {/* Status feedback */}
       {(retryMut.isSuccess || pauseMut.isSuccess || priorityMut.isSuccess || requeueMut.isSuccess) && (
-        <div className="text-xs text-green-600 dark:text-green-400 mb-1">Action completed</div>
+        <div className="text-xs sf-status-text-success mb-1">Action completed</div>
       )}
       {(retryMut.isError || pauseMut.isError || priorityMut.isError || requeueMut.isError) && (
-        <div className="text-xs text-red-600 dark:text-red-400 mb-1">Action failed</div>
+        <div className="text-xs sf-status-text-danger mb-1">Action failed</div>
       )}
 
       <DataTable data={products} columns={columns} maxHeight="max-h-60" />

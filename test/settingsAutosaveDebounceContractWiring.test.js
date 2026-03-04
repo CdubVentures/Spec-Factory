@@ -20,7 +20,11 @@ test('settings manifest defines canonical autosave debounce and status timings',
   const text = readText(SETTINGS_MANIFEST);
   const sharedDefaultsText = readText(SHARED_DEFAULTS);
   assert.equal(text.includes('SETTINGS_AUTOSAVE_DEBOUNCE_MS'), true, 'settings manifest should define autosave debounce contract');
-  assert.equal(text.includes("import { SETTINGS_DEFAULTS } from '../../../../src/shared/settingsDefaults.js';"), true, 'settings manifest should import shared defaults');
+  assert.match(
+    text,
+    /import\s*\{[\s\S]*SETTINGS_DEFAULTS[\s\S]*\}\s*from\s*'..\/..\/..\/..\/src\/shared\/settingsDefaults\.js';/,
+    'settings manifest should import shared defaults',
+  );
   assert.equal(text.includes('...SETTINGS_DEFAULTS.autosave.debounceMs'), true, 'settings manifest debounce should flow from shared defaults');
   assert.equal(text.includes('SETTINGS_AUTOSAVE_STATUS_MS'), true, 'settings manifest should define autosave status timing contract');
   assert.equal(text.includes('...SETTINGS_DEFAULTS.autosave.statusMs'), true, 'settings manifest status timing should flow from shared defaults');
@@ -71,9 +75,8 @@ test('runtime and studio autosave timing text is sourced from debounce contract'
   assert.equal(runtimePanelText.includes('${runtimeAutoSaveDelaySeconds} seconds after any change.'), true, 'runtime autosave title should interpolate contract-owned delay');
   assert.equal(runtimePanelText.includes('1.5 seconds after any change.'), false, 'runtime panel should not hardcode autosave timing copy');
 
-  assert.equal(studioText.includes('studioDocsAutoSaveDelaySeconds'), true, 'studio field-studio docs autosave copy should derive from studio docs debounce contract');
+  assert.equal(studioText.includes('SETTINGS_AUTOSAVE_DEBOUNCE_MS.studioDocs'), true, 'studio field-studio docs autosave behavior should derive from studio docs debounce contract');
   assert.equal(studioText.includes('studioMapAutoSaveDelaySeconds'), true, 'studio mapping autosave copy should derive from studio map debounce contract');
-  assert.equal(studioText.includes('${studioDocsAutoSaveDelaySeconds}s of inactivity.'), true, 'studio field-studio docs autosave tooltip should interpolate contract-owned delay');
   assert.equal(studioText.includes('${studioMapAutoSaveDelaySeconds}s of inactivity.'), true, 'studio mapping autosave tooltip should interpolate contract-owned delay');
   assert.equal(studioText.includes('after 1.5s of inactivity.'), false, 'studio autosave tooltip copy should not hardcode debounce timing');
 });

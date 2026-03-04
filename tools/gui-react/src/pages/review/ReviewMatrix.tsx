@@ -86,19 +86,16 @@ export function ReviewMatrix({
 
   return (
     <Tooltip.Provider delayDuration={200}>
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+      <div className="sf-table-shell rounded-lg overflow-hidden">
         <div
           ref={parentRef}
           className="overflow-auto"
           style={{ height: 'calc(100vh - 340px)' }}
         >
           <div style={{ width: totalColWidth, position: 'relative' }}>
-            <div
-              className="flex bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20"
-              style={{ width: totalColWidth, height: HEADER_HEIGHT }}
-            >
+            <div className="flex sf-table-head sticky top-0 z-20" style={{ width: totalColWidth, height: HEADER_HEIGHT }}>
               <div
-                className="shrink-0 border-r border-gray-200 dark:border-gray-700 px-2 py-1 text-[10px] font-semibold text-gray-500 uppercase flex items-center sticky left-0 z-30 bg-gray-50 dark:bg-gray-800"
+                className="shrink-0 sf-review-matrix-field-header px-2 py-1 sf-text-caption font-semibold uppercase flex items-center sticky left-0 z-30"
                 style={{ width: FIELD_COL_WIDTH, minWidth: FIELD_COL_WIDTH }}
               >
                 Field
@@ -110,24 +107,24 @@ export function ReviewMatrix({
                   return (
                     <div
                       key={p.product_id}
-                      className={`absolute top-0 border-r border-gray-200 dark:border-gray-700 px-1.5 py-1 text-center flex flex-col justify-center ${dimmed ? 'opacity-40 bg-gray-50 dark:bg-gray-800/50' : ''}`}
+                      className={`absolute top-0 sf-review-matrix-product-header px-1.5 py-1 text-center flex flex-col justify-center ${dimmed ? 'opacity-40 sf-review-matrix-product-header-dimmed' : ''}`}
                       style={{ width: vCol.size, left: vCol.start, height: HEADER_HEIGHT }}
                     >
                       <div className="text-[11px] font-semibold truncate">{p.identity.brand}</div>
-                      <div className="text-[10px] text-gray-500 truncate">{p.identity.model}</div>
-                      <div className="text-[9px] text-gray-400 font-mono truncate">
+                      <div className="sf-text-caption sf-status-text-muted truncate">{p.identity.model}</div>
+                      <div className="sf-text-nano sf-text-subtle font-mono truncate">
                         {p.identity.id ? `#${p.identity.id}` : '#--'} | {p.identity.identifier ? p.identity.identifier.slice(0, 6) : 'no-id'}
                       </div>
-                      <div className="text-[9px] text-gray-400 flex items-center justify-center gap-1">
+                      <div className="sf-text-nano sf-text-subtle flex items-center justify-center gap-1">
                         <span>{pct(p.metrics.confidence)}</span>
                         <span>|</span>
                         {p.metrics.flags > 0 ? (
-                          <span className="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+                          <span className="inline-flex items-center gap-0.5 sf-status-text-warning">
                             <FlagIcon className="w-2.5 h-2.5" />
                             {p.metrics.flags}
                           </span>
                         ) : (
-                          <span className="text-green-500">0f</span>
+                          <span className="sf-status-text-success">0f</span>
                         )}
                         <span>{p.metrics.missing}m</span>
                       </div>
@@ -146,7 +143,7 @@ export function ReviewMatrix({
                 return (
                   <div
                     key={row.key}
-                    className="absolute flex w-full border-b border-gray-100 dark:border-gray-800"
+                    className="absolute flex w-full sf-review-matrix-row"
                     style={{
                       height: ROW_HEIGHT,
                       top: vRow.start,
@@ -154,11 +151,11 @@ export function ReviewMatrix({
                     }}
                   >
                     <div
-                      className="shrink-0 flex items-center gap-1 border-r border-gray-200 dark:border-gray-700 px-2 bg-white dark:bg-gray-900 sticky left-0 z-[5]"
+                      className="shrink-0 flex items-center gap-1 sf-review-matrix-field-cell px-2 sticky left-0 z-[5]"
                       style={{ width: FIELD_COL_WIDTH, minWidth: FIELD_COL_WIDTH }}
                     >
                       {showGroup ? (
-                        <span className="text-[8px] text-gray-400 uppercase w-14 truncate" title={group}>
+                        <span className="sf-text-micro sf-text-subtle uppercase w-14 truncate" title={group}>
                           {group}
                         </span>
                       ) : (
@@ -176,12 +173,12 @@ export function ReviewMatrix({
                         if (r.enum_name) parts.push(`Enum: ${r.enum_name}`);
                         return r.required ? (
                           <span
-                            className="ml-auto inline-block w-2 h-2 rounded-full bg-red-400 flex-shrink-0 cursor-help"
+                            className="ml-auto inline-block w-2 h-2 rounded-full sf-review-matrix-required-dot flex-shrink-0 cursor-help"
                             title={parts.join(' · ')}
                           />
                         ) : r.units || r.enum_name ? (
                           <span
-                            className="ml-auto inline-block w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600 flex-shrink-0 cursor-help"
+                            className="ml-auto inline-block w-1.5 h-1.5 rounded-full sf-review-matrix-optional-dot flex-shrink-0 cursor-help"
                             title={parts.join(' · ')}
                           />
                         ) : null;
@@ -216,15 +213,15 @@ export function ReviewMatrix({
                             key={p.product_id}
                             data-product-id={p.product_id}
                             data-field-key={row.key}
-                            className={`absolute top-0 flex items-center border-r border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 ${
+                            className={`absolute top-0 flex items-center sf-review-matrix-cell cursor-pointer ${
                               isEditing
-                                ? 'bg-white dark:bg-gray-800'
+                                ? 'sf-review-matrix-cell-editing'
                                 : isSelected
-                                  ? 'ring-2 ring-accent ring-inset bg-blue-50 dark:bg-blue-900/30'
+                                  ? 'ring-2 ring-accent ring-inset sf-review-matrix-cell-active'
                                   : isActive
-                                    ? 'ring-2 ring-accent ring-inset bg-blue-50 dark:bg-blue-900/30'
+                                    ? 'ring-2 ring-accent ring-inset sf-review-matrix-cell-active'
                                     : dimmed
-                                      ? 'bg-gray-50 dark:bg-gray-800/50'
+                                      ? 'sf-review-matrix-cell-dimmed'
                                       : ''
                             }`}
                             style={{ width: vCol.size, left: vCol.start, height: ROW_HEIGHT }}
@@ -236,7 +233,7 @@ export function ReviewMatrix({
                                 onChange={onEditingValueChange}
                                 onCommit={onCommitEditing}
                                 onCancel={onCancelEditing}
-                                className="w-full h-full px-1 text-[11px] bg-white dark:bg-gray-800 border-0 outline-none ring-2 ring-accent"
+                                className="w-full h-full px-1 text-[11px] sf-review-matrix-inline-editor ring-2 ring-accent"
                                 stopClickPropagation
                               />
                             ) : (
@@ -268,3 +265,4 @@ export function ReviewMatrix({
     </Tooltip.Provider>
   );
 }
+

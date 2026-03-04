@@ -276,7 +276,7 @@ function sanitizeUiSettings(raw, fallback = UI_SETTINGS_DEFAULTS) {
   const studioAutoSaveMapEnabled = studioAutoSaveAllEnabled
     ? true
     : resolveBooleanSetting(source, 'studioAutoSaveMapEnabled', fallback.studioAutoSaveMapEnabled);
-  const studioAutoSaveEnabled = studioAutoSaveAllEnabled || studioAutoSaveMapEnabled
+  const studioAutoSaveEnabled = studioAutoSaveAllEnabled
     ? true
     : resolveBooleanSetting(source, 'studioAutoSaveEnabled', fallback.studioAutoSaveEnabled);
   return {

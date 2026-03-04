@@ -267,13 +267,13 @@ describe('buildDecisionSegments', () => {
     assert.equal(segments.length, 3);
     assert.equal(segments[0].label, 'Keep');
     assert.equal(segments[0].value, 5);
-    assert.ok(segments[0].color.includes('green'));
+    assert.ok(segments[0].color.includes('sf-metric-fill-success'));
     assert.equal(segments[1].label, 'Maybe');
     assert.equal(segments[1].value, 2);
-    assert.ok(segments[1].color.includes('yellow'));
+    assert.ok(segments[1].color.includes('sf-metric-fill-warning'));
     assert.equal(segments[2].label, 'Drop');
     assert.equal(segments[2].value, 3);
-    assert.ok(segments[2].color.includes('red'));
+    assert.ok(segments[2].color.includes('sf-metric-fill-danger'));
   });
 
   it('returns segments with zero values when all counts are zero', () => {

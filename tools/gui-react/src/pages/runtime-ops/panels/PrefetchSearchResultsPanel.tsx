@@ -55,39 +55,39 @@ function ResultDetailDrawer({ result, query, provider, targetFields, passName, d
       </DrawerSection>
       <DrawerSection title="Decision">
         <div className="flex items-center gap-2">
-          <span className={`px-2.5 py-1 rounded text-xs font-semibold ${triageDecisionBadgeClass(result.decision)}`}>
+          <span className={`px-2.5 py-1 rounded sf-text-caption font-semibold ${triageDecisionBadgeClass(result.decision)}`}>
             {result.decision || '-'}
           </span>
         </div>
       </DrawerSection>
       {result.reason && (
         <DrawerSection title="Why kept/dropped">
-          <div className="text-xs text-gray-600 dark:text-gray-400">{result.reason}</div>
+          <div className="sf-text-caption sf-text-muted">{result.reason}</div>
         </DrawerSection>
       )}
       {query && (
         <DrawerSection title="Query Context">
-          <pre className="text-xs font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 whitespace-pre-wrap text-gray-700 dark:text-gray-300 mb-2">
+          <pre className="sf-pre-block sf-text-caption font-mono rounded p-2 whitespace-pre-wrap mb-2">
             {query}
           </pre>
           <div className="flex items-center gap-2 flex-wrap">
             {passName && (
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+              <span className="px-1.5 py-0.5 rounded sf-text-caption font-medium sf-chip-warning">
                 {passName}
               </span>
             )}
             {provider && (
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+              <span className="px-1.5 py-0.5 rounded sf-text-caption font-medium sf-chip-accent">
                 {providerDisplayLabel(provider)}
               </span>
             )}
           </div>
           {targetFields && targetFields.length > 0 && (
             <div className="mt-2">
-              <div className="text-[10px] text-gray-400 dark:text-gray-500 mb-1">Target fields:</div>
+              <div className="sf-text-caption sf-text-subtle mb-1">Target fields:</div>
               <div className="flex flex-wrap gap-1">
                 {targetFields.map((f) => (
-                  <span key={f} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                  <span key={f} className="px-2 py-0.5 rounded-full sf-text-caption font-medium sf-chip-success">
                     {f}
                   </span>
                 ))}
@@ -99,32 +99,32 @@ function ResultDetailDrawer({ result, query, provider, targetFields, passName, d
       {domainEntry && (
         <DrawerSection title="Domain Decision Breakdown">
           <div className="grid grid-cols-2 gap-1 text-xs">
-            <span className="text-gray-500">Keep</span>
-            <span className="font-mono text-green-600">{domainEntry.keep}</span>
-            <span className="text-gray-500">Maybe</span>
-            <span className="font-mono text-yellow-600">{domainEntry.maybe}</span>
-            <span className="text-gray-500">Drop</span>
-            <span className="font-mono text-red-600">{domainEntry.drop}</span>
+            <span className="sf-text-subtle">Keep</span>
+            <span className="font-mono sf-status-text-success">{domainEntry.keep}</span>
+            <span className="sf-text-subtle">Maybe</span>
+            <span className="font-mono sf-status-text-warning">{domainEntry.maybe}</span>
+            <span className="sf-text-subtle">Drop</span>
+            <span className="font-mono sf-status-text-danger">{domainEntry.drop}</span>
           </div>
         </DrawerSection>
       )}
       {result.snippet && (
         <DrawerSection title="Snippet">
-          <div className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 rounded p-2 italic">
+          <div className="sf-pre-block sf-text-caption rounded p-2 italic">
             &ldquo;{result.snippet}&rdquo;
           </div>
         </DrawerSection>
       )}
       <DrawerSection title="Details">
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="text-gray-500">Rank</div>
+          <div className="sf-text-subtle">Rank</div>
           <div className="font-mono">{result.rank}</div>
-          <div className="text-gray-500">Domain</div>
+          <div className="sf-text-subtle">Domain</div>
           <div className="font-mono">{result.domain}</div>
         </div>
       </DrawerSection>
       <DrawerSection title="URL">
-        <a href={result.url} target="_blank" rel="noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline break-all">
+        <a href={result.url} target="_blank" rel="noreferrer" className="sf-link-accent sf-text-caption hover:underline break-all">
           {result.url}
         </a>
       </DrawerSection>
@@ -147,8 +147,8 @@ function queryDecisionSummary(queryResults: SerpResultRow[]): string {
 }
 
 export function PrefetchSearchResultsPanel({ results, searchResultDetails, searchPlans, persistScope, liveSettings }: PrefetchSearchResultsPanelProps) {
-  const [showSnippets, toggleSnippets] = usePersistedToggle('runtimeOps:searchResults:snippets', false);
-  const [kanbanView, toggleKanbanView] = usePersistedToggle('runtimeOps:searchResults:kanbanView', false);
+  const [showSnippets, toggleSnippets, setShowSnippets] = usePersistedToggle('runtimeOps:searchResults:snippets', false);
+  const [kanbanView, toggleKanbanView, setKanbanView] = usePersistedToggle('runtimeOps:searchResults:kanbanView', false);
 
   const rawDetails = searchResultDetails || [];
   const details = useMemo(() => enrichResultDomains(rawDetails), [rawDetails]);
@@ -256,25 +256,25 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
   const isComplete = results.length > 0 && !hasProviderFailures;
   const isProgressing = hasDetails && results.length > 0 && details.length < results.length;
 
-  // ── A) Empty State ──
+  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ A) Empty State ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
   if (results.length === 0 && !hasDetails) {
     return (
       <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+        <h3 className="text-sm font-semibold sf-text-primary">
           Search Results
           <Tip text="Search Results shows what came back from configured providers (Google, Bing, DuckDuckGo, SearXNG, or Dual). Raw results are deduped and triaged into Keep/Maybe/Drop decisions based on relevance scoring." />
         </h3>
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="text-3xl text-gray-300 dark:text-gray-600 mb-3">&#128270;</div>
-          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          <div className="text-3xl sf-text-subtle mb-3">&#128270;</div>
+          <div className="text-sm font-medium sf-text-subtle">
             Waiting for search results
           </div>
-          <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm">
+          <div className="text-xs sf-text-subtle mt-1 max-w-sm">
             Results will appear after the Search Planner generates queries and
             they are executed against configured providers. Each query returns
             ranked URLs that are then deduped and triaged.
           </div>
-          <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-3">
+          <div className="sf-text-caption sf-text-subtle mt-3">
             Provider: <span className="font-mono">{providerDisplayLabel(liveSettings?.searchProvider) || (liveSettings ? 'Not set' : 'runtime settings hydrating')}</span>
           </div>
         </div>
@@ -286,52 +286,78 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
     <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
       {/* A) Header Row */}
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+        <h3 className="text-sm font-semibold sf-text-primary">
           Search Results
           <Tip text="Search Results shows what came back from configured providers (Google, Bing, DuckDuckGo, SearXNG, or Dual). Raw results are deduped and triaged into Keep/Maybe/Drop decisions based on relevance scoring." />
         </h3>
         {isComplete && (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+          <span className="px-2 py-0.5 rounded-full sf-text-caption font-medium sf-chip-success">
             Done
           </span>
         )}
         {hasProviderFailures && (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+          <span className="px-2 py-0.5 rounded-full sf-text-caption font-medium sf-chip-warning">
             Partial Errors
           </span>
         )}
         {isProgressing && (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 animate-pulse">
+          <span className="px-2 py-0.5 rounded-full sf-text-caption font-medium sf-chip-info animate-pulse">
             {details.length} of {results.length} queries detailed&hellip;
           </span>
         )}
         {engineCounts.size > 0 ? (
           [...engineCounts.entries()].map(([eng, cnt]) => (
-            <span key={eng} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+            <span key={eng} className="px-2 py-0.5 rounded-full sf-text-caption font-medium sf-chip-accent">
               {providerDisplayLabel(eng)} <span className="font-mono opacity-70">({cnt})</span>
             </span>
           ))
         ) : liveSettings?.searchProvider ? (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+          <span className="px-2 py-0.5 rounded-full sf-text-caption font-medium sf-chip-accent">
             {providerDisplayLabel(liveSettings.searchProvider)}
           </span>
         ) : null}
         {hasDetails && (
           <div className="flex items-center gap-2 ml-auto">
-            <button
-              type="button"
-              onClick={() => toggleKanbanView()}
-              className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {kanbanView ? 'Table' : 'Kanban'}
-            </button>
-            <button
-              type="button"
-              onClick={() => toggleSnippets()}
-              className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {showSnippets ? 'Hide Snippets' : 'Show Snippets'}
-            </button>
+            <div className="inline-flex items-center gap-1 rounded p-0.5 sf-surface-panel">
+              <button
+                type="button"
+                onClick={() => setKanbanView(false)}
+                className={`px-2 py-1 rounded sf-text-caption font-medium transition-colors ${
+                  !kanbanView ? 'sf-primary-button' : 'sf-icon-button'
+                }`}
+              >
+                Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setKanbanView(true)}
+                className={`px-2 py-1 rounded sf-text-caption font-medium transition-colors ${
+                  kanbanView ? 'sf-primary-button' : 'sf-icon-button'
+                }`}
+              >
+                Kanban
+              </button>
+            </div>
+            <div className="inline-flex items-center gap-1 rounded p-0.5 sf-surface-panel">
+              <button
+                type="button"
+                onClick={() => setShowSnippets(false)}
+                className={`px-2 py-1 rounded sf-text-caption font-medium transition-colors ${
+                  !showSnippets ? 'sf-primary-button' : 'sf-icon-button'
+                }`}
+              >
+                Snippets Off
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSnippets(true)}
+                className={`px-2 py-1 rounded sf-text-caption font-medium transition-colors ${
+                  showSnippets ? 'sf-primary-button' : 'sf-icon-button'
+                }`}
+              >
+                Snippets On
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -340,11 +366,11 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
       {failedQueries.length > 0 && (
         <div className="space-y-1.5">
           {failedQueries.map((fq, i) => (
-            <div key={i} className="px-4 py-2.5 rounded bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
-              <div className="text-xs font-medium text-orange-700 dark:text-orange-300">
+            <div key={i} className="px-4 py-2.5 sf-callout sf-callout-warning">
+              <div className="text-xs font-medium">
                 Zero results from {providerDisplayLabel(fq.provider) || (engineCounts.size > 0 ? [...engineCounts.keys()].map(providerDisplayLabel).join(', ') : 'search provider')}
               </div>
-              <div className="text-[10px] text-orange-600 dark:text-orange-400 mt-0.5">
+              <div className="sf-text-caption mt-0.5">
                 Query &ldquo;{fq.query}&rdquo; returned no results after {formatMs(fq.duration_ms)}.
                 The provider may be unreachable or the query may be too restrictive.
               </div>
@@ -353,27 +379,27 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
         </div>
       )}
 
-      {/* D) Hero Card — Results at a Glance */}
+      {/* D) Hero Card ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Results at a Glance */}
       {hasDetails && totalDetailResults > 0 && (() => {
         return (
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <div className="sf-surface-card p-4">
             <div className="flex items-start gap-4">
               <div className="flex-1">
-                <div className="text-sm text-gray-700 dark:text-gray-300">
+                <div className="text-sm sf-text-muted">
                   {results.length} quer{results.length === 1 ? 'y' : 'ies'} returned {totalResults} raw results.
                   {uniqueUrlCount > 0 && <> After dedupe, <strong>{uniqueUrlCount}</strong> unique URLs.</>}
                   {decisions.keep > 0 && <> <strong>{decisions.keep}</strong> kept, <strong>{filteredCount}</strong> dropped.</>}
                 </div>
                 {funnelBullets.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                  <div className="mt-3 pt-3 border-t sf-border-soft">
+                    <div className="sf-text-caption font-medium sf-text-subtle uppercase tracking-wider mb-1.5">
                       Why these results?
                       <Tip text="A narrative explaining the search results funnel: how many queries ran, what they targeted, how many URLs survived dedupe and triage, and which domains contributed the most kept results." />
                     </div>
                     <ul className="space-y-1">
                       {funnelBullets.map((b, i) => (
-                        <li key={i} className="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-1.5">
-                          <span className="text-emerald-500 mt-0.5 shrink-0">&#8226;</span>
+                        <li key={i} className="text-xs sf-text-muted flex items-start gap-1.5">
+                          <span className="sf-status-text-success mt-0.5 shrink-0">&#8226;</span>
                           <span>{b}</span>
                         </li>
                       ))}
@@ -381,8 +407,8 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                   </div>
                 )}
                 {topDomains.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                  <div className="mt-3 pt-3 border-t sf-border-soft">
+                    <div className="sf-text-caption font-medium sf-text-subtle uppercase tracking-wider mb-1.5">
                       Top Domains
                       <Tip text="The most frequently appearing domains across all search results. Click a domain to filter the results table or Kanban view to only show results from that domain." />
                     </div>
@@ -392,10 +418,10 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                           key={d.domain}
                           type="button"
                           onClick={() => setDomainFilter(domainFilter === d.domain ? null : d.domain)}
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
+                          className={`px-2 py-0.5 rounded-full sf-text-caption font-medium transition-colors ${
                             domainFilter === d.domain
-                              ? 'bg-blue-500 text-white ring-1 ring-blue-400'
-                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800'
+                              ? 'sf-chip-info sf-icon-badge'
+                              : 'sf-chip-info'
                           }`}
                         >
                           {d.domain} ({d.count})
@@ -405,7 +431,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                         <button
                           type="button"
                           onClick={() => setDomainFilter(null)}
-                          className="text-[10px] text-red-500 hover:underline ml-1"
+                          className="sf-text-caption sf-status-text-danger hover:underline ml-1"
                         >
                           Clear filter
                         </button>
@@ -445,7 +471,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
       {/* F) Decision Distribution Bar */}
       {hasDecisions && (
         <div>
-          <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+          <div className="sf-text-caption font-medium sf-text-subtle uppercase tracking-wider mb-1.5">
             Decision Distribution
             <Tip text="Visual breakdown of how search results were classified. Keep = will be fetched and parsed. Maybe = borderline, may be fetched if budget allows. Drop = filtered out." />
           </div>
@@ -456,7 +482,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
       {/* G) Per-query accordion with result details (enhanced) */}
       {hasDetails ? (
         <div className="space-y-2">
-          <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          <div className="sf-text-caption font-medium sf-text-subtle uppercase tracking-wider">
             Per-Query Results
             <Tip text="Each query sent to the search provider is shown as an expandable section. Click to see individual results, their relevance scores, and triage decisions. Use the Table/Kanban toggle above to switch between views." />
           </div>
@@ -476,21 +502,21 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
             const dropped = filteredResults.filter((r) => r.decision === 'drop' || r.decision === 'skip');
 
             return (
-              <div key={di} className="border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+              <div key={di} className="sf-surface-elevated rounded overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setExpandedQuery(isExpanded ? null : detail.query)}
-                  className="w-full flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800/80 hover:bg-gray-100 dark:hover:bg-gray-700/50 text-left"
+                  className="w-full flex items-center gap-2 px-3 py-2 sf-table-head sf-row-hoverable text-left"
                 >
-                  <span className="text-[10px] text-gray-400">{isExpanded ? '\u25BC' : '\u25B6'}</span>
-                  <span className="text-xs font-mono text-gray-900 dark:text-gray-100 flex-1 truncate">{detail.query}</span>
+                  <span className="sf-text-caption sf-text-subtle">{isExpanded ? '\u25BC' : '\u25B6'}</span>
+                  <span className="text-xs font-mono sf-text-primary flex-1 truncate">{detail.query}</span>
                   {passName && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 shrink-0">
+                    <span className="px-1.5 py-0.5 rounded sf-text-caption sf-chip-warning shrink-0">
                       {passName}
                     </span>
                   )}
                   {siteScope && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200 shrink-0">
+                    <span className="px-1.5 py-0.5 rounded sf-text-caption sf-chip-info shrink-0">
                       {siteScope}
                     </span>
                   )}
@@ -501,27 +527,27 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                       if (eng) perResultEngineCounts.set(eng, (perResultEngineCounts.get(eng) || 0) + 1);
                     }
                     return [...perResultEngineCounts.entries()].map(([eng, cnt]) => (
-                      <span key={eng} className="px-1.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 shrink-0">
+                      <span key={eng} className="px-1.5 py-0.5 rounded sf-text-caption sf-chip-accent shrink-0">
                         {providerDisplayLabel(eng)} <span className="font-mono opacity-70">({cnt})</span>
                       </span>
                     ));
                   })()}
-                  <span className="text-[10px] font-mono text-gray-500">{detail.results.length} results</span>
+                  <span className="sf-text-caption font-mono sf-text-subtle">{detail.results.length} results</span>
                   {targets.length > 0 && (
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <span className="sf-text-caption sf-status-text-success shrink-0">
                       {targets.length} field{targets.length > 1 ? 's' : ''}
                     </span>
                   )}
                   {decSummary && (
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{decSummary}</span>
+                    <span className="sf-text-caption sf-text-subtle">{decSummary}</span>
                   )}
                   {matchingBasic && matchingBasic.duration_ms > 0 && (
-                    <span className="text-[10px] font-mono text-gray-400">{formatMs(matchingBasic.duration_ms)}</span>
+                    <span className="sf-text-caption font-mono sf-text-subtle">{formatMs(matchingBasic.duration_ms)}</span>
                   )}
                 </button>
                 {isExpanded && kanbanView ? (
                   <div className="p-3 flex gap-3 overflow-x-auto">
-                    <KanbanLane title="Keep" count={kept.length} badgeClass="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    <KanbanLane title="Keep" count={kept.length} badgeClass="sf-chip-success">
                       {kept.map((r, ri) => (
                         <KanbanCard
                           key={ri}
@@ -539,20 +565,20 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                           {targets.length > 0 && (
                             <div className="flex flex-wrap gap-0.5 mt-1">
                               {targets.slice(0, 3).map((f) => (
-                                <span key={f} className="px-1 py-0 rounded text-[8px] font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                                <span key={f} className="px-1 py-0 rounded sf-text-micro font-medium sf-chip-success">
                                   {f}
                                 </span>
                               ))}
                               {targets.length > 3 && (
-                                <span className="text-[8px] text-gray-400">+{targets.length - 3}</span>
+                                <span className="sf-text-micro sf-text-subtle">+{targets.length - 3}</span>
                               )}
                             </div>
                           )}
                         </KanbanCard>
                       ))}
-                      {kept.length === 0 && <div className="text-[10px] text-gray-400 py-2 text-center">None</div>}
+                      {kept.length === 0 && <div className="sf-text-caption sf-text-subtle py-2 text-center">None</div>}
                     </KanbanLane>
-                    <KanbanLane title="Maybe" count={maybe.length} badgeClass="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                    <KanbanLane title="Maybe" count={maybe.length} badgeClass="sf-chip-warning">
                       {maybe.map((r, ri) => (
                         <KanbanCard
                           key={ri}
@@ -568,9 +594,9 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                           )}
                         />
                       ))}
-                      {maybe.length === 0 && <div className="text-[10px] text-gray-400 py-2 text-center">None</div>}
+                      {maybe.length === 0 && <div className="sf-text-caption sf-text-subtle py-2 text-center">None</div>}
                     </KanbanLane>
-                    <KanbanLane title="Drop" count={dropped.length} badgeClass="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                    <KanbanLane title="Drop" count={dropped.length} badgeClass="sf-chip-danger">
                       {dropped.map((r, ri) => (
                         <KanbanCard
                           key={ri}
@@ -586,55 +612,55 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                           )}
                         />
                       ))}
-                      {dropped.length === 0 && <div className="text-[10px] text-gray-400 py-2 text-center">None</div>}
+                      {dropped.length === 0 && <div className="sf-text-caption sf-text-subtle py-2 text-center">None</div>}
                     </KanbanLane>
                   </div>
                 ) : isExpanded ? (
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400">
-                        <th className="text-right px-2 py-1 font-medium w-8">#</th>
-                        <th className="text-left px-2 py-1 font-medium">Title</th>
-                        <th className="text-left px-2 py-1 font-medium">Domain</th>
-                        {showSnippets && <th className="text-left px-2 py-1 font-medium">Snippet</th>}
-                        <th className="text-left px-2 py-1 font-medium w-24">Relevance</th>
-                        <th className="text-left px-2 py-1 font-medium">Decision</th>
-                        {showSnippets && <th className="text-left px-2 py-1 font-medium">Reason</th>}
+                      <tr className="sf-table-head">
+                        <th className="sf-table-head-cell text-right px-2 py-1 w-8">#</th>
+                        <th className="sf-table-head-cell text-left px-2 py-1">Title</th>
+                        <th className="sf-table-head-cell text-left px-2 py-1">Domain</th>
+                        {showSnippets && <th className="sf-table-head-cell text-left px-2 py-1">Snippet</th>}
+                        <th className="sf-table-head-cell text-left px-2 py-1 w-24">Relevance</th>
+                        <th className="sf-table-head-cell text-left px-2 py-1">Decision</th>
+                        {showSnippets && <th className="sf-table-head-cell text-left px-2 py-1">Reason</th>}
                       </tr>
                     </thead>
                     <tbody>
                       {filteredResults.map((r, ri) => (
                         <tr
                           key={ri}
-                          className="border-t border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer"
+                          className="border-t sf-border-soft sf-table-row cursor-pointer"
                           onClick={() => setSelectedResultKey(
                             selectedResultKey === `${detail.query}::${r.url}`
                               ? null
                               : `${detail.query}::${r.url}`,
                           )}
                         >
-                          <td className="text-right px-2 py-1 font-mono text-gray-400">{r.rank || ri + 1}</td>
-                          <td className="px-2 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[16rem]">{r.title || '-'}</td>
-                          <td className="px-2 py-1 text-gray-500 dark:text-gray-400">{r.domain}</td>
+                          <td className="text-right px-2 py-1 font-mono sf-text-subtle">{r.rank || ri + 1}</td>
+                          <td className="px-2 py-1 sf-text-primary truncate max-w-[16rem]">{r.title || '-'}</td>
+                          <td className="px-2 py-1 sf-text-subtle">{r.domain}</td>
                           {showSnippets && (
-                            <td className="px-2 py-1 text-gray-400 dark:text-gray-500 truncate max-w-[14rem]">{r.snippet || '-'}</td>
+                            <td className="px-2 py-1 sf-text-subtle truncate max-w-[14rem]">{r.snippet || '-'}</td>
                           )}
                           <td className="px-2 py-1">
                             {r.relevance_score > 0 ? (
                               <ScoreBar value={r.relevance_score} max={1} label={r.relevance_score.toFixed(2)} />
                             ) : (
-                              <span className="text-gray-400">-</span>
+                              <span className="sf-text-subtle">-</span>
                             )}
                           </td>
                           <td className="px-2 py-1">
                             {r.decision ? (
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${triageDecisionBadgeClass(r.decision)}`}>{r.decision}</span>
+                              <span className={`px-1.5 py-0.5 rounded sf-text-caption font-medium ${triageDecisionBadgeClass(r.decision)}`}>{r.decision}</span>
                             ) : (
-                              <span className="text-gray-400">-</span>
+                              <span className="sf-text-subtle">-</span>
                             )}
                           </td>
                           {showSnippets && (
-                            <td className="px-2 py-1 text-gray-400 dark:text-gray-500 truncate max-w-[10rem]">{r.reason || '-'}</td>
+                            <td className="px-2 py-1 sf-text-subtle truncate max-w-[10rem]">{r.reason || '-'}</td>
                           )}
                         </tr>
                       ))}
@@ -647,40 +673,40 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
         </div>
       ) : results.length > 0 ? (
         /* H) Fallback: basic query/count table when no details */
-        <div className="border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+        <div className="sf-table-shell rounded overflow-hidden">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-gray-50 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400">
-                <th className="text-left px-3 py-2 font-medium">Query</th>
-                <th className="text-left px-3 py-2 font-medium">Site</th>
-                <th className="text-left px-3 py-2 font-medium">Engine</th>
-                <th className="text-right px-3 py-2 font-medium">Results</th>
-                <th className="text-right px-3 py-2 font-medium">Duration</th>
-                <th className="text-left px-3 py-2 font-medium">Worker</th>
+              <tr className="sf-table-head">
+                <th className="sf-table-head-cell text-left px-3 py-2">Query</th>
+                <th className="sf-table-head-cell text-left px-3 py-2">Site</th>
+                <th className="sf-table-head-cell text-left px-3 py-2">Engine</th>
+                <th className="sf-table-head-cell text-right px-3 py-2">Results</th>
+                <th className="sf-table-head-cell text-right px-3 py-2">Duration</th>
+                <th className="sf-table-head-cell text-left px-3 py-2">Worker</th>
               </tr>
             </thead>
             <tbody>
               {results.map((r, i) => (
-                <tr key={i} className="border-t border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                  <td className="px-3 py-1.5 font-mono text-gray-900 dark:text-gray-100 max-w-[20rem] truncate">{r.query}</td>
+                <tr key={i} className="border-t sf-border-soft sf-table-row">
+                  <td className="px-3 py-1.5 font-mono sf-text-primary max-w-[20rem] truncate">{r.query}</td>
                   <td className="px-3 py-1.5">
                     {(() => {
                       const site = extractSiteScope(r.query);
                       return site ? (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200">{site}</span>
+                        <span className="px-1.5 py-0.5 rounded sf-text-caption sf-chip-info">{site}</span>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="sf-text-subtle">-</span>
                       );
                     })()}
                   </td>
                   <td className="px-3 py-1.5">
-                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                    <span className="px-1.5 py-0.5 rounded sf-text-caption sf-chip-accent">
                       {providerDisplayLabel(r.provider) || '-'} <span className="font-mono opacity-70">({r.result_count})</span>
                     </span>
                   </td>
                   <td className="px-3 py-1.5 text-right font-mono">{r.result_count}</td>
-                  <td className="px-3 py-1.5 text-right font-mono text-gray-600 dark:text-gray-400">{r.duration_ms > 0 ? formatMs(r.duration_ms) : '-'}</td>
-                  <td className="px-3 py-1.5 font-mono text-gray-500 dark:text-gray-400">{r.worker_id || '-'}</td>
+                  <td className="px-3 py-1.5 text-right font-mono sf-text-muted">{r.duration_ms > 0 ? formatMs(r.duration_ms) : '-'}</td>
+                  <td className="px-3 py-1.5 font-mono sf-text-subtle">{r.worker_id || '-'}</td>
                 </tr>
               ))}
             </tbody>
@@ -704,10 +730,10 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
       {/* J) Debug: Raw JSON */}
       {hasDetails && (
         <details className="text-xs">
-          <summary className="cursor-pointer text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+          <summary className="cursor-pointer sf-summary-toggle">
             Debug: Raw Search Results
           </summary>
-          <pre className="mt-2 text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-3 overflow-x-auto overflow-y-auto max-h-60 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+          <pre className="mt-2 sf-pre-block sf-text-caption font-mono rounded p-3 overflow-x-auto overflow-y-auto max-h-60 whitespace-pre-wrap">
             {JSON.stringify(details, null, 2)}
           </pre>
         </details>

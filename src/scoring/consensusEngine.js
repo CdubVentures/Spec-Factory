@@ -43,14 +43,56 @@ const TIER_WEIGHT = {
   3: 0.45
 };
 
+function resolveParsingConfidenceBaseMap(config = null) {
+  const source = config?.parsingConfidenceBaseMap && typeof config.parsingConfidenceBaseMap === 'object'
+    ? config.parsingConfidenceBaseMap
+    : {};
+  const read = (key, fallback) => {
+    const parsed = Number.parseFloat(String(source?.[key] ?? ''));
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  const microformatRdfa = read('microformat_rdfa', read('microformat', METHOD_WEIGHT.microformat));
+  return {
+    network_json: read('network_json', METHOD_WEIGHT.network_json),
+    embedded_state: read('embedded_state', METHOD_WEIGHT.embedded_state),
+    json_ld: read('json_ld', METHOD_WEIGHT.json_ld),
+    microdata: read('microdata', METHOD_WEIGHT.microdata),
+    opengraph: read('opengraph', METHOD_WEIGHT.opengraph),
+    microformat: microformatRdfa,
+    rdfa: microformatRdfa,
+  };
+}
+
 function resolveMethodWeight(method, tier, config = null) {
-  if (method === 'llm_extract') {
+  const methodToken = String(method || '').trim().toLowerCase();
+  const parsingConfidenceBaseMap = resolveParsingConfidenceBaseMap(config);
+  if (methodToken === 'llm_extract') {
+    const llmExtractBase = Number.parseFloat(String(config?.consensusMethodWeightLlmExtractBase ?? METHOD_WEIGHT.llm_extract));
+    const safeLlmExtractBase = Number.isFinite(llmExtractBase) ? llmExtractBase : METHOD_WEIGHT.llm_extract;
     if (tier === 1) return config?.consensusLlmWeightTier1 ?? 0.6;
     if (tier === 2) return config?.consensusLlmWeightTier2 ?? 0.4;
-    if (tier === 3) return config?.consensusLlmWeightTier3 ?? 0.2;
-    return config?.consensusLlmWeightTier4 ?? 0.15;
+    if (tier === 3) return config?.consensusLlmWeightTier3 ?? safeLlmExtractBase;
+    return config?.consensusLlmWeightTier4 ?? Math.min(safeLlmExtractBase, 0.15);
   }
-  return METHOD_WEIGHT[method] || 0.4;
+  if (methodToken === 'network_json') {
+    return config?.consensusMethodWeightNetworkJson ?? parsingConfidenceBaseMap.network_json;
+  }
+  if (methodToken === 'adapter_api') {
+    return config?.consensusMethodWeightAdapterApi ?? METHOD_WEIGHT.adapter_api;
+  }
+  if (methodToken === 'json_ld' || methodToken === 'structured_meta') {
+    return config?.consensusMethodWeightStructuredMeta ?? parsingConfidenceBaseMap.json_ld;
+  }
+  if (methodToken === 'pdf') {
+    return config?.consensusMethodWeightPdf ?? METHOD_WEIGHT.pdf;
+  }
+  if (methodToken === 'table_kv') {
+    return config?.consensusMethodWeightTableKv ?? 0.78;
+  }
+  if (methodToken === 'dom') {
+    return config?.consensusMethodWeightDom ?? METHOD_WEIGHT.dom;
+  }
+  return parsingConfidenceBaseMap[methodToken] ?? METHOD_WEIGHT[methodToken] ?? 0.4;
 }
 
 function resolveTierWeight(tier, config = null) {
@@ -153,10 +195,12 @@ function computePolicySignal(cluster, policy) {
   }
 }
 
-function applyPolicyBonus(clusters, policy) {
+function applyPolicyBonus(clusters, policy, config = null) {
   if (!policy || policy === 'best_confidence' || clusters.length < 2) {
     return;
   }
+  const policyBonus = Number.parseFloat(String(config?.consensusPolicyBonus ?? POLICY_BONUS));
+  const safePolicyBonus = Number.isFinite(policyBonus) ? policyBonus : POLICY_BONUS;
   let bestSignal = -Infinity;
   let bestIdx = -1;
   for (let i = 0; i < clusters.length; i++) {
@@ -167,18 +211,26 @@ function applyPolicyBonus(clusters, policy) {
     }
   }
   if (bestIdx >= 0 && bestSignal > 0) {
-    clusters[bestIdx].score += POLICY_BONUS;
+    clusters[bestIdx].score += safePolicyBonus;
   }
 }
 
-function passTargetForField(field) {
+function passTargetForField(field, config = null) {
+  const identityStrongTargetParsed = Number.parseInt(String(config?.consensusPassTargetIdentityStrong ?? 5), 10);
+  const normalTargetParsed = Number.parseInt(String(config?.consensusPassTargetNormal ?? 3), 10);
+  const identityStrongTarget = Number.isFinite(identityStrongTargetParsed)
+    ? Math.max(1, identityStrongTargetParsed)
+    : 5;
+  const normalTarget = Number.isFinite(normalTargetParsed)
+    ? Math.max(1, normalTargetParsed)
+    : 3;
   if (PASS_EXEMPT_FIELDS.has(field)) {
     return 0;
   }
   if (COMMONLY_WRONG_FIELDS.has(field)) {
-    return 5;
+    return identityStrongTarget;
   }
-  return 3;
+  return normalTarget;
 }
 
 function selectBestCluster(clusters) {
@@ -490,7 +542,7 @@ export function runConsensusEngine({
         anchor_locked: false,
         confirmations: 0,
         approved_confirmations: 0,
-        pass_target: passTargetForField(field),
+        pass_target: passTargetForField(field, config),
         meets_pass_target: false,
         confidence: 0,
         evidence: []
@@ -509,13 +561,28 @@ export function runConsensusEngine({
     const selectionPolicy = typeof fieldRule?.selection_policy === 'string'
       ? fieldRule.selection_policy : null;
     if (selectionPolicy) {
-      applyPolicyBonus(clusters, selectionPolicy);
+      applyPolicyBonus(clusters, selectionPolicy, config);
     }
 
     const { best, second } = selectBestCluster(clusters);
-    const weightedMajority = !second || best.score >= (second.score * 1.1);
+    const weightedMajorityThresholdParsed = Number.parseFloat(String(config?.consensusWeightedMajorityThreshold ?? 1.1));
+    const weightedMajorityThreshold = Number.isFinite(weightedMajorityThresholdParsed)
+      ? Math.max(1, weightedMajorityThresholdParsed)
+      : 1.1;
+    const weightedMajority = !second || best.score >= (second.score * weightedMajorityThreshold);
 
-    const minimumRequired = 3;
+    const minimumRequiredParsed = Number.parseInt(String(config?.consensusStrictAcceptanceDomainCount ?? 3), 10);
+    const minimumRequired = Number.isFinite(minimumRequiredParsed)
+      ? Math.max(1, minimumRequiredParsed)
+      : 3;
+    const relaxedMinimumParsed = Number.parseInt(String(config?.consensusRelaxedAcceptanceDomainCount ?? 2), 10);
+    const relaxedMinimum = Number.isFinite(relaxedMinimumParsed)
+      ? Math.max(1, relaxedMinimumParsed)
+      : 2;
+    const instrumentedThresholdParsed = Number.parseInt(String(config?.consensusInstrumentedFieldThreshold ?? 3), 10);
+    const instrumentedThreshold = Number.isFinite(instrumentedThresholdParsed)
+      ? Math.max(1, instrumentedThresholdParsed)
+      : 3;
     const approvedDomainCount = best?.approvedDomainCount || 0;
     const instrumentedCount = best?.instrumentedDomainCount || 0;
 
@@ -523,7 +590,7 @@ export function runConsensusEngine({
     const relaxedCandidate = Boolean(config.allowBelowPassTargetFill) && !INSTRUMENTED_FIELDS.has(field);
 
     let relaxedAccepted = false;
-    if (relaxedCandidate && approvedDomainCount >= 2 && weightedMajority) {
+    if (relaxedCandidate && approvedDomainCount >= relaxedMinimum && weightedMajority) {
       const approvedEvidence = (best?.evidence || []).filter((item) => item.approvedDomain);
       const hasTier1Manufacturer = approvedEvidence.some(
         (item) => item.tier === 1 && item.tierName === 'manufacturer'
@@ -541,14 +608,14 @@ export function runConsensusEngine({
 
     let accepted = strictAccepted || relaxedAccepted;
     if (INSTRUMENTED_FIELDS.has(field)) {
-      accepted = strictAccepted && instrumentedCount >= 3;
+      accepted = strictAccepted && instrumentedCount >= instrumentedThreshold;
       relaxedAccepted = false;
     }
 
     const value = accepted ? best.display : 'unk';
     fields[field] = value;
 
-    const passTarget = passTargetForField(field);
+    const passTarget = passTargetForField(field, config);
     const meetsPassTarget = approvedDomainCount >= passTarget;
 
     if (!meetsPassTarget) {
@@ -558,7 +625,11 @@ export function runConsensusEngine({
       }
     }
 
-    const confidenceBase = approvedDomainCount >= 3 ? 0.7 : approvedDomainCount / 4;
+    const confidenceBaseParsed = Number.parseFloat(String(config?.consensusConfidenceScoringBase ?? 0.7));
+    const confidenceBaseDefault = Number.isFinite(confidenceBaseParsed)
+      ? Math.max(0, Math.min(1, confidenceBaseParsed))
+      : 0.7;
+    const confidenceBase = approvedDomainCount >= minimumRequired ? confidenceBaseDefault : approvedDomainCount / 4;
     const confidenceScore = Math.max(
       0,
       Math.min(1, confidenceBase + (weightedMajority ? 0.2 : 0) + Math.min(0.1, best.score / 10))

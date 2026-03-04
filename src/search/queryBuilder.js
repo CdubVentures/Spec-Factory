@@ -506,13 +506,14 @@ function domainHintsForField(fieldRule = {}) {
     .filter((value) => value.includes('.'));
 }
 
-function toFieldTargetMap(rows = []) {
+function toFieldTargetMap(rows = [], perFieldCap = 3) {
+  const cap = Math.max(1, Number(perFieldCap || 3));
   const out = {};
   for (const row of rows) {
     for (const field of toArray(row.target_fields)) {
       if (!field) continue;
       out[field] = out[field] || [];
-      if (out[field].length >= 3) continue;
+      if (out[field].length >= cap) continue;
       if (!out[field].includes(row.query)) {
         out[field].push(row.query);
       }
@@ -521,7 +522,8 @@ function toFieldTargetMap(rows = []) {
   return out;
 }
 
-function toDocHintRows(rows = []) {
+function toDocHintRows(rows = [], perHintCap = 3) {
+  const cap = Math.max(1, Number(perHintCap || 3));
   const byHint = new Map();
   for (const row of rows) {
     const docHint = clean(row.doc_hint || '');
@@ -530,7 +532,7 @@ function toDocHintRows(rows = []) {
       byHint.set(docHint, []);
     }
     const list = byHint.get(docHint);
-    if (list.length >= 3) continue;
+    if (list.length >= cap) continue;
     if (!list.includes(row.query)) {
       list.push(row.query);
     }
@@ -826,7 +828,10 @@ export function buildSearchProfile({
   lexicon = {},
   learnedQueries = {},
   maxQueries = 24,
-  brandResolution = null
+  brandResolution = null,
+  aliasValidationCap = 12,
+  fieldTargetQueriesCap = 3,
+  docHintQueriesCap = 3,
 }) {
   const brand = clean(job?.identityLock?.brand || '');
   const model = clean(job?.identityLock?.model || '');
@@ -835,7 +840,7 @@ export function buildSearchProfile({
   const identity = { brand, model, variant, category };
   const aliasRejectLog = [];
   const queryRejectLog = [];
-  const identityAliases = buildDeterministicAliases(identity, 12, aliasRejectLog);
+  const identityAliases = buildDeterministicAliases(identity, aliasValidationCap, aliasRejectLog);
   const variantGuardTerms = buildVariantGuardTerms(identity);
 
   const baseTemplates = toArray(categoryConfig?.searchTemplates)
@@ -939,8 +944,8 @@ export function buildSearchProfile({
     query_rows: boundedRows,
     queries: boundedQueries,
     targeted_queries: boundedRows.map((row) => row.query),
-    field_target_queries: toFieldTargetMap(boundedRows),
-    doc_hint_queries: toDocHintRows(boundedRows),
+    field_target_queries: toFieldTargetMap(boundedRows, fieldTargetQueriesCap),
+    doc_hint_queries: toDocHintRows(boundedRows, docHintQueriesCap),
     hint_source_counts: hintSourceCounts,
     field_rule_gate_counts: buildFieldRuleGateCounts(categoryConfig),
     field_rule_hint_counts_by_field: buildFieldRuleHintCountsByField(categoryConfig)

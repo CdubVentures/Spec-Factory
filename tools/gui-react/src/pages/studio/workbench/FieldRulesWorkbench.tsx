@@ -235,8 +235,8 @@ export function FieldRulesWorkbench({
   const drawerOpen = drawerKey !== null && drawerRule !== null;
 
   return (
-    <div className={`grid ${drawerOpen ? 'grid-cols-[1fr,480px]' : 'grid-cols-1'} gap-3`}>
-      <div className="overflow-hidden">
+    <div className={`grid ${drawerOpen ? 'grid-cols-[1fr,480px]' : 'grid-cols-1'} gap-3 sf-text-primary sf-border-default sf-border-soft`}>
+      <div className="overflow-hidden sf-surface-card sf-bg-surface-soft">
         <WorkbenchColumnPresets
           activePreset={activePreset}
           onPreset={handlePreset}

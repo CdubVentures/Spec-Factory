@@ -22,6 +22,7 @@ function makeDeps({
   manifest = null,
   mapMtimeIso = '2026-02-20T12:00:00.000Z',
   fsWriteCalls = [],
+  keyMigrations = null,
 } = {}) {
   let diskMap = mapDoc ? JSON.parse(JSON.stringify(mapDoc)) : null;
   let readCount = 0;
@@ -30,6 +31,9 @@ function makeDeps({
     readCount += 1;
     if (String(filePath).includes('manifest.json')) {
       return manifest ? JSON.parse(JSON.stringify(manifest)) : null;
+    }
+    if (String(filePath).includes('key_migrations.json')) {
+      return keyMigrations ? JSON.parse(JSON.stringify(keyMigrations)) : null;
     }
     if (String(filePath).includes('field_studio_map.json')) {
       return diskMap ? JSON.parse(JSON.stringify(diskMap)) : null;
@@ -100,6 +104,47 @@ describe('sessionCache', () => {
       ['__grp::sensor', 'dpi_max', 'polling_rate', '__grp::physical', 'weight']
     );
     assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'polling_rate', 'weight']);
+  });
+
+  it('collapses repeated group transitions when selected_keys are interleaved', async () => {
+    const deps = makeDeps({
+      mapDoc: {
+        selected_keys: ['dpi_max', 'weight', 'polling_rate'],
+        field_overrides: {
+          polling_rate: { type: 'number', label: 'Polling Rate', ui: { label: 'Polling Rate (Hz)', group: 'sensor' } },
+        },
+      },
+    });
+    const cache = await createCache(deps);
+    const result = await cache.getSessionRules('mouse');
+
+    assert.deepEqual(
+      result.mergedFieldOrder,
+      ['__grp::sensor', 'dpi_max', 'polling_rate', '__grp::physical', 'weight']
+    );
+    assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'polling_rate', 'weight']);
+  });
+
+  it('remaps stale selected_keys using generated key migrations', async () => {
+    const deps = makeDeps({
+      mapDoc: {
+        selected_keys: ['dpi_max', 'switch_link'],
+        field_overrides: {},
+      },
+      compiledFields: {
+        dpi_max: { type: 'number', label: 'DPI Max', ui: { label: 'Max DPI', group: 'sensor' } },
+        switches_link: { type: 'string', label: 'Switches Link', ui: { label: 'Switches Link', group: 'switches' } },
+      },
+      compiledOrder: ['dpi_max', 'switches_link'],
+      keyMigrations: {
+        key_map: {
+          switch_link: 'switches_link',
+        },
+      },
+    });
+    const cache = await createCache(deps);
+    const result = await cache.getSessionRules('mouse');
+    assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'switches_link']);
   });
 
   it('labels are derived from merged fields', async () => {

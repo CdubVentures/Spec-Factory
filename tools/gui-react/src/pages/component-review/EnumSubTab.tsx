@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, type QueryClient } from '@tanstack/react-query';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { api } from '../../api/client';
+import { ActionTooltip } from '../../components/common/ActionTooltip';
 import { InlineCellEditor } from '../../components/common/InlineCellEditor';
 import { ReviewValueCell, type ReviewValueCellState } from '../../components/common/ReviewValueCell';
 import { CellDrawer } from '../../components/common/CellDrawer';
@@ -10,7 +11,6 @@ import { FlagsSection } from '../../components/common/FlagsSection';
 import { usePersistedToggle } from '../../stores/collapseStore';
 import { usePersistedTab } from '../../stores/tabStore';
 import { LinkedProductsList } from '../../components/common/LinkedProductsList';
-import { Tip } from '../../components/common/Tip';
 import { useComponentReviewStore } from '../../stores/componentReviewStore';
 import { hasKnownValue } from '../../utils/fieldNormalize';
 import { useFieldLabels } from '../../hooks/useFieldLabels';
@@ -95,25 +95,25 @@ function FieldListItem({
       onClick={onClick}
       className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between rounded transition-colors ${
         isSelected
-          ? 'bg-accent/10 text-accent dark:bg-accent-dark/10 dark:text-accent-dark border-l-2 border-accent'
-          : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+          ? 'sf-review-enum-field-selected'
+          : 'sf-review-enum-field-idle'
       }`}
     >
       <span className="truncate">{getLabel(field.field)}</span>
       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-        <span className="text-[10px] text-gray-400">{field.metrics.total}</span>
+        <span className="sf-text-nano sf-text-muted">{field.metrics.total}</span>
         {(() => {
           const pipelineReviewCount = field.values.filter((v) => hasActionablePending(v) && v.source === 'pipeline').length;
           const otherFlagCount = field.metrics.flags - pipelineReviewCount;
           return (
             <>
               {pipelineReviewCount > 0 && (
-                <span className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-[10px] rounded">
+                <span className="px-1.5 py-0.5 sf-text-nano sf-chip-accent rounded">
                   {pipelineReviewCount} AI
                 </span>
               )}
               {otherFlagCount > 0 && (
-                <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 text-[10px] rounded">
+                <span className="px-1.5 py-0.5 sf-text-nano sf-chip-danger rounded">
                   {otherFlagCount}
                 </span>
               )}
@@ -157,16 +157,16 @@ function ValueRow({
 
   if (isEditing) {
     return (
-      <div className="w-full px-3 py-1 flex items-center gap-2 rounded bg-blue-50 dark:bg-blue-900/30">
+      <div className="w-full px-3 py-1 flex items-center gap-2 rounded sf-callout sf-callout-info">
         <InlineCellEditor
           value={editText}
           onChange={onEditChange}
           onCommit={onEditCommit}
           onCancel={onEditCancel}
-          className="w-48 max-w-[50%] px-2 py-0.5 text-[11px] bg-white dark:bg-gray-800 border-0 outline-none ring-2 ring-accent rounded"
+          className="w-48 max-w-[50%] px-2 py-0.5 sf-text-label sf-review-enum-inline-editor"
           stopClickPropagation
         />
-        <span className={`ml-auto px-1.5 py-0.5 rounded text-[9px] font-medium flex-shrink-0 ${sourceBadge[item.source] || SOURCE_BADGE_FALLBACK}`}>
+        <span className={`ml-auto px-1.5 py-0.5 rounded sf-text-nano font-medium flex-shrink-0 ${sourceBadge[item.source] || SOURCE_BADGE_FALLBACK}`}>
           {item.source}
         </span>
       </div>
@@ -181,14 +181,14 @@ function ValueRow({
         onClick={onClick}
         className={`w-full text-left px-3 py-1 flex items-center gap-2 rounded transition-colors ${
           isSelected
-            ? 'bg-blue-50 dark:bg-blue-900/30'
+            ? 'sf-review-enum-row-selected'
             : isPipelineReview
-              ? 'bg-purple-50/50 dark:bg-purple-950/20 hover:bg-purple-50 dark:hover:bg-purple-950/30'
-              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-        } ${item.needs_review ? (isPipelineReview ? 'border-l-2 border-purple-400' : 'border-l-2 border-yellow-400') : ''}`}
+              ? 'sf-review-enum-row-pipeline'
+              : 'sf-review-enum-row-default'
+        } ${item.needs_review ? (isPipelineReview ? 'sf-review-enum-row-flag-ai' : 'sf-review-enum-row-flag-review') : ''}`}
       >
         {item.needs_review && (
-          <span className={`inline-flex items-center flex-shrink-0 ${isPipelineReview ? 'text-purple-600 dark:text-purple-400' : 'text-amber-600 dark:text-amber-400'}`} title="Needs review">
+          <span className={`inline-flex items-center flex-shrink-0 ${isPipelineReview ? 'sf-status-text-info' : 'sf-status-text-warning'}`} title="Needs review">
             <FlagIcon className="w-2.5 h-2.5" />
           </span>
         )}
@@ -204,29 +204,30 @@ function ValueRow({
         {linkedCount > 0 && (
           <span
             onClick={(e) => { e.stopPropagation(); toggleLinksExpanded(); }}
-            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium flex-shrink-0 cursor-pointer transition-colors ${
+            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded sf-text-nano font-medium flex-shrink-0 cursor-pointer transition-colors ${
               linksExpanded
-                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                ? 'sf-review-enum-linked-chip-open'
+                : 'sf-review-enum-linked-chip'
             }`}
             title={`${linkedCount} linked product${linkedCount !== 1 ? 's' : ''} - click to ${linksExpanded ? 'collapse' : 'expand'}`}
           >
-            <span className="text-[8px]">{linksExpanded ? '\u25BC' : '\u25B6'}</span>
+            <span className="sf-text-micro">{linksExpanded ? '\u25BC' : '\u25B6'}</span>
             {linkedCount}p
           </span>
         )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onRunAIReview();
-          }}
-          disabled={aiPending}
-          title="Run AI review for list/component pending matches (batch run)."
-          className="px-1.5 py-0.5 rounded text-[9px] font-medium text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 flex-shrink-0"
-        >
-          {aiPending ? '...' : 'AI'}
-        </button>
-        <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium flex-shrink-0 ${sourceBadge[item.source] || SOURCE_BADGE_FALLBACK}`}>
+        <ActionTooltip text="Run AI Review for pending list/component matches in this enum field.">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRunAIReview();
+            }}
+            disabled={aiPending}
+            className="px-1.5 py-0.5 rounded sf-text-nano font-medium sf-run-ai-button disabled:opacity-50 flex-shrink-0"
+          >
+            {aiPending ? '...' : 'Run AI'}
+          </button>
+        </ActionTooltip>
+        <span className={`px-1.5 py-0.5 rounded sf-text-nano font-medium flex-shrink-0 ${sourceBadge[item.source] || SOURCE_BADGE_FALLBACK}`}>
           {item.source}
         </span>
       </button>
@@ -595,9 +596,9 @@ export function EnumSubTab({
   return (
     <Tooltip.Provider delayDuration={200}>
       <div className="grid grid-cols-[220px,1fr] gap-3" style={{ minHeight: '400px' }}>
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-y-auto max-h-[calc(100vh-320px)]">
-          <div className="sticky top-0 bg-gray-50 dark:bg-gray-800 px-3 py-2 border-b border-gray-200 dark:border-gray-700">
-            <p className="text-xs font-medium text-gray-500">Fields ({data.fields.length})</p>
+        <div className="border sf-border-default rounded-lg overflow-y-auto max-h-[calc(100vh-320px)]">
+          <div className="sticky top-0 sf-surface-elevated px-3 py-2 border-b sf-border-default">
+            <p className="text-xs font-medium sf-text-muted">Fields ({data.fields.length})</p>
           </div>
           <div className="p-1 space-y-0.5">
             {[...data.fields].sort((a, b) => a.field.localeCompare(b.field)).map((field) => (
@@ -619,11 +620,11 @@ export function EnumSubTab({
         </div>
 
         <div className={`grid ${enumDrawerOpen && selectedValueItem ? 'grid-cols-[1fr,320px]' : 'grid-cols-1'} gap-3 min-w-0`}>
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-y-auto max-h-[calc(100vh-320px)] min-w-0">
+          <div className="border sf-border-default rounded-lg overflow-y-auto max-h-[calc(100vh-320px)] min-w-0">
             {selectedFieldData ? (
               <>
-                <div className="sticky top-0 bg-gray-50 dark:bg-gray-800 px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                  <p className="text-xs font-medium text-gray-500">
+                <div className="sticky top-0 sf-surface-elevated px-3 py-2 border-b sf-border-default flex items-center justify-between">
+                  <p className="text-xs font-medium sf-text-muted">
                     {getLabel(selectedFieldData.field)} - {selectedFieldData.values.length} values
                   </p>
                   {(() => {
@@ -632,32 +633,32 @@ export function EnumSubTab({
                     return (
                       <div className="flex items-center gap-1.5">
                         <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => enumConsistencyMut.mutate({ field: selectedFieldData.field, apply: true })}
-                            disabled={enumConsistencyMut.isPending}
-                            className="px-2 py-0.5 bg-blue-600 text-white text-[10px] rounded hover:bg-blue-700 disabled:opacity-50"
-                            title="Run LLM enum formatting consistency. Uses Key Navigator format pattern when configured (example: XXXX zone (YYYY))."
-                          >
-                            {enumConsistencyMut.isPending ? 'Consistency...' : 'Consistency'}
-                          </button>
-                          <span className="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-[10px] font-semibold">LLM</span>
-                          <Tip text="LLM final/review only. Uses Key Navigator format pattern placeholders (XXXX, YYYY) when configured. Seed and Index extraction behavior stay unchanged." />
+                          <ActionTooltip text="Apply enum consistency normalization using configured format rules. Uses Key Navigator placeholders like XXXX and YYYY when available.">
+                            <button
+                              onClick={() => enumConsistencyMut.mutate({ field: selectedFieldData.field, apply: true })}
+                              disabled={enumConsistencyMut.isPending}
+                              className="px-2 py-0.5 sf-llm-soft-button sf-text-nano rounded disabled:opacity-50"
+                            >
+                              {enumConsistencyMut.isPending ? 'Consistency...' : 'Consistency'}
+                            </button>
+                          </ActionTooltip>
                         </div>
-                        <button
-                          onClick={() => aiReviewBatchMut.mutate()}
-                          disabled={aiReviewBatchMut.isPending}
-                          className="px-2 py-0.5 bg-purple-600 text-white text-[10px] rounded hover:bg-purple-700 disabled:opacity-50"
-                          title="Run AI review for list/component pending matches (batch run)."
-                        >
-                          {aiReviewBatchMut.isPending ? 'Running...' : 'Run AI Review'}
-                        </button>
+                        <ActionTooltip text="Run AI Review across enum values with pending shared/component matches. This does not change accepted values until you accept or confirm.">
+                          <button
+                            onClick={() => aiReviewBatchMut.mutate()}
+                            disabled={aiReviewBatchMut.isPending}
+                            className="px-2 py-0.5 sf-run-ai-button sf-text-nano rounded disabled:opacity-50"
+                          >
+                            {aiReviewBatchMut.isPending ? 'Running...' : 'Run AI Review'}
+                          </button>
+                        </ActionTooltip>
                         {pipelineCount > 0 && (
-                          <span className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-[10px] rounded">
+                          <span className="px-1.5 py-0.5 sf-chip-accent sf-text-nano rounded">
                             {pipelineCount} AI review
                           </span>
                         )}
                         {otherCount > 0 && (
-                          <span className="px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 text-[10px] rounded">
+                          <span className="px-1.5 py-0.5 sf-chip-warning sf-text-nano rounded">
                             {otherCount} needs review
                           </span>
                         )}
@@ -666,10 +667,10 @@ export function EnumSubTab({
                   })()}
                 </div>
                 {consistencyMessage ? (
-                  <div className="px-3 py-1 text-[11px] text-blue-700 dark:text-blue-300">{consistencyMessage}</div>
+                  <div className="px-3 py-1 sf-text-label sf-status-text-info">{consistencyMessage}</div>
                 ) : null}
                 {consistencyError ? (
-                  <div className="px-3 py-1 text-[11px] text-red-600 dark:text-red-400">{consistencyError}</div>
+                  <div className="px-3 py-1 sf-text-label sf-status-text-danger">{consistencyError}</div>
                 ) : null}
                 <div className="p-1 space-y-0.5">
                   {selectedFieldData.values.map((valueItem, valueIndex) => (
@@ -690,13 +691,13 @@ export function EnumSubTab({
                   ))}
                 </div>
 
-                <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-2">
+                <div className="sticky bottom-0 sf-surface-elevated border-t sf-border-default p-2">
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={newValue}
                       onChange={(event) => setNewValue(event.target.value)}
-                      className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                      className="flex-1 sf-drawer-input text-sm"
                       placeholder="Add new value..."
                       onKeyDown={(event) => {
                         if (event.key === 'Enter' && newValue.trim()) {
@@ -707,7 +708,7 @@ export function EnumSubTab({
                     <button
                       onClick={() => { void handleAddValue(); }}
                       disabled={!newValue.trim()}
-                      className="px-3 py-1 text-sm bg-accent text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                      className="px-3 py-1 text-sm sf-primary-button rounded disabled:opacity-50"
                     >
                       Add
                     </button>
@@ -715,7 +716,7 @@ export function EnumSubTab({
                 </div>
               </>
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+              <div className="flex items-center justify-center h-full sf-text-muted text-sm">
                 Select a field from the list
               </div>
             )}
@@ -730,7 +731,7 @@ export function EnumSubTab({
             const canMutateValueSlot = Boolean(listValueId);
             const drawerBadges: Array<{ label: string; className: string }> = [];
             if (vi.needs_review) {
-              drawerBadges.push({ label: 'needs_review', className: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200' });
+              drawerBadges.push({ label: 'needs_review', className: 'sf-chip-warning' });
             }
             const hasMeaningfulValue = hasKnownValue(vi.value);
             const isAccepted = hasMeaningfulValue
@@ -756,7 +757,7 @@ export function EnumSubTab({
                   setSelectedValueIndex(null);
                 }}
                 disabled={removeMutation.isPending || !canMutateValueSlot}
-                className="w-full px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                className="w-full px-3 py-1.5 text-sm sf-danger-button-solid rounded disabled:opacity-50"
               >
                 {removeMutation.isPending ? 'Removing...' : 'Remove Value'}
               </button>
@@ -882,7 +883,7 @@ export function EnumSubTab({
                       />
                     )}
                     {debugLinkedProducts && (
-                      <div className="px-3 py-2 border border-cyan-200 dark:border-cyan-800 rounded bg-cyan-50/60 dark:bg-cyan-900/20 text-[10px] text-cyan-700 dark:text-cyan-300 space-y-0.5">
+                      <div className="px-3 py-2 sf-callout sf-callout-info rounded sf-text-nano space-y-0.5">
                         <div>{`field: ${fd.field}`}</div>
                         <div>{`value: ${vi.value}`}</div>
                         <div>{`listValueId: ${listValueId ?? 'n/a'}`}</div>

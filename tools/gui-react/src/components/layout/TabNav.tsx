@@ -13,9 +13,9 @@ interface TabDef {
 
 const CATALOG_TABS: TabDef[] = [
   { path: '/', label: 'Overview' },
-  { path: '/categories', label: 'Categories' },
-  { path: '/catalog', label: 'Catalog', disabledOnTest: true },
   { path: '/product', label: 'Selected Product', dividerAfter: true },
+  { path: '/categories', label: 'Categories' },
+  { path: '/catalog', label: 'Catalog', disabledOnTest: true, dividerAfter: true },
   { path: '/studio', label: 'Field Rules Studio', disabledOnAll: true, disabledOnTest: true, dividerAfter: true },
 ];
 
@@ -30,10 +30,10 @@ const OPS_TABS: TabDef[] = [
   { path: '/storage', label: 'Storage' },
 ];
 
-const activeCls = 'border-transparent text-accent dark:text-accent-dark';
-const inactiveCls = 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200';
+const activeCls = 'border-accent text-accent';
+const inactiveCls = 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-300/70 dark:hover:text-white';
 const baseCls = 'inline-flex items-center px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors';
-const disabledCls = `${baseCls} border-transparent opacity-40 cursor-not-allowed text-gray-600 dark:text-gray-400`;
+const disabledCls = `${baseCls} border-transparent opacity-40 cursor-not-allowed text-slate-400/70`;
 
 function TabGroup({ tabs, isAll, isTestMode }: { tabs: TabDef[]; isAll: boolean; isTestMode: boolean }) {
   return (
@@ -46,11 +46,11 @@ function TabGroup({ tabs, isAll, isTestMode }: { tabs: TabDef[]; isAll: boolean;
             : 'Select a specific category to use this tab';
           return (
             <span
-              key={tab.path}
-              className="inline-flex items-center"
-            >
+                key={tab.path}
+                className="inline-flex items-center"
+              >
               {tab.dividerBefore && (
-                <span className="self-center mr-1 text-gray-300 dark:text-gray-600 select-none">|</span>
+                <span className="self-center mr-1 text-slate-300 dark:text-white/35 select-none">|</span>
               )}
               <span
                 className={disabledCls}
@@ -59,7 +59,7 @@ function TabGroup({ tabs, isAll, isTestMode }: { tabs: TabDef[]; isAll: boolean;
                 {tab.label}
               </span>
               {tab.dividerAfter && (
-                <span className="self-center ml-1 text-gray-300 dark:text-gray-600 select-none">|</span>
+                <span className="self-center ml-1 text-slate-300 dark:text-white/35 select-none">|</span>
               )}
             </span>
           );
@@ -67,7 +67,7 @@ function TabGroup({ tabs, isAll, isTestMode }: { tabs: TabDef[]; isAll: boolean;
         return (
           <span key={tab.path} className="inline-flex items-center">
             {tab.dividerBefore && (
-              <span className="self-center mr-1 text-gray-300 dark:text-gray-600 select-none">|</span>
+                <span className="self-center mr-1 text-slate-300 dark:text-white/35 select-none">|</span>
             )}
             <NavLink
               to={tab.path}
@@ -77,7 +77,7 @@ function TabGroup({ tabs, isAll, isTestMode }: { tabs: TabDef[]; isAll: boolean;
               {tab.label}
             </NavLink>
             {tab.dividerAfter && (
-              <span className="self-center ml-1 text-gray-300 dark:text-gray-600 select-none">|</span>
+                <span className="self-center ml-1 text-slate-300 dark:text-white/35 select-none">|</span>
             )}
           </span>
         );
@@ -91,12 +91,10 @@ export function TabNav() {
   const isAll = category === 'all';
   const testMode = isTestCategory(category);
 
-  const borderCls = testMode
-    ? 'border-b-2 border-amber-400 dark:border-amber-500'
-    : 'border-b border-gray-200 dark:border-gray-700';
+  const borderCls = 'border-b sf-border-default';
 
   return (
-    <nav className={`flex items-center ${borderCls} bg-white dark:bg-gray-800 px-4 overflow-x-auto`}>
+    <nav className={`sf-tab-nav flex items-center ${borderCls} px-4 overflow-x-auto`}>
       <TabGroup tabs={CATALOG_TABS} isAll={isAll} isTestMode={testMode} />
       <TabGroup tabs={OPS_TABS} isAll={isAll} isTestMode={testMode} />
     </nav>

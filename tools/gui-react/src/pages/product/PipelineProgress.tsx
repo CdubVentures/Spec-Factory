@@ -21,17 +21,17 @@ export function PipelineProgress({ events }: PipelineProgressProps) {
   const stageIndex = computeStage(events);
 
   return (
-    <div>
+    <div className="sf-surface-card p-3 sf-text-primary">
       <h3 className="text-sm font-medium mb-2">Pipeline Progress</h3>
       <div className="flex gap-1">
         {PIPELINE_STAGE_DEFS.map((stage, i) => (
           <div key={stage.id} className="flex-1">
             <div
               className={`h-2 rounded transition-colors duration-300 ${
-                i <= stageIndex ? 'bg-accent' : 'bg-gray-200 dark:bg-gray-700'
+                i <= stageIndex ? 'bg-accent' : 'sf-progress-track-soft sf-dk-surface-700'
               }`}
             />
-            <p className="text-[10px] text-center mt-1 text-gray-500">{stage.label}</p>
+            <p className="text-[10px] text-center mt-1 sf-text-muted">{stage.label}</p>
           </div>
         ))}
       </div>

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const FRONTEND_ROUTE_TYPE_FILE = 'tools/gui-react/src/types/llmSettings.ts';
-const DEFAULT_OUTPUT_FILE = 'implementation/gui-persistence/llm-route-field-usage-audit.json';
+const DEFAULT_OUTPUT_FILE = 'implementation/gui-persistence/04-LLM-ROUTE-FIELD-USAGE-AUDIT.json';
 const EXCLUDED_ROUTE_KEYS = new Set(['id', 'category']);
 
 export const DEFAULT_RUNTIME_USAGE_FILES = [

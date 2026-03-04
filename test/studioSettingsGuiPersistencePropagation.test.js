@@ -73,6 +73,40 @@ async function seedStudioCategory(helperRoot, category) {
   });
 }
 
+async function ensureStudioAutoSaveAllPersisted(page, baseUrl) {
+  const autoSaveAllButton = page.locator('button').filter({ hasText: /Auto-Save All (On|Off)/ }).first();
+  await autoSaveAllButton.waitFor({ state: 'visible', timeout: 20_000 });
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const current = await apiJson(baseUrl, 'GET', '/ui-settings');
+    if (current?.studioAutoSaveAllEnabled === true) {
+      await page.waitForSelector('button:has-text("Auto-Save All On")', { timeout: 20_000 });
+      return;
+    }
+
+    const buttonText = String(await autoSaveAllButton.innerText());
+    if (buttonText.includes('Auto-Save All On')) {
+      await autoSaveAllButton.click();
+      await page.waitForSelector('button:has-text("Auto-Save All Off")', { timeout: 20_000 });
+    }
+
+    await autoSaveAllButton.click();
+    await page.waitForSelector('button:has-text("Auto-Save All On")', { timeout: 20_000 });
+
+    try {
+      await waitForCondition(async () => {
+        const payload = await apiJson(baseUrl, 'GET', '/ui-settings');
+        return payload?.studioAutoSaveAllEnabled === true;
+      }, 20_000, 150, `ui_settings_autosave_all_persisted_attempt_${attempt}`);
+      return;
+    } catch {
+      // Retry a fresh toggle cycle in case the first click raced initial hydration.
+    }
+  }
+
+  throw new Error('studio_autosave_all_not_persisted');
+}
+
 test('GUI studio autosave settings persist across reload and propagate across shared tabs', { timeout: 240_000 }, async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'studio-settings-gui-'));
   const config = {
@@ -122,32 +156,21 @@ test('GUI studio autosave settings persist across reload and propagate across sh
     await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
 
-    const autoSaveAllButton = page.locator('button').filter({ hasText: /Auto-save ALL (On|Off)/ }).first();
-    await autoSaveAllButton.waitFor({ state: 'visible', timeout: 20_000 });
-    const autoSaveAllText = String(await autoSaveAllButton.innerText());
-    if (!autoSaveAllText.includes('Auto-save ALL On')) {
-      await autoSaveAllButton.click();
-    }
-    await page.waitForSelector('button:has-text("Auto-save ALL On")', { timeout: 20_000 });
-
-    await waitForCondition(async () => {
-      const payload = await apiJson(baseUrl, 'GET', '/ui-settings');
-      return payload?.studioAutoSaveAllEnabled === true;
-    }, 20_000, 150, 'ui_settings_autosave_all_persisted');
+    await ensureStudioAutoSaveAllPersisted(page, baseUrl);
 
     await page.getByRole('button', { name: '2) Key Navigator' }).click();
-    await page.waitForSelector('button:has-text("Auto-save On (Locked by Auto-save ALL)")', { timeout: 20_000 });
+    await page.waitForSelector('button:has-text("Auto-Save On (Locked)")', { timeout: 20_000 });
 
     await page.getByRole('button', { name: '1) Mapping Studio' }).click();
-    await page.waitForSelector('button:has-text("Auto-save On (Locked by Auto-save ALL)")', { timeout: 20_000 });
+    await page.waitForSelector('button:has-text("Auto-Save On (Locked)")', { timeout: 20_000 });
 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
 
-    await page.waitForSelector('button:has-text("Auto-save ALL On")', { timeout: 20_000 });
+    await page.waitForSelector('button:has-text("Auto-Save All On")', { timeout: 20_000 });
     await page.getByRole('button', { name: '2) Key Navigator' }).click();
-    await page.waitForSelector('button:has-text("Auto-save On (Locked by Auto-save ALL)")', { timeout: 20_000 });
+    await page.waitForSelector('button:has-text("Auto-Save On (Locked)")', { timeout: 20_000 });
 
     const persistedUiSettings = await apiJson(baseUrl, 'GET', '/ui-settings');
     assert.equal(

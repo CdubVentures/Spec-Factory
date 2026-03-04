@@ -15,12 +15,12 @@ export function ProcessOutput({ lines, maxHeight = 'max-h-60' }: ProcessOutputPr
   return (
     <div>
       <h3 className="text-sm font-semibold mb-2">Process Output</h3>
-      <pre className={`text-xs font-mono bg-gray-900 text-gray-100 p-3 rounded overflow-auto ${maxHeight}`}>
+      <pre className={`text-xs font-mono sf-bg-surface-soft sf-dk-surface-900 sf-dk-fg-100 p-3 rounded overflow-auto ${maxHeight}`}>
         {lines.length > 0 ? lines.map((line, i) => (
-          <div key={i} className={line.includes('ERROR') || line.includes('error') ? 'text-red-400' : ''}>
+          <div key={i} className={line.includes('ERROR') || line.includes('error') ? 'sf-status-text-danger' : ''}>
             {line}
           </div>
-        )) : <span className="text-gray-500">(no output)</span>}
+        )) : <span className="sf-text-muted">(no output)</span>}
         <div ref={bottomRef} />
       </pre>
     </div>

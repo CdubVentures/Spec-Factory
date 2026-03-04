@@ -8,6 +8,20 @@ import {
 } from './billing/modelPricingCatalog.js';
 import { normalizeDynamicFetchPolicyMap } from './fetcher/dynamicFetchPolicy.js';
 import { normalizeArticleExtractorPolicyMap } from './extract/articleExtractorPolicy.js';
+import { CONFIG_MANIFEST_DEFAULTS } from './core/config/manifest.js';
+
+let manifestDefaultsApplied = false;
+
+function applyManifestDefaultsToProcessEnv() {
+  if (manifestDefaultsApplied) return;
+  for (const [key, defaultValue] of Object.entries(CONFIG_MANIFEST_DEFAULTS || {})) {
+    if (process.env[key] !== undefined && process.env[key] !== '') continue;
+    const value = String(defaultValue ?? '').trim();
+    if (value === '') continue;
+    process.env[key] = value;
+  }
+  manifestDefaultsApplied = true;
+}
 
 function parseIntEnv(name, defaultValue) {
   const raw = process.env[name];
@@ -47,6 +61,211 @@ function parseJsonEnv(name, defaultValue = {}) {
   } catch {
     return defaultValue;
   }
+}
+
+const SEARCH_PROFILE_CAP_DEFAULTS = Object.freeze({
+  deterministicAliasCap: 6,
+  llmAliasValidationCap: 12,
+  llmDocHintQueriesCap: 3,
+  llmFieldTargetQueriesCap: 3,
+  dedupeQueriesCap: 24
+});
+
+const SERP_RERANKER_WEIGHT_DEFAULTS = Object.freeze({
+  identityStrongBonus: 2.0,
+  identityPartialBonus: 0.8,
+  identityWeakBonus: 0,
+  identityNoneBonus: -1.5,
+  brandPresenceBonus: 2.5,
+  modelPresenceBonus: 2.5,
+  specManualKeywordBonus: 1.3,
+  reviewBenchmarkBonus: 0.9,
+  forumRedditPenalty: -0.9,
+  brandInHostnameBonus: 1.2,
+  wikipediaPenalty: -1.0,
+  variantGuardPenalty: -3.0,
+  multiModelHintPenalty: -1.5,
+  tier1Bonus: 1.5,
+  tier2Bonus: 0.5
+});
+
+const FETCH_SCHEDULER_INTERNALS_DEFAULTS = Object.freeze({
+  defaultDelayMs: 300,
+  defaultConcurrency: 2,
+  defaultMaxRetries: 1,
+  retryWaitMs: 60000
+});
+
+const RETRIEVAL_INTERNALS_DEFAULTS = Object.freeze({
+  evidenceTierWeightMultiplier: 2.6,
+  evidenceDocWeightMultiplier: 1.5,
+  evidenceMethodWeightMultiplier: 0.85,
+  evidencePoolMaxRows: 4000,
+  snippetsPerSourceCap: 120,
+  maxHitsCap: 80,
+  evidenceRefsLimit: 12,
+  reasonBadgesLimit: 8,
+  retrievalAnchorsLimit: 6,
+  primeSourcesMaxCap: 20,
+  fallbackEvidenceMaxRows: 6000,
+  provenanceOnlyMinRows: 24
+});
+
+const EVIDENCE_PACK_LIMITS_DEFAULTS = Object.freeze({
+  headingsLimit: 120,
+  chunkMaxLength: 3000,
+  specSectionsLimit: 8
+});
+
+const IDENTITY_GATE_THRESHOLD_BOUNDS_DEFAULTS = Object.freeze({
+  thresholdFloor: 0.62,
+  thresholdCeiling: 0.92
+});
+
+const PARSING_CONFIDENCE_BASE_DEFAULTS = Object.freeze({
+  network_json: 1,
+  embedded_state: 0.85,
+  json_ld: 0.9,
+  microdata: 0.88,
+  opengraph: 0.8,
+  microformat_rdfa: 0.78
+});
+
+const REPAIR_DEDUPE_RULE_DEFAULT = 'domain_once';
+const AUTOMATION_QUEUE_STORAGE_ENGINE_DEFAULT = 'sqlite';
+
+function clampIntFromMap(source, key, fallback, min, max) {
+  const parsed = Number.parseInt(String(source?.[key] ?? ''), 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, parsed));
+}
+
+function clampFloatFromMap(source, key, fallback, min, max) {
+  const parsed = Number.parseFloat(String(source?.[key] ?? ''));
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, parsed));
+}
+
+function normalizeSearchProfileCapMap(input = {}) {
+  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  return {
+    deterministicAliasCap: clampIntFromMap(source, 'deterministicAliasCap', SEARCH_PROFILE_CAP_DEFAULTS.deterministicAliasCap, 1, 20),
+    llmAliasValidationCap: clampIntFromMap(source, 'llmAliasValidationCap', SEARCH_PROFILE_CAP_DEFAULTS.llmAliasValidationCap, 1, 32),
+    llmDocHintQueriesCap: clampIntFromMap(source, 'llmDocHintQueriesCap', SEARCH_PROFILE_CAP_DEFAULTS.llmDocHintQueriesCap, 1, 20),
+    llmFieldTargetQueriesCap: clampIntFromMap(source, 'llmFieldTargetQueriesCap', SEARCH_PROFILE_CAP_DEFAULTS.llmFieldTargetQueriesCap, 1, 20),
+    dedupeQueriesCap: clampIntFromMap(source, 'dedupeQueriesCap', SEARCH_PROFILE_CAP_DEFAULTS.dedupeQueriesCap, 1, 200),
+  };
+}
+
+function normalizeSerpRerankerWeightMap(input = {}) {
+  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  return {
+    identityStrongBonus: clampFloatFromMap(source, 'identityStrongBonus', SERP_RERANKER_WEIGHT_DEFAULTS.identityStrongBonus, -20, 20),
+    identityPartialBonus: clampFloatFromMap(source, 'identityPartialBonus', SERP_RERANKER_WEIGHT_DEFAULTS.identityPartialBonus, -20, 20),
+    identityWeakBonus: clampFloatFromMap(source, 'identityWeakBonus', SERP_RERANKER_WEIGHT_DEFAULTS.identityWeakBonus, -20, 20),
+    identityNoneBonus: clampFloatFromMap(source, 'identityNoneBonus', SERP_RERANKER_WEIGHT_DEFAULTS.identityNoneBonus, -20, 20),
+    brandPresenceBonus: clampFloatFromMap(source, 'brandPresenceBonus', SERP_RERANKER_WEIGHT_DEFAULTS.brandPresenceBonus, -20, 20),
+    modelPresenceBonus: clampFloatFromMap(source, 'modelPresenceBonus', SERP_RERANKER_WEIGHT_DEFAULTS.modelPresenceBonus, -20, 20),
+    specManualKeywordBonus: clampFloatFromMap(source, 'specManualKeywordBonus', SERP_RERANKER_WEIGHT_DEFAULTS.specManualKeywordBonus, -20, 20),
+    reviewBenchmarkBonus: clampFloatFromMap(source, 'reviewBenchmarkBonus', SERP_RERANKER_WEIGHT_DEFAULTS.reviewBenchmarkBonus, -20, 20),
+    forumRedditPenalty: clampFloatFromMap(source, 'forumRedditPenalty', SERP_RERANKER_WEIGHT_DEFAULTS.forumRedditPenalty, -20, 20),
+    brandInHostnameBonus: clampFloatFromMap(source, 'brandInHostnameBonus', SERP_RERANKER_WEIGHT_DEFAULTS.brandInHostnameBonus, -20, 20),
+    wikipediaPenalty: clampFloatFromMap(source, 'wikipediaPenalty', SERP_RERANKER_WEIGHT_DEFAULTS.wikipediaPenalty, -20, 20),
+    variantGuardPenalty: clampFloatFromMap(source, 'variantGuardPenalty', SERP_RERANKER_WEIGHT_DEFAULTS.variantGuardPenalty, -20, 20),
+    multiModelHintPenalty: clampFloatFromMap(source, 'multiModelHintPenalty', SERP_RERANKER_WEIGHT_DEFAULTS.multiModelHintPenalty, -20, 20),
+    tier1Bonus: clampFloatFromMap(source, 'tier1Bonus', SERP_RERANKER_WEIGHT_DEFAULTS.tier1Bonus, -20, 20),
+    tier2Bonus: clampFloatFromMap(source, 'tier2Bonus', SERP_RERANKER_WEIGHT_DEFAULTS.tier2Bonus, -20, 20),
+  };
+}
+
+function normalizeFetchSchedulerInternalsMap(input = {}) {
+  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  return {
+    defaultDelayMs: clampIntFromMap(source, 'defaultDelayMs', FETCH_SCHEDULER_INTERNALS_DEFAULTS.defaultDelayMs, 0, 600000),
+    defaultConcurrency: clampIntFromMap(source, 'defaultConcurrency', FETCH_SCHEDULER_INTERNALS_DEFAULTS.defaultConcurrency, 1, 128),
+    defaultMaxRetries: clampIntFromMap(source, 'defaultMaxRetries', FETCH_SCHEDULER_INTERNALS_DEFAULTS.defaultMaxRetries, 0, 20),
+    retryWaitMs: clampIntFromMap(source, 'retryWaitMs', FETCH_SCHEDULER_INTERNALS_DEFAULTS.retryWaitMs, 0, 600000),
+  };
+}
+
+function normalizeRetrievalInternalsMap(input = {}) {
+  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  return {
+    evidenceTierWeightMultiplier: clampFloatFromMap(source, 'evidenceTierWeightMultiplier', RETRIEVAL_INTERNALS_DEFAULTS.evidenceTierWeightMultiplier, 0, 20),
+    evidenceDocWeightMultiplier: clampFloatFromMap(source, 'evidenceDocWeightMultiplier', RETRIEVAL_INTERNALS_DEFAULTS.evidenceDocWeightMultiplier, 0, 20),
+    evidenceMethodWeightMultiplier: clampFloatFromMap(source, 'evidenceMethodWeightMultiplier', RETRIEVAL_INTERNALS_DEFAULTS.evidenceMethodWeightMultiplier, 0, 20),
+    evidencePoolMaxRows: clampIntFromMap(source, 'evidencePoolMaxRows', RETRIEVAL_INTERNALS_DEFAULTS.evidencePoolMaxRows, 100, 20000),
+    snippetsPerSourceCap: clampIntFromMap(source, 'snippetsPerSourceCap', RETRIEVAL_INTERNALS_DEFAULTS.snippetsPerSourceCap, 8, 300),
+    maxHitsCap: clampIntFromMap(source, 'maxHitsCap', RETRIEVAL_INTERNALS_DEFAULTS.maxHitsCap, 1, 200),
+    evidenceRefsLimit: clampIntFromMap(source, 'evidenceRefsLimit', RETRIEVAL_INTERNALS_DEFAULTS.evidenceRefsLimit, 1, 64),
+    reasonBadgesLimit: clampIntFromMap(source, 'reasonBadgesLimit', RETRIEVAL_INTERNALS_DEFAULTS.reasonBadgesLimit, 1, 32),
+    retrievalAnchorsLimit: clampIntFromMap(source, 'retrievalAnchorsLimit', RETRIEVAL_INTERNALS_DEFAULTS.retrievalAnchorsLimit, 1, 32),
+    primeSourcesMaxCap: clampIntFromMap(source, 'primeSourcesMaxCap', RETRIEVAL_INTERNALS_DEFAULTS.primeSourcesMaxCap, 1, 50),
+    fallbackEvidenceMaxRows: clampIntFromMap(source, 'fallbackEvidenceMaxRows', RETRIEVAL_INTERNALS_DEFAULTS.fallbackEvidenceMaxRows, 200, 20000),
+    provenanceOnlyMinRows: clampIntFromMap(source, 'provenanceOnlyMinRows', RETRIEVAL_INTERNALS_DEFAULTS.provenanceOnlyMinRows, 0, 500),
+  };
+}
+
+function normalizeEvidencePackLimitsMap(input = {}) {
+  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  return {
+    headingsLimit: clampIntFromMap(source, 'headingsLimit', EVIDENCE_PACK_LIMITS_DEFAULTS.headingsLimit, 1, 1000),
+    chunkMaxLength: clampIntFromMap(source, 'chunkMaxLength', EVIDENCE_PACK_LIMITS_DEFAULTS.chunkMaxLength, 200, 20000),
+    specSectionsLimit: clampIntFromMap(source, 'specSectionsLimit', EVIDENCE_PACK_LIMITS_DEFAULTS.specSectionsLimit, 1, 200),
+  };
+}
+
+function normalizeIdentityGateThresholdBoundsMap(input = {}) {
+  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  const thresholdFloor = clampFloatFromMap(source, 'thresholdFloor', IDENTITY_GATE_THRESHOLD_BOUNDS_DEFAULTS.thresholdFloor, 0, 1);
+  const thresholdCeilingRaw = clampFloatFromMap(source, 'thresholdCeiling', IDENTITY_GATE_THRESHOLD_BOUNDS_DEFAULTS.thresholdCeiling, 0, 1);
+  const thresholdCeiling = Math.max(thresholdFloor, thresholdCeilingRaw);
+  return {
+    thresholdFloor,
+    thresholdCeiling
+  };
+}
+
+function normalizeParsingConfidenceBaseMap(input = {}) {
+  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  const microformatRdfaFallback = clampFloatFromMap(
+    source,
+    'microformat_rdfa',
+    PARSING_CONFIDENCE_BASE_DEFAULTS.microformat_rdfa,
+    0,
+    2
+  );
+  const microformatRdfa = clampFloatFromMap(
+    source,
+    'microformat_rdfa',
+    clampFloatFromMap(source, 'microformat', microformatRdfaFallback, 0, 2),
+    0,
+    2
+  );
+  return {
+    network_json: clampFloatFromMap(source, 'network_json', PARSING_CONFIDENCE_BASE_DEFAULTS.network_json, 0, 2),
+    embedded_state: clampFloatFromMap(source, 'embedded_state', PARSING_CONFIDENCE_BASE_DEFAULTS.embedded_state, 0, 2),
+    json_ld: clampFloatFromMap(source, 'json_ld', PARSING_CONFIDENCE_BASE_DEFAULTS.json_ld, 0, 2),
+    microdata: clampFloatFromMap(source, 'microdata', PARSING_CONFIDENCE_BASE_DEFAULTS.microdata, 0, 2),
+    opengraph: clampFloatFromMap(source, 'opengraph', PARSING_CONFIDENCE_BASE_DEFAULTS.opengraph, 0, 2),
+    microformat_rdfa: microformatRdfa,
+  };
+}
+
+function normalizeRepairDedupeRule(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'domain_once' || normalized === 'domain_and_status' || normalized === 'none') {
+    return normalized;
+  }
+  return REPAIR_DEDUPE_RULE_DEFAULT;
+}
+
+function normalizeAutomationQueueStorageEngine(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'sqlite' || normalized === 'memory') {
+    return normalized;
+  }
+  return AUTOMATION_QUEUE_STORAGE_ENGINE_DEFAULT;
 }
 
 function normalizeModelPricingMap(input = {}) {
@@ -367,6 +586,8 @@ export function loadDotEnvFile(dotEnvPath = '.env') {
 }
 
 export function loadConfig(overrides = {}) {
+  applyManifestDefaultsToProcessEnv();
+
   const maxCandidateUrlsFromEnv =
     process.env.MAX_CANDIDATE_URLS_PER_PRODUCT ||
     process.env.MAX_CANDIDATE_URLS;
@@ -381,6 +602,37 @@ export function loadConfig(overrides = {}) {
   const envOutputMode = normalizeOutputMode(process.env.OUTPUT_MODE || 'dual', 'dual');
   const hasS3Creds = hasS3EnvCreds();
   const defaultMirrorToS3 = envOutputMode !== 'local' && hasS3Creds;
+  const normalizedFetchSchedulerInternalsMap = normalizeFetchSchedulerInternalsMap(
+    parseJsonEnv('FETCH_SCHEDULER_INTERNALS_MAP_JSON', {})
+  );
+  const normalizedRetrievalInternalsMap = normalizeRetrievalInternalsMap(
+    parseJsonEnv('RETRIEVAL_INTERNALS_MAP_JSON', {})
+  );
+  const normalizedEvidencePackLimitsMap = normalizeEvidencePackLimitsMap(
+    parseJsonEnv('EVIDENCE_PACK_LIMITS_MAP_JSON', {})
+  );
+  const normalizedIdentityGateThresholdBoundsMap = normalizeIdentityGateThresholdBoundsMap(
+    parseJsonEnv('IDENTITY_GATE_THRESHOLD_BOUNDS_MAP_JSON', {})
+  );
+  const normalizedParsingConfidenceBaseMap = normalizeParsingConfidenceBaseMap(
+    parseJsonEnv('PARSING_CONFIDENCE_BASE_MAP_JSON', {})
+  );
+  const normalizedArticleExtractorDomainPolicyMap = normalizeArticleExtractorPolicyMap(
+    parseJsonEnv('ARTICLE_EXTRACTOR_DOMAIN_POLICY_MAP_JSON', {})
+  );
+  const articleExtractorDomainPolicyMapJson = Object.keys(normalizedArticleExtractorDomainPolicyMap).length > 0
+    ? JSON.stringify(normalizedArticleExtractorDomainPolicyMap)
+    : '';
+  const normalizedDynamicFetchPolicyMap = normalizeDynamicFetchPolicyMap(
+    parseJsonEnv('DYNAMIC_FETCH_POLICY_MAP_JSON', {})
+  );
+  const dynamicFetchPolicyMapJson = Object.keys(normalizedDynamicFetchPolicyMap).length > 0
+    ? JSON.stringify(normalizedDynamicFetchPolicyMap)
+    : '';
+  const normalizedVisualAssetHeroSelectorMap = parseJsonEnv('VISUAL_ASSET_HERO_SELECTOR_MAP_JSON', {});
+  const visualAssetHeroSelectorMapJson = Object.keys(normalizedVisualAssetHeroSelectorMap).length > 0
+    ? JSON.stringify(normalizedVisualAssetHeroSelectorMap)
+    : '';
 
   const cfg = {
     awsRegion: process.env.AWS_REGION || 'us-east-2',
@@ -420,6 +672,12 @@ export function loadConfig(overrides = {}) {
     fetchSchedulerEnabled: parseBoolEnv('FETCH_SCHEDULER_ENABLED', false),
     fetchSchedulerMaxRetries: parseIntEnv('FETCH_SCHEDULER_MAX_RETRIES', 1),
     fetchSchedulerFallbackWaitMs: parseIntEnv('FETCH_SCHEDULER_FALLBACK_WAIT_MS', 60000),
+    fetchSchedulerInternalsMap: normalizedFetchSchedulerInternalsMap,
+    fetchSchedulerInternalsMapJson: JSON.stringify(normalizedFetchSchedulerInternalsMap),
+    fetchSchedulerDefaultDelayMs: parseIntEnv('FETCH_SCHEDULER_DEFAULT_DELAY_MS', normalizedFetchSchedulerInternalsMap.defaultDelayMs),
+    fetchSchedulerDefaultConcurrency: parseIntEnv('FETCH_SCHEDULER_DEFAULT_CONCURRENCY', normalizedFetchSchedulerInternalsMap.defaultConcurrency),
+    fetchSchedulerDefaultMaxRetries: parseIntEnv('FETCH_SCHEDULER_DEFAULT_MAX_RETRIES', normalizedFetchSchedulerInternalsMap.defaultMaxRetries),
+    fetchSchedulerRetryWaitMs: parseIntEnv('FETCH_SCHEDULER_RETRY_WAIT_MS', normalizedFetchSchedulerInternalsMap.retryWaitMs),
     userAgent:
       process.env.USER_AGENT ||
       'Mozilla/5.0 (compatible; EGSpecHarvester/1.0; +https://eggear.com)',
@@ -441,6 +699,7 @@ export function loadConfig(overrides = {}) {
     discoveryQueryConcurrency: parseIntEnv('DISCOVERY_QUERY_CONCURRENCY', 4),
     searchProvider: process.env.SEARCH_PROVIDER || 'none',
     searxngBaseUrl: process.env.SEARXNG_BASE_URL || process.env.SEARXNG_URL || '',
+    searxngDefaultBaseUrl: process.env.SEARXNG_DEFAULT_BASE_URL || 'http://127.0.0.1:8080',
     bingSearchKey: process.env.BING_SEARCH_KEY || '',
     bingSearchEndpoint: process.env.BING_SEARCH_ENDPOINT || '',
     googleCseKey: process.env.GOOGLE_CSE_KEY || '',
@@ -451,6 +710,7 @@ export function loadConfig(overrides = {}) {
     duckduckgoEnabled: parseBoolEnv('DUCKDUCKGO_ENABLED', true),
     duckduckgoBaseUrl: process.env.DUCKDUCKGO_BASE_URL || 'https://html.duckduckgo.com/html/',
     duckduckgoTimeoutMs: parseIntEnv('DUCKDUCKGO_TIMEOUT_MS', 8_000),
+    duckduckgoUserAgent: process.env.DUCKDUCKGO_USER_AGENT || 'Mozilla/5.0 (compatible; SpecFactory/1.0)',
     eloSupabaseAnonKey: process.env.ELO_SUPABASE_ANON_KEY || '',
     eloSupabaseEndpoint: process.env.ELO_SUPABASE_ENDPOINT || '',
     llmEnabled: parseBoolEnv('LLM_ENABLED', false),
@@ -459,6 +719,7 @@ export function loadConfig(overrides = {}) {
     llmProvider: (process.env.LLM_PROVIDER || '').trim().toLowerCase(),
     llmApiKey: resolvedApiKey,
     llmBaseUrl: resolvedBaseUrl,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
     llmModelExtract: process.env.LLM_MODEL_EXTRACT || defaultModel,
     llmModelPlan: process.env.LLM_MODEL_PLAN || process.env.LLM_MODEL_EXTRACT || defaultModel,
     llmModelFast:
@@ -566,6 +827,23 @@ export function loadConfig(overrides = {}) {
     uberMaxUrlsPerDomain: parseIntEnv('UBER_MAX_URLS_PER_DOMAIN', 6),
     uberMaxRounds: parseIntEnv('UBER_MAX_ROUNDS', 6),
     identityGatePublishThreshold: parseFloatEnv('IDENTITY_GATE_PUBLISH_THRESHOLD', 0.70),
+    identityGateBaseMatchThreshold: parseFloatEnv('IDENTITY_GATE_BASE_MATCH_THRESHOLD', 0.80),
+    identityGateEasyAmbiguityReduction: parseFloatEnv('IDENTITY_GATE_EASY_AMBIGUITY_REDUCTION', -0.15),
+    identityGateMediumAmbiguityReduction: parseFloatEnv('IDENTITY_GATE_MEDIUM_AMBIGUITY_REDUCTION', -0.10),
+    identityGateHardAmbiguityReduction: parseFloatEnv('IDENTITY_GATE_HARD_AMBIGUITY_REDUCTION', -0.02),
+    identityGateVeryHardAmbiguityIncrease: parseFloatEnv('IDENTITY_GATE_VERY_HARD_AMBIGUITY_INCREASE', 0.01),
+    identityGateExtraHardAmbiguityIncrease: parseFloatEnv('IDENTITY_GATE_EXTRA_HARD_AMBIGUITY_INCREASE', 0.03),
+    identityGateMissingStrongIdPenalty: parseFloatEnv('IDENTITY_GATE_MISSING_STRONG_ID_PENALTY', -0.05),
+    identityGateHardMissingStrongIdIncrease: parseFloatEnv('IDENTITY_GATE_HARD_MISSING_STRONG_ID_INCREASE', 0.03),
+    identityGateVeryHardMissingStrongIdIncrease: parseFloatEnv('IDENTITY_GATE_VERY_HARD_MISSING_STRONG_ID_INCREASE', 0.05),
+    identityGateExtraHardMissingStrongIdIncrease: parseFloatEnv('IDENTITY_GATE_EXTRA_HARD_MISSING_STRONG_ID_INCREASE', 0.08),
+    identityGateNumericTokenBoost: parseFloatEnv('IDENTITY_GATE_NUMERIC_TOKEN_BOOST', 0.10),
+    identityGateNumericRangeThreshold: parseIntEnv('IDENTITY_GATE_NUMERIC_RANGE_THRESHOLD', 3),
+    identityGateThresholdBoundsMap: normalizedIdentityGateThresholdBoundsMap,
+    identityGateThresholdBoundsMapJson: JSON.stringify(normalizedIdentityGateThresholdBoundsMap),
+    identityGateThresholdFloor: parseFloatEnv('IDENTITY_GATE_THRESHOLD_FLOOR', normalizedIdentityGateThresholdBoundsMap.thresholdFloor),
+    identityGateThresholdCeiling: parseFloatEnv('IDENTITY_GATE_THRESHOLD_CEILING', normalizedIdentityGateThresholdBoundsMap.thresholdCeiling),
+    qualityGateIdentityThreshold: parseFloatEnv('QUALITY_GATE_IDENTITY_THRESHOLD', 0.70),
     convergenceMaxRounds: parseIntEnv('CONVERGENCE_MAX_ROUNDS', 3),
     convergenceNoProgressLimit: parseIntEnv('CONVERGENCE_NO_PROGRESS_LIMIT', 2),
     convergenceMaxLowQualityRounds: parseIntEnv('CONVERGENCE_MAX_LOW_QUALITY_ROUNDS', 1),
@@ -575,6 +853,34 @@ export function loadConfig(overrides = {}) {
     convergenceMaxTargetFields: parseIntEnv('CONVERGENCE_MAX_TARGET_FIELDS', 30),
     needsetEvidenceDecayDays: parseIntEnv('NEEDSET_EVIDENCE_DECAY_DAYS', 14),
     needsetEvidenceDecayFloor: parseFloatEnv('NEEDSET_EVIDENCE_DECAY_FLOOR', 0.30),
+    needsetRequiredWeightIdentity: parseFloatEnv('NEEDSET_REQUIRED_WEIGHT_IDENTITY', 5),
+    needsetRequiredWeightCritical: parseFloatEnv('NEEDSET_REQUIRED_WEIGHT_CRITICAL', 4),
+    needsetRequiredWeightRequired: parseFloatEnv('NEEDSET_REQUIRED_WEIGHT_REQUIRED', 2),
+    needsetRequiredWeightExpected: parseFloatEnv('NEEDSET_REQUIRED_WEIGHT_EXPECTED', 1),
+    needsetRequiredWeightOptional: parseFloatEnv('NEEDSET_REQUIRED_WEIGHT_OPTIONAL', 1),
+    needsetMissingMultiplier: parseFloatEnv('NEEDSET_MISSING_MULTIPLIER', 2),
+    needsetTierDeficitMultiplier: parseFloatEnv('NEEDSET_TIER_DEFICIT_MULTIPLIER', 2),
+    needsetMinRefsDeficitMultiplier: parseFloatEnv('NEEDSET_MIN_REFS_DEFICIT_MULTIPLIER', 1.5),
+    needsetConflictMultiplier: parseFloatEnv('NEEDSET_CONFLICT_MULTIPLIER', 1.5),
+    needsetIdentityLockThreshold: parseFloatEnv('NEEDSET_IDENTITY_LOCK_THRESHOLD', 0.95),
+    needsetIdentityProvisionalThreshold: parseFloatEnv('NEEDSET_IDENTITY_PROVISIONAL_THRESHOLD', 0.70),
+    needsetDefaultIdentityAuditLimit: parseIntEnv('NEEDSET_DEFAULT_IDENTITY_AUDIT_LIMIT', 24),
+    consensusMethodWeightNetworkJson: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_NETWORK_JSON', 1.00),
+    consensusMethodWeightAdapterApi: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_ADAPTER_API', 0.95),
+    consensusMethodWeightStructuredMeta: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_STRUCTURED_META', 0.90),
+    consensusMethodWeightPdf: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_PDF', 0.82),
+    consensusMethodWeightTableKv: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_TABLE_KV', 0.78),
+    consensusMethodWeightDom: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_DOM', 0.40),
+    consensusMethodWeightLlmExtractBase: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_LLM_EXTRACT_BASE', 0.20),
+    consensusPolicyBonus: parseFloatEnv('CONSENSUS_POLICY_BONUS', 0.30),
+    consensusWeightedMajorityThreshold: parseFloatEnv('CONSENSUS_WEIGHTED_MAJORITY_THRESHOLD', 1.10),
+    consensusStrictAcceptanceDomainCount: parseIntEnv('CONSENSUS_STRICT_ACCEPTANCE_DOMAIN_COUNT', 3),
+    consensusRelaxedAcceptanceDomainCount: parseIntEnv('CONSENSUS_RELAXED_ACCEPTANCE_DOMAIN_COUNT', 2),
+    consensusInstrumentedFieldThreshold: parseIntEnv('CONSENSUS_INSTRUMENTED_FIELD_THRESHOLD', 3),
+    consensusConfidenceScoringBase: parseFloatEnv('CONSENSUS_CONFIDENCE_SCORING_BASE', 0.70),
+    consensusPassTargetIdentityStrong: parseIntEnv('CONSENSUS_PASS_TARGET_IDENTITY_STRONG', 5),
+    consensusPassTargetNormal: parseIntEnv('CONSENSUS_PASS_TARGET_NORMAL', 3),
+    evidenceTextMaxChars: parseIntEnv('EVIDENCE_TEXT_MAX_CHARS', 5000),
     needsetCapIdentityLocked: parseFloatEnv('NEEDSET_CAP_IDENTITY_LOCKED', 1.00),
     needsetCapIdentityProvisional: parseFloatEnv('NEEDSET_CAP_IDENTITY_PROVISIONAL', 0.74),
     needsetCapIdentityConflict: parseFloatEnv('NEEDSET_CAP_IDENTITY_CONFLICT', 0.39),
@@ -593,6 +899,47 @@ export function loadConfig(overrides = {}) {
     retrievalMaxHitsPerField: parseIntEnv('RETRIEVAL_MAX_HITS_PER_FIELD', 24),
     retrievalMaxPrimeSources: parseIntEnv('RETRIEVAL_MAX_PRIME_SOURCES', 8),
     retrievalIdentityFilterEnabled: parseBoolEnv('RETRIEVAL_IDENTITY_FILTER_ENABLED', true),
+    retrievalTierWeightTier1: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER1', 3.00),
+    retrievalTierWeightTier2: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER2', 2.00),
+    retrievalTierWeightTier3: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER3', 1.00),
+    retrievalTierWeightTier4: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER4', 0.65),
+    retrievalTierWeightTier5: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER5', 0.40),
+    retrievalDocKindWeightManualPdf: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_MANUAL_PDF', 1.50),
+    retrievalDocKindWeightSpecPdf: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_SPEC_PDF', 1.40),
+    retrievalDocKindWeightSupport: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_SUPPORT', 1.10),
+    retrievalDocKindWeightLabReview: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_LAB_REVIEW', 0.95),
+    retrievalDocKindWeightProductPage: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_PRODUCT_PAGE', 0.75),
+    retrievalDocKindWeightOther: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_OTHER', 0.55),
+    retrievalMethodWeightTable: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_TABLE', 1.25),
+    retrievalMethodWeightKv: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_KV', 1.15),
+    retrievalMethodWeightJsonLd: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_JSON_LD', 1.10),
+    retrievalMethodWeightLlmExtract: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_LLM_EXTRACT', 0.85),
+    retrievalMethodWeightHelperSupportive: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_HELPER_SUPPORTIVE', 0.65),
+    retrievalAnchorScorePerMatch: parseFloatEnv('RETRIEVAL_ANCHOR_SCORE_PER_MATCH', 0.42),
+    retrievalIdentityScorePerMatch: parseFloatEnv('RETRIEVAL_IDENTITY_SCORE_PER_MATCH', 0.28),
+    retrievalUnitMatchBonus: parseFloatEnv('RETRIEVAL_UNIT_MATCH_BONUS', 0.35),
+    retrievalDirectFieldMatchBonus: parseFloatEnv('RETRIEVAL_DIRECT_FIELD_MATCH_BONUS', 0.65),
+    retrievalInternalsMap: normalizedRetrievalInternalsMap,
+    retrievalInternalsMapJson: JSON.stringify(normalizedRetrievalInternalsMap),
+    retrievalEvidenceTierWeightMultiplier: parseFloatEnv('RETRIEVAL_EVIDENCE_TIER_WEIGHT_MULTIPLIER', normalizedRetrievalInternalsMap.evidenceTierWeightMultiplier),
+    retrievalEvidenceDocWeightMultiplier: parseFloatEnv('RETRIEVAL_EVIDENCE_DOC_WEIGHT_MULTIPLIER', normalizedRetrievalInternalsMap.evidenceDocWeightMultiplier),
+    retrievalEvidenceMethodWeightMultiplier: parseFloatEnv('RETRIEVAL_EVIDENCE_METHOD_WEIGHT_MULTIPLIER', normalizedRetrievalInternalsMap.evidenceMethodWeightMultiplier),
+    retrievalEvidencePoolMaxRows: parseIntEnv('RETRIEVAL_EVIDENCE_POOL_MAX_ROWS', normalizedRetrievalInternalsMap.evidencePoolMaxRows),
+    retrievalSnippetsPerSourceCap: parseIntEnv('RETRIEVAL_SNIPPETS_PER_SOURCE_CAP', normalizedRetrievalInternalsMap.snippetsPerSourceCap),
+    retrievalMaxHitsCap: parseIntEnv('RETRIEVAL_MAX_HITS_CAP', normalizedRetrievalInternalsMap.maxHitsCap),
+    retrievalEvidenceRefsLimit: parseIntEnv('RETRIEVAL_EVIDENCE_REFS_LIMIT', normalizedRetrievalInternalsMap.evidenceRefsLimit),
+    retrievalReasonBadgesLimit: parseIntEnv('RETRIEVAL_REASON_BADGES_LIMIT', normalizedRetrievalInternalsMap.reasonBadgesLimit),
+    retrievalAnchorsLimit: parseIntEnv('RETRIEVAL_ANCHORS_LIMIT', normalizedRetrievalInternalsMap.retrievalAnchorsLimit),
+    retrievalPrimeSourcesMaxCap: parseIntEnv('RETRIEVAL_PRIME_SOURCES_MAX_CAP', normalizedRetrievalInternalsMap.primeSourcesMaxCap),
+    retrievalFallbackEvidenceMaxRows: parseIntEnv('RETRIEVAL_FALLBACK_EVIDENCE_MAX_ROWS', normalizedRetrievalInternalsMap.fallbackEvidenceMaxRows),
+    retrievalProvenanceOnlyMinRows: parseIntEnv('RETRIEVAL_PROVENANCE_ONLY_MIN_ROWS', normalizedRetrievalInternalsMap.provenanceOnlyMinRows),
+    evidencePackLimitsMap: normalizedEvidencePackLimitsMap,
+    evidencePackLimitsMapJson: JSON.stringify(normalizedEvidencePackLimitsMap),
+    parsingConfidenceBaseMap: normalizedParsingConfidenceBaseMap,
+    parsingConfidenceBaseMapJson: JSON.stringify(normalizedParsingConfidenceBaseMap),
+    evidenceHeadingsLimit: parseIntEnv('EVIDENCE_HEADINGS_LIMIT', normalizedEvidencePackLimitsMap.headingsLimit),
+    evidenceChunkMaxLength: parseIntEnv('EVIDENCE_CHUNK_MAX_LENGTH', normalizedEvidencePackLimitsMap.chunkMaxLength),
+    evidenceSpecSectionsLimit: parseIntEnv('EVIDENCE_SPEC_SECTIONS_LIMIT', normalizedEvidencePackLimitsMap.specSectionsLimit),
     specDbDir: process.env.SPEC_DB_DIR || '.specfactory_tmp',
     frontierDbPath: process.env.FRONTIER_DB_PATH || '_intel/frontier/frontier.json',
     frontierEnableSqlite: parseBoolEnv('FRONTIER_ENABLE_SQLITE', true),
@@ -604,8 +951,14 @@ export function loadConfig(overrides = {}) {
     frontierCooldownTimeoutSeconds: parseIntEnv('FRONTIER_COOLDOWN_TIMEOUT', 6 * 60 * 60),
     frontierCooldown403BaseSeconds: parseIntEnv('FRONTIER_COOLDOWN_403_BASE', 30 * 60),
     frontierCooldown429BaseSeconds: parseIntEnv('FRONTIER_COOLDOWN_429_BASE', 15 * 60),
+    frontierBackoffMaxExponent: parseIntEnv('FRONTIER_BACKOFF_MAX_EXPONENT', 4),
+    frontierPathPenaltyNotfoundThreshold: parseIntEnv('FRONTIER_PATH_PENALTY_NOTFOUND_THRESHOLD', 3),
     frontierBlockedDomainThreshold: parseIntEnv('FRONTIER_BLOCKED_DOMAIN_THRESHOLD', 2),
     frontierRepairSearchEnabled: parseBoolEnv('FRONTIER_REPAIR_SEARCH_ENABLED', true),
+    repairDedupeRule: normalizeRepairDedupeRule(process.env['REPAIR_DEDUPE_RULE'] || REPAIR_DEDUPE_RULE_DEFAULT),
+    automationQueueStorageEngine: normalizeAutomationQueueStorageEngine(
+      process.env['AUTOMATION_QUEUE_STORAGE_ENGINE'] || AUTOMATION_QUEUE_STORAGE_ENGINE_DEFAULT
+    ),
     runtimeTraceEnabled: parseBoolEnv('RUNTIME_TRACE_ENABLED', true),
     runtimeTraceFetchRing: parseIntEnv('RUNTIME_TRACE_FETCH_RING', 30),
     runtimeTraceLlmRing: parseIntEnv('RUNTIME_TRACE_LLM_RING', 50),
@@ -740,9 +1093,8 @@ export function loadConfig(overrides = {}) {
     articleExtractorMinChars: parseIntEnv('ARTICLE_EXTRACTOR_MIN_CHARS', 700),
     articleExtractorMinScore: parseIntEnv('ARTICLE_EXTRACTOR_MIN_SCORE', 45),
     articleExtractorMaxChars: parseIntEnv('ARTICLE_EXTRACTOR_MAX_CHARS', 24_000),
-    articleExtractorDomainPolicyMap: normalizeArticleExtractorPolicyMap(
-      parseJsonEnv('ARTICLE_EXTRACTOR_DOMAIN_POLICY_MAP_JSON', {})
-    ),
+    articleExtractorDomainPolicyMap: normalizedArticleExtractorDomainPolicyMap,
+    articleExtractorDomainPolicyMapJson,
     htmlTableExtractorV2: parseBoolEnv('HTML_TABLE_EXTRACTOR_V2', true),
     staticDomExtractorEnabled: parseBoolEnv('STATIC_DOM_EXTRACTOR_ENABLED', true),
     staticDomMode: normalizeStaticDomMode(process.env.STATIC_DOM_MODE || 'cheerio'),
@@ -759,8 +1111,19 @@ export function loadConfig(overrides = {}) {
     crawleeRequestHandlerTimeoutSecs: parseIntEnv('CRAWLEE_REQUEST_HANDLER_TIMEOUT_SECS', 75),
     dynamicFetchRetryBudget: parseIntEnv('DYNAMIC_FETCH_RETRY_BUDGET', 2),
     dynamicFetchRetryBackoffMs: parseIntEnv('DYNAMIC_FETCH_RETRY_BACKOFF_MS', 1200),
-    dynamicFetchPolicyMap: normalizeDynamicFetchPolicyMap(
-      parseJsonEnv('DYNAMIC_FETCH_POLICY_MAP_JSON', {})
+    dynamicFetchPolicyMap: normalizedDynamicFetchPolicyMap,
+    dynamicFetchPolicyMapJson,
+    searchProfileCapMap: normalizeSearchProfileCapMap(
+      parseJsonEnv('SEARCH_PROFILE_CAP_MAP_JSON', {})
+    ),
+    searchProfileCapMapJson: JSON.stringify(
+      normalizeSearchProfileCapMap(parseJsonEnv('SEARCH_PROFILE_CAP_MAP_JSON', {}))
+    ),
+    serpRerankerWeightMap: normalizeSerpRerankerWeightMap(
+      parseJsonEnv('SERP_RERANKER_WEIGHT_MAP_JSON', {})
+    ),
+    serpRerankerWeightMapJson: JSON.stringify(
+      normalizeSerpRerankerWeightMap(parseJsonEnv('SERP_RERANKER_WEIGHT_MAP_JSON', {}))
     ),
     preferHttpFetcher: parseBoolEnv('PREFER_HTTP_FETCHER', false),
     capturePageScreenshotEnabled: parseBoolEnv('CAPTURE_PAGE_SCREENSHOT_ENABLED', true),
@@ -773,6 +1136,26 @@ export function loadConfig(overrides = {}) {
       process.env.CAPTURE_PAGE_SCREENSHOT_SELECTORS ||
       'table,[data-spec-table],.specs-table,.spec-table,.specifications'
     ).trim(),
+    visualAssetCaptureEnabled: parseBoolEnv('VISUAL_ASSET_CAPTURE_ENABLED', true),
+    visualAssetCaptureMaxPerSource: parseIntEnv('VISUAL_ASSET_CAPTURE_MAX_PER_SOURCE', 5),
+    visualAssetStoreOriginal: parseBoolEnv('VISUAL_ASSET_STORE_ORIGINAL', true),
+    visualAssetRetentionDays: parseIntEnv('VISUAL_ASSET_RETENTION_DAYS', 30),
+    visualAssetPhashEnabled: parseBoolEnv('VISUAL_ASSET_PHASH_ENABLED', true),
+    visualAssetReviewFormat: String(process.env.VISUAL_ASSET_REVIEW_FORMAT || 'webp').trim().toLowerCase(),
+    visualAssetReviewLgMaxSide: parseIntEnv('VISUAL_ASSET_REVIEW_LG_MAX_SIDE', 1600),
+    visualAssetReviewSmMaxSide: parseIntEnv('VISUAL_ASSET_REVIEW_SM_MAX_SIDE', 768),
+    visualAssetReviewLgQuality: parseIntEnv('VISUAL_ASSET_REVIEW_LG_QUALITY', 75),
+    visualAssetReviewSmQuality: parseIntEnv('VISUAL_ASSET_REVIEW_SM_QUALITY', 65),
+    visualAssetRegionCropMaxSide: parseIntEnv('VISUAL_ASSET_REGION_CROP_MAX_SIDE', 1024),
+    visualAssetRegionCropQuality: parseIntEnv('VISUAL_ASSET_REGION_CROP_QUALITY', 70),
+    visualAssetLlmMaxBytes: parseIntEnv('VISUAL_ASSET_LLM_MAX_BYTES', 512000),
+    visualAssetMinWidth: parseIntEnv('VISUAL_ASSET_MIN_WIDTH', 320),
+    visualAssetMinHeight: parseIntEnv('VISUAL_ASSET_MIN_HEIGHT', 320),
+    visualAssetMinSharpness: parseFloatEnv('VISUAL_ASSET_MIN_SHARPNESS', 80),
+    visualAssetMinEntropy: parseFloatEnv('VISUAL_ASSET_MIN_ENTROPY', 2.5),
+    visualAssetMaxPhashDistance: parseIntEnv('VISUAL_ASSET_MAX_PHASH_DISTANCE', 10),
+    visualAssetHeroSelectorMapJson,
+    chartExtractionEnabled: parseBoolEnv('CHART_EXTRACTION_ENABLED', true),
     domSnippetMaxChars: parseIntEnv('DOM_SNIPPET_MAX_CHARS', 3600),
     autoScrollEnabled: parseBoolEnv('AUTO_SCROLL_ENABLED', false),
     autoScrollPasses: parseIntEnv('AUTO_SCROLL_PASSES', 0),
@@ -786,6 +1169,11 @@ export function loadConfig(overrides = {}) {
     manufacturerSeedSearchUrls: parseBoolEnv('MANUFACTURER_SEED_SEARCH_URLS', false),
     allowBelowPassTargetFill: parseBoolEnv('ALLOW_BELOW_PASS_TARGET_FILL', false),
     selfImproveEnabled: parseBoolEnv('SELF_IMPROVE_ENABLED', true),
+    learningConfidenceThreshold: parseFloatEnv('LEARNING_CONFIDENCE_THRESHOLD', 0.85),
+    componentLexiconDecayDays: parseIntEnv('COMPONENT_LEXICON_DECAY_DAYS', 90),
+    componentLexiconExpireDays: parseIntEnv('COMPONENT_LEXICON_EXPIRE_DAYS', 180),
+    fieldAnchorsDecayDays: parseIntEnv('FIELD_ANCHORS_DECAY_DAYS', 60),
+    urlMemoryDecayDays: parseIntEnv('URL_MEMORY_DECAY_DAYS', 120),
     maxHypothesisItems: parseIntEnv('MAX_HYPOTHESIS_ITEMS', 50),
     hypothesisAutoFollowupRounds: parseIntEnv('HYPOTHESIS_AUTO_FOLLOWUP_ROUNDS', 0),
     hypothesisFollowupUrlsPerRound: parseIntEnv('HYPOTHESIS_FOLLOWUP_URLS_PER_ROUND', 12),
@@ -811,7 +1199,8 @@ export function loadConfig(overrides = {}) {
     runtimeScreencastFps: parseIntEnv('RUNTIME_SCREENCAST_FPS', 10),
     runtimeScreencastQuality: parseIntEnv('RUNTIME_SCREENCAST_QUALITY', 50),
     runtimeScreencastMaxWidth: parseIntEnv('RUNTIME_SCREENCAST_MAX_WIDTH', 1280),
-    runtimeScreencastMaxHeight: parseIntEnv('RUNTIME_SCREENCAST_MAX_HEIGHT', 720)
+    runtimeScreencastMaxHeight: parseIntEnv('RUNTIME_SCREENCAST_MAX_HEIGHT', 720),
+    runtimeAutoSaveEnabled: parseBoolEnv('RUNTIME_AUTOSAVE_ENABLED', true)
   };
 
   const filtered = Object.fromEntries(

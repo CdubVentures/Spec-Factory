@@ -40,9 +40,9 @@ export function computeUniqueDomains(health) {
 
 export function buildSafetyClassSegments(counts) {
   return [
-    { label: 'Safe', value: counts.safe, color: 'bg-green-500' },
-    { label: 'Caution', value: counts.caution, color: 'bg-yellow-500' },
-    { label: 'Blocked', value: counts.blocked, color: 'bg-red-500' },
+    { label: 'Safe', value: counts.safe, color: 'sf-metric-fill-success' },
+    { label: 'Caution', value: counts.caution, color: 'sf-metric-fill-warning' },
+    { label: 'Blocked', value: counts.blocked, color: 'sf-metric-fill-danger' },
   ];
 }
 

@@ -26,9 +26,9 @@ export function computeUniquePredictionDomains(predictions) {
 
 export function buildPredictionDecisionSegments(counts) {
   return [
-    { label: 'Fetch', value: counts.fetch, color: 'bg-emerald-500' },
-    { label: 'Later', value: counts.later, color: 'bg-amber-500' },
-    { label: 'Skip', value: counts.skip, color: 'bg-red-500' },
+    { label: 'Fetch', value: counts.fetch, color: 'sf-metric-fill-success' },
+    { label: 'Later', value: counts.later, color: 'sf-metric-fill-warning' },
+    { label: 'Skip', value: counts.skip, color: 'sf-metric-fill-danger' },
   ];
 }
 

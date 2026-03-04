@@ -5,6 +5,7 @@ import path from 'node:path';
 
 const INDEXING_PAGE = path.resolve('tools/gui-react/src/pages/indexing/IndexingPage.tsx');
 const RUNTIME_PANEL = path.resolve('tools/gui-react/src/pages/indexing/panels/RuntimePanel.tsx');
+const RUNTIME_SETTINGS_DOMAIN = path.resolve('tools/gui-react/src/stores/runtimeSettingsDomain.ts');
 
 function readText(filePath) {
   return fs.readFileSync(filePath, 'utf8');
@@ -13,6 +14,7 @@ function readText(filePath) {
 test('runtime llm token fallback wiring derives defaults from authority/bootstrap state without hardcoded literals', () => {
   const text = readText(INDEXING_PAGE);
   const runtimePanelText = readText(RUNTIME_PANEL);
+  const runtimeDomainText = readText(RUNTIME_SETTINGS_DOMAIN);
 
   assert.equal(
     text.includes('const llmTokenPresetFallbackOptions = useMemo(() => {'),
@@ -50,9 +52,9 @@ test('runtime llm token fallback wiring derives defaults from authority/bootstra
     true,
     'Token max resolution should fallback to authority/bootstrap-derived preset ceiling',
   );
-  assert.equal(
-    text.includes("import { LLM_SETTING_LIMITS, RUNTIME_SETTING_DEFAULTS } from '../../stores/settingsManifest';"),
-    true,
+  assert.match(
+    text,
+    /import\s*\{[\s\S]*LLM_SETTING_LIMITS[\s\S]*RUNTIME_SETTING_DEFAULTS[\s\S]*\}\s*from\s*'..\/..\/stores\/settingsManifest';/,
     'Runtime LLM token wiring should import shared LLM token limits from settings manifest',
   );
   assert.equal(
@@ -61,19 +63,24 @@ test('runtime llm token fallback wiring derives defaults from authority/bootstra
     'Runtime LLM token wiring should derive min token floor from shared limit contract',
   );
   assert.equal(
-    text.includes('const LLM_MAX_OUTPUT_TOKENS = LLM_SETTING_LIMITS.maxTokens.max;'),
+    runtimeDomainText.includes('const LLM_MAX_OUTPUT_TOKENS = LLM_SETTING_LIMITS.maxTokens.max;'),
     true,
-    'Runtime LLM token wiring should derive max token ceiling from shared limit contract',
+    'Shared runtime domain should derive max token ceiling from shared limit contract',
+  );
+  assert.equal(
+    runtimeDomainText.includes('export function parseRuntimeLlmTokenCap(value: unknown): number | null {'),
+    true,
+    'Shared runtime domain should normalize token caps through a shared parser',
+  );
+  assert.equal(
+    runtimeDomainText.includes('Math.min(LLM_MAX_OUTPUT_TOKENS, parsed)'),
+    true,
+    'Shared runtime domain token parser should clamp to shared max token ceiling',
   );
   assert.equal(
     text.includes('function parseRuntimeLlmTokenCap(value: unknown): number | null {'),
-    true,
-    'Runtime LLM token wiring should normalize token caps through a shared parser',
-  );
-  assert.equal(
-    text.includes('Math.min(LLM_MAX_OUTPUT_TOKENS, parsed)'),
-    true,
-    'Runtime LLM token parser should clamp to shared max token ceiling',
+    false,
+    'IndexingPage should consume token-cap parsing from shared runtime domain instead of local parser copies',
   );
   assert.equal(
     text.includes('map((value) => parseRuntimeLlmTokenCap(value))'),
@@ -96,14 +103,14 @@ test('runtime llm token fallback wiring derives defaults from authority/bootstra
     'Token default resolution should use shared token-cap parser',
   );
   assert.equal(
-    /Math\.max\(\s*LLM_MIN_OUTPUT_TOKENS,\s*Math\.min\(LLM_MAX_OUTPUT_TOKENS,\s*parsed\),\s*\)/s.test(text),
+    /Math\.max\(\s*LLM_MIN_OUTPUT_TOKENS,\s*Math\.min\(LLM_MAX_OUTPUT_TOKENS,\s*parsed\),\s*\)/s.test(runtimeDomainText),
     true,
-    'Shared token-cap parser should enforce min/max bounds using shared limits',
+    'Shared runtime domain token parser should enforce min/max bounds using shared limits',
   );
   assert.equal(
-    text.includes('Math.max(LLM_MIN_OUTPUT_TOKENS, Number.isFinite(parsed) ? parsed : defaults.default_output_tokens)'),
+    /Math\.max\(\s*LLM_MIN_OUTPUT_TOKENS,\s*Number\.isFinite\(parsed\)\s*\?\s*parsed\s*:\s*defaults\.default_output_tokens,\s*\)/s.test(runtimeDomainText),
     true,
-    'Token clamp should enforce shared minimum token floor rather than hardcoded literals',
+    'Shared runtime domain token clamp should enforce shared minimum token floor rather than hardcoded literals',
   );
   assert.equal(
     text.includes('token_defaults?.plan || 2048'),

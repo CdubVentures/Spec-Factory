@@ -113,7 +113,8 @@ export class FrontierDbSqlite {
     this._cooldownTimeoutMs = toInt(config.frontierCooldownTimeoutSeconds, 21600) * 1000;
     this._cooldown403BaseMs = Math.max(60000, toInt(config.frontierCooldown403BaseSeconds, 1800) * 1000);
     this._cooldown429BaseMs = Math.max(60000, toInt(config.frontierCooldown429BaseSeconds, 900) * 1000);
-    this._pathPenaltyThreshold = Math.max(2, toInt(config.frontierPathPenaltyNotfoundThreshold, 3));
+    this._backoffMaxExponent = Math.max(1, toInt(config.frontierBackoffMaxExponent, 4));
+    this._pathPenaltyThreshold = Math.max(1, toInt(config.frontierPathPenaltyNotfoundThreshold, 3));
   }
 
   canonicalize(url) {
@@ -242,11 +243,11 @@ export class FrontierDbSqlite {
       cooldownReason = 'status_410';
       cooldownNextRetryTs = new Date(Date.parse(ts) + cooldownSeconds * 1000).toISOString();
     } else if (statusCode === 403) {
-      cooldownSeconds = Math.round(this._cooldown403BaseMs * Math.pow(2, Math.min(4, fetchCount - 1)) / 1000);
+      cooldownSeconds = Math.round(this._cooldown403BaseMs * Math.pow(2, Math.min(this._backoffMaxExponent, fetchCount - 1)) / 1000);
       cooldownReason = 'status_403_backoff';
       cooldownNextRetryTs = new Date(Date.parse(ts) + cooldownSeconds * 1000).toISOString();
     } else if (statusCode === 429) {
-      cooldownSeconds = Math.round(this._cooldown429BaseMs * Math.pow(2, Math.min(4, fetchCount - 1)) / 1000);
+      cooldownSeconds = Math.round(this._cooldown429BaseMs * Math.pow(2, Math.min(this._backoffMaxExponent, fetchCount - 1)) / 1000);
       cooldownReason = 'status_429_backoff';
       cooldownNextRetryTs = new Date(Date.parse(ts) + cooldownSeconds * 1000).toISOString();
     } else if (statusCode === 0 && error) {

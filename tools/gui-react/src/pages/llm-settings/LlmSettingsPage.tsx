@@ -50,9 +50,9 @@ const SORT_BY_KEYS = [
 ] as const satisfies ReadonlyArray<SortBy>;
 const SORT_DIR_KEYS = ['asc', 'desc'] as const;
 
-const inputCls = 'px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700';
+const inputCls = 'sf-input';
 const selectCls = inputCls;
-const cardCls = 'bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 p-4';
+const cardCls = 'rounded sf-surface-elevated p-4';
 const EFFORT_BOUNDS = LLM_SETTING_LIMITS.effort;
 const MAX_TOKEN_BOUNDS = LLM_SETTING_LIMITS.maxTokens;
 const MIN_EVIDENCE_BOUNDS = LLM_SETTING_LIMITS.minEvidenceRefs;
@@ -89,6 +89,23 @@ function toEffortBand(effort: number) {
   return '9-10';
 }
 
+function rowEffortBand(row: Pick<LlmRouteRow, 'effort'>) {
+  return toEffortBand(row.effort);
+}
+
+function normalizeRowEffortBand(row: LlmRouteRow): LlmRouteRow {
+  const normalizedBand = rowEffortBand(row);
+  if (row.effort_band === normalizedBand) return row;
+  return {
+    ...row,
+    effort_band: normalizedBand,
+  };
+}
+
+function normalizeRowsEffortBand(rows: LlmRouteRow[]) {
+  return rows.map((row) => normalizeRowEffortBand(row));
+}
+
 function applyContextPack(row: LlmRouteRow, pack: 'minimal' | 'standard' | 'full') {
   const next = { ...row };
   if (pack === 'minimal') {
@@ -115,18 +132,52 @@ function applyContextPack(row: LlmRouteRow, pack: 'minimal' | 'standard' | 'full
   return next;
 }
 
-function routeTone(row: LlmRouteRow): string {
-  if (row.required_level === 'identity' || row.required_level === 'critical' || row.required_level === 'required') {
-    return 'border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800';
-  }
-  if (row.difficulty === 'hard' || row.effort >= 7) {
-    return 'border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800';
-  }
-  return 'border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800';
-}
-
 function routeSummary(row: LlmRouteRow) {
   return `${row.required_level} | ${row.difficulty} | ${row.availability} | effort ${row.effort}`;
+}
+
+function selectedRouteTone(row: LlmRouteRow) {
+  const effortBand = rowEffortBand(row);
+  if (effortBand === '9-10') {
+    return 'sf-callout sf-callout-danger';
+  }
+  if (effortBand === '7-8') {
+    return 'sf-callout sf-callout-warning';
+  }
+  if (effortBand === '4-6') {
+    return 'sf-callout sf-callout-info';
+  }
+  return 'sf-callout sf-callout-success';
+}
+
+function selectedRouteToneStyle(row: LlmRouteRow) {
+  const effortBand = rowEffortBand(row);
+  if (effortBand === '9-10') {
+    return {
+      color: 'var(--sf-state-danger-fg)',
+      backgroundColor: 'var(--sf-state-danger-bg)',
+      borderColor: 'var(--sf-state-danger-border)',
+    };
+  }
+  if (effortBand === '7-8') {
+    return {
+      color: 'var(--sf-state-warning-fg)',
+      backgroundColor: 'var(--sf-state-warning-bg)',
+      borderColor: 'var(--sf-state-warning-border)',
+    };
+  }
+  if (effortBand === '4-6') {
+    return {
+      color: 'var(--sf-state-info-fg)',
+      backgroundColor: 'var(--sf-state-info-bg)',
+      borderColor: 'var(--sf-state-info-border)',
+    };
+  }
+  return {
+    color: 'var(--sf-state-success-fg)',
+    backgroundColor: 'var(--sf-state-success-bg)',
+    borderColor: 'var(--sf-state-success-border)',
+  };
 }
 
 function prettyToken(value: string) {
@@ -246,21 +297,26 @@ function rankForSort(row: LlmRouteRow, sortBy: SortBy): number | string {
 
 function tagCls(kind: 'required' | 'difficulty' | 'availability' | 'effort', value: string) {
   if (kind === 'required') {
-    if (['identity', 'critical', 'required'].includes(value)) return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
-    if (value === 'expected') return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
-    return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600';
+    if (['identity', 'critical', 'required'].includes(value)) return 'sf-chip-danger';
+    if (value === 'expected') return 'sf-chip-info';
+    return 'sf-chip-neutral';
   }
   if (kind === 'difficulty') {
-    if (value === 'hard' || value === 'instrumented') return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
-    if (value === 'medium') return 'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800';
-    return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
+    if (value === 'hard' || value === 'instrumented') return 'sf-chip-warning';
+    if (value === 'medium') return 'sf-chip-info';
+    return 'sf-chip-success';
   }
   if (kind === 'availability') {
-    if (value === 'always' || value === 'expected') return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-    if (value === 'sometimes') return 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800';
-    return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600';
+    if (value === 'always' || value === 'expected') return 'sf-chip-success';
+    if (value === 'sometimes') return 'sf-chip-warning';
+    return 'sf-chip-neutral';
   }
-  return 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800';
+  const parsedEffort = Number.parseInt(String(value || ''), 10);
+  const effortBand = toEffortBand(Number.isFinite(parsedEffort) ? parsedEffort : EFFORT_BOUNDS.min);
+  if (effortBand === '1-3') return 'sf-chip-success';
+  if (effortBand === '4-6') return 'sf-chip-info';
+  if (effortBand === '7-8') return 'sf-chip-warning';
+  return 'sf-chip-danger';
 }
 
 export function LlmSettingsPage() {
@@ -280,9 +336,9 @@ export function LlmSettingsPage() {
     `llmSettings:selectedRoute:${scopeStateKey}`,
     '',
   );
-  const [rows, setRows] = useState<LlmRouteRow[]>(() => llmSettingsBootstrapRows);
+  const [rows, setRows] = useState<LlmRouteRow[]>(() => normalizeRowsEffortBand(llmSettingsBootstrapRows));
   const [defaultRowsByKey, setDefaultRowsByKey] = useState<Record<string, LlmRouteRow>>(
-    () => Object.fromEntries(llmSettingsBootstrapRows.map((row) => [row.route_key, row])),
+    () => Object.fromEntries(normalizeRowsEffortBand(llmSettingsBootstrapRows).map((row) => [row.route_key, row])),
   );
   const [dirty, setDirty] = useState(false);
   const [sortBy, setSortBy] = usePersistedTab<SortBy>(
@@ -335,7 +391,7 @@ export function LlmSettingsPage() {
     editVersion: editVersionRef.current,
     onPersisted: (result, payload) => {
       if (payload.version >= editVersionRef.current) {
-        setRows(result.rows || []);
+        setRows(normalizeRowsEffortBand(result.rows || []));
         if (result.ok) {
           setDirty(false);
           setSaveStatus({ kind: 'ok', message: 'LLM settings saved.' });
@@ -357,8 +413,9 @@ export function LlmSettingsPage() {
       setSaveStatus({ kind: 'error', message: error instanceof Error ? error.message : 'Failed to save LLM settings.' });
     },
     onResetSuccess: (resp) => {
-      setRows(resp.rows || []);
-      setDefaultRowsByKey(Object.fromEntries((resp.rows || []).map((row) => [row.route_key, row])));
+      const normalizedRows = normalizeRowsEffortBand(resp.rows || []);
+      setRows(normalizedRows);
+      setDefaultRowsByKey(Object.fromEntries(normalizedRows.map((row) => [row.route_key, row])));
       setDirty(false);
       editVersionRef.current += 1;
       setSaveStatus({ kind: 'ok', message: 'LLM settings reset to defaults.' });
@@ -368,8 +425,9 @@ export function LlmSettingsPage() {
   const llmHydrated = isAll || (llmSettingsReady && !isLoading);
 
   useEffect(() => {
-    setRows(llmSettingsBootstrapRows);
-    setDefaultRowsByKey(Object.fromEntries(llmSettingsBootstrapRows.map((row) => [row.route_key, row])));
+    const normalizedRows = normalizeRowsEffortBand(llmSettingsBootstrapRows);
+    setRows(normalizedRows);
+    setDefaultRowsByKey(Object.fromEntries(normalizedRows.map((row) => [row.route_key, row])));
     setDirty(false);
     setSaveStatus({ kind: 'idle', message: '' });
     setLastSavedAt(null);
@@ -377,11 +435,12 @@ export function LlmSettingsPage() {
 
   useEffect(() => {
     if (!data?.rows) return;
-    setRows(data.rows);
+    const normalizedRows = normalizeRowsEffortBand(data.rows);
+    setRows(normalizedRows);
     setDirty(false);
     setDefaultRowsByKey((prev) => {
       if (Object.keys(prev).length > 0) return prev;
-      return Object.fromEntries((data.rows || []).map((row) => [row.route_key, row]));
+      return Object.fromEntries(normalizedRows.map((row) => [row.route_key, row]));
     });
   }, [data]);
 
@@ -402,7 +461,9 @@ export function LlmSettingsPage() {
     required: [...new Set(scopeRows.map((row) => row.required_level).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     difficulty: [...new Set(scopeRows.map((row) => row.difficulty).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     availability: [...new Set(scopeRows.map((row) => row.availability).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
-    effortBand: [...new Set(scopeRows.map((row) => row.effort_band).filter(Boolean))].sort((a, b) => a.localeCompare(b))
+    effortBand: [...new Set(scopeRows.map((row) => rowEffortBand(row)).filter(Boolean))]
+      .map((value) => String(value))
+      .sort((a, b) => a.localeCompare(b))
   }), [scopeRows]);
 
   useEffect(() => {
@@ -435,7 +496,7 @@ export function LlmSettingsPage() {
       if (filterRequiredLevel !== 'all' && row.required_level !== filterRequiredLevel) return false;
       if (filterDifficulty !== 'all' && row.difficulty !== filterDifficulty) return false;
       if (filterAvailability !== 'all' && row.availability !== filterAvailability) return false;
-      if (filterEffortBand !== 'all' && row.effort_band !== filterEffortBand) return false;
+      if (filterEffortBand !== 'all' && rowEffortBand(row) !== filterEffortBand) return false;
       return true;
     });
   }, [scopeRows, filterRequiredLevel, filterDifficulty, filterAvailability, filterEffortBand]);
@@ -487,7 +548,7 @@ export function LlmSettingsPage() {
     setRows((prev) => prev.map((row) => {
       if (row.route_key !== routeKey) return row;
       const merged = { ...row, ...patch };
-      if (patch.effort !== undefined && patch.effort_band === undefined) {
+      if (patch.effort_band === undefined) {
         merged.effort_band = toEffortBand(merged.effort);
       }
       return merged;
@@ -502,7 +563,7 @@ export function LlmSettingsPage() {
   }
 
   if (isAll) {
-    return <p className="text-gray-500 mt-8 text-center">Select a specific category to manage LLM settings.</p>;
+    return <p className="sf-status-text-muted mt-8 text-center">Select a specific category to manage LLM settings.</p>;
   }
 
   if (!llmHydrated && rows.length === 0) {
@@ -515,7 +576,7 @@ export function LlmSettingsPage() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold">LLM Settings Studio</h2>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="sf-text-label sf-status-text-muted mt-1">
               Route presets on the left, selected preset controls on the right.
             </p>
           </div>
@@ -523,21 +584,21 @@ export function LlmSettingsPage() {
             <button
               onClick={() => { void reload(); }}
               disabled={!llmHydrated || isSaving || isResetting}
-              className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="rounded sf-icon-button px-3 py-1.5 sf-text-label disabled:opacity-50"
             >
               Reload
             </button>
             <button
               onClick={resetDefaults}
               disabled={!llmHydrated || isResetting}
-              className="px-3 py-1.5 text-xs border border-amber-300 text-amber-700 rounded hover:bg-amber-50 disabled:opacity-50"
+              className="rounded sf-action-button px-3 py-1.5 sf-text-label disabled:opacity-50"
             >
               {isResetting ? 'Resetting...' : 'Reset Defaults'}
             </button>
             <button
               onClick={save}
               disabled={!llmHydrated || !dirty || isSaving}
-              className="px-3 py-1.5 text-xs bg-accent text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="rounded sf-primary-button px-3 py-1.5 sf-text-label disabled:opacity-50"
             >
               {isSaving ? 'Saving...' : autoSaveEnabled ? 'Save Now' : 'Save LLM Settings'}
             </button>
@@ -545,13 +606,13 @@ export function LlmSettingsPage() {
         </div>
         <div className="mt-2 flex items-center justify-between">
           <div
-            className={`text-[11px] ${isSaving
-              ? 'text-blue-600 dark:text-blue-400'
+            className={`sf-text-label ${isSaving
+              ? 'sf-status-text-info'
               : saveStatus.kind === 'error'
-              ? 'text-rose-600 dark:text-rose-300'
+              ? 'sf-status-text-danger'
               : saveStatus.kind === 'partial'
-              ? 'text-amber-600 dark:text-amber-400'
-              : 'text-gray-500'
+              ? 'sf-status-text-warning'
+              : 'sf-status-text-muted'
             }`}
           >
             {isSaving
@@ -561,30 +622,30 @@ export function LlmSettingsPage() {
               : !llmHydrated
               ? 'Loading persisted LLM settings...'
               : dirty
-              ? (autoSaveEnabled ? 'Unsaved (auto-save pending).' : 'Unsaved changes.')
+              ? (autoSaveEnabled ? 'Unsaved (Auto-Save Pending).' : 'Unsaved changes.')
               : 'All changes saved.'}
             {lastSavedAt ? ` Last save: ${lastSavedAt}` : ''}
           </div>
-          <label className="text-xs flex items-center gap-2">
+          <label className="sf-text-label flex items-center gap-2">
             <input
               type="checkbox"
               checked={autoSaveEnabled}
               onChange={(e) => setAutoSaveEnabled(e.target.checked)}
             />
-            <span>Auto Save</span>
+            <span>Auto-Save</span>
           </label>
         </div>
       </div>
 
-      <div className="flex border-b border-gray-200 dark:border-gray-700">
+      <div className="sf-tab-strip flex flex-wrap items-center gap-1 rounded p-1">
         {scopes.map((scope) => (
           <button
             key={scope.key}
             onClick={() => setActiveScope(scope.key)}
-            className={`px-3 py-2 text-sm font-medium border-b-2 ${
+            className={`rounded sf-tab-item px-3 py-2 sf-text-label font-medium ${
               activeScope === scope.key
-                ? 'border-accent text-accent'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'sf-tab-item-active'
+                : ''
             }`}
           >
             {scope.label} ({scopeCounts[scope.key] || 0})
@@ -595,25 +656,25 @@ export function LlmSettingsPage() {
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-12 lg:col-span-4">
           <div className={`${cardCls} p-0 overflow-hidden`}>
-            <div className="sticky top-0 z-20 bg-white dark:bg-gray-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700 space-y-3">
+            <div className="sticky top-0 z-20 sf-surface-elevated px-4 py-3 border-b space-y-3" style={{ borderColor: 'var(--sf-surface-border)' }}>
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="text-xs font-semibold">Preset Buttons</div>
-                  <div className="text-[10px] text-gray-500 mt-0.5">Select a preset button, then tune it with Priority Mixer.</div>
+                  <div className="sf-text-label font-semibold">Preset Buttons</div>
+                  <div className="sf-text-caption sf-status-text-muted mt-0.5">Select a preset button, then tune it with Priority Mixer.</div>
                 </div>
-                <div className="text-right text-[10px] text-gray-500">
+                <div className="text-right sf-text-caption sf-status-text-muted">
                   <div>
                     Showing {sortedScopeRows.length} / {scopeCounts[activeScope] || 0}
                   </div>
                   <div>Total loaded {scopeCounts[activeScope] || 0}</div>
                 </div>
               </div>
-              <div className="text-[10px] text-gray-500">
+              <div className="sf-text-caption sf-status-text-muted">
                 Button imported from Field Rules {category} Contract
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <div className="text-[10px] text-gray-500 mb-1">Sort By</div>
+                  <div className="sf-text-caption sf-status-text-muted mb-1">Sort By</div>
                   <select className={`${selectCls} w-full`} value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)}>
                     <option value="effort">effort</option>
                     <option value="required_level">required_level</option>
@@ -623,9 +684,9 @@ export function LlmSettingsPage() {
                   </select>
                 </div>
                 <div>
-                  <div className="text-[10px] text-gray-500 mb-1">Direction</div>
+                  <div className="sf-text-caption sf-status-text-muted mb-1">Direction</div>
                   <button
-                    className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="w-full rounded sf-icon-button px-2 py-1.5 sf-text-label"
                     onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
                   >
                     {sortDir}
@@ -634,28 +695,28 @@ export function LlmSettingsPage() {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <div className="text-[10px] text-gray-500 mb-1">Filter Required</div>
+                  <div className="sf-text-caption sf-status-text-muted mb-1">Filter Required</div>
                   <select className={`${selectCls} w-full`} value={filterRequiredLevel} onChange={(e) => setFilterRequiredLevel(e.target.value)}>
                     <option value="all">all</option>
                     {filterOptions.required.map((v) => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
                 <div>
-                  <div className="text-[10px] text-gray-500 mb-1">Filter Difficulty</div>
+                  <div className="sf-text-caption sf-status-text-muted mb-1">Filter Difficulty</div>
                   <select className={`${selectCls} w-full`} value={filterDifficulty} onChange={(e) => setFilterDifficulty(e.target.value)}>
                     <option value="all">all</option>
                     {filterOptions.difficulty.map((v) => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
                 <div>
-                  <div className="text-[10px] text-gray-500 mb-1">Filter Availability</div>
+                  <div className="sf-text-caption sf-status-text-muted mb-1">Filter Availability</div>
                   <select className={`${selectCls} w-full`} value={filterAvailability} onChange={(e) => setFilterAvailability(e.target.value)}>
                     <option value="all">all</option>
                     {filterOptions.availability.map((v) => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
                 <div>
-                  <div className="text-[10px] text-gray-500 mb-1">Filter Effort Band</div>
+                  <div className="sf-text-caption sf-status-text-muted mb-1">Filter Effort Band</div>
                   <select className={`${selectCls} w-full`} value={filterEffortBand} onChange={(e) => setFilterEffortBand(e.target.value)}>
                     <option value="all">all</option>
                     {filterOptions.effortBand.map((v) => <option key={v} value={v}>{v}</option>)}
@@ -665,46 +726,50 @@ export function LlmSettingsPage() {
             </div>
 
             <div className="max-h-[calc(100vh-360px)] overflow-y-auto p-3 space-y-2">
-              {sortedScopeRows.map((row) => (
+              {sortedScopeRows.map((row) => {
+                const selected = row.route_key === selectedRouteKey;
+                return (
                 <button
                   key={row.route_key}
                   onClick={() => setSelectedRouteKey(row.route_key)}
-                  className={`w-full text-left rounded border px-3 py-2 transition ${
-                    row.route_key === selectedRouteKey
-                      ? `ring-2 ring-accent ${routeTone(row)}`
-                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-accent/50'
+                  className={`w-full text-left rounded sf-nav-item px-3 py-2 transition ${
+                    selected
+                      ? selectedRouteTone(row)
+                      : ''
                   }`}
+                  style={selected ? selectedRouteToneStyle(row) : undefined}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="text-xs font-semibold">{presetDisplayName(row)}</div>
+                    <div className="sf-text-label font-semibold">{presetDisplayName(row)}</div>
                     {userSetByRouteKey[row.route_key] ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300">
+                      <span className="sf-text-caption px-1.5 py-0.5 rounded sf-chip-success">
                         User Set ✓
                       </span>
                     ) : null}
                   </div>
-                  <div className="text-[11px] text-gray-500 mt-1">Effort band {row.effort_band}</div>
-                  <div className="text-[10px] text-gray-400 mt-0.5">{row.route_key}</div>
+                  <div className="sf-text-label sf-status-text-muted mt-1">Effort band {rowEffortBand(row)}</div>
+                  <div className="sf-text-caption sf-status-text-muted mt-0.5">{row.route_key}</div>
                   <div className="mt-2 flex flex-wrap gap-1">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${tagCls('required', row.required_level)}`}>
+                    <span className={`sf-text-caption px-1.5 py-0.5 rounded ${tagCls('required', row.required_level)}`}>
                       {row.required_level}
                     </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${tagCls('difficulty', row.difficulty)}`}>
+                    <span className={`sf-text-caption px-1.5 py-0.5 rounded ${tagCls('difficulty', row.difficulty)}`}>
                       {row.difficulty}
                     </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${tagCls('availability', row.availability)}`}>
+                    <span className={`sf-text-caption px-1.5 py-0.5 rounded ${tagCls('availability', row.availability)}`}>
                       {row.availability}
                     </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${tagCls('effort', String(row.effort))}`}>
+                    <span className={`sf-text-caption px-1.5 py-0.5 rounded ${tagCls('effort', String(row.effort))}`}>
                       effort {row.effort}
                     </span>
                   </div>
                 </button>
-              ))}
+                );
+              })}
 
               {sortedScopeRows.length === 0 && (
-                <div className="rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2">
-                  <p className="text-xs text-gray-500">No routes match current filters.</p>
+                <div className="rounded sf-surface-elevated px-3 py-2">
+                  <p className="sf-text-label sf-status-text-muted">No routes match current filters.</p>
                 </div>
               )}
             </div>
@@ -714,38 +779,38 @@ export function LlmSettingsPage() {
         <div className="col-span-12 lg:col-span-8">
           {!selectedRow ? (
             <div className={cardCls}>
-              <p className="text-xs text-gray-500">Select a preset button to edit its settings.</p>
+              <p className="sf-text-label sf-status-text-muted">Select a preset button to edit its settings.</p>
             </div>
           ) : (
             <div className={`${cardCls} p-0 overflow-hidden`}>
-              <div className="sticky top-0 z-20 bg-white dark:bg-gray-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+              <div className="sticky top-0 z-20 sf-surface-elevated px-4 py-3 border-b" style={{ borderColor: 'var(--sf-surface-border)' }}>
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div>
                     <div className="text-sm font-semibold">Priority Mixer</div>
-                    <div className="text-[11px] text-gray-500 mt-0.5">{presetDisplayName(selectedRow)}</div>
-                    <div className="text-[10px] text-gray-400 mt-0.5">{selectedRow.route_key}</div>
+                    <div className="sf-text-label sf-status-text-muted mt-0.5">{presetDisplayName(selectedRow)}</div>
+                    <div className="sf-text-caption sf-status-text-muted mt-0.5">{selectedRow.route_key}</div>
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${selectedIsUserSet ? 'border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300' : 'border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-300'}`}>
+                    <span className={`sf-text-caption px-1.5 py-0.5 rounded ${selectedIsUserSet ? 'sf-chip-success' : 'sf-chip-neutral'}`}>
                       {selectedIsUserSet ? 'User Set ✓' : 'Default'}
                     </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${tagCls('required', selectedRow.required_level)}`}>
+                    <span className={`sf-text-caption px-1.5 py-0.5 rounded ${tagCls('required', selectedRow.required_level)}`}>
                       {selectedRow.required_level}
                     </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${tagCls('difficulty', selectedRow.difficulty)}`}>
+                    <span className={`sf-text-caption px-1.5 py-0.5 rounded ${tagCls('difficulty', selectedRow.difficulty)}`}>
                       {selectedRow.difficulty}
                     </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${tagCls('availability', selectedRow.availability)}`}>
+                    <span className={`sf-text-caption px-1.5 py-0.5 rounded ${tagCls('availability', selectedRow.availability)}`}>
                       {selectedRow.availability}
                     </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${tagCls('effort', String(selectedRow.effort))}`}>
+                    <span className={`sf-text-caption px-1.5 py-0.5 rounded ${tagCls('effort', String(selectedRow.effort))}`}>
                       effort {selectedRow.effort}
                     </span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
-                    <div className="text-[11px] text-gray-500 mb-1">Required Level</div>
+                    <div className="sf-text-label sf-status-text-muted mb-1">Required Level</div>
                     <select className={`${selectCls} w-full`} value={selectedRow.required_level} onChange={(e) => updateSelected({ required_level: e.target.value })}>
                       <option value="identity">identity</option>
                       <option value="required">required</option>
@@ -757,7 +822,7 @@ export function LlmSettingsPage() {
                     </select>
                   </div>
                   <div>
-                    <div className="text-[11px] text-gray-500 mb-1">Availability</div>
+                    <div className="sf-text-label sf-status-text-muted mb-1">Availability</div>
                     <select className={`${selectCls} w-full`} value={selectedRow.availability} onChange={(e) => updateSelected({ availability: e.target.value })}>
                       <option value="always">always</option>
                       <option value="expected">expected</option>
@@ -767,7 +832,7 @@ export function LlmSettingsPage() {
                     </select>
                   </div>
                   <div>
-                    <div className="text-[11px] text-gray-500 mb-1">Difficulty</div>
+                    <div className="sf-text-label sf-status-text-muted mb-1">Difficulty</div>
                     <select className={`${selectCls} w-full`} value={selectedRow.difficulty} onChange={(e) => updateSelected({ difficulty: e.target.value })}>
                       <option value="easy">easy</option>
                       <option value="medium">medium</option>
@@ -776,7 +841,7 @@ export function LlmSettingsPage() {
                     </select>
                   </div>
                   <div>
-                    <div className="text-[11px] text-gray-500 mb-1">Effort: {selectedRow.effort}</div>
+                    <div className="sf-text-label sf-status-text-muted mb-1">Effort: {selectedRow.effort}</div>
                     <input
                       className="w-full"
                       type="range"
@@ -787,7 +852,7 @@ export function LlmSettingsPage() {
                         effort: clampToRange(Number.parseInt(e.target.value, 10), EFFORT_BOUNDS.min, EFFORT_BOUNDS.max),
                       })}
                     />
-                    <div className="text-[10px] text-gray-500 mt-1">Band: {selectedRow.effort_band}</div>
+                    <div className="sf-text-caption sf-status-text-muted mt-1">Band: {rowEffortBand(selectedRow)}</div>
                   </div>
                 </div>
               </div>
@@ -796,24 +861,24 @@ export function LlmSettingsPage() {
                 <div className={cardCls}>
                   <div className="text-sm font-semibold mb-2">Source Package</div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <label className="text-xs flex items-center gap-2">
+                    <label className="sf-text-label flex items-center gap-2">
                       <input type="checkbox" checked={selectedRow.single_source_data} onChange={(e) => updateSelected({ single_source_data: e.target.checked })} />
                       <span>Single Source Data</span>
                     </label>
-                    <label className="text-xs flex items-center gap-2">
+                    <label className="sf-text-label flex items-center gap-2">
                       <input type="checkbox" checked={selectedRow.all_source_data} onChange={(e) => updateSelected({ all_source_data: e.target.checked })} />
                       <span>All Source Data</span>
                     </label>
-                    <label className="text-xs flex items-center gap-2">
+                    <label className="sf-text-label flex items-center gap-2">
                       <input type="checkbox" checked={selectedRow.enable_websearch} onChange={(e) => updateSelected({ enable_websearch: e.target.checked })} />
                       <span>Enable Web Search</span>
                     </label>
-                    <label className="text-xs flex items-center gap-2">
+                    <label className="sf-text-label flex items-center gap-2">
                       <input type="checkbox" checked={selectedRow.all_sources_confidence_repatch} onChange={(e) => updateSelected({ all_sources_confidence_repatch: e.target.checked })} />
                       <span>All Confidence Repatch</span>
                     </label>
                     <div>
-                      <div className="text-[11px] text-gray-500 mb-1">Context Pack</div>
+                      <div className="sf-text-label sf-status-text-muted mb-1">Context Pack</div>
                       <select className={`${selectCls} w-full`} defaultValue="standard" onChange={(e) => updateSelected(applyContextPack(selectedRow, e.target.value as 'minimal' | 'standard' | 'full'))}>
                         <option value="standard">standard</option>
                         <option value="minimal">minimal</option>
@@ -823,21 +888,21 @@ export function LlmSettingsPage() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
                     <div>
-                      <div className="text-[11px] text-gray-500 mb-1">Scalar Send</div>
+                      <div className="sf-text-label sf-status-text-muted mb-1">Scalar Send</div>
                       <select className={`${selectCls} w-full`} value={selectedRow.scalar_linked_send} onChange={(e) => updateSelected({ scalar_linked_send: e.target.value })}>
                         <option value="scalar value">scalar value</option>
                         <option value="scalar value + prime sources">scalar value + prime sources</option>
                       </select>
                     </div>
                     <div>
-                      <div className="text-[11px] text-gray-500 mb-1">Component Send</div>
+                      <div className="sf-text-label sf-status-text-muted mb-1">Component Send</div>
                       <select className={`${selectCls} w-full`} value={selectedRow.component_values_send} onChange={(e) => updateSelected({ component_values_send: e.target.value })}>
                         <option value="component values">component values</option>
                         <option value="component values + prime sources">component values + prime sources</option>
                       </select>
                     </div>
                     <div>
-                      <div className="text-[11px] text-gray-500 mb-1">List Send</div>
+                      <div className="sf-text-label sf-status-text-muted mb-1">List Send</div>
                       <select className={`${selectCls} w-full`} value={selectedRow.list_values_send} onChange={(e) => updateSelected({ list_values_send: e.target.value })}>
                         <option value="list values">list values</option>
                         <option value="list values prime sources">list values prime sources</option>
@@ -850,18 +915,18 @@ export function LlmSettingsPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="text-sm font-semibold">Model Deck</div>
                     <div className="flex items-center gap-2">
-                      <button className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => updateSelected(applyRoutePreset(selectedRow, 'fast'))}>Fast</button>
-                      <button className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => updateSelected(applyRoutePreset(selectedRow, 'balanced'))}>Balanced</button>
-                      <button className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => updateSelected(applyRoutePreset(selectedRow, 'deep'))}>Deep</button>
+                      <button className="rounded sf-icon-button px-2 py-1 sf-text-label" onClick={() => updateSelected(applyRoutePreset(selectedRow, 'fast'))}>Fast</button>
+                      <button className="rounded sf-icon-button px-2 py-1 sf-text-label" onClick={() => updateSelected(applyRoutePreset(selectedRow, 'balanced'))}>Balanced</button>
+                      <button className="rounded sf-icon-button px-2 py-1 sf-text-label" onClick={() => updateSelected(applyRoutePreset(selectedRow, 'deep'))}>Deep</button>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <div className="text-[11px] text-gray-500 mb-1">Model Ladder (today)</div>
+                      <div className="sf-text-label sf-status-text-muted mb-1">Model Ladder (today)</div>
                       <input className={`${inputCls} w-full`} value={selectedRow.model_ladder_today} onChange={(e) => updateSelected({ model_ladder_today: e.target.value })} />
                     </div>
                     <div>
-                      <div className="text-[11px] text-gray-500 mb-1">Max Tokens: {selectedRow.max_tokens}</div>
+                      <div className="sf-text-label sf-status-text-muted mb-1">Max Tokens: {selectedRow.max_tokens}</div>
                       <input
                         className="w-full"
                         type="range"
@@ -881,7 +946,7 @@ export function LlmSettingsPage() {
                   <div className="text-sm font-semibold mb-2">Evidence Gate</div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <div className="text-[11px] text-gray-500 mb-1">Min Evidence Refs: {selectedRow.llm_output_min_evidence_refs_required}</div>
+                      <div className="sf-text-label sf-status-text-muted mb-1">Min Evidence Refs: {selectedRow.llm_output_min_evidence_refs_required}</div>
                       <input
                         className="w-full"
                         type="range"
@@ -898,7 +963,7 @@ export function LlmSettingsPage() {
                       />
                     </div>
                     <div>
-                      <div className="text-[11px] text-gray-500 mb-1">Insufficient Evidence Action</div>
+                      <div className="sf-text-label sf-status-text-muted mb-1">Insufficient Evidence Action</div>
                       <select className={`${selectCls} w-full`} value={selectedRow.insufficient_evidence_action} onChange={(e) => updateSelected({ insufficient_evidence_action: e.target.value })}>
                         <option value="threshold_unmet">threshold_unmet</option>
                         <option value="return_unk">return_unk</option>
@@ -909,10 +974,10 @@ export function LlmSettingsPage() {
                 </div>
 
                 <details className={cardCls}>
-                  <summary className="cursor-pointer text-xs text-gray-500">Advanced Prompt Flags</summary>
+                  <summary className="cursor-pointer sf-text-label sf-status-text-muted">Advanced Prompt Flags</summary>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
                     {PROMPT_FLAG_FIELDS.map((key) => (
-                      <label key={key} className="text-xs flex items-center gap-2">
+                      <label key={key} className="sf-text-label flex items-center gap-2">
                         <input
                           type="checkbox"
                           checked={Boolean(selectedRow[key])}

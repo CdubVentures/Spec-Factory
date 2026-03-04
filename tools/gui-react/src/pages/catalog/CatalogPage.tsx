@@ -18,17 +18,15 @@ export function CatalogPage() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sf-text-primary sf-border-default">
       {/* Sub-tab bar */}
-      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">
+      <div className="inline-flex gap-1 p-1 sf-tab-strip">
         {subTabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab.id
-                ? 'border-accent text-accent dark:border-accent-dark dark:text-accent-dark'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            className={`px-4 py-2 text-sm font-medium sf-tab-item ${
+              activeTab === tab.id ? 'sf-tab-item-active' : ''
             }`}
           >
             {tab.label}

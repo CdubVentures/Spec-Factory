@@ -18,12 +18,12 @@ import {
   snapshotRuntimeSettings,
   snapshotStorageSettings,
   snapshotUiSettings,
-} from '../services/userSettingsService.js';
+} from '../../features/settings-authority/index.js';
 import {
   CONVERGENCE_SETTINGS_ROUTE_PUT,
   RUNTIME_SETTINGS_ROUTE_GET,
   RUNTIME_SETTINGS_ROUTE_PUT,
-} from '../services/settingsContract.js';
+} from '../../features/settings-authority/index.js';
 import {
   recordSettingsWriteAttempt,
   recordSettingsWriteOutcome,
@@ -73,6 +73,7 @@ export function registerConfigRoutes(ctx) {
         })()
   );
   const initialUserSettings = loadUserSettingsSync({ helperFilesRoot });
+  let userSettingsState = initialUserSettings;
   const initialSettingsArtifacts = deriveSettingsArtifactsFromUserSettings(initialUserSettings);
   const uiSettingsState = snapshotUiSettings(initialSettingsArtifacts.sections.ui || {});
 
@@ -113,6 +114,7 @@ export function registerConfigRoutes(ctx) {
       ui,
       studio,
     });
+    userSettingsState = persisted;
     const artifacts = deriveSettingsArtifactsFromUserSettings(persisted);
     applyDerivedSettingsArtifacts(artifacts);
     return artifacts;
@@ -159,7 +161,23 @@ export function registerConfigRoutes(ctx) {
         nextUiSettings[key] = enabled;
         appliedKeys.push(key);
       }
-      const snapshot = snapshotUiSettings(nextUiSettings);
+      const normalizedUiSnapshot = snapshotUiSettings(nextUiSettings);
+      const currentUserUi = (
+        userSettingsState
+        && userSettingsState.ui
+        && typeof userSettingsState.ui === 'object'
+      )
+        ? userSettingsState.ui
+        : {};
+      const uiPatch = {};
+      for (const [key, value] of Object.entries(normalizedUiSnapshot)) {
+        if (!appliedKeys.includes(key)) continue;
+        uiPatch[key] = value;
+      }
+      const snapshot = {
+        ...currentUserUi,
+        ...uiPatch,
+      };
       recordRouteWriteAttempt('ui', 'ui-settings-route');
       let persistedArtifacts = null;
       try {
@@ -236,11 +254,39 @@ export function registerConfigRoutes(ctx) {
           return jsonRes(res, 400, { error: message });
         }
       }
-      const storageSnapshot = snapshotStorageSettings({
+      const normalizedStorageSnapshot = snapshotStorageSettings({
         ...currentStorageSnapshot,
         ...normalized,
         updatedAt: new Date().toISOString(),
       });
+      const currentUserStorage = (
+        userSettingsState
+        && userSettingsState.storage
+        && typeof userSettingsState.storage === 'object'
+      )
+        ? userSettingsState.storage
+        : {};
+      const storagePatch = {};
+      const storageMutableKeys = [
+        'enabled',
+        'destinationType',
+        'localDirectory',
+        's3Region',
+        's3Bucket',
+        's3Prefix',
+        's3AccessKeyId',
+        's3SecretAccessKey',
+        's3SessionToken',
+      ];
+      for (const key of storageMutableKeys) {
+        if (!Object.prototype.hasOwnProperty.call(body || {}, key)) continue;
+        storagePatch[key] = normalizedStorageSnapshot[key];
+      }
+      storagePatch.updatedAt = normalizedStorageSnapshot.updatedAt;
+      const storageSnapshot = {
+        ...currentUserStorage,
+        ...storagePatch,
+      };
       recordRouteWriteAttempt('storage', 'storage-settings-route');
       let persistedArtifacts = null;
       try {
@@ -499,6 +545,22 @@ export function registerConfigRoutes(ctx) {
           applied[key] = b;
         }
       }
+      const currentUserConvergence = (
+        userSettingsState
+        && userSettingsState.convergence
+        && typeof userSettingsState.convergence === 'object'
+      )
+        ? userSettingsState.convergence
+        : {};
+      const convergencePatch = {};
+      for (const [key, value] of Object.entries(applied)) {
+        convergencePatch[key] = value;
+      }
+      const convergenceToPersist = {
+        ...currentUserConvergence,
+        ...convergencePatch,
+      };
+      Object.assign(nextConvergenceSnapshot, convergenceToPersist);
       recordRouteWriteAttempt('convergence', 'convergence-settings-route');
       let persistedArtifacts = null;
       try {
@@ -577,6 +639,7 @@ export function registerConfigRoutes(ctx) {
 
       const applied = {};
       const rejected = {};
+      const runtimePatch = {};
 
       for (const [key, value] of Object.entries(body || {})) {
         if (key in STRING_ENUM_MAP) {
@@ -585,12 +648,15 @@ export function registerConfigRoutes(ctx) {
           if (!allowed.includes(str)) { rejected[key] = 'invalid_enum'; continue; }
           nextRuntimeSnapshot[cfgKey] = str;
           applied[key] = str;
+          runtimePatch[cfgKey] = str;
         } else if (key === DYNAMIC_FETCH_POLICY_MAP_JSON_KEY) {
           const normalized = String(value ?? '').trim();
           if (!normalized) {
             nextRuntimeSnapshot.dynamicFetchPolicyMapJson = '';
             nextRuntimeSnapshot.dynamicFetchPolicyMap = {};
             applied[key] = '';
+            runtimePatch.dynamicFetchPolicyMapJson = '';
+            runtimePatch.dynamicFetchPolicyMap = {};
             continue;
           }
           try {
@@ -602,6 +668,8 @@ export function registerConfigRoutes(ctx) {
             nextRuntimeSnapshot.dynamicFetchPolicyMap = parsed;
             nextRuntimeSnapshot.dynamicFetchPolicyMapJson = JSON.stringify(parsed);
             applied[key] = nextRuntimeSnapshot.dynamicFetchPolicyMapJson;
+            runtimePatch.dynamicFetchPolicyMap = parsed;
+            runtimePatch.dynamicFetchPolicyMapJson = nextRuntimeSnapshot.dynamicFetchPolicyMapJson;
           } catch {
             rejected[key] = 'invalid_json_object';
           }
@@ -610,6 +678,7 @@ export function registerConfigRoutes(ctx) {
           const str = String(value ?? '').trim();
           nextRuntimeSnapshot[cfgKey] = str;
           applied[key] = str;
+          runtimePatch[cfgKey] = str;
         } else if (key in INT_RANGE_MAP) {
           const { cfgKey, min, max } = INT_RANGE_MAP[key];
           const n = Number.parseInt(String(value ?? ''), 10);
@@ -617,6 +686,7 @@ export function registerConfigRoutes(ctx) {
           const clamped = Math.max(min, Math.min(max, n));
           nextRuntimeSnapshot[cfgKey] = clamped;
           applied[key] = clamped;
+          runtimePatch[cfgKey] = clamped;
         } else if (key in FLOAT_RANGE_MAP) {
           const { cfgKey, min, max } = FLOAT_RANGE_MAP[key];
           const n = Number.parseFloat(String(value ?? ''));
@@ -624,13 +694,23 @@ export function registerConfigRoutes(ctx) {
           const clamped = Math.max(min, Math.min(max, n));
           nextRuntimeSnapshot[cfgKey] = clamped;
           applied[key] = clamped;
+          runtimePatch[cfgKey] = clamped;
         } else if (key in BOOL_MAP) {
           const cfgKey = BOOL_MAP[key];
           const b = value === true || value === 'true' || value === 1;
           nextRuntimeSnapshot[cfgKey] = b;
           applied[key] = b;
+          runtimePatch[cfgKey] = b;
         }
       }
+      const currentUserRuntime = (
+        userSettingsState
+        && userSettingsState.runtime
+        && typeof userSettingsState.runtime === 'object'
+      )
+        ? userSettingsState.runtime
+        : {};
+      Object.assign(nextRuntimeSnapshot, currentUserRuntime, runtimePatch);
 
       recordRouteWriteAttempt('runtime', 'runtime-settings-route');
       let persistedArtifacts = null;

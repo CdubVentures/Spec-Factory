@@ -31,9 +31,17 @@ interface UiSettingsAuthorityResult {
 const UI_SETTINGS_QUERY_KEY = ['ui-settings'];
 
 function readUiBool(source: Record<string, unknown>, key: keyof UiSettingsPayload, fallback: boolean): boolean {
-  return Object.prototype.hasOwnProperty.call(source, key)
-    ? Boolean(source[key])
-    : fallback;
+  if (!Object.prototype.hasOwnProperty.call(source, key)) return fallback;
+  const value = source[key];
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return value !== 0;
+  if (typeof value === 'string') {
+    const token = value.trim().toLowerCase();
+    if (!token) return fallback;
+    if (['1', 'true', 'yes', 'on'].includes(token)) return true;
+    if (['0', 'false', 'no', 'off'].includes(token)) return false;
+  }
+  return fallback;
 }
 
 function sanitizeUiSettings(raw: Record<string, unknown> | null | undefined): UiSettingsPayload {
@@ -42,7 +50,7 @@ function sanitizeUiSettings(raw: Record<string, unknown> | null | undefined): Ui
   const studioAutoSaveMapEnabled = studioAutoSaveAllEnabled
     ? true
     : readUiBool(source, 'studioAutoSaveMapEnabled', UI_SETTING_DEFAULTS.studioAutoSaveMapEnabled);
-  const studioAutoSaveEnabled = (studioAutoSaveAllEnabled || studioAutoSaveMapEnabled)
+  const studioAutoSaveEnabled = studioAutoSaveAllEnabled
     ? true
     : readUiBool(source, 'studioAutoSaveEnabled', UI_SETTING_DEFAULTS.studioAutoSaveEnabled);
   return {

@@ -1,52 +1,125 @@
 export function statusBadgeClass(status: string): string {
   switch (status) {
     case 'running':
+      return 'sf-chip-info';
     case 'fetching':
+      return 'sf-chip-success';
     case 'parsing':
+      return 'sf-chip-info';
     case 'indexing':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      return 'sf-chip-success';
     case 'completed':
     case 'fetched':
     case 'parsed':
     case 'indexed':
     case 'idle':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      return 'sf-chip-success';
     case 'stuck':
     case 'fetch_error':
     case 'failed':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      return 'sf-chip-danger';
     case 'skipped':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      return 'sf-chip-warning';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
   }
 }
 
 export function workerStateBadgeClass(state: string): string {
   switch (state) {
     case 'stuck':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 animate-pulse';
+      return 'sf-chip-danger animate-pulse';
     case 'running':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      return 'sf-chip-info';
     case 'idle':
-      return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+      return 'sf-chip-neutral';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
   }
 }
 
 export function poolBadgeClass(pool: string): string {
   switch (pool) {
     case 'search':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      return 'sf-chip-accent';
     case 'fetch':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      return 'sf-chip-success';
     case 'parse':
-      return 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200';
+      return 'sf-chip-info';
     case 'llm':
-      return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
+      return 'sf-chip-warning';
+    case 'index':
+      return 'sf-chip-success';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
+  }
+}
+
+export function poolDotClass(pool: string): string {
+  switch (pool) {
+    case 'search':
+      return 'sf-dot-accent';
+    case 'fetch':
+      return 'sf-dot-success';
+    case 'parse':
+      return 'sf-dot-info';
+    case 'llm':
+      return 'sf-dot-warning';
+    case 'index':
+      return 'sf-dot-success';
+    default:
+      return 'sf-dot-neutral';
+  }
+}
+
+export function poolMeterFillClass(pool: string): string {
+  switch (pool) {
+    case 'search':
+      return 'sf-meter-fill';
+    case 'fetch':
+      return 'sf-meter-fill-success';
+    case 'parse':
+      return 'sf-meter-fill-info';
+    case 'llm':
+      return 'sf-meter-fill-warning';
+    case 'index':
+      return 'sf-meter-fill-success';
+    default:
+      return 'sf-meter-fill-neutral';
+  }
+}
+
+export function poolSelectedTabClass(pool: string): string {
+  switch (pool) {
+    case 'search':
+      return 'sf-prefetch-tab-idle-accent';
+    case 'fetch':
+      return 'sf-prefetch-tab-idle-success';
+    case 'parse':
+      return 'sf-prefetch-tab-idle-info';
+    case 'llm':
+      return 'sf-prefetch-tab-idle-warning';
+    case 'index':
+      return 'sf-prefetch-tab-idle-success';
+    default:
+      return 'sf-prefetch-tab-idle-neutral';
+  }
+}
+
+export function poolOutlineTabClass(pool: string): string {
+  switch (pool) {
+    case 'search':
+      return 'sf-prefetch-tab-outline-accent';
+    case 'fetch':
+      return 'sf-prefetch-tab-outline-success';
+    case 'parse':
+      return 'sf-prefetch-tab-outline-info';
+    case 'llm':
+      return 'sf-prefetch-tab-outline-warning';
+    case 'index':
+      return 'sf-prefetch-tab-outline-success';
+    default:
+      return 'sf-prefetch-tab-outline-neutral';
   }
 }
 
@@ -86,95 +159,95 @@ export function methodBadgeClass(method: string): string {
   switch (method) {
     case 'html_spec_table':
     case 'html_table':
-      return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200';
+      return 'sf-chip-info';
     case 'embedded_json':
     case 'json_ld':
     case 'microdata':
     case 'opengraph':
-      return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
+      return 'sf-chip-accent';
     case 'main_article':
     case 'dom':
-      return 'bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200';
+      return 'sf-chip-info';
     case 'pdf_text':
     case 'pdf_kv':
     case 'pdf_table':
-      return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      return 'sf-chip-warning';
     case 'scanned_pdf_ocr':
     case 'scanned_pdf_ocr_table':
     case 'scanned_pdf_ocr_kv':
     case 'scanned_pdf_ocr_text':
     case 'image_ocr':
-      return 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200';
+      return 'sf-chip-danger';
     case 'chart_payload':
     case 'network_json':
-      return 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200';
+      return 'sf-chip-accent';
     case 'llm_extract':
     case 'llm_validate':
-      return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
+      return 'sf-chip-warning';
     case 'deterministic_normalizer':
     case 'consensus_policy_reducer':
-      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
+      return 'sf-chip-success';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
   }
 }
 
 export function fieldStatusBadgeClass(status: string): string {
   switch (status) {
     case 'accepted':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      return 'sf-chip-success';
     case 'conflict':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      return 'sf-chip-danger';
     case 'candidate':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      return 'sf-chip-info';
     case 'unknown':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      return 'sf-chip-warning';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
   }
 }
 
 export function fallbackResultBadgeClass(result: string): string {
   switch (result) {
     case 'succeeded':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      return 'sf-chip-success';
     case 'exhausted':
     case 'failed':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      return 'sf-chip-danger';
     case 'pending':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      return 'sf-chip-info';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
   }
 }
 
 export function fetchModeBadgeClass(mode: string): string {
   switch (mode) {
     case 'playwright':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      return 'sf-chip-accent';
     case 'crawlee':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      return 'sf-chip-info';
     case 'http':
-      return 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200';
+      return 'sf-chip-success';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
   }
 }
 
 export function queueStatusBadgeClass(status: string): string {
   switch (status) {
     case 'queued':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      return 'sf-chip-info';
     case 'running':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 animate-pulse';
+      return 'sf-chip-info animate-pulse';
     case 'done':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      return 'sf-chip-success';
     case 'failed':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      return 'sf-chip-danger';
     case 'cooldown':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      return 'sf-chip-warning';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
   }
 }
 
@@ -303,11 +376,11 @@ export function timeUntil(isoStr: string): string {
 
 export function tierBadgeClass(tier: number | null): string {
   switch (tier) {
-    case 1: return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-    case 2: return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-    case 3: return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-    case 4: return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
-    default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    case 1: return 'sf-chip-success';
+    case 2: return 'sf-chip-info';
+    case 3: return 'sf-chip-warning';
+    case 4: return 'sf-chip-neutral';
+    default: return 'sf-chip-neutral';
   }
 }
 
@@ -315,13 +388,17 @@ export const STAGE_ORDER = ['search', 'fetch', 'parse', 'index', 'llm'] as const
 
 export function stageBadgeClass(stage: string): string {
   switch (stage) {
-    case 'search': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-    case 'fetch': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-    case 'parse': return 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200';
-    case 'index': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
-    case 'llm': return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
-    default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    case 'search': return 'sf-chip-accent';
+    case 'fetch': return 'sf-chip-success';
+    case 'parse': return 'sf-chip-info';
+    case 'index': return 'sf-chip-success';
+    case 'llm': return 'sf-chip-warning';
+    default: return 'sf-chip-neutral';
   }
+}
+
+export function stageMeterFillClass(stage: string): string {
+  return poolMeterFillClass(stage);
 }
 
 export function stageLabel(stage: string): string {
@@ -340,28 +417,28 @@ export function stageLabel(stage: string): string {
 export function llmCallStatusBadgeClass(status: string): string {
   switch (status) {
     case 'finished':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      return 'sf-chip-success';
     case 'failed':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      return 'sf-chip-danger';
     case 'running':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 animate-pulse';
+      return 'sf-chip-info animate-pulse';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
   }
 }
 
 export function identityStatusBadgeClass(status: string): string {
   switch (status) {
     case 'locked':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      return 'sf-chip-success';
     case 'provisional':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      return 'sf-chip-warning';
     case 'conflict':
-      return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      return 'sf-chip-danger';
     case 'unlocked':
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200';
+      return 'sf-chip-info';
     default:
-      return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+      return 'sf-chip-neutral';
   }
 }
 
@@ -383,13 +460,13 @@ export function identityStatusTooltip(status: string): string {
 export function needsetReasonBadgeClass(reason: string): string {
   switch (reason) {
     case 'missing':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      return 'sf-chip-danger';
     case 'low_confidence':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      return 'sf-chip-warning';
     case 'conflict':
-      return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      return 'sf-chip-danger';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
   }
 }
 
@@ -397,33 +474,33 @@ export function domainClassBadgeClass(classification: string): string {
   switch (classification) {
     case 'safe':
     case 'manufacturer':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      return 'sf-chip-success';
     case 'review':
     case 'lab':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      return 'sf-chip-info';
     case 'retail':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      return 'sf-chip-warning';
     case 'blocked':
     case 'unsafe':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      return 'sf-chip-danger';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
   }
 }
 
 export function triageDecisionBadgeClass(decision: string): string {
   switch (decision) {
     case 'keep':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      return 'sf-chip-success';
     case 'maybe':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      return 'sf-chip-warning';
     case 'drop':
     case 'skip':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      return 'sf-chip-danger';
     case 'fetch':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      return 'sf-chip-info';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
   }
 }
 
@@ -432,42 +509,42 @@ export function riskFlagBadgeClass(flag: string): string {
     case 'low_trust':
     case 'potential_paywall':
     case 'blocked':
-      return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200';
+      return 'sf-chip-danger';
     case 'pdf_only':
     case 'slow':
-      return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200';
+      return 'sf-chip-warning';
     default:
-      return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+      return 'sf-chip-neutral';
   }
 }
 
 export function domainRoleBadgeClass(role: string): string {
   switch (role) {
     case 'manufacturer':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      return 'sf-chip-success';
     case 'lab_review':
     case 'review':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      return 'sf-chip-info';
     case 'retail':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      return 'sf-chip-warning';
     case 'database':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      return 'sf-chip-accent';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
   }
 }
 
 export function safetyClassBadgeClass(safetyClass: string): string {
   switch (safetyClass) {
     case 'safe':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      return 'sf-chip-success';
     case 'caution':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      return 'sf-chip-warning';
     case 'blocked':
     case 'unsafe':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      return 'sf-chip-danger';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      return 'sf-chip-neutral';
   }
 }
 
@@ -479,24 +556,24 @@ import type { TriageScoreComponents } from './types';
 
 export function scoreBarSegments(components: TriageScoreComponents): { label: string; value: number; color: string }[] {
   return [
-    { label: 'Relevance', value: Math.max(0, components.base_relevance), color: 'bg-blue-500' },
-    { label: 'Tier Boost', value: Math.max(0, components.tier_boost), color: 'bg-green-500' },
-    { label: 'Identity', value: Math.max(0, components.identity_match), color: 'bg-purple-500' },
-    { label: 'Penalties', value: Math.abs(components.penalties), color: 'bg-red-400' },
+    { label: 'Relevance', value: Math.max(0, components.base_relevance), color: 'sf-metric-fill-info' },
+    { label: 'Tier Boost', value: Math.max(0, components.tier_boost), color: 'sf-metric-fill-success' },
+    { label: 'Identity', value: Math.max(0, components.identity_match), color: 'sf-metric-fill-accent' },
+    { label: 'Penalties', value: Math.abs(components.penalties), color: 'sf-metric-fill-danger' },
   ];
 }
 
 export function prefetchTabAccent(tab: string): string {
   switch (tab) {
-    case 'needset': return 'border-emerald-500';
+    case 'needset': return 'sf-prefetch-tab-selected-success';
     case 'search_profile':
-    case 'search_results': return 'border-purple-500';
-    case 'query_journey': return 'border-sky-500';
+    case 'search_results': return 'sf-prefetch-tab-selected-accent';
+    case 'query_journey': return 'sf-prefetch-tab-selected-info';
     case 'brand_resolver':
     case 'search_planner':
     case 'url_predictor':
     case 'serp_triage':
-    case 'domain_classifier': return 'border-amber-500';
-    default: return 'border-gray-400';
+    case 'domain_classifier': return 'sf-prefetch-tab-selected-warning';
+    default: return 'sf-prefetch-tab-selected-neutral';
   }
 }

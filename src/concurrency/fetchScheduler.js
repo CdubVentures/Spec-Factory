@@ -3,14 +3,31 @@ import { HostPacer } from './hostPacer.js';
 import { classifyFallbackAction, buildFallbackDecision } from './fallbackPolicy.js';
 
 export function createFetchScheduler({
-  concurrency = 2,
-  perHostDelayMs = 300,
-  maxRetries = 1,
+  concurrency = undefined,
+  defaultConcurrency = 2,
+  perHostDelayMs = undefined,
+  defaultPerHostDelayMs = 300,
+  maxRetries = undefined,
+  defaultMaxRetries = 1,
+  retryWaitMs = undefined,
   nowFn = Date.now,
   sleepFn
 } = {}) {
-  const pool = new WorkerPool({ concurrency, name: 'fetch' });
-  const pacer = new HostPacer({ delayMs: perHostDelayMs, nowFn, sleepFn });
+  const resolvedConcurrency = Number.isFinite(Number(concurrency))
+    ? Math.max(1, Number.parseInt(String(concurrency), 10))
+    : Math.max(1, Number.parseInt(String(defaultConcurrency ?? 2), 10) || 2);
+  const resolvedPerHostDelayMs = Number.isFinite(Number(perHostDelayMs))
+    ? Math.max(0, Number.parseInt(String(perHostDelayMs), 10))
+    : Math.max(0, Number.parseInt(String(defaultPerHostDelayMs ?? 300), 10) || 300);
+  const resolvedMaxRetries = Number.isFinite(Number(maxRetries))
+    ? Math.max(0, Number.parseInt(String(maxRetries), 10))
+    : Math.max(0, Number.parseInt(String(defaultMaxRetries ?? 1), 10) || 1);
+  const resolvedRetryWaitMs = Number.isFinite(Number(retryWaitMs))
+    ? Math.max(0, Number.parseInt(String(retryWaitMs), 10))
+    : (typeof sleepFn === 'function' ? 1000 : 60000);
+
+  const pool = new WorkerPool({ concurrency: resolvedConcurrency, name: 'fetch' });
+  const pacer = new HostPacer({ delayMs: resolvedPerHostDelayMs, nowFn, sleepFn });
 
   let processed = 0;
   let skipped = 0;
@@ -34,7 +51,7 @@ export function createFetchScheduler({
     maxRetries: drainMaxRetries
   }) {
     const startMs = nowFn();
-    const effectiveMaxRetries = drainMaxRetries !== undefined ? drainMaxRetries : maxRetries;
+    const effectiveMaxRetries = drainMaxRetries !== undefined ? drainMaxRetries : resolvedMaxRetries;
     const emit = typeof emitEvent === 'function' ? emitEvent : () => {};
 
     const tasks = [];
@@ -110,7 +127,7 @@ export function createFetchScheduler({
               exhaustedModes,
               retryCount,
               maxRetries: effectiveMaxRetries,
-              waitMs: typeof sleepFn === 'function' ? 1000 : 60000
+              waitMs: resolvedRetryWaitMs
             });
 
             if (decision.action === 'none' || decision.action === 'skip' || decision.exhausted) {

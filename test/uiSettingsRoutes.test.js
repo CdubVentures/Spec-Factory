@@ -125,7 +125,7 @@ test('ui-settings PUT persists autosave toggles and emits settings data-change',
   assert.equal(saved.ui.llmSettingsAutoSaveEnabled, false);
 });
 
-test('ui-settings PUT enforces field-studio-map autosave implies key navigator autosave', async (t) => {
+test('ui-settings PUT keeps field-studio-map autosave independent from key navigator autosave when auto-save-all is off', async (t) => {
   const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-ui-settings-shared-autosave-'));
   t.after(async () => {
     await fs.rm(helperRoot, { recursive: true, force: true });
@@ -147,12 +147,12 @@ test('ui-settings PUT enforces field-studio-map autosave implies key navigator a
   assert.equal(putResult.status, 200);
   assert.equal(putResult.body.studioAutoSaveAllEnabled, false);
   assert.equal(putResult.body.studioAutoSaveMapEnabled, true);
-  assert.equal(putResult.body.studioAutoSaveEnabled, true);
+  assert.equal(putResult.body.studioAutoSaveEnabled, false);
   assert.equal(putResult.body.applied.studioAutoSaveMapEnabled, true);
-  assert.equal(putResult.body.applied.studioAutoSaveEnabled, true);
+  assert.equal(putResult.body.applied.studioAutoSaveEnabled, false);
 
   const getResult = await handler(['ui-settings'], new URLSearchParams(), 'GET', {}, {});
   assert.equal(getResult.status, 200);
   assert.equal(getResult.body.studioAutoSaveMapEnabled, true);
-  assert.equal(getResult.body.studioAutoSaveEnabled, true);
+  assert.equal(getResult.body.studioAutoSaveEnabled, false);
 });

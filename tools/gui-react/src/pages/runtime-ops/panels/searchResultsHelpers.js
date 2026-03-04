@@ -77,9 +77,9 @@ export function buildFunnelBullets(results, details, decisions) {
 
 export function buildDecisionSegments(decisions) {
   return [
-    { label: 'Keep', value: decisions.keep, color: 'bg-green-500' },
-    { label: 'Maybe', value: decisions.maybe, color: 'bg-yellow-500' },
-    { label: 'Drop', value: decisions.drop, color: 'bg-red-500' },
+    { label: 'Keep', value: decisions.keep, color: 'sf-metric-fill-success' },
+    { label: 'Maybe', value: decisions.maybe, color: 'sf-metric-fill-warning' },
+    { label: 'Drop', value: decisions.drop, color: 'sf-metric-fill-danger' },
   ];
 }
 

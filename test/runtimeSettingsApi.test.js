@@ -83,6 +83,8 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
 
     const STRING_KEYS = [
       'profile', 'searchProvider',
+      'searxngBaseUrl', 'bingSearchEndpoint', 'googleCseCx', 'duckduckgoBaseUrl',
+      'frontierDbPath',
       'phase2LlmModel', 'phase3LlmModel', 'llmModelFast', 'llmModelReasoning',
       'llmModelExtract', 'llmModelValidate', 'llmModelWrite',
       'llmFallbackPlanModel', 'llmFallbackExtractModel', 'llmFallbackValidateModel', 'llmFallbackWriteModel',
@@ -100,6 +102,16 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'resumeWindowHours', 'reextractAfterHours',
       'scannedPdfOcrMaxPages', 'scannedPdfOcrMaxPairs', 'scannedPdfOcrMinCharsPerPage', 'scannedPdfOcrMinLinesPerPage',
       'crawleeRequestHandlerTimeoutSecs', 'dynamicFetchRetryBudget', 'dynamicFetchRetryBackoffMs',
+      'fetchSchedulerMaxRetries', 'fetchSchedulerFallbackWaitMs', 'pageGotoTimeoutMs', 'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
+      'frontierQueryCooldownSeconds', 'frontierCooldown404Seconds', 'frontierCooldown404RepeatSeconds',
+      'frontierCooldown410Seconds', 'frontierCooldownTimeoutSeconds', 'frontierCooldown403BaseSeconds',
+      'frontierCooldown429BaseSeconds', 'frontierBlockedDomainThreshold',
+      'autoScrollPasses', 'autoScrollDelayMs', 'maxGraphqlReplays', 'maxNetworkResponsesPerPage', 'robotsTxtTimeoutMs',
+      'runtimeScreencastFps', 'runtimeScreencastQuality', 'runtimeScreencastMaxWidth', 'runtimeScreencastMaxHeight',
+      'endpointSignalLimit', 'endpointSuggestionLimit', 'endpointNetworkScanLimit',
+      'cseRescueRequiredIteration',
+      'duckduckgoTimeoutMs',
+      'runtimeTraceFetchRing', 'runtimeTraceLlmRing',
     ];
     for (const key of INT_KEYS) {
       assert.equal(typeof body[key], 'number', `expected number for ${key}, got ${typeof body[key]}`);
@@ -114,7 +126,13 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const BOOL_KEYS = [
       'discoveryEnabled', 'phase2LlmEnabled', 'phase3LlmTriageEnabled', 'llmFallbackEnabled',
       'reextractIndexed', 'scannedPdfOcrEnabled', 'scannedPdfOcrPromoteCandidates',
-      'dynamicCrawleeEnabled', 'crawleeHeadless',
+      'dynamicCrawleeEnabled', 'crawleeHeadless', 'fetchSchedulerEnabled', 'preferHttpFetcher', 'runtimeScreencastEnabled',
+      'frontierEnableSqlite', 'frontierStripTrackingParams', 'frontierRepairSearchEnabled',
+      'autoScrollEnabled', 'graphqlReplayEnabled', 'robotsTxtCompliant',
+      'fetchCandidateSources', 'manufacturerBroadDiscovery', 'manufacturerSeedSearchUrls',
+      'disableGoogleCse', 'cseRescueOnlyMode', 'duckduckgoEnabled',
+      'runtimeTraceEnabled', 'runtimeTraceLlmPayloads',
+      'eventsJsonWrite', 'authoritySnapshotEnabled',
     ];
     for (const key of BOOL_KEYS) {
       assert.equal(typeof body[key], 'boolean', `expected boolean for ${key}, got ${typeof body[key]}`);

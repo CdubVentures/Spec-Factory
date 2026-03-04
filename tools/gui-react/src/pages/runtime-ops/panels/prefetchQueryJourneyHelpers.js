@@ -134,10 +134,10 @@ export function queryJourneyStatusLabel(status) {
 
 export function queryJourneyStatusBadgeClass(status) {
   const token = normalizeToken(status);
-  if (token === 'results_received') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
-  if (token === 'sent') return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-  if (token === 'observed') return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-  return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+  if (token === 'results_received') return 'sf-chip-success';
+  if (token === 'sent') return 'sf-chip-info';
+  if (token === 'observed') return 'sf-chip-accent';
+  return 'sf-chip-neutral';
 }
 
 export function buildQueryJourneyRows({

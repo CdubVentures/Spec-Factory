@@ -30,7 +30,7 @@ test('llm route field usage audit only permits derived effort_band as dormant', 
 
 test('llm route field usage artifact matches generated audit snapshot', () => {
   const generated = buildLlmRouteFieldUsageAudit({ repoRoot: path.resolve('.') });
-  const persisted = readJson('implementation/gui-persistence/llm-route-field-usage-audit.json');
+  const persisted = readJson('implementation/gui-persistence/04-LLM-ROUTE-FIELD-USAGE-AUDIT.json');
 
   assert.equal(Number(persisted.keysCount || 0), generated.keysCount, 'persisted key count should match generator output');
   assert.deepEqual(

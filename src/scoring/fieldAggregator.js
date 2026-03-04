@@ -41,6 +41,26 @@ const PASS_TARGET_EXEMPT_FIELDS = new Set([
   'sku'
 ]);
 
+function resolveParsingConfidenceBaseMap(config = null) {
+  const source = config?.parsingConfidenceBaseMap && typeof config.parsingConfidenceBaseMap === 'object'
+    ? config.parsingConfidenceBaseMap
+    : {};
+  const read = (key, fallback) => {
+    const parsed = Number.parseFloat(String(source?.[key] ?? ''));
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  const microformatRdfa = read('microformat_rdfa', read('microformat', METHOD_WEIGHT.microformat));
+  return {
+    network_json: read('network_json', METHOD_WEIGHT.network_json),
+    embedded_state: read('embedded_state', METHOD_WEIGHT.embedded_state),
+    json_ld: read('json_ld', METHOD_WEIGHT.json_ld),
+    microdata: read('microdata', METHOD_WEIGHT.microdata),
+    opengraph: read('opengraph', METHOD_WEIGHT.opengraph),
+    microformat: microformatRdfa,
+    rdfa: microformatRdfa,
+  };
+}
+
 function unknownFieldMap() {
   const map = {};
   for (const field of MOUSE_FIELD_ORDER) {
@@ -88,7 +108,7 @@ function calcConfidenceForField(entry) {
   return Math.min(1, (density * 0.7) + (quality * 0.3));
 }
 
-function projectEntry(entry, allowTier3) {
+function projectEntry(entry, allowTier3, parsingConfidenceBaseMap) {
   const filteredEvidence = entry.evidence.filter((ev) => allowTier3 || ev.tier <= 2);
   if (filteredEvidence.length === 0) {
     return {
@@ -110,7 +130,7 @@ function projectEntry(entry, allowTier3) {
   );
 
   const score = filteredEvidence.reduce((acc, ev) => {
-    const methodWeight = METHOD_WEIGHT[ev.method] || 0.4;
+    const methodWeight = parsingConfidenceBaseMap[ev.method] ?? METHOD_WEIGHT[ev.method] ?? 0.4;
     const tierWeight = TIER_WEIGHT[ev.tier] || 0.3;
     return acc + (methodWeight * tierWeight);
   }, 0);
@@ -126,11 +146,12 @@ function projectEntry(entry, allowTier3) {
   };
 }
 
-export function aggregateFieldValues(sourceResults, identityLock, productId) {
+export function aggregateFieldValues(sourceResults, identityLock, productId, config = null) {
   const fields = unknownFieldMap();
   const provenance = {};
   const fieldsBelowPassTarget = [];
   const newValuesProposed = [];
+  const parsingConfidenceBaseMap = resolveParsingConfidenceBaseMap(config);
 
   fields.id = productId;
   fields.brand = identityLock.brand || 'unk';
@@ -156,7 +177,7 @@ export function aggregateFieldValues(sourceResults, identityLock, productId) {
         continue;
       }
 
-      const methodWeight = METHOD_WEIGHT[candidate.method] || 0.4;
+      const methodWeight = parsingConfidenceBaseMap[candidate.method] ?? METHOD_WEIGHT[candidate.method] ?? 0.4;
       const tierWeight = TIER_WEIGHT[source.tier] || 0.3;
       const weighted = methodWeight * tierWeight;
 
@@ -220,7 +241,7 @@ export function aggregateFieldValues(sourceResults, identityLock, productId) {
     );
     const ranked = sortByScore(
       toArray(new Set(byValue.values()))
-        .map((entry) => projectEntry(entry, !hasTier12Evidence))
+        .map((entry) => projectEntry(entry, !hasTier12Evidence, parsingConfidenceBaseMap))
         .filter((entry) => entry.domainCount > 0)
     );
 

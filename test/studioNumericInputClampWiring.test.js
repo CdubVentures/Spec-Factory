@@ -48,34 +48,34 @@ test('studio numeric knob parsing uses shared bounded helpers and preserves low/
     'Studio component-match defaults should be centralized in a shared bounds module',
   );
 
-  assert.equal(
-    studioPageText.includes("from './numericInputHelpers';"),
-    true,
+  assert.match(
+    studioPageText,
+    /from\s+["']\.\/numericInputHelpers["'];/,
     'StudioPage should consume shared numeric helper contract',
   );
-  assert.equal(
-    studioPageText.includes("from './studioNumericKnobBounds';"),
-    true,
+  assert.match(
+    studioPageText,
+    /from\s+["']\.\/studioNumericKnobBounds["'];/,
     'StudioPage should consume shared numeric bounds contract',
   );
-  assert.equal(
-    workbenchDrawerText.includes("from '../numericInputHelpers';"),
-    true,
+  assert.match(
+    workbenchDrawerText,
+    /from\s+["']\.\.\/numericInputHelpers["'];/,
     'WorkbenchDrawer should consume shared numeric helper contract',
   );
-  assert.equal(
-    workbenchDrawerText.includes("from '../studioNumericKnobBounds';"),
-    true,
+  assert.match(
+    workbenchDrawerText,
+    /from\s+["']\.\.\/studioNumericKnobBounds["'];/,
     'WorkbenchDrawer should consume shared numeric bounds contract',
   );
-  assert.equal(
-    workbenchBulkBarText.includes("from '../numericInputHelpers';"),
-    true,
+  assert.match(
+    workbenchBulkBarText,
+    /from\s+["']\.\.\/numericInputHelpers["'];/,
     'WorkbenchBulkBar should consume shared numeric helper contract',
   );
-  assert.equal(
-    workbenchBulkBarText.includes("from '../studioNumericKnobBounds';"),
-    true,
+  assert.match(
+    workbenchBulkBarText,
+    /from\s+["']\.\.\/studioNumericKnobBounds["'];/,
     'WorkbenchBulkBar should consume shared numeric bounds contract',
   );
 
@@ -107,15 +107,15 @@ test('studio numeric knob parsing uses shared bounded helpers and preserves low/
 
   assert.equal(
     /['"]component\.match\.fuzzy_threshold['"],\s*parseBoundedFloatInput\(/s.test(studioPageText)
-      && studioPageText.includes('STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min')
-      && studioPageText.includes('STUDIO_COMPONENT_MATCH_DEFAULTS.fuzzyThreshold'),
+      && /STUDIO_NUMERIC_KNOB_BOUNDS\s*\.componentMatch\s*\.min/.test(studioPageText)
+      && /STUDIO_COMPONENT_MATCH_DEFAULTS\s*\.fuzzyThreshold/.test(studioPageText),
     true,
     'StudioPage component-match knobs should use bounded float parsing so 0 is preserved',
   );
   assert.equal(
     /['"]component\.match\.fuzzy_threshold['"],\s*parseBoundedFloatInput\(/s.test(workbenchDrawerText)
-      && workbenchDrawerText.includes('STUDIO_NUMERIC_KNOB_BOUNDS.componentMatch.min')
-      && workbenchDrawerText.includes('STUDIO_COMPONENT_MATCH_DEFAULTS.fuzzyThreshold'),
+      && /STUDIO_NUMERIC_KNOB_BOUNDS\s*\.componentMatch\s*\.min/.test(workbenchDrawerText)
+      && /STUDIO_COMPONENT_MATCH_DEFAULTS\s*\.fuzzyThreshold/.test(workbenchDrawerText),
     true,
     'WorkbenchDrawer component-match knobs should use bounded float parsing so 0 is preserved',
   );
@@ -138,33 +138,33 @@ test('studio numeric knob parsing uses shared bounded helpers and preserves low/
   assert.equal(
     studioPageText.includes('const maxCallsRaw = parseOptionalPositiveIntInput(')
       && studioPageText.includes('clampNumber(')
-      && studioPageText.includes('STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min')
-      && studioPageText.includes('STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max'),
+      && /STUDIO_NUMERIC_KNOB_BOUNDS\s*\.aiMaxCalls\s*\.min/.test(studioPageText)
+      && /STUDIO_NUMERIC_KNOB_BOUNDS\s*\.aiMaxCalls\s*\.max/.test(studioPageText),
     true,
     'StudioPage ai_assist.max_calls normalization should use shared optional-positive integer parser and bounds constants',
   );
   assert.equal(
     studioPageText.includes('const maxTokensRaw = parseOptionalPositiveIntInput(')
       && studioPageText.includes('clampNumber(')
-      && studioPageText.includes('STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min')
-      && studioPageText.includes('STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max'),
+      && /STUDIO_NUMERIC_KNOB_BOUNDS\s*\.aiMaxTokens\s*\.min/.test(studioPageText)
+      && /STUDIO_NUMERIC_KNOB_BOUNDS\s*\.aiMaxTokens\s*\.max/.test(studioPageText),
     true,
     'StudioPage ai_assist.max_tokens normalization should use shared optional-positive integer parser and bounds constants',
   );
 
-  assert.equal(
-    studioPageText.includes("numN(currentRule, 'min_evidence_refs', STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback)"),
-    true,
+  assert.match(
+    studioPageText,
+    /numN\(\s*currentRule,\s*["']min_evidence_refs["'],\s*STUDIO_NUMERIC_KNOB_BOUNDS\s*\.evidenceMinRefs\s*\.fallback\s*,?\s*\)/,
     'StudioPage min-evidence readers should use shared fallback bounds contract instead of local literals',
   );
-  assert.equal(
-    workbenchDrawerText.includes("numN(rule, 'min_evidence_refs', STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback)"),
-    true,
+  assert.match(
+    workbenchDrawerText,
+    /numN\(\s*rule,\s*["']min_evidence_refs["'],\s*STUDIO_NUMERIC_KNOB_BOUNDS\s*\.evidenceMinRefs\s*\.fallback\s*,?\s*\)/,
     'WorkbenchDrawer min-evidence readers should use shared fallback bounds contract instead of local literals',
   );
-  assert.equal(
-    workbenchHelpersText.includes("numN(r, 'min_evidence_refs', STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback)"),
-    true,
+  assert.match(
+    workbenchHelpersText,
+    /numN\(\s*r,\s*["']min_evidence_refs["'],\s*STUDIO_NUMERIC_KNOB_BOUNDS\s*\.evidenceMinRefs\s*\.fallback\s*,?\s*\)/,
     'Workbench row projection should use shared fallback bounds contract for min-evidence refs',
   );
 

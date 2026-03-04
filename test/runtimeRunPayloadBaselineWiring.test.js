@@ -13,9 +13,14 @@ test('runtime run payload fallbacks are authority-derived after hydration', () =
   const indexingPageText = readText(INDEXING_PAGE);
 
   assert.equal(
-    indexingPageText.includes('const runtimeSettingsBaseline = useMemo(() => ({'),
+    indexingPageText.includes('const runtimeSettingsBaseline = useMemo('),
     true,
     'IndexingPage should define a runtime settings baseline derived from hydrated authority data',
+  );
+  assert.equal(
+    indexingPageText.includes('readRuntimeSettingsNumericBaseline(runtimeSettingsData, runtimeSettingsFallbackBaseline)'),
+    true,
+    'runtime settings baseline should derive through shared authority numeric-baseline helper',
   );
 
   const runControlStart = indexingPageText.indexOf('const runControlPayload = useMemo(() => {');

@@ -1,8 +1,23 @@
 import { create } from 'zustand';
 import { coerceCategories } from '../components/layout/categoryStoreSync.js';
 import { UI_SETTING_DEFAULTS } from './settingsManifest';
+import {
+  DEFAULT_SF_THEME_PROFILE,
+  coerceThemeColorProfile,
+  coerceThemeDensityProfile,
+  coerceThemeRadiusProfile,
+  isDarkThemeColorProfile,
+  type SfThemeColorProfileId,
+  type SfThemeDensityProfileId,
+  type SfThemeProfile,
+  type SfThemeRadiusProfileId,
+} from './uiThemeProfiles';
 
 const UI_CATEGORY_KEY = 'ui:selectedCategory';
+const DARK_MODE_KEY = 'ui:darkMode';
+const THEME_COLOR_KEY = 'ui:themeColorProfile';
+const THEME_RADIUS_KEY = 'ui:themeRadiusProfile';
+const THEME_DENSITY_KEY = 'ui:themeDensityProfile';
 const RUNTIME_AUTOSAVE_KEY = 'indexlab-runtime-autosave';
 const LLM_SETTINGS_AUTOSAVE_KEY = 'llmSettings:autoSaveEnabled';
 const STUDIO_AUTOSAVE_ALL_KEY = 'studio:autoSaveAllEnabled';
@@ -11,13 +26,22 @@ const STUDIO_MAP_AUTOSAVE_KEY = 'autoSaveMapEnabled';
 const STORAGE_AUTOSAVE_KEY = 'storage:autoSaveEnabled';
 const DEFAULT_CATEGORY = 'mouse';
 
-function readSessionBool(key: string, fallback: boolean): boolean {
-  const value = readSessionValue(key);
+function readPersistedBool(key: string, fallback: boolean): boolean {
+  const value = readPersistedValue(key);
   if (!value) return fallback;
   return value === 'true';
 }
 
-function readSessionValue(key: string): string {
+function readLocalValue(key: string): string {
+  if (typeof localStorage === 'undefined') return '';
+  try {
+    return localStorage.getItem(key) || '';
+  } catch {
+    return '';
+  }
+}
+
+function readLegacySessionValue(key: string): string {
   if (typeof sessionStorage === 'undefined') return '';
   try {
     return sessionStorage.getItem(key) || '';
@@ -26,13 +50,96 @@ function readSessionValue(key: string): string {
   }
 }
 
-function writeSessionValue(key: string, value: string) {
-  if (typeof sessionStorage === 'undefined') return;
+function writeLocalValue(key: string, value: string) {
+  if (typeof localStorage === 'undefined') return;
   try {
-    sessionStorage.setItem(key, value);
+    localStorage.setItem(key, value);
   } catch {
     return;
   }
+}
+
+function clearLegacySessionValue(key: string): void {
+  if (typeof sessionStorage === 'undefined') return;
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    return;
+  }
+}
+
+function readPersistedValue(key: string): string {
+  const local = readLocalValue(key);
+  if (local) return local;
+  const legacy = readLegacySessionValue(key);
+  if (legacy) {
+    writeLocalValue(key, legacy);
+    clearLegacySessionValue(key);
+  }
+  return legacy;
+}
+
+function writePersistedValue(key: string, value: string): void {
+  writeLocalValue(key, value);
+  clearLegacySessionValue(key);
+}
+
+function setRootDataAttribute(attribute: string, value: string): void {
+  if (typeof document === 'undefined') return;
+  document.documentElement.setAttribute(attribute, value);
+}
+
+function normalizeThemeProfile(themeProfile: SfThemeProfile): Required<SfThemeProfile> {
+  return {
+    color: coerceThemeColorProfile(themeProfile.color, DEFAULT_SF_THEME_PROFILE.color),
+    radius: coerceThemeRadiusProfile(themeProfile.radius, DEFAULT_SF_THEME_PROFILE.radius),
+    density: coerceThemeDensityProfile(themeProfile.density, DEFAULT_SF_THEME_PROFILE.density),
+  };
+}
+
+function applyThemeProfile(themeProfile: SfThemeProfile): Required<SfThemeProfile> {
+  const normalizedProfile = normalizeThemeProfile(themeProfile);
+  if (typeof document === 'undefined') return normalizedProfile;
+  setRootDataAttribute('data-sf-theme', normalizedProfile.color);
+  setRootDataAttribute('data-sf-radius', normalizedProfile.radius);
+  setRootDataAttribute('data-sf-density', normalizedProfile.density);
+  document.documentElement.classList.toggle('dark', isDarkThemeColorProfile(normalizedProfile.color));
+  return normalizedProfile;
+}
+
+function persistThemeProfile(themeProfile: Required<SfThemeProfile>): void {
+  writePersistedValue(THEME_COLOR_KEY, themeProfile.color);
+  writePersistedValue(THEME_RADIUS_KEY, themeProfile.radius);
+  writePersistedValue(THEME_DENSITY_KEY, themeProfile.density);
+  writePersistedValue(DARK_MODE_KEY, String(isDarkThemeColorProfile(themeProfile.color)));
+}
+
+function readPersistedThemeProfile(): Required<SfThemeProfile> {
+  const legacyDarkMode = readPersistedBool(DARK_MODE_KEY, false);
+  const persistedColor = readPersistedValue(THEME_COLOR_KEY);
+  const persistedRadius = readPersistedValue(THEME_RADIUS_KEY);
+  const persistedDensity = readPersistedValue(THEME_DENSITY_KEY);
+  return normalizeThemeProfile({
+    color: coerceThemeColorProfile(persistedColor, legacyDarkMode ? 'dark' : DEFAULT_SF_THEME_PROFILE.color),
+    radius: coerceThemeRadiusProfile(persistedRadius, DEFAULT_SF_THEME_PROFILE.radius),
+    density: coerceThemeDensityProfile(persistedDensity, DEFAULT_SF_THEME_PROFILE.density),
+  });
+}
+
+function toThemeState(themeProfile: Required<SfThemeProfile>) {
+  return {
+    darkMode: isDarkThemeColorProfile(themeProfile.color),
+    themeColorProfile: themeProfile.color,
+    themeRadiusProfile: themeProfile.radius,
+    themeDensityProfile: themeProfile.density,
+  };
+}
+
+export function hydrateUiThemeProfile(): Required<SfThemeProfile> {
+  const hydratedProfile = readPersistedThemeProfile();
+  persistThemeProfile(hydratedProfile);
+  applyThemeProfile(hydratedProfile);
+  return hydratedProfile;
 }
 
 interface StudioAutoSaveState {
@@ -44,7 +151,7 @@ interface StudioAutoSaveState {
 function normalizeStudioAutoSaveState(state: StudioAutoSaveState): StudioAutoSaveState {
   const autoSaveAllEnabled = Boolean(state.autoSaveAllEnabled);
   const autoSaveMapEnabled = autoSaveAllEnabled ? true : Boolean(state.autoSaveMapEnabled);
-  const autoSaveEnabled = autoSaveAllEnabled || autoSaveMapEnabled
+  const autoSaveEnabled = autoSaveAllEnabled
     ? true
     : Boolean(state.autoSaveEnabled);
   return {
@@ -55,15 +162,18 @@ function normalizeStudioAutoSaveState(state: StudioAutoSaveState): StudioAutoSav
 }
 
 function persistStudioAutoSaveState(state: StudioAutoSaveState): void {
-  writeSessionValue(STUDIO_AUTOSAVE_ALL_KEY, String(state.autoSaveAllEnabled));
-  writeSessionValue(STUDIO_AUTOSAVE_KEY, String(state.autoSaveEnabled));
-  writeSessionValue(STUDIO_MAP_AUTOSAVE_KEY, String(state.autoSaveMapEnabled));
+  writePersistedValue(STUDIO_AUTOSAVE_ALL_KEY, String(state.autoSaveAllEnabled));
+  writePersistedValue(STUDIO_AUTOSAVE_KEY, String(state.autoSaveEnabled));
+  writePersistedValue(STUDIO_MAP_AUTOSAVE_KEY, String(state.autoSaveMapEnabled));
 }
 
 interface UiState {
   category: string;
   categories: string[];
   darkMode: boolean;
+  themeColorProfile: SfThemeColorProfileId;
+  themeRadiusProfile: SfThemeRadiusProfileId;
+  themeDensityProfile: SfThemeDensityProfileId;
   autoSaveAllEnabled: boolean;
   autoSaveEnabled: boolean;
   autoSaveMapEnabled: boolean;
@@ -72,6 +182,10 @@ interface UiState {
   llmSettingsAutoSaveEnabled: boolean;
   setCategory: (cat: string) => void;
   setCategories: (cats: string[]) => void;
+  setThemeProfile: (themeProfile: SfThemeProfile) => void;
+  setThemeColorProfile: (themeColorProfile: SfThemeColorProfileId) => void;
+  setThemeRadiusProfile: (themeRadiusProfile: SfThemeRadiusProfileId) => void;
+  setDarkMode: (darkMode: boolean) => void;
   toggleDarkMode: () => void;
   setAutoSaveAllEnabled: (v: boolean) => void;
   setAutoSaveEnabled: (v: boolean) => void;
@@ -81,34 +195,76 @@ interface UiState {
   setLlmSettingsAutoSaveEnabled: (v: boolean) => void;
 }
 
-const initialCategory = readSessionValue(UI_CATEGORY_KEY) || DEFAULT_CATEGORY;
+const initialCategory = readPersistedValue(UI_CATEGORY_KEY) || DEFAULT_CATEGORY;
+const initialThemeProfile = readPersistedThemeProfile();
 const initialStudioAutoSaveState = normalizeStudioAutoSaveState({
-  autoSaveAllEnabled: readSessionBool(STUDIO_AUTOSAVE_ALL_KEY, UI_SETTING_DEFAULTS.studioAutoSaveAllEnabled),
-  autoSaveEnabled: readSessionBool(STUDIO_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.studioAutoSaveEnabled),
-  autoSaveMapEnabled: readSessionBool(STUDIO_MAP_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.studioAutoSaveMapEnabled),
+  autoSaveAllEnabled: readPersistedBool(STUDIO_AUTOSAVE_ALL_KEY, UI_SETTING_DEFAULTS.studioAutoSaveAllEnabled),
+  autoSaveEnabled: readPersistedBool(STUDIO_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.studioAutoSaveEnabled),
+  autoSaveMapEnabled: readPersistedBool(STUDIO_MAP_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.studioAutoSaveMapEnabled),
 });
 persistStudioAutoSaveState(initialStudioAutoSaveState);
 
 export const useUiStore = create<UiState>((set) => ({
   category: initialCategory,
   categories: coerceCategories(['mouse']),
-  darkMode: false,
+  ...toThemeState(initialThemeProfile),
   autoSaveAllEnabled: initialStudioAutoSaveState.autoSaveAllEnabled,
   autoSaveEnabled: initialStudioAutoSaveState.autoSaveEnabled,
   autoSaveMapEnabled: initialStudioAutoSaveState.autoSaveMapEnabled,
-  runtimeAutoSaveEnabled: readSessionBool(RUNTIME_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.runtimeAutoSaveEnabled),
-  storageAutoSaveEnabled: readSessionBool(STORAGE_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.storageAutoSaveEnabled),
-  llmSettingsAutoSaveEnabled: readSessionBool(LLM_SETTINGS_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.llmSettingsAutoSaveEnabled),
+  runtimeAutoSaveEnabled: readPersistedBool(RUNTIME_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.runtimeAutoSaveEnabled),
+  storageAutoSaveEnabled: readPersistedBool(STORAGE_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.storageAutoSaveEnabled),
+  llmSettingsAutoSaveEnabled: readPersistedBool(LLM_SETTINGS_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.llmSettingsAutoSaveEnabled),
   setCategory: (category) => {
-    writeSessionValue(UI_CATEGORY_KEY, category);
+    writePersistedValue(UI_CATEGORY_KEY, category);
     set({ category });
   },
   setCategories: (categories) => set({ categories: coerceCategories(categories) }),
+  setThemeProfile: (themeProfile) => {
+    const nextThemeProfile = applyThemeProfile(themeProfile);
+    persistThemeProfile(nextThemeProfile);
+    set({ ...toThemeState(nextThemeProfile) });
+  },
+  setThemeColorProfile: (themeColorProfile) =>
+    set((state) => {
+      const nextThemeProfile = applyThemeProfile({
+        color: themeColorProfile,
+        radius: state.themeRadiusProfile,
+        density: state.themeDensityProfile,
+      });
+      persistThemeProfile(nextThemeProfile);
+      return { ...toThemeState(nextThemeProfile) };
+    }),
+  setThemeRadiusProfile: (themeRadiusProfile) =>
+    set((state) => {
+      const nextThemeProfile = applyThemeProfile({
+        color: state.themeColorProfile,
+        radius: themeRadiusProfile,
+        density: state.themeDensityProfile,
+      });
+      persistThemeProfile(nextThemeProfile);
+      return { ...toThemeState(nextThemeProfile) };
+    }),
+  setDarkMode: (darkMode) => {
+    const nextColorProfile = Boolean(darkMode) ? 'dark' : 'light';
+    set((state) => {
+      const nextThemeProfile = applyThemeProfile({
+        color: nextColorProfile,
+        radius: state.themeRadiusProfile,
+        density: state.themeDensityProfile,
+      });
+      persistThemeProfile(nextThemeProfile);
+      return { ...toThemeState(nextThemeProfile) };
+    });
+  },
   toggleDarkMode: () =>
-    set((s) => {
-      const next = !s.darkMode;
-      document.documentElement.classList.toggle('dark', next);
-      return { darkMode: next };
+    set((state) => {
+      const nextThemeProfile = applyThemeProfile({
+        color: state.darkMode ? 'light' : 'dark',
+        radius: state.themeRadiusProfile,
+        density: state.themeDensityProfile,
+      });
+      persistThemeProfile(nextThemeProfile);
+      return { ...toThemeState(nextThemeProfile) };
     }),
   setAutoSaveAllEnabled: (v) =>
     set((state) => {
@@ -149,15 +305,15 @@ export const useUiStore = create<UiState>((set) => ({
     });
   },
   setRuntimeAutoSaveEnabled: (v) => {
-    writeSessionValue(RUNTIME_AUTOSAVE_KEY, String(v));
+    writePersistedValue(RUNTIME_AUTOSAVE_KEY, String(v));
     set({ runtimeAutoSaveEnabled: v });
   },
   setStorageAutoSaveEnabled: (v) => {
-    writeSessionValue(STORAGE_AUTOSAVE_KEY, String(v));
+    writePersistedValue(STORAGE_AUTOSAVE_KEY, String(v));
     set({ storageAutoSaveEnabled: v });
   },
   setLlmSettingsAutoSaveEnabled: (v) => {
-    writeSessionValue(LLM_SETTINGS_AUTOSAVE_KEY, String(v));
+    writePersistedValue(LLM_SETTINGS_AUTOSAVE_KEY, String(v));
     set({ llmSettingsAutoSaveEnabled: v });
   },
 }));

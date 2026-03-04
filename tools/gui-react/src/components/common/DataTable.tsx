@@ -160,12 +160,12 @@ function DataTableInner<T>({
           placeholder="Search..."
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
-          className="mb-2 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 w-full max-w-xs"
+          className="sf-input sf-primitive-input sf-table-search-input mb-2 w-full max-w-xs"
         />
       )}
-      <div className={`overflow-auto ${maxHeight} border border-gray-200 dark:border-gray-700 rounded`}>
+      <div className={`sf-table-shell sf-primitive-table-shell overflow-auto ${maxHeight}`}>
         <table className="min-w-full text-sm" style={{ tableLayout: 'fixed' }}>
-          <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0">
+          <thead className="sf-table-head sticky top-0">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((header) => {
@@ -173,7 +173,7 @@ function DataTableInner<T>({
                   return (
                     <th
                       key={header.id}
-                      className="px-2 py-1.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer select-none"
+                      className="sf-table-head-cell cursor-pointer select-none"
                       style={colSize ? { width: colSize, minWidth: colSize } : undefined}
                       onClick={header.column.getToggleSortingHandler()}
                     >
@@ -187,14 +187,14 @@ function DataTableInner<T>({
               </tr>
             ))}
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="divide-y divide-sf-border-default">
             {table.getRowModel().rows.map((row) => {
               const isExpanded = row.getIsExpanded();
               const expandedContent = isExpanded && renderExpandedRow ? renderExpandedRow(row.original) : null;
               return (
                 <Fragment key={row.id}>
                   <tr
-                    className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${onRowClick || onCellClick ? 'cursor-pointer' : ''} ${getRowClassName?.(row.original) || ''}`}
+                    className={`sf-table-row ${onRowClick || onCellClick ? 'cursor-pointer' : ''} ${getRowClassName?.(row.original) || ''}`}
                     onClick={onCellClick ? undefined : () => onRowClick?.(row.original)}
                   >
                     {row.getVisibleCells().map((cell) => (
@@ -211,7 +211,7 @@ function DataTableInner<T>({
                     ))}
                   </tr>
                   {expandedContent && (
-                    <tr className="bg-gray-50/50 dark:bg-gray-800/30">
+                    <tr className="sf-table-expanded-row">
                       <td colSpan={totalVisibleCols} className="px-3 py-2">
                         {expandedContent}
                       </td>
@@ -223,7 +223,7 @@ function DataTableInner<T>({
           </tbody>
         </table>
         {table.getRowModel().rows.length === 0 && (
-          <div className="text-center py-8 text-gray-400 text-sm">No data</div>
+          <div className="sf-table-empty-state text-center py-8 text-sm">No data</div>
         )}
       </div>
     </div>

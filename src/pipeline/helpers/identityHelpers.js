@@ -139,9 +139,11 @@ export function helperSupportsProvisionalFill(helperContext, identityLock = {}) 
 
 export function deriveNeedSetIdentityState({
   identityGate = {},
-  identityConfidence = 0
+  identityConfidence = 0,
+  identityLockThreshold = 0.95,
+  identityProvisionalThreshold = 0.70
 } = {}) {
-  if (identityGate?.validated && Number(identityConfidence || 0) >= 0.95) {
+  if (identityGate?.validated && Number(identityConfidence || 0) >= Number(identityLockThreshold || 0.95)) {
     return 'locked';
   }
   const reasonCodes = Array.isArray(identityGate?.reasonCodes) ? identityGate.reasonCodes : [];
@@ -152,7 +154,7 @@ export function deriveNeedSetIdentityState({
   if (hasConflictCode || identityGate?.status === 'IDENTITY_CONFLICT') {
     return 'conflict';
   }
-  if (Number(identityConfidence || 0) >= 0.70) {
+  if (Number(identityConfidence || 0) >= Number(identityProvisionalThreshold || 0.70)) {
     return 'provisional';
   }
   return 'unlocked';

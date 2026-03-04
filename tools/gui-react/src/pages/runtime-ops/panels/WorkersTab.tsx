@@ -161,12 +161,12 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
     <div className="flex flex-col flex-1 min-h-0">
       <PrefetchTabRow activeTab={prefetchTab} onSelectTab={handleSelectPrefetchTab} busyTabs={busyPrefetchTabs} disabledTabs={disabledPrefetchTabs} />
 
-      <div className="px-4 py-2 flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <label className="text-xs text-gray-500 dark:text-gray-400">Pool:</label>
+      <div className="px-4 py-2 flex items-center gap-2 border-b sf-border-default sf-surface-shell">
+        <label className="sf-text-caption sf-text-muted">Pool:</label>
         <select
           value={poolFilter}
           onChange={(e) => setPoolFilter(e.target.value)}
-          className="text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1"
+          className="sf-select sf-text-caption px-2 py-1"
         >
           {pools.map((p) => (
             <option key={p} value={p}>{p}</option>
@@ -188,7 +188,7 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
           ) : activeWorker ? (
             <WorkerLivePanel worker={activeWorker} wsUrl={wsUrl} isRunning={isRunning} />
           ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
+            <div className="flex-1 flex items-center justify-center sf-text-subtle text-sm">
               {workers.length === 0
                 ? 'No workers active yet. Workers will appear when the run starts fetching.'
                 : 'Select a worker from the tabs above'}
@@ -198,7 +198,7 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
 
         <div className={isPrefetchActive ? 'relative' : ''}>
           {isPrefetchActive && (
-            <div className="absolute inset-0 bg-gray-200/40 dark:bg-gray-900/40 z-10 pointer-events-none" />
+            <div className="absolute inset-0 sf-overlay-muted z-10 pointer-events-none" />
           )}
           {activeWorker && (
             <WorkerDataDrawer

@@ -847,14 +847,13 @@ export interface RoundSummaryResponse {
   round_count: number;
 }
 
-export type PanelKey = 'overview' | 'runtime' | 'picker' | 'searchProfile' | 'serpExplorer' | 'phase5' | 'phase6b' | 'phase6' | 'phase7' | 'phase8' | 'phase9' | 'learning' | 'urlHealth' | 'llmOutput' | 'llmMetrics' | 'eventStream' | 'needset';
+export type PanelKey = 'overview' | 'picker' | 'searchProfile' | 'serpExplorer' | 'phase5' | 'phase6b' | 'phase6' | 'phase7' | 'phase8' | 'phase9' | 'learning' | 'urlHealth' | 'llmOutput' | 'llmMetrics' | 'eventStream' | 'needset';
 export type PanelStateToken = 'live' | 'ready' | 'waiting';
 
-export const PANEL_KEYS: PanelKey[] = ['overview', 'runtime', 'picker', 'searchProfile', 'serpExplorer', 'phase5', 'phase6b', 'phase6', 'phase7', 'phase8', 'phase9', 'learning', 'urlHealth', 'llmOutput', 'llmMetrics', 'eventStream', 'needset'];
+export const PANEL_KEYS: PanelKey[] = ['overview', 'picker', 'searchProfile', 'serpExplorer', 'phase5', 'phase6b', 'phase6', 'phase7', 'phase8', 'phase9', 'learning', 'urlHealth', 'llmOutput', 'llmMetrics', 'eventStream', 'needset'];
 
 export const DEFAULT_PANEL_COLLAPSED: Record<PanelKey, boolean> = {
   overview: false,
-  runtime: false,
   picker: false,
   searchProfile: true,
   serpExplorer: true,

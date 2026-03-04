@@ -13,14 +13,26 @@ function readText(filePath) {
 test('pipeline settings route has no ad hoc runtime bootstrap component path', () => {
   assert.equal(
     fs.existsSync(RUNTIME_SETTINGS_FLOW_CARD),
-    false,
-    'stale RuntimeSettingsFlowCard ad hoc bootstrap component should be removed from source tree',
+    true,
+    'RuntimeSettingsFlowCard should exist as the canonical runtime settings editor surface',
+  );
+
+  const runtimeFlowCardText = readText(RUNTIME_SETTINGS_FLOW_CARD);
+  assert.equal(
+    runtimeFlowCardText.includes('readRuntimeSettingsBootstrap('),
+    true,
+    'RuntimeSettingsFlowCard should bootstrap runtime settings through shared authority helpers',
   );
 
   const pipelineText = readText(PIPELINE_SETTINGS_PAGE);
   assert.equal(
     pipelineText.includes('readRuntimeSettingsBootstrap'),
     false,
-    'PipelineSettingsPage should not locally bootstrap runtime settings outside runtime authority surfaces',
+    'PipelineSettingsPage should not locally bootstrap runtime settings outside runtime flow authority surface',
+  );
+  assert.equal(
+    pipelineText.includes('<RuntimeSettingsFlowCard'),
+    true,
+    'PipelineSettingsPage should render RuntimeSettingsFlowCard as the single runtime editor surface',
   );
 });

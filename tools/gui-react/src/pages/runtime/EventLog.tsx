@@ -86,7 +86,7 @@ const columns: ColumnDef<RuntimeEvent, unknown>[] = [
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Content
-                className="bg-gray-900 text-white text-xs rounded px-2 py-1 max-w-xs"
+                className="sf-tooltip-content text-xs rounded px-2 py-1 max-w-xs"
                 sideOffset={5}
               >
                 {meaning}
@@ -106,7 +106,7 @@ const columns: ColumnDef<RuntimeEvent, unknown>[] = [
       const evt = row.original;
       const detail = buildEventDetail(evt);
       return (
-        <span className="font-mono text-[11px]" title={detail}>
+        <span className="font-mono text-[11px] sf-text-subtle" title={detail}>
           {detail}
         </span>
       );
@@ -124,9 +124,11 @@ export function EventLog({ events, maxHeight = 'max-h-72' }: EventLogProps) {
   const reversed = useMemo(() => [...events].reverse(), [events]);
 
   return (
-    <div>
-      <h3 className="text-sm font-semibold mb-2">Event Log ({events.length})</h3>
-      <DataTable data={reversed} columns={columns} searchable maxHeight={maxHeight} />
+    <div className="sf-surface-card p-3 sf-text-primary">
+      <h3 className="text-sm font-semibold mb-2 sf-text-muted">Event Log ({events.length})</h3>
+      <div className="sf-table-shell">
+        <DataTable data={reversed} columns={columns} searchable maxHeight={maxHeight} />
+      </div>
     </div>
   );
 }

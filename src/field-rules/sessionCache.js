@@ -30,18 +30,50 @@ function normalizeFieldOrder(order = [], fields = {}) {
   return normalized;
 }
 
+function normalizeKeyMap(keyMap = {}) {
+  if (!isObject(keyMap)) return {};
+  const out = {};
+  for (const [from, to] of Object.entries(keyMap)) {
+    const fromKey = String(from || '').trim().toLowerCase();
+    const toKey = String(to || '').trim();
+    if (!fromKey || !toKey) continue;
+    out[fromKey] = toKey;
+  }
+  return out;
+}
+
+function remapSelectedKeys(order = [], fields = {}, keyMap = {}) {
+  const mapped = [];
+  for (const key of order) {
+    const token = String(key || '').trim();
+    if (!token || token.startsWith('__grp::')) continue;
+    const candidate = keyMap[token.toLowerCase()] || token;
+    if (Object.prototype.hasOwnProperty.call(fields, candidate)) {
+      mapped.push(candidate);
+    } else if (Object.prototype.hasOwnProperty.call(fields, token)) {
+      mapped.push(token);
+    }
+  }
+  return mapped;
+}
+
 function buildGroupedFieldOrder(fieldOrder = [], mergedFields = {}) {
   const grouped = [];
-  let currentGroup = '';
+  const keysByGroup = new Map();
+  const groupOrder = [];
   for (const field of fieldOrder) {
     const rule = isObject(mergedFields[field]) ? mergedFields[field] : {};
     const ui = isObject(rule.ui) ? rule.ui : {};
     const group = String(ui.group || rule.group || 'ungrouped').trim() || 'ungrouped';
-    if (group !== currentGroup) {
-      grouped.push(`__grp::${group}`);
-      currentGroup = group;
+    if (!keysByGroup.has(group)) {
+      keysByGroup.set(group, []);
+      groupOrder.push(group);
     }
-    grouped.push(field);
+    keysByGroup.get(group).push(field);
+  }
+  for (const group of groupOrder) {
+    grouped.push(`__grp::${group}`);
+    grouped.push(...keysByGroup.get(group));
   }
   return grouped;
 }
@@ -74,6 +106,10 @@ export function createSessionCache({
     return path.join(helperRoot, category, '_generated', 'manifest.json');
   }
 
+  function keyMigrationsPath(category) {
+    return path.join(helperRoot, category, '_generated', 'key_migrations.json');
+  }
+
   async function readStudioMapSnapshot(category) {
     const candidate = fieldStudioMapPath(category);
     const map = await readJsonIfExists(candidate);
@@ -101,11 +137,18 @@ export function createSessionCache({
 
     const studioMapSnapshot = await readStudioMapSnapshot(category);
     const savedMap = isObject(studioMapSnapshot.map) ? studioMapSnapshot.map : {};
+    const keyMigrations = await readJsonIfExists(keyMigrationsPath(category));
+    const keyMap = normalizeKeyMap(keyMigrations?.key_map);
     const mapFieldOverrides = isObject(savedMap.field_overrides) ? savedMap.field_overrides : {};
     const mergedFields = mergeFieldOverrides(compiledFields, mapFieldOverrides);
 
-    const selectedKeys = normalizeFieldOrder(
+    const remappedSelectedKeys = remapSelectedKeys(
       Array.isArray(savedMap.selected_keys) ? savedMap.selected_keys : [],
+      mergedFields,
+      keyMap,
+    );
+    const selectedKeys = normalizeFieldOrder(
+      remappedSelectedKeys,
       mergedFields
     );
 

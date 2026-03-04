@@ -1,0 +1,639 @@
+domain,token,count,classification,notes
+color,text-gray-400,1030,near-duplicate,tailwind color utility in TSX
+color,text-gray-500,922,near-duplicate,tailwind color utility in TSX
+color,border-gray-200,487,near-duplicate,tailwind color utility in TSX
+color,border-gray-700,486,near-duplicate,tailwind color utility in TSX
+color,text-gray-600,270,near-duplicate,tailwind color utility in TSX
+color,text-gray-300,261,near-duplicate,tailwind color utility in TSX
+color,border-gray-300,242,near-duplicate,tailwind color utility in TSX
+color,border-gray-600,237,near-duplicate,tailwind color utility in TSX
+color,bg-gray-700,211,near-duplicate,tailwind color utility in TSX
+color,bg-white,207,near-duplicate,tailwind color utility in TSX
+color,text-gray-200,201,near-duplicate,tailwind color utility in TSX
+color,text-gray-700,198,near-duplicate,tailwind color utility in TSX
+color,bg-gray-100,184,near-duplicate,tailwind color utility in TSX
+color,bg-gray-800,162,near-duplicate,tailwind color utility in TSX
+color,bg-gray-50,147,near-duplicate,tailwind color utility in TSX
+color,text-white,100,near-duplicate,tailwind color utility in TSX
+color,text-gray-800,98,near-duplicate,tailwind color utility in TSX
+color,bg-gray-900,96,near-duplicate,tailwind color utility in TSX
+color,text-gray-100,89,near-duplicate,tailwind color utility in TSX
+color,text-gray-900,82,near-duplicate,tailwind color utility in TSX
+color,border-gray-100,78,near-duplicate,tailwind color utility in TSX
+color,text-red-600,78,drift,tailwind color utility in TSX
+color,text-red-400,67,drift,tailwind color utility in TSX
+color,text-blue-700,63,drift,tailwind color utility in TSX
+color,text-red-300,63,drift,tailwind color utility in TSX
+color,text-red-700,62,drift,tailwind color utility in TSX
+color,text-amber-300,61,drift,tailwind color utility in TSX
+color,text-blue-300,60,drift,tailwind color utility in TSX
+color,bg-blue-100,58,drift,tailwind color utility in TSX
+color,text-amber-700,57,drift,tailwind color utility in TSX
+color,bg-red-100,56,drift,tailwind color utility in TSX
+color,bg-amber-100,53,drift,tailwind color utility in TSX
+color,bg-emerald-100,45,drift,tailwind color utility in TSX
+color,border-gray-800,45,near-duplicate,tailwind color utility in TSX
+color,text-emerald-300,42,drift,tailwind color utility in TSX
+color,text-green-600,41,drift,tailwind color utility in TSX
+color,bg-blue-50,40,drift,tailwind color utility in TSX
+color,bg-green-100,40,drift,tailwind color utility in TSX
+color,text-accent,39,compliant,tailwind color utility in TSX
+color,bg-purple-100,37,drift,tailwind color utility in TSX
+color,text-emerald-700,37,drift,tailwind color utility in TSX
+color,text-blue-600,34,drift,tailwind color utility in TSX
+color,bg-gray-200,33,near-duplicate,tailwind color utility in TSX
+color,bg-red-50,33,drift,tailwind color utility in TSX
+color,bg-red-900/30,32,drift,tailwind color utility in TSX
+color,text-blue-400,32,drift,tailwind color utility in TSX
+color,text-purple-300,32,drift,tailwind color utility in TSX
+color,text-slate-200,32,near-duplicate,tailwind color utility in TSX
+color,bg-accent,31,compliant,tailwind color utility in TSX
+color,text-purple-700,31,drift,tailwind color utility in TSX
+color,text-red-500,31,drift,tailwind color utility in TSX
+color,bg-amber-900/30,30,drift,tailwind color utility in TSX
+color,text-amber-600,30,drift,tailwind color utility in TSX
+color,text-green-300,29,drift,tailwind color utility in TSX
+color,text-green-700,28,drift,tailwind color utility in TSX
+color,text-amber-200,27,drift,tailwind color utility in TSX
+color,text-amber-400,27,drift,tailwind color utility in TSX
+color,bg-blue-900/20,26,drift,tailwind color utility in TSX
+color,border-red-200,26,drift,tailwind color utility in TSX
+color,text-red-800,26,drift,tailwind color utility in TSX
+color,bg-gray-800/50,25,near-duplicate,tailwind color utility in TSX
+color,text-slate-700,25,near-duplicate,tailwind color utility in TSX
+color,bg-blue-900/40,24,drift,tailwind color utility in TSX
+color,bg-emerald-900/30,24,drift,tailwind color utility in TSX
+color,bg-yellow-100,24,drift,tailwind color utility in TSX
+color,text-amber-800,24,drift,tailwind color utility in TSX
+color,bg-green-500,23,drift,tailwind color utility in TSX
+color,bg-green-900/40,23,drift,tailwind color utility in TSX
+color,text-blue-200,23,drift,tailwind color utility in TSX
+color,text-red-200,23,drift,tailwind color utility in TSX
+color,bg-gray-600,22,near-duplicate,tailwind color utility in TSX
+color,bg-slate-100,22,near-duplicate,tailwind color utility in TSX
+color,border-red-800,22,drift,tailwind color utility in TSX
+color,text-emerald-200,22,drift,tailwind color utility in TSX
+color,text-emerald-800,22,drift,tailwind color utility in TSX
+color,text-green-800,22,drift,tailwind color utility in TSX
+color,text-orange-300,22,drift,tailwind color utility in TSX
+color,bg-amber-50,21,drift,tailwind color utility in TSX
+color,bg-emerald-900,21,drift,tailwind color utility in TSX
+color,text-green-400,21,drift,tailwind color utility in TSX
+color,text-orange-700,21,drift,tailwind color utility in TSX
+color,border-accent,20,compliant,tailwind color utility in TSX
+color,border-blue-200,20,drift,tailwind color utility in TSX
+color,border-gray-700/50,20,near-duplicate,tailwind color utility in TSX
+color,text-blue-800,20,drift,tailwind color utility in TSX
+color,text-rose-300,20,drift,tailwind color utility in TSX
+color,bg-blue-600,19,drift,tailwind color utility in TSX
+color,bg-blue-900/30,19,drift,tailwind color utility in TSX
+color,bg-orange-100,19,drift,tailwind color utility in TSX
+color,border-transparent,19,drift,tailwind color utility in TSX
+color,text-yellow-300,19,drift,tailwind color utility in TSX
+color,bg-blue-900,18,drift,tailwind color utility in TSX
+color,text-purple-400,18,drift,tailwind color utility in TSX
+color,bg-amber-900,17,drift,tailwind color utility in TSX
+color,border-blue-800,17,drift,tailwind color utility in TSX
+color,text-yellow-700,17,drift,tailwind color utility in TSX
+color,bg-red-900/20,16,drift,tailwind color utility in TSX
+color,bg-red-900/40,16,drift,tailwind color utility in TSX
+color,text-yellow-800,16,drift,tailwind color utility in TSX
+color,border-amber-700,15,drift,tailwind color utility in TSX
+color,border-red-300,15,drift,tailwind color utility in TSX
+color,border-red-700,15,drift,tailwind color utility in TSX
+color,text-green-200,15,drift,tailwind color utility in TSX
+color,text-yellow-200,15,drift,tailwind color utility in TSX
+color,bg-accent/10,14,compliant,tailwind color utility in TSX
+color,bg-amber-900/40,14,drift,tailwind color utility in TSX
+color,bg-purple-50,14,drift,tailwind color utility in TSX
+color,bg-purple-900/40,14,drift,tailwind color utility in TSX
+color,bg-red-500,14,drift,tailwind color utility in TSX
+color,bg-red-600,14,drift,tailwind color utility in TSX
+color,border-green-200,14,drift,tailwind color utility in TSX
+color,bg-gray-400,13,near-duplicate,tailwind color utility in TSX
+color,bg-green-50,13,drift,tailwind color utility in TSX
+color,bg-red-700,13,drift,tailwind color utility in TSX
+color,text-purple-200,13,drift,tailwind color utility in TSX
+color,text-purple-800,13,drift,tailwind color utility in TSX
+color,text-slate-600,13,near-duplicate,tailwind color utility in TSX
+color,bg-blue-700,12,drift,tailwind color utility in TSX
+color,bg-gray-700/50,12,near-duplicate,tailwind color utility in TSX
+color,border-amber-200,12,drift,tailwind color utility in TSX
+color,text-rose-600,12,drift,tailwind color utility in TSX
+color,text-rose-700,12,drift,tailwind color utility in TSX
+color,bg-gray-300,11,near-duplicate,tailwind color utility in TSX
+color,bg-purple-900,11,drift,tailwind color utility in TSX
+color,bg-red-900/50,11,drift,tailwind color utility in TSX
+color,bg-slate-700,11,near-duplicate,tailwind color utility in TSX
+color,border-slate-600,11,near-duplicate,tailwind color utility in TSX
+color,border-yellow-200,11,drift,tailwind color utility in TSX
+color,ring-accent,11,compliant,tailwind color utility in TSX
+color,text-orange-400,11,drift,tailwind color utility in TSX
+color,text-orange-600,11,drift,tailwind color utility in TSX
+color,text-purple-600,11,drift,tailwind color utility in TSX
+color,bg-amber-500,10,drift,tailwind color utility in TSX
+color,bg-emerald-50,10,drift,tailwind color utility in TSX
+color,bg-purple-600,10,drift,tailwind color utility in TSX
+color,bg-purple-700,10,drift,tailwind color utility in TSX
+color,bg-purple-900/50,10,drift,tailwind color utility in TSX
+color,bg-red-900,10,drift,tailwind color utility in TSX
+color,bg-yellow-500,10,drift,tailwind color utility in TSX
+color,border-amber-300,10,drift,tailwind color utility in TSX
+color,border-slate-200,10,near-duplicate,tailwind color utility in TSX
+color,border-yellow-800,10,drift,tailwind color utility in TSX
+color,text-yellow-600,10,drift,tailwind color utility in TSX
+color,bg-amber-900/20,9,drift,tailwind color utility in TSX
+color,bg-cyan-100,9,drift,tailwind color utility in TSX
+color,bg-emerald-500,9,drift,tailwind color utility in TSX
+color,bg-gray-800/30,9,near-duplicate,tailwind color utility in TSX
+color,bg-gray-800/80,9,near-duplicate,tailwind color utility in TSX
+color,bg-green-900,9,drift,tailwind color utility in TSX
+color,bg-rose-100,9,drift,tailwind color utility in TSX
+color,bg-rose-900/30,9,drift,tailwind color utility in TSX
+color,bg-slate-700/40,9,near-duplicate,tailwind color utility in TSX
+color,bg-yellow-50,9,drift,tailwind color utility in TSX
+color,border-slate-300,9,near-duplicate,tailwind color utility in TSX
+color,border-slate-500,9,near-duplicate,tailwind color utility in TSX
+color,text-emerald-500,9,drift,tailwind color utility in TSX
+color,text-emerald-600,9,drift,tailwind color utility in TSX
+color,text-sky-300,9,drift,tailwind color utility in TSX
+color,text-slate-300,9,near-duplicate,tailwind color utility in TSX
+color,bg-blue-500,8,drift,tailwind color utility in TSX
+color,bg-gray-800/60,8,near-duplicate,tailwind color utility in TSX
+color,bg-gray-900/30,8,near-duplicate,tailwind color utility in TSX
+color,bg-gray-900/70,8,near-duplicate,tailwind color utility in TSX
+color,bg-green-900/20,8,drift,tailwind color utility in TSX
+color,bg-orange-600,8,drift,tailwind color utility in TSX
+color,bg-purple-900/30,8,drift,tailwind color utility in TSX
+color,bg-sky-100,8,drift,tailwind color utility in TSX
+color,bg-violet-100,8,drift,tailwind color utility in TSX
+color,bg-yellow-900,8,drift,tailwind color utility in TSX
+color,bg-yellow-900/20,8,drift,tailwind color utility in TSX
+color,border-blue-700,8,drift,tailwind color utility in TSX
+color,border-emerald-700,8,drift,tailwind color utility in TSX
+color,text-blue-500,8,drift,tailwind color utility in TSX
+color,text-cyan-300,8,drift,tailwind color utility in TSX
+color,text-cyan-700,8,drift,tailwind color utility in TSX
+color,bg-gray-900/40,7,near-duplicate,tailwind color utility in TSX
+color,bg-orange-50,7,drift,tailwind color utility in TSX
+color,bg-orange-900/30,7,drift,tailwind color utility in TSX
+color,bg-yellow-900/40,7,drift,tailwind color utility in TSX
+color,border-emerald-200,7,drift,tailwind color utility in TSX
+color,border-orange-200,7,drift,tailwind color utility in TSX
+color,border-orange-800,7,drift,tailwind color utility in TSX
+color,border-white/90,7,near-duplicate,tailwind color utility in TSX
+color,text-orange-200,7,drift,tailwind color utility in TSX
+color,text-orange-800,7,drift,tailwind color utility in TSX
+color,text-sky-700,7,drift,tailwind color utility in TSX
+color,text-violet-300,7,drift,tailwind color utility in TSX
+color,text-violet-700,7,drift,tailwind color utility in TSX
+color,bg-blue-900/50,6,drift,tailwind color utility in TSX
+color,bg-gray-750,6,near-duplicate,tailwind color utility in TSX
+color,bg-green-900/30,6,drift,tailwind color utility in TSX
+color,bg-orange-500,6,drift,tailwind color utility in TSX
+color,bg-orange-900/50,6,drift,tailwind color utility in TSX
+color,bg-purple-500,6,drift,tailwind color utility in TSX
+color,bg-purple-900/20,6,drift,tailwind color utility in TSX
+color,bg-transparent,6,drift,tailwind color utility in TSX
+color,bg-violet-900/30,6,drift,tailwind color utility in TSX
+color,bg-yellow-900/50,6,drift,tailwind color utility in TSX
+color,border-blue-300,6,drift,tailwind color utility in TSX
+color,border-blue-400,6,drift,tailwind color utility in TSX
+color,border-blue-500,6,drift,tailwind color utility in TSX
+color,border-emerald-300,6,drift,tailwind color utility in TSX
+color,border-green-700,6,drift,tailwind color utility in TSX
+color,border-green-800,6,drift,tailwind color utility in TSX
+color,border-purple-200,6,drift,tailwind color utility in TSX
+color,border-red-400,6,drift,tailwind color utility in TSX
+color,bg-accent/20,5,compliant,tailwind color utility in TSX
+color,bg-blue-800,5,drift,tailwind color utility in TSX
+color,bg-gray-900/20,5,near-duplicate,tailwind color utility in TSX
+color,bg-green-700,5,drift,tailwind color utility in TSX
+color,bg-indigo-100,5,drift,tailwind color utility in TSX
+color,bg-orange-900/40,5,drift,tailwind color utility in TSX
+color,bg-sky-900/30,5,drift,tailwind color utility in TSX
+color,border-accent/50,5,compliant,tailwind color utility in TSX
+color,border-blue-600,5,drift,tailwind color utility in TSX
+color,border-gray-400,5,near-duplicate,tailwind color utility in TSX
+color,border-purple-800,5,drift,tailwind color utility in TSX
+color,text-emerald-400,5,drift,tailwind color utility in TSX
+color,text-yellow-400,5,drift,tailwind color utility in TSX
+color,bg-blue-200,4,drift,tailwind color utility in TSX
+color,bg-blue-950/40,4,drift,tailwind color utility in TSX
+color,bg-emerald-900/20,4,drift,tailwind color utility in TSX
+color,bg-green-900/50,4,drift,tailwind color utility in TSX
+color,bg-orange-900,4,drift,tailwind color utility in TSX
+color,bg-orange-900/20,4,drift,tailwind color utility in TSX
+color,bg-sky-50,4,drift,tailwind color utility in TSX
+color,bg-sky-900/20,4,drift,tailwind color utility in TSX
+color,bg-teal-100,4,drift,tailwind color utility in TSX
+color,bg-yellow-900/30,4,drift,tailwind color utility in TSX
+color,border-accent/40,4,compliant,tailwind color utility in TSX
+color,border-amber-400,4,drift,tailwind color utility in TSX
+color,border-amber-500,4,drift,tailwind color utility in TSX
+color,border-amber-800,4,drift,tailwind color utility in TSX
+color,border-emerald-500,4,drift,tailwind color utility in TSX
+color,border-emerald-800,4,drift,tailwind color utility in TSX
+color,border-gray-500,4,near-duplicate,tailwind color utility in TSX
+color,border-green-700/60,4,drift,tailwind color utility in TSX
+color,border-red-500,4,drift,tailwind color utility in TSX
+color,border-red-600,4,drift,tailwind color utility in TSX
+color,ring-blue-400,4,drift,tailwind color utility in TSX
+color,text-orange-500,4,drift,tailwind color utility in TSX
+color,text-slate-900,4,near-duplicate,tailwind color utility in TSX
+color,text-teal-300,4,drift,tailwind color utility in TSX
+color,text-white/35,4,near-duplicate,tailwind color utility in TSX
+color,bg-accent/5,3,compliant,tailwind color utility in TSX
+color,bg-amber-900/50,3,drift,tailwind color utility in TSX
+color,bg-black/45,3,near-duplicate,tailwind color utility in TSX
+color,bg-blue-400,3,drift,tailwind color utility in TSX
+color,bg-cyan-700,3,drift,tailwind color utility in TSX
+color,bg-cyan-900,3,drift,tailwind color utility in TSX
+color,bg-cyan-900/50,3,drift,tailwind color utility in TSX
+color,bg-emerald-950/35,3,drift,tailwind color utility in TSX
+color,bg-gray-800/40,3,near-duplicate,tailwind color utility in TSX
+color,bg-green-600,3,drift,tailwind color utility in TSX
+color,bg-orange-700,3,drift,tailwind color utility in TSX
+color,bg-purple-50/50,3,drift,tailwind color utility in TSX
+color,bg-red-400,3,drift,tailwind color utility in TSX
+color,bg-rose-50,3,drift,tailwind color utility in TSX
+color,bg-teal-900/40,3,drift,tailwind color utility in TSX
+color,border-gray-700/40,3,near-duplicate,tailwind color utility in TSX
+color,border-red-700/60,3,drift,tailwind color utility in TSX
+color,border-white/10,3,near-duplicate,tailwind color utility in TSX
+color,ring-blue-500/25,3,drift,tailwind color utility in TSX
+color,text-cyan-200,3,drift,tailwind color utility in TSX
+color,text-cyan-800,3,drift,tailwind color utility in TSX
+color,text-green-500,3,drift,tailwind color utility in TSX
+color,text-indigo-300,3,drift,tailwind color utility in TSX
+color,text-indigo-700,3,drift,tailwind color utility in TSX
+color,text-slate-100,3,near-duplicate,tailwind color utility in TSX
+color,text-slate-400,3,near-duplicate,tailwind color utility in TSX
+color,text-slate-500,3,near-duplicate,tailwind color utility in TSX
+color,text-teal-700,3,drift,tailwind color utility in TSX
+color,bg-amber-200,2,drift,tailwind color utility in TSX
+color,bg-amber-400,2,drift,tailwind color utility in TSX
+color,bg-amber-600,2,drift,tailwind color utility in TSX
+color,bg-amber-700,2,drift,tailwind color utility in TSX
+color,bg-black/60,2,near-duplicate,tailwind color utility in TSX
+color,bg-black/80,2,near-duplicate,tailwind color utility in TSX
+color,bg-cyan-900/30,2,drift,tailwind color utility in TSX
+color,bg-emerald-500/30,2,drift,tailwind color utility in TSX
+color,bg-gray-300/60,2,near-duplicate,tailwind color utility in TSX
+color,bg-gray-50/70,2,near-duplicate,tailwind color utility in TSX
+color,bg-gray-500,2,near-duplicate,tailwind color utility in TSX
+color,bg-gray-700/30,2,near-duplicate,tailwind color utility in TSX
+color,bg-gray-900/50,2,near-duplicate,tailwind color utility in TSX
+color,bg-gray-900/60,2,near-duplicate,tailwind color utility in TSX
+color,bg-indigo-600,2,drift,tailwind color utility in TSX
+color,bg-indigo-900,2,drift,tailwind color utility in TSX
+color,bg-indigo-900/50,2,drift,tailwind color utility in TSX
+color,bg-purple-950/20,2,drift,tailwind color utility in TSX
+color,bg-purple-950/30,2,drift,tailwind color utility in TSX
+color,bg-rose-900/20,2,drift,tailwind color utility in TSX
+color,bg-sky-900,2,drift,tailwind color utility in TSX
+color,bg-slate-800,2,near-duplicate,tailwind color utility in TSX
+color,bg-violet-600,2,drift,tailwind color utility in TSX
+color,bg-violet-700,2,drift,tailwind color utility in TSX
+color,bg-violet-800,2,drift,tailwind color utility in TSX
+color,bg-white/10,2,near-duplicate,tailwind color utility in TSX
+color,bg-white/5,2,near-duplicate,tailwind color utility in TSX
+color,bg-white/60,2,near-duplicate,tailwind color utility in TSX
+color,bg-white/70,2,near-duplicate,tailwind color utility in TSX
+color,bg-yellow-200,2,drift,tailwind color utility in TSX
+color,bg-yellow-800,2,drift,tailwind color utility in TSX
+color,border-accent/30,2,compliant,tailwind color utility in TSX
+color,border-amber-600,2,drift,tailwind color utility in TSX
+color,border-amber-700/60,2,drift,tailwind color utility in TSX
+color,border-cyan-200,2,drift,tailwind color utility in TSX
+color,border-cyan-800,2,drift,tailwind color utility in TSX
+color,border-emerald-400,2,drift,tailwind color utility in TSX
+color,border-green-400,2,drift,tailwind color utility in TSX
+color,border-purple-700,2,drift,tailwind color utility in TSX
+color,border-rose-300,2,drift,tailwind color utility in TSX
+color,border-rose-700,2,drift,tailwind color utility in TSX
+color,border-slate-300/50,2,near-duplicate,tailwind color utility in TSX
+color,border-slate-600/70,2,near-duplicate,tailwind color utility in TSX
+color,border-yellow-400,2,drift,tailwind color utility in TSX
+color,divide-gray-700,2,near-duplicate,tailwind color utility in TSX
+color,ring-blue-900/40,2,drift,tailwind color utility in TSX
+color,ring-gray-400,2,near-duplicate,tailwind color utility in TSX
+color,text-amber-700/90,2,drift,tailwind color utility in TSX
+color,text-indigo-200,2,drift,tailwind color utility in TSX
+color,text-indigo-800,2,drift,tailwind color utility in TSX
+color,text-rose-200,2,drift,tailwind color utility in TSX
+color,text-rose-400,2,drift,tailwind color utility in TSX
+color,text-sky-200,2,drift,tailwind color utility in TSX
+color,text-sky-800,2,drift,tailwind color utility in TSX
+color,text-yellow-100,2,drift,tailwind color utility in TSX
+color,text-yellow-500,2,drift,tailwind color utility in TSX
+color,text-yellow-900,2,drift,tailwind color utility in TSX
+color,bg-amber-800,1,drift,tailwind color utility in TSX
+color,bg-amber-900/70,1,drift,tailwind color utility in TSX
+color,bg-black,1,near-duplicate,tailwind color utility in TSX
+color,bg-black/5,1,near-duplicate,tailwind color utility in TSX
+color,bg-black/70,1,near-duplicate,tailwind color utility in TSX
+color,bg-blue-50/70,1,drift,tailwind color utility in TSX
+color,bg-blue-700/60,1,drift,tailwind color utility in TSX
+color,bg-blue-900/60,1,drift,tailwind color utility in TSX
+color,bg-cyan-50/60,1,drift,tailwind color utility in TSX
+color,bg-cyan-600,1,drift,tailwind color utility in TSX
+color,bg-cyan-800,1,drift,tailwind color utility in TSX
+color,bg-cyan-900/20,1,drift,tailwind color utility in TSX
+color,bg-cyan-900/40,1,drift,tailwind color utility in TSX
+color,bg-emerald-700,1,drift,tailwind color utility in TSX
+color,bg-emerald-800,1,drift,tailwind color utility in TSX
+color,bg-emerald-900/40,1,drift,tailwind color utility in TSX
+color,bg-emerald-950/20,1,drift,tailwind color utility in TSX
+color,bg-emerald-950/30,1,drift,tailwind color utility in TSX
+color,bg-fuchsia-100,1,drift,tailwind color utility in TSX
+color,bg-fuchsia-500,1,drift,tailwind color utility in TSX
+color,bg-fuchsia-900/30,1,drift,tailwind color utility in TSX
+color,bg-gray-100/80,1,near-duplicate,tailwind color utility in TSX
+color,bg-gray-200/40,1,near-duplicate,tailwind color utility in TSX
+color,bg-gray-50/50,1,near-duplicate,tailwind color utility in TSX
+color,bg-gray-50/80,1,near-duplicate,tailwind color utility in TSX
+color,bg-gray-700/60,1,near-duplicate,tailwind color utility in TSX
+color,bg-gray-900/35,1,near-duplicate,tailwind color utility in TSX
+color,bg-gray-950,1,near-duplicate,tailwind color utility in TSX
+color,bg-green-400,1,drift,tailwind color utility in TSX
+color,bg-green-700/60,1,drift,tailwind color utility in TSX
+color,bg-green-800,1,drift,tailwind color utility in TSX
+color,bg-indigo-700,1,drift,tailwind color utility in TSX
+color,bg-indigo-900/30,1,drift,tailwind color utility in TSX
+color,bg-orange-50/50,1,drift,tailwind color utility in TSX
+color,bg-orange-700/60,1,drift,tailwind color utility in TSX
+color,bg-orange-900/10,1,drift,tailwind color utility in TSX
+color,bg-purple-200/50,1,drift,tailwind color utility in TSX
+color,bg-purple-800/50,1,drift,tailwind color utility in TSX
+color,bg-purple-900/10,1,drift,tailwind color utility in TSX
+color,bg-red-900/10,1,drift,tailwind color utility in TSX
+color,bg-red-950/40,1,drift,tailwind color utility in TSX
+color,bg-rose-500,1,drift,tailwind color utility in TSX
+color,bg-rose-950/20,1,drift,tailwind color utility in TSX
+color,bg-sky-500,1,drift,tailwind color utility in TSX
+color,bg-sky-900/40,1,drift,tailwind color utility in TSX
+color,bg-slate-900/10,1,near-duplicate,tailwind color utility in TSX
+color,bg-slate-900/8,1,near-duplicate,tailwind color utility in TSX
+color,bg-teal-600,1,drift,tailwind color utility in TSX
+color,bg-teal-700,1,drift,tailwind color utility in TSX
+color,bg-teal-900/50,1,drift,tailwind color utility in TSX
+color,bg-violet-900,1,drift,tailwind color utility in TSX
+color,bg-violet-900/50,1,drift,tailwind color utility in TSX
+color,bg-yellow-600,1,drift,tailwind color utility in TSX
+color,bg-yellow-700/60,1,drift,tailwind color utility in TSX
+color,border-accent/25,1,compliant,tailwind color utility in TSX
+color,border-accent/70,1,compliant,tailwind color utility in TSX
+color,border-cyan-300,1,drift,tailwind color utility in TSX
+color,border-cyan-700,1,drift,tailwind color utility in TSX
+color,border-emerald-600,1,drift,tailwind color utility in TSX
+color,border-gray-200/70,1,near-duplicate,tailwind color utility in TSX
+color,border-gray-50,1,near-duplicate,tailwind color utility in TSX
+color,border-gray-700/80,1,near-duplicate,tailwind color utility in TSX
+color,border-green-300,1,drift,tailwind color utility in TSX
+color,border-green-600,1,drift,tailwind color utility in TSX
+color,border-indigo-300,1,drift,tailwind color utility in TSX
+color,border-indigo-300/60,1,drift,tailwind color utility in TSX
+color,border-indigo-400,1,drift,tailwind color utility in TSX
+color,border-indigo-500,1,drift,tailwind color utility in TSX
+color,border-orange-300,1,drift,tailwind color utility in TSX
+color,border-orange-700,1,drift,tailwind color utility in TSX
+color,border-purple-200/50,1,drift,tailwind color utility in TSX
+color,border-purple-300,1,drift,tailwind color utility in TSX
+color,border-purple-400,1,drift,tailwind color utility in TSX
+color,border-purple-500,1,drift,tailwind color utility in TSX
+color,border-purple-800/50,1,drift,tailwind color utility in TSX
+color,border-red-100,1,drift,tailwind color utility in TSX
+color,border-red-900/20,1,drift,tailwind color utility in TSX
+color,border-rose-200,1,drift,tailwind color utility in TSX
+color,border-rose-800,1,drift,tailwind color utility in TSX
+color,border-slate-400/40,1,near-duplicate,tailwind color utility in TSX
+color,border-teal-500,1,drift,tailwind color utility in TSX
+color,border-violet-200,1,drift,tailwind color utility in TSX
+color,border-violet-800,1,drift,tailwind color utility in TSX
+color,border-yellow-700,1,drift,tailwind color utility in TSX
+color,divide-gray-100,1,near-duplicate,tailwind color utility in TSX
+color,divide-gray-200,1,near-duplicate,tailwind color utility in TSX
+color,ring-accent/30,1,compliant,tailwind color utility in TSX
+color,ring-amber-300,1,drift,tailwind color utility in TSX
+color,ring-amber-600,1,drift,tailwind color utility in TSX
+color,ring-cyan-900/40,1,drift,tailwind color utility in TSX
+color,ring-emerald-100,1,drift,tailwind color utility in TSX
+color,ring-emerald-900/40,1,drift,tailwind color utility in TSX
+color,ring-gray-500,1,near-duplicate,tailwind color utility in TSX
+color,ring-green-300/70,1,drift,tailwind color utility in TSX
+color,ring-indigo-900/20,1,drift,tailwind color utility in TSX
+color,ring-red-300,1,drift,tailwind color utility in TSX
+color,ring-violet-300/70,1,drift,tailwind color utility in TSX
+color,text-accent/60,1,compliant,tailwind color utility in TSX
+color,text-amber-100,1,drift,tailwind color utility in TSX
+color,text-amber-500,1,drift,tailwind color utility in TSX
+color,text-amber-700/80,1,drift,tailwind color utility in TSX
+color,text-amber-900,1,drift,tailwind color utility in TSX
+color,text-emerald-100,1,drift,tailwind color utility in TSX
+color,text-emerald-900,1,drift,tailwind color utility in TSX
+color,text-fuchsia-300,1,drift,tailwind color utility in TSX
+color,text-fuchsia-700,1,drift,tailwind color utility in TSX
+color,text-purple-500,1,drift,tailwind color utility in TSX
+color,text-red-100,1,drift,tailwind color utility in TSX
+color,text-red-900,1,drift,tailwind color utility in TSX
+color,text-sky-400,1,drift,tailwind color utility in TSX
+color,text-sky-600,1,drift,tailwind color utility in TSX
+color,text-slate-300/70,1,near-duplicate,tailwind color utility in TSX
+color,text-slate-300/90,1,near-duplicate,tailwind color utility in TSX
+color,text-slate-400/70,1,near-duplicate,tailwind color utility in TSX
+color,text-teal-600,1,drift,tailwind color utility in TSX
+color,text-violet-200,1,drift,tailwind color utility in TSX
+color,text-violet-800,1,drift,tailwind color utility in TSX
+typography,text-xs,854,near-duplicate,tailwind text size/alignment
+typography,text-[10px],588,drift,arbitrary px text size
+typography,text-sm,282,near-duplicate,tailwind text size/alignment
+typography,text-[11px],229,drift,arbitrary px text size
+typography,text-left,169,near-duplicate,tailwind text size/alignment
+typography,text-[9px],84,drift,arbitrary px text size
+typography,text-center,69,near-duplicate,tailwind text size/alignment
+typography,text-right,61,near-duplicate,tailwind text size/alignment
+typography,text-lg,25,near-duplicate,tailwind text size/alignment
+typography,text-[8px],14,drift,arbitrary px text size
+typography,text-3xl,8,near-duplicate,tailwind text size/alignment
+typography,text-2xl,5,near-duplicate,tailwind text size/alignment
+typography,text-[12px],3,drift,arbitrary px text size
+typography,text-xl,3,near-duplicate,tailwind text size/alignment
+typography,text-base,2,near-duplicate,tailwind text size/alignment
+typography,text-4xl,1,near-duplicate,tailwind text size/alignment
+spacing,py-1,844,near-duplicate,tailwind spacing utility
+spacing,px-2,600,near-duplicate,tailwind spacing utility
+spacing,pr-3,519,near-duplicate,tailwind spacing utility
+spacing,gap-2,386,near-duplicate,tailwind spacing utility
+spacing,py-0.5,363,near-duplicate,tailwind spacing utility
+spacing,py-2,311,near-duplicate,tailwind spacing utility
+spacing,px-3,308,near-duplicate,tailwind spacing utility
+spacing,gap-1,210,near-duplicate,tailwind spacing utility
+spacing,py-1.5,202,near-duplicate,tailwind spacing utility
+spacing,px-1.5,196,near-duplicate,tailwind spacing utility
+spacing,mt-1,154,near-duplicate,tailwind spacing utility
+spacing,mt-2,116,near-duplicate,tailwind spacing utility
+spacing,p-2,112,near-duplicate,tailwind spacing utility
+spacing,gap-3,94,near-duplicate,tailwind spacing utility
+spacing,mb-1,84,near-duplicate,tailwind spacing utility
+spacing,px-1,79,near-duplicate,tailwind spacing utility
+spacing,p-3,74,near-duplicate,tailwind spacing utility
+spacing,space-y-2,74,near-duplicate,tailwind spacing utility
+spacing,mb-2,66,near-duplicate,tailwind spacing utility
+spacing,space-y-3,62,near-duplicate,tailwind spacing utility
+spacing,p-4,58,near-duplicate,tailwind spacing utility
+spacing,gap-1.5,53,near-duplicate,tailwind spacing utility
+spacing,space-y-1,53,near-duplicate,tailwind spacing utility
+spacing,px-4,49,near-duplicate,tailwind spacing utility
+spacing,mt-0.5,46,near-duplicate,tailwind spacing utility
+spacing,mr-1,45,near-duplicate,tailwind spacing utility
+spacing,gap-0.5,38,near-duplicate,tailwind spacing utility
+spacing,mb-3,34,near-duplicate,tailwind spacing utility
+spacing,mt-3,34,near-duplicate,tailwind spacing utility
+spacing,gap-4,30,near-duplicate,tailwind spacing utility
+spacing,space-y-0.5,21,near-duplicate,tailwind spacing utility
+spacing,py-2.5,19,near-duplicate,tailwind spacing utility
+spacing,pb-2,18,near-duplicate,tailwind spacing utility
+spacing,space-y-4,18,near-duplicate,tailwind spacing utility
+spacing,mb-1.5,17,near-duplicate,tailwind spacing utility
+spacing,py-3,17,near-duplicate,tailwind spacing utility
+spacing,space-y-1.5,17,near-duplicate,tailwind spacing utility
+spacing,py-0,15,near-duplicate,tailwind spacing utility
+spacing,pt-3,13,near-duplicate,tailwind spacing utility
+spacing,px-2.5,13,near-duplicate,tailwind spacing utility
+spacing,pt-1,12,near-duplicate,tailwind spacing utility
+spacing,mb-4,11,near-duplicate,tailwind spacing utility
+spacing,py-4,10,near-duplicate,tailwind spacing utility
+spacing,py-8,10,near-duplicate,tailwind spacing utility
+spacing,mt-8,9,near-duplicate,tailwind spacing utility
+spacing,mt-12,8,near-duplicate,tailwind spacing utility
+spacing,p-2.5,8,near-duplicate,tailwind spacing utility
+spacing,mt-4,7,near-duplicate,tailwind spacing utility
+spacing,space-y-6,7,near-duplicate,tailwind spacing utility
+spacing,mb-0.5,6,near-duplicate,tailwind spacing utility
+spacing,mt-1.5,6,near-duplicate,tailwind spacing utility
+spacing,py-12,6,near-duplicate,tailwind spacing utility
+spacing,p-0,5,near-duplicate,tailwind spacing utility
+spacing,pr-2,5,near-duplicate,tailwind spacing utility
+spacing,pt-0.5,5,near-duplicate,tailwind spacing utility
+spacing,my-0.5,4,near-duplicate,tailwind spacing utility
+spacing,pt-2,4,near-duplicate,tailwind spacing utility
+spacing,px-0.5,4,near-duplicate,tailwind spacing utility
+spacing,px-6,4,near-duplicate,tailwind spacing utility
+spacing,gap-2.5,3,near-duplicate,tailwind spacing utility
+spacing,mr-0.5,3,near-duplicate,tailwind spacing utility
+spacing,p-1.5,3,near-duplicate,tailwind spacing utility
+spacing,p-8,3,near-duplicate,tailwind spacing utility
+spacing,pl-1,3,near-duplicate,tailwind spacing utility
+spacing,gap-6,2,near-duplicate,tailwind spacing utility
+spacing,mx-1,2,near-duplicate,tailwind spacing utility
+spacing,p-1,2,near-duplicate,tailwind spacing utility
+spacing,p-5,2,near-duplicate,tailwind spacing utility
+spacing,pb-1,2,near-duplicate,tailwind spacing utility
+spacing,pb-1.5,2,near-duplicate,tailwind spacing utility
+spacing,pb-4,2,near-duplicate,tailwind spacing utility
+spacing,pl-2,2,near-duplicate,tailwind spacing utility
+spacing,pr-1,2,near-duplicate,tailwind spacing utility
+spacing,gap-5,1,near-duplicate,tailwind spacing utility
+spacing,m-0,1,near-duplicate,tailwind spacing utility
+spacing,m-4,1,near-duplicate,tailwind spacing utility
+spacing,mr-2,1,near-duplicate,tailwind spacing utility
+spacing,mr-4,1,near-duplicate,tailwind spacing utility
+spacing,mt-0,1,near-duplicate,tailwind spacing utility
+spacing,p-3.5,1,drift,tailwind spacing utility
+spacing,p-6,1,near-duplicate,tailwind spacing utility
+spacing,pl-4,1,near-duplicate,tailwind spacing utility
+spacing,pl-5,1,near-duplicate,tailwind spacing utility
+spacing,pr-7,1,drift,tailwind spacing utility
+spacing,space-y-2.5,1,near-duplicate,tailwind spacing utility
+spacing,space-y-3.5,1,drift,tailwind spacing utility
+radius,rounded,1064,compliant,tailwind radius utility
+radius,rounded-full,163,compliant,tailwind radius utility
+radius,rounded-lg,58,compliant,tailwind radius utility
+radius,rounded-md,9,near-duplicate,tailwind radius utility
+radius,rounded-t,5,near-duplicate,tailwind radius utility
+radius,rounded-b,4,near-duplicate,tailwind radius utility
+radius,rounded-sm,3,near-duplicate,tailwind radius utility
+radius,rounded-none,1,drift,tailwind radius utility
+raw-hex,#4361ee,2,drift,literal hex value in css/ts/tsx
+raw-hex,#060b1a,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#0a1330,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#0b1220,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#0d1834,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#0e7490,1,drift,literal hex value in css/ts/tsx
+raw-hex,#0f1a35,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#10b981,1,drift,literal hex value in css/ts/tsx
+raw-hex,#10b98180,1,drift,literal hex value in css/ts/tsx
+raw-hex,#111f41,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#1f2937,1,drift,literal hex value in css/ts/tsx
+raw-hex,#243a65,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#38bdf8,1,near-duplicate,literal hex value in css/ts/tsx
+raw-hex,#3b82f6,1,drift,literal hex value in css/ts/tsx
+raw-hex,#3b82f680,1,drift,literal hex value in css/ts/tsx
+raw-hex,#4d7c0f,1,drift,literal hex value in css/ts/tsx
+raw-hex,#54617a,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#9ca3af,1,drift,literal hex value in css/ts/tsx
+raw-hex,#a5f3fc,1,drift,literal hex value in css/ts/tsx
+raw-hex,#adc2eb,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#be123c,1,drift,literal hex value in css/ts/tsx
+raw-hex,#cffafe,1,drift,literal hex value in css/ts/tsx
+raw-hex,#d7e0f1,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#d9f99d,1,drift,literal hex value in css/ts/tsx
+raw-hex,#e5e7eb,1,drift,literal hex value in css/ts/tsx
+raw-hex,#eaf0ff,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#ecf1ff,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#ecfccb,1,drift,literal hex value in css/ts/tsx
+raw-hex,#eef2ff,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#f3f4f6,1,drift,literal hex value in css/ts/tsx
+raw-hex,#f472b6,1,near-duplicate,literal hex value in css/ts/tsx
+raw-hex,#f59e0b,1,near-duplicate,literal hex value in css/ts/tsx
+raw-hex,#f8fafc,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#f8fbff,1,compliant,literal hex value in css/ts/tsx
+raw-hex,#fecdd3,1,drift,literal hex value in css/ts/tsx
+raw-hex,#ffe4e6,1,drift,literal hex value in css/ts/tsx
+raw-hex,#ffffff,1,compliant,literal hex value in css/ts/tsx
+inline-style-hotspot,src/pages/studio/StudioPage.tsx,87,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/studio/workbench/WorkbenchDrawer.tsx,41,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/review/ReviewMatrix.tsx,11,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/pipeline-settings/PipelineSettingsPage.tsx,6,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/studio/workbench/WorkbenchTable.tsx,3,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/BatchPanel.tsx,2,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/LearningPanel.tsx,2,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/OverviewPanel.tsx,2,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/Phase09Panel.tsx,2,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/PickerPanel.tsx,2,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/RuntimePanel.tsx,2,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/WorkerPanel.tsx,2,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/runtime-ops/panels/PrefetchUrlPredictorPanel.tsx,2,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/studio/workbench/WorkbenchColumnPresets.tsx,2,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/components/common/DataTable.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/components/common/LinkedProductsList.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/components/common/ProgressBar.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/components/common/Tip.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/component-review/ComponentReviewPanel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/component-review/EnumSubTab.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/helpers.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/IndexingPage.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/EventStreamPanel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/LlmMetricsPanel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/LlmOutputPanel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/NeedSetPanel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/PanelControlsPanel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/Phase05Panel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/Phase06bPanel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/Phase06Panel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/Phase07Panel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/Phase08Panel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/SearchProfilePanel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/SerpExplorerPanel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/SessionDataPanel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/indexing/panels/UrlHealthPanel.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/runtime-ops/components/KanbanLane.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/runtime-ops/components/ProgressRing.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/runtime-ops/components/ScoreBar.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/runtime-ops/components/StackedScoreBar.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/runtime-ops/panels/ExtractionTab.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/runtime-ops/panels/FallbacksTab.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/runtime-ops/panels/MetricsRail.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/studio/workbench/SystemBadges.tsx,1,near-duplicate,count of style={{ occurrences
+inline-style-hotspot,src/pages/test-mode/TestModePage.tsx,1,near-duplicate,count of style={{ occurrences

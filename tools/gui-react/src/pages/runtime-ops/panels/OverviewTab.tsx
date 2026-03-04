@@ -22,10 +22,10 @@ interface OverviewTabProps {
 
 function HealthCard({ label, value, sub, tip }: { label: string; value: string | number; sub?: string; tip?: string }) {
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-600 p-3">
-      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}{tip && <Tip text={tip} />}</div>
-      <div className="text-xl font-semibold text-gray-900 dark:text-gray-100">{value}</div>
-      {sub && <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</div>}
+    <div className="rounded-lg sf-surface-card p-3">
+      <div className="sf-text-caption sf-text-muted mb-1">{label}{tip && <Tip text={tip} />}</div>
+      <div className="text-xl font-semibold sf-text-primary">{value}</div>
+      {sub && <div className="sf-text-caption sf-text-subtle mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -59,8 +59,8 @@ export function OverviewTab({ summary, selectedBlocker, onSelectBlocker, through
         </div>
 
         {throughputHistory.length > 1 && (
-          <div className="rounded-lg border border-gray-200 dark:border-gray-600 p-3">
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+          <div className="rounded-lg sf-surface-card p-3">
+            <div className="sf-text-caption sf-text-muted mb-2">
               Throughput Trend<Tip text="Live docs/min and fields/min over time. Shows whether the run is accelerating or stalling." />
             </div>
             <ResponsiveContainer width="100%" height={120}>
@@ -77,7 +77,7 @@ export function OverviewTab({ summary, selectedBlocker, onSelectBlocker, through
 
         {s.top_blockers.length > 0 && (
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <h3 className="text-sm font-semibold sf-text-primary mb-2">
               Top Blockers<Tip text={METRIC_TIPS.top_blockers} />
             </h3>
             <div className="space-y-1">
@@ -88,18 +88,18 @@ export function OverviewTab({ summary, selectedBlocker, onSelectBlocker, through
                   onClick={() => onSelectBlocker(selectedBlocker?.host === b.host ? null : b)}
                   className={`w-full text-left flex items-center justify-between px-3 py-2 rounded text-sm transition-colors ${
                     selectedBlocker?.host === b.host
-                      ? 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-transparent'
+                      ? 'sf-callout-danger'
+                      : 'sf-row-hoverable border border-transparent'
                   }`}
                 >
-                  <span className="text-gray-800 dark:text-gray-200 font-mono text-xs truncate">{b.host}</span>
+                  <span className="sf-text-primary font-mono sf-text-caption truncate">{b.host}</span>
                   <span className={`ml-2 shrink-0 text-xs px-2 py-0.5 rounded ${statusBadgeClass('failed')}`}>
                     {b.error_count} errors
                   </span>
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 italic">
+            <p className="sf-text-caption sf-text-muted mt-2 italic">
               These domains are producing the most errors. Consider checking if they require JavaScript rendering
               (switch to Playwright mode) or if they are rate-limiting requests (apply longer cooldowns).
             </p>
@@ -108,18 +108,18 @@ export function OverviewTab({ summary, selectedBlocker, onSelectBlocker, through
       </div>
 
       {selectedBlocker && (
-        <div className="w-80 shrink-0 border-l border-gray-200 dark:border-gray-700 overflow-y-auto p-4">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <div className="w-80 shrink-0 border-l sf-border-default overflow-y-auto p-4">
+          <h3 className="text-sm font-semibold sf-text-primary mb-2">
             Blocker Details
           </h3>
-          <div className="space-y-2 text-xs">
+          <div className="space-y-2 sf-text-caption">
             <div>
-              <span className="text-gray-500 dark:text-gray-400">Host:</span>
-              <span className="ml-2 font-mono text-gray-800 dark:text-gray-200">{selectedBlocker.host}</span>
+              <span className="sf-text-muted">Host:</span>
+              <span className="ml-2 font-mono sf-text-primary">{selectedBlocker.host}</span>
             </div>
             <div>
-              <span className="text-gray-500 dark:text-gray-400">Errors:</span>
-              <span className="ml-2 font-mono text-red-600 dark:text-red-400">{selectedBlocker.error_count}</span>
+              <span className="sf-text-muted">Errors:</span>
+              <span className="ml-2 font-mono sf-status-text-danger">{selectedBlocker.error_count}</span>
             </div>
           </div>
         </div>

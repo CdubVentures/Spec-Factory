@@ -20,15 +20,15 @@ export function HelperLlmStatus({ events }: HelperLlmStatusProps) {
   const totalCost = llmUsage.reduce((sum, e) => sum + Number(e.costUsd || e.cost_usd || 0), 0);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 p-3">
+    <div className="sf-surface-card p-3">
       <h3 className="text-sm font-semibold mb-2">Helper + LLM Status</h3>
       <div className="grid grid-cols-2 gap-2 text-xs">
         <div className="flex items-center gap-1">
-          <span className={`w-2 h-2 rounded-full ${helperLoaded ? 'bg-green-500' : 'bg-gray-400'}`} />
+          <span className={`w-2 h-2 rounded-full ${helperLoaded ? 'sf-dot-success' : 'sf-dot-neutral'}`} />
           Helper Loaded
         </div>
         <div className="flex items-center gap-1">
-          <span className={`w-2 h-2 rounded-full ${supportiveFill ? 'bg-green-500' : 'bg-gray-400'}`} />
+          <span className={`w-2 h-2 rounded-full ${supportiveFill ? 'sf-dot-success' : 'sf-dot-neutral'}`} />
           Supportive Fill
         </div>
         <div>LLM Calls: {llmCalls.length}</div>

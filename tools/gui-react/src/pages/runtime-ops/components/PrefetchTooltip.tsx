@@ -22,12 +22,12 @@ export function UiTooltip({
       </Tooltip.Trigger>
       <Tooltip.Portal>
         <Tooltip.Content
-          className="z-50 max-w-sm px-3 py-2 text-xs leading-snug whitespace-pre-line text-gray-900 bg-white border border-gray-200 rounded shadow-lg dark:text-gray-100 dark:bg-gray-900 dark:border-gray-700"
+          className="z-50 max-w-sm px-3 py-2 text-xs leading-snug whitespace-pre-line sf-tooltip-content"
           side={side}
           sideOffset={6}
         >
           {text}
-          <Tooltip.Arrow className="fill-white dark:fill-gray-900" />
+          <Tooltip.Arrow className="sf-tooltip-arrow" />
         </Tooltip.Content>
       </Tooltip.Portal>
     </Tooltip.Root>

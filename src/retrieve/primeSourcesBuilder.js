@@ -21,6 +21,11 @@ function toInt(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function clampInt(value, fallback, min, max) {
+  const parsed = toInt(value, fallback);
+  return Math.max(min, Math.min(max, parsed));
+}
+
 function normalizeFieldRulesMap(fieldRules = {}) {
   if (isObject(fieldRules?.fields)) return fieldRules.fields;
   if (isObject(fieldRules)) return fieldRules;
@@ -104,17 +109,43 @@ export function buildPhase07PrimeSources({
   const now = new Date().toISOString();
   const rulesMap = normalizeFieldRulesMap(fieldRules);
   const provenancePool = buildEvidencePoolFromProvenance(provenance);
+  const retrievalFallbackEvidenceMaxRows = clampInt(
+    options.retrievalFallbackEvidenceMaxRows ?? options.maxFallbackEvidenceRows,
+    6_000,
+    200,
+    20_000
+  );
+  const retrievalSnippetsPerSourceCap = clampInt(
+    options.retrievalSnippetsPerSourceCap ?? options.maxFallbackSnippetsPerSource,
+    120,
+    8,
+    300
+  );
   const fallbackPool = buildEvidencePoolFromSourceResults(sourceResults, {
-    maxRows: Math.max(200, Math.min(20_000, toInt(options.maxFallbackEvidenceRows, 6_000))),
-    maxSnippetsPerSource: Math.max(8, Math.min(300, toInt(options.maxFallbackSnippetsPerSource, 120)))
+    maxRows: retrievalFallbackEvidenceMaxRows,
+    maxSnippetsPerSource: retrievalSnippetsPerSourceCap
   });
-  const mergeThreshold = Math.max(0, toInt(options.provenanceOnlyMinRows, 24));
+  const mergeThreshold = clampInt(options.retrievalProvenanceOnlyMinRows ?? options.provenanceOnlyMinRows, 24, 0, 500);
   const fallbackUsed = provenancePool.length < mergeThreshold && fallbackPool.length > 0;
-  const evidencePool = fallbackUsed
+  const mergedEvidencePool = fallbackUsed
     ? [...provenancePool, ...fallbackPool]
     : provenancePool;
-  const maxHitsPerField = Math.max(4, Math.min(80, toInt(options.maxHitsPerField, 24)));
-  const maxPrimeSourcesPerField = Math.max(2, Math.min(20, toInt(options.maxPrimeSourcesPerField, 8)));
+  const retrievalEvidencePoolMaxRows = clampInt(options.retrievalEvidencePoolMaxRows, 4_000, 100, 20_000);
+  const evidencePool = mergedEvidencePool.slice(0, retrievalEvidencePoolMaxRows);
+  const maxHitsPerField = Math.max(
+    4,
+    Math.min(
+      clampInt(options.retrievalMaxHitsCap, 80, 1, 200),
+      toInt(options.maxHitsPerField, 24)
+    )
+  );
+  const maxPrimeSourcesPerField = Math.max(
+    2,
+    Math.min(
+      clampInt(options.retrievalPrimeSourcesMaxCap, 20, 1, 50),
+      toInt(options.maxPrimeSourcesPerField, 8)
+    )
+  );
   const identityFilterEnabled = Boolean(options.identityFilterEnabled);
 
   const needRows = toArray(needSet?.needs)
@@ -142,6 +173,32 @@ export function buildPhase07PrimeSources({
       identity,
       maxHits: maxHitsPerField,
       identityFilterEnabled,
+      retrievalTierWeightTier1: options.retrievalTierWeightTier1,
+      retrievalTierWeightTier2: options.retrievalTierWeightTier2,
+      retrievalTierWeightTier3: options.retrievalTierWeightTier3,
+      retrievalTierWeightTier4: options.retrievalTierWeightTier4,
+      retrievalTierWeightTier5: options.retrievalTierWeightTier5,
+      retrievalDocKindWeightManualPdf: options.retrievalDocKindWeightManualPdf,
+      retrievalDocKindWeightSpecPdf: options.retrievalDocKindWeightSpecPdf,
+      retrievalDocKindWeightSupport: options.retrievalDocKindWeightSupport,
+      retrievalDocKindWeightLabReview: options.retrievalDocKindWeightLabReview,
+      retrievalDocKindWeightProductPage: options.retrievalDocKindWeightProductPage,
+      retrievalDocKindWeightOther: options.retrievalDocKindWeightOther,
+      retrievalMethodWeightTable: options.retrievalMethodWeightTable,
+      retrievalMethodWeightKv: options.retrievalMethodWeightKv,
+      retrievalMethodWeightJsonLd: options.retrievalMethodWeightJsonLd,
+      retrievalMethodWeightLlmExtract: options.retrievalMethodWeightLlmExtract,
+      retrievalMethodWeightHelperSupportive: options.retrievalMethodWeightHelperSupportive,
+      retrievalAnchorScorePerMatch: options.retrievalAnchorScorePerMatch,
+      retrievalIdentityScorePerMatch: options.retrievalIdentityScorePerMatch,
+      retrievalUnitMatchBonus: options.retrievalUnitMatchBonus,
+      retrievalDirectFieldMatchBonus: options.retrievalDirectFieldMatchBonus,
+      retrievalEvidenceTierWeightMultiplier: options.retrievalEvidenceTierWeightMultiplier,
+      retrievalEvidenceDocWeightMultiplier: options.retrievalEvidenceDocWeightMultiplier,
+      retrievalEvidenceMethodWeightMultiplier: options.retrievalEvidenceMethodWeightMultiplier,
+      retrievalEvidenceRefsLimit: options.retrievalEvidenceRefsLimit,
+      retrievalReasonBadgesLimit: options.retrievalReasonBadgesLimit,
+      retrievalAnchorsLimit: options.retrievalAnchorsLimit,
       ftsQueryFn
     });
     const prime = selectPrimeSourcesForField({

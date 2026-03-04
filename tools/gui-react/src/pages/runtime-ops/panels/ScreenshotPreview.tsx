@@ -17,12 +17,14 @@ export function ScreenshotPreview({ screenshot, runId }: ScreenshotPreviewProps)
       <button
         type="button"
         onClick={() => setIsExpanded(true)}
-        className="rounded border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-blue-400 dark:hover:border-blue-500 transition-colors group"
+        className="sf-surface-elevated sf-row-hoverable overflow-hidden transition-colors group"
       >
-        <div className="relative bg-gray-100 dark:bg-gray-800 aspect-video">
+        <div className="relative sf-surface-shell aspect-video">
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-6 h-6 border-2 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full animate-spin" />
+              <div className="w-6 h-6 rounded-full sf-meter-track flex items-center justify-center animate-pulse">
+                <span className="w-2.5 h-2.5 rounded-full sf-meter-fill" />
+              </div>
             </div>
           )}
           <img
@@ -34,7 +36,7 @@ export function ScreenshotPreview({ screenshot, runId }: ScreenshotPreviewProps)
             onError={() => setIsLoading(false)}
           />
         </div>
-        <div className="px-2 py-1 text-[10px] text-gray-500 dark:text-gray-400 text-left">
+        <div className="px-2 py-1 sf-text-caption sf-text-muted text-left">
           {screenshot.width}x{screenshot.height} &middot; {formatBytes(screenshot.bytes)}
         </div>
       </button>
@@ -50,7 +52,7 @@ export function ScreenshotPreview({ screenshot, runId }: ScreenshotPreviewProps)
               alt={screenshot.filename}
               className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl"
             />
-            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-3 py-2 rounded-b flex items-center justify-between">
+            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-3 py-2 rounded flex items-center justify-between">
               <span className="font-mono">{screenshot.filename}</span>
               <span>{screenshot.width}x{screenshot.height} &middot; {formatBytes(screenshot.bytes)}</span>
             </div>
@@ -59,7 +61,7 @@ export function ScreenshotPreview({ screenshot, runId }: ScreenshotPreviewProps)
               onClick={() => setIsExpanded(false)}
               className="absolute top-2 right-2 w-8 h-8 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-black/80 text-sm"
             >
-              ✕
+              &times;
             </button>
           </div>
         </div>
@@ -67,3 +69,4 @@ export function ScreenshotPreview({ screenshot, runId }: ScreenshotPreviewProps)
     </>
   );
 }
+

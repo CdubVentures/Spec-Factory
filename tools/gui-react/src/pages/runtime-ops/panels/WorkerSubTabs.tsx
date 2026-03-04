@@ -1,28 +1,12 @@
 import { useMemo } from 'react';
 import type { RuntimeOpsWorkerRow } from '../types';
-import { poolBadgeClass } from '../helpers';
+import { poolDotClass, poolSelectedTabClass, poolOutlineTabClass } from '../helpers';
 
 interface WorkerSubTabsProps {
   workers: RuntimeOpsWorkerRow[];
   selectedWorkerId: string | null;
   onSelectWorker: (workerId: string) => void;
   poolFilter: string;
-}
-
-function stateDot(state: string): string {
-  if (state === 'stuck') return 'bg-red-500 animate-pulse';
-  if (state === 'running') return 'bg-green-500 animate-pulse';
-  return 'bg-gray-400';
-}
-
-function poolAccent(pool: string): string {
-  switch (pool) {
-    case 'search': return 'border-purple-500';
-    case 'fetch': return 'border-blue-500';
-    case 'parse': return 'border-teal-500';
-    case 'llm': return 'border-amber-500';
-    default: return 'border-gray-400';
-  }
 }
 
 export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolFilter }: WorkerSubTabsProps) {
@@ -38,7 +22,7 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
   }, [workers, poolFilter]);
 
   return (
-    <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+    <div className="flex items-center gap-1 px-3 py-2 border-b sf-border-default overflow-x-auto">
       {filtered.map((w) => {
         const isSelected = w.worker_id === selectedWorkerId;
         return (
@@ -46,19 +30,19 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
             key={w.worker_id}
             type="button"
             onClick={() => onSelectWorker(w.worker_id)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-t text-xs font-mono whitespace-nowrap border-b-2 transition-colors ${
+            className={`sf-prefetch-tab-button flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-mono whitespace-nowrap border transition-colors ${
               isSelected
-                ? `bg-white dark:bg-gray-800 ${poolAccent(w.pool)} shadow-sm`
-                : 'border-transparent hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+                ? `sf-prefetch-tab-selected ${poolSelectedTabClass(w.pool)} sf-text-primary`
+                : `${poolOutlineTabClass(w.pool)} sf-text-primary`
             }`}
-            title={`${w.worker_id} — ${w.state}`}
+            title={`${w.worker_id} - ${w.state}`}
           >
-            <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${stateDot(w.state)}`} />
-            <span className={isSelected ? 'text-gray-900 dark:text-gray-100' : ''}>{w.worker_id}</span>
+            <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${poolDotClass(w.pool)}`} />
+            <span className={isSelected ? 'sf-text-primary' : ''}>{w.worker_id}</span>
           </button>
         );
       })}
-      <span className="ml-auto text-xs text-gray-400 dark:text-gray-500 shrink-0 pl-2">
+      <span className="ml-auto sf-text-caption sf-text-subtle shrink-0 pl-2">
         {filtered.length} workers
       </span>
     </div>

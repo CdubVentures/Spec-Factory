@@ -10,9 +10,9 @@ interface PrefetchLlmCallPanelProps {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 min-w-[8rem]">
-      <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</div>
-      <div className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-0.5">{value}</div>
+    <div className="sf-surface-card rounded px-3 py-2 min-w-[8rem]">
+      <div className="sf-text-caption font-medium sf-text-subtle uppercase tracking-wider">{label}</div>
+      <div className="text-lg font-semibold sf-text-primary mt-0.5">{value}</div>
     </div>
   );
 }
@@ -22,54 +22,54 @@ function LlmCallCard({ call, index }: { call: PrefetchLlmCall; index: number }) 
   const totalTokens = (call.tokens?.input ?? 0) + (call.tokens?.output ?? 0);
 
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800">
+    <div className="sf-surface-card rounded">
       <div className="flex items-center gap-2 px-3 py-2">
-        <span className="text-xs font-mono text-gray-400 dark:text-gray-500 w-5 shrink-0">#{index + 1}</span>
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${llmCallStatusBadgeClass(call.status)}`}>
+        <span className="sf-text-caption font-mono sf-text-subtle w-5 shrink-0">#{index + 1}</span>
+        <span className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${llmCallStatusBadgeClass(call.status)}`}>
           {call.status}
         </span>
-        <span className="text-xs font-mono text-gray-600 dark:text-gray-400 truncate flex-1">{call.reason}</span>
+        <span className="sf-text-caption font-mono sf-text-muted truncate flex-1">{call.reason}</span>
         {call.model && (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 shrink-0">
+          <span className="px-2 py-0.5 rounded-full sf-text-caption font-medium sf-chip-neutral shrink-0">
             {call.model}
           </span>
         )}
         {call.provider && (
-          <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">{call.provider}</span>
+          <span className="sf-text-caption sf-text-subtle shrink-0">{call.provider}</span>
         )}
-        <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400 shrink-0">
+        <span className="sf-text-caption font-mono sf-text-subtle shrink-0">
           {totalTokens > 0 ? `${totalTokens} tok` : ''}
         </span>
-        <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400 shrink-0">
+        <span className="sf-text-caption font-mono sf-text-subtle shrink-0">
           {call.duration_ms > 0 ? formatMs(call.duration_ms) : ''}
         </span>
         {(call.prompt_preview || call.response_preview || call.error) && (
           <button
             type="button"
             onClick={() => toggleExpanded()}
-            className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline shrink-0"
+            className="sf-text-caption sf-link-accent hover:underline shrink-0"
           >
             {expanded ? 'Hide' : 'Raw I/O'}
           </button>
         )}
       </div>
       {call.error && (
-        <div className="px-3 pb-2 text-xs text-red-600 dark:text-red-400">{call.error}</div>
+        <div className="px-3 pb-2 sf-text-caption sf-status-text-danger">{call.error}</div>
       )}
       {expanded && (
-        <div className="border-t border-gray-100 dark:border-gray-700/50 px-3 py-2 space-y-2">
+        <div className="border-t sf-border-soft px-3 py-2 space-y-2">
           {call.prompt_preview && (
             <div>
-              <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase mb-0.5">Prompt</div>
-              <pre className="text-[11px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-40 whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+              <div className="sf-text-caption font-medium sf-text-subtle uppercase mb-0.5">Prompt</div>
+              <pre className="sf-pre-block sf-text-label font-mono rounded p-2 overflow-x-auto overflow-y-auto max-h-40 whitespace-pre-wrap">
                 {call.prompt_preview}
               </pre>
             </div>
           )}
           {call.response_preview && (
             <div>
-              <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase mb-0.5">Response</div>
-              <pre className="text-[11px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-2 overflow-x-auto overflow-y-auto max-h-40 whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+              <div className="sf-text-caption font-medium sf-text-subtle uppercase mb-0.5">Response</div>
+              <pre className="sf-pre-block sf-text-label font-mono rounded p-2 overflow-x-auto overflow-y-auto max-h-40 whitespace-pre-wrap">
                 {call.response_preview}
               </pre>
             </div>
@@ -89,12 +89,12 @@ export function PrefetchLlmCallPanel({ title, calls, emptyMessage }: PrefetchLlm
   return (
     <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{title}</h3>
+        <h3 className="text-sm font-semibold sf-text-primary">{title}</h3>
         {calls.length > 0 && (
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+          <span className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${
             failed > 0
-              ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-              : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+              ? 'sf-chip-danger'
+              : 'sf-chip-success'
           }`}>
             {failed > 0 ? `${failed} failed` : `${finished} done`}
           </span>
@@ -116,7 +116,7 @@ export function PrefetchLlmCallPanel({ title, calls, emptyMessage }: PrefetchLlm
           ))}
         </div>
       ) : (
-        <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">
+        <div className="text-sm sf-text-subtle text-center py-8">
           {emptyMessage}
         </div>
       )}

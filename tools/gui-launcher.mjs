@@ -12,10 +12,14 @@ import path from 'node:path';
 import readline from 'node:readline';
 import net from 'node:net';
 import { execSync, spawn } from 'node:child_process';
+import { CONFIG_MANIFEST_DEFAULTS } from '../src/core/config/manifest.js';
 
 const IS_WINDOWS = process.platform === 'win32';
 const AUTO_REBUILD_SKIP_FLAG = '--skip-autorebuild';
-const DEFAULT_PORT = 8788;
+const DEFAULT_PORT = Number.parseInt(
+  String(process.env.PORT || CONFIG_MANIFEST_DEFAULTS.PORT || '8788'),
+  10,
+) || 8788;
 
 const WATCHED_DIRECTORIES = [
   'src',

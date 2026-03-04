@@ -101,10 +101,10 @@ export function ProductPage() {
   }, [normalizedFields, apiFieldOrder]);
 
   if (!productId) {
-    return <p className="text-gray-500 mt-8 text-center">Select a product — choose a Brand and Model from the sidebar, or click a row in the Overview tab.</p>;
+    return <p className="sf-text-muted mt-8 text-center">Select a product — choose a Brand and Model from the sidebar, or click a row in the Overview tab.</p>;
   }
   if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
-  if (!data) return <p className="text-gray-500 mt-8 text-center">No data found.</p>;
+  if (!data) return <p className="sf-text-muted mt-8 text-center">No data found.</p>;
 
   const { summary, normalized, provenance, trafficLight } = data;
   const traffic = trafficLight?.by_field || {};
@@ -131,9 +131,9 @@ export function ProductPage() {
           {normalized?.identity?.brand} {normalized?.identity?.model}
         </h2>
         {normalized?.identity?.variant && !['unk', 'unknown', 'na', 'n/a', 'none', 'null'].includes(String(normalized.identity.variant).toLowerCase().trim()) && (
-          <span className="text-sm text-gray-500">({normalized.identity.variant})</span>
+          <span className="text-sm sf-text-muted">({normalized.identity.variant})</span>
         )}
-        <span className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+        <span className="text-xs font-mono sf-bg-surface-soft-strong sf-dk-surface-700 px-1.5 py-0.5 rounded">
           {(normalized?.identity as Record<string, unknown>)?.id
             ? `#${(normalized.identity as Record<string, unknown>).id}`
             : '#—'}
@@ -162,10 +162,10 @@ export function ProductPage() {
             <div key={stage.id} className="flex-1">
               <div
                 className={`h-2 rounded ${
-                  i <= stageIndex ? 'bg-accent' : 'bg-gray-200 dark:bg-gray-700'
+                  i <= stageIndex ? 'bg-accent' : 'sf-progress-track-soft sf-dk-surface-700'
                 }`}
               />
-              <p className="text-[10px] text-center mt-1 text-gray-500">{stage.label}</p>
+              <p className="text-[10px] text-center mt-1 sf-text-muted">{stage.label}</p>
             </div>
           ))}
         </div>

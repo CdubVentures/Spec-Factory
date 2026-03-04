@@ -56,6 +56,12 @@ async function selectCategory(page, category) {
   );
 }
 
+async function openSourceStrategySection(page) {
+  const sourceStrategySectionButton = page.getByRole('button', { name: /Source Strategy/i }).first();
+  await sourceStrategySectionButton.waitFor({ state: 'visible', timeout: 20_000 });
+  await sourceStrategySectionButton.click();
+}
+
 async function seedCategory(helperRoot, category) {
   await seedFieldRules(helperRoot, category);
   await seedComponentDb(helperRoot, category);
@@ -142,7 +148,8 @@ test('GUI source strategy toggle persists across reload in pipeline settings', {
     await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
     await page.waitForSelector('text=Pipeline Settings', { timeout: 20_000 });
-    await page.waitForSelector('text=Source Strategy', { timeout: 20_000 });
+    await openSourceStrategySection(page);
+    await page.waitForSelector('h3:has-text("Source Strategy")', { timeout: 20_000 });
 
     const rowLocator = page.locator('tr').filter({ has: page.locator(`td:has-text("${host}")`) }).first();
     await rowLocator.waitFor({ state: 'visible', timeout: 25_000 });
@@ -160,6 +167,7 @@ test('GUI source strategy toggle persists across reload in pipeline settings', {
     await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
     await page.waitForSelector('text=Pipeline Settings', { timeout: 20_000 });
+    await openSourceStrategySection(page);
     const rowAfterReload = page.locator('tr').filter({ has: page.locator(`td:has-text("${host}")`) }).first();
     await rowAfterReload.waitFor({ state: 'visible', timeout: 25_000 });
     const toggleAfterReload = rowAfterReload.locator('button').filter({ hasText: /ON|OFF/ }).first();
@@ -194,4 +202,3 @@ test('GUI source strategy toggle persists across reload in pipeline settings', {
     await fs.rm(tempRoot, { recursive: true, force: true }).catch(() => {});
   }
 });
-

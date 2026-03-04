@@ -1,28 +1,39 @@
 export function readLearningHintsFromStores({
   stores,
   category,
-  focusFields = []
+  focusFields = [],
+  config = {}
 }) {
+  const componentLexiconDecayDays = Math.max(1, Number.parseInt(String(config?.componentLexiconDecayDays ?? 90), 10) || 90);
+  const componentLexiconExpireDays = Math.max(componentLexiconDecayDays, Number.parseInt(String(config?.componentLexiconExpireDays ?? 180), 10) || 180);
+  const fieldAnchorsDecayDays = Math.max(1, Number.parseInt(String(config?.fieldAnchorsDecayDays ?? 60), 10) || 60);
+  const urlMemoryDecayDays = Math.max(1, Number.parseInt(String(config?.urlMemoryDecayDays ?? 120), 10) || 120);
+
   const anchorsByField = {};
   const knownUrls = {};
   const componentValues = {};
 
   for (const field of focusFields) {
-    const rawAnchors = stores.fieldAnchors.queryWithDecay({ field, category });
+    const rawAnchors = stores.fieldAnchors.queryWithDecay({ field, category, decayDays: fieldAnchorsDecayDays });
     anchorsByField[field] = rawAnchors.map((row) => ({
       phrase: row.phrase,
       sourceUrl: row.source_url,
       decayStatus: row.decay_status
     }));
 
-    const rawUrls = stores.urlMemory.queryWithDecay({ field, category });
+    const rawUrls = stores.urlMemory.queryWithDecay({ field, category, decayDays: urlMemoryDecayDays });
     knownUrls[field] = rawUrls.map((row) => ({
       url: row.url,
       usedCount: row.used_count,
       decayStatus: row.decay_status
     }));
 
-    const rawLexicon = stores.componentLexicon.queryWithDecay({ field, category });
+    const rawLexicon = stores.componentLexicon.queryWithDecay({
+      field,
+      category,
+      decayDays: componentLexiconDecayDays,
+      expireDays: componentLexiconExpireDays,
+    });
     componentValues[field] = rawLexicon.map((row) => ({
       value: row.value,
       decayStatus: row.decay_status

@@ -181,13 +181,13 @@ describe('buildSafetyClassSegments', () => {
     assert.equal(segments.length, 3);
     assert.equal(segments[0].label, 'Safe');
     assert.equal(segments[0].value, 5);
-    assert.ok(segments[0].color.includes('green'));
+    assert.ok(segments[0].color.includes('sf-metric-fill-success'));
     assert.equal(segments[1].label, 'Caution');
     assert.equal(segments[1].value, 2);
-    assert.ok(segments[1].color.includes('yellow'));
+    assert.ok(segments[1].color.includes('sf-metric-fill-warning'));
     assert.equal(segments[2].label, 'Blocked');
     assert.equal(segments[2].value, 1);
-    assert.ok(segments[2].color.includes('red'));
+    assert.ok(segments[2].color.includes('sf-metric-fill-danger'));
   });
 
   it('returns segments with zero values', () => {

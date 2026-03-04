@@ -20,7 +20,7 @@ const columns: ColumnDef<CatalogRow, unknown>[] = [
     header: 'Variant',
     cell: ({ getValue }) => {
       const v = getValue() as string;
-      return v ? <span className="text-xs">{v}</span> : <span className="text-gray-400 text-xs italic">—</span>;
+      return v ? <span className="text-xs">{v}</span> : <span className="sf-text-subtle text-xs italic">—</span>;
     },
     size: 100,
   },
@@ -123,7 +123,7 @@ export function OverviewPage() {
   const totals = billing?.totals || {};
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sf-text-primary">
       <MetricRow
         metrics={[
           { label: 'Products', value: catalog.length },
@@ -135,16 +135,20 @@ export function OverviewPage() {
         ]}
       />
 
-      <ProgressBar value={coverageAvg} label="Overall Coverage" color="bg-green-500" />
+      <div className="sf-surface-card p-3">
+        <ProgressBar value={coverageAvg} label="Overall Coverage" color="sf-meter-fill-success" />
+      </div>
 
-      <DataTable
-        data={catalog}
-        columns={columns}
-        searchable
-        persistKey={`overview:table:${category}`}
-        maxHeight="max-h-[calc(100vh-340px)]"
-        onRowClick={(row) => setSelectedProduct(row.productId, row.brand, row.model)}
-      />
+      <div className="sf-table-shell">
+        <DataTable
+          data={catalog}
+          columns={columns}
+          searchable
+          persistKey={`overview:table:${category}`}
+          maxHeight="max-h-[calc(100vh-340px)]"
+          onRowClick={(row) => setSelectedProduct(row.productId, row.brand, row.model)}
+        />
+      </div>
     </div>
   );
 }

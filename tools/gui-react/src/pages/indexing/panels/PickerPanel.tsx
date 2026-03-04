@@ -47,6 +47,30 @@ interface PickerPanelProps {
   productPickerActivity: { currentPerMin: number; peakPerMin: number };
 }
 
+function resolveAmbiguityToken(level: string): 'success' | 'warning' | 'danger' | 'neutral' {
+  const normalized = (level || '').toLowerCase().replace(/[_\s]+/g, '-');
+  if (normalized === 'easy') return 'success';
+  if (normalized === 'medium') return 'warning';
+  if (normalized === 'hard' || normalized === 'very-hard' || normalized === 'extra-hard') return 'danger';
+  return 'neutral';
+}
+
+function ambiguityBadgeClass(level: string): string {
+  const token = resolveAmbiguityToken(level);
+  if (token === 'success') return 'sf-chip-success';
+  if (token === 'warning') return 'sf-chip-warning';
+  if (token === 'danger') return 'sf-chip-danger';
+  return 'sf-chip-neutral';
+}
+
+function ambiguityBarColor(level: string): string {
+  const token = resolveAmbiguityToken(level);
+  if (token === 'success') return 'var(--sf-state-success-fg)';
+  if (token === 'warning') return 'var(--sf-state-warning-fg)';
+  if (token === 'danger') return 'var(--sf-state-danger-fg)';
+  return 'rgb(var(--sf-color-text-muted-rgb))';
+}
+
 export function PickerPanel({
   collapsed,
   onToggle,
@@ -78,21 +102,18 @@ export function PickerPanel({
   productPickerActivity,
 }: PickerPanelProps) {
   return (
-    <div className="rounded-lg border-2 border-emerald-300 dark:border-emerald-600 ring-1 ring-emerald-100 dark:ring-emerald-900/40 bg-white dark:bg-gray-800 p-3 space-y-3" style={{ order: -20 }}>
+    <div className="sf-surface-panel p-3 space-y-3" style={{ order: -20 }}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <div className="flex items-center text-sm font-semibold sf-text-primary">
           <button
             onClick={onToggle}
-            className="inline-flex items-center justify-center w-5 h-5 mr-1 text-[10px] rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="inline-flex items-center justify-center w-5 h-5 mr-1 sf-text-caption sf-icon-button"
             title={collapsed ? 'Open panel' : 'Close panel'}
           >
             {collapsed ? '+' : '-'}
           </button>
           <span>Product Picker</span>
           <Tip text="Pick one exact product, then run IndexLab." />
-          <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-            Start Here
-          </span>
         </div>
         <ActivityGauge
           label="selected product activity"
@@ -110,7 +131,7 @@ export function PickerPanel({
             onBrandChange(e.target.value);
           }}
           disabled={isAll || busy}
-          className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
+          className="px-2 py-2 text-sm rounded sf-select"
           title="Step 1: Choose brand."
         >
           <option value="">1) select brand</option>
@@ -126,7 +147,7 @@ export function PickerPanel({
             onModelChange(e.target.value);
           }}
           disabled={isAll || busy || !singleBrand}
-          className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
+          className="px-2 py-2 text-sm rounded sf-select"
           title="Step 2: Choose model."
         >
           <option value="">2) select model</option>
@@ -140,7 +161,7 @@ export function PickerPanel({
           value={singleProductId}
           onChange={(e) => onProductIdChange(e.target.value)}
           disabled={isAll || busy || !singleModel}
-          className="px-2 py-2 text-sm border rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
+          className="px-2 py-2 text-sm rounded sf-select"
           title="Step 3: Choose variant."
         >
           <option value="">3) select variant</option>
@@ -151,7 +172,7 @@ export function PickerPanel({
           ))}
         </select>
       </div>
-      <div className="rounded border border-gray-200 dark:border-gray-700 p-2 text-xs text-gray-600 dark:text-gray-300">
+      <div className="sf-surface-elevated p-2 sf-text-caption sf-text-muted">
         selected product id: <span className="font-mono">{singleProductId || '(none)'}</span>
         {selectedCatalogProduct ? (
           <span>
@@ -159,9 +180,9 @@ export function PickerPanel({
           </span>
         ) : null}
       </div>
-      <div className="rounded border border-gray-200 dark:border-gray-700 p-2">
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="font-semibold text-gray-800 dark:text-gray-200 inline-flex items-center">
+      <div className="sf-surface-elevated p-2">
+        <div className="flex flex-wrap items-center gap-2 sf-text-caption">
+          <span className="font-semibold sf-text-primary inline-flex items-center">
             ambiguity meter
             <Tip text={`Brand + model family size in catalog:
 - easy: 1 sibling (green)
@@ -174,31 +195,34 @@ Variant-empty extraction policy:
 - easy/medium: less strict extraction gate
 - hard/very hard/extra hard: strict extraction gate`} />
           </span>
-          <span className={`px-2 py-0.5 rounded ${selectedAmbiguityMeter.badgeCls}`}>
+          <span className={`px-2 py-0.5 rounded ${ambiguityBadgeClass(selectedAmbiguityMeter.level)}`}>
             {selectedAmbiguityMeter.label}
           </span>
-          <span className="text-gray-500 dark:text-gray-400">
+          <span className="sf-text-muted">
             family count {formatNumber(selectedAmbiguityMeter.count)}
           </span>
         </div>
-        <div className="mt-2 h-2 w-full rounded bg-gray-200 dark:bg-gray-700 overflow-hidden">
+        <div className="mt-2 h-2 w-full rounded sf-surface-panel overflow-hidden">
           <div
-            className={`h-full ${selectedAmbiguityMeter.barCls}`}
-            style={{ width: `${selectedAmbiguityMeter.widthPct}%` }}
+            className="h-full"
+            style={{
+              width: `${selectedAmbiguityMeter.widthPct}%`,
+              backgroundColor: ambiguityBarColor(selectedAmbiguityMeter.level),
+            }}
           />
         </div>
       </div>
           <button
             onClick={onRunIndexLab}
             disabled={!canRunSingle || busy || processRunning || !runtimeSettingsReady}
-            className={`w-full px-3 py-2 text-sm rounded text-white transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed ${
+            className={`w-full px-3 py-2 text-sm rounded sf-primary-button transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed ${
               processRunning
-                ? 'bg-cyan-700 translate-y-px scale-[0.99] shadow-inner ring-1 ring-cyan-900/40'
-                : 'bg-cyan-600 hover:bg-cyan-700 shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner'
+                ? 'translate-y-px scale-[0.99] shadow-inner'
+                : 'shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner'
             }`}
             title={runtimeSettingsReady
               ? 'Run IndexLab for selected product and stream events.'
-              : 'Run start is locked until runtime settings finish hydrating.'}
+              : 'Run start is locked until shared pipeline settings finish hydrating.'}
           >
             Run IndexLab
           </button>
@@ -207,12 +231,12 @@ Variant-empty extraction policy:
               <button
                 onClick={() => onStopProcess({ force: stopForceKill })}
                 disabled={stopPending}
-                className="w-full h-10 inline-flex items-center justify-center px-3 text-sm rounded bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full h-10 inline-flex items-center justify-center px-3 text-sm rounded sf-danger-button-solid shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed"
                 title={stopForceKill ? 'Force kill process tree if needed.' : 'Graceful stop request.'}
               >
                 Stop Process
               </button>
-              <label className="inline-flex items-center gap-2 text-[11px] text-gray-600 dark:text-gray-300">
+              <label className="inline-flex items-center gap-2 sf-text-label sf-text-muted">
                 <input
                   type="checkbox"
                   checked={stopForceKill}
@@ -226,7 +250,7 @@ Variant-empty extraction policy:
             <button
               onClick={onClearSelectedRunView}
               disabled={isAll || busy || !selectedIndexLabRunId}
-              className="w-full h-10 self-start inline-flex items-center justify-center px-3 text-sm rounded bg-gray-700 hover:bg-gray-800 text-white shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full h-10 self-start inline-flex items-center justify-center px-3 text-sm rounded sf-icon-button shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed"
               title="Clear only selected run containers from the current view."
             >
               Clear Selected View
@@ -234,15 +258,15 @@ Variant-empty extraction policy:
             <button
               onClick={onReplaySelectedRunView}
               disabled={isAll || busy || !selectedIndexLabRunId}
-              className="w-full h-10 self-start inline-flex items-center justify-center px-3 text-sm rounded bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full h-10 self-start inline-flex items-center justify-center px-3 text-sm rounded sf-icon-button shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed"
               title="Replay selected run from persisted events/artifacts."
             >
               Replay Selected Run
             </button>
           </div>
           {!runtimeSettingsReady ? (
-            <div className="text-[11px] text-amber-700 dark:text-amber-300">
-              Runtime settings are loading. Run start is locked until persisted settings hydrate.
+            <div className="sf-text-label sf-status-text-warning">
+              Pipeline settings are loading. Run start is locked until persisted settings hydrate.
             </div>
           ) : null}
         </>

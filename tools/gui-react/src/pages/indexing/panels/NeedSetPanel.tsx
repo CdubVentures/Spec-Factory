@@ -64,17 +64,17 @@ export function NeedSetPanel({
   processRunning,
 }: NeedSetPanelProps) {
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-3" style={{ order: 45 }}>
+    <div className="sf-surface-panel p-3 space-y-3" style={{ order: 45 }}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <div className="flex items-center text-sm font-semibold sf-text-primary">
           <button
             onClick={onToggle}
-            className="inline-flex items-center justify-center w-5 h-5 mr-1 text-[10px] rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="inline-flex items-center justify-center w-5 h-5 mr-1 sf-text-caption sf-icon-button"
             title={collapsed ? 'Open panel' : 'Close panel'}
           >
             {collapsed ? '+' : '-'}
           </button>
-          <span>NeedSet (Phase 01)</span>
+          <span>NeedSet</span>
           <Tip text="Field-level deficits with tier/confidence/evidence reasons and priority score." />
         </div>
         <ActivityGauge
@@ -87,39 +87,39 @@ export function NeedSetPanel({
       </div>
       {!collapsed ? (
         <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
-          <div className="text-gray-500 dark:text-gray-400 flex items-center">needset size<Tip text="Count of fields currently in deficit and needing more work." /></div>
-          <div className="font-semibold">{formatNumber(Number(indexlabNeedset?.needset_size || 0))}</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sf-text-caption">
+        <div className="sf-surface-elevated px-2 py-1">
+          <div className="sf-text-muted flex items-center">needset size<Tip text="Count of fields currently in deficit and needing more work." /></div>
+          <div className="font-semibold sf-text-primary">{formatNumber(Number(indexlabNeedset?.needset_size || 0))}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
-          <div className="text-gray-500 dark:text-gray-400 flex items-center">total fields<Tip text="Total tracked fields in the contract snapshot for this run." /></div>
-          <div className="font-semibold">{formatNumber(Number(indexlabNeedset?.total_fields || 0))}</div>
+        <div className="sf-surface-elevated px-2 py-1">
+          <div className="sf-text-muted flex items-center">total fields<Tip text="Total tracked fields in the contract snapshot for this run." /></div>
+          <div className="font-semibold sf-text-primary">{formatNumber(Number(indexlabNeedset?.total_fields || 0))}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
-          <div className="text-gray-500 dark:text-gray-400 flex items-center">rows<Tip text="Visible NeedSet rows after sorting and runtime merge." /></div>
-          <div className="font-semibold">{formatNumber(indexlabNeedsetRows.length)}</div>
+        <div className="sf-surface-elevated px-2 py-1">
+          <div className="sf-text-muted flex items-center">rows<Tip text="Visible NeedSet rows after sorting and runtime merge." /></div>
+          <div className="font-semibold sf-text-primary">{formatNumber(indexlabNeedsetRows.length)}</div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
-          <div className="text-gray-500 dark:text-gray-400 flex items-center">generated<Tip text="Timestamp when the latest NeedSet payload was generated." /></div>
-          <div className="font-semibold">{formatDateTime(indexlabNeedset?.generated_at || null)}</div>
+        <div className="sf-surface-elevated px-2 py-1">
+          <div className="sf-text-muted flex items-center">generated<Tip text="Timestamp when the latest NeedSet payload was generated." /></div>
+          <div className="font-semibold sf-text-primary">{formatDateTime(indexlabNeedset?.generated_at || null)}</div>
         </div>
       </div>
 
-      <div className="rounded border border-gray-200 dark:border-gray-700 p-2 text-xs">
-        <div className="font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+      <div className="sf-surface-elevated p-2 sf-text-caption">
+        <div className="font-semibold sf-text-primary flex items-center">
           identity lock state
           <Tip text="Phase 01: identity evidence lock for this NeedSet snapshot (locked/provisional/unlocked/conflict)." />
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <span className={`px-2 py-0.5 rounded ${
             indexlabNeedsetIdentityState.status === 'locked'
-              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+              ? 'sf-chip-success'
               : indexlabNeedsetIdentityState.status === 'provisional'
-                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                ? 'sf-chip-warning'
                 : indexlabNeedsetIdentityState.status === 'conflict'
-                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                  : 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                  ? 'sf-chip-danger'
+                  : 'sf-chip-accent'
           }`}>
             {indexlabNeedsetIdentityState.status}
           </span>
@@ -155,7 +155,7 @@ export function NeedSetPanel({
         {(indexlabNeedsetIdentityState.blockers || []).length > 0 ? (
           <div className="mt-1 flex flex-wrap gap-1">
             {(indexlabNeedsetIdentityState.blockers || []).slice(0, 8).map((reason) => (
-              <span key={`needset-lock-blocker:${reason}`} className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+              <span key={`needset-lock-blocker:${reason}`} className="px-1.5 py-0.5 rounded sf-chip-warning">
                 blocker {reason}
               </span>
             ))}
@@ -163,17 +163,17 @@ export function NeedSetPanel({
         ) : null}
       </div>
 
-      <div className="rounded border border-gray-200 dark:border-gray-700 p-2">
-        <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">needset size over time<Tip text="Sparkline of NeedSet size snapshots through the run." /></div>
+      <div className="sf-surface-elevated p-2">
+        <div className="sf-text-caption sf-text-muted flex items-center">needset size over time<Tip text="Sparkline of NeedSet size snapshots through the run." /></div>
         <NeedsetSparkline values={indexlabNeedsetSparklineValues} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-        <div className="rounded border border-gray-200 dark:border-gray-700 p-2">
-          <div className="font-semibold text-gray-800 dark:text-gray-200 flex items-center">reason counts<Tip text="Why fields are still in NeedSet (missing, low_conf, tier_pref_unmet, blocked_by_identity, publish_gate_block, etc.)." /></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sf-text-caption">
+        <div className="sf-surface-elevated p-2">
+          <div className="font-semibold sf-text-primary flex items-center">reason counts<Tip text="Why fields are still in NeedSet (missing, low_conf, tier_pref_unmet, blocked_by_identity, publish_gate_block, etc.)." /></div>
           <div className="mt-1 flex flex-wrap gap-1">
             {Object.entries(indexlabNeedset?.reason_counts || {}).length === 0 && (
-              <span className="text-gray-500 dark:text-gray-400">no reason counts</span>
+              <span className="sf-text-muted">no reason counts</span>
             )}
             {Object.entries(indexlabNeedset?.reason_counts || {}).map(([reason, count]) => (
               <span
@@ -185,11 +185,11 @@ export function NeedSetPanel({
             ))}
           </div>
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 p-2">
-          <div className="font-semibold text-gray-800 dark:text-gray-200 flex items-center">required level counts<Tip text="NeedSet rows grouped by required level: identity, critical, required, optional." /></div>
+        <div className="sf-surface-elevated p-2">
+          <div className="font-semibold sf-text-primary flex items-center">required level counts<Tip text="NeedSet rows grouped by required level: identity, critical, required, optional." /></div>
           <div className="mt-1 flex flex-wrap gap-1">
             {Object.entries(indexlabNeedset?.required_level_counts || {}).length === 0 && (
-              <span className="text-gray-500 dark:text-gray-400">no required-level counts</span>
+              <span className="sf-text-muted">no required-level counts</span>
             )}
             {Object.entries(indexlabNeedset?.required_level_counts || {}).map(([level, count]) => {
               const badge = needsetRequiredLevelBadge(level);
@@ -203,14 +203,15 @@ export function NeedSetPanel({
         </div>
       </div>
 
-      <div className="rounded border border-gray-200 dark:border-gray-700 p-2 overflow-x-auto">
-        <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+      <div className="sf-surface-elevated p-2 overflow-x-auto">
+        <div className="sf-text-caption font-semibold sf-text-primary flex items-center">
           identity audit rows ({formatNumber(indexlabNeedsetIdentityAuditRows.length)} shown)
           <Tip text="Source-level identity decisions linked to NeedSet lock state for Phase 01 auditability." />
         </div>
-        <table className="mt-2 min-w-full text-xs">
-          <thead>
-            <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+        <div className="mt-2 sf-table-shell">
+        <table className="min-w-full sf-text-caption">
+          <thead className="sf-table-head border-b sf-border-soft">
+            <tr>
               <th className="py-1 pr-3">
                 <div className="inline-flex items-center">
                   <span>source</span>
@@ -240,29 +241,31 @@ export function NeedSetPanel({
           <tbody>
             {indexlabNeedsetIdentityAuditRows.length === 0 && (
               <tr>
-                <td className="py-2 text-gray-500 dark:text-gray-400" colSpan={4}>no identity audit rows yet</td>
+                <td className="py-2 sf-text-muted" colSpan={4}>no identity audit rows yet</td>
               </tr>
             )}
             {indexlabNeedsetIdentityAuditRows.map((row, idx) => (
-              <tr key={`needset-audit:${row.source_id || row.url || idx}`} className="border-b border-gray-100 dark:border-gray-800">
-                <td className="py-1 pr-3 font-mono truncate max-w-[26rem]" title={row.url || row.source_id}>
+              <tr key={`needset-audit:${row.source_id || row.url || idx}`} className="sf-table-row border-b sf-border-soft">
+                <td className="py-1 pr-3 font-mono sf-text-primary truncate max-w-[26rem]" title={row.url || row.source_id}>
                   {row.source_id || row.url || '-'}
                 </td>
-                <td className="py-1 pr-3">{row.decision || '-'}</td>
-                <td className="py-1 pr-3">{row.confidence === null ? '-' : formatNumber(Number(row.confidence || 0), 3)}</td>
-                <td className="py-1 pr-3">
+                <td className="py-1 pr-3 sf-text-subtle">{row.decision || '-'}</td>
+                <td className="py-1 pr-3 sf-text-subtle">{row.confidence === null ? '-' : formatNumber(Number(row.confidence || 0), 3)}</td>
+                <td className="py-1 pr-3 sf-text-subtle">
                   {(row.reason_codes || []).length > 0 ? (row.reason_codes || []).slice(0, 6).join(', ') : '-'}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
-      <div className="rounded border border-gray-200 dark:border-gray-700 p-2 overflow-x-auto overflow-y-auto max-h-[28rem]">
-        <table className="min-w-full text-xs">
-          <thead>
-            <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+      <div className="sf-surface-elevated p-2 overflow-x-auto overflow-y-auto max-h-[28rem]">
+        <div className="sf-table-shell">
+        <table className="min-w-full sf-text-caption">
+          <thead className="sf-table-head border-b sf-border-soft">
+            <tr>
               <th className="py-1 pr-3">
                 <div className="inline-flex items-center">
                   <button onClick={() => onSortChange('field_key')} className="hover:underline">field</button>
@@ -322,7 +325,7 @@ export function NeedSetPanel({
           <tbody>
             {indexlabNeedsetRows.length === 0 && (
               <tr>
-                <td className="py-2 text-gray-500 dark:text-gray-400" colSpan={9}>no NeedSet rows yet</td>
+                <td className="py-2 sf-text-muted" colSpan={9}>no NeedSet rows yet</td>
               </tr>
             )}
             {indexlabNeedsetRows.map((row) => {
@@ -332,29 +335,29 @@ export function NeedSetPanel({
                 ? Number(row.effective_confidence)
                 : (Number.isFinite(Number(row.confidence)) ? Number(row.confidence) : null);
               return (
-                <tr key={row.field_key} className="border-b border-gray-100 dark:border-gray-800">
-                  <td className="py-1 pr-3 font-mono">{row.field_key}</td>
+                <tr key={row.field_key} className="sf-table-row border-b sf-border-soft">
+                  <td className="py-1 pr-3 font-mono sf-text-primary">{row.field_key}</td>
                   <td className="py-1 pr-3">
                     <span className={`px-1.5 py-0.5 rounded ${reqBadge.cls}`}>
                       {reqBadge.short} {row.required_level || 'optional'}
                     </span>
                   </td>
-                  <td className="py-1 pr-3">{formatNumber(Number(row.need_score || 0), 3)}</td>
+                  <td className="py-1 pr-3 sf-text-subtle">{formatNumber(Number(row.need_score || 0), 3)}</td>
                   <td className="py-1 pr-3">
                     {effectiveConfidence === null ? '-' : formatNumber(effectiveConfidence, 3)}
                     {row.confidence_capped ? (
                       <span className="ml-1 inline-flex items-center gap-1">
-                        <span className="px-1 py-0.5 rounded bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
+                        <span className="px-1 py-0.5 rounded sf-chip-accent">
                           capped
                         </span>
                         <Tip text="Confidence was capped due to identity uncertainty or publish-gate policy." />
                       </span>
                     ) : null}
                   </td>
-                  <td className="py-1 pr-3">{row.best_tier_seen === null ? '-' : formatNumber(Number(row.best_tier_seen || 0))}</td>
+                  <td className="py-1 pr-3 sf-text-subtle">{row.best_tier_seen === null ? '-' : formatNumber(Number(row.best_tier_seen || 0))}</td>
                   <td className="py-1 pr-3">
                     {formatNumber(Number(row.refs_found || 0))}/{formatNumber(Number(row.min_refs || 0))}
-                    <span className={`ml-1 ${refsGap >= 0 ? 'text-emerald-600 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-300'}`}>
+                    <span className={`ml-1 ${refsGap >= 0 ? 'sf-status-text-success' : 'sf-status-text-danger'}`}>
                       ({refsGap >= 0 ? '+' : ''}{formatNumber(refsGap)})
                     </span>
                   </td>
@@ -362,7 +365,7 @@ export function NeedSetPanel({
                     <div className="flex flex-wrap gap-1">
                       {(row.blocked_by || []).length === 0 ? <span>-</span> : null}
                       {(row.blocked_by || []).map((reason) => (
-                        <span key={`${row.field_key}:blocked:${reason}`} className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                        <span key={`${row.field_key}:blocked:${reason}`} className="px-1.5 py-0.5 rounded sf-chip-warning">
                           {reason}
                         </span>
                       ))}
@@ -374,7 +377,7 @@ export function NeedSetPanel({
                       : formatNumber(Number(row.best_identity_match || 0), 3)}
                     {row.quarantined ? (
                       <span className="ml-1 inline-flex items-center gap-1">
-                        <span className="px-1 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                        <span className="px-1 py-0.5 rounded sf-chip-danger">
                           quarantine
                         </span>
                         <Tip text="Field value is quarantined from publish output until identity gate is validated." />
@@ -395,6 +398,7 @@ export function NeedSetPanel({
             })}
           </tbody>
         </table>
+        </div>
       </div>
         </>
       ) : null}

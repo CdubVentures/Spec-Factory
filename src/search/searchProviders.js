@@ -190,13 +190,21 @@ function shouldFallbackDuckduckgoToSearxng(error) {
   return name === 'AbortError' || name === 'TypeError';
 }
 
-const LOCAL_SEARXNG_FALLBACK_BASE_URL = 'http://127.0.0.1:8080';
-
 function duckduckgoFallbackSearxngTimeoutMs(config = {}) {
   return Math.max(
     800,
     Math.min(8_000, Number(config.searxngTimeoutMs || 4_000))
   );
+}
+
+function searxngFallbackBaseUrl(config = {}) {
+  const token = String(config.searxngDefaultBaseUrl || '').trim() || 'http://127.0.0.1:8080';
+  try {
+    const parsed = new URL(token);
+    return parsed.toString().replace(/\/+$/, '');
+  } catch {
+    return 'http://127.0.0.1:8080';
+  }
 }
 
 function searxngBaseUrl(config = {}) {
@@ -381,7 +389,8 @@ export async function searchDuckduckgo({
   baseUrl,
   query,
   limit = 10,
-  timeoutMs = 8_000
+  timeoutMs = 8_000,
+  userAgent = 'Mozilla/5.0 (compatible; SpecFactory/1.0)'
 }) {
   if (!query) {
     return [];
@@ -397,7 +406,7 @@ export async function searchDuckduckgo({
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        'user-agent': 'Mozilla/5.0 (compatible; SpecFactory/1.0)',
+        'user-agent': String(userAgent || 'Mozilla/5.0 (compatible; SpecFactory/1.0)').trim() || 'Mozilla/5.0 (compatible; SpecFactory/1.0)',
         'accept-language': 'en-US,en;q=0.9'
       }
     });
@@ -458,7 +467,8 @@ export async function runSearchProviders({
         baseUrl: duckduckgoBaseUrl(config),
         query,
         limit,
-        timeoutMs: config.duckduckgoTimeoutMs
+        timeoutMs: config.duckduckgoTimeoutMs,
+        userAgent: config.duckduckgoUserAgent
       });
       return dedupeResults(rows);
     } catch (error) {
@@ -468,7 +478,7 @@ export async function runSearchProviders({
         message: error.message
       });
       if (shouldFallbackDuckduckgoToSearxng(error)) {
-        const fallbackBase = searxBase || LOCAL_SEARXNG_FALLBACK_BASE_URL;
+        const fallbackBase = searxBase || searxngFallbackBaseUrl(config);
         const fallbackTimeoutMs = duckduckgoFallbackSearxngTimeoutMs(config);
         try {
           const fallbackRows = await searchSearxng({
@@ -552,7 +562,8 @@ export async function runSearchProviders({
           baseUrl: duckduckgoBaseUrl(config),
           query,
           limit,
-          timeoutMs: config.duckduckgoTimeoutMs
+          timeoutMs: config.duckduckgoTimeoutMs,
+          userAgent: config.duckduckgoUserAgent
         });
       } catch (error) {
         duckduckgoError = error;
@@ -572,7 +583,7 @@ export async function runSearchProviders({
 
       try {
         const fallbackRows = await searchSearxng({
-          baseUrl: LOCAL_SEARXNG_FALLBACK_BASE_URL,
+          baseUrl: searxngFallbackBaseUrl(config),
           query,
           limit,
           timeoutMs: duckduckgoFallbackSearxngTimeoutMs(config)
@@ -623,7 +634,8 @@ export async function runSearchProviders({
           baseUrl: duckduckgoBaseUrl(config),
           query,
           limit,
-          timeoutMs: config.duckduckgoTimeoutMs
+          timeoutMs: config.duckduckgoTimeoutMs,
+          userAgent: config.duckduckgoUserAgent
         }).catch((error) => {
           logger?.warn?.('search_provider_failed', {
             provider: 'duckduckgo',

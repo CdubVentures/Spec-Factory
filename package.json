@@ -8,10 +8,12 @@
     "node": ">=20"
   },
   "scripts": {
+    "env:check": "node tools/check-env-example-sync.mjs",
+    "settings:sync-defaults": "node tools/sync-settings-defaults-from-env.mjs",
     "setup:bootstrap": "node tools/setup-deps.mjs",
     "setup:gui": "node tools/specfactory-launcher.mjs",
     "setup:exe": "node tools/build-setup-exe.mjs",
-    "test": "node --test",
+    "test": "npm run settings:sync-defaults && node --test",
     "run:one": "node src/cli/spec.js run-one",
     "run:indexlab": "node src/cli/spec.js indexlab",
     "run:adhoc": "node src/cli/spec.js run-ad-hoc",
@@ -29,8 +31,8 @@
     "smoke:local": "node src/cli/smoke-local.js",
     "test:s3": "node src/cli/spec.js test-s3",
     "gui:api": "node src/api/guiServer.js --port 8788 --local",
-    "gui:dev": "cd tools/gui-react && npm run dev",
-    "gui:build": "cd tools/gui-react && npm run build",
+    "gui:dev": "npm run settings:sync-defaults && cd tools/gui-react && npm run dev",
+    "gui:build": "npm run settings:sync-defaults && cd tools/gui-react && npm run build",
     "gui:start": "npm run gui:build && npm run gui:api",
     "gui:exe": "node tools/build-exe.mjs",
     "docs:render:authority-diagrams": "node tools/render-authority-mermaid.mjs"

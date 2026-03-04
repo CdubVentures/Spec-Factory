@@ -33,26 +33,26 @@ test('runtime autosave payload fallbacks are authority-derived after hydration',
     'IndexingPage should not keep local runtime baseline equality helpers once authority helpers are available',
   );
 
-  const collectStart = indexingPageText.indexOf('const collectRuntimeSettingsPayload = () => ({');
+  const collectStart = indexingPageText.indexOf('const collectRuntimeSettingsPayload = () => collectRuntimeSettingsPayloadFromDomain({');
   const collectEnd = indexingPageText.indexOf('const runtimeSettingsPayload = collectRuntimeSettingsPayload();');
   assert.notEqual(collectStart, -1, 'collectRuntimeSettingsPayload block should exist');
   assert.notEqual(collectEnd, -1, 'runtimeSettingsPayload initialization marker should exist');
   const collectText = indexingPageText.slice(collectStart, collectEnd);
 
   assert.equal(
-    collectText.includes('runtimeSettingsFallbackBaseline.fetchConcurrency'),
+    collectText.includes('runtimeSettingsFallbackBaseline'),
     true,
-    'runtime autosave payload should fallback to runtime baseline fetch concurrency',
+    'runtime autosave payload should pass shared runtime baseline contract into serializer',
   );
   assert.equal(
-    collectText.includes('runtimeSettingsFallbackBaseline.resumeWindowHours'),
+    collectText.includes('resolveModelTokenDefaults'),
     true,
-    'runtime autosave payload should fallback to runtime baseline resume window hours',
+    'runtime autosave payload should pass shared model token resolver into serializer',
   );
   assert.equal(
-    collectText.includes('runtimeSettingsFallbackBaseline.scannedPdfOcrMinConfidence'),
+    collectText.includes('collectRuntimeSettingsPayloadFromDomain'),
     true,
-    'runtime autosave payload should fallback to runtime baseline OCR confidence',
+    'runtime autosave payload should serialize through shared runtime domain serializer',
   );
   assert.equal(
     collectText.includes('runtimeDefaults.fetchConcurrency'),

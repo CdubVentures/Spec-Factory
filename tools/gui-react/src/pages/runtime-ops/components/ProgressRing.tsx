@@ -21,8 +21,8 @@ export function ProgressRing({
   const circumference = 2 * Math.PI * radius;
   const pct = denominator > 0 ? Math.min(1, numerator / denominator) : 0;
   const colorClass = variant === 'fraction'
-    ? 'text-emerald-500'
-    : pct >= 0.7 ? 'text-emerald-500' : pct >= 0.4 ? 'text-yellow-500' : 'text-red-400';
+    ? 'sf-metric-ring-success'
+    : pct >= 0.7 ? 'sf-metric-ring-success' : pct >= 0.4 ? 'sf-metric-ring-warning' : 'sf-metric-ring-danger';
 
   return (
     <div className="text-center shrink-0">
@@ -30,7 +30,7 @@ export function ProgressRing({
         <svg width={size} height={size} className="-rotate-90">
           <circle
             cx={size / 2} cy={size / 2} r={radius}
-            fill="none" stroke="currentColor" className="text-gray-200 dark:text-gray-700" strokeWidth={strokeWidth}
+            fill="none" stroke="currentColor" className="sf-text-subtle" strokeWidth={strokeWidth}
           />
           <circle
             cx={size / 2} cy={size / 2} r={radius}
@@ -42,15 +42,15 @@ export function ProgressRing({
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           {variant === 'fraction' ? (
             <>
-              <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{numerator}</span>
-              <span className="text-[9px] text-gray-400 dark:text-gray-500 -mt-0.5">/ {denominator}</span>
+              <span className="text-sm font-bold sf-text-primary">{numerator}</span>
+              <span className="sf-text-nano sf-text-subtle -mt-0.5">/ {denominator}</span>
             </>
           ) : (
-            <span className="text-xs font-bold text-gray-900 dark:text-gray-100">{pctString(pct)}</span>
+            <span className="text-xs font-bold sf-text-primary">{pctString(pct)}</span>
           )}
         </div>
       </div>
-      {label && <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{label}</div>}
+      {label && <div className="sf-text-nano sf-text-subtle mt-0.5">{label}</div>}
     </div>
   );
 }

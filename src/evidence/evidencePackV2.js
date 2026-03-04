@@ -121,11 +121,15 @@ export function stripHtml(html) {
     .trim();
 }
 
-function extractSpecSections(html) {
+function extractSpecSections(html, {
+  headingsLimit = 120,
+  chunkMaxLength = 3000,
+  specSectionsLimit = 8
+} = {}) {
   const content = String(html || '');
   const sections = [];
   const regex = /<(h[1-4])[^>]*>([\s\S]*?)<\/\1>/gi;
-  const headings = [...content.matchAll(regex)].slice(0, 120);
+  const headings = [...content.matchAll(regex)].slice(0, Math.max(1, Number.parseInt(String(headingsLimit ?? 120), 10) || 120));
   for (let i = 0; i < headings.length; i += 1) {
     const title = stripHtml(headings[i][2]).toLowerCase();
     if (!/(spec|technical|feature|performance|sensor|battery|dimension|weight)/.test(title)) {
@@ -135,10 +139,10 @@ function extractSpecSections(html) {
     const end = i + 1 < headings.length ? (headings[i + 1].index || content.length) : content.length;
     const chunk = stripHtml(content.slice(start, Math.min(content.length, end)));
     if (chunk) {
-      sections.push(chunk.slice(0, 3000));
+      sections.push(chunk.slice(0, Math.max(200, Number.parseInt(String(chunkMaxLength ?? 3000), 10) || 3000)));
     }
   }
-  return sections.slice(0, 8);
+  return sections.slice(0, Math.max(1, Number.parseInt(String(specSectionsLimit ?? 8), 10) || 8));
 }
 
 function extractHtmlTables(html) {
@@ -156,7 +160,7 @@ function extractHtmlTables(html) {
   return sections;
 }
 
-function extractDefinitionPairs(html) {
+function extractDefinitionPairs(html, chunkMaxLength = 3000) {
   const sections = [];
   for (const dlMatch of String(html || '').matchAll(/<dl[\s\S]*?<\/dl>/gi)) {
     const dl = String(dlMatch[0] || '');
@@ -174,7 +178,7 @@ function extractDefinitionPairs(html) {
       }
     }
     if (pairs.length > 0) {
-      sections.push(pairs.join(' | ').slice(0, 3000));
+      sections.push(pairs.join(' | ').slice(0, Math.max(200, Number.parseInt(String(chunkMaxLength ?? 3000), 10) || 3000)));
     }
     if (sections.length >= 10) {
       break;
@@ -239,10 +243,10 @@ function toStableId(prefix, index) {
   return `${prefix}${String(index + 1).padStart(2, '0')}`;
 }
 
-function rankNetworkJsonRows(rows, fieldTokens) {
+function rankNetworkJsonRows(rows, fieldTokens, textCap = 4000) {
   const scored = [];
   for (const row of rows || []) {
-    const payload = toText(row.jsonFull ?? row.jsonPreview, 4000).toLowerCase();
+    const payload = toText(row.jsonFull ?? row.jsonPreview, textCap).toLowerCase();
     let score = 0;
     for (const token of fieldTokens) {
       if (payload.includes(token)) {
@@ -454,6 +458,22 @@ export function buildEvidencePackV2({
   targetFields = [],
   deterministicCandidates = []
 }) {
+  const parsedEvidenceTextMaxChars = Number.parseInt(String(config?.evidenceTextMaxChars ?? ''), 10);
+  const evidenceTextMaxChars = Number.isFinite(parsedEvidenceTextMaxChars)
+    ? Math.max(200, Math.min(200_000, parsedEvidenceTextMaxChars))
+    : 5000;
+  const parsedEvidenceHeadingsLimit = Number.parseInt(String(config?.evidenceHeadingsLimit ?? ''), 10);
+  const evidenceHeadingsLimit = Number.isFinite(parsedEvidenceHeadingsLimit)
+    ? Math.max(1, Math.min(1000, parsedEvidenceHeadingsLimit))
+    : 120;
+  const parsedEvidenceChunkMaxLength = Number.parseInt(String(config?.evidenceChunkMaxLength ?? ''), 10);
+  const evidenceChunkMaxLength = Number.isFinite(parsedEvidenceChunkMaxLength)
+    ? Math.max(200, Math.min(20_000, parsedEvidenceChunkMaxLength))
+    : 3000;
+  const parsedEvidenceSpecSectionsLimit = Number.parseInt(String(config?.evidenceSpecSectionsLimit ?? ''), 10);
+  const evidenceSpecSectionsLimit = Number.isFinite(parsedEvidenceSpecSectionsLimit)
+    ? Math.max(1, Math.min(200, parsedEvidenceSpecSectionsLimit))
+    : 8;
   const maxChars = Math.max(1500, Number(config.llmMaxEvidenceChars || config.openaiMaxInputChars || 60_000));
   const host = String(source?.host || '').toLowerCase();
   const sourceId = safeSourceId(source, host);
@@ -546,7 +566,7 @@ export function buildEvidencePackV2({
     }, targetFields);
   }
 
-  const definitionSections = extractDefinitionPairs(pageData?.html || '');
+  const definitionSections = extractDefinitionPairs(pageData?.html || '', evidenceChunkMaxLength);
   definitionSections.forEach((text, index) => {
     pushReference(state, {
       id: toStableId('d', index),
@@ -586,7 +606,11 @@ export function buildEvidencePackV2({
     }, targetFields);
   });
 
-  const specSections = extractSpecSections(pageData?.html || '');
+  const specSections = extractSpecSections(pageData?.html || '', {
+    headingsLimit: evidenceHeadingsLimit,
+    chunkMaxLength: evidenceChunkMaxLength,
+    specSectionsLimit: evidenceSpecSectionsLimit
+  });
   specSections.forEach((text, index) => {
     pushReference(state, {
       id: toStableId('s', index),
@@ -649,12 +673,16 @@ export function buildEvidencePackV2({
     });
   }
 
-  rankNetworkJsonRows(pageData?.networkResponses || [], tokens).forEach((row, index) => {
+  rankNetworkJsonRows(
+    pageData?.networkResponses || [],
+    tokens,
+    Math.min(4000, evidenceTextMaxChars)
+  ).forEach((row, index) => {
     pushReference(state, {
       id: toStableId('j', index),
       url: row.url || normalizedUrl || source.url,
       type: 'json',
-      content: toText(row.jsonFull ?? row.jsonPreview, 4000)
+      content: toText(row.jsonFull ?? row.jsonPreview, Math.min(4000, evidenceTextMaxChars))
     }, targetFields);
   });
 
@@ -665,7 +693,7 @@ export function buildEvidencePackV2({
       id: toStableId('l', index),
       url: normalizedUrl || source.url,
       type: 'json_ld_product',
-      content: toText(product, 2800)
+      content: toText(product, Math.min(2800, evidenceTextMaxChars))
     }, targetFields);
   });
 
@@ -682,7 +710,7 @@ export function buildEvidencePackV2({
       id: toStableId('m', index),
       url: normalizedUrl || source.url,
       type: 'microdata_product',
-      content: toText(node, 2800),
+      content: toText(node, Math.min(2800, evidenceTextMaxChars)),
       extractionMethod: 'microdata',
       keyPath: `structured.microdata[${index}]`,
       surface: 'microdata'
@@ -695,7 +723,7 @@ export function buildEvidencePackV2({
       id: toStableId('r', index),
       url: normalizedUrl || source.url,
       type: 'rdfa_product',
-      content: toText(node, 2600),
+      content: toText(node, Math.min(2600, evidenceTextMaxChars)),
       extractionMethod: 'rdfa',
       keyPath: `structured.rdfa[${index}]`,
       surface: 'rdfa'
@@ -708,7 +736,7 @@ export function buildEvidencePackV2({
       id: toStableId('f', index),
       url: normalizedUrl || source.url,
       type: 'microformat_product',
-      content: toText(node, 2600),
+      content: toText(node, Math.min(2600, evidenceTextMaxChars)),
       extractionMethod: 'microformat',
       keyPath: `structured.microformats[${index}]`,
       surface: 'microformat'
@@ -721,7 +749,7 @@ export function buildEvidencePackV2({
       id: toStableId('o', index),
       url: normalizedUrl || source.url,
       type: 'opengraph_product',
-      content: toText(node, 2200),
+      content: toText(node, Math.min(2200, evidenceTextMaxChars)),
       extractionMethod: 'opengraph',
       keyPath: `structured.opengraph[${index}]`,
       surface: 'opengraph'
@@ -734,7 +762,7 @@ export function buildEvidencePackV2({
       id: toStableId('u', index),
       url: normalizedUrl || source.url,
       type: 'twitter_card_product',
-      content: toText(node, 2200),
+      content: toText(node, Math.min(2200, evidenceTextMaxChars)),
       extractionMethod: 'twitter_card',
       keyPath: `structured.twitter[${index}]`,
       surface: 'twitter_card'
@@ -752,7 +780,7 @@ export function buildEvidencePackV2({
       id: toStableId('e', index),
       url: normalizedUrl || source.url,
       type: 'json',
-      content: toText(payload, 3200)
+      content: toText(payload, Math.min(3200, evidenceTextMaxChars))
     }, targetFields);
   });
 
@@ -801,7 +829,7 @@ export function buildEvidencePackV2({
       surface: 'pdf_text'
     }, targetFields);
 
-    const textPreview = normalizeWhitespace(String(pdf?.textPreview || '')).slice(0, 3000);
+    const textPreview = normalizeWhitespace(String(pdf?.textPreview || '')).slice(0, evidenceChunkMaxLength);
     if (textPreview) {
       pushReference(state, {
         id: toStableId('x', pdfTextIndex),
@@ -842,7 +870,7 @@ export function buildEvidencePackV2({
       pdfTableRowIndex += 1;
     });
 
-    const ocrTextPreview = normalizeWhitespace(String(pdf?.ocr_text_preview || '')).slice(0, 3000);
+    const ocrTextPreview = normalizeWhitespace(String(pdf?.ocr_text_preview || '')).slice(0, evidenceChunkMaxLength);
     if (ocrTextPreview) {
       pushReference(state, {
         id: toStableId('y', scannedPdfTextIndex),
@@ -967,7 +995,7 @@ export function buildEvidencePackV2({
     pushReference(state, {
       url: normalizedUrl || source.url,
       type: 'text',
-      content: stripHtml(pageData?.html || '').slice(0, 3000)
+      content: stripHtml(pageData?.html || '').slice(0, evidenceChunkMaxLength)
     }, targetFields);
   }
   const structuredStats = structuredMetadata?.stats && typeof structuredMetadata.stats === 'object'

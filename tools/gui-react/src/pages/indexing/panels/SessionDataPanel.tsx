@@ -24,15 +24,15 @@ export function SessionDataPanel({
 }: SessionDataPanelProps) {
   const [open, , setOpen] = usePersistedToggle(persistKey, true);
   const body = (
-    <div className={`${embedded ? '' : 'mt-2 '}grid grid-cols-1 xl:grid-cols-1 gap-2 text-xs`}>
+    <div className={`${embedded ? '' : 'mt-2 '}grid grid-cols-1 xl:grid-cols-1 gap-2 sf-text-caption`}>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         {sessionCrawledCells.slice(0, 5).map((cell) => (
-          <div key={`session-craweds:top:${cell.key}`} className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
-            <div className="text-gray-500 dark:text-gray-400 flex items-center">
+          <div key={`session-craweds:top:${cell.key}`} className="sf-surface-elevated px-2 py-1">
+            <div className="sf-text-muted flex items-center">
               {cell.label}
               <Tip text={cell.tooltip} />
             </div>
-            <div className={`font-semibold ${cell.placeholder ? 'text-amber-700 dark:text-amber-300' : 'text-gray-900 dark:text-gray-100'}`}>
+            <div className={`font-semibold ${cell.placeholder ? 'sf-status-text-warning' : 'sf-text-primary'}`}>
               {cell.value}
             </div>
           </div>
@@ -40,12 +40,12 @@ export function SessionDataPanel({
       </div>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         {sessionCrawledCells.slice(5).map((cell) => (
-          <div key={`session-craweds:extra:${cell.key}`} className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
-            <div className="text-gray-500 dark:text-gray-400 flex items-center">
+          <div key={`session-craweds:extra:${cell.key}`} className="sf-surface-elevated px-2 py-1">
+            <div className="sf-text-muted flex items-center">
               {cell.label}
               <Tip text={cell.tooltip} />
             </div>
-            <div className={`font-semibold ${cell.placeholder ? 'text-amber-700 dark:text-amber-300' : 'text-gray-900 dark:text-gray-100'}`}>
+            <div className={`font-semibold ${cell.placeholder ? 'sf-status-text-warning' : 'sf-text-primary'}`}>
               {cell.value}
             </div>
           </div>
@@ -57,7 +57,7 @@ export function SessionDataPanel({
   if (embedded) {
     return (
       <div className="space-y-1">
-        <div className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="sf-text-caption sf-text-muted">
           run {selectedIndexLabRunId || '-'}
         </div>
         {body}
@@ -72,19 +72,19 @@ export function SessionDataPanel({
         const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
         if (nextOpen !== open) setOpen(nextOpen);
       }}
-      className="group rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3"
+      className="group sf-surface-panel p-3"
       style={{ order: 16 }}
     >
       <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex items-center text-sm font-semibold text-gray-900 dark:text-gray-100">
-          <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 text-[10px] leading-none text-gray-700 dark:border-gray-600 dark:text-gray-200 mr-1">
+        <span className="inline-flex items-center text-sm font-semibold sf-text-primary">
+          <span className="inline-flex h-4 w-4 items-center justify-center sf-icon-button sf-text-caption leading-none mr-1">
             <span className="group-open:hidden">+</span>
             <span className="hidden group-open:inline">-</span>
           </span>
           Session Data
           <Tip text="High-level run summary for crawl/fetch coverage and phase progression signals." />
         </span>
-        <span className="text-xs text-gray-500 dark:text-gray-400">
+        <span className="sf-text-caption sf-text-muted">
           run {selectedIndexLabRunId || '-'}
         </span>
       </summary>

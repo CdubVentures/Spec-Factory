@@ -1,7 +1,7 @@
 import { handleReviewItemMutationRoute } from '../reviewItemRoutes.js';
 import { handleReviewComponentMutationRoute } from '../reviewComponentMutationRoutes.js';
 import { handleReviewEnumMutationRoute } from '../reviewEnumMutationRoutes.js';
-import { resolveProductIdentity } from '../../catalog/productIdentityAuthority.js';
+import { resolveProductIdentity } from '../../features/catalog-identity/index.js';
 import { emitDataChange } from '../events/dataChangeContract.js';
 import { runEnumConsistencyReview as runEnumConsistencyReviewDefault } from '../../llm/validateEnumConsistency.js';
 import { isConsumerEnabled } from '../../field-rules/consumerGate.js';
@@ -183,7 +183,13 @@ export function registerReviewRoutes(ctx) {
     if (parts[0] === 'review' && parts[1] && parts[2] === 'layout' && method === 'GET') {
       const category = parts[1];
       const session = await sessionCache.getSessionRules(category);
-      const layout = await buildReviewLayout({ storage, config, category, fieldOrderOverride: session.draftFieldOrder, fieldsOverride: session.draftFields });
+      const layout = await buildReviewLayout({
+        storage,
+        config,
+        category,
+        fieldOrderOverride: session.mergedFieldOrder,
+        fieldsOverride: session.mergedFields,
+      });
       return jsonRes(res, 200, layout);
     }
 
@@ -197,7 +203,13 @@ export function registerReviewRoutes(ctx) {
         return jsonRes(res, 404, { error: 'not_in_catalog', message: `Product ${productId} is not in the product catalog` });
       }
       const sessionProd = await sessionCache.getSessionRules(category);
-      const draftLayout = await buildReviewLayout({ storage, config, category, fieldOrderOverride: sessionProd.draftFieldOrder, fieldsOverride: sessionProd.draftFields });
+      const draftLayout = await buildReviewLayout({
+        storage,
+        config,
+        category,
+        fieldOrderOverride: sessionProd.mergedFieldOrder,
+        fieldsOverride: sessionProd.mergedFields,
+      });
       const catEntry = catalog.products?.[productId] || {};
       const payload = await buildProductReviewPayload({
         storage,
@@ -246,7 +258,13 @@ export function registerReviewRoutes(ctx) {
       productIds = productIds.filter(pid => catalogPids.has(pid));
       const brandsFilter = brandsParam ? new Set(brandsParam.split(',').map(b => b.trim().toLowerCase()).filter(Boolean)) : null;
       const batchSession = await sessionCache.getSessionRules(category);
-      const batchLayout = await buildReviewLayout({ storage, config, category, fieldOrderOverride: batchSession.draftFieldOrder, fieldsOverride: batchSession.draftFields });
+      const batchLayout = await buildReviewLayout({
+        storage,
+        config,
+        category,
+        fieldOrderOverride: batchSession.mergedFieldOrder,
+        fieldsOverride: batchSession.mergedFields,
+      });
       const payloads = [];
       for (const pid of productIds) {
         try {

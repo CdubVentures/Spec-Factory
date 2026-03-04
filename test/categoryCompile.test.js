@@ -104,6 +104,27 @@ test('validateFieldStudioMap accepts named_range key source', () => {
   assert.equal(checked.valid, true);
 });
 
+test('validateFieldStudioMap preserves selected_keys order (normalized but not sorted)', () => {
+  const checked = validateFieldStudioMap({
+    version: 2,
+    sheet_roles: [{ sheet: 'dataEntry', role: 'field_key_list' }],
+    key_list: {
+      sheet: 'dataEntry',
+      source: 'column_range',
+      column: 'B',
+      row_start: 1,
+      row_end: 10,
+    },
+    selected_keys: ['dpi', 'connection', 'dpi', 'weight'],
+  });
+
+  assert.equal(checked.valid, true);
+  assert.deepEqual(
+    checked.normalized.selected_keys,
+    ['dpi', 'connection', 'weight'],
+  );
+});
+
 test('validateFieldStudioMap accepts scratch-only maps without key_list and blank property columns', () => {
   const checked = validateFieldStudioMap({
     version: 2,

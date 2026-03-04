@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -144,7 +144,7 @@ test('GUI llm route knobs persist across manual save/autosave reload and keep au
 
     await openRouteEditor(page, targetRouteKey, targetScope);
 
-    const autoSaveCheckbox = page.locator('label:has-text("Auto Save") input[type="checkbox"]').first();
+    const autoSaveCheckbox = page.locator('label:has-text("Auto-Save") input[type="checkbox"]').first();
     await autoSaveCheckbox.waitFor({ state: 'visible', timeout: 20_000 });
     if (await autoSaveCheckbox.isChecked()) {
       await autoSaveCheckbox.click();
@@ -255,3 +255,4 @@ test('GUI llm route knobs persist across manual save/autosave reload and keep au
     await fs.rm(tempRoot, { recursive: true, force: true }).catch(() => {});
   }
 });
+

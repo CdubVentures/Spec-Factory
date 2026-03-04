@@ -1769,7 +1769,7 @@ function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
       expected_sometimes_fields: [],
       deep_fields: []
     },
-    selected_keys: stableSortStrings(toArray(map.selected_keys).map((field) => normalizeFieldKey(field))),
+    selected_keys: orderedUniqueStrings(toArray(map.selected_keys).map((field) => normalizeFieldKey(field))),
     version_note: normalizeText(map.version_note || ''),
     field_overrides: isObject(map.field_overrides) ? map.field_overrides : {},
     ui_defaults: isObject(map.ui_defaults) ? map.ui_defaults : {},

@@ -83,6 +83,10 @@ import {
   normalizeRuntimeOverrides, applyRuntimeOverridesToPlanner
 } from './helpers/runtimeHelpers.js';
 import {
+  buildNeedSetIdentityCaps,
+  loadEnabledSourceStrategyRows
+} from './helpers/runProductOrchestrationHelpers.js';
+import {
   PASS_TARGET_EXEMPT_FIELDS, markSatisfiedLlmFields,
   refreshFieldsBelowPassTarget, isAnchorLocked,
   resolveTargets, resolveLlmTargetFields
@@ -196,35 +200,6 @@ import {
 } from '../utils/identityNormalize.js';
 
 const RUN_DEDUPE_MODE = 'serp_url+content_hash';
-
-function normalizeCategoryToken(value) {
-  return String(value || '').trim().toLowerCase();
-}
-
-function buildNeedSetIdentityCaps(config = {}) {
-  return {
-    locked: toFloat(config.needsetCapIdentityLocked, 1),
-    provisional: toFloat(config.needsetCapIdentityProvisional, 0.74),
-    conflict: toFloat(config.needsetCapIdentityConflict, 0.39),
-    unlocked: toFloat(config.needsetCapIdentityUnlocked, 0.59),
-  };
-}
-
-async function loadEnabledSourceStrategyRows({ config = {}, category = '' } = {}) {
-  const categoryToken = normalizeCategoryToken(category);
-  if (!categoryToken) return [];
-  let db = null;
-  try {
-    const { SpecDb } = await import('../db/specDb.js');
-    const dbPath = `${String(config.specDbDir || '.specfactory_tmp').replace(/[\\\/]+$/, '')}/${categoryToken}/spec.sqlite`;
-    db = new SpecDb({ dbPath, category: categoryToken });
-    return db.listEnabledSourceStrategies(categoryToken);
-  } catch {
-    return [];
-  } finally {
-    try { db?.close?.(); } catch { /* ignore */ }
-  }
-}
 
 export async function runProduct({
   storage,
@@ -609,6 +584,7 @@ export async function runProduct({
   const hostBudgetByHost = new Map();
   const blockedDomainThreshold = Math.max(1, toInt(config.frontierBlockedDomainThreshold, 2));
   const repairSearchEnabled = config.frontierRepairSearchEnabled !== false;
+  const repairDedupeRule = String(config.repairDedupeRule || 'domain_once').trim().toLowerCase();
   const llmSatisfiedFields = new Set();
   const helperSupportiveSyntheticSources = (indexingHelperFlowEnabled && config.helperSupportiveEnabled)
     ? buildSupportiveSyntheticSources({
@@ -769,7 +745,8 @@ export async function runProduct({
       learningStoreHints = readLearningHintsFromStores({
         stores: readStores,
         category: categoryToken,
-        focusFields
+        focusFields,
+        config,
       });
     } catch {
       // learning readback is non-essential
@@ -908,7 +885,10 @@ export async function runProduct({
       if (!repairSearchEnabled) return;
       const domain = normalizeHostToken(source?.host || hostFromHttpUrl(sourceUrl || source?.url || ''));
       if (!domain) return;
-      if (repairQueryByDomain.has(domain)) return;
+      const dedupeKey = repairDedupeRule === 'domain_and_status'
+        ? `${domain}:${Number(statusCode || 0)}`
+        : domain;
+      if (repairDedupeRule !== 'none' && repairQueryByDomain.has(dedupeKey)) return;
       const query = buildRepairSearchQuery({
         domain,
         brand: job.identityLock?.brand || '',
@@ -916,11 +896,14 @@ export async function runProduct({
         variant: job.identityLock?.variant || ''
       });
       if (!query) return;
-      repairQueryByDomain.add(domain);
+      if (repairDedupeRule !== 'none') {
+        repairQueryByDomain.add(dedupeKey);
+      }
       logger.info('repair_query_enqueued', {
         domain,
         host: domain,
         query,
+        dedupe_rule: repairDedupeRule,
         status: Number(statusCode || 0),
         reason: String(reason || '').trim() || null,
         source_url: String(sourceUrl || source?.url || '').trim() || null,
@@ -1762,7 +1745,18 @@ export async function runProduct({
           identityCandidates: mergedIdentityCandidates,
           connectionHint: candidateFieldMap.connection
         },
-        job.identityLock || {}
+        job.identityLock || {},
+        {
+          identityGateBaseMatchThreshold: config.identityGateBaseMatchThreshold,
+          identityGateThresholdFloor: config.identityGateThresholdFloor,
+          identityGateThresholdCeiling: config.identityGateThresholdCeiling,
+          identityGateEasyAmbiguityReduction: config.identityGateEasyAmbiguityReduction,
+          identityGateMediumAmbiguityReduction: config.identityGateMediumAmbiguityReduction,
+          identityGateHardAmbiguityReduction: config.identityGateHardAmbiguityReduction,
+          identityGateVeryHardAmbiguityIncrease: config.identityGateVeryHardAmbiguityIncrease,
+          identityGateExtraHardAmbiguityIncrease: config.identityGateExtraHardAmbiguityIncrease,
+          identityGateMissingStrongIdPenalty: config.identityGateMissingStrongIdPenalty,
+        }
       );
 
       const identityGatedCandidates = applyIdentityGateToCandidates(
@@ -2298,7 +2292,11 @@ export async function runProduct({
       const scheduler = createFetchScheduler({
         concurrency: config.concurrency,
         perHostDelayMs: config.perHostMinDelayMs,
-        maxRetries: config.fetchSchedulerMaxRetries
+        maxRetries: config.fetchSchedulerMaxRetries,
+        defaultConcurrency: config.fetchSchedulerDefaultConcurrency,
+        defaultPerHostDelayMs: config.fetchSchedulerDefaultDelayMs,
+        defaultMaxRetries: config.fetchSchedulerDefaultMaxRetries,
+        retryWaitMs: config.fetchSchedulerRetryWaitMs
       });
 
       await scheduler.drainQueue({
@@ -2534,7 +2532,18 @@ export async function runProduct({
         identityCandidates: syntheticSource.identityCandidates,
         connectionHint: candidateMap.connection
       },
-      job.identityLock || {}
+      job.identityLock || {},
+      {
+        identityGateBaseMatchThreshold: config.identityGateBaseMatchThreshold,
+        identityGateThresholdFloor: config.identityGateThresholdFloor,
+        identityGateThresholdCeiling: config.identityGateThresholdCeiling,
+        identityGateEasyAmbiguityReduction: config.identityGateEasyAmbiguityReduction,
+        identityGateMediumAmbiguityReduction: config.identityGateMediumAmbiguityReduction,
+        identityGateHardAmbiguityReduction: config.identityGateHardAmbiguityReduction,
+        identityGateVeryHardAmbiguityIncrease: config.identityGateVeryHardAmbiguityIncrease,
+        identityGateExtraHardAmbiguityIncrease: config.identityGateExtraHardAmbiguityIncrease,
+        identityGateMissingStrongIdPenalty: config.identityGateMissingStrongIdPenalty,
+      }
     );
 
     const anchorStatus =
@@ -3078,6 +3087,7 @@ export async function runProduct({
   const gate = evaluateValidationGate({
     identityGateValidated: identityGate.validated,
     identityConfidence,
+    qualityGateIdentityThreshold: config.qualityGateIdentityThreshold,
     anchorMajorConflictsCount,
     completenessRequired: completenessStats.completenessRequired,
     targetCompleteness: targets.targetCompleteness,
@@ -3163,13 +3173,18 @@ export async function runProduct({
   });
   const needSetIdentityState = deriveNeedSetIdentityState({
     identityGate,
-    identityConfidence
+    identityConfidence,
+    identityLockThreshold: config.needsetIdentityLockThreshold,
+    identityProvisionalThreshold: config.needsetIdentityProvisionalThreshold
   });
   const extractionGateOpen = resolveExtractionGateOpen({
     identityLock: job.identityLock || {},
     identityGate
   });
-  const needSetIdentityAuditRows = buildNeedSetIdentityAuditRows(identityReport, 24);
+  const needSetIdentityAuditRows = buildNeedSetIdentityAuditRows(
+    identityReport,
+    Number(config.needsetDefaultIdentityAuditLimit || 24),
+  );
   const needSetIdentityContext = {
     status: needSetIdentityState,
     confidence: identityConfidence,
@@ -3198,6 +3213,20 @@ export async function runProduct({
     constraintAnalysis,
     identityContext: needSetIdentityContext,
     identityCaps: needSetIdentityCaps,
+    needsetTuning: {
+      needsetRequiredWeightIdentity: config.needsetRequiredWeightIdentity,
+      needsetRequiredWeightCritical: config.needsetRequiredWeightCritical,
+      needsetRequiredWeightRequired: config.needsetRequiredWeightRequired,
+      needsetRequiredWeightExpected: config.needsetRequiredWeightExpected,
+      needsetRequiredWeightOptional: config.needsetRequiredWeightOptional,
+      needsetMissingMultiplier: config.needsetMissingMultiplier,
+      needsetTierDeficitMultiplier: config.needsetTierDeficitMultiplier,
+      needsetMinRefsDeficitMultiplier: config.needsetMinRefsDeficitMultiplier,
+      needsetConflictMultiplier: config.needsetConflictMultiplier,
+      needsetIdentityLockThreshold: config.needsetIdentityLockThreshold,
+      needsetIdentityProvisionalThreshold: config.needsetIdentityProvisionalThreshold,
+      needsetDefaultIdentityAuditLimit: config.needsetDefaultIdentityAuditLimit,
+    },
     decayConfig: {
       decayDays: config.needsetEvidenceDecayDays,
       decayFloor: config.needsetEvidenceDecayFloor
@@ -3223,7 +3252,46 @@ export async function runProduct({
     options: {
       maxHitsPerField: config.retrievalMaxHitsPerField || 24,
       maxPrimeSourcesPerField: config.retrievalMaxPrimeSources || 8,
-      identityFilterEnabled: Boolean(config.retrievalIdentityFilterEnabled)
+      identityFilterEnabled: Boolean(config.retrievalIdentityFilterEnabled),
+      retrievalTierWeightTier1: config.retrievalTierWeightTier1,
+      retrievalTierWeightTier2: config.retrievalTierWeightTier2,
+      retrievalTierWeightTier3: config.retrievalTierWeightTier3,
+      retrievalTierWeightTier4: config.retrievalTierWeightTier4,
+      retrievalTierWeightTier5: config.retrievalTierWeightTier5,
+      retrievalDocKindWeightManualPdf: config.retrievalDocKindWeightManualPdf,
+      retrievalDocKindWeightSpecPdf: config.retrievalDocKindWeightSpecPdf,
+      retrievalDocKindWeightSupport: config.retrievalDocKindWeightSupport,
+      retrievalDocKindWeightLabReview: config.retrievalDocKindWeightLabReview,
+      retrievalDocKindWeightProductPage: config.retrievalDocKindWeightProductPage,
+      retrievalDocKindWeightOther: config.retrievalDocKindWeightOther,
+      retrievalMethodWeightTable: config.retrievalMethodWeightTable,
+      retrievalMethodWeightKv: config.retrievalMethodWeightKv,
+      retrievalMethodWeightJsonLd: config.retrievalMethodWeightJsonLd,
+      retrievalMethodWeightLlmExtract: config.retrievalMethodWeightLlmExtract,
+      retrievalMethodWeightHelperSupportive: config.retrievalMethodWeightHelperSupportive,
+      retrievalAnchorScorePerMatch: config.retrievalAnchorScorePerMatch,
+      retrievalIdentityScorePerMatch: config.retrievalIdentityScorePerMatch,
+      retrievalUnitMatchBonus: config.retrievalUnitMatchBonus,
+      retrievalDirectFieldMatchBonus: config.retrievalDirectFieldMatchBonus,
+      retrievalEvidenceTierWeightMultiplier: config.retrievalEvidenceTierWeightMultiplier,
+      retrievalEvidenceDocWeightMultiplier: config.retrievalEvidenceDocWeightMultiplier,
+      retrievalEvidenceMethodWeightMultiplier: config.retrievalEvidenceMethodWeightMultiplier,
+      retrievalEvidencePoolMaxRows: config.retrievalEvidencePoolMaxRows,
+      retrievalSnippetsPerSourceCap: config.retrievalSnippetsPerSourceCap,
+      retrievalMaxHitsCap: config.retrievalMaxHitsCap,
+      retrievalEvidenceRefsLimit: config.retrievalEvidenceRefsLimit,
+      retrievalReasonBadgesLimit: config.retrievalReasonBadgesLimit,
+      retrievalAnchorsLimit: config.retrievalAnchorsLimit,
+      retrievalPrimeSourcesMaxCap: config.retrievalPrimeSourcesMaxCap,
+      retrievalFallbackEvidenceMaxRows: config.retrievalFallbackEvidenceMaxRows,
+      retrievalProvenanceOnlyMinRows: config.retrievalProvenanceOnlyMinRows,
+      retrievalInternalsMapJson: config.retrievalInternalsMapJson,
+      fetchSchedulerInternalsMapJson: config.fetchSchedulerInternalsMapJson,
+      evidencePackLimitsMapJson: config.evidencePackLimitsMapJson,
+      identityGateThresholdBoundsMapJson: config.identityGateThresholdBoundsMapJson,
+      parsingConfidenceBaseMapJson: config.parsingConfidenceBaseMapJson,
+      repairDedupeRule: config.repairDedupeRule,
+      consensusMethodWeightLlmExtractBase: config.consensusMethodWeightLlmExtractBase,
     },
     ftsQueryFn
   });

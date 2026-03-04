@@ -16,8 +16,8 @@ function cleanVariant(v: string): string {
   return VARIANT_PLACEHOLDERS.has(s.toLowerCase()) ? '' : s;
 }
 
-const selectCls = 'w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700';
-const labelCls = 'text-xs font-medium text-gray-500 dark:text-gray-400';
+const selectCls = 'w-full px-2 py-1.5 text-sm border rounded sf-sidebar-control text-slate-900 dark:text-slate-100';
+const labelCls = 'text-xs font-medium text-slate-600 dark:text-slate-300/90';
 
 export function Sidebar() {
   const category = useUiStore((s) => s.category);
@@ -130,10 +130,10 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-64 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-4 overflow-y-auto">
+    <aside className="sf-sidebar w-64 flex-shrink-0 p-4 space-y-4 overflow-y-auto">
       {/* Category */}
       <div>
-        <h2 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">Category</h2>
+        <h2 className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Category</h2>
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -155,7 +155,7 @@ export function Sidebar() {
 
       {/* Cascading Product Selectors */}
       <div className="space-y-2">
-        <h2 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">Product</h2>
+        <h2 className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Product</h2>
 
         {catalogLoading ? (
           <Spinner className="h-4 w-4" />
@@ -214,7 +214,7 @@ export function Sidebar() {
 
       {selectedProductId && (
         <div className="text-xs space-y-1">
-          <p className="font-mono text-gray-600 dark:text-gray-300 truncate" title={selectedProductId}>
+          <p className="font-mono text-slate-600 dark:text-slate-300 truncate" title={selectedProductId}>
             {selectedProductId}
           </p>
           <p>Brands: {brands.length} | Models: {models.length}</p>
@@ -224,12 +224,12 @@ export function Sidebar() {
         </div>
       )}
 
-      <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+      <div className="border-t border-white/10 pt-3">
         {processStatus.running && (
-          <p className="mt-2 text-xs text-gray-500">PID {processStatus.pid} running</p>
+          <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">PID {processStatus.pid} running</p>
         )}
         {processStatus.command && !processStatus.running && (
-          <p className="mt-1 text-xs text-gray-400 truncate" title={processStatus.command}>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate" title={processStatus.command}>
             Last: {processStatus.command}
           </p>
         )}

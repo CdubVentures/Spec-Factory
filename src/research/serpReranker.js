@@ -36,14 +36,52 @@ function rerankSchema() {
   };
 }
 
-const IDENTITY_MATCH_BONUS = {
-  strong: 2.0,
-  partial: 0.8,
-  weak: 0,
-  none: -1.5
-};
+const SERP_RERANKER_WEIGHT_DEFAULTS = Object.freeze({
+  identityStrongBonus: 2.0,
+  identityPartialBonus: 0.8,
+  identityWeakBonus: 0,
+  identityNoneBonus: -1.5,
+  brandPresenceBonus: 2.5,
+  modelPresenceBonus: 2.5,
+  specManualKeywordBonus: 1.3,
+  reviewBenchmarkBonus: 0.9,
+  forumRedditPenalty: -0.9,
+  brandInHostnameBonus: 1.2,
+  wikipediaPenalty: -1.0,
+  variantGuardPenalty: -3.0,
+  multiModelHintPenalty: -1.5,
+  tier1Bonus: 1.5,
+  tier2Bonus: 0.5,
+});
 
-function deterministicScoreWithBreakdown(row, { identity = {}, frontier = null } = {}) {
+function resolveSerpRerankerWeights(config = {}) {
+  const configured = config?.serpRerankerWeightMap && typeof config.serpRerankerWeightMap === 'object'
+    ? config.serpRerankerWeightMap
+    : {};
+  const readWeight = (key) => {
+    const parsed = Number.parseFloat(String(configured?.[key] ?? ''));
+    return Number.isFinite(parsed) ? parsed : SERP_RERANKER_WEIGHT_DEFAULTS[key];
+  };
+  return {
+    identityStrongBonus: readWeight('identityStrongBonus'),
+    identityPartialBonus: readWeight('identityPartialBonus'),
+    identityWeakBonus: readWeight('identityWeakBonus'),
+    identityNoneBonus: readWeight('identityNoneBonus'),
+    brandPresenceBonus: readWeight('brandPresenceBonus'),
+    modelPresenceBonus: readWeight('modelPresenceBonus'),
+    specManualKeywordBonus: readWeight('specManualKeywordBonus'),
+    reviewBenchmarkBonus: readWeight('reviewBenchmarkBonus'),
+    forumRedditPenalty: readWeight('forumRedditPenalty'),
+    brandInHostnameBonus: readWeight('brandInHostnameBonus'),
+    wikipediaPenalty: readWeight('wikipediaPenalty'),
+    variantGuardPenalty: readWeight('variantGuardPenalty'),
+    multiModelHintPenalty: readWeight('multiModelHintPenalty'),
+    tier1Bonus: readWeight('tier1Bonus'),
+    tier2Bonus: readWeight('tier2Bonus'),
+  };
+}
+
+function deterministicScoreWithBreakdown(row, { identity = {}, frontier = null, weights = SERP_RERANKER_WEIGHT_DEFAULTS } = {}) {
   const url = normalizeText(row?.url);
   const text = `${row?.title || ''} ${row?.snippet || ''} ${url}`.toLowerCase();
   const brand = String(identity?.brand || '').toLowerCase();
@@ -51,14 +89,14 @@ function deterministicScoreWithBreakdown(row, { identity = {}, frontier = null }
   const host = normalizeHost(row?.host || '');
 
   let baseScore = 0;
-  if (brand && text.includes(brand)) baseScore += 2.5;
-  if (model && text.includes(model)) baseScore += 2.5;
-  if (/spec|manual|datasheet|technical|support/.test(text)) baseScore += 1.3;
-  if (/review|benchmark|latency|measure/.test(text)) baseScore += 0.9;
-  if (/forum|reddit|community/.test(text)) baseScore -= 0.9;
+  if (brand && text.includes(brand)) baseScore += weights.brandPresenceBonus;
+  if (model && text.includes(model)) baseScore += weights.modelPresenceBonus;
+  if (/spec|manual|datasheet|technical|support/.test(text)) baseScore += weights.specManualKeywordBonus;
+  if (/review|benchmark|latency|measure/.test(text)) baseScore += weights.reviewBenchmarkBonus;
+  if (/forum|reddit|community/.test(text)) baseScore += weights.forumRedditPenalty;
   if (host) {
-    if (host.includes(brand.replace(/\s+/g, ''))) baseScore += 1.2;
-    if (host.includes('wikipedia')) baseScore -= 1;
+    if (host.includes(brand.replace(/\s+/g, ''))) baseScore += weights.brandInHostnameBonus;
+    if (host.includes('wikipedia')) baseScore += weights.wikipediaPenalty;
   }
 
   let frontierPenalty = 0;
@@ -67,13 +105,19 @@ function deterministicScoreWithBreakdown(row, { identity = {}, frontier = null }
   }
 
   const identityLevel = String(row?.identity_match_level || '').toLowerCase();
-  const identityBonus = IDENTITY_MATCH_BONUS[identityLevel] ?? 0;
+  const identityBonusMap = {
+    strong: weights.identityStrongBonus,
+    partial: weights.identityPartialBonus,
+    weak: weights.identityWeakBonus,
+    none: weights.identityNoneBonus,
+  };
+  const identityBonus = identityBonusMap[identityLevel] ?? 0;
 
-  const variantGuardPenalty = row?.variant_guard_hit ? -3.0 : 0;
+  const variantGuardPenalty = row?.variant_guard_hit ? weights.variantGuardPenalty : 0;
 
-  const multiModelPenalty = row?.multi_model_hint ? -1.5 : 0;
+  const multiModelPenalty = row?.multi_model_hint ? weights.multiModelHintPenalty : 0;
 
-  const tierBonus = row?.tier === 1 ? 1.5 : (row?.tier === 2 ? 0.5 : 0);
+  const tierBonus = row?.tier === 1 ? weights.tier1Bonus : (row?.tier === 2 ? weights.tier2Bonus : 0);
 
   const total = baseScore + frontierPenalty + identityBonus + variantGuardPenalty + multiModelPenalty + tierBonus;
 
@@ -101,6 +145,7 @@ export async function rerankSerpResults({
   topK = 16,
   domainSafetyResults = null
 } = {}) {
+  const weights = resolveSerpRerankerWeights(config);
   const safetyFiltered = domainSafetyResults
     ? toArray(serpResults).filter((row) => {
       const host = normalizeHost(row?.host || '');
@@ -110,7 +155,7 @@ export async function rerankSerpResults({
     : toArray(serpResults);
 
   const scored = safetyFiltered.map((row, idx) => {
-    const { score, breakdown } = deterministicScoreWithBreakdown(row, { identity, frontier });
+    const { score, breakdown } = deterministicScoreWithBreakdown(row, { identity, frontier, weights });
     return {
       ...row,
       rank: Number.parseInt(String(row?.rank || idx + 1), 10) || (idx + 1),

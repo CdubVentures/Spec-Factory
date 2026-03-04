@@ -7,6 +7,7 @@ const SETTINGS_AUTHORITY = path.resolve('tools/gui-react/src/stores/settingsAuth
 const APP_SHELL = path.resolve('tools/gui-react/src/components/layout/AppShell.tsx');
 const INDEXING_PAGE = path.resolve('tools/gui-react/src/pages/indexing/IndexingPage.tsx');
 const PIPELINE_SETTINGS_PAGE = path.resolve('tools/gui-react/src/pages/pipeline-settings/PipelineSettingsPage.tsx');
+const RUNTIME_SETTINGS_FLOW_CARD = path.resolve('tools/gui-react/src/pages/pipeline-settings/RuntimeSettingsFlowCard.tsx');
 const LLM_SETTINGS_PAGE = path.resolve('tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx');
 const LLM_SETTINGS_AUTHORITY = path.resolve('tools/gui-react/src/stores/llmSettingsAuthority.ts');
 const UI_STORE = path.resolve('tools/gui-react/src/stores/uiStore.ts');
@@ -59,21 +60,28 @@ test('settings authority bootstrap composes runtime, convergence, and autosave s
 test('settings matrix wiring uses shared authority paths across surfaces', () => {
   const indexingPageText = readText(INDEXING_PAGE);
   const pipelineSettingsText = readText(PIPELINE_SETTINGS_PAGE);
+  const runtimeSettingsFlowCardText = readText(RUNTIME_SETTINGS_FLOW_CARD);
   const llmSettingsPageText = readText(LLM_SETTINGS_PAGE);
   const llmSettingsAuthorityText = readText(LLM_SETTINGS_AUTHORITY);
   const uiStoreText = readText(UI_STORE);
   const studioPageText = readText(STUDIO_PAGE);
 
-  assert.equal(indexingPageText.includes('useRuntimeSettingsAuthority'), true, 'Indexing page should subscribe to runtime settings authority');
+  assert.equal(indexingPageText.includes('useRuntimeSettingsReader'), true, 'Indexing page should consume runtime settings through reader authority');
+  assert.equal(indexingPageText.includes('useRuntimeSettingsAuthority'), false, 'Indexing page should not instantiate runtime writer authority');
   assert.equal(indexingPageText.includes('useSettingsAuthorityStore'), true, 'Indexing page should read readiness from settings authority store');
   assert.equal(indexingPageText.includes('/runtime-settings'), false, 'Indexing page should not directly own runtime settings endpoint');
+  assert.equal(pipelineSettingsText.includes('<RuntimeSettingsFlowCard'), true, 'Pipeline settings should render runtime settings editor surface');
+  assert.equal(runtimeSettingsFlowCardText.includes('useRuntimeSettingsEditorAdapter<RuntimeDraft>'), true, 'Pipeline runtime flow should own runtime editor adapter wiring');
 
-  assert.equal(indexingPageText.includes('useConvergenceSettingsAuthority'), true, 'Indexing page should subscribe to convergence settings authority');
+  assert.equal(indexingPageText.includes('useConvergenceSettingsAuthority'), false, 'Indexing page should not instantiate convergence writer authority');
   assert.equal(pipelineSettingsText.includes('useConvergenceSettingsAuthority'), true, 'Pipeline settings page should subscribe to convergence settings authority');
+  assert.equal(pipelineSettingsText.includes('useSourceStrategyAuthority'), true, 'Pipeline settings page should subscribe to source strategy writer authority');
+  assert.equal(indexingPageText.includes('useSourceStrategyAuthority'), false, 'Indexing page should not instantiate source strategy writer authority');
   assert.equal(pipelineSettingsText.includes('useSettingsAuthorityStore'), true, 'Pipeline settings page should read readiness from settings authority store');
   assert.equal(indexingPageText.includes('/convergence-settings'), false, 'Indexing page should not directly own convergence settings endpoint');
   assert.equal(pipelineSettingsText.includes('/convergence-settings'), false, 'Pipeline settings page should not directly own convergence settings endpoint');
-  assert.equal(indexingPageText.includes('reloadConvergenceSettings'), true, 'Indexing page should expose convergence reload through authority hook');
+  assert.equal(indexingPageText.includes('/source-strategy'), false, 'Indexing page should not directly own source strategy endpoint');
+  assert.equal(pipelineSettingsText.includes('/source-strategy'), false, 'Pipeline settings page should not directly own source strategy endpoint');
   assert.equal(pipelineSettingsText.includes('void reload();'), true, 'Pipeline settings page should expose convergence reload through authority hook');
 
   assert.equal(uiStoreText.includes('llmSettings:autoSaveEnabled'), true, 'uiStore should own global llm autosave key');

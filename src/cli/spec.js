@@ -2,6 +2,7 @@
 import { loadConfig, loadDotEnvFile, validateConfig } from '../config.js';
 import { createStorage, toPosixKey } from '../s3/storage.js';
 import { parseArgs, asBool } from './args.js';
+import { createCliCommandDispatcher } from '../app/cli/commandDispatch.js';
 import { runProduct } from '../pipeline/runProduct.js';
 import { runConvergenceLoop, bridgeAsLogger } from '../pipeline/runOrchestrator.js';
 import { computeNeedSet } from '../indexlab/needsetEngine.js';
@@ -2707,6 +2708,71 @@ async function commandMigrateToSqlite(config, storage, args) {
   }
 }
 
+const dispatchCliCommand = createCliCommandDispatcher({
+  handlers: {
+    'run-one': ({ config, storage, args }) => commandRunOne(config, storage, args),
+    indexlab: ({ config, storage, args }) => commandIndexLab(config, storage, args),
+    'run-ad-hoc': ({ config, storage, args }) => commandRunAdHoc(config, storage, args),
+    'run-until-complete': ({ config, storage, args }) => commandRunUntilComplete(config, storage, args),
+    'category-compile': ({ config, storage, args }) => commandCategoryCompile(config, storage, args),
+    'compile-rules': ({ config, storage, args }) => commandCompileRules(config, storage, args),
+    'compile-report': ({ config, storage, args }) => commandCompileReport(config, storage, args),
+    'rules-diff': ({ config, storage, args }) => commandRulesDiff(config, storage, args),
+    'validate-rules': ({ config, storage, args }) => commandValidateRules(config, storage, args),
+    'init-category': ({ config, storage, args }) => commandInitCategory(config, storage, args),
+    'list-fields': ({ config, storage, args }) => commandListFields(config, storage, args),
+    'field-report': ({ config, storage, args }) => commandFieldReport(config, storage, args),
+    'field-rules-verify': ({ config, storage, args }) => commandFieldRulesVerify(config, storage, args),
+    'create-golden': ({ config, storage, args }) => commandCreateGolden(config, storage, args),
+    'test-golden': ({ config, storage, args }) => commandTestGolden(config, storage, args),
+    'qa-judge': ({ config, storage, args }) => commandQaJudge(config, storage, args),
+    'calibrate-confidence': ({ config, storage, args }) => commandCalibrateConfidence(config, storage, args),
+    'accuracy-report': ({ config, storage, args }) => commandAccuracyReport(config, storage, args),
+    'accuracy-benchmark': ({ config, storage, args }) => commandAccuracyBenchmark(config, storage, args),
+    'accuracy-trend': ({ config, storage, args }) => commandAccuracyTrend(config, storage, args),
+    'generate-types': ({ config, storage, args }) => commandGenerateTypes(config, storage, args),
+    publish: ({ config, storage, args }) => commandPublish(config, storage, args),
+    provenance: ({ config, storage, args }) => commandProvenance(config, storage, args),
+    changelog: ({ config, storage, args }) => commandChangelog(config, storage, args),
+    'source-health': ({ config, storage, args }) => commandSourceHealth(config, storage, args),
+    'llm-metrics': ({ config, storage, args }) => commandLlmMetrics(config, storage, args),
+    'phase10-bootstrap': ({ config, storage, args }) => commandPhase10Bootstrap(config, storage, args),
+    'hardening-harness': ({ config, storage, args }) => commandHardeningHarness(config, storage, args),
+    'hardening-report': ({ config, storage, args }) => commandHardeningReport(config, storage, args),
+    'drift-scan': ({ config, storage, args }) => commandDriftScan(config, storage, args),
+    'drift-reconcile': ({ config, storage, args }) => commandDriftReconcile(config, storage, args),
+    'run-batch': ({ config, storage, args }) => commandRunBatch(config, storage, args),
+    discover: ({ config, storage, args }) => commandDiscover(config, storage, args),
+    'ingest-csv': ({ config, storage, args }) => commandIngestCsv(config, storage, args),
+    'watch-imports': ({ config, storage, args }) => commandWatchImports(config, storage, args),
+    daemon: ({ config, storage, args }) => commandDaemon(config, storage, args),
+    queue: ({ config, storage, args }) => commandQueue(config, storage, args),
+    review: ({ config, storage, args }) => commandReview(config, storage, args),
+    'billing-report': ({ config, storage, args }) => commandBillingReport(config, storage, args),
+    'learning-report': ({ config, storage, args }) => commandLearningReport(config, storage, args),
+    'explain-unk': ({ config, storage, args }) => commandExplainUnk(config, storage, args),
+    'llm-health': ({ config, storage, args }) => commandLlmHealth(config, storage, args),
+    'cortex-start': ({ config, storage }) => commandCortexLifecycle(config, storage, 'start'),
+    'cortex-stop': ({ config, storage }) => commandCortexLifecycle(config, storage, 'stop'),
+    'cortex-restart': ({ config, storage }) => commandCortexLifecycle(config, storage, 'restart'),
+    'cortex-status': ({ config, storage }) => commandCortexLifecycle(config, storage, 'status'),
+    'cortex-ensure': ({ config, storage }) => commandCortexLifecycle(config, storage, 'ensure'),
+    'cortex-route-plan': ({ config, storage, args }) => commandCortexRoutePlan(config, storage, args),
+    'cortex-run-pass': ({ config, storage, args }) => commandCortexRunPass(config, storage, args),
+    'test-s3': () => commandTestS3(),
+    'sources-plan': ({ config, storage, args }) => commandSourcesPlan(config, storage, args),
+    'sources-report': ({ config, storage, args }) => commandSourcesReport(config, storage, args),
+    'rebuild-index': ({ config, storage, args }) => commandRebuildIndex(config, storage, args),
+    benchmark: ({ config, storage, args }) => commandBenchmark(config, storage, args, 'benchmark'),
+    'benchmark-golden': ({ config, storage, args }) =>
+      commandBenchmark(config, storage, args, 'benchmark-golden'),
+    'intel-graph-api': ({ config, storage, args }) => commandIntelGraphApi(config, storage, args),
+    'product-reconcile': ({ config, storage, args }) => commandProductReconcile(config, storage, args),
+    'seed-db': ({ config, storage, args }) => commandSeedDb(config, storage, args),
+    'migrate-to-sqlite': ({ config, storage, args }) => commandMigrateToSqlite(config, storage, args)
+  }
+});
+
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
   if (!command) {
@@ -2731,128 +2797,7 @@ async function main() {
   }
   const storage = createStorage(config);
 
-  let output;
-  if (command === 'run-one') {
-    output = await commandRunOne(config, storage, args);
-  } else if (command === 'indexlab') {
-    output = await commandIndexLab(config, storage, args);
-  } else if (command === 'run-ad-hoc') {
-    output = await commandRunAdHoc(config, storage, args);
-  } else if (command === 'run-until-complete') {
-    output = await commandRunUntilComplete(config, storage, args);
-  } else if (command === 'category-compile') {
-    output = await commandCategoryCompile(config, storage, args);
-  } else if (command === 'compile-rules') {
-    output = await commandCompileRules(config, storage, args);
-  } else if (command === 'compile-report') {
-    output = await commandCompileReport(config, storage, args);
-  } else if (command === 'rules-diff') {
-    output = await commandRulesDiff(config, storage, args);
-  } else if (command === 'validate-rules') {
-    output = await commandValidateRules(config, storage, args);
-  } else if (command === 'init-category') {
-    output = await commandInitCategory(config, storage, args);
-  } else if (command === 'list-fields') {
-    output = await commandListFields(config, storage, args);
-  } else if (command === 'field-report') {
-    output = await commandFieldReport(config, storage, args);
-  } else if (command === 'field-rules-verify') {
-    output = await commandFieldRulesVerify(config, storage, args);
-  } else if (command === 'create-golden') {
-    output = await commandCreateGolden(config, storage, args);
-  } else if (command === 'test-golden') {
-    output = await commandTestGolden(config, storage, args);
-  } else if (command === 'qa-judge') {
-    output = await commandQaJudge(config, storage, args);
-  } else if (command === 'calibrate-confidence') {
-    output = await commandCalibrateConfidence(config, storage, args);
-  } else if (command === 'accuracy-report') {
-    output = await commandAccuracyReport(config, storage, args);
-  } else if (command === 'accuracy-benchmark') {
-    output = await commandAccuracyBenchmark(config, storage, args);
-  } else if (command === 'accuracy-trend') {
-    output = await commandAccuracyTrend(config, storage, args);
-  } else if (command === 'generate-types') {
-    output = await commandGenerateTypes(config, storage, args);
-  } else if (command === 'publish') {
-    output = await commandPublish(config, storage, args);
-  } else if (command === 'provenance') {
-    output = await commandProvenance(config, storage, args);
-  } else if (command === 'changelog') {
-    output = await commandChangelog(config, storage, args);
-  } else if (command === 'source-health') {
-    output = await commandSourceHealth(config, storage, args);
-  } else if (command === 'llm-metrics') {
-    output = await commandLlmMetrics(config, storage, args);
-  } else if (command === 'phase10-bootstrap') {
-    output = await commandPhase10Bootstrap(config, storage, args);
-  } else if (command === 'hardening-harness') {
-    output = await commandHardeningHarness(config, storage, args);
-  } else if (command === 'hardening-report') {
-    output = await commandHardeningReport(config, storage, args);
-  } else if (command === 'drift-scan') {
-    output = await commandDriftScan(config, storage, args);
-  } else if (command === 'drift-reconcile') {
-    output = await commandDriftReconcile(config, storage, args);
-  } else if (command === 'run-batch') {
-    output = await commandRunBatch(config, storage, args);
-  } else if (command === 'discover') {
-    output = await commandDiscover(config, storage, args);
-  } else if (command === 'ingest-csv') {
-    output = await commandIngestCsv(config, storage, args);
-  } else if (command === 'watch-imports') {
-    output = await commandWatchImports(config, storage, args);
-  } else if (command === 'daemon') {
-    output = await commandDaemon(config, storage, args);
-  } else if (command === 'queue') {
-    output = await commandQueue(config, storage, args);
-  } else if (command === 'review') {
-    output = await commandReview(config, storage, args);
-  } else if (command === 'billing-report') {
-    output = await commandBillingReport(config, storage, args);
-  } else if (command === 'learning-report') {
-    output = await commandLearningReport(config, storage, args);
-  } else if (command === 'explain-unk') {
-    output = await commandExplainUnk(config, storage, args);
-  } else if (command === 'llm-health') {
-    output = await commandLlmHealth(config, storage, args);
-  } else if (command === 'cortex-start') {
-    output = await commandCortexLifecycle(config, storage, 'start');
-  } else if (command === 'cortex-stop') {
-    output = await commandCortexLifecycle(config, storage, 'stop');
-  } else if (command === 'cortex-restart') {
-    output = await commandCortexLifecycle(config, storage, 'restart');
-  } else if (command === 'cortex-status') {
-    output = await commandCortexLifecycle(config, storage, 'status');
-  } else if (command === 'cortex-ensure') {
-    output = await commandCortexLifecycle(config, storage, 'ensure');
-  } else if (command === 'cortex-route-plan') {
-    output = await commandCortexRoutePlan(config, storage, args);
-  } else if (command === 'cortex-run-pass') {
-    output = await commandCortexRunPass(config, storage, args);
-  } else if (command === 'test-s3') {
-    output = await commandTestS3();
-  } else if (command === 'sources-plan') {
-    output = await commandSourcesPlan(config, storage, args);
-  } else if (command === 'sources-report') {
-    output = await commandSourcesReport(config, storage, args);
-  } else if (command === 'rebuild-index') {
-    output = await commandRebuildIndex(config, storage, args);
-  } else if (command === 'benchmark') {
-    output = await commandBenchmark(config, storage, args, 'benchmark');
-  } else if (command === 'benchmark-golden') {
-    output = await commandBenchmark(config, storage, args, 'benchmark-golden');
-  } else if (command === 'intel-graph-api') {
-    output = await commandIntelGraphApi(config, storage, args);
-  } else if (command === 'product-reconcile') {
-    output = await commandProductReconcile(config, storage, args);
-  } else if (command === 'seed-db') {
-    output = await commandSeedDb(config, storage, args);
-  } else if (command === 'migrate-to-sqlite') {
-    output = await commandMigrateToSqlite(config, storage, args);
-  } else {
-    throw new Error(`Unknown command: ${command}`);
-  }
+  const output = await dispatchCliCommand({ command, config, storage, args });
 
   if (output && typeof output === 'object') {
     output.run_profile = config.runProfile;

@@ -89,7 +89,8 @@ export class FrontierDb {
     this.cooldownTimeoutSeconds = Math.max(0, toInt(config.frontierCooldownTimeoutSeconds, 6 * 60 * 60));
     this.cooldown403BaseSeconds = Math.max(60, toInt(config.frontierCooldown403BaseSeconds, 30 * 60));
     this.cooldown429BaseSeconds = Math.max(60, toInt(config.frontierCooldown429BaseSeconds, 15 * 60));
-    this.pathPenaltyNotfoundThreshold = Math.max(2, toInt(config.frontierPathPenaltyNotfoundThreshold, 3));
+    this.backoffMaxExponent = Math.max(1, toInt(config.frontierBackoffMaxExponent, 4));
+    this.pathPenaltyNotfoundThreshold = Math.max(1, toInt(config.frontierPathPenaltyNotfoundThreshold, 3));
   }
 
   async load() {
@@ -267,11 +268,11 @@ export class FrontierDb {
       seconds = this.cooldown410Seconds;
       reason = 'status_410';
     } else if (code === 403) {
-      const exponent = Math.max(0, Math.min(4, fetchCount - 1));
+      const exponent = Math.max(0, Math.min(this.backoffMaxExponent, fetchCount - 1));
       seconds = this.cooldown403BaseSeconds * (2 ** exponent);
       reason = 'status_403_backoff';
     } else if (code === 429) {
-      const exponent = Math.max(0, Math.min(4, fetchCount - 1));
+      const exponent = Math.max(0, Math.min(this.backoffMaxExponent, fetchCount - 1));
       seconds = this.cooldown429BaseSeconds * (2 ** exponent);
       reason = 'status_429_backoff';
     } else if (code === 0) {

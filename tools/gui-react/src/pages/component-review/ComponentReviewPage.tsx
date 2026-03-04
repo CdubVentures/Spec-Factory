@@ -13,9 +13,9 @@ import { EnumSubTab } from './EnumSubTab';
 import { pct } from '../../utils/formatting';
 import type { ComponentReviewLayout, ComponentReviewPayload } from '../../types/componentReview';
 
-const baseCls = 'px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors cursor-pointer';
-const activeCls = 'border-accent text-accent dark:border-accent-dark dark:text-accent-dark';
-const inactiveCls = 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200';
+const baseCls = 'px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer rounded sf-nav-item';
+const activeCls = 'sf-nav-item-active';
+const inactiveCls = 'sf-text-muted';
 
 export function ComponentReviewPage() {
   const category = useUiStore((s) => s.category);
@@ -100,11 +100,11 @@ export function ComponentReviewPage() {
   }, [activeSubTab, componentData, enumDataFromStore]);
 
   if (category === 'all') {
-    return <p className="text-gray-500 mt-8 text-center">Select a specific category to review components.</p>;
+    return <p className="sf-text-muted mt-8 text-center">Select a specific category to review components.</p>;
   }
   if (layoutLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
   if (!layout || layout.types.length === 0) {
-    return <p className="text-gray-500 mt-8 text-center">No component data found. Run a compile first.</p>;
+    return <p className="sf-text-muted mt-8 text-center">No component data found. Run a compile first.</p>;
   }
 
   const isLoading = activeSubTab === 'enums' ? enumLoadingFromStore : componentLoading;
@@ -114,10 +114,10 @@ export function ComponentReviewPage() {
       <div className="flex items-center justify-end">
         <button
           onClick={() => toggleDebugLinkedProducts()}
-          className={`px-2.5 py-1 rounded text-[11px] font-medium border transition-colors ${
+          className={`px-2.5 py-1 rounded sf-text-label font-medium border transition-colors ${
             debugLinkedProducts
-              ? 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'
+              ? 'sf-chip-info sf-border-default'
+              : 'sf-icon-button'
           }`}
           title="Toggle linked-product and identity debug overlays."
         >
@@ -129,7 +129,7 @@ export function ComponentReviewPage() {
       {metrics && <MetricRow metrics={metrics} />}
 
       {/* Sub-tab bar */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+      <div className="flex gap-1 overflow-x-auto">
         {subTabs.map((tab) => (
           <button
             key={tab.key}
@@ -141,7 +141,7 @@ export function ComponentReviewPage() {
           >
             {tab.label}
             {tab.count > 0 && (
-              <span className="ml-1.5 text-[10px] bg-gray-200 dark:bg-gray-700 rounded-full px-1.5 py-0.5">
+              <span className="ml-1.5 sf-text-nano sf-chip-neutral rounded-full px-1.5 py-0.5">
                 {tab.count}
               </span>
             )}

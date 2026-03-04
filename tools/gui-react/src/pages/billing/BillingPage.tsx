@@ -25,7 +25,7 @@ interface LearningArtifact {
   updated: string;
 }
 
-const sectionCls = 'bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4';
+const sectionCls = 'sf-surface-card rounded-lg p-4';
 
 // ── Single-category view ────────────────────────────────────────
 function SingleCategoryBilling({ category }: { category: string }) {
@@ -95,13 +95,13 @@ function SingleCategoryBilling({ category }: { category: string }) {
       <div className={sectionCls}>
         <h3 className="text-sm font-semibold mb-3">Learning Artifacts</h3>
         {artifacts.length === 0 ? (
-          <p className="text-gray-400 text-sm">No learning artifacts found.</p>
+          <p className="sf-text-subtle text-sm">No learning artifacts found.</p>
         ) : (
           <div className="space-y-1 text-sm">
             {artifacts.map((a) => (
               <div key={a.name} className="flex justify-between">
                 <span className="font-mono text-xs">{a.name}</span>
-                <span className="text-gray-500">{compactNumber(a.size)} bytes</span>
+                <span className="sf-text-muted">{compactNumber(a.size)} bytes</span>
               </div>
             ))}
           </div>
@@ -192,7 +192,7 @@ function AllCategoriesBilling({ categories }: { categories: string[] }) {
             {perCategory.map((c) => (
               <div key={c.category} className="flex items-center justify-between text-sm">
                 <span className="font-medium capitalize">{c.category}</span>
-                <span>{usd(c.cost, 2)} <span className="text-gray-500 text-xs ml-1">({compactNumber(c.calls)} calls)</span></span>
+                <span>{usd(c.cost, 2)} <span className="sf-text-muted text-xs ml-1">({compactNumber(c.calls)} calls)</span></span>
               </div>
             ))}
           </div>
@@ -229,7 +229,7 @@ function AllCategoriesBilling({ categories }: { categories: string[] }) {
       )}
 
       {perCategory.length === 0 && (
-        <p className="text-gray-400 text-sm text-center">No billing data found across any category.</p>
+        <p className="sf-text-subtle text-sm text-center">No billing data found across any category.</p>
       )}
     </div>
   );

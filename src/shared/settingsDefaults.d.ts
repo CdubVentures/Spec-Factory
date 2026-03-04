@@ -46,6 +46,8 @@ export interface SharedRuntimeOptionValues {
   searchProvider: readonly ['none', 'google', 'bing', 'searxng', 'duckduckgo', 'dual'];
   resumeMode: readonly ['auto', 'force_resume', 'start_over'];
   scannedPdfOcrBackend: readonly ['auto', 'tesseract', 'none'];
+  repairDedupeRule: readonly ['domain_once', 'domain_and_status', 'none'];
+  automationQueueStorageEngine: readonly ['sqlite', 'memory'];
 }
 
 export interface SharedStorageOptionValues {

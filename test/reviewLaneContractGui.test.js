@@ -209,6 +209,33 @@ function seedStrictLaneCandidates(db, category) {
     score: 0.92,
   });
   replaceCandidateRow(db, {
+    candidateId: 'p1-conn-1',
+    category,
+    productId: PRODUCT_A,
+    fieldKey: 'connection',
+    value: '2.4GHz',
+    score: 0.98,
+    isListField: true,
+  });
+  replaceCandidateRow(db, {
+    candidateId: 'p1-conn-3',
+    category,
+    productId: PRODUCT_A,
+    fieldKey: 'connection',
+    value: '2.4GHz',
+    score: 0.9,
+    isListField: true,
+  });
+  replaceCandidateRow(db, {
+    candidateId: 'p1-conn-2',
+    category,
+    productId: PRODUCT_A,
+    fieldKey: 'connection',
+    value: 'Wireless',
+    score: 0.65,
+    isListField: true,
+  });
+  replaceCandidateRow(db, {
     candidateId: 'global_connection_candidate',
     category,
     productId: PRODUCT_A,
@@ -498,9 +525,14 @@ test('GUI click contract: grid + component + enum accept/confirm stay decoupled 
     await page.waitForSelector(`[data-product-id="${PRODUCT_A}"][data-field-key="weight"]`, { timeout: 20_000 });
 
     await clickGridCell(page, PRODUCT_A, 'weight');
-    await ensureButtonVisible(page, 'Accept Item');
-    await ensureButtonVisible(page, 'Confirm Item');
-    await page.getByRole('button', { name: 'Accept Item' }).first().click();
+    await ensureButtonVisible(page, 'Accept');
+    await ensureButtonVisible(page, 'Confirm');
+    const gridCandidatesSection = page.locator('section').filter({ hasText: /Candidates \(/ }).first();
+    const gridAcceptButton = gridCandidatesSection
+      .locator('span[title="49"]')
+      .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Accept"]')
+      .first();
+    await gridAcceptButton.click();
     const weightSlotId = getItemFieldStateId(db, CATEGORY, PRODUCT_A, 'weight');
     assert.ok(weightSlotId, 'weight item slot id should exist');
     await waitForCondition(async () => {
@@ -515,24 +547,24 @@ test('GUI click contract: grid + component + enum accept/confirm stay decoupled 
     }, 15_000, 120, 'grid_item_accept_primary');
     const gridCandidatesSectionAfterAccept = page.locator('section').filter({ hasText: /Candidates \(/ }).first();
     const gridAcceptedValueCard = gridCandidatesSectionAfterAccept.locator('span[title="49"]').first();
-    const gridConfirmAfterAccept = gridAcceptedValueCard.locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Confirm Item"]').first();
+    const gridConfirmAfterAccept = gridAcceptedValueCard.locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Confirm"]').first();
     await waitForCondition(async () => (
       (await gridConfirmAfterAccept.count()) > 0
     ), 15_000, 120, 'grid_confirm_still_visible_after_accept');
 
     await clickGridCell(page, PRODUCT_A, 'dpi');
-    await ensureButtonVisible(page, 'Confirm Item');
-    await page.getByRole('button', { name: 'Confirm Item' }).first().click();
+    await ensureButtonVisible(page, 'Confirm');
+    await page.getByRole('button', { name: 'Confirm' }).first().click();
     await waitForCondition(async () => {
       const payload = await apiJson(baseUrl, 'GET', `/review/${CATEGORY}/candidates/${PRODUCT_A}/dpi`);
       return payload?.keyReview?.primaryStatus === 'confirmed' && payload?.keyReview?.userAcceptPrimary == null;
     }, 15_000, 120, 'grid_item_confirm_primary');
 
     await clickGridCell(page, PRODUCT_A, 'connection');
-    const gridCandidatesSection = page.locator('section').filter({ hasText: /Candidates \(/ }).first();
-    assert.equal(await gridCandidatesSection.getByRole('button', { name: 'Accept Shared' }).count(), 0);
-    assert.equal(await gridCandidatesSection.getByRole('button', { name: 'Confirm Shared' }).count(), 0);
-    assert.equal(await gridCandidatesSection.locator('text=AI Shared Pending').count(), 0);
+    const gridCandidatesSectionForConnection = page.locator('section').filter({ hasText: /Candidates \(/ }).first();
+    assert.equal(await gridCandidatesSectionForConnection.getByRole('button', { name: 'Accept Shared' }).count(), 0);
+    assert.equal(await gridCandidatesSectionForConnection.getByRole('button', { name: 'Confirm Shared' }).count(), 0);
+    assert.equal(await gridCandidatesSectionForConnection.locator('text=AI Shared Pending').count(), 0);
     // Candidate card styling can vary by list virtualization/order; button contract is authoritative.
 
     await page.getByRole('link', { name: 'Review Components' }).click();
@@ -557,7 +589,7 @@ test('GUI click contract: grid + component + enum accept/confirm stay decoupled 
     await clickAndWaitForDrawer(page, '35000');
     const componentCandidatesSection = page.locator('section').filter({ hasText: /Candidates \(/ }).first();
     const componentAcceptButton = componentCandidatesSection
-      .locator('span[title="candidate_id: cmp_dpi_35000"]')
+      .locator('span[title="35000"]')
       .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Accept"]')
       .first();
     await componentAcceptButton.click();
@@ -603,10 +635,22 @@ test('GUI click contract: grid + component + enum accept/confirm stay decoupled 
     await page.getByRole('button', { name: /connection/i }).first().click();
     await clickAndWaitForDrawer(page, '2.4GHz');
     const enumCandidatesSection = page.locator('section').filter({ hasText: /Candidates \(/ }).first();
-    const enumAcceptButton = enumCandidatesSection
-      .locator('span[title="candidate_id: global_connection_candidate"]')
+    let enumAcceptButton = enumCandidatesSection
+      .locator('span[title="candidate_id: p1-conn-1"]')
       .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Accept"]')
       .first();
+    if ((await enumAcceptButton.count()) === 0) {
+      enumAcceptButton = enumCandidatesSection
+        .locator('span[title="candidate_id: global_connection_candidate"]')
+        .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Accept"]')
+        .first();
+    }
+    if ((await enumAcceptButton.count()) === 0) {
+      enumAcceptButton = enumCandidatesSection
+        .locator('span[title="2.4GHz"]')
+        .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Accept"]')
+        .first();
+    }
     await enumAcceptButton.click();
     await waitForCondition(async () => {
       const state = getStrictKeyReviewState(db, CATEGORY, {
@@ -620,7 +664,7 @@ test('GUI click contract: grid + component + enum accept/confirm stay decoupled 
     await clickAndWaitForDrawer(page, 'Wireless');
     const enumWirelessCandidatesSection = page.locator('section').filter({ hasText: /Candidates \(/ }).first();
     const enumConfirmAfterAccept = enumWirelessCandidatesSection
-      .locator('span[title="candidate_id: p1-conn-2"]')
+      .locator('span[title="Wireless"]')
       .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Confirm"]')
       .first();
 
@@ -732,7 +776,7 @@ test('GUI click contract: grid + component + enum accept/confirm stay decoupled 
     await page.getByRole('link', { name: 'Review Grid' }).click();
     await page.waitForSelector(`[data-product-id="${PRODUCT_A}"][data-field-key="weight"]`, { timeout: 20_000 });
     await clickGridCell(page, PRODUCT_A, 'weight');
-    assert.equal(await page.getByRole('button', { name: 'Confirm Item' }).count(), 0);
+    assert.equal(await page.getByRole('button', { name: 'Confirm' }).count(), 0);
     const zeroCandidateGridPayload = await apiJson(baseUrl, 'GET', `/review/${CATEGORY}/candidates/${PRODUCT_A}/weight`);
     assert.equal(zeroCandidateGridPayload?.keyReview?.primaryStatus, 'pending');
 
@@ -773,3 +817,5 @@ test('GUI click contract: grid + component + enum accept/confirm stay decoupled 
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
+
+

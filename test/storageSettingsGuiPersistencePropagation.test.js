@@ -69,13 +69,24 @@ function storageCard(page) {
 
 async function setStorageAutoSave(page, baseUrl, enabled) {
   const card = storageCard(page);
-  const toggleButton = card.getByRole('button', { name: enabled ? 'On' : 'Off', exact: true }).first();
-  await toggleButton.waitFor({ state: 'visible', timeout: 20_000 });
-  await toggleButton.click();
+  const expectedLabel = enabled ? 'Auto-Save On' : 'Auto-Save Off';
+  const inverseLabel = enabled ? 'Auto-Save Off' : 'Auto-Save On';
+  const expectedToggle = card.getByRole('button', { name: expectedLabel, exact: true }).first();
+  if ((await expectedToggle.count()) === 0) {
+    const toggleButton = card.getByRole('button', { name: inverseLabel, exact: true }).first();
+    await toggleButton.waitFor({ state: 'visible', timeout: 20_000 });
+    await toggleButton.click();
+  }
   await waitForCondition(async () => {
     const uiSettings = await apiJson(baseUrl, 'GET', '/ui-settings');
     return uiSettings?.storageAutoSaveEnabled === enabled;
   }, 20_000, 150, `ui_settings_storage_autosave_${enabled ? 'on' : 'off'}`);
+  await waitForCondition(
+    async () => (await card.getByRole('button', { name: expectedLabel, exact: true }).count()) > 0,
+    20_000,
+    120,
+    `storage_autosave_toggle_label_${enabled ? 'on' : 'off'}`,
+  );
 }
 
 test('GUI storage settings persist across reload for manual-save and autosave paths', { timeout: 300_000 }, async () => {
@@ -157,7 +168,7 @@ test('GUI storage settings persist across reload for manual-save and autosave pa
     await prefixInput.fill('gui-manual-prefix');
     await accessKeyInput.fill('AKIA_GUI_STORAGE');
 
-    const saveButton = page.getByRole('button', { name: 'Save Storage Settings' }).first();
+    const saveButton = card.getByRole('button', { name: 'Save', exact: true }).first();
     await saveButton.waitFor({ state: 'visible', timeout: 20_000 });
     await waitForCondition(
       async () => !(await saveButton.isDisabled()),
@@ -199,10 +210,12 @@ test('GUI storage settings persist across reload for manual-save and autosave pa
     assert.equal(await bucketAfterReload.inputValue(), 'spec-factory-gui-storage', 's3 bucket should persist after reload');
     assert.equal(await prefixAfterReload.inputValue(), 'gui-autosave-prefix', 'autosaved s3 prefix should persist after reload');
     assert.equal(await accessAfterReload.inputValue(), 'AKIA_GUI_STORAGE', 's3 access key id should persist after reload');
+    const saveButtonAfterReload = storageCard(page).getByRole('button', { name: 'Save', exact: true }).first();
+    await saveButtonAfterReload.waitFor({ state: 'visible', timeout: 20_000 });
     assert.equal(
-      await page.getByRole('button', { name: 'Save Storage Settings' }).count(),
-      0,
-      'manual save button should stay hidden when storage autosave is enabled',
+      await saveButtonAfterReload.isDisabled(),
+      true,
+      'manual save button should be disabled when storage autosave is enabled',
     );
 
     const persistedUiSettings = await apiJson(baseUrl, 'GET', '/ui-settings');
@@ -229,4 +242,3 @@ test('GUI storage settings persist across reload for manual-save and autosave pa
     await fs.rm(tempRoot, { recursive: true, force: true }).catch(() => {});
   }
 });
-

@@ -1,7 +1,7 @@
 import { emitDataChange } from '../events/dataChangeContract.js';
 import { runEnumConsistencyReview as runEnumConsistencyReviewDefault } from '../../llm/validateEnumConsistency.js';
 import { isConsumerEnabled } from '../../field-rules/consumerGate.js';
-import { loadUserSettings, persistUserSettingsSections, readStudioMapFromUserSettings } from '../services/userSettingsService.js';
+import { loadUserSettings, persistUserSettingsSections, readStudioMapFromUserSettings } from '../../features/settings-authority/index.js';
 
 function normalizeEnumToken(value) {
   return String(value ?? '').trim().toLowerCase();

@@ -24,7 +24,7 @@ test('runtime PUT keys are fully represented in IndexingPage collect payload and
     String(routePut.dynamicFetchPolicyMapJsonKey || 'dynamicFetchPolicyMapJson'),
   ]);
 
-  const collectStart = indexingText.indexOf('const collectRuntimeSettingsPayload = () => ({');
+  const collectStart = indexingText.indexOf('const collectRuntimeSettingsPayload = () => collectRuntimeSettingsPayloadFromDomain({');
   const collectEnd = indexingText.indexOf('const runtimeSettingsPayload = collectRuntimeSettingsPayload();');
   const collectPayloadSection = (
     collectStart >= 0

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const RUN_PRODUCT = path.resolve('src/pipeline/runProduct.js');
+const RUN_PRODUCT_ORCH_HELPERS = path.resolve('src/pipeline/helpers/runProductOrchestrationHelpers.js');
 const SEARCH_DISCOVERY = path.resolve('src/discovery/searchDiscovery.js');
 
 function readText(filePath) {
@@ -12,6 +13,7 @@ function readText(filePath) {
 
 test('runProduct wires convergence identity and retrieval knobs into runtime behavior', () => {
   const runProductText = readText(RUN_PRODUCT);
+  const orchestrationHelpersText = readText(RUN_PRODUCT_ORCH_HELPERS);
 
   assert.equal(
     runProductText.includes('buildNeedSetIdentityCaps(config)'),
@@ -24,24 +26,24 @@ test('runProduct wires convergence identity and retrieval knobs into runtime beh
     'runProduct should pass identity caps to computeNeedSet',
   );
   assert.equal(
-    runProductText.includes('config.needsetCapIdentityLocked'),
+    orchestrationHelpersText.includes('config.needsetCapIdentityLocked'),
     true,
-    'runProduct should wire needsetCapIdentityLocked',
+    'orchestration helpers should wire needsetCapIdentityLocked',
   );
   assert.equal(
-    runProductText.includes('config.needsetCapIdentityProvisional'),
+    orchestrationHelpersText.includes('config.needsetCapIdentityProvisional'),
     true,
-    'runProduct should wire needsetCapIdentityProvisional',
+    'orchestration helpers should wire needsetCapIdentityProvisional',
   );
   assert.equal(
-    runProductText.includes('config.needsetCapIdentityConflict'),
+    orchestrationHelpersText.includes('config.needsetCapIdentityConflict'),
     true,
-    'runProduct should wire needsetCapIdentityConflict',
+    'orchestration helpers should wire needsetCapIdentityConflict',
   );
   assert.equal(
-    runProductText.includes('config.needsetCapIdentityUnlocked'),
+    orchestrationHelpersText.includes('config.needsetCapIdentityUnlocked'),
     true,
-    'runProduct should wire needsetCapIdentityUnlocked',
+    'orchestration helpers should wire needsetCapIdentityUnlocked',
   );
   assert.equal(
     runProductText.includes('identityFilterEnabled: Boolean(config.retrievalIdentityFilterEnabled)'),

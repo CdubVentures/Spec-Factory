@@ -1,4 +1,4 @@
-import { resolveProductIdentity } from '../../catalog/productIdentityAuthority.js';
+import { resolveProductIdentity } from '../../features/catalog-identity/index.js';
 import { emitDataChange } from '../events/dataChangeContract.js';
 import { recordQueueCleanupOutcome } from '../../observability/dataPropagationCounters.js';
 

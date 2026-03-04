@@ -96,7 +96,7 @@ function productText(variables = {}) {
     .trim();
 }
 
-function buildModelSlugCandidates(variables = {}) {
+function buildModelSlugCandidates(variables = {}, cap = 6) {
   const entries = [];
   const brandSlug = slug(variables.brand || '');
   const modelSlug = slug(variables.model || '');
@@ -129,7 +129,8 @@ function buildModelSlugCandidates(variables = {}) {
     seen.add(token);
     unique.push(token);
   }
-  return unique.slice(0, 6);
+  const normalizedCap = Math.max(1, Number.parseInt(String(cap ?? 6), 10) || 6);
+  return unique.slice(0, normalizedCap);
 }
 
 function categoryPathSegments(category) {
@@ -149,11 +150,11 @@ function categoryPathSegments(category) {
   return [token, `${token}s`];
 }
 
-function buildManufacturerPlanUrls({ host, variables, queries, maxQueries = 3 }) {
+function buildManufacturerPlanUrls({ host, variables, queries, maxQueries = 3, deterministicAliasCap = 6 }) {
   const urls = [];
   const product = productText(variables);
   const queryText = product || queries[0] || '';
-  const slugs = buildModelSlugCandidates(variables);
+  const slugs = buildModelSlugCandidates(variables, deterministicAliasCap);
   const brandSlug = slug(variables.brand || '');
   const categorySegments = categoryPathSegments(variables.category);
 
@@ -362,7 +363,7 @@ function uniqueTokens(values = [], limit = 32) {
   return out;
 }
 
-function buildPlanOnlyResults({ categoryConfig, queries, variables, maxQueries = 3 }) {
+function buildPlanOnlyResults({ categoryConfig, queries, variables, maxQueries = 3, deterministicAliasCap = 6 }) {
   const planned = [];
   for (const sourceHost of categoryConfig.sourceHosts || []) {
     const host = sourceHost.host;
@@ -373,7 +374,8 @@ function buildPlanOnlyResults({ categoryConfig, queries, variables, maxQueries =
           host,
           variables,
           queries,
-          maxQueries
+          maxQueries,
+          deterministicAliasCap,
         })
       );
       continue;
@@ -891,6 +893,24 @@ function buildQueryAttemptStats(rows = []) {
   return [...byQuery.values()].sort((a, b) => b.result_count - a.result_count || a.query.localeCompare(b.query));
 }
 
+function resolveSearchProfileCaps(config = {}) {
+  const map = config?.searchProfileCapMap && typeof config.searchProfileCapMap === 'object'
+    ? config.searchProfileCapMap
+    : {};
+  const readCap = (key, fallback, min, max) => {
+    const parsed = Number.parseInt(String(map?.[key] ?? fallback), 10);
+    const normalized = Number.isFinite(parsed) ? parsed : fallback;
+    return Math.max(min, Math.min(max, normalized));
+  };
+  return {
+    deterministicAliasCap: readCap('deterministicAliasCap', 6, 1, 20),
+    llmAliasValidationCap: readCap('llmAliasValidationCap', 12, 1, 32),
+    llmDocHintQueriesCap: readCap('llmDocHintQueriesCap', 3, 1, 20),
+    llmFieldTargetQueriesCap: readCap('llmFieldTargetQueriesCap', 3, 1, 20),
+    dedupeQueriesCap: readCap('dedupeQueriesCap', 24, 1, 200),
+  };
+}
+
 function normalizeCategoryScope(value) {
   return String(value || '').trim().toLowerCase();
 }
@@ -1027,6 +1047,7 @@ export async function discoverCandidateSources({
   });
 
   const enrichedLexicon = mergeLearningStoreHintsIntoLexicon(learning.lexicon, learningStoreHints);
+  const searchProfileCaps = resolveSearchProfileCaps(config);
   const profileMaxQueries = Math.max(6, Number(config.discoveryMaxQueries || 8) * 2);
   const searchProfileBase = buildSearchProfile({
     job,
@@ -1035,7 +1056,10 @@ export async function discoverCandidateSources({
     lexicon: enrichedLexicon,
     learnedQueries: learning.queryTemplates,
     maxQueries: profileMaxQueries,
-    brandResolution
+    brandResolution,
+    aliasValidationCap: searchProfileCaps.llmAliasValidationCap,
+    fieldTargetQueriesCap: searchProfileCaps.llmFieldTargetQueriesCap,
+    docHintQueriesCap: searchProfileCaps.llmDocHintQueriesCap,
   });
   const baseQueries = toArray(searchProfileBase?.base_templates);
   const targetedQueries = toArray(searchProfileBase?.queries);
@@ -1134,7 +1158,7 @@ export async function discoverCandidateSources({
     ...extraQueries.map((query) => ({ query, source: 'runtime_extra', target_fields: [] }))
   ];
   const mergedQueryCap = Math.max(queryLimit, 6);
-  const mergedQueries = dedupeQueryRows(queryCandidates, null);
+  const mergedQueries = dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap);
   const rankedQueries = prioritizeQueryRows(mergedQueries.rows, variables, missingFields);
   const rankedCappedQueries = rankedQueries.slice(0, mergedQueryCap);
   const rankedCapRejectLog = rankedQueries.slice(mergedQueryCap).map((row) => ({
@@ -1472,7 +1496,8 @@ export async function discoverCandidateSources({
       categoryConfig,
       queries,
       variables,
-      maxQueries: Math.min(queryLimit, 12)
+      maxQueries: Math.min(queryLimit, 12),
+      deterministicAliasCap: searchProfileCaps.deterministicAliasCap,
     });
     rawResults.push(...planned);
     searchAttempts.push({

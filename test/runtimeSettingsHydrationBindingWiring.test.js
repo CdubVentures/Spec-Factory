@@ -9,42 +9,37 @@ function readText(filePath) {
   return fs.readFileSync(filePath, 'utf8');
 }
 
-test('runtime settings hydration in IndexingPage is binding-driven (single wiring path)', () => {
+test('runtime settings hydration in IndexingPage is domain-driven through shared binding helpers', () => {
   const indexingPageText = readText(INDEXING_PAGE);
 
   assert.equal(
-    indexingPageText.includes('const runtimeStringHydrationBindings = useMemo(() => (['),
+    indexingPageText.includes('createRuntimeHydrationBindings({'),
     true,
-    'IndexingPage should define string runtime hydration bindings',
+    'IndexingPage should create hydration bindings through shared runtime domain helper',
+  );
+  assert.equal(
+    indexingPageText.includes('const runtimeHydrationBindings = useMemo('),
+    true,
+    'IndexingPage should keep a single hydration binding contract reference',
+  );
+  assert.equal(
+    indexingPageText.includes('hydrateRuntimeSettingsFromBindings('),
+    true,
+    'IndexingPage should hydrate runtime settings through shared runtime domain hydrator',
+  );
+  assert.equal(
+    indexingPageText.includes('const runtimeStringHydrationBindings = useMemo(() => (['),
+    false,
+    'IndexingPage should not keep page-local string binding tables once extracted',
   );
   assert.equal(
     indexingPageText.includes('const runtimeNumberHydrationBindings = useMemo(() => (['),
-    true,
-    'IndexingPage should define number runtime hydration bindings',
+    false,
+    'IndexingPage should not keep page-local number binding tables once extracted',
   );
   assert.equal(
     indexingPageText.includes('const runtimeBooleanHydrationBindings = useMemo(() => (['),
-    true,
-    'IndexingPage should define boolean runtime hydration bindings',
-  );
-  assert.match(
-    indexingPageText,
-    /for \(const binding of runtimeStringHydrationBindings\)/,
-    'IndexingPage should hydrate string runtime settings by iterating shared binding metadata',
-  );
-  assert.match(
-    indexingPageText,
-    /for \(const binding of runtimeNumberHydrationBindings\)/,
-    'IndexingPage should hydrate numeric runtime settings by iterating shared binding metadata',
-  );
-  assert.match(
-    indexingPageText,
-    /for \(const binding of runtimeBooleanHydrationBindings\)/,
-    'IndexingPage should hydrate boolean runtime settings by iterating shared binding metadata',
-  );
-  assert.equal(
-    indexingPageText.includes("if (typeof d.profile === 'string' && d.profile) setProfile"),
     false,
-    'IndexingPage should avoid hand-written per-key hydration branches that drift over time',
+    'IndexingPage should not keep page-local boolean binding tables once extracted',
   );
 });

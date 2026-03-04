@@ -115,18 +115,21 @@ interface ImportProgress {
 // ── Styles ──────────────────────────────────────────────────────────
 
 const btnCls = 'px-3 py-1.5 text-sm rounded disabled:opacity-50 transition-colors';
-const btnPrimary = `${btnCls} bg-accent text-white hover:bg-blue-600`;
-const btnDanger = `${btnCls} bg-red-600 text-white hover:bg-red-700`;
-const btnSecondary = `${btnCls} bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600`;
-const cardCls = 'border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800';
+const btnPrimary = `${btnCls} sf-primary-button`;
+const btnDanger = `${btnCls} sf-danger-button-solid`;
+const btnSecondary = `${btnCls} sf-icon-button`;
+const cardCls = 'border sf-border-default rounded-lg p-3 sf-surface-card';
+const stepDoneCls = 'sf-chip-success';
+const stepActiveCls = 'sf-chip-info';
+const stepIdleCls = 'sf-chip-neutral';
 
 // ── Scenario category colors ────────────────────────────────────────
 const categoryColors: Record<string, string> = {
-  Coverage: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  Components: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-  Enums: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-  Constraints: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-  'Edge Cases': 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+  Coverage: 'sf-chip-info',
+  Components: 'sf-llm-soft-badge',
+  Enums: 'sf-chip-warning',
+  Constraints: 'sf-chip-danger',
+  'Edge Cases': 'sf-chip-neutral'
 };
 
 // ── Matrix Table Component ──────────────────────────────────────────
@@ -159,17 +162,17 @@ function MatrixTable({ matrix, validationResult, collapsed, onToggle }: {
         className="w-full flex items-center justify-between text-left"
       >
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-gray-400">{collapsed ? '+' : '-'}</span>
-          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{matrix.title}</span>
-          <span className="text-[10px] text-gray-400">{matrix.rows.length} rows</span>
+          <span className="text-xs font-mono sf-text-subtle">{collapsed ? '+' : '-'}</span>
+          <span className="text-sm font-semibold sf-text-primary">{matrix.title}</span>
+          <span className="text-[10px] sf-text-subtle">{matrix.rows.length} rows</span>
           {validationResult && (
             <span className="text-[10px]">
-              {passCount > 0 && <span className="text-green-600 mr-1">{passCount} pass</span>}
-              {failCount > 0 && <span className="text-red-600">{failCount} fail</span>}
+              {passCount > 0 && <span className="sf-status-text-success mr-1">{passCount} pass</span>}
+              {failCount > 0 && <span className="sf-status-text-danger">{failCount} fail</span>}
             </span>
           )}
         </div>
-        <div className="flex gap-2 text-[10px] text-gray-400">
+        <div className="flex gap-2 text-[10px] sf-text-subtle">
           {Object.entries(matrix.summary).map(([k, v]) => (
             <span key={k} className="font-mono">{k}: {v}</span>
           ))}
@@ -180,7 +183,7 @@ function MatrixTable({ matrix, validationResult, collapsed, onToggle }: {
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-[11px]">
             <thead>
-              <tr className="text-left text-gray-400 border-b border-gray-200 dark:border-gray-700">
+              <tr className="text-left sf-text-subtle border-b sf-border-default">
                 {validationResult && <th className="pb-1.5 pr-2 w-6"></th>}
                 {matrix.columns.map(col => (
                   <th key={col.key} className="pb-1.5 pr-2 whitespace-nowrap" style={{ minWidth: col.width }}>
@@ -191,16 +194,16 @@ function MatrixTable({ matrix, validationResult, collapsed, onToggle }: {
             </thead>
             <tbody>
               {rowsWithStatus.map(row => (
-                <tr key={row.id} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <tr key={row.id} className="border-b sf-border-default hover:opacity-95">
                   {validationResult && (
                     <td className="py-1 pr-2">
-                      {row.validationStatus === 'pass' && <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-500" title="All linked checks passed" />}
-                      {row.validationStatus === 'fail' && <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" title="One or more linked checks failed" />}
-                      {row.validationStatus === 'pending' && <span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-300 dark:bg-gray-600" title="No validation run yet" />}
+                      {row.validationStatus === 'pass' && <span className="inline-block h-2.5 w-2.5 rounded-full sf-metric-fill-success" title="All linked checks passed" />}
+                      {row.validationStatus === 'fail' && <span className="inline-block h-2.5 w-2.5 rounded-full sf-metric-fill-danger" title="One or more linked checks failed" />}
+                      {row.validationStatus === 'pending' && <span className="inline-block h-2.5 w-2.5 rounded-full sf-metric-fill-info" title="No validation run yet" />}
                     </td>
                   )}
                   {matrix.columns.map(col => (
-                    <td key={col.key} className="py-1 pr-2 font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                    <td key={col.key} className="py-1 pr-2 font-mono sf-text-muted whitespace-nowrap">
                       {col.key === 'testNumbers' || col.key === 'testScenario'
                         ? String(row.cells[col.key] ?? row.testNumbers?.join(', ') ?? '-')
                         : col.key === 'expectedBehavior'
@@ -227,26 +230,26 @@ function ImportProgressPanel({ steps }: { steps: ImportProgress[] }) {
 
   return (
     <div className={cardCls}>
-      <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
+      <div className="text-sm font-semibold sf-text-primary mb-2">
         {complete ? 'Import Complete' : 'Importing Field Rules Studio Contract...'}
       </div>
       <div className="space-y-1">
         {steps.filter(s => s.step !== 'complete').map((s, i) => (
           <div key={i} className="flex items-center gap-2 text-xs">
             {s.status === 'done' ? (
-              <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-500" title="Completed" />
+              <span className="inline-block h-2.5 w-2.5 rounded-full sf-metric-fill-success" title="Completed" />
             ) : s.status === 'error' ? (
-              <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" title="Error" />
+              <span className="inline-block h-2.5 w-2.5 rounded-full sf-metric-fill-danger" title="Error" />
             ) : (
               <Spinner className="h-3 w-3" />
             )}
-            <span className="font-mono text-gray-600 dark:text-gray-400">{s.step}</span>
-            {s.detail && <span className="text-gray-400">({s.detail})</span>}
+            <span className="font-mono sf-text-muted">{s.step}</span>
+            {s.detail && <span className="sf-text-subtle">({s.detail})</span>}
           </div>
         ))}
       </div>
       {complete?.summary && (
-        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+        <div className="mt-2 pt-2 border-t sf-border-default text-xs sf-text-muted">
           {complete.summary.fields} fields, {complete.summary.components} component DBs ({complete.summary.componentItems} items), {complete.summary.enums} enum catalogs, {complete.summary.rules} cross-validation rules
         </div>
       )}
@@ -504,9 +507,9 @@ export function TestModePage() {
   }
 
   function statusBadge(result?: RunResultItem) {
-    if (!result) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500">pending</span>;
-    if (result.status === 'error') return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300">error</span>;
-    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300">complete</span>;
+    if (!result) return <span className="text-[10px] px-1.5 py-0.5 rounded sf-chip-neutral">pending</span>;
+    if (result.status === 'error') return <span className="text-[10px] px-1.5 py-0.5 rounded sf-chip-danger">error</span>;
+    return <span className="text-[10px] px-1.5 py-0.5 rounded sf-chip-success">complete</span>;
   }
 
   function pct(v?: number) {
@@ -530,8 +533,8 @@ export function TestModePage() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Test Mode v2</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <h1 className="text-xl font-bold sf-text-primary">Test Mode v2</h1>
+        <p className="text-sm sf-text-muted mt-1">
           Contract-driven pipeline validation — scenarios auto-generated from the field rules contract (universal, any category).
         </p>
       </div>
@@ -540,35 +543,35 @@ export function TestModePage() {
       <div className={`${cardCls} space-y-3`}>
         {/* Step indicator */}
         <div className="flex items-center gap-1 text-[10px] font-medium">
-          <span className={`px-2 py-0.5 rounded-full ${step1Done ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}`}>
+          <span className={`px-2 py-0.5 rounded-full ${step1Done ? stepDoneCls : stepActiveCls}`}>
             1. Import{step1Done ? ' done' : ''}
           </span>
-          <span className="text-gray-300 dark:text-gray-600">&rarr;</span>
-          <span className={`px-2 py-0.5 rounded-full ${step2Done ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : step1Done ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'}`}>
+          <span className="sf-text-subtle">&rarr;</span>
+          <span className={`px-2 py-0.5 rounded-full ${step2Done ? stepDoneCls : step1Done ? stepActiveCls : stepIdleCls}`}>
             2. Generate{step2Done ? ' done' : ''}
           </span>
-          <span className="text-gray-300 dark:text-gray-600">&rarr;</span>
-          <span className={`px-2 py-0.5 rounded-full ${step3Done ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : step2Done ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'}`}>
+          <span className="sf-text-subtle">&rarr;</span>
+          <span className={`px-2 py-0.5 rounded-full ${step3Done ? stepDoneCls : step2Done ? stepActiveCls : stepIdleCls}`}>
             3. Run{step3Done ? ' done' : ''}
           </span>
-          <span className="text-gray-300 dark:text-gray-600">&rarr;</span>
-          <span className={`px-2 py-0.5 rounded-full ${step4Done ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : step3Done ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'}`}>
+          <span className="sf-text-subtle">&rarr;</span>
+          <span className={`px-2 py-0.5 rounded-full ${step4Done ? stepDoneCls : step3Done ? stepActiveCls : stepIdleCls}`}>
             4. Validate{step4Done ? ' done' : ''}
           </span>
           {testCategory && (
-            <span className="ml-auto text-xs font-mono text-gray-400">{testCategory}</span>
+            <span className="ml-auto text-xs font-mono sf-text-subtle">{testCategory}</span>
           )}
         </div>
 
         {/* Buttons row */}
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[240px]">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">Source Category</label>
+            <label className="text-xs font-medium sf-text-muted block mb-1">Source Category</label>
             {hasRemoteCategories ? (
               <select
                 value={sourceCategory}
                 onChange={(e) => setSourceCategory(e.target.value)}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                className="w-full sf-input"
                 title={categoriesLoading ? 'Loading categories...' : 'Select the source category to clone into Field Test.'}
               >
                 <option value="" disabled>{categoriesLoading ? 'Loading categories...' : 'Select category'}</option>
@@ -581,12 +584,12 @@ export function TestModePage() {
                 value={sourceCategory}
                 onChange={(e) => setSourceCategory(String(e.target.value || '').trim())}
                 placeholder={categoriesLoading ? 'Loading categories...' : 'Type source category'}
-                className="w-full px-2 py-1.5 text-sm border border-amber-300 dark:border-amber-700 rounded bg-white dark:bg-gray-700"
+                className="w-full sf-input"
                 title="Category list unavailable. Type a source category manually."
               />
             )}
             {(categoriesError || (!categoriesLoading && !hasRemoteCategories)) && (
-              <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
+              <p className="mt-1 text-[11px] sf-status-text-warning">
                 Category list unavailable. Manual category input enabled.
               </p>
             )}
@@ -641,10 +644,10 @@ export function TestModePage() {
           </button>
 
           <div className="flex items-end gap-2">
-            <label className="text-xs text-gray-500 dark:text-gray-400">
+            <label className="text-xs sf-text-muted">
               <span className="inline-flex items-center gap-1">
                 Sources/Scenario
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-100 text-[10px] text-gray-500 dark:bg-gray-700 dark:text-gray-300" title="0 uses each scenario's default source count. 1-5 overrides all scenarios.">?</span>
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full sf-chip-neutral text-[10px]" title="0 uses each scenario's default source count. 1-5 overrides all scenarios.">?</span>
               </span>
               <input
                 type="number"
@@ -653,14 +656,14 @@ export function TestModePage() {
                 step={1}
                 value={sourcesPerScenario}
                 onChange={(e) => setSourcesPerScenario(Number.parseInt(e.target.value || '0', 10) || 0)}
-                className="block mt-1 w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                className="block mt-1 w-20 sf-input"
                 title="0 uses each scenario's default source count. 1-5 overrides all scenarios."
               />
             </label>
-            <label className="text-xs text-gray-500 dark:text-gray-400">
+            <label className="text-xs sf-text-muted">
               <span className="inline-flex items-center gap-1">
                 Shared %
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-100 text-[10px] text-gray-500 dark:bg-gray-700 dark:text-gray-300" title="Percent of non-primary-source fields copied from source 1. Higher = more agreement across sources.">?</span>
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full sf-chip-neutral text-[10px]" title="Percent of non-primary-source fields copied from source 1. Higher = more agreement across sources.">?</span>
               </span>
               <input
                 type="number"
@@ -669,14 +672,14 @@ export function TestModePage() {
                 step={5}
                 value={sharedFieldRatioPercent}
                 onChange={(e) => setSharedFieldRatioPercent(Number.parseInt(e.target.value || '0', 10) || 0)}
-                className="block mt-1 w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                className="block mt-1 w-20 sf-input"
                 title="Percent of non-primary-source fields copied from source 1."
               />
             </label>
-            <label className="text-xs text-gray-500 dark:text-gray-400">
+            <label className="text-xs sf-text-muted">
               <span className="inline-flex items-center gap-1">
                 Duplicate %
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-100 text-[10px] text-gray-500 dark:bg-gray-700 dark:text-gray-300" title="Extra chance to force same-value duplicates even when Shared % would have varied the field.">?</span>
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full sf-chip-neutral text-[10px]" title="Extra chance to force same-value duplicates even when Shared % would have varied the field.">?</span>
               </span>
               <input
                 type="number"
@@ -685,7 +688,7 @@ export function TestModePage() {
                 step={5}
                 value={sameValueDuplicatePercent}
                 onChange={(e) => setSameValueDuplicatePercent(Number.parseInt(e.target.value || '0', 10) || 0)}
-                className="block mt-1 w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                className="block mt-1 w-20 sf-input"
                 title="Extra chance to force same-value duplicates even when Shared % does not."
               />
             </label>
@@ -717,7 +720,7 @@ export function TestModePage() {
         </div>
 
         {/* Current step explanation */}
-        <div className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+        <div className="text-[11px] sf-text-muted dark:sf-text-subtle leading-relaxed">
           {!step1Done && (
             <span>Select a source category and click <strong>Create</strong> to import its field rules contract into an isolated test sandbox.</span>
           )}
@@ -731,14 +734,14 @@ export function TestModePage() {
             <span>{runResults.filter(r => r.status === 'complete').length}/{generatedProducts.length} scenarios complete. Click <strong>Validate</strong> to run contract assertion checks against the persisted artifacts — covering component suggestions, enum matching, variance policies, constraint violations, range checks, and more (or re-run individual scenarios below).</span>
           )}
           {step4Done && (
-            <span>Validation complete: <span className="text-green-600 font-medium">{validationResult!.summary.passed} passed</span>, <span className="text-red-600 font-medium">{validationResult!.summary.failed} failed</span> out of {validationResult!.summary.total} checks. Review the matrices and results below.</span>
+            <span>Validation complete: <span className="sf-status-text-success font-medium">{validationResult!.summary.passed} passed</span>, <span className="sf-status-text-danger font-medium">{validationResult!.summary.failed} failed</span> out of {validationResult!.summary.total} checks. Review the matrices and results below.</span>
           )}
         </div>
       </div>
 
       {/* ── Error display ──────────────────────────────────────── */}
       {(createMut.error || generateMut.error || runAllMut.error || validateMut.error || deleteMut.error) && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3 text-sm text-red-700 dark:text-red-300">
+        <div className="sf-status sf-status-danger text-sm">
           {(createMut.error || generateMut.error || runAllMut.error || validateMut.error || deleteMut.error)?.message}
         </div>
       )}
@@ -749,10 +752,10 @@ export function TestModePage() {
       {/* ── Coverage Matrices ──────────────────────────────────── */}
       {contractData?.matrices && (
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          <h2 className="text-sm font-semibold sf-text-muted">
             Coverage Matrices
             {contractData.summary && (
-              <span className="ml-2 text-xs font-normal text-gray-400">
+              <span className="ml-2 text-xs font-normal sf-text-subtle">
                 {contractData.summary.fieldCount} fields, {contractData.summary.componentTypes?.length || 0} component types, {contractData.summary.knownValuesCatalogs?.length || 0} enum catalogs
               </span>
             )}
@@ -782,10 +785,10 @@ export function TestModePage() {
       {/* ── Test Cases Grid ────────────────────────────────────── */}
       {generatedProducts.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+          <h2 className="text-sm font-semibold sf-text-muted mb-3">
             Test Scenarios ({generatedProducts.length})
             {runResults.length > 0 && (
-              <span className="ml-2 text-xs font-normal text-gray-400">
+              <span className="ml-2 text-xs font-normal sf-text-subtle">
                 {runResults.filter(r => r.status === 'complete').length}/{generatedProducts.length} complete
               </span>
             )}
@@ -806,57 +809,57 @@ export function TestModePage() {
                   const failChecks = scenarioChecks.filter(c => !c.pass).length;
 
                   return (
-                    <div key={tc.id} className={`${cardCls} ${result?.status === 'error' ? 'border-red-300 dark:border-red-700' : ''}`}>
+                    <div key={tc.id} className={`${cardCls} ${result?.status === 'error' ? 'sf-border-danger-soft' : ''}`}>
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                        <span className="text-xs font-bold sf-text-primary">
                           #{tc.id} {tc.name.replace(/_/g, ' ')}
                         </span>
                         <div className="flex items-center gap-1.5">
                           {scenarioChecks.length > 0 && (
                             <span className="text-[10px]">
-                              <span className="text-green-600">{passChecks}</span>/<span className={failChecks > 0 ? 'text-red-600' : 'text-gray-400'}>{passChecks + failChecks}</span>
+                              <span className="sf-status-text-success">{passChecks}</span>/<span className={failChecks > 0 ? 'sf-status-text-danger' : 'sf-text-subtle'}>{passChecks + failChecks}</span>
                             </span>
                           )}
                           {statusBadge(result)}
                         </div>
                       </div>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2">{tc.description}</p>
+                      <p className="text-[11px] sf-text-muted mb-2">{tc.description}</p>
 
                       {result && result.status === 'complete' && (
                         <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[10px] mb-2">
                           <div>
-                            <span className="text-gray-400 block">Conf</span>
+                            <span className="sf-text-subtle block">Conf</span>
                             <span className="font-mono">{pct(result.confidence)}</span>
                           </div>
                           <div>
-                            <span className="text-gray-400 block">Cov</span>
+                            <span className="sf-text-subtle block">Cov</span>
                             <span className="font-mono">{pct(result.coverage)}</span>
                           </div>
                           <div>
-                            <span className="text-gray-400 block">Traffic</span>
+                            <span className="sf-text-subtle block">Traffic</span>
                             <span className="font-mono">
-                              <span className="text-green-600">{result.trafficLight?.green ?? 0}</span>{'/'}
-                              <span className="text-yellow-600">{result.trafficLight?.yellow ?? 0}</span>{'/'}
-                              <span className="text-red-600">{result.trafficLight?.red ?? 0}</span>
+                              <span className="sf-status-text-success">{result.trafficLight?.green ?? 0}</span>{'/'}
+                              <span className="sf-status-text-warning">{result.trafficLight?.yellow ?? 0}</span>{'/'}
+                              <span className="sf-status-text-danger">{result.trafficLight?.red ?? 0}</span>
                             </span>
                           </div>
                           <div>
-                            <span className="text-gray-400 block">Conflicts</span>
+                            <span className="sf-text-subtle block">Conflicts</span>
                             <span className="font-mono">{result.constraintConflicts ?? 0}</span>
                           </div>
                           <div>
-                            <span className="text-gray-400 block">Missing</span>
+                            <span className="sf-text-subtle block">Missing</span>
                             <span className="font-mono">{result.missingRequired?.length ?? 0}</span>
                           </div>
                           <div>
-                            <span className="text-gray-400 block">Time</span>
+                            <span className="sf-text-subtle block">Time</span>
                             <span className="font-mono">{result.durationMs ? `${(result.durationMs / 1000).toFixed(1)}s` : '-'}</span>
                           </div>
                         </div>
                       )}
 
                       {result?.error && (
-                        <p className="text-[10px] text-red-500 dark:text-red-400 mb-2 truncate" title={result.error}>
+                        <p className="text-[10px] sf-status-text-danger mb-2 truncate" title={result.error}>
                           {result.error}
                         </p>
                       )}
@@ -873,13 +876,13 @@ export function TestModePage() {
                           <>
                             <a
                               href={`#/review?category=${testCategory}`}
-                              className={`${btnCls} text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200`}
+                              className={`${btnCls} text-[10px] sf-icon-button`}
                             >
                               Review
                             </a>
                             <a
                               href={`#/review-components?category=${testCategory}`}
-                              className={`${btnCls} text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200`}
+                              className={`${btnCls} text-[10px] sf-icon-button`}
                             >
                               Components
                             </a>
@@ -898,12 +901,12 @@ export function TestModePage() {
       {/* ── Validation Results ──────────────────────────────────── */}
       {validationResult && (
         <div>
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+          <h2 className="text-sm font-semibold sf-text-muted mb-3">
             Validation Results
             <span className="ml-2 text-xs font-normal">
-              <span className="text-green-600">{validationResult.summary.passed} passed</span>
+              <span className="sf-status-text-success">{validationResult.summary.passed} passed</span>
               {' / '}
-              <span className="text-red-600">{validationResult.summary.failed} failed</span>
+              <span className="sf-status-text-danger">{validationResult.summary.failed} failed</span>
               {' / '}
               {validationResult.summary.total} total
             </span>
@@ -911,7 +914,7 @@ export function TestModePage() {
           <div className={cardCls}>
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-left text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                <tr className="text-left sf-text-subtle border-b sf-border-default">
                   <th className="pb-2 pr-3">Product</th>
                   <th className="pb-2 pr-3">Test Case</th>
                   <th className="pb-2 pr-3">Check</th>
@@ -921,20 +924,20 @@ export function TestModePage() {
               </thead>
               <tbody>
                 {validationResult.results.map((check, i) => (
-                  <tr key={i} className="border-b border-gray-100 dark:border-gray-800">
-                    <td className="py-1.5 pr-3 font-mono text-[10px] text-gray-500 truncate max-w-[120px]" title={check.productId}>
+                  <tr key={i} className="border-b sf-border-default">
+                    <td className="py-1.5 pr-3 font-mono text-[10px] sf-text-muted truncate max-w-[120px]" title={check.productId}>
                       {check.productId.split('-').slice(-2).join('-')}
                     </td>
                     <td className="py-1.5 pr-3">{check.testCase}</td>
                     <td className="py-1.5 pr-3 font-mono">{check.check}</td>
                     <td className="py-1.5 pr-3">
                       {check.pass ? (
-                        <span className="text-green-600 font-bold">PASS</span>
+                        <span className="sf-status-text-success font-bold">PASS</span>
                       ) : (
-                        <span className="text-red-600 font-bold">FAIL</span>
+                        <span className="sf-status-text-danger font-bold">FAIL</span>
                       )}
                     </td>
-                    <td className="py-1.5 text-gray-400 truncate max-w-[200px]" title={check.detail}>
+                    <td className="py-1.5 sf-text-subtle truncate max-w-[200px]" title={check.detail}>
                       {check.detail}
                     </td>
                   </tr>

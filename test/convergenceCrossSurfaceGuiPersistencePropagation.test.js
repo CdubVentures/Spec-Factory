@@ -56,6 +56,16 @@ async function selectCategory(page, category) {
   );
 }
 
+async function openConvergenceSection(page) {
+  const convergenceSectionButton = page.getByRole('button', { name: /Convergence/i }).first();
+  await convergenceSectionButton.waitFor({ state: 'visible', timeout: 20_000 });
+  await convergenceSectionButton.click();
+}
+
+async function isSwitchChecked(switchLocator) {
+  return (await switchLocator.getAttribute('aria-checked')) === 'true';
+}
+
 async function seedCategory(helperRoot, category) {
   await seedFieldRules(helperRoot, category);
   await seedComponentDb(helperRoot, category);
@@ -63,22 +73,7 @@ async function seedCategory(helperRoot, category) {
   await seedWorkbookMap(helperRoot, category);
 }
 
-async function ensureDetailsOpen(page, summaryText) {
-  const details = page.locator(`details:has(summary:has-text("${summaryText}"))`).first();
-  await details.waitFor({ state: 'attached', timeout: 25_000 });
-  const isOpen = await details.evaluate((node) => node.hasAttribute('open'));
-  if (isOpen) return details;
-  await details.locator('summary').first().click();
-  await waitForCondition(
-    async () => await details.evaluate((node) => node.hasAttribute('open')),
-    10_000,
-    120,
-    `details_open_${summaryText}`,
-  );
-  return details;
-}
-
-test('GUI convergence knob stays synced across Pipeline Settings and Runtime Panel and persists reload', { timeout: 300_000 }, async () => {
+test('GUI convergence knob persists via Pipeline Settings while Indexing omits runtime settings container', { timeout: 300_000 }, async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'convergence-cross-surface-gui-'));
   const helperFilesRoot = path.join(tempRoot, 'helper_files');
   const localOutputRoot = path.join(tempRoot, 'out');
@@ -126,17 +121,30 @@ test('GUI convergence knob stays synced across Pipeline Settings and Runtime Pan
     await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
     await page.waitForSelector('text=Pipeline Settings', { timeout: 20_000 });
+    await openConvergenceSection(page);
 
-    const serpTriageCard = page.locator('h3:has-text("SERP Triage")').locator('xpath=ancestor::div[contains(@class,"rounded")][1]').first();
+    const serpTriageNavButton = page
+      .locator('aside button')
+      .filter({ has: page.locator('text=SERP Triage') })
+      .first();
+    await serpTriageNavButton.waitFor({ state: 'visible', timeout: 20_000 });
+    await serpTriageNavButton.click();
+
+    const serpTriageCard = page
+      .locator('h3:has-text("SERP Triage")')
+      .locator('xpath=ancestor::section[contains(@class,"rounded")][1]')
+      .first();
     await serpTriageCard.waitFor({ state: 'visible', timeout: 20_000 });
-    const triagePipelineCheckbox = serpTriageCard.locator('label:has-text("Triage Enabled") input[type="checkbox"]').first();
-    await triagePipelineCheckbox.waitFor({ state: 'visible', timeout: 20_000 });
-    const targetFromPipeline = !(await triagePipelineCheckbox.isChecked());
-    if ((await triagePipelineCheckbox.isChecked()) !== targetFromPipeline) {
-      await triagePipelineCheckbox.click();
+    const triagePipelineSwitch = serpTriageCard
+      .getByRole('switch', { name: 'Triage Enabled', exact: true })
+      .first();
+    await triagePipelineSwitch.waitFor({ state: 'visible', timeout: 20_000 });
+    const targetFromPipeline = !(await isSwitchChecked(triagePipelineSwitch));
+    if ((await isSwitchChecked(triagePipelineSwitch)) !== targetFromPipeline) {
+      await triagePipelineSwitch.click();
     }
 
-    const pipelineSave = page.getByRole('button', { name: 'Save Settings', exact: true }).first();
+    const pipelineSave = page.getByRole('button', { name: 'Save', exact: true }).first();
     await pipelineSave.waitFor({ state: 'visible', timeout: 20_000 });
     await waitForCondition(
       async () => !(await pipelineSave.isDisabled()),
@@ -154,66 +162,72 @@ test('GUI convergence knob stays synced across Pipeline Settings and Runtime Pan
     await page.getByRole('link', { name: 'Indexing Lab' }).click();
     await page.waitForURL(/#\/indexing/, { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
-    await ensureDetailsOpen(page, 'Run Setup and Discovery');
-    const runtimeConvergence = await ensureDetailsOpen(page, 'Convergence Tuning');
-    const triageRuntimeCheckbox = runtimeConvergence.locator('label:has-text("Triage Enabled") input[type="checkbox"]').first();
-    await triageRuntimeCheckbox.waitFor({ state: 'visible', timeout: 20_000 });
+    await page.waitForSelector('text=Event Stream', { timeout: 20_000 });
     assert.equal(
-      await triageRuntimeCheckbox.isChecked(),
+      await page.locator('text=Runtime and convergence settings now live in').count(),
+      0,
+      'indexing should not show runtime-settings migration banner after runtime panel removal',
+    );
+    const runtimeConvergenceDetails = page.locator('details:has(summary:has-text("Convergence Tuning"))');
+    assert.equal(
+      await runtimeConvergenceDetails.count(),
+      0,
+      'indexing should not render convergence controls from removed runtime settings container',
+    );
+    const convergenceAfterIndexingVisit = await apiJson(baseUrl, 'GET', '/convergence-settings');
+    assert.equal(
+      convergenceAfterIndexingVisit?.serpTriageEnabled,
       targetFromPipeline,
-      'runtime panel convergence knob should reflect pipeline settings saved value',
+      'visiting indexing should not mutate convergence persistence state',
     );
-
-    const targetFromRuntime = !targetFromPipeline;
-    if ((await triageRuntimeCheckbox.isChecked()) !== targetFromRuntime) {
-      await triageRuntimeCheckbox.click();
-    }
-    const runtimeSave = runtimeConvergence.getByRole('button', { name: 'Save', exact: true }).first();
-    await runtimeSave.waitFor({ state: 'visible', timeout: 20_000 });
-    await waitForCondition(
-      async () => !(await runtimeSave.isDisabled()),
-      20_000,
-      120,
-      'runtime_convergence_save_enabled',
-    );
-    await runtimeSave.click();
-
-    await waitForCondition(async () => {
-      const payload = await apiJson(baseUrl, 'GET', '/convergence-settings');
-      return payload?.serpTriageEnabled === targetFromRuntime;
-    }, 25_000, 150, 'runtime_convergence_persisted');
 
     await page.getByRole('link', { name: 'Pipeline Settings' }).click();
     await page.waitForURL(/#\/pipeline-settings/, { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
     await page.waitForSelector('text=Pipeline Settings', { timeout: 20_000 });
-    const triagePipelineAfterRuntimeSave = page
-      .locator('h3:has-text("SERP Triage")')
-      .locator('xpath=ancestor::div[contains(@class,"rounded")][1]')
-      .first()
-      .locator('label:has-text("Triage Enabled") input[type="checkbox"]')
+    await openConvergenceSection(page);
+    const serpTriageNavButtonAfterIndexingVisit = page
+      .locator('aside button')
+      .filter({ has: page.locator('text=SERP Triage') })
       .first();
-    await triagePipelineAfterRuntimeSave.waitFor({ state: 'visible', timeout: 20_000 });
+    await serpTriageNavButtonAfterIndexingVisit.waitFor({ state: 'visible', timeout: 20_000 });
+    await serpTriageNavButtonAfterIndexingVisit.click();
+
+    const triagePipelineAfterIndexingVisit = page
+      .locator('h3:has-text("SERP Triage")')
+      .locator('xpath=ancestor::section[contains(@class,"rounded")][1]')
+      .first()
+      .getByRole('switch', { name: 'Triage Enabled', exact: true })
+      .first();
+    await triagePipelineAfterIndexingVisit.waitFor({ state: 'visible', timeout: 20_000 });
     assert.equal(
-      await triagePipelineAfterRuntimeSave.isChecked(),
-      targetFromRuntime,
-      'pipeline convergence knob should reflect runtime panel saved value',
+      await isSwitchChecked(triagePipelineAfterIndexingVisit),
+      targetFromPipeline,
+      'pipeline convergence knob should remain canonical after navigating to indexing',
     );
 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
     await page.waitForSelector('text=Pipeline Settings', { timeout: 20_000 });
+    await openConvergenceSection(page);
+    const serpTriageNavButtonAfterReload = page
+      .locator('aside button')
+      .filter({ has: page.locator('text=SERP Triage') })
+      .first();
+    await serpTriageNavButtonAfterReload.waitFor({ state: 'visible', timeout: 20_000 });
+    await serpTriageNavButtonAfterReload.click();
+
     const triageAfterReload = page
       .locator('h3:has-text("SERP Triage")')
-      .locator('xpath=ancestor::div[contains(@class,"rounded")][1]')
+      .locator('xpath=ancestor::section[contains(@class,"rounded")][1]')
       .first()
-      .locator('label:has-text("Triage Enabled") input[type="checkbox"]')
+      .getByRole('switch', { name: 'Triage Enabled', exact: true })
       .first();
     await triageAfterReload.waitFor({ state: 'visible', timeout: 20_000 });
     assert.equal(
-      await triageAfterReload.isChecked(),
-      targetFromRuntime,
+      await isSwitchChecked(triageAfterReload),
+      targetFromPipeline,
       'convergence knob should remain persisted after reload',
     );
   } catch (error) {
@@ -230,4 +244,3 @@ test('GUI convergence knob stays synced across Pipeline Settings and Runtime Pan
     await fs.rm(tempRoot, { recursive: true, force: true }).catch(() => {});
   }
 });
-

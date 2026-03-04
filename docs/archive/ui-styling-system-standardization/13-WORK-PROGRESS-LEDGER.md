@@ -1,0 +1,1242 @@
+# UI Styling System Standardization - Work Progress Ledger
+
+This file is now the canonical progress log for the UI styling system standardization track.
+
+## Usage
+
+- Append new progress entries here for this track.
+- Keep AGENTS.md lightweight by linking here instead of duplicating full history.
+- Record date/time, changed files, tests run, and result status for each slice.
+
+## Migrated Progress History (from AGENTS.md)
+
+### Active Implementation Plan - UI styling system standardization
+
+- UI styling system standardization - Phase 0 (baseline audit) is now in progress (`implementation/ui-styling-system-standardization/01-PHASE-0-BASELINE-AUDIT.md`).
+- Pipeline settings/code-level knob drift gate added (2026-02-26):
+  - AST inventory generator: `scripts/generateAstKnobInventory.js`
+  - Snapshot artifact: `implementation/ai-indexing-plans/ast-knob-inventory.snapshot.json`
+  - CI test gate: `test/astKnobInventorySnapshot.test.js`
+  - NPM commands: `npm run audit:knobs` (check), `npm run audit:knobs:write` (refresh snapshot)
+- Pipeline knob hierarchy rollout planning artifacts added (2026-02-26):
+  - `implementation/ai-indexing-plans/PIPELINE-KNOB-HIERARCHY-ROLLOUT-PLAN-2026-02-26.md`
+  - `implementation/ai-indexing-plans/pipeline-knob-hierarchy-plan-2026-02-26.csv`
+- Baseline artifacts generated on 2026-02-26:
+  - `implementation/ui-styling-system-standardization/phase-0-audit-report.md`
+  - `implementation/ui-styling-system-standardization/phase-0-token-frequency.csv`
+  - `implementation/ui-styling-system-standardization/phase-0-audit-summary.json`
+- Canonical migration anchors confirmed for this track:
+  - `tools/gui-react/src/components/layout/AppShell.tsx`
+  - `tools/gui-react/src/components/common/DrawerShell.tsx`
+  - `tools/gui-react/src/components/common/DataTable.tsx`
+- Phase 0 freeze policy enacted in audit report:
+  - No new raw hex in TS/TSX.
+  - No new arbitrary `text-[Npx]` without explicit approval.
+  - No new spacing/radius values outside observed baseline scale.
+- UI styling system standardization - Phase 1 (token contract) deliverables drafted on 2026-02-26:
+  - `implementation/ui-styling-system-standardization/token-contract.md`
+  - `implementation/ui-styling-system-standardization/token-mapping-table.md`
+  - `implementation/ui-styling-system-standardization/token-rules.md`
+- Phase 1 contract decisions captured:
+  - Two-layer token model (`scale.*`, `semantic.*`) with light/dark parity required for semantic colors.
+  - Explicit allowed sets for typography, spacing, and radius (arbitrary `text-[Npx]` and out-of-scale spacing/radius disallowed).
+  - High-usage legacy style patterns mapped to semantic token targets (status families, gray/surface pairs, chart literals).
+- UI styling system standardization - Phase 2 (theme infrastructure) implemented on 2026-02-26:
+  - Added centralized theme source: `tools/gui-react/src/theme.css`
+  - Updated style load order in `tools/gui-react/src/main.tsx` (`theme.css` before `index.css`)
+  - Refactored `tools/gui-react/src/index.css` to consume token aliases/state vars and preserve shell gradients/behavior
+  - Extended `tools/gui-react/tailwind.config.ts` with semantic variable-driven colors plus approved spacing/radius/font scales
+  - Added wiring coverage: `test/themeInfrastructureWiring.test.js`
+  - Added build-guard coverage for Tailwind content parsing false positives: `test/tailwindContentExtractionGuard.test.js` (`IndexingPage` run-id stamp sanitizer avoids regex literal that generated invalid arbitrary css utility during minify)
+  - Validation: `node --test test/themeInfrastructureWiring.test.js` passing; `node --test test/tailwindContentExtractionGuard.test.js` passing; `npm --prefix tools/gui-react run build` passing
+- UI styling system standardization - Phase 3 (pilot migration) implemented on 2026-02-26 for canonical components:
+  - `tools/gui-react/src/components/layout/AppShell.tsx`
+  - `tools/gui-react/src/components/common/DrawerShell.tsx`
+  - `tools/gui-react/src/components/common/DataTable.tsx`
+  - Pilot semantic class set added to `tools/gui-react/src/theme.css` (app-shell header controls, drawer primitives, table primitives, compact text tokens)
+  - Pilot migration notes captured: `implementation/ui-styling-system-standardization/phase-3-pilot-migration-notes.md`
+  - Validation: `node --test test/pilotThemeMigrationWiring.test.js` passing; `node --test test/themeInfrastructureWiring.test.js` passing; `node --test test/tailwindContentExtractionGuard.test.js` passing; `npm --prefix tools/gui-react run build` passing
+- UI styling system standardization - Phase 4 (shared primitive layer) implemented on 2026-02-26:
+  - Added shared primitive API in `tools/gui-react/src/theme.css`:
+    - surfaces: `sf-surface-shell`, `sf-surface-panel`, `sf-surface-elevated`
+    - form: `sf-input`, `sf-select`, `sf-icon-button`
+    - table: `sf-table-shell`, `sf-table-head-cell`, `sf-table-row`, `sf-table-empty-state`
+    - status: `sf-status`, `sf-status-success`, `sf-status-warning`, `sf-status-danger`, `sf-status-info`
+  - Refactored shared components to consume primitives:
+    - `tools/gui-react/src/components/layout/AppShell.tsx`
+    - `tools/gui-react/src/components/common/DrawerShell.tsx`
+    - `tools/gui-react/src/components/common/DataTable.tsx`
+  - Added primitive wiring coverage: `test/primitiveLayerWiring.test.js`
+  - Primitive catalog + usage guide captured: `implementation/ui-styling-system-standardization/phase-4-primitive-layer-guide.md`
+  - Validation: `node --test test/primitiveLayerWiring.test.js test/pilotThemeMigrationWiring.test.js test/themeInfrastructureWiring.test.js test/tailwindContentExtractionGuard.test.js` passing; `npm --prefix tools/gui-react run build` passing
+- UI styling system standardization - Phase 5 batch 01 (indexing panel shell rollout) implemented on 2026-02-26:
+  - Added rollout tracker: `implementation/ui-styling-system-standardization/rollout-tracker.md`
+  - Migrated indexing panel shell bundles to shared primitives:
+    - outer shell bundle `rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800` -> `sf-surface-panel`
+    - inner section bundle `rounded border border-gray-200 dark:border-gray-700` -> `sf-surface-elevated`
+  - Added drift guard coverage: `test/indexingPanelThemeDriftGuard.test.js`
+  - Validation: `node --test test/themeInfrastructureWiring.test.js test/primitiveLayerWiring.test.js test/tailwindContentExtractionGuard.test.js test/pilotThemeMigrationWiring.test.js test/indexingPanelThemeDriftGuard.test.js` passing; `npm --prefix tools/gui-react run build` passing
+- UI styling system standardization - Phase 5 batch 02 (runtime-ops section-shell rollout) implemented on 2026-02-26:
+  - Migrated remaining runtime-ops section shell bundles to shared primitives (`sf-surface-elevated`) in:
+    - `tools/gui-react/src/pages/runtime-ops/panels/WorkerDataDrawer.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/panels/ScreenshotPreview.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/panels/ExtractionTab.tsx`
+  - Added drift guard coverage: `test/runtimeOpsPanelThemeDriftGuard.test.js`
+  - Validation: `node --test test/indexingPanelThemeDriftGuard.test.js test/runtimeOpsPanelThemeDriftGuard.test.js` passing; `npm --prefix tools/gui-react run build` passing
+- UI styling system standardization - Phase 5 batch 03 (indexing + runtime-ops typography tokenization) implemented on 2026-02-26:
+  - Added shared typography primitive in `tools/gui-react/src/theme.css`: `sf-text-label` (`11px`)
+  - Replaced arbitrary panel micro-text utilities with shared text primitives across:
+    - `tools/gui-react/src/pages/indexing/panels/*.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/panels/*.tsx`
+    - `text-[9px]` -> `sf-text-nano`
+    - `text-[10px]` -> `sf-text-caption`
+    - `text-[11px]` -> `sf-text-label`
+  - Extended drift guard coverage:
+    - `test/indexingPanelThemeDriftGuard.test.js` now blocks panel `text-[9|10|11px]`
+    - `test/runtimeOpsPanelThemeDriftGuard.test.js` now blocks panel `text-[9|10|11px]`
+  - Validation: `node --test test/themeInfrastructureWiring.test.js test/primitiveLayerWiring.test.js test/tailwindContentExtractionGuard.test.js test/pilotThemeMigrationWiring.test.js test/indexingPanelThemeDriftGuard.test.js test/runtimeOpsPanelThemeDriftGuard.test.js` passing; `npm --prefix tools/gui-react run build` passing
+- UI styling system standardization - Phase 5 batch 04 (indexing + runtime-ops badge color standardization) implemented on 2026-02-26:
+  - Added shared chip color primitives in `tools/gui-react/src/theme.css`:
+    - `sf-chip-success`, `sf-chip-warning`, `sf-chip-danger`, `sf-chip-info`, `sf-chip-neutral`
+  - Replaced legacy inline light/dark badge color bundles across:
+    - `tools/gui-react/src/pages/indexing/panels/*.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/panels/*.tsx`
+  - Extended drift guard coverage:
+    - `test/indexingPanelThemeDriftGuard.test.js` now blocks legacy inline badge color bundles
+    - `test/runtimeOpsPanelThemeDriftGuard.test.js` now blocks legacy inline badge color bundles
+  - Extended primitive coverage:
+    - `test/primitiveLayerWiring.test.js` now asserts shared chip primitives
+  - Validation: `node --test test/themeInfrastructureWiring.test.js test/primitiveLayerWiring.test.js test/tailwindContentExtractionGuard.test.js test/pilotThemeMigrationWiring.test.js test/indexingPanelThemeDriftGuard.test.js test/runtimeOpsPanelThemeDriftGuard.test.js` passing; `npm --prefix tools/gui-react run build` passing
+- UI styling system standardization - Phase 5 batch 05 (expanded badge + micro-text guard finalization) implemented on 2026-02-26:
+  - Added shared micro typography primitive in `tools/gui-react/src/theme.css`: `sf-text-micro` (`8px`)
+  - Expanded panel drift guard denylist to block:
+    - `text-[8|9|10|11px]` in indexing/runtime-ops panel surfaces
+    - remaining inline badge/status bundles (emerald/green, amber/yellow/orange, red/rose, blue/cyan/sky, gray/slate, indigo/purple/violet families)
+    - runtime-ops residual toggle variants (`bg-red-100 text-red-800`, `bg-green-100 text-green-800`, and bordered blue/gray state bundles)
+  - Codemodded indexing + runtime-ops panel surfaces and panel helper mappers to shared chip primitives (`sf-chip-success|warning|danger|info|neutral|accent`) and `sf-text-micro`
+  - Validation: `node --test test/themeInfrastructureWiring.test.js test/primitiveLayerWiring.test.js test/tailwindContentExtractionGuard.test.js test/pilotThemeMigrationWiring.test.js test/indexingPanelThemeDriftGuard.test.js test/runtimeOpsPanelThemeDriftGuard.test.js` passing; `npm --prefix tools/gui-react run build` passing
+- UI styling system standardization - Phase 5 batch 06 (callout + state-surface standardization) implemented on 2026-02-26:
+  - Added shared callout primitives in `tools/gui-react/src/theme.css`:
+    - `sf-callout`, `sf-callout-success`, `sf-callout-warning`, `sf-callout-danger`, `sf-callout-info`, `sf-callout-neutral`, `sf-callout-accent`
+  - Added shared action button primitive in `tools/gui-react/src/theme.css`:
+    - `sf-action-button`
+  - Added shared card surface primitive in `tools/gui-react/src/theme.css`:
+    - `sf-surface-card`
+  - Migrated remaining inline callout/state bundles in indexing + runtime-ops panels to shared callout primitives
+  - Migrated indexing runtime-panel lock label from ad-hoc red bordered bundle to shared chip primitive (`sf-chip-danger`)
+  - Migrated runtime-ops recurring blue bordered action button bundle (Extraction/Fallbacks/Queue tabs) to `sf-action-button`
+  - Migrated repeated rounded card-shell bundle (`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg`) to `sf-surface-card` across indexing/runtime-ops panel cards
+  - Drift guard expansion:
+    - `test/indexingPanelThemeDriftGuard.test.js` now blocks legacy callout bundles
+    - `test/indexingPanelThemeDriftGuard.test.js` now blocks legacy rounded card surface bundle
+    - `test/runtimeOpsPanelThemeDriftGuard.test.js` now blocks legacy callout bundles
+    - `test/runtimeOpsPanelThemeDriftGuard.test.js` now blocks legacy blue action-button bundle
+    - `test/runtimeOpsPanelThemeDriftGuard.test.js` now blocks legacy rounded card surface bundle
+  - Primitive wiring expansion:
+    - `test/primitiveLayerWiring.test.js` now asserts shared callout primitives, `sf-action-button`, and `sf-surface-card`
+  - Validation: `node --test test/themeInfrastructureWiring.test.js test/primitiveLayerWiring.test.js test/tailwindContentExtractionGuard.test.js test/pilotThemeMigrationWiring.test.js test/indexingPanelThemeDriftGuard.test.js test/runtimeOpsPanelThemeDriftGuard.test.js` passing; `npm --prefix tools/gui-react run build` passing
+- UI styling system standardization - Phase 5 batch 07 (pipeline-settings drift normalization) implemented on 2026-02-26:
+  - Added shared primitives in `tools/gui-react/src/theme.css`:
+    - `sf-primary-button`, `sf-danger-button`
+    - `sf-nav-item`, `sf-nav-item-active`, `sf-nav-item-muted`
+    - `sf-switch`, `sf-switch-on`, `sf-switch-off`, `sf-switch-track`, `sf-switch-track-on`, `sf-switch-thumb`
+    - `sf-status-text-info`, `sf-status-text-warning`, `sf-status-text-danger`, `sf-status-text-muted`
+  - Migrated pipeline surfaces:
+    - `tools/gui-react/src/pages/pipeline-settings/PipelineSettingsPage.tsx`
+    - `tools/gui-react/src/pages/pipeline-settings/RuntimeSettingsFlowCard.tsx`
+  - Added pipeline drift guard suite:
+    - `test/pipelineSettingsThemeDriftGuard.test.js`
+  - Expanded primitive wiring assertions:
+    - `test/primitiveLayerWiring.test.js` now asserts shared nav/switch/button/status-text primitives
+  - Validation: `node --test test/themeInfrastructureWiring.test.js test/primitiveLayerWiring.test.js test/tailwindContentExtractionGuard.test.js test/pilotThemeMigrationWiring.test.js test/indexingPanelThemeDriftGuard.test.js test/runtimeOpsPanelThemeDriftGuard.test.js test/pipelineSettingsThemeDriftGuard.test.js` passing; `npm --prefix tools/gui-react run build` passing
+  - Panel matrix artifact captured:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+- UI styling developer preference contract captured (2026-02-26):
+  - `implementation/ui-styling-system-standardization/11-DEVELOPER-STYLES-AND-OWNER-PREFERENCES-2026-02-26.md`
+  - Session rules include active-vs-hover stability and effort-band color mapping for Review LLM preset rows.
+- UI styling multi-theme handoff packet captured (2026-02-26 01:48:51 -08:00):
+  - `implementation/ui-styling-system-standardization/12-MULTI-THEME-HANDOFF-2026-02-26-014851.md`
+  - Defines next-phase objective for on-demand full-theme and border-radius profile switching under semantic token rules.
+- UI styling multi-theme runtime profile infrastructure implemented (2026-03-02):
+  - Added shared theme profile contract module: `tools/gui-react/src/stores/uiThemeProfiles.ts`
+  - Added uiStore runtime/persisted profile ownership:
+    - keys `ui:themeColorProfile`, `ui:themeRadiusProfile`, `ui:themeDensityProfile`
+    - html attributes `data-sf-theme`, `data-sf-radius`, `data-sf-density` applied via `hydrateUiThemeProfile()`
+  - Added startup hydration hook in `tools/gui-react/src/main.tsx` (`hydrateUiThemeProfile()` before render)
+  - Added settings control surface selectors in `tools/gui-react/src/pages/pipeline-settings/PipelineSettingsPage.tsx` for theme and radius profiles
+  - Refactored `tools/gui-react/src/theme.css` token infrastructure:
+    - theme mode via `html[data-sf-theme='dark']`
+    - radius profiles `tight`, `standard`, `relaxed`, `pill-heavy`
+    - semantic radius role tokens (`--sf-token-radius-status/chip/callout`) and primitive wiring updates
+  - Added/updated guardrail coverage:
+    - `test/themeProfileRuntimeWiring.test.js`
+    - `test/themeInfrastructureWiring.test.js`
+    - `test/primitiveLayerWiring.test.js`
+  - Validation (this session):
+    - `node --test test/themeInfrastructureWiring.test.js test/primitiveLayerWiring.test.js test/pipelineSettingsThemeDriftGuard.test.js test/settingsAdjacentThemeDriftGuard.test.js test/llmSettingsEffortBadgeTierWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` passing
+    - full regression sweep `npm test` passing
+- UI styling full panel audit refresh + runtime queue drift slice implemented (2026-03-02):
+  - Regenerated full matrix artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+  - Added ranked backlog artifact + generator:
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+    - `scripts/generatePanelStyleRemediationQueue.js`
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/QueueTab.tsx` to semantic primitives/token aliases:
+    - removed raw utility color usage (`131 -> 0`)
+    - drift grade moved `high -> aligned`
+  - Expanded semantic primitives in `tools/gui-react/src/theme.css`:
+    - `sf-status-text-success`
+    - `sf-text-primary`, `sf-text-muted`, `sf-text-subtle`
+    - `sf-border-default`, `sf-border-soft`, `sf-border-danger-soft`
+    - `sf-row-hoverable`, `sf-table-row-active`
+    - `sf-table-head-danger`, `sf-table-head-cell-danger`
+    - `sf-marker-info`
+  - Normalized shared runtime-ops badge mappers in `tools/gui-react/src/pages/runtime-ops/helpers.ts`:
+    - `queueStatusBadgeClass`
+    - `llmCallStatusBadgeClass`
+    - `triageDecisionBadgeClass`
+    - `riskFlagBadgeClass`
+  - Extended drift guard coverage:
+    - `test/runtimeOpsPanelThemeDriftGuard.test.js` now asserts QueueTab has no raw utility color classes.
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` passing
+    - full regression sweep `npm test` passing (`tests=3354`, `pass=3354`, `fail=0`)
+    - full regression sweep `npm test` passing (`tests=3351`, `pass=3351`, `fail=0`)
+    - full regression sweep `npm test` failing due existing `test/astKnobInventorySnapshot.test.js` snapshot mismatch (line-number drift in `src/api/routes/configRoutes.js`; snapshot refresh command: `node scripts/generateAstKnobInventory.js --write`)
+- UI styling runtime-ops planner drift slice implemented (2026-03-02):
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/PrefetchSearchPlannerPanel.tsx` to semantic theme primitives (removed raw inline utility colors).
+  - Extended semantic helper classes in `tools/gui-react/src/theme.css`:
+    - `sf-summary-toggle`
+    - `sf-link-accent`
+    - `sf-icon-badge`
+    - `sf-pre-block`
+  - Expanded drift guard for migrated runtime panel set in `test/runtimeOpsPanelThemeDriftGuard.test.js` (QueueTab + PrefetchSearchPlannerPanel raw-color guard).
+  - Regenerated matrix + queue artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+- UI styling review curation drift slice implemented (2026-03-03):
+  - Migrated review filter + tooltip surfaces to semantic theme primitives:
+    - `tools/gui-react/src/pages/review/BrandFilterBar.tsx`
+    - `tools/gui-react/src/pages/review/CellTooltip.tsx`
+  - Added shared primitive classes in `tools/gui-react/src/theme.css`:
+    - review brand filter contract (`sf-review-brand-filter-*`)
+    - cell tooltip contract (`sf-cell-tooltip-*`)
+  - Expanded guardrail coverage in `test/reviewButtonThemeDriftGuard.test.js`:
+    - zero raw-color drift assertions for `BrandFilterBar.tsx` and `CellTooltip.tsx`
+    - semantic class-hook assertions for both files and matching `theme.css` blocks
+  - Regenerated artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+    - `implementation/ui-styling-system-standardization/review-button-color-matrix.xlsx`
+  - Added formal runbook:
+    - `implementation/ui-styling-system-standardization/15-REVIEW-CURATION-THEME-CONTRACT-RUNBOOK-2026-03-03.md`
+  - Validation:
+    - `node --test test/reviewButtonThemeDriftGuard.test.js test/componentReviewThemeDriftGuard.test.js test/tabNavGroupingWiring.test.js` passing (`20/20`)
+    - `node --test test/*ThemeDriftGuard.test.js` passing (`97/97`)
+    - `node --test` passing (`3434/3434`)
+  - Drift impact:
+    - full matrix summary `aligned=5, high=26` -> `aligned=6, high=25`
+    - runtime-ops summary `high=11, aligned=1, rawColor=1456` -> `high=10, aligned=2, rawColor=1394`
+    - planner panel summary `rawColor=62 -> 0`, grade `high -> aligned`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` passing
+    - full regression sweep `npm test` passing
+- UI styling runtime-ops brand-resolver drift slice implemented (2026-03-02):
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/PrefetchBrandResolverPanel.tsx` to semantic theme primitives (removed raw inline utility colors).
+  - Expanded migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` to include:
+    - `PrefetchBrandResolverPanel.tsx`
+  - Regenerated matrix + queue artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=6, high=25` -> `aligned=7, high=24`
+    - runtime-ops summary `high=10, aligned=2, rawColor=1394` -> `high=9, aligned=3, rawColor=1282`
+    - brand resolver panel summary `rawColor=112 -> 0`, grade `high -> aligned`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` passing
+- UI styling runtime-ops prefetch triplet drift slice implemented (2026-03-02):
+  - Migrated high-drift runtime-ops panels to semantic primitives/token roles:
+    - `tools/gui-react/src/pages/runtime-ops/panels/PrefetchUrlPredictorPanel.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/panels/PrefetchSerpTriagePanel.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/panels/PrefetchSearchResultsPanel.tsx`
+  - Updated migrated-panel raw-color guard coverage in `test/runtimeOpsPanelThemeDriftGuard.test.js` to include the three prefetch panels above.
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=7, high=24` -> `aligned=10, high=21`
+    - runtime-ops summary `high=9, aligned=3, rawColor=1282` -> `high=6, aligned=6, rawColor=900`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` passing
+    - full regression sweep `npm test` passing (`tests=3351`, `pass=3351`, `fail=0`)
+- UI styling runtime-ops domain-classifier drift slice implemented (2026-03-02):
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/PrefetchDomainClassifierPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors).
+  - Expanded migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` to include:
+    - `PrefetchDomainClassifierPanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=10, high=21` -> `aligned=11, high=20`
+    - runtime-ops summary `high=6, aligned=6, rawColor=900` -> `high=5, aligned=7, rawColor=793`
+    - domain classifier panel summary `rawColor=107 -> 0`, grade `high -> aligned`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` passing
+    - full regression sweep `npm test` passing (`tests=3351`, `pass=3351`, `fail=0`)
+- UI styling runtime-ops needset drift slice implemented (2026-03-02):
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/PrefetchNeedSetPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors).
+  - Expanded migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` to include:
+    - `PrefetchNeedSetPanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=11, high=20` -> `aligned=12, high=19`
+    - runtime-ops summary `high=5, aligned=7, rawColor=793` -> `high=4, aligned=8, rawColor=678`
+    - needset panel summary `rawColor=115 -> 0`, grade `high -> aligned`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` passing
+    - full regression sweep `npm test` passing (`tests=3351`, `pass=3351`, `fail=0`)
+- UI styling runtime-ops query-journey drift slice implemented (2026-03-02):
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/PrefetchQueryJourneyPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors).
+  - Expanded migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` to include:
+    - `PrefetchQueryJourneyPanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=12, high=19` -> `aligned=13, high=18`
+    - runtime-ops summary `high=4, aligned=8, rawColor=678` -> `high=3, aligned=9, rawColor=610`
+    - query journey panel summary `rawColor=68 -> 0`, grade `high -> aligned`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` passing
+- UI styling runtime-ops high-drift burn-down slice implemented (2026-03-02):
+  - Migrated remaining runtime-ops high-drift panels to semantic theme primitives/token roles:
+    - `tools/gui-react/src/pages/runtime-ops/panels/DocumentsTab.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/panels/ExtractionTab.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/panels/FallbacksTab.tsx`
+  - Expanded migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` to include:
+    - `DocumentsTab.tsx`
+    - `ExtractionTab.tsx`
+    - `FallbacksTab.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=13, high=18` -> `aligned=16, high=15`
+    - runtime-ops summary `high=3, aligned=9, rawColor=610` -> `high=0, aligned=12, rawColor=362`
+    - panel summaries:
+      - `DocumentsTab`: `rawColor=66 -> 0`, grade `high -> aligned`
+      - `ExtractionTab`: `rawColor=92 -> 0`, grade `high -> aligned`
+      - `FallbacksTab`: `rawColor=90 -> 0`, grade `high -> aligned`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` passing
+    - full regression sweep `npm test` passing (`tests=3354`, `pass=3354`, `fail=0`)
+- UI styling indexing phase05 drift slice implemented (2026-03-02):
+  - Migrated `tools/gui-react/src/pages/indexing/panels/Phase05Panel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `Phase05Panel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=16, high=15` -> `aligned=17, high=14`
+    - indexing summary `high=7, aligned=0, rawColor=1792` -> `high=6, aligned=1, rawColor=1609`
+    - phase05 panel summary `rawColor=183 -> 0`, grade `high -> aligned`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` passing
+    - full regression sweep `npm test` passing (`tests=3355`, `pass=3355`, `fail=0`)
+- UI styling indexing runtime-settings drift slice implemented (2026-03-02):
+  - GUI panel: `Runtime Settings`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/RuntimePanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `RuntimePanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=17, high=14` -> `aligned=18, high=13`
+    - indexing summary `high=6, aligned=1, rawColor=1609` -> `high=5, aligned=2, rawColor=1143`
+    - runtime settings panel summary `rawColor=466 -> 0`, grade `high -> aligned`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` passing
+    - full regression sweep `npm test` passing (`tests=3355`, `pass=3355`, `fail=0`)
+- UI styling indexing search-profile drift slice implemented (2026-03-02):
+  - GUI panel: `Search Profile`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/SearchProfilePanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and utility radius classes).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `SearchProfilePanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=18, high=13` -> `aligned=19, high=12`
+    - indexing summary `high=5, aligned=2, rawColor=1143` -> `high=4, aligned=3, rawColor=964`
+    - search profile panel summary `colorCount -> 0`, grade `-> aligned`
+  - Validation (this session):
+    - focused sweep passing:
+      - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js`
+    - `npm --prefix tools/gui-react run build` failing due pre-existing `RuntimeDraft` contract mismatch in `tools/gui-react/src/pages/pipeline-settings/RuntimeSettingsFlowCard.tsx` (missing runtime fields)
+    - full regression sweep `npm test` failing (`tests=3355`, `pass=3352`, `fail=3`) with unrelated pre-existing failures:
+      - `test/indexingRuntimeOpsImmediateRunSyncGui.test.js` timeout waiting for indexing/runtime-ops run-id sync condition
+      - `test/runtimeSettingsKeyCoverageMatrix.test.js` runtime key coverage mismatch
+      - `test/storageSettingsRoutes.test.js` storage PUT expected `200` got `500`
+- UI styling indexing llm-output drift slice implemented (2026-03-02):
+  - GUI panel: `LLM Output Review (All Phases)`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/LlmOutputPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and utility radius classes).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `LlmOutputPanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=19, high=12` -> `aligned=20, high=11`
+    - indexing summary `high=4, aligned=3, rawColor=964` -> `high=3, aligned=4, rawColor=868`
+    - llm-output panel summary `colorCount=0`, grade `aligned`, `sfCount=108`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` passing
+    - full regression sweep `npm test` passing (`tests=3355`, `pass=3355`, `fail=0`)
+- UI styling indexing phase-06 drift slice implemented (2026-03-02):
+  - GUI panel: `Evidence Index & Dedupe (Phase 06A)`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/Phase06Panel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and utility radius classes).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `Phase06Panel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=20, high=11` -> `aligned=21, high=10`
+    - indexing summary `high=3, aligned=4, rawColor=868` -> `high=2, aligned=5, rawColor=775`
+    - phase-06 panel summary `colorCount=0`, grade `aligned`, `sfCount=106`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` passing
+    - full regression sweep `npm test` passing (`tests=3355`, `pass=3355`, `fail=0`)
+- UI styling indexing event-stream drift slice implemented (2026-03-02):
+  - GUI panel: `IndexLab Event Stream`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/EventStreamPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and utility radius classes).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `EventStreamPanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=21, high=10` -> `aligned=22, high=9`
+    - indexing summary `high=2, aligned=5, rawColor=775` -> `high=1, aligned=6, rawColor=688`
+    - event-stream panel summary `colorCount=0`, grade `aligned`, `sfCount=96`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` failing due pre-existing `RuntimeDraft` contract mismatch in `tools/gui-react/src/pages/pipeline-settings/RuntimeSettingsFlowCard.tsx`
+    - full regression sweep `npm test` passing (`tests=3356`, `pass=3356`, `fail=0`)
+
+## Current Working Contract (for this track)
+
+- Theme mode is controlled by `html[data-sf-theme="<theme-id>"]`.
+- Radius mode is controlled by `html[data-sf-radius="<radius-id>"]`.
+- Components should keep consuming semantic `sf-*` primitives.
+- Active state must remain visually stable against hover.
+- Effort-band mapping remains canonical:
+  - `1-3 -> success`
+  - `4-6 -> info`
+  - `7-8 -> warning`
+  - `9-10 -> danger`
+- UI styling indexing batch-processing drift slice implemented (2026-03-02):
+  - GUI panel: `Batch Processing`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/BatchPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and color-radius bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `BatchPanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=22, high=9` -> `aligned=23, high=8`
+    - indexing summary `high=1, aligned=6, rawColor=688` -> `high=0, aligned=7, rawColor=613`
+    - batch panel summary `rawColor=75 -> 0`, grade `aligned`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` failing due pre-existing runtime contract/type drift (`IndexingPage.tsx` / `RuntimeSettingsFlowCard.tsx`)
+
+- UI styling indexing learning-feed drift slice implemented (2026-03-02):
+  - GUI panel: `Learning Feed (Phase 10)`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/LearningPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and color-radius bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `LearningPanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=23, high=8` -> `aligned=24, high=8`
+    - indexing summary `high=0, aligned=7, rawColor=613` -> `high=0, aligned=8, rawColor=560`
+    - learning panel summary `rawColor=53 -> 0`, grade `aligned`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `npm --prefix tools/gui-react run build` failing due pre-existing runtime contract/type drift (`IndexingPage.tsx` / `RuntimeSettingsFlowCard.tsx`)
+    - full regression sweep `npm test` failing (`tests=3357`, `pass=3355`, `fail=2`):
+      - `test/pipelineSettingsThemeDriftGuard.test.js` intermittent micro-text guard failure in full-suite context; isolated run passes
+      - `test/runtimeSettingsKeyCoverageMatrix.test.js` runtime PUT key coverage mismatch
+- UI styling indexing llm-runtime-metrics drift slice implemented (2026-03-02):
+  - GUI panel: `LLM Runtime Metrics`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/LlmMetricsPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and color-radius bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `LlmMetricsPanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=24, low=14, moderate=37, high=8` -> `aligned=24, low=15, moderate=36, high=8`
+    - indexing summary `high=0, aligned=8, rawColor=560` -> `high=0, aligned=9, rawColor=514`
+    - llm-runtime-metrics panel summary `rawColor=46 -> 0`, grade `aligned`, `sfCount=91`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - full regression sweep `npm test` passing (`tests=3357`, `pass=3357`, `fail=0`)
+- UI styling indexing need-set drift slice implemented (2026-03-02):
+  - GUI panel: `NeedSet (Phase 01)`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/NeedSetPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and color-radius bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `NeedSetPanel.tsx`
+  - Updated scroll-cap regression guard for semantic table typography wrapper in:
+    - `test/needsetPanelScrollCap.test.js`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=24, low=15, moderate=36, high=8` -> `aligned=25, low=15, moderate=35, high=8`
+    - indexing summary `high=0, aligned=9, rawColor=514` -> `high=0, aligned=10, rawColor=470`
+    - need-set panel summary `rawColor=44 -> 0`, grade `aligned`, `sfCount=65`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - `node --test test/needsetPanelScrollCap.test.js test/indexingRuntimeOpsImmediateRunSyncGui.test.js` passing
+    - full regression sweep `npm test` passing (`tests=3357`, `pass=3357`, `fail=0`)
+- UI styling indexing overview drift slice implemented (2026-03-02):
+  - GUI panel: `Overview`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/OverviewPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and color-radius bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `OverviewPanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=25, low=15, moderate=35, high=8` -> `aligned=26, low=15, moderate=34, high=8`
+    - indexing summary `high=0, aligned=10, rawColor=470` -> `high=0, aligned=11, rawColor=415`
+    - overview panel summary `rawColor=55 -> 0`, grade `aligned`, `sfCount=51`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - full regression sweep `npm test` passing (`tests=3357`, `pass=3357`, `fail=0`)
+- UI styling indexing url-health drift slice implemented (2026-03-02):
+  - GUI panel: `URL Health & Repair (Phase 04)`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/UrlHealthPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and color-radius bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `UrlHealthPanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=26, low=15, moderate=34, high=8` -> `aligned=27, low=15, moderate=33, high=8`
+    - indexing summary `high=0, aligned=11, rawColor=415` -> `high=0, aligned=12, rawColor=361`
+    - url-health panel summary `rawColor=54 -> 0`, grade `aligned`, `sfCount=86`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - full regression sweep `npm test` failing (`tests=3357`, `pass=3355`, `fail=2`):
+      - `test/runtimeObservabilityKnobWiring.test.js`
+      - `test/runtimeSettingsKeyCoverageMatrix.test.js`
+- UI styling indexing phase-08 drift slice implemented (2026-03-02):
+  - GUI panel: `Extraction Context Matrix (Phase 08)`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/Phase08Panel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and color-radius bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `Phase08Panel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=27, low=15, moderate=33, high=8` -> `aligned=28, low=15, moderate=32, high=8`
+    - indexing summary `high=0, aligned=12, rawColor=361` -> `high=0, aligned=13, rawColor=309`
+    - phase-08 panel summary `rawColor=52 -> 0`, grade `aligned`, `sfCount=83`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - full regression sweep `npm test` passing (`tests=3357`, `pass=3357`, `fail=0`)
+- UI styling indexing phase-07 drift slice implemented (2026-03-02):
+  - GUI panel: `Tier Retrieval & Prime Sources (Phase 07)`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/Phase07Panel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and color-radius bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `Phase07Panel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=28, low=15, moderate=32, high=8` -> `aligned=29, low=15, moderate=31, high=8`
+    - indexing summary `high=0, aligned=13, rawColor=309` -> `high=0, aligned=14, rawColor=257`
+    - phase-07 panel summary `rawColor=52 -> 0`, grade `aligned`, `sfCount=83`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - full regression sweep `npm test` passing (`tests=3357`, `pass=3357`, `fail=0`)
+- UI styling indexing phase-06b drift slice implemented (2026-03-02):
+  - GUI panel: `Automation Queue (Phase 06B)`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/Phase06bPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and color-radius bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `Phase06bPanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=29, low=15, moderate=31, high=8` -> `aligned=30, low=15, moderate=30, high=8`
+    - indexing summary `high=0, aligned=14, rawColor=257` -> `high=0, aligned=15, rawColor=209`
+    - phase-06b panel summary `rawColor=48 -> 0`, grade `aligned`, `sfCount=82`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - full regression sweep `npm test` passing (`tests=3357`, `pass=3357`, `fail=0`)
+- UI styling indexing phase-09 drift slice implemented (2026-03-02):
+  - GUI panel: `Convergence Round Summary (Phase 09)`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/Phase09Panel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and color-radius bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `Phase09Panel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=30, low=15, moderate=30, high=8` -> `aligned=31, low=15, moderate=29, high=8`
+    - indexing summary `high=0, aligned=15, rawColor=209` -> `high=0, aligned=16, rawColor=174`
+    - phase-09 panel summary `rawColor=35 -> 0`, grade `aligned`, `sfCount=45`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js test/primitiveLayerWiring.test.js test/themeInfrastructureWiring.test.js test/themeProfileRuntimeWiring.test.js` passing
+    - full regression sweep `npm test` failing (`tests=3358`, `pass=3355`, `fail=3`):
+      - `test/runtimeLlmBudgetKnobWiring.test.js`
+      - `test/runtimeSettingsKeyCoverageMatrix.test.js`
+      - `test/runtimeSettingsSerializerParity.test.js`
+- UI styling indexing SERP explorer + title consistency slice implemented (2026-03-02):
+  - GUI panel: `SERP Explorer`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/SerpExplorerPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and legacy gray border/text bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `SerpExplorerPanel.tsx`
+  - Added indexing title consistency guard in `test/indexingPanelThemeDriftGuard.test.js`:
+    - `indexing panel titles avoid phase suffix labels`
+  - Removed phase suffix labels from indexing panel titles/subheaders for consistency (`(Phase XX)` removed, e.g. `SearchProfile JSON`).
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=31, low=15, moderate=29, high=8` -> `aligned=32, low=14, moderate=29, high=8`
+    - indexing summary `high=0, aligned=16, rawColor=174` -> `high=0, aligned=17, rawColor=144`
+    - SERP explorer summary `rawColor=30 -> 0`, grade `aligned`, `sfCount=37`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js` passing
+    - `node --test test/themeProfileRuntimeWiring.test.js` passing
+    - `npm test` passing (`tests=3362`, `pass=3362`, `fail=0`)
+- UI styling indexing session data drift slice implemented (2026-03-02):
+  - GUI panel: `Session Data`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/SessionDataPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and legacy gray/amber utility bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `SessionDataPanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=32, low=14, moderate=29, high=8` -> `aligned=33, low=14, moderate=28, high=8`
+    - indexing summary `high=0, aligned=17, rawColor=144` -> `high=0, aligned=18, rawColor=122`
+    - session data summary `rawColor=22 -> 0`, grade `aligned`, `sfCount=17`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js` passing
+    - `node --test test/themeProfileRuntimeWiring.test.js` passing
+- UI styling indexing picker drift slice implemented (2026-03-02):
+  - GUI panel: `Product Picker`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/PickerPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and legacy emerald/gray/cyan/red bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `PickerPanel.tsx`
+  - Removed decorative `Start Here` header badge from picker title strip.
+  - Drift impact:
+    - full matrix summary `aligned=33, low=14, moderate=28, high=8` -> `aligned=34, low=14, moderate=27, high=8`
+    - indexing summary `high=0, aligned=18, rawColor=122` -> `high=0, aligned=19, rawColor=80`
+    - picker summary `rawColor=42 -> 0`, grade `aligned`, `sfCount=31`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js` passing
+    - `node --test test/themeProfileRuntimeWiring.test.js` passing
+- UI styling indexing worker-lanes drift slice implemented (2026-03-02):
+  - GUI panel: `Worker Lanes`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/WorkerPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility colors and legacy lane-color bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `WorkerPanel.tsx`
+  - Drift impact:
+    - full matrix summary `aligned=34, low=14, moderate=27, high=8` -> `aligned=35, low=14, moderate=26, high=8`
+    - indexing summary `high=0, aligned=19, rawColor=80` -> `high=0, aligned=20, rawColor=54`
+    - worker-lanes summary `rawColor=26 -> 0`, grade `aligned`, `sfCount=27`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js` passing
+    - `node --test test/themeProfileRuntimeWiring.test.js` passing
+- UI styling indexing page-shell drift slice implemented (2026-03-02):
+  - GUI surface: `IndexingPage`
+  - Migrated `tools/gui-react/src/pages/indexing/IndexingPage.tsx` ambiguity presets + error callout to semantic token roles (removed residual raw utility color literals).
+  - Added indexing page raw-color guard in `test/indexingPanelThemeDriftGuard.test.js`:
+    - `indexing page shell avoids raw utility color classes`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=35, low=14, moderate=26, high=8` -> `aligned=36, low=14, moderate=25, high=8`
+    - indexing summary `high=0, aligned=20, rawColor=54` -> `high=0, aligned=21, rawColor=12`
+    - indexing-page summary `rawColor=42 -> 0`, grade `aligned`, `sfCount=17`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js` passing
+    - `node --test test/themeProfileRuntimeWiring.test.js` passing
+- UI styling indexing panel-controls drift slice implemented (2026-03-02):
+  - GUI panel: `Panel Controls`
+  - Migrated `tools/gui-react/src/pages/indexing/panels/PanelControlsPanel.tsx` to semantic theme primitives/token roles (removed residual gray utility color bundles).
+  - Added indexing migrated-panel raw-color guard in `test/indexingPanelThemeDriftGuard.test.js` for:
+    - `PanelControlsPanel.tsx`
+  - Regenerated drift artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=36, low=14, moderate=25, high=8` -> `aligned=37, low=13, moderate=25, high=8`
+    - indexing summary `high=0, moderate=0, low=1, aligned=21, rawColor=12` -> `high=0, moderate=0, low=0, aligned=22, rawColor=0`
+    - panel-controls summary `rawColor=12 -> 0`, grade `aligned`, `sfCount=12`
+  - Validation (this session):
+    - `node --test test/indexingPanelThemeDriftGuard.test.js` passing
+    - `node --test test/themeProfileRuntimeWiring.test.js` passing
+- UI styling runtime-ops llm-call-details drift slice implemented (2026-03-02):
+  - GUI panel: `LLM Call Details`
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/PrefetchLlmCallPanel.tsx` to semantic theme primitives/token roles (removed residual raw utility color bundles).
+  - Added runtime-ops migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` for:
+    - `PrefetchLlmCallPanel.tsx`
+  - Drift impact:
+    - full matrix summary `aligned=39, low=13, moderate=23, high=8` -> `aligned=40, low=13, moderate=22, high=8`
+    - runtime-ops summary `high=0, moderate=8, low=3, aligned=14, rawColor=263` -> `high=0, moderate=7, low=3, aligned=15, rawColor=221`
+    - llm-call-details summary `rawColor=42 -> 0`, grade `aligned`, `sfCount=36`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js` passing
+- UI styling runtime-ops pre-fetch-tab-row drift slice implemented (2026-03-02):
+  - GUI panel: `Pre-Fetch` tab strip
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/PrefetchTabRow.tsx` to semantic theme primitives/token roles (removed residual raw utility color bundles).
+  - Added runtime-ops migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` for:
+    - `PrefetchTabRow.tsx`
+  - Regenerated drift artifacts (write mode):
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=40, low=13, moderate=22, high=8` -> `aligned=41, low=13, moderate=21, high=8`
+    - runtime-ops summary `high=0, moderate=7, low=3, aligned=15, rawColor=221` -> `high=0, moderate=6, low=3, aligned=16, rawColor=185`
+    - pre-fetch-tab-row summary `rawColor=36 -> 0`, grade `aligned`, `sfCount=13`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js` passing
+- UI styling runtime-ops overview drift slice implemented (2026-03-02):
+  - GUI panel: `Overview`
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/OverviewTab.tsx` to semantic theme primitives/token roles (removed residual raw utility color bundles).
+  - Added runtime-ops migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` for:
+    - `OverviewTab.tsx`
+  - Drift impact:
+    - full matrix summary `aligned=41, low=13, moderate=21, high=8` -> `aligned=42, low=13, moderate=20, high=8`
+    - runtime-ops summary `high=0, moderate=6, low=3, aligned=16, rawColor=185` -> `high=0, moderate=5, low=3, aligned=17, rawColor=153`
+    - overview summary `rawColor=32 -> 0`, grade `aligned`, `sfCount=20`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js` passing
+- UI styling runtime-ops metrics-rail drift slice implemented (2026-03-02):
+  - GUI panel: `Metrics Rail`
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/MetricsRail.tsx` to semantic theme primitives/token roles (removed residual raw utility color bundles).
+  - Added semantic meter primitives in `tools/gui-react/src/theme.css`:
+    - `.sf-meter-track`
+    - `.sf-meter-fill`
+  - Added runtime-ops migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` for:
+    - `MetricsRail.tsx`
+  - Drift impact:
+    - full matrix summary `aligned=42, low=13, moderate=20, high=8` -> `aligned=43, low=13, moderate=19, high=8`
+    - runtime-ops summary `high=0, moderate=5, low=3, aligned=17, rawColor=153` -> `high=0, moderate=4, low=3, aligned=18, rawColor=121`
+    - metrics-rail summary `rawColor=32 -> 0`, grade `aligned`, `sfCount=14`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js` passing
+- UI styling runtime-ops pipeline-flow drift slice implemented (2026-03-02):
+  - GUI panel: `Pipeline Flow`
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/PipelineFlowStrip.tsx` to semantic theme primitives/token roles (removed residual raw utility color bundles).
+  - Added runtime-ops migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` for:
+    - `PipelineFlowStrip.tsx`
+  - Regenerated drift artifacts (write mode):
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - full matrix summary `aligned=43, low=13, moderate=19, high=8` -> `aligned=44, low=13, moderate=18, high=8`
+    - runtime-ops summary `high=0, moderate=4, low=3, aligned=18, rawColor=121` -> `high=0, moderate=3, low=3, aligned=19, rawColor=104`
+    - pipeline-flow summary `rawColor=17 -> 0`, grade `aligned`, `sfCount=12`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js` passing
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js test/indexingPanelThemeDriftGuard.test.js test/themeProfileRuntimeWiring.test.js` passing
+- UI styling runtime-ops worker-live drift slice implemented (2026-03-02):
+  - GUI panel: `Worker Live`
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/WorkerLivePanel.tsx` to semantic theme primitives/token roles (removed residual raw utility color bundles).
+  - Added runtime-ops migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` for:
+    - `WorkerLivePanel.tsx`
+  - Drift impact:
+    - full matrix summary `aligned=45, low=13, moderate=17, high=8` -> `aligned=46, low=13, moderate=16, high=8`
+    - runtime-ops summary `high=0, moderate=1, low=3, aligned=20, rawColor=85` -> `high=0, moderate=0, low=3, aligned=21, rawColor=56`
+    - worker-live summary `rawColor=29 -> 0`, grade `aligned`, `sfCount=24`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js` passing
+- UI styling runtime-ops page-shell drift slice implemented (2026-03-02):
+  - GUI surface: `Runtime Ops`
+  - Migrated `tools/gui-react/src/pages/runtime-ops/RuntimeOpsPage.tsx` to semantic theme primitives/token roles (removed residual raw utility color bundles).
+  - Added runtime-ops page raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js`:
+    - `runtime-ops page shell avoids raw utility color classes`
+  - Regenerated drift artifacts (write mode):
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - runtime-ops moderate panel drift now cleared; only low-drift runtime-ops surfaces remain (`WorkersTab`, `ScreenshotPreview`, `BrowserStream`).
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js test/indexingPanelThemeDriftGuard.test.js test/themeProfileRuntimeWiring.test.js` passing
+- UI styling runtime-ops workers-tab-shell drift slice implemented (2026-03-02):
+  - GUI panel: `Workers`
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/WorkersTab.tsx` to semantic theme primitives/token roles (removed residual raw utility color bundles).
+  - Added runtime-ops migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` for:
+    - `WorkersTab.tsx`
+  - Drift impact:
+    - full matrix summary `aligned=46, low=13, moderate=16, high=8` -> `aligned=47, low=13, moderate=15, high=8`
+    - runtime-ops summary `high=0, moderate=0, low=3, aligned=21, rawColor=56` -> `high=0, moderate=0, low=2, aligned=22, rawColor=44`
+    - workers-tab summary `rawColor=12 -> 0`, grade `aligned`, `sfCount=8`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js` passing
+- UI styling runtime-ops browser-stream drift slice implemented (2026-03-02):
+  - GUI panel: `Browser Stream`
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/BrowserStream.tsx` to semantic theme primitives/token roles (removed residual raw utility color bundles).
+  - Added runtime-ops migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` for:
+    - `BrowserStream.tsx`
+  - Drift impact:
+    - full matrix summary `aligned=47, low=13, moderate=15, high=8` -> `aligned=48, low=12, moderate=15, high=8`
+    - runtime-ops summary `high=0, moderate=0, low=2, aligned=22, rawColor=44` -> `high=0, moderate=0, low=1, aligned=23, rawColor=37`
+    - browser-stream summary `rawColor=7 -> 0`, grade `aligned`, `sfCount=8`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js` passing
+- UI styling runtime-ops screenshot-preview drift slice implemented (2026-03-02):
+  - GUI panel: `Screenshot Preview`
+  - Migrated `tools/gui-react/src/pages/runtime-ops/panels/ScreenshotPreview.tsx` to semantic theme primitives/token roles (removed residual raw utility color bundles).
+  - Added runtime-ops migrated-panel raw-color guard in `test/runtimeOpsPanelThemeDriftGuard.test.js` for:
+    - `ScreenshotPreview.tsx`
+  - Radius normalization for aligned threshold:
+    - `rounded-b` -> `rounded`
+  - Drift impact:
+    - full matrix summary `aligned=48, low=11, moderate=15, high=8` -> `aligned=50, low=10, moderate=15, high=8`
+    - runtime-ops summary `high=0, moderate=0, low=1, aligned=23, rawColor=37` -> `high=0, moderate=0, low=0, aligned=25, rawColor=0`
+    - screenshot-preview summary `rawColor=8 -> 0`, grade `aligned`, `sfCount=7`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js` passing
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js test/indexingPanelThemeDriftGuard.test.js test/themeProfileRuntimeWiring.test.js` passing
+- UI styling runtime-ops shared-component semantic drift closure implemented (2026-03-02):
+  - GUI surfaces affected: Search Results, SERP Triage, URL Predictor, Search Planner, NeedSet, Domain Classifier, Brand Resolver (shared runtime component layer).
+  - Added component-level runtime drift guard coverage in `test/runtimeOpsPanelThemeDriftGuard.test.js`:
+    - `runtime-ops shared components avoid raw utility color classes`
+    - `runtime-ops shared components avoid arbitrary micro text utilities`
+  - Migrated shared component files to semantic primitives/token roles:
+    - `tools/gui-react/src/pages/runtime-ops/components/StatCard.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/components/StageCard.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/components/ScoreBar.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/components/StackedScoreBar.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/components/KanbanLane.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/components/VerticalStepper.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/components/PrefetchTooltip.tsx`
+    - `tools/gui-react/src/pages/runtime-ops/components/ProgressRing.tsx`
+  - Added shared semantic primitives in `tools/gui-react/src/theme.css`:
+    - `sf-meter-fill-success`, `sf-meter-fill-warning`, `sf-meter-fill-danger`
+    - `sf-card-hover-accent`
+    - `sf-tooltip-content`, `sf-tooltip-arrow`
+    - `sf-step-index-badge`
+  - Regenerated drift artifacts (write mode):
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - panel matrix unchanged at `aligned=50, low=10, moderate=15, high=8`
+    - runtime-ops section remains fully aligned (`high=0, moderate=0, low=0, aligned=25, rawColor=0`)
+    - new component guard offenders: raw utility color `7 -> 0`, micro text `7 -> 0`
+  - Validation (this session):
+    - `node --test test/runtimeOpsPanelThemeDriftGuard.test.js` passing
+    - `node --test test/searchResultsHelpers.test.js test/serpTriageHelpers.test.js test/urlPredictorHelpers.test.js` passing
+    - `node --test test/themeProfileRuntimeWiring.test.js` passing
+- UI styling component-review panel/page drift slice implemented (2026-03-02):
+  - GUI panels:
+    - `Component Review` panel strip/cards (`tools/gui-react/src/pages/component-review/ComponentReviewPanel.tsx`)
+    - `Component Review` page shell/tabs/debug toggle (`tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx`)
+  - Added component-review drift guard suite:
+    - `test/componentReviewThemeDriftGuard.test.js`
+    - guards:
+      - `component-review migrated panels avoid raw utility color classes`
+      - `component-review migrated panels avoid arbitrary micro text utilities`
+  - Migrated both surfaces to semantic primitives/token roles:
+    - chips/callouts/buttons/text/meter primitives (`sf-chip-*`, `sf-callout-*`, `sf-primary-button`, `sf-action-button`, `sf-icon-button`, `sf-nav-item*`, `sf-text-*`, `sf-status-text-*`, `sf-meter-*`)
+  - Removed arbitrary micro text utilities (`text-[10px]`, `text-[11px]`) from migrated files.
+  - Regenerated drift artifacts (write mode):
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Drift impact:
+    - global summary `aligned=50, low=10, moderate=15, high=8` -> `aligned=52, low=10, moderate=14, high=7`
+    - component-review section `high=3, moderate=2, aligned=0, rawColor=388` -> `high=2, moderate=1, aligned=2, rawColor=268`
+    - `ComponentReviewPanel.tsx` `rawColor=96 -> 0`, grade `aligned`
+    - `ComponentReviewPage.tsx` `rawColor=24 -> 0`, grade `aligned`
+  - Validation (this session):
+    - `node --test test/componentReviewThemeDriftGuard.test.js` passing
+    - `node --test test/componentReviewDataLaneState.test.js test/guiPersistenceSessionScope.test.js test/componentReviewThemeDriftGuard.test.js` passing
+- UI styling review/component final semantic drift slice implemented (2026-03-03):
+  - GUI surfaces:
+    - `tools/gui-react/src/components/common/CellDrawer.tsx`
+    - `tools/gui-react/src/pages/component-review/ComponentSubTab.tsx`
+  - Tightened guard contract in `test/reviewButtonThemeDriftGuard.test.js`:
+    - prioritized drift scan caps for `CellDrawer.tsx` and `ComponentSubTab.tsx` lowered to `0`
+    - pending-lane contract moved from hardcoded utility bundles to semantic classes (`sf-review-ai-pending-banner`, `sf-review-ai-pending-badge`, `sf-review-candidate-pending`)
+  - Added semantic primitives/tokens in `tools/gui-react/src/theme.css` for:
+    - pending lane visuals, accepted button/row states, evidence card/link/quote/meta styles, component subtab inline editor/chips/header counters/flag chip/pending rows
+    - `--sf-color-run-ai-rgb` token bridge for purple lane tints
+  - Regenerated UI styling artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+    - `implementation/ui-styling-system-standardization/review-button-color-matrix.xlsx`
+  - Updated workbook generator source:
+    - `scripts/generate_review_button_color_matrix.py` (removed stale `Finalize All`, fixed `Approve` naming/state and current primitive mappings)
+  - Drift impact:
+    - global summary `aligned=54, low=11, moderate=13, high=5` -> `aligned=57, low=10, moderate=11, high=5`
+    - `component-review` section now fully aligned (`aligned=5`, `rawColor=0`)
+    - `review` section reduced to `moderate=2`, `aligned=2`, `rawColor=70`
+  - Validation (this session):
+    - `node --test test/componentReviewThemeDriftGuard.test.js test/reviewActionTooltipThemeDriftGuard.test.js test/reviewButtonThemeDriftGuard.test.js` passing (`19/19`)
+    - `node --test test/*ThemeDriftGuard.test.js` passing (`92/92`)
+    - `node --test` passing (`3427/3427`)
+- UI styling high-drift reduction wave (studio/catalog/test-mode) implemented (2026-03-03):
+  - Tightened RED drift caps before implementation:
+    - `test/studioButtonThemeDriftGuard.test.js`
+      - `StudioPage.tsx` cap `<= 560`
+      - `WorkbenchDrawer.tsx` cap `<= 160`
+    - `test/catalogButtonThemeDriftGuard.test.js`
+      - `BrandManager.tsx` cap `<= 150`
+      - `ProductManager.tsx` cap `<= 230`
+    - `test/testModeThemeDriftGuard.test.js`
+      - `TestModePage.tsx` cap `<= 160`
+  - Migrated high-volume gray text/border utility bundles to semantic token classes in:
+    - `tools/gui-react/src/pages/studio/StudioPage.tsx`
+    - `tools/gui-react/src/pages/studio/workbench/WorkbenchDrawer.tsx`
+    - `tools/gui-react/src/pages/studio/BrandManager.tsx`
+    - `tools/gui-react/src/pages/catalog/ProductManager.tsx`
+    - `tools/gui-react/src/pages/test-mode/TestModePage.tsx`
+  - Regenerated styling artifacts + workbook:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+    - `implementation/ui-styling-system-standardization/review-button-color-matrix.xlsx`
+  - Drift impact (fresh matrix):
+    - `StudioPage.tsx` rawColor `602 -> 537`
+    - `ProductManager.tsx` rawColor `246 -> 215`
+    - `TestModePage.tsx` rawColor `172 -> 147`
+    - `BrandManager.tsx` rawColor `159 -> 138`
+    - `WorkbenchDrawer.tsx` rawColor `170 -> 120`
+  - Validation (this session):
+    - `node --test test/studioButtonThemeDriftGuard.test.js test/catalogButtonThemeDriftGuard.test.js test/testModeThemeDriftGuard.test.js` passing (`13/13`)
+    - `node --test test/*ThemeDriftGuard.test.js` passing (`99/99`)
+    - `node --test` passing (`3437/3437`)
+- UI styling drift reporting schema clarity update implemented (2026-03-03):
+  - Added explicit dual-metric reporting for color drift:
+    - `Raw color refs` (total utility-color occurrences)
+    - `Unique raw colors` (distinct utility-color tokens)
+  - Generator updates:
+    - `scripts/generatePanelStyleDriftMatrix.js`
+      - snapshot row metrics now include `colorUniqueCount`
+      - matrix tables/signals now display unique-token counts
+    - `scripts/generatePanelStyleRemediationQueue.js`
+      - section heat, wave summary, and ranked queue now include unique-token counts
+  - Added reporting contract test:
+    - `test/panelStyleDriftReportingContract.test.js`
+  - Regenerated artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+  - Validation (this session):
+    - `node --test test/panelStyleDriftReportingContract.test.js` passing (`3/3`)
+- UI styling stabilization + drift artifact refresh completed (2026-03-03):
+  - Repaired accidental syntax corruption in:
+    - `tools/gui-react/src/pages/studio/BrandManager.tsx`
+    - `tools/gui-react/src/pages/catalog/ProductManager.tsx`
+  - Hardened catalog drift assertion to be formatting-agnostic (semantic primitive detection instead of exact quote/line matching):
+    - `test/catalogButtonThemeDriftGuard.test.js`
+  - Refreshed reporting artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+    - `implementation/ui-styling-system-standardization/review-button-color-matrix.xlsx`
+  - Validation (this session):
+    - `node --test test/studioButtonThemeDriftGuard.test.js test/catalogButtonThemeDriftGuard.test.js` passing
+    - `node --test test/*ThemeDriftGuard.test.js` passing (`106/106`)
+    - `node --test test/indexingRuntimeOpsImmediateRunSyncGui.test.js test/runtimeSettingsIndexingNoOverlapPhase4Wiring.test.js test/runtimeSettingsPipelineFlowWiring.test.js test/settingsAdHocInitializationWiring.test.js test/settingsAuthorityMatrixWiring.test.js test/storageSettingsHydrationGate.test.js` passing (`9/9`)
+    - full suite `node --test` passing (`tests=3449`, `pass=3449`, `fail=0`)
+  - Current remaining drift from regenerated matrix:
+    - Summary: Total `83`, Aligned `62`, Low `16`, Moderate `4`, High `1`
+    - Highest remaining surface: `tools/gui-react/src/pages/studio/StudioPage.tsx` (`rawColor=499`, grade=`high`)
+- Studio high-drift burn-down slice completed (2026-03-03):
+  - Tightened studio drift guard threshold in `test/studioButtonThemeDriftGuard.test.js` from `<=500` to `<=450` (RED first).
+  - Migrated repeated Studio badge/callout/text color bundles in `tools/gui-react/src/pages/studio/StudioPage.tsx` to semantic primitives (`sf-chip-*`, `sf-callout-*`, `sf-status-text-*`, `sf-link-accent`).
+  - Hardened brittle Studio drift assertions to be formatting-agnostic in `test/studioButtonThemeDriftGuard.test.js` (regex/semantic checks instead of exact quote/newline matching).
+  - Result: `StudioPage.tsx` raw color refs reduced `499 -> 351` while preserving existing behavior.
+  - Validation:
+    - `node --test test/studioButtonThemeDriftGuard.test.js` passing
+    - `node --test test/*ThemeDriftGuard.test.js` passing (`106/106`)
+    - `node --test test/indexingRuntimeOpsImmediateRunSyncGui.test.js test/runtimeSettingsIndexingNoOverlapPhase4Wiring.test.js test/runtimeSettingsPipelineFlowWiring.test.js test/settingsAdHocInitializationWiring.test.js test/settingsAuthorityMatrixWiring.test.js test/storageSettingsHydrationGate.test.js` passing (`9/9`)
+  - Refreshed artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+    - `implementation/ui-styling-system-standardization/review-button-color-matrix.xlsx`
+  - Updated drift status:
+    - Summary: Total `83`, Aligned `62`, Low `17`, Moderate `3`, High `1`.
+    - Remaining high: `tools/gui-react/src/pages/studio/StudioPage.tsx` (`351`).
+- Studio drift reduction + test hardening stabilization pass completed (2026-03-03):
+  - Hardened brittle Studio wiring tests to be formatting/quote resilient:
+    - `test/studioAutosaveFlushOnUnmount.test.js`
+    - `test/studioAutosaveStatusParity.test.js`
+    - `test/studioConsumerToggleImmediatePropagation.test.js`
+    - `test/studioNumericInputClampWiring.test.js`
+    - `test/uiAutosaveAuthorityWiring.test.js`
+  - Confirmed runtime phase-05 GUI contract failure was stale dist-related, rebuilt GUI bundle:
+    - `npm run gui:build`
+    - `test/runtimeSettingsPhase05GuiContract.test.js` passing after rebuild.
+  - Tightened Studio drift guard threshold in `test/studioButtonThemeDriftGuard.test.js` from `<=450` to `<=320` (RED first, then GREEN).
+  - Added dark-mode compatibility semantic aliases in `tools/gui-react/src/theme.css` and migrated Studio usages away from raw dark gray utility tokens.
+  - Added semantic chip primitive `.sf-chip-confirm` in `tools/gui-react/src/theme.css`.
+  - Migrated repeated purple/orange/amber/yellow Studio badge bundles in `tools/gui-react/src/pages/studio/StudioPage.tsx` to semantic primitives (`sf-review-ai-pending-badge`, `sf-chip-confirm`, `sf-chip-warning`) where safe.
+  - Studio drift impact:
+    - `tools/gui-react/src/pages/studio/StudioPage.tsx` rawColor `351 -> 240`.
+  - Validation (this session):
+    - `node --test test/studioAutosaveFlushOnUnmount.test.js test/studioAutosaveStatusParity.test.js test/studioConsumerToggleImmediatePropagation.test.js test/studioNumericInputClampWiring.test.js test/uiAutosaveAuthorityWiring.test.js` passing (`20/20`)
+    - `node --test test/runtimeSettingsPhase05GuiContract.test.js` passing
+    - `node --test test/studioButtonThemeDriftGuard.test.js` passing (`14/14`)
+    - `node --test test/*ThemeDriftGuard.test.js` passing (`106/106`)
+    - full suite `node --test` passing (`tests=3451`, `pass=3451`, `fail=0`)
+  - Refreshed artifacts:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+    - `implementation/ui-styling-system-standardization/review-button-color-matrix.xlsx`
+  - Updated drift status:
+    - Summary: Total `83`, Aligned `62`, Low `17`, Moderate `3`, High `1`.
+    - Remaining high: `tools/gui-react/src/pages/studio/StudioPage.tsx` (`240`).
+- Studio high-drift reduction wave 2 completed (2026-03-03):
+  - Tightened Studio drift guard in `test/studioButtonThemeDriftGuard.test.js`:
+    - `StudioPage.tsx` raw utility color cap `<=190 -> <=170` (RED first, then GREEN).
+  - Replaced repeated Studio raw color bundles with semantic primitives in `tools/gui-react/src/pages/studio/StudioPage.tsx`:
+    - compile summary success/warning tones moved to `sf-status-text-*`
+    - warning callouts moved to `sf-callout sf-callout-warning`
+    - tooltip arrow fills moved to `sf-tooltip-arrow`
+    - save/compile status dots moved to semantic `sf-dot-*` classes
+  - Studio drift impact:
+    - `tools/gui-react/src/pages/studio/StudioPage.tsx` rawColor `186 -> 141` (unique `93 -> 68`).
+  - Refreshed artifacts (write mode):
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+    - `implementation/ui-styling-system-standardization/review-button-color-matrix.xlsx`
+  - Validation (this session):
+    - `node --test test/studioButtonThemeDriftGuard.test.js` passing (`14/14`)
+    - `node --test test/*ThemeDriftGuard.test.js` passing (`106/106`)
+    - full suite `node --test` passing (`tests=3451`, `pass=3451`, `fail=0`)
+  - Updated drift status:
+    - Summary: Total `83`, Aligned `62`, Low `17`, Moderate `3`, High `1`.
+    - Remaining high: `tools/gui-react/src/pages/studio/StudioPage.tsx` (`141`).
+- Studio high-drift elimination wave completed (2026-03-03):
+  - Tightened Studio drift guard in `test/studioButtonThemeDriftGuard.test.js`:
+    - `StudioPage.tsx` cap `<=170 -> <=40` (RED first, then GREEN).
+  - Added semantic style primitives in `tools/gui-react/src/theme.css` to preserve current colors while removing residual raw utility bundles:
+    - `sf-chip-warning-soft`, `sf-chip-warning-strong`
+    - `sf-chip-info-strong`, `sf-chip-info-active`, `sf-chip-info-soft`
+    - `sf-chip-success-strong`, `sf-chip-orange-strong`, `sf-chip-teal-strong`, `sf-chip-sky-strong`
+    - `sf-danger-action-soft`, `sf-danger-action-outline`, `sf-danger-action-outline-hover`, `sf-danger-solid-button`
+    - `sf-divider-soft`, `sf-divider-default`
+    - `sf-progress-track-soft`, `sf-progress-fill-idle`, `sf-progress-active-shell`
+    - `sf-border-warning-soft`, `sf-dot-subtle`, `sf-dot-pending`, `sf-hover-surface-soft-200`, `sf-status-danger-hover`
+  - Migrated repeated Studio bundles in `tools/gui-react/src/pages/studio/StudioPage.tsx` to those primitives (remove/delete actions, warning/ai badges, progress states, divider rows, status chips).
+  - Studio drift impact:
+    - `tools/gui-react/src/pages/studio/StudioPage.tsx` rawColor `141 -> 39` (unique `68 -> 26`).
+  - Regenerated artifacts + workbook:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+    - `implementation/ui-styling-system-standardization/review-button-color-matrix.xlsx`
+  - Validation (this session):
+    - `node --test test/studioButtonThemeDriftGuard.test.js` passing (`14/14`)
+    - `node --test test/*ThemeDriftGuard.test.js` passing (`106/106`)
+    - full suite `node --test` passing (`tests=3452`, `pass=3452`, `fail=0`)
+  - Updated drift status:
+    - Summary: Total `83`, Aligned `62`, Low `17`, Moderate `4`, High `0`.
+    - Remaining highest queue items are now moderate:
+      - `tools/gui-react/src/pages/studio/workbench/WorkbenchDrawer.tsx` (`56`)
+      - `tools/gui-react/src/pages/studio/StudioPage.tsx` (`39`)
+- Studio workbench drawer drift burn-down completed (2026-03-03):
+  - Tightened `WorkbenchDrawer.tsx` drift cap in `test/studioButtonThemeDriftGuard.test.js`:
+    - `<=60 -> <=40` (RED first, then GREEN).
+  - Added/extended semantic primitives in `tools/gui-react/src/theme.css` for workbench drawer residual bundles:
+    - `sf-dot-danger`
+    - `sf-chip-info-strong-hover`
+    - `sf-border-top-subtle`
+  - Migrated `tools/gui-react/src/pages/studio/workbench/WorkbenchDrawer.tsx` residual raw utility bundles to semantic classes:
+    - publish-failure status dots and component/enum purple badges
+    - property variance chips (teal/info), bool warning badge, known-value chips
+    - dark gray surface aliases and row divider aliases
+    - blue state row/callout bundles
+  - Workbench drawer drift impact:
+    - rawColor `56 -> 2` (unique `38 -> 1`)
+    - grade `moderate -> aligned`
+  - Regenerated artifacts + workbook:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+    - `implementation/ui-styling-system-standardization/review-button-color-matrix.xlsx`
+  - Validation (this session):
+    - `node --test test/studioButtonThemeDriftGuard.test.js` passing (`14/14`)
+    - `node --test test/*ThemeDriftGuard.test.js` passing (`106/106`)
+    - full suite `node --test` passing (`tests=3452`, `pass=3452`, `fail=0`)
+  - Updated drift status:
+    - Summary: Total `83`, Aligned `63`, Low `17`, Moderate `3`, High `0`.
+- Moderate drift elimination pass completed (2026-03-03):
+  - Added new focused drift guard:
+    - `test/productRuntimeThemeDriftGuard.test.js`
+      - `AvailabilityGuidance.tsx` locked to semantic callout/chip primitives + raw color refs `== 0`
+      - `QueueSnapshot.tsx` locked to semantic form/button primitives + raw color refs `== 0`
+  - Migrated product/runtime moderate surfaces:
+    - `tools/gui-react/src/pages/product/AvailabilityGuidance.tsx`
+      - Replaced raw green/orange/red/yellow bundles with semantic `sf-callout`/`sf-chip` + `sf-status-text-*` primitives.
+    - `tools/gui-react/src/pages/runtime/QueueSnapshot.tsx`
+      - Replaced raw select/input/button bundles with `sf-select`, `sf-input`, `sf-primary-button`, `sf-warning-button-solid`, `sf-run-ai-button`, `sf-danger-button-solid`.
+      - Replaced raw success/error status text colors with semantic status text primitives.
+  - Final Studio moderate cleanup:
+    - `tools/gui-react/src/pages/studio/StudioPage.tsx` residual raw color bundles removed (icon hovers, inline add forms, bool badges, compile error border, summary chips, key cards).
+    - Added helper semantic aliases in `tools/gui-react/src/theme.css`:
+      - `sf-status-warning-hover`
+      - `sf-run-ai-text`
+      - `sf-run-ai-text-hover`
+    - Tightened studio drift guard cap in `test/studioButtonThemeDriftGuard.test.js`:
+      - `StudioPage.tsx` raw utility color cap `<=40 -> <=0`.
+  - Drift impact:
+    - `StudioPage.tsx` rawColor `39 -> 0`
+    - `AvailabilityGuidance.tsx` rawColor `27 -> 0`
+    - `QueueSnapshot.tsx` rawColor `18 -> 0`
+  - Regenerated artifacts + workbook:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+    - `implementation/ui-styling-system-standardization/review-button-color-matrix.xlsx`
+  - Validation (this session):
+    - `node --test test/productRuntimeThemeDriftGuard.test.js` passing (`4/4`)
+    - `node --test test/studioButtonThemeDriftGuard.test.js` passing (`15/15`)
+    - `node --test test/*ThemeDriftGuard.test.js` passing (`111/111`)
+    - full suite `node --test --test-reporter=dot` passing
+  - Updated drift status:
+    - Summary: Total `83`, Aligned `65`, Low `18`, Moderate `0`, High `0`.
+- Low-drift burn-down batch completed (2026-03-03):
+  - Tightened drift caps to zero (RED first):
+    - `test/catalogButtonThemeDriftGuard.test.js`
+      - `BrandManager.tsx` raw utility color cap `<=100 -> <=0`
+    - `test/studioButtonThemeDriftGuard.test.js`
+      - `WorkbenchColumnPresets.tsx` raw utility color cap `<=16 -> <=0`
+  - Migrated remaining raw color bundles to semantic primitives:
+    - `tools/gui-react/src/pages/studio/BrandManager.tsx`
+      - warning/error text tokens moved to semantic status classes
+      - duplicate/invalid chips moved to `sf-chip-warning` / `sf-chip-danger`
+      - bulk row divider moved to `sf-divider-default`
+    - `tools/gui-react/src/pages/studio/workbench/WorkbenchColumnPresets.tsx`
+      - inactive preset/picker buttons moved to semantic surface/hover aliases
+      - picker menu shell moved to `sf-surface-card`
+      - picker row hover moved to semantic hover primitive
+      - search input moved to `sf-input`
+      - autosave dots moved to `sf-dot-pending` / `sf-success-bg-500`
+  - Drift impact:
+    - `BrandManager.tsx` rawColor `15 -> 0`
+    - `WorkbenchColumnPresets.tsx` rawColor `14 -> 0`
+  - Regenerated artifacts + workbook:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+    - `implementation/ui-styling-system-standardization/review-button-color-matrix.xlsx`
+  - Validation (this session):
+    - `node --test test/catalogButtonThemeDriftGuard.test.js test/studioButtonThemeDriftGuard.test.js` passing (`19/19`)
+    - `node --test test/*ThemeDriftGuard.test.js` passing (`111/111`)
+    - `node --test test/panelStyleDriftReportingContract.test.js` passing (`3/3`)
+    - `node --test --test-reporter=dot`:
+      - one unrelated non-styling failure remains in `test/settingsDefaultsEnvSync.test.js`:
+        - `pipeline defaults are sourced from .env-backed config`
+        - assertion: `visualAssetCaptureEnabled` default sync mismatch
+  - Updated drift status:
+    - Summary: Total `83`, Aligned `67`, Low `16`, Moderate `0`, High `0`.
+- Zero-drift completion wave completed (2026-03-03):
+  - Tightened/additional RED guards (before edits):
+    - `test/catalogButtonThemeDriftGuard.test.js`
+      - Added `CatalogPage.tsx` semantic token density floor (`sf-* >= 5`).
+    - `test/productBillingThemeDriftGuard.test.js`
+      - Added `OverviewPage.tsx` semantic token density floor (`sf-* >= 5`).
+      - Added `FieldStatusTable.tsx` semantic token density floor (`sf-* >= 5`).
+    - `test/productRuntimeThemeDriftGuard.test.js`
+      - Added `PipelineProgress.tsx` + `EventLog.tsx` semantic token density floors (`sf-* >= 5`).
+      - Added `ProcessOutput.tsx` raw color guard (`== 0`).
+    - `test/studioButtonThemeDriftGuard.test.js`
+      - Tightened `WorkbenchTable.tsx`, `WorkbenchBulkBar.tsx`, `DraggableKeyList.tsx` raw color caps to `<= 0`.
+      - Added `FieldRulesWorkbench.tsx` semantic token density floor (`sf-* >= 5`).
+      - Added `StudioPage.tsx` rounded token palette cap (`<= 3` unique `rounded*` tokens).
+  - Migration updates (GREEN):
+    - `tools/gui-react/src/pages/catalog/CatalogPage.tsx`
+    - `tools/gui-react/src/pages/catalog/ProductManager.tsx`
+    - `tools/gui-react/src/pages/overview/OverviewPage.tsx`
+    - `tools/gui-react/src/pages/product/FieldStatusTable.tsx`
+    - `tools/gui-react/src/pages/product/HelperLlmStatus.tsx`
+    - `tools/gui-react/src/pages/product/PipelineProgress.tsx`
+    - `tools/gui-react/src/pages/runtime/EventLog.tsx`
+    - `tools/gui-react/src/pages/runtime/ProcessOutput.tsx`
+    - `tools/gui-react/src/pages/studio/DraggableKeyList.tsx`
+    - `tools/gui-react/src/pages/studio/StudioPage.tsx`
+    - `tools/gui-react/src/pages/studio/workbench/FieldRulesWorkbench.tsx`
+    - `tools/gui-react/src/pages/studio/workbench/WorkbenchBulkBar.tsx`
+    - `tools/gui-react/src/pages/studio/workbench/WorkbenchTable.tsx`
+  - Regenerated artifacts + workbook:
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.snapshot.json`
+    - `implementation/ui-styling-system-standardization/panel-style-drift-matrix.md`
+    - `implementation/ui-styling-system-standardization/panel-style-remediation-queue.md`
+    - `implementation/ui-styling-system-standardization/review-button-color-matrix.xlsx`
+  - Validation (this session):
+    - `node --test test/catalogButtonThemeDriftGuard.test.js test/productBillingThemeDriftGuard.test.js test/productRuntimeThemeDriftGuard.test.js test/studioButtonThemeDriftGuard.test.js` passing (`38/38`)
+    - `node --test test/*ThemeDriftGuard.test.js` passing (`126/126`)
+    - `node --test test/panelStyleDriftReportingContract.test.js` passing (`3/3`)
+    - full suite `node --test` passing (`tests=3473`, `pass=3473`, `fail=0`)
+  - Updated drift status:
+    - Summary: Total `83`, Aligned `83`, Low `0`, Moderate `0`, High `0`.

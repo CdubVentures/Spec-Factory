@@ -130,6 +130,11 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const uiSettings = useUiSettingsAuthority({
     enabled: false,
     onPersisted: () => {
+      const persistedFingerprint = lastUiAutosaveFingerprintRef.current;
+      if (persistedFingerprint) {
+        lastAppliedServerUiFingerprintRef.current = persistedFingerprint;
+        lastUiAutosaveFingerprintRef.current = '';
+      }
       setUiSettingsPersistState('idle');
       setUiSettingsPersistMessage('');
     },
@@ -147,7 +152,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const hydratedCategoryRef = useRef<string | null>(null);
   const startupHydrationRunIdRef = useRef(0);
   const uiSettingsHydratedRef = useRef(false);
-  const skipNextUiPersistRef = useRef(false);
   const lastUiAutosaveFingerprintRef = useRef('');
   const lastAppliedServerUiFingerprintRef = useRef('');
   const runtimeReloadRef = useRef(runtime.reload);
@@ -256,19 +260,38 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     if (uiSettingsLoading) return;
     const serverSettings = uiSettingsData;
     if (!serverSettings) return;
+    const shouldPreserveLocalStudioAutoSaveEnabled = (
+      !serverSettings.studioAutoSaveAllEnabled
+      && serverSettings.studioAutoSaveMapEnabled
+      && serverSettings.studioAutoSaveEnabled
+      && !autoSaveEnabled
+      && autoSaveMapEnabled
+    );
+    const nextStudioAutoSaveEnabled = shouldPreserveLocalStudioAutoSaveEnabled
+      ? false
+      : serverSettings.studioAutoSaveEnabled;
     const serverFingerprint = autoSaveFingerprint(serverSettings);
-    if (serverFingerprint && serverFingerprint === lastAppliedServerUiFingerprintRef.current) {
-      uiSettingsHydratedRef.current = true;
-      lastUiAutosaveFingerprintRef.current = serverFingerprint;
+    const localFingerprint = autoSaveFingerprint(uiAutoSavePayload);
+    if (
+      serverFingerprint
+      && localFingerprint
+      && localFingerprint !== serverFingerprint
+      && lastUiAutosaveFingerprintRef.current
+      && serverFingerprint !== lastUiAutosaveFingerprintRef.current
+    ) {
       return;
     }
-    skipNextUiPersistRef.current = true;
+    if (serverFingerprint && serverFingerprint === lastAppliedServerUiFingerprintRef.current) {
+      uiSettingsHydratedRef.current = true;
+      lastUiAutosaveFingerprintRef.current = '';
+      return;
+    }
     if (serverSettings.studioAutoSaveAllEnabled) {
-      setAutoSaveEnabled(serverSettings.studioAutoSaveEnabled);
+      setAutoSaveEnabled(nextStudioAutoSaveEnabled);
       setAutoSaveMapEnabled(serverSettings.studioAutoSaveMapEnabled);
     } else {
       setAutoSaveAllEnabled(false);
-      setAutoSaveEnabled(serverSettings.studioAutoSaveEnabled);
+      setAutoSaveEnabled(nextStudioAutoSaveEnabled);
       setAutoSaveMapEnabled(serverSettings.studioAutoSaveMapEnabled);
     }
     setRuntimeAutoSaveEnabled(serverSettings.runtimeAutoSaveEnabled);
@@ -277,10 +300,11 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     setAutoSaveAllEnabled(serverSettings.studioAutoSaveAllEnabled);
     uiSettingsHydratedRef.current = true;
     lastAppliedServerUiFingerprintRef.current = serverFingerprint;
-    lastUiAutosaveFingerprintRef.current = serverFingerprint;
+    lastUiAutosaveFingerprintRef.current = '';
   }, [
     uiSettingsLoading,
     uiSettingsData,
+    uiAutoSavePayload,
     setAutoSaveEnabled,
     setAutoSaveMapEnabled,
     setRuntimeAutoSaveEnabled,
@@ -346,11 +370,10 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
 
   useEffect(() => {
     if (!uiSettingsHydratedRef.current) return;
-    if (skipNextUiPersistRef.current) {
-      skipNextUiPersistRef.current = false;
+    const nextFingerprint = autoSaveFingerprint(uiAutoSavePayload);
+    if (nextFingerprint && nextFingerprint === lastAppliedServerUiFingerprintRef.current) {
       return;
     }
-    const nextFingerprint = autoSaveFingerprint(uiAutoSavePayload);
     if (nextFingerprint && nextFingerprint === lastUiAutosaveFingerprintRef.current) return;
     const timer = setTimeout(() => {
       setUiSettingsPersistState('saving');

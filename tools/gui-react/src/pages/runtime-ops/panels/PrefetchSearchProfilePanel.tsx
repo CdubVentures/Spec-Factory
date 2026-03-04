@@ -30,14 +30,14 @@ interface PrefetchSearchProfilePanelProps {
 
 function gateBadgeClass(active: boolean) {
   return active
-    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
-    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+    ? 'sf-chip-success'
+    : 'sf-chip-neutral';
 }
 
 
 function Chip({ label, className }: { label: string; className?: string }) {
   return (
-    <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${className || 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'}`}>
+    <span className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${className || 'sf-chip-accent'}`}>
       {label}
     </span>
   );
@@ -69,12 +69,12 @@ function formatProviderList(providers: string[] | undefined): string {
 
 function llmPlannerBadgeClass(active: boolean): string {
   return active
-    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
-    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+    ? 'sf-chip-warning'
+    : 'sf-chip-neutral';
 }
 
 function gateBadgePillClass(active: boolean): string {
-  return `px-2 py-0.5 rounded-full text-[10px] font-medium ${gateBadgeClass(active)}`;
+  return `px-2 py-0.5 rounded-full sf-text-caption font-medium ${gateBadgeClass(active)}`;
 }
 
 function gateZeroRatioReason(gateKey: string): string {
@@ -115,7 +115,7 @@ function QueryDetailDrawer({
       onClose={onClose}
     >
       <DrawerSection title="Query">
-        <div className="font-mono text-xs text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 rounded p-2">{row.query}</div>
+        <div className="font-mono sf-text-caption sf-text-primary sf-pre-block rounded p-2">{row.query}</div>
       </DrawerSection>
 
       {showGateBadges && (
@@ -148,7 +148,7 @@ function QueryDetailDrawer({
             className={querySourceChipClass(source)}
           />
         ) : (
-          <div className="text-xs font-mono text-gray-700 dark:text-gray-300">{source}</div>
+          <div className="sf-text-caption font-mono sf-text-muted">{source}</div>
         )}
       </DrawerSection>
 
@@ -156,14 +156,14 @@ function QueryDetailDrawer({
         <DrawerSection title="Target Fields">
           <div className="flex flex-wrap gap-1">
             {row.target_fields?.map((f) => (
-              <Chip key={f} label={f} className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" />
+              <Chip key={f} label={f} className="sf-chip-success" />
             ))}
           </div>
         </DrawerSection>
       )}
 
       <DrawerSection title="Results">
-        <div className="text-xs text-gray-600 dark:text-gray-400">
+        <div className="sf-text-caption sf-text-muted">
           {row.result_count !== undefined ? `${row.result_count} results` : 'No result data'}
           {row.providers?.length ? ` from ${formatProviderList(row.providers)}` : ''}
         </div>
@@ -258,13 +258,13 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
   return (
     <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1 min-h-0">
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+        <h3 className="text-sm font-semibold sf-text-primary">
           Search Profile
           <Tip text="The Search Profile assembles queries, aliases, and variant guards used to discover source URLs. It combines deterministic rules with optional LLM planner queries." />
         </h3>
         {providerLabel && <Chip label={providerLabel} />}
         <TooltipBadge
-          className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${llmPlannerBadgeClass(llmPlannerActive)}`}
+          className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${llmPlannerBadgeClass(llmPlannerActive)}`}
           tooltip={llmPlannerTooltip}
         >
           LLM Planner
@@ -316,14 +316,14 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
 
       {identityAliasEntries.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Aliases:</span>
+          <span className="sf-text-caption sf-text-subtle">Aliases:</span>
           {identityAliasEntries.map((entry) => <Chip key={entry.key} label={entry.label} />)}
         </div>
       )}
 
       {data.variant_guard_terms.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Guard terms:</span>
+          <span className="sf-text-caption sf-text-subtle">Guard terms:</span>
           {data.variant_guard_terms.map((t, index) => {
             const label = toChipLabel(t);
             if (!label) return null;
@@ -331,7 +331,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
               <Chip
                 key={`guard:${label}:${index}`}
                 label={label}
-                className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"
+                className="sf-chip-danger"
               />
             );
           })}
@@ -339,19 +339,19 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
       )}
 
       {uncoveredFields.length > 0 && (
-        <div className="px-3 py-2 rounded bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-xs">
-          <span className="font-medium text-yellow-700 dark:text-yellow-300">Uncovered fields: </span>
+        <div className="px-3 py-2 sf-callout sf-callout-warning text-xs">
+          <span className="font-medium sf-status-text-warning">Uncovered fields: </span>
           {uncoveredFields.map((f) => (
-            <span key={f} className="inline-block px-1.5 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 text-[10px] mr-1 mb-0.5">{f}</span>
+            <span key={f} className="inline-block px-1.5 py-0.5 rounded sf-chip-warning sf-text-caption mr-1 mb-0.5">{f}</span>
           ))}
         </div>
       )}
 
       {data.query_rows.length > 0 && (
-        <div className={`border border-gray-200 dark:border-gray-700 rounded overflow-hidden overflow-x-auto overflow-y-auto ${selectedQuery ? 'max-h-[50vh]' : 'max-h-none'}`}>
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-gray-50 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400">
+        <div className={`sf-table-shell rounded overflow-hidden overflow-x-auto overflow-y-auto ${selectedQuery ? 'max-h-[50vh]' : 'max-h-none'}`}>
+          <table className="w-full sf-text-caption">
+            <thead className="sf-table-head">
+              <tr>
                 <th className="text-left px-3 py-2 font-medium">Query</th>
                 <th className="text-left px-3 py-2 font-medium">Strategy</th>
                 <th className="text-left px-3 py-2 font-medium">Target Fields</th>
@@ -398,41 +398,41 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
                 return (
                   <tr
                     key={i}
-                    className="border-t border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer"
+                    className="sf-table-row border-t sf-border-soft sf-row-hoverable cursor-pointer"
                     onClick={() => setSelectedQueryText(selectedQueryText === r.query ? null : r.query)}
                   >
-                    <td className="px-3 py-1.5 font-mono text-gray-900 dark:text-gray-100 max-w-[20rem] truncate">{r.query}</td>
+                    <td className="px-3 py-1.5 font-mono sf-text-primary max-w-[20rem] truncate">{r.query}</td>
                     <td className="px-3 py-1.5">
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                      <span className={`px-1.5 py-0.5 rounded sf-text-caption font-medium ${
                         isLlm
-                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
-                          : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                          ? 'sf-chip-warning'
+                          : 'sf-chip-neutral'
                       }`}>
                         {isLlm ? 'LLM' : 'Det.'}
                       </span>
                     </td>
-                    <td className="px-3 py-1.5 text-gray-600 dark:text-gray-400">
+                    <td className="px-3 py-1.5 sf-text-muted">
                       {r.target_fields?.join(', ') || '-'}
                     </td>
                     {showGateBadges ? (
                       <td className="px-3 py-1.5">
                         <div className="flex flex-wrap gap-1">
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${gateBadgeClass(queryTermsBadgeOn)}`}>
+                          <span className={`px-1.5 py-0.5 rounded sf-text-caption font-medium ${gateBadgeClass(queryTermsBadgeOn)}`}>
                             Terms{queryTermsCountLabel ? ` ${queryTermsCountLabel}` : ''}
                           </span>
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${gateBadgeClass(domainHintsBadgeOn)}`}>
+                          <span className={`px-1.5 py-0.5 rounded sf-text-caption font-medium ${gateBadgeClass(domainHintsBadgeOn)}`}>
                             Domain{domainHintsCountLabel ? ` ${domainHintsCountLabel}` : ''}
                           </span>
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${gateBadgeClass(contentTypesBadgeOn)}`}>
+                          <span className={`px-1.5 py-0.5 rounded sf-text-caption font-medium ${gateBadgeClass(contentTypesBadgeOn)}`}>
                             Content{contentTypesCountLabel ? ` ${contentTypesCountLabel}` : ''}
                           </span>
                         </div>
                       </td>
                     ) : (
-                      <td className="px-3 py-1.5 text-gray-600 dark:text-gray-400 font-mono">{source}</td>
+                      <td className="px-3 py-1.5 sf-text-muted font-mono">{source}</td>
                     )}
                     <td className="px-3 py-1.5 text-right font-mono">{r.result_count ?? '-'}</td>
-                    <td className="px-3 py-1.5 text-gray-600 dark:text-gray-400">{formatProviderList(r.providers) || '-'}</td>
+                    <td className="px-3 py-1.5 sf-text-muted">{formatProviderList(r.providers) || '-'}</td>
                   </tr>
                 );
               })}
@@ -442,7 +442,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
       )}
 
       {data.query_rows.length === 0 && (
-        <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">
+        <div className="text-sm sf-text-subtle text-center py-8">
           No search profile data available. Profile will appear after query planning.
         </div>
       )}
@@ -457,10 +457,10 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
       )}
 
       <details className="text-xs">
-        <summary className="cursor-pointer text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+        <summary className="sf-summary-toggle">
           Debug: Raw SearchProfile JSON
         </summary>
-        <pre className="mt-2 text-[10px] font-mono bg-gray-50 dark:bg-gray-900 rounded p-3 overflow-x-auto overflow-y-auto max-h-60 whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+        <pre className="mt-2 sf-text-caption font-mono sf-pre-block rounded p-3 overflow-x-auto overflow-y-auto max-h-60 whitespace-pre-wrap">
           {JSON.stringify(data, null, 2)}
         </pre>
       </details>

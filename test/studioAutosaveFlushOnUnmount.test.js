@@ -14,7 +14,7 @@ test('studio drafts autosave flushes pending dirty edits on unmount', () => {
 
   assert.match(
     studioPageText,
-    /useEffect\(\(\) => \(\) => \{[\s\S]*effectiveAutoSaveEnabled[\s\S]*saveFromStore\(\{ force: true \}\)/,
+    /useEffect\(\s*\(\)\s*=>\s*\(\)\s*=>\s*\{[\s\S]*?effectiveAutoSaveEnabled[\s\S]*?saveFromStore\(\{\s*force:\s*true\s*\}\)/,
     'Studio drafts autosave should flush pending dirty edits on unmount',
   );
 });
@@ -24,7 +24,7 @@ test('studio map autosave flushes pending dirty map payload on unmount', () => {
 
   assert.match(
     studioPageText,
-    /useEffect\(\(\) => \(\) => \{[\s\S]*autoSaveMapEnabled[\s\S]*mapHydrated\.current[\s\S]*onSaveMap\(nextMap\)/,
+    /useEffect\(\s*\(\)\s*=>\s*\(\)\s*=>\s*\{[\s\S]*?autoSaveMapEnabled[\s\S]*?mapHydrated\.current[\s\S]*?onSaveMap\(nextMap\)/,
     'Studio map autosave should flush pending dirty map payload on unmount',
   );
 });

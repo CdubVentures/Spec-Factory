@@ -7,15 +7,56 @@ import { toTierNumber, parseTierPreferenceFromRule } from '../utils/tierHelpers.
 
 const UNKNOWN_VALUE_TOKENS = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined']);
 
-const REQUIRED_WEIGHT = {
-  identity: 5,
-  critical: 4,
-  required: 2,
-  expected: 1,
-  optional: 1
-};
 const IDENTITY_GATED_LEVELS = new Set(['identity', 'critical', 'required']);
-const DEFAULT_IDENTITY_AUDIT_LIMIT = 24;
+const DEFAULT_NEEDSET_TUNING = Object.freeze({
+  needsetRequiredWeightIdentity: 5,
+  needsetRequiredWeightCritical: 4,
+  needsetRequiredWeightRequired: 2,
+  needsetRequiredWeightExpected: 1,
+  needsetRequiredWeightOptional: 1,
+  needsetMissingMultiplier: 2,
+  needsetTierDeficitMultiplier: 2,
+  needsetMinRefsDeficitMultiplier: 1.5,
+  needsetConflictMultiplier: 1.5,
+  needsetIdentityLockThreshold: 0.95,
+  needsetIdentityProvisionalThreshold: 0.7,
+  needsetDefaultIdentityAuditLimit: 24
+});
+
+function clamp(value, min, max) {
+  if (!Number.isFinite(value)) return min;
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+
+function normalizeNeedSetTuning(input = {}) {
+  const source = isObject(input) ? input : {};
+  return {
+    needsetRequiredWeightIdentity: clamp(toNumber(source.needsetRequiredWeightIdentity, DEFAULT_NEEDSET_TUNING.needsetRequiredWeightIdentity), 0.1, 100),
+    needsetRequiredWeightCritical: clamp(toNumber(source.needsetRequiredWeightCritical, DEFAULT_NEEDSET_TUNING.needsetRequiredWeightCritical), 0.1, 100),
+    needsetRequiredWeightRequired: clamp(toNumber(source.needsetRequiredWeightRequired, DEFAULT_NEEDSET_TUNING.needsetRequiredWeightRequired), 0.1, 100),
+    needsetRequiredWeightExpected: clamp(toNumber(source.needsetRequiredWeightExpected, DEFAULT_NEEDSET_TUNING.needsetRequiredWeightExpected), 0.1, 100),
+    needsetRequiredWeightOptional: clamp(toNumber(source.needsetRequiredWeightOptional, DEFAULT_NEEDSET_TUNING.needsetRequiredWeightOptional), 0.1, 100),
+    needsetMissingMultiplier: clamp(toNumber(source.needsetMissingMultiplier, DEFAULT_NEEDSET_TUNING.needsetMissingMultiplier), 0.1, 100),
+    needsetTierDeficitMultiplier: clamp(toNumber(source.needsetTierDeficitMultiplier, DEFAULT_NEEDSET_TUNING.needsetTierDeficitMultiplier), 0.1, 100),
+    needsetMinRefsDeficitMultiplier: clamp(toNumber(source.needsetMinRefsDeficitMultiplier, DEFAULT_NEEDSET_TUNING.needsetMinRefsDeficitMultiplier), 0.1, 100),
+    needsetConflictMultiplier: clamp(toNumber(source.needsetConflictMultiplier, DEFAULT_NEEDSET_TUNING.needsetConflictMultiplier), 0.1, 100),
+    needsetIdentityLockThreshold: clamp(toNumber(source.needsetIdentityLockThreshold, DEFAULT_NEEDSET_TUNING.needsetIdentityLockThreshold), 0, 1),
+    needsetIdentityProvisionalThreshold: clamp(toNumber(source.needsetIdentityProvisionalThreshold, DEFAULT_NEEDSET_TUNING.needsetIdentityProvisionalThreshold), 0, 1),
+    needsetDefaultIdentityAuditLimit: Math.max(1, Math.min(200, Number.parseInt(String(source.needsetDefaultIdentityAuditLimit ?? DEFAULT_NEEDSET_TUNING.needsetDefaultIdentityAuditLimit), 10) || DEFAULT_NEEDSET_TUNING.needsetDefaultIdentityAuditLimit))
+  };
+}
+
+function requiredWeightMap(needsetTuning = DEFAULT_NEEDSET_TUNING) {
+  return {
+    identity: needsetTuning.needsetRequiredWeightIdentity,
+    critical: needsetTuning.needsetRequiredWeightCritical,
+    required: needsetTuning.needsetRequiredWeightRequired,
+    expected: needsetTuning.needsetRequiredWeightExpected,
+    optional: needsetTuning.needsetRequiredWeightOptional
+  };
+}
 
 function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -142,7 +183,7 @@ function uniqueReasonCodes(values = []) {
   return out;
 }
 
-function normalizeIdentityState(input = {}) {
+function normalizeIdentityState(input = {}, needsetTuning = DEFAULT_NEEDSET_TUNING) {
   const token = String(input?.status || '').trim().toLowerCase();
   if (token === 'locked' || token === 'provisional' || token === 'unlocked' || token === 'conflict') {
     return token;
@@ -155,13 +196,13 @@ function normalizeIdentityState(input = {}) {
     || code.includes('mismatch')
     || code.includes('major_anchor')
   );
-  if (gateValidated && confidence >= 0.95) {
+  if (gateValidated && confidence >= needsetTuning.needsetIdentityLockThreshold) {
     return 'locked';
   }
   if (hasConflictCode) {
     return 'conflict';
   }
-  if (confidence >= 0.70) {
+  if (confidence >= needsetTuning.needsetIdentityProvisionalThreshold) {
     return 'provisional';
   }
   return 'unlocked';
@@ -176,14 +217,14 @@ function confidenceCapForIdentityState(status = 'unlocked', caps = null) {
   return caps?.unlocked ?? 0.59;
 }
 
-function normalizeIdentityContext(identityContext = {}, now = '') {
+function normalizeIdentityContext(identityContext = {}, now = '', needsetTuning = DEFAULT_NEEDSET_TUNING) {
   const normalizedNow = toIso(now);
   const reasonCodes = uniqueReasonCodes(identityContext.reason_codes || []);
   const publishBlockers = uniqueReasonCodes(identityContext.publish_blockers || []);
   const status = normalizeIdentityState({
     ...identityContext,
     reason_codes: reasonCodes
-  });
+  }, needsetTuning);
   const confidence = clamp01(toNumber(identityContext.confidence, 0));
   const maxMatchScore = clamp01(toNumber(identityContext.max_match_score, confidence));
   const familyModelCount = Math.max(0, Number.parseInt(String(identityContext.family_model_count || 0), 10) || 0);
@@ -203,7 +244,7 @@ function normalizeIdentityContext(identityContext = {}, now = '') {
       ts: toIso(row?.ts || row?.updated_at || normalizedNow, normalizedNow)
     }))
     .filter((row) => row.source_id || row.url)
-    .slice(0, DEFAULT_IDENTITY_AUDIT_LIMIT);
+    .slice(0, needsetTuning.needsetDefaultIdentityAuditLimit);
   return {
     status,
     confidence,
@@ -259,10 +300,13 @@ export function computeNeedSet({
   constraintAnalysis = {},
   identityContext = {},
   identityCaps = null,
+  needsetTuning = null,
   decayConfig = null,
   now = new Date().toISOString()
 } = {}) {
-  const identity = normalizeIdentityContext(identityContext, now);
+  const normalizedNeedsetTuning = normalizeNeedSetTuning(needsetTuning || {});
+  const requiredWeightByLevel = requiredWeightMap(normalizedNeedsetTuning);
+  const identity = normalizeIdentityContext(identityContext, now, normalizedNeedsetTuning);
   const rulesMap = isObject(fieldRules?.fields) ? fieldRules.fields : (isObject(fieldRules) ? fieldRules : {});
   const fields = collectFieldKeys({ fieldOrder, provenance, fieldRules: rulesMap });
   const rows = [];
@@ -284,7 +328,7 @@ export function computeNeedSet({
     const rule = rulesMap?.[field] || {};
     const requiredLevel = normalizeRequiredLevel(ruleRequiredLevel(rule));
     const gatedField = IDENTITY_GATED_LEVELS.has(requiredLevel);
-    const requiredWeight = REQUIRED_WEIGHT[requiredLevel] ?? 1;
+    const requiredWeight = requiredWeightByLevel[requiredLevel] ?? 1;
     const value = bucket.value ?? 'unk';
     const confidence = toNumber(bucket.confidence, null);
     const passTarget = clamp01(toNumber(bucket.pass_target, 0.8));
@@ -338,11 +382,11 @@ export function computeNeedSet({
     }
     requiredLevelCounts[requiredLevel] = (requiredLevelCounts[requiredLevel] || 0) + 1;
 
-    const missingMultiplier = missing ? 2 : 1;
+    const missingMultiplier = missing ? normalizedNeedsetTuning.needsetMissingMultiplier : 1;
     const confTerm = effectiveConfidence === null ? 1 : (1 - clamp01(effectiveConfidence));
-    const tierDeficitMultiplier = tierDeficit ? 2 : 1;
-    const minRefsDeficitMultiplier = minRefsDeficit ? 1.5 : 1;
-    const conflictMultiplier = conflict ? 1.5 : 1;
+    const tierDeficitMultiplier = tierDeficit ? normalizedNeedsetTuning.needsetTierDeficitMultiplier : 1;
+    const minRefsDeficitMultiplier = minRefsDeficit ? normalizedNeedsetTuning.needsetMinRefsDeficitMultiplier : 1;
+    const conflictMultiplier = conflict ? normalizedNeedsetTuning.needsetConflictMultiplier : 1;
     const identityBlockMultiplier = blockedByIdentity ? 1.35 : 1;
     const publishBlockMultiplier = publishGateBlocked ? 1.2 : 1;
     const needScore = missingMultiplier
@@ -396,7 +440,7 @@ export function computeNeedSet({
 
   rows.sort((a, b) => {
     if (b.need_score !== a.need_score) return b.need_score - a.need_score;
-    const levelDelta = (REQUIRED_WEIGHT[b.required_level] ?? 0) - (REQUIRED_WEIGHT[a.required_level] ?? 0);
+    const levelDelta = (requiredWeightByLevel[b.required_level] ?? 0) - (requiredWeightByLevel[a.required_level] ?? 0);
     if (levelDelta !== 0) return levelDelta;
     return String(a.field_key).localeCompare(String(b.field_key));
   });

@@ -23,6 +23,8 @@ interface SourceStrategyAuthorityOptions {
   autoQueryEnabled?: boolean;
   onError?: (error: Error | unknown) => void;
   onToggled?: (row: SourceStrategyRow) => void;
+  onCreated?: (row: SourceStrategyRow) => void;
+  onUpdated?: (row: SourceStrategyRow) => void;
   onDeleted?: (id: number) => void;
 }
 
@@ -31,8 +33,12 @@ interface SourceStrategyAuthorityResult {
   isLoading: boolean;
   isSaving: boolean;
   isToggling: boolean;
+  isCreating: boolean;
+  isUpdating: boolean;
   isDeleting: boolean;
   reload: () => Promise<SourceStrategyRow[] | undefined>;
+  createRow: (payload: Partial<SourceStrategyRow>) => void;
+  updateRow: (id: number, payload: Partial<SourceStrategyRow>) => void;
   toggleEnabled: (row: SourceStrategyRow) => void;
   deleteRow: (id: number) => void;
 }
@@ -97,6 +103,8 @@ export function useSourceStrategyAuthority({
   autoQueryEnabled = true,
   onError,
   onToggled,
+  onCreated,
+  onUpdated,
   onDeleted,
 }: SourceStrategyAuthorityOptions): SourceStrategyAuthorityResult {
   const queryClient = useQueryClient();
@@ -136,6 +144,37 @@ export function useSourceStrategyAuthority({
     }),
   );
 
+  const createMutation = useMutation({
+    mutationFn: (payload: Partial<SourceStrategyRow>) =>
+      api.post<{ ok: boolean; id?: number }>(`/source-strategy${categoryQuery}`, payload),
+    onSuccess: async (response) => {
+      await queryClient.invalidateQueries({ queryKey });
+      const id = Number(response?.id || 0);
+      const updatedRows = queryClient.getQueryData<SourceStrategyRow[]>(queryKey) || [];
+      const created = updatedRows.find((row) => row.id === id) || updatedRows[0];
+      if (created) {
+        publishSettingsPropagation({ domain: 'source-strategy', category });
+        onCreated?.(created);
+      }
+    },
+    onError,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Partial<SourceStrategyRow> }) =>
+      api.put<SourceStrategyRow>(`/source-strategy/${id}${categoryQuery}`, payload),
+    onSuccess: (updatedRow) => {
+      const baseline = queryClient.getQueryData<SourceStrategyRow[]>(queryKey) || [];
+      queryClient.setQueryData(
+        queryKey,
+        baseline.map((row) => (row.id === updatedRow.id ? updatedRow : row)),
+      );
+      publishSettingsPropagation({ domain: 'source-strategy', category });
+      onUpdated?.(updatedRow);
+    },
+    onError,
+  });
+
   const deleteMutation = useMutation(
     createSettingsOptimisticMutationContract<number, unknown, SourceStrategyRow[], number>({
       queryClient,
@@ -164,6 +203,16 @@ export function useSourceStrategyAuthority({
     return result.data;
   }
 
+  function createRow(payload: Partial<SourceStrategyRow>) {
+    if (!enabled) return;
+    createMutation.mutate(payload);
+  }
+
+  function updateRow(id: number, payload: Partial<SourceStrategyRow>) {
+    if (!enabled) return;
+    updateMutation.mutate({ id, payload });
+  }
+
   function toggleEnabled(row: SourceStrategyRow) {
     if (!enabled) return;
     toggleMutation.mutate(row);
@@ -177,10 +226,14 @@ export function useSourceStrategyAuthority({
   return {
     rows,
     isLoading: enabled ? isLoading : false,
-    isSaving: toggleMutation.isPending || deleteMutation.isPending,
+    isSaving: createMutation.isPending || updateMutation.isPending || toggleMutation.isPending || deleteMutation.isPending,
     isToggling: toggleMutation.isPending,
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     reload,
+    createRow,
+    updateRow,
     toggleEnabled,
     deleteRow,
   };

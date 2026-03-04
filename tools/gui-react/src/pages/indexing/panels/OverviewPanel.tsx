@@ -107,18 +107,18 @@ export function OverviewPanel({
         active={processRunning || pendingLlmTotal > 0}
         tooltip="Live LLM call lifecycle events (started/completed/failed) per minute."
       />
-      <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-2">
-        <div className="flex items-center justify-between gap-2 text-xs">
-          <div className="flex items-center text-gray-600 dark:text-gray-300">
+      <div className="sf-surface-elevated px-2 py-2">
+        <div className="flex items-center justify-between gap-2 sf-text-caption">
+          <div className="flex items-center sf-text-subtle">
             pending llm calls
             <Tip text="Current in-flight LLM calls grouped by purpose + model. Bars shrink to zero when calls complete." />
           </div>
-          <div className={`font-semibold ${pendingLlmTotal > 0 ? 'text-emerald-600 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400'}`}>
+          <div className={`font-semibold ${pendingLlmTotal > 0 ? 'sf-status-text-success' : 'sf-text-muted'}`}>
             {formatNumber(pendingLlmTotal)}
           </div>
         </div>
         {pendingLlmRows.length === 0 ? (
-          <div className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+          <div className="mt-1 sf-text-label sf-text-muted">
             no llm calls pending
           </div>
         ) : (
@@ -127,25 +127,33 @@ export function OverviewPanel({
               const widthPct = Math.max(8, Math.min(100, (Number(row.pending || 0) / Math.max(1, pendingLlmPeak)) * 100));
               const sinceMs = row.firstStartedAtMs > 0 ? Math.max(0, activityNowMs - row.firstStartedAtMs) : 0;
               return (
-                <div key={`pending-llm:${row.key}`} className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
-                  <div className="flex items-center justify-between gap-2 text-[11px]">
-                    <div className="truncate text-gray-700 dark:text-gray-200" title={`${row.reason} | ${row.model}`}>
+                <div key={`pending-llm:${row.key}`} className="sf-surface-elevated px-2 py-1">
+                  <div className="flex items-center justify-between gap-2 sf-text-label">
+                    <div className="truncate sf-text-subtle" title={`${row.reason} | ${row.model}`}>
                       {row.reason} | {row.model}
                     </div>
-                    <div className="font-semibold text-emerald-600 dark:text-emerald-300">
+                    <div className="font-semibold sf-status-text-success">
                       {formatNumber(Number(row.pending || 0))}
                     </div>
                   </div>
-                  <div className="mt-0.5 flex items-center justify-between gap-2 text-[10px] text-gray-500 dark:text-gray-400">
+                  <div className="mt-0.5 flex items-center justify-between gap-2 sf-text-caption sf-text-muted">
                     <span className="truncate" title={`${row.provider} | ${row.routeRole || 'n/a'}`}>
                       {row.provider} | role {row.routeRole || 'n/a'}
                     </span>
                     <span>{sinceMs > 0 ? `pending ${formatDuration(sinceMs)}` : 'pending'}</span>
                   </div>
-                  <div className="mt-1 h-1.5 rounded bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                  <div
+                    className="mt-1 h-1.5 rounded overflow-hidden"
+                    style={{
+                      backgroundColor: 'rgb(var(--sf-color-border-default-rgb) / 0.7)',
+                    }}
+                  >
                     <div
-                      className="h-full rounded bg-emerald-500"
-                      style={{ width: `${widthPct}%` }}
+                      className="h-full rounded"
+                      style={{
+                        width: `${widthPct}%`,
+                        backgroundColor: 'var(--sf-state-success-fg)',
+                      }}
                     />
                   </div>
                 </div>
@@ -154,67 +162,67 @@ export function OverviewPanel({
           </div>
         )}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-        <div className={`rounded border px-2 py-2 ${activePendingLlm ? 'border-emerald-400 dark:border-emerald-500' : 'border-gray-200 dark:border-gray-700'}`}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sf-text-caption">
+        <div className={`px-2 py-2 ${activePendingLlm ? 'sf-callout sf-callout-success' : 'sf-callout sf-callout-neutral'}`}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
-              <div className={`font-semibold ${activePendingLlm ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-800 dark:text-gray-200'}`}>
+              <div className={`font-semibold ${activePendingLlm ? 'sf-status-text-success' : 'sf-text-primary'}`}>
                 Pending LLM Prompt
               </div>
-              <span className={`px-1.5 py-0.5 rounded text-[10px] ${llmPhaseBadgeClasses(pendingPromptPhase)}`}>
+              <span className={`px-1.5 py-0.5 rounded sf-text-caption ${llmPhaseBadgeClasses(pendingPromptPhase)}`}>
                 {llmPhaseLabel(pendingPromptPhase)}
               </span>
               {pendingPromptIsJson ? (
-                <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                <span className="px-1.5 py-0.5 rounded sf-text-caption sf-chip-success">
                   JSON
                 </span>
               ) : null}
             </div>
             <button
               onClick={() => togglePendingPrompt()}
-              className={`inline-flex items-center justify-center w-5 h-5 text-[10px] rounded border ${activePendingLlm ? 'border-emerald-400 dark:border-emerald-500 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20' : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              className="inline-flex items-center justify-center w-5 h-5 sf-text-caption sf-icon-button"
               title={pendingPromptCollapsed ? 'Open panel' : 'Close panel'}
             >
               {pendingPromptCollapsed ? '+' : '-'}
             </button>
           </div>
-          <div className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+          <div className="mt-1 sf-text-label sf-text-muted">
             {activePendingLlm
               ? `${activePendingLlm.reason} | ${activePendingLlm.model} | role ${activePendingLlm.routeRole || 'n/a'} | pending ${formatNumber(Number(activePendingLlm.pending || 0))}`
               : 'no pending prompt'}
           </div>
           {!pendingPromptCollapsed ? (
-            <pre className="mt-2 whitespace-pre-wrap break-words text-[11px] max-h-56 overflow-y-auto text-gray-700 dark:text-gray-200">
+            <pre className="mt-2 whitespace-pre-wrap break-words sf-text-label max-h-56 overflow-y-auto sf-pre-block">
               {activePendingLlm
                 ? (pendingPromptPretty || '(prompt preview not available yet for the active call)')
                 : '(no pending llm prompt)'}
             </pre>
           ) : null}
         </div>
-        <div className="rounded border border-gray-200 dark:border-gray-700 px-2 py-2">
+        <div className="sf-surface-elevated px-2 py-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
-              <div className="font-semibold text-gray-800 dark:text-gray-200">
+              <div className="font-semibold sf-text-primary">
                 Last Received Response
               </div>
-              <span className={`px-1.5 py-0.5 rounded text-[10px] ${llmPhaseBadgeClasses(lastReceivedPhase)}`}>
+              <span className={`px-1.5 py-0.5 rounded sf-text-caption ${llmPhaseBadgeClasses(lastReceivedPhase)}`}>
                 {llmPhaseLabel(lastReceivedPhase)}
               </span>
               {lastReceivedResponseIsJson ? (
-                <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                <span className="px-1.5 py-0.5 rounded sf-text-caption sf-chip-success">
                   JSON
                 </span>
               ) : null}
             </div>
             <button
               onClick={() => toggleLastResponse()}
-              className="inline-flex items-center justify-center w-5 h-5 text-[10px] rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="inline-flex items-center justify-center w-5 h-5 sf-text-caption sf-icon-button"
               title={lastResponseCollapsed ? 'Open panel' : 'Close panel'}
             >
               {lastResponseCollapsed ? '+' : '-'}
             </button>
           </div>
-          <div className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+          <div className="mt-1 sf-text-label sf-text-muted">
             {lastReceivedResponseTrace
               ? `${String(lastReceivedResponseTrace.purpose || 'unknown')} | ${String(lastReceivedResponseTrace.model || 'unknown')} | ${formatDateTime(lastReceivedResponseTrace.ts || null)}`
               : lastReceivedResponseEvent
@@ -222,16 +230,16 @@ export function OverviewPanel({
                 : 'no response received yet'}
           </div>
           {!lastResponseCollapsed ? (
-            <pre className="mt-2 whitespace-pre-wrap break-words text-[11px] max-h-56 overflow-y-auto text-gray-700 dark:text-gray-200">
+            <pre className="mt-2 whitespace-pre-wrap break-words sf-text-label max-h-56 overflow-y-auto sf-pre-block">
               {lastReceivedResponsePretty || '(no response trace yet)'}
             </pre>
           ) : null}
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 text-xs">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 sf-text-caption">
         {pipelineSteps.map((step) => (
-          <div key={`pipeline-step:${step.label}`} className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 flex items-center justify-between gap-2">
-            <span className="text-gray-600 dark:text-gray-300 truncate" title={step.label}>{step.label}</span>
+          <div key={`pipeline-step:${step.label}`} className="sf-surface-elevated px-2 py-1 flex items-center justify-between gap-2">
+            <span className="sf-text-subtle truncate" title={step.label}>{step.label}</span>
             <span className={`px-1.5 py-0.5 rounded ${panelStateChipClasses(step.state)}`}>
               {step.state}
             </span>
@@ -246,26 +254,26 @@ export function OverviewPanel({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4" style={{ order: 10 }}>
+    <div className="sf-surface-panel p-4" style={{ order: 10 }}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <button
             onClick={onToggle}
-            className="inline-flex items-center justify-center w-6 h-6 text-xs rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="inline-flex items-center justify-center w-6 h-6 text-xs sf-icon-button"
             title={collapsed ? 'Open panel' : 'Close panel'}
           >
             {collapsed ? '+' : '-'}
           </button>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Indexing Lab (Phase 01)</h2>
+            <h2 className="text-lg font-semibold sf-text-primary">Indexing Lab</h2>
             {!collapsed ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm sf-text-muted">
                 One click run path. Run IndexLab executes search -&gt; fetch -&gt; parse -&gt; index -&gt; NeedSet/Phase 02/Phase 03 automatically for <span className="font-mono">{category}</span>.
               </p>
             ) : null}
           </div>
         </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="sf-text-caption sf-text-muted">
           process {processStateLabel}
           {processStatus?.pid ? ` | pid ${processStatus.pid}` : ''}
           {processStatus?.command ? ` | ${processStatus.command}` : ''}

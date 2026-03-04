@@ -69,9 +69,9 @@ export function WorkbenchTable({
   }, [table, columnVisibility]);
 
   return (
-    <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded" style={{ maxHeight: 'calc(100vh - 380px)' }}>
+    <div className="overflow-x-auto border sf-border-default dark:sf-border-default rounded" style={{ maxHeight: 'calc(100vh - 380px)' }}>
       <table className="w-full text-xs border-collapse">
-        <thead className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-800">
+        <thead className="sticky top-0 z-20 sf-table-head">
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id}>
               {hg.headers.map((header) => {
@@ -79,8 +79,8 @@ export function WorkbenchTable({
                 return (
                   <th
                     key={header.id}
-                    className={`px-2 py-1.5 text-left font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap select-none ${
-                      header.column.getCanSort() ? 'cursor-pointer hover:text-gray-700 dark:hover:text-gray-200' : ''
+                    className={`px-2 py-1.5 text-left font-medium sf-text-subtle dark:sf-text-subtle border-b sf-border-default dark:sf-border-default whitespace-nowrap select-none ${
+                      header.column.getCanSort() ? 'cursor-pointer hover:sf-text-muted dark:hover:sf-text-primary' : ''
                     }`}
                     style={{
                       width: header.getSize(),
@@ -115,20 +115,18 @@ export function WorkbenchTable({
               <tr
                 key={row.id}
                 onClick={() => onRowClick(row.original.key)}
-                className={`cursor-pointer transition-colors ${
-                  isActive
-                    ? 'bg-accent/5 dark:bg-accent/10'
-                    : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                }${hasError ? ' border-l-2 border-l-red-400' : ''}${
-                  rowSelection[row.original.key] ? ' bg-blue-50 dark:bg-blue-900/20' : ''
-                }`}
+                className={`cursor-pointer sf-table-row ${
+                  isActive || rowSelection[row.original.key]
+                    ? 'sf-table-row-active'
+                    : 'sf-hover-bg-surface-soft'
+                }${hasError ? ' border-l-2 border-l-red-400' : ''}`}
               >
                 {row.getVisibleCells().map((cell) => {
                   const isPinned = PINNED_IDS.has(cell.column.id);
                   return (
                     <td
                       key={cell.id}
-                      className="px-2 py-1.5 border-b border-gray-100 dark:border-gray-800 whitespace-nowrap"
+                      className="px-2 py-1.5 border-b sf-border-soft dark:sf-border-soft whitespace-nowrap"
                       style={{
                         width: cell.column.getSize(),
                         minWidth: cell.column.getSize(),

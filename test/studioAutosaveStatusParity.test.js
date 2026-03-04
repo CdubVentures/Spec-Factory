@@ -17,14 +17,14 @@ test('studio save status prioritizes error and unsaved state ahead of autosave i
     /if \(saveStudioDocsMut\.isPending\)[\s\S]*if \(saveStudioDocsMut\.isError\)[\s\S]*if \(hasUnsavedChanges\)[\s\S]*if \(effectiveAutoSaveEnabled\)/,
     'save status precedence should be pending -> error -> unsaved -> autosave idle labels',
   );
-  assert.equal(
-    studioPageText.includes("label: effectiveAutoSaveEnabled ? 'Unsaved (auto-save pending)' : 'Unsaved'"),
-    true,
+  assert.match(
+    studioPageText,
+    /label:\s*effectiveAutoSaveEnabled\s*\?\s*["']Unsaved \(Auto-Save Pending\)["']\s*:\s*["']Unsaved["']/,
     'autosave-on unsaved edits should report pending unsaved state instead of up-to-date',
   );
-  assert.equal(
-    studioPageText.includes("label: (saveStudioDocsMut.error as Error)?.message || 'Save failed'"),
-    true,
+  assert.match(
+    studioPageText,
+    /label:\s*\(saveStudioDocsMut\.error as Error\)\?\.message\s*\|\|\s*["']Save failed["']/,
     'save status should surface save mutation errors',
   );
 });
