@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { registerDataAuthorityRoutes } from '../src/api/routes/dataAuthorityRoutes.js';
+import { registerDataAuthorityRoutes } from '../src/features/category-authority/api/dataAuthorityRoutes.js';
 import { resetDataPropagationCounters } from '../src/observability/dataPropagationCounters.js';
 import { resetSettingsPersistenceCounters } from '../src/observability/settingsPersistenceCounters.js';
 import { emitDataChange } from '../src/api/events/dataChangeContract.js';

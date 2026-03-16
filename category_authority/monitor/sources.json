@@ -1,0 +1,1013 @@
+{
+  "category": "monitor",
+  "version": "1.0.0",
+  "approved": {
+    "manufacturer": [],
+    "lab": [
+      "rtings.com",
+      "tftcentral.co.uk",
+      "tomshardware.com",
+      "pcmonitors.info",
+      "displayninja.com",
+      "lttlabs.com",
+      "flatpanelshd.com",
+      "notebookcheck.net"
+    ],
+    "database": [
+      "displayspecifications.com",
+      "versus.com",
+      "pcpartpicker.com",
+      "reddit.com",
+      "displaydb.com",
+      "blurbusters.com",
+      "panelook.com",
+      "displayhdr.org",
+      "lcdtech.info",
+      "prosettings.net"
+    ],
+    "retailer": [
+      "amazon.com",
+      "bestbuy.com",
+      "newegg.com",
+      "bhphotovideo.com",
+      "microcenter.com"
+    ]
+  },
+  "denylist": [],
+  "manufacturer_defaults": {
+    "method": "http",
+    "rate_limit_ms": 2000,
+    "timeout_ms": 12000,
+    "robots_txt_compliant": true
+  },
+  "manufacturer_crawl_overrides": {
+    "dell.com": { "method": "playwright", "rate_limit_ms": 2500, "timeout_ms": 15000 },
+    "lg.com": { "method": "playwright", "rate_limit_ms": 2500, "timeout_ms": 15000 },
+    "samsung.com": { "method": "playwright", "rate_limit_ms": 2500, "timeout_ms": 15000 },
+    "asus.com": { "method": "playwright", "rate_limit_ms": 2200, "timeout_ms": 15000 },
+    "benq.com": { "method": "playwright", "rate_limit_ms": 2000, "timeout_ms": 15000 },
+    "acer.com": { "method": "playwright", "rate_limit_ms": 2200, "timeout_ms": 15000 },
+    "msi.com": { "method": "playwright", "rate_limit_ms": 2000, "timeout_ms": 15000 },
+    "gigabyte.com": { "method": "playwright", "rate_limit_ms": 2200, "timeout_ms": 15000 }
+  },
+  "sources": {
+    "rtings_com": {
+      "display_name": "RTINGS",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.rtings.com",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "playwright",
+        "rate_limit_ms": 3000,
+        "timeout_ms": 20000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "response_time",
+          "input_lag",
+          "color_accuracy",
+          "brightness",
+          "contrast_ratio"
+        ],
+        "medium": [
+          "panel_type",
+          "refresh_rate",
+          "hdr"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 90,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "tftcentral_co_uk": {
+      "display_name": "TFT Central",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://tftcentral.co.uk",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2500,
+        "timeout_ms": 15000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "response_time",
+          "input_lag",
+          "color_accuracy",
+          "panel_type"
+        ],
+        "medium": [
+          "brightness",
+          "contrast_ratio"
+        ],
+        "low": [
+          "refresh_rate"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 85,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "tomshardware_com": {
+      "display_name": "Tom's Hardware",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.tomshardware.com",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "response_time",
+          "input_lag"
+        ],
+        "medium": [
+          "color_accuracy",
+          "brightness",
+          "contrast_ratio"
+        ],
+        "low": [
+          "panel_type"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 80,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "pcmonitors_info": {
+      "display_name": "PC Monitors",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://pcmonitors.info",
+      "content_types": [
+        "review"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2500,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "panel_type",
+          "response_time"
+        ],
+        "medium": [
+          "color_accuracy",
+          "input_lag"
+        ],
+        "low": [
+          "brightness"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 80,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "amazon_com": {
+      "display_name": "Amazon",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.amazon.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1500,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "screen_size",
+          "resolution"
+        ],
+        "medium": [
+          "panel_type",
+          "refresh_rate",
+          "weight",
+          "width", "depth"
+        ],
+        "low": [
+          "response_time"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 45,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "bestbuy_com": {
+      "display_name": "Best Buy",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.bestbuy.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1400,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "screen_size",
+          "resolution"
+        ],
+        "medium": [
+          "refresh_rate",
+          "panel_type",
+          "weight"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 40,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "newegg_com": {
+      "display_name": "Newegg",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.newegg.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1500,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "screen_size",
+          "resolution"
+        ],
+        "medium": [
+          "panel_type",
+          "refresh_rate",
+          "response_time"
+        ],
+        "low": [
+          "weight"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 40,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "bhphotovideo_com": {
+      "display_name": "B&H Photo",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.bhphotovideo.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1500,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "screen_size",
+          "resolution"
+        ],
+        "medium": [
+          "panel_type",
+          "refresh_rate",
+          "weight"
+        ],
+        "low": [
+          "response_time"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 35,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "displayspecifications_com": {
+      "display_name": "Display Specifications",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.displayspecifications.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "spec_sheet"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 10000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "panel_type",
+          "resolution",
+          "screen_size",
+          "refresh_rate",
+          "response_time"
+        ],
+        "medium": [
+          "brightness",
+          "contrast_ratio",
+          "color_gamut",
+          "weight",
+          "width", "depth"
+        ],
+        "low": [
+          "hdr"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "aggregator",
+        "search_pattern": "",
+        "priority": 50,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "versus_com": {
+      "display_name": "Versus",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://versus.com",
+      "content_types": [
+        "comparison"
+      ],
+      "doc_kinds": [
+        "comparison"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1500,
+        "timeout_ms": 10000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [],
+        "medium": [
+          "panel_type",
+          "resolution",
+          "refresh_rate",
+          "screen_size"
+        ],
+        "low": [
+          "response_time",
+          "brightness"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "aggregator",
+        "search_pattern": "",
+        "priority": 30,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "pcpartpicker_com": {
+      "display_name": "PCPartPicker",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://pcpartpicker.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 10000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [],
+        "medium": [
+          "screen_size",
+          "resolution",
+          "panel_type",
+          "refresh_rate"
+        ],
+        "low": [
+          "response_time"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "aggregator",
+        "search_pattern": "",
+        "priority": 35,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "reddit_com": {
+      "display_name": "Reddit",
+      "tier": "tier4_community",
+      "authority": "community",
+      "base_url": "https://www.reddit.com",
+      "content_types": [
+        "discussion"
+      ],
+      "doc_kinds": [
+        "forum"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2500,
+        "timeout_ms": 10000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [],
+        "medium": [],
+        "low": [
+          "panel_type",
+          "response_time",
+          "input_lag"
+        ]
+      },
+      "discovery": {
+        "method": "manual",
+        "source_type": "community",
+        "search_pattern": "",
+        "priority": 20,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "microcenter_com": {
+      "display_name": "Micro Center",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.microcenter.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1500,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "screen_size",
+          "resolution"
+        ],
+        "medium": [
+          "panel_type",
+          "refresh_rate"
+        ],
+        "low": [
+          "response_time"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 38,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "displaydb_com": {
+      "display_name": "DisplayDB",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.displaydb.com",
+      "content_types": [
+        "product_page",
+        "reference"
+      ],
+      "doc_kinds": [
+        "spec_sheet"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "panel_type",
+          "resolution",
+          "refresh_rate",
+          "screen_size",
+          "response_time_gtg"
+        ],
+        "medium": [
+          "brightness_sdr",
+          "contrast_ratio",
+          "color_gamut_srgb",
+          "color_gamut_dci_p3",
+          "hdr_support",
+          "hdmi_ports",
+          "displayport_ports",
+          "weight_without_stand"
+        ],
+        "low": [
+          "panel_bit_depth"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 75,
+        "enabled": true,
+        "notes": "comprehensive monitor and TV specs database with detailed panel data"
+      }
+    },
+    "displayninja_com": {
+      "display_name": "Display Ninja",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.displayninja.com",
+      "content_types": [
+        "review",
+        "benchmark",
+        "reference"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "response_time_gtg",
+          "input_lag",
+          "panel_type"
+        ],
+        "medium": [
+          "refresh_rate",
+          "resolution",
+          "screen_size",
+          "color_accuracy_delta_e",
+          "brightness_sdr",
+          "contrast_ratio",
+          "adaptive_sync"
+        ],
+        "low": [
+          "hdr_support"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 78,
+        "enabled": true,
+        "notes": "monitor reviews with OSRTT response time testing and gaming monitor database"
+      }
+    },
+    "blurbusters_com": {
+      "display_name": "Blur Busters",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://blurbusters.com",
+      "content_types": [
+        "reference",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "reference"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "response_time_gtg",
+          "response_time_mprt",
+          "motion_blur_reduction"
+        ],
+        "medium": [
+          "refresh_rate",
+          "input_lag",
+          "overdrive",
+          "flicker_free",
+          "variable_refresh_rate"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 72,
+        "enabled": true,
+        "notes": "display motion testing authority, pursuit camera methodology used by RTINGS/TFTCentral"
+      }
+    },
+    "panelook_com": {
+      "display_name": "Panelook",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.panelook.com",
+      "content_types": [
+        "reference"
+      ],
+      "doc_kinds": [
+        "spec_sheet"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2500,
+        "timeout_ms": 15000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "panel_type",
+          "panel_manufacturer",
+          "panel_bit_depth",
+          "resolution",
+          "screen_size"
+        ],
+        "medium": [
+          "brightness_sdr",
+          "contrast_ratio",
+          "response_time_gtg",
+          "native_colors",
+          "backlight_type"
+        ],
+        "low": [
+          "color_gamut_srgb"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 70,
+        "enabled": true,
+        "notes": "raw LCD panel specification database, identifies panel manufacturer and model"
+      }
+    },
+    "lttlabs_com": {
+      "display_name": "LTT Labs",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.lttlabs.com",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2200,
+        "timeout_ms": 14000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "response_time_gtg",
+          "input_lag",
+          "color_accuracy_delta_e"
+        ],
+        "medium": [
+          "brightness_sdr",
+          "brightness_hdr_peak",
+          "contrast_ratio",
+          "color_gamut_srgb",
+          "color_gamut_dci_p3",
+          "refresh_rate"
+        ],
+        "low": [
+          "panel_type"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 86,
+        "enabled": true,
+        "notes": "instrumented display testing with professional measurement equipment"
+      }
+    },
+    "flatpanelshd_com": {
+      "display_name": "FlatpanelsHD",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.flatpanelshd.com",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2500,
+        "timeout_ms": 14000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "color_accuracy",
+          "contrast_ratio",
+          "brightness",
+          "input_lag"
+        ],
+        "medium": [
+          "response_time",
+          "panel_type",
+          "hdr",
+          "color_gamut"
+        ],
+        "low": [
+          "refresh_rate"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 82,
+        "enabled": true,
+        "notes": "professional lab equipment for color accuracy, contrast, input lag, PWM; publishes calibration settings"
+      }
+    },
+    "notebookcheck_net": {
+      "display_name": "NotebookCheck",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.notebookcheck.net",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 14000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "color_accuracy_delta_e",
+          "color_gamut_srgb",
+          "color_gamut_dci_p3",
+          "response_time"
+        ],
+        "medium": [
+          "brightness",
+          "contrast_ratio",
+          "panel_type",
+          "refresh_rate"
+        ],
+        "low": [
+          "input_lag"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 76,
+        "enabled": true,
+        "notes": "X-Rite i1Profiler color gamut (3D), Thorlabs PDA100A oscilloscope response times, free ICC profiles"
+      }
+    },
+    "displayhdr_org": {
+      "display_name": "VESA DisplayHDR",
+      "tier": "tier5_aggregator",
+      "authority": "authoritative",
+      "base_url": "https://displayhdr.org",
+      "content_types": [
+        "reference"
+      ],
+      "doc_kinds": [
+        "reference"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "hdr_support",
+          "brightness_sdr",
+          "brightness_hdr_peak"
+        ],
+        "medium": [
+          "color_gamut",
+          "panel_bit_depth"
+        ],
+        "low": [
+          "panel_type"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 65,
+        "enabled": true,
+        "notes": "official VESA certification database, 3000+ certified display models with verified HDR performance"
+      }
+    },
+    "lcdtech_info": {
+      "display_name": "LCDtech",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://lcdtech.info",
+      "content_types": [
+        "reference"
+      ],
+      "doc_kinds": [
+        "spec_sheet"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "panel_manufacturer",
+          "panel_type",
+          "resolution",
+          "screen_size"
+        ],
+        "medium": [
+          "brightness",
+          "contrast_ratio",
+          "response_time",
+          "color_gamut",
+          "backlight_type"
+        ],
+        "low": [
+          "panel_bit_depth"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 72,
+        "enabled": true,
+        "notes": "panel cross-reference database, identifies which LCD panel is inside which monitor product"
+      }
+    },
+    "prosettings_net": {
+      "display_name": "ProSettings.net",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.prosettings.net",
+      "content_types": [
+        "comparison",
+        "reference"
+      ],
+      "doc_kinds": [
+        "comparison"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "refresh_rate",
+          "resolution",
+          "screen_size"
+        ],
+        "medium": [
+          "panel_type",
+          "response_time"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "aggregator",
+        "search_pattern": "",
+        "priority": 50,
+        "enabled": true,
+        "notes": "2210+ pro player monitor usage tracking across CS2, Valorant, and other esports titles"
+      }
+    }
+  }
+}

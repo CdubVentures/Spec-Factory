@@ -1,0 +1,18 @@
+[
+  {
+    "field": "sensor_brand",
+    "value": "docid",
+    "method": "spec_table_match",
+    "keyPath": "spec_table.sensor_brand",
+    "evidenceRefs": [
+      "sn_bca282c99271c971"
+    ],
+    "snippetId": "sn_bca282c99271c971",
+    "snippetHash": "sha256:cad75046b3fb489bc7bb20a9dcef0b3a1b82685645c72d7ff101b5a78cc65475",
+    "sourceId": "logitech_com",
+    "quote": "stream adobe: docid",
+    "confidence": 0.8181818181818182,
+    "identity_label": "possible",
+    "identity_confidence": 0.75
+  }
+]

@@ -19,7 +19,7 @@ async function writeJson(filePath, value) {
 
 test('loadFieldRules returns assembled artifacts for downstream systems', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-loader-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   try {
     const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
     await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -68,7 +68,7 @@ test('loadFieldRules returns assembled artifacts for downstream systems', async 
 
     const loaded = await loadFieldRules('mouse', {
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(typeof loaded, 'object');
@@ -84,7 +84,7 @@ test('loadFieldRules returns assembled artifacts for downstream systems', async 
 
 test('loadFieldRules resolves test_ aliases to canonical _test_ contracts', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-loader-test-alias-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   try {
     const generatedRoot = path.join(helperRoot, '_test_mouse', '_generated');
     await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -99,7 +99,7 @@ test('loadFieldRules resolves test_ aliases to canonical _test_ contracts', asyn
 
     const loaded = await loadFieldRules('test_mouse', {
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(loaded.category, '_test_mouse');
@@ -111,7 +111,7 @@ test('loadFieldRules resolves test_ aliases to canonical _test_ contracts', asyn
 
 test('getFieldRule/getKnownValues/getParseTemplate/getCrossValidationRules expose targeted selectors', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-loader-selectors-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   try {
     const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
     await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -150,14 +150,14 @@ test('getFieldRule/getKnownValues/getParseTemplate/getCrossValidationRules expos
 
     const fieldRule = await getFieldRule('mouse', 'connection', {
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(fieldRule?.key, 'connection');
 
     const knownValues = await getKnownValues('mouse', 'connection', {
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(knownValues?.policy, 'open');
@@ -165,14 +165,14 @@ test('getFieldRule/getKnownValues/getParseTemplate/getCrossValidationRules expos
 
     const parseTemplate = await getParseTemplate('mouse', 'connection', {
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(Array.isArray(parseTemplate?.patterns), true);
 
     const rules = await getCrossValidationRules('mouse', {
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(rules.length, 2);
@@ -184,7 +184,7 @@ test('getFieldRule/getKnownValues/getParseTemplate/getCrossValidationRules expos
 
 test('lookupComponent resolves by canonical and alias tokens', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-loader-lookup-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   try {
     const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
     await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -217,21 +217,21 @@ test('lookupComponent resolves by canonical and alias tokens', async () => {
 
     const byCanonical = await lookupComponent('mouse', 'sensor', 'PAW3395', {
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(byCanonical?.canonical_name, 'PAW3395');
 
     const byAlias = await lookupComponent('mouse', 'sensor', 'pixart 3395', {
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(byAlias?.canonical_name, 'PAW3395');
 
     const missing = await lookupComponent('mouse', 'sensor', 'not-a-sensor', {
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(missing, null);

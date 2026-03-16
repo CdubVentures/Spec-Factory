@@ -8,7 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { nowIso } from '../utils/common.js';
 import { componentReviewPath } from '../engine/curationSuggestions.js';
-import { validateComponentMatches } from '../llm/validateComponentMatches.js';
+import { validateComponentMatches } from '../features/indexing/validation/index.js';
 import { createBudgetGuard } from '../billing/budgetGuard.js';
 import { normalizeCostRates } from '../billing/costRates.js';
 
@@ -67,7 +67,7 @@ export async function runComponentReviewBatch({
   category,
   logger,
 }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   const reviewFilePath = componentReviewPath({ config, category });
   const reviewDoc = await safeReadJson(reviewFilePath);
 
@@ -214,3 +214,4 @@ async function writeAliasOverride({
 
   await fs.writeFile(overridePath, JSON.stringify(existing, null, 2));
 }
+

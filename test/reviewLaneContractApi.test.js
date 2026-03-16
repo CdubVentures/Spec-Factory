@@ -237,7 +237,7 @@ test('lane contract matrix: grid + component + enum endpoints stay decoupled and
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-lane-contract-api-'));
   const storage = makeStorage(tempRoot);
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files'),
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
     localOutputRoot: path.join(tempRoot, 'out'),
     specDbDir: path.join(tempRoot, '.specfactory_tmp'),
   };
@@ -247,14 +247,14 @@ test('lane contract matrix: grid + component + enum endpoints stay decoupled and
   const logs = [];
 
   try {
-    await seedFieldRules(config.helperFilesRoot, CATEGORY);
-    await seedComponentDb(config.helperFilesRoot, CATEGORY);
-    await seedKnownValues(config.helperFilesRoot, CATEGORY);
-    await seedWorkbookMap(config.helperFilesRoot, CATEGORY);
+    await seedFieldRules(config.categoryAuthorityRoot, CATEGORY);
+    await seedComponentDb(config.categoryAuthorityRoot, CATEGORY);
+    await seedKnownValues(config.categoryAuthorityRoot, CATEGORY);
+    await seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY);
     for (const [productId, product] of Object.entries(PRODUCTS)) {
       await seedLatestArtifacts(storage, CATEGORY, productId, product);
     }
-    await seedComponentReviewSuggestions(config.helperFilesRoot, CATEGORY);
+    await seedComponentReviewSuggestions(config.categoryAuthorityRoot, CATEGORY);
 
     const dbPath = path.join(tempRoot, '.specfactory_tmp', CATEGORY, 'spec.sqlite');
     await fs.mkdir(path.dirname(dbPath), { recursive: true });
@@ -366,7 +366,7 @@ test('lane contract matrix: grid + component + enum endpoints stay decoupled and
       cwd: tempRoot,
       env: {
         ...process.env,
-        HELPER_FILES_ROOT: config.helperFilesRoot,
+        HELPER_FILES_ROOT: config.categoryAuthorityRoot,
         LOCAL_OUTPUT_ROOT: config.localOutputRoot,
         LOCAL_INPUT_ROOT: path.join(tempRoot, 'fixtures'),
         OUTPUT_MODE: 'local',
@@ -403,7 +403,7 @@ test('lane contract matrix: grid + component + enum endpoints stay decoupled and
     });
 
     await t.test('component review GET does not mutate synthetic candidates on read', async () => {
-      const reviewPath = path.join(config.helperFilesRoot, CATEGORY, '_suggestions', 'component_review.json');
+      const reviewPath = path.join(config.categoryAuthorityRoot, CATEGORY, '_suggestions', 'component_review.json');
       const reviewDoc = JSON.parse(await fs.readFile(reviewPath, 'utf8'));
       reviewDoc.items.push({
         review_id: 'rv-cmp-unknown-like',
@@ -957,7 +957,7 @@ test('lane contract matrix: grid + component + enum endpoints stay decoupled and
       assert.equal(afterConfirm.user_accept_shared_status, 'accepted');
 
       const reviewDoc = JSON.parse(
-        await fs.readFile(path.join(config.helperFilesRoot, CATEGORY, '_suggestions', 'component_review.json'), 'utf8'),
+        await fs.readFile(path.join(config.categoryAuthorityRoot, CATEGORY, '_suggestions', 'component_review.json'), 'utf8'),
       );
       const r35000 = reviewDoc.items.find((item) => item.review_id === 'rv-cmp-35000');
       const r26000 = reviewDoc.items.find((item) => item.review_id === 'rv-cmp-26000');
@@ -1078,7 +1078,7 @@ test('lane contract matrix: grid + component + enum endpoints stay decoupled and
       assert.equal(afterConfirm.user_accept_shared_status, 'accepted');
 
       const reviewDoc = JSON.parse(
-        await fs.readFile(path.join(config.helperFilesRoot, CATEGORY, '_suggestions', 'component_review.json'), 'utf8'),
+        await fs.readFile(path.join(config.categoryAuthorityRoot, CATEGORY, '_suggestions', 'component_review.json'), 'utf8'),
       );
       const r24 = reviewDoc.items.find((item) => item.review_id === 'rv-enum-24');
       const rWireless = reviewDoc.items.find((item) => item.review_id === 'rv-enum-wireless');

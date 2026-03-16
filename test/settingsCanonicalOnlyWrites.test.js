@@ -56,7 +56,7 @@ async function readJsonFileUntil(filePath, predicate, timeoutMs = 4_000) {
 test('canonical-only settings write mode skips legacy snapshot files and persists user-settings only', { timeout: 90_000 }, async (t) => {
   const repoRoot = path.resolve('.');
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'settings-canonical-only-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const outputRoot = path.join(tempRoot, 'out');
   const inputRoot = path.join(tempRoot, 'fixtures');
 
@@ -99,14 +99,14 @@ test('canonical-only settings write mode skips legacy snapshot files and persist
   const runtimeRes = await fetch(`${baseUrl}/runtime-settings`, {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ fetchConcurrency: 11, profile: 'thorough' }),
+    body: JSON.stringify({ fetchConcurrency: 11 }),
   });
   assert.equal(runtimeRes.status, 200, `runtime put failed; stdout=${stdout} stderr=${stderr}`);
 
   const convergenceRes = await fetch(`${baseUrl}/convergence-settings`, {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ convergenceMaxRounds: 6, serpTriageEnabled: false }),
+    body: JSON.stringify({ serpTriageMinScore: 3 }),
   });
   assert.equal(convergenceRes.status, 200, `convergence put failed; stdout=${stdout} stderr=${stderr}`);
 
@@ -118,7 +118,7 @@ test('canonical-only settings write mode skips legacy snapshot files and persist
       enabled: true,
       destinationType: 'local',
       localDirectory: storageDirectory,
-      s3Region: 'us-east-2',
+      awsRegion: 'us-east-2',
       s3Bucket: '',
       s3Prefix: 'spec-factory-runs',
       s3AccessKeyId: '',
@@ -134,17 +134,13 @@ test('canonical-only settings write mode skips legacy snapshot files and persist
     userSettingsPath,
     (json) => (
       json?.runtime?.concurrency === 11
-      && json?.runtime?.runProfile === 'thorough'
-      && json?.convergence?.convergenceMaxRounds === 6
-      && json?.convergence?.serpTriageEnabled === false
+      && json?.convergence?.serpTriageMinScore === 3
       && json?.storage?.destinationType === 'local'
       && json?.storage?.localDirectory === storageDirectory
     ),
   );
   assert.equal(userSettings.runtime.concurrency, 11);
-  assert.equal(userSettings.runtime.runProfile, 'thorough');
-  assert.equal(userSettings.convergence.convergenceMaxRounds, 6);
-  assert.equal(userSettings.convergence.serpTriageEnabled, false);
+  assert.equal(userSettings.convergence.serpTriageMinScore, 3);
   assert.equal(userSettings.storage.destinationType, 'local');
   assert.equal(userSettings.storage.localDirectory, storageDirectory);
 

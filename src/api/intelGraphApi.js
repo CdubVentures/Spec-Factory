@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { loadSourceIntel } from '../intel/sourceIntel.js';
-import { nextBestUrlsFromHypotheses } from '../learning/hypothesisQueue.js';
+import { nextBestUrlsFromHypotheses } from '../features/indexing/learning/index.js';
 
 function toInt(value, fallback) {
   const parsed = Number.parseInt(String(value ?? ''), 10);

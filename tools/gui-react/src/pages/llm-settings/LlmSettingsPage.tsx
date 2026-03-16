@@ -4,6 +4,7 @@ import { useUiStore } from '../../stores/uiStore';
 import { useLlmSettingsAuthority, useLlmSettingsBootstrapRows } from '../../stores/llmSettingsAuthority';
 import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore';
 import { Spinner } from '../../components/common/Spinner';
+import { resolveLlmSettingsStatusText } from '../../shared/ui/feedback/settingsStatus';
 import type { LlmRouteRow, LlmScope } from '../../types/llmSettings';
 import { LLM_ROUTE_PRESET_LIMITS, LLM_SETTING_LIMITS } from '../../stores/settingsManifest';
 import type { LlmRoutePresetConfig } from '../../stores/settingsManifest';
@@ -615,16 +616,15 @@ export function LlmSettingsPage() {
               : 'sf-status-text-muted'
             }`}
           >
-            {isSaving
-              ? 'Saving...'
-              : saveStatus.kind === 'error' || saveStatus.kind === 'partial'
-              ? saveStatus.message
-              : !llmHydrated
-              ? 'Loading persisted LLM settings...'
-              : dirty
-              ? (autoSaveEnabled ? 'Unsaved (Auto-Save Pending).' : 'Unsaved changes.')
-              : 'All changes saved.'}
-            {lastSavedAt ? ` Last save: ${lastSavedAt}` : ''}
+            {resolveLlmSettingsStatusText({
+              isSaving,
+              saveState: saveStatus.kind,
+              saveMessage: saveStatus.message,
+              llmHydrated,
+              dirty,
+              autoSaveEnabled,
+              lastSavedAt,
+            })}
           </div>
           <label className="sf-text-label flex items-center gap-2">
             <input

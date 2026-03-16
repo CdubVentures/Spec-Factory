@@ -2,11 +2,12 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyIdentityGateToCandidates,
-  isIdentityGatedField
+  isIdentityGatedField,
+  resolveIdentityLabel
 } from '../src/pipeline/identityGateExtraction.js';
 
 describe('applyIdentityGateToCandidates', () => {
-  it('passes through candidates unchanged when identity matches', () => {
+  it('annotates candidates with identity_label and identity_confidence when identity matches', () => {
     const candidates = [
       { field: 'weight', value: '58g', confidence: 0.9, method: 'llm_extract' },
       { field: 'sensor', value: 'PAW3950', confidence: 0.85, method: 'html_table' }
@@ -16,12 +17,13 @@ describe('applyIdentityGateToCandidates', () => {
     const result = applyIdentityGateToCandidates(candidates, identity);
     assert.equal(result.length, 2);
     assert.equal(result[0].value, '58g');
-    assert.equal(result[0].target_match_passed, true);
-    assert.equal(result[0].target_match_score, 0.92);
-    assert.equal(result[1].target_match_passed, true);
+    assert.equal(result[0].identity_label, 'matched');
+    assert.equal(result[0].identity_confidence, 0.92);
+    assert.equal(result[0].confidence, 0.9, 'confidence is NOT modified');
+    assert.equal(result[1].identity_label, 'matched');
   });
 
-  it('downgrades all candidates when identity does not match', () => {
+  it('annotates with identity_label when identity does not match', () => {
     const candidates = [
       { field: 'weight', value: '58g', confidence: 0.9, method: 'llm_extract' },
       { field: 'dpi', value: '30000', confidence: 0.8, method: 'html_table' }
@@ -30,31 +32,21 @@ describe('applyIdentityGateToCandidates', () => {
 
     const result = applyIdentityGateToCandidates(candidates, identity);
     assert.equal(result.length, 2);
-    assert.equal(result[0].target_match_passed, false);
-    assert.equal(result[0].target_match_score, 0.35);
-    assert.equal(result[0].identity_reject_reason, 'source_identity_mismatch');
-    assert.ok(result[0].confidence < 0.9);
+    assert.equal(result[0].identity_label, 'different');
+    assert.equal(result[0].identity_confidence, 0.35);
+    assert.equal(result[0].confidence, 0.9, 'confidence is NOT capped');
+    assert.equal(result[1].confidence, 0.8, 'confidence is NOT capped');
   });
 
-  it('caps confidence at identity gate threshold when identity fails', () => {
+  it('does NOT cap confidence — confidence passes through unchanged', () => {
     const candidates = [
       { field: 'weight', value: '58g', confidence: 0.95, method: 'llm_extract' }
     ];
     const identity = { match: false, score: 0.3, decision: 'REJECT' };
 
     const result = applyIdentityGateToCandidates(candidates, identity);
-    assert.ok(result[0].confidence <= 0.3);
-  });
-
-  it('preserves original confidence in original_confidence field', () => {
-    const candidates = [
-      { field: 'weight', value: '58g', confidence: 0.9, method: 'llm_extract' }
-    ];
-    const identity = { match: false, score: 0.4, decision: 'REJECT' };
-
-    const result = applyIdentityGateToCandidates(candidates, identity);
-    assert.equal(result[0].original_confidence, 0.9);
-    assert.ok(result[0].confidence < 0.9);
+    assert.equal(result[0].confidence, 0.95, 'confidence unchanged');
+    assert.equal(result[0].identity_label, 'different');
   });
 
   it('returns empty array for empty candidates', () => {
@@ -62,14 +54,15 @@ describe('applyIdentityGateToCandidates', () => {
     assert.deepEqual(result, []);
   });
 
-  it('handles null/undefined identity gracefully', () => {
+  it('handles null/undefined identity — labels as unknown', () => {
     const candidates = [
       { field: 'weight', value: '58g', confidence: 0.9, method: 'llm_extract' }
     ];
     const result = applyIdentityGateToCandidates(candidates, null);
     assert.equal(result.length, 1);
-    assert.equal(result[0].target_match_passed, false);
-    assert.equal(result[0].identity_reject_reason, 'no_identity_evaluation');
+    assert.equal(result[0].identity_label, 'unknown');
+    assert.equal(result[0].identity_confidence, 0);
+    assert.equal(result[0].confidence, 0.9, 'confidence unchanged');
   });
 
   it('handles null/undefined candidates gracefully', () => {
@@ -84,20 +77,18 @@ describe('applyIdentityGateToCandidates', () => {
 
     applyIdentityGateToCandidates(candidates, identity);
     assert.equal(original.confidence, 0.9);
-    assert.equal(original.target_match_passed, undefined);
+    assert.equal(original.identity_label, undefined);
   });
 
-  it('applies stricter downgrade to identity-gated fields', () => {
+  it('labels possible when score >= 0.4 and no match and no conflicts', () => {
     const candidates = [
       { field: 'brand', value: 'Razer', confidence: 0.95, method: 'html_table' },
-      { field: 'weight', value: '58g', confidence: 0.95, method: 'html_table' }
     ];
-    const identity = { match: false, score: 0.4, decision: 'REJECT' };
+    const identity = { match: false, score: 0.5, decision: 'REJECT' };
 
     const result = applyIdentityGateToCandidates(candidates, identity);
-    const brandResult = result.find((r) => r.field === 'brand');
-    const weightResult = result.find((r) => r.field === 'weight');
-    assert.ok(brandResult.confidence <= weightResult.confidence);
+    assert.equal(result[0].identity_label, 'possible');
+    assert.equal(result[0].confidence, 0.95, 'no capping');
   });
 });
 

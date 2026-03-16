@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createStorage } from '../src/s3/storage.js';
 import { persistSourceIntel } from '../src/intel/sourceIntel.js';
-import { discoverCandidateSources } from '../src/discovery/searchDiscovery.js';
+import { discoverCandidateSources } from '../src/features/indexing/discovery/searchDiscovery.js';
 
 function baseCategoryConfig() {
   return {
@@ -93,6 +93,29 @@ function jobFixture() {
   };
 }
 
+test('discoverCandidateSources returns disabled defaults when discovery is off', async () => {
+  const discovery = await discoverCandidateSources({
+    config: { discoveryEnabled: false },
+    storage: {
+      resolveOutputKey: (...parts) => parts.join('/'),
+      readJsonOrNull: async () => null,
+      writeObject: async () => {}
+    },
+    categoryConfig: baseCategoryConfig(),
+    job: jobFixture(),
+    runId: 'run-disabled',
+    logger: null,
+    planningHints: {},
+    llmContext: {}
+  });
+
+  assert.equal(discovery.enabled, false);
+  assert.equal(discovery.discoveryKey, null);
+  assert.equal(discovery.candidatesKey, null);
+  assert.deepEqual(discovery.candidates, []);
+  assert.deepEqual(discovery.queries, []);
+});
+
 test('discoverCandidateSources uses internal source corpus when external providers are unavailable', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-internal-corpus-'));
   const localInputRoot = path.join(tempRoot, 'fixtures');
@@ -174,6 +197,7 @@ test('discoverCandidateSources skips external search when internal recall alread
     discoveryMaxDiscovered: 20,
     searchProvider: 'searxng',
     searxngBaseUrl: 'http://127.0.0.1:8080',
+    searxngMinQueryIntervalMs: 0,
     llmEnabled: false,
     llmPlanDiscoveryQueries: false,
     searchCacheTtlSeconds: 0
@@ -226,7 +250,7 @@ test('discoverCandidateSources skips external search when internal recall alread
   }
 });
 
-test('discoverCandidateSources annotates dual-mode searxng fallback reason when only searxng is available', async () => {
+test('discoverCandidateSources annotates dual-mode internet search reason when public engines are available', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-searxng-fallback-'));
   const localInputRoot = path.join(tempRoot, 'fixtures');
   const localOutputRoot = path.join(tempRoot, 'out');
@@ -244,6 +268,7 @@ test('discoverCandidateSources annotates dual-mode searxng fallback reason when 
     discoveryMaxDiscovered: 20,
     searchProvider: 'dual',
     searxngBaseUrl: 'http://127.0.0.1:8080',
+    searxngMinQueryIntervalMs: 0,
     llmEnabled: false,
     llmPlanDiscoveryQueries: false,
     searchCacheTtlSeconds: 0
@@ -262,7 +287,7 @@ test('discoverCandidateSources annotates dual-mode searxng fallback reason when 
             url: 'https://www.razer.com/gaming-mice/viper-v3-pro',
             title: 'Razer Viper V3 Pro',
             content: 'Official specs',
-            engine: 'duckduckgo'
+            engine: 'bing'
           }
         ]
       };
@@ -287,10 +312,11 @@ test('discoverCandidateSources annotates dual-mode searxng fallback reason when 
     assert.equal(discovery.external_search_reason, 'required_fields_missing_internal_under_target');
     assert.equal(
       (discovery.search_attempts || []).some(
-        (row) => row.provider === 'dual' && row.reason_code === 'dual_fallback_searxng_only'
+        (row) => row.provider === 'dual' && row.reason_code === 'internet_search'
       ),
       true
     );
+    assert.equal(discovery.provider_state?.fallback_reason, 'dual_fallback_searxng_only');
   } finally {
     global.fetch = originalFetch;
     await fs.rm(tempRoot, { recursive: true, force: true });

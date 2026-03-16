@@ -48,6 +48,16 @@ function hasKnownValue(value) {
   return token !== '' && token !== 'unk' && token !== 'unknown' && token !== 'n/a' && token !== 'null' && token !== 'undefined';
 }
 
+function firstKnownValue(candidates = [], fallback = '') {
+  for (const candidate of candidates) {
+    const token = String(candidate ?? '').trim();
+    if (hasKnownValue(token)) {
+      return token;
+    }
+  }
+  return String(fallback ?? '').trim();
+}
+
 function normalizeHost(value = '') {
   return String(value || '').trim().toLowerCase().replace(/^www\./, '');
 }
@@ -264,8 +274,9 @@ function makeCandidateRows(source = {}) {
 }
 
 function topFieldKeysByNeedSet(needSet = {}, fallbackKeys = []) {
-  const rows = Array.isArray(needSet?.needs) ? needSet.needs : [];
+  const rows = Array.isArray(needSet?.fields) ? needSet.fields : [];
   const ranked = rows
+    .filter((row) => row && row.state !== 'accepted')
     .map((row) => String(row?.field_key || '').trim())
     .filter(Boolean);
   if (ranked.length > 0) return [...new Set(ranked)].slice(0, 24);
@@ -712,6 +723,22 @@ function buildFallbackSourcePacket({
   normalized,
   categoryConfig
 }) {
+  const fallbackBrand = firstKnownValue([
+    normalized?.identity?.brand,
+    normalized?.fields?.brand
+  ]);
+  const fallbackModel = firstKnownValue([
+    normalized?.identity?.model,
+    normalized?.fields?.model
+  ], productId);
+  const fallbackVariant = firstKnownValue([
+    normalized?.identity?.variant,
+    normalized?.fields?.variant
+  ]);
+  const fallbackSku = firstKnownValue([
+    normalized?.identity?.sku,
+    normalized?.fields?.sku
+  ]);
   const fallbackUrl = `https://fallback.local/${encodeURIComponent(productId)}`;
   const source = {
     url: fallbackUrl,
@@ -724,15 +751,15 @@ function buildFallbackSourcePacket({
     ts: nowIso,
     identity: { match: true, score: 1 },
     identityCandidates: {
-      brand: String(normalized?.identity?.brand || '').trim(),
-      model: String(normalized?.identity?.model || '').trim(),
-      variant: String(normalized?.identity?.variant || '').trim(),
-      sku: String(normalized?.identity?.sku || '').trim()
+      brand: fallbackBrand,
+      model: fallbackModel,
+      variant: fallbackVariant,
+      sku: fallbackSku
     },
     fieldCandidates: [
       {
         field: 'model',
-        value: String(normalized?.identity?.model || normalized?.fields?.model || productId).trim(),
+        value: fallbackModel,
         method: 'dom',
         confidence: 1
       }
@@ -1302,3 +1329,5 @@ export function buildIndexingSchemaPackets({
     runMetaPacket
   };
 }
+
+export { PHASE_IDS, phaseFromMethod, sourceSurfaceFromMethod };

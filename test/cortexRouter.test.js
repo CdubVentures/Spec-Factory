@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildCortexTaskPlan,
   shouldEscalateToDeep
-} from '../src/llm/cortex_router.js';
+} from '../src/core/llm/cortex/cortexRouter.js';
 
 test('shouldEscalateToDeep defaults to false for healthy non-conflict context', () => {
   const decision = shouldEscalateToDeep({

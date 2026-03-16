@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-razer-viper-v3-pro-black",
+  "category": "mouse",
+  "identityLock": {
+    "id": 1,
+    "identifier": "8a60ae8b",
+    "brand": "Razer",
+    "model": "Viper V3 Pro",
+    "variant": "Black",
+    "sku": "",
+    "mpn": "",
+    "gtin": ""
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

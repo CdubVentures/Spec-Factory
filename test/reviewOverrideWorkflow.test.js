@@ -223,12 +223,12 @@ test('setOverrideFromCandidate writes helper override file and finalize applies 
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-override-'));
   const storage = makeStorage(tempRoot);
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files')
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority')
   };
   const category = 'mouse';
   const productId = 'mouse-review-override';
   try {
-    await seedFieldRulesArtifacts(config.helperFilesRoot, category);
+    await seedFieldRulesArtifacts(config.categoryAuthorityRoot, category);
     await seedReviewCandidates(storage, category, productId);
     await seedLatestArtifacts(storage, category, productId);
 
@@ -283,12 +283,12 @@ test('setOverrideFromCandidate accepts synthetic candidates when candidateValue 
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-synthetic-candidate-'));
   const storage = makeStorage(tempRoot);
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files')
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority')
   };
   const category = 'mouse';
   const productId = 'mouse-review-synthetic-candidate';
   try {
-    await seedFieldRulesArtifacts(config.helperFilesRoot, category);
+    await seedFieldRulesArtifacts(config.categoryAuthorityRoot, category);
     await seedLatestArtifacts(storage, category, productId);
 
     const setResult = await setOverrideFromCandidate({
@@ -319,13 +319,13 @@ test('finalizeOverrides demotes invalid override values through runtime engine g
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-override-invalid-'));
   const storage = makeStorage(tempRoot);
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files')
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority')
   };
   const category = 'mouse';
   const productId = 'mouse-review-override-invalid';
 
   try {
-    await seedFieldRulesArtifacts(config.helperFilesRoot, category);
+    await seedFieldRulesArtifacts(config.categoryAuthorityRoot, category);
     await seedReviewCandidates(storage, category, productId, '10');
     await seedLatestArtifacts(storage, category, productId);
 
@@ -393,7 +393,7 @@ test('setManualOverride requires evidence and writes canonical manual override c
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-manual-override-'));
   const storage = makeStorage(tempRoot);
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files')
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority')
   };
   const category = 'mouse';
   const productId = 'mouse-review-manual';
@@ -455,12 +455,12 @@ test('approveGreenOverrides writes candidate overrides only for green known fiel
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-approve-greens-'));
   const storage = makeStorage(tempRoot);
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files')
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority')
   };
   const category = 'mouse';
   const productId = 'mouse-review-approve-greens';
   try {
-    await seedFieldRulesArtifacts(config.helperFilesRoot, category);
+    await seedFieldRulesArtifacts(config.categoryAuthorityRoot, category);
     await seedReviewCandidates(storage, category, productId);
     await seedLatestArtifacts(storage, category, productId);
     await seedReviewProductPayload(storage, category, productId, {
@@ -504,12 +504,12 @@ test('buildReviewMetrics reports throughput and override ratios from override do
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-metrics-'));
   const storage = makeStorage(tempRoot);
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files')
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority')
   };
   const category = 'mouse';
   const productId = 'mouse-review-metrics';
   try {
-    await seedFieldRulesArtifacts(config.helperFilesRoot, category);
+    await seedFieldRulesArtifacts(config.categoryAuthorityRoot, category);
     await seedReviewCandidates(storage, category, productId);
     await seedLatestArtifacts(storage, category, productId);
     await seedReviewProductPayload(storage, category, productId);

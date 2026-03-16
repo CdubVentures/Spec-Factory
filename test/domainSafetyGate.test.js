@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyDomains } from '../src/discovery/domainSafetyGate.js';
+import { classifyDomains } from '../src/features/indexing/discovery/domainSafetyGate.js';
 
 function makeMockStorage() {
   const rows = new Map();
@@ -100,5 +100,78 @@ describe('domainSafetyGate', () => {
     assert.equal(result.get('cougar.com').classification, 'adult_content');
     const cached = storage._rows.get('cougar.com');
     assert.equal(cached.safe, 0);
+  });
+
+  it('backfills uncached domains when the classifier returns no rows', async () => {
+    const storage = makeMockStorage();
+    const result = await classifyDomains({
+      domains: ['dl.razerzone.com'],
+      category: 'mouse',
+      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      callLlmFn: async () => [],
+      storage
+    });
+
+    assert.deepEqual(result.get('dl.razerzone.com'), {
+      safe: true,
+      classification: 'unknown',
+      reason: 'llm_missing_result'
+    });
+    assert.equal(storage._rows.has('dl.razerzone.com'), false);
+  });
+
+  it('backfills only the domains omitted from a partial classifier response', async () => {
+    const storage = makeMockStorage();
+    const result = await classifyDomains({
+      domains: ['rtings.com', 'dl.razerzone.com'],
+      category: 'mouse',
+      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      callLlmFn: async () => ([
+        {
+          domain: 'rtings.com',
+          classification: 'lab_review',
+          safe: true,
+          reason: 'Lab review site'
+        }
+      ]),
+      storage
+    });
+
+    assert.deepEqual(result.get('rtings.com'), {
+      safe: true,
+      classification: 'lab_review',
+      reason: 'Lab review site'
+    });
+    assert.deepEqual(result.get('dl.razerzone.com'), {
+      safe: true,
+      classification: 'unknown',
+      reason: 'llm_missing_result'
+    });
+    assert.equal(storage._rows.has('rtings.com'), true);
+    assert.equal(storage._rows.has('dl.razerzone.com'), false);
+  });
+
+  it('classifies uncached domains even when storage has no domain cache methods', async () => {
+    const llm = makeLlmFn({
+      results: {
+        'techpowerup.com': {
+          domain: 'techpowerup.com',
+          classification: 'lab_review',
+          safe: true,
+          reason: 'Hardware review site'
+        }
+      }
+    });
+
+    const result = await classifyDomains({
+      domains: ['techpowerup.com'],
+      category: 'mouse',
+      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      callLlmFn: llm.callLlm,
+      storage: {}
+    });
+
+    assert.equal(result.get('techpowerup.com').classification, 'lab_review');
+    assert.ok(llm.called);
   });
 });

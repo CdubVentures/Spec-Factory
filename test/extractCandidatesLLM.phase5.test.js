@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { extractCandidatesLLM } from '../src/llm/extractCandidatesLLM.js';
+import { extractCandidatesLLM } from '../src/features/indexing/extraction/extractCandidatesLLM.js';
 
 function mockChatCompletionPayload(contentJson) {
   return {
@@ -178,6 +178,160 @@ test('extractCandidatesLLM drops non-auditable candidates when evidence verifier
 
     assert.equal(result.fieldCandidates.length, 0);
     assert.equal((result.notes || []).some((row) => String(row).includes('evidence verifier')), true);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('extractCandidatesLLM skips repatch when budget guard disallows extra call', async () => {
+  const originalFetch = global.fetch;
+  let callCount = 0;
+  const budgetReasons = [];
+  const blockedReasons = [];
+  global.fetch = async () => {
+    callCount += 1;
+    return {
+      ok: true,
+      status: 200,
+      async text() {
+        return JSON.stringify(
+          mockChatCompletionPayload({
+            identityCandidates: {},
+            fieldCandidates: [],
+            conflicts: [],
+            notes: []
+          })
+        );
+      }
+    };
+  };
+
+  const budgetGuard = {
+    canCall(options = {}) {
+      const reason = String(options.reason || '');
+      budgetReasons.push(reason);
+      if (reason.includes('_repatch')) {
+        return { allowed: false, reason: 'budget_max_calls_per_round_reached' };
+      }
+      return { allowed: true, reason: 'ok' };
+    },
+    recordCall() {},
+    block(reason) {
+      blockedReasons.push(String(reason || ''));
+    },
+    snapshot() {
+      return {
+        limits: {},
+        state: {
+          blockedReason: blockedReasons[blockedReasons.length - 1] || '',
+          roundCalls: callCount
+        }
+      };
+    }
+  };
+
+  try {
+    await extractCandidatesLLM({
+      job: {
+        productId: 'mouse-phase5-repatch-budget',
+        category: 'mouse',
+        identityLock: {},
+        anchors: {}
+      },
+      categoryConfig: {
+        category: 'mouse',
+        fieldOrder: ['sensor']
+      },
+      evidencePack: {
+        references: [{ id: 'ref-sensor', url: 'https://example.com/spec' }],
+        snippets: [{ id: 'ref-sensor', normalized_text: 'Sensor: Focus Pro 35K' }]
+      },
+      llmContext: {
+        budgetGuard,
+        route_matrix_policy: {
+          all_sources_confidence_repatch: true,
+          model_ladder_today: 'fast-model -> repatch-model',
+          min_evidence_refs_effective: 1
+        }
+      },
+      config: {
+        llmEnabled: true,
+        llmApiKey: 'sk-test',
+        llmBaseUrl: 'https://api.openai.com',
+        llmProvider: 'openai',
+        llmModelExtract: 'fallback-model',
+        llmModelFast: 'fast-model',
+        llmModelPlan: 'plan-model',
+        llmTimeoutMs: 5_000
+      }
+    });
+
+    assert.equal(callCount, 1);
+    assert.equal(budgetReasons.some((reason) => reason.includes('_repatch')), true);
+    assert.equal(blockedReasons.includes('budget_max_calls_per_round_reached'), true);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('extractCandidatesLLM skips repatch when role model provider pin is enabled', async () => {
+  const originalFetch = global.fetch;
+  let callCount = 0;
+  global.fetch = async () => {
+    callCount += 1;
+    return {
+      ok: true,
+      status: 200,
+      async text() {
+        return JSON.stringify(
+          mockChatCompletionPayload({
+            identityCandidates: {},
+            fieldCandidates: [],
+            conflicts: [],
+            notes: []
+          })
+        );
+      }
+    };
+  };
+
+  try {
+    await extractCandidatesLLM({
+      job: {
+        productId: 'mouse-phase5-repatch-provider-pin',
+        category: 'mouse',
+        identityLock: {},
+        anchors: {}
+      },
+      categoryConfig: {
+        category: 'mouse',
+        fieldOrder: ['sensor']
+      },
+      evidencePack: {
+        references: [{ id: 'ref-sensor', url: 'https://example.com/spec' }],
+        snippets: [{ id: 'ref-sensor', normalized_text: 'Sensor: Focus Pro 35K' }]
+      },
+      llmContext: {
+        route_matrix_policy: {
+          all_sources_confidence_repatch: true,
+          model_ladder_today: 'gpt-5.1-mini -> gpt-5.1-high',
+          min_evidence_refs_effective: 1
+        }
+      },
+      config: {
+        llmEnabled: true,
+        llmApiKey: 'sk-test',
+        llmBaseUrl: 'https://api.openai.com',
+        llmProvider: 'openai',
+        llmModelExtract: 'gemini-2.5-flash-lite',
+        llmModelFast: 'gemini-2.5-flash-lite',
+        llmModelPlan: 'gemini-2.5-flash-lite',
+        llmForceRoleModelProvider: true,
+        llmTimeoutMs: 5_000
+      }
+    });
+
+    assert.equal(callCount, 1);
   } finally {
     global.fetch = originalFetch;
   }

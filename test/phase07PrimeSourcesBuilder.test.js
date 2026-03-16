@@ -9,7 +9,7 @@ test('phase07 builder enforces min refs + distinct source policy for critical fi
     category: 'mouse',
     productId: 'mouse-test',
     needSet: {
-      needs: [
+      fields: [
         {
           field_key: 'polling_rate',
           required_level: 'critical',
@@ -81,7 +81,7 @@ test('phase07 retriever generates deterministic snippet ids when missing', () =>
     category: 'mouse',
     productId: 'mouse-test',
     needSet: {
-      needs: [
+      fields: [
         {
           field_key: 'weight',
           required_level: 'required',
@@ -130,7 +130,7 @@ test('phase07 builder falls back to sourceResults evidence packs when provenance
     category: 'mouse',
     productId: 'mouse-test',
     needSet: {
-      needs: [
+      fields: [
         {
           field_key: 'polling_rate',
           required_level: 'critical',
@@ -284,7 +284,7 @@ test('E2E: two fields with different tier_preferences produce different top hits
     category: 'mouse',
     productId: 'mouse-test',
     needSet: {
-      needs: [
+      fields: [
         {
           field_key: 'sensor',
           required_level: 'required',
@@ -351,7 +351,7 @@ test('phase07 builder uses default maxHitsPerField=24 and maxPrimeSourcesPerFiel
     runId: 'run-defaults-test',
     category: 'mouse',
     productId: 'mouse-defaults',
-    needSet: { needs: [{ field_key: 'weight', required_level: 'required', need_score: 20, min_refs: 1, tier_preference: [1, 2, 3] }] },
+    needSet: { fields: [{ field_key: 'weight', required_level: 'required', need_score: 20, min_refs: 1, tier_preference: [1, 2, 3] }] },
     provenance: { weight: { value: '50', evidence } },
     fieldRules: { fields: { weight: { required_level: 'required', unit: 'g' } } },
     identity: { brand: 'Test', model: 'Default' }
@@ -374,7 +374,7 @@ test('phase07 builder respects custom maxHitsPerField and maxPrimeSourcesPerFiel
     runId: 'run-custom-limits',
     category: 'mouse',
     productId: 'mouse-custom',
-    needSet: { needs: [{ field_key: 'weight', required_level: 'required', need_score: 20, min_refs: 1, tier_preference: [1, 2, 3] }] },
+    needSet: { fields: [{ field_key: 'weight', required_level: 'required', need_score: 20, min_refs: 1, tier_preference: [1, 2, 3] }] },
     provenance: { weight: { value: '50', evidence } },
     fieldRules: { fields: { weight: { required_level: 'required', unit: 'g' } } },
     identity: { brand: 'Test', model: 'Custom' },

@@ -1,6 +1,5 @@
 import zlib from 'node:zlib';
-import { extractLdJsonBlocks } from '../extractors/ldjsonExtractor.js';
-import { extractEmbeddedState } from '../extractors/embeddedStateExtractor.js';
+import { extractLdJsonBlocks, extractEmbeddedState } from '../features/indexing/extraction/index.js';
 import { loadReplayManifest } from '../replay/replayManifest.js';
 
 function normalizeUrl(value) {

@@ -1,5 +1,19 @@
 # /etc/searxng/settings.yml
-use_default_settings: true
+use_default_settings:
+  engines:
+    keep_only:
+      - google
+      - bing
+
+engines:
+  - name: google
+    engine: google
+    shortcut: go
+    disabled: false
+  - name: bing
+    engine: bing
+    shortcut: bi
+    disabled: false
 
 general:
   instance_name: "Spec Harvester Local Search"
@@ -9,6 +23,7 @@ general:
 
 search:
   safe_search: 0
+  autocomplete: ""
   formats:
     - html
     - json

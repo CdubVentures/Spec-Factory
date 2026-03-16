@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { verifyCandidateEvidence } from '../src/llm/evidenceVerifier.js';
+import { verifyCandidateEvidence } from '../src/features/indexing/extraction/evidenceVerifier.js';
 
 // ---------------------------------------------------------------------------
 // A.1 — Evidence Verification Wire-In Tests

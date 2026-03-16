@@ -17,9 +17,9 @@ function makeSource(url, host) {
 }
 
 describe('FetchScheduler integration — feature flag', () => {
-  it('feature flag false uses sequential behavior (default config)', () => {
+  it('feature flag defaults to enabled in the standard config', () => {
     const config = loadConfig({});
-    assert.equal(config.fetchSchedulerEnabled, false);
+    assert.equal(config.fetchSchedulerEnabled, true);
   });
 
   it('feature flag true enables scheduler', () => {

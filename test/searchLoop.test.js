@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateSearchLoopStop } from '../src/search/searchLoop.js';
+import { evaluateSearchLoopStop } from '../src/features/indexing/search/searchLoop.js';
 
 test('search loop stops when no new urls and fields for configured rounds', () => {
   const decision = evaluateSearchLoopStop({

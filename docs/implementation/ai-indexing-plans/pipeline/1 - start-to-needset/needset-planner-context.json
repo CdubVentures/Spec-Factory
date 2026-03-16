@@ -1,0 +1,154 @@
+{
+  "_doc": "Schema 3 (SearchPlanningContext) gap analysis. Compares spec against actual buildSearchPlanningContext() output (searchPlanningContext.js:288-377) and downstream consumer buildSearchPlan() (searchPlanBuilder.js:263-417). Updated 2026-03-16 — all body text aligned with code after gap fixes.",
+
+  "_plan_alignment": {
+    "_question": "Are we following the plans to achieve 00-PRODUCT-GOAL.md?",
+
+    "answer": "YES. The pipeline brain is now connected to its memory. Schema 3 computes anti-garbage intelligence (domains_tried, host_classes_tried, evidence_classes_tried, no_value_attempts, search_exhaustion) and inlines catalog metadata (source_target, content_target, search_intent, host_class). Schema 4 buildSearchPlan sends ALL of these to the LLM in the payload (searchPlanBuilder.js:298-338). The feedback loop from buildFieldHistories → Schema 2 → Schema 3 → Schema 4 LLM payload is complete.",
+
+    "current_status": {
+      "anti_garbage_signals": "CONNECTED — searchPlanBuilder.js:313-335 sends domains_tried_union, host_classes_tried_union, evidence_classes_tried_union, no_value_attempts, preferred_content_types_union, aliases_union, weak_field_keys, conflict_field_keys, host_class, source_target, search_intent, urls_examined_count, query_count to the LLM",
+      "catalog_metadata": "INLINED — searchPlanningContext.js:249-259 inlines label, desc, source_target, content_target, search_intent, host_class from catalog into each focus_group",
+      "search_exhaustion": "ACTIVE — searchPlanningContext.js:143-149 + 204-206 + 232-237 compute exhaustion and move fully-exhausted groups to hold phase",
+      "aliases": "FLOWING — searchPlanningContext.js:175,214,282 aggregates aliases_union per group; searchPlanBuilder.js:325 sends to LLM",
+      "feedback_loop": "COMPLETE — buildFieldHistories → previousFieldHistories → computeNeedSet → field.history → buildSearchPlanningContext → focus_groups unions → buildSearchPlan LLM payload"
+    }
+  },
+
+  "_spec_vs_actual_summary": {
+    "schema_3_spec_keys": ["schema_version", "run", "identity", "needset", "planner_limits", "group_catalog", "focus_groups", "field_priority_map", "learning", "previous_round_fields"],
+    "actual_output_keys": ["schema_version", "run", "identity", "needset", "planner_limits", "group_catalog", "focus_groups", "field_priority_map", "learning", "previous_round_fields"],
+    "top_level_key_match": "MATCH — all spec keys present, plus field_priority_map (used by Schema 4 for bundle fields[] derivation)"
+  },
+
+  "schema_version": {
+    "spec": "search_planning_context.v2",
+    "actual": "MATCH — searchPlanningContext.js:357"
+  },
+
+  "run": {
+    "run_id":     { "actual": "searchPlanningContext.js:359 — rc.run_id || ''", "status": "MATCH" },
+    "category":   { "actual": "searchPlanningContext.js:360 — rc.category || ''", "status": "MATCH" },
+    "product_id": { "actual": "searchPlanningContext.js:361 — rc.product_id || ''", "status": "MATCH" },
+    "brand":      { "actual": "searchPlanningContext.js:362 — rc.brand || ''", "status": "MATCH" },
+    "model":      { "actual": "searchPlanningContext.js:363 — rc.model || ''", "status": "MATCH" },
+    "base_model": { "actual": "MATCH — searchPlanningContext.js:364 — rc.base_model || ''", "status": "MATCH" },
+    "aliases":    { "actual": "MATCH — searchPlanningContext.js:365 — Array.isArray(rc.aliases) ? rc.aliases : []", "status": "MATCH" },
+    "round":      { "actual": "searchPlanningContext.js:366 — rc.round ?? 0", "status": "MATCH" },
+    "round_mode": { "actual": "searchPlanningContext.js:367 — rc.round_mode || 'seed'", "status": "MATCH" }
+  },
+
+  "identity": {
+    "_note": "Passthrough from Schema 2 (NeedSetOutput.identity). Not transformed.",
+    "state":              { "actual": "searchPlanningContext.js:369 — ns.identity passthrough", "status": "MATCH" },
+    "source_label_state": { "status": "MATCH — passthrough" },
+    "manufacturer":       { "status": "MATCH — passthrough" },
+    "model":              { "status": "MATCH — passthrough" },
+    "confidence":         { "status": "MATCH — passthrough" },
+    "official_domain":    { "status": "MATCH — passthrough" },
+    "support_domain":     { "status": "MATCH — passthrough" }
+  },
+
+  "needset": {
+    "_note": "Slim projection of Schema 2 output. Built in searchPlanningContext.js:347-354. Heavy fields[] passthrough removed to reduce payload size.",
+    "summary":                 { "actual": "searchPlanningContext.js:349 — ns.summary || {}", "status": "MATCH" },
+    "blockers":                { "actual": "searchPlanningContext.js:350 — ns.blockers || {}", "status": "MATCH" },
+    "missing_critical_fields": { "actual": "searchPlanningContext.js:351 — plannerSeed.missing_critical_fields || []", "status": "MATCH — consumed by searchPlanBuilder.js:306 (sent to LLM)" },
+    "unresolved_fields":       { "actual": "searchPlanningContext.js:352 — plannerSeed.unresolved_fields || []", "status": "MATCH — not consumed by planner (per-group unresolved_field_keys used instead)" },
+    "existing_queries":        { "actual": "searchPlanningContext.js:353 — plannerSeed.existing_queries || []", "status": "MATCH — consumed by searchPlanBuilder.js:337,381 (sent to LLM + used for dedup)" }
+  },
+
+  "planner_limits": {
+    "_note": "Derived from runtime config in searchPlanningContext.js:57-76 (derivePlannerLimits function).",
+    "phase2LlmEnabled":        { "actual": "line 62", "status": "MATCH — guards LLM call in searchPlanBuilder.js:277" },
+    "discoveryMaxQueries":     { "actual": "line 56", "status": "MATCH — sent to LLM at searchPlanBuilder.js:308" },
+    "maxUrlsPerProduct":       { "actual": "line 58", "status": "MATCH — sent to LLM at searchPlanBuilder.js:309" },
+    "llmModelPlan":            { "actual": "line 63", "status": "MATCH" },
+    "searchProfileCapMap":     { "actual": "line 69 — parseCapMap()", "status": "MATCH" },
+    "searchProvider":          { "actual": "line 70", "status": "MATCH" }
+  },
+
+  "group_catalog": {
+    "_note": "Static metadata map built from GROUP_DEFAULTS + fieldGroupsData. Still emitted as separate top-level key but now ALSO inlined into focus_groups. Catalog is redundant but harmless.",
+    "_source": "searchPlanningContext.js:108-134 (buildGroupCatalog). GROUP_DEFAULTS has 11 mouse-specific groups. resolveGroupMeta checks fieldGroupsData first for category-aware overrides.",
+    "_entry_shape": {
+      "label":          "MATCH — searchPlanningContext.js:124",
+      "desc":           "MATCH — line 125",
+      "source_target":  "MATCH — line 126",
+      "content_target": "MATCH — line 127",
+      "search_intent":  "MATCH — line 128",
+      "host_class":     "MATCH — line 129"
+    }
+  },
+
+  "focus_groups": {
+    "_note": "Derived from Schema 2 fields[] grouped by group_key. Built in searchPlanningContext.js:151-285 (buildFocusGroup). Catalog metadata inlined. Anti-garbage unions from non-accepted fields only. Sorted by phase→priority→key.",
+
+    "key":                            { "actual": "searchPlanningContext.js:253 — groupKey", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:314 — sent to LLM" },
+    "label":                          { "actual": "MATCH — searchPlanningContext.js:254 — cat.label || groupKey (inlined from catalog)", "consumed_by": "Schema 4 panel bundles" },
+    "desc":                           { "actual": "MATCH — searchPlanningContext.js:255 — cat.desc || '' (inlined from catalog)", "consumed_by": "Schema 4 panel bundles" },
+    "source_target":                  { "actual": "MATCH — searchPlanningContext.js:256 — cat.source_target || 'product_page' (inlined from catalog)", "consumed_by": "searchPlanBuilder.js:332 — sent to LLM" },
+    "content_target":                 { "actual": "MATCH — searchPlanningContext.js:257 — cat.content_target || 'general' (inlined from catalog)", "consumed_by": "Schema 4 panel bundles" },
+    "search_intent":                  { "actual": "MATCH — searchPlanningContext.js:258 — cat.search_intent || 'broad' (inlined from catalog)", "consumed_by": "searchPlanBuilder.js:333 — sent to LLM" },
+    "host_class":                     { "actual": "MATCH — searchPlanningContext.js:259 — cat.host_class || 'any' (inlined from catalog)", "consumed_by": "searchPlanBuilder.js:331 — sent to LLM" },
+
+    "field_keys":                     { "actual": "searchPlanningContext.js:260", "status": "MATCH" },
+    "satisfied_field_keys":           { "actual": "searchPlanningContext.js:261", "status": "MATCH" },
+    "unresolved_field_keys":          { "actual": "searchPlanningContext.js:262", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:317 — sent to LLM" },
+    "weak_field_keys":                { "actual": "searchPlanningContext.js:263", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:318 — sent to LLM" },
+    "conflict_field_keys":            { "actual": "searchPlanningContext.js:264", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:319 — sent to LLM" },
+    "search_exhausted_field_keys":    { "actual": "searchPlanningContext.js:265", "status": "MATCH — drives phase=hold when all non-accepted fields are exhausted" },
+    "search_exhausted_count":         { "actual": "searchPlanningContext.js:266", "status": "MATCH" },
+
+    "core_unresolved_count":          { "actual": "searchPlanningContext.js:267", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:320 — sent to LLM" },
+    "secondary_unresolved_count":     { "actual": "searchPlanningContext.js:268", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:321 — sent to LLM" },
+    "optional_unresolved_count":      { "actual": "searchPlanningContext.js:269", "status": "MATCH" },
+    "exact_match_count":              { "actual": "searchPlanningContext.js:270", "status": "MATCH", "consumed_by": "searchPlanBuilder.js not directly — used for Schema 4 panel" },
+    "no_value_attempts":              { "actual": "searchPlanningContext.js:271", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:330 — sent to LLM" },
+    "duplicate_attempts_suppressed":  { "actual": "searchPlanningContext.js:272", "status": "MATCH" },
+    "urls_examined_count":            { "actual": "searchPlanningContext.js:273", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:334 — sent to LLM" },
+    "query_count":                    { "actual": "searchPlanningContext.js:274", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:335 — sent to LLM" },
+
+    "query_terms_union":              { "actual": "searchPlanningContext.js:275 — unionSorted() from non-accepted fields only", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:322 — sent to LLM (capped to 5)" },
+    "domain_hints_union":             { "actual": "searchPlanningContext.js:276 — unionSorted() from non-accepted fields only", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:289,323 — dead domains filtered then sent to LLM (capped to 5)" },
+    "preferred_content_types_union":  { "actual": "searchPlanningContext.js:277 — unionSorted() from non-accepted fields only", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:326 — sent to LLM (capped to 5)" },
+    "existing_queries_union":         { "actual": "searchPlanningContext.js:278 — unionSorted() from non-accepted fields only", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:290-293,324 — dead hashes filtered then sent to LLM (capped to 5)" },
+    "domains_tried_union":            { "actual": "searchPlanningContext.js:279 — unionSorted() from non-accepted fields only", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:327 — sent to LLM (capped to 5)" },
+    "host_classes_tried_union":       { "actual": "searchPlanningContext.js:280 — unionSorted() from non-accepted fields only", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:328 — sent to LLM" },
+    "evidence_classes_tried_union":   { "actual": "searchPlanningContext.js:281 — unionSorted() from non-accepted fields only", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:329 — sent to LLM" },
+    "aliases_union":                  { "actual": "searchPlanningContext.js:282 — unionSorted() from non-accepted fields only", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:325 — sent to LLM (capped to 5)" },
+
+    "priority":                       { "actual": "searchPlanningContext.js:226-229 — derived from unresolved required_levels", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:316 — sent to LLM" },
+    "phase":                          { "actual": "searchPlanningContext.js:236-247 — derived from hasUnresolved + priority + hasCoreGroupAnywhere + allFieldsExhausted", "status": "MATCH", "consumed_by": "searchPlanBuilder.js:286 — filters groups to now|next for LLM" }
+  },
+
+  "field_priority_map": {
+    "_note": "Map of field_key → required_level. Built in searchPlanningContext.js:332-335. Used by Schema 4 assembleSchema4() to derive bundle.fields[].bucket.",
+    "actual": "searchPlanningContext.js:374 — fieldPriorityMap",
+    "status": "MATCH",
+    "consumed_by": "searchPlanBuilder.js:183 (ctx.field_priority_map) → assembleSchema4 line 197 (requiredLevelToBucket)"
+  },
+
+  "learning": {
+    "_note": "Optional passthrough from external learning stores. searchPlanningContext.js:375 — learning || null.",
+    "dead_query_hashes": { "status": "MATCH", "consumed_by": "searchPlanBuilder.js:283 — pre-LLM anti-garbage filter" },
+    "dead_domains":      { "status": "MATCH", "consumed_by": "searchPlanBuilder.js:282 — pre-LLM anti-garbage filter" },
+    "query_index_hits":  { "status": "MATCH — passthrough if provided" },
+    "url_index_hits":    { "status": "MATCH — passthrough if provided" }
+  },
+
+  "previous_round_fields": {
+    "_note": "Optional passthrough for round-over-round delta computation. searchPlanningContext.js:376.",
+    "spec": "Array<{ field_key, state }>",
+    "actual": "passthrough if provided",
+    "status": "MATCH",
+    "consumed_by": "searchPlanBuilder.js assembleSchema4():93-115 (computeDeltas) → panel.deltas"
+  },
+
+  "_gap_summary": {
+    "total_gaps_original": 12,
+    "all_closed": true,
+    "remaining": 0,
+    "_history": "All 12 gaps (PROFILE-GAP-1 through PROFILE-GAP-12) resolved. Catalog metadata inlined into focus_groups. Anti-garbage signals sent to LLM. aliases_union aggregated. Search exhaustion drives phase=hold. base_model/aliases in run block. Union sets filtered to non-accepted fields. resolveGroupMeta checks fieldGroupsData. urls_examined_count/query_count aggregated. previous_round_fields consumed by computeDeltas. key standardized. llmPlanApiKey removed from spec. weak/conflict/missing_critical sent to LLM."
+  }
+}

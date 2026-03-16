@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto';
 import { normalizeWhitespace } from '../utils/common.js';
-import { filterReadableHtml } from '../extract/readabilityFilter.js';
-import { extractMainArticle } from '../extract/articleExtractor.js';
-import { resolveArticleExtractionPolicy } from '../extract/articleExtractorPolicy.js';
+import {
+  filterReadableHtml,
+  extractMainArticle,
+  resolveArticleExtractionPolicy,
+} from '../features/indexing/extraction/index.js';
 import { generateStableSnippetId } from '../index/evidenceIndexDb.js';
 
 function toText(value, maxChars = 5000) {

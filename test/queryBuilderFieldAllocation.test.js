@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSearchProfile } from '../src/search/queryBuilder.js';
-import { filterRelevantQueries } from '../src/llm/discoveryPlanner.js';
+import { buildSearchProfile } from '../src/features/indexing/search/queryBuilder.js';
+import { filterRelevantQueries } from '../src/features/indexing/discovery/discoveryPlanner.js';
 
 function makeJob(overrides = {}) {
   return {

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runConsensusEngine, applySelectionPolicyReducers } from '../src/scoring/consensusEngine.js';
 
-function makeSource({ host, rootDomain, approvedDomain, value }) {
+function makeSource({ host, rootDomain, approvedDomain, value, field = 'sensor' }) {
   return {
     host,
     rootDomain,
@@ -13,23 +13,23 @@ function makeSource({ host, rootDomain, approvedDomain, value }) {
     identity: { match: true },
     anchorCheck: { majorConflicts: [] },
     fieldCandidates: [
-      { field: 'sensor', value, method: 'network_json', keyPath: 'payload.sensor' }
+      { field, value, method: 'network_json', keyPath: `payload.${field}` }
     ]
   };
 }
 
-test('consensus requires 3 approved domains for non-anchor fields', () => {
+test('consensus defaults to 2 approved domains for normal fields when config omits pass-target overrides', () => {
   const categoryConfig = {
-    criticalFieldSet: new Set(['sensor'])
+    criticalFieldSet: new Set(['connectivity'])
   };
 
-  const fieldOrder = ['id', 'brand', 'model', 'base_model', 'category', 'sku', 'sensor'];
+  const fieldOrder = ['id', 'brand', 'model', 'base_model', 'category', 'sku', 'connectivity'];
 
   const result = runConsensusEngine({
     sourceResults: [
-      makeSource({ host: 'a.com', rootDomain: 'a.com', approvedDomain: true, value: 'Focus Pro 35K' }),
-      makeSource({ host: 'b.com', rootDomain: 'b.com', approvedDomain: true, value: 'Focus Pro 35K' }),
-      makeSource({ host: 'c.com', rootDomain: 'c.com', approvedDomain: false, value: 'Focus Pro 35K' })
+      makeSource({ host: 'a.com', rootDomain: 'a.com', approvedDomain: true, value: 'wireless', field: 'connectivity' }),
+      makeSource({ host: 'b.com', rootDomain: 'b.com', approvedDomain: false, value: 'wireless', field: 'connectivity' }),
+      makeSource({ host: 'c.com', rootDomain: 'c.com', approvedDomain: false, value: 'wireless', field: 'connectivity' })
     ],
     categoryConfig,
     fieldOrder,
@@ -39,13 +39,13 @@ test('consensus requires 3 approved domains for non-anchor fields', () => {
     category: 'mouse'
   });
 
-  assert.equal(result.fields.sensor, 'unk');
+  assert.equal(result.fields.connectivity, 'unk');
 
   const result2 = runConsensusEngine({
     sourceResults: [
-      makeSource({ host: 'a.com', rootDomain: 'a.com', approvedDomain: true, value: 'Focus Pro 35K' }),
-      makeSource({ host: 'b.com', rootDomain: 'b.com', approvedDomain: true, value: 'Focus Pro 35K' }),
-      makeSource({ host: 'd.com', rootDomain: 'd.com', approvedDomain: true, value: 'Focus Pro 35K' })
+      makeSource({ host: 'a.com', rootDomain: 'a.com', approvedDomain: true, value: 'wireless', field: 'connectivity' }),
+      makeSource({ host: 'b.com', rootDomain: 'b.com', approvedDomain: true, value: 'wireless', field: 'connectivity' }),
+      makeSource({ host: 'd.com', rootDomain: 'd.com', approvedDomain: false, value: 'wireless', field: 'connectivity' })
     ],
     categoryConfig,
     fieldOrder,
@@ -55,7 +55,82 @@ test('consensus requires 3 approved domains for non-anchor fields', () => {
     category: 'mouse'
   });
 
-  assert.equal(result2.fields.sensor, 'Focus Pro 35K');
+  assert.equal(result2.fields.connectivity, 'wireless');
+  assert.equal(result2.provenance.connectivity.pass_target, 2);
+});
+
+test('consensus defaults to 4 approved domains for identity-strong fields when config omits pass-target overrides', () => {
+  const categoryConfig = {
+    criticalFieldSet: new Set(['weight'])
+  };
+
+  const fieldOrder = ['id', 'brand', 'model', 'base_model', 'category', 'sku', 'weight'];
+
+  const result = runConsensusEngine({
+    sourceResults: [
+      {
+        host: 'a.com',
+        rootDomain: 'a.com',
+        tier: 2,
+        tierName: 'database',
+        role: 'review',
+        approvedDomain: true,
+        identity: { match: true },
+        anchorCheck: { majorConflicts: [] },
+        fieldCandidates: [
+          { field: 'weight', value: '54', method: 'network_json', keyPath: 'payload.weight' }
+        ]
+      },
+      {
+        host: 'b.com',
+        rootDomain: 'b.com',
+        tier: 2,
+        tierName: 'database',
+        role: 'review',
+        approvedDomain: true,
+        identity: { match: true },
+        anchorCheck: { majorConflicts: [] },
+        fieldCandidates: [
+          { field: 'weight', value: '54', method: 'network_json', keyPath: 'payload.weight' }
+        ]
+      },
+      {
+        host: 'c.com',
+        rootDomain: 'c.com',
+        tier: 2,
+        tierName: 'database',
+        role: 'review',
+        approvedDomain: true,
+        identity: { match: true },
+        anchorCheck: { majorConflicts: [] },
+        fieldCandidates: [
+          { field: 'weight', value: '54', method: 'network_json', keyPath: 'payload.weight' }
+        ]
+      },
+      {
+        host: 'd.com',
+        rootDomain: 'd.com',
+        tier: 2,
+        tierName: 'database',
+        role: 'review',
+        approvedDomain: true,
+        identity: { match: true },
+        anchorCheck: { majorConflicts: [] },
+        fieldCandidates: [
+          { field: 'weight', value: '54', method: 'network_json', keyPath: 'payload.weight' }
+        ]
+      }
+    ],
+    categoryConfig,
+    fieldOrder,
+    anchors: {},
+    identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+    productId: 'mouse-a',
+    category: 'mouse'
+  });
+
+  assert.equal(result.fields.weight, '54');
+  assert.equal(result.provenance.weight.pass_target, 4);
 });
 
 test('consensus can fill below pass target only with manufacturer+tier2 when enabled', () => {

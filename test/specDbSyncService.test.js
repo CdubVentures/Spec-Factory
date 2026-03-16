@@ -23,7 +23,7 @@ test('syncSpecDbForCategory seeds SpecDb from latest field rules for resolved ca
   };
   const result = await syncSpecDbForCategory({
     category: 'Mouse',
-    config: { helperFilesRoot: 'helper_files' },
+    config: { categoryAuthorityRoot: 'category_authority' },
     resolveCategoryAlias: (value) => String(value || '').trim().toLowerCase(),
     getSpecDbReady: async (category) => {
       calls.getSpecDbReady.push(category);

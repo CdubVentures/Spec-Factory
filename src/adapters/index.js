@@ -2,7 +2,7 @@ import { manufacturerAdapter } from './manufacturerAdapter.js';
 import { techPowerUpAdapter } from './techPowerUpAdapter.js';
 import { rtingsAdapter } from './rtingsAdapter.js';
 import { eloShapesAdapter } from './eloShapesAdapter.js';
-import { normalizePdfBackend } from '../extract/pdfBackendRouter.js';
+import { normalizePdfBackend } from '../features/indexing/extraction/index.js';
 
 const ADAPTERS = [manufacturerAdapter, techPowerUpAdapter, rtingsAdapter, eloShapesAdapter];
 
@@ -111,9 +111,7 @@ function mergePdfStats(into = {}, extra = {}) {
 
 function redactSecrets(message, config) {
   const secrets = [
-    config?.eloSupabaseAnonKey,
-    config?.bingSearchKey,
-    config?.googleCseKey
+    config?.eloSupabaseAnonKey
   ].filter(Boolean);
 
   let output = String(message || '');

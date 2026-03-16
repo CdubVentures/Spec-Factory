@@ -128,7 +128,7 @@ test('component payload hydrates __name/__maker accepted_candidate_id from key_r
     });
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: path.join(tempRoot, 'helper_files') },
+      config: { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') },
       category: CATEGORY,
       componentType: 'sensor',
       specDb,
@@ -167,7 +167,7 @@ test('component payload keeps contract-declared property columns when component 
       constraints: [],
     });
 
-    const config = { helperFilesRoot: path.join(tempRoot, 'helper_files') };
+    const config = { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
     const fieldRules = {
       rules: {
         fields: {
@@ -235,8 +235,8 @@ test('component payload keeps contract-declared property columns when component 
 test('component layout item_count matches visible payload rows', async () => {
   const { tempRoot, specDb } = await createTempSpecDb();
   try {
-    const helperRoot = path.join(tempRoot, 'helper_files');
-    const config = { helperFilesRoot: helperRoot };
+    const helperRoot = path.join(tempRoot, 'category_authority');
+    const config = { categoryAuthorityRoot: helperRoot };
     const componentType = 'sensor';
 
     // Visible row: linked product exists.
@@ -348,7 +348,7 @@ test('component payload does not hydrate queue-only property candidates when lin
       matchScore: 1,
     });
 
-    const helperRoot = path.join(tempRoot, 'helper_files');
+    const helperRoot = path.join(tempRoot, 'category_authority');
     const reviewPath = path.join(helperRoot, CATEGORY, '_suggestions', 'component_review.json');
     await fs.mkdir(path.dirname(reviewPath), { recursive: true });
     await fs.writeFile(
@@ -378,7 +378,7 @@ test('component payload does not hydrate queue-only property candidates when lin
     );
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
       category: CATEGORY,
       componentType: 'sensor',
       specDb,
@@ -489,7 +489,7 @@ test('component payload isolates same-name lanes by maker for linked-product can
       linkAndSeedCandidates(productId, makerB, 65);
     }
 
-    const helperRoot = path.join(tempRoot, 'helper_files');
+    const helperRoot = path.join(tempRoot, 'category_authority');
     const reviewPath = path.join(helperRoot, CATEGORY, '_suggestions', 'component_review.json');
     await fs.mkdir(path.dirname(reviewPath), { recursive: true });
     await fs.writeFile(
@@ -536,7 +536,7 @@ test('component payload isolates same-name lanes by maker for linked-product can
     );
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
       category: CATEGORY,
       componentType,
       specDb,
@@ -623,7 +623,7 @@ test('component payload keeps a single row per exact component name+maker identi
     });
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: path.join(tempRoot, 'helper_files') },
+      config: { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') },
       category: CATEGORY,
       componentType,
       specDb,
@@ -690,7 +690,7 @@ test('component payload keeps shared pending when AI lane is still pending even 
     });
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: path.join(tempRoot, 'helper_files') },
+      config: { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') },
       category: CATEGORY,
       componentType: 'sensor',
       specDb,
@@ -749,7 +749,7 @@ test('enum payload keeps pending when AI shared lane is pending even if user acc
     });
 
     const payload = await buildEnumReviewPayloads({
-      config: { helperFilesRoot: path.join(tempRoot, 'helper_files') },
+      config: { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') },
       category: CATEGORY,
       specDb,
     });
@@ -821,7 +821,7 @@ test('component payload defaults non-user slot selection to highest-confidence c
     });
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: path.join(tempRoot, 'helper_files') },
+      config: { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') },
       category: CATEGORY,
       componentType: 'sensor',
       specDb,
@@ -879,7 +879,7 @@ test('component payload keeps candidate evidence visible after shared lane confi
       userAcceptSharedStatus: 'accepted',
     });
 
-    const helperRoot = path.join(tempRoot, 'helper_files');
+    const helperRoot = path.join(tempRoot, 'category_authority');
     const reviewPath = path.join(helperRoot, CATEGORY, '_suggestions', 'component_review.json');
     await fs.mkdir(path.dirname(reviewPath), { recursive: true });
     await fs.writeFile(
@@ -909,7 +909,7 @@ test('component payload keeps candidate evidence visible after shared lane confi
     );
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
       category: CATEGORY,
       componentType: 'sensor',
       specDb,
@@ -961,7 +961,7 @@ test('component payload synthesizes backing candidate for selected non-user valu
     });
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: path.join(tempRoot, 'helper_files') },
+      config: { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') },
       category: CATEGORY,
       componentType: 'sensor',
       specDb,
@@ -1011,7 +1011,7 @@ test('enum payload synthesizes backing candidate when selected non-manual value 
     });
 
     const payload = await buildEnumReviewPayloads({
-      config: { helperFilesRoot: path.join(tempRoot, 'helper_files') },
+      config: { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') },
       category: CATEGORY,
       specDb,
     });
@@ -1069,7 +1069,7 @@ test('enum payload hides pending pipeline values without linked products', async
     });
 
     const payload = await buildEnumReviewPayloads({
-      config: { helperFilesRoot: path.join(tempRoot, 'helper_files') },
+      config: { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') },
       category: CATEGORY,
       specDb,
     });
@@ -1229,13 +1229,13 @@ test('component payload aggregates candidates from ALL linked products for EVERY
       }
     }
 
-    const helperRoot = path.join(tempRoot, 'helper_files');
+    const helperRoot = path.join(tempRoot, 'category_authority');
     const reviewPath = path.join(helperRoot, CATEGORY, '_suggestions', 'component_review.json');
     await fs.mkdir(path.dirname(reviewPath), { recursive: true });
     await fs.writeFile(reviewPath, JSON.stringify({ version: 1, category: CATEGORY, items: [] }, null, 2), 'utf8');
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
       category: CATEGORY,
       componentType,
       specDb,
@@ -1343,13 +1343,13 @@ test('candidate_count equals candidates.length for every slot in component paylo
       component_type: componentType,
     });
 
-    const helperRoot = path.join(tempRoot, 'helper_files');
+    const helperRoot = path.join(tempRoot, 'category_authority');
     const reviewPath = path.join(helperRoot, CATEGORY, '_suggestions', 'component_review.json');
     await fs.mkdir(path.dirname(reviewPath), { recursive: true });
     await fs.writeFile(reviewPath, JSON.stringify({ version: 1, category: CATEGORY, items: [] }, null, 2), 'utf8');
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
       category: CATEGORY,
       componentType,
       specDb,
@@ -1457,13 +1457,13 @@ test('edge case — confidence boundaries in component payload slots', async () 
       });
     }
 
-    const helperRoot = path.join(tempRoot, 'helper_files');
+    const helperRoot = path.join(tempRoot, 'category_authority');
     const reviewPath = path.join(helperRoot, CATEGORY, '_suggestions', 'component_review.json');
     await fs.mkdir(path.dirname(reviewPath), { recursive: true });
     await fs.writeFile(reviewPath, JSON.stringify({ version: 1, category: CATEGORY, items: [] }, null, 2), 'utf8');
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
       category: CATEGORY,
       componentType,
       specDb,
@@ -1636,7 +1636,7 @@ test('component payload inherits constraints from field rules, not DB row', asyn
     };
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: path.join(tempRoot, 'helper_files') },
+      config: { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') },
       category: CATEGORY,
       componentType: 'sensor',
       specDb,
@@ -1705,7 +1705,7 @@ test('component payload includes enum_values and enum_policy from field rules', 
     };
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: path.join(tempRoot, 'helper_files') },
+      config: { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') },
       category: CATEGORY,
       componentType: 'encoder',
       specDb,
@@ -1779,7 +1779,7 @@ test('component payload strips review-disabled constraints and enum metadata fro
     };
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: path.join(tempRoot, 'helper_files') },
+      config: { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') },
       category: CATEGORY,
       componentType: 'encoder',
       specDb,
@@ -1853,7 +1853,7 @@ test('override_allowed property skips variance evaluation — no violation flags
     };
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: path.join(tempRoot, 'helper_files') },
+      config: { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') },
       category: CATEGORY,
       componentType: 'sensor',
       specDb,
@@ -1932,7 +1932,7 @@ test('authoritative property DOES flag variance violation for same mismatch scen
     };
 
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: path.join(tempRoot, 'helper_files') },
+      config: { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') },
       category: CATEGORY,
       componentType: 'sensor',
       specDb,

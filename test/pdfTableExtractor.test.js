@@ -4,7 +4,7 @@ import {
   extractPdfText,
   extractTablesFromPdfText,
   parsePdfSpecTable
-} from '../src/extract/pdfTableExtractor.js';
+} from '../src/features/indexing/extraction/pdfTableExtractor.js';
 
 // ---------------------------------------------------------------------------
 // IP02-2D — PDF Table Extraction Tests

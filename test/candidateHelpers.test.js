@@ -9,7 +9,7 @@ import {
   parseFirstNumber,
   hasKnownFieldValue,
   METHOD_PRIORITY
-} from '../src/pipeline/helpers/candidateHelpers.js';
+} from '../src/features/indexing/orchestration/shared/candidateHelpers.js';
 
 test('parseFirstNumber extracts number from string', () => {
   assert.equal(parseFirstNumber('35000 DPI'), 35000);

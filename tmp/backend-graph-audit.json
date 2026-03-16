@@ -1,0 +1,84 @@
+{
+  "label": "backend",
+  "generated_at": "2026-03-12T00:06:29.960Z",
+  "root": "src",
+  "files": 614,
+  "edges": 1303,
+  "cycle_count": 1,
+  "cycles": [
+    [
+      "src/features/catalog/index.js",
+      "src/features/catalog/products/reconciler.js",
+      "src/queue/queueState.js"
+    ]
+  ],
+  "top_outgoing_zones": [
+    [
+      "api",
+      88
+    ],
+    [
+      "cli",
+      72
+    ],
+    [
+      "core",
+      29
+    ],
+    [
+      "queue",
+      2
+    ]
+  ],
+  "top_incoming_zones": [
+    [
+      "core",
+      57
+    ],
+    [
+      "api",
+      47
+    ],
+    [
+      "queue",
+      10
+    ],
+    [
+      "cli",
+      7
+    ]
+  ],
+  "top_cross_zone_edges": [
+    {
+      "pair": "cli=>core",
+      "from": "cli",
+      "to": "core",
+      "edges": 6
+    },
+    {
+      "pair": "api=>core",
+      "from": "api",
+      "to": "core",
+      "edges": 5
+    },
+    {
+      "pair": "cli=>api",
+      "from": "cli",
+      "to": "api",
+      "edges": 2
+    },
+    {
+      "pair": "api=>queue",
+      "from": "api",
+      "to": "queue",
+      "edges": 1
+    },
+    {
+      "pair": "cli=>queue",
+      "from": "cli",
+      "to": "queue",
+      "edges": 1
+    }
+  ],
+  "bidirectional_zone_pairs": []
+}

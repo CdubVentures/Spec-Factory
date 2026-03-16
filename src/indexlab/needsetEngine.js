@@ -1,62 +1,12 @@
 import {
-  ruleMinEvidenceRefs,
   ruleRequiredLevel
 } from '../engine/ruleAccessors.js';
-import { normalizeAmbiguityLevel } from '../utils/identityNormalize.js';
-import { toTierNumber, parseTierPreferenceFromRule } from '../utils/tierHelpers.js';
 
 const UNKNOWN_VALUE_TOKENS = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined']);
 
-const IDENTITY_GATED_LEVELS = new Set(['identity', 'critical', 'required']);
-const DEFAULT_NEEDSET_TUNING = Object.freeze({
-  needsetRequiredWeightIdentity: 5,
-  needsetRequiredWeightCritical: 4,
-  needsetRequiredWeightRequired: 2,
-  needsetRequiredWeightExpected: 1,
-  needsetRequiredWeightOptional: 1,
-  needsetMissingMultiplier: 2,
-  needsetTierDeficitMultiplier: 2,
-  needsetMinRefsDeficitMultiplier: 1.5,
-  needsetConflictMultiplier: 1.5,
-  needsetIdentityLockThreshold: 0.95,
-  needsetIdentityProvisionalThreshold: 0.7,
-  needsetDefaultIdentityAuditLimit: 24
-});
+const BUCKET_ORDER = { core: 0, secondary: 1, optional: 2 };
 
-function clamp(value, min, max) {
-  if (!Number.isFinite(value)) return min;
-  if (value < min) return min;
-  if (value > max) return max;
-  return value;
-}
-
-function normalizeNeedSetTuning(input = {}) {
-  const source = isObject(input) ? input : {};
-  return {
-    needsetRequiredWeightIdentity: clamp(toNumber(source.needsetRequiredWeightIdentity, DEFAULT_NEEDSET_TUNING.needsetRequiredWeightIdentity), 0.1, 100),
-    needsetRequiredWeightCritical: clamp(toNumber(source.needsetRequiredWeightCritical, DEFAULT_NEEDSET_TUNING.needsetRequiredWeightCritical), 0.1, 100),
-    needsetRequiredWeightRequired: clamp(toNumber(source.needsetRequiredWeightRequired, DEFAULT_NEEDSET_TUNING.needsetRequiredWeightRequired), 0.1, 100),
-    needsetRequiredWeightExpected: clamp(toNumber(source.needsetRequiredWeightExpected, DEFAULT_NEEDSET_TUNING.needsetRequiredWeightExpected), 0.1, 100),
-    needsetRequiredWeightOptional: clamp(toNumber(source.needsetRequiredWeightOptional, DEFAULT_NEEDSET_TUNING.needsetRequiredWeightOptional), 0.1, 100),
-    needsetMissingMultiplier: clamp(toNumber(source.needsetMissingMultiplier, DEFAULT_NEEDSET_TUNING.needsetMissingMultiplier), 0.1, 100),
-    needsetTierDeficitMultiplier: clamp(toNumber(source.needsetTierDeficitMultiplier, DEFAULT_NEEDSET_TUNING.needsetTierDeficitMultiplier), 0.1, 100),
-    needsetMinRefsDeficitMultiplier: clamp(toNumber(source.needsetMinRefsDeficitMultiplier, DEFAULT_NEEDSET_TUNING.needsetMinRefsDeficitMultiplier), 0.1, 100),
-    needsetConflictMultiplier: clamp(toNumber(source.needsetConflictMultiplier, DEFAULT_NEEDSET_TUNING.needsetConflictMultiplier), 0.1, 100),
-    needsetIdentityLockThreshold: clamp(toNumber(source.needsetIdentityLockThreshold, DEFAULT_NEEDSET_TUNING.needsetIdentityLockThreshold), 0, 1),
-    needsetIdentityProvisionalThreshold: clamp(toNumber(source.needsetIdentityProvisionalThreshold, DEFAULT_NEEDSET_TUNING.needsetIdentityProvisionalThreshold), 0, 1),
-    needsetDefaultIdentityAuditLimit: Math.max(1, Math.min(200, Number.parseInt(String(source.needsetDefaultIdentityAuditLimit ?? DEFAULT_NEEDSET_TUNING.needsetDefaultIdentityAuditLimit), 10) || DEFAULT_NEEDSET_TUNING.needsetDefaultIdentityAuditLimit))
-  };
-}
-
-function requiredWeightMap(needsetTuning = DEFAULT_NEEDSET_TUNING) {
-  return {
-    identity: needsetTuning.needsetRequiredWeightIdentity,
-    critical: needsetTuning.needsetRequiredWeightCritical,
-    required: needsetTuning.needsetRequiredWeightRequired,
-    expected: needsetTuning.needsetRequiredWeightExpected,
-    optional: needsetTuning.needsetRequiredWeightOptional
-  };
-}
+const NEED_SCORE_WEIGHTS = { identity: 100, critical: 80, required: 60, expected: 30, optional: 10 };
 
 function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -84,34 +34,6 @@ function normalizeRequiredLevel(value) {
 
 function hasKnownFieldValue(value) {
   return !UNKNOWN_VALUE_TOKENS.has(String(value ?? '').trim().toLowerCase());
-}
-
-
-function countDistinctEvidenceRefs(evidenceRows = []) {
-  const seen = new Set();
-  for (const row of evidenceRows || []) {
-    if (!isObject(row)) continue;
-    const key = [
-      String(row.url || '').trim(),
-      String(row.keyPath || row.key_path || '').trim(),
-      String(row.snippetId || row.snippet_id || row.id || '').trim()
-    ].join('|');
-    seen.add(key);
-  }
-  return seen.size;
-}
-
-function bestTierSeen(evidenceRows = []) {
-  let best = null;
-  for (const row of evidenceRows || []) {
-    if (!isObject(row)) continue;
-    const tier = toTierNumber(row.tier ?? row.tier_name ?? row.tierName);
-    if (tier === null) continue;
-    if (best === null || tier < best) {
-      best = tier;
-    }
-  }
-  return best;
 }
 
 function isFieldConflict(field, fieldReasoning = {}, constraintAnalysis = {}) {
@@ -144,149 +66,277 @@ function collectFieldKeys({ fieldOrder = [], provenance = {}, fieldRules = {} })
   return out;
 }
 
-function requiredLevelCountSeed() {
-  return {
-    identity: 0,
-    critical: 0,
-    required: 0,
-    expected: 0,
-    optional: 0
-  };
+// --- State derivation ---
+
+function deriveFieldState({ missing, conflict, confidence, passTarget }) {
+  if (conflict) return 'conflict';
+  if (missing) return 'missing';
+  if (confidence === null || confidence < passTarget) return 'weak';
+  return 'covered';
 }
 
-function toIso(value, fallback = '') {
-  const raw = String(value || '').trim();
-  const ms = Date.parse(raw);
-  if (Number.isFinite(ms)) {
-    return new Date(ms).toISOString();
+// WHY: Schema 2 uses "accepted"/"unknown" instead of "covered"/"missing"
+function mapInternalToSchemaState(internalState) {
+  if (internalState === 'covered') return 'accepted';
+  if (internalState === 'missing') return 'unknown';
+  return internalState; // 'weak' and 'conflict' unchanged
+}
+
+function mapPriorityBucket(requiredLevel) {
+  if (requiredLevel === 'identity' || requiredLevel === 'critical' || requiredLevel === 'required') {
+    return 'core';
   }
-  if (fallback) return fallback;
-  return new Date().toISOString();
+  if (requiredLevel === 'expected') return 'secondary';
+  return 'optional';
 }
 
-function normalizeReasonCode(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, '_');
-}
-
-function uniqueReasonCodes(values = []) {
-  const out = [];
+// WHY: Logic Box 1 step 1 requires normalization of per-field hints
+// to prevent duplicate/variant terms from wasting planner query budget.
+function normalizeStringArray(arr) {
+  if (!Array.isArray(arr)) return [];
   const seen = new Set();
-  for (const row of values || []) {
-    const token = normalizeReasonCode(row);
-    if (!token || seen.has(token)) continue;
-    seen.add(token);
-    out.push(token);
+  const result = [];
+  for (const item of arr) {
+    const normalized = String(item ?? '').toLowerCase().trim();
+    if (normalized && !seen.has(normalized)) {
+      seen.add(normalized);
+      result.push(normalized);
+    }
   }
-  return out;
+  return result;
 }
 
-function normalizeIdentityState(input = {}, needsetTuning = DEFAULT_NEEDSET_TUNING) {
-  const token = String(input?.status || '').trim().toLowerCase();
-  if (token === 'locked' || token === 'provisional' || token === 'unlocked' || token === 'conflict') {
-    return token;
+function normalizeDomainHints(arr) {
+  if (!Array.isArray(arr)) return [];
+  const seen = new Set();
+  const result = [];
+  for (const item of arr) {
+    let host = String(item ?? '').trim();
+    if (!host) continue;
+    // Strip protocol
+    host = host.replace(/^https?:\/\//i, '');
+    // Strip path, query, fragment
+    host = host.split('/')[0].split('?')[0].split('#')[0];
+    host = host.toLowerCase().trim();
+    if (host && !seen.has(host)) {
+      seen.add(host);
+      result.push(host);
+    }
   }
-  const confidence = clamp01(toNumber(input?.confidence, 0));
-  const gateValidated = Boolean(input?.identity_gate_validated);
-  const reasonCodes = uniqueReasonCodes(input?.reason_codes || []);
-  const hasConflictCode = reasonCodes.some((code) =>
-    code.includes('conflict')
-    || code.includes('mismatch')
-    || code.includes('major_anchor')
-  );
-  if (gateValidated && confidence >= needsetTuning.needsetIdentityLockThreshold) {
-    return 'locked';
-  }
-  if (hasConflictCode) {
-    return 'conflict';
-  }
-  if (confidence >= needsetTuning.needsetIdentityProvisionalThreshold) {
-    return 'provisional';
-  }
-  return 'unlocked';
+  return result;
 }
 
-
-function confidenceCapForIdentityState(status = 'unlocked', caps = null) {
-  const token = String(status || '').trim().toLowerCase();
-  if (token === 'locked') return caps?.locked ?? 1;
-  if (token === 'provisional') return caps?.provisional ?? 0.74;
-  if (token === 'conflict') return caps?.conflict ?? 0.39;
-  return caps?.unlocked ?? 0.59;
-}
-
-function normalizeIdentityContext(identityContext = {}, now = '', needsetTuning = DEFAULT_NEEDSET_TUNING) {
-  const normalizedNow = toIso(now);
-  const reasonCodes = uniqueReasonCodes(identityContext.reason_codes || []);
-  const publishBlockers = uniqueReasonCodes(identityContext.publish_blockers || []);
-  const status = normalizeIdentityState({
-    ...identityContext,
-    reason_codes: reasonCodes
-  }, needsetTuning);
-  const confidence = clamp01(toNumber(identityContext.confidence, 0));
-  const maxMatchScore = clamp01(toNumber(identityContext.max_match_score, confidence));
-  const familyModelCount = Math.max(0, Number.parseInt(String(identityContext.family_model_count || 0), 10) || 0);
-  const ambiguityLevel = normalizeAmbiguityLevel(identityContext.ambiguity_level, familyModelCount);
-  const extractionGateOpen =
-    Boolean(identityContext.extraction_gate_open)
-    || status === 'locked';
-  const auditRowsRaw = Array.isArray(identityContext.audit_rows) ? identityContext.audit_rows : [];
-  const auditRows = auditRowsRaw
-    .map((row, index) => ({
-      source_id: String(row?.source_id || row?.sourceId || `source_${String(index + 1).padStart(3, '0')}`).trim(),
-      url: String(row?.url || '').trim(),
-      host: String(row?.host || '').trim(),
-      decision: String(row?.decision || '').trim().toUpperCase(),
-      confidence: clamp01(toNumber(row?.confidence, 0)),
-      reason_codes: uniqueReasonCodes(row?.reason_codes || row?.reasonCodes || []),
-      ts: toIso(row?.ts || row?.updated_at || normalizedNow, normalizedNow)
-    }))
-    .filter((row) => row.source_id || row.url)
-    .slice(0, needsetTuning.needsetDefaultIdentityAuditLimit);
+function extractSearchHints(rule = {}) {
+  const hints = isObject(rule.search_hints) ? rule.search_hints : {};
   return {
-    status,
-    confidence,
-    identity_gate_validated: Boolean(identityContext.identity_gate_validated),
-    extraction_gate_open: extractionGateOpen,
-    family_model_count: familyModelCount,
-    ambiguity_level: ambiguityLevel,
-    publishable: Boolean(identityContext.publishable),
-    publish_blockers: publishBlockers,
-    reason_codes: reasonCodes,
-    page_count: Math.max(0, Number.parseInt(String(identityContext.page_count || 0), 10) || 0),
-    max_match_score: maxMatchScore,
-    updated_at: normalizedNow,
-    audit_rows: auditRows
+    query_terms: normalizeStringArray(hints.query_terms),
+    preferred_content_types: normalizeStringArray(hints.preferred_content_types),
+    domain_hints: normalizeDomainHints(hints.domain_hints),
+    query_templates: Array.isArray(hints.query_templates) ? hints.query_templates : [],
+    content_types: normalizeStringArray(hints.content_types)
   };
 }
 
-function mostRecentRetrievedAt(evidenceRows = []) {
-  let latest = null;
-  for (const row of evidenceRows || []) {
-    if (!isObject(row)) continue;
-    const raw = String(row.retrieved_at || row.retrievedAt || '').trim();
-    if (!raw) continue;
-    const ms = Date.parse(raw);
-    if (!Number.isFinite(ms)) continue;
-    if (latest === null || ms > latest) latest = ms;
+function deriveQueryFamilies(contentTarget, domainHints) {
+  const families = new Set();
+  if (domainHints.length > 0) families.add('manufacturer_html');
+  for (const ct of contentTarget) {
+    const lower = String(ct).toLowerCase();
+    if (lower.includes('manual') || lower.includes('pdf')) families.add('manual_pdf');
+    else if (lower.includes('support') || lower.includes('doc')) families.add('support_docs');
+    else if (lower.includes('spec') || lower.includes('product') || lower.includes('review')) families.add('manufacturer_html');
   }
-  return latest === null ? null : new Date(latest).toISOString();
+  if (families.size === 0) families.add('fallback_web');
+  return [...families].sort();
 }
 
-export function computeEvidenceDecay({ retrievedAt, now, decayDays, decayFloor }) {
-  if (!retrievedAt || !String(retrievedAt).trim()) return 1.0;
-  const retrievedMs = Date.parse(String(retrievedAt));
-  if (!Number.isFinite(retrievedMs)) return 1.0;
-  const nowMs = Date.parse(String(now));
-  if (!Number.isFinite(nowMs)) return 1.0;
-  const halfLife = Number(decayDays);
-  if (!Number.isFinite(halfLife) || halfLife <= 0) return 1.0;
-  const floor = Number.isFinite(Number(decayFloor)) ? Number(decayFloor) : 0;
-  const ageDays = Math.max(0, (nowMs - retrievedMs) / (1000 * 60 * 60 * 24));
-  const raw = Math.pow(2, -(ageDays / halfLife));
-  return Math.max(floor, Math.min(1, raw));
+function formBundles(eligibleFields, bundleAssignmentNotes) {
+  const bucketGroups = new Map();
+  for (const field of eligibleFields) {
+    const bucket = field.priority_bucket;
+    if (!bucketGroups.has(bucket)) bucketGroups.set(bucket, []);
+    bucketGroups.get(bucket).push(field);
+  }
+
+  const bundles = [];
+  let bundleIndex = 0;
+
+  for (const [bucket, fields] of bucketGroups) {
+    const contentGroups = new Map();
+    for (const field of fields) {
+      const contentKey = field.preferred_content_types.slice().sort().join('|') || '_default';
+      if (!contentGroups.has(contentKey)) contentGroups.set(contentKey, []);
+      contentGroups.get(contentKey).push(field);
+    }
+
+    for (const [contentKey, groupFields] of contentGroups) {
+      bundleIndex++;
+      const bundleId = `bundle_${String(bundleIndex).padStart(3, '0')}`;
+
+      const allQueryTerms = new Set();
+      const allDomainHints = new Set();
+      const allPreferredContentTypes = new Set();
+
+      for (const f of groupFields) {
+        for (const t of f.query_terms) allQueryTerms.add(t);
+        for (const d of f.domain_hints) allDomainHints.add(d);
+        for (const c of f.preferred_content_types) allPreferredContentTypes.add(c);
+      }
+
+      const preferredContentTypes = [...allPreferredContentTypes].sort();
+      const domainHints = [...allDomainHints].sort();
+      const queryTerms = [...allQueryTerms].sort();
+      const plannedQueryFamilies = deriveQueryFamilies(preferredContentTypes, domainHints);
+
+      const fieldStates = {};
+      for (const f of groupFields) {
+        fieldStates[f.field_key] = f.state;
+      }
+
+      bundles.push({
+        bundle_id: bundleId,
+        label: `${bucket}_${contentKey === '_default' ? 'general' : contentKey.replace(/\|/g, '_')}`,
+        priority_bucket: bucket,
+        fields: groupFields.map((f) => f.field_key).sort(),
+        states: fieldStates,
+        preferred_content_types: preferredContentTypes,
+        query_terms: queryTerms,
+        domain_hints: domainHints,
+        planned_query_families: plannedQueryFamilies
+      });
+
+      bundleAssignmentNotes.push(
+        `${bundleId}: ${groupFields.length} fields in ${bucket}/${contentKey}`
+      );
+    }
+  }
+
+  bundles.sort((a, b) => {
+    const diff = (BUCKET_ORDER[a.priority_bucket] ?? 3) - (BUCKET_ORDER[b.priority_bucket] ?? 3);
+    if (diff !== 0) return diff;
+    return a.bundle_id.localeCompare(b.bundle_id);
+  });
+
+  return bundles;
+}
+
+function deriveProfileMix(bundles) {
+  const mix = {
+    manufacturer_html: 0,
+    manual_pdf: 0,
+    support_docs: 0,
+    fallback_web: 0,
+    targeted_single_field: 0
+  };
+  for (const bundle of bundles) {
+    for (const family of bundle.planned_query_families) {
+      if (family in mix) mix[family]++;
+    }
+    if (bundle.fields.length === 1) mix.targeted_single_field++;
+  }
+  return mix;
+}
+
+function selectFocusFields(eligibleFields, maxFocus = 10) {
+  const sorted = [...eligibleFields].sort((a, b) => {
+    const bucketDiff = (BUCKET_ORDER[a.priority_bucket] ?? 3) - (BUCKET_ORDER[b.priority_bucket] ?? 3);
+    if (bucketDiff !== 0) return bucketDiff;
+    return a.field_key.localeCompare(b.field_key);
+  });
+  return sorted.slice(0, maxFocus).map((f) => f.field_key);
+}
+
+// --- Schema 2: Identity derivation ---
+
+function deriveSourceLabelState(identityContext) {
+  const status = String(identityContext?.status || '').toLowerCase();
+  const confidence = toNumber(identityContext?.confidence, 0);
+  const contradictionCount = toNumber(identityContext?.contradiction_count, 0);
+
+  if (status === 'conflict' || contradictionCount > 0) return 'different';
+  if (status === 'locked' && confidence >= 0.95) return 'matched';
+  if (confidence >= 0.70) return 'possible';
+  return 'unknown';
+}
+
+function mapIdentityState(identityContext) {
+  const status = String(identityContext?.status || '').toLowerCase();
+  if (status === 'locked') return 'locked';
+  if (status === 'provisional') return 'provisional';
+  if (status === 'conflict') return 'conflict';
+  return 'unknown';
+}
+
+// --- Schema 2: Reasons derivation ---
+
+function deriveFieldReasons({ field, internalState, value, confidence, passTarget, refsFound, minEvidenceRefs, rule, fieldReasoning, constraintAnalysis }) {
+  const reasons = [];
+
+  if (!hasKnownFieldValue(value)) {
+    reasons.push('missing');
+  }
+
+  if (isFieldConflict(field, fieldReasoning, constraintAnalysis)) {
+    reasons.push('conflict');
+  }
+
+  const known = hasKnownFieldValue(value);
+  if (known && confidence !== null && confidence < passTarget) {
+    reasons.push('low_conf');
+  }
+
+  if (known && minEvidenceRefs > 0 && refsFound < minEvidenceRefs) {
+    reasons.push('min_refs_fail');
+  }
+
+  // tier_pref_unmet: best_tier_seen > preferred tier minimum
+  // Not derivable without tier preferences comparison; reserved for future
+
+  if (rule?.priority?.block_publish_when_unk && internalState !== 'covered') {
+    reasons.push('publish_gate_block');
+  }
+
+  return reasons;
+}
+
+// --- Schema 2: History derivation ---
+
+function deriveFieldHistory({ round, provenance, previousFieldHistories, field }) {
+  const prev = previousFieldHistories?.[field] || {};
+  const evidence = Array.isArray(provenance?.evidence) ? provenance.evidence : [];
+
+  if (round === 0) {
+    return {
+      existing_queries: [],
+      domains_tried: [],
+      host_classes_tried: [],
+      evidence_classes_tried: [],
+      query_count: 0,
+      urls_examined_count: 0,
+      refs_found: 0,
+      no_value_attempts: 0,
+      duplicate_attempts_suppressed: 0
+    };
+  }
+
+  // Round 1+: derive from evidence + carry forward
+  const domainsTried = new Set(Array.isArray(prev.domains_tried) ? prev.domains_tried : []);
+  for (const ev of evidence) {
+    const domain = String(ev?.rootDomain || '').trim();
+    if (domain) domainsTried.add(domain);
+  }
+
+  return {
+    existing_queries: Array.isArray(prev.existing_queries) ? prev.existing_queries : [],
+    domains_tried: [...domainsTried].sort(),
+    host_classes_tried: Array.isArray(prev.host_classes_tried) ? prev.host_classes_tried : [],
+    evidence_classes_tried: Array.isArray(prev.evidence_classes_tried) ? prev.evidence_classes_tried : [],
+    query_count: toNumber(prev.query_count, 0),
+    urls_examined_count: toNumber(prev.urls_examined_count, 0),
+    refs_found: evidence.length,
+    no_value_attempts: toNumber(prev.no_value_attempts, 0),
+    duplicate_attempts_suppressed: toNumber(prev.duplicate_attempts_suppressed, 0)
+  };
 }
 
 export function computeNeedSet({
@@ -299,183 +349,287 @@ export function computeNeedSet({
   fieldReasoning = {},
   constraintAnalysis = {},
   identityContext = {},
-  identityCaps = null,
-  needsetTuning = null,
-  decayConfig = null,
-  now = new Date().toISOString()
-} = {}) {
-  const normalizedNeedsetTuning = normalizeNeedSetTuning(needsetTuning || {});
-  const requiredWeightByLevel = requiredWeightMap(normalizedNeedsetTuning);
-  const identity = normalizeIdentityContext(identityContext, now, normalizedNeedsetTuning);
-  const rulesMap = isObject(fieldRules?.fields) ? fieldRules.fields : (isObject(fieldRules) ? fieldRules : {});
-  const fields = collectFieldKeys({ fieldOrder, provenance, fieldRules: rulesMap });
-  const rows = [];
-  const reasonCounts = {
-    missing: 0,
-    tier_pref_unmet: 0,
-    min_refs_fail: 0,
-    conflict: 0,
-    low_conf: 0,
-    identity_unlocked: 0,
-    blocked_by_identity: 0,
-    publish_gate_block: 0
-  };
-  const requiredLevelCounts = requiredLevelCountSeed();
+  now = new Date().toISOString(),
 
-  for (const field of fields) {
-    const bucket = provenance?.[field] || {};
-    const reasoning = isObject(fieldReasoning?.[field]) ? fieldReasoning[field] : {};
+  // Schema 2 new params
+  round = 0,
+  roundMode = 'seed',
+  brand = '',
+  model = '',
+  baseModel = '',
+  aliases = [],
+  settings = {},
+  previousFieldHistories = {},
+} = {}) {
+  const rulesMap = isObject(fieldRules?.fields) ? fieldRules.fields : (isObject(fieldRules) ? fieldRules : {});
+  const fieldKeys = collectFieldKeys({ fieldOrder, provenance, fieldRules: rulesMap });
+
+  const eligibleFields = [];
+  const schema2Fields = [];
+
+  // --- Per-field bucket counts (total, not just unresolved) ---
+  let coreTotal = 0;
+  let secondaryTotal = 0;
+  let optionalTotal = 0;
+  let resolvedCount = 0;
+
+  for (const field of fieldKeys) {
+    const prov = provenance?.[field] || {};
     const rule = rulesMap?.[field] || {};
     const requiredLevel = normalizeRequiredLevel(ruleRequiredLevel(rule));
-    const gatedField = IDENTITY_GATED_LEVELS.has(requiredLevel);
-    const requiredWeight = requiredWeightByLevel[requiredLevel] ?? 1;
-    const value = bucket.value ?? 'unk';
-    const confidence = toNumber(bucket.confidence, null);
-    const passTarget = clamp01(toNumber(bucket.pass_target, 0.8));
-    const meetsPassTarget = Boolean(bucket.meets_pass_target);
-    const evidenceRows = Array.isArray(bucket.evidence) ? bucket.evidence : [];
-    const refsFound = countDistinctEvidenceRefs(evidenceRows);
-    const minRefs = Math.max(1, Number(ruleMinEvidenceRefs(rule) || 1));
-    const tierPreference = parseTierPreferenceFromRule(rule);
-    const bestTier = bestTierSeen(evidenceRows);
+    const value = prov.value ?? 'unk';
+    const confidence = toNumber(prov.confidence, null);
+    const passTarget = clamp01(toNumber(prov.pass_target, 0.8));
     const missing = !hasKnownFieldValue(value);
     const conflict = isFieldConflict(field, fieldReasoning, constraintAnalysis);
-    const tierDeficit = tierPreference.includes(1) && (bestTier === null || bestTier > 1);
-    const blockedByIdentity = gatedField && !identity.extraction_gate_open;
-    const publishGateBlocked = gatedField && !identity.publishable;
-    const confidenceCap = gatedField && !identity.extraction_gate_open
-      ? confidenceCapForIdentityState(identity.status, identityCaps)
-      : 1;
-    const cappedConfidence = confidence === null
-      ? null
-      : Math.min(clamp01(confidence), confidenceCap);
-    const decayFactor = decayConfig
-      ? computeEvidenceDecay({
-          retrievedAt: mostRecentRetrievedAt(evidenceRows),
-          now,
-          decayDays: decayConfig.decayDays,
-          decayFloor: decayConfig.decayFloor
-        })
-      : 1.0;
-    const effectiveConfidence = cappedConfidence === null
-      ? null
-      : clamp01(cappedConfidence * decayFactor);
-    const confidenceCapped = confidence !== null && effectiveConfidence !== null && effectiveConfidence < clamp01(confidence);
-    const minRefsDeficit = refsFound < minRefs;
-    const lowConf = effectiveConfidence === null ? !missing : effectiveConfidence < passTarget;
 
-    const reasons = [];
-    if (missing) reasons.push('missing');
-    if (tierDeficit) reasons.push('tier_pref_unmet');
-    if (minRefsDeficit) reasons.push('min_refs_fail');
-    if (conflict) reasons.push('conflict');
-    if (lowConf) reasons.push('low_conf');
-    if (missing && !identity.extraction_gate_open) reasons.push('identity_unlocked');
-    if (blockedByIdentity) reasons.push('blocked_by_identity');
-    if (publishGateBlocked) reasons.push('publish_gate_block');
-    if (reasons.length === 0) {
-      continue;
+    const internalState = deriveFieldState({ missing, conflict, confidence, passTarget });
+    const schemaState = mapInternalToSchemaState(internalState);
+    const priorityBucket = mapPriorityBucket(requiredLevel);
+    const searchHints = extractSearchHints(rule);
+
+    const preferredContentTypes = searchHints.preferred_content_types.length > 0
+      ? searchHints.preferred_content_types
+      : searchHints.content_types;
+
+    // Count totals per bucket
+    if (priorityBucket === 'core') coreTotal++;
+    else if (priorityBucket === 'secondary') secondaryTotal++;
+    else optionalTotal++;
+
+    if (internalState === 'covered') resolvedCount++;
+
+    if (internalState !== 'covered') {
+      eligibleFields.push({
+        field_key: field,
+        required_level: requiredLevel,
+        priority_bucket: priorityBucket,
+        state: internalState,
+        preferred_content_types: preferredContentTypes,
+        query_terms: searchHints.query_terms,
+        domain_hints: searchHints.domain_hints
+      });
     }
 
-    for (const reason of reasons) {
-      reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
-    }
-    requiredLevelCounts[requiredLevel] = (requiredLevelCounts[requiredLevel] || 0) + 1;
+    // --- Build Schema 2 field entry ---
+    const evidence = Array.isArray(prov.evidence) ? prov.evidence : [];
+    const refsFound = evidence.length || toNumber(prov.confirmations, 0);
+    const minEvidenceRefs = toNumber(rule.min_evidence_refs, 0);
+    const effectiveConfidence = clamp01(toNumber(confidence, 0));
+    const meetsPassTarget = internalState === 'covered' || (confidence !== null && confidence >= passTarget);
 
-    const missingMultiplier = missing ? normalizedNeedsetTuning.needsetMissingMultiplier : 1;
-    const confTerm = effectiveConfidence === null ? 1 : (1 - clamp01(effectiveConfidence));
-    const tierDeficitMultiplier = tierDeficit ? normalizedNeedsetTuning.needsetTierDeficitMultiplier : 1;
-    const minRefsDeficitMultiplier = minRefsDeficit ? normalizedNeedsetTuning.needsetMinRefsDeficitMultiplier : 1;
-    const conflictMultiplier = conflict ? normalizedNeedsetTuning.needsetConflictMultiplier : 1;
-    const identityBlockMultiplier = blockedByIdentity ? 1.35 : 1;
-    const publishBlockMultiplier = publishGateBlocked ? 1.2 : 1;
-    const needScore = missingMultiplier
-      * confTerm
-      * requiredWeight
-      * tierDeficitMultiplier
-      * minRefsDeficitMultiplier
-      * conflictMultiplier
-      * identityBlockMultiplier
-      * publishBlockMultiplier;
+    const bestTierSeen = evidence.length > 0
+      ? Math.min(...evidence.map((e) => toNumber(e?.tier, 99)).filter((t) => t !== null && t < 99))
+      : null;
 
-    const blockedBy = [];
-    if (blockedByIdentity) blockedBy.push('identity_lock');
-    if (publishGateBlocked) blockedBy.push('publish_gate');
-    if (identity.status === 'conflict') blockedBy.push('identity_conflict');
-    const unknownReason = String(reasoning.unknown_reason || '').trim() || null;
-    const reasonPayload = {
-      why_missing: missing ? (unknownReason || 'missing_value') : null,
-      why_low_conf: lowConf
-        ? (effectiveConfidence === null ? 'no_confidence_available' : 'below_pass_target')
-        : null,
-      why_blocked: blockedBy.length > 0 ? blockedBy.join('|') : null
-    };
-
-    rows.push({
-      field_key: field,
-      required_level: requiredLevel,
-      required_weight: requiredWeight,
-      status: missing ? 'unknown' : (conflict ? 'conflict' : 'accepted'),
+    const reasons = deriveFieldReasons({
+      field,
+      internalState,
       value,
       confidence,
+      passTarget,
+      refsFound,
+      minEvidenceRefs,
+      rule,
+      fieldReasoning,
+      constraintAnalysis
+    });
+
+    const history = deriveFieldHistory({
+      round,
+      provenance: prov,
+      previousFieldHistories,
+      field
+    });
+
+    const needScoreWeight = NEED_SCORE_WEIGHTS[requiredLevel] || 10;
+    const needScore = internalState === 'covered'
+      ? 0
+      : needScoreWeight * (1 + reasons.length * 0.2);
+
+    const label = String(rule.display_name || rule.ui?.label || field).trim();
+    const groupKey = String(rule.group || '').trim() || null;
+    const tooltipMd = rule.ui?.tooltip_md || null;
+    const fieldAliases = Array.isArray(rule.aliases) ? rule.aliases : [];
+    const exactMatchRequired = Boolean(rule.contract?.exact_match);
+
+    schema2Fields.push({
+      field_key: field,
+      label,
+      group_key: groupKey,
+      required_level: requiredLevel,
+      idx: {
+        min_evidence_refs: minEvidenceRefs,
+        query_terms: searchHints.query_terms,
+        domain_hints: searchHints.domain_hints,
+        preferred_content_types: preferredContentTypes,
+        tooltip_md: tooltipMd,
+        aliases: fieldAliases
+      },
+      state: schemaState,
+      value: value,
+      confidence: toNumber(confidence, 0),
       effective_confidence: effectiveConfidence,
-      confidence_capped: confidenceCapped,
+      refs_found: refsFound,
+      min_refs: minEvidenceRefs,
+      best_tier_seen: (bestTierSeen !== null && Number.isFinite(bestTierSeen) && bestTierSeen < 99) ? bestTierSeen : null,
       pass_target: passTarget,
       meets_pass_target: meetsPassTarget,
-      refs_found: refsFound,
-      min_refs: minRefs,
-      best_tier_seen: bestTier,
-      tier_preference: tierPreference,
-      identity_state: identity.status,
-      best_identity_match: identity.max_match_score,
-      blocked_by: blockedBy,
-      quarantined: blockedByIdentity && hasKnownFieldValue(value),
-      unknown_reason: unknownReason,
-      reason_payload: reasonPayload,
-      conflict,
+      exact_match_required: exactMatchRequired,
+      need_score: needScore,
       reasons,
-      need_score: Number.parseFloat(needScore.toFixed(6))
+      history
     });
   }
 
+  // --- Form bundles (backward compat) ---
+  const bundleAssignmentNotes = [];
+  const bundles = formBundles(eligibleFields, bundleAssignmentNotes);
+
+  const fieldBundleMap = new Map();
+  for (const bundle of bundles) {
+    for (const f of bundle.fields) {
+      fieldBundleMap.set(f, bundle.bundle_id);
+    }
+  }
+
+  // --- Build rows (backward compat) ---
+  const rows = eligibleFields.map((f) => ({
+    field_key: f.field_key,
+    required_level: f.required_level,
+    priority_bucket: f.priority_bucket,
+    state: f.state,
+    bundle_id: fieldBundleMap.get(f.field_key) || ''
+  }));
+
   rows.sort((a, b) => {
-    if (b.need_score !== a.need_score) return b.need_score - a.need_score;
-    const levelDelta = (requiredWeightByLevel[b.required_level] ?? 0) - (requiredWeightByLevel[a.required_level] ?? 0);
-    if (levelDelta !== 0) return levelDelta;
-    return String(a.field_key).localeCompare(String(b.field_key));
+    const bucketDiff = (BUCKET_ORDER[a.priority_bucket] ?? 3) - (BUCKET_ORDER[b.priority_bucket] ?? 3);
+    if (bucketDiff !== 0) return bucketDiff;
+    return a.field_key.localeCompare(b.field_key);
   });
 
-  const needsetSize = rows.length;
+  // --- Profile mix (backward compat) ---
+  const profileMix = deriveProfileMix(bundles);
+
+  // --- Focus fields (backward compat) ---
+  const focusFields = selectFocusFields(eligibleFields);
+
+  // --- Blockers (Schema 2: 5 fields) ---
+  const missingCount = rows.filter((r) => r.state === 'missing').length;
+  const weakCount = rows.filter((r) => r.state === 'weak').length;
+  const conflictCount = rows.filter((r) => r.state === 'conflict').length;
+  const needsExactMatchCount = schema2Fields.filter(
+    (f) => f.exact_match_required && f.state !== 'accepted'
+  ).length;
+  // WHY: A field is search-exhausted when it's been targeted multiple times
+  // with diverse evidence classes and still has no value. This tells the planner
+  // to stop wasting query budget on dead-end fields.
+  const SEARCH_EXHAUSTED_MIN_ATTEMPTS = 3;
+  const SEARCH_EXHAUSTED_MIN_CLASSES = 3;
+  const searchExhaustedCount = schema2Fields.filter((f) => {
+    if (f.state === 'accepted') return false;
+    const hist = f.history || {};
+    const attempts = toNumber(hist.no_value_attempts, 0);
+    const classCount = Array.isArray(hist.evidence_classes_tried) ? hist.evidence_classes_tried.length : 0;
+    return attempts >= SEARCH_EXHAUSTED_MIN_ATTEMPTS && classCount >= SEARCH_EXHAUSTED_MIN_CLASSES;
+  }).length;
+
+  // --- Summary (Schema 2: 9 fields + backward compat) ---
+  const coreUnresolved = rows.filter((r) => r.priority_bucket === 'core').length;
+  const secondaryUnresolved = rows.filter((r) => r.priority_bucket === 'secondary').length;
+  const optionalUnresolved = rows.filter((r) => r.priority_bucket === 'optional').length;
+
+  const summary = {
+    total: fieldKeys.length,
+    resolved: resolvedCount,
+    core_total: coreTotal,
+    core_unresolved: coreUnresolved,
+    secondary_total: secondaryTotal,
+    secondary_unresolved: secondaryUnresolved,
+    optional_total: optionalTotal,
+    optional_unresolved: optionalUnresolved,
+    conflicts: conflictCount,
+    // backward compat
+    bundles_planned: bundles.length
+  };
+
+  // --- Identity block (Schema 2) ---
+  const identity = {
+    state: mapIdentityState(identityContext),
+    source_label_state: deriveSourceLabelState(identityContext),
+    manufacturer: String(brand || identityContext?.manufacturer || '').trim() || null,
+    model: String(model || '').trim() || null,
+    confidence: toNumber(identityContext?.confidence, 0),
+    official_domain: identityContext?.official_domain || null,
+    support_domain: identityContext?.support_domain || null
+  };
+
+  // --- Planner seed (Schema 2) ---
+  const missingCriticalFields = schema2Fields
+    .filter((f) => (f.required_level === 'identity' || f.required_level === 'critical') && f.state !== 'accepted')
+    .map((f) => f.field_key);
+
+  const unresolvedFields = schema2Fields
+    .filter((f) => f.state !== 'accepted')
+    .map((f) => f.field_key);
+
+  const existingQueriesSet = new Set();
+  for (const f of schema2Fields) {
+    for (const q of f.history.existing_queries) {
+      existingQueriesSet.add(q);
+    }
+  }
+
+  const plannerSeed = {
+    missing_critical_fields: missingCriticalFields,
+    unresolved_fields: unresolvedFields,
+    existing_queries: [...existingQueriesSet].sort(),
+    current_product_identity: {
+      category: String(category || '').trim(),
+      brand: String(brand || '').trim(),
+      model: String(model || '').trim()
+    }
+  };
+
+  // --- Debug ---
+  const debug = {
+    suppressed_duplicate_rows: [],
+    state_inputs: {
+      total_fields: fieldKeys.length,
+      eligible_count: eligibleFields.length,
+      covered_count: fieldKeys.length - eligibleFields.length
+    },
+    bundle_assignment_notes: bundleAssignmentNotes,
+    identity_context: identityContext
+  };
+
   return {
+    // Schema 2 additions
+    schema_version: 'needset_output.v2',
+    round,
+    round_mode: roundMode,
+    identity,
+    fields: schema2Fields,
+    planner_seed: plannerSeed,
+
+    // Existing output (backward compat)
     run_id: String(runId || '').trim(),
     category: String(category || '').trim(),
     product_id: String(productId || '').trim(),
     generated_at: now,
-    total_fields: fields.length,
-    needset_size: needsetSize,
-    identity_lock_state: {
-      status: identity.status,
-      confidence: identity.confidence,
-      identity_gate_validated: identity.identity_gate_validated,
-      extraction_gate_open: identity.extraction_gate_open,
-      family_model_count: identity.family_model_count,
-      ambiguity_level: identity.ambiguity_level,
-      publishable: identity.publishable,
-      publish_blockers: identity.publish_blockers,
-      reason_codes: identity.reason_codes,
-      page_count: identity.page_count,
-      max_match_score: identity.max_match_score,
-      updated_at: identity.updated_at
+    total_fields: fieldKeys.length,
+    summary,
+    blockers: {
+      missing: missingCount,
+      weak: weakCount,
+      conflict: conflictCount,
+      needs_exact_match: needsExactMatchCount,
+      search_exhausted: searchExhaustedCount
     },
-    identity_audit_rows: identity.audit_rows,
-    reason_counts: reasonCounts,
-    required_level_counts: requiredLevelCounts,
-    needs: rows,
-    snapshots: [
-      {
-        ts: now,
-        needset_size: needsetSize
-      }
-    ]
+    focus_fields: focusFields,
+    bundles,
+    profile_mix: profileMix,
+    rows,
+    debug
   };
 }

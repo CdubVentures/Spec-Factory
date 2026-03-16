@@ -9,7 +9,7 @@
  * not hardcoded to mouse or any specific category.
  */
 
-import { callLlmWithRouting } from '../llm/routing.js';
+import { callLlmWithRouting } from '../core/llm/client/routing.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 

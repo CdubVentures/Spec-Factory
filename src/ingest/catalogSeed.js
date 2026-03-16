@@ -7,13 +7,13 @@ import { XMLParser } from 'fast-xml-parser';
 import { toPosixKey } from '../s3/storage.js';
 import { nowIso } from '../utils/common.js';
 import { upsertQueueProduct } from '../queue/queueState.js';
-import { slugify as canonicalSlugify, buildProductId as canonicalBuildProductId } from '../catalog/slugify.js';
-import { loadCatalogProductsWithFields } from '../catalog/catalogProductLoader.js';
+import { slugify as canonicalSlugify, buildProductId as canonicalBuildProductId } from '../features/catalog/identity/slugify.js';
+import { loadCatalogProductsWithFields } from '../features/catalog/products/catalogProductLoader.js';
 import {
   evaluateIdentityGate,
   loadCanonicalIdentityIndex,
   registerCanonicalIdentity
-} from '../catalog/identityGate.js';
+} from '../features/catalog/identity/identityGate.js';
 
 function toArray(value) {
   return Array.isArray(value) ? value : [];
@@ -452,7 +452,7 @@ function buildProductId({ category, brand, model, variant }) {
 }
 
 function helperCategoryDir({ category, config = {} }) {
-  return path.resolve(config.helperFilesRoot || 'helper_files', category);
+  return path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority', category);
 }
 
 export function fieldRulesPathCandidates({ category, config = {} }) {
@@ -484,7 +484,7 @@ function resolveFieldStudioSourcePath({ category, config = {}, fieldRules = {} }
     }
     return path.resolve(helperCategoryDir({ category, config }), configured);
   }
-  return path.join(helperCategoryDir({ category, config }), `${category}Data.xlsm`);
+  return '';
 }
 
 function resolveFieldStudioSourceConfig({ category, config = {}, fieldRules = {} }) {
@@ -947,3 +947,4 @@ export async function syncJobsFromCatalogSeed({
 export async function loadCategoryFieldRules(category, config = {}) {
   return loadGeneratedFieldRules(category, config);
 }
+

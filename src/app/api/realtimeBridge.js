@@ -107,9 +107,39 @@ export function createRealtimeBridge({
   const wsClients = new Set();
   let wsServer = null;
   let watchers = null;
+  const lastScreencastFrames = new Map();
+
+  function screencastCacheKey(runId, workerId) {
+    const normalizedRunId = String(runId || '').trim();
+    const normalizedWorkerId = String(workerId || '').trim();
+    if (!normalizedRunId || !normalizedWorkerId) return '';
+    return `${normalizedRunId}::${normalizedWorkerId}`;
+  }
 
   function broadcastWs(channel, data) {
     const timestamp = now().toISOString();
+    if (
+      String(channel || '').startsWith('screencast-')
+      && data
+      && typeof data === 'object'
+      && !Array.isArray(data)
+    ) {
+      const workerId = String(data.worker_id || '').trim();
+      const frameData = typeof data.data === 'string' ? data.data : '';
+      const status = processStatus();
+      const runId = String(data.run_id || status?.run_id || status?.runId || '').trim();
+      const cacheKey = screencastCacheKey(runId, workerId);
+      if (cacheKey && frameData) {
+        lastScreencastFrames.set(cacheKey, {
+          run_id: runId,
+          worker_id: workerId,
+          data: frameData,
+          width: Number(data.width || 0),
+          height: Number(data.height || 0),
+          ts: String(data.ts || timestamp),
+        });
+      }
+    }
     for (const client of wsClients) {
       if (client.readyState !== 1) continue; // OPEN
       if (!wsClientWantsChannel(client, channel)) continue;
@@ -265,9 +295,16 @@ export function createRealtimeBridge({
     return watchers;
   }
 
+  function getLastScreencastFrame(runId, workerId) {
+    const cacheKey = screencastCacheKey(runId, workerId);
+    if (!cacheKey) return null;
+    return lastScreencastFrames.get(cacheKey) || null;
+  }
+
   return {
     broadcastWs,
     setupWatchers,
     attachWebSocketUpgrade,
+    getLastScreencastFrame,
   };
 }

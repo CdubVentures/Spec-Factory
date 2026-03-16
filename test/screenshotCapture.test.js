@@ -4,7 +4,7 @@ import {
   buildScreenshotConfig,
   parseScreenshotResult,
   ScreenshotQueue
-} from '../src/extract/screenshotCapture.js';
+} from '../src/features/indexing/extraction/screenshotCapture.js';
 
 // ---------------------------------------------------------------------------
 // IP02-2C — Screenshot Capture Lane Tests

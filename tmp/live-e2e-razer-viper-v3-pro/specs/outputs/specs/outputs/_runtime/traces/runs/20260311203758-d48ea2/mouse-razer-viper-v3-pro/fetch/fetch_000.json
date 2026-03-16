@@ -1,0 +1,9 @@
+{
+  "url": "https://razer.com/mice/viper-v3-pro",
+  "host": "razer.com",
+  "status": 404,
+  "fetch_ms": 1087,
+  "outcome": "not_found",
+  "error": "HTTP 404",
+  "bytes": 0
+}

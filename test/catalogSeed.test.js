@@ -79,7 +79,7 @@ test('loadGeneratedFieldRules loads generated field rules only', async () => {
 
   try {
     const loaded = await loadGeneratedFieldRules(category, {
-      helperFilesRoot: tempRoot
+      categoryAuthorityRoot: tempRoot
     });
     assert.equal(Boolean(loaded), true);
     assert.equal(

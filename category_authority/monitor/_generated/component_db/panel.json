@@ -1,0 +1,396 @@
+{
+  "category": "monitor",
+  "component_type": "panel",
+  "generated_at": "2026-03-16T00:08:03.693Z",
+  "items": [
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "In-Plane Switching"
+      ],
+      "maker": "",
+      "name": "IPS",
+      "properties": {
+        "frc": "No",
+        "native_colors": "16.7 million",
+        "panel_bit_depth": "8-bit",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "Vertically Aligned"
+      ],
+      "maker": "",
+      "name": "VA",
+      "properties": {
+        "frc": "No",
+        "native_colors": "16.7 million",
+        "panel_bit_depth": "8-bit",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "Twisted Nematic"
+      ],
+      "maker": "",
+      "name": "TN",
+      "properties": {
+        "frc": "Yes",
+        "native_colors": "16.2 million",
+        "panel_bit_depth": "6-bit + FRC",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "authoritative",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "override_allowed"
+      },
+      "aliases": [
+        "Organic LED"
+      ],
+      "maker": "",
+      "name": "OLED",
+      "properties": {
+        "frc": "No",
+        "native_colors": "1.07 billion",
+        "panel_bit_depth": "10-bit",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "authoritative",
+        "native_colors": "authoritative",
+        "panel_bit_depth": "authoritative",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "Quantum Dot OLED",
+        "Samsung QD-OLED"
+      ],
+      "maker": "samsung_display",
+      "name": "QD-OLED",
+      "properties": {
+        "frc": "No",
+        "native_colors": "1.07 billion",
+        "panel_bit_depth": "10-bit",
+        "subpixel_layout": "QD RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "authoritative",
+        "native_colors": "authoritative",
+        "panel_bit_depth": "authoritative",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "White OLED",
+        "LG WOLED"
+      ],
+      "maker": "lg_display",
+      "name": "W-OLED",
+      "properties": {
+        "frc": "No",
+        "native_colors": "1.07 billion",
+        "panel_bit_depth": "10-bit",
+        "subpixel_layout": "WRGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "Nano IPS Black",
+        "LG Nano IPS"
+      ],
+      "maker": "lg_display",
+      "name": "Nano IPS",
+      "properties": {
+        "frc": "No",
+        "native_colors": "1.07 billion",
+        "panel_bit_depth": "10-bit",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "AUO Fast IPS"
+      ],
+      "maker": "au_optronics",
+      "name": "Fast IPS",
+      "properties": {
+        "frc": "Yes",
+        "native_colors": "16.7 million",
+        "panel_bit_depth": "8-bit + FRC",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "AUO Rapid IPS"
+      ],
+      "maker": "au_optronics",
+      "name": "Rapid IPS",
+      "properties": {
+        "frc": "Yes",
+        "native_colors": "16.7 million",
+        "panel_bit_depth": "8-bit + FRC",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "Advanced Hyper-Viewing Angle IPS"
+      ],
+      "maker": "lg_display",
+      "name": "AH-IPS",
+      "properties": {
+        "frc": "No",
+        "native_colors": "16.7 million",
+        "panel_bit_depth": "8-bit",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "Super IPS"
+      ],
+      "maker": "lg_display",
+      "name": "S-IPS",
+      "properties": {
+        "frc": "No",
+        "native_colors": "16.7 million",
+        "panel_bit_depth": "8-bit",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "Plane to Line Switching"
+      ],
+      "maker": "samsung_display",
+      "name": "PLS",
+      "properties": {
+        "frc": "No",
+        "native_colors": "16.7 million",
+        "panel_bit_depth": "8-bit",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "Advanced Hyper-Viewing Angle"
+      ],
+      "maker": "au_optronics",
+      "name": "AHVA",
+      "properties": {
+        "frc": "No",
+        "native_colors": "16.7 million",
+        "panel_bit_depth": "8-bit",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "Advanced Dimension Switching"
+      ],
+      "maker": "boe",
+      "name": "ADS",
+      "properties": {
+        "frc": "No",
+        "native_colors": "16.7 million",
+        "panel_bit_depth": "8-bit",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "Super Vertical Alignment"
+      ],
+      "maker": "samsung_display",
+      "name": "SVA",
+      "properties": {
+        "frc": "No",
+        "native_colors": "16.7 million",
+        "panel_bit_depth": "8-bit",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "IPS Black Technology",
+        "LG IPS Black"
+      ],
+      "maker": "lg_display",
+      "name": "IPS Black",
+      "properties": {
+        "frc": "No",
+        "native_colors": "16.7 million",
+        "panel_bit_depth": "8-bit",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "Hyper Vertical Alignment"
+      ],
+      "maker": "samsung_display",
+      "name": "HVA",
+      "properties": {
+        "frc": "No",
+        "native_colors": "16.7 million",
+        "panel_bit_depth": "8-bit",
+        "subpixel_layout": "RGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "authoritative",
+        "native_colors": "authoritative",
+        "panel_bit_depth": "authoritative",
+        "subpixel_layout": "override_allowed"
+      },
+      "aliases": [
+        "Stacked OLED",
+        "Dual-layer OLED",
+        "ASUS Tandem OLED"
+      ],
+      "maker": "lg_display",
+      "name": "Tandem OLED",
+      "properties": {
+        "frc": "No",
+        "native_colors": "1.07 billion",
+        "panel_bit_depth": "10-bit",
+        "subpixel_layout": "WRGB"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "authoritative",
+        "native_colors": "authoritative",
+        "panel_bit_depth": "authoritative",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "RGB OLED",
+        "True RGB OLED",
+        "ASUS RGB Stripe OLED"
+      ],
+      "maker": "lg_display",
+      "name": "RGB Stripe OLED",
+      "properties": {
+        "frc": "No",
+        "native_colors": "1.07 billion",
+        "panel_bit_depth": "10-bit",
+        "subpixel_layout": "RGB Stripe"
+      }
+    },
+    {
+      "__variance_policies": {
+        "frc": "override_allowed",
+        "native_colors": "override_allowed",
+        "panel_bit_depth": "override_allowed",
+        "subpixel_layout": "authoritative"
+      },
+      "aliases": [
+        "Mini-LED Backlit IPS"
+      ],
+      "maker": "",
+      "name": "Mini-LED IPS",
+      "properties": {
+        "frc": "Yes",
+        "native_colors": "16.7 million",
+        "panel_bit_depth": "8-bit + FRC",
+        "subpixel_layout": "RGB"
+      }
+    }
+  ],
+  "version": 1
+}

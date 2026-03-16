@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { LLMCache } from '../src/llm/llmCache.js';
+import { LLMCache } from '../src/core/llm/client/llmCache.js';
 
 test('LLMCache stores and retrieves responses by deterministic key', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'llm-cache-test-'));

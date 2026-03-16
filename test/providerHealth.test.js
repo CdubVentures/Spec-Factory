@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LlmProviderHealth, normalizeProviderBaseUrl } from '../src/llm/providerHealth.js';
-import { getProviderHealth } from '../src/llm/openaiClient.js';
+import { LlmProviderHealth, normalizeProviderBaseUrl } from '../src/core/llm/client/providerHealth.js';
+import { getProviderHealth } from '../src/core/llm/client/openaiClient.js';
 
 // ---------------------------------------------------------------------------
 // Phase 01 — Foundation Hardening: Provider Health Tests

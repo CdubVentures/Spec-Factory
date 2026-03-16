@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildPreFetchPhases } from '../src/api/routes/runtimeOpsDataBuilders.js';
+import { buildPreFetchPhases } from '../src/features/indexing/api/builders/runtimeOpsDataBuilders.js';
 
 function makeEvent(event, payload = {}, overrides = {}) {
   return {
@@ -33,13 +33,12 @@ test('buildPreFetchPhases: empty events returns baseline shape', () => {
   assert.ok(Array.isArray(result.search_results));
   assert.equal(result.needset.needset_size, 0);
   assert.equal(result.needset.total_fields, 0);
-  assert.deepEqual(result.needset.needs, []);
+  assert.deepEqual(result.needset.fields, []);
   assert.deepEqual(result.needset.snapshots, []);
   assert.equal(result.search_profile.query_count, 0);
   assert.deepEqual(result.search_profile.query_rows, []);
   assert.deepEqual(result.llm_calls.brand_resolver, []);
   assert.deepEqual(result.llm_calls.search_planner, []);
-  assert.deepEqual(result.llm_calls.url_predictor, []);
   assert.deepEqual(result.llm_calls.serp_triage, []);
   assert.deepEqual(result.llm_calls.domain_classifier, []);
   assert.deepEqual(result.search_results, []);
@@ -50,42 +49,42 @@ test('buildPreFetchPhases: extracts needset data from needset_computed events', 
     makeEvent('needset_computed', {
       needset_size: 12,
       total_fields: 40,
-      identity_status: 'locked',
-      identity_confidence: 0.95,
-      needs: [
-        { field: 'weight', required: 'required', need_score: 0.8, confidence: 0.3, best_tier: 2, refs: 1 },
-        { field: 'sensor', required: 'required', need_score: 0.6, confidence: 0.5, best_tier: 1, refs: 2 },
+      identity: { state: 'locked', confidence: 0.95 },
+      fields: [
+        { field_key: 'weight', required_level: 'required', state: 'missing', need_score: 0.8 },
+        { field_key: 'sensor', required_level: 'required', state: 'weak', need_score: 0.6 },
       ],
-      reason_counts: { missing: 5, low_confidence: 3, conflict: 2 },
-      required_level_counts: { required: 8, recommended: 3, optional: 1 },
+      summary: { total: 40, resolved: 28 },
+      blockers: { missing: 5, weak: 3, conflict: 2 },
     }),
   ];
   const result = buildPreFetchPhases(events, makeMeta(), {});
   assert.equal(result.needset.needset_size, 12);
   assert.equal(result.needset.total_fields, 40);
-  assert.equal(result.needset.identity_lock_state.status, 'locked');
-  assert.equal(result.needset.identity_lock_state.confidence, 0.95);
-  assert.equal(result.needset.needs.length, 2);
-  assert.equal(result.needset.needs[0].field, 'weight');
-  assert.deepEqual(result.needset.reason_counts, { missing: 5, low_confidence: 3, conflict: 2 });
-  assert.deepEqual(result.needset.required_level_counts, { required: 8, recommended: 3, optional: 1 });
+  assert.equal(result.needset.identity_state, 'locked');
+  assert.equal(result.needset.fields.length, 2);
+  assert.equal(result.needset.fields[0].field_key, 'weight');
+  assert.deepEqual(result.needset.summary, { total: 40, resolved: 28 });
+  assert.deepEqual(result.needset.blockers, { missing: 5, weak: 3, conflict: 2 });
 });
 
-test('buildPreFetchPhases: multiple needset_computed events create snapshots and use last for needs', () => {
+test('buildPreFetchPhases: multiple needset_computed events create snapshots and use last for fields', () => {
   const events = [
     makeEvent('needset_computed', {
       needset_size: 20,
       total_fields: 40,
-      identity_status: 'provisional',
-      identity_confidence: 0.6,
-      needs: [{ field: 'weight', required: 'required', need_score: 0.9 }],
+      identity: { state: 'provisional' },
+      fields: [{ field_key: 'weight', state: 'missing', need_score: 0.9 }],
+      summary: {},
+      blockers: {},
     }, { ts: '2026-02-20T00:01:00.000Z' }),
     makeEvent('needset_computed', {
       needset_size: 10,
       total_fields: 40,
-      identity_status: 'locked',
-      identity_confidence: 0.95,
-      needs: [{ field: 'sensor', required: 'recommended', need_score: 0.4 }],
+      identity: { state: 'locked' },
+      fields: [{ field_key: 'sensor', state: 'weak', need_score: 0.4 }],
+      summary: {},
+      blockers: {},
     }, { ts: '2026-02-20T00:02:00.000Z' }),
   ];
   const result = buildPreFetchPhases(events, makeMeta(), {});
@@ -93,23 +92,26 @@ test('buildPreFetchPhases: multiple needset_computed events create snapshots and
   assert.equal(result.needset.snapshots.length, 2);
   assert.equal(result.needset.snapshots[0].needset_size, 20);
   assert.equal(result.needset.snapshots[1].needset_size, 10);
-  assert.equal(result.needset.needs[0].field, 'sensor');
+  assert.equal(result.needset.fields[0].field_key, 'sensor');
 });
 
 test('buildPreFetchPhases: enriches needset from artifacts when events are empty', () => {
   const artifacts = {
     needset: {
-      needset_size: 15,
       total_fields: 42,
-      identity_lock_state: { status: 'locked', confidence: 0.99 },
-      needs: [{ field: 'dpi', required: 'required', need_score: 0.7 }],
+      identity: { state: 'locked' },
+      fields: [
+        { field_key: 'dpi', required_level: 'required', need_score: 0.7, state: 'missing' },
+      ],
+      summary: {},
+      blockers: {},
     },
   };
   const result = buildPreFetchPhases([], makeMeta(), artifacts);
-  assert.equal(result.needset.needset_size, 15);
+  assert.equal(result.needset.needset_size, 1);
   assert.equal(result.needset.total_fields, 42);
-  assert.equal(result.needset.needs.length, 1);
-  assert.equal(result.needset.needs[0].field, 'dpi');
+  assert.equal(result.needset.fields.length, 1);
+  assert.equal(result.needset.fields[0].field_key, 'dpi');
 });
 
 test('buildPreFetchPhases: extracts search_profile from artifacts', () => {
@@ -189,16 +191,6 @@ test('buildPreFetchPhases: groups discovery_planner LLM calls under search_plann
   assert.equal(result.llm_calls.search_planner[1].reason, 'discovery_planner_fast');
 });
 
-test('buildPreFetchPhases: groups url_prediction LLM calls', () => {
-  const events = [
-    makeEvent('llm_started', { reason: 'url_prediction', batch_id: 'up-1' }),
-    makeEvent('llm_finished', { reason: 'url_prediction', batch_id: 'up-1' }),
-  ];
-  const result = buildPreFetchPhases(events, makeMeta(), {});
-  assert.equal(result.llm_calls.url_predictor.length, 1);
-  assert.equal(result.llm_calls.url_predictor[0].reason, 'url_prediction');
-});
-
 test('buildPreFetchPhases: groups triage/rerank/serp LLM calls under serp_triage', () => {
   const events = [
     makeEvent('llm_started', { reason: 'serp_triage_batch', batch_id: 'st-1' }),
@@ -267,6 +259,40 @@ test('buildPreFetchPhases: extracts search results from search_started/finished 
   assert.equal(result.search_results[1].query, 'Razer Viper V3 Pro sensor DPI');
 });
 
+test('buildPreFetchPhases: aggregates search_request_throttled events into search results rows', () => {
+  const events = [
+    makeEvent('search_started', {
+      query: 'Razer Viper V3 Pro specifications',
+      provider: 'searxng',
+      worker_id: 'search-1',
+    }, { ts: '2026-02-20T00:01:00.000Z' }),
+    makeEvent('search_request_throttled', {
+      query: 'Razer Viper V3 Pro specifications',
+      provider: 'searxng',
+      key: '127.0.0.1',
+      wait_ms: 350,
+    }, { ts: '2026-02-20T00:01:01.000Z' }),
+    makeEvent('search_request_throttled', {
+      query: 'Razer Viper V3 Pro specifications',
+      provider: 'searxng',
+      key: '127.0.0.1',
+      wait_ms: 150,
+    }, { ts: '2026-02-20T00:01:01.250Z' }),
+    makeEvent('search_finished', {
+      query: 'Razer Viper V3 Pro specifications',
+      provider: 'searxng',
+      result_count: 15,
+      worker_id: 'search-1',
+    }, { ts: '2026-02-20T00:01:02.000Z' }),
+  ];
+
+  const result = buildPreFetchPhases(events, makeMeta(), {});
+  assert.equal(result.search_results.length, 1);
+  assert.equal(result.search_results[0].query, 'Razer Viper V3 Pro specifications');
+  assert.equal(result.search_results[0].throttle_events, 2);
+  assert.equal(result.search_results[0].throttle_wait_ms, 500);
+});
+
 test('buildPreFetchPhases: non-prefetch LLM calls are not included in any group', () => {
   const events = [
     makeEvent('llm_started', { reason: 'extract_candidates_batch', batch_id: 'ex-1' }),
@@ -277,7 +303,6 @@ test('buildPreFetchPhases: non-prefetch LLM calls are not included in any group'
   const result = buildPreFetchPhases(events, makeMeta(), {});
   assert.equal(result.llm_calls.brand_resolver.length, 0);
   assert.equal(result.llm_calls.search_planner.length, 0);
-  assert.equal(result.llm_calls.url_predictor.length, 0);
   assert.equal(result.llm_calls.serp_triage.length, 0);
   assert.equal(result.llm_calls.domain_classifier.length, 0);
 });

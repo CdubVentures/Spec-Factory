@@ -39,12 +39,11 @@ describe('buildBusyPrefetchTabs', () => {
       prefetchData: {
         needset: { needset_size: 3, total_fields: 40, needs: [], snapshots: [] },
         search_profile: { query_count: 2, query_rows: [{ query: 'q1' }] },
-        llm_calls: { brand_resolver: [{ status: 'finished' }], search_planner: [], url_predictor: [], serp_triage: [], domain_classifier: [] },
+        llm_calls: { brand_resolver: [{ status: 'finished' }], search_planner: [], serp_triage: [], domain_classifier: [] },
         brand_resolution: { status: 'resolved', brand: 'Razer', official_domain: 'razer.com', aliases: [], candidates: [] },
         search_plans: [{ pass_name: 'primary', queries_generated: ['q1'] }],
         search_results: [{ query: 'q1' }],
         search_result_details: [{ query: 'q1', results: [] }],
-        url_predictions: null,
         serp_triage: [],
         domain_health: [],
       },
@@ -63,7 +62,6 @@ describe('buildBusyPrefetchTabs', () => {
         llm_calls: {
           brand_resolver: [{ status: 'finished' }],
           search_planner: [{ status: 'finished' }],
-          url_predictor: [],
           serp_triage: [],
           domain_classifier: [],
         },
@@ -71,7 +69,6 @@ describe('buildBusyPrefetchTabs', () => {
         search_plans: [{ pass_name: 'primary', queries_generated: ['q1'] }],
         search_results: [{ query: 'q1', result_count: 1 }],
         search_result_details: [{ query: 'q1', results: [{ url: 'https://razer.com', decision: 'keep' }] }],
-        url_predictions: null,
         serp_triage: [],
         domain_health: [],
       },
@@ -83,7 +80,6 @@ describe('buildBusyPrefetchTabs', () => {
     assert.equal(busy.has('brand_resolver'), false);
     assert.equal(busy.has('search_planner'), false);
     assert.equal(busy.has('search_results'), false);
-    assert.equal(busy.has('url_predictor'), true);
     assert.equal(busy.has('serp_triage'), true);
     assert.equal(busy.has('domain_classifier'), true);
   });

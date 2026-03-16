@@ -1,0 +1,180 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontSize': '16px', 'fontFamily': 'Segoe UI', 'primaryColor': '#1565c0', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0d47a1', 'lineColor': '#444', 'secondaryColor': '#e3f2fd', 'tertiaryColor': '#bbdefb'}}}%%
+
+flowchart LR
+    subgraph PHASE1["PHASE 1: IDENTITY LOCK + PRE-FETCH SIGNALS"]
+        direction TB
+
+        subgraph LOCK["Identity Lock (Seed)"]
+            direction TB
+            L1["<b>From product catalog:</b><br/>brand, model, variant"]
+            L2["<b>Hard IDs (optional):</b><br/>sku, mpn, gtin,<br/>upc, ean, asin"]
+            L3["<b>Guard tokens:</b><br/>negativeTokens[],<br/>anchorTokens.negative[]"]
+            L4["<b>Identity fingerprint:</b><br/>SHA-256 of<br/>category|product|brand|<br/>model|variant|sku"]
+            L1 --> L2 --> L3 --> L4
+        end
+
+        subgraph SERP_ID["SERP Identity Signals"]
+            direction TB
+            SI1["computeIdentityMatchLevel()<br/><b>Substring check only</b><br/>(url + title + snippet)"]
+            SI2["<b>strong:</b> brand+model+variant<br/><b>partial:</b> brand+model<br/><b>weak:</b> brand only<br/><b>none:</b> no brand"]
+            SI3["<b>Variant guard:</b><br/>detectVariantGuardHit()<br/>unexpected variant term<br/>in title/snippet/url"]
+            SI4["<b>Multi-model hint:</b><br/>vs, top N, best X,<br/>comparison patterns"]
+            SI1 --> SI2 --> SI3 --> SI4
+        end
+
+        subgraph RERANKER["Reranker Scoring Impact"]
+            direction TB
+            RR1["<b>Stage 1 (integer):</b><br/>strong: +30, partial: +22<br/>weak: +6, none: -10<br/>variant_guard: -56<br/>multi_model: -18"]
+            RR2["<b>Stage 2 (float):</b><br/>strong: +2.0, partial: +0.8<br/>weak: 0, none: -1.5<br/>variant_guard: -3.0<br/>multi_model: -1.5"]
+            RR3["<b>Not a hard gate:</b><br/>ranking signal only<br/>affects fetch priority"]
+            RR1 --> RR2 --> RR3
+        end
+
+        LOCK --> SERP_ID --> RERANKER
+    end
+
+    subgraph PHASE2["PHASE 2: PER-SOURCE IDENTITY EVALUATION"]
+        direction TB
+
+        subgraph EVAL["evaluateSourceIdentity()"]
+            direction TB
+            EV1["<b>Post-extraction evaluation</b><br/>per fetched source"]
+            EV2["Input: extracted candidates<br/>(brand, model, variant,<br/>sku, mpn, gtin)<br/>+ page title + URL"]
+            EV1 --> EV2
+        end
+
+        subgraph BANDS["5 Scoring Bands (0-1)"]
+            direction TB
+            B1["<b>Band 1: Brand (+0.35)</b><br/>all brand tokens in<br/>candidate OR title OR URL<br/>miss on product source<br/>→ brand_mismatch"]
+            B2["<b>Band 2: Model (+0.35)</b><br/>100% token match<br/>OR overlap ≥ 0.72<br/>OR overlap ≥ 0.55 + numeric<br/>numeric range ±3 units"]
+            B3["<b>Band 3: Variant (+0.15)</b><br/>connection class match:<br/>wireless/wired/dual<br/>mismatch → variant_mismatch"]
+            B4["<b>Band 4: Hard IDs (+0.15)</b><br/>SKU / MPN / GTIN<br/>exact match → CONFIRMED<br/>exact mismatch → REJECTED<br/>absence → no check"]
+            B5["<b>Band 5: Penalties</b><br/>negative tokens → critical<br/>unexpected suffix (elite,<br/>max, mini, plus, se, xl)<br/>→ critical conflict"]
+            B1 --> B2 --> B3 --> B4 --> B5
+        end
+
+        subgraph DECISION["Decision Matrix"]
+            direction TB
+            D1["<b>Hard ID mismatch</b><br/>OR negative token<br/>→ REJECTED (conf ≤ 0.39)"]
+            D2["<b>Hard ID match</b><br/>→ CONFIRMED (conf = 1.0)<br/>overrides all other scoring"]
+            D3["<b>Critical conflicts</b><br/>→ REJECTED"]
+            D4["<b>score ≥ 0.8 + no conflicts</b><br/>→ CONFIRMED, match=true"]
+            D5["<b>score bands:</b><br/>≥0.85: CONFIRMED<br/>≥0.60: WARNING<br/>≥0.40: QUARANTINE<br/><0.40: REJECTED"]
+            D1 --> D2 --> D3 --> D4 --> D5
+        end
+
+        EVAL --> BANDS --> DECISION
+    end
+
+    subgraph PHASE3["PHASE 3: LABELING + ANCHOR CONFLICTS"]
+        direction TB
+
+        subgraph LABEL["Identity Labeling"]
+            direction TB
+            LB1["resolveIdentityLabel()"]
+            LB2["<b>match=true</b><br/>→ 'matched'<br/>(consensus eligible)"]
+            LB3["<b>criticalConflicts > 0</b><br/>→ 'different'<br/>(consensus excluded)"]
+            LB4["<b>score ≥ 0.4</b><br/>→ 'possible'<br/>(consensus eligible)"]
+            LB5["<b>score < 0.4</b><br/>→ 'different'<br/>(consensus excluded)"]
+            LB6["<b>null/missing</b><br/>→ 'unknown'<br/>(consensus excluded)"]
+            LB1 --> LB2 --> LB3 --> LB4 --> LB5 --> LB6
+        end
+
+        subgraph ANNOTATE["Candidate Annotation"]
+            direction TB
+            AN1["applyIdentityGateToCandidates()"]
+            AN2["<b>Adds to each candidate:</b><br/>identity_label: string<br/>identity_confidence: 0-1"]
+            AN3["<b>10 gated fields:</b><br/>brand, model, variant, sku,<br/>base_model, mpn, gtin,<br/>upc, ean, asin"]
+            AN4["Does NOT mutate originals<br/>Does NOT cap confidence<br/>Creates new array"]
+            AN1 --> AN2 --> AN3 --> AN4
+        end
+
+        subgraph ANCHOR["Anchor Conflict Evaluation"]
+            direction TB
+            AC1["evaluateAnchorConflicts()<br/><b>Separate from identity</b>"]
+            AC2["<b>MAJOR (blocks consensus):</b><br/>dimension > 15mm<br/>polling_rate / dpi mismatch<br/>sensor / switch mismatch<br/>weight > 2kg diff"]
+            AC3["<b>MINOR (warning only):</b><br/>weight 0.5-2kg diff"]
+            AC4["<b>Dimension bounds:</b><br/>length: 50-220mm<br/>width: 30-120mm<br/>height: 10-100mm"]
+            AC1 --> AC2 --> AC3 --> AC4
+        end
+
+        subgraph FILTER["Consensus Source Filter"]
+            direction TB
+            CF1["<b>Two conditions required:</b>"]
+            CF2["1. identity_label IN<br/>('matched', 'possible')"]
+            CF3["2. majorConflicts.length<br/>=== 0"]
+            CF4["<b>Both must be true</b><br/>to enter consensus<br/>'different' → excluded<br/>'unknown' → excluded"]
+            CF1 --> CF2 --> CF3 --> CF4
+        end
+
+        LABEL --> ANNOTATE --> ANCHOR --> FILTER
+    end
+
+    subgraph PHASE4["PHASE 4: CROSS-SOURCE IDENTITY GATE"]
+        direction TB
+
+        subgraph REQUIREMENTS["Gate Requirements"]
+            direction TB
+            RQ1["evaluateIdentityGate()<br/><b>Aggregate validation</b>"]
+            RQ2["<b>1. Authority source:</b><br/>manufacturer (tier 1) OR<br/>2+ tier-1 lab sources"]
+            RQ3["<b>2. Credible sources:</b><br/>2+ tier ≤ 2 domains<br/>OR (helper + 1 credible)"]
+            RQ4["<b>3. No contradictions:</b><br/>connection class agreement<br/>SKU token overlap<br/>dimension spread ≤ 15mm"]
+            RQ5["<b>4. No major anchors:</b><br/>zero majorConflicts<br/>across all sources"]
+            RQ1 --> RQ2 --> RQ3 --> RQ4 --> RQ5
+        end
+
+        subgraph CONTRADICTIONS["Contradiction Detection"]
+            direction TB
+            CT1["buildIdentityCritical<br/>Contradictions()"]
+            CT2["<b>Connection conflict:</b><br/>wireless vs wired<br/>(dual exempt)"]
+            CT3["<b>SKU conflict:</b><br/>non-overlapping tokens<br/>across accepted sources"]
+            CT4["<b>Dimension conflict:</b><br/>spread > 15mm after<br/>outlier filter (±20mm)"]
+            CT5["<b>Height suppression:</b><br/>if length+width agree<br/>with 2+ sources,<br/>height-only conflict<br/>is suppressed"]
+            CT1 --> CT2 --> CT3 --> CT4 --> CT5
+        end
+
+        subgraph CERTAINTY["Certainty Scoring"]
+            direction TB
+            CS1["<b>Base: 0.40</b>"]
+            CS2["+0.25 manufacturer<br/>(or +0.20 lab consensus)"]
+            CS3["+0.20 credible sources<br/>+0.05 helper sources"]
+            CS4["+0.10 no contradictions<br/>+0.10 no major anchors"]
+            CS5["+0.05 if ≥ 3 sources<br/><b>Max: 1.0</b>"]
+            CS1 --> CS2 --> CS3 --> CS4 --> CS5
+        end
+
+        subgraph OUTPUT["Gate Status"]
+            direction TB
+            O1["<b>CONFIRMED</b><br/>all requirements met<br/>certainty ≥ 0.95<br/>validated = true"]
+            O2["<b>IDENTITY_CONFLICT</b><br/>contradictions detected<br/>needsReview = true"]
+            O3["<b>IDENTITY_FAILED</b><br/>zero accepted sources"]
+            O4["<b>LOW_CONFIDENCE</b><br/>missing requirements<br/>no contradictions"]
+            O5["<b>→ identity_report.json</b><br/><b>→ summary.json</b><br/><b>→ publish gate</b><br/><b>→ repair/hypothesis</b>"]
+            O1 --> O2 --> O3 --> O4 --> O5
+        end
+
+        REQUIREMENTS --> CONTRADICTIONS --> CERTAINTY --> OUTPUT
+    end
+
+    PHASE1 ==>|"identity lock +<br/>SERP signals"| PHASE2
+    PHASE2 ==>|"per-source:<br/>match + score +<br/>decision"| PHASE3
+    PHASE3 ==>|"labeled sources<br/>+ anchor check"| PHASE4
+
+    style PHASE1 fill:#e3f2fd,stroke:#1565c0,stroke-width:3px
+    style PHASE2 fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
+    style PHASE3 fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style PHASE4 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
+    style LOCK fill:#e8eaf6,stroke:#283593,stroke-width:1px
+    style SERP_ID fill:#e0f7fa,stroke:#00838f,stroke-width:1px
+    style RERANKER fill:#efebe9,stroke:#5d4037,stroke-width:1px
+    style EVAL fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style BANDS fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style DECISION fill:#fce4ec,stroke:#c62828,stroke-width:2px
+    style LABEL fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style ANNOTATE fill:#e0f7fa,stroke:#00838f,stroke-width:1px
+    style ANCHOR fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    style FILTER fill:#fff8e1,stroke:#f9a825,stroke-width:2px
+    style REQUIREMENTS fill:#ede7f6,stroke:#512da8,stroke-width:2px
+    style CONTRADICTIONS fill:#fce4ec,stroke:#c62828,stroke-width:2px
+    style CERTAINTY fill:#e8eaf6,stroke:#283593,stroke-width:1px
+    style OUTPUT fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px

@@ -6,8 +6,8 @@ const DEFAULT_OUTPUT_FILE = 'implementation/gui-persistence/04-LLM-ROUTE-FIELD-U
 const EXCLUDED_ROUTE_KEYS = new Set(['id', 'category']);
 
 export const DEFAULT_RUNTIME_USAGE_FILES = [
-  'src/pipeline/helpers/runtimeHelpers.js',
-  'src/llm/extractCandidatesLLM.js'
+  'src/features/indexing/orchestration/shared/runtimeHelpers.js',
+  'src/features/indexing/extraction/extractCandidatesLLM.js'
 ];
 
 function resolveRepoPath(repoRoot, relativePath) {

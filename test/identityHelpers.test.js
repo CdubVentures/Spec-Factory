@@ -8,7 +8,7 @@ import {
   deriveNeedSetIdentityState,
   resolveExtractionGateOpen,
   buildNeedSetIdentityAuditRows
-} from '../src/pipeline/helpers/identityHelpers.js';
+} from '../src/features/indexing/orchestration/shared/identityHelpers.js';
 
 // --- isIdentityLockedField ---
 

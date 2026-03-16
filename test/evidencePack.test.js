@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildEvidenceCandidateFingerprint, buildEvidencePack } from '../src/llm/evidencePack.js';
+import { buildEvidenceCandidateFingerprint, buildEvidencePack } from '../src/features/indexing/extraction/evidencePack.js';
 
 test('buildEvidencePack respects max char bound and emits evidence references', () => {
   const source = {

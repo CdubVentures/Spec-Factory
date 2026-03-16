@@ -23,16 +23,17 @@ import {
   buildComponentReviewPayloads,
   buildEnumReviewPayloads
 } from '../src/review/componentReviewData.js';
-import { buildPromptFieldContracts } from '../src/llm/extractCandidatesLLM.js';
+import { buildPromptFieldContracts } from '../src/features/indexing/extraction/extractCandidatesLLM.js';
 import { suggestionFilePath } from '../src/review/suggestions.js';
+import { getMouseFieldStudioSourcePath } from './fixtures/mouseFieldStudioWorkbookFixture.js';
 
 function mouseFieldStudioSourcePath() {
-  return path.resolve('helper_files', 'mouse', 'mouseData.xlsm');
+  return getMouseFieldStudioSourcePath();
 }
 
-// â”€â”€ Helper: create a temp helper_files structure with component DB + overrides â”€â”€
+// â”€â”€ Helper: create a temp category_authority structure with component DB + overrides â”€â”€
 async function setupTempHelper(tempRoot, category = 'mouse') {
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const catRoot = path.join(helperRoot, category);
   const genRoot = path.join(catRoot, '_generated');
   const dbDir = path.join(genRoot, 'component_db');
@@ -127,7 +128,7 @@ async function createSeededSpecDb({ tempRoot, helperRoot, category = 'mouse' }) 
   const dbPath = path.join(dbDir, 'spec.sqlite');
   const specDb = new SpecDb({ dbPath, category });
   const config = {
-    helperFilesRoot: helperRoot,
+    categoryAuthorityRoot: helperRoot,
     localOutputRoot: path.join(tempRoot, 'out'),
     specDbDir,
   };
@@ -165,7 +166,7 @@ test('Fix #1: component overrides are merged into review payloads', async () => 
 
     // Build review payloads â€” they should show the override
     const payload = await buildComponentReviewPayloads({
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
       category: 'mouse',
       componentType: 'sensor'
     });
@@ -194,7 +195,7 @@ test('Fix #1: component overrides are merged into review payloads', async () => 
 
 test('Fix #2: manual_enum_values in field_studio_map are included in compiled known_values', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'comp-fix2-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
 
   try {
@@ -225,6 +226,7 @@ test('Fix #2: manual_enum_values in field_studio_map are included in compiled kn
       enum_lists: [],
       component_sheets: [],
       field_overrides: {},
+      selected_keys: ['connection', 'form_factor', 'weight', 'dpi'],
       // This is the key: manual_enum_values should survive recompilation
       manual_enum_values: {
         connection: ['usb-c_direct'],
@@ -235,13 +237,13 @@ test('Fix #2: manual_enum_values in field_studio_map are included in compiled kn
     await saveFieldStudioMap({
       category: 'mouse',
       fieldStudioMap,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
 
     const result = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
     assert.equal(result.compiled, true, 'Compilation should succeed');
 
@@ -356,7 +358,7 @@ test('Fix #4: buildPromptFieldContracts merges known_values into enumOptions', (
 
 test('Fix #5: appendComponentCurationSuggestions writes to components.json', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'comp-fix5-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const suggestDir = path.join(helperRoot, 'mouse', '_suggestions');
   await fs.mkdir(suggestDir, { recursive: true });
 
@@ -368,7 +370,7 @@ test('Fix #5: appendComponentCurationSuggestions writes to components.json', asy
 
   try {
     const result = await appendComponentCurationSuggestions({
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
       category: 'mouse',
       productId: 'test-product-1',
       runId: 'test-run-1',
@@ -396,7 +398,7 @@ test('Fix #5: appendComponentCurationSuggestions writes to components.json', asy
 
     // Append same suggestion again â€” should be deduped
     const result2 = await appendComponentCurationSuggestions({
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
       category: 'mouse',
       productId: 'test-product-2',
       runId: 'test-run-2',
@@ -450,7 +452,7 @@ test('Fix #7: compile validation warns about Excel serial dates and missing prop
   // Test the validation logic directly with synthetic component data
   // by importing validateFieldStudioMap which calls buildCompileValidation internally.
   // We verify the validation code runs without error on the live compiled output.
-  const genRoot = path.resolve('helper_files', 'mouse', '_generated');
+  const genRoot = path.resolve('category_authority', 'mouse', '_generated');
   const reportPath = path.join(genRoot, '_compile_report.json');
 
   let report;
@@ -487,7 +489,7 @@ test('Fix #7: compile validation warns about Excel serial dates and missing prop
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 test('Fix #8: suggestion file paths are consolidated (enum + component)', () => {
-  const config = { helperFilesRoot: '/tmp/test_helpers' };
+  const config = { categoryAuthorityRoot: '/tmp/test_helpers' };
 
   // Runtime curation paths
   const enumCurationPath = enumSuggestionPath({ config, category: 'mouse' });

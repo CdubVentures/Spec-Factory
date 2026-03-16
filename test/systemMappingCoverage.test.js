@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function loadSystemMapping() {
   const esbuild = await import('esbuild');
-  const srcPath = path.resolve(__dirname, '..', 'tools', 'gui-react', 'src', 'pages', 'studio', 'workbench', 'systemMapping.ts');
+  const srcPath = path.resolve(__dirname, '..', 'tools', 'gui-react', 'src', 'features', 'studio', 'workbench', 'systemMapping.ts');
   const result = await esbuild.build({
     entryPoints: [srcPath],
     bundle: false,
@@ -136,6 +136,56 @@ test('frontend and backend FIELD_SYSTEM_MAP stay in parity', async () => {
   backendEntries.sort((a, b) => a[0].localeCompare(b[0]));
 
   assert.deepEqual(backendEntries, frontendEntries);
+});
+
+test('authorable compile-time knobs stay out of consumer maps when no downstream system reads them', async () => {
+  if (!FIELD_SYSTEM_MAP) {
+    const mod = await loadSystemMapping();
+    FIELD_SYSTEM_MAP = mod.FIELD_SYSTEM_MAP;
+  }
+
+  assert.equal(FIELD_SYSTEM_MAP['contract.rounding.decimals'], undefined, 'frontend FIELD_SYSTEM_MAP should omit contract.rounding.decimals when no downstream system consumes it');
+  assert.equal(BACKEND_FIELD_SYSTEM_MAP['contract.rounding.decimals'], undefined, 'backend FIELD_SYSTEM_MAP should omit contract.rounding.decimals when no downstream system consumes it');
+  assert.equal(FIELD_SYSTEM_MAP['contract.rounding.mode'], undefined, 'frontend FIELD_SYSTEM_MAP should omit contract.rounding.mode when no downstream system consumes it');
+  assert.equal(BACKEND_FIELD_SYSTEM_MAP['contract.rounding.mode'], undefined, 'backend FIELD_SYSTEM_MAP should omit contract.rounding.mode when no downstream system consumes it');
+  assert.equal(FIELD_SYSTEM_MAP['priority.publish_gate'], undefined, 'frontend FIELD_SYSTEM_MAP should omit priority.publish_gate when no downstream system consumes it');
+  assert.equal(BACKEND_FIELD_SYSTEM_MAP['priority.publish_gate'], undefined, 'backend FIELD_SYSTEM_MAP should omit priority.publish_gate when no downstream system consumes it');
+  assert.equal(FIELD_SYSTEM_MAP['parse.unit'], undefined, 'frontend FIELD_SYSTEM_MAP should omit parse.unit when no downstream system consumes it');
+  assert.equal(BACKEND_FIELD_SYSTEM_MAP['parse.unit'], undefined, 'backend FIELD_SYSTEM_MAP should omit parse.unit when no downstream system consumes it');
+});
+
+test('IDX-only dead knobs are removed while verified live runtime knobs stay mapped', async () => {
+  if (!FIELD_SYSTEM_MAP) {
+    const mod = await loadSystemMapping();
+    FIELD_SYSTEM_MAP = mod.FIELD_SYSTEM_MAP;
+  }
+
+  const removedKnobs = [
+    'parse.unit_accepts',
+    'parse.allow_unitless',
+    'parse.allow_ranges',
+    'parse.strict_unit_required',
+    'ai_assist.max_calls',
+  ];
+
+  for (const knob of removedKnobs) {
+    assert.equal(FIELD_SYSTEM_MAP[knob], undefined, `frontend FIELD_SYSTEM_MAP should remove dead IDX knob ${knob}`);
+    assert.equal(BACKEND_FIELD_SYSTEM_MAP[knob], undefined, `backend FIELD_SYSTEM_MAP should remove dead IDX knob ${knob}`);
+  }
+
+  assert.deepEqual(FIELD_SYSTEM_MAP['contract.range'], ['indexlab'], 'frontend FIELD_SYSTEM_MAP should expose contract.range to IDX');
+  assert.deepEqual(BACKEND_FIELD_SYSTEM_MAP['contract.range'], ['indexlab'], 'backend FIELD_SYSTEM_MAP should expose contract.range to IDX');
+  assert.deepEqual(FIELD_SYSTEM_MAP['contract.list_rules'], ['indexlab'], 'frontend FIELD_SYSTEM_MAP should expose contract.list_rules to IDX');
+  assert.deepEqual(BACKEND_FIELD_SYSTEM_MAP['contract.list_rules'], ['indexlab'], 'backend FIELD_SYSTEM_MAP should expose contract.list_rules to IDX');
+});
+
+test('IDX tooltips point users back to the exact Field Studio key navigation path', async () => {
+  const mod = await loadSystemMapping();
+  const tooltip = mod.formatConsumerTooltip('search_hints.query_terms', 'indexlab', true);
+
+  assert.match(tooltip, /Key Navigation > Search Hints > Query Terms/);
+  assert.match(tooltip, /When enabled:/);
+  assert.match(tooltip, /When disabled:/);
 });
 
 test('all formatted dynamic consumer tooltips parse into structured sections', async () => {

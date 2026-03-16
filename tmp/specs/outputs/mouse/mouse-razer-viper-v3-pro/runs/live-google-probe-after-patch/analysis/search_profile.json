@@ -1,0 +1,3227 @@
+{
+  "category": "mouse",
+  "identity": {
+    "brand": "Razer",
+    "model": "Viper V3 Pro",
+    "variant": "",
+    "category": "mouse"
+  },
+  "variant_guard_terms": [
+    "razer viper v3 pro",
+    "viper v3 pro",
+    "razer",
+    "viperv3pro",
+    "razerviperv3pro",
+    "viper",
+    "v3"
+  ],
+  "identity_aliases": [
+    {
+      "alias": "razer",
+      "source": "deterministic",
+      "weight": 0.8
+    },
+    {
+      "alias": "razer viper v3 pro",
+      "source": "deterministic",
+      "weight": 1
+    },
+    {
+      "alias": "viperv3pro",
+      "source": "deterministic",
+      "weight": 0.9
+    },
+    {
+      "alias": "razer viperv3pro",
+      "source": "deterministic",
+      "weight": 1
+    },
+    {
+      "alias": "viperv 3 pro",
+      "source": "deterministic",
+      "weight": 0.9
+    },
+    {
+      "alias": "razer viperv 3 pro",
+      "source": "deterministic",
+      "weight": 1
+    },
+    {
+      "alias": "viperv-3-pro",
+      "source": "deterministic",
+      "weight": 0.9
+    },
+    {
+      "alias": "razer viperv-3-pro",
+      "source": "deterministic",
+      "weight": 1
+    },
+    {
+      "alias": "viper v3 pro",
+      "source": "deterministic",
+      "weight": 0.9
+    },
+    {
+      "alias": "viper v 3 pro",
+      "source": "deterministic",
+      "weight": 0.9
+    },
+    {
+      "alias": "razer viper v 3 pro",
+      "source": "deterministic",
+      "weight": 1
+    },
+    {
+      "alias": "viper-v-3-pro",
+      "source": "deterministic",
+      "weight": 0.9
+    }
+  ],
+  "alias_reject_log": [
+    {
+      "alias": "razer viper v3 pro",
+      "source": "deterministic",
+      "reason": "duplicate_alias",
+      "stage": "deterministic_alias",
+      "detail": ""
+    },
+    {
+      "alias": "razer viper v3 pro",
+      "source": "deterministic",
+      "reason": "duplicate_alias",
+      "stage": "deterministic_alias",
+      "detail": ""
+    },
+    {
+      "alias": "razer viper-v-3-pro",
+      "source": "deterministic",
+      "reason": "alias_cap_reached",
+      "stage": "deterministic_alias",
+      "detail": "cap:12"
+    }
+  ],
+  "query_reject_log": [
+    {
+      "query": "Razer Viper V3 Pro connection specification",
+      "source": "field_rules.search_hints",
+      "reason": "duplicate_query_merged",
+      "stage": "query_row_builder",
+      "detail": ""
+    },
+    {
+      "query": "Razer Viper V3 Pro wired specification",
+      "source": "field_rules.search_hints",
+      "reason": "duplicate_query_merged",
+      "stage": "query_row_builder",
+      "detail": ""
+    },
+    {
+      "query": "Razer Viper V3 Pro connectivity specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro connectivity manual pdf",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro connectivity support",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro connectivity specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro connectivity manual",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro connectivity pdf",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:razer.com Razer Viper V3 Pro connectivity",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:eloshapes.com Razer Viper V3 Pro connectivity",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:mousespecs.org Razer Viper V3 Pro connectivity",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:rtings.com Razer Viper V3 Pro connectivity",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:bestbuy.com Razer Viper V3 Pro connectivity",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer viperv3pro connectivity specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer viperv 3 pro connectivity specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro wireless technology specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro wireless technology manual pdf",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro wireless technology support",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro wireless technology specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro wireless technology manual",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro wireless technology pdf",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:razer.com Razer Viper V3 Pro wireless technology",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:eloshapes.com Razer Viper V3 Pro wireless technology",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:mousespecs.org Razer Viper V3 Pro wireless technology",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:rtings.com Razer Viper V3 Pro wireless technology",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:bestbuy.com Razer Viper V3 Pro wireless technology",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro DPI specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro DPI manual pdf",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro DPI support",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro DPI specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro DPI manual",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro DPI pdf",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:razer.com Razer Viper V3 Pro DPI",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:eloshapes.com Razer Viper V3 Pro DPI",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:rtings.com Razer Viper V3 Pro DPI",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:mousespecs.org Razer Viper V3 Pro DPI",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:techpowerup.com Razer Viper V3 Pro DPI",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:prosettings.net Razer Viper V3 Pro DPI",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer viperv3pro DPI specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer viperv 3 pro DPI specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro CPI specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro CPI manual pdf",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro CPI support",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro CPI specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro CPI manual",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro CPI pdf",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:razer.com Razer Viper V3 Pro CPI",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:eloshapes.com Razer Viper V3 Pro CPI",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:rtings.com Razer Viper V3 Pro CPI",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:mousespecs.org Razer Viper V3 Pro CPI",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:techpowerup.com Razer Viper V3 Pro CPI",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:prosettings.net Razer Viper V3 Pro CPI",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro weight specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro weight manual pdf",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro weight support",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro weight specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro weight manual",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro weight pdf",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:razer.com Razer Viper V3 Pro weight",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:eloshapes.com Razer Viper V3 Pro weight",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:rtings.com Razer Viper V3 Pro weight",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:mousespecs.org Razer Viper V3 Pro weight",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:techpowerup.com Razer Viper V3 Pro weight",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:lttlabs.com Razer Viper V3 Pro weight",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer viperv3pro weight specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer viperv 3 pro weight specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro weight grams specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro weight grams manual pdf",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro weight grams support",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro weight grams specification",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro weight grams manual",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "Razer Viper V3 Pro weight grams pdf",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:razer.com Razer Viper V3 Pro weight grams",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:eloshapes.com Razer Viper V3 Pro weight grams",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:rtings.com Razer Viper V3 Pro weight grams",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:mousespecs.org Razer Viper V3 Pro weight grams",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:techpowerup.com Razer Viper V3 Pro weight grams",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:lttlabs.com Razer Viper V3 Pro weight grams",
+      "source": "field_rules.search_hints",
+      "reason": "query_row_cap_reached",
+      "stage": "query_row_builder",
+      "detail": "cap:24"
+    },
+    {
+      "query": "site:mousespecs.org Razer Viper V3 Pro connection",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "site:bestbuy.com Razer Viper V3 Pro connection",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "site:pcpartpicker.com Razer Viper V3 Pro connection",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "Razer viperv3pro connection specification",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "Razer viperv 3 pro connection specification",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "Razer Viper V3 Pro wired specification",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "Razer Viper V3 Pro wired manual pdf",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "Razer Viper V3 Pro wired support",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "Razer Viper V3 Pro wired manual",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "Razer Viper V3 Pro wired pdf",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "site:razer.com Razer Viper V3 Pro wired",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "site:eloshapes.com Razer Viper V3 Pro wired",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "site:rtings.com Razer Viper V3 Pro wired",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "site:mousespecs.org Razer Viper V3 Pro wired",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "site:bestbuy.com Razer Viper V3 Pro wired",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "site:pcpartpicker.com Razer Viper V3 Pro wired",
+      "source": "query_selection",
+      "reason": "max_query_cap",
+      "stage": "query_selection",
+      "detail": "cap:8"
+    },
+    {
+      "query": "Razer Viper V3 Pro connection specification",
+      "source": [
+        "targeted"
+      ],
+      "reason": "max_query_cap",
+      "stage": "pre_execution_rank_cap",
+      "detail": "cap:6"
+    },
+    {
+      "query": "Razer Viper V3 Pro connection support",
+      "source": [
+        "targeted"
+      ],
+      "reason": "max_query_cap",
+      "stage": "pre_execution_rank_cap",
+      "detail": "cap:6"
+    }
+  ],
+  "negative_terms": [],
+  "focus_fields": [
+    "connection",
+    "connectivity",
+    "dpi",
+    "weight"
+  ],
+  "base_templates": [],
+  "query_rows": [
+    {
+      "query": "site:rtings.com Razer Viper V3 Pro connection",
+      "sources": [
+        "targeted"
+      ],
+      "target_fields": [
+        "connection"
+      ],
+      "doc_hint": "",
+      "domain_hint": "rtings.com",
+      "hint_source": "field_rules.search_hints",
+      "score": 19,
+      "result_count": 2,
+      "attempts": 1,
+      "providers": [
+        "google"
+      ]
+    },
+    {
+      "query": "site:eloshapes.com Razer Viper V3 Pro connection",
+      "sources": [
+        "targeted"
+      ],
+      "target_fields": [
+        "connection"
+      ],
+      "doc_hint": "",
+      "domain_hint": "eloshapes.com",
+      "hint_source": "field_rules.search_hints",
+      "score": 18,
+      "result_count": 2,
+      "attempts": 1,
+      "providers": [
+        "google"
+      ]
+    },
+    {
+      "query": "site:razer.com Razer Viper V3 Pro connection",
+      "sources": [
+        "targeted"
+      ],
+      "target_fields": [
+        "connection"
+      ],
+      "doc_hint": "",
+      "domain_hint": "razer.com",
+      "hint_source": "field_rules.search_hints",
+      "score": 18,
+      "result_count": 5,
+      "attempts": 1,
+      "providers": [
+        "google"
+      ]
+    },
+    {
+      "query": "Razer Viper V3 Pro connection manual",
+      "sources": [
+        "targeted"
+      ],
+      "target_fields": [
+        "connection"
+      ],
+      "doc_hint": "manual",
+      "domain_hint": "",
+      "hint_source": "field_rules.search_hints",
+      "score": 16,
+      "result_count": 5,
+      "attempts": 1,
+      "providers": [
+        "google"
+      ]
+    },
+    {
+      "query": "Razer Viper V3 Pro connection manual pdf",
+      "sources": [
+        "targeted"
+      ],
+      "target_fields": [
+        "connection"
+      ],
+      "doc_hint": "manual_pdf",
+      "domain_hint": "",
+      "hint_source": "field_rules.search_hints",
+      "score": 16,
+      "result_count": 5,
+      "attempts": 1,
+      "providers": [
+        "google"
+      ]
+    },
+    {
+      "query": "Razer Viper V3 Pro connection pdf",
+      "sources": [
+        "targeted"
+      ],
+      "target_fields": [
+        "connection"
+      ],
+      "doc_hint": "pdf",
+      "domain_hint": "",
+      "hint_source": "field_rules.search_hints",
+      "score": 16,
+      "result_count": 5,
+      "attempts": 1,
+      "providers": [
+        "google"
+      ]
+    }
+  ],
+  "queries": [
+    "Razer Viper V3 Pro connection specification",
+    "Razer Viper V3 Pro connection manual pdf",
+    "Razer Viper V3 Pro connection support",
+    "Razer Viper V3 Pro connection manual",
+    "Razer Viper V3 Pro connection pdf",
+    "site:razer.com Razer Viper V3 Pro connection",
+    "site:eloshapes.com Razer Viper V3 Pro connection",
+    "site:rtings.com Razer Viper V3 Pro connection"
+  ],
+  "targeted_queries": [
+    "Razer Viper V3 Pro connection specification",
+    "Razer Viper V3 Pro connection manual pdf",
+    "Razer Viper V3 Pro connection support",
+    "Razer Viper V3 Pro connection manual",
+    "Razer Viper V3 Pro connection pdf",
+    "site:razer.com Razer Viper V3 Pro connection",
+    "site:eloshapes.com Razer Viper V3 Pro connection",
+    "site:rtings.com Razer Viper V3 Pro connection"
+  ],
+  "field_target_queries": {
+    "connection": [
+      "Razer Viper V3 Pro connection specification",
+      "Razer Viper V3 Pro connection manual pdf",
+      "Razer Viper V3 Pro connection support"
+    ]
+  },
+  "doc_hint_queries": [
+    {
+      "doc_hint": "spec",
+      "queries": [
+        "Razer Viper V3 Pro connection specification"
+      ]
+    },
+    {
+      "doc_hint": "manual_pdf",
+      "queries": [
+        "Razer Viper V3 Pro connection manual pdf"
+      ]
+    },
+    {
+      "doc_hint": "support",
+      "queries": [
+        "Razer Viper V3 Pro connection support"
+      ]
+    },
+    {
+      "doc_hint": "manual",
+      "queries": [
+        "Razer Viper V3 Pro connection manual"
+      ]
+    },
+    {
+      "doc_hint": "pdf",
+      "queries": [
+        "Razer Viper V3 Pro connection pdf"
+      ]
+    }
+  ],
+  "hint_source_counts": {
+    "field_rules.search_hints": 8
+  },
+  "field_rule_gate_counts": {
+    "search_hints.query_terms": {
+      "value_count": 363,
+      "enabled_field_count": 80,
+      "disabled_field_count": 0,
+      "status": "active",
+      "total_value_count": 363,
+      "effective_value_count": 363
+    },
+    "search_hints.domain_hints": {
+      "value_count": 283,
+      "enabled_field_count": 80,
+      "disabled_field_count": 0,
+      "status": "active",
+      "total_value_count": 287,
+      "effective_value_count": 283
+    },
+    "search_hints.preferred_content_types": {
+      "value_count": 400,
+      "enabled_field_count": 80,
+      "disabled_field_count": 0,
+      "status": "active",
+      "total_value_count": 400,
+      "effective_value_count": 400
+    }
+  },
+  "field_rule_hint_counts_by_field": {
+    "acceleration": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "adjustable_scroll_wheel": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "adjustable_weight": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "battery_hours": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "bluetooth": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "cable_type": {
+      "query_terms": {
+        "value_count": 6,
+        "status": "active",
+        "total_value_count": 6,
+        "effective_value_count": 6
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "click_force": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "click_latency": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "click_latency_list": {
+      "query_terms": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "coating": {
+      "query_terms": {
+        "value_count": 6,
+        "status": "active",
+        "total_value_count": 6,
+        "effective_value_count": 6
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "colors": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "computer_side_connector": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "connection": {
+      "query_terms": {
+        "value_count": 7,
+        "status": "active",
+        "total_value_count": 7,
+        "effective_value_count": 7
+      },
+      "domain_hints": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "connectivity": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "debounce": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "design": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "discontinued": {
+      "query_terms": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "dpi": {
+      "query_terms": {
+        "value_count": 7,
+        "status": "active",
+        "total_value_count": 7,
+        "effective_value_count": 7
+      },
+      "domain_hints": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "encoder": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "encoder_brand": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "encoder_life_span": {
+      "query_terms": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "domain_hints": {
+        "value_count": 2,
+        "status": "active",
+        "total_value_count": 2,
+        "effective_value_count": 2
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "encoder_link": {
+      "query_terms": {
+        "value_count": 2,
+        "status": "active",
+        "total_value_count": 2,
+        "effective_value_count": 2
+      },
+      "domain_hints": {
+        "value_count": 2,
+        "status": "active",
+        "total_value_count": 2,
+        "effective_value_count": 2
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "encoder_steps": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "encoder_type": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "feet_material": {
+      "query_terms": {
+        "value_count": 6,
+        "status": "active",
+        "total_value_count": 6,
+        "effective_value_count": 6
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "flawless_sensor": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "form_factor": {
+      "query_terms": {
+        "value_count": 7,
+        "status": "active",
+        "total_value_count": 7,
+        "effective_value_count": 7
+      },
+      "domain_hints": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "front_flare": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 2,
+        "status": "active",
+        "total_value_count": 2,
+        "effective_value_count": 2
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "grip": {
+      "query_terms": {
+        "value_count": 6,
+        "status": "active",
+        "total_value_count": 6,
+        "effective_value_count": 6
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "hand_size": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "hardware_acceleration": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "height": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "honeycomb_frame": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "hot_swappable": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "hump": {
+      "query_terms": {
+        "value_count": 6,
+        "status": "active",
+        "total_value_count": 6,
+        "effective_value_count": 6
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "ips": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "lift": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "lift_settings": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "lighting": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "lngth": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "material": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "mcu": {
+      "query_terms": {
+        "value_count": 6,
+        "status": "active",
+        "total_value_count": 6,
+        "effective_value_count": 6
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "mcu_link": {
+      "query_terms": {
+        "value_count": 2,
+        "status": "active",
+        "total_value_count": 2,
+        "effective_value_count": 2
+      },
+      "domain_hints": {
+        "value_count": 1,
+        "status": "active",
+        "total_value_count": 1,
+        "effective_value_count": 1
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "middle_buttons": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "motion_sync": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "mouse_side_connector": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "nvidia_reflex": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "onboard_memory": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "onboard_memory_value": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "paracord": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "polling_rate": {
+      "query_terms": {
+        "value_count": 7,
+        "status": "active",
+        "total_value_count": 7,
+        "effective_value_count": 7
+      },
+      "domain_hints": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "price_range": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "profile_switching": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "programmable_buttons": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "release_date": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "releasing_force": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 2,
+        "status": "active",
+        "total_value_count": 2,
+        "effective_value_count": 2
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "rgb": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "sensor": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "sensor_brand": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "sensor_date": {
+      "query_terms": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "sensor_latency": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "sensor_latency_list": {
+      "query_terms": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "sensor_link": {
+      "query_terms": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "sensor_type": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "shape": {
+      "query_terms": {
+        "value_count": 6,
+        "status": "active",
+        "total_value_count": 6,
+        "effective_value_count": 6
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "shift_latency": {
+      "query_terms": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "side_buttons": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "silent_clicks": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "sku": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "smoothing": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "switch": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "switch_brand": {
+      "query_terms": {
+        "value_count": 7,
+        "status": "active",
+        "total_value_count": 7,
+        "effective_value_count": 7
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "switch_life_span": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "switch_type": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "switches_link": {
+      "query_terms": {
+        "value_count": 1,
+        "status": "active",
+        "total_value_count": 1,
+        "effective_value_count": 1
+      },
+      "domain_hints": {
+        "value_count": 0,
+        "status": "zero",
+        "total_value_count": 4,
+        "effective_value_count": 0
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "thumb_rest": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 3,
+        "status": "active",
+        "total_value_count": 3,
+        "effective_value_count": 3
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "tilt_scroll_wheel": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "weight": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "width": {
+      "query_terms": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    },
+    "wireless_charging": {
+      "query_terms": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      },
+      "domain_hints": {
+        "value_count": 4,
+        "status": "active",
+        "total_value_count": 4,
+        "effective_value_count": 4
+      },
+      "preferred_content_types": {
+        "value_count": 5,
+        "status": "active",
+        "total_value_count": 5,
+        "effective_value_count": 5
+      }
+    }
+  },
+  "product_id": "mouse-razer-viper-v3-pro",
+  "run_id": "live-google-probe-after-patch",
+  "generated_at": "2026-03-11T00:10:39.454Z",
+  "status": "executed",
+  "provider": "google",
+  "llm_queries": [],
+  "query_guard": {
+    "brand_tokens": [
+      "razer"
+    ],
+    "model_tokens": [
+      "viper"
+    ],
+    "required_digit_groups": [],
+    "accepted_query_count": 6,
+    "rejected_query_count": 0
+  },
+  "selected_queries": [
+    "site:rtings.com Razer Viper V3 Pro connection",
+    "site:eloshapes.com Razer Viper V3 Pro connection",
+    "site:razer.com Razer Viper V3 Pro connection",
+    "Razer Viper V3 Pro connection manual",
+    "Razer Viper V3 Pro connection manual pdf",
+    "Razer Viper V3 Pro connection pdf"
+  ],
+  "selected_query_count": 6,
+  "effective_host_plan": null,
+  "key": "specs/inputs/_discovery/mouse/live-google-probe-after-patch.search_profile.json",
+  "run_key": "specs/outputs/mouse/mouse-razer-viper-v3-pro/runs/live-google-probe-after-patch/analysis/search_profile.json",
+  "latest_key": "specs/outputs/mouse/mouse-razer-viper-v3-pro/latest/search_profile.json",
+  "query_stats": [
+    {
+      "query": "Razer Viper V3 Pro connection manual",
+      "attempts": 1,
+      "result_count": 5,
+      "providers": [
+        "google"
+      ]
+    },
+    {
+      "query": "Razer Viper V3 Pro connection manual pdf",
+      "attempts": 1,
+      "result_count": 5,
+      "providers": [
+        "google"
+      ]
+    },
+    {
+      "query": "Razer Viper V3 Pro connection pdf",
+      "attempts": 1,
+      "result_count": 5,
+      "providers": [
+        "google"
+      ]
+    },
+    {
+      "query": "site:razer.com Razer Viper V3 Pro connection",
+      "attempts": 1,
+      "result_count": 5,
+      "providers": [
+        "google"
+      ]
+    },
+    {
+      "query": "site:eloshapes.com Razer Viper V3 Pro connection",
+      "attempts": 1,
+      "result_count": 2,
+      "providers": [
+        "google"
+      ]
+    },
+    {
+      "query": "site:rtings.com Razer Viper V3 Pro connection",
+      "attempts": 1,
+      "result_count": 2,
+      "providers": [
+        "google"
+      ]
+    }
+  ],
+  "discovered_count": 5,
+  "approved_count": 5,
+  "candidate_count": 0,
+  "llm_query_planning": false,
+  "llm_query_model": "",
+  "llm_serp_triage": false,
+  "llm_serp_triage_model": "",
+  "serp_explorer": {
+    "generated_at": "2026-03-11T00:10:39.454Z",
+    "provider": "google",
+    "llm_triage_enabled": false,
+    "llm_triage_applied": false,
+    "llm_triage_model": "",
+    "query_count": 6,
+    "candidates_checked": 12,
+    "urls_triaged": 5,
+    "urls_selected": 5,
+    "urls_rejected": 7,
+    "dedupe_input": 24,
+    "dedupe_output": 12,
+    "duplicates_removed": 12,
+    "queries": [
+      {
+        "query": "site:rtings.com Razer Viper V3 Pro connection",
+        "hint_source": "field_rules.search_hints",
+        "target_fields": [
+          "connection"
+        ],
+        "doc_hint": "",
+        "domain_hint": "rtings.com",
+        "result_count": 2,
+        "attempts": 1,
+        "providers": [
+          "google"
+        ],
+        "candidate_count": 1,
+        "selected_count": 0,
+        "candidates": [
+          {
+            "url": "https://rtings.com/search?q=site%3Artings.com%20Razer%20Viper%20V3%20Pro%20connection",
+            "title": "rtings.com search",
+            "snippet": "planned source search URL",
+            "host": "",
+            "tier": null,
+            "tier_name": "",
+            "doc_kind": "other",
+            "triage_score": 0,
+            "triage_reason": "",
+            "decision": "rejected",
+            "reason_codes": [
+              "low_relevance"
+            ],
+            "providers": [
+              "plan_fallback"
+            ]
+          }
+        ]
+      },
+      {
+        "query": "site:eloshapes.com Razer Viper V3 Pro connection",
+        "hint_source": "field_rules.search_hints",
+        "target_fields": [
+          "connection"
+        ],
+        "doc_hint": "",
+        "domain_hint": "eloshapes.com",
+        "result_count": 2,
+        "attempts": 1,
+        "providers": [
+          "google"
+        ],
+        "candidate_count": 1,
+        "selected_count": 0,
+        "candidates": [
+          {
+            "url": "https://eloshapes.com/search?q=site%3Aeloshapes.com%20Razer%20Viper%20V3%20Pro%20connection",
+            "title": "eloshapes.com search",
+            "snippet": "planned source search URL",
+            "host": "",
+            "tier": null,
+            "tier_name": "",
+            "doc_kind": "other",
+            "triage_score": 0,
+            "triage_reason": "",
+            "decision": "rejected",
+            "reason_codes": [
+              "low_relevance"
+            ],
+            "providers": [
+              "plan_fallback"
+            ]
+          }
+        ]
+      },
+      {
+        "query": "site:razer.com Razer Viper V3 Pro connection",
+        "hint_source": "field_rules.search_hints",
+        "target_fields": [
+          "connection"
+        ],
+        "doc_hint": "",
+        "domain_hint": "razer.com",
+        "result_count": 5,
+        "attempts": 1,
+        "providers": [
+          "google"
+        ],
+        "candidate_count": 5,
+        "selected_count": 5,
+        "candidates": [
+          {
+            "url": "https://razer.com/support/viper-v3-pro",
+            "title": "razer.com planned manufacturer path",
+            "snippet": "planned manufacturer candidate URL",
+            "host": "razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "support",
+            "triage_score": 112,
+            "triage_reason": "",
+            "decision": "selected",
+            "reason_codes": [
+              "approved_domain",
+              "tier_1",
+              "brand_match",
+              "model_match",
+              "domain_hint_match",
+              "hint:field_rules.search_hints",
+              "selected_top_k"
+            ],
+            "providers": [
+              "plan_fallback"
+            ]
+          },
+          {
+            "url": "https://razer.com/product/viper-v3-pro",
+            "title": "razer.com planned manufacturer path",
+            "snippet": "planned manufacturer candidate URL",
+            "host": "razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "product_page",
+            "triage_score": 78,
+            "triage_reason": "",
+            "decision": "selected",
+            "reason_codes": [
+              "approved_domain",
+              "tier_1",
+              "brand_match",
+              "model_match",
+              "domain_hint_match",
+              "hint:field_rules.search_hints",
+              "selected_top_k"
+            ],
+            "providers": [
+              "plan_fallback"
+            ]
+          },
+          {
+            "url": "https://razer.com/products/viper-v3-pro",
+            "title": "razer.com planned manufacturer path",
+            "snippet": "planned manufacturer candidate URL",
+            "host": "razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "product_page",
+            "triage_score": 78,
+            "triage_reason": "",
+            "decision": "selected",
+            "reason_codes": [
+              "approved_domain",
+              "tier_1",
+              "brand_match",
+              "model_match",
+              "domain_hint_match",
+              "hint:field_rules.search_hints",
+              "selected_top_k"
+            ],
+            "providers": [
+              "plan_fallback"
+            ]
+          },
+          {
+            "url": "https://razer.com/p/viper-v3-pro",
+            "title": "razer.com planned manufacturer path",
+            "snippet": "planned manufacturer candidate URL",
+            "host": "razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "product_page",
+            "triage_score": 74,
+            "triage_reason": "",
+            "decision": "selected",
+            "reason_codes": [
+              "approved_domain",
+              "tier_1",
+              "brand_match",
+              "model_match",
+              "domain_hint_match",
+              "hint:field_rules.search_hints",
+              "selected_top_k"
+            ],
+            "providers": [
+              "plan_fallback"
+            ]
+          },
+          {
+            "url": "https://razer.com/viper-v3-pro",
+            "title": "razer.com planned manufacturer path",
+            "snippet": "planned manufacturer candidate URL",
+            "host": "razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "other",
+            "triage_score": 74,
+            "triage_reason": "",
+            "decision": "selected",
+            "reason_codes": [
+              "approved_domain",
+              "tier_1",
+              "brand_match",
+              "model_match",
+              "domain_hint_match",
+              "hint:field_rules.search_hints",
+              "selected_top_k"
+            ],
+            "providers": [
+              "plan_fallback"
+            ]
+          }
+        ]
+      },
+      {
+        "query": "Razer Viper V3 Pro connection manual",
+        "hint_source": "field_rules.search_hints",
+        "target_fields": [
+          "connection"
+        ],
+        "doc_hint": "manual",
+        "domain_hint": "",
+        "result_count": 5,
+        "attempts": 1,
+        "providers": [
+          "google"
+        ],
+        "candidate_count": 5,
+        "selected_count": 0,
+        "candidates": [
+          {
+            "url": "https://insider.razer.com/",
+            "title": "Razer Insider | Razer Insider",
+            "snippet": "Razer Insider - Hardcore. That's what the Razer Community is. The Razer Insider is our commitment to the Community – delivering news and announcements about Razer that can't be found anywhere …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "other",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          },
+          {
+            "url": "https://insider.razer.com/razer-synapse-27",
+            "title": "Razer Synapse - Razer Insider",
+            "snippet": "Razer Synapse 4 not starting with Windows or launching very late Hi everyone, My device: Razer Blade 18 (2024) – Intel i9-14900HX / RTX 4080 / Windows 11 Home I’m having an issue where Razer …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "other",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          },
+          {
+            "url": "https://insider.razer.com/razer-synapse-4-55",
+            "title": "Razer Synapse 4",
+            "snippet": "Razer Synapse 4 not starting with Windows or launching very late Hi everyone, My device: Razer Blade 18 (2024) – Intel i9-14900HX / RTX 4080 / Windows 11 Home I’m having an issue where Razer …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "other",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          },
+          {
+            "url": "https://insider.razer.com/razer-synapse-for-mac-preview-61",
+            "title": "Razer Synapse for Mac Preview",
+            "snippet": "Razer Synapse for Mac Guide and FAQ Getting Started Installation Guide Maximize your unfair advantage with the Razer Synapse for Mac Preview App, the unified cloud-based hardware …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "lab_review",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          },
+          {
+            "url": "https://insider.razer.com/razer-synapse-for-mac-preview-61/razer-synapse-for-mac-guide-and-faq-76388",
+            "title": "Razer Synapse for Mac Guide and FAQ",
+            "snippet": "May 8, 2025 · Getting Started Installation Guide Maximize your unfair advantage with the Razer Synapse for Mac Preview App, the unified cloud-based hardware configuration tool that takes your …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "lab_review",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          }
+        ]
+      },
+      {
+        "query": "Razer Viper V3 Pro connection manual pdf",
+        "hint_source": "field_rules.search_hints",
+        "target_fields": [
+          "connection"
+        ],
+        "doc_hint": "manual_pdf",
+        "domain_hint": "",
+        "result_count": 5,
+        "attempts": 1,
+        "providers": [
+          "google"
+        ],
+        "candidate_count": 5,
+        "selected_count": 0,
+        "candidates": [
+          {
+            "url": "https://insider.razer.com/",
+            "title": "Razer Insider | Razer Insider",
+            "snippet": "Razer Insider - Hardcore. That's what the Razer Community is. The Razer Insider is our commitment to the Community – delivering news and announcements about Razer that can't be found anywhere …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "other",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          },
+          {
+            "url": "https://insider.razer.com/razer-synapse-27",
+            "title": "Razer Synapse - Razer Insider",
+            "snippet": "Razer Synapse 4 not starting with Windows or launching very late Hi everyone, My device: Razer Blade 18 (2024) – Intel i9-14900HX / RTX 4080 / Windows 11 Home I’m having an issue where Razer …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "other",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          },
+          {
+            "url": "https://insider.razer.com/razer-synapse-4-55",
+            "title": "Razer Synapse 4",
+            "snippet": "Razer Synapse 4 not starting with Windows or launching very late Hi everyone, My device: Razer Blade 18 (2024) – Intel i9-14900HX / RTX 4080 / Windows 11 Home I’m having an issue where Razer …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "other",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          },
+          {
+            "url": "https://insider.razer.com/razer-synapse-for-mac-preview-61",
+            "title": "Razer Synapse for Mac Preview",
+            "snippet": "Razer Synapse for Mac Guide and FAQ Getting Started Installation Guide Maximize your unfair advantage with the Razer Synapse for Mac Preview App, the unified cloud-based hardware …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "lab_review",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          },
+          {
+            "url": "https://insider.razer.com/razer-synapse-for-mac-preview-61/razer-synapse-for-mac-guide-and-faq-76388",
+            "title": "Razer Synapse for Mac Guide and FAQ",
+            "snippet": "May 8, 2025 · Getting Started Installation Guide Maximize your unfair advantage with the Razer Synapse for Mac Preview App, the unified cloud-based hardware configuration tool that takes your …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "lab_review",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          }
+        ]
+      },
+      {
+        "query": "Razer Viper V3 Pro connection pdf",
+        "hint_source": "field_rules.search_hints",
+        "target_fields": [
+          "connection"
+        ],
+        "doc_hint": "pdf",
+        "domain_hint": "",
+        "result_count": 5,
+        "attempts": 1,
+        "providers": [
+          "google"
+        ],
+        "candidate_count": 5,
+        "selected_count": 0,
+        "candidates": [
+          {
+            "url": "https://insider.razer.com/",
+            "title": "Razer Insider | Razer Insider",
+            "snippet": "Razer Insider - Hardcore. That's what the Razer Community is. The Razer Insider is our commitment to the Community – delivering news and announcements about Razer that can't be found anywhere …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "other",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          },
+          {
+            "url": "https://insider.razer.com/razer-synapse-27",
+            "title": "Razer Synapse - Razer Insider",
+            "snippet": "Razer Synapse 4 not starting with Windows or launching very late Hi everyone, My device: Razer Blade 18 (2024) – Intel i9-14900HX / RTX 4080 / Windows 11 Home I’m having an issue where Razer …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "other",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          },
+          {
+            "url": "https://insider.razer.com/razer-synapse-4-55",
+            "title": "Razer Synapse 4",
+            "snippet": "Razer Synapse 4 not starting with Windows or launching very late Hi everyone, My device: Razer Blade 18 (2024) – Intel i9-14900HX / RTX 4080 / Windows 11 Home I’m having an issue where Razer …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "other",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          },
+          {
+            "url": "https://insider.razer.com/razer-synapse-for-mac-preview-61",
+            "title": "Razer Synapse for Mac Preview",
+            "snippet": "Razer Synapse for Mac Guide and FAQ Getting Started Installation Guide Maximize your unfair advantage with the Razer Synapse for Mac Preview App, the unified cloud-based hardware …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "lab_review",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          },
+          {
+            "url": "https://insider.razer.com/razer-synapse-for-mac-preview-61/razer-synapse-for-mac-guide-and-faq-76388",
+            "title": "Razer Synapse for Mac Guide and FAQ",
+            "snippet": "May 8, 2025 · Getting Started Installation Guide Maximize your unfair advantage with the Razer Synapse for Mac Preview App, the unified cloud-based hardware configuration tool that takes your …",
+            "host": "insider.razer.com",
+            "tier": 1,
+            "tier_name": "manufacturer",
+            "doc_kind": "lab_review",
+            "triage_score": 0,
+            "triage_reason": "forum_subdomain",
+            "decision": "rejected",
+            "reason_codes": [
+              "forum_subdomain"
+            ],
+            "providers": [
+              "bing_fallback"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

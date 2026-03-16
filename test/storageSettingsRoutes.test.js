@@ -4,18 +4,31 @@ import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 
-import { registerConfigRoutes } from '../src/api/routes/configRoutes.js';
+import { registerConfigRoutes } from '../src/features/settings/api/configRoutes.js';
 
 function toInt(value, fallback = 0) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function makeIsolatedAuthorityRoot() {
+  const nonce = `${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return path.join(os.tmpdir(), `spec-factory-storage-settings-${nonce}`);
+}
+
 function makeCtx(overrides = {}) {
+  const helperRoot = String(overrides.HELPER_ROOT || makeIsolatedAuthorityRoot());
+  const configOverrides = overrides.config && typeof overrides.config === 'object'
+    ? overrides.config
+    : {};
   const base = {
     jsonRes: (_res, status, body) => ({ status, body }),
     readJsonBody: async () => ({}),
-    config: {},
+    config: {
+      categoryAuthorityRoot: helperRoot,
+      categoryAuthorityRoot: helperRoot,
+      ...configOverrides,
+    },
     toInt,
     collectLlmModels: () => [],
     llmProviderFromModel: () => '',
@@ -35,7 +48,7 @@ function makeCtx(overrides = {}) {
       enabled: false,
       destinationType: 'local',
       localDirectory: '',
-      s3Region: 'us-east-2',
+      awsRegion: 'us-east-2',
       s3Bucket: '',
       s3Prefix: 'spec-factory-runs',
       s3AccessKeyId: '',
@@ -45,8 +58,9 @@ function makeCtx(overrides = {}) {
     },
     fs,
     path,
+    HELPER_ROOT: helperRoot,
   };
-  return { ...base, ...overrides };
+  return { ...base, ...overrides, config: base.config, HELPER_ROOT: helperRoot };
 }
 
 test('storage-settings GET redacts secret values but reports presence flags', async () => {
@@ -55,7 +69,7 @@ test('storage-settings GET redacts secret values but reports presence flags', as
       enabled: true,
       destinationType: 's3',
       localDirectory: 'C:\\Runs',
-      s3Region: 'us-east-1',
+      awsRegion: 'us-east-1',
       s3Bucket: 'bucket-a',
       s3Prefix: 'spec-factory/runs',
       s3AccessKeyId: 'AKIA_TEST_KEY',
@@ -84,7 +98,7 @@ test('storage-settings PUT updates local destination config and emits data-chang
     enabled: false,
     destinationType: 'local',
     localDirectory: '',
-    s3Region: 'us-east-2',
+    awsRegion: 'us-east-2',
     s3Bucket: '',
     s3Prefix: 'spec-factory-runs',
     s3AccessKeyId: '',
@@ -159,7 +173,7 @@ test('storage-settings local browse without path uses configured local directory
       enabled: true,
       destinationType: 'local',
       localDirectory: tempRoot,
-      s3Region: 'us-east-2',
+      awsRegion: 'us-east-2',
       s3Bucket: '',
       s3Prefix: 'spec-factory-runs',
       s3AccessKeyId: '',
@@ -179,7 +193,7 @@ test('storage-settings PUT keeps localDirectory empty when destination is s3', a
     enabled: false,
     destinationType: 'local',
     localDirectory: '',
-    s3Region: 'us-east-2',
+    awsRegion: 'us-east-2',
     s3Bucket: '',
     s3Prefix: 'spec-factory-runs',
     s3AccessKeyId: '',
@@ -193,7 +207,7 @@ test('storage-settings PUT keeps localDirectory empty when destination is s3', a
       enabled: true,
       destinationType: 's3',
       localDirectory: '',
-      s3Region: 'us-east-2',
+      awsRegion: 'us-east-2',
       s3Bucket: 'my-spec-harvester-data',
       s3Prefix: 'spec-factory-runs',
       s3AccessKeyId: 'AKIA_TEST',

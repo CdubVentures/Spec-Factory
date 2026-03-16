@@ -4,7 +4,7 @@ import {
   buildExtractionContextMatrix,
   buildPrimeSourcesFromEvidencePack,
   buildPrimeSourcesFromProvenance
-} from '../src/llm/extractionContext.js';
+} from '../src/features/indexing/extraction/extractionContext.js';
 
 test('buildExtractionContextMatrix includes policy, parse intent, and prime snippets', () => {
   const categoryConfig = {

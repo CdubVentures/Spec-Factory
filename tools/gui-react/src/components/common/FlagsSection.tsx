@@ -2,7 +2,7 @@ import { FlagIcon } from './FlagIcon';
 import { DrawerSection, DrawerCard } from './DrawerShell';
 import { getFlagInfo } from '../../utils/flagDescriptions';
 import { humanizeField } from '../../utils/fieldNormalize';
-import { usePersistedToggle } from '../../stores/collapseStore';
+import { usePersistedToggle } from '../../hooks/useSessionPersistence';
 
 interface FlagsSectionProps {
   reasonCodes: string[];

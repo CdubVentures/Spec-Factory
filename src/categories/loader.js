@@ -7,6 +7,10 @@ import {
   ruleAvailability,
   ruleDifficulty
 } from '../engine/ruleAccessors.js';
+import {
+  loadSourceRegistry,
+  checkCategoryPopulationHardGate,
+} from '../features/indexing/discovery/index.js';
 
 const cache = new Map();
 
@@ -20,6 +24,25 @@ function normalizeHost(host) {
 
 function hostMatches(host, candidate) {
   return host === candidate || host.endsWith(`.${candidate}`);
+}
+
+function titleCaseHostLabel(host) {
+  const base = String(host || '').split('.')[0] || 'Unknown';
+  return base.charAt(0).toUpperCase() + base.slice(1);
+}
+
+function manufacturerSourceIdFromHost(host) {
+  return 'brand_' + normalizeHost(host).replace(/[^a-z0-9]/g, '_');
+}
+
+function manufacturerCrawlConfigForHost(sources, host) {
+  const defaults = isObject(sources?.manufacturer_defaults) ? sources.manufacturer_defaults : {};
+  const overrides = isObject(sources?.manufacturer_crawl_overrides) ? sources.manufacturer_crawl_overrides : {};
+  const override = isObject(overrides?.[host]) ? overrides[host] : {};
+  return {
+    ...defaults,
+    ...override
+  };
 }
 
 function flattenApprovedHosts(sources) {
@@ -81,7 +104,27 @@ function flattenApprovedHosts(sources) {
       robotsTxtCompliant: crawlConfig?.robots_txt_compliant !== undefined
         ? Boolean(crawlConfig.robots_txt_compliant)
         : null,
+      requires_js: Boolean(sourceRow.requires_js) || crawlConfig?.method === 'playwright',
       baseUrl: String(sourceRow.base_url || sourceRow.baseUrl || '').trim()
+    });
+  }
+
+  for (const overrideHost of Object.keys(sources?.manufacturer_crawl_overrides || {})) {
+    const host = normalizeHost(overrideHost);
+    if (!host) {
+      continue;
+    }
+    const crawlConfig = manufacturerCrawlConfigForHost(sources, host);
+    upsertHost(host, {
+      sourceId: manufacturerSourceIdFromHost(host),
+      displayName: `${titleCaseHostLabel(host)} Official`,
+      tierName: 'manufacturer',
+      crawlConfig,
+      robotsTxtCompliant: crawlConfig.robots_txt_compliant !== undefined
+        ? Boolean(crawlConfig.robots_txt_compliant)
+        : true,
+      requires_js: crawlConfig?.method === 'playwright',
+      baseUrl: `https://${host}`
     });
   }
 
@@ -225,6 +268,8 @@ function defaultSources() {
       retailer: []
     },
     denylist: [],
+    manufacturer_defaults: {},
+    manufacturer_crawl_overrides: {},
     sources: {}
   };
 }
@@ -348,6 +393,14 @@ function mergeSources(baseSources, overrideSources) {
   return {
     approved: mergedApproved,
     denylist: mergeUnique([...(baseSources?.denylist || []), ...(overrideSources?.denylist || [])]),
+    manufacturer_defaults: {
+      ...(isObject(baseSources?.manufacturer_defaults) ? baseSources.manufacturer_defaults : {}),
+      ...(isObject(overrideSources?.manufacturer_defaults) ? overrideSources.manufacturer_defaults : {})
+    },
+    manufacturer_crawl_overrides: {
+      ...(isObject(baseSources?.manufacturer_crawl_overrides) ? baseSources.manufacturer_crawl_overrides : {}),
+      ...(isObject(overrideSources?.manufacturer_crawl_overrides) ? overrideSources.manufacturer_crawl_overrides : {})
+    },
     sources: {
       ...(isObject(baseSources?.sources) ? baseSources.sources : {}),
       ...(isObject(overrideSources?.sources) ? overrideSources.sources : {})
@@ -368,12 +421,30 @@ async function readJsonIfExists(filePath) {
   }
 }
 
+function resolveHelperRoot(runtimeConfig = {}) {
+  return path.resolve(
+    runtimeConfig.categoryAuthorityRoot || runtimeConfig['helper' + 'FilesRoot'] || 'category_authority'
+  );
+}
+
+function resolveLegacyCategoriesRoot(runtimeConfig = {}) {
+  return path.resolve(runtimeConfig.categoriesRoot || 'categories');
+}
+
+function buildBaseConfigCacheKey(category, runtimeConfig = {}) {
+  return [
+    resolveHelperRoot(runtimeConfig),
+    resolveLegacyCategoriesRoot(runtimeConfig),
+    category
+  ].join('::');
+}
+
 async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
-  const helperRoot = path.resolve(runtimeConfig.helperFilesRoot || 'helper_files');
+  const helperRoot = resolveHelperRoot(runtimeConfig);
   const helperCategoryRoot = path.join(helperRoot, category);
   const generatedRoot = path.join(helperRoot, category, '_generated');
 
-  const [schemaRaw, requiredRaw, fieldRulesRaw, fieldRulesRuntimeRaw, uiFieldCatalogRaw, generatedSourcesRaw, generatedAnchorsRaw, generatedSearchTemplatesRaw, helperSourcesRaw, helperAnchorsRaw, helperSearchTemplatesRaw] = await Promise.all([
+  const [schemaRaw, requiredRaw, fieldRulesRaw, fieldRulesRuntimeRaw, uiFieldCatalogRaw, generatedSourcesRaw, generatedAnchorsRaw, generatedSearchTemplatesRaw, fieldGroupsRaw, helperSchemaRaw, helperRequiredRaw, helperSourcesRaw, helperAnchorsRaw, helperSearchTemplatesRaw] = await Promise.all([
     readJsonIfExists(path.join(generatedRoot, 'schema.json')),
     readJsonIfExists(path.join(generatedRoot, 'required_fields.json')),
     readJsonIfExists(path.join(generatedRoot, 'field_rules.json')),
@@ -382,6 +453,9 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
     readJsonIfExists(path.join(generatedRoot, 'sources.json')),
     readJsonIfExists(path.join(generatedRoot, 'anchors.json')),
     readJsonIfExists(path.join(generatedRoot, 'search_templates.json')),
+    readJsonIfExists(path.join(generatedRoot, 'field_groups.json')),
+    readJsonIfExists(path.join(helperCategoryRoot, 'schema.json')),
+    readJsonIfExists(path.join(helperCategoryRoot, 'required_fields.json')),
     readJsonIfExists(path.join(helperCategoryRoot, 'sources.json')),
     readJsonIfExists(path.join(helperCategoryRoot, 'anchors.json')),
     readJsonIfExists(path.join(helperCategoryRoot, 'search_templates.json'))
@@ -396,12 +470,16 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
   const uiFieldCatalog = isObject(uiFieldCatalogRaw) ? uiFieldCatalogRaw : null;
   const schema = isObject(schemaRaw)
     ? schemaRaw
-    : deriveSchemaFromFieldRules(category, fieldRulesPayload, uiFieldCatalog);
+    : (isObject(helperSchemaRaw) ? helperSchemaRaw : deriveSchemaFromFieldRules(category, fieldRulesPayload, uiFieldCatalog));
   const requiredFields = Array.isArray(requiredRaw)
     ? requiredRaw
       .map((field) => String(field || '').trim())
       .filter(Boolean)
-    : deriveRequiredFieldsFromFieldRules(fieldRulesPayload);
+    : (Array.isArray(helperRequiredRaw)
+      ? helperRequiredRaw
+        .map((field) => String(field || '').trim())
+        .filter(Boolean)
+      : deriveRequiredFieldsFromFieldRules(fieldRulesPayload));
 
   const fieldRules = fieldRulesPayload
     ? {
@@ -422,10 +500,17 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
     : (isObject(helperSourcesRaw) ? helperSourcesRaw : null);
   const anchors = isObject(generatedAnchorsRaw)
     ? generatedAnchorsRaw
-    : (isObject(helperAnchorsRaw) ? helperAnchorsRaw : {});
+    : (isObject(helperAnchorsRaw) ? helperAnchorsRaw : null);
   const searchTemplates = Array.isArray(generatedSearchTemplatesRaw)
     ? generatedSearchTemplatesRaw
-    : (Array.isArray(helperSearchTemplatesRaw) ? helperSearchTemplatesRaw : []);
+    : (Array.isArray(helperSearchTemplatesRaw) ? helperSearchTemplatesRaw : null);
+
+  const schemaPath = isObject(schemaRaw)
+    ? path.join(generatedRoot, 'schema.json')
+    : (isObject(helperSchemaRaw) ? path.join(helperCategoryRoot, 'schema.json') : null);
+  const requiredPath = Array.isArray(requiredRaw)
+    ? path.join(generatedRoot, 'required_fields.json')
+    : (Array.isArray(helperRequiredRaw) ? path.join(helperCategoryRoot, 'required_fields.json') : null);
 
   return {
     helperCategoryRoot,
@@ -434,11 +519,12 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
     requiredFields,
     fieldRules,
     uiFieldCatalog,
+    fieldGroups: isObject(fieldGroupsRaw) ? fieldGroupsRaw : null,
     sources,
     anchors,
     searchTemplates,
-    schemaPath: schema ? path.join(generatedRoot, 'schema.json') : null,
-    requiredPath: requiredFields ? path.join(generatedRoot, 'required_fields.json') : null
+    schemaPath,
+    requiredPath
   };
 }
 
@@ -477,19 +563,43 @@ function buildCategoryConfig({
   };
 }
 
-async function loadCategoryBaseConfig(category) {
-  if (cache.has(category)) {
-    return cache.get(category);
+async function loadCategoryBaseConfig(category, runtimeConfig = {}) {
+  const cacheKey = buildBaseConfigCacheKey(category, runtimeConfig);
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey);
   }
 
-  const baseDir = path.resolve('categories', category);
-  const [schemaRaw, sourcesRaw, requiredRaw, anchorsRaw, searchTemplatesRaw] = await Promise.all([
-    readJsonIfExists(path.join(baseDir, 'schema.json')),
-    readJsonIfExists(path.join(baseDir, 'sources.json')),
-    readJsonIfExists(path.join(baseDir, 'required_fields.json')),
-    readJsonIfExists(path.join(baseDir, 'anchors.json')),
-    readJsonIfExists(path.join(baseDir, 'search_templates.json'))
+  const helperCategoryDir = path.join(resolveHelperRoot(runtimeConfig), category);
+  const legacyCategoryDir = path.join(resolveLegacyCategoriesRoot(runtimeConfig), category);
+  const [
+    helperSchemaRaw,
+    helperSourcesRaw,
+    helperRequiredRaw,
+    helperAnchorsRaw,
+    helperSearchTemplatesRaw,
+    legacySchemaRaw,
+    legacySourcesRaw,
+    legacyRequiredRaw,
+    legacyAnchorsRaw,
+    legacySearchTemplatesRaw
+  ] = await Promise.all([
+    readJsonIfExists(path.join(helperCategoryDir, 'schema.json')),
+    readJsonIfExists(path.join(helperCategoryDir, 'sources.json')),
+    readJsonIfExists(path.join(helperCategoryDir, 'required_fields.json')),
+    readJsonIfExists(path.join(helperCategoryDir, 'anchors.json')),
+    readJsonIfExists(path.join(helperCategoryDir, 'search_templates.json')),
+    readJsonIfExists(path.join(legacyCategoryDir, 'schema.json')),
+    readJsonIfExists(path.join(legacyCategoryDir, 'sources.json')),
+    readJsonIfExists(path.join(legacyCategoryDir, 'required_fields.json')),
+    readJsonIfExists(path.join(legacyCategoryDir, 'anchors.json')),
+    readJsonIfExists(path.join(legacyCategoryDir, 'search_templates.json'))
   ]);
+
+  const schemaRaw = isObject(helperSchemaRaw) ? helperSchemaRaw : legacySchemaRaw;
+  const sourcesRaw = isObject(helperSourcesRaw) ? helperSourcesRaw : legacySourcesRaw;
+  const requiredRaw = Array.isArray(helperRequiredRaw) ? helperRequiredRaw : legacyRequiredRaw;
+  const anchorsRaw = isObject(helperAnchorsRaw) ? helperAnchorsRaw : legacyAnchorsRaw;
+  const searchTemplatesRaw = Array.isArray(helperSearchTemplatesRaw) ? helperSearchTemplatesRaw : legacySearchTemplatesRaw;
 
   const schema = isObject(schemaRaw) ? schemaRaw : defaultSchema(category);
   const sources = isObject(sourcesRaw) ? sourcesRaw : defaultSources();
@@ -506,18 +616,18 @@ async function loadCategoryBaseConfig(category) {
     searchTemplates
   });
 
-  cache.set(category, config);
+  cache.set(cacheKey, config);
   return config;
 }
 
 export async function loadCategoryConfig(category, options = {}) {
-  const baseConfig = await loadCategoryBaseConfig(category);
   const storage = options.storage || null;
   const runtimeConfig = options.config || {};
+  const baseConfig = await loadCategoryBaseConfig(category, runtimeConfig);
 
   const generated = await loadGeneratedCategoryArtifacts(category, runtimeConfig);
   if (!generated?.fieldRules) {
-    throw new Error(`Missing generated field rules: helper_files/${category}/_generated/field_rules.json`);
+    throw new Error(`Missing generated field rules: category_authority/${category}/_generated/field_rules.json`);
   }
 
   const schema = generated?.schema || baseConfig.schema || defaultSchema(category);
@@ -554,11 +664,30 @@ export async function loadCategoryConfig(category, options = {}) {
 
   resolved.fieldRules = generated.fieldRules;
   resolved.uiFieldCatalog = generated.uiFieldCatalog || null;
+  resolved.fieldGroups = generated.fieldGroups || null;
   resolved.generated_root = generated.generatedRoot;
   resolved.generated_schema_path = generated.schemaPath;
   resolved.generated_required_fields_path = generated.requiredPath;
   if (sourcesOverrideKey) {
     resolved.sources_override_key = sourcesOverrideKey;
   }
+
+  // Source registry validation (Phase 02)
+  if (runtimeConfig.enableSourceRegistry) {
+    const { registry, validationErrors, sparsityWarnings } = loadSourceRegistry(category, sources);
+    if (validationErrors.length > 0) {
+      console.warn(`[source-registry] ${category}: ${validationErrors.length} validation error(s):`, validationErrors);
+    }
+    if (sparsityWarnings.length > 0) {
+      console.warn(`[source-registry] ${category}: ${sparsityWarnings.length} sparsity warning(s)`);
+    }
+    const gate = checkCategoryPopulationHardGate(registry);
+    if (!gate.passed) {
+      console.warn(`[source-registry] ${category}: population gate BLOCKED —`, gate.reasons.join('; '));
+    }
+    resolved.validatedRegistry = registry;
+    resolved.registryPopulationGate = gate;
+  }
+
   return resolved;
 }

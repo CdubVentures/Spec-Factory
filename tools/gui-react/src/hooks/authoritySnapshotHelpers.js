@@ -1,6 +1,8 @@
-import { resolveDataChangeScopedCategories } from '../components/layout/dataChangeScope.js';
-import { resolveDataChangeInvalidationQueryKeys } from '../api/dataChangeInvalidationMap.js';
-import { shouldHandleDataChangeMessage } from './dataChangeSubscriptionHelpers.js';
+import {
+  resolveDataChangeInvalidationQueryKeys,
+  shouldHandleDataChangeMessage,
+  resolveDataChangeScopedCategories,
+} from '../utils/data-change/index.js';
 
 function normalizedToken(value) {
   return String(value || '').trim();

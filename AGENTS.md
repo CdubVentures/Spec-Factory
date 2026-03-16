@@ -18,10 +18,10 @@ It defines **non‑negotiable rules** for any agent working in this repo.
 
 - Multiple `AGENTS.md` files may exist across the repo.
 - **Nearest-file rules win** (the `AGENTS.md` closest to the file(s) being edited overrides higher-level rules).
-- If a rule conflicts with an explicit human request, **STOP** and surface the conflict:
+- If a rule conflicts with an explicit human request, **STOP** and surface the conflict, **unless the user has specified that they are overriding that stop/ask behavior and wants you to proceed until finished**:
   - Quote the conflicting rule(s) and the human request.
   - Explain the smallest compliant alternative.
-  - Do **not** proceed until the conflict is resolved.
+  - Do **not** proceed until the conflict is resolved, **unless the user has explicitly instructed you to continue through completion despite intermediate stop/ask checkpoints**.
 
 ---
 
@@ -79,6 +79,59 @@ For any new boundary/module/feature:
    - Decompose into a helper boundary with its own contract + test matrix.
    - Repeat the same sequence for the helper.
 
+---
+
+## Test scope calibration (required)
+
+Not every change requires a new automated test.
+
+### Tests REQUIRED for:
+
+- domain logic
+- state transitions
+- parsers / mappers / transforms
+- boundary contracts
+- error handling
+- accessibility behavior and semantics
+- regressions in previously broken behavior
+- any change that introduces branching or non-trivial conditions
+
+### Tests NOT REQUIRED for:
+
+- purely visual CSS tweaks with no logic change
+- spacing, color, typography, or layout adjustments
+- theme-token remaps that do not change behavior contracts
+- static text / copy edits
+- content/config changes with no new logic
+- markup reshuffles that preserve behavior and accessibility
+
+### For CSS / theme / settings changes:
+Use the light-theme checkpoint, visual review, and targeted smoke validation instead of forcing unit tests.
+
+A test becomes required only when the change affects:
+
+- conditional rendering
+- computed class/state logic
+- accessibility semantics
+- persisted settings behavior
+- cross-theme invariants explicitly protected by contract
+
+### Retirement / knob-removal testing rule
+
+When a setting, knob, flag, payload field, or helper is retired, tests must focus on observable behavior and public contracts only.
+
+Required proof:
+- resolved config no longer carries it
+- settings/API surfaces no longer accept or emit it
+- relevant UI surface no longer exposes it
+- live run still works
+
+Disallowed by default:
+- large repo-wide string-search tests
+- tests that assert raw source text in many unrelated files
+- retirement tests that couple to comments, labels, or file layout instead of behavior
+
+If a broad cleanup audit is needed, use a one-time audit script or checklist, not a permanent brittle test file.
 ---
 
 ## Escalation mandate (The Loop Breaker)
@@ -141,7 +194,7 @@ When decomposing, extracting, or refactoring existing code, **existing behavior 
 
 ### Canonical structure (preferred)
 
-```
+```text
 src/
   app/                 # entrypoints + routing only
   core/                # infra: config, API clients, logging, adapters
@@ -188,7 +241,7 @@ src/
 - File discipline:
   - Soft limit ~700 LOC per file.
   - One primary export per file (additional exports must be clearly subordinate).
-  
+
 - ### Language & Typing Conventions (Hybrid Stack)
 
 - **Backend / Core (Strictly JavaScript)**
@@ -277,20 +330,25 @@ UI drift and one-off styling are forbidden.
   - Tell the human exactly what to add
 
 ---
-## Domain Contracts (Local Architecture)
+## Domain Contracts (LLM-Optimized Local Architecture)
 
-Each domain boundary (`src/core`, `src/shared`, `src/features/<name>`) must contain exactly one structural map: `DOMAIN.md`.
+Each domain boundary (`src/core/`, `src/shared/`, `src/features/<name>/`) must contain exactly one structural map: `README.md`.
 
-This file defines the **stable architectural intent** of the domain. It is NOT a living state document. Do not maintain dynamic state in Markdown.
+This file acts as the **local system prompt** for any LLM agent operating within that specific directory. It defines the stable architectural intent, the public contract, and the strict business rules of the domain. It is NOT a living state document. Do not maintain dynamic state in Markdown.
 
-**Strict Rules for `DOMAIN.md`:**
+**Strict Rules for `README.md`:**
 
-- Update it ONLY when the public API, core data schema, or boundary dependencies change.
-- NO file trees (use `tree` or `ls` to discover files).
-- NO test execution statuses (run `node --test` to discover status).
-- Maximum length: 150 lines.
+- **High-Signal, Low-Noise:** Maximum length is 150 lines. Conserve token space.
+- **Trigger for Updates:** Update this file ONLY when the public API, core data schema, or boundary dependencies change.
+- **NO File Trees:** File trees cause token bloat and context rot. Use `tree` or `ls` commands to discover current physical files.
+- **NO Test Execution Statuses:** Do not track passing/failing tests here. Run `node --test` to discover current status.
 
----
+**Required Sections within `README.md.md`:**
+
+1. **`## Purpose`:** A 1-2 sentence definition of what this domain boundary is responsible for.
+2. **`## Public API (The Contract)`:** Explicitly list what this module exports (e.g., what is exposed in `index.js`). Agents must strictly adhere to this contract when importing this feature elsewhere.
+3. **`## Dependencies`:** State what external boundaries this domain is allowed to import from (e.g., "Allowed: `src/core/api`, `src/shared/ui`. Forbidden: Other feature folders").
+4. **`## Domain Invariants`:** List the absolute business rules or data constraints that an LLM must never violate when writing logic in this folder.
 
 ## Documentation & Architecture Mapping
 
@@ -301,7 +359,6 @@ This file defines the **stable architectural intent** of the domain. It is NOT a
 
 ---
 
-
 ## Exception protocol (velocity without breaking rules)
 
 - No silent rule-bending.
@@ -310,3 +367,12 @@ This file defines the **stable architectural intent** of the domain. It is NOT a
   - Propose the smallest scope possible
   - Get explicit human approval
   - Contain it and include a plan to remove it
+
+
+
+## Process Safety
+
+- NEVER kill, terminate, or stop Node.js processes that are running Claude Code, Codex, or any AI agent sessions.
+- NEVER blindly kill PIDs. Always inspect a PID first (e.g., `ps -p <pid> -o comm=`) to confirm it's not an active Claude, Codex, or agent session before terminating.
+- Before running `kill`, `pkill`, `killall`, or similar commands targeting Node.js or unknown PIDs, always verify what the process is.
+- When cleaning up processes, explicitly exclude anything matching `claude`, `codex`, or related agent runtimes.

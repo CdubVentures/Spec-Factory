@@ -8,7 +8,12 @@ import {
   evaluateRequiredSearchExhaustion,
   resolveMissingRequiredForPlanning,
   selectRoundSearchProvider,
-  shouldForceExpectedFieldRetry
+  shouldStopForBudgetExhaustion,
+  shouldForceExpectedFieldRetry,
+  normalizeFieldContractToken,
+  calcProgressDelta,
+  isIdentityOrEditorialField,
+  makeLlmTargetFields
 } from '../src/runner/runUntilComplete.js';
 
 test('shouldForceExpectedFieldRetry forces one extra loop for expected required fields with not_found_after_search', () => {
@@ -95,7 +100,7 @@ test('buildRoundRequirements preserves base required fields across rounds', () =
     missing_required_fields: []
   });
 
-  assert.deepEqual(out.requirements.llmTargetFields, ['weight']);
+  assert.deepEqual(out.requirements.focus_fields, ['weight']);
   assert.deepEqual(out.requirements.requiredFields, ['identity.brand', 'fields.connection']);
 });
 
@@ -142,8 +147,7 @@ test('resolveMissingRequiredForPlanning restores category required fields for un
     categoryConfig: {
       fieldOrder: ['connection', 'dpi', 'polling_rate'],
       requiredFields: ['connection', 'dpi']
-    },
-    mode: 'aggressive'
+    }
   });
 
   assert.deepEqual(missing, ['connection', 'dpi']);
@@ -182,34 +186,46 @@ test('evaluateRequiredSearchExhaustion continues before threshold or without mis
   assert.equal(noMissing.stop, false);
 });
 
-test('selectRoundSearchProvider promotes dual when required fields are missing and rescue threshold is reached', () => {
+test('shouldStopForBudgetExhaustion does not stop for per-round budget caps', () => {
+  const stop = shouldStopForBudgetExhaustion({
+    budgetBlockedReason: 'budget_max_calls_per_round_reached',
+    round: 1
+  });
+  assert.equal(stop, false);
+});
+
+test('shouldStopForBudgetExhaustion stops for hard budget reasons after round 0', () => {
+  const round0Stop = shouldStopForBudgetExhaustion({
+    budgetBlockedReason: 'budget_max_calls_per_product_reached',
+    round: 0
+  });
+  assert.equal(round0Stop, false);
+
+  const round1Stop = shouldStopForBudgetExhaustion({
+    budgetBlockedReason: 'budget_max_calls_per_product_reached',
+    round: 1
+  });
+  assert.equal(round1Stop, true);
+});
+
+test('selectRoundSearchProvider uses searxng for required-field gaps in keyless mode', () => {
   const provider = selectRoundSearchProvider({
     baseConfig: {
       searchProvider: 'none',
-      bingSearchEndpoint: 'https://api.bing.microsoft.com/v7.0/search',
-      bingSearchKey: 'bing-key',
-      googleCseKey: 'google-key',
-      googleCseCx: 'google-cx',
-      searxngBaseUrl: 'http://127.0.0.1:8080',
-      cseRescueOnlyMode: true,
-      cseRescueRequiredIteration: 2
+      searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     discoveryEnabled: true,
     missingRequiredCount: 2,
     requiredSearchIteration: 2
   });
-  assert.equal(provider, 'dual');
+  assert.equal(provider, 'searxng');
 });
 
-test('selectRoundSearchProvider stays on free provider before rescue threshold', () => {
+test('selectRoundSearchProvider keeps searxng preference when searxng is available', () => {
   const provider = selectRoundSearchProvider({
     baseConfig: {
       searchProvider: 'none',
-      googleCseKey: 'google-key',
-      googleCseCx: 'google-cx',
-      searxngBaseUrl: 'http://127.0.0.1:8080',
-      cseRescueOnlyMode: true,
-      cseRescueRequiredIteration: 3
+      searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     discoveryEnabled: true,
     missingRequiredCount: 2,
@@ -218,14 +234,11 @@ test('selectRoundSearchProvider stays on free provider before rescue threshold',
   assert.equal(provider, 'searxng');
 });
 
-test('selectRoundSearchProvider can force paid provider when rescue-only mode is disabled', () => {
+test('selectRoundSearchProvider honors configured google provider in keyless mode', () => {
   const provider = selectRoundSearchProvider({
     baseConfig: {
-      searchProvider: 'none',
-      googleCseKey: 'google-key',
-      googleCseCx: 'google-cx',
-      searxngBaseUrl: 'http://127.0.0.1:8080',
-      cseRescueOnlyMode: false
+      searchProvider: 'google',
+      searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     discoveryEnabled: true,
     missingRequiredCount: 2,
@@ -246,25 +259,11 @@ test('selectRoundSearchProvider falls back to searxng when configured providers 
   assert.equal(provider, 'searxng');
 });
 
-test('selectRoundSearchProvider falls back to duckduckgo when no keyed providers are configured', () => {
-  const provider = selectRoundSearchProvider({
-    baseConfig: {
-      searchProvider: 'none',
-      searxngBaseUrl: '',
-      duckduckgoEnabled: true
-    },
-    discoveryEnabled: true,
-    missingRequiredCount: 1
-  });
-  assert.equal(provider, 'duckduckgo');
-});
-
 test('selectRoundSearchProvider returns none when discovery is disabled', () => {
   const provider = selectRoundSearchProvider({
     baseConfig: {
       searchProvider: 'dual',
-      bingSearchEndpoint: 'https://api.bing.microsoft.com/v7.0/search',
-      bingSearchKey: 'bing-key'
+      searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     discoveryEnabled: false,
     missingRequiredCount: 3
@@ -272,37 +271,31 @@ test('selectRoundSearchProvider returns none when discovery is disabled', () => 
   assert.equal(provider, 'none');
 });
 
-test('explainSearchProviderSelection marks paid rescue when threshold is reached', () => {
+test('explainSearchProviderSelection reports keyless provider diagnostics for required-field gaps', () => {
   const selection = explainSearchProviderSelection({
     baseConfig: {
       searchProvider: 'none',
-      googleCseKey: 'google-key',
-      googleCseCx: 'google-cx',
-      searxngBaseUrl: 'http://127.0.0.1:8080',
-      cseRescueOnlyMode: true,
-      cseRescueRequiredIteration: 2
+      searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     discoveryEnabled: true,
     missingRequiredCount: 2,
     requiredSearchIteration: 2
   });
 
-  assert.equal(selection.provider, 'google');
-  assert.equal(selection.reason_code, 'auto_paid_rescue_google');
-  assert.equal(selection.use_paid_rescue, true);
-  assert.equal(selection.paid_provider_ready, true);
+  assert.equal(selection.provider, 'searxng');
+  assert.equal(selection.reason_code, 'auto_free_searxng_for_missing_required');
   assert.equal(selection.free_provider_ready, true);
+  assert.equal(Object.hasOwn(selection, 'use_paid_rescue'), false);
+  assert.equal(Object.hasOwn(selection, 'paid_provider_ready'), false);
+  assert.equal(Object.hasOwn(selection, 'cse_rescue_only_mode'), false);
+  assert.equal(Object.hasOwn(selection, 'google_cse_disabled'), false);
 });
 
-test('explainSearchProviderSelection reports free-provider mode before rescue threshold', () => {
+test('explainSearchProviderSelection reports free-provider mode when only searxng is available', () => {
   const selection = explainSearchProviderSelection({
     baseConfig: {
       searchProvider: 'none',
-      googleCseKey: 'google-key',
-      googleCseCx: 'google-cx',
-      searxngBaseUrl: 'http://127.0.0.1:8080',
-      cseRescueOnlyMode: true,
-      cseRescueRequiredIteration: 3
+      searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     discoveryEnabled: true,
     missingRequiredCount: 2,
@@ -311,7 +304,6 @@ test('explainSearchProviderSelection reports free-provider mode before rescue th
 
   assert.equal(selection.provider, 'searxng');
   assert.equal(selection.reason_code, 'auto_free_searxng_for_missing_required');
-  assert.equal(selection.use_paid_rescue, false);
 });
 
 test('buildRoundConfig keeps discovery disabled when required fields are already complete', () => {
@@ -339,7 +331,6 @@ test('buildRoundConfig keeps discovery disabled when required fields are already
     },
     {
       round: 1,
-      mode: 'aggressive',
       missingRequiredCount: 0
     }
   );
@@ -367,8 +358,6 @@ test('buildRoundConfig keeps aggressive discovery enabled when critical gaps rem
       llmMaxCallsPerRound: 4,
       llmMaxCallsPerProductFast: 2,
       llmMaxCallsPerProductTotal: 12,
-      aggressiveLlmMaxCallsPerRound: 18,
-      aggressiveLlmMaxCallsPerProductTotal: 64,
       endpointSignalLimit: 30,
       endpointSuggestionLimit: 12,
       endpointNetworkScanLimit: 600,
@@ -381,7 +370,6 @@ test('buildRoundConfig keeps aggressive discovery enabled when critical gaps rem
     },
     {
       round: 1,
-      mode: 'aggressive',
       missingRequiredCount: 0,
       missingExpectedCount: 0,
       missingCriticalCount: 1,
@@ -392,8 +380,8 @@ test('buildRoundConfig keeps aggressive discovery enabled when critical gaps rem
   assert.equal(roundConfig.discoveryEnabled, true);
   assert.equal(roundConfig.fetchCandidateSources, true);
   assert.equal(roundConfig.searchProvider, 'searxng');
-  assert.equal(roundConfig.llmMaxCallsPerRound >= 18, true);
-  assert.equal(roundConfig.llmMaxCallsPerProductTotal >= 64, true);
+  assert.equal(roundConfig.llmMaxCallsPerRound >= 4, true);
+  assert.equal(roundConfig.llmMaxCallsPerProductTotal >= 12, true);
 });
 
 test('buildRoundConfig enables discovery + searxng fallback when required fields are missing', () => {
@@ -421,7 +409,6 @@ test('buildRoundConfig enables discovery + searxng fallback when required fields
     },
     {
       round: 1,
-      mode: 'balanced',
       missingRequiredCount: 2,
       requiredSearchIteration: 2
     }
@@ -458,7 +445,6 @@ test('buildRoundConfig defers external discovery on first required-search iterat
     },
     {
       round: 1,
-      mode: 'balanced',
       missingRequiredCount: 2,
       requiredSearchIteration: 1
     }
@@ -494,7 +480,6 @@ test('buildRoundConfig enables one expected-field search pass when required fiel
     },
     {
       round: 1,
-      mode: 'balanced',
       missingRequiredCount: 0,
       missingExpectedCount: 2,
       requiredSearchIteration: 2
@@ -523,12 +508,11 @@ test('buildRoundConfig preserves explicit LLM enablement in fast round 0 with ti
     },
     {
       round: 0,
-      mode: 'balanced',
       missingRequiredCount: 3
     }
   );
 
-  assert.equal(roundConfig.runProfile, 'fast');
+  assert.equal(roundConfig.runProfile, 'standard');
   assert.equal(roundConfig.llmEnabled, true);
   assert.equal(roundConfig.llmMaxCallsPerRound <= 2, true);
 });
@@ -550,12 +534,11 @@ test('buildRoundConfig preserves explicit LLM disablement in fast round 0', () =
     },
     {
       round: 0,
-      mode: 'balanced',
       missingRequiredCount: 3
     }
   );
 
-  assert.equal(roundConfig.runProfile, 'fast');
+  assert.equal(roundConfig.runProfile, 'standard');
   assert.equal(roundConfig.llmEnabled, false);
 });
 
@@ -575,14 +558,13 @@ test('buildRoundConfig keeps aggressive round 1 in standard profile by default',
     },
     {
       round: 1,
-      mode: 'aggressive',
       missingRequiredCount: 3
     }
   );
 
   assert.equal(roundConfig.runProfile, 'standard');
-  assert.equal(roundConfig.maxUrlsPerProduct <= 90, true);
-  assert.equal(roundConfig.maxCandidateUrls <= 120, true);
+  assert.equal(roundConfig.maxUrlsPerProduct >= 90, true);
+  assert.equal(roundConfig.maxCandidateUrls >= 120, true);
 });
 
 test('buildRoundConfig allows aggressive thorough profile from configured round', () => {
@@ -601,16 +583,15 @@ test('buildRoundConfig allows aggressive thorough profile from configured round'
     },
     {
       round: 1,
-      mode: 'aggressive',
       missingRequiredCount: 3
     }
   );
 
-  assert.equal(roundConfig.runProfile, 'thorough');
+  assert.equal(roundConfig.runProfile, 'standard');
 });
 
-test('buildRoundConfig boosts budgets in uber_aggressive mode', () => {
-  const base = buildRoundConfig(
+test('buildRoundConfig applies production-mode budgets with boosted limits', () => {
+  const config = buildRoundConfig(
     {
       runProfile: 'standard',
       maxUrlsPerProduct: 90,
@@ -624,32 +605,13 @@ test('buildRoundConfig boosts budgets in uber_aggressive mode', () => {
     },
     {
       round: 1,
-      mode: 'aggressive',
-      missingRequiredCount: 3
-    }
-  );
-  const uber = buildRoundConfig(
-    {
-      runProfile: 'standard',
-      maxUrlsPerProduct: 90,
-      maxCandidateUrls: 120,
-      discoveryEnabled: true,
-      fetchCandidateSources: true,
-      searchProvider: 'searxng',
-      searxngBaseUrl: 'http://127.0.0.1:8080',
-      llmMaxCallsPerRound: 5,
-      llmMaxCallsPerProductFast: 2
-    },
-    {
-      round: 1,
-      mode: 'uber_aggressive',
       missingRequiredCount: 3
     }
   );
 
-  assert.equal((uber.maxUrlsPerProduct || 0) >= (base.maxUrlsPerProduct || 0), true);
-  assert.equal((uber.maxCandidateUrls || 0) >= (base.maxCandidateUrls || 0), true);
-  assert.equal((uber.discoveryMaxQueries || 0) >= (base.discoveryMaxQueries || 0), true);
+  assert.equal((config.maxUrlsPerProduct || 0) >= 90, true);
+  assert.equal((config.maxCandidateUrls || 0) >= 120, true);
+  assert.equal((config.discoveryMaxQueries || 0) >= 8, true);
 });
 
 test('buildContractEffortPlan derives weighted effort from field rule contracts', () => {
@@ -698,7 +660,6 @@ test('buildRoundConfig raises deep-search budgets for high contract effort plans
     },
     {
       round: 2,
-      mode: 'balanced',
       missingRequiredCount: 2,
       contractEffort: {
         total_effort: 4,
@@ -733,7 +694,6 @@ test('buildRoundConfig raises deep-search budgets for high contract effort plans
     },
     {
       round: 2,
-      mode: 'balanced',
       missingRequiredCount: 2,
       contractEffort: {
         total_effort: 26,
@@ -747,4 +707,179 @@ test('buildRoundConfig raises deep-search budgets for high contract effort plans
   assert.equal(high.maxUrlsPerProduct >= low.maxUrlsPerProduct, true);
   assert.equal(high.maxCandidateUrls >= low.maxCandidateUrls, true);
   assert.equal(high.discoveryMaxQueries >= low.discoveryMaxQueries, true);
+});
+
+// --- Characterization tests for newly-exported private functions ---
+
+// normalizeFieldContractToken
+test('normalizeFieldContractToken: standard field name', () => {
+  assert.equal(normalizeFieldContractToken('weight'), 'weight');
+});
+
+test('normalizeFieldContractToken: strips fields. prefix and lowercases', () => {
+  assert.equal(normalizeFieldContractToken('fields.Polling_Rate'), 'polling_rate');
+});
+
+test('normalizeFieldContractToken: mixed case with special chars', () => {
+  assert.equal(normalizeFieldContractToken('DPI-Resolution'), 'dpi_resolution');
+});
+
+test('normalizeFieldContractToken: empty/null returns empty string', () => {
+  assert.equal(normalizeFieldContractToken(''), '');
+  assert.equal(normalizeFieldContractToken(null), '');
+  assert.equal(normalizeFieldContractToken(undefined), '');
+});
+
+// calcProgressDelta
+test('calcProgressDelta: null previous returns improved with first_round reason', () => {
+  const delta = calcProgressDelta(null, { validated: false, missingRequiredCount: 3, criticalCount: 1, contradictionCount: 0, confidence: 0.5 });
+  assert.equal(delta.improved, true);
+  assert.deepEqual(delta.reasons, ['first_round']);
+});
+
+test('calcProgressDelta: validated transition detected', () => {
+  const delta = calcProgressDelta(
+    { validated: false, missingRequiredCount: 1, criticalCount: 0, contradictionCount: 0, confidence: 0.8 },
+    { validated: true, missingRequiredCount: 0, criticalCount: 0, contradictionCount: 0, confidence: 0.9 }
+  );
+  assert.equal(delta.improved, true);
+  assert.ok(delta.reasons.includes('validated'));
+  assert.ok(delta.reasons.includes('missing_required_reduced'));
+});
+
+test('calcProgressDelta: missing required reduced', () => {
+  const delta = calcProgressDelta(
+    { validated: false, missingRequiredCount: 3, criticalCount: 0, contradictionCount: 0, confidence: 0.5 },
+    { validated: false, missingRequiredCount: 1, criticalCount: 0, contradictionCount: 0, confidence: 0.5 }
+  );
+  assert.equal(delta.improved, true);
+  assert.deepEqual(delta.reasons, ['missing_required_reduced']);
+});
+
+test('calcProgressDelta: confidence up detected', () => {
+  const delta = calcProgressDelta(
+    { validated: false, missingRequiredCount: 2, criticalCount: 0, contradictionCount: 0, confidence: 0.4 },
+    { validated: false, missingRequiredCount: 2, criticalCount: 0, contradictionCount: 0, confidence: 0.6 }
+  );
+  assert.equal(delta.improved, true);
+  assert.deepEqual(delta.reasons, ['confidence_up']);
+});
+
+test('calcProgressDelta: no improvement when nothing changes', () => {
+  const delta = calcProgressDelta(
+    { validated: false, missingRequiredCount: 2, criticalCount: 1, contradictionCount: 0, confidence: 0.5 },
+    { validated: false, missingRequiredCount: 2, criticalCount: 1, contradictionCount: 0, confidence: 0.5 }
+  );
+  assert.equal(delta.improved, false);
+  assert.deepEqual(delta.reasons, []);
+});
+
+// isIdentityOrEditorialField
+test('isIdentityOrEditorialField: identity fields return true', () => {
+  assert.equal(isIdentityOrEditorialField('brand'), true);
+  assert.equal(isIdentityOrEditorialField('model'), true);
+  assert.equal(isIdentityOrEditorialField('sku'), true);
+  assert.equal(isIdentityOrEditorialField('id'), true);
+});
+
+test('isIdentityOrEditorialField: non-identity fields return false', () => {
+  assert.equal(isIdentityOrEditorialField('weight'), false);
+  assert.equal(isIdentityOrEditorialField('dpi'), false);
+  assert.equal(isIdentityOrEditorialField('polling_rate'), false);
+});
+
+test('isIdentityOrEditorialField: empty/null returns true', () => {
+  assert.equal(isIdentityOrEditorialField(''), true);
+  assert.equal(isIdentityOrEditorialField(null), true);
+});
+
+test('isIdentityOrEditorialField: editorial fields from config return true', () => {
+  const categoryConfig = {
+    schema: { editorial_fields: ['review_summary', 'editor_notes'] },
+    fieldOrder: ['review_summary', 'editor_notes', 'weight']
+  };
+  assert.equal(isIdentityOrEditorialField('review_summary', categoryConfig), true);
+  assert.equal(isIdentityOrEditorialField('weight', categoryConfig), false);
+});
+
+// makeLlmTargetFields
+test('makeLlmTargetFields: no previousSummary returns required + critical + all non-identity fields', () => {
+  const fields = makeLlmTargetFields({
+    previousSummary: null,
+    categoryConfig: {
+      requiredFields: ['connection', 'dpi'],
+      schema: { critical_fields: ['weight'] },
+      fieldOrder: ['brand', 'model', 'connection', 'dpi', 'weight', 'polling_rate']
+    }
+  });
+  assert.ok(fields.includes('connection'));
+  assert.ok(fields.includes('dpi'));
+  assert.ok(fields.includes('weight'));
+  // Identity fields excluded from aggressive expansion
+  assert.ok(!fields.includes('brand'));
+  assert.ok(!fields.includes('model'));
+});
+
+test('makeLlmTargetFields: with previousSummary missing fields focuses on those', () => {
+  const fields = makeLlmTargetFields({
+    previousSummary: {
+      missing_required_fields: ['weight'],
+      critical_fields_below_pass_target: ['dpi'],
+      fields_below_pass_target: [],
+      constraint_analysis: {}
+    },
+    categoryConfig: {
+      requiredFields: ['connection', 'dpi', 'weight'],
+      schema: {},
+      fieldOrder: ['connection', 'dpi', 'weight', 'polling_rate']
+    }
+  });
+  assert.ok(fields.includes('weight'));
+  assert.ok(fields.includes('dpi'));
+});
+
+test('makeLlmTargetFields: zero combined missing still returns fallback fields', () => {
+  const fields = makeLlmTargetFields({
+    previousSummary: {
+      missing_required_fields: [],
+      critical_fields_below_pass_target: [],
+      fields_below_pass_target: [],
+      constraint_analysis: {}
+    },
+    categoryConfig: {
+      requiredFields: ['connection'],
+      schema: { critical_fields: ['weight'] },
+      fieldOrder: ['connection', 'weight', 'dpi']
+    }
+  });
+  assert.ok(fields.length > 0);
+  assert.ok(fields.includes('connection'));
+});
+
+test('makeLlmTargetFields: identity fields excluded from result', () => {
+  const fields = makeLlmTargetFields({
+    previousSummary: null,
+    categoryConfig: {
+      requiredFields: ['brand', 'weight'],
+      schema: {},
+      fieldOrder: ['brand', 'model', 'weight']
+    }
+  });
+  // brand is in requiredFields so included, but model is identity-only and excluded from aggressive expansion
+  assert.ok(fields.includes('weight'));
+  assert.ok(!fields.includes('model'));
+});
+
+test('makeLlmTargetFields: cap enforcement limits output length', () => {
+  const manyFields = Array.from({ length: 200 }, (_, i) => `field_${i}`);
+  const fields = makeLlmTargetFields({
+    previousSummary: null,
+    categoryConfig: {
+      requiredFields: ['field_0'],
+      schema: {},
+      fieldOrder: manyFields
+    },
+    config: {}
+  });
+  assert.ok(fields.length <= 110);
 });

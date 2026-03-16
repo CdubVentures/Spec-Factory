@@ -1,0 +1,319 @@
+{
+  "category": "keyboard",
+  "generated_at": "2026-03-16T00:08:03.587Z",
+  "group_index": {
+    "build": [
+      "case_material",
+      "foam_dampening",
+      "gasket_mount",
+      "mounting_style",
+      "plate_material",
+      "south_facing_leds",
+      "stabilizer_lubed",
+      "stabilizer_mount",
+      "stabilizer_type"
+    ],
+    "connectivity": [
+      "bluetooth_version",
+      "cable_length",
+      "cable_type",
+      "connection",
+      "detachable_cable",
+      "multi_device_pairing",
+      "multi_device_pairing_count",
+      "usb_passthrough",
+      "wired_interface",
+      "wireless_technology"
+    ],
+    "dimensions": [
+      "adjustable_feet",
+      "depth",
+      "height_front",
+      "height_rear",
+      "typing_angle",
+      "weight",
+      "width"
+    ],
+    "features": [
+      "backlighting",
+      "knob_dial",
+      "macro_keys",
+      "media_controls",
+      "onboard_memory",
+      "onboard_profile_count",
+      "os_mode_switch",
+      "per_key_rgb",
+      "qmk_via_support",
+      "rgb_zones",
+      "software"
+    ],
+    "general": [
+      "color",
+      "compatible_os",
+      "discontinued",
+      "included_accessories",
+      "price_range",
+      "release_date",
+      "software_required",
+      "warranty"
+    ],
+    "identity": [
+      "base_model",
+      "brand",
+      "category",
+      "gtin",
+      "model",
+      "mpn",
+      "sku",
+      "variant"
+    ],
+    "keycaps": [
+      "doubleshot",
+      "keycap_material",
+      "keycap_profile",
+      "keycap_thickness",
+      "legends",
+      "shine_through"
+    ],
+    "layout": [
+      "arrow_keys",
+      "form_factor",
+      "function_row",
+      "key_count",
+      "layout",
+      "layout_standard",
+      "numpad"
+    ],
+    "performance": [
+      "adjustable_input_granularity",
+      "analog_input",
+      "anti_ghosting",
+      "debounce_time",
+      "key_rollover",
+      "multi_key_latency",
+      "polling_rate_wired",
+      "polling_rate_wireless",
+      "rapid_trigger",
+      "scan_rate",
+      "single_key_latency",
+      "socd_cleaning"
+    ],
+    "power": [
+      "battery_capacity",
+      "battery_life_off",
+      "battery_life_rgb",
+      "charging_method"
+    ],
+    "sound": [
+      "sound_dampening",
+      "sound_profile",
+      "typing_noise"
+    ],
+    "switch": [
+      "actuation_adjustment_step",
+      "actuation_distance",
+      "actuation_force",
+      "adjustable_actuation_max",
+      "adjustable_actuation_min",
+      "bottom_out_force",
+      "hot_swappable",
+      "switch_brand",
+      "switch_compatibility",
+      "switch_feel",
+      "switch_lifespan",
+      "switch_name",
+      "switch_output_type",
+      "switch_pin_support",
+      "switch_type",
+      "total_travel"
+    ]
+  },
+  "groups": [
+    {
+      "count": 9,
+      "display_name": "Build",
+      "field_keys": [
+        "case_material",
+        "foam_dampening",
+        "gasket_mount",
+        "mounting_style",
+        "plate_material",
+        "south_facing_leds",
+        "stabilizer_lubed",
+        "stabilizer_mount",
+        "stabilizer_type"
+      ],
+      "group_key": "build"
+    },
+    {
+      "count": 10,
+      "display_name": "Connectivity",
+      "field_keys": [
+        "bluetooth_version",
+        "cable_length",
+        "cable_type",
+        "connection",
+        "detachable_cable",
+        "multi_device_pairing",
+        "multi_device_pairing_count",
+        "usb_passthrough",
+        "wired_interface",
+        "wireless_technology"
+      ],
+      "group_key": "connectivity"
+    },
+    {
+      "count": 7,
+      "display_name": "Dimensions",
+      "field_keys": [
+        "adjustable_feet",
+        "depth",
+        "height_front",
+        "height_rear",
+        "typing_angle",
+        "weight",
+        "width"
+      ],
+      "group_key": "dimensions"
+    },
+    {
+      "count": 11,
+      "display_name": "Features",
+      "field_keys": [
+        "backlighting",
+        "knob_dial",
+        "macro_keys",
+        "media_controls",
+        "onboard_memory",
+        "onboard_profile_count",
+        "os_mode_switch",
+        "per_key_rgb",
+        "qmk_via_support",
+        "rgb_zones",
+        "software"
+      ],
+      "group_key": "features"
+    },
+    {
+      "count": 8,
+      "display_name": "General",
+      "field_keys": [
+        "color",
+        "compatible_os",
+        "discontinued",
+        "included_accessories",
+        "price_range",
+        "release_date",
+        "software_required",
+        "warranty"
+      ],
+      "group_key": "general"
+    },
+    {
+      "count": 8,
+      "display_name": "Identity",
+      "field_keys": [
+        "base_model",
+        "brand",
+        "category",
+        "gtin",
+        "model",
+        "mpn",
+        "sku",
+        "variant"
+      ],
+      "group_key": "identity"
+    },
+    {
+      "count": 6,
+      "display_name": "Keycaps",
+      "field_keys": [
+        "doubleshot",
+        "keycap_material",
+        "keycap_profile",
+        "keycap_thickness",
+        "legends",
+        "shine_through"
+      ],
+      "group_key": "keycaps"
+    },
+    {
+      "count": 7,
+      "display_name": "Layout",
+      "field_keys": [
+        "arrow_keys",
+        "form_factor",
+        "function_row",
+        "key_count",
+        "layout",
+        "layout_standard",
+        "numpad"
+      ],
+      "group_key": "layout"
+    },
+    {
+      "count": 12,
+      "display_name": "Performance",
+      "field_keys": [
+        "adjustable_input_granularity",
+        "analog_input",
+        "anti_ghosting",
+        "debounce_time",
+        "key_rollover",
+        "multi_key_latency",
+        "polling_rate_wired",
+        "polling_rate_wireless",
+        "rapid_trigger",
+        "scan_rate",
+        "single_key_latency",
+        "socd_cleaning"
+      ],
+      "group_key": "performance"
+    },
+    {
+      "count": 4,
+      "display_name": "Power",
+      "field_keys": [
+        "battery_capacity",
+        "battery_life_off",
+        "battery_life_rgb",
+        "charging_method"
+      ],
+      "group_key": "power"
+    },
+    {
+      "count": 3,
+      "display_name": "Sound",
+      "field_keys": [
+        "sound_dampening",
+        "sound_profile",
+        "typing_noise"
+      ],
+      "group_key": "sound"
+    },
+    {
+      "count": 16,
+      "display_name": "Switch",
+      "field_keys": [
+        "actuation_adjustment_step",
+        "actuation_distance",
+        "actuation_force",
+        "adjustable_actuation_max",
+        "adjustable_actuation_min",
+        "bottom_out_force",
+        "hot_swappable",
+        "switch_brand",
+        "switch_compatibility",
+        "switch_feel",
+        "switch_lifespan",
+        "switch_name",
+        "switch_output_type",
+        "switch_pin_support",
+        "switch_type",
+        "total_travel"
+      ],
+      "group_key": "switch"
+    }
+  ],
+  "version": 1
+}

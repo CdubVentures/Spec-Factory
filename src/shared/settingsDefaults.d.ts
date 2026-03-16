@@ -11,7 +11,7 @@ export interface SharedStorageDefaults {
   enabled: boolean;
   destinationType: 'local' | 's3';
   localDirectory: string;
-  s3Region: string;
+  awsRegion: string;
   s3Bucket: string;
   s3Prefix: string;
   s3AccessKeyId: string;
@@ -42,8 +42,7 @@ export interface SharedSettingsDefaults {
 export const SETTINGS_DEFAULTS: SharedSettingsDefaults;
 
 export interface SharedRuntimeOptionValues {
-  profile: readonly ['fast', 'standard', 'thorough'];
-  searchProvider: readonly ['none', 'google', 'bing', 'searxng', 'duckduckgo', 'dual'];
+  searchProvider: readonly ['none', 'google', 'bing', 'searxng', 'dual'];
   resumeMode: readonly ['auto', 'force_resume', 'start_over'];
   scannedPdfOcrBackend: readonly ['auto', 'tesseract', 'none'];
   repairDedupeRule: readonly ['domain_once', 'domain_and_status', 'none'];

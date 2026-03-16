@@ -1,7 +1,7 @@
 import { lazy, Suspense, type ComponentType } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AppShell } from './components/layout/AppShell';
+import { AppShell } from './pages/layout/AppShell';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 function lazyNamedPage(loader: () => Promise<Record<string, unknown>>, exportName: string) {
@@ -25,7 +25,7 @@ const CategoryManager = lazyNamedPage(() => import('./pages/catalog/CategoryMana
 const ReviewPage = lazyNamedPage(() => import('./pages/review/ReviewPage'), 'ReviewPage');
 const ComponentReviewPage = lazyNamedPage(() => import('./pages/component-review/ComponentReviewPage'), 'ComponentReviewPage');
 const TestModePage = lazyNamedPage(() => import('./pages/test-mode/TestModePage'), 'TestModePage');
-const IndexingPage = lazyNamedPage(() => import('./pages/indexing/IndexingPage'), 'IndexingPage');
+const IndexingPage = lazyNamedPage(() => import('./features/indexing/components/IndexingPage'), 'IndexingPage');
 const PipelineSettingsPage = lazyNamedPage(() => import('./pages/pipeline-settings/PipelineSettingsPage'), 'PipelineSettingsPage');
 const RuntimeOpsPage = lazyNamedPage(() => import('./pages/runtime-ops/RuntimeOpsPage'), 'RuntimeOpsPage');
 const StoragePage = lazyNamedPage(() => import('./pages/storage/StoragePage'), 'StoragePage');

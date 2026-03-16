@@ -1,13 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { extractLdJsonBlocks } from '../extractors/ldjsonExtractor.js';
-import { extractEmbeddedState } from '../extractors/embeddedStateExtractor.js';
+import { extractLdJsonBlocks, extractEmbeddedState } from '../features/indexing/extraction/index.js';
 import { NetworkRecorder } from './networkRecorder.js';
 import { replayGraphqlRequests } from './graphqlReplay.js';
 import { wait } from '../utils/common.js';
 import { RobotsPolicyCache } from './robotsPolicy.js';
 import { resolveDynamicFetchPolicy } from './dynamicFetchPolicy.js';
+import { attachRuntimeScreencast } from './runtimeScreencast.js';
+import { buildStealthContextOptions, STEALTH_INIT_SCRIPT } from './stealthProfile.js';
 
 function fixtureFilenameFromHost(host) {
   return `${host.toLowerCase()}.json`;
@@ -77,10 +78,14 @@ async function captureScreenshotArtifact(page, config = {}, policy = {}) {
       })
       : await page.screenshot({
         type: format,
-        fullPage: Boolean(policy.captureFullPageScreenshot)
+        fullPage: Boolean(policy.captureFullPageScreenshot),
+        ...(format === 'jpeg' ? { quality } : {})
       });
-    if (!Buffer.isBuffer(bytes) || bytes.length === 0 || bytes.length > maxBytes) {
+    if (!Buffer.isBuffer(bytes) || bytes.length === 0) {
       return null;
+    }
+    if (bytes.length > maxBytes) {
+      return { rejected: true, rejected_reason: 'exceeds_max_bytes', rejected_bytes: bytes.length, max_bytes: maxBytes, kind: selector ? 'crop' : 'page', selector: selector || null };
     }
     const viewport = page.viewportSize() || {};
     return {
@@ -94,19 +99,24 @@ async function captureScreenshotArtifact(page, config = {}, policy = {}) {
     };
   };
 
+  let lastRejection = null;
   for (const selector of selectors) {
     try {
       const artifact = await capture(selector);
-      if (artifact) return artifact;
+      if (artifact && !artifact.rejected) return artifact;
+      if (artifact?.rejected) lastRejection = artifact;
     } catch {
       // try next selector
     }
   }
   try {
-    return await capture(null);
+    const viewport = await capture(null);
+    if (viewport && !viewport.rejected) return viewport;
+    if (viewport?.rejected) lastRejection = viewport;
   } catch {
-    return null;
+    // ignore
   }
+  return lastRejection || null;
 }
 
 function policySnapshotForTelemetry(fetchPolicy = {}) {
@@ -125,6 +135,34 @@ function policySnapshotForTelemetry(fetchPolicy = {}) {
     matched_host: String(fetchPolicy?.matchedHost || '').trim() || null,
     override_applied: Boolean(fetchPolicy?.overrideApplied)
   };
+}
+
+function requestThrottleKeyForSource(source = {}) {
+  const host = String(source?.host || '').trim().toLowerCase();
+  if (host) {
+    return host;
+  }
+  try {
+    return new URL(String(source?.url || '')).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+async function waitForRequestThrottlerSlot(config = {}, source = {}) {
+  const requestThrottler = config?.requestThrottler;
+  if (!requestThrottler || typeof requestThrottler.acquire !== 'function') {
+    return 0;
+  }
+  const key = requestThrottleKeyForSource(source);
+  if (!key) {
+    return 0;
+  }
+  return Number(await requestThrottler.acquire({
+    key,
+    url: String(source?.url || '').trim() || null,
+    scope: 'fetch'
+  })) || 0;
 }
 
 export class PlaywrightFetcher {
@@ -149,9 +187,11 @@ export class PlaywrightFetcher {
       return;
     }
     this.browser = await chromium.launch({ headless: true });
-    this.context = await this.browser.newContext({
-      userAgent: this.config.userAgent
+    const stealthOpts = buildStealthContextOptions({
+      userAgent: this.config.userAgent || undefined
     });
+    this.context = await this.browser.newContext(stealthOpts);
+    await this.context.addInitScript(STEALTH_INIT_SCRIPT);
   }
 
   async stop() {
@@ -248,6 +288,7 @@ export class PlaywrightFetcher {
     }
 
     const maxAttempts = Math.max(1, Number(fetchPolicy.retryBudget || 0) + 1);
+    const fetchBudgetMs = Math.max(0, Number(fetchPolicy.fetchBudgetMs || this.config.fetchBudgetMs || 45_000));
     const startedAtMs = Date.now();
 
     let html = '';
@@ -266,6 +307,7 @@ export class PlaywrightFetcher {
     let graphqlReplayMs = 0;
     let contentCaptureMs = 0;
     let screenshotMs = 0;
+    let requestThrottleWaitMs = 0;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       attemptsUsed = attempt;
@@ -273,41 +315,20 @@ export class PlaywrightFetcher {
         source.host,
         source?.crawlConfig?.rate_limit_ms ?? fetchPolicy.perHostMinDelayMs
       );
+      requestThrottleWaitMs += await waitForRequestThrottlerSlot(this.config, source);
 
       const page = await this.context.newPage();
       const recorder = new NetworkRecorder({
-        maxJsonBytes: this.config.maxJsonBytes,
+        maxJsonBytes: Math.min(Number(this.config.maxJsonBytes) || 2_000_000, 512_000),
         maxRows: this.config.maxNetworkResponsesPerPage
       });
 
-      let cdpSession = null;
-      if (this.onScreencastFrame && this.config.runtimeScreencastEnabled !== false) {
-        try {
-          cdpSession = await page.context().newCDPSession(page);
-          await cdpSession.send('Page.startScreencast', {
-            format: 'jpeg',
-            quality: Math.max(10, Math.min(100, Number(this.config.runtimeScreencastQuality || 50))),
-            maxWidth: Math.max(320, Number(this.config.runtimeScreencastMaxWidth || 1280)),
-            maxHeight: Math.max(240, Number(this.config.runtimeScreencastMaxHeight || 720)),
-            everyNthFrame: Math.max(1, Math.ceil(60 / Math.max(1, Number(this.config.runtimeScreencastFps || 10)))),
-          });
-          const workerId = source?.worker_id || '';
-          cdpSession.on('Page.screencastFrame', (params) => {
-            try {
-              cdpSession.send('Page.screencastFrameAck', { sessionId: params.sessionId }).catch(() => {});
-              this.onScreencastFrame({
-                worker_id: workerId,
-                data: params.data || '',
-                width: params.metadata?.deviceWidth || 0,
-                height: params.metadata?.deviceHeight || 0,
-                ts: new Date().toISOString(),
-              });
-            } catch { /* ignore frame callback errors */ }
-          });
-        } catch {
-          cdpSession = null;
-        }
-      }
+      const stopRuntimeScreencast = await attachRuntimeScreencast({
+        page,
+        config: this.config,
+        workerId: source?.worker_id || '',
+        onFrame: this.onScreencastFrame
+      });
 
       page.on('response', async (response) => {
         await recorder.handleResponse(response);
@@ -341,6 +362,12 @@ export class PlaywrightFetcher {
         await this.captureInteractiveSignals(page, fetchPolicy);
         interactiveWaitMs += Math.max(0, Date.now() - interactiveStartedAt);
 
+        if (fetchBudgetMs > 0 && (Date.now() - startedAtMs) > fetchBudgetMs) {
+          const budgetErr = new Error(`fetch_budget_exceeded_${fetchBudgetMs}ms`);
+          budgetErr.retryable = false;
+          throw budgetErr;
+        }
+
         if (fetchPolicy.graphqlReplayEnabled) {
           const replayStartedAt = Date.now();
           const replayRows = await replayGraphqlRequests({
@@ -357,25 +384,19 @@ export class PlaywrightFetcher {
           }
         }
 
-        const captureStartedAt = Date.now();
-        html = await page.content();
         title = await page.title();
-        contentCaptureMs += Math.max(0, Date.now() - captureStartedAt);
         const screenshotStartedAt = Date.now();
         screenshot = await captureScreenshotArtifact(page, this.config, fetchPolicy);
         screenshotMs += Math.max(0, Date.now() - screenshotStartedAt);
+        const captureStartedAt = Date.now();
+        html = await page.content();
+        contentCaptureMs += Math.max(0, Date.now() - captureStartedAt);
         networkResponses = recorder.rows;
-        if (cdpSession) {
-          try { await cdpSession.send('Page.stopScreencast'); } catch { /* ignore */ }
-          try { await cdpSession.detach(); } catch { /* ignore */ }
-        }
+        await stopRuntimeScreencast();
         await page.close();
         break;
       } catch (error) {
-        if (cdpSession) {
-          try { await cdpSession.send('Page.stopScreencast'); } catch { /* ignore */ }
-          try { await cdpSession.detach(); } catch { /* ignore */ }
-        }
+        await stopRuntimeScreencast();
         await page.close();
         retryReasons.push(String(error?.message || 'retryable_error'));
         const shouldRetry = attempt < maxAttempts && isRetryableFetchError(error);
@@ -407,6 +428,7 @@ export class PlaywrightFetcher {
       timings_ms: {
         total: Math.max(0, Date.now() - startedAtMs),
         host_wait: hostWaitMs,
+        request_throttle_wait: requestThrottleWaitMs,
         navigation: navigationMs,
         network_idle_wait: networkIdleWaitMs,
         interactive_wait: interactiveWaitMs,
@@ -420,11 +442,15 @@ export class PlaywrightFetcher {
         ldjson_blocks: Array.isArray(ldjsonBlocks) ? ldjsonBlocks.length : 0
       },
       capture: {
-        screenshot_available: Boolean(screenshot),
+        screenshot_available: Boolean(screenshot) && !screenshot?.rejected,
         screenshot_kind: String(screenshot?.kind || '').trim() || null,
-        screenshot_selector: String(screenshot?.selector || '').trim() || null
+        screenshot_selector: String(screenshot?.selector || '').trim() || null,
+        screenshot_rejected_reason: String(screenshot?.rejected_reason || '').trim() || null,
+        screenshot_rejected_bytes: screenshot?.rejected ? Number(screenshot.rejected_bytes || 0) : null
       }
     };
+
+    const resolvedScreenshot = screenshot?.rejected ? null : screenshot;
 
     return {
       url: source.url,
@@ -435,7 +461,7 @@ export class PlaywrightFetcher {
       ldjsonBlocks,
       embeddedState,
       networkResponses,
-      screenshot,
+      screenshot: resolvedScreenshot,
       fetchTelemetry
     };
   }
@@ -597,6 +623,7 @@ export class HttpFetcher {
     let result;
     let attemptsUsed = 0;
     let hostWaitMs = 0;
+    let requestThrottleWaitMs = 0;
     let requestMs = 0;
     const retryReasons = [];
 
@@ -606,6 +633,7 @@ export class HttpFetcher {
         source.host,
         source?.crawlConfig?.rate_limit_ms ?? fetchPolicy.perHostMinDelayMs
       );
+      requestThrottleWaitMs += await waitForRequestThrottlerSlot(this.config, source);
 
       try {
         const requestStartedAt = Date.now();
@@ -704,6 +732,7 @@ export class HttpFetcher {
       timings_ms: {
         total: Math.max(0, Date.now() - startedAtMs),
         host_wait: hostWaitMs,
+        request_throttle_wait: requestThrottleWaitMs,
         navigation: requestMs,
         network_idle_wait: 0,
         interactive_wait: 0,
@@ -738,7 +767,7 @@ export class HttpFetcher {
 }
 
 export class CrawleeFetcher {
-  constructor(config, logger) {
+  constructor(config, logger, options = {}) {
     this.config = config;
     this.logger = logger;
     this.hostLastAccess = new Map();
@@ -748,6 +777,9 @@ export class CrawleeFetcher {
       logger
     });
     this.crawleeImportPromise = null;
+    this.onScreencastFrame = typeof options?.onScreencastFrame === 'function'
+      ? options.onScreencastFrame
+      : undefined;
   }
 
   async ensureCrawlee() {
@@ -886,6 +918,7 @@ export class CrawleeFetcher {
       source.host,
       source?.crawlConfig?.rate_limit_ms ?? fetchPolicy.perHostMinDelayMs
     );
+    let requestThrottleWaitMs = 0;
 
     const { PlaywrightCrawler, log: crawleeLog } = await this.ensureCrawlee();
     if (crawleeLog?.setLevel && crawleeLog?.LEVELS?.WARNING !== undefined) {
@@ -917,6 +950,41 @@ export class CrawleeFetcher {
     let contentCaptureMs = 0;
     let screenshotMs = 0;
     let replayRowsAdded = 0;
+    const activeRuntimeScreencasts = new Map();
+    const runtimeScreencastKeyForRequest = (request = {}) => {
+      const uniqueKey = String(request?.uniqueKey || '').trim();
+      if (uniqueKey) {
+        return uniqueKey;
+      }
+      return String(request?.url || source.url || '').trim();
+    };
+    const attachRequestRuntimeScreencast = async (request = {}, page = null) => {
+      const key = runtimeScreencastKeyForRequest(request);
+      if (!key || !page || activeRuntimeScreencasts.has(key)) {
+        return activeRuntimeScreencasts.get(key) || null;
+      }
+      const stopRuntimeScreencast = await attachRuntimeScreencast({
+        page,
+        config: this.config,
+        workerId: source?.worker_id || '',
+        onFrame: this.onScreencastFrame
+      });
+      activeRuntimeScreencasts.set(key, stopRuntimeScreencast);
+      return stopRuntimeScreencast;
+    };
+    const stopRequestRuntimeScreencast = async (request = {}) => {
+      const key = runtimeScreencastKeyForRequest(request);
+      if (!key || !activeRuntimeScreencasts.has(key)) {
+        return;
+      }
+      const stopRuntimeScreencast = activeRuntimeScreencasts.get(key);
+      activeRuntimeScreencasts.delete(key);
+      try {
+        await stopRuntimeScreencast?.();
+      } catch {
+        // ignore screencast cleanup failures
+      }
+    };
 
     const crawler = new PlaywrightCrawler({
       maxRequestsPerCrawl: 1,
@@ -928,10 +996,12 @@ export class CrawleeFetcher {
         }
       },
       preNavigationHooks: [
-        async ({ request }, gotoOptions) => {
+        async ({ request, page }, gotoOptions) => {
           gotoOptions.waitUntil = 'domcontentloaded';
           gotoOptions.timeout = navigationTimeout;
           attemptsUsed = Math.max(attemptsUsed, Number(request?.retryCount || 0) + 1);
+          requestThrottleWaitMs += await waitForRequestThrottlerSlot(this.config, source);
+          await attachRequestRuntimeScreencast(request, page);
           if (request.retryCount > 0 && retryBackoffMs > 0) {
             retryReasons.push('crawlee_retry_backoff');
             this.logger?.warn?.('dynamic_fetch_retry', {
@@ -961,97 +1031,109 @@ export class CrawleeFetcher {
           await recorder.handleResponse(resp);
         });
 
+        await attachRequestRuntimeScreencast(request, page);
+
         try {
-          const networkIdleStartedAt = Date.now();
-          await page.waitForLoadState('networkidle', {
-            timeout: networkIdleTimeout
-          });
-          networkIdleWaitMs += Math.max(0, Date.now() - networkIdleStartedAt);
-        } catch {
-          // Best effort only.
-        }
-
-        const interactiveStartedAt = Date.now();
-        await this.captureInteractiveSignals(page, fetchPolicy);
-        interactiveWaitMs += Math.max(0, Date.now() - interactiveStartedAt);
-
-        if (fetchPolicy.graphqlReplayEnabled) {
-          const replayStartedAt = Date.now();
-          const replayRows = await replayGraphqlRequests({
-            page,
-            capturedResponses: recorder.rows,
-            maxReplays: fetchPolicy.maxGraphqlReplays,
-            maxJsonBytes: this.config.maxJsonBytes,
-            logger: this.logger
-          });
-          graphqlReplayMs += Math.max(0, Date.now() - replayStartedAt);
-          if (replayRows.length) {
-            recorder.rows.push(...replayRows);
-            replayRowsAdded += replayRows.length;
+          try {
+            const networkIdleStartedAt = Date.now();
+            await page.waitForLoadState('networkidle', {
+              timeout: networkIdleTimeout
+            });
+            networkIdleWaitMs += Math.max(0, Date.now() - networkIdleStartedAt);
+          } catch {
+            // Best effort only.
           }
-        }
 
-        const captureStartedAt = Date.now();
-        const html = await page.content();
-        const title = await page.title();
-        const finalUrl = page.url();
-        contentCaptureMs += Math.max(0, Date.now() - captureStartedAt);
-        const screenshotStartedAt = Date.now();
-        const screenshot = await captureScreenshotArtifact(page, this.config, fetchPolicy);
-        screenshotMs += Math.max(0, Date.now() - screenshotStartedAt);
-        navigationMs += Math.max(0, Number(request?.loadedTimeMillis || 0));
-        const ldjsonBlocks = extractLdJsonBlocks(html);
-        const embeddedState = extractEmbeddedState(html);
-        const fetchTelemetry = {
-          fetcher_kind: 'crawlee',
-          attempts: attemptsUsed,
-          retry_count: Math.max(0, attemptsUsed - 1),
-          retry_reasons: retryReasons.slice(0, 8),
-          policy: policySnapshotForTelemetry(fetchPolicy),
-          timings_ms: {
-            total: Math.max(0, Date.now() - startedAtMs),
-            host_wait: hostWaitMs,
-            navigation: navigationMs,
-            network_idle_wait: networkIdleWaitMs,
-            interactive_wait: interactiveWaitMs,
-            graphql_replay: graphqlReplayMs,
-            content_capture: contentCaptureMs,
-            screenshot_capture: screenshotMs
-          },
-          payload_counts: {
-            network_rows: recorder.rows.length,
-            graphql_replay_rows: replayRowsAdded,
-            ldjson_blocks: Array.isArray(ldjsonBlocks) ? ldjsonBlocks.length : 0
-          },
-          capture: {
-            screenshot_available: Boolean(screenshot),
-            screenshot_kind: String(screenshot?.kind || '').trim() || null,
-            screenshot_selector: String(screenshot?.selector || '').trim() || null
+          const interactiveStartedAt = Date.now();
+          await this.captureInteractiveSignals(page, fetchPolicy);
+          interactiveWaitMs += Math.max(0, Date.now() - interactiveStartedAt);
+
+          if (fetchPolicy.graphqlReplayEnabled) {
+            const replayStartedAt = Date.now();
+            const replayRows = await replayGraphqlRequests({
+              page,
+              capturedResponses: recorder.rows,
+              maxReplays: fetchPolicy.maxGraphqlReplays,
+              maxJsonBytes: this.config.maxJsonBytes,
+              logger: this.logger
+            });
+            graphqlReplayMs += Math.max(0, Date.now() - replayStartedAt);
+            if (replayRows.length) {
+              recorder.rows.push(...replayRows);
+              replayRowsAdded += replayRows.length;
+            }
           }
-        };
 
-        result = {
-          url: source.url,
-          finalUrl,
-          status,
-          title,
-          html,
-          ldjsonBlocks,
-          embeddedState,
-          networkResponses: recorder.rows,
-          screenshot,
-          fetchTelemetry
-        };
+          const title = await page.title();
+          const finalUrl = page.url();
+          const screenshotStartedAt = Date.now();
+          const screenshot = await captureScreenshotArtifact(page, this.config, fetchPolicy);
+          screenshotMs += Math.max(0, Date.now() - screenshotStartedAt);
+          const captureStartedAt = Date.now();
+          const html = await page.content();
+          contentCaptureMs += Math.max(0, Date.now() - captureStartedAt);
+          navigationMs += Math.max(0, Number(request?.loadedTimeMillis || 0));
+          const ldjsonBlocks = extractLdJsonBlocks(html);
+          const embeddedState = extractEmbeddedState(html);
+          const fetchTelemetry = {
+            fetcher_kind: 'crawlee',
+            attempts: attemptsUsed,
+            retry_count: Math.max(0, attemptsUsed - 1),
+            retry_reasons: retryReasons.slice(0, 8),
+            policy: policySnapshotForTelemetry(fetchPolicy),
+            timings_ms: {
+              total: Math.max(0, Date.now() - startedAtMs),
+              host_wait: hostWaitMs,
+              request_throttle_wait: requestThrottleWaitMs,
+              navigation: navigationMs,
+              network_idle_wait: networkIdleWaitMs,
+              interactive_wait: interactiveWaitMs,
+              graphql_replay: graphqlReplayMs,
+              content_capture: contentCaptureMs,
+              screenshot_capture: screenshotMs
+            },
+            payload_counts: {
+              network_rows: recorder.rows.length,
+              graphql_replay_rows: replayRowsAdded,
+              ldjson_blocks: Array.isArray(ldjsonBlocks) ? ldjsonBlocks.length : 0
+            },
+            capture: {
+              screenshot_available: Boolean(screenshot) && !screenshot?.rejected,
+              screenshot_kind: String(screenshot?.kind || '').trim() || null,
+              screenshot_selector: String(screenshot?.selector || '').trim() || null,
+              screenshot_rejected_reason: String(screenshot?.rejected_reason || '').trim() || null,
+              screenshot_rejected_bytes: screenshot?.rejected ? Number(screenshot.rejected_bytes || 0) : null
+            }
+          };
+
+          const resolvedScreenshot = screenshot?.rejected ? null : screenshot;
+
+          result = {
+            url: source.url,
+            finalUrl,
+            status,
+            title,
+            html,
+            ldjsonBlocks,
+            embeddedState,
+            networkResponses: recorder.rows,
+            screenshot: resolvedScreenshot,
+            fetchTelemetry
+          };
+        } finally {
+          await stopRequestRuntimeScreencast(request);
+        }
       },
       failedRequestHandler: async ({ request, error }) => {
+        await stopRequestRuntimeScreencast(request);
         retryReasons.push(String(error?.message || 'crawlee_failed'));
         lastError = error || new Error(`crawlee_failed_${request.url}`);
       },
       errorHandler: async ({ error }) => {
+        retryReasons.push(String(error?.message || 'crawlee_failed'));
         if (!lastError) {
           lastError = error;
         }
-        retryReasons.push(String(error?.message || 'crawlee_error'));
       }
     });
 

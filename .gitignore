@@ -9,6 +9,7 @@ npm-debug.log*
 !.env.example
 # Generated control plane versions
 helper_files/**/_control_plane/_versions/
+category_authority/**/_control_plane/_versions/
 
 # Python cache
 __pycache__/
@@ -22,19 +23,13 @@ __pycache__/
 .specfactory_tmp/
 artifacts/
 debug/
-storage/
+/storage/
 
 # Local temporary scratch files
 .tmp-*
 _tmp_*
 *.tmp
 
-# Local desktop/build outputs
-desktop.ini
-build/
-dist/
-gui-dist/
-tools/dist/
 
 # Generated discovery/candidate dumps (local run artifacts)
 fixtures/s3/specs/inputs/_discovery/
@@ -49,6 +44,8 @@ fixtures/s3/specs/inputs/*/products/*-dltest.json
 # Local helper staging/test data
 helper_files/_test_*/
 helper_files/_global/
+category_authority/_test_*/
+category_authority/_runtime/
 
 # Launcher binaries (runtime artifacts)
 SpecFactory.exe

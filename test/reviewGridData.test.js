@@ -228,9 +228,9 @@ async function seedQueueState(storage, category, productIds = []) {
 test('buildReviewLayout follows field-studio row order and inherits blank group labels', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-layout-'));
   const storage = makeStorage(tempRoot);
-  const config = { helperFilesRoot: path.join(tempRoot, 'helper_files') };
+  const config = { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
   try {
-    await seedCategoryArtifacts(config.helperFilesRoot, 'mouse');
+    await seedCategoryArtifacts(config.categoryAuthorityRoot, 'mouse');
     const layout = await buildReviewLayout({ storage, config, category: 'mouse' });
     assert.equal(layout.category, 'mouse');
     assert.equal(layout.field_studio.key_range, 'B9:B11');
@@ -247,10 +247,10 @@ test('buildReviewLayout follows field-studio row order and inherits blank group 
 test('buildReviewLayout strips review-disabled rule paths before deriving field_rule metadata', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-layout-gates-'));
   const storage = makeStorage(tempRoot);
-  const config = { helperFilesRoot: path.join(tempRoot, 'helper_files') };
+  const config = { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
   const category = 'mouse';
   try {
-    const generated = path.join(config.helperFilesRoot, category, '_generated');
+    const generated = path.join(config.categoryAuthorityRoot, category, '_generated');
     await writeJson(path.join(generated, 'field_rules.json'), {
       category,
       fields: {
@@ -291,11 +291,11 @@ test('buildReviewLayout strips review-disabled rule paths before deriving field_
 test('writeProductReviewArtifacts writes review candidates and per-field review queue', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-product-'));
   const storage = makeStorage(tempRoot);
-  const config = { helperFilesRoot: path.join(tempRoot, 'helper_files') };
+  const config = { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
   const category = 'mouse';
   const productId = 'mouse-razer-viper-v3-pro-wireless';
   try {
-    await seedCategoryArtifacts(config.helperFilesRoot, category);
+    await seedCategoryArtifacts(config.categoryAuthorityRoot, category);
     await seedLatestArtifacts(storage, category, productId);
     const result = await writeProductReviewArtifacts({
       storage,
@@ -328,11 +328,11 @@ test('writeProductReviewArtifacts writes review candidates and per-field review 
 test('buildProductReviewPayload can omit candidate payloads for lightweight grid rendering', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-product-lite-'));
   const storage = makeStorage(tempRoot);
-  const config = { helperFilesRoot: path.join(tempRoot, 'helper_files') };
+  const config = { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
   const category = 'mouse';
   const productId = 'mouse-razer-viper-v3-pro-wireless-lite';
   try {
-    await seedCategoryArtifacts(config.helperFilesRoot, category);
+    await seedCategoryArtifacts(config.categoryAuthorityRoot, category);
     await seedLatestArtifacts(storage, category, productId);
     const payload = await buildProductReviewPayload({
       storage,
@@ -429,10 +429,10 @@ test('buildFieldState normalizes list slot values and keeps candidate count when
 test('buildReviewQueue sorts products by urgency and writeCategoryReviewArtifacts persists queue', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-queue-'));
   const storage = makeStorage(tempRoot);
-  const config = { helperFilesRoot: path.join(tempRoot, 'helper_files') };
+  const config = { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
   const category = 'mouse';
   try {
-    await seedCategoryArtifacts(config.helperFilesRoot, category);
+    await seedCategoryArtifacts(config.categoryAuthorityRoot, category);
     const productA = 'mouse-a';
     const productB = 'mouse-b';
     await seedLatestArtifacts(storage, category, productA);
@@ -492,11 +492,11 @@ test('buildReviewQueue sorts products by urgency and writeCategoryReviewArtifact
 test('review payload and queue infer readable identity from product_id when normalized identity is missing', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-identity-fallback-'));
   const storage = makeStorage(tempRoot);
-  const config = { helperFilesRoot: path.join(tempRoot, 'helper_files') };
+  const config = { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
   const category = 'mouse';
   const productId = 'mouse-acer-cestus-310-310';
   try {
-    await seedCategoryArtifacts(config.helperFilesRoot, category);
+    await seedCategoryArtifacts(config.categoryAuthorityRoot, category);
     await seedLatestArtifacts(storage, category, productId, {
       identity: {}
     });
@@ -616,4 +616,37 @@ test('buildFieldState does not apply contract.rounding.decimals — characteriza
     'value should pass through as-is — contract.rounding is NOT consumed at grid level');
   assert.equal(state.candidates[0].value, '67.456',
     'candidate value should also pass through without rounding');
+});
+
+test('buildReviewLayout ignores parse.unit and priority.publish_gate when deriving review field metadata — characterization (GAP-9)', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-layout-gap9-'));
+  const storage = makeStorage(tempRoot);
+  const config = { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
+  const category = 'mouse';
+  try {
+    const generated = path.join(config.categoryAuthorityRoot, category, '_generated');
+    await writeJson(path.join(generated, 'field_rules.json'), {
+      category,
+      fields: {
+        weight: {
+          required_level: 'optional',
+          contract: { type: 'number', shape: 'scalar' },
+          priority: { publish_gate: true },
+          parse: { unit: 'g' },
+          field_studio_hints: {
+            dataEntry: { sheet: 'dataEntry', row: 9, key_cell: 'B9' }
+          },
+          ui: { label: 'Weight', group: 'General', order: 9 },
+        },
+      },
+    });
+
+    const layout = await buildReviewLayout({ storage, config, category });
+    const row = layout.rows.find((entry) => entry.key === 'weight');
+    assert.ok(row, 'expected weight field row');
+    assert.equal(row.field_rule.required, false, 'review field metadata should continue following required_level, not priority.publish_gate');
+    assert.equal(row.field_rule.units, null, 'review field metadata should not source units from parse.unit');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
 });

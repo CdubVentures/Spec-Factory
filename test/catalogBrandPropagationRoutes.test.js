@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { registerCatalogRoutes } from '../src/api/routes/catalogRoutes.js';
-import { registerBrandRoutes } from '../src/api/routes/brandRoutes.js';
+import { registerCatalogRoutes } from '../src/features/catalog/api/catalogRoutes.js';
+import { registerBrandRoutes } from '../src/features/catalog/api/brandRoutes.js';
 import {
   getDataPropagationCountersSnapshot,
   resetDataPropagationCounters,
@@ -36,7 +36,7 @@ function makeCatalogCtx(overrides = {}) {
     sessionCache: { getSessionRules: async () => ({ cleanFieldOrder: [] }) },
     resolveCategoryAlias: (value) => String(value || '').trim().toLowerCase(),
     listDirs: async () => [],
-    HELPER_ROOT: 'helper_files',
+    HELPER_ROOT: 'category_authority',
     broadcastWs: noop,
     loadQueueState: async () => ({ state: { products: {} } }),
     saveQueueState: async () => ({ ok: true }),

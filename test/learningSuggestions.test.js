@@ -4,7 +4,7 @@ import {
   buildSearchHints,
   buildAnchorsSuggestions,
   buildKnownValuesSuggestions
-} from '../src/learning/learningSuggestionEmitter.js';
+} from '../src/features/indexing/learning/learningSuggestionEmitter.js';
 
 test('buildSearchHints produces search_hints from accepted updates', () => {
   const updates = [

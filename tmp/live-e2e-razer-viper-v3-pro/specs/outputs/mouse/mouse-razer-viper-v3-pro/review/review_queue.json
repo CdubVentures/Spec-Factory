@@ -1,0 +1,720 @@
+{
+  "version": 1,
+  "generated_at": "2026-03-11T20:46:08.720Z",
+  "category": "mouse",
+  "product_id": "mouse-razer-viper-v3-pro",
+  "count": 79,
+  "items": [
+    {
+      "field": "release_date",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "discontinued",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "sku",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "price_range",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "colors",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "design",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "lighting",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "rgb",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "connectivity",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "computer_side_connector",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "mouse_side_connector",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "bluetooth",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "cable_type",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "paracord",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "wireless_charging",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "battery_hours",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "adjustable_weight",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "feet_material",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "coating",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "honeycomb_frame",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "silent_clicks",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "weight",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "material",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "lngth",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "width",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "height",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "form_factor",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "shape",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "hump",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "front_flare",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "thumb_rest",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "grip",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "hand_size",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "mcu",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "mcu_link",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "sensor",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "sensor_brand",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "sensor_date",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "sensor_link",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "sensor_type",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "flawless_sensor",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "sensor_latency",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "sensor_latency_list",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "shift_latency",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "polling_rate",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "dpi",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "ips",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "acceleration",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "lift",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "lift_settings",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "motion_sync",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "hardware_acceleration",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "smoothing",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "nvidia_reflex",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "switch",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "switch_brand",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "switch_type",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "hot_swappable",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "debounce",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "click_latency",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "click_latency_list",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "click_force",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "encoder",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "encoder_brand",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "encoder_link",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "side_buttons",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "middle_buttons",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "programmable_buttons",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "tilt_scroll_wheel",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "adjustable_scroll_wheel",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "onboard_memory",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "onboard_memory_value",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "profile_switching",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "switches_link",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "encoder_life_span",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "encoder_steps",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "encoder_type",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "releasing_force",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    },
+    {
+      "field": "switch_life_span",
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "selected_value": "unk",
+      "confidence": 0,
+      "color": "gray"
+    }
+  ]
+}

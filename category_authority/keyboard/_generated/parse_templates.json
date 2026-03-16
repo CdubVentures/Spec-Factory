@@ -1,0 +1,1041 @@
+{
+  "category": "keyboard",
+  "generated_at": "2026-03-16T00:08:03.587Z",
+  "template_library": {
+    "boolean_yes_no_unk": {
+      "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
+      "tests": [
+        {
+          "expected": true,
+          "raw": "Yes"
+        },
+        {
+          "expected": false,
+          "raw": "no"
+        },
+        {
+          "expected": "unk",
+          "raw": "unk"
+        }
+      ]
+    },
+    "component_reference": {
+      "description": "Match a component entity name/alias against a component_db type; output canonical component name.",
+      "tests": [
+        {
+          "expected": "PAW3395",
+          "raw": "PAW 3395"
+        },
+        {
+          "expected": "Kailh GM 8.0",
+          "raw": "Kailh GM 8.0"
+        }
+      ]
+    },
+    "date_field": {
+      "description": "Parse date strings to ISO-8601 (YYYY-MM-DD) when possible.",
+      "tests": [
+        {
+          "expected": "2024-10-01",
+          "raw": "2024-10-01"
+        },
+        {
+          "expected": "2024-10-01",
+          "raw": "Oct 2024"
+        }
+      ]
+    },
+    "list_numbers_or_ranges_with_unit": {
+      "description": "Parse mixed lists containing numbers and ranges (e.g. '1-3, 4'). Canonical output is list of intervals {min,max}.",
+      "tests": [
+        {
+          "expected": [
+            {
+              "max": 4,
+              "min": 4
+            }
+          ],
+          "raw": "4"
+        },
+        {
+          "expected": [
+            {
+              "max": 3,
+              "min": 1
+            }
+          ],
+          "raw": "1-3"
+        },
+        {
+          "expected": [
+            {
+              "max": 3,
+              "min": 1
+            },
+            {
+              "max": 4,
+              "min": 4
+            }
+          ],
+          "raw": "1-3, 4"
+        }
+      ]
+    },
+    "list_of_numbers_with_unit": {
+      "description": "Parse list of numbers with optional unit into list<number> (or list<int>) in target unit.",
+      "tests": [
+        {
+          "expected": [
+            125,
+            500,
+            1000
+          ],
+          "raw": "125, 500, 1000 Hz"
+        },
+        {
+          "expected": [
+            1000
+          ],
+          "raw": "1000"
+        },
+        {
+          "expected": [
+            1000,
+            2000
+          ],
+          "raw": "1k, 2k"
+        }
+      ]
+    },
+    "list_of_tokens_delimited": {
+      "description": "Parse delimited tokens into list<string> with optional token_map normalization.",
+      "tests": [
+        {
+          "expected": [
+            "white",
+            "black"
+          ],
+          "raw": "white, black"
+        },
+        {
+          "expected": [
+            "gray",
+            "black"
+          ],
+          "raw": "gray+black"
+        },
+        {
+          "expected": [
+            "red",
+            "blue"
+          ],
+          "raw": "  Red / Blue  "
+        }
+      ]
+    },
+    "number_with_unit": {
+      "description": "Parse a single number with optional unit. Convert to target unit when allowed.",
+      "tests": [
+        {
+          "expected_mm": 120,
+          "raw": "120 mm"
+        },
+        {
+          "expected_mm": 120,
+          "raw": "12 cm"
+        },
+        {
+          "expected_mm": 114.3,
+          "raw": "4.5 in"
+        }
+      ]
+    },
+    "url_field": {
+      "description": "Parse and validate URL. Normalize by trimming and ensuring scheme.",
+      "tests": [
+        {
+          "expected": "https://example.com/spec",
+          "raw": "https://example.com/spec"
+        },
+        {
+          "expected": "https://example.com/spec",
+          "raw": "example.com/spec"
+        }
+      ]
+    }
+  },
+  "templates": {
+    "actuation_adjustment_step": {
+      "context_keywords": [
+        "actuation precision",
+        "actuation step",
+        "adjustment step"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "actuation_distance": {
+      "context_keywords": [
+        "actuation distance",
+        "pre-travel"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "actuation_force": {
+      "context_keywords": [
+        "actuation force",
+        "operating force"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "g"
+    },
+    "adjustable_actuation_max": {
+      "context_keywords": [
+        "adjustable actuation max",
+        "maximum actuation",
+        "maximum trigger point"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "adjustable_actuation_min": {
+      "context_keywords": [
+        "adjustable actuation min",
+        "minimum actuation",
+        "minimum trigger point"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "adjustable_feet": {
+      "context_keywords": [
+        "adjustable feet",
+        "height adjustment feet"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "adjustable_input_granularity": {
+      "context_keywords": [
+        "adjustable actuation step",
+        "adjustable input granularity"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "analog_input": {
+      "context_keywords": [
+        "analog input",
+        "analog mode",
+        "controller input"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "anti_ghosting": {
+      "context_keywords": [
+        "anti ghosting",
+        "anti-ghosting",
+        "ghosting protection"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "arrow_keys": {
+      "context_keywords": [
+        "arrow keys",
+        "dedicated arrows"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "backlighting": {
+      "context_keywords": [
+        "backlighting",
+        "lighting"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "base_model": {
+      "context_keywords": [
+        "base model",
+        "series"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "battery_capacity": {
+      "context_keywords": [
+        "battery capacity"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mAh"
+    },
+    "battery_life_off": {
+      "context_keywords": [
+        "battery life (lighting off)",
+        "battery life no RGB",
+        "battery life off"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "hours"
+    },
+    "battery_life_rgb": {
+      "context_keywords": [
+        "battery life (lighting on)",
+        "battery life rgb",
+        "battery life with backlight"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "hours"
+    },
+    "bluetooth_version": {
+      "context_keywords": [
+        "bluetooth version",
+        "bt version"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "bottom_out_force": {
+      "context_keywords": [
+        "bottom out force",
+        "bottom-out force"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "g"
+    },
+    "brand": {
+      "context_keywords": [
+        "brand",
+        "manufacturer"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "cable_length": {
+      "context_keywords": [
+        "cable length",
+        "cord length"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "m"
+    },
+    "cable_type": {
+      "context_keywords": [
+        "cable type",
+        "included cable"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "case_material": {
+      "context_keywords": [
+        "case material",
+        "chassis material"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "category": {
+      "context_keywords": [
+        "category",
+        "product type"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "charging_method": {
+      "context_keywords": [
+        "charging",
+        "charging method"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "color": {
+      "context_keywords": [
+        "color",
+        "colorway"
+      ],
+      "patterns": [],
+      "template": "list_of_tokens_delimited"
+    },
+    "compatible_os": {
+      "context_keywords": [
+        "compatible os",
+        "supported operating systems"
+      ],
+      "patterns": [],
+      "template": "list_of_tokens_delimited"
+    },
+    "connection": {
+      "context_keywords": [
+        "connection",
+        "connectivity mode"
+      ],
+      "patterns": [],
+      "template": "list_of_tokens_delimited"
+    },
+    "debounce_time": {
+      "context_keywords": [
+        "debounce",
+        "debounce time"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "ms"
+    },
+    "depth": {
+      "context_keywords": [
+        "depth",
+        "front to back"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "detachable_cable": {
+      "context_keywords": [
+        "detachable cable",
+        "removable cable"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "discontinued": {
+      "context_keywords": [
+        "discontinued",
+        "end of life"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "doubleshot": {
+      "context_keywords": [
+        "double-shot",
+        "doubleshot"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "foam_dampening": {
+      "context_keywords": [
+        "acoustic foam",
+        "foam dampening"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "form_factor": {
+      "context_keywords": [
+        "form factor",
+        "size"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "function_row": {
+      "context_keywords": [
+        "f-row",
+        "function row"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "gasket_mount": {
+      "context_keywords": [
+        "double gasket",
+        "gasket mount"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "gtin": {
+      "context_keywords": [
+        "ean",
+        "gtin",
+        "upc"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "height_front": {
+      "context_keywords": [
+        "front height",
+        "front lip height",
+        "height front"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "height_rear": {
+      "context_keywords": [
+        "back height",
+        "height rear",
+        "rear height"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "hot_swappable": {
+      "context_keywords": [
+        "hot swap",
+        "hot swappable",
+        "hot-swappable"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "included_accessories": {
+      "context_keywords": [
+        "in the box",
+        "included accessories"
+      ],
+      "patterns": [],
+      "template": "list_of_tokens_delimited"
+    },
+    "key_count": {
+      "context_keywords": [
+        "key count",
+        "number of keys"
+      ],
+      "patterns": [],
+      "template": "integer_field"
+    },
+    "key_rollover": {
+      "context_keywords": [
+        "key rollover",
+        "n-key rollover",
+        "nkro"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "keycap_material": {
+      "context_keywords": [
+        "cap material",
+        "keycap material"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "keycap_profile": {
+      "context_keywords": [
+        "keycap profile",
+        "profile"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "keycap_thickness": {
+      "context_keywords": [
+        "keycap thickness",
+        "wall thickness"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "knob_dial": {
+      "context_keywords": [
+        "dial",
+        "knob",
+        "knob / dial",
+        "knob dial",
+        "rotary encoder"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "layout": {
+      "context_keywords": [
+        "layout",
+        "physical layout"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "layout_standard": {
+      "context_keywords": [
+        "ansi",
+        "iso",
+        "jis",
+        "layout standard"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "legends": {
+      "context_keywords": [
+        "legend method",
+        "legends",
+        "printing method"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "macro_keys": {
+      "context_keywords": [
+        "macro keys",
+        "programmable keys"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "media_controls": {
+      "context_keywords": [
+        "media controls",
+        "media keys",
+        "volume control"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "model": {
+      "context_keywords": [
+        "model",
+        "model number"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "mounting_style": {
+      "context_keywords": [
+        "mount type",
+        "mounting style"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "mpn": {
+      "context_keywords": [
+        "manufacturer part number",
+        "mpn"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "multi_device_pairing": {
+      "context_keywords": [
+        "device switching",
+        "multi device pairing",
+        "multi-device pairing"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "multi_device_pairing_count": {
+      "context_keywords": [
+        "device count",
+        "multi-device count",
+        "paired devices"
+      ],
+      "patterns": [],
+      "template": "integer_field"
+    },
+    "multi_key_latency": {
+      "context_keywords": [
+        "chord latency",
+        "multi key latency",
+        "multi-key latency"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "ms"
+    },
+    "numpad": {
+      "context_keywords": [
+        "numeric keypad",
+        "numpad"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "onboard_memory": {
+      "context_keywords": [
+        "onboard memory",
+        "profile memory"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "onboard_profile_count": {
+      "context_keywords": [
+        "onboard profiles",
+        "profile count",
+        "saved profiles"
+      ],
+      "patterns": [],
+      "template": "integer_field"
+    },
+    "os_mode_switch": {
+      "context_keywords": [
+        "mac windows switch",
+        "os mode switch",
+        "system toggle"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "per_key_rgb": {
+      "context_keywords": [
+        "individual key RGB",
+        "per key rgb",
+        "per-key rgb"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "plate_material": {
+      "context_keywords": [
+        "plate material",
+        "switch plate"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "polling_rate_wired": {
+      "context_keywords": [
+        "polling rate",
+        "polling rate wired",
+        "wired polling rate"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "Hz"
+    },
+    "polling_rate_wireless": {
+      "context_keywords": [
+        "2.4 GHz polling rate",
+        "polling rate wireless",
+        "wireless polling rate"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "Hz"
+    },
+    "price_range": {
+      "context_keywords": [
+        "msrp",
+        "price range"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "qmk_via_support": {
+      "context_keywords": [
+        "qmk",
+        "qmk / via support",
+        "qmk via support",
+        "via"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "rapid_trigger": {
+      "context_keywords": [
+        "dynamic reset",
+        "rapid trigger"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "release_date": {
+      "context_keywords": [
+        "launch date",
+        "release date"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "rgb_zones": {
+      "context_keywords": [
+        "lighting zones",
+        "rgb zones"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "scan_rate": {
+      "context_keywords": [
+        "key scan rate",
+        "matrix scan rate",
+        "scan rate"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "Hz"
+    },
+    "shine_through": {
+      "context_keywords": [
+        "backlight shine-through",
+        "shine through",
+        "shine-through"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "single_key_latency": {
+      "context_keywords": [
+        "key latency",
+        "single key latency",
+        "single-key latency"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "ms"
+    },
+    "sku": {
+      "context_keywords": [
+        "sku",
+        "stock keeping unit"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "socd_cleaning": {
+      "context_keywords": [
+        "rapid tap",
+        "snap tap",
+        "socd cleaning"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "software": {
+      "context_keywords": [
+        "configuration software",
+        "software"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "software_required": {
+      "context_keywords": [
+        "driver required",
+        "software required"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "sound_dampening": {
+      "context_keywords": [
+        "acoustic treatment",
+        "sound dampening"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "sound_profile": {
+      "context_keywords": [
+        "clacky",
+        "sound profile",
+        "thocky"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "south_facing_leds": {
+      "context_keywords": [
+        "south facing leds",
+        "south-facing leds"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "stabilizer_lubed": {
+      "context_keywords": [
+        "factory lubed stabilizers",
+        "stabilizer lubed"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "stabilizer_mount": {
+      "context_keywords": [
+        "stab mount",
+        "stabilizer mount",
+        "stabilizer mounting"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "stabilizer_type": {
+      "context_keywords": [
+        "stabilizer type",
+        "stabs"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "switch_brand": {
+      "context_keywords": [
+        "switch brand",
+        "switch maker"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "switch_compatibility": {
+      "context_keywords": [
+        "compatible switches",
+        "switch compatibility",
+        "switch support"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "switch_feel": {
+      "context_keywords": [
+        "linear tactile clicky",
+        "switch feel"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "switch_lifespan": {
+      "context_keywords": [
+        "durability",
+        "keystroke life",
+        "switch lifespan"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "million keystrokes"
+    },
+    "switch_name": {
+      "context_keywords": [
+        "keyswitch",
+        "switch",
+        "switch model",
+        "switch name"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "switch_output_type": {
+      "context_keywords": [
+        "adjustable actuation",
+        "analog switch",
+        "switch output type"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "switch_pin_support": {
+      "context_keywords": [
+        "pin support",
+        "socket compatibility",
+        "switch pin support"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "switch_type": {
+      "context_keywords": [
+        "switch technology",
+        "switch type"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "total_travel": {
+      "context_keywords": [
+        "total travel",
+        "travel distance"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "typing_angle": {
+      "context_keywords": [
+        "angle",
+        "typing angle"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "deg"
+    },
+    "typing_noise": {
+      "context_keywords": [
+        "noise level",
+        "typing noise"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "usb_passthrough": {
+      "context_keywords": [
+        "passthrough port",
+        "usb passthrough"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "variant": {
+      "context_keywords": [
+        "edition",
+        "revision",
+        "variant"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "warranty": {
+      "context_keywords": [
+        "warranty"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "weight": {
+      "context_keywords": [
+        "weight"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "kg"
+    },
+    "width": {
+      "context_keywords": [
+        "width"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "wired_interface": {
+      "context_keywords": [
+        "wired connector",
+        "wired interface"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "wireless_technology": {
+      "context_keywords": [
+        "wireless mode",
+        "wireless technology"
+      ],
+      "patterns": [],
+      "template": "list_of_tokens_delimited"
+    }
+  },
+  "version": 1
+}

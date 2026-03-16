@@ -4,7 +4,7 @@ import {
   resolveEnumConsistencyFormatGuidance,
   sanitizeEnumConsistencyDecisions,
   runEnumConsistencyReview,
-} from '../src/llm/validateEnumConsistency.js';
+} from '../src/features/indexing/validation/validateEnumConsistency.js';
 
 test('sanitizeEnumConsistencyDecisions maps only to known canonical targets', () => {
   const decisions = sanitizeEnumConsistencyDecisions({

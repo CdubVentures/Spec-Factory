@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "category": "mouse",
+  "product_id": "mouse-logitech-g-pro-x-superlight-2-phase01-live",
+  "created_at": "2026-03-11T20:48:25.543Z",
+  "updated_at": "2026-03-11T20:48:25.549Z",
+  "queries": [],
+  "visited_urls": [
+    {
+      "url": "https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf",
+      "source": "crawl",
+      "first_seen": "2026-03-11T20:48:25.543Z",
+      "last_seen": "2026-03-11T20:48:25.543Z",
+      "count": 1
+    },
+    {
+      "url": "https://www.logitechg.com/robots.txt",
+      "source": "crawl",
+      "first_seen": "2026-03-11T20:48:25.543Z",
+      "last_seen": "2026-03-11T20:48:25.543Z",
+      "count": 1
+    },
+    {
+      "url": "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse",
+      "source": "crawl",
+      "first_seen": "2026-03-11T20:48:25.543Z",
+      "last_seen": "2026-03-11T20:48:25.543Z",
+      "count": 1
+    },
+    {
+      "url": "https://www.logitechg.com/sitemap_index.xml",
+      "source": "crawl",
+      "first_seen": "2026-03-11T20:48:25.543Z",
+      "last_seen": "2026-03-11T20:48:25.543Z",
+      "count": 1
+    }
+  ],
+  "field_yield": {
+    "id": {
+      "hits": 1,
+      "last_seen": "2026-03-11T20:48:25.549Z"
+    },
+    "brand": {
+      "hits": 1,
+      "last_seen": "2026-03-11T20:48:25.549Z"
+    },
+    "model": {
+      "hits": 1,
+      "last_seen": "2026-03-11T20:48:25.549Z"
+    },
+    "base_model": {
+      "hits": 1,
+      "last_seen": "2026-03-11T20:48:25.549Z"
+    },
+    "category": {
+      "hits": 1,
+      "last_seen": "2026-03-11T20:48:25.549Z"
+    }
+  },
+  "frontier": []
+}

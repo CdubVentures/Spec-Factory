@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildPreFetchPhases } from '../src/api/routes/runtimeOpsDataBuilders.js';
+import { buildPreFetchPhases } from '../src/features/indexing/api/builders/runtimeOpsDataBuilders.js';
 
 function makeEvent(event, payload = {}, overrides = {}) {
   return {
@@ -210,33 +210,6 @@ test('search_result_details defaults to empty array when no events', () => {
   assert.equal(result.search_result_details.length, 0);
 });
 
-test('urls_predicted event populates url_predictions structured data', () => {
-  const events = [
-    makeEvent('urls_predicted', {
-      remaining_budget: 15,
-      predictions: [
-        { url: 'https://razer.com/viper-v3-pro/specs', domain: 'razer.com', predicted_payoff: 92, target_fields: ['weight', 'sensor', 'dpi'], risk_flags: [], decision: 'fetch' },
-        { url: 'https://razer.com/support/viper-v3-pro', domain: 'razer.com', predicted_payoff: 65, target_fields: ['warranty', 'dimensions'], risk_flags: ['pdf_only'], decision: 'fetch' },
-        { url: 'https://sketchy.site/review', domain: 'sketchy.site', predicted_payoff: 20, target_fields: ['weight'], risk_flags: ['low_trust', 'potential_paywall'], decision: 'skip' },
-      ],
-    }),
-  ];
-  const result = buildPreFetchPhases(events, makeMeta(), {});
-  assert.ok(result.url_predictions, 'url_predictions should be present');
-  assert.equal(result.url_predictions.remaining_budget, 15);
-  assert.equal(result.url_predictions.predictions.length, 3);
-  assert.equal(result.url_predictions.predictions[0].url, 'https://razer.com/viper-v3-pro/specs');
-  assert.equal(result.url_predictions.predictions[0].predicted_payoff, 92);
-  assert.deepEqual(result.url_predictions.predictions[0].target_fields, ['weight', 'sensor', 'dpi']);
-  assert.equal(result.url_predictions.predictions[2].decision, 'skip');
-  assert.deepEqual(result.url_predictions.predictions[2].risk_flags, ['low_trust', 'potential_paywall']);
-});
-
-test('url_predictions defaults to null when no urls_predicted event', () => {
-  const result = buildPreFetchPhases([], makeMeta(), {});
-  assert.equal(result.url_predictions, null);
-});
-
 test('serp_triage_completed events populate serp_triage array', () => {
   const events = [
     makeEvent('serp_triage_completed', {
@@ -339,11 +312,10 @@ test('new structured fields coexist with existing fields in buildPreFetchPhases'
     makeEvent('needset_computed', {
       needset_size: 12,
       total_fields: 40,
-      identity_status: 'locked',
-      identity_confidence: 0.95,
-      needs: [{ field: 'weight', required: 'required', need_score: 0.8 }],
-      reason_counts: { missing: 5 },
-      required_level_counts: { required: 8 },
+      identity: { state: 'locked', confidence: 0.95 },
+      fields: [{ field_key: 'weight', required_level: 'required', state: 'missing', need_score: 0.8 }],
+      summary: { total: 40, resolved: 28 },
+      blockers: { missing: 5 },
     }),
     makeEvent('brand_resolved', {
       brand: 'Razer',
@@ -374,7 +346,6 @@ test('new structured fields coexist with existing fields in buildPreFetchPhases'
   assert.equal(result.brand_resolution.brand, 'Razer', 'new brand_resolution present');
   assert.equal(result.search_plans.length, 1, 'new search_plans present');
   assert.ok(Array.isArray(result.search_result_details), 'new search_result_details present');
-  assert.equal(result.url_predictions, null, 'null when no urls_predicted event');
   assert.ok(Array.isArray(result.serp_triage), 'new serp_triage present');
   assert.ok(Array.isArray(result.domain_health), 'new domain_health present');
 });
@@ -540,6 +511,28 @@ test('search_plan_generated multi-pass with enriched fields', () => {
   assert.equal(result.search_plans[1].mode, 'uber_aggressive');
   assert.deepEqual(result.search_plans[1].query_target_map, { 'query C': ['dpi', 'polling_rate'] });
   assert.deepEqual(result.search_plans[1].missing_critical_fields, ['dpi', 'polling_rate']);
+});
+
+test('needset artifact identity conflict breakdown is preserved in runtime-ops prefetch payload', () => {
+  const result = buildPreFetchPhases([], makeMeta(), {
+    needset: {
+      total_fields: 80,
+      identity: { state: 'conflict' },
+      fields: [
+        { field_key: 'weight', state: 'missing', need_score: 10 },
+        { field_key: 'sensor', state: 'missing', need_score: 8 },
+        { field_key: 'dpi', state: 'missing', need_score: 6 },
+        { field_key: 'polling_rate', state: 'missing', need_score: 4 },
+      ],
+      summary: {},
+      blockers: {},
+    },
+  });
+
+  assert.equal(result.needset.identity_state, 'conflict');
+  assert.equal(result.needset.needset_size, 4);
+  assert.equal(result.needset.total_fields, 80);
+  assert.equal(result.needset.fields.length, 4);
 });
 
 test('serp_triage_completed handles candidates with missing score_components', () => {

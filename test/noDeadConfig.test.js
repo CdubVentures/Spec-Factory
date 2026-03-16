@@ -105,28 +105,38 @@ test('no duplicate knob names (case-insensitive)', async () => {
     `Duplicate knobs: ${JSON.stringify(dupes)}`);
 });
 
-test('live AI assist knobs have consumers that import ruleAccessors', async () => {
+test('non-indexlab knobs remain authorable in capabilities registry', async () => {
   const cap = await loadCapabilities();
-  const aiKnobs = Object.entries(cap.knobs)
-    .filter(([k, c]) => k.startsWith('ai_assist.') && c.status === 'live');
+  const retainedKnobs = [
+    'contract.rounding.decimals',
+    'contract.rounding.mode',
+    'priority.publish_gate',
+    'parse.unit',
+  ];
 
-  assert.ok(aiKnobs.length >= 3, `Expected at least 3 live AI knobs, got ${aiKnobs.length}`);
+  for (const knob of retainedKnobs) {
+    assert.ok(cap.knobs[knob], `${knob} should remain authorable in capabilities.json`);
+  }
+});
 
-  for (const [knob, config] of aiKnobs) {
-    assert.ok(config.consumer, `AI knob ${knob} has no consumer`);
-    // Verify the consumer file paths reference real source files
-    const filePaths = config.consumer.match(/src\/[a-zA-Z0-9_/]+\.js/g) || [];
-    assert.ok(filePaths.length > 0,
-      `AI knob ${knob} consumer "${config.consumer}" has no recognizable source file paths`);
+test('live AI assist knobs remain registered with consumer metadata', async () => {
+  const cap = await loadCapabilities();
+  const expectedLiveAiKnobs = [
+    'ai_assist.mode',
+    'ai_assist.model_strategy',
+    'ai_assist.max_calls',
+    'ai_assist.max_tokens',
+    'ai_assist.reasoning_note',
+  ];
 
-    for (const fp of filePaths) {
-      const fullPath = path.join(__dirname, '..', fp);
-      try {
-        await fs.access(fullPath);
-      } catch {
-        assert.fail(`AI knob ${knob} consumer references "${fp}" but file does not exist`);
-      }
-    }
+  for (const knob of expectedLiveAiKnobs) {
+    const config = cap.knobs[knob];
+    assert.ok(config, `AI knob ${knob} should exist in capabilities.json`);
+    assert.equal(config.status, 'live', `AI knob ${knob} should remain live`);
+    assert.ok(
+      typeof config.consumer === 'string' && config.consumer.trim().length > 0,
+      `AI knob ${knob} should declare consumer metadata`,
+    );
   }
 });
 

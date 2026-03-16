@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { buildCompiledHelperContract } from '../helperFiles/compiledContract.js';
 import {
   buildFieldOrderFromCatalogSeed,
   extractCatalogSeedData,
@@ -146,7 +145,10 @@ async function writeJson(filePath, value) {
 }
 
 function helperCategoryDir({ category, config = {} }) {
-  return path.resolve(config.helperFilesRoot || 'helper_files', category);
+  return path.resolve(
+    config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority',
+    category
+  );
 }
 
 function runtimeCategoryDir(category) {
@@ -306,33 +308,6 @@ export async function syncCategorySchemaFromCatalog({
     }
   }
 
-  const compiled = await buildCompiledHelperContract({
-    category,
-    categoryConfig: {
-      category,
-      schema,
-      fieldOrder,
-      requiredFields,
-      fieldRules: {
-        ...(fieldRules || {}),
-        __meta: {
-          file_path: fieldRulesLoaded.file_path || null
-        }
-      }
-    },
-    helperData: {
-      category_root: helperDir,
-      active: [],
-      supportive: [],
-      catalog_seed: extracted,
-      schema_file: helperSchemaPath,
-      field_rules_file: fieldRulesLoaded.file_path || null,
-      tooltip_hints: {},
-      tooltip_source_file: null
-    },
-    config
-  });
-
   return {
     category,
     synced: true,
@@ -346,11 +321,8 @@ export async function syncCategorySchemaFromCatalog({
     helper_required_fields_path: shouldWriteRequiredFieldsFile ? helperRequiredPath : null,
     schema_path: mirrorRuntimeFiles ? runtimeSchemaPath : null,
     required_fields_path: mirrorRuntimeFiles && shouldWriteRequiredFieldsFile ? runtimeRequiredPath : null,
-    helper_compiled_contract_path: compiled.helper_file_path,
-    helper_compiled_expectations_path: compiled.helper_expectations_file_path,
-    compiled_contract_path: compiled.file_path,
-    compiled_expectations_path: compiled.expectations_file_path,
-    compiled_contract_hash: compiled.contract?.hash || null
   };
 }
+
+
 

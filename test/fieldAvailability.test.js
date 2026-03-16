@@ -7,7 +7,7 @@ import {
   summarizeAvailability,
   undisclosedThresholdForField,
   updateFieldAvailability
-} from '../src/learning/fieldAvailability.js';
+} from '../src/features/indexing/learning/fieldAvailability.js';
 
 function makeRun({
   weight = '60',

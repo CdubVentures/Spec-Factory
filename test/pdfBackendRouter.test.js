@@ -6,7 +6,7 @@ import {
   normalizePdfPair,
   splitPdfPairsBySurface,
   summarizePdfDoc
-} from '../src/extract/pdfBackendRouter.js';
+} from '../src/features/indexing/extraction/pdfBackendRouter.js';
 
 test('pdf backend router chooses camelot for table-dense auto fingerprint when available', () => {
   const decision = choosePdfBackend({

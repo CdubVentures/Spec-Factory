@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   coerceCategories,
   resolveActiveCategory,
-} from '../tools/gui-react/src/components/layout/categoryStoreSync.js';
+} from '../tools/gui-react/src/utils/categoryStoreSync.js';
 
 test('coerceCategories keeps unique non-empty entries in order', () => {
   const result = coerceCategories(['mouse', 'mouse', '', ' monitor ', null, undefined, 'keyboard']);
@@ -31,4 +31,3 @@ test('resolveActiveCategory switches to first category when current missing', ()
   });
   assert.equal(result, 'mouse');
 });
-

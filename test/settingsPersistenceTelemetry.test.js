@@ -6,7 +6,7 @@ import path from 'node:path';
 import {
   loadUserSettingsSync,
   persistUserSettingsSections,
-} from '../src/api/services/userSettingsService.js';
+} from '../src/features/settings-authority/userSettingsService.js';
 import {
   getSettingsPersistenceCountersSnapshot,
   resetSettingsPersistenceCounters,
@@ -24,16 +24,14 @@ test('loadUserSettingsSync records stale-read + migration telemetry for outdated
   await fs.writeFile(path.join(runtimeRoot, 'user-settings.json'), JSON.stringify({
     schemaVersion: 1,
     runtime: {
-      runProfile: 'standard',
       concurrency: 7,
     },
   }, null, 2), 'utf8');
 
   resetSettingsPersistenceCounters();
-  const snapshot = loadUserSettingsSync({ helperFilesRoot: root });
+  const snapshot = loadUserSettingsSync({ categoryAuthorityRoot: root });
   const counters = getSettingsPersistenceCountersSnapshot();
 
-  assert.equal(snapshot.runtime.runProfile, 'standard');
   assert.equal(snapshot.runtime.concurrency, 7);
   assert.equal(counters.stale_reads.total, 1);
   assert.equal(counters.stale_reads.by_reason.schema_version_outdated, 1);
@@ -45,15 +43,13 @@ test('persistUserSettingsSections records write attempt/success telemetry for us
 
   resetSettingsPersistenceCounters();
   const saved = await persistUserSettingsSections({
-    helperFilesRoot: root,
+    categoryAuthorityRoot: root,
     runtime: {
-      runProfile: 'thorough',
       concurrency: 5,
     },
   });
   const counters = getSettingsPersistenceCountersSnapshot();
 
-  assert.equal(saved.runtime.runProfile, 'thorough');
   assert.equal(saved.runtime.concurrency, 5);
   assert.equal(counters.writes.attempt_total, 1);
   assert.equal(counters.writes.success_total, 1);
@@ -69,21 +65,19 @@ test('persistUserSettingsSections serializes concurrent section writes without d
 
   await Promise.all([
     persistUserSettingsSections({
-      helperFilesRoot: root,
+      categoryAuthorityRoot: root,
       runtime: {
-        runProfile: 'thorough',
         concurrency: 9,
       },
     }),
     persistUserSettingsSections({
-      helperFilesRoot: root,
+      categoryAuthorityRoot: root,
       convergence: {
-        convergenceMaxRounds: 6,
-        serpTriageEnabled: false,
+        serpTriageMinScore: 3,
       },
     }),
     persistUserSettingsSections({
-      helperFilesRoot: root,
+      categoryAuthorityRoot: root,
       ui: {
         runtimeAutoSaveEnabled: false,
         storageAutoSaveEnabled: true,
@@ -91,11 +85,9 @@ test('persistUserSettingsSections serializes concurrent section writes without d
     }),
   ]);
 
-  const snapshot = loadUserSettingsSync({ helperFilesRoot: root, strictRead: true });
-  assert.equal(snapshot.runtime.runProfile, 'thorough');
+  const snapshot = loadUserSettingsSync({ categoryAuthorityRoot: root, strictRead: true });
   assert.equal(snapshot.runtime.concurrency, 9);
-  assert.equal(snapshot.convergence.convergenceMaxRounds, 6);
-  assert.equal(snapshot.convergence.serpTriageEnabled, false);
+  assert.equal(snapshot.convergence.serpTriageMinScore, 3);
   assert.equal(snapshot.ui.runtimeAutoSaveEnabled, false);
   assert.equal(snapshot.ui.storageAutoSaveEnabled, true);
 });
@@ -107,7 +99,7 @@ test('persistUserSettingsSections fails on invalid user-settings JSON instead of
 
   await assert.rejects(
     () => persistUserSettingsSections({
-      helperFilesRoot: root,
+      categoryAuthorityRoot: root,
       ui: {
         runtimeAutoSaveEnabled: false,
       },
@@ -127,28 +119,28 @@ test('persistUserSettingsSections studioPatch merges per-category updates withou
 
   await Promise.all([
     persistUserSettingsSections({
-      helperFilesRoot: root,
+      categoryAuthorityRoot: root,
       studioPatch: {
         mouse: {
-          file_path: 'helper_files/mouse/_control_plane/field_studio_map.json',
+          file_path: 'category_authority/mouse/_control_plane/field_studio_map.json',
           map: { version: 1, component_sources: [{ component_type: 'sensor' }] },
         },
       },
     }),
     persistUserSettingsSections({
-      helperFilesRoot: root,
+      categoryAuthorityRoot: root,
       studioPatch: {
         keyboard: {
-          file_path: 'helper_files/keyboard/_control_plane/field_studio_map.json',
+          file_path: 'category_authority/keyboard/_control_plane/field_studio_map.json',
           map: { version: 2, component_sources: [{ component_type: 'switch' }] },
         },
       },
     }),
   ]);
 
-  const snapshot = loadUserSettingsSync({ helperFilesRoot: root, strictRead: true });
-  assert.equal(snapshot.studio.mouse.file_path, 'helper_files/mouse/_control_plane/field_studio_map.json');
-  assert.equal(snapshot.studio.keyboard.file_path, 'helper_files/keyboard/_control_plane/field_studio_map.json');
+  const snapshot = loadUserSettingsSync({ categoryAuthorityRoot: root, strictRead: true });
+  assert.equal(snapshot.studio.mouse.file_path, 'category_authority/mouse/_control_plane/field_studio_map.json');
+  assert.equal(snapshot.studio.keyboard.file_path, 'category_authority/keyboard/_control_plane/field_studio_map.json');
   assert.equal(snapshot.studio.mouse.map.version, 1);
   assert.equal(snapshot.studio.keyboard.map.version, 2);
 });
@@ -158,7 +150,7 @@ test('persistUserSettingsSections rejects mixed studio and studioPatch writes', 
 
   await assert.rejects(
     () => persistUserSettingsSections({
-      helperFilesRoot: root,
+      categoryAuthorityRoot: root,
       studio: {
         mouse: { map: { version: 1 } },
       },

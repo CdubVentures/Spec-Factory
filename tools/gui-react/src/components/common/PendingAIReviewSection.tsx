@@ -1,7 +1,7 @@
-import { useMutation, type QueryClient } from '@tanstack/react-query';
-import { api } from '../../api/client';
+import type { QueryClient } from '@tanstack/react-query';
 import { DrawerSection } from './DrawerShell';
-import type { ComponentReviewFlaggedItem, ComponentReviewBatchResult } from '../../types/componentReview';
+import { useRunComponentReviewBatchMutation } from '../../hooks/useRunComponentReviewBatchMutation';
+import type { ComponentReviewFlaggedItem } from '../../types/componentReview';
 
 interface PendingAIReviewSectionProps {
   items: ComponentReviewFlaggedItem[];
@@ -11,14 +11,9 @@ interface PendingAIReviewSectionProps {
 }
 
 export function PendingAIReviewSection({ items, pendingCandidateCount, category, queryClient }: PendingAIReviewSectionProps) {
-  const batchMut = useMutation({
-    mutationFn: () =>
-      api.post<ComponentReviewBatchResult>(`/review-components/${category}/run-component-review-batch`, {}),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['componentReview', category] });
-      queryClient.invalidateQueries({ queryKey: ['componentReviewData', category] });
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-    },
+  const batchMut = useRunComponentReviewBatchMutation({
+    category,
+    queryClient,
   });
 
   if (items.length === 0) return null;

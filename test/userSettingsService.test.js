@@ -4,7 +4,7 @@ import {
   deriveSettingsArtifactsFromUserSettings,
   readStudioMapFromUserSettings,
   sanitizeUserSettingsSettings,
-} from '../src/api/services/userSettingsService.js';
+} from '../src/features/settings-authority/userSettingsService.js';
 
 test('readStudioMapFromUserSettings returns null when category entry is missing', () => {
   const payload = {
@@ -33,12 +33,12 @@ test('readStudioMapFromUserSettings returns populated map for matching category'
           version: 2,
           component_sources: [{ component_type: 'sensor', roles: {} }],
         },
-        file_path: 'helper_files/mouse/_control_plane/field_studio_map.json',
+        file_path: 'category_authority/mouse/_control_plane/field_studio_map.json',
       },
     },
   };
   assert.deepEqual(readStudioMapFromUserSettings(payload, 'mouse'), {
-    file_path: 'helper_files/mouse/_control_plane/field_studio_map.json',
+    file_path: 'category_authority/mouse/_control_plane/field_studio_map.json',
     map: {
       version: 2,
       component_sources: [{ component_type: 'sensor', roles: {} }],
@@ -87,7 +87,7 @@ test('deriveSettingsArtifactsFromUserSettings uses canonical runtime json and em
     storage: {
       enabled: true,
       destinationType: 's3',
-      s3Region: 'us-east-2',
+      awsRegion: 'us-east-2',
       s3Bucket: 'spec-bucket',
       s3Prefix: 'runs',
       s3AccessKeyId: 'AKIA123',

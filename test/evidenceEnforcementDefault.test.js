@@ -21,7 +21,7 @@ async function writeJson(filePath, value) {
 
 async function createFixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'evidence-enforce-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
 
   await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -95,7 +95,7 @@ test('A.1 enforce: field with value but no evidence provenance is zeroed out', a
   const fixture = await createFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = applyRuntimeFieldRules({
       engine,
@@ -128,7 +128,7 @@ test('A.1 enforce: strict enforcement via runtimeGate accepts complete provenanc
   const fixture = await createFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = applyRuntimeFieldRules({
       engine,
@@ -174,7 +174,7 @@ test('A.1 enforce: weight preserved, sensor zeroed — mixed evidence (BUG FIXED
   const fixture = await createFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = applyRuntimeFieldRules({
       engine,
@@ -227,7 +227,7 @@ test('A.1 enforce off: fields without evidence pass when enforceEvidence=false a
   const fixture = await createFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = applyRuntimeFieldRules({
       engine,
@@ -259,7 +259,7 @@ test('A.1 enforce: changes list records before/after for evidence failures', asy
   const fixture = await createFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = applyRuntimeFieldRules({
       engine,
@@ -291,7 +291,7 @@ test('A.1 enforce: normalization failures happen before evidence check', async (
   const fixture = await createFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = applyRuntimeFieldRules({
       engine,

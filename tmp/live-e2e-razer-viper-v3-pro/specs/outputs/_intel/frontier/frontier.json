@@ -1,0 +1,1802 @@
+{
+  "version": 1,
+  "created_at": "2026-03-11T20:37:58.702Z",
+  "updated_at": "2026-03-11T20:46:08.725Z",
+  "queries": {
+    "b95s2z": {
+      "query_hash": "b95s2z",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "site:razer.com razer viper v3 pro connection",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:38:17.368Z",
+      "last_ts": "2026-03-11T20:38:17.368Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://razer.com/product/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://razer.com/products/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 3,
+          "url": "https://razer.com/p/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 4,
+          "url": "https://razer.com/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 5,
+          "url": "https://razer.com/support/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 6,
+          "url": "https://razer.com/manual/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 7,
+          "url": "https://razer.com/downloads/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 8,
+          "url": "https://razer.com/specs/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 9,
+          "url": "https://razer.com/mouse/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 10,
+          "url": "https://razer.com/mice/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        }
+      ]
+    },
+    "iuar5w": {
+      "query_hash": "iuar5w",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "site:razer.com razer viper v3 pro connectivity",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:38:41.397Z",
+      "last_ts": "2026-03-11T20:38:41.397Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://razer.com/product/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://razer.com/products/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 3,
+          "url": "https://razer.com/p/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 4,
+          "url": "https://razer.com/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 5,
+          "url": "https://razer.com/support/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 6,
+          "url": "https://razer.com/manual/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 7,
+          "url": "https://razer.com/downloads/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 8,
+          "url": "https://razer.com/specs/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 9,
+          "url": "https://razer.com/mouse/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 10,
+          "url": "https://razer.com/mice/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        }
+      ]
+    },
+    "xkqis0": {
+      "query_hash": "xkqis0",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "site:razer.com razer viper v3 pro dpi",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:39:05.433Z",
+      "last_ts": "2026-03-11T20:39:05.433Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://razer.com/product/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://razer.com/products/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 3,
+          "url": "https://razer.com/p/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 4,
+          "url": "https://razer.com/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 5,
+          "url": "https://razer.com/support/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 6,
+          "url": "https://razer.com/manual/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 7,
+          "url": "https://razer.com/downloads/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 8,
+          "url": "https://razer.com/specs/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 9,
+          "url": "https://razer.com/mouse/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 10,
+          "url": "https://razer.com/mice/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        }
+      ]
+    },
+    "86d0k7": {
+      "query_hash": "86d0k7",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "site:razerzone.com razer viper v3 pro connection",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:39:29.441Z",
+      "last_ts": "2026-03-11T20:39:29.441Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://razerzone.com/product/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://razerzone.com/products/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 3,
+          "url": "https://razerzone.com/p/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 4,
+          "url": "https://razerzone.com/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 5,
+          "url": "https://razerzone.com/support/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 6,
+          "url": "https://razerzone.com/manual/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 7,
+          "url": "https://razerzone.com/downloads/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 8,
+          "url": "https://razerzone.com/specs/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 9,
+          "url": "https://razerzone.com/mouse/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 10,
+          "url": "https://razerzone.com/mice/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        }
+      ]
+    },
+    "qlxo40": {
+      "query_hash": "qlxo40",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "site:razerzone.com razer viper v3 pro connectivity",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:39:53.476Z",
+      "last_ts": "2026-03-11T20:39:53.476Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://razerzone.com/product/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://razerzone.com/products/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 3,
+          "url": "https://razerzone.com/p/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 4,
+          "url": "https://razerzone.com/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 5,
+          "url": "https://razerzone.com/support/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 6,
+          "url": "https://razerzone.com/manual/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 7,
+          "url": "https://razerzone.com/downloads/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 8,
+          "url": "https://razerzone.com/specs/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 9,
+          "url": "https://razerzone.com/mouse/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 10,
+          "url": "https://razerzone.com/mice/viper-v3-pro",
+          "title": "razerzone.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        }
+      ]
+    },
+    "ndjfeb": {
+      "query_hash": "ndjfeb",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "razer viper v3 pro connection manual",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:40:17.502Z",
+      "last_ts": "2026-03-11T20:40:17.502Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://rtings.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20manual",
+          "title": "rtings.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://rtings.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20manual",
+          "title": "rtings.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 3,
+          "url": "https://techpowerup.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20manual",
+          "title": "techpowerup.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 4,
+          "url": "https://techpowerup.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20manual",
+          "title": "techpowerup.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 5,
+          "url": "https://tomshardware.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20manual",
+          "title": "tomshardware.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 6,
+          "url": "https://tomshardware.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20manual",
+          "title": "tomshardware.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 7,
+          "url": "https://lttlabs.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20manual",
+          "title": "lttlabs.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 8,
+          "url": "https://lttlabs.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20manual",
+          "title": "lttlabs.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 9,
+          "url": "https://igorslab.de/search?q=Razer%20Viper%20V3%20Pro%20connection%20manual",
+          "title": "igorslab.de search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 10,
+          "url": "https://igorslab.de/search/?q=Razer%20Viper%20V3%20Pro%20connection%20manual",
+          "title": "igorslab.de search",
+          "host": "",
+          "snippet": "planned source search URL"
+        }
+      ]
+    },
+    "vntu3j": {
+      "query_hash": "vntu3j",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "razer viper v3 pro connection manual pdf",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:40:41.526Z",
+      "last_ts": "2026-03-11T20:40:41.526Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://rtings.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20manual%20pdf",
+          "title": "rtings.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://rtings.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20manual%20pdf",
+          "title": "rtings.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 3,
+          "url": "https://techpowerup.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20manual%20pdf",
+          "title": "techpowerup.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 4,
+          "url": "https://techpowerup.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20manual%20pdf",
+          "title": "techpowerup.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 5,
+          "url": "https://tomshardware.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20manual%20pdf",
+          "title": "tomshardware.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 6,
+          "url": "https://tomshardware.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20manual%20pdf",
+          "title": "tomshardware.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 7,
+          "url": "https://lttlabs.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20manual%20pdf",
+          "title": "lttlabs.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 8,
+          "url": "https://lttlabs.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20manual%20pdf",
+          "title": "lttlabs.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 9,
+          "url": "https://igorslab.de/search?q=Razer%20Viper%20V3%20Pro%20connection%20manual%20pdf",
+          "title": "igorslab.de search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 10,
+          "url": "https://igorslab.de/search/?q=Razer%20Viper%20V3%20Pro%20connection%20manual%20pdf",
+          "title": "igorslab.de search",
+          "host": "",
+          "snippet": "planned source search URL"
+        }
+      ]
+    },
+    "ki4egl": {
+      "query_hash": "ki4egl",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "razer viper v3 pro connection pdf",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:41:05.556Z",
+      "last_ts": "2026-03-11T20:41:05.556Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://rtings.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20pdf",
+          "title": "rtings.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://rtings.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20pdf",
+          "title": "rtings.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 3,
+          "url": "https://techpowerup.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20pdf",
+          "title": "techpowerup.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 4,
+          "url": "https://techpowerup.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20pdf",
+          "title": "techpowerup.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 5,
+          "url": "https://tomshardware.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20pdf",
+          "title": "tomshardware.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 6,
+          "url": "https://tomshardware.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20pdf",
+          "title": "tomshardware.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 7,
+          "url": "https://lttlabs.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20pdf",
+          "title": "lttlabs.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 8,
+          "url": "https://lttlabs.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20pdf",
+          "title": "lttlabs.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 9,
+          "url": "https://igorslab.de/search?q=Razer%20Viper%20V3%20Pro%20connection%20pdf",
+          "title": "igorslab.de search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 10,
+          "url": "https://igorslab.de/search/?q=Razer%20Viper%20V3%20Pro%20connection%20pdf",
+          "title": "igorslab.de search",
+          "host": "",
+          "snippet": "planned source search URL"
+        }
+      ]
+    },
+    "87ozh8": {
+      "query_hash": "87ozh8",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "razer viper v3 pro connection specification",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:41:29.595Z",
+      "last_ts": "2026-03-11T20:41:29.595Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://rtings.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20specification",
+          "title": "rtings.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://rtings.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20specification",
+          "title": "rtings.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 3,
+          "url": "https://techpowerup.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20specification",
+          "title": "techpowerup.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 4,
+          "url": "https://techpowerup.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20specification",
+          "title": "techpowerup.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 5,
+          "url": "https://tomshardware.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20specification",
+          "title": "tomshardware.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 6,
+          "url": "https://tomshardware.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20specification",
+          "title": "tomshardware.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 7,
+          "url": "https://lttlabs.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20specification",
+          "title": "lttlabs.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 8,
+          "url": "https://lttlabs.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20specification",
+          "title": "lttlabs.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 9,
+          "url": "https://igorslab.de/search?q=Razer%20Viper%20V3%20Pro%20connection%20specification",
+          "title": "igorslab.de search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 10,
+          "url": "https://igorslab.de/search/?q=Razer%20Viper%20V3%20Pro%20connection%20specification",
+          "title": "igorslab.de search",
+          "host": "",
+          "snippet": "planned source search URL"
+        }
+      ]
+    },
+    "c6l2js": {
+      "query_hash": "c6l2js",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "razer viper v3 pro connection support",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:41:53.624Z",
+      "last_ts": "2026-03-11T20:41:53.624Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://rtings.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20support",
+          "title": "rtings.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://rtings.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20support",
+          "title": "rtings.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 3,
+          "url": "https://techpowerup.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20support",
+          "title": "techpowerup.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 4,
+          "url": "https://techpowerup.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20support",
+          "title": "techpowerup.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 5,
+          "url": "https://tomshardware.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20support",
+          "title": "tomshardware.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 6,
+          "url": "https://tomshardware.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20support",
+          "title": "tomshardware.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 7,
+          "url": "https://lttlabs.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20support",
+          "title": "lttlabs.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 8,
+          "url": "https://lttlabs.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20support",
+          "title": "lttlabs.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 9,
+          "url": "https://igorslab.de/search?q=Razer%20Viper%20V3%20Pro%20connection%20support",
+          "title": "igorslab.de search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 10,
+          "url": "https://igorslab.de/search/?q=Razer%20Viper%20V3%20Pro%20connection%20support",
+          "title": "igorslab.de search",
+          "host": "",
+          "snippet": "planned source search URL"
+        }
+      ]
+    },
+    "97h7pp": {
+      "query_hash": "97h7pp",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "razer viper v3 pro connection connectivity dpi height lngth middle_buttons polling_rate sensor sensor_brand side_buttons switch switch_brand weight width manual site:lttlabs.com filetype:pdf",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:42:17.649Z",
+      "last_ts": "2026-03-11T20:42:17.649Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://lttlabs.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Alttlabs.com%20filetype%3Apdf",
+          "title": "lttlabs.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://lttlabs.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Alttlabs.com%20filetype%3Apdf",
+          "title": "lttlabs.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        }
+      ]
+    },
+    "4mf1ya": {
+      "query_hash": "4mf1ya",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "razer viper v3 pro connection connectivity dpi height lngth middle_buttons polling_rate sensor sensor_brand side_buttons switch switch_brand weight width manual site:rtings.com filetype:pdf",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:42:41.668Z",
+      "last_ts": "2026-03-11T20:42:41.668Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://rtings.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Artings.com%20filetype%3Apdf",
+          "title": "rtings.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://rtings.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Artings.com%20filetype%3Apdf",
+          "title": "rtings.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        }
+      ]
+    },
+    "yly09x": {
+      "query_hash": "yly09x",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "razer viper v3 pro connection connectivity dpi height lngth middle_buttons polling_rate sensor sensor_brand side_buttons switch switch_brand weight width manual site:techpowerup.com filetype:pdf",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:43:05.761Z",
+      "last_ts": "2026-03-11T20:43:05.761Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://techpowerup.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Atechpowerup.com%20filetype%3Apdf",
+          "title": "techpowerup.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://techpowerup.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Atechpowerup.com%20filetype%3Apdf",
+          "title": "techpowerup.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        }
+      ]
+    },
+    "4ve7qd": {
+      "query_hash": "4ve7qd",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "razer viper v3 pro connection connectivity dpi height lngth middle_buttons polling_rate sensor sensor_brand side_buttons switch switch_brand weight width manual site:mousespecs.org filetype:pdf",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:43:29.793Z",
+      "last_ts": "2026-03-11T20:43:29.793Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://mousespecs.org/search?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Amousespecs.org%20filetype%3Apdf",
+          "title": "mousespecs.org search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://mousespecs.org/search/?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Amousespecs.org%20filetype%3Apdf",
+          "title": "mousespecs.org search",
+          "host": "",
+          "snippet": "planned source search URL"
+        }
+      ]
+    },
+    "qxjc3v": {
+      "query_hash": "qxjc3v",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "razer viper v3 pro connection connectivity dpi height lngth middle_buttons polling_rate sensor sensor_brand side_buttons switch switch_brand weight width manual site:eloshapes.com filetype:pdf",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:43:53.808Z",
+      "last_ts": "2026-03-11T20:43:53.808Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://eloshapes.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Aeloshapes.com%20filetype%3Apdf",
+          "title": "eloshapes.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://eloshapes.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Aeloshapes.com%20filetype%3Apdf",
+          "title": "eloshapes.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        }
+      ]
+    },
+    "mz35kz": {
+      "query_hash": "mz35kz",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "razer viper v3 pro connection connectivity dpi height lngth middle_buttons polling_rate sensor sensor_brand side_buttons switch switch_brand weight width manual site:bestbuy.com filetype:pdf",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:44:17.834Z",
+      "last_ts": "2026-03-11T20:44:17.834Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://bestbuy.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Abestbuy.com%20filetype%3Apdf",
+          "title": "bestbuy.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://bestbuy.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Abestbuy.com%20filetype%3Apdf",
+          "title": "bestbuy.com search",
+          "host": "",
+          "snippet": "planned source search URL"
+        }
+      ]
+    },
+    "wxxhmh": {
+      "query_hash": "wxxhmh",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "razer viper v3 pro connection connectivity dpi height lngth middle_buttons polling_rate sensor sensor_brand side_buttons switch switch_brand weight width manual site:prosettings.net filetype:pdf",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:44:41.868Z",
+      "last_ts": "2026-03-11T20:44:41.868Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://prosettings.net/search?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Aprosettings.net%20filetype%3Apdf",
+          "title": "prosettings.net search",
+          "host": "",
+          "snippet": "planned source search URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://prosettings.net/search/?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Aprosettings.net%20filetype%3Apdf",
+          "title": "prosettings.net search",
+          "host": "",
+          "snippet": "planned source search URL"
+        }
+      ]
+    },
+    "nk6czx": {
+      "query_hash": "nk6czx",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "query_text": "razer viper v3 pro connection connectivity dpi height lngth middle_buttons polling_rate sensor sensor_brand side_buttons switch switch_brand weight width manual site:razer.com filetype:pdf",
+      "provider": "google",
+      "fields": [
+        "connection",
+        "connectivity",
+        "dpi",
+        "height",
+        "lngth",
+        "middle_buttons",
+        "polling_rate",
+        "sensor",
+        "sensor_brand",
+        "side_buttons",
+        "switch",
+        "switch_brand",
+        "weight",
+        "width"
+      ],
+      "attempts": 1,
+      "first_ts": "2026-03-11T20:45:05.887Z",
+      "last_ts": "2026-03-11T20:45:05.887Z",
+      "results": [
+        {
+          "rank": 1,
+          "url": "https://razer.com/product/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 2,
+          "url": "https://razer.com/products/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 3,
+          "url": "https://razer.com/p/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 4,
+          "url": "https://razer.com/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 5,
+          "url": "https://razer.com/support/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 6,
+          "url": "https://razer.com/manual/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 7,
+          "url": "https://razer.com/downloads/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 8,
+          "url": "https://razer.com/specs/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 9,
+          "url": "https://razer.com/mouse/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        },
+        {
+          "rank": 10,
+          "url": "https://razer.com/mice/viper-v3-pro",
+          "title": "razer.com planned manufacturer path",
+          "host": "",
+          "snippet": "planned manufacturer candidate URL"
+        }
+      ]
+    }
+  },
+  "urls": {
+    "https://razer.com/mice/viper-v3-pro": {
+      "canonical_url": "https://razer.com/mice/viper-v3-pro",
+      "original_url": "https://razer.com/mice/viper-v3-pro",
+      "domain": "razer.com",
+      "path_sig": "/mice/viper-v3-pro",
+      "first_seen_ts": "2026-03-11T20:45:07.012Z",
+      "last_seen_ts": "2026-03-11T20:45:07.012Z",
+      "last_status": 404,
+      "last_final_url": "",
+      "content_type": "",
+      "content_hash": "",
+      "fetch_count": 1,
+      "retries_count": 1,
+      "fields_found": [],
+      "avg_confidence": 0,
+      "conflict_count": 0,
+      "cooldown": {
+        "next_retry_ts": "2026-03-14T20:45:07.013Z",
+        "reason": "status_404",
+        "seconds": 259200
+      }
+    },
+    "https://razer.com/mouse/viper-v3-pro": {
+      "canonical_url": "https://razer.com/mouse/viper-v3-pro",
+      "original_url": "https://razer.com/mouse/viper-v3-pro",
+      "domain": "razer.com",
+      "path_sig": "/mouse/viper-v3-pro",
+      "first_seen_ts": "2026-03-11T20:45:10.945Z",
+      "last_seen_ts": "2026-03-11T20:45:10.945Z",
+      "last_status": 404,
+      "last_final_url": "",
+      "content_type": "",
+      "content_hash": "",
+      "fetch_count": 1,
+      "retries_count": 1,
+      "fields_found": [],
+      "avg_confidence": 0,
+      "conflict_count": 0,
+      "cooldown": {
+        "next_retry_ts": "2026-03-14T20:45:10.945Z",
+        "reason": "status_404",
+        "seconds": 259200
+      }
+    },
+    "https://razer.com/support/viper-v3-pro": {
+      "canonical_url": "https://razer.com/support/viper-v3-pro",
+      "original_url": "https://razer.com/support/viper-v3-pro",
+      "domain": "razer.com",
+      "path_sig": "/support/viper-v3-pro",
+      "first_seen_ts": "2026-03-11T20:45:13.885Z",
+      "last_seen_ts": "2026-03-11T20:45:13.885Z",
+      "last_status": 404,
+      "last_final_url": "",
+      "content_type": "",
+      "content_hash": "",
+      "fetch_count": 1,
+      "retries_count": 1,
+      "fields_found": [],
+      "avg_confidence": 0,
+      "conflict_count": 0,
+      "cooldown": {
+        "next_retry_ts": "2026-03-14T20:45:13.885Z",
+        "reason": "status_404",
+        "seconds": 259200
+      }
+    },
+    "https://razer.com/downloads/viper-v3-pro": {
+      "canonical_url": "https://razer.com/downloads/viper-v3-pro",
+      "original_url": "https://razer.com/downloads/viper-v3-pro",
+      "domain": "razer.com",
+      "path_sig": "/downloads/viper-v3-pro",
+      "first_seen_ts": "2026-03-11T20:45:17.347Z",
+      "last_seen_ts": "2026-03-11T20:45:17.347Z",
+      "last_status": 404,
+      "last_final_url": "",
+      "content_type": "",
+      "content_hash": "",
+      "fetch_count": 1,
+      "retries_count": 1,
+      "fields_found": [],
+      "avg_confidence": 0,
+      "conflict_count": 0,
+      "cooldown": {
+        "next_retry_ts": "2026-03-14T20:45:17.347Z",
+        "reason": "status_404",
+        "seconds": 259200
+      }
+    },
+    "https://razer.com/manual/viper-v3-pro": {
+      "canonical_url": "https://razer.com/manual/viper-v3-pro",
+      "original_url": "https://razer.com/manual/viper-v3-pro",
+      "domain": "razer.com",
+      "path_sig": "/manual/viper-v3-pro",
+      "first_seen_ts": "2026-03-11T20:45:21.064Z",
+      "last_seen_ts": "2026-03-11T20:45:21.064Z",
+      "last_status": 404,
+      "last_final_url": "",
+      "content_type": "",
+      "content_hash": "",
+      "fetch_count": 1,
+      "retries_count": 1,
+      "fields_found": [],
+      "avg_confidence": 0,
+      "conflict_count": 0,
+      "cooldown": {
+        "next_retry_ts": "2026-03-14T20:45:21.064Z",
+        "reason": "status_404",
+        "seconds": 259200
+      }
+    },
+    "https://razer.com/specs/viper-v3-pro": {
+      "canonical_url": "https://razer.com/specs/viper-v3-pro",
+      "original_url": "https://razer.com/specs/viper-v3-pro",
+      "domain": "razer.com",
+      "path_sig": "/specs/viper-v3-pro",
+      "first_seen_ts": "2026-03-11T20:45:24.366Z",
+      "last_seen_ts": "2026-03-11T20:45:24.366Z",
+      "last_status": 404,
+      "last_final_url": "",
+      "content_type": "",
+      "content_hash": "",
+      "fetch_count": 1,
+      "retries_count": 1,
+      "fields_found": [],
+      "avg_confidence": 0,
+      "conflict_count": 0,
+      "cooldown": {
+        "next_retry_ts": "2026-03-14T20:45:24.366Z",
+        "reason": "status_404",
+        "seconds": 259200
+      }
+    },
+    "https://razer.com/product/viper-v3-pro": {
+      "canonical_url": "https://razer.com/product/viper-v3-pro",
+      "original_url": "https://razer.com/product/viper-v3-pro",
+      "domain": "razer.com",
+      "path_sig": "/product/viper-v3-pro",
+      "first_seen_ts": "2026-03-11T20:45:27.904Z",
+      "last_seen_ts": "2026-03-11T20:45:27.904Z",
+      "last_status": 404,
+      "last_final_url": "",
+      "content_type": "",
+      "content_hash": "",
+      "fetch_count": 1,
+      "retries_count": 1,
+      "fields_found": [],
+      "avg_confidence": 0,
+      "conflict_count": 0,
+      "cooldown": {
+        "next_retry_ts": "2026-03-14T20:45:27.904Z",
+        "reason": "status_404",
+        "seconds": 259200
+      }
+    },
+    "https://razer.com/robots.txt": {
+      "canonical_url": "https://razer.com/robots.txt",
+      "original_url": "https://razer.com/robots.txt",
+      "domain": "razer.com",
+      "path_sig": "/robots.txt",
+      "first_seen_ts": "2026-03-11T20:45:30.791Z",
+      "last_seen_ts": "2026-03-11T20:45:30.791Z",
+      "last_status": 200,
+      "last_final_url": "https://www.razer.com/robots.txt",
+      "content_type": "text/html",
+      "content_hash": "4974d5b2d5175ee1e4057bc2cbf487f2623032f9cdf6be413eb7a626fae99aef",
+      "fetch_count": 1,
+      "retries_count": 0,
+      "fields_found": [],
+      "avg_confidence": 0.3,
+      "conflict_count": 0,
+      "cooldown": {
+        "next_retry_ts": "",
+        "reason": "",
+        "seconds": 0
+      }
+    },
+    "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap1.xml": {
+      "canonical_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap1.xml",
+      "original_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap1.xml",
+      "domain": "sitemap-xml.razer.com",
+      "path_sig": "/pro-sitemaps-4237407.php",
+      "first_seen_ts": "2026-03-11T20:45:38.646Z",
+      "last_seen_ts": "2026-03-11T20:45:38.646Z",
+      "last_status": 200,
+      "last_final_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap1.xml",
+      "content_type": "text/html",
+      "content_hash": "29a139d0cc6e7f1c011b743c5063efc3156e4668c94f274d28166305548c4234",
+      "fetch_count": 1,
+      "retries_count": 0,
+      "fields_found": [],
+      "avg_confidence": 0.3,
+      "conflict_count": 0,
+      "cooldown": {
+        "next_retry_ts": "",
+        "reason": "",
+        "seconds": 0
+      }
+    },
+    "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap2.xml": {
+      "canonical_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap2.xml",
+      "original_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap2.xml",
+      "domain": "sitemap-xml.razer.com",
+      "path_sig": "/pro-sitemaps-4237407.php",
+      "first_seen_ts": "2026-03-11T20:45:45.557Z",
+      "last_seen_ts": "2026-03-11T20:45:45.557Z",
+      "last_status": 200,
+      "last_final_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap2.xml",
+      "content_type": "text/html",
+      "content_hash": "70708fa0a25df7fdf5bdf01f7e4043129ed9b3976a0e7b05bbd34882b8a10033",
+      "fetch_count": 1,
+      "retries_count": 0,
+      "fields_found": [],
+      "avg_confidence": 0.3,
+      "conflict_count": 0,
+      "cooldown": {
+        "next_retry_ts": "",
+        "reason": "",
+        "seconds": 0
+      }
+    },
+    "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap3.xml": {
+      "canonical_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap3.xml",
+      "original_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap3.xml",
+      "domain": "sitemap-xml.razer.com",
+      "path_sig": "/pro-sitemaps-4237407.php",
+      "first_seen_ts": "2026-03-11T20:45:52.474Z",
+      "last_seen_ts": "2026-03-11T20:45:52.474Z",
+      "last_status": 200,
+      "last_final_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap3.xml",
+      "content_type": "text/html",
+      "content_hash": "31ab6eebbdbd2d15d1d7b07178daa38387befc7a9b12a91618352027a16690e9",
+      "fetch_count": 1,
+      "retries_count": 0,
+      "fields_found": [],
+      "avg_confidence": 0.4,
+      "conflict_count": 0,
+      "cooldown": {
+        "next_retry_ts": "",
+        "reason": "",
+        "seconds": 0
+      }
+    }
+  },
+  "recent_fetches": [
+    {
+      "ts": "2026-03-11T20:45:07.012Z",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "canonical_url": "https://razer.com/mice/viper-v3-pro",
+      "status": 404,
+      "final_url": "",
+      "bytes": 0,
+      "elapsed_ms": 1087,
+      "error": "HTTP 404"
+    },
+    {
+      "ts": "2026-03-11T20:45:10.945Z",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "canonical_url": "https://razer.com/mouse/viper-v3-pro",
+      "status": 404,
+      "final_url": "",
+      "bytes": 0,
+      "elapsed_ms": 3507,
+      "error": "HTTP 404"
+    },
+    {
+      "ts": "2026-03-11T20:45:13.885Z",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "canonical_url": "https://razer.com/support/viper-v3-pro",
+      "status": 404,
+      "final_url": "",
+      "bytes": 0,
+      "elapsed_ms": 6447,
+      "error": "HTTP 404"
+    },
+    {
+      "ts": "2026-03-11T20:45:17.347Z",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "canonical_url": "https://razer.com/downloads/viper-v3-pro",
+      "status": 404,
+      "final_url": "",
+      "bytes": 0,
+      "elapsed_ms": 9909,
+      "error": "HTTP 404"
+    },
+    {
+      "ts": "2026-03-11T20:45:21.064Z",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "canonical_url": "https://razer.com/manual/viper-v3-pro",
+      "status": 404,
+      "final_url": "",
+      "bytes": 0,
+      "elapsed_ms": 13626,
+      "error": "HTTP 404"
+    },
+    {
+      "ts": "2026-03-11T20:45:24.366Z",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "canonical_url": "https://razer.com/specs/viper-v3-pro",
+      "status": 404,
+      "final_url": "",
+      "bytes": 0,
+      "elapsed_ms": 13420,
+      "error": "HTTP 404"
+    },
+    {
+      "ts": "2026-03-11T20:45:27.904Z",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "canonical_url": "https://razer.com/product/viper-v3-pro",
+      "status": 404,
+      "final_url": "",
+      "bytes": 0,
+      "elapsed_ms": 14018,
+      "error": "HTTP 404"
+    },
+    {
+      "ts": "2026-03-11T20:45:30.791Z",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "canonical_url": "https://razer.com/robots.txt",
+      "status": 200,
+      "final_url": "https://www.razer.com/robots.txt",
+      "bytes": 1485,
+      "elapsed_ms": 13427,
+      "error": ""
+    },
+    {
+      "ts": "2026-03-11T20:45:38.646Z",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "canonical_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap1.xml",
+      "status": 200,
+      "final_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap1.xml",
+      "bytes": 10482953,
+      "elapsed_ms": 7750,
+      "error": ""
+    },
+    {
+      "ts": "2026-03-11T20:45:45.557Z",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "canonical_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap2.xml",
+      "status": 200,
+      "final_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap2.xml",
+      "bytes": 10484020,
+      "elapsed_ms": 13141,
+      "error": ""
+    },
+    {
+      "ts": "2026-03-11T20:45:52.474Z",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "canonical_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap3.xml",
+      "status": 200,
+      "final_url": "https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap3.xml",
+      "bytes": 10483190,
+      "elapsed_ms": 20085,
+      "error": ""
+    }
+  ],
+  "domain_stats": {
+    "razer.com|__all__": {
+      "domain": "razer.com",
+      "field_key": "__all__",
+      "notfound_count": 7,
+      "success_count": 1,
+      "conflict_count": 0,
+      "sample_count": 8,
+      "avg_confidence": 0.0375,
+      "last_seen_ts": "2026-03-11T20:45:30.791Z",
+      "ok_count": 1
+    },
+    "sitemap-xml.razer.com|__all__": {
+      "domain": "sitemap-xml.razer.com",
+      "field_key": "__all__",
+      "ok_count": 3,
+      "success_count": 3,
+      "conflict_count": 0,
+      "sample_count": 3,
+      "avg_confidence": 0.333333,
+      "last_seen_ts": "2026-03-11T20:45:52.474Z"
+    }
+  },
+  "path_stats": {
+    "razer.com|/mice/viper-v3-pro": {
+      "domain": "razer.com",
+      "path_sig": "/mice/viper-v3-pro",
+      "notfound_count": 1,
+      "last_seen_ts": "2026-03-11T20:45:07.012Z"
+    },
+    "razer.com|/mouse/viper-v3-pro": {
+      "domain": "razer.com",
+      "path_sig": "/mouse/viper-v3-pro",
+      "notfound_count": 1,
+      "last_seen_ts": "2026-03-11T20:45:10.945Z"
+    },
+    "razer.com|/support/viper-v3-pro": {
+      "domain": "razer.com",
+      "path_sig": "/support/viper-v3-pro",
+      "notfound_count": 1,
+      "last_seen_ts": "2026-03-11T20:45:13.885Z"
+    },
+    "razer.com|/downloads/viper-v3-pro": {
+      "domain": "razer.com",
+      "path_sig": "/downloads/viper-v3-pro",
+      "notfound_count": 1,
+      "last_seen_ts": "2026-03-11T20:45:17.347Z"
+    },
+    "razer.com|/manual/viper-v3-pro": {
+      "domain": "razer.com",
+      "path_sig": "/manual/viper-v3-pro",
+      "notfound_count": 1,
+      "last_seen_ts": "2026-03-11T20:45:21.064Z"
+    },
+    "razer.com|/specs/viper-v3-pro": {
+      "domain": "razer.com",
+      "path_sig": "/specs/viper-v3-pro",
+      "notfound_count": 1,
+      "last_seen_ts": "2026-03-11T20:45:24.366Z"
+    },
+    "razer.com|/product/viper-v3-pro": {
+      "domain": "razer.com",
+      "path_sig": "/product/viper-v3-pro",
+      "notfound_count": 1,
+      "last_seen_ts": "2026-03-11T20:45:27.904Z"
+    },
+    "razer.com|/robots.txt": {
+      "domain": "razer.com",
+      "path_sig": "/robots.txt",
+      "ok_count": 1,
+      "last_seen_ts": "2026-03-11T20:45:30.791Z"
+    },
+    "sitemap-xml.razer.com|/pro-sitemaps-4237407.php": {
+      "domain": "sitemap-xml.razer.com",
+      "path_sig": "/pro-sitemaps-4237407.php",
+      "ok_count": 3,
+      "last_seen_ts": "2026-03-11T20:45:52.474Z"
+    }
+  },
+  "product_index": {
+    "mouse-razer-viper-v3-pro": {
+      "last_query_hash": "nk6czx",
+      "last_query_ts": "2026-03-11T20:45:05.887Z"
+    }
+  }
+}

@@ -1,0 +1,275 @@
+{
+  "schema_version": "2026-02-20.source-indexing-extraction-packet.collection.v1",
+  "record_kind": "source_indexing_extraction_packet_collection",
+  "run_id": "20260311203758-d48ea2",
+  "category": "mouse",
+  "item_identifier": "mouse-razer-viper-v3-pro",
+  "generated_at": "2026-03-11T20:46:08.511Z",
+  "source_packet_count": 1,
+  "packets": [
+    {
+      "schema_version": "2026-02-20.source-indexing-extraction-packet.v1",
+      "record_kind": "source_indexing_extraction_packet",
+      "source_packet_id": "sha256:479009bda250d1dcedb0cfa9c960b4004eda18bfa98930aff6a6f87027208329",
+      "source_id": "src_870a1f7e3cec",
+      "source_key": "https://fallback.local/mouse-razer-viper-v3-pro",
+      "canonical_url": "https://fallback.local/mouse-razer-viper-v3-pro",
+      "source_version_id": "sha256:ddcfbe09af29e8afd88e41b911d6528d53c3f5a6806fc59e295b2d1ccb865cc5",
+      "content_hash": "sha256:967b5b8cee261e4677e61e11ec005ee0f807b4e3f6c9bc4c3012c12e47e52843",
+      "run_meta": {
+        "run_id": "20260311203758-d48ea2",
+        "category": "mouse",
+        "item_identifier": "mouse-razer-viper-v3-pro",
+        "product_id": "mouse-razer-viper-v3-pro",
+        "started_at": "2026-03-11T20:46:08.511Z",
+        "finished_at": "2026-03-11T20:46:08.511Z",
+        "fetch_status": "partial",
+        "http_status": 0,
+        "content_type": "text/html",
+        "fetch_ms": 0
+      },
+      "source_metadata": {
+        "source_url": "https://fallback.local/mouse-razer-viper-v3-pro",
+        "source_host": "fallback.local",
+        "source_root_domain": "fallback.local",
+        "source_tier": 3,
+        "source_method": "candidate_source",
+        "doc_kind": "html",
+        "host_authority_disabled": true
+      },
+      "parser_execution": {
+        "supported_source_kinds": [
+          "phase_01_static_html"
+        ],
+        "phase_lineage": {
+          "phase_01_static_html": true,
+          "phase_02_dynamic_js": false,
+          "phase_03_main_article": false,
+          "phase_04_html_spec_table": false,
+          "phase_05_embedded_json": false,
+          "phase_06_text_pdf": false,
+          "phase_07_scanned_pdf_ocr": false,
+          "phase_08_image_ocr": false,
+          "phase_09_chart_graph": false,
+          "phase_10_office_mixed_doc": false
+        },
+        "phase_stats": {
+          "phase_01_static_html": {
+            "executed": true,
+            "duration_ms": 0,
+            "assertion_count": 1,
+            "evidence_count": 1
+          }
+        }
+      },
+      "identity_target": {
+        "category": "mouse",
+        "brand": "Razer",
+        "model": "Viper V3 Pro",
+        "variant": "unk",
+        "sku": "unk"
+      },
+      "artifact_index": {
+        "art_485613d3f33b": {
+          "artifact_id": "art_485613d3f33b",
+          "phase_id": "phase_01_static_html",
+          "artifact_kind": "html",
+          "content_hash": "sha256:967b5b8cee261e4677e61e11ec005ee0f807b4e3f6c9bc4c3012c12e47e52843",
+          "mime_type": "text/html",
+          "captured_at": "2026-03-11T20:46:08.511Z",
+          "local_path": "https://fallback.local/mouse-razer-viper-v3-pro"
+        }
+      },
+      "evidence_index": {
+        "e_c19c41a0abbadc": {
+          "evidence_id": "e_c19c41a0abbadc",
+          "source_id": "src_870a1f7e3cec",
+          "source_url": "https://fallback.local/mouse-razer-viper-v3-pro",
+          "source_host": "fallback.local",
+          "source_root_domain": "fallback.local",
+          "phase_id": "phase_01_static_html",
+          "source_surface": "static_dom",
+          "target_match": {
+            "page_product_cluster_id": "cluster_main_product",
+            "target_match_score": 1,
+            "target_match_passed": true
+          },
+          "artifact_id": "art_485613d3f33b",
+          "snippet_id": "snip_8053907a09",
+          "snippet_hash": "sha256:06c433fbf351b68ac6228cf7224fe3fddf9e3f379266cbba8962f154f3a2c6de",
+          "quote": "Viper V3 Pro",
+          "snippet_text": "Viper V3 Pro",
+          "method": "dom",
+          "tier": 3,
+          "retrieved_at": "2026-03-11T20:46:08.511Z",
+          "surface_meta": {}
+        }
+      },
+      "field_key_map": {
+        "model": {
+          "field_key": "model",
+          "field_key_id": "sha256:15b6fd844c34f77b33b0688021841d044afdea003f15601a899b7993ee1ca771",
+          "field_meta": {
+            "field_key": "model",
+            "contract_type": "spec_field",
+            "shape": "scalar",
+            "required_level": "identity",
+            "is_identity": true,
+            "unit_expected": null,
+            "component_type": null,
+            "enum_source": null
+          },
+          "contexts": [
+            {
+              "field_instance_id": "fi_a8cf3bd3e82f830f",
+              "context_id": "ctx_fcf39550a686",
+              "context_kind": "scalar",
+              "context_ref": null,
+              "ambiguity": {
+                "level": "low",
+                "score": 0.08
+              },
+              "assertions": [
+                {
+                  "assertion_id": "cand_c19c41a0abbadc19e5",
+                  "candidate_id": "cand_c19c41a0abbadc19e5",
+                  "source_id": "src_870a1f7e3cec",
+                  "field_key": "model",
+                  "context_kind": "scalar",
+                  "context_ref": null,
+                  "value_raw": "Viper V3 Pro",
+                  "value_normalized": "Viper V3 Pro",
+                  "value_type": "string",
+                  "unit": null,
+                  "extraction_method": "dom",
+                  "parser_phase": "phase_01_static_html",
+                  "parser_confidence": 1,
+                  "confidence": 1,
+                  "target_match": {
+                    "page_product_cluster_id": "cluster_main_product",
+                    "target_match_score": 1,
+                    "target_match_passed": true
+                  },
+                  "ambiguity": {
+                    "level": "low",
+                    "score": 0.08
+                  },
+                  "parse_score_by_key": {
+                    "field_key": "model",
+                    "score": 1,
+                    "score_factors": {
+                      "parser_confidence": 1,
+                      "evidence_density": 1,
+                      "unit_match": 0.7,
+                      "identity_match": 1,
+                      "tier_weight": 0.45
+                    },
+                    "suggested_start_rank": 1
+                  },
+                  "evidence_ref_ids": [
+                    "e_c19c41a0abbadc"
+                  ],
+                  "created_at": "2026-03-11T20:46:08.511Z"
+                }
+              ]
+            }
+          ],
+          "field_metrics": {
+            "assertion_count": 1,
+            "distinct_evidence_count": 1,
+            "distinct_surface_count": 1,
+            "distinct_source_count": 1,
+            "ambiguity_level": "low",
+            "ambiguity_score": 0.08,
+            "has_conflict": false
+          }
+        }
+      },
+      "quality": {
+        "wrong_model": false,
+        "junk": false,
+        "blocked_reason": ""
+      },
+      "coverage_summary": {
+        "field_count": 1,
+        "fields": [
+          "model"
+        ],
+        "required_coverage": "0/14",
+        "critical_coverage": "0/1",
+        "is_jackpot_candidate": true
+      },
+      "indexing_projection": {
+        "retrieval_ready": true,
+        "chunk_strategy": "hybrid",
+        "chunk_count": 1,
+        "embedding_ready_evidence_ids": [
+          "e_c19c41a0abbadc"
+        ],
+        "retrieval_priority_field_keys": [
+          "model"
+        ],
+        "token_estimate_total": 80
+      },
+      "sql_projection": {
+        "source_registry_row": {
+          "source_id": "src_870a1f7e3cec",
+          "category": "mouse",
+          "item_identifier": "mouse-razer-viper-v3-pro",
+          "product_id": "mouse-razer-viper-v3-pro",
+          "run_id": "20260311203758-d48ea2",
+          "source_url": "https://fallback.local/mouse-razer-viper-v3-pro",
+          "source_host": "fallback.local",
+          "source_root_domain": "fallback.local",
+          "source_tier": 3,
+          "source_method": "candidate_source",
+          "crawl_status": "partial",
+          "http_status": 0,
+          "fetched_at": "2026-03-11T20:46:08.511Z"
+        },
+        "source_artifact_rows": [
+          {
+            "source_id": "src_870a1f7e3cec",
+            "artifact_type": "html",
+            "local_path": "https://fallback.local/mouse-razer-viper-v3-pro",
+            "content_hash": "sha256:967b5b8cee261e4677e61e11ec005ee0f807b4e3f6c9bc4c3012c12e47e52843",
+            "mime_type": "text/html",
+            "size_bytes": null,
+            "captured_at": "2026-03-11T20:46:08.511Z"
+          }
+        ],
+        "source_assertion_rows": [
+          {
+            "assertion_id": "cand_c19c41a0abbadc19e5",
+            "source_id": "src_870a1f7e3cec",
+            "field_key": "model",
+            "context_kind": "scalar",
+            "context_ref": null,
+            "value_raw": "Viper V3 Pro",
+            "value_normalized": "Viper V3 Pro",
+            "unit": null,
+            "candidate_id": "cand_c19c41a0abbadc19e5",
+            "extraction_method": "dom"
+          }
+        ],
+        "source_evidence_rows": [
+          {
+            "assertion_id": "cand_c19c41a0abbadc19e5",
+            "evidence_url": "https://fallback.local/mouse-razer-viper-v3-pro",
+            "snippet_id": "snip_8053907a09",
+            "quote": "Viper V3 Pro",
+            "method": "dom",
+            "tier": 3,
+            "retrieved_at": "2026-03-11T20:46:08.511Z"
+          }
+        ]
+      },
+      "packet_invariants": {
+        "one_packet_per_canonical_url": true,
+        "source_host_non_authority": true,
+        "extraction_first_packet": true,
+        "downstream_binding_optional": true
+      }
+    }
+  ]
+}

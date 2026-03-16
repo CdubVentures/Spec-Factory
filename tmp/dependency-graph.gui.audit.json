@@ -1,0 +1,18 @@
+{
+  "label": "gui",
+  "generated_at": "2026-03-12T06:31:23.984Z",
+  "root": "tools\\gui-react\\src",
+  "files": 636,
+  "edges": 1537,
+  "cycle_count": 1,
+  "cycles": [
+    [
+      "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerDocDetailView.tsx",
+      "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerDocsTab.tsx"
+    ]
+  ],
+  "top_outgoing_zones": [],
+  "top_incoming_zones": [],
+  "top_cross_zone_edges": [],
+  "bidirectional_zone_pairs": []
+}

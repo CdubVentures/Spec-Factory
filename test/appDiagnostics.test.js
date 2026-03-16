@@ -12,7 +12,7 @@ async function writeJson(filePath, value) {
 
 test('runAppDiagnostics reports helper/runtime schema mirror redundancy', async () => {
   const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-diagnostic-'));
-  const helperRoot = path.join(rootDir, 'helper_files', 'mouse');
+  const helperRoot = path.join(rootDir, 'category_authority', 'mouse');
   const runtimeRoot = path.join(rootDir, 'categories', 'mouse');
   try {
     await writeJson(path.join(helperRoot, 'schema.json'), {
@@ -30,7 +30,7 @@ test('runAppDiagnostics reports helper/runtime schema mirror redundancy', async 
 
     const report = await runAppDiagnostics({
       config: {
-        helperFilesRoot: 'helper_files'
+        categoryAuthorityRoot: 'category_authority'
       },
       rootDir
     });
@@ -58,7 +58,7 @@ test('runAppDiagnostics prune removes safe temporary folders', async () => {
 
     const report = await runAppDiagnostics({
       config: {
-        helperFilesRoot: 'helper_files'
+        categoryAuthorityRoot: 'category_authority'
       },
       rootDir,
       prune: true

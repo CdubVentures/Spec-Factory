@@ -1,0 +1,37 @@
+export function buildSourceProcessingPhaseContext({
+  buildSourceFetchClassificationPhaseFn,
+  classifyFetchOutcomeFn,
+  runSourceArtifactsPhaseFn,
+  runSourceExtractionFn,
+  runArtifactsBase,
+  config,
+  storage,
+  logger,
+  traceWriter,
+  buildDomSnippetArtifactFn,
+  toIntFn,
+  screenshotExtensionFn,
+  screenshotMimeTypeFn,
+  sha256Fn,
+  sha256BufferFn,
+} = {}) {
+  return {
+    buildSourceFetchClassificationPhaseFn,
+    classifyFetchOutcomeFn,
+    runSourceArtifactsPhaseFn,
+    runSourceExtractionFn,
+    runSourceArtifactsPhaseContext: {
+      runArtifactsBase,
+      config,
+      storage,
+      logger,
+      traceWriter,
+      buildDomSnippetArtifactFn,
+      toIntFn,
+      screenshotExtensionFn,
+      screenshotMimeTypeFn,
+      sha256Fn,
+      sha256BufferFn,
+    },
+  };
+}

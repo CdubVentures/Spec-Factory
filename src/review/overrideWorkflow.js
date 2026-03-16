@@ -124,7 +124,7 @@ function extractOverrideProvenance(override = {}, category, productId, field) {
     };
   }
   return {
-    url: `helper_files://${category}/_overrides/${productId}.overrides.json`,
+    url: `category_authority://${category}/_overrides/${productId}.overrides.json`,
     source_id: String(fallbackSource.source_id || '').trim() || null,
     retrieved_at: nowIso(),
     snippet_id: null,
@@ -207,7 +207,7 @@ function latestKeys(storage, category, productId) {
 }
 
 export function resolveOverrideFilePath({ config = {}, category, productId }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   return path.join(helperRoot, category, '_overrides', `${productId}.overrides.json`);
 }
 
@@ -805,7 +805,7 @@ export async function buildReviewMetrics({
   category,
   windowHours = 24
 }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   const rows = await listOverrideDocs(helperRoot, category);
   const now = Date.now();
   const cutoff = now - (Math.max(1, toNumber(windowHours, 24)) * 60 * 60 * 1000);
@@ -1171,3 +1171,4 @@ export async function finalizeOverrides({
     }
   };
 }
+

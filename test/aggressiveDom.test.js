@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AggressiveDomExtractor } from '../src/extract/aggressiveDom.js';
+import { AggressiveDomExtractor } from '../src/features/indexing/extraction/aggressiveDom.js';
 
 test('AggressiveDomExtractor extracts basic field candidates from HTML text', async () => {
   const extractor = new AggressiveDomExtractor({

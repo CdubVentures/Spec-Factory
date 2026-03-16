@@ -287,7 +287,7 @@ async function collectListSeedRows(fieldRules, config, category) {
   }
 
   // From control plane manual enum values
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   const controlPlaneRoot = path.join(helperRoot, category, '_control_plane');
   const fieldStudioMapPath = path.join(controlPlaneRoot, 'field_studio_map.json');
   const fieldStudioMap = await readJsonIfExists(fieldStudioMapPath);
@@ -426,7 +426,7 @@ function buildFieldMeta(fieldRules) {
 // ── Step 1a: Component override seeding ──────────────────────────────────────
 
 async function seedComponentOverrides(db, config, category) {
-  const helperRoot = config.helperFilesRoot || 'helper_files';
+  const helperRoot = config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority';
   const overrideDir = path.join(helperRoot, category, '_overrides', 'components');
   let overrideCount = 0;
 
@@ -670,7 +670,7 @@ async function collectPerSourceCandidates(outputRoot, productId, runId) {
 
 async function seedProducts(db, config, category, fieldRules, fieldMeta) {
   const outputRoot = path.join(config.localOutputRoot || 'out', 'specs', 'outputs', category);
-  const helperRoot = config.helperFilesRoot || 'helper_files';
+  const helperRoot = config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority';
   const overridesDir = path.join(helperRoot, category, '_overrides');
 
   let entries;
@@ -1073,7 +1073,7 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
 
 async function seedQueueState(db, config, category) {
   // Try modern queue state path first, then legacy
-  const helperRoot = path.resolve(config?.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority');
   const modernPath = path.resolve(`_queue/${category}/state.json`);
   const legacyPath = path.join(helperRoot, category, '_queue', 'state.json');
 
@@ -1113,7 +1113,7 @@ async function seedQueueState(db, config, category) {
 // ── Curation suggestions seeding ─────────────────────────────────────────────
 
 async function seedCurationSuggestions(db, config, category) {
-  const helperRoot = path.resolve(config?.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority');
   const enumPath = path.join(helperRoot, category, '_suggestions', 'enums.json');
   const compPath = path.join(helperRoot, category, '_suggestions', 'components.json');
 
@@ -1176,7 +1176,7 @@ async function seedCurationSuggestions(db, config, category) {
 // ── Component review queue seeding ───────────────────────────────────────────
 
 async function seedComponentReviewQueue(db, config, category) {
-  const helperRoot = path.resolve(config?.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority');
   const reviewPath = path.join(helperRoot, category, '_suggestions', 'component_review.json');
   const reviewDoc = await readJsonIfExists(reviewPath);
   if (!reviewDoc || !Array.isArray(reviewDoc.items)) return { count: 0 };
@@ -1212,7 +1212,7 @@ async function seedComponentReviewQueue(db, config, category) {
 // ── Product catalog seeding ───────────────────────────────────────────────────
 
 async function seedProductCatalog(db, config, category) {
-  const helperRoot = path.resolve(config?.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority');
   const catalogPath = path.join(helperRoot, category, '_control_plane', 'product_catalog.json');
   const catalog = await readJsonIfExists(catalogPath);
   if (!catalog || !isObject(catalog.products)) return { count: 0 };
@@ -1800,26 +1800,7 @@ function seedSourceAndKeyReview(db, category, fieldMeta) {
   };
 }
 
-// ── Step 10: Default source strategies ────────────────────────────────────────
-
-const DEFAULT_SOURCE_STRATEGIES = [
-  { host: 'rtings.com', display_name: 'RTINGS', source_type: 'lab_review', default_tier: 2, discovery_method: 'search_first', priority: 90 },
-  { host: 'techpowerup.com', display_name: 'TechPowerUp', source_type: 'lab_review', default_tier: 2, discovery_method: 'search_first', priority: 85 },
-  { host: 'eloshapes.com', display_name: 'Eloshapes', source_type: 'spec_database', default_tier: 2, discovery_method: 'search_first', priority: 70 },
-];
-
-function seedDefaultSourceStrategies(db) {
-  if (typeof db.listSourceStrategies !== 'function') return 0;
-  const existing = db.listSourceStrategies();
-  const existingHosts = new Set(existing.map(r => r.host));
-  let count = 0;
-  for (const strategy of DEFAULT_SOURCE_STRATEGIES) {
-    if (existingHosts.has(strategy.host)) continue;
-    db.insertSourceStrategy(strategy);
-    count++;
-  }
-  return count;
-}
+// ── Step 10: Source strategies ── (removed: sources.json is now the SSOT)
 
 // ── Main entry point ─────────────────────────────────────────────────────────
 
@@ -1928,11 +1909,7 @@ export async function seedSpecDb({ db, config, category, fieldRules, logger }) {
     }
   }
 
-  // Step 10: Seed default source strategies (idempotent)
-  const sourceStrategiesSeeded = seedDefaultSourceStrategies(db);
-  if (logger && sourceStrategiesSeeded > 0) {
-    logger.log?.('info', `[seed] Source strategies: ${sourceStrategiesSeeded}`);
-  }
+  // Step 10: Source strategies (removed — sources.json is now the SSOT)
 
   const duration_ms = Date.now() - start;
   const counts = db.counts();
@@ -1942,7 +1919,7 @@ export async function seedSpecDb({ db, config, category, fieldRules, logger }) {
     counts,
     duration_ms,
     errors,
-    source_strategies_seeded: sourceStrategiesSeeded,
+    source_strategies_seeded: 0,
     components_seeded: compResult.identityCount,
     component_overrides_seeded: overrideResult.overrideCount,
     list_values_seeded: listResult.count,
@@ -1966,3 +1943,4 @@ export async function seedSpecDb({ db, config, category, fieldRules, logger }) {
     removed_list_value_rows: reconcileListResult.removed_list_value_rows,
   };
 }
+

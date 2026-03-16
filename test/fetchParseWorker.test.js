@@ -118,7 +118,8 @@ describe('FETCH_OUTCOME_KEYS', () => {
     assert.ok(FETCH_OUTCOME_KEYS.includes('blocked'));
     assert.ok(FETCH_OUTCOME_KEYS.includes('rate_limited'));
     assert.ok(FETCH_OUTCOME_KEYS.includes('fetch_error'));
-    assert.equal(FETCH_OUTCOME_KEYS.length, 10);
+    assert.ok(FETCH_OUTCOME_KEYS.includes('soft_block'));
+    assert.equal(FETCH_OUTCOME_KEYS.length, 11);
   });
 });
 

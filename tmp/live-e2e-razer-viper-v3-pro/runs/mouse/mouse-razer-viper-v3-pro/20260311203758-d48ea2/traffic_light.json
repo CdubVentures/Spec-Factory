@@ -1,0 +1,809 @@
+{
+  "by_field": {
+    "release_date": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "discontinued": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sku": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "price_range": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "colors": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "design": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "lighting": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "rgb": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "connection": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "connectivity": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "computer_side_connector": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "mouse_side_connector": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "bluetooth": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "cable_type": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "paracord": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "wireless_charging": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "battery_hours": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "adjustable_weight": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "feet_material": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "coating": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "honeycomb_frame": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "silent_clicks": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "weight": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "material": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "lngth": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "width": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "height": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "form_factor": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "shape": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "hump": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "front_flare": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "thumb_rest": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "grip": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "hand_size": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "mcu": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "mcu_link": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor_brand": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor_date": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor_link": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor_type": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "flawless_sensor": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor_latency": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor_latency_list": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "shift_latency": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "polling_rate": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "dpi": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "ips": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "acceleration": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "lift": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "lift_settings": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "switches_link": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "motion_sync": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "hardware_acceleration": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "smoothing": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "nvidia_reflex": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "switch": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "switch_brand": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "switch_type": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "hot_swappable": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "debounce": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "click_latency": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "click_latency_list": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "click_force": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "encoder": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "encoder_brand": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "encoder_link": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "encoder_life_span": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "side_buttons": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "encoder_steps": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "middle_buttons": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "encoder_type": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "programmable_buttons": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "releasing_force": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "tilt_scroll_wheel": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "adjustable_scroll_wheel": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "switch_life_span": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "onboard_memory": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "onboard_memory_value": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    },
+    "profile_switching": {
+      "color": "red",
+      "reason": "identity_ambiguous",
+      "confidence": 0,
+      "source_tier": null,
+      "source_tier_name": null,
+      "source_method": null,
+      "source_url": null,
+      "unknown_reason": "identity_ambiguous"
+    }
+  },
+  "counts": {
+    "green": 0,
+    "yellow": 0,
+    "red": 80
+  }
+}

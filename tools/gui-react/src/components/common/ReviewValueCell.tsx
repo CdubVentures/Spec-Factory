@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { trafficColor, trafficTextColor } from '../../utils/colors';
 import { pct } from '../../utils/formatting';
 import { hasKnownValue } from '../../utils/fieldNormalize';
-import { CellTooltip, type CellTooltipState } from '../../pages/review/CellTooltip';
+import { CellTooltip, type CellTooltipState } from './CellTooltip';
 import { FlagIcon } from './FlagIcon';
 
 export interface ReviewValueCellState extends CellTooltipState {

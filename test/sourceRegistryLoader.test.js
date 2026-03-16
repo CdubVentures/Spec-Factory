@@ -12,7 +12,7 @@ async function writeJson(filePath, value) {
 
 test('loadCategoryConfig maps rich source registry metadata to source hosts', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase4-source-registry-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const category = 'mouse';
   try {
     await writeJson(path.join(helperRoot, category, '_generated', 'field_rules.json'), {
@@ -64,7 +64,7 @@ test('loadCategoryConfig maps rich source registry metadata to source hosts', as
 
     const config = await loadCategoryConfig(category, {
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
 
@@ -81,6 +81,81 @@ test('loadCategoryConfig maps rich source registry metadata to source hosts', as
     const sourceHosts = new Set((config.sourceHosts || []).map((row) => row.host));
     assert.equal(sourceHosts.has('razer.com'), true);
     assert.equal(sourceHosts.has('rtings.com'), true);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('loadCategoryConfig materializes manufacturer override hosts into source hosts', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase4-manufacturer-overrides-'));
+  const helperRoot = path.join(root, 'category_authority');
+  const category = 'mouse';
+  try {
+    await writeJson(path.join(helperRoot, category, '_generated', 'field_rules.json'), {
+      category: 'mouse',
+      fields: {
+        sensor: {
+          required_level: 'required',
+          availability: 'expected',
+          difficulty: 'easy'
+        }
+      }
+    });
+
+    await writeJson(path.join(helperRoot, category, 'sources.json'), {
+      category: 'mouse',
+      version: '1.0.0',
+      approved: {
+        manufacturer: [],
+        lab: ['rtings.com'],
+        database: [],
+        retailer: []
+      },
+      manufacturer_defaults: {
+        method: 'http',
+        rate_limit_ms: 2000,
+        timeout_ms: 12000,
+        robots_txt_compliant: true
+      },
+      manufacturer_crawl_overrides: {
+        'razer.com': {
+          method: 'playwright',
+          rate_limit_ms: 2200,
+          timeout_ms: 15000
+        }
+      },
+      sources: {
+        rtings_com: {
+          display_name: 'RTINGS',
+          tier: 'tier2_lab',
+          base_url: 'https://www.rtings.com',
+          crawl_config: {
+            method: 'playwright',
+            rate_limit_ms: 3000,
+            robots_txt_compliant: true
+          }
+        }
+      }
+    });
+
+    const config = await loadCategoryConfig(category, {
+      config: {
+        categoryAuthorityRoot: helperRoot
+      }
+    });
+
+    const hostMap = config.sourceHostMap || new Map();
+    assert.equal(hostMap.has('razer.com'), true);
+
+    const razer = hostMap.get('razer.com');
+    assert.equal(razer.tierName, 'manufacturer');
+    assert.equal(razer.crawlConfig.method, 'playwright');
+    assert.equal(razer.crawlConfig.rate_limit_ms, 2200);
+    assert.equal(razer.crawlConfig.timeout_ms, 15000);
+    assert.equal(razer.robotsTxtCompliant, true);
+
+    const sourceHosts = new Set((config.sourceHosts || []).map((row) => row.host));
+    assert.equal(sourceHosts.has('razer.com'), true);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }

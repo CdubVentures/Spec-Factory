@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rankBatchWithBandit } from '../src/learning/banditScheduler.js';
+import { rankBatchWithBandit } from '../src/features/indexing/learning/banditScheduler.js';
 
 test('bandit scheduler prioritizes high information-need cold-start items in balanced mode', () => {
   const ranked = rankBatchWithBandit({

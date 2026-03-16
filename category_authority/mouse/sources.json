@@ -1,0 +1,1011 @@
+{
+  "category": "mouse",
+  "version": "1.0.0",
+  "approved": {
+    "manufacturer": [],
+    "lab": [
+      "rtings.com",
+      "techpowerup.com",
+      "tomshardware.com",
+      "lttlabs.com",
+      "igorslab.de",
+      "techgearlab.com"
+    ],
+    "database": [
+      "pcpartpicker.com",
+      "reddit.com",
+      "eloshapes.com",
+      "versus.com",
+      "mousespecs.org",
+      "sensor.fyi",
+      "prosettings.net",
+      "mousecompare.com",
+      "rocketjumpninja.com",
+      "gaminggem.com",
+      "thegamingsetup.com"
+    ],
+    "retailer": [
+      "amazon.com",
+      "bestbuy.com",
+      "newegg.com",
+      "bhphotovideo.com",
+      "microcenter.com"
+    ]
+  },
+  "denylist": [],
+  "manufacturer_defaults": {
+    "method": "playwright",
+    "rate_limit_ms": 3000,
+    "timeout_ms": 15000,
+    "robots_txt_compliant": true
+  },
+  "manufacturer_crawl_overrides": {
+    "razer.com": { "method": "playwright", "rate_limit_ms": 3500, "timeout_ms": 15000 },
+    "logitechg.com": { "method": "playwright", "rate_limit_ms": 3500, "timeout_ms": 15000 },
+    "steelseries.com": { "method": "playwright", "rate_limit_ms": 3500, "timeout_ms": 15000 },
+    "corsair.com": { "method": "playwright", "rate_limit_ms": 4000, "timeout_ms": 15000 },
+    "gloriousgaming.com": { "method": "playwright", "rate_limit_ms": 4000, "timeout_ms": 15000 },
+    "pulsar.gg": { "method": "playwright", "rate_limit_ms": 3000, "timeout_ms": 15000 },
+    "endgamegear.com": { "method": "playwright", "rate_limit_ms": 3000, "timeout_ms": 15000 },
+    "zowie.benq.com": { "method": "playwright", "rate_limit_ms": 3000, "timeout_ms": 15000 },
+    "vaxee.co": { "method": "playwright", "rate_limit_ms": 3000, "timeout_ms": 15000 }
+  },
+  "sources": {
+    "rtings_com": {
+      "display_name": "RTINGS",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.rtings.com",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "playwright",
+        "rate_limit_ms": 3000,
+        "timeout_ms": 20000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "click_latency",
+          "sensor_latency",
+          "click_latency_list",
+          "sensor_latency_list",
+          "weight",
+          "shape"
+        ],
+        "medium": [
+          "polling_rate",
+          "dpi",
+          "sensor",
+          "grip",
+          "hand_size",
+          "lngth",
+          "width",
+          "height",
+          "battery_hours"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 98,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "techpowerup_com": {
+      "display_name": "TechPowerUp",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.techpowerup.com",
+      "content_types": [
+        "review"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "sensor",
+          "lift",
+          "motion_sync",
+          "encoder",
+          "switch"
+        ],
+        "medium": [
+          "weight",
+          "dpi",
+          "polling_rate",
+          "sensor_brand",
+          "sensor_type",
+          "click_force",
+          "debounce",
+          "mcu"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 94,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "amazon_com": {
+      "display_name": "Amazon",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.amazon.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "requires_js": true,
+      "crawl_config": {
+        "method": "playwright",
+        "rate_limit_ms": 5000,
+        "timeout_ms": 20000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "weight",
+          "lngth",
+          "width",
+          "height"
+        ],
+        "medium": [
+          "connection",
+          "sensor",
+          "battery_hours",
+          "colors"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 45,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "bestbuy_com": {
+      "display_name": "Best Buy",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.bestbuy.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "requires_js": true,
+      "crawl_config": {
+        "method": "playwright",
+        "rate_limit_ms": 5000,
+        "timeout_ms": 20000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "weight",
+          "lngth",
+          "width",
+          "height"
+        ],
+        "medium": [
+          "connection",
+          "battery_hours",
+          "colors"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 40,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "pcpartpicker_com": {
+      "display_name": "PCPartPicker",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://pcpartpicker.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 10000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [],
+        "medium": [
+          "sensor",
+          "connection",
+          "price_range",
+          "release_date"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "aggregator",
+        "search_pattern": "",
+        "priority": 35,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "reddit_com": {
+      "display_name": "Reddit",
+      "tier": "tier4_community",
+      "authority": "community",
+      "base_url": "https://www.reddit.com",
+      "content_types": [
+        "discussion"
+      ],
+      "doc_kinds": [
+        "forum"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2500,
+        "timeout_ms": 10000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [],
+        "medium": [],
+        "low": [
+          "shape",
+          "grip",
+          "weight"
+        ]
+      },
+      "discovery": {
+        "method": "manual",
+        "source_type": "community",
+        "search_pattern": "",
+        "priority": 20,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "tomshardware_com": {
+      "display_name": "Tom's Hardware",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.tomshardware.com",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "sensor",
+          "weight",
+          "dpi"
+        ],
+        "medium": [
+          "click_latency",
+          "polling_rate",
+          "connection",
+          "lngth",
+          "width",
+          "height"
+        ],
+        "low": [
+          "battery_hours"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 72,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "eloshapes_com": {
+      "display_name": "Eloshapes",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.eloshapes.com",
+      "content_types": [
+        "product_page",
+        "comparison"
+      ],
+      "doc_kinds": [
+        "spec_sheet"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 10000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "shape",
+          "lngth",
+          "width",
+          "height",
+          "weight",
+          "form_factor",
+          "hump"
+        ],
+        "medium": [
+          "front_flare",
+          "thumb_rest",
+          "grip",
+          "hand_size",
+          "sensor",
+          "connection",
+          "dpi",
+          "polling_rate",
+          "release_date"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 96,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "newegg_com": {
+      "display_name": "Newegg",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.newegg.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "requires_js": true,
+      "crawl_config": {
+        "method": "playwright",
+        "rate_limit_ms": 4000,
+        "timeout_ms": 15000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "weight",
+          "lngth",
+          "width",
+          "height"
+        ],
+        "medium": [
+          "connection",
+          "sensor",
+          "battery_hours"
+        ],
+        "low": [
+          "colors"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 42,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "bhphotovideo_com": {
+      "display_name": "B&H Photo",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.bhphotovideo.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "requires_js": true,
+      "crawl_config": {
+        "method": "playwright",
+        "rate_limit_ms": 4000,
+        "timeout_ms": 15000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "lngth",
+          "width",
+          "height"
+        ],
+        "medium": [
+          "weight",
+          "connection",
+          "sensor",
+          "colors"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 38,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "microcenter_com": {
+      "display_name": "Micro Center",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.microcenter.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "requires_js": true,
+      "crawl_config": {
+        "method": "playwright",
+        "rate_limit_ms": 4000,
+        "timeout_ms": 15000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "weight",
+          "lngth",
+          "width",
+          "height"
+        ],
+        "medium": [
+          "connection",
+          "sensor",
+          "dpi",
+          "colors"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 36,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "versus_com": {
+      "display_name": "Versus",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://versus.com",
+      "content_types": [
+        "comparison"
+      ],
+      "doc_kinds": [
+        "comparison"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1500,
+        "timeout_ms": 10000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [],
+        "medium": [
+          "weight",
+          "lngth",
+          "width",
+          "height",
+          "sensor",
+          "dpi"
+        ],
+        "low": [
+          "connection"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "aggregator",
+        "search_pattern": "",
+        "priority": 30,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "lttlabs_com": {
+      "display_name": "LTT Labs",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.lttlabs.com",
+      "content_types": [
+        "review",
+        "benchmark",
+        "comparison"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2200,
+        "timeout_ms": 14000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "click_latency",
+          "sensor_latency",
+          "weight",
+          "polling_rate"
+        ],
+        "medium": [
+          "dpi",
+          "shape",
+          "connection",
+          "lngth",
+          "width",
+          "height"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 92,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "mousespecs_org": {
+      "display_name": "MouseSpecs",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.mousespecs.org",
+      "content_types": [
+        "product_page",
+        "comparison",
+        "reference"
+      ],
+      "doc_kinds": [
+        "spec_sheet",
+        "comparison"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "shape",
+          "weight",
+          "battery_hours",
+          "switch",
+          "encoder"
+        ],
+        "medium": [
+          "connection",
+          "dpi",
+          "polling_rate",
+          "lngth",
+          "width",
+          "height",
+          "sensor"
+        ],
+        "low": [
+          "click_latency"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 93,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "sensor_fyi": {
+      "display_name": "Sensor.fyi",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.sensor.fyi",
+      "content_types": [
+        "reference",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "reference"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "sensor",
+          "sensor_brand",
+          "sensor_link",
+          "ips",
+          "acceleration"
+        ],
+        "medium": [
+          "hardware_acceleration",
+          "flawless_sensor",
+          "smoothing",
+          "sensor_date",
+          "lift",
+          "lift_settings",
+          "motion_sync",
+          "nvidia_reflex"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 91,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "prosettings_net": {
+      "display_name": "ProSettings.net",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.prosettings.net",
+      "content_types": [
+        "comparison",
+        "reference"
+      ],
+      "doc_kinds": [
+        "comparison"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "dpi",
+          "polling_rate",
+          "weight"
+        ],
+        "medium": [
+          "sensor",
+          "shape",
+          "connection",
+          "release_date"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "aggregator",
+        "search_pattern": "",
+        "priority": 58,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "mousecompare_com": {
+      "display_name": "MouseCompare",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.mousecompare.com",
+      "content_types": [
+        "comparison",
+        "reference"
+      ],
+      "doc_kinds": [
+        "comparison"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "debounce",
+          "shape",
+          "lngth",
+          "width",
+          "height"
+        ],
+        "medium": [
+          "weight",
+          "click_force",
+          "grip",
+          "thumb_rest"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "aggregator",
+        "search_pattern": "",
+        "priority": 56,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "rocketjumpninja_com": {
+      "display_name": "Rocket Jump Ninja",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.rocketjumpninja.com",
+      "content_types": [
+        "review",
+        "comparison",
+        "reference"
+      ],
+      "doc_kinds": [
+        "review",
+        "comparison"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "shape",
+          "lngth",
+          "width",
+          "height",
+          "weight",
+          "grip",
+          "hand_size"
+        ],
+        "medium": [
+          "sensor",
+          "connection",
+          "dpi",
+          "form_factor",
+          "coating"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 82,
+        "enabled": true,
+        "notes": "100+ mouse reviews with searchable shape/grip database"
+      }
+    },
+    "gaminggem_com": {
+      "display_name": "GamingGem",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://gaminggem.com",
+      "content_types": [
+        "comparison",
+        "reference"
+      ],
+      "doc_kinds": [
+        "comparison"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "shape",
+          "weight",
+          "grip"
+        ],
+        "medium": [
+          "sensor",
+          "connection",
+          "dpi",
+          "lngth",
+          "width",
+          "height",
+          "hand_size"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 60,
+        "enabled": true,
+        "notes": "structured comparison table with grip/shape filtering, weekly updates"
+      }
+    },
+    "igorslab_de": {
+      "display_name": "Igor's Lab",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.igorslab.de",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2500,
+        "timeout_ms": 14000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "click_latency"
+        ],
+        "medium": [
+          "sensor_latency",
+          "polling_rate",
+          "weight",
+          "sensor"
+        ],
+        "low": [
+          "connection"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 80,
+        "enabled": true,
+        "notes": "NVIDIA LDAT hardware-measured click latency database, 22+ mice under identical conditions"
+      }
+    },
+    "techgearlab_com": {
+      "display_name": "TechGearLab",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.techgearlab.com",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "click_force",
+          "weight"
+        ],
+        "medium": [
+          "sensor",
+          "lngth",
+          "width",
+          "height",
+          "dpi"
+        ],
+        "low": [
+          "connection"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 76,
+        "enabled": true,
+        "notes": "custom-built click force measurement machinery, SRAV metric, multi-surface sensor testing"
+      }
+    },
+    "thegamingsetup_com": {
+      "display_name": "TheGamingSetup",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://thegamingsetup.com",
+      "content_types": [
+        "reference",
+        "comparison"
+      ],
+      "doc_kinds": [
+        "reference"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "lngth",
+          "width",
+          "height",
+          "flawless_sensor"
+        ],
+        "medium": [
+          "weight",
+          "sensor",
+          "switch"
+        ],
+        "low": [
+          "dpi",
+          "connection"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 55,
+        "enabled": true,
+        "notes": "interactive dimension chart, curated flawless sensor list, mouse switch guide"
+      }
+    }
+  }
+}

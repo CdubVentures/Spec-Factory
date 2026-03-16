@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { registerStudioRoutes } from '../src/api/routes/studioRoutes.js';
+import { registerStudioRoutes } from '../src/features/studio/api/studioRoutes.js';
 
 function makeCtx(overrides = {}) {
   const ctx = {
     jsonRes: (_res, status, body) => ({ status, body }),
     readJsonBody: async () => ({}),
     config: {},
-    HELPER_ROOT: 'helper_files',
+    HELPER_ROOT: 'category_authority',
     safeReadJson: async () => null,
     safeStat: async () => null,
     listFiles: async () => [],
@@ -178,7 +178,7 @@ test('studio field-studio-map PUT rejects destructive empty overwrite by default
       enum_lists: [],
     }),
     loadFieldStudioMap: async () => ({
-      file_path: 'helper_files/mouse/_control_plane/field_studio_map.json',
+      file_path: 'category_authority/mouse/_control_plane/field_studio_map.json',
       map: {
         version: 2,
         component_sources: [{ component_type: 'sensor' }],
@@ -220,7 +220,7 @@ test('studio field-studio-map GET prefers control-plane payload over legacy part
       },
     }),
     loadFieldStudioMap: async () => ({
-      file_path: 'helper_files/mouse/_control_plane/field_studio_map.json',
+      file_path: 'category_authority/mouse/_control_plane/field_studio_map.json',
       map: {
         version: 2,
         component_sources: [{ component_type: 'sensor' }],
@@ -239,7 +239,7 @@ test('studio field-studio-map GET prefers control-plane payload over legacy part
   );
 
   assert.equal(result.status, 200);
-  assert.equal(result.body.file_path, 'helper_files/mouse/_control_plane/field_studio_map.json');
+  assert.equal(result.body.file_path, 'category_authority/mouse/_control_plane/field_studio_map.json');
   assert.equal(Array.isArray(result.body.map.component_sources), true);
   assert.equal(result.body.map.component_sources.length, 1);
   assert.equal(Array.isArray(result.body.map.data_lists), true);
@@ -307,7 +307,7 @@ test('studio field-studio-map GET prefers valid control-plane map over richer in
       },
     }),
     loadFieldStudioMap: async () => ({
-      file_path: 'helper_files/mouse/_control_plane/field_studio_map.json',
+      file_path: 'category_authority/mouse/_control_plane/field_studio_map.json',
       map: {
         version: 2,
         key_list: {
@@ -342,7 +342,7 @@ test('studio field-studio-map GET prefers valid control-plane map over richer in
   );
 
   assert.equal(result.status, 200);
-  assert.equal(result.body.file_path, 'helper_files/mouse/_control_plane/field_studio_map.json');
+  assert.equal(result.body.file_path, 'category_authority/mouse/_control_plane/field_studio_map.json');
   assert.equal(Array.isArray(result.body.map.component_sources), true);
   assert.equal(result.body.map.component_sources.length, 1);
   assert.equal(result.body.map.component_sources[0].component_type, 'sensor');

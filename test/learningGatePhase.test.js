@@ -7,7 +7,7 @@ import {
   DomainFieldYieldStore,
   FieldAnchorsStore,
   ComponentLexiconStore
-} from '../src/learning/learningStores.js';
+} from '../src/features/indexing/learning/learningStores.js';
 
 function makeProvenance(overrides = {}) {
   return {

@@ -48,12 +48,22 @@ async function writeJsonl(filePath, rows) {
 }
 
 test('domain checklist endpoint returns shape with loop metrics', { timeout: 60_000 }, async (t) => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexing-checklist-shape-'));
+  const helperRoot = path.join(tempRoot, 'category_authority');
+  const outputRoot = path.join(tempRoot, 'out');
   const port = await getFreePort();
   const proc = spawn(
     process.execPath,
     ['src/api/guiServer.js', '--port', String(port), '--local'],
     {
       cwd: process.cwd(),
+      env: {
+        ...process.env,
+        LOCAL_MODE: 'true',
+        LOCAL_OUTPUT_ROOT: outputRoot,
+        HELPER_FILES_ROOT: helperRoot,
+        CATEGORY_AUTHORITY_ROOT: helperRoot,
+      },
       stdio: ['ignore', 'ignore', 'pipe']
     }
   );
@@ -63,8 +73,9 @@ test('domain checklist endpoint returns shape with loop metrics', { timeout: 60_
     stderr += chunk.toString();
   });
 
-  t.after(() => {
+  t.after(async () => {
     if (!proc.killed) proc.kill('SIGTERM');
+    await fs.rm(tempRoot, { recursive: true, force: true });
   });
 
   const healthUrl = `http://127.0.0.1:${port}/api/v1/health`;
@@ -114,6 +125,7 @@ test('domain checklist endpoint returns shape with loop metrics', { timeout: 60_
 test('domain checklist excludes helper pseudo-domain rows from provenance rollup', { timeout: 60_000 }, async (t) => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexing-checklist-'));
   const outputRoot = path.join(tempRoot, 'out');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const category = 'mouse';
   const productId = 'mouse-test-brand-model';
   const runId = 'run-helper-filter-001';
@@ -159,7 +171,7 @@ test('domain checklist excludes helper pseudo-domain rows from provenance rollup
         confidence: 0.9,
         evidence: [
           {
-            url: 'helper_files://mouse/activeFiltering.json#4',
+            url: 'category_authority://mouse/activeFiltering.json#4',
             host: 'helper-files.local',
             rootDomain: 'helper-files.local',
             tier: 2,
@@ -188,7 +200,9 @@ test('domain checklist excludes helper pseudo-domain rows from provenance rollup
       env: {
         ...process.env,
         LOCAL_MODE: 'true',
-        LOCAL_OUTPUT_ROOT: outputRoot
+        LOCAL_OUTPUT_ROOT: outputRoot,
+        HELPER_FILES_ROOT: helperRoot,
+        CATEGORY_AUTHORITY_ROOT: helperRoot,
       },
       stdio: ['ignore', 'ignore', 'pipe']
     }
@@ -224,6 +238,7 @@ test('domain checklist excludes helper pseudo-domain rows from provenance rollup
 test('domain checklist marks domain good when indexed signal exists even with 404 URL failures', { timeout: 60_000 }, async (t) => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexing-checklist-status-'));
   const outputRoot = path.join(tempRoot, 'out');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const category = 'mouse';
   const productId = 'mouse-hyperx-pulsefire-haste-wireless';
   const runId = 'run-status-001';
@@ -271,7 +286,9 @@ test('domain checklist marks domain good when indexed signal exists even with 40
       env: {
         ...process.env,
         LOCAL_MODE: 'true',
-        LOCAL_OUTPUT_ROOT: outputRoot
+        LOCAL_OUTPUT_ROOT: outputRoot,
+        HELPER_FILES_ROOT: helperRoot,
+        CATEGORY_AUTHORITY_ROOT: helperRoot,
       },
       stdio: ['ignore', 'ignore', 'pipe']
     }
@@ -312,6 +329,7 @@ test('domain checklist marks domain good when indexed signal exists even with 40
 test('domain checklist exposes fetch outcomes and cooldown countdown fields', { timeout: 60_000 }, async (t) => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexing-checklist-outcomes-'));
   const outputRoot = path.join(tempRoot, 'out');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const category = 'mouse';
   const productId = 'mouse-test-outcome-001';
   const runId = 'run-outcome-001';
@@ -378,7 +396,9 @@ test('domain checklist exposes fetch outcomes and cooldown countdown fields', { 
       env: {
         ...process.env,
         LOCAL_MODE: 'true',
-        LOCAL_OUTPUT_ROOT: outputRoot
+        LOCAL_OUTPUT_ROOT: outputRoot,
+        HELPER_FILES_ROOT: helperRoot,
+        CATEGORY_AUTHORITY_ROOT: helperRoot,
       },
       stdio: ['ignore', 'ignore', 'pipe']
     }
@@ -413,3 +433,4 @@ test('domain checklist exposes fetch outcomes and cooldown countdown fields', { 
   assert.equal((row.outcome_counts?.rate_limited || 0) > 0, true);
   assert.equal((row.outcome_counts?.bot_challenge || 0) > 0, true);
 });
+

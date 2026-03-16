@@ -1,0 +1,33 @@
+flowchart TD
+  A["Round 0 or later round"] --> B["Round 0 seed path<br/>resolveLlmTargetFields()<br/>job.requirements + requiredFields + critical_fields"]
+  A --> C["Later rounds only<br/>computeNeedSet(previous summary/provenance)<br/>then buildNeedSetDispatch()"]
+  C --> D["Dispatch output<br/>llmTargetFields<br/>extraQueries<br/>escalatedFields"]
+  D --> E["buildRoundContext()<br/>missing_required_fields<br/>missing_critical_fields<br/>extra_queries<br/>llm_target_fields"]
+
+  B --> F["runDiscoverySeedPlan()<br/>normalizePlanningHints()"]
+  E --> F
+
+  F --> G["discoverCandidateSources()"]
+  G --> H["missingFields = normalize(<br/>planningHints.missingRequiredFields +<br/>planningHints.missingCriticalFields +<br/>job.requirements.llmTargetFields,<br/>fieldOrder)"]
+
+  G --> I["Brand resolution<br/>cache -> optional triage LLM -><br/>officialDomain + aliases + supportDomain"]
+  I --> J["manufacturerAutoPromote?<br/>mutate categoryConfig.sourceHosts<br/>sourceHostMap + sourceRegistry"]
+
+  G --> K["Learning artifacts + caps<br/>profileMaxQueries = max(6, discoveryMaxQueries * 2)<br/>caps from searchProfileCapMap"]
+
+  H --> L["buildSearchProfile()<br/>job<br/>categoryConfig<br/>missingFields<br/>enrichedLexicon<br/>learning.queryTemplates<br/>brandResolution<br/>maxQueries + caps"]
+  J --> L
+  K --> L
+
+  subgraph P["buildSearchProfile() live behavior"]
+    L --> P1["identity = brand/model/variant/category<br/>base_templates = categoryConfig.searchTemplates<br/>focus_fields = normalize(missingFields by fieldOrder)"]
+    P1 --> P2["identity_aliases = buildDeterministicAliases(aliasValidationCap)<br/>variant_guard_terms"]
+    P1 --> P3["brandResolutionHints = officialDomain first + aliases"]
+    P1 --> P4["buildQueryRows() per focus field<br/>search_hints.query_terms<br/>search_hints.domain_hints<br/>search_hints.preferred_content_types<br/>ui.tooltip_md gate<br/>learned lexicon + learned queries"]
+    P4 --> P5["selectManufacturerHosts()<br/>filters manufacturer sourceHosts using brand + domain hints"]
+    P5 --> P6["selectedQueries = base_templates + interleaved query rows<br/>fallback if none<br/>final cap = maxQueries"]
+  end
+
+  P6 --> Q["Search Profile output<br/>17 top-level keys<br/>queries<br/>query_rows<br/>focus_fields<br/>identity_aliases<br/>variant_guard_terms<br/>field_target_queries<br/>doc_hint_queries"]
+
+  D -.-> R["extraQueries bypass buildSearchProfile()<br/>merged later in searchDiscovery"]

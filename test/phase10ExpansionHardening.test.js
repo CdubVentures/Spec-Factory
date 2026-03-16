@@ -10,7 +10,7 @@ import {
   runFuzzSourceHealthHarness,
   runProductionHardeningReport,
   runQueueLoadHarness
-} from '../src/phase10/expansionHardening.js';
+} from '../src/features/expansion-hardening/index.js';
 
 function makeStorage(tempRoot) {
   return createStorage({
@@ -32,15 +32,15 @@ async function exists(filePath) {
 }
 
 test('bootstrapExpansionCategories initializes monitor and keyboard scaffolding with golden manifests', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase10-bootstrap-'));
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-expansion-bootstrap-'));
   try {
-    const helperRoot = path.join(tempRoot, 'helper_files');
+    const helperRoot = path.join(tempRoot, 'category_authority');
     const categoriesRoot = path.join(tempRoot, 'categories');
     const goldenRoot = path.join(tempRoot, 'fixtures', 'golden');
 
     const result = await bootstrapExpansionCategories({
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       },
       categories: ['monitor', 'keyboard'],
@@ -52,17 +52,26 @@ test('bootstrapExpansionCategories initializes monitor and keyboard scaffolding 
     assert.equal(result.categories.includes('monitor'), true);
     assert.equal(result.categories.includes('keyboard'), true);
 
-    assert.equal(await exists(path.join(categoriesRoot, 'monitor', 'schema.json')), true);
-    assert.equal(await exists(path.join(categoriesRoot, 'keyboard', 'schema.json')), true);
+    assert.equal(await exists(path.join(helperRoot, 'monitor', 'schema.json')), true);
+    assert.equal(await exists(path.join(helperRoot, 'keyboard', 'schema.json')), true);
+    assert.equal(await exists(path.join(categoriesRoot, 'monitor')), false);
+    assert.equal(await exists(path.join(categoriesRoot, 'keyboard')), false);
     assert.equal(await exists(path.join(goldenRoot, 'monitor', 'manifest.json')), true);
     assert.equal(await exists(path.join(goldenRoot, 'keyboard', 'manifest.json')), true);
+    assert.deepEqual(
+      result.rows.map((row) => path.relative(tempRoot, row.starter_field_studio_source).replace(/\\/g, '/')).sort(),
+      [
+        'category_authority/keyboard/_source/field_catalog.seed.json',
+        'category_authority/monitor/_source/field_catalog.seed.json'
+      ]
+    );
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
 
 test('queue load, failure injection, and fuzz source-health harnesses execute successfully', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase10-harness-'));
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-expansion-harness-'));
   const storage = makeStorage(tempRoot);
   try {
     const load = await runQueueLoadHarness({
@@ -97,7 +106,7 @@ test('queue load, failure injection, and fuzz source-health harnesses execute su
 });
 
 test('runProductionHardeningReport flags missing docs and insecure gitignore settings', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase10-report-'));
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-expansion-report-'));
   try {
     await fs.writeFile(
       path.join(tempRoot, 'package.json'),

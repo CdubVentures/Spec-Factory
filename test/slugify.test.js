@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { slugify, buildProductId } from '../src/catalog/slugify.js';
+import { slugify, buildProductId } from '../src/features/catalog/identity/slugify.js';
 
 // --- slugify ---
 

@@ -6,6 +6,8 @@ import os from 'node:os';
 import net from 'node:net';
 import { spawn } from 'node:child_process';
 
+const LEGACY_HELPER_DIR = `helper${'_files'}`;
+
 function getFreePort() {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -147,10 +149,10 @@ test('gui server resolves relative helper root against project root when launche
   );
 });
 
-test('gui server fails fast when launch cwd contains shadow helper_files runtime', { timeout: 30_000 }, async (t) => {
+test('gui server fails fast when launch cwd contains shadow legacy helper runtime', { timeout: 30_000 }, async (t) => {
   const repoRoot = path.resolve('.');
   const tempCwd = await fs.mkdtemp(path.join(os.tmpdir(), 'gui-shadow-cwd-'));
-  const shadowRuntimeDir = path.join(tempCwd, 'helper_files', '_runtime');
+  const shadowRuntimeDir = path.join(tempCwd, LEGACY_HELPER_DIR, '_runtime');
   const relativeHelperRoot = path.join('.tmp', `gui-shadow-canonical-${Date.now()}`);
   const canonicalHelperRoot = path.join(repoRoot, relativeHelperRoot);
   const guiServerPath = path.join(repoRoot, 'src', 'api', 'guiServer.js');
@@ -196,5 +198,203 @@ test('gui server fails fast when launch cwd contains shadow helper_files runtime
     (stderr + stdout).includes('shadow_helper_runtime_detected'),
     true,
     `expected shadow-helper guard marker in startup failure output; stdout=${stdout} stderr=${stderr}`,
+  );
+});
+
+test('gui server boot roots honor enabled local storage settings from canonical user settings', { timeout: 90_000 }, async (t) => {
+  const repoRoot = path.resolve('.');
+  const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'gui-storage-root-helper-'));
+  const storageRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'gui-storage-root-target-'));
+  const runtimeRoot = path.join(helperRoot, '_runtime');
+  const guiServerPath = path.join(repoRoot, 'src', 'api', 'guiServer.js');
+  const expectedOutputRoot = path.join(storageRoot, 'output');
+  const expectedIndexLabRoot = path.join(storageRoot, 'indexlab');
+  const expectedSpecDbDir = path.join(storageRoot, '.specfactory_tmp');
+  const expectedLlmCacheDir = path.join(expectedSpecDbDir, 'llm_cache');
+
+  await fs.mkdir(runtimeRoot, { recursive: true });
+  await fs.writeFile(
+    path.join(runtimeRoot, 'user-settings.json'),
+    `${JSON.stringify({
+      schemaVersion: 2,
+      runtime: {},
+      convergence: {},
+      storage: {
+        enabled: true,
+        destinationType: 'local',
+        localDirectory: storageRoot,
+        awsRegion: 'us-east-2',
+        s3Bucket: '',
+        s3Prefix: 'spec-factory-runs',
+        s3AccessKeyId: '',
+        s3SecretAccessKey: '',
+        s3SessionToken: '',
+        updatedAt: '2026-03-08T00:00:00.000Z',
+      },
+      studio: {},
+      ui: {
+        studioAutoSaveAllEnabled: false,
+        studioAutoSaveEnabled: true,
+        studioAutoSaveMapEnabled: true,
+        runtimeAutoSaveEnabled: true,
+        storageAutoSaveEnabled: false,
+        llmSettingsAutoSaveEnabled: true,
+      },
+    }, null, 2)}\n`,
+    'utf8',
+  );
+
+  let child = null;
+  let stderr = '';
+  let stdout = '';
+
+  t.after(async () => {
+    if (child && !child.killed) {
+      try { child.kill('SIGTERM'); } catch {}
+    }
+    await fs.rm(helperRoot, { recursive: true, force: true }).catch(() => {});
+    await fs.rm(storageRoot, { recursive: true, force: true }).catch(() => {});
+  });
+
+  const port = await getFreePort();
+  child = spawn(
+    process.execPath,
+    [guiServerPath, '--port', String(port), '--local'],
+    {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        HELPER_FILES_ROOT: helperRoot,
+        LOCAL_OUTPUT_ROOT: '',
+        OUTPUT_MODE: 'local',
+        LOCAL_MODE: 'true',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  );
+  child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+  child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+
+  await waitForHttpReady(`http://127.0.0.1:${port}/api/v1/health`);
+
+  const runtimeSettingsRes = await fetch(`http://127.0.0.1:${port}/api/v1/runtime-settings`);
+  assert.equal(
+    runtimeSettingsRes.status,
+    200,
+    `expected runtime settings endpoint to succeed; stdout=${stdout} stderr=${stderr}`,
+  );
+  const runtimeSettings = await runtimeSettingsRes.json();
+
+  assert.equal(
+    stdout.includes(`[gui-server] Output:  ${expectedOutputRoot}`),
+    true,
+    `expected storage-root output path in startup logs; stdout=${stdout} stderr=${stderr}`,
+  );
+  assert.equal(
+    stdout.includes(`[gui-server] IndexLab:${expectedIndexLabRoot}`),
+    true,
+    `expected storage-root indexlab path in startup logs; stdout=${stdout} stderr=${stderr}`,
+  );
+  assert.equal(
+    runtimeSettings.specDbDir,
+    expectedSpecDbDir,
+    `expected storage-root spec db dir in runtime settings; stdout=${stdout} stderr=${stderr}`,
+  );
+  assert.equal(
+    runtimeSettings.llmExtractionCacheDir,
+    expectedLlmCacheDir,
+    `expected storage-root llm cache dir in runtime settings; stdout=${stdout} stderr=${stderr}`,
+  );
+});
+
+test('gui server boot with enabled s3 storage stages db and cache roots under temp workspace', { timeout: 90_000 }, async (t) => {
+  const repoRoot = path.resolve('.');
+  const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'gui-storage-s3-helper-'));
+  const runtimeRoot = path.join(helperRoot, '_runtime');
+  const guiServerPath = path.join(repoRoot, 'src', 'api', 'guiServer.js');
+  const expectedSpecDbDir = path.join(os.tmpdir(), 'spec-factory', '.specfactory_tmp');
+  const expectedLlmCacheDir = path.join(expectedSpecDbDir, 'llm_cache');
+
+  await fs.mkdir(runtimeRoot, { recursive: true });
+  await fs.writeFile(
+    path.join(runtimeRoot, 'user-settings.json'),
+    `${JSON.stringify({
+      schemaVersion: 2,
+      runtime: {},
+      convergence: {},
+      storage: {
+        enabled: true,
+        destinationType: 's3',
+        localDirectory: '',
+        awsRegion: 'us-east-2',
+        s3Bucket: 'my-spec-harvester-data',
+        s3Prefix: 'spec-factory-runs',
+        s3AccessKeyId: 'test-access-key',
+        s3SecretAccessKey: 'test-secret-key',
+        s3SessionToken: '',
+        updatedAt: '2026-03-08T00:00:00.000Z',
+      },
+      studio: {},
+      ui: {
+        studioAutoSaveAllEnabled: false,
+        studioAutoSaveEnabled: true,
+        studioAutoSaveMapEnabled: true,
+        runtimeAutoSaveEnabled: true,
+        storageAutoSaveEnabled: false,
+        llmSettingsAutoSaveEnabled: true,
+      },
+    }, null, 2)}\n`,
+    'utf8',
+  );
+
+  let child = null;
+  let stderr = '';
+  let stdout = '';
+
+  t.after(async () => {
+    if (child && !child.killed) {
+      try { child.kill('SIGTERM'); } catch {}
+    }
+    await fs.rm(helperRoot, { recursive: true, force: true }).catch(() => {});
+  });
+
+  const port = await getFreePort();
+  child = spawn(
+    process.execPath,
+    [guiServerPath, '--port', String(port), '--local'],
+    {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        HELPER_FILES_ROOT: helperRoot,
+        LOCAL_OUTPUT_ROOT: '',
+        OUTPUT_MODE: 'local',
+        LOCAL_MODE: 'true',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  );
+  child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+  child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+
+  await waitForHttpReady(`http://127.0.0.1:${port}/api/v1/health`);
+
+  const runtimeSettingsRes = await fetch(`http://127.0.0.1:${port}/api/v1/runtime-settings`);
+  assert.equal(
+    runtimeSettingsRes.status,
+    200,
+    `expected runtime settings endpoint to succeed; stdout=${stdout} stderr=${stderr}`,
+  );
+  const runtimeSettings = await runtimeSettingsRes.json();
+
+  assert.equal(
+    runtimeSettings.specDbDir,
+    expectedSpecDbDir,
+    `expected temp staging spec db dir in runtime settings; stdout=${stdout} stderr=${stderr}`,
+  );
+  assert.equal(
+    runtimeSettings.llmExtractionCacheDir,
+    expectedLlmCacheDir,
+    `expected temp staging llm cache dir in runtime settings; stdout=${stdout} stderr=${stderr}`,
   );
 });

@@ -33,8 +33,8 @@ test('persistSourceIntel ignores helper pseudo domains from source rows and evid
     brand: 'Logitech',
     sourceResults: [
       {
-        url: 'helper_files://mouse/trusted-a.json#0',
-        finalUrl: 'helper_files://mouse/trusted-a.json#0',
+        url: 'category_authority://mouse/trusted-a.json#0',
+        finalUrl: 'category_authority://mouse/trusted-a.json#0',
         host: 'helper-files.local',
         rootDomain: 'helper-files.local',
         helperSource: true,
@@ -61,7 +61,7 @@ test('persistSourceIntel ignores helper pseudo domains from source rows and evid
         value: '60 g',
         evidence: [
           {
-            url: 'helper_files://mouse/trusted-a.json#0',
+            url: 'category_authority://mouse/trusted-a.json#0',
             host: 'helper-files.local',
             rootDomain: 'helper-files.local',
             method: 'helper_supportive'
@@ -93,3 +93,4 @@ test('persistSourceIntel ignores helper pseudo domains from source rows and evid
   assert.equal(Boolean(domains['helper-files.local']), false);
   assert.equal(Boolean(domains['logitechg.com']), true);
 });
+

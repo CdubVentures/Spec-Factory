@@ -4,7 +4,7 @@ import {
   getDataChangeClientObservabilitySnapshot,
   recordDataChangeInvalidationFlush,
   resetDataChangeClientObservability,
-} from '../tools/gui-react/src/components/layout/dataChangeClientObservability.js';
+} from '../tools/gui-react/src/features/data-change/index.js';
 
 test('client observability records invalidation flush counters', () => {
   resetDataChangeClientObservability();

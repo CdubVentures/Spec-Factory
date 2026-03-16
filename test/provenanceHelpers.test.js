@@ -6,7 +6,7 @@ import {
   mergePhase08Rows,
   buildPhase08SummaryFromBatches,
   tsvRowFromFields
-} from '../src/pipeline/helpers/provenanceHelpers.js';
+} from '../src/features/indexing/orchestration/shared/provenanceHelpers.js';
 
 test('createEmptyProvenance creates entries for all fields', () => {
   const result = createEmptyProvenance(['sensor', 'dpi'], { sensor: 'Focus Pro', dpi: '35000' });

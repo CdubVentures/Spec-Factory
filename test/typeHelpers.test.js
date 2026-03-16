@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { toInt, toFloat, toBool, isIndexingHelperFlowEnabled } from '../src/pipeline/helpers/typeHelpers.js';
+import { toInt, toFloat, toBool, isIndexingHelperFlowEnabled } from '../src/features/indexing/orchestration/shared/typeHelpers.js';
 
 // --- toInt ---
 
@@ -73,12 +73,12 @@ test('toBool returns fallback for null/undefined/empty', () => {
 // --- isIndexingHelperFlowEnabled ---
 
 test('isIndexingHelperFlowEnabled returns true when both flags are set', () => {
-  assert.equal(isIndexingHelperFlowEnabled({ helperFilesEnabled: true, indexingHelperFilesEnabled: true }), true);
+  assert.equal(isIndexingHelperFlowEnabled({ categoryAuthorityEnabled: true, indexingCategoryAuthorityEnabled: true }), true);
 });
 
 test('isIndexingHelperFlowEnabled returns false when either flag is missing', () => {
-  assert.equal(isIndexingHelperFlowEnabled({ helperFilesEnabled: true }), false);
-  assert.equal(isIndexingHelperFlowEnabled({ indexingHelperFilesEnabled: true }), false);
+  assert.equal(isIndexingHelperFlowEnabled({ categoryAuthorityEnabled: true }), false);
+  assert.equal(isIndexingHelperFlowEnabled({ indexingCategoryAuthorityEnabled: true }), false);
   assert.equal(isIndexingHelperFlowEnabled({}), false);
   assert.equal(isIndexingHelperFlowEnabled(), false);
 });

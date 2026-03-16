@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { coerceCategories } from '../components/layout/categoryStoreSync.js';
+import { coerceCategories } from '../utils/categoryStoreSync.js';
 import { UI_SETTING_DEFAULTS } from './settingsManifest';
 import {
   DEFAULT_SF_THEME_PROFILE,
@@ -24,6 +24,8 @@ const STUDIO_AUTOSAVE_ALL_KEY = 'studio:autoSaveAllEnabled';
 const STUDIO_AUTOSAVE_KEY = 'autoSaveEnabled';
 const STUDIO_MAP_AUTOSAVE_KEY = 'autoSaveMapEnabled';
 const STORAGE_AUTOSAVE_KEY = 'storage:autoSaveEnabled';
+const LAST_LIGHT_THEME_KEY = 'ui:lastLightTheme';
+const LAST_DARK_THEME_KEY = 'ui:lastDarkTheme';
 const DEFAULT_CATEGORY = 'mouse';
 
 function readPersistedBool(key: string, fallback: boolean): boolean {
@@ -100,11 +102,28 @@ function normalizeThemeProfile(themeProfile: SfThemeProfile): Required<SfThemePr
 function applyThemeProfile(themeProfile: SfThemeProfile): Required<SfThemeProfile> {
   const normalizedProfile = normalizeThemeProfile(themeProfile);
   if (typeof document === 'undefined') return normalizedProfile;
+  const isDark = isDarkThemeColorProfile(normalizedProfile.color);
   setRootDataAttribute('data-sf-theme', normalizedProfile.color);
+  setRootDataAttribute('data-sf-theme-mode', isDark ? 'dark' : 'light');
   setRootDataAttribute('data-sf-radius', normalizedProfile.radius);
   setRootDataAttribute('data-sf-density', normalizedProfile.density);
-  document.documentElement.classList.toggle('dark', isDarkThemeColorProfile(normalizedProfile.color));
+  document.documentElement.classList.toggle('dark', isDark);
   return normalizedProfile;
+}
+
+function trackLastUsedTheme(colorProfile: SfThemeColorProfileId): void {
+  if (isDarkThemeColorProfile(colorProfile)) {
+    writePersistedValue(LAST_DARK_THEME_KEY, colorProfile);
+  } else {
+    writePersistedValue(LAST_LIGHT_THEME_KEY, colorProfile);
+  }
+}
+
+function readLastUsedTheme(wantDark: boolean): SfThemeColorProfileId {
+  const key = wantDark ? LAST_DARK_THEME_KEY : LAST_LIGHT_THEME_KEY;
+  const fallback: SfThemeColorProfileId = wantDark ? 'dark' : 'light';
+  const persisted = readLocalValue(key);
+  return persisted ? coerceThemeColorProfile(persisted, fallback) : fallback;
 }
 
 function persistThemeProfile(themeProfile: Required<SfThemeProfile>): void {
@@ -232,6 +251,7 @@ export const useUiStore = create<UiState>((set) => ({
         density: state.themeDensityProfile,
       });
       persistThemeProfile(nextThemeProfile);
+      trackLastUsedTheme(nextThemeProfile.color);
       return { ...toThemeState(nextThemeProfile) };
     }),
   setThemeRadiusProfile: (themeRadiusProfile) =>
@@ -245,7 +265,7 @@ export const useUiStore = create<UiState>((set) => ({
       return { ...toThemeState(nextThemeProfile) };
     }),
   setDarkMode: (darkMode) => {
-    const nextColorProfile = Boolean(darkMode) ? 'dark' : 'light';
+    const nextColorProfile = readLastUsedTheme(Boolean(darkMode));
     set((state) => {
       const nextThemeProfile = applyThemeProfile({
         color: nextColorProfile,
@@ -258,8 +278,9 @@ export const useUiStore = create<UiState>((set) => ({
   },
   toggleDarkMode: () =>
     set((state) => {
+      const nextColorProfile = readLastUsedTheme(!state.darkMode);
       const nextThemeProfile = applyThemeProfile({
-        color: state.darkMode ? 'light' : 'dark',
+        color: nextColorProfile,
         radius: state.themeRadiusProfile,
         density: state.themeDensityProfile,
       });

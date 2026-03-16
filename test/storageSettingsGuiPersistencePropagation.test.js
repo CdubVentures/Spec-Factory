@@ -91,7 +91,7 @@ async function setStorageAutoSave(page, baseUrl, enabled) {
 
 test('GUI storage settings persist across reload for manual-save and autosave paths', { timeout: 300_000 }, async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'storage-settings-gui-'));
-  const helperFilesRoot = path.join(tempRoot, 'helper_files');
+  const categoryAuthorityRoot = path.join(tempRoot, 'category_authority');
   const localOutputRoot = path.join(tempRoot, 'out');
   const repoRoot = path.resolve('.');
   const guiDistRoot = path.join(repoRoot, 'tools', 'gui-react', 'dist');
@@ -105,8 +105,8 @@ test('GUI storage settings persist across reload for manual-save and autosave pa
 
   try {
     await ensureGuiBuilt();
-    await seedCategory(helperFilesRoot, 'mouse');
-    await seedCategory(helperFilesRoot, CATEGORY);
+    await seedCategory(categoryAuthorityRoot, 'mouse');
+    await seedCategory(categoryAuthorityRoot, CATEGORY);
 
     const port = await findFreePort();
     const baseUrl = `http://127.0.0.1:${port}`;
@@ -115,7 +115,7 @@ test('GUI storage settings persist across reload for manual-save and autosave pa
       cwd: tempRoot,
       env: {
         ...process.env,
-        HELPER_FILES_ROOT: helperFilesRoot,
+        HELPER_FILES_ROOT: categoryAuthorityRoot,
         LOCAL_OUTPUT_ROOT: localOutputRoot,
         LOCAL_INPUT_ROOT: path.join(tempRoot, 'fixtures'),
         OUTPUT_MODE: 'local',
@@ -133,7 +133,7 @@ test('GUI storage settings persist across reload for manual-save and autosave pa
       enabled: true,
       destinationType: 'local',
       localDirectory,
-      s3Region: 'us-east-2',
+      awsRegion: 'us-east-2',
       s3Bucket: '',
       s3Prefix: 'spec-factory-runs',
       s3AccessKeyId: '',
@@ -182,7 +182,7 @@ test('GUI storage settings persist across reload for manual-save and autosave pa
       const persisted = await apiJson(baseUrl, 'GET', '/storage-settings');
       return persisted?.enabled === true
         && persisted?.destinationType === 's3'
-        && persisted?.s3Region === 'us-west-1'
+        && persisted?.awsRegion === 'us-west-1'
         && persisted?.s3Bucket === 'spec-factory-gui-storage'
         && persisted?.s3Prefix === 'gui-manual-prefix'
         && persisted?.s3AccessKeyId === 'AKIA_GUI_STORAGE';

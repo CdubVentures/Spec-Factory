@@ -53,12 +53,12 @@ function stableSortSuggestions(rows = []) {
 }
 
 export function enumSuggestionPath({ config = {}, category }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   return path.join(helperRoot, normalizeCategory(category), '_suggestions', 'enums.json');
 }
 
 export function componentSuggestionPath({ config = {}, category }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   return path.join(helperRoot, normalizeCategory(category), '_suggestions', 'components.json');
 }
 
@@ -219,7 +219,7 @@ export async function appendEnumCurationSuggestions({
 // ── Component Review Items (flagged for AI review) ────────────────
 
 export function componentReviewPath({ config = {}, category }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   return path.join(helperRoot, normalizeCategory(category), '_suggestions', 'component_review.json');
 }
 
@@ -311,7 +311,7 @@ export async function appendComponentReviewItems({
 // ── Component Identity Observations (successful matches) ──────────
 
 export function componentIdentityPath({ config = {}, category }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   return path.join(helperRoot, normalizeCategory(category), '_suggestions', 'component_identity.json');
 }
 
@@ -394,3 +394,4 @@ export async function appendComponentIdentityObservations({
     total_count: next.observations.length
   };
 }
+

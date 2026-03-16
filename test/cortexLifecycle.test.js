@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   CortexLifecycle,
   stripTrailingV1
-} from '../src/llm/cortex_lifecycle.js';
+} from '../src/core/llm/cortex/cortexLifecycle.js';
 
 function okResponse(payload = {}) {
   return {

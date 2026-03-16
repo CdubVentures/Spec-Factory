@@ -1,11 +1,7 @@
 import { nowIso } from '../utils/common.js';
 import { loadCategoryConfig } from '../categories/loader.js';
-import { loadCategoryBrain } from '../learning/categoryBrain.js';
+import { loadCategoryBrain } from '../features/indexing/learning/index.js';
 import { runUntilComplete } from '../runner/runUntilComplete.js';
-import {
-  loadHelperCategoryData,
-  syncJobsFromActiveFiltering
-} from '../helperFiles/index.js';
 import { normalizeMissingFieldTargets } from '../utils/fieldKeys.js';
 import { writeGeneratedCategoryTests } from './generateCategoryTests.js';
 
@@ -85,34 +81,6 @@ export async function runCategoryTrainer({
   const startedAt = Date.now();
   const categoryConfig = await loadCategoryConfig(category, { storage, config });
   const beforeBrain = await loadCategoryBrain({ storage, category });
-  const beforeContractHash = categoryConfig.helperContract?.hash || null;
-
-  // Rebuild/load compiled helper contract and emit helper audit details for training.
-  const helperData = await loadHelperCategoryData({
-    config,
-    category,
-    categoryConfig,
-    forceRefresh: true
-  });
-  logger?.info?.('category_trainer_helper_audit', {
-    category,
-    contract_loaded: Boolean(helperData?.helper_audit?.contract_loaded),
-    contract_hash: helperData?.helper_audit?.contract_hash || null,
-    contract_file: helperData?.helper_audit?.contract_file || null,
-    source_files: helperData?.helper_audit?.source_files || [],
-    counts: helperData?.helper_audit?.counts || {}
-  });
-
-  // Ensure helper targets are materialized as product jobs before sampling.
-  const helperSync = await syncJobsFromActiveFiltering({
-    storage,
-    config,
-    category,
-    categoryConfig,
-    limit: 0,
-    logger
-  });
-
   const allKeys = await storage.listInputKeys(category);
   const limit = Math.max(1, toInt(trainingSetSize, 10));
   const selectedKeys = allKeys.slice(0, limit);
@@ -124,7 +92,7 @@ export async function runCategoryTrainer({
   const orchestrationMode = runMode === 'full' ? 'aggressive' : 'balanced';
   const trainingConfig = {
     ...config,
-    runProfile: runMode === 'full' ? 'standard' : 'fast',
+    runProfile: 'standard',
     llmExplicitlySet: true,
     llmExplicitlyEnabled: Boolean(config.llmEnabled)
   };
@@ -187,7 +155,6 @@ export async function runCategoryTrainer({
 
   const afterBrain = await loadCategoryBrain({ storage, category });
   const afterCategoryConfig = await loadCategoryConfig(category, { storage, config });
-  const afterContractHash = helperData?.helper_audit?.contract_hash || afterCategoryConfig.helperContract?.hash || null;
   const beforeStats = brainStats(beforeBrain);
   const afterStats = brainStats(afterBrain);
 
@@ -200,30 +167,10 @@ export async function runCategoryTrainer({
     training_set_size_run: productRuns.length,
     rounds_per_product: rounds,
     orchestration_mode: orchestrationMode,
-    helper_sync: helperSync,
-    helper_contract: {
-      loaded: Boolean(helperData?.helper_audit?.contract_loaded),
-      previous_hash: beforeContractHash,
-      current_hash: afterContractHash,
-      changed: Boolean(beforeContractHash && afterContractHash && beforeContractHash !== afterContractHash),
-      file: helperData?.helper_audit?.contract_file || null,
-      counts: helperData?.helper_audit?.counts || {},
-      source_files: helperData?.helper_audit?.source_files || [],
-      error: helperData?.helper_audit?.error || null
-    },
-    helper_expectations: {
-      hash: helperData?.helper_audit?.expectations_hash || null,
-      file: helperData?.helper_audit?.expectations_file || null,
-      counts: helperData?.helper_audit?.expectation_counts || {},
-      required_fields: helperData?.compiled_expectations?.required_fields || [],
-      expected_easy_fields: helperData?.compiled_expectations?.expected_easy_fields || [],
-      expected_sometimes_fields: helperData?.compiled_expectations?.expected_sometimes_fields || [],
-      deep_fields: helperData?.compiled_expectations?.deep_fields || []
-    },
     generated_tests: await writeGeneratedCategoryTests({
       category,
-      contract: helperData?.compiled_contract || {},
-      expectations: helperData?.compiled_expectations || {}
+      contract: {},
+      expectations: {}
     }),
     learning_artifact_diff: brainDiff(beforeStats, afterStats),
     metrics: {
@@ -259,3 +206,4 @@ export async function runCategoryTrainer({
     report_key: reportKey
   };
 }
+

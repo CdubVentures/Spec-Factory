@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   normalizeArticleExtractorPolicyMap,
   resolveArticleExtractionPolicy
-} from '../src/extract/articleExtractorPolicy.js';
+} from '../src/features/indexing/extraction/articleExtractorPolicy.js';
 
 test('article extractor policy: normalizes host map and aliases', () => {
   const map = normalizeArticleExtractorPolicyMap({

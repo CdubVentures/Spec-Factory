@@ -246,6 +246,100 @@ test('source planner discovers manufacturer URLs from sitemap XML', () => {
   assert.equal(planner.getStats().sitemap_urls_discovered >= 3, true);
 });
 
+test('source planner rejects sibling manufacturer category product paths even when family tokens overlap', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    {
+      sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  assert.equal(
+    planner.isRelevantDiscoveredUrl(
+      new URL('https://razer.com/gaming-mice/razer-viper-v3-pro'),
+      { manufacturerContext: true, sitemapContext: true }
+    ),
+    true
+  );
+  assert.equal(
+    planner.isRelevantDiscoveredUrl(
+      new URL('https://razer.com/gaming-mice/razer-viper-v3-hyperspeed'),
+      { manufacturerContext: true, sitemapContext: true }
+    ),
+    false
+  );
+  assert.equal(
+    planner.isRelevantDiscoveredUrl(
+      new URL('https://razer.com/gaming-mice/razer-viper-v2-pro'),
+      { manufacturerContext: true, sitemapContext: true }
+    ),
+    false
+  );
+  assert.equal(
+    planner.isRelevantDiscoveredUrl(
+      new URL('https://razer.com/gaming-mice/counter-strike-2-razer-viper-v3-pro'),
+      { manufacturerContext: true, sitemapContext: true }
+    ),
+    false
+  );
+});
+
+test('source planner discoverFromSitemap skips sibling manufacturer product pages for locked model runs', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: false,
+      fetchCandidateSources: false,
+      maxManufacturerPagesPerDomain: 20,
+      maxManufacturerUrlsPerProduct: 20
+    }),
+    {
+      sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  planner.discoverFromSitemap(
+    'https://razer.com/sitemap.xml',
+    [
+      '<urlset>',
+      '<url><loc>https://razer.com/gaming-mice/razer-viper-v3-pro</loc></url>',
+      '<url><loc>https://www.razer.com/gaming-mice/razer-viper-v3-pro</loc></url>',
+      '<url><loc>https://razer.com/mena-ar/gaming-mice/razer-viper-v3-pro</loc></url>',
+      '<url><loc>https://razer.com/gaming-mice/razer-viper-v3-hyperspeed</loc></url>',
+      '<url><loc>https://razer.com/gaming-mice/razer-viper-v2-pro</loc></url>',
+      '<url><loc>https://razer.com/gaming-mice/counter-strike-2-razer-viper-v3-pro</loc></url>',
+      '<url><loc>https://razer.com/support/razer-viper-v3-pro</loc></url>',
+      '</urlset>'
+    ].join('')
+  );
+
+  const seenUrls = [];
+  while (planner.hasNext()) {
+    seenUrls.push(planner.next().url);
+  }
+
+  assert.equal(seenUrls.includes('https://razer.com/gaming-mice/razer-viper-v3-pro'), true);
+  assert.equal(seenUrls.includes('https://www.razer.com/gaming-mice/razer-viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/mena-ar/gaming-mice/razer-viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/support/razer-viper-v3-pro'), true);
+  assert.equal(seenUrls.includes('https://razer.com/gaming-mice/razer-viper-v3-hyperspeed'), false);
+  assert.equal(seenUrls.includes('https://razer.com/gaming-mice/razer-viper-v2-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/gaming-mice/counter-strike-2-razer-viper-v3-pro'), false);
+});
+
 test('source planner discovers sitemap pointers from robots.txt', () => {
   const planner = new SourcePlanner(
     {
@@ -272,6 +366,130 @@ test('source planner discovers sitemap pointers from robots.txt', () => {
   assert.equal(planner.getStats().robots_sitemaps_discovered, 2);
 });
 
+test('source planner discoverFromRobots strips html wrapper tags from sitemap directives', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Logitech G', model: 'Pro X Superlight 2' },
+      productId: 'mouse-logitech-g-pro-x-superlight-2'
+    },
+    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    {
+      sourceHosts: [{ host: 'logitechg.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  const discovered = planner.discoverFromRobots(
+    'https://www.logitechg.com/robots.txt',
+    [
+      '<html><body><pre>User-agent: *',
+      'Disallow: /cart',
+      'Sitemap: https://www.logitechg.com/sitemap_index.xml</pre></body></html>'
+    ].join('\n')
+  );
+
+  const seenUrls = [];
+  while (planner.hasNext()) {
+    seenUrls.push(planner.next().url);
+  }
+
+  assert.equal(discovered, 1);
+  assert.equal(
+    seenUrls.includes('https://www.logitechg.com/sitemap_index.xml'),
+    true,
+    `expected clean sitemap pointer to be enqueued: ${JSON.stringify(seenUrls)}`
+  );
+  assert.equal(
+    seenUrls.some((url) => url.includes('%3C/pre%3E')),
+    false,
+    `expected html wrapper tags to be stripped from sitemap pointer: ${JSON.stringify(seenUrls)}`
+  );
+});
+
+test('source planner discoverFromRobots skips image sitemap pointers for locked manufacturer products', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    {
+      sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  const discovered = planner.discoverFromRobots(
+    'https://razer.com/robots.txt',
+    [
+      'User-agent: *',
+      'Disallow: /cart',
+      'Sitemap: https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap_images.xml',
+      'Sitemap: https://www.razer.com/sitemap-products.xml'
+    ].join('\n')
+  );
+
+  const seenUrls = [];
+  while (planner.hasNext()) {
+    seenUrls.push(planner.next().url);
+  }
+
+  assert.equal(discovered, 1);
+  assert.equal(
+    seenUrls.includes('https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap_images.xml'),
+    false
+  );
+  assert.equal(seenUrls.includes('https://www.razer.com/sitemap-products.xml'), true);
+});
+
+test('source planner discoverFromSitemap skips non-sitemap API XML entries from manufacturer sitemap indexes', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: false,
+      fetchCandidateSources: false,
+      maxManufacturerPagesPerDomain: 20,
+      maxManufacturerUrlsPerProduct: 20
+    }),
+    {
+      sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  planner.discoverFromSitemap(
+    'https://sitemap-xml.razer.com/pro-sitemaps-4237407.php?sn=sitemap1.xml',
+    [
+      '<urlset>',
+      '<url><loc>https://api-p1.phoenix.razer.com/medias/Category-en-AU-AUD-17122041193263043540.xml?context=test</loc></url>',
+      '<url><loc>https://www.razer.com/sitemap.xml</loc></url>',
+      '<url><loc>https://www.razer.com/support/razer-viper-v3-pro</loc></url>',
+      '</urlset>'
+    ].join('')
+  );
+
+  const seenUrls = [];
+  while (planner.hasNext()) {
+    seenUrls.push(planner.next().url);
+  }
+
+  assert.equal(
+    seenUrls.includes('https://api-p1.phoenix.razer.com/medias/Category-en-AU-AUD-17122041193263043540.xml?context=test'),
+    false
+  );
+  assert.equal(seenUrls.includes('https://www.razer.com/sitemap.xml'), true);
+  assert.equal(seenUrls.includes('https://www.razer.com/support/razer-viper-v3-pro'), true);
+});
+
 test('source planner manufacturer deep seeds are brand-targeted', () => {
   const categoryConfig = {
     sourceHosts: [
@@ -293,6 +511,42 @@ test('source planner manufacturer deep seeds are brand-targeted', () => {
 
   const stats = planner.getStats();
   assert.deepEqual(stats.brand_manufacturer_hosts, ['logitechg.com']);
+});
+
+test('source planner manufacturer deep seeds retain robots discovery instead of guessing direct category slugs', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({ fetchCandidateSources: false }),
+    {
+      sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  const seenUrls = [];
+  for (let index = 0; index < 8; index += 1) {
+    const next = planner.next();
+    if (!next) {
+      break;
+    }
+    seenUrls.push(next.url);
+  }
+
+  assert.equal(
+    seenUrls.includes('https://razer.com/robots.txt'),
+    true,
+    `expected robots discovery seed in deep queue: ${JSON.stringify(seenUrls)}`
+  );
+  assert.equal(
+    seenUrls.includes('https://razer.com/gaming-mice/razer-viper-v3-pro'),
+    false,
+    `guessed direct category slug should not be seeded: ${JSON.stringify(seenUrls)}`
+  );
 });
 
 test('source planner does not bypass brand manufacturer filtering for seeded discovery URLs', () => {
@@ -386,4 +640,668 @@ test('source planner prioritizes manufacturer product pages over generic search 
 
   assert.equal(first.url, 'https://razer.com/gaming-mice/razer-basilisk-v3-35k');
   assert.equal(second.url, 'https://razer.com/search?q=Razer%20Basilisk%20V3%2035k');
+});
+
+test('source planner prioritizes canonical manufacturer category pages ahead of guessed product paths', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    {
+      sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  planner.enqueue('https://razer.com/product/viper-v3-pro');
+  planner.enqueue('https://razer.com/products/viper-v3-pro');
+  planner.enqueue('https://razer.com/gaming-mice/viper-v3-pro');
+  planner.enqueue('https://www.razer.com/gaming-mice/razer-viper-v3-pro');
+
+  const first = planner.next();
+  const second = planner.next();
+
+  assert.equal(first.url, 'https://www.razer.com/gaming-mice/razer-viper-v3-pro');
+  assert.equal(second.url, 'https://razer.com/gaming-mice/viper-v3-pro');
+});
+
+test('source planner rejects unbranded follow-up URLs on brand-prefixed manufacturer hosts', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    {
+      sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  const rejectedUrls = [
+    'https://razer.com/gaming-mice/viper-v3-pro',
+    'https://razer.com/support/viper-v3-pro',
+    'https://razer.com/manual/viper-v3-pro',
+    'https://razer.com/specs/viper-v3-pro',
+    'https://razer.com/product/viper-v3-pro',
+    'https://razer.com/products/viper-v3-pro'
+  ];
+
+  for (const url of rejectedUrls) {
+    assert.equal(
+      planner.isRelevantDiscoveredUrl(new URL(url), { manufacturerContext: true }),
+      false,
+      `expected unbranded follow-up URL to be rejected: ${url}`
+    );
+  }
+});
+
+test('source planner keeps branded follow-up URLs on brand-prefixed manufacturer hosts', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    {
+      sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  const acceptedUrls = [
+    'https://razer.com/gaming-mice/razer-viper-v3-pro',
+    'https://razer.com/support/razer-viper-v3-pro',
+    'https://razer.com/specs/razer-viper-v3-pro'
+  ];
+
+  for (const url of acceptedUrls) {
+    assert.equal(
+      planner.isRelevantDiscoveredUrl(new URL(url), { manufacturerContext: true }),
+      true,
+      `expected branded follow-up URL to remain eligible: ${url}`
+    );
+  }
+});
+
+test('source planner discoverFromHtml skips unbranded Razer follow-up links from manufacturer pages', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: false,
+      fetchCandidateSources: false,
+      maxManufacturerPagesPerDomain: 20,
+      maxManufacturerUrlsPerProduct: 20
+    }),
+    {
+      sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  planner.discoverFromHtml(
+    'https://razer.com/gaming-mice/razer-viper-v3-pro',
+    [
+      '<a href="/support/viper-v3-pro">Dead support slug</a>',
+      '<a href="/manual/viper-v3-pro">Dead manual slug</a>',
+      '<a href="/specs/viper-v3-pro">Dead specs slug</a>',
+      '<a href="/products/viper-v3-pro">Dead product slug</a>',
+      '<a href="/support/razer-viper-v3-pro">Branded support</a>',
+      '<a href="/gaming-mice/razer-viper-v3-pro">Canonical product</a>'
+    ].join('\n')
+  );
+
+  const seenUrls = [];
+  while (planner.hasNext()) {
+    seenUrls.push(planner.next().url);
+  }
+
+  assert.equal(seenUrls.includes('https://razer.com/support/viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/manual/viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/specs/viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/products/viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/support/razer-viper-v3-pro'), true);
+  assert.equal(seenUrls.includes('https://razer.com/gaming-mice/razer-viper-v3-pro'), false);
+});
+
+test('source planner discoverFromHtml skips locale-variant copies of the same manufacturer product page', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: false,
+      fetchCandidateSources: false,
+      maxManufacturerPagesPerDomain: 20,
+      maxManufacturerUrlsPerProduct: 20
+    }),
+    {
+      sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  planner.discoverFromHtml(
+    'https://razer.com/gaming-mice/razer-viper-v3-pro',
+    [
+      '<a href="/au-en/gaming-mice/razer-viper-v3-pro">AU locale duplicate</a>',
+      '<a href="/hk-en/gaming-mice/razer-viper-v3-pro">HK locale duplicate</a>',
+      '<a href="/mena-ar/gaming-mice/razer-viper-v3-pro">MENA Arabic locale duplicate</a>',
+      '<a href="/latam-es/gaming-mice/razer-viper-v3-pro">LATAM Spanish locale duplicate</a>',
+      '<a href="/mena-en/gaming-mice/razer-viper-v3-pro">MENA English locale duplicate</a>',
+      '<a href="/support/razer-viper-v3-pro">Branded support</a>'
+    ].join('\n')
+  );
+
+  const seenUrls = [];
+  while (planner.hasNext()) {
+    seenUrls.push(planner.next().url);
+  }
+
+  assert.equal(seenUrls.includes('https://razer.com/au-en/gaming-mice/razer-viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/hk-en/gaming-mice/razer-viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/mena-ar/gaming-mice/razer-viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/latam-es/gaming-mice/razer-viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/mena-en/gaming-mice/razer-viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/support/razer-viper-v3-pro'), true);
+});
+
+test('source planner discoverFromHtml skips sibling manufacturer variants for a locked product page', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: false,
+      fetchCandidateSources: false,
+      maxManufacturerPagesPerDomain: 20,
+      maxManufacturerUrlsPerProduct: 20
+    }),
+    {
+      sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  planner.discoverFromHtml(
+    'https://razer.com/gaming-mice/razer-viper-v3-pro',
+    [
+      '<a href="/gaming-mice/razer-viper-v3-pro-faker-edition">Faker edition</a>',
+      '<a href="/gaming-mice/razer-viper-v3-pro-se">SE edition</a>',
+      '<a href="/support/razer-viper-v3-pro">Branded support</a>'
+    ].join('\n')
+  );
+
+  const seenUrls = [];
+  while (planner.hasNext()) {
+    seenUrls.push(planner.next().url);
+  }
+
+  assert.equal(seenUrls.includes('https://razer.com/gaming-mice/razer-viper-v3-pro-faker-edition'), false);
+  assert.equal(seenUrls.includes('https://razer.com/gaming-mice/razer-viper-v3-pro-se'), false);
+  assert.equal(seenUrls.includes('https://razer.com/support/razer-viper-v3-pro'), true);
+});
+
+test('source planner discoverFromHtml skips prefixed and bundle sibling slugs for a locked manufacturer product page', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: false,
+      fetchCandidateSources: false,
+      maxManufacturerPagesPerDomain: 20,
+      maxManufacturerUrlsPerProduct: 20
+    }),
+    {
+      sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  planner.discoverFromHtml(
+    'https://razer.com/gaming-mice/razer-viper-v3-pro',
+    [
+      '<a href="/gaming-mice/counter-strike-2-razer-viper-v3-pro">Counter-Strike 2 sibling</a>',
+      '<a href="/gaming-mice/counter-strike-2-razer-viper-v3-pro-gigantus-v2-bundle">Bundle sibling</a>',
+      '<a href="/gaming-mice/razer-viper-v3-pro/RZHB-251028-01">Canonical SKU child</a>'
+    ].join('\n')
+  );
+
+  const seenUrls = [];
+  while (planner.hasNext()) {
+    seenUrls.push(planner.next().url);
+  }
+
+  assert.equal(seenUrls.includes('https://razer.com/gaming-mice/counter-strike-2-razer-viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/gaming-mice/counter-strike-2-razer-viper-v3-pro-gigantus-v2-bundle'), false);
+  assert.equal(seenUrls.includes('https://razer.com/gaming-mice/razer-viper-v3-pro/RZHB-251028-01'), true);
+});
+
+test('source planner discoverFromHtml skips canonical self links and sitemap pages for locked manufacturer products', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: false,
+      fetchCandidateSources: false,
+      maxManufacturerPagesPerDomain: 20,
+      maxManufacturerUrlsPerProduct: 20
+    }),
+    {
+      sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  planner.discoverFromHtml(
+    'https://razer.com/gaming-mice/razer-viper-v3-pro',
+    [
+      '<a href="https://www.razer.com/gaming-mice/razer-viper-v3-pro">Canonical self link</a>',
+      '<a href="/sitemap">Footer sitemap</a>',
+      '<a href="/support/razer-viper-v3-pro">Branded support</a>'
+    ].join('\n')
+  );
+
+  const seenUrls = [];
+  while (planner.hasNext()) {
+    seenUrls.push(planner.next().url);
+  }
+
+  assert.equal(seenUrls.includes('https://www.razer.com/gaming-mice/razer-viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/sitemap'), false);
+  assert.equal(seenUrls.includes('https://razer.com/support/razer-viper-v3-pro'), true);
+});
+
+test('source planner discoverFromHtml skips review blog articles even when the locked model appears in the slug', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: false,
+      fetchCandidateSources: false,
+      maxManufacturerPagesPerDomain: 20,
+      maxManufacturerUrlsPerProduct: 20
+    }),
+    {
+      sourceHosts: [
+        { host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 },
+        { host: 'prosettings.net', tierName: 'review', role: 'review', tier: 2 }
+      ],
+      denylist: []
+    }
+  );
+
+  planner.discoverFromHtml(
+    'https://razer.com/gaming-mice/razer-viper-v3-pro',
+    [
+      '<a href="https://prosettings.net/blog/the-rise-of-the-razer-viper-v3-pro">ProSettings blog</a>',
+      '<a href="/support/razer-viper-v3-pro">Branded support</a>'
+    ].join('\n')
+  );
+
+  const seenUrls = [];
+  while (planner.hasNext()) {
+    seenUrls.push(planner.next().url);
+  }
+
+  assert.equal(seenUrls.includes('https://prosettings.net/blog/the-rise-of-the-razer-viper-v3-pro'), false);
+  assert.equal(seenUrls.includes('https://razer.com/support/razer-viper-v3-pro'), true);
+});
+
+test('source planner prioritizes explicit support spec seed URLs ahead of guessed manufacturer deep seeds', () => {
+  const seedUrl = 'https://support.logi.com/hc/en-ch/articles/15235304069783-Specification-G-PRO-X-Superlight-2-Lightspeed-Gaming-Mouse';
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [seedUrl],
+      preferredSources: {},
+      identityLock: { brand: 'Logitech G', model: 'PRO X SUPERLIGHT 2' },
+      productId: 'mouse-logitech-g-pro-x-superlight-2'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: true,
+      manufacturerSeedSearchUrls: true,
+      fetchCandidateSources: false
+    }),
+    {
+      sourceHosts: [{ host: 'logitechg.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  const first = planner.next();
+
+  assert.equal(first.url, seedUrl);
+});
+
+test('source planner keeps explicit support seeds ahead of adapter search seeds', () => {
+  const explicitSeedUrl = 'https://support.logi.com/hc/en-ch/articles/15235304069783-Specification-G-PRO-X-Superlight-2-Lightspeed-Gaming-Mouse';
+  const adapterSeedUrl = 'https://www.techpowerup.com/search/?q=Logitech%20G%20PRO%20X%20SUPERLIGHT%202';
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [explicitSeedUrl],
+      preferredSources: {},
+      identityLock: { brand: 'Logitech G', model: 'PRO X SUPERLIGHT 2' },
+      productId: 'mouse-logitech-g-pro-x-superlight-2'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: false,
+      fetchCandidateSources: false
+    }),
+    {
+      sourceHosts: [{ host: 'logitechg.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  planner.enqueue(adapterSeedUrl, 'adapter_seed', { forceApproved: true, forceBrandBypass: false });
+  const first = planner.next();
+
+  assert.equal(first.url, explicitSeedUrl);
+});
+
+test('source planner keeps explicit support seeds even when manufacturer reserve exceeds max urls', () => {
+  const explicitSeedUrl = 'https://support.logi.com/hc/en-ch/articles/15235304069783-Specification-G-PRO-X-Superlight-2-Lightspeed-Gaming-Mouse';
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [explicitSeedUrl],
+      preferredSources: {},
+      identityLock: { brand: 'Logitech G', model: 'PRO X SUPERLIGHT 2' },
+      productId: 'mouse-logitech-g-pro-x-superlight-2'
+    },
+    makeConfig({
+      maxUrlsPerProduct: 4,
+      manufacturerReserveUrls: 10,
+      manufacturerDeepResearchEnabled: true,
+      manufacturerSeedSearchUrls: true,
+      fetchCandidateSources: false
+    }),
+    {
+      sourceHosts: [{ host: 'logitechg.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  const first = planner.next();
+
+  assert.equal(first.url, explicitSeedUrl);
+});
+
+test('source planner suppresses guessed manufacturer deep seeds when an explicit support seed already covers that host', () => {
+  const explicitSeedUrl = 'https://support.logi.com/hc/en-ch/articles/15235304069783-Specification-G-PRO-X-Superlight-2-Lightspeed-Gaming-Mouse';
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [explicitSeedUrl],
+      preferredSources: {},
+      identityLock: { brand: 'Logitech G', model: 'PRO X SUPERLIGHT 2' },
+      productId: 'mouse-logitech-g-pro-x-superlight-2'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: true,
+      manufacturerSeedSearchUrls: true,
+      fetchCandidateSources: false,
+      maxManufacturerPagesPerDomain: 20,
+      maxManufacturerUrlsPerProduct: 20
+    }),
+    {
+      sourceHosts: [{ host: 'logitechg.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  const seenUrls = [];
+  for (let index = 0; index < 12; index += 1) {
+    const next = planner.next();
+    if (!next) {
+      break;
+    }
+    seenUrls.push(next.url);
+  }
+
+  assert.equal(seenUrls[0], explicitSeedUrl);
+  assert.equal(
+    seenUrls.some((url) => url.includes('logitechg.com/gaming-mice/pro-x-superlight-2')),
+    false,
+    `guessed category path should be suppressed once explicit host seed exists: ${JSON.stringify(seenUrls)}`
+  );
+  assert.equal(
+    seenUrls.some((url) => url.includes('logitechg.com/support/pro-x-superlight-2')),
+    false,
+    `guessed support slug path should be suppressed once explicit host seed exists: ${JSON.stringify(seenUrls)}`
+  );
+  assert.equal(
+    seenUrls.some((url) => url.includes('logitechg.com/search?q=')),
+    false,
+    `manufacturer search surfaces should be suppressed once explicit host seed exists: ${JSON.stringify(seenUrls)}`
+  );
+  assert.equal(
+    seenUrls.some((url) => url.includes('logitechg.com/search?query=')),
+    false,
+    `manufacturer query surfaces should be suppressed once explicit host seed exists: ${JSON.stringify(seenUrls)}`
+  );
+});
+
+test('source planner manufacturer deep seeds keep robots/search surfaces but skip guessed direct product slugs', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Logitech G', model: 'PRO X SUPERLIGHT 2' },
+      productId: 'mouse-logitech-g-pro-x-superlight-2'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: true,
+      manufacturerSeedSearchUrls: true,
+      fetchCandidateSources: false,
+      maxManufacturerPagesPerDomain: 20,
+      maxManufacturerUrlsPerProduct: 20
+    }),
+    {
+      sourceHosts: [{ host: 'logitechg.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
+      denylist: []
+    }
+  );
+
+  const seenUrls = [];
+  for (let index = 0; index < 10; index += 1) {
+    const next = planner.next();
+    if (!next) {
+      break;
+    }
+    seenUrls.push(next.url);
+  }
+
+  assert.equal(
+    seenUrls.includes('https://logitechg.com/robots.txt'),
+    true,
+    `expected manufacturer deep seed to retain robots discovery: ${JSON.stringify(seenUrls)}`
+  );
+  assert.equal(
+    seenUrls.some((url) => url.includes('logitechg.com/search?q=')),
+    true,
+    `expected manufacturer deep seed to retain search surfaces: ${JSON.stringify(seenUrls)}`
+  );
+  assert.equal(
+    seenUrls.some((url) => url.includes('logitechg.com/gaming-mice/pro-x-superlight-2')),
+    false,
+    `guessed direct manufacturer slug should not be seeded: ${JSON.stringify(seenUrls)}`
+  );
+});
+
+test('source planner rejects sibling and generic manufacturer resume seeds while keeping exact locked-model resume seeds', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: false,
+      fetchCandidateSources: false,
+      maxManufacturerPagesPerDomain: 20,
+      maxManufacturerUrlsPerProduct: 20
+    }),
+    {
+      sourceHosts: [
+        { host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 },
+        { host: 'api-p1.phoenix.razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }
+      ],
+      denylist: []
+    }
+  );
+
+  const exactLocaleProductUrl = 'https://www.razer.com/latam-es/gaming-mice/razer-viper-v3-pro';
+  const siblingCategoryProductUrl = 'https://www.razer.com/gaming-mice/razer-viper-v3-hyperspeed';
+  const siblingEditionProductUrl = 'https://www.razer.com/gaming-mice/razer-viper-v3-pro-faker-edition';
+  const exactVariantApiUrl =
+    'https://api-p1.phoenix.razer.com/rest/v2/razerUs/users/anonymous/variant/products/Viper-V3-Pro-Base';
+  const siblingVariantApiUrl =
+    'https://api-p1.phoenix.razer.com/rest/v2/razerUs/users/anonymous/variant/products/Viper-V3-HyperSpeed-Base';
+  const genericProductEndpointUrl =
+    'https://api-p1.phoenix.razer.com/rest/v2/razerUs/products/productSKUPrefix';
+
+  assert.equal(
+    planner.enqueue(exactLocaleProductUrl, 'resume_pending_seed', { forceApproved: true, forceBrandBypass: false }),
+    true
+  );
+  assert.equal(
+    planner.enqueue(siblingCategoryProductUrl, 'resume_pending_seed', { forceApproved: true, forceBrandBypass: false }),
+    false
+  );
+  assert.equal(
+    planner.enqueue(siblingEditionProductUrl, 'resume_pending_seed', { forceApproved: true, forceBrandBypass: false }),
+    false
+  );
+  assert.equal(
+    planner.enqueue(exactVariantApiUrl, 'resume_pending_seed', { forceApproved: true, forceBrandBypass: false }),
+    true
+  );
+  assert.equal(
+    planner.enqueue(siblingVariantApiUrl, 'resume_pending_seed', { forceApproved: true, forceBrandBypass: false }),
+    false
+  );
+  assert.equal(
+    planner.enqueue(genericProductEndpointUrl, 'resume_pending_seed', { forceApproved: true, forceBrandBypass: false }),
+    false
+  );
+
+  const seenUrls = [];
+  while (planner.hasNext()) {
+    seenUrls.push(planner.next().url);
+  }
+
+  assert.equal(seenUrls.includes(exactLocaleProductUrl), true);
+  assert.equal(seenUrls.includes(exactVariantApiUrl), true);
+  assert.equal(seenUrls.includes(siblingCategoryProductUrl), false);
+  assert.equal(seenUrls.includes(siblingEditionProductUrl), false);
+  assert.equal(seenUrls.includes(siblingVariantApiUrl), false);
+  assert.equal(seenUrls.includes(genericProductEndpointUrl), false);
+});
+
+test('source planner rejects locale, sibling, and generic manufacturer sitemap seeds for locked runs', () => {
+  const planner = new SourcePlanner(
+    {
+      seedUrls: [],
+      preferredSources: {},
+      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      productId: 'mouse-razer-viper-v3-pro'
+    },
+    makeConfig({
+      manufacturerDeepResearchEnabled: false,
+      fetchCandidateSources: false,
+      maxManufacturerPagesPerDomain: 20,
+      maxManufacturerUrlsPerProduct: 20
+    }),
+    {
+      sourceHosts: [
+        { host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 },
+        { host: 'api-p1.phoenix.razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }
+      ],
+      denylist: []
+    }
+  );
+
+  const exactCanonicalProductUrl = 'https://www.razer.com/gaming-mice/razer-viper-v3-pro';
+  const exactLocaleProductUrl = 'https://www.razer.com/mena-ar/gaming-mice/razer-viper-v3-pro';
+  const exactLocaleSkuChildUrl = 'https://www.razer.com/mena-ar/gaming-mice/razer-viper-v3-pro/RZ01-05120100-R3G1';
+  const siblingLocaleProductUrl = 'https://www.razer.com/mena-ar/gaming-mice/razer-viper-v3-hyperspeed';
+  const exactVariantApiUrl =
+    'https://api-p1.phoenix.razer.com/rest/v2/razerUs/users/anonymous/variant/products/Viper-V3-Pro-Base';
+  const siblingVariantApiUrl =
+    'https://api-p1.phoenix.razer.com/rest/v2/razerUs/users/anonymous/variant/products/Viper-V3-HyperSpeed-Base';
+  const genericProductEndpointUrl =
+    'https://api-p1.phoenix.razer.com/rest/v2/razerUs/products/productSKUPrefix';
+
+  assert.equal(
+    planner.enqueue(exactCanonicalProductUrl, 'sitemap:https://www.razer.com/sitemap-products.xml', { forceApproved: true, forceBrandBypass: false }),
+    true
+  );
+  assert.equal(
+    planner.enqueue(exactLocaleProductUrl, 'sitemap:https://www.razer.com/sitemap-products.xml', { forceApproved: true, forceBrandBypass: false }),
+    false
+  );
+  assert.equal(
+    planner.enqueue(exactLocaleSkuChildUrl, 'sitemap:https://www.razer.com/sitemap-products.xml', { forceApproved: true, forceBrandBypass: false }),
+    false
+  );
+  assert.equal(
+    planner.enqueue(siblingLocaleProductUrl, 'sitemap:https://www.razer.com/sitemap-products.xml', { forceApproved: true, forceBrandBypass: false }),
+    false
+  );
+  assert.equal(
+    planner.enqueue(exactVariantApiUrl, 'sitemap:https://www.razer.com/sitemap-products.xml', { forceApproved: true, forceBrandBypass: false }),
+    true
+  );
+  assert.equal(
+    planner.enqueue(siblingVariantApiUrl, 'sitemap:https://www.razer.com/sitemap-products.xml', { forceApproved: true, forceBrandBypass: false }),
+    false
+  );
+  assert.equal(
+    planner.enqueue(genericProductEndpointUrl, 'sitemap:https://www.razer.com/sitemap-products.xml', { forceApproved: true, forceBrandBypass: false }),
+    false
+  );
+
+  const seenUrls = [];
+  while (planner.hasNext()) {
+    seenUrls.push(planner.next().url);
+  }
+
+  assert.equal(seenUrls.includes(exactCanonicalProductUrl), true);
+  assert.equal(seenUrls.includes(exactLocaleProductUrl), false);
+  assert.equal(seenUrls.includes(exactLocaleSkuChildUrl), false);
+  assert.equal(seenUrls.includes(siblingLocaleProductUrl), false);
+  assert.equal(seenUrls.includes(exactVariantApiUrl), true);
+  assert.equal(seenUrls.includes(siblingVariantApiUrl), false);
+  assert.equal(seenUrls.includes(genericProductEndpointUrl), false);
 });

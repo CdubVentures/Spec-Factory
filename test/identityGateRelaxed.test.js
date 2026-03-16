@@ -3,11 +3,8 @@ import assert from 'node:assert/strict';
 import {
   evaluateIdentityGate,
   buildIdentityCriticalContradictions
-} from '../src/validator/identityGate.js';
+} from '../src/features/indexing/validation/identityGate.js';
 import { loadConfig } from '../src/config.js';
-import {
-  evaluateStopConditions
-} from '../src/pipeline/runOrchestrator.js';
 
 function makeAcceptedSource(overrides = {}) {
   return {
@@ -59,7 +56,7 @@ describe('Step 1: Tiered identity gate threshold', () => {
     assert.equal(gate.validated, true);
   });
 
-  it('manufacturer + additional + contradictions yields certainty 0.75 (extraction proceeds above 0.70)', () => {
+  it('manufacturer + additional + contradictions yields certainty 0.75 (keeps extraction provisional but publish-safe)', () => {
     const sources = [
       makeAcceptedSource({
         url: 'https://razer.com/mice/viper',
@@ -117,9 +114,9 @@ describe('Step 1: Tiered identity gate threshold', () => {
     assert.equal(gate.validated, false);
   });
 
-  it('config identityGatePublishThreshold defaults to 0.70', () => {
+  it('config identityGatePublishThreshold defaults to 0.75', () => {
     const config = loadConfig();
-    assert.equal(config.identityGatePublishThreshold, 0.70);
+    assert.equal(config.identityGatePublishThreshold, 0.75);
   });
 });
 
@@ -168,6 +165,106 @@ describe('Step 2: Relaxed contradiction detection', () => {
     assert.equal(sensorConflicts.length, 0, 'Focus Pro 30K vs FOCUS PRO 30K Optical should not be a conflict');
   });
 
+  it('generic or noisy sensor labels do not create a sensor conflict when only one concrete sensor signature exists', () => {
+    const sources = [
+      makeAcceptedSource({
+        url: 'https://www.razer.com/gaming-mice/razer-viper-v3-pro',
+        rootDomain: 'razer.com',
+        tier: 1,
+        role: 'manufacturer',
+        fieldCandidates: [{ field: 'sensor', value: 'ProSettings' }]
+      }),
+      makeAcceptedSource({
+        url: 'https://mousespecs.org/razer-viper-v3-pro',
+        rootDomain: 'mousespecs.org',
+        tier: 2,
+        role: 'database',
+        fieldCandidates: [{ field: 'sensor', value: 'Optical' }]
+      }),
+      makeAcceptedSource({
+        url: 'https://psamethodcalculator.com/mouse/razer-viper-v3-pro',
+        rootDomain: 'psamethodcalculator.com',
+        tier: 2,
+        role: 'database',
+        fieldCandidates: [{ field: 'sensor', value: 'Focus Pro 35K Optical Gen-2' }]
+      })
+    ];
+
+    const contradictions = buildIdentityCriticalContradictions(sources);
+    const sensorConflicts = contradictions.filter(c => c.conflict === 'sensor_family_conflict');
+    assert.equal(sensorConflicts.length, 0, 'noisy sensor labels should not create a product-family conflict');
+  });
+
+  it('Focus Pro 35K Perfect Sensor vs Focus Pro 35K Optical Sensor Gen-2 is not a sensor conflict', () => {
+    const sources = [
+      makeAcceptedSource({
+        url: 'https://mousespecs.org/razer-viper-v3-pro',
+        rootDomain: 'mousespecs.org',
+        tier: 2,
+        role: 'database',
+        fieldCandidates: [{ field: 'sensor', value: 'Focus Pro 35K Perfect Sensor' }]
+      }),
+      makeAcceptedSource({
+        url: 'https://www.razer.com/gaming-mice/razer-viper-v3-pro',
+        rootDomain: 'razer.com',
+        tier: 1,
+        role: 'manufacturer',
+        fieldCandidates: [{ field: 'sensor', value: 'Focus Pro 35K Optical Sensor Gen-2' }]
+      })
+    ];
+
+    const contradictions = buildIdentityCriticalContradictions(sources);
+    const sensorConflicts = contradictions.filter(c => c.conflict === 'sensor_family_conflict');
+    assert.equal(sensorConflicts.length, 0, 'sensor-family wording differences should not create a conflict');
+  });
+
+  it('localized manufacturer Focus Pro 35K strings do not create a sensor conflict', () => {
+    const localizedSensor = '\u7b2c 2 \u4e16\u4ee3 Focus Pro 35K \u30aa\u30d7\u30c6\u30a3\u30ab\u30eb\u30bb\u30f3\u30b5\u30fc';
+    const sources = [
+      makeAcceptedSource({
+        url: 'https://www.razer.com/jp-jp/gaming-mice/razer-viper-v3-pro',
+        rootDomain: 'razer.com',
+        tier: 1,
+        role: 'manufacturer',
+        fieldCandidates: [{ field: 'sensor', value: localizedSensor }]
+      }),
+      makeAcceptedSource({
+        url: 'https://psamethodcalculator.com/mouse/razer-viper-v3-pro',
+        rootDomain: 'psamethodcalculator.com',
+        tier: 2,
+        role: 'database',
+        fieldCandidates: [{ field: 'sensor', value: 'Focus Pro 35K Optical Sensor Gen-2' }]
+      })
+    ];
+
+    const contradictions = buildIdentityCriticalContradictions(sources);
+    const sensorConflicts = contradictions.filter(c => c.conflict === 'sensor_family_conflict');
+    assert.equal(sensorConflicts.length, 0, 'localized manufacturer sensor labels should not create a conflict');
+  });
+
+  it('truncated numeric blurbs do not count as a concrete conflicting sensor family', () => {
+    const sources = [
+      makeAcceptedSource({
+        url: 'https://psamethodcalculator.com/mouse/razer-viper-v3-pro',
+        rootDomain: 'psamethodcalculator.com',
+        tier: 2,
+        role: 'database',
+        fieldCandidates: [{ field: 'sensor', value: 'supporting up to 35' }]
+      }),
+      makeAcceptedSource({
+        url: 'https://www.razer.com/gaming-mice/razer-viper-v3-pro',
+        rootDomain: 'razer.com',
+        tier: 1,
+        role: 'manufacturer',
+        fieldCandidates: [{ field: 'sensor', value: 'Focus Pro 35K Optical Sensor Gen-2' }]
+      })
+    ];
+
+    const contradictions = buildIdentityCriticalContradictions(sources);
+    const sensorConflicts = contradictions.filter(c => c.conflict === 'sensor_family_conflict');
+    assert.equal(sensorConflicts.length, 0, 'truncated blurbs should be ignored, not treated as conflicting sensor families');
+  });
+
   it('125.6mm vs 126.1mm is NOT a dimension conflict (within 3mm)', () => {
     const sources = [
       makeAcceptedSource({
@@ -190,7 +287,7 @@ describe('Step 2: Relaxed contradiction detection', () => {
     assert.equal(sizeConflicts.length, 0, '0.5mm difference should not be a conflict');
   });
 
-  it('125mm vs 132mm IS a dimension conflict (7mm difference)', () => {
+  it('125mm vs 132mm is NOT a dimension conflict (7mm within 15mm measurement tolerance)', () => {
     const sources = [
       makeAcceptedSource({
         url: 'https://razer.com/mice',
@@ -209,7 +306,90 @@ describe('Step 2: Relaxed contradiction detection', () => {
 
     const contradictions = buildIdentityCriticalContradictions(sources);
     const sizeConflicts = contradictions.filter(c => c.conflict === 'size_class_conflict');
-    assert.equal(sizeConflicts.length, 1, '7mm difference should be a conflict');
+    assert.equal(sizeConflicts.length, 0, '7mm difference is within measurement tolerance — not a product identity conflict');
+  });
+
+  it('90mm vs 130mm IS a dimension conflict (40mm = genuinely different product class)', () => {
+    const sources = [
+      makeAcceptedSource({
+        url: 'https://razer.com/mice',
+        rootDomain: 'razer.com',
+        tier: 1,
+        role: 'manufacturer',
+        fieldCandidates: [{ field: 'lngth', value: '90' }]
+      }),
+      makeAcceptedSource({
+        url: 'https://rtings.com/review',
+        rootDomain: 'rtings.com',
+        tier: 2,
+        fieldCandidates: [{ field: 'lngth', value: '130' }]
+      })
+    ];
+
+    const contradictions = buildIdentityCriticalContradictions(sources);
+    const sizeConflicts = contradictions.filter(c => c.conflict === 'size_class_conflict');
+    assert.equal(sizeConflicts.length, 1, '40mm difference indicates genuinely different products');
+  });
+
+  it('implausible page-layout dimensions do not create a size conflict when one plausible mouse cluster exists', () => {
+    const sources = [
+      makeAcceptedSource({
+        url: 'https://www.razer.com/gaming-mice/razer-viper-v3-pro',
+        rootDomain: 'razer.com',
+        tier: 1,
+        role: 'manufacturer',
+        fieldCandidates: [
+          { field: 'width', value: '375' },
+          { field: 'height', value: '620' }
+        ]
+      }),
+      makeAcceptedSource({
+        url: 'https://www.rtings.com/mouse/reviews/razer/viper-v3-pro',
+        rootDomain: 'rtings.com',
+        tier: 2,
+        role: 'lab',
+        fieldCandidates: [
+          { field: 'width', value: '300' },
+          { field: 'height', value: '150' }
+        ]
+      }),
+      makeAcceptedSource({
+        url: 'https://prosettings.net/blog/the-rise-of-the-razer-viper-v3-pro',
+        rootDomain: 'prosettings.net',
+        tier: 2,
+        role: 'review',
+        fieldCandidates: [
+          { field: 'width', value: '1600' },
+          { field: 'height', value: '900' }
+        ]
+      }),
+      makeAcceptedSource({
+        url: 'https://psamethodcalculator.com/mouse/razer-viper-v3-pro',
+        rootDomain: 'psamethodcalculator.com',
+        tier: 2,
+        role: 'database',
+        fieldCandidates: [
+          { field: 'lngth', value: '127.1' },
+          { field: 'width', value: '63.9' },
+          { field: 'height', value: '39.9' }
+        ]
+      }),
+      makeAcceptedSource({
+        url: 'https://mousespecs.org/razer-viper-v3-pro',
+        rootDomain: 'mousespecs.org',
+        tier: 2,
+        role: 'database',
+        fieldCandidates: [
+          { field: 'lngth', value: '1271' },
+          { field: 'width', value: '640' },
+          { field: 'height', value: '360' }
+        ]
+      })
+    ];
+
+    const contradictions = buildIdentityCriticalContradictions(sources);
+    const sizeConflicts = contradictions.filter(c => c.conflict === 'size_class_conflict');
+    assert.equal(sizeConflicts.length, 0, 'layout-sized pixel values should not create a product-size conflict');
   });
 
   it('regional SKU variants share base SKU — NOT a conflict', () => {
@@ -257,49 +437,14 @@ describe('Step 2: Relaxed contradiction detection', () => {
   });
 });
 
-describe('Step 3: Identity fast-fail stop condition', () => {
-  it('identity stuck for 1 round stops immediately with default config', () => {
-    const result = evaluateStopConditions({
-      identityStuckRounds: 1,
-      identityFailFastRounds: 1
-    });
-    assert.equal(result.stop, true);
-    assert.equal(result.reason, 'identity_gate_stuck');
-  });
-
-  it('identity improves — does not trigger fast-fail', () => {
-    const result = evaluateStopConditions({
-      identityStuckRounds: 0,
-      identityFailFastRounds: 1
-    });
-    assert.equal(result.stop, false);
-  });
-
-  it('config convergenceIdentityFailFastRounds defaults to 1', () => {
-    const config = loadConfig();
-    assert.equal(config.convergenceIdentityFailFastRounds, 1);
-  });
-
-  it('identity stuck but fail-fast disabled (0) does not trigger', () => {
-    const result = evaluateStopConditions({
-      identityStuckRounds: 5,
-      identityFailFastRounds: 0
-    });
-    assert.equal(result.stop, false);
-  });
-});
-
 describe('Step 4: Performance tuning defaults', () => {
   it('standard profile has tuned defaults', () => {
     const config = loadConfig({ runProfile: 'standard' });
-    assert.equal(config.perHostMinDelayMs, 300);
-    assert.equal(config.pageGotoTimeoutMs, 15000);
+    assert.equal(config.perHostMinDelayMs, 1500);
+    assert.equal(config.pageGotoTimeoutMs, 12000);
     assert.equal(config.pageNetworkIdleTimeoutMs, 2000);
-    assert.equal(config.discoveryMaxQueries, 6);
-    assert.equal(config.discoveryMaxDiscovered, 80);
-    assert.equal(config.convergenceMaxRounds, 3);
-    assert.equal(config.convergenceMaxLowQualityRounds, 1);
-    assert.equal(config.convergenceNoProgressLimit, 2);
+    assert.equal(config.discoveryMaxQueries, 10);
+    assert.equal(config.discoveryMaxDiscovered, 60);
   });
 });
 
@@ -360,5 +505,59 @@ describe('Step 5: Soft identity gate on extraction', () => {
     assert.equal(gate.validated, false);
     assert.equal(gate.acceptedSourceCount, 0);
     assert.ok(gate.certainty < 0.70, `certainty ${gate.certainty} should be < 0.70`);
+  });
+
+  it('noisy accepted-source fields do not block validation when identity evidence is otherwise sufficient', () => {
+    const gate = evaluateIdentityGate([
+      makeAcceptedSource({
+        url: 'https://www.razer.com/gaming-mice/razer-viper-v3-pro',
+        rootDomain: 'razer.com',
+        tier: 1,
+        role: 'manufacturer',
+        fieldCandidates: [
+          { field: 'sensor', value: 'ProSettings' },
+          { field: 'width', value: '375' },
+          { field: 'height', value: '620' }
+        ]
+      }),
+      makeAcceptedSource({
+        url: 'https://www.rtings.com/mouse/reviews/razer/viper-v3-pro',
+        rootDomain: 'rtings.com',
+        tier: 2,
+        role: 'lab',
+        fieldCandidates: [
+          { field: 'width', value: '300' },
+          { field: 'height', value: '150' }
+        ]
+      }),
+      makeAcceptedSource({
+        url: 'https://psamethodcalculator.com/mouse/razer-viper-v3-pro',
+        rootDomain: 'psamethodcalculator.com',
+        tier: 2,
+        role: 'database',
+        fieldCandidates: [
+          { field: 'sensor', value: 'Focus Pro 35K Optical Gen-2' },
+          { field: 'lngth', value: '127.1' },
+          { field: 'width', value: '63.9' },
+          { field: 'height', value: '39.9' }
+        ]
+      }),
+      makeAcceptedSource({
+        url: 'https://mousespecs.org/razer-viper-v3-pro',
+        rootDomain: 'mousespecs.org',
+        tier: 2,
+        role: 'database',
+        fieldCandidates: [
+          { field: 'sensor', value: 'Optical' },
+          { field: 'lngth', value: '1271' },
+          { field: 'width', value: '640' },
+          { field: 'height', value: '360' }
+        ]
+      })
+    ]);
+
+    assert.equal(gate.validated, true);
+    assert.equal(gate.status, 'CONFIRMED');
+    assert.equal(gate.reasonCodes.includes('identity_conflict'), false);
   });
 });

@@ -1,0 +1,89 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontSize': '16px', 'fontFamily': 'Segoe UI', 'primaryColor': '#0f766e', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#134e4a', 'lineColor': '#334155', 'secondaryColor': '#ccfbf1', 'tertiaryColor': '#ecfeff'}}}%%
+
+flowchart LR
+    subgraph PHASE1["PHASE 1: CLASSIFY + HARD REJECT"]
+        direction TB
+
+        I1["<b>Input:</b><br/>dedupedResults"]
+        I2["Build per-URL trace<br/>merge query metadata<br/>canonicalize via frontier when present"]
+        I3["Hard rejects:<br/>non_https<br/>denied_host<br/>url_cooldown<br/>manufacturer_brand_mismatch<br/>low_relevance"]
+        I4["Survivors -> classifyUrlCandidate()<br/>doc_kind_guess, role, tier,<br/>identity_match_level,<br/>variant_guard_hit, multi_model_hint"]
+
+        I1 --> I2 --> I3 --> I4
+    end
+
+    subgraph PHASE2["PHASE 2: DOMAIN SAFETY + ADMISSION"]
+        direction TB
+
+        D1["collectDomainClassificationSeeds()<br/>candidate hosts first<br/>host-plan/brandResolution only if empty"]
+        D2["Deterministic domain rows only:<br/>blocked | safe | caution"]
+        D3["Build domainSafetyResults map"]
+        D4["Admission filter:<br/>forum_subdomain<br/>sibling_model_page<br/>multi_model_hint (non-mfr)"]
+        D5["Dormant here:<br/>forum_classification<br/>because classifier never emits forum/community"]
+
+        D1 --> D2 --> D3 --> D4 --> D5
+    end
+
+    subgraph PHASE3["PHASE 3: FIRST DETERMINISTIC RERANK"]
+        direction TB
+
+        R1["rerankSearchResults()"]
+        R2["Active positives:<br/>approved host, tier, role,<br/>identity, path/doc bonuses,<br/>text overlap, field yield"]
+        R3["Active negatives:<br/>variant_guard_hit<br/>multi_model_hint<br/>comparison/forum/blog<br/>retailer search/brand surfaces<br/>provider plan"]
+        R4["Output:<br/>deterministicReranked[]<br/>with score"]
+
+        R1 --> R2 --> R4
+        R1 --> R3 --> R4
+    end
+
+    subgraph PHASE4["PHASE 4: TRIAGE DECISION"]
+        direction TB
+
+        T1["Compute triageMinScore<br/>triageMaxUrls<br/>highQualityCount"]
+        T2{{"highQualityCount < ceil(triageMaxUrls * 0.6) ?"}}
+        T3["No -> deterministic threshold triage"]
+        T4["Yes -> enter rerankSerpResults() lane"]
+
+        T1 --> T2
+        T2 -->|No| T3
+        T2 -->|Yes| T4
+    end
+
+    subgraph PHASE5["PHASE 5: CONDITIONAL SERP RERANK"]
+        direction TB
+
+        S1["rerankSerpResults()<br/>safety prefilter -> score_det -> topK"]
+        S2["Active score_det terms:<br/>brand/model presence<br/>spec/manual keywords<br/>frontier penalty<br/>identity, guard, tier"]
+        S3["Dormant on this call path:<br/>host health<br/>operator risk<br/>field affinity<br/>NeedSet coverage<br/>diversity penalty"]
+        S4{{"Inner LLM gate:<br/>llmEnabled and<br/>plan-route key?"}}
+        S5["No -> deterministic keep rows<br/>rerank_reason = deterministic"]
+        S6["Yes -> call uber_serp_reranker<br/>merge keep/drop results<br/>fallbacks if empty/error"]
+
+        S1 --> S2 --> S4
+        S1 --> S3 --> S4
+        S4 -->|No| S5
+        S4 -->|Yes| S6
+    end
+
+    subgraph PHASE6["PHASE 6: SELECT + WRITE OUTPUTS"]
+        direction TB
+
+        O1["normalizeTriageScore()<br/>prefers rerank_score -> score -> score_det"]
+        O2["Apply threshold/cap<br/>discoveredCap = min(discoveryCap, triageMaxUrls)<br/>once triage applies"]
+        O3["discovered[]"]
+        O4["Immediate outputs:<br/>selected_urls trace<br/>candidate trace enrichment<br/>serp_explorer<br/>searchProfileFinal<br/>discovery/candidate payloads"]
+        O5["Return payload:<br/>candidates, approvedUrls,<br/>candidateUrls, search_profile,<br/>serp_explorer, attempts, journal"]
+
+        O1 --> O2 --> O3 --> O4 --> O5
+    end
+
+    PHASE1 --> PHASE2 --> PHASE3 --> PHASE4
+    T3 --> PHASE6
+    T4 --> PHASE5 --> PHASE6
+
+    style PHASE1 fill:#e0f2fe,stroke:#0369a1,stroke-width:3px
+    style PHASE2 fill:#ecfccb,stroke:#4d7c0f,stroke-width:3px
+    style PHASE3 fill:#dcfce7,stroke:#166534,stroke-width:3px
+    style PHASE4 fill:#fef3c7,stroke:#b45309,stroke-width:3px
+    style PHASE5 fill:#f3e8ff,stroke:#7e22ce,stroke-width:3px
+    style PHASE6 fill:#fee2e2,stroke:#b91c1c,stroke-width:3px

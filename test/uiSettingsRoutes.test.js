@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 
-import { registerConfigRoutes } from '../src/api/routes/configRoutes.js';
+import { registerConfigRoutes } from '../src/features/settings/api/configRoutes.js';
 
 function toInt(value, fallback = 0) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -31,12 +31,12 @@ function makeCtx(overrides = {}) {
     storage: {},
     OUTPUT_ROOT: 'out',
     broadcastWs: () => {},
-    HELPER_ROOT: path.resolve('helper_files'),
+    HELPER_ROOT: path.resolve('category_authority'),
     runDataStorageState: {
       enabled: false,
       destinationType: 'local',
       localDirectory: '',
-      s3Region: 'us-east-2',
+      awsRegion: 'us-east-2',
       s3Bucket: '',
       s3Prefix: 'spec-factory-runs',
       s3AccessKeyId: '',
@@ -54,7 +54,7 @@ test('ui-settings GET returns durable autosave defaults', async (t) => {
     await fs.rm(helperRoot, { recursive: true, force: true });
   });
   const handler = registerConfigRoutes(makeCtx({
-    config: { helperFilesRoot: helperRoot },
+    config: { categoryAuthorityRoot: helperRoot },
     HELPER_ROOT: helperRoot,
   }));
 
@@ -75,7 +75,7 @@ test('ui-settings PUT persists autosave toggles and emits settings data-change',
   });
   const emitted = [];
   const handler = registerConfigRoutes(makeCtx({
-    config: { helperFilesRoot: helperRoot },
+    config: { categoryAuthorityRoot: helperRoot },
     HELPER_ROOT: helperRoot,
     readJsonBody: async () => ({
       studioAutoSaveAllEnabled: true,
@@ -131,7 +131,7 @@ test('ui-settings PUT keeps field-studio-map autosave independent from key navig
     await fs.rm(helperRoot, { recursive: true, force: true });
   });
   const handler = registerConfigRoutes(makeCtx({
-    config: { helperFilesRoot: helperRoot },
+    config: { categoryAuthorityRoot: helperRoot },
     HELPER_ROOT: helperRoot,
     readJsonBody: async () => ({
       studioAutoSaveAllEnabled: false,

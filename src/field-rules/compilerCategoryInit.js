@@ -1,0 +1,224 @@
+/**
+ * Category initialization: scaffolding, default files, and template presets.
+ */
+
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { normalizeFieldKey, normalizeToken, titleCase } from './compilerPrimitives.js';
+import { ensureSharedSchemaPack, writeIfMissing, writeJsonStable } from './compilerFileOps.js';
+
+export const TEMPLATE_PRESETS = {
+  electronics: {
+    common_identity: ['brand', 'model', 'variant', 'base_model', 'sku', 'mpn', 'gtin', 'category'],
+    common_physical: ['weight', 'length', 'width', 'height', 'material', 'color'],
+    common_connectivity: ['connection', 'wireless_technology', 'cable_type', 'cable_length'],
+    common_editorial: ['overall_score', 'pros', 'cons', 'verdict', 'key_takeaway'],
+    common_commerce: ['price_range', 'affiliate_links', 'images'],
+    common_media: ['youtube_url', 'feature_image', 'gallery_images']
+  }
+};
+
+function defaultCategorySchema(category, templateName) {
+  return {
+    category,
+    template: templateName,
+    field_order: [],
+    critical_fields: [],
+    expected_easy_fields: [],
+    expected_sometimes_fields: [],
+    deep_fields: [],
+    editorial_fields: [],
+    targets: {
+      targetCompleteness: 0.9,
+      targetConfidence: 0.8
+    }
+  };
+}
+
+function defaultSources() {
+  return {
+    approved: {
+      manufacturer: [],
+      lab: [],
+      database: [],
+      retailer: []
+    },
+    denylist: []
+  };
+}
+
+function defaultSearchTemplates(category) {
+  return [
+    `${category} {brand} {model} specs`,
+    `${category} {brand} {model} datasheet`,
+    `${category} {brand} {model} manual pdf`
+  ];
+}
+
+function defaultSourceSeed(category, templateName) {
+  const preset = TEMPLATE_PRESETS[templateName] || TEMPLATE_PRESETS.electronics;
+  return {
+    category,
+    template: templateName,
+    groups: {
+      identity: preset.common_identity,
+      physical: preset.common_physical,
+      connectivity: preset.common_connectivity,
+      performance: [],
+      features: [],
+      editorial: preset.common_editorial,
+      commerce: preset.common_commerce,
+      media: preset.common_media
+    }
+  };
+}
+
+function starterFieldDefinition({ group, fieldKey }) {
+  const normalizedGroup = normalizeFieldKey(group);
+  const key = normalizeFieldKey(fieldKey);
+  const isList = ['pros', 'cons', 'images', 'gallery_images', 'affiliate_links'].includes(key);
+  const isUrl = key.includes('url');
+  const isScore = key === 'overall_score';
+  const dataType = isScore ? 'number' : (isUrl ? 'url' : 'string');
+  const outputShape = isList ? 'list' : 'scalar';
+  let requiredLevel = 'expected';
+  let availability = 'expected';
+  if (normalizedGroup === 'editorial') {
+    requiredLevel = 'editorial';
+    availability = 'editorial_only';
+  } else if (normalizedGroup === 'commerce') {
+    requiredLevel = 'commerce';
+    availability = 'sometimes';
+  } else if (normalizedGroup === 'media') {
+    requiredLevel = 'optional';
+    availability = 'sometimes';
+  } else if (normalizedGroup === 'identity') {
+    requiredLevel = ['brand', 'model', 'category'].includes(key) ? 'required' : 'expected';
+    availability = 'expected';
+  }
+  return {
+    group: normalizedGroup,
+    field_key: key,
+    display_name: titleCase(key),
+    data_type: dataType,
+    output_shape: outputShape,
+    required_level: requiredLevel,
+    availability,
+    difficulty: 'easy',
+    effort: isScore ? 4 : 3,
+    evidence_required: true,
+    unknown_reason_default: normalizedGroup === 'editorial'
+      ? 'editorial_not_generated'
+      : 'not_found_after_search',
+    description: `Starter ${normalizedGroup} field`
+  };
+}
+
+function starterFieldRows({ category, templateName }) {
+  const preset = TEMPLATE_PRESETS[templateName] || TEMPLATE_PRESETS.electronics;
+  const groups = {
+    identity: preset.common_identity || [],
+    physical: preset.common_physical || [],
+    connectivity: preset.common_connectivity || [],
+    performance: [],
+    features: [],
+    editorial: preset.common_editorial || [],
+    commerce: preset.common_commerce || [],
+    media: preset.common_media || []
+  };
+  const rows = [];
+  for (const [group, fields] of Object.entries(groups)) {
+    for (const fieldKey of fields) {
+      rows.push(starterFieldDefinition({ group, fieldKey }));
+    }
+  }
+  rows.push({
+    group: 'performance',
+    field_key: '',
+    display_name: '',
+    data_type: '',
+    output_shape: '',
+    required_level: '',
+    availability: '',
+    difficulty: '',
+    effort: '',
+    evidence_required: '',
+    unknown_reason_default: '',
+    description: `Add category-specific performance fields for '${category}'`
+  });
+  rows.push({
+    group: 'features',
+    field_key: '',
+    display_name: '',
+    data_type: '',
+    output_shape: '',
+    required_level: '',
+    availability: '',
+    difficulty: '',
+    effort: '',
+    evidence_required: '',
+    unknown_reason_default: '',
+    description: `Add category-specific feature fields for '${category}'`
+  });
+  return rows;
+}
+
+export async function initCategory({
+  category,
+  template = 'electronics',
+  config = {}
+}) {
+  const normalizedCategory = normalizeFieldKey(category);
+  if (!normalizedCategory) {
+    throw new Error('category_required');
+  }
+  const templateName = normalizeToken(template) || 'electronics';
+
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperCategoryRoot = path.join(helperRoot, normalizedCategory);
+  const sourceRoot = path.join(helperCategoryRoot, '_source');
+  const generatedRoot = path.join(helperCategoryRoot, '_generated');
+  const suggestionsRoot = path.join(helperCategoryRoot, '_suggestions');
+  const overridesRoot = path.join(helperCategoryRoot, '_overrides');
+  const categoryConfigRoot = helperCategoryRoot;
+
+  await fs.mkdir(sourceRoot, { recursive: true });
+  await fs.mkdir(generatedRoot, { recursive: true });
+  await fs.mkdir(suggestionsRoot, { recursive: true });
+  await fs.mkdir(overridesRoot, { recursive: true });
+  await fs.mkdir(path.join(sourceRoot, 'component_db'), { recursive: true });
+  await fs.mkdir(path.join(sourceRoot, 'overrides'), { recursive: true });
+  const schemaProvision = await ensureSharedSchemaPack(helperRoot);
+
+  const createdFiles = [];
+  const maybeCreated = [
+    [path.join(sourceRoot, 'field_catalog.seed.json'), defaultSourceSeed(normalizedCategory, templateName)],
+    [path.join(categoryConfigRoot, 'schema.json'), defaultCategorySchema(normalizedCategory, templateName)],
+    [path.join(categoryConfigRoot, 'sources.json'), defaultSources()],
+    [path.join(categoryConfigRoot, 'required_fields.json'), []],
+    [path.join(categoryConfigRoot, 'search_templates.json'), defaultSearchTemplates(normalizedCategory)],
+    [path.join(categoryConfigRoot, 'anchors.json'), {}]
+  ];
+
+  for (const [filePath, payload] of maybeCreated) {
+    if (await writeIfMissing(filePath, payload)) {
+      createdFiles.push(filePath);
+    }
+  }
+  return {
+    category: normalizedCategory,
+    template: templateName,
+    created: true,
+    created_files: createdFiles,
+    shared_schema_root: schemaProvision.shared_root,
+    shared_schema_copied: schemaProvision.copied,
+    paths: {
+      helper_category_root: helperCategoryRoot,
+      source_root: sourceRoot,
+      generated_root: generatedRoot,
+      suggestions_root: suggestionsRoot,
+      overrides_root: overridesRoot,
+      category_root: categoryConfigRoot
+    }
+  };
+}

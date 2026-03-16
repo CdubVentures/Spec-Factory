@@ -116,7 +116,7 @@ test('createGoldenFixture writes expected fixture and manifest rows', async () =
 
 test('createGoldenFromCatalog creates a bounded batch and validateGoldenFixtures passes', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase2-golden-catalog-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const goldenRoot = path.join(root, 'fixtures', 'golden');
   try {
     await seedCatalogFixtures(helperRoot);
@@ -124,7 +124,7 @@ test('createGoldenFromCatalog creates a bounded batch and validateGoldenFixtures
       category: 'mouse',
       count: 3,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         goldenRoot
       }
     });
@@ -134,7 +134,7 @@ test('createGoldenFromCatalog creates a bounded batch and validateGoldenFixtures
     const validation = await validateGoldenFixtures({
       category: 'mouse',
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         goldenRoot
       }
     });

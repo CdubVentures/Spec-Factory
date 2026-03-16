@@ -1,0 +1,14 @@
+{
+  "productId": "mouse-razer-viper-v3",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Razer",
+    "model": "Viper V3",
+    "variant": "",
+    "sku": "",
+    "mpn": "",
+    "gtin": ""
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

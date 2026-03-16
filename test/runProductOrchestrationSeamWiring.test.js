@@ -2,63 +2,71 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { pathToFileURL } from 'node:url';
 
-const RUN_PRODUCT = path.resolve('src/pipeline/runProduct.js');
-const RUN_PRODUCT_HELPERS = path.resolve('src/pipeline/helpers/runProductOrchestrationHelpers.js');
+const RUN_PRODUCT_HELPERS = path.resolve('src/features/indexing/orchestration/shared/runProductOrchestrationHelpers.js');
 
-function readText(filePath) {
-  return fs.readFileSync(filePath, 'utf8');
-}
-
-test('runProduct orchestration helper resolves need-set identity caps with defaults and overrides', async () => {
+test('runProduct orchestration helper returns empty source entries for missing/blank category', async () => {
   const helpers = await import(pathToFileURL(RUN_PRODUCT_HELPERS).href);
-  assert.equal(typeof helpers.buildNeedSetIdentityCaps, 'function');
-  assert.deepEqual(helpers.buildNeedSetIdentityCaps({}), {
-    locked: 1,
-    provisional: 0.74,
-    conflict: 0.39,
-    unlocked: 0.59,
-  });
-  assert.deepEqual(helpers.buildNeedSetIdentityCaps({
-    needsetCapIdentityLocked: '0.8',
-    needsetCapIdentityProvisional: 0.6,
-    needsetCapIdentityConflict: '0.25',
-    needsetCapIdentityUnlocked: 0.5,
-  }), {
-    locked: 0.8,
-    provisional: 0.6,
-    conflict: 0.25,
-    unlocked: 0.5,
-  });
-});
-
-test('runProduct orchestration helper returns empty source-strategy rows for missing/blank category', async () => {
-  const helpers = await import(pathToFileURL(RUN_PRODUCT_HELPERS).href);
-  assert.equal(typeof helpers.loadEnabledSourceStrategyRows, 'function');
+  assert.equal(typeof helpers.loadEnabledSourceEntries, 'function');
   await assert.doesNotReject(async () => {
-    const noCategoryRows = await helpers.loadEnabledSourceStrategyRows({ config: {}, category: '' });
-    const blankCategoryRows = await helpers.loadEnabledSourceStrategyRows({ config: {}, category: '   ' });
-    assert.deepEqual(noCategoryRows, []);
-    assert.deepEqual(blankCategoryRows, []);
+    const noCategoryEntries = await helpers.loadEnabledSourceEntries({ config: {}, category: '' });
+    const blankCategoryEntries = await helpers.loadEnabledSourceEntries({ config: {}, category: '   ' });
+    assert.deepEqual(noCategoryEntries, []);
+    assert.deepEqual(blankCategoryEntries, []);
   });
 });
 
-test('runProduct consumes external orchestration helper module for seam-bound helpers', () => {
-  const runProductText = readText(RUN_PRODUCT);
-  assert.equal(
-    runProductText.includes("from './helpers/runProductOrchestrationHelpers.js'"),
-    true,
-    'runProduct should import orchestration helper seams from helper module',
-  );
-  assert.equal(
-    runProductText.includes('function buildNeedSetIdentityCaps('),
-    false,
-    'runProduct should not keep inline need-set cap helper after seam extraction',
-  );
-  assert.equal(
-    runProductText.includes('async function loadEnabledSourceStrategyRows('),
-    false,
-    'runProduct should not keep inline source-strategy helper after seam extraction',
-  );
+test('runProduct orchestration helper loads enabled file-backed source entries without flattening discovery fields', async () => {
+  const helpers = await import(pathToFileURL(RUN_PRODUCT_HELPERS).href);
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'source-entries-'));
+  const categoryRoot = path.join(tempRoot, 'mouse');
+
+  try {
+    fs.mkdirSync(categoryRoot, { recursive: true });
+    fs.writeFileSync(path.join(categoryRoot, 'sources.json'), JSON.stringify({
+      category: 'mouse',
+      version: '1.0.0',
+      approved: { manufacturer: [], lab: ['rtings.com'], database: [], retailer: [] },
+      denylist: [],
+      sources: {
+        rtings_com: {
+          display_name: 'RTINGS',
+          tier: 'tier2_lab',
+          authority: 'instrumented',
+          base_url: 'https://www.rtings.com',
+          content_types: ['review'],
+          doc_kinds: ['review'],
+          crawl_config: { method: 'playwright', rate_limit_ms: 3000, timeout_ms: 20000, robots_txt_compliant: true },
+          field_coverage: { high: ['weight'], medium: [], low: [] },
+          discovery: { method: 'search_first', source_type: 'lab_review', search_pattern: '', priority: 90, enabled: true, notes: '' },
+        },
+        disabled_com: {
+          display_name: 'Disabled',
+          tier: 'tier2_lab',
+          authority: 'unknown',
+          base_url: 'https://disabled.example.com',
+          content_types: [],
+          doc_kinds: [],
+          crawl_config: { method: 'http', rate_limit_ms: 2000, timeout_ms: 12000, robots_txt_compliant: true },
+          field_coverage: { high: [], medium: [], low: [] },
+          discovery: { method: 'manual', source_type: '', search_pattern: '', priority: 10, enabled: false, notes: '' },
+        },
+      },
+    }, null, 2));
+
+    const sourceEntries = await helpers.loadEnabledSourceEntries({
+      config: { categoryAuthorityRoot: tempRoot },
+      category: 'mouse',
+    });
+
+    assert.equal(sourceEntries.length, 1);
+    assert.equal(sourceEntries[0].sourceId, 'rtings_com');
+    assert.equal(sourceEntries[0].host, 'rtings.com');
+    assert.equal(sourceEntries[0].discovery.method, 'search_first');
+    assert.equal(Object.hasOwn(sourceEntries[0], 'discovery_method'), false);
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
 });

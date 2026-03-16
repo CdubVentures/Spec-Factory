@@ -462,17 +462,16 @@ describe('Phase 04 Audit — Frontier Scheduler', () => {
     assert.equal(tier, 'tier0');
   });
 
-  it('resolveDeepeningTier escalates to tier3 in uber_aggressive with stalled criticals', () => {
+  it('resolveDeepeningTier escalates to tier3 with stalled criticals', () => {
     const tier = resolveDeepeningTier({
       round: 3,
-      mode: 'uber_aggressive',
       previousSummary: {
         missing_required_fields: ['dpi'],
         critical_fields_below_pass_target: ['dpi']
       },
       noProgressRounds: 2
     });
-    console.log('[P04-SCHED-02] uber_aggressive tier3:', tier);
+    console.log('[P04-SCHED-02] tier3 escalation:', tier);
     assert.equal(tier, 'tier3');
   });
 

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   runSearchProviders,
   searchProviderAvailability
-} from '../src/search/searchProviders.js';
+} from '../src/features/indexing/search/searchProviders.js';
 
 function makeJsonResponse(payload, ok = true) {
   return {
@@ -24,8 +24,12 @@ function makeTextResponse(payload, ok = true, status = ok ? 200 : 500) {
   };
 }
 
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function makeSearchConfig(overrides = {}) {
+  return {
+    searxngBaseUrl: 'http://127.0.0.1:8080',
+    searxngMinQueryIntervalMs: 0,
+    ...overrides,
+  };
 }
 
 test('searchProviderAvailability includes searxng readiness', () => {
@@ -38,18 +42,46 @@ test('searchProviderAvailability includes searxng readiness', () => {
   assert.equal(available.internet_ready, true);
 });
 
-test('searchProviderAvailability reports Google CSE disabled while keeping Google search-ready via SearXNG', () => {
+test('searchProviderAvailability reports keyless Google/Bing readiness without CSE diagnostics', () => {
   const available = searchProviderAvailability({
     searchProvider: 'dual',
-    googleCseKey: 'abc',
-    googleCseCx: 'cx',
-    disableGoogleCse: true,
     searxngBaseUrl: 'http://127.0.0.1:8080'
   });
-  assert.equal(available.google_cse_disabled, true);
-  assert.equal(available.google_ready, false);
-  assert.equal(available.google_search_ready, true);
+  assert.equal(available.google_ready, true);
+  assert.equal(available.bing_ready, true);
   assert.equal(available.active_providers.includes('google'), true);
+  assert.equal(Object.hasOwn(available, 'google_cse_disabled'), false);
+  assert.equal(Object.hasOwn(available, 'google_missing_credentials'), false);
+  assert.equal(Object.hasOwn(available, 'bing_missing_credentials'), false);
+});
+
+test('searchProviderAvailability ignores legacy direct-search knobs when no live provider is configured', () => {
+  const available = searchProviderAvailability({
+    searchProvider: 'dual',
+    searxngBaseUrl: '',
+    bingSearchEndpoint: 'https://api.bing.microsoft.com/v7.0/search',
+    bingSearchKey: 'retired-bing-key',
+    googleCseKey: 'retired-key',
+    googleCseCx: 'retired-cx',
+    disableGoogleCse: false
+  });
+
+  assert.equal(available.google_ready, false);
+  assert.equal(available.bing_ready, false);
+  assert.deepEqual(available.active_providers, []);
+  assert.equal(available.fallback_reason, 'no_provider_ready');
+  assert.equal(available.internet_ready, false);
+});
+
+test('searchProviderAvailability marks bing as internet-ready via free fallback when keyless', () => {
+  const available = searchProviderAvailability({
+    searchProvider: 'bing',
+    searxngBaseUrl: 'http://127.0.0.1:8080'
+  });
+  assert.equal(available.provider, 'bing');
+  assert.equal(available.bing_ready, true);
+  assert.equal(available.internet_ready, true);
+  assert.equal(available.active_providers.includes('searxng'), true);
 });
 
 test('runSearchProviders returns searxng results for searxng provider', async () => {
@@ -73,12 +105,11 @@ test('runSearchProviders returns searxng results for searxng provider', async ()
 
   try {
     const rows = await runSearchProviders({
-      config: {
+      config: makeSearchConfig({
         searchProvider: 'searxng',
-        searxngBaseUrl: 'http://127.0.0.1:8080',
         searxngTimeoutMs: 5_000,
         searchCacheTtlSeconds: 0
-      },
+      }),
       query: 'logitech',
       limit: 5
     });
@@ -87,143 +118,6 @@ test('runSearchProviders returns searxng results for searxng provider', async ()
     assert.equal(rows.length, 1);
     assert.equal(rows[0].provider, 'searxng');
     assert.equal(rows[0].url, 'https://example.com/spec');
-  } finally {
-    global.fetch = originalFetch;
-  }
-});
-
-test('searchProviderAvailability includes duckduckgo readiness', () => {
-  const available = searchProviderAvailability({
-    searchProvider: 'duckduckgo',
-    duckduckgoEnabled: true
-  });
-  assert.equal(available.provider, 'duckduckgo');
-  assert.equal(available.duckduckgo_ready, true);
-  assert.equal(available.internet_ready, true);
-});
-
-test('runSearchProviders returns parsed duckduckgo results for duckduckgo provider', async () => {
-  const originalFetch = global.fetch;
-  let calls = 0;
-  global.fetch = async (url) => {
-    calls += 1;
-    const token = String(url);
-    assert.equal(token.includes('q=viper+v3+pro') || token.includes('q=viper%20v3%20pro'), true);
-    return makeTextResponse(
-      [
-        '<html><body>',
-        '<a class="result__a" href="https://example.com/spec-page">Razer Viper V3 Pro Specs</a>',
-        '<a class="result__snippet" href="https://example.com/spec-page">Weight 54 g, Polling 8000 Hz</a>',
-        '</body></html>'
-      ].join('')
-    );
-  };
-
-  try {
-    const rows = await runSearchProviders({
-      config: {
-        searchProvider: 'duckduckgo',
-        duckduckgoEnabled: true,
-        duckduckgoTimeoutMs: 5_000
-      },
-      query: 'viper v3 pro',
-      limit: 5
-    });
-
-    assert.equal(calls, 1);
-    assert.equal(rows.length, 1);
-    assert.equal(rows[0].provider, 'duckduckgo');
-    assert.equal(rows[0].url, 'https://example.com/spec-page');
-  } finally {
-    global.fetch = originalFetch;
-  }
-});
-
-test('runSearchProviders duckduckgo falls back to searxng on DDG challenge responses', async () => {
-  const originalFetch = global.fetch;
-  let calls = 0;
-  global.fetch = async (url) => {
-    calls += 1;
-    const token = String(url || '');
-    if (token.includes('format=json')) {
-      return makeJsonResponse({
-        results: [
-          {
-            url: 'https://example.com/fallback-spec',
-            title: 'Fallback Spec',
-            content: 'Fallback result from SearXNG'
-          }
-        ]
-      });
-    }
-    return makeTextResponse(
-      '<html><head><title>DuckDuckGo</title></head><body><script src="/anomaly.js"></script><div>challenge</div></body></html>',
-      true,
-      202
-    );
-  };
-
-  try {
-    const rows = await runSearchProviders({
-      config: {
-        searchProvider: 'duckduckgo',
-        duckduckgoEnabled: true,
-        duckduckgoTimeoutMs: 5_000,
-        searxngBaseUrl: 'http://127.0.0.1:8080',
-        searxngTimeoutMs: 5_000
-      },
-      query: 'viper v3 pro',
-      limit: 5
-    });
-
-    assert.equal(calls, 2);
-    assert.equal(rows.length, 1);
-    assert.equal(rows[0].provider, 'searxng');
-    assert.equal(rows[0].url, 'https://example.com/fallback-spec');
-  } finally {
-    global.fetch = originalFetch;
-  }
-});
-
-test('runSearchProviders duckduckgo uses local searxng fallback when base URL is unset', async () => {
-  const originalFetch = global.fetch;
-  let calls = 0;
-  global.fetch = async (url) => {
-    calls += 1;
-    const token = String(url || '');
-    if (token.includes('127.0.0.1:8080/search') && token.includes('format=json')) {
-      return makeJsonResponse({
-        results: [
-          {
-            url: 'https://example.com/local-fallback-spec',
-            title: 'Local Fallback Spec',
-            content: 'Fallback result from local SearXNG'
-          }
-        ]
-      });
-    }
-    return makeTextResponse(
-      '<html><head><title>DuckDuckGo</title></head><body><script src="/anomaly.js"></script><div>challenge</div></body></html>',
-      true,
-      202
-    );
-  };
-
-  try {
-    const rows = await runSearchProviders({
-      config: {
-        searchProvider: 'duckduckgo',
-        duckduckgoEnabled: true,
-        duckduckgoTimeoutMs: 5_000
-      },
-      query: 'viper v3 pro',
-      limit: 5
-    });
-
-    assert.equal(calls, 2);
-    assert.equal(rows.length, 1);
-    assert.equal(rows[0].provider, 'searxng');
-    assert.equal(rows[0].url, 'https://example.com/local-fallback-spec');
   } finally {
     global.fetch = originalFetch;
   }
@@ -251,13 +145,12 @@ test('runSearchProviders uses SearXNG Google engine for google provider', async 
 
   try {
     const rows = await runSearchProviders({
-      config: {
+      config: makeSearchConfig({
         searchProvider: 'google',
-        searxngBaseUrl: 'http://127.0.0.1:8080',
         googleCseKey: '',
         googleCseCx: '',
         searchCacheTtlSeconds: 0
-      },
+      }),
       query: 'razer viper v3 pro',
       limit: 5
     });
@@ -266,6 +159,48 @@ test('runSearchProviders uses SearXNG Google engine for google provider', async 
     assert.equal(rows.length, 1);
     assert.equal(rows[0].provider, 'google');
     assert.equal(rows[0].url, 'https://www.razer.com/gaming-mice/razer-viper-v3-pro');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('runSearchProviders bing provider does not call Bing API endpoint even when legacy keys are present', async () => {
+  const originalFetch = global.fetch;
+  let calledBingApi = false;
+  global.fetch = async (url) => {
+    const token = String(url || '');
+    if (token.includes('api.bing.microsoft.com')) {
+      calledBingApi = true;
+      return makeJsonResponse({ webPages: { value: [] } });
+    }
+    if (token.includes('format=json') && token.includes('engines=bing')) {
+      return makeJsonResponse({
+        results: [
+          {
+            url: 'https://example.com/keyless-bing-result',
+            title: 'Keyless Bing Result',
+            content: 'Result via SearXNG bing engine'
+          }
+        ]
+      });
+    }
+    return makeJsonResponse({ results: [] });
+  };
+
+  try {
+    const rows = await runSearchProviders({
+      config: makeSearchConfig({
+        searchProvider: 'bing',
+        bingSearchEndpoint: 'https://api.bing.microsoft.com/v7.0/search',
+        bingSearchKey: 'legacy-bing-key',
+      }),
+      query: 'keyless bing provider test',
+      limit: 5
+    });
+
+    assert.equal(calledBingApi, false);
+    assert.equal(rows.length > 0, true);
+    assert.equal(rows[0].provider, 'bing');
   } finally {
     global.fetch = originalFetch;
   }
@@ -293,12 +228,11 @@ test('runSearchProviders google provider never calls Google CSE API endpoint', a
 
   try {
     const rows = await runSearchProviders({
-      config: {
+      config: makeSearchConfig({
         searchProvider: 'google',
-        searxngBaseUrl: 'http://127.0.0.1:8080',
         googleCseKey: 'legacy-key',
         googleCseCx: 'legacy-cx'
-      },
+      }),
       query: 'viper specs',
       limit: 5
     });
@@ -316,7 +250,11 @@ test('runSearchProviders dual mode falls back to searxng when bing/google are un
   let calls = 0;
   global.fetch = async (url) => {
     calls += 1;
-    if (String(url).includes('format=json')) {
+    const token = String(url || '');
+    if (token.includes('engines=google') || token.includes('engines=bing')) {
+      return makeJsonResponse({ results: [] });
+    }
+    if (token.includes('format=json')) {
       return makeJsonResponse({
         results: [
           {
@@ -334,159 +272,77 @@ test('runSearchProviders dual mode falls back to searxng when bing/google are un
 
   try {
     const rows = await runSearchProviders({
-      config: {
+      config: makeSearchConfig({
         searchProvider: 'dual',
         bingSearchEndpoint: '',
         bingSearchKey: '',
         googleCseKey: '',
         googleCseCx: '',
-        searxngBaseUrl: 'http://127.0.0.1:8080',
         searchCacheTtlSeconds: 0
-      },
+      }),
       query: 'viper v3 pro dpi',
       limit: 6
     });
 
-    assert.equal(calls, 2);
+    assert.equal(calls, 3);
     assert.equal(rows.some((row) => row.provider === 'searxng'), true);
   } finally {
     global.fetch = originalFetch;
   }
 });
 
-test('runSearchProviders dual mode falls back to duckduckgo when bing/google/searxng are unavailable', async () => {
+test('runSearchProviders google mode falls back to bing sequentially and stops after first hit', async () => {
   const originalFetch = global.fetch;
-  let calls = 0;
-  global.fetch = async () => {
-    calls += 1;
-    return makeTextResponse(
-      '<a class="result__a" href="https://vendor.example/product">Vendor Product</a>'
-    );
-  };
-
-  try {
-    const rows = await runSearchProviders({
-      config: {
-        searchProvider: 'dual',
-        bingSearchEndpoint: '',
-        bingSearchKey: '',
-        googleCseKey: '',
-        googleCseCx: '',
-        searxngBaseUrl: '',
-        duckduckgoEnabled: true,
-        searchCacheTtlSeconds: 0
-      },
-      query: 'g pro x superlight 2',
-      limit: 6
-    });
-
-    assert.equal(calls, 1);
-    assert.equal(rows.length, 1);
-    assert.equal(rows[0].provider, 'duckduckgo');
-  } finally {
-    global.fetch = originalFetch;
-  }
-});
-
-test('runSearchProviders dual mode uses local searxng fallback when DDG is challenged and searxng base is unset', async () => {
-  const originalFetch = global.fetch;
-  let calls = 0;
+  const calls = [];
   global.fetch = async (url) => {
-    calls += 1;
     const token = String(url || '');
-    if (token.includes('127.0.0.1:8080/search') && token.includes('format=json')) {
+    calls.push(token);
+    if (token.includes('engines=google')) {
+      return makeJsonResponse({ results: [] });
+    }
+    if (token.includes('engines=bing')) {
       return makeJsonResponse({
         results: [
           {
-            url: 'https://example.com/dual-local-fallback',
-            title: 'Dual Local Fallback',
-            content: 'Recovered from DDG challenge'
+            url: 'https://example.com/bing-fallback-result',
+            title: 'Bing fallback result',
+            content: 'Recovered from bing lane'
           }
         ]
       });
     }
-    return makeTextResponse(
-      '<html><head><title>DuckDuckGo</title></head><body><script src="/anomaly.js"></script><div>challenge</div></body></html>',
-      true,
-      202
-    );
+    return makeJsonResponse({
+      results: [
+        {
+          url: 'https://example.com/should-not-run',
+          title: 'Unexpected fallback',
+          content: 'Unexpected fallback'
+        }
+      ]
+    });
   };
 
   try {
     const rows = await runSearchProviders({
-      config: {
-        searchProvider: 'dual',
-        bingSearchEndpoint: '',
-        bingSearchKey: '',
-        googleCseKey: '',
-        googleCseCx: '',
-        searxngBaseUrl: '',
-        duckduckgoEnabled: true,
-        searchCacheTtlSeconds: 0
-      },
-      query: 'g pro x superlight 2',
-      limit: 6
+      config: makeSearchConfig({
+        searchProvider: 'google',
+      }),
+      query: 'Razer Viper V3 Pro connection',
+      limit: 5
     });
 
-    assert.equal(calls, 2);
     assert.equal(rows.length, 1);
-    assert.equal(rows[0].provider, 'searxng');
-    assert.equal(rows[0].url, 'https://example.com/dual-local-fallback');
+    assert.equal(rows[0].provider, 'bing_fallback');
+    assert.equal(calls.length, 2);
+    assert.equal(calls.some((token) => token.includes('engines=google')), true);
+    assert.equal(calls.some((token) => token.includes('engines=bing')), true);
+    assert.equal(calls.some((token) => token.includes('format=json') && !token.includes('engines=')), false);
   } finally {
     global.fetch = originalFetch;
   }
 });
 
-test('runSearchProviders dual mode fans out to public engines in parallel when paid providers are unavailable', async () => {
-  const originalFetch = global.fetch;
-  let inFlight = 0;
-  let maxInFlight = 0;
-  global.fetch = async (url) => {
-    inFlight += 1;
-    maxInFlight = Math.max(maxInFlight, inFlight);
-    await delay(75);
-    inFlight -= 1;
-    const token = String(url || '');
-    if (token.includes('format=json')) {
-      return makeJsonResponse({
-        results: [
-          {
-            url: 'https://example.com/searxng-spec',
-            title: 'Spec Page',
-            content: 'Polling rate 8000 Hz'
-          }
-        ]
-      });
-    }
-    return makeTextResponse(
-      '<a class="result__a" href="https://example.com/ddg-spec">Duck Result</a>'
-    );
-  };
-
-  try {
-    const rows = await runSearchProviders({
-      config: {
-        searchProvider: 'dual',
-        bingSearchEndpoint: '',
-        bingSearchKey: '',
-        googleCseKey: '',
-        googleCseCx: '',
-        searxngBaseUrl: 'http://127.0.0.1:8080',
-        duckduckgoEnabled: true
-      },
-      query: 'g pro x superlight 2',
-      limit: 6
-    });
-
-    assert.equal(maxInFlight > 1, true);
-    assert.equal(rows.some((row) => row.provider === 'searxng'), true);
-    assert.equal(rows.some((row) => row.provider === 'duckduckgo'), true);
-  } finally {
-    global.fetch = originalFetch;
-  }
-});
-
-test('runSearchProviders does not call Google CSE when DISABLE_GOOGLE_CSE is enabled', async () => {
+test('runSearchProviders does not call Google CSE endpoints even with legacy CSE knobs present', async () => {
   const originalFetch = global.fetch;
   let calledGoogleCse = false;
   global.fetch = async (url) => {
@@ -500,25 +356,106 @@ test('runSearchProviders does not call Google CSE when DISABLE_GOOGLE_CSE is ena
         results: [{ url: 'https://example.com/spec', title: 'Spec', content: 'details' }]
       });
     }
-    return makeTextResponse('<a class="result__a" href="https://example.com/ddg">DDG</a>');
+    return makeJsonResponse({ results: [] });
   };
 
   try {
     const rows = await runSearchProviders({
-      config: {
+      config: makeSearchConfig({
         searchProvider: 'dual',
-        disableGoogleCse: true,
         googleCseKey: 'would-have-been-used',
         googleCseCx: 'would-have-been-used',
-        searxngBaseUrl: 'http://127.0.0.1:8080',
-        duckduckgoEnabled: true
-      },
+      }),
       query: 'hyperx pulsefire haste 2 core wireless',
       limit: 5
     });
 
     assert.equal(calledGoogleCse, false);
     assert.equal(rows.length > 0, true);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('runSearchProviders applies request throttler slots per engine host in dual mode', async () => {
+  const originalFetch = global.fetch;
+  const throttleKeys = [];
+  global.fetch = async (url) => {
+    const token = String(url || '');
+    if (token.includes('format=json')) {
+      return makeJsonResponse({
+        results: [
+          {
+            url: 'https://example.com/searxng-spec',
+            title: 'SearXNG Spec',
+            content: 'searxng result'
+          }
+        ]
+      });
+    }
+    return makeJsonResponse({ results: [] });
+  };
+
+  try {
+    const rows = await runSearchProviders({
+      config: makeSearchConfig({
+        searchProvider: 'dual',
+      }),
+      query: 'g pro x superlight 2',
+      limit: 6,
+      requestThrottler: {
+        async acquire({ key }) {
+          throttleKeys.push(String(key || ''));
+        }
+      }
+    });
+
+    assert.equal(rows.length >= 1, true);
+    assert.equal(throttleKeys.includes('127.0.0.1'), true);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('runSearchProviders emits search_request_throttled event when acquire waits', async () => {
+  const originalFetch = global.fetch;
+  const infoEvents = [];
+  global.fetch = async () =>
+    makeJsonResponse({
+      results: [
+        {
+          url: 'https://example.com/searxng-spec',
+          title: 'SearXNG Spec',
+          content: 'searxng result'
+        }
+      ]
+    });
+
+  try {
+    const rows = await runSearchProviders({
+      config: makeSearchConfig({
+        searchProvider: 'searxng',
+      }),
+      query: 'g pro x superlight 2',
+      limit: 5,
+      logger: {
+        info(event, payload) {
+          infoEvents.push({ event, payload });
+        }
+      },
+      requestThrottler: {
+        async acquire() {
+          return 420;
+        }
+      }
+    });
+
+    assert.equal(rows.length, 1);
+    const throttled = infoEvents.find((row) => row.event === 'search_request_throttled');
+    assert.ok(throttled);
+    assert.equal(throttled.payload.provider, 'searxng');
+    assert.equal(throttled.payload.query, 'g pro x superlight 2');
+    assert.equal(throttled.payload.wait_ms, 420);
   } finally {
     global.fetch = originalFetch;
   }

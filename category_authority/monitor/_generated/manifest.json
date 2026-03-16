@@ -1,0 +1,54 @@
+{
+  "algorithm": "sha256",
+  "artifact_count": 9,
+  "artifacts": [
+    {
+      "bytes": 10202,
+      "path": "component_db/panel.json",
+      "sha256": "6a90af4e62a5232638c4e6a1ec218632dbc72cc7996027b2d8f732ed6359bf71"
+    },
+    {
+      "bytes": 12311,
+      "path": "cross_validation_rules.json",
+      "sha256": "d9cadace739f891999b3b85c50683a39dd596b670c6b704680d0b5dfb5023491"
+    },
+    {
+      "bytes": 7240,
+      "path": "field_groups.json",
+      "sha256": "ff048510547a6c9dd5babc136b91924bdc466cff622dd9343af59a298c2560b5"
+    },
+    {
+      "bytes": 383999,
+      "path": "field_rules.json",
+      "sha256": "179f0d5e4c8e23caaa74391d48fcd4e080816a5e60620e27a711d21a4fc84afc"
+    },
+    {
+      "bytes": 383999,
+      "path": "field_rules.runtime.json",
+      "sha256": "179f0d5e4c8e23caaa74391d48fcd4e080816a5e60620e27a711d21a4fc84afc"
+    },
+    {
+      "bytes": 201,
+      "path": "key_migrations.json",
+      "sha256": "f586186d31cee70ccb52f334fc38e4b83e4768abed23aab8b1e711cd73aeecf5"
+    },
+    {
+      "bytes": 8428,
+      "path": "known_values.json",
+      "sha256": "2bca33c56ab5ba4c857fd16e3377f1423a2a87792e435cced150291b61433458"
+    },
+    {
+      "bytes": 24078,
+      "path": "parse_templates.json",
+      "sha256": "b2a92a7c5e6f9c9e9b4669637214c3a850b59f9582207e431a1676046abc971b"
+    },
+    {
+      "bytes": 117549,
+      "path": "ui_field_catalog.json",
+      "sha256": "8a8808522885dcf5528c3864216f27d1512150c09490fd1aa60d6950c241adf7"
+    }
+  ],
+  "category": "monitor",
+  "generated_at": "2026-03-16T05:55:10.303Z",
+  "version": 1
+}

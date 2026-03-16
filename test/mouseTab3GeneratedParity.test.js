@@ -17,7 +17,7 @@ async function readJson(filePath) {
 }
 
 test('mouse tab3 map keys are covered by generated field rules (with migrations)', async () => {
-  const categoryRoot = path.join(process.cwd(), 'helper_files', 'mouse');
+  const categoryRoot = path.join(process.cwd(), 'category_authority', 'mouse');
   const generatedRoot = path.join(categoryRoot, '_generated');
   const controlRoot = path.join(categoryRoot, '_control_plane');
 

@@ -36,6 +36,26 @@ export function buildRepairSearchQuery({
   return compactQueryText(`site:${host} ${identitySegment} (spec OR manual OR pdf OR "user guide")`);
 }
 
+const SOFT_BLOCK_MARKERS = [
+  'access denied', 'forbidden', '403 forbidden',
+  'enable javascript', 'javascript is required',
+  'browser not supported', 'browser is not supported',
+  'captcha', 'recaptcha', 'hcaptcha', 'challenge-platform',
+  'cf-browser-verification', 'just a moment',
+  'pardon our interruption',
+  'robot or human', 'are you a human',
+];
+
+const SOFT_BLOCK_MAX_BODY_BYTES = 10_000;
+
+export function isSoftBlocked(html) {
+  const body = String(html || '');
+  if (!body) return false;
+  if (body.length > SOFT_BLOCK_MAX_BODY_BYTES) return false;
+  const lower = body.toLowerCase();
+  return SOFT_BLOCK_MARKERS.some((m) => lower.includes(m));
+}
+
 export function classifyFetchOutcome({
   status = 0,
   message = '',
@@ -57,6 +77,9 @@ export function classifyFetchOutcome({
   if (code >= 200 && code < 400) {
     if (contentTypeToken.includes('application/octet-stream') && htmlSize === 0) {
       return 'bad_content';
+    }
+    if (isSoftBlocked(html)) {
+      return 'soft_block';
     }
     return 'ok';
   }
@@ -87,6 +110,7 @@ export const FETCH_OUTCOME_KEYS = [
   'login_wall',
   'bot_challenge',
   'bad_content',
+  'soft_block',
   'server_error',
   'network_timeout',
   'fetch_error'
@@ -148,7 +172,7 @@ export function applyHostBudgetBackoff(hostRow, { status = 0, outcome = '', conf
   let seconds = 0;
   if (code === 429 || token === 'rate_limited') {
     seconds = Math.max(60, toInt(config.frontierCooldown429BaseSeconds, 15 * 60));
-  } else if (code === 403 || token === 'blocked' || token === 'login_wall' || token === 'bot_challenge') {
+  } else if (code === 403 || token === 'blocked' || token === 'login_wall' || token === 'bot_challenge' || token === 'soft_block') {
     seconds = Math.max(60, toInt(config.frontierCooldown403BaseSeconds, 30 * 60));
   } else if (token === 'network_timeout' || token === 'fetch_error' || token === 'server_error') {
     seconds = Math.max(60, toInt(config.frontierCooldownTimeoutSeconds, 6 * 60 * 60));
@@ -172,6 +196,7 @@ export function resolveHostBudgetState(hostRow, nowMs = Date.now()) {
   score -= toInt(outcomes.login_wall, 0) * 10;
   score -= toInt(outcomes.bot_challenge, 0) * 14;
   score -= toInt(outcomes.bad_content, 0) * 8;
+  score -= toInt(outcomes.soft_block, 0) * 10;
   score -= toInt(outcomes.server_error, 0) * 6;
   score -= toInt(outcomes.network_timeout, 0) * 5;
   score -= toInt(outcomes.fetch_error, 0) * 4;
@@ -190,6 +215,7 @@ export function resolveHostBudgetState(hostRow, nowMs = Date.now()) {
     + toInt(outcomes.rate_limited, 0)
     + toInt(outcomes.login_wall, 0)
     + toInt(outcomes.bot_challenge, 0)
+    + toInt(outcomes.soft_block, 0)
   );
 
   let state = 'open';

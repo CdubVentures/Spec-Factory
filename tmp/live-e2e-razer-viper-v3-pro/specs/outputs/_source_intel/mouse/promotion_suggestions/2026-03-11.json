@@ -1,0 +1,13 @@
+{
+  "category": "mouse",
+  "generated_at": "2026-03-11T20:46:08.665Z",
+  "thresholds": {
+    "min_products_seen": 20,
+    "min_identity_match_rate": 0.98,
+    "max_major_anchor_conflicts": 0,
+    "min_fields_accepted_count": 10,
+    "min_accepted_critical_fields_count": 1
+  },
+  "suggestion_count": 0,
+  "suggestions": []
+}

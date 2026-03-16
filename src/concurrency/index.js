@@ -12,3 +12,4 @@ export {
 } from './fallbackPolicy.js';
 export { createFetchScheduler } from './fetchScheduler.js';
 export { LaneManager } from './laneManager.js';
+export { createRequestThrottler, createHostConcurrencyGate } from './requestThrottler.js';

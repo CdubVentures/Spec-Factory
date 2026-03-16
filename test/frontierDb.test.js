@@ -101,6 +101,32 @@ test('FrontierDb applies cooldown for 403 with backoff reason', async () => {
   assert.equal(row.cooldown.reason, 'status_403_backoff');
 });
 
+test('FrontierDb respects custom frontierBackoffMaxExponent caps', async () => {
+  const storage = createStorage();
+  const db = new FrontierDb({
+    storage,
+    key: 'specs/outputs/_intel/frontier/frontier.json',
+    config: {
+      frontierCooldown403BaseSeconds: 60,
+      frontierBackoffMaxExponent: 2,
+    }
+  });
+  await db.load();
+
+  const url = 'https://example.com/rate-limited';
+  for (let idx = 0; idx < 6; idx += 1) {
+    db.recordFetch({
+      productId: 'p1',
+      url,
+      status: 403
+    });
+  }
+
+  const row = db.getUrlRow(url);
+  assert.equal(row.cooldown.reason, 'status_403_backoff');
+  assert.equal(row.cooldown.seconds, 240);
+});
+
 test('FrontierDb records yields and produces product snapshot', async () => {
   const storage = createStorage();
   const key = 'specs/outputs/_intel/frontier/frontier.json';

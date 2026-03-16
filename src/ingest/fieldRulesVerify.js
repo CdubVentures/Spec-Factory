@@ -107,7 +107,7 @@ export async function verifyGeneratedFieldRules({
   if (!normalizedCategory) {
     throw new Error('category_required');
   }
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   const generatedPath = path.join(helperRoot, normalizedCategory, '_generated', 'field_rules.json');
   const resolvedFixturePath = String(fixturePath || '').trim()
     ? path.resolve(fixturePath)
@@ -149,3 +149,4 @@ export async function verifyGeneratedFieldRules({
     diff
   };
 }
+

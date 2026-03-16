@@ -5,7 +5,7 @@ import {
   findUnmappedDataChangeDomains,
   resolveDataChangeInvalidationQueryKeys,
   invalidateDataChangeQueries,
-} from '../tools/gui-react/src/api/dataChangeInvalidationMap.js';
+} from '../tools/gui-react/src/features/data-change/index.js';
 
 function hasQueryKey(keys, expected) {
   const target = JSON.stringify(expected);

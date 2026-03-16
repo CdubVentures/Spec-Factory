@@ -40,7 +40,7 @@ async function writeJson(filePath, value) {
 
 async function createEngineFixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'final-export-engine-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
 
   await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -214,7 +214,7 @@ test('writeFinalOutputs applies runtime engine migrations and enum normalization
   try {
     const runtimeEngine = await FieldRulesEngine.create('mouse', {
       config: {
-        helperFilesRoot: fixture.helperRoot
+        categoryAuthorityRoot: fixture.helperRoot
       }
     });
     const result = await writeFinalOutputs({

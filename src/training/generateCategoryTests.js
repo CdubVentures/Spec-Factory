@@ -115,7 +115,7 @@ function buildNormalizationTestContent({ category, contract }) {
   return [
     "import test from 'node:test';",
     "import assert from 'node:assert/strict';",
-    "import { runDeterministicCritic } from '../../src/validator/critic.js';",
+    "import { runDeterministicCritic } from '../features/indexing/validation/critic.js';",
     '',
     `const ALIAS_CASES = ${JSON.stringify(fallbackCases, null, 2)};`,
     `const FIELD_ORDER = ${JSON.stringify(fieldOrder, null, 2)};`,

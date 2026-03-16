@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runLlmHealthCheck } from '../src/llm/healthCheck.js';
+import { runLlmHealthCheck } from '../src/core/llm/client/healthCheck.js';
 
 function makeMemoryStorage() {
   const map = new Map();

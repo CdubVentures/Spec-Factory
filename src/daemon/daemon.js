@@ -19,11 +19,16 @@ import {
 } from '../queue/queueState.js';
 import { runUntilComplete } from '../runner/runUntilComplete.js';
 import { loadCategoryConfig } from '../categories/loader.js';
-import { syncJobsFromActiveFiltering } from '../helperFiles/index.js';
 import { validateConfig } from '../config.js';
 
-async function listConfiguredCategories() {
-  const dir = path.resolve('categories');
+function resolveCategoryAuthorityRoot(config = {}) {
+  return path.resolve(
+    config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority'
+  );
+}
+
+async function listConfiguredCategories(config = {}) {
+  const dir = resolveCategoryAuthorityRoot(config);
   let entries = [];
   try {
     entries = await fs.readdir(dir, { withFileTypes: true });
@@ -34,7 +39,7 @@ async function listConfiguredCategories() {
     throw error;
   }
   return entries
-    .filter((entry) => entry.isDirectory())
+    .filter((entry) => entry.isDirectory() && entry.name !== '_global' && !entry.name.startsWith('_'))
     .map((entry) => entry.name)
     .sort();
 }
@@ -42,7 +47,8 @@ async function listConfiguredCategories() {
 async function resolveCategories({
   category,
   all = false,
-  importsRoot
+  importsRoot,
+  config = {}
 }) {
   if (category) {
     return [category];
@@ -51,7 +57,7 @@ async function resolveCategories({
     return ['mouse'];
   }
 
-  const fromConfig = await listConfiguredCategories();
+  const fromConfig = await listConfiguredCategories(config);
   const fromImports = await listImportCategories(importsRoot);
   return [...new Set([...fromConfig, ...fromImports])].sort();
 }
@@ -121,7 +127,8 @@ export async function runWatchImports({
   const categories = await resolveCategories({
     category,
     all,
-    importsRoot
+    importsRoot,
+    config
   });
 
   if (!categories.length) {
@@ -173,7 +180,6 @@ export async function runDaemon({
   importsRoot = config.importsRoot || 'imports',
   category,
   all = false,
-  mode = config.accuracyMode || 'balanced',
   once = false,
   logger = null,
   runtimeHooks = {}
@@ -201,7 +207,8 @@ export async function runDaemon({
     : await resolveCategories({
       category,
       all,
-      importsRoot
+      importsRoot,
+      config
     });
   if (!categories.length) {
     return {
@@ -290,32 +297,6 @@ export async function runDaemon({
           failed_count: ingest.failed_count
         });
 
-        if (config.helperFilesEnabled && config.helperAutoSeedTargets) {
-          try {
-            const categoryConfig = await loadCategoryConfig(cat, { storage, config });
-            const syncResult = await syncJobsFromActiveFiltering({
-              storage,
-              config,
-              category: cat,
-              categoryConfig,
-              limit: Math.max(0, Number.parseInt(String(config.helperActiveSyncLimit || 0), 10) || 0),
-              logger
-            });
-            logger?.info?.('daemon_helper_active_sync', {
-              category: cat,
-              active_rows: syncResult.active_rows,
-              created: syncResult.created,
-              skipped_existing: syncResult.skipped_existing,
-              failed: syncResult.failed
-            });
-          } catch (error) {
-            logger?.warn?.('daemon_helper_active_sync_failed', {
-              category: cat,
-              message: error.message
-            });
-          }
-        }
-
         const staleScan = await markStaleQueueProductsFn({
           storage,
           category: cat,
@@ -391,13 +372,9 @@ export async function runDaemon({
             try {
               const run = await runUntilCompleteFn({
                 storage,
-                config: {
-                  ...config,
-                  accuracyMode: mode
-                },
+                config,
                 s3key: nextJob.s3key,
-                maxRounds: mode === 'uber_aggressive' ? Math.max(8, Number(config.uberMaxRounds || 6)) : (mode === 'aggressive' ? 8 : 4),
-                mode
+                maxRounds: 8,
               });
               const nextHint = String(nextJob.next_action_hint || '').trim().toLowerCase();
               if (
@@ -512,3 +489,4 @@ export async function runDaemon({
     runs
   };
 }
+

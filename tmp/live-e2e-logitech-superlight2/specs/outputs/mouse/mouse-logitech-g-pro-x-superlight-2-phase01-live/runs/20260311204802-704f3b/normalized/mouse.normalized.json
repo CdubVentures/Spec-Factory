@@ -1,0 +1,279 @@
+{
+  "productId": "mouse-logitech-g-pro-x-superlight-2-phase01-live",
+  "runId": "20260311204802-704f3b",
+  "category": "mouse",
+  "identity": {
+    "id": 0,
+    "identifier": "",
+    "brand": "Logitech G",
+    "model": "Pro X Superlight 2",
+    "base_model": "Pro X Superlight 2",
+    "variant": "unk",
+    "sku": "910-006636",
+    "mpn": "910-006636",
+    "gtin": "unk"
+  },
+  "fields": {
+    "release_date": "unk",
+    "discontinued": "unk",
+    "sku": "unk",
+    "price_range": "unk",
+    "colors": "unk",
+    "design": "unk",
+    "lighting": "unk",
+    "rgb": "unk",
+    "connection": "unk",
+    "connectivity": "unk",
+    "computer_side_connector": "unk",
+    "mouse_side_connector": "unk",
+    "bluetooth": "unk",
+    "cable_type": "unk",
+    "paracord": "unk",
+    "wireless_charging": "unk",
+    "battery_hours": "unk",
+    "adjustable_weight": "unk",
+    "feet_material": "unk",
+    "coating": "unk",
+    "honeycomb_frame": "unk",
+    "silent_clicks": "unk",
+    "weight": "unk",
+    "material": "unk",
+    "lngth": "unk",
+    "width": "unk",
+    "height": "unk",
+    "form_factor": "unk",
+    "shape": "unk",
+    "hump": "unk",
+    "front_flare": "unk",
+    "thumb_rest": "unk",
+    "grip": "unk",
+    "hand_size": "unk",
+    "mcu": "unk",
+    "mcu_link": "unk",
+    "sensor": "unk",
+    "sensor_brand": "unk",
+    "sensor_date": "unk",
+    "sensor_link": "unk",
+    "sensor_type": "unk",
+    "flawless_sensor": "unk",
+    "sensor_latency": "unk",
+    "sensor_latency_list": "unk",
+    "shift_latency": "unk",
+    "polling_rate": "unk",
+    "dpi": "unk",
+    "ips": "unk",
+    "acceleration": "unk",
+    "lift": "unk",
+    "lift_settings": "unk",
+    "switches_link": "unk",
+    "motion_sync": "unk",
+    "hardware_acceleration": "unk",
+    "smoothing": "unk",
+    "nvidia_reflex": "unk",
+    "switch": "unk",
+    "switch_brand": "unk",
+    "switch_type": "unk",
+    "hot_swappable": "unk",
+    "debounce": "unk",
+    "click_latency": "unk",
+    "click_latency_list": "unk",
+    "click_force": "unk",
+    "encoder": "unk",
+    "encoder_brand": "unk",
+    "encoder_link": "unk",
+    "encoder_life_span": "unk",
+    "side_buttons": "unk",
+    "encoder_steps": "unk",
+    "middle_buttons": "unk",
+    "encoder_type": "unk",
+    "programmable_buttons": "unk",
+    "releasing_force": "unk",
+    "tilt_scroll_wheel": "unk",
+    "adjustable_scroll_wheel": "unk",
+    "switch_life_span": "unk",
+    "onboard_memory": "unk",
+    "onboard_memory_value": "unk",
+    "profile_switching": "unk",
+    "id": "mouse-logitech-g-pro-x-superlight-2-phase01-live",
+    "brand": "Logitech G",
+    "model": "Pro X Superlight 2",
+    "base_model": "Pro X Superlight 2",
+    "category": "mouse"
+  },
+  "quality": {
+    "validated": false,
+    "confidence": 0.416809375,
+    "completeness_required": 0,
+    "coverage_overall": 0,
+    "notes": [
+      "MODEL_AMBIGUITY_ALERT",
+      "BELOW_REQUIRED_COMPLETENESS",
+      "BELOW_CONFIDENCE_THRESHOLD",
+      "CRITICAL_FIELDS_BELOW_PASS_TARGET"
+    ]
+  },
+  "sources": {
+    "urls": [
+      "https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf",
+      "https://logitechg.com/robots.txt",
+      "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse",
+      "https://www.logitechg.com/sitemap_index.xml"
+    ],
+    "used": [
+      {
+        "url": "https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf",
+        "host": "logitech.com",
+        "source_id": "",
+        "tier": 4,
+        "tier_name": "candidate",
+        "role": "other",
+        "approved_domain": true,
+        "candidate_source": false,
+        "anchor_check_status": "pass",
+        "identity": {
+          "match": false,
+          "score": 0.75,
+          "confidence": 0.75,
+          "decision": "WARNING",
+          "matchThreshold": 0.8,
+          "reasons": [
+            "brand_match",
+            "model_match"
+          ],
+          "reasonCodes": [
+            "brand_match",
+            "model_match"
+          ],
+          "criticalConflicts": [],
+          "matchedHardIds": {},
+          "matchedRequiredTokens": [
+            "logitech",
+            "g",
+            "pro",
+            "x",
+            "superlight",
+            "2"
+          ],
+          "missingRequiredTokens": [],
+          "matchedNegativeTokens": []
+        }
+      },
+      {
+        "url": "https://logitechg.com/robots.txt",
+        "host": "logitechg.com",
+        "source_id": "brand_logitechg_com",
+        "tier": 1,
+        "tier_name": "manufacturer",
+        "role": "manufacturer",
+        "approved_domain": true,
+        "candidate_source": false,
+        "anchor_check_status": "pass",
+        "identity": {
+          "match": false,
+          "score": 0.3,
+          "confidence": 0.3,
+          "decision": "REJECTED",
+          "matchThreshold": 0.8,
+          "reasons": [
+            "brand_match"
+          ],
+          "reasonCodes": [
+            "brand_match",
+            "model_numeric_range_out_of_range",
+            "missing_required_tokens"
+          ],
+          "criticalConflicts": [],
+          "matchedHardIds": {},
+          "matchedRequiredTokens": [],
+          "missingRequiredTokens": [
+            "logitech",
+            "g",
+            "pro",
+            "x",
+            "superlight",
+            "2"
+          ],
+          "matchedNegativeTokens": []
+        }
+      },
+      {
+        "url": "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse",
+        "host": "logitechg.com",
+        "source_id": "brand_logitechg_com",
+        "tier": 1,
+        "tier_name": "manufacturer",
+        "role": "manufacturer",
+        "approved_domain": true,
+        "candidate_source": false,
+        "anchor_check_status": "pass",
+        "identity": {
+          "match": false,
+          "score": 0.75,
+          "confidence": 0.75,
+          "decision": "WARNING",
+          "matchThreshold": 0.8,
+          "reasons": [
+            "brand_match",
+            "model_match"
+          ],
+          "reasonCodes": [
+            "brand_match",
+            "model_match"
+          ],
+          "criticalConflicts": [],
+          "matchedHardIds": {},
+          "matchedRequiredTokens": [
+            "logitech",
+            "g",
+            "pro",
+            "x",
+            "superlight",
+            "2"
+          ],
+          "missingRequiredTokens": [],
+          "matchedNegativeTokens": []
+        }
+      },
+      {
+        "url": "https://www.logitechg.com/sitemap_index.xml",
+        "host": "logitechg.com",
+        "source_id": "brand_logitechg_com",
+        "tier": 1,
+        "tier_name": "manufacturer",
+        "role": "manufacturer",
+        "approved_domain": true,
+        "candidate_source": false,
+        "anchor_check_status": "pass",
+        "identity": {
+          "match": false,
+          "score": 0.3,
+          "confidence": 0.3,
+          "decision": "REJECTED",
+          "matchThreshold": 0.8,
+          "reasons": [
+            "brand_match"
+          ],
+          "reasonCodes": [
+            "brand_match",
+            "model_numeric_range_out_of_range",
+            "missing_required_tokens"
+          ],
+          "criticalConflicts": [],
+          "matchedHardIds": {},
+          "matchedRequiredTokens": [],
+          "missingRequiredTokens": [
+            "logitech",
+            "g",
+            "pro",
+            "x",
+            "superlight",
+            "2"
+          ],
+          "matchedNegativeTokens": []
+        }
+      }
+    ]
+  },
+  "identity_provisional": true,
+  "review_required": true
+}

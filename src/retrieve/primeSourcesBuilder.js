@@ -148,8 +148,8 @@ export function buildPhase07PrimeSources({
   );
   const identityFilterEnabled = Boolean(options.identityFilterEnabled);
 
-  const needRows = toArray(needSet?.needs)
-    .filter((row) => isObject(row) && String(row.field_key || '').trim())
+  const needRows = toArray(needSet?.fields)
+    .filter((row) => isObject(row) && String(row.field_key || '').trim() && row.state !== 'accepted')
     .sort((a, b) => Number(b.need_score || 0) - Number(a.need_score || 0));
 
   const fields = [];

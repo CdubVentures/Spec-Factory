@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CortexClient } from '../src/llm/cortex_client.js';
+import { CortexClient } from '../src/core/llm/cortex/cortexClient.js';
 
 function mockJsonResponse(payload, ok = true, status = 200) {
   return {

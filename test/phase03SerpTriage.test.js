@@ -1,13 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { dedupeSerpResults } from '../src/search/serpDedupe.js';
-import { rerankSearchResults } from '../src/search/resultReranker.js';
+import { dedupeSerpResults } from '../src/features/indexing/search/serpDedupe.js';
+import { rerankSearchResults } from '../src/features/indexing/search/resultReranker.js';
 import { rerankSerpResults } from '../src/research/serpReranker.js';
 import {
   computeIdentityMatchLevel,
   detectVariantGuardHit,
   detectMultiModelHint
-} from '../src/discovery/searchDiscovery.js';
+} from '../src/features/indexing/discovery/searchDiscovery.js';
 
 function makeCategoryConfig() {
   return {
@@ -153,6 +153,101 @@ describe('Phase 03 — Deterministic Reranker (resultReranker.js)', () => {
     assert.ok(typeof row.path === 'string');
     assert.ok(typeof row.approved_domain === 'boolean');
     assert.ok(typeof row.score === 'number');
+  });
+
+  it('prefers canonical manufacturer category pages over guessed manufacturer product paths', () => {
+    const results = [
+      { url: 'https://razer.com/product/viper-v3-pro', title: 'Razer Viper V3 Pro', snippet: 'Official specs' },
+      { url: 'https://razer.com/products/viper-v3-pro', title: 'Razer Viper V3 Pro', snippet: 'Official specs' },
+      { url: 'https://razer.com/gaming-mice/viper-v3-pro', title: 'Razer Viper V3 Pro', snippet: 'Official specs' },
+      { url: 'https://www.razer.com/gaming-mice/razer-viper-v3-pro', title: 'Razer Viper V3 Pro', snippet: 'Official specs' }
+    ];
+
+    const ranked = rerankSearchResults({
+      results,
+      categoryConfig: makeCategoryConfig(),
+      missingFields: ['weight', 'sensor', 'polling_rate']
+    });
+
+    assert.equal(ranked[0].url, 'https://www.razer.com/gaming-mice/razer-viper-v3-pro');
+    assert.equal(ranked[1].url, 'https://razer.com/gaming-mice/viper-v3-pro');
+  });
+
+  it('penalizes retailer search and brand surfaces below exact identity manual hits', () => {
+    const categoryConfig = {
+      ...makeCategoryConfig(),
+      sourceHosts: [
+        ...makeCategoryConfig().sourceHosts,
+        { host: 'bestbuy.com', tierName: 'retailer', role: 'retailer', tier: 3 }
+      ]
+    };
+    const results = [
+      {
+        url: 'https://bestbuy.com/site/searchpage.jsp?id=pcat17071&st=logitech+superlight',
+        title: 'logitech superlight - Best Buy',
+        snippet: 'Logitech PRO X SUPERLIGHT mice',
+        identity_match_level: 'weak'
+      },
+      {
+        url: 'https://bestbuy.com/site/brands/logitech/pcmcat10900050009.c?id=pcmcat10900050009',
+        title: 'Logitech: Computer Accessories - Best Buy',
+        snippet: 'General Logitech brand page',
+        identity_match_level: 'none'
+      },
+      {
+        url: 'https://manualslib.com/manual/4035888/Logitech-G-Pro-X-Superlight-2.html',
+        title: 'Logitech G PRO X SUPERLIGHT 2 Manual',
+        snippet: 'Official manual for the exact target product',
+        identity_match_level: 'partial'
+      }
+    ];
+
+    const ranked = rerankSearchResults({
+      results,
+      categoryConfig,
+      missingFields: ['weight', 'sensor', 'polling_rate']
+    });
+
+    assert.equal(ranked[0].url, 'https://manualslib.com/manual/4035888/Logitech-G-Pro-X-Superlight-2.html');
+    assert.equal(ranked[2].url, 'https://bestbuy.com/site/brands/logitech/pcmcat10900050009.c?id=pcmcat10900050009');
+  });
+
+  it('penalizes wrong-variant and comparison pages below exact-identity manual pages', () => {
+    const results = [
+      {
+        url: 'https://manualslib.com/manual/4035888/Logitech-G-Pro-X-Superlight-2.html',
+        title: 'Logitech G PRO X SUPERLIGHT 2 Manual',
+        snippet: 'Exact target manual',
+        identity_match_level: 'partial',
+        variant_guard_hit: false,
+        multi_model_hint: false
+      },
+      {
+        url: 'https://manua.ls/logitech/g-pro-x-superlight-2-dex/manual',
+        title: 'Logitech G PRO X Superlight 2 DEX manual',
+        snippet: 'DEX variant manual',
+        identity_match_level: 'partial',
+        variant_guard_hit: true,
+        multi_model_hint: false
+      },
+      {
+        url: 'https://example.com/logitech-g-pro-x-superlight-2-vs-razer-viper-v3-pro',
+        title: 'Logitech G Pro X Superlight 2 vs Razer Viper V3 Pro',
+        snippet: 'Comparison page',
+        identity_match_level: 'partial',
+        variant_guard_hit: false,
+        multi_model_hint: true
+      }
+    ];
+
+    const ranked = rerankSearchResults({
+      results,
+      categoryConfig: makeCategoryConfig(),
+      missingFields: ['weight', 'sensor']
+    });
+
+    assert.equal(ranked[0].url, 'https://manualslib.com/manual/4035888/Logitech-G-Pro-X-Superlight-2.html');
+    assert.equal(ranked[2].url, 'https://manua.ls/logitech/g-pro-x-superlight-2-dex/manual');
   });
 });
 

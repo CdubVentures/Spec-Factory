@@ -1,0 +1,237 @@
+{
+  "version": 1,
+  "category": "mouse",
+  "items": [
+    {
+      "review_id": "cr_sensor_focus_pro_35k_optical_sensor_gen_2_mouse_razer_viper_v3_pro",
+      "component_type": "sensor",
+      "field_key": "sensor",
+      "raw_query": "Focus Pro 35K Optical Sensor Gen-2",
+      "matched_component": "Focus Pro Gen-2",
+      "match_type": "fuzzy_flagged",
+      "name_score": 0.7941176470588235,
+      "property_score": 0,
+      "combined_score": 0.6176470588235294,
+      "alternatives": [
+        {
+          "canonical_name": "Focus Pro Gen-2",
+          "score": 0.7941176470588235
+        },
+        {
+          "canonical_name": "Advanced Optical Tracking",
+          "score": 0.7352941176470589
+        },
+        {
+          "canonical_name": "Focus Pro 30K",
+          "score": 0.6470588235294118
+        },
+        {
+          "canonical_name": "Focus Pro 45K",
+          "score": 0.6470588235294118
+        },
+        {
+          "canonical_name": "AimPoint (PixArt PAW3395)",
+          "score": 0.5882352941176471
+        }
+      ],
+      "product_id": "mouse-razer-viper-v3-pro",
+      "run_id": "20260309092004-91ac2a",
+      "status": "pending_ai",
+      "reasoning_note": "",
+      "product_attributes": {
+        "flawless_sensor": "unk",
+        "sensor_type": "optical",
+        "dpi": "100",
+        "ips": "750",
+        "acceleration": "70",
+        "sensor_date": "unk"
+      },
+      "created_at": "2026-03-09T09:30:13.801Z"
+    },
+    {
+      "review_id": "cr_sensor_optical_mouse_logitech_g_pro_x_superli",
+      "component_type": "sensor",
+      "field_key": "sensor",
+      "raw_query": "Optical",
+      "matched_component": null,
+      "match_type": "new_component",
+      "name_score": 0.5,
+      "property_score": 0,
+      "combined_score": 0.2,
+      "alternatives": [
+        {
+          "canonical_name": "AimNinja",
+          "score": 0.5
+        },
+        {
+          "canonical_name": "AimPoint Pro (PixArt PAW3950)",
+          "score": 0.4827586206896552
+        },
+        {
+          "canonical_name": "AimPoint (PixArt PAW3395)",
+          "score": 0.48
+        },
+        {
+          "canonical_name": "BlueTrack",
+          "score": 0.4444444444444444
+        },
+        {
+          "canonical_name": "AIM-WL",
+          "score": 0.42857142857142855
+        }
+      ],
+      "product_id": "mouse-logitech-g-pro-x-superlight-2-indexlab-1773120648779",
+      "run_id": "20260310053047-bd16ec",
+      "status": "pending_ai",
+      "reasoning_note": "",
+      "product_attributes": {
+        "flawless_sensor": "unk",
+        "sensor_type": "unk",
+        "dpi": "unk",
+        "ips": "unk",
+        "acceleration": "40",
+        "sensor_date": "unk"
+      },
+      "created_at": "2026-03-10T05:32:39.687Z"
+    },
+    {
+      "review_id": "cr_sensor_optical_mouse_logitech_g_pro_x_superli",
+      "component_type": "sensor",
+      "field_key": "sensor",
+      "raw_query": "Optical",
+      "matched_component": null,
+      "match_type": "new_component",
+      "name_score": 0.5,
+      "property_score": 0,
+      "combined_score": 0.2,
+      "alternatives": [
+        {
+          "canonical_name": "AimNinja",
+          "score": 0.5
+        },
+        {
+          "canonical_name": "AimPoint Pro (PixArt PAW3950)",
+          "score": 0.4827586206896552
+        },
+        {
+          "canonical_name": "AimPoint (PixArt PAW3395)",
+          "score": 0.48
+        },
+        {
+          "canonical_name": "BlueTrack",
+          "score": 0.4444444444444444
+        },
+        {
+          "canonical_name": "AIM-WL",
+          "score": 0.42857142857142855
+        }
+      ],
+      "product_id": "mouse-logitech-g-pro-x-superlight-2",
+      "run_id": "20260310072625-bf3317",
+      "status": "pending_ai",
+      "reasoning_note": "",
+      "product_attributes": {
+        "flawless_sensor": "unk",
+        "sensor_type": "unk",
+        "dpi": "unk",
+        "ips": "unk",
+        "acceleration": "40",
+        "sensor_date": "unk"
+      },
+      "created_at": "2026-03-10T07:31:36.629Z"
+    },
+    {
+      "review_id": "cr_sensor_optical_mouse_razer_viper_v3_pro_black",
+      "component_type": "sensor",
+      "field_key": "sensor",
+      "raw_query": "Optical",
+      "matched_component": null,
+      "match_type": "new_component",
+      "name_score": 0.5,
+      "property_score": 0,
+      "combined_score": 0.2,
+      "alternatives": [
+        {
+          "canonical_name": "AimNinja",
+          "score": 0.5
+        },
+        {
+          "canonical_name": "AimPoint Pro (PixArt PAW3950)",
+          "score": 0.4827586206896552
+        },
+        {
+          "canonical_name": "AimPoint (PixArt PAW3395)",
+          "score": 0.48
+        },
+        {
+          "canonical_name": "BlueTrack",
+          "score": 0.4444444444444444
+        },
+        {
+          "canonical_name": "AIM-WL",
+          "score": 0.42857142857142855
+        }
+      ],
+      "product_id": "mouse-razer-viper-v3-pro-black",
+      "run_id": "ipc_exit_1773186181623",
+      "status": "pending_ai",
+      "reasoning_note": "",
+      "product_attributes": {
+        "flawless_sensor": "unk",
+        "sensor_type": "unk",
+        "dpi": "100",
+        "ips": "unk",
+        "acceleration": "70",
+        "sensor_date": "unk"
+      },
+      "created_at": "2026-03-10T23:43:28.795Z"
+    },
+    {
+      "review_id": "cr_sensor_focus_pro_35k_mouse_razer_viper_v3_pro",
+      "component_type": "sensor",
+      "field_key": "sensor",
+      "raw_query": "Focus Pro 35K",
+      "matched_component": "Focus Pro 45K",
+      "match_type": "fuzzy_flagged",
+      "name_score": 0.9230769230769231,
+      "property_score": 0.75,
+      "combined_score": 0.8192307692307692,
+      "alternatives": [
+        {
+          "canonical_name": "Focus Pro 30K",
+          "score": 0.9230769230769231
+        },
+        {
+          "canonical_name": "Focus Pro 45K",
+          "score": 0.9230769230769231
+        },
+        {
+          "canonical_name": "Focus X 18K",
+          "score": 0.6923076923076923
+        },
+        {
+          "canonical_name": "Focus X 26K",
+          "score": 0.6923076923076923
+        },
+        {
+          "canonical_name": "Focus Pro Gen-2",
+          "score": 0.6666666666666666
+        }
+      ],
+      "product_id": "mouse-razer-viper-v3-pro",
+      "run_id": "20260311183758-2ab9e1",
+      "status": "pending_ai",
+      "reasoning_note": "",
+      "product_attributes": {
+        "flawless_sensor": "unk",
+        "sensor_type": "unk",
+        "dpi": "35000",
+        "ips": "750",
+        "acceleration": "70",
+        "sensor_date": "unk"
+      },
+      "created_at": "2026-03-11T18:45:12.699Z"
+    }
+  ],
+  "updated_at": "2026-03-11T21:34:29.554Z"
+}

@@ -8,7 +8,7 @@ import { appendReviewSuggestion } from '../src/review/suggestions.js';
 test('appendReviewSuggestion writes enum/component/alias suggestions and deduplicates entries', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-suggestions-'));
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files')
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority')
   };
   try {
     const enumOne = await appendReviewSuggestion({
@@ -87,7 +87,7 @@ test('appendReviewSuggestion writes enum/component/alias suggestions and dedupli
 test('appendReviewSuggestion requires evidence url and quote', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-suggestions-validation-'));
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files')
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority')
   };
   try {
     await assert.rejects(

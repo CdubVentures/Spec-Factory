@@ -1,0 +1,360 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { QueryClient } from '@tanstack/react-query';
+
+import { useAuthoritySnapshot } from '../../../hooks/useAuthoritySnapshot.js';
+import { buildAuthorityVersionToken } from '../../../hooks/authoritySnapshotHelpers.js';
+import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint';
+import {
+  SETTINGS_AUTOSAVE_DEBOUNCE_MS,
+  SETTINGS_AUTOSAVE_STATUS_MS,
+} from '../../../stores/settingsManifest';
+import type { FieldRule, StudioConfig } from '../../../types/studio';
+import {
+  decideStudioAuthorityAction,
+  shouldOpenStudioAuthorityConflict,
+} from './authoritySync.js';
+import { invalidateFieldRulesQueries } from './invalidateFieldRulesQueries';
+import {
+  shouldFlushStudioDocsOnUnmount,
+} from './studioBehaviorContracts';
+import { deriveStudioPageViewState } from './studioPageDerivedState';
+import {
+  buildStudioPersistMap as buildStudioPersistMapPayload,
+  shouldPersistStudioDocsAttempt,
+} from './studioPagePersistence';
+import { useStudioPersistenceAuthority } from './studioPersistenceAuthority';
+import {
+  getStudioFieldRulesSnapshot,
+  useStudioFieldRulesActions,
+  useStudioFieldRulesState,
+} from './studioFieldRulesController';
+
+export interface UseStudioPageDocsControllerInput {
+  category: string;
+  rules: Record<string, FieldRule>;
+  fieldOrder: string[];
+  wbMap: StudioConfig;
+  autoSaveAllEnabled: boolean;
+  autoSaveEnabled: boolean;
+  autoSaveMapEnabled: boolean;
+  mapSavedAt?: string | null;
+  compiledAt?: string | null;
+  queryClient: QueryClient;
+}
+
+export interface UseStudioPageDocsControllerResult {
+  saveMapMut: ReturnType<typeof useStudioPersistenceAuthority>['saveMapMut'];
+  saveStudioDocsMut: ReturnType<
+    typeof useStudioPersistenceAuthority
+  >['saveStudioDocsMut'];
+  fieldRulesInitialized: boolean;
+  authorityConflictVersion: string;
+  authorityConflictDetectedAt: string;
+  autoSaveStatus: 'idle' | 'saved';
+  effectiveAutoSaveEnabled: boolean;
+  effectiveAutoSaveMapEnabled: boolean;
+  storeRules: Record<string, FieldRule>;
+  storeFieldOrder: string[];
+  hasUnsavedChanges: boolean;
+  saveFromStore: (options?: { force?: boolean }) => void;
+  reloadAuthoritySnapshot: () => void;
+  keepLocalChangesForAuthorityConflict: () => void;
+}
+
+export function useStudioPageDocsController({
+  category,
+  rules,
+  fieldOrder,
+  wbMap,
+  autoSaveAllEnabled,
+  autoSaveEnabled,
+  autoSaveMapEnabled,
+  mapSavedAt,
+  compiledAt,
+  queryClient,
+}: UseStudioPageDocsControllerInput): UseStudioPageDocsControllerResult {
+  const hydrated = useRef(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saved'>(
+    'idle',
+  );
+  const [authorityConflictVersion, setAuthorityConflictVersion] = useState('');
+  const [authorityConflictDetectedAt, setAuthorityConflictDetectedAt] =
+    useState('');
+  const fieldRulesState = useStudioFieldRulesState();
+  const fieldRulesActions = useStudioFieldRulesActions();
+  const { saveMapMut, saveStudioDocsMut } = useStudioPersistenceAuthority({
+    category,
+    onStudioDocsSaved: () => {
+      fieldRulesActions.clearRenames();
+      invalidateFieldRulesQueries(queryClient, category);
+    },
+  });
+  const previousCategoryRef = useRef(category);
+  const authorityVersionRef = useRef('');
+  const ignoredConflictVersionRef = useRef('');
+  const fallbackAuthorityVersion = buildAuthorityVersionToken({
+    map_hash: mapSavedAt ? `map:${mapSavedAt}` : null,
+    compiled_hash: compiledAt ? `compiled:${compiledAt}` : null,
+    specdb_sync_version: 0,
+    updated_at: mapSavedAt || compiledAt || null,
+  });
+  const { authorityVersionToken: snapshotAuthorityVersion } =
+    useAuthoritySnapshot({
+      category,
+      enabled: category !== 'all',
+    });
+  const authoritySnapshotVersion =
+    snapshotAuthorityVersion || fallbackAuthorityVersion;
+
+  useEffect(() => {
+    const hasServerRules = Object.keys(rules).length > 0;
+    const hasUnsavedEdits = Object.values(fieldRulesState.editedRules).some(
+      (rule) => Boolean(rule?._edited),
+    );
+    const nextVersion = authoritySnapshotVersion;
+
+    const action = decideStudioAuthorityAction({
+      category,
+      previousCategory: previousCategoryRef.current,
+      initialized: fieldRulesState.initialized,
+      hasServerRules,
+      hasUnsavedEdits,
+      previousVersion: authorityVersionRef.current,
+      nextVersion,
+    });
+
+    if (action.resetStore) {
+      fieldRulesActions.reset();
+      authorityVersionRef.current = '';
+      ignoredConflictVersionRef.current = '';
+      setAuthorityConflictVersion('');
+      setAuthorityConflictDetectedAt('');
+      hydrated.current = false;
+    }
+    if (action.hydrate) {
+      fieldRulesActions.hydrate(rules, fieldOrder);
+    }
+    if (action.rehydrate) {
+      fieldRulesActions.rehydrate(rules, fieldOrder);
+      hydrated.current = false;
+    }
+    if (
+      shouldOpenStudioAuthorityConflict({
+        conflict: action.conflict,
+        nextVersion,
+        pendingVersion: authorityConflictVersion,
+        ignoredVersion: ignoredConflictVersionRef.current,
+      })
+    ) {
+      setAuthorityConflictVersion(nextVersion);
+      setAuthorityConflictDetectedAt(new Date().toISOString());
+    }
+
+    if ((action.hydrate || action.rehydrate) && hasServerRules) {
+      authorityVersionRef.current = nextVersion;
+      ignoredConflictVersionRef.current = '';
+      setAuthorityConflictVersion('');
+      setAuthorityConflictDetectedAt('');
+    } else if (hasServerRules && !authorityVersionRef.current) {
+      authorityVersionRef.current = nextVersion;
+    }
+    previousCategoryRef.current = category;
+  }, [
+    authorityConflictVersion,
+    authoritySnapshotVersion,
+    category,
+    fieldOrder,
+    fieldRulesActions,
+    fieldRulesState,
+    rules,
+  ]);
+
+  const studioPageViewState = deriveStudioPageViewState({
+    activeTab: 'mapping',
+    autoSaveAllEnabled,
+    autoSaveEnabled,
+    autoSaveMapEnabled,
+    initialized: fieldRulesState.initialized,
+    serverRules: rules,
+    serverFieldOrder: fieldOrder,
+    editedRules: fieldRulesState.editedRules,
+    editedFieldOrder: fieldRulesState.editedFieldOrder,
+  });
+  const effectiveAutoSaveEnabled =
+    studioPageViewState.effectiveAutoSaveEnabled;
+  const effectiveAutoSaveMapEnabled =
+    studioPageViewState.effectiveAutoSaveMapEnabled;
+  const storeRules = studioPageViewState.storeRules;
+  const storeFieldOrder = studioPageViewState.storeFieldOrder;
+  const hasUnsavedChanges = studioPageViewState.hasUnsavedChanges;
+  const lastStudioAutoSaveFingerprintRef = useRef('');
+  const lastStudioAutoSaveAttemptFingerprintRef = useRef('');
+  const saveStudioDocs = saveStudioDocsMut.mutate;
+
+  const buildStudioPersistMap = useCallback(
+    (snap: {
+      rules: Record<string, Record<string, unknown>>;
+      fieldOrder: string[];
+      renames: Record<string, string>;
+    }) =>
+      buildStudioPersistMapPayload({
+        baseMap: wbMap,
+        snapshot: snap,
+      }),
+    [wbMap],
+  );
+
+  const saveFromStore = useCallback(
+    (options?: { force?: boolean }) => {
+      const force = options?.force === true;
+      const snap = getStudioFieldRulesSnapshot();
+      const payload = buildStudioPersistMap(snap);
+      const nextFingerprint = autoSaveFingerprint(payload);
+      if (
+        !shouldPersistStudioDocsAttempt({
+          force,
+          nextFingerprint,
+          lastSavedFingerprint: lastStudioAutoSaveFingerprintRef.current,
+          lastAttemptFingerprint:
+            lastStudioAutoSaveAttemptFingerprintRef.current,
+        })
+      ) {
+        return;
+      }
+      if (nextFingerprint) {
+        lastStudioAutoSaveAttemptFingerprintRef.current = nextFingerprint;
+      }
+      saveStudioDocs(payload, {
+        onSuccess: () => {
+          lastStudioAutoSaveFingerprintRef.current = nextFingerprint;
+          lastStudioAutoSaveAttemptFingerprintRef.current = nextFingerprint;
+          if (effectiveAutoSaveEnabled) {
+            setAutoSaveStatus('saved');
+            setTimeout(
+              () => setAutoSaveStatus('idle'),
+              SETTINGS_AUTOSAVE_STATUS_MS.studioSavedIndicatorReset,
+            );
+          }
+        },
+      });
+    },
+    [buildStudioPersistMap, effectiveAutoSaveEnabled, saveStudioDocs],
+  );
+
+  useEffect(() => {
+    if (!fieldRulesState.initialized) return;
+    const snap = getStudioFieldRulesSnapshot();
+    const hydratedFingerprint = autoSaveFingerprint(
+      buildStudioPersistMap(snap),
+    );
+    lastStudioAutoSaveFingerprintRef.current = hydratedFingerprint;
+    lastStudioAutoSaveAttemptFingerprintRef.current = hydratedFingerprint;
+    hydrated.current = true;
+  }, [
+    authoritySnapshotVersion,
+    buildStudioPersistMap,
+    fieldRulesState.initialized,
+  ]);
+
+  const editedRules = fieldRulesState.editedRules;
+  const editedFieldOrder = fieldRulesState.editedFieldOrder;
+  useEffect(() => {
+    if (
+      !effectiveAutoSaveEnabled ||
+      !fieldRulesState.initialized ||
+      !hydrated.current ||
+      authorityConflictVersion
+    ) {
+      return;
+    }
+    const snap = getStudioFieldRulesSnapshot();
+    const nextFingerprint = autoSaveFingerprint(buildStudioPersistMap(snap));
+    if (
+      !shouldPersistStudioDocsAttempt({
+        force: false,
+        nextFingerprint,
+        lastSavedFingerprint: lastStudioAutoSaveFingerprintRef.current,
+        lastAttemptFingerprint: lastStudioAutoSaveAttemptFingerprintRef.current,
+      })
+    ) {
+      return;
+    }
+    const timer = setTimeout(
+      saveFromStore,
+      SETTINGS_AUTOSAVE_DEBOUNCE_MS.studioDocs,
+    );
+    return () => clearTimeout(timer);
+  }, [
+    authorityConflictVersion,
+    buildStudioPersistMap,
+    editedFieldOrder,
+    editedRules,
+    effectiveAutoSaveEnabled,
+    fieldRulesState.initialized,
+    saveFromStore,
+  ]);
+
+  useEffect(
+    () => () => {
+      const snap = getStudioFieldRulesSnapshot();
+      const nextFingerprint = autoSaveFingerprint(buildStudioPersistMap(snap));
+      if (
+        !shouldFlushStudioDocsOnUnmount({
+          autoSaveEnabled: effectiveAutoSaveEnabled,
+          initialized: fieldRulesState.initialized,
+          hydrated: hydrated.current,
+          authorityConflictVersion,
+          isPending: saveStudioDocsMut.isPending,
+          nextFingerprint,
+          lastSavedFingerprint: lastStudioAutoSaveFingerprintRef.current,
+        })
+      ) {
+        return;
+      }
+      saveFromStore({ force: true });
+    },
+    [
+      authorityConflictVersion,
+      buildStudioPersistMap,
+      effectiveAutoSaveEnabled,
+      fieldRulesState.initialized,
+      saveFromStore,
+      saveStudioDocsMut.isPending,
+    ],
+  );
+
+  const reloadAuthoritySnapshot = useCallback(() => {
+    if (Object.keys(rules).length === 0) return;
+    fieldRulesActions.rehydrate(rules, fieldOrder);
+    authorityVersionRef.current = authoritySnapshotVersion;
+    ignoredConflictVersionRef.current = '';
+    setAuthorityConflictVersion('');
+    setAuthorityConflictDetectedAt('');
+    hydrated.current = false;
+  }, [authoritySnapshotVersion, fieldOrder, fieldRulesActions, rules]);
+
+  const keepLocalChangesForAuthorityConflict = useCallback(() => {
+    if (authorityConflictVersion) {
+      ignoredConflictVersionRef.current = authorityConflictVersion;
+    }
+    setAuthorityConflictVersion('');
+    setAuthorityConflictDetectedAt('');
+  }, [authorityConflictVersion]);
+
+  return {
+    saveMapMut,
+    saveStudioDocsMut,
+    fieldRulesInitialized: fieldRulesState.initialized,
+    authorityConflictVersion,
+    authorityConflictDetectedAt,
+    autoSaveStatus,
+    effectiveAutoSaveEnabled,
+    effectiveAutoSaveMapEnabled,
+    storeRules,
+    storeFieldOrder,
+    hasUnsavedChanges,
+    saveFromStore,
+    reloadAuthoritySnapshot,
+    keepLocalChangesForAuthorityConflict,
+  };
+}

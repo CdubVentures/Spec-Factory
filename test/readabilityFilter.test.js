@@ -4,7 +4,7 @@ import {
   filterReadableHtml,
   extractReadableText,
   truncateForTokenBudget
-} from '../src/extract/readabilityFilter.js';
+} from '../src/features/indexing/extraction/readabilityFilter.js';
 
 // ---------------------------------------------------------------------------
 // Phase 02 — Evidence Extraction Quality: Readability Filter Tests

@@ -4,7 +4,7 @@ import {
   computeIdentityMatchLevel,
   detectVariantGuardHit,
   detectMultiModelHint
-} from '../src/discovery/searchDiscovery.js';
+} from '../src/features/indexing/discovery/searchDiscovery.js';
 
 test('computeIdentityMatchLevel returns strong when brand+model+variant all present', () => {
   const result = computeIdentityMatchLevel({

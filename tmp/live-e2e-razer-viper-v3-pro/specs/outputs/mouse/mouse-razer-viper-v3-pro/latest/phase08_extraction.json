@@ -1,0 +1,30 @@
+{
+  "run_id": "20260311203758-d48ea2",
+  "category": "mouse",
+  "product_id": "mouse-razer-viper-v3-pro",
+  "generated_at": "2026-03-11T20:46:08.509Z",
+  "summary": {
+    "batch_count": 0,
+    "batch_error_count": 0,
+    "schema_fail_rate": 0,
+    "raw_candidate_count": 0,
+    "accepted_candidate_count": 0,
+    "dangling_snippet_ref_count": 0,
+    "dangling_snippet_ref_rate": 0,
+    "evidence_policy_violation_count": 0,
+    "evidence_policy_violation_rate": 0,
+    "min_refs_satisfied_count": 0,
+    "min_refs_total": 0,
+    "min_refs_satisfied_rate": 0
+  },
+  "batches": [],
+  "field_contexts": {},
+  "prime_sources": {
+    "rows": []
+  },
+  "validator": {
+    "context_field_count": 0,
+    "prime_source_rows": 0,
+    "payload_chars": 0
+  }
+}

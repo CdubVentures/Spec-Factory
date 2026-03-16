@@ -17,32 +17,6 @@ function unwrapPayload(row) {
 export function buildRoundSummaryFromEvents(events) {
   const rows = Array.isArray(events) ? events : [];
 
-  const roundRows = rows.filter((r) => r?.event === 'convergence_round_completed');
-  const stopRow = rows.find((r) => r?.event === 'convergence_stop') || null;
-
-  if (roundRows.length > 0) {
-    const rounds = roundRows.map((r) => {
-      const d = unwrapPayload(r);
-      return {
-        round: toInt(d.round, 0),
-        needset_size: toInt(d.needset_size, 0),
-        missing_required_count: toInt(d.missing_required_count, 0),
-        critical_count: toInt(d.critical_count, 0),
-        confidence: toFloat(d.confidence, 0),
-        validated: Boolean(d.validated),
-        improved: Boolean(d.improved),
-        improvement_reasons: Array.isArray(d.improvement_reasons) ? d.improvement_reasons : []
-      };
-    });
-
-    const stopData = unwrapPayload(stopRow);
-    return {
-      rounds,
-      stop_reason: stopRow ? String(stopData.stop_reason || '') || null : null,
-      round_count: rounds.length
-    };
-  }
-
   const runCompleted = rows.find((r) => r?.event === 'run_completed');
   if (runCompleted) {
     const rc = unwrapPayload(runCompleted);

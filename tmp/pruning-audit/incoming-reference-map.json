@@ -1,0 +1,3563 @@
+{
+  "backend": {
+    "src/benchmark/benchmarkMatrix.js": {
+      "refs": [
+        "test/benchmarkMatrix.test.js",
+        "test/regressionGates.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/benchmarkMatrix.test.js",
+        "test/regressionGates.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/benchmark/evalLab.js": {
+      "refs": [
+        "test/evalLab.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/evalLab.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/benchmark/regressionGates.js": {
+      "refs": [
+        "test/regressionGates.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/regressionGates.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/benchmark/scaleBenchmark.js": {
+      "refs": [
+        "test/scaleBenchmark.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/scaleBenchmark.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/cache/contentHashCache.js": {
+      "refs": [
+        "test/contentHashCache.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/contentHashCache.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/cli/indexlab.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/cli/runBatch.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/cli/runOne.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/cli/smokeLocal.js": {
+      "refs": [
+        "test/runtimeArtifactRootsTempDefaults.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/runtimeArtifactRootsTempDefaults.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/concurrency/asyncDeepJob.js": {
+      "refs": [
+        "src/concurrency/index.js",
+        "test/asyncDeepJob.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "src/concurrency/index.js"
+      ],
+      "fromTests": [
+        "test/asyncDeepJob.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": [
+        "src/concurrency/index.js"
+      ]
+    },
+    "src/concurrency/budgetEnforcer.js": {
+      "refs": [
+        "src/concurrency/index.js",
+        "test/budgetEnforcer.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "src/concurrency/index.js"
+      ],
+      "fromTests": [
+        "test/budgetEnforcer.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": [
+        "src/concurrency/index.js"
+      ]
+    },
+    "src/concurrency/index.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/concurrency/laneManager.js": {
+      "refs": [
+        "src/concurrency/index.js",
+        "test/laneManager.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "src/concurrency/index.js"
+      ],
+      "fromTests": [
+        "test/laneManager.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": [
+        "src/concurrency/index.js"
+      ]
+    },
+    "src/core/llm/prompts/extractor.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/core/llm/prompts/planner.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/core/llm/prompts/validator.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/diagnostics/appDiagnostics.js": {
+      "refs": [
+        "test/appDiagnostics.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/appDiagnostics.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/evidence/verifyEvidenceSpan.js": {
+      "refs": [
+        "test/verifyEvidenceSpan.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/verifyEvidenceSpan.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/features/category-authority/index.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/features/indexing/discovery/index.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/features/indexing/extraction/dossierBuilder.js": {
+      "refs": [
+        "test/dossierBuilder.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/dossierBuilder.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/features/indexing/extraction/pdfTableExtractor.js": {
+      "refs": [
+        "test/pdfTableExtractor.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/pdfTableExtractor.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/features/indexing/extraction/screenshotCapture.js": {
+      "refs": [
+        "test/screenshotCapture.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/screenshotCapture.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/features/indexing/extraction/structuredMetadataClient.js": {
+      "refs": [
+        "test/structuredMetadataClient.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/structuredMetadataClient.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/features/indexing/index.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/features/indexing/learning/index.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/features/indexing/learning/sourceIntel.js": {
+      "refs": [
+        "src/features/indexing/learning/index.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "src/features/indexing/learning/index.js"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": [
+        "src/features/indexing/learning/index.js"
+      ]
+    },
+    "src/features/indexing/search/index.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/fetcher/dynamicCrawlerService.js": {
+      "refs": [
+        "test/dynamicCrawlerFallback.test.js",
+        "test/dynamicCrawlerService.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/dynamicCrawlerFallback.test.js",
+        "test/dynamicCrawlerService.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/fetcher/fetchResult.js": {
+      "refs": [
+        "test/fetchResult.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/fetchResult.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/fetcher/replayFetcher.js": {
+      "refs": [
+        "test/replayRun.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/replayRun.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/field-rules/capabilities.json": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/indexlab/index.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/ingest/categorySchemaSync.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/intel/domainFieldMatrix.js": {
+      "refs": [
+        "test/domainFieldMatrix.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/domainFieldMatrix.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/intel/retrievalIndex.js": {
+      "refs": [
+        "test/retrievalIndex.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/retrievalIndex.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/intel/sitemapInventory.js": {
+      "refs": [
+        "test/sitemapInventory.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/sitemapInventory.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/intel/sourceSuggestions.js": {
+      "refs": [
+        "test/sourceSuggestions.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/sourceSuggestions.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/pipeline/automationQueue.js": {
+      "refs": [
+        "test/automationQueue.test.js",
+        "test/automationWorker.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/automationQueue.test.js",
+        "test/automationWorker.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/pipeline/automationWorker.js": {
+      "refs": [
+        "test/automationWorker.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/automationWorker.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/replay/replayManifest.js": {
+      "refs": [
+        "src/fetcher/replayFetcher.js",
+        "test/replayRun.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "src/fetcher/replayFetcher.js"
+      ],
+      "fromTests": [
+        "test/replayRun.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": [
+        "src/fetcher/replayFetcher.js"
+      ]
+    },
+    "src/reports/dailyKpi.js": {
+      "refs": [
+        "test/dailyKpi.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/dailyKpi.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/retrieve/index.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/runtime/fleetMonitor.js": {
+      "refs": [
+        "test/fleetMonitor.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/fleetMonitor.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/runtime/metricsWriter.js": {
+      "refs": [
+        "test/metricsWriter.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/metricsWriter.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/scoring/candidateMerger.js": {
+      "refs": [
+        "src/scoring/index.js",
+        "test/candidateMerger.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "src/scoring/index.js"
+      ],
+      "fromTests": [
+        "test/candidateMerger.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": [
+        "src/scoring/index.js"
+      ]
+    },
+    "src/scoring/fieldAggregator.js": {
+      "refs": [
+        "src/scoring/index.js",
+        "test/scoringRuntimeConfigContracts.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "src/scoring/index.js"
+      ],
+      "fromTests": [
+        "test/scoringRuntimeConfigContracts.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": [
+        "src/scoring/index.js"
+      ]
+    },
+    "src/scoring/index.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/studio/keyOperations.js": {
+      "refs": [
+        "test/studioKeyOperations.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/studioKeyOperations.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/training/categoryTrainer.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "src/training/generateCategoryTests.js": {
+      "refs": [
+        "src/training/categoryTrainer.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "src/training/categoryTrainer.js"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": [
+        "src/training/categoryTrainer.js"
+      ]
+    }
+  },
+  "gui": {
+    "tools/gui-react/src/api/graphql.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/components/common/CodeBlock.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/components/layout/categoryStoreSync.js": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/features/indexing/panels/BatchPanel.tsx": {
+      "refs": [
+        "tools/gui-react/src/pages/indexing/panels/BatchPanel.tsx"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/indexing/panels/BatchPanel.tsx"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/indexing/panels/BatchPanel.tsx"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/features/indexing/panels/RuntimePanel.tsx": {
+      "refs": [
+        "tools/gui-react/src/pages/indexing/panels/RuntimePanel.tsx"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/indexing/panels/RuntimePanel.tsx"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/indexing/panels/RuntimePanel.tsx"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/features/indexing/panels/WorkerPanel.tsx": {
+      "refs": [
+        "tools/gui-react/src/pages/indexing/panels/WorkerPanel.tsx"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/indexing/panels/WorkerPanel.tsx"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/indexing/panels/WorkerPanel.tsx"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/features/review/components/CellTooltip.tsx": {
+      "refs": [
+        "tools/gui-react/src/pages/review/CellTooltip.tsx"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/review/CellTooltip.tsx"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/review/CellTooltip.tsx"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/features/runtime-ops/panels/overview/ScreenshotPreview.tsx": {
+      "refs": [
+        "tools/gui-react/src/pages/runtime-ops/panels/ScreenshotPreview.tsx"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/runtime-ops/panels/ScreenshotPreview.tsx"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/runtime-ops/panels/ScreenshotPreview.tsx"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchLlmCallPanel.tsx": {
+      "refs": [
+        "tools/gui-react/src/pages/runtime-ops/panels/PrefetchLlmCallPanel.tsx"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/runtime-ops/panels/PrefetchLlmCallPanel.tsx"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/runtime-ops/panels/PrefetchLlmCallPanel.tsx"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/features/runtime-ops/types.ts": {
+      "refs": [
+        "tools/gui-react/src/features/runtime-ops/components/RuntimeIdxBadgeStrip.tsx",
+        "tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx",
+        "tools/gui-react/src/features/runtime-ops/helpers.ts",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/CompoundCurveSubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/CompoundTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/KnobTelemetrySubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/PlanDiffSubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/QueryIndexSubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/UrlIndexSubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/DocumentsTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/ExtractionTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/FallbacksTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/MetricsRail.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/OverviewTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/PipelineFlowStrip.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/QueueTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/ScreenshotPreview.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchBrandResolverPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchBrandResolverPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchDomainClassifierPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchDomainClassifierPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchLlmCallPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchNeedSetPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchNeedSetPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchQueryJourneyPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchPlannerPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchPlannerPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchProfilePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchProfilePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchResultsPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchResultsPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSerpTriagePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSerpTriagePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchTabRow.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerDocDetailView.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerDocsTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerExtractTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerMetricsTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerPipelineTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerQueueTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerShotsTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/LlmCallsDashboard.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/SearchWorkerPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/WorkerDataDrawer.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/WorkerLivePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/WorkerSubTabs.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/WorkersTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/selectors/domainClassifierHelpers.d.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/phaseLineageHelpers.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/prefetchQueryJourneyHelpers.d.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/prefetchTabBusyHelpers.d.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/prefetchUiContracts.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/searchProfileHelpers.d.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/searchResultsHelpers.d.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/serpTriageHelpers.d.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/workerTabHelpers.d.ts",
+        "tools/gui-react/src/pages/runtime-ops/types.ts"
+      ],
+      "fromReachable": [
+        "tools/gui-react/src/features/runtime-ops/components/RuntimeIdxBadgeStrip.tsx",
+        "tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx",
+        "tools/gui-react/src/features/runtime-ops/helpers.ts",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/CompoundCurveSubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/CompoundTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/KnobTelemetrySubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/PlanDiffSubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/QueryIndexSubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/UrlIndexSubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/DocumentsTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/ExtractionTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/FallbacksTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/MetricsRail.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/OverviewTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/PipelineFlowStrip.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/QueueTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchBrandResolverPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchBrandResolverPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchDomainClassifierPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchDomainClassifierPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchNeedSetPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchNeedSetPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchQueryJourneyPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchPlannerPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchPlannerPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchProfilePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchProfilePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchResultsPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchResultsPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSerpTriagePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSerpTriagePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchTabRow.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerDocDetailView.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerDocsTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerExtractTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerMetricsTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerPipelineTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerQueueTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerShotsTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/LlmCallsDashboard.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/SearchWorkerPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/WorkerDataDrawer.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/WorkerLivePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/WorkerSubTabs.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/WorkersTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/selectors/phaseLineageHelpers.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/prefetchUiContracts.ts"
+      ],
+      "fromUnreachable": [
+        "tools/gui-react/src/features/runtime-ops/panels/overview/ScreenshotPreview.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchLlmCallPanel.tsx",
+        "tools/gui-react/src/pages/runtime-ops/types.ts"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/features/runtime-ops/components/RuntimeIdxBadgeStrip.tsx",
+        "tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx",
+        "tools/gui-react/src/features/runtime-ops/helpers.ts",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/CompoundCurveSubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/CompoundTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/KnobTelemetrySubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/PlanDiffSubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/QueryIndexSubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/compound/UrlIndexSubTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/DocumentsTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/ExtractionTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/FallbacksTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/MetricsRail.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/OverviewTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/PipelineFlowStrip.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/QueueTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/overview/ScreenshotPreview.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchBrandResolverPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchBrandResolverPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchDomainClassifierPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchDomainClassifierPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchLlmCallPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchNeedSetPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchNeedSetPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchQueryJourneyPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchPlannerPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchPlannerPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchProfilePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchProfilePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchResultsPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchResultsPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSerpTriagePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSerpTriagePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchTabRow.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerDocDetailView.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerDocsTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerExtractTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerMetricsTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerPipelineTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerQueueTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/DrawerShotsTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/LlmCallsDashboard.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/SearchWorkerPanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/WorkerDataDrawer.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/WorkerLivePanel.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/WorkerSubTabs.tsx",
+        "tools/gui-react/src/features/runtime-ops/panels/workers/WorkersTab.tsx",
+        "tools/gui-react/src/features/runtime-ops/selectors/domainClassifierHelpers.d.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/phaseLineageHelpers.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/prefetchQueryJourneyHelpers.d.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/prefetchTabBusyHelpers.d.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/prefetchUiContracts.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/searchProfileHelpers.d.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/searchResultsHelpers.d.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/serpTriageHelpers.d.ts",
+        "tools/gui-react/src/features/runtime-ops/selectors/workerTabHelpers.d.ts",
+        "tools/gui-react/src/pages/runtime-ops/types.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/features/studio/workbench/workbenchTypes.ts": {
+      "refs": [
+        "tools/gui-react/src/features/studio/workbench/FieldRulesWorkbench.tsx",
+        "tools/gui-react/src/features/studio/workbench/WorkbenchColumnPresets.tsx",
+        "tools/gui-react/src/features/studio/workbench/WorkbenchDrawer.tsx",
+        "tools/gui-react/src/features/studio/workbench/WorkbenchTable.tsx",
+        "tools/gui-react/src/features/studio/workbench/workbenchColumns.tsx",
+        "tools/gui-react/src/features/studio/workbench/workbenchHelpers.ts",
+        "tools/gui-react/src/pages/studio/workbench/workbenchTypes.ts"
+      ],
+      "fromReachable": [
+        "tools/gui-react/src/features/studio/workbench/FieldRulesWorkbench.tsx",
+        "tools/gui-react/src/features/studio/workbench/WorkbenchColumnPresets.tsx",
+        "tools/gui-react/src/features/studio/workbench/WorkbenchDrawer.tsx",
+        "tools/gui-react/src/features/studio/workbench/WorkbenchTable.tsx",
+        "tools/gui-react/src/features/studio/workbench/workbenchColumns.tsx",
+        "tools/gui-react/src/features/studio/workbench/workbenchHelpers.ts"
+      ],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/studio/workbench/workbenchTypes.ts"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/features/studio/workbench/FieldRulesWorkbench.tsx",
+        "tools/gui-react/src/features/studio/workbench/WorkbenchColumnPresets.tsx",
+        "tools/gui-react/src/features/studio/workbench/WorkbenchDrawer.tsx",
+        "tools/gui-react/src/features/studio/workbench/WorkbenchTable.tsx",
+        "tools/gui-react/src/features/studio/workbench/workbenchColumns.tsx",
+        "tools/gui-react/src/features/studio/workbench/workbenchHelpers.ts",
+        "tools/gui-react/src/pages/studio/workbench/workbenchTypes.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/catalog/ProductManager.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/IndexingEventStreamSection.tsx": {
+      "refs": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/IndexingPhasePanelsSection.tsx": {
+      "refs": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/IndexingTopPanelsSection.tsx": {
+      "refs": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/helpers.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingActivitySelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingCatalogDerivations.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingCatalogSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingDashboardDerivations.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingDashboardSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingEventActivityDerivations.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingEventSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingLastResponseSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingLlmConfigSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingLlmDerivations.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingLlmMetricsSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingLlmModelDerivations.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingLlmOutputSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingLlmTraceSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingNeedsetSearchDerivations.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingNeedsetSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingPageSectionProps.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingPanelState.ts": {
+      "refs": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingPendingLlmSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingPendingPromptSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingPhase4Selectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingPhase5Selectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingPhase6Selectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingPhase6bSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingPhase78Selectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingPhaseDerivations.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingProcessUnloadStop.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunControlSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunCortexPayload.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunDiscoveryPayload.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunId.ts": {
+      "refs": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunIdentitySelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunLearningPayload.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunLlmSettingsPayload.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunModelPayload.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunMutationCallbacks.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunMutations.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunOcrPolicyPayload.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunQueries.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunRuntimePayload.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunSelection.ts": {
+      "refs": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunSelectionState.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunStartParsedValues.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunStartPayload.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunStartupSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunViewActions.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRunViewHandlers.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingRuntimeSettingsDerivedState.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingSearchProfileSelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingSectionProps.ts": {
+      "refs": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingStatusSelectors.ts": {
+      "refs": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingSummarySelectors.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/indexingTopPanelProps.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/BatchPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/EventStreamPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/LearningPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/LlmMetricsPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/LlmOutputPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/NeedSetPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/OverviewPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/PanelControlsPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/Phase05Panel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/Phase06Panel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/Phase06bPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/Phase07Panel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/Phase08Panel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/Phase09Panel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/PickerPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/RuntimePanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/SearchProfilePanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/SerpExplorerPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/SessionDataPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/UrlHealthPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/WorkerPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/panels/searchProfileHelpers.js": {
+      "refs": [
+        "test/searchProfilePanelStoryMode.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/searchProfilePanelStoryMode.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/types.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/indexing/useIndexingPageSurfaceProps.ts": {
+      "refs": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/pages/indexing/indexingPageCompatContracts.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/PipelineSettingsPageShell.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/PipelineSourceStrategySection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowAutomationSection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowBrowserRenderingSection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowCardHeader.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowCoreStepsSection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowDraftNormalization.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowDraftPayload.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowFallbackRoutingSection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowFetchNetworkSection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowHeaderControls.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowModelTokenDefaults.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowModelTokenOptions.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowObservabilitySection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowOcrSection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowParsingSection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowPlannerTriageSection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowPrimitives.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowRoleRoutingSection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowRunOutputSection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowRunSetupSection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowScoringEvidenceSection.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowStateDerivations.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowStatus.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowStepDetailHeader.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowStepIcon.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowStepRegistry.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeFlowStepSidebar.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/pipeline-settings/RuntimeSettingsFlowCard.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/product/AvailabilityGuidance.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/product/FieldStatusTable.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/product/HelperLlmStatus.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/product/PipelineProgress.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/review/BrandFilterBar.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/review/CellTooltip.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/review/ReviewMatrix.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/review/reviewGridSessionState.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/components/ConfidenceBar.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/components/KanbanLane.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/components/KpiStrip.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/components/PrefetchTooltip.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/components/ProgressRing.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/components/RuntimeIdxBadgeStrip.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/components/ScoreBar.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/components/Sparkline.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/components/StackedScoreBar.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/components/StageCard.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/components/StatCard.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/components/VerticalStepper.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/components/prefetchTooltipHelpers.js": {
+      "refs": [
+        "test/prefetchTooltipHelpers.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/prefetchTooltipHelpers.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/helpers.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/BrowserStream.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/DocumentsTab.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/DrawerDocDetailView.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/DrawerDocsTab.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/DrawerExtractTab.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/DrawerMetricsTab.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/DrawerPipelineTab.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/DrawerQueueTab.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/DrawerShotsTab.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/ExtractionTab.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/FallbacksTab.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/LlmCallsDashboard.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/MetricsRail.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/OverviewTab.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/PipelineFlowStrip.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/PrefetchBrandResolverPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/PrefetchDomainClassifierPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/PrefetchLlmCallPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/PrefetchNeedSetPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/PrefetchQueryJourneyPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/PrefetchSearchPlannerPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/PrefetchSearchProfilePanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/PrefetchSearchResultsPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/PrefetchSerpTriagePanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/PrefetchTabRow.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/QueueTab.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/ScreenshotPreview.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/SearchWorkerPanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/WorkerDataDrawer.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/WorkerLivePanel.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/WorkerSubTabs.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/WorkersTab.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/domainClassifierHelpers.js": {
+      "refs": [
+        "test/domainClassifierHelpers.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/domainClassifierHelpers.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/prefetchQueryJourneyHelpers.js": {
+      "refs": [
+        "test/prefetchQueryJourneyHelpers.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/prefetchQueryJourneyHelpers.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/prefetchSearchProfileDisplayHelpers.js": {
+      "refs": [
+        "test/prefetchSearchProfileDisplayHelpers.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/prefetchSearchProfileDisplayHelpers.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/prefetchSearchProfileGateHelpers.js": {
+      "refs": [
+        "test/prefetchSearchProfileGateHelpers.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/prefetchSearchProfileGateHelpers.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/prefetchTabBusyHelpers.js": {
+      "refs": [
+        "test/prefetchTabBusyHelpers.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/prefetchTabBusyHelpers.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/searchResultsHelpers.js": {
+      "refs": [
+        "test/searchResultsHelpers.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/searchResultsHelpers.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/panels/serpTriageHelpers.js": {
+      "refs": [
+        "test/serpTriageHelpers.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/serpTriageHelpers.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/runActivityScopeHelpers.js": {
+      "refs": [
+        "test/runtimeOpsRunActivityScopeHelpers.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/runtimeOpsRunActivityScopeHelpers.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime-ops/types.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime/EventLog.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime/ProcessOutput.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/runtime/QueueSnapshot.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/BrandManager.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/DraggableKeyList.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/StudioPageShell.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/authoritySync.js": {
+      "refs": [
+        "test/studioAuthoritySync.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/studioAuthoritySync.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/invalidateFieldRulesQueries.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/keyUtils.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/mapValidationPreflight.js": {
+      "refs": [
+        "test/mapValidationPreflight.test.js"
+      ],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [
+        "test/mapValidationPreflight.test.js"
+      ],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/numericInputHelpers.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/studioConstants.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/studioNumericKnobBounds.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/studioPersistenceAuthority.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/useFieldRulesStore.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/workbench/FieldRulesWorkbench.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/workbench/SystemBadges.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/workbench/WorkbenchBulkBar.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/workbench/WorkbenchColumnPresets.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/workbench/WorkbenchDrawer.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/workbench/WorkbenchTable.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/workbench/systemMapping.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/workbench/workbenchColumns.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/workbench/workbenchHelpers.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/workbench/workbenchSessionState.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/pages/studio/workbench/workbenchTypes.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/shared/ui/data-display/MetricCard.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/shared/ui/data-display/MetricRow.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/shared/ui/data-display/ProgressBar.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/shared/ui/data-display/ReviewValueCell.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/shared/ui/feedback/ActionTooltip.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/shared/ui/feedback/StatusBadge.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/shared/ui/feedback/TrafficLight.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/shared/ui/forms/InlineCellEditor.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/shared/ui/overlay/CellDrawer.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/shared/ui/overlay/CellTooltip.tsx": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/stores/reviewStore.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/stores/runtimeSettingsDomain.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/stores/runtimeSettingsEditorAdapter.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/types/componentReview.ts": {
+      "refs": [
+        "tools/gui-react/src/components/common/LinkedProductsList.tsx",
+        "tools/gui-react/src/components/common/PendingAIReviewSection.tsx",
+        "tools/gui-react/src/hooks/useRunComponentReviewBatchMutation.ts",
+        "tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx",
+        "tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx",
+        "tools/gui-react/src/pages/component-review/ComponentReviewPanel.tsx",
+        "tools/gui-react/src/pages/component-review/ComponentSubTab.tsx",
+        "tools/gui-react/src/pages/component-review/EnumSubTab.tsx",
+        "tools/gui-react/src/pages/component-review/enumReviewStore.d.ts",
+        "tools/gui-react/src/pages/component-review/useEnumReviewData.ts"
+      ],
+      "fromReachable": [
+        "tools/gui-react/src/components/common/LinkedProductsList.tsx",
+        "tools/gui-react/src/components/common/PendingAIReviewSection.tsx",
+        "tools/gui-react/src/hooks/useRunComponentReviewBatchMutation.ts",
+        "tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx",
+        "tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx",
+        "tools/gui-react/src/pages/component-review/ComponentReviewPanel.tsx",
+        "tools/gui-react/src/pages/component-review/ComponentSubTab.tsx",
+        "tools/gui-react/src/pages/component-review/EnumSubTab.tsx",
+        "tools/gui-react/src/pages/component-review/useEnumReviewData.ts"
+      ],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/components/common/LinkedProductsList.tsx",
+        "tools/gui-react/src/components/common/PendingAIReviewSection.tsx",
+        "tools/gui-react/src/hooks/useRunComponentReviewBatchMutation.ts",
+        "tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx",
+        "tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx",
+        "tools/gui-react/src/pages/component-review/ComponentReviewPanel.tsx",
+        "tools/gui-react/src/pages/component-review/ComponentSubTab.tsx",
+        "tools/gui-react/src/pages/component-review/EnumSubTab.tsx",
+        "tools/gui-react/src/pages/component-review/enumReviewStore.d.ts",
+        "tools/gui-react/src/pages/component-review/useEnumReviewData.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/types/events.ts": {
+      "refs": [
+        "tools/gui-react/src/features/indexing/api/indexingRunMutationCallbacks.ts",
+        "tools/gui-react/src/features/indexing/api/indexingRunMutations.ts",
+        "tools/gui-react/src/features/indexing/components/IndexingPage.tsx",
+        "tools/gui-react/src/features/indexing/state/indexingPageSectionProps.ts",
+        "tools/gui-react/src/features/indexing/state/indexingRunViewActions.ts",
+        "tools/gui-react/src/features/indexing/state/indexingRunViewHandlers.ts",
+        "tools/gui-react/src/features/indexing/state/useIndexingPageSurfaceProps.ts",
+        "tools/gui-react/src/features/runtime-ops/state/runtimeStore.ts",
+        "tools/gui-react/src/features/studio/components/StudioPage.tsx",
+        "tools/gui-react/src/hooks/useProcessStatusQuery.ts",
+        "tools/gui-react/src/pages/layout/AppShell.tsx",
+        "tools/gui-react/src/pages/layout/AppShell.tsx",
+        "tools/gui-react/src/pages/product/HelperLlmStatus.tsx",
+        "tools/gui-react/src/pages/product/PipelineProgress.tsx",
+        "tools/gui-react/src/pages/runtime/EventLog.tsx",
+        "tools/gui-react/src/stores/eventsStore.ts"
+      ],
+      "fromReachable": [
+        "tools/gui-react/src/features/indexing/api/indexingRunMutationCallbacks.ts",
+        "tools/gui-react/src/features/indexing/api/indexingRunMutations.ts",
+        "tools/gui-react/src/features/indexing/components/IndexingPage.tsx",
+        "tools/gui-react/src/features/indexing/state/indexingPageSectionProps.ts",
+        "tools/gui-react/src/features/indexing/state/indexingRunViewActions.ts",
+        "tools/gui-react/src/features/indexing/state/indexingRunViewHandlers.ts",
+        "tools/gui-react/src/features/indexing/state/useIndexingPageSurfaceProps.ts",
+        "tools/gui-react/src/features/runtime-ops/state/runtimeStore.ts",
+        "tools/gui-react/src/features/studio/components/StudioPage.tsx",
+        "tools/gui-react/src/hooks/useProcessStatusQuery.ts",
+        "tools/gui-react/src/pages/layout/AppShell.tsx",
+        "tools/gui-react/src/pages/layout/AppShell.tsx",
+        "tools/gui-react/src/stores/eventsStore.ts"
+      ],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/product/HelperLlmStatus.tsx",
+        "tools/gui-react/src/pages/product/PipelineProgress.tsx",
+        "tools/gui-react/src/pages/runtime/EventLog.tsx"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/features/indexing/api/indexingRunMutationCallbacks.ts",
+        "tools/gui-react/src/features/indexing/api/indexingRunMutations.ts",
+        "tools/gui-react/src/features/indexing/components/IndexingPage.tsx",
+        "tools/gui-react/src/features/indexing/state/indexingPageSectionProps.ts",
+        "tools/gui-react/src/features/indexing/state/indexingRunViewActions.ts",
+        "tools/gui-react/src/features/indexing/state/indexingRunViewHandlers.ts",
+        "tools/gui-react/src/features/indexing/state/useIndexingPageSurfaceProps.ts",
+        "tools/gui-react/src/features/runtime-ops/state/runtimeStore.ts",
+        "tools/gui-react/src/features/studio/components/StudioPage.tsx",
+        "tools/gui-react/src/hooks/useProcessStatusQuery.ts",
+        "tools/gui-react/src/pages/layout/AppShell.tsx",
+        "tools/gui-react/src/pages/layout/AppShell.tsx",
+        "tools/gui-react/src/pages/product/HelperLlmStatus.tsx",
+        "tools/gui-react/src/pages/product/PipelineProgress.tsx",
+        "tools/gui-react/src/pages/runtime/EventLog.tsx",
+        "tools/gui-react/src/stores/eventsStore.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/types/learning.ts": {
+      "refs": [
+        "tools/gui-react/src/features/indexing/api/indexingRunQueries.ts",
+        "tools/gui-react/src/features/indexing/panels/LearningPanel.tsx",
+        "tools/gui-react/src/features/indexing/state/indexingPageSectionProps.ts",
+        "tools/gui-react/src/features/indexing/types.ts"
+      ],
+      "fromReachable": [
+        "tools/gui-react/src/features/indexing/api/indexingRunQueries.ts",
+        "tools/gui-react/src/features/indexing/panels/LearningPanel.tsx",
+        "tools/gui-react/src/features/indexing/state/indexingPageSectionProps.ts",
+        "tools/gui-react/src/features/indexing/types.ts"
+      ],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/features/indexing/api/indexingRunQueries.ts",
+        "tools/gui-react/src/features/indexing/panels/LearningPanel.tsx",
+        "tools/gui-react/src/features/indexing/state/indexingPageSectionProps.ts",
+        "tools/gui-react/src/features/indexing/types.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/types/llmSettings.ts": {
+      "refs": [
+        "tools/gui-react/src/features/pipeline-settings/state/llmSettingsAuthority.ts",
+        "tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx"
+      ],
+      "fromReachable": [
+        "tools/gui-react/src/features/pipeline-settings/state/llmSettingsAuthority.ts",
+        "tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx"
+      ],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/features/pipeline-settings/state/llmSettingsAuthority.ts",
+        "tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/types/product.ts": {
+      "refs": [
+        "tools/gui-react/src/features/indexing/components/IndexingPage.tsx",
+        "tools/gui-react/src/features/indexing/panels/PickerPanel.tsx",
+        "tools/gui-react/src/features/indexing/selectors/indexingCatalogDerivations.ts",
+        "tools/gui-react/src/features/indexing/selectors/indexingCatalogSelectors.ts",
+        "tools/gui-react/src/features/review/components/ReviewPage.tsx",
+        "tools/gui-react/src/features/studio/components/BrandManager.tsx",
+        "tools/gui-react/src/hooks/useCatalogQuery.ts",
+        "tools/gui-react/src/pages/overview/OverviewPage.tsx",
+        "tools/gui-react/src/pages/product/ProductPage.tsx",
+        "tools/gui-react/src/pages/runtime/QueueSnapshot.tsx"
+      ],
+      "fromReachable": [
+        "tools/gui-react/src/features/indexing/components/IndexingPage.tsx",
+        "tools/gui-react/src/features/indexing/panels/PickerPanel.tsx",
+        "tools/gui-react/src/features/indexing/selectors/indexingCatalogDerivations.ts",
+        "tools/gui-react/src/features/indexing/selectors/indexingCatalogSelectors.ts",
+        "tools/gui-react/src/features/review/components/ReviewPage.tsx",
+        "tools/gui-react/src/features/studio/components/BrandManager.tsx",
+        "tools/gui-react/src/hooks/useCatalogQuery.ts",
+        "tools/gui-react/src/pages/overview/OverviewPage.tsx",
+        "tools/gui-react/src/pages/product/ProductPage.tsx"
+      ],
+      "fromUnreachable": [
+        "tools/gui-react/src/pages/runtime/QueueSnapshot.tsx"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/features/indexing/components/IndexingPage.tsx",
+        "tools/gui-react/src/features/indexing/panels/PickerPanel.tsx",
+        "tools/gui-react/src/features/indexing/selectors/indexingCatalogDerivations.ts",
+        "tools/gui-react/src/features/indexing/selectors/indexingCatalogSelectors.ts",
+        "tools/gui-react/src/features/review/components/ReviewPage.tsx",
+        "tools/gui-react/src/features/studio/components/BrandManager.tsx",
+        "tools/gui-react/src/hooks/useCatalogQuery.ts",
+        "tools/gui-react/src/pages/overview/OverviewPage.tsx",
+        "tools/gui-react/src/pages/product/ProductPage.tsx",
+        "tools/gui-react/src/pages/runtime/QueueSnapshot.tsx"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/types/review.ts": {
+      "refs": [
+        "tools/gui-react/src/components/common/CellDrawer.tsx",
+        "tools/gui-react/src/features/review/components/BrandFilterBar.tsx",
+        "tools/gui-react/src/features/review/components/ReviewMatrix.tsx",
+        "tools/gui-react/src/features/review/components/ReviewPage.tsx",
+        "tools/gui-react/src/features/review/components/ReviewPage.tsx",
+        "tools/gui-react/src/features/review/state/reviewStore.ts",
+        "tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx",
+        "tools/gui-react/src/types/componentReview.ts"
+      ],
+      "fromReachable": [
+        "tools/gui-react/src/components/common/CellDrawer.tsx",
+        "tools/gui-react/src/features/review/components/BrandFilterBar.tsx",
+        "tools/gui-react/src/features/review/components/ReviewMatrix.tsx",
+        "tools/gui-react/src/features/review/components/ReviewPage.tsx",
+        "tools/gui-react/src/features/review/components/ReviewPage.tsx",
+        "tools/gui-react/src/features/review/state/reviewStore.ts",
+        "tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx"
+      ],
+      "fromUnreachable": [
+        "tools/gui-react/src/types/componentReview.ts"
+      ],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/components/common/CellDrawer.tsx",
+        "tools/gui-react/src/features/review/components/BrandFilterBar.tsx",
+        "tools/gui-react/src/features/review/components/ReviewMatrix.tsx",
+        "tools/gui-react/src/features/review/components/ReviewPage.tsx",
+        "tools/gui-react/src/features/review/components/ReviewPage.tsx",
+        "tools/gui-react/src/features/review/state/reviewStore.ts",
+        "tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx",
+        "tools/gui-react/src/types/componentReview.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/types/runtime.ts": {
+      "refs": [
+        "tools/gui-react/src/features/runtime-ops/state/runtimeStore.ts"
+      ],
+      "fromReachable": [
+        "tools/gui-react/src/features/runtime-ops/state/runtimeStore.ts"
+      ],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/features/runtime-ops/state/runtimeStore.ts"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/types/studio.ts": {
+      "refs": [
+        "tools/gui-react/src/components/common/EnumConfigurator.tsx",
+        "tools/gui-react/src/features/studio/components/StudioPage.tsx",
+        "tools/gui-react/src/features/studio/state/studioPersistenceAuthority.ts",
+        "tools/gui-react/src/features/studio/workbench/FieldRulesWorkbench.tsx",
+        "tools/gui-react/src/features/studio/workbench/WorkbenchDrawer.tsx"
+      ],
+      "fromReachable": [
+        "tools/gui-react/src/components/common/EnumConfigurator.tsx",
+        "tools/gui-react/src/features/studio/components/StudioPage.tsx",
+        "tools/gui-react/src/features/studio/state/studioPersistenceAuthority.ts",
+        "tools/gui-react/src/features/studio/workbench/FieldRulesWorkbench.tsx",
+        "tools/gui-react/src/features/studio/workbench/WorkbenchDrawer.tsx"
+      ],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [
+        "tools/gui-react/src/components/common/EnumConfigurator.tsx",
+        "tools/gui-react/src/features/studio/components/StudioPage.tsx",
+        "tools/gui-react/src/features/studio/state/studioPersistenceAuthority.ts",
+        "tools/gui-react/src/features/studio/workbench/FieldRulesWorkbench.tsx",
+        "tools/gui-react/src/features/studio/workbench/WorkbenchDrawer.tsx"
+      ],
+      "fromSrc": []
+    },
+    "tools/gui-react/src/utils/candidateIdentifier.ts": {
+      "refs": [],
+      "fromReachable": [],
+      "fromUnreachable": [],
+      "fromTests": [],
+      "fromTools": [],
+      "fromScripts": [],
+      "fromGui": [],
+      "fromSrc": []
+    }
+  }
+}

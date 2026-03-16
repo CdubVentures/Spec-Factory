@@ -16,40 +16,30 @@ function clamp01(value) {
   return value;
 }
 
+export function resolveIdentityLabel(identity) {
+  if (!identity || typeof identity !== 'object') return 'unknown';
+  const matched = Boolean(identity.match);
+  const score = Number(identity.score) || 0;
+  const criticalConflicts = Array.isArray(identity.criticalConflicts)
+    ? identity.criticalConflicts
+    : [];
+  if (matched) return 'matched';
+  if (criticalConflicts.length > 0) return 'different';
+  if (score >= 0.4) return 'possible';
+  return 'different';
+}
+
 export function applyIdentityGateToCandidates(candidates, identity) {
   if (!Array.isArray(candidates)) return [];
   if (candidates.length === 0) return [];
 
-  const hasIdentity = identity && typeof identity === 'object';
-  const matched = hasIdentity ? Boolean(identity.match) : false;
-  const matchScore = hasIdentity ? clamp01(Number(identity.score) || 0) : 0;
-  const rejectReason = !hasIdentity
-    ? 'no_identity_evaluation'
-    : (!matched ? 'source_identity_mismatch' : null);
+  const label = resolveIdentityLabel(identity);
+  const matchScore = (identity && typeof identity === 'object')
+    ? clamp01(Number(identity.score) || 0) : 0;
 
-  return candidates.map((candidate) => {
-    const originalConfidence = clamp01(Number(candidate.confidence) || 0);
-    const gatedField = isIdentityGatedField(candidate.field);
-
-    if (matched) {
-      return {
-        ...candidate,
-        target_match_passed: true,
-        target_match_score: matchScore
-      };
-    }
-
-    const identityConfidenceCap = gatedField
-      ? Math.min(matchScore * 0.5, 0.15)
-      : matchScore;
-
-    return {
-      ...candidate,
-      target_match_passed: false,
-      target_match_score: matchScore,
-      original_confidence: originalConfidence,
-      confidence: Math.min(originalConfidence, identityConfidenceCap),
-      identity_reject_reason: rejectReason
-    };
-  });
+  return candidates.map((candidate) => ({
+    ...candidate,
+    identity_label: label,
+    identity_confidence: matchScore,
+  }));
 }

@@ -7,6 +7,7 @@ import {
   LIST_FIELDS,
   NUMERIC_FIELDS
 } from '../constants.js';
+import { resolveIdentityLabel } from '../pipeline/identityGateExtraction.js';
 import {
   normalizeToken,
   normalizeWhitespace,
@@ -216,14 +217,14 @@ function applyPolicyBonus(clusters, policy, config = null) {
 }
 
 function passTargetForField(field, config = null) {
-  const identityStrongTargetParsed = Number.parseInt(String(config?.consensusPassTargetIdentityStrong ?? 5), 10);
-  const normalTargetParsed = Number.parseInt(String(config?.consensusPassTargetNormal ?? 3), 10);
+  const identityStrongTargetParsed = Number.parseInt(String(config?.consensusPassTargetIdentityStrong ?? 4), 10);
+  const normalTargetParsed = Number.parseInt(String(config?.consensusPassTargetNormal ?? 2), 10);
   const identityStrongTarget = Number.isFinite(identityStrongTargetParsed)
     ? Math.max(1, identityStrongTargetParsed)
-    : 5;
+    : 4;
   const normalTarget = Number.isFinite(normalTargetParsed)
     ? Math.max(1, normalTargetParsed)
-    : 3;
+    : 2;
   if (PASS_EXEMPT_FIELDS.has(field)) {
     return 0;
   }
@@ -397,6 +398,19 @@ function resolveCitationFromCandidate(source, candidate, evidenceIndexCache) {
   return null;
 }
 
+/**
+ * Compute character offsets of normalizedValue within quoteText.
+ * Case-insensitive, returns first occurrence as [start, end] or null.
+ */
+export function computeQuoteSpan(normalizedValue, quoteText) {
+  const value = String(normalizedValue ?? '').trim();
+  const quote = String(quoteText ?? '').trim();
+  if (!value || !quote) return null;
+  const idx = quote.toLowerCase().indexOf(value.toLowerCase());
+  if (idx === -1) return null;
+  return [idx, idx + value.length];
+}
+
 export function runConsensusEngine({
   sourceResults,
   categoryConfig,
@@ -422,8 +436,11 @@ export function runConsensusEngine({
   fields.category = category;
   fields.sku = identityLock.sku || 'unk';
 
-  const usableSources = sourceResults.filter(
-    (source) => source.identity?.match && (source.anchorCheck?.majorConflicts || []).length === 0
+  const labeledSources = sourceResults.map(s => ({ ...s, identity_label: resolveIdentityLabel(s.identity) }));
+  const usableSources = labeledSources.filter(
+    (source) =>
+      (source.anchorCheck?.majorConflicts || []).length === 0 &&
+      (source.identity_label === 'matched' || source.identity_label === 'possible')
   );
   const evidenceIndexCache = new Map();
 
@@ -500,7 +517,7 @@ export function runConsensusEngine({
         mime_type: row.citation?.mimeType || '',
         content_hash: row.citation?.contentHash || '',
         surface: row.citation?.surface || '',
-        quote_span: null,
+        quote_span: computeQuoteSpan(row.value, row.citation?.quote || ''),
         snippet_text: row.citation?.quote || ''
       }
     }));
@@ -571,10 +588,10 @@ export function runConsensusEngine({
       : 1.1;
     const weightedMajority = !second || best.score >= (second.score * weightedMajorityThreshold);
 
-    const minimumRequiredParsed = Number.parseInt(String(config?.consensusStrictAcceptanceDomainCount ?? 3), 10);
+    const minimumRequiredParsed = Number.parseInt(String(config?.consensusStrictAcceptanceDomainCount ?? 2), 10);
     const minimumRequired = Number.isFinite(minimumRequiredParsed)
       ? Math.max(1, minimumRequiredParsed)
-      : 3;
+      : 2;
     const relaxedMinimumParsed = Number.parseInt(String(config?.consensusRelaxedAcceptanceDomainCount ?? 2), 10);
     const relaxedMinimum = Number.isFinite(relaxedMinimumParsed)
       ? Math.max(1, relaxedMinimumParsed)

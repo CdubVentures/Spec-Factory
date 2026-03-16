@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { StructuredMetadataClient } from '../src/extract/structuredMetadataClient.js';
+import { StructuredMetadataClient } from '../src/features/indexing/extraction/structuredMetadataClient.js';
 
 test('StructuredMetadataClient fail-open when disabled', async () => {
   const client = new StructuredMetadataClient({

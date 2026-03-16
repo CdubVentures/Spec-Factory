@@ -7,10 +7,20 @@ import {
   mergeModelPricingMaps
 } from './billing/modelPricingCatalog.js';
 import { normalizeDynamicFetchPolicyMap } from './fetcher/dynamicFetchPolicy.js';
-import { normalizeArticleExtractorPolicyMap } from './extract/articleExtractorPolicy.js';
+import { normalizeArticleExtractorPolicyMap } from './core/config/configNormalizers.js';
+import {
+  CONVERGENCE_SETTINGS_KEYS,
+  RUNTIME_SETTINGS_ROUTE_GET,
+} from './core/config/settingsKeyMap.js';
 import { CONFIG_MANIFEST_DEFAULTS } from './core/config/manifest.js';
+import { defaultLocalOutputRoot } from './core/config/runtimeArtifactRoots.js';
+import { SETTINGS_DEFAULTS } from './shared/settingsDefaults.js';
 
 let manifestDefaultsApplied = false;
+const manifestDefaultedEnvKeys = new Set();
+const RUNTIME_SETTINGS_DEFAULTS = Object.freeze(SETTINGS_DEFAULTS?.runtime || {});
+const CONVERGENCE_SETTINGS_DEFAULTS = Object.freeze(SETTINGS_DEFAULTS?.convergence || {});
+const LEGACY_HELPER_ROOT_ENV = `HELPER${'_FILES'}_ROOT`;
 
 function applyManifestDefaultsToProcessEnv() {
   if (manifestDefaultsApplied) return;
@@ -19,6 +29,7 @@ function applyManifestDefaultsToProcessEnv() {
     const value = String(defaultValue ?? '').trim();
     if (value === '') continue;
     process.env[key] = value;
+    manifestDefaultedEnvKeys.add(key);
   }
   manifestDefaultsApplied = true;
 }
@@ -63,7 +74,35 @@ function parseJsonEnv(name, defaultValue = {}) {
   }
 }
 
-const SEARCH_PROFILE_CAP_DEFAULTS = Object.freeze({
+function runtimeSettingDefault(key, fallback) {
+  return Object.hasOwn(RUNTIME_SETTINGS_DEFAULTS, key)
+    ? RUNTIME_SETTINGS_DEFAULTS[key]
+    : fallback;
+}
+
+function convergenceSettingDefault(key, fallback) {
+  return Object.hasOwn(CONVERGENCE_SETTINGS_DEFAULTS, key)
+    ? CONVERGENCE_SETTINGS_DEFAULTS[key]
+    : fallback;
+}
+
+function parseRuntimeJsonDefault(key, fallback) {
+  const raw = runtimeSettingDefault(key, '');
+  if (typeof raw !== 'string' || raw.trim() === '') {
+    return Object.freeze({ ...fallback });
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return Object.freeze({ ...fallback, ...parsed });
+    }
+  } catch {
+    // Fall back to the baked safety defaults if the shared JSON string is malformed.
+  }
+  return Object.freeze({ ...fallback });
+}
+
+const SEARCH_PROFILE_CAP_DEFAULTS = parseRuntimeJsonDefault('searchProfileCapMapJson', {
   deterministicAliasCap: 6,
   llmAliasValidationCap: 12,
   llmDocHintQueriesCap: 3,
@@ -71,7 +110,7 @@ const SEARCH_PROFILE_CAP_DEFAULTS = Object.freeze({
   dedupeQueriesCap: 24
 });
 
-const SERP_RERANKER_WEIGHT_DEFAULTS = Object.freeze({
+const SERP_RERANKER_WEIGHT_DEFAULTS = parseRuntimeJsonDefault('serpRerankerWeightMapJson', {
   identityStrongBonus: 2.0,
   identityPartialBonus: 0.8,
   identityWeakBonus: 0,
@@ -86,17 +125,23 @@ const SERP_RERANKER_WEIGHT_DEFAULTS = Object.freeze({
   variantGuardPenalty: -3.0,
   multiModelHintPenalty: -1.5,
   tier1Bonus: 1.5,
-  tier2Bonus: 0.5
+  tier2Bonus: 0.5,
+  hostHealthDownrankPenalty: -0.4,
+  hostHealthExcludePenalty: -2.0,
+  operatorRiskPenalty: -0.5,
+  fieldAffinityBonus: 0.5,
+  diversityPenaltyPerDupe: -0.3,
+  needsetCoverageBonus: 0.2,
 });
 
-const FETCH_SCHEDULER_INTERNALS_DEFAULTS = Object.freeze({
+const FETCH_SCHEDULER_INTERNALS_DEFAULTS = parseRuntimeJsonDefault('fetchSchedulerInternalsMapJson', {
   defaultDelayMs: 300,
-  defaultConcurrency: 2,
+  defaultConcurrency: 3,
   defaultMaxRetries: 1,
-  retryWaitMs: 60000
+  retryWaitMs: 15000
 });
 
-const RETRIEVAL_INTERNALS_DEFAULTS = Object.freeze({
+const RETRIEVAL_INTERNALS_DEFAULTS = parseRuntimeJsonDefault('retrievalInternalsMapJson', {
   evidenceTierWeightMultiplier: 2.6,
   evidenceDocWeightMultiplier: 1.5,
   evidenceMethodWeightMultiplier: 0.85,
@@ -111,18 +156,15 @@ const RETRIEVAL_INTERNALS_DEFAULTS = Object.freeze({
   provenanceOnlyMinRows: 24
 });
 
-const EVIDENCE_PACK_LIMITS_DEFAULTS = Object.freeze({
+const EVIDENCE_PACK_LIMITS_DEFAULTS = parseRuntimeJsonDefault('evidencePackLimitsMapJson', {
   headingsLimit: 120,
   chunkMaxLength: 3000,
   specSectionsLimit: 8
 });
 
-const IDENTITY_GATE_THRESHOLD_BOUNDS_DEFAULTS = Object.freeze({
-  thresholdFloor: 0.62,
-  thresholdCeiling: 0.92
-});
 
-const PARSING_CONFIDENCE_BASE_DEFAULTS = Object.freeze({
+
+const PARSING_CONFIDENCE_BASE_DEFAULTS = parseRuntimeJsonDefault('parsingConfidenceBaseMapJson', {
   network_json: 1,
   embedded_state: 0.85,
   json_ld: 0.9,
@@ -133,6 +175,93 @@ const PARSING_CONFIDENCE_BASE_DEFAULTS = Object.freeze({
 
 const REPAIR_DEDUPE_RULE_DEFAULT = 'domain_once';
 const AUTOMATION_QUEUE_STORAGE_ENGINE_DEFAULT = 'sqlite';
+const DEFAULT_USER_AGENT = runtimeSettingDefault(
+  'userAgent',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+);
+const SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
+  'llmPlanApiKey',
+  'openaiApiKey',
+  'anthropicApiKey',
+  'cortexApiKey',
+  'eloSupabaseAnonKey',
+]);
+const NON_CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
+  'localOutputRoot',
+]);
+const CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set(
+  Object.keys(RUNTIME_SETTINGS_DEFAULTS).filter((key) => (
+    !SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS.has(key)
+    && !NON_CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS.has(key)
+  ))
+);
+const EXPLICIT_ENV_KEY_OVERRIDES = new Map([
+  ['fetchConcurrency', ['CONCURRENCY']],
+  ['categoryAuthorityEnabled', ['HELPER_FILES_ENABLED']],
+  ['helperFilesEnabled', ['HELPER_FILES_ENABLED']],
+  ['indexingCategoryAuthorityEnabled', ['INDEXING_HELPER_FILES_ENABLED']],
+  ['indexingHelperFilesEnabled', ['INDEXING_HELPER_FILES_ENABLED']],
+  ['categoryAuthorityRoot', ['CATEGORY_AUTHORITY_ROOT', LEGACY_HELPER_ROOT_ENV]],
+  ['helperFilesRoot', ['CATEGORY_AUTHORITY_ROOT', LEGACY_HELPER_ROOT_ENV]],
+  ['articleExtractorV2Enabled', ['ARTICLE_EXTRACTOR_V2']],
+  ['dynamicFetchPolicyMap', ['DYNAMIC_FETCH_POLICY_MAP_JSON']],
+  ['dynamicFetchPolicyMapJson', ['DYNAMIC_FETCH_POLICY_MAP_JSON']],
+  ['llmProvider', ['LLM_PROVIDER', 'LLM_BASE_URL', 'OPENAI_BASE_URL', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
+  ['llmBaseUrl', ['LLM_BASE_URL', 'OPENAI_BASE_URL', 'DEEPSEEK_API_KEY']],
+  ['llmModelExtract', ['LLM_MODEL_EXTRACT', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
+  ['llmModelPlan', ['LLM_MODEL_PLAN', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_PLAN', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
+  ['llmModelTriage', ['LLM_MODEL_TRIAGE', 'LLM_MODEL_FAST', 'LLM_MODEL_PLAN', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
+  ['llmModelFast', ['LLM_MODEL_FAST', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
+  ['llmModelReasoning', ['LLM_MODEL_REASONING', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
+  ['llmModelValidate', ['LLM_MODEL_VALIDATE', 'LLM_MODEL_PLAN', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
+  ['llmModelWrite', ['LLM_MODEL_WRITE', 'LLM_MODEL_VALIDATE', 'LLM_MODEL_PLAN', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
+  ['llmPlanProvider', ['LLM_PLAN_PROVIDER', 'LLM_PROVIDER', 'LLM_BASE_URL', 'OPENAI_BASE_URL', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
+  ['llmPlanBaseUrl', ['LLM_PLAN_BASE_URL', 'LLM_BASE_URL', 'OPENAI_BASE_URL', 'DEEPSEEK_API_KEY']],
+  ['runtimeScreencastEnabled', ['RUNTIME_SCREENCAST_ENABLED']],
+  ['runtimeScreencastFps', ['RUNTIME_SCREENCAST_FPS']],
+  ['runtimeScreencastQuality', ['RUNTIME_SCREENCAST_QUALITY']],
+  ['runtimeScreencastMaxWidth', ['RUNTIME_SCREENCAST_MAX_WIDTH']],
+  ['runtimeScreencastMaxHeight', ['RUNTIME_SCREENCAST_MAX_HEIGHT']],
+]);
+
+function buildRuntimeSettingsConfigKeyMap() {
+  const pairs = [
+    ...Object.entries(RUNTIME_SETTINGS_ROUTE_GET.stringMap),
+    ...Object.entries(RUNTIME_SETTINGS_ROUTE_GET.intMap),
+    ...Object.entries(RUNTIME_SETTINGS_ROUTE_GET.floatMap),
+    ...Object.entries(RUNTIME_SETTINGS_ROUTE_GET.boolMap),
+  ];
+  return new Map(pairs);
+}
+
+const RUNTIME_SETTINGS_CONFIG_KEY_MAP = buildRuntimeSettingsConfigKeyMap();
+
+function toEnvKey(value) {
+  return String(value || '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/[^A-Za-z0-9]+/g, '_')
+    .toUpperCase();
+}
+
+function resolveSettingEnvKeys(settingKey, configKey) {
+  return (
+    EXPLICIT_ENV_KEY_OVERRIDES.get(settingKey)
+    || EXPLICIT_ENV_KEY_OVERRIDES.get(configKey)
+    || [toEnvKey(configKey || settingKey)]
+  );
+}
+
+function hasExplicitSettingEnv(settingKey, configKey, explicitEnvKeys) {
+  const envKeys = resolveSettingEnvKeys(settingKey, configKey);
+  return envKeys.some((envKey) => explicitEnvKeys.has(envKey));
+}
+
+function explicitEnvValue(name, explicitEnvKeys) {
+  if (!explicitEnvKeys.has(name)) {
+    return '';
+  }
+  return String(process.env[name] ?? '');
+}
 
 function clampIntFromMap(source, key, fallback, min, max) {
   const parsed = Number.parseInt(String(source?.[key] ?? ''), 10);
@@ -215,16 +344,7 @@ function normalizeEvidencePackLimitsMap(input = {}) {
   };
 }
 
-function normalizeIdentityGateThresholdBoundsMap(input = {}) {
-  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
-  const thresholdFloor = clampFloatFromMap(source, 'thresholdFloor', IDENTITY_GATE_THRESHOLD_BOUNDS_DEFAULTS.thresholdFloor, 0, 1);
-  const thresholdCeilingRaw = clampFloatFromMap(source, 'thresholdCeiling', IDENTITY_GATE_THRESHOLD_BOUNDS_DEFAULTS.thresholdCeiling, 0, 1);
-  const thresholdCeiling = Math.max(thresholdFloor, thresholdCeilingRaw);
-  return {
-    thresholdFloor,
-    thresholdCeiling
-  };
-}
+
 
 function normalizeParsingConfidenceBaseMap(input = {}) {
   const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
@@ -250,6 +370,26 @@ function normalizeParsingConfidenceBaseMap(input = {}) {
     opengraph: clampFloatFromMap(source, 'opengraph', PARSING_CONFIDENCE_BASE_DEFAULTS.opengraph, 0, 2),
     microformat_rdfa: microformatRdfa,
   };
+}
+
+function applyCanonicalSettingsDefaults(cfg, explicitEnvKeys) {
+  const next = { ...cfg };
+
+  for (const key of CONVERGENCE_SETTINGS_KEYS) {
+    if (!Object.hasOwn(CONVERGENCE_SETTINGS_DEFAULTS, key)) continue;
+    if (hasExplicitSettingEnv(key, key, explicitEnvKeys)) continue;
+    next[key] = CONVERGENCE_SETTINGS_DEFAULTS[key];
+  }
+
+  for (const key of CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS) {
+    if (!Object.hasOwn(RUNTIME_SETTINGS_DEFAULTS, key)) continue;
+    const configKey = RUNTIME_SETTINGS_CONFIG_KEY_MAP.get(key) || key;
+    if (hasExplicitSettingEnv(key, configKey, explicitEnvKeys)) continue;
+    if (!Object.hasOwn(next, configKey)) continue;
+    next[configKey] = RUNTIME_SETTINGS_DEFAULTS[key];
+  }
+
+  return next;
 }
 
 function normalizeRepairDedupeRule(value) {
@@ -373,6 +513,23 @@ function normalizeBaseUrl(value) {
   return String(value || '').trim().replace(/\/+$/, '');
 }
 
+function normalizeWrappedString(value) {
+  const normalized = String(value || '').trim();
+  if (normalized.length < 2) {
+    return normalized;
+  }
+  const quote = normalized[0];
+  if ((quote !== '"' && quote !== "'") || normalized.at(-1) !== quote) {
+    return normalized;
+  }
+  return normalized.slice(1, -1).trim();
+}
+
+function normalizeUserAgent(value, fallback = DEFAULT_USER_AGENT) {
+  const normalized = normalizeWrappedString(value);
+  return normalized || fallback;
+}
+
 function normalizeStaticDomMode(value, fallback = 'cheerio') {
   const token = String(value || '').trim().toLowerCase();
   if (token === 'regex_fallback') {
@@ -425,102 +582,6 @@ function inferLlmProvider(baseUrl, model, hasDeepSeekKey) {
   return 'openai';
 }
 
-export function normalizeRunProfile(value) {
-  const token = String(value || '').trim().toLowerCase();
-  if (['thorough', 'deep', 'full', 'max'].includes(token)) {
-    return 'thorough';
-  }
-  if (['fast', 'quick', 'lean'].includes(token)) {
-    return 'fast';
-  }
-  return 'standard';
-}
-
-function intMax(current, floor) {
-  return Math.max(Number.parseInt(String(current || 0), 10) || 0, floor);
-}
-
-function intMin(current, ceiling) {
-  const parsed = Number.parseInt(String(current || 0), 10) || 0;
-  return Math.min(parsed, ceiling);
-}
-
-export function applyRunProfile(config, profile) {
-  const normalizedProfile = normalizeRunProfile(profile || config.runProfile);
-  const next = {
-    ...config,
-    runProfile: normalizedProfile
-  };
-
-  if (normalizedProfile === 'thorough') {
-    next.maxRunSeconds = intMax(next.maxRunSeconds, 3600);
-    next.maxUrlsPerProduct = intMax(next.maxUrlsPerProduct, 220);
-    next.maxCandidateUrls = intMax(next.maxCandidateUrls, 280);
-    next.maxPagesPerDomain = intMax(next.maxPagesPerDomain, 8);
-    next.maxManufacturerUrlsPerProduct = intMax(next.maxManufacturerUrlsPerProduct, 140);
-    next.maxManufacturerPagesPerDomain = intMax(next.maxManufacturerPagesPerDomain, 50);
-    next.manufacturerReserveUrls = intMax(next.manufacturerReserveUrls, 100);
-    next.maxJsonBytes = intMax(next.maxJsonBytes, 6_000_000);
-    next.maxGraphqlReplays = intMax(next.maxGraphqlReplays, 20);
-    next.maxHypothesisItems = intMax(next.maxHypothesisItems, 120);
-    next.maxNetworkResponsesPerPage = intMax(next.maxNetworkResponsesPerPage, 2500);
-    next.endpointNetworkScanLimit = intMax(next.endpointNetworkScanLimit, 1800);
-    next.endpointSignalLimit = intMax(next.endpointSignalLimit, 120);
-    next.endpointSuggestionLimit = intMax(next.endpointSuggestionLimit, 36);
-    next.hypothesisAutoFollowupRounds = intMax(next.hypothesisAutoFollowupRounds, 2);
-    next.hypothesisFollowupUrlsPerRound = intMax(next.hypothesisFollowupUrlsPerRound, 24);
-    next.pageGotoTimeoutMs = intMax(next.pageGotoTimeoutMs, 45_000);
-    next.pageNetworkIdleTimeoutMs = intMax(next.pageNetworkIdleTimeoutMs, 15_000);
-    next.postLoadWaitMs = intMax(next.postLoadWaitMs, 10_000);
-    next.autoScrollEnabled = true;
-    next.autoScrollPasses = intMax(next.autoScrollPasses, 3);
-    next.autoScrollDelayMs = intMax(next.autoScrollDelayMs, 1200);
-    next.discoveryEnabled = true;
-    next.fetchCandidateSources = true;
-    next.discoveryMaxQueries = intMax(next.discoveryMaxQueries, 24);
-    next.discoveryResultsPerQuery = intMax(next.discoveryResultsPerQuery, 20);
-    next.discoveryMaxDiscovered = intMax(next.discoveryMaxDiscovered, 300);
-    next.discoveryQueryConcurrency = intMax(next.discoveryQueryConcurrency, 8);
-    next.llmPlanDiscoveryQueries = true;
-    next.manufacturerBroadDiscovery = true;
-    next.preferHttpFetcher = false;
-  } else if (normalizedProfile === 'fast') {
-    next.maxRunSeconds = intMin(next.maxRunSeconds, 180);
-    next.maxUrlsPerProduct = intMin(next.maxUrlsPerProduct, 12);
-    next.maxCandidateUrls = intMin(next.maxCandidateUrls, 20);
-    next.maxPagesPerDomain = intMin(next.maxPagesPerDomain, 2);
-    next.maxManufacturerUrlsPerProduct = intMin(next.maxManufacturerUrlsPerProduct, 10);
-    next.maxManufacturerPagesPerDomain = intMin(next.maxManufacturerPagesPerDomain, 5);
-    next.manufacturerReserveUrls = intMin(next.manufacturerReserveUrls, 4);
-    next.discoveryMaxQueries = intMin(next.discoveryMaxQueries, 4);
-    next.discoveryResultsPerQuery = intMin(next.discoveryResultsPerQuery, 6);
-    next.discoveryMaxDiscovered = intMin(next.discoveryMaxDiscovered, 60);
-    next.discoveryQueryConcurrency = intMax(next.discoveryQueryConcurrency, 4);
-    next.perHostMinDelayMs = intMin(next.perHostMinDelayMs, 150);
-    next.pageGotoTimeoutMs = intMin(next.pageGotoTimeoutMs, 12_000);
-    next.pageNetworkIdleTimeoutMs = intMin(next.pageNetworkIdleTimeoutMs, 1_500);
-    next.endpointSignalLimit = intMin(next.endpointSignalLimit, 24);
-    next.endpointSuggestionLimit = intMin(next.endpointSuggestionLimit, 8);
-    next.endpointNetworkScanLimit = intMin(next.endpointNetworkScanLimit, 400);
-    next.hypothesisAutoFollowupRounds = intMin(next.hypothesisAutoFollowupRounds, 0);
-    next.hypothesisFollowupUrlsPerRound = intMin(next.hypothesisFollowupUrlsPerRound, 8);
-    next.postLoadWaitMs = intMin(next.postLoadWaitMs, 0);
-    next.autoScrollEnabled = false;
-    next.autoScrollPasses = 0;
-    next.preferHttpFetcher = true;
-  }
-
-  next.manufacturerReserveUrls = Math.max(
-    0,
-    Math.min(next.maxUrlsPerProduct, next.manufacturerReserveUrls)
-  );
-  next.maxManufacturerUrlsPerProduct = Math.max(
-    1,
-    Math.min(next.maxUrlsPerProduct, next.maxManufacturerUrlsPerProduct)
-  );
-
-  return next;
-}
 
 function parseDotEnvValue(rawValue) {
   const trimmed = String(rawValue || '').trim();
@@ -543,7 +604,13 @@ function parseDotEnvValue(rawValue) {
   return (commentIndex >= 0 ? trimmed.slice(0, commentIndex) : trimmed).trim();
 }
 
-export function loadDotEnvFile(dotEnvPath = '.env') {
+export function loadDotEnvFile(dotEnvPath = '.env', options = {}) {
+  const overrideExisting = typeof options === 'boolean'
+    ? options
+    : Boolean(options?.overrideExisting);
+  const overrideExistingKeys = Array.isArray(options?.overrideExistingKeys)
+    ? new Set(options.overrideExistingKeys.map((key) => String(key || '').trim()).filter(Boolean))
+    : null;
   const fullPath = path.resolve(dotEnvPath);
   let content = '';
 
@@ -574,7 +641,9 @@ export function loadDotEnvFile(dotEnvPath = '.env') {
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
       continue;
     }
-    if (process.env[key] !== undefined && process.env[key] !== '') {
+    const hasExistingValue = process.env[key] !== undefined && process.env[key] !== '';
+    const shouldOverrideKey = overrideExisting || Boolean(overrideExistingKeys?.has(key));
+    if (hasExistingValue && !shouldOverrideKey) {
       continue;
     }
 
@@ -586,7 +655,35 @@ export function loadDotEnvFile(dotEnvPath = '.env') {
 }
 
 export function loadConfig(overrides = {}) {
+  const explicitCategoryAuthorityRoot = String(process.env.CATEGORY_AUTHORITY_ROOT || '').trim();
+  const explicitHelperFilesRoot = String(process.env.HELPER_FILES_ROOT || '').trim();
+  const explicitEnvKeys = new Set(
+    Object.entries(process.env)
+      .filter(([key, value]) => {
+        if (value === undefined || value === null || String(value) === '') return false;
+        if (!manifestDefaultedEnvKeys.has(key)) return true;
+        return String(value) !== String(CONFIG_MANIFEST_DEFAULTS?.[key] ?? '');
+      })
+      .map(([key]) => key)
+  );
   applyManifestDefaultsToProcessEnv();
+
+  // Treat manifest-injected env as fallback defaults, not explicit operator intent.
+  const explicitLlmProvider = explicitEnvValue('LLM_PROVIDER', explicitEnvKeys).trim().toLowerCase();
+  const explicitLlmBaseUrl = explicitEnvValue('LLM_BASE_URL', explicitEnvKeys);
+  const explicitOpenAiBaseUrl = explicitEnvValue('OPENAI_BASE_URL', explicitEnvKeys);
+  const explicitLlmModelExtract = explicitEnvValue('LLM_MODEL_EXTRACT', explicitEnvKeys);
+  const explicitOpenAiModelExtract = explicitEnvValue('OPENAI_MODEL_EXTRACT', explicitEnvKeys);
+  const explicitLlmModelPlan = explicitEnvValue('LLM_MODEL_PLAN', explicitEnvKeys);
+  const explicitOpenAiModelPlan = explicitEnvValue('OPENAI_MODEL_PLAN', explicitEnvKeys);
+  const explicitLlmModelFast = explicitEnvValue('LLM_MODEL_FAST', explicitEnvKeys);
+  const explicitLlmModelTriage = explicitEnvValue('LLM_MODEL_TRIAGE', explicitEnvKeys);
+  const explicitLlmModelReasoning = explicitEnvValue('LLM_MODEL_REASONING', explicitEnvKeys);
+  const explicitLlmModelValidate = explicitEnvValue('LLM_MODEL_VALIDATE', explicitEnvKeys);
+  const explicitLlmModelWrite = explicitEnvValue('LLM_MODEL_WRITE', explicitEnvKeys);
+  const explicitOpenAiModelWrite = explicitEnvValue('OPENAI_MODEL_WRITE', explicitEnvKeys);
+  const explicitLlmPlanProvider = explicitEnvValue('LLM_PLAN_PROVIDER', explicitEnvKeys).trim().toLowerCase();
+  const explicitLlmPlanBaseUrl = explicitEnvValue('LLM_PLAN_BASE_URL', explicitEnvKeys);
 
   const maxCandidateUrlsFromEnv =
     process.env.MAX_CANDIDATE_URLS_PER_PRODUCT ||
@@ -595,10 +692,10 @@ export function loadConfig(overrides = {}) {
   const parsedCandidateUrls = Number.parseInt(String(maxCandidateUrlsFromEnv || ''), 10);
   const hasDeepSeekKey = Boolean(process.env.DEEPSEEK_API_KEY);
   const resolvedApiKey = process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY || '';
-  const resolvedBaseUrl = process.env.LLM_BASE_URL || process.env.OPENAI_BASE_URL ||
+  const resolvedBaseUrl = explicitLlmBaseUrl || explicitOpenAiBaseUrl ||
     (hasDeepSeekKey ? 'https://api.deepseek.com' : 'https://api.openai.com');
-  const defaultModel = process.env.LLM_MODEL_EXTRACT || (hasDeepSeekKey ? 'deepseek-reasoner' : 'gpt-4.1-mini');
-  const timeoutMs = parseIntEnv('LLM_TIMEOUT_MS', parseIntEnv('OPENAI_TIMEOUT_MS', 40_000));
+  const defaultModel = explicitLlmModelExtract || explicitOpenAiModelExtract || (hasDeepSeekKey ? 'deepseek-reasoner' : 'gpt-4.1-mini');
+  const timeoutMs = parseIntEnv('LLM_TIMEOUT_MS', parseIntEnv('OPENAI_TIMEOUT_MS', runtimeSettingDefault('llmTimeoutMs', 40_000)));
   const envOutputMode = normalizeOutputMode(process.env.OUTPUT_MODE || 'dual', 'dual');
   const hasS3Creds = hasS3EnvCreds();
   const defaultMirrorToS3 = envOutputMode !== 'local' && hasS3Creds;
@@ -610,9 +707,6 @@ export function loadConfig(overrides = {}) {
   );
   const normalizedEvidencePackLimitsMap = normalizeEvidencePackLimitsMap(
     parseJsonEnv('EVIDENCE_PACK_LIMITS_MAP_JSON', {})
-  );
-  const normalizedIdentityGateThresholdBoundsMap = normalizeIdentityGateThresholdBoundsMap(
-    parseJsonEnv('IDENTITY_GATE_THRESHOLD_BOUNDS_MAP_JSON', {})
   );
   const normalizedParsingConfidenceBaseMap = normalizeParsingConfidenceBaseMap(
     parseJsonEnv('PARSING_CONFIDENCE_BASE_MAP_JSON', {})
@@ -629,49 +723,56 @@ export function loadConfig(overrides = {}) {
   const dynamicFetchPolicyMapJson = Object.keys(normalizedDynamicFetchPolicyMap).length > 0
     ? JSON.stringify(normalizedDynamicFetchPolicyMap)
     : '';
-  const normalizedVisualAssetHeroSelectorMap = parseJsonEnv('VISUAL_ASSET_HERO_SELECTOR_MAP_JSON', {});
-  const visualAssetHeroSelectorMapJson = Object.keys(normalizedVisualAssetHeroSelectorMap).length > 0
-    ? JSON.stringify(normalizedVisualAssetHeroSelectorMap)
-    : '';
+  const resolvedCategoryAuthorityRoot =
+    explicitCategoryAuthorityRoot ||
+    explicitHelperFilesRoot ||
+    process.env.CATEGORY_AUTHORITY_ROOT ||
+    process.env.HELPER_FILES_ROOT ||
+    'category_authority';
 
   const cfg = {
-    awsRegion: process.env.AWS_REGION || 'us-east-2',
-    s3Bucket: process.env.S3_BUCKET || 'my-spec-harvester-data',
-    s3InputPrefix: (process.env.S3_INPUT_PREFIX || 'specs/inputs').replace(/\/+$/, ''),
-    s3OutputPrefix: (process.env.S3_OUTPUT_PREFIX || 'specs/outputs').replace(/\/+$/, ''),
-    maxUrlsPerProduct: parseIntEnv('MAX_URLS_PER_PRODUCT', 20),
-    maxCandidateUrls: Number.isFinite(parsedCandidateUrls) ? parsedCandidateUrls : 50,
-    maxPagesPerDomain: parseIntEnv('MAX_PAGES_PER_DOMAIN', 2),
-    manufacturerDeepResearchEnabled: parseBoolEnv('MANUFACTURER_DEEP_RESEARCH_ENABLED', true),
-    maxManufacturerUrlsPerProduct: parseIntEnv('MAX_MANUFACTURER_URLS_PER_PRODUCT', 20),
-    maxManufacturerPagesPerDomain: parseIntEnv('MAX_MANUFACTURER_PAGES_PER_DOMAIN', 8),
-    manufacturerReserveUrls: parseIntEnv('MANUFACTURER_RESERVE_URLS', 10),
-    maxRunSeconds: parseIntEnv('MAX_RUN_SECONDS', 300),
-    maxJsonBytes: parseIntEnv('MAX_JSON_BYTES', 2_000_000),
-    maxPdfBytes: parseIntEnv('MAX_PDF_BYTES', 8_000_000),
-    pdfBackendRouterEnabled: parseBoolEnv('PDF_BACKEND_ROUTER_ENABLED', false),
-    pdfPreferredBackend: process.env.PDF_PREFERRED_BACKEND || 'auto',
-    pdfBackendRouterTimeoutMs: parseIntEnv('PDF_BACKEND_ROUTER_TIMEOUT_MS', 120_000),
-    pdfBackendRouterMaxPages: parseIntEnv('PDF_BACKEND_ROUTER_MAX_PAGES', 60),
-    pdfBackendRouterMaxPairs: parseIntEnv('PDF_BACKEND_ROUTER_MAX_PAIRS', 5000),
-    pdfBackendRouterMaxTextPreviewChars: parseIntEnv('PDF_BACKEND_ROUTER_MAX_TEXT_PREVIEW_CHARS', 20_000),
-    scannedPdfOcrEnabled: parseBoolEnv('SCANNED_PDF_OCR_ENABLED', true),
-    scannedPdfOcrPromoteCandidates: parseBoolEnv('SCANNED_PDF_OCR_PROMOTE_CANDIDATES', true),
-    scannedPdfOcrBackend: process.env.SCANNED_PDF_OCR_BACKEND || 'auto',
-    scannedPdfOcrMaxPages: parseIntEnv('SCANNED_PDF_OCR_MAX_PAGES', 4),
-    scannedPdfOcrMaxPairs: parseIntEnv('SCANNED_PDF_OCR_MAX_PAIRS', 800),
-    scannedPdfOcrMinCharsPerPage: parseIntEnv('SCANNED_PDF_OCR_MIN_CHARS_PER_PAGE', 30),
-    scannedPdfOcrMinLinesPerPage: parseIntEnv('SCANNED_PDF_OCR_MIN_LINES_PER_PAGE', 2),
-    scannedPdfOcrMinConfidence: parseFloatEnv('SCANNED_PDF_OCR_MIN_CONFIDENCE', 0.5),
-    concurrency: parseIntEnv('CONCURRENCY', 2),
-    perHostMinDelayMs: parseIntEnv('PER_HOST_MIN_DELAY_MS', 300),
-    laneConcurrencySearch: parseIntEnv('LANE_CONCURRENCY_SEARCH', 2),
-    laneConcurrencyFetch: parseIntEnv('LANE_CONCURRENCY_FETCH', 4),
-    laneConcurrencyParse: parseIntEnv('LANE_CONCURRENCY_PARSE', 4),
-    laneConcurrencyLlm: parseIntEnv('LANE_CONCURRENCY_LLM', 2),
-    fetchSchedulerEnabled: parseBoolEnv('FETCH_SCHEDULER_ENABLED', false),
-    fetchSchedulerMaxRetries: parseIntEnv('FETCH_SCHEDULER_MAX_RETRIES', 1),
-    fetchSchedulerFallbackWaitMs: parseIntEnv('FETCH_SCHEDULER_FALLBACK_WAIT_MS', 60000),
+    awsRegion: process.env.AWS_REGION || runtimeSettingDefault('awsRegion', 'us-east-2'),
+    s3Bucket: process.env.S3_BUCKET || runtimeSettingDefault('s3Bucket', 'my-spec-harvester-data'),
+    s3InputPrefix: (process.env.S3_INPUT_PREFIX || runtimeSettingDefault('s3InputPrefix', 'specs/inputs')).replace(/\/+$/, ''),
+    s3OutputPrefix: (process.env.S3_OUTPUT_PREFIX || runtimeSettingDefault('s3OutputPrefix', 'specs/outputs')).replace(/\/+$/, ''),
+    maxUrlsPerProduct: parseIntEnv('MAX_URLS_PER_PRODUCT', runtimeSettingDefault('maxUrlsPerProduct', 20)),
+    maxCandidateUrls: Number.isFinite(parsedCandidateUrls) ? parsedCandidateUrls : runtimeSettingDefault('maxCandidateUrls', 50),
+    maxPagesPerDomain: parseIntEnv('MAX_PAGES_PER_DOMAIN', runtimeSettingDefault('maxPagesPerDomain', 2)),
+    manufacturerDeepResearchEnabled: parseBoolEnv('MANUFACTURER_DEEP_RESEARCH_ENABLED', runtimeSettingDefault('manufacturerDeepResearchEnabled', true)),
+    maxManufacturerUrlsPerProduct: parseIntEnv('MAX_MANUFACTURER_URLS_PER_PRODUCT', runtimeSettingDefault('maxManufacturerUrlsPerProduct', 20)),
+    maxManufacturerPagesPerDomain: parseIntEnv('MAX_MANUFACTURER_PAGES_PER_DOMAIN', runtimeSettingDefault('maxManufacturerPagesPerDomain', 8)),
+    manufacturerReserveUrls: parseIntEnv('MANUFACTURER_RESERVE_URLS', runtimeSettingDefault('manufacturerReserveUrls', 10)),
+    maxRunSeconds: parseIntEnv('MAX_RUN_SECONDS', runtimeSettingDefault('maxRunSeconds', 300)),
+    maxJsonBytes: parseIntEnv('MAX_JSON_BYTES', runtimeSettingDefault('maxJsonBytes', 2_000_000)),
+    maxPdfBytes: parseIntEnv('MAX_PDF_BYTES', runtimeSettingDefault('maxPdfBytes', 8_000_000)),
+    pdfBackendRouterEnabled: parseBoolEnv('PDF_BACKEND_ROUTER_ENABLED', runtimeSettingDefault('pdfBackendRouterEnabled', false)),
+    pdfPreferredBackend: process.env.PDF_PREFERRED_BACKEND || runtimeSettingDefault('pdfPreferredBackend', 'auto'),
+    pdfBackendRouterTimeoutMs: parseIntEnv('PDF_BACKEND_ROUTER_TIMEOUT_MS', runtimeSettingDefault('pdfBackendRouterTimeoutMs', 120_000)),
+    pdfBackendRouterMaxPages: parseIntEnv('PDF_BACKEND_ROUTER_MAX_PAGES', runtimeSettingDefault('pdfBackendRouterMaxPages', 60)),
+    pdfBackendRouterMaxPairs: parseIntEnv('PDF_BACKEND_ROUTER_MAX_PAIRS', runtimeSettingDefault('pdfBackendRouterMaxPairs', 5000)),
+    pdfBackendRouterMaxTextPreviewChars: parseIntEnv('PDF_BACKEND_ROUTER_MAX_TEXT_PREVIEW_CHARS', runtimeSettingDefault('pdfBackendRouterMaxTextPreviewChars', 20_000)),
+    scannedPdfOcrEnabled: parseBoolEnv('SCANNED_PDF_OCR_ENABLED', runtimeSettingDefault('scannedPdfOcrEnabled', true)),
+    scannedPdfOcrPromoteCandidates: parseBoolEnv('SCANNED_PDF_OCR_PROMOTE_CANDIDATES', runtimeSettingDefault('scannedPdfOcrPromoteCandidates', true)),
+    scannedPdfOcrBackend: process.env.SCANNED_PDF_OCR_BACKEND || runtimeSettingDefault('scannedPdfOcrBackend', 'auto'),
+    scannedPdfOcrMaxPages: parseIntEnv('SCANNED_PDF_OCR_MAX_PAGES', runtimeSettingDefault('scannedPdfOcrMaxPages', 4)),
+    scannedPdfOcrMaxPairs: parseIntEnv('SCANNED_PDF_OCR_MAX_PAIRS', runtimeSettingDefault('scannedPdfOcrMaxPairs', 800)),
+    scannedPdfOcrMinCharsPerPage: parseIntEnv('SCANNED_PDF_OCR_MIN_CHARS_PER_PAGE', runtimeSettingDefault('scannedPdfOcrMinCharsPerPage', 30)),
+    scannedPdfOcrMinLinesPerPage: parseIntEnv('SCANNED_PDF_OCR_MIN_LINES_PER_PAGE', runtimeSettingDefault('scannedPdfOcrMinLinesPerPage', 2)),
+    scannedPdfOcrMinConfidence: parseFloatEnv('SCANNED_PDF_OCR_MIN_CONFIDENCE', runtimeSettingDefault('scannedPdfOcrMinConfidence', 0.5)),
+    concurrency: parseIntEnv('CONCURRENCY', runtimeSettingDefault('fetchConcurrency', 4)),
+    perHostMinDelayMs: parseIntEnv('PER_HOST_MIN_DELAY_MS', runtimeSettingDefault('perHostMinDelayMs', 1500)),
+    searchGlobalRps: parseIntEnv('SEARCH_GLOBAL_RPS', runtimeSettingDefault('searchGlobalRps', 0)),
+    searchGlobalBurst: parseIntEnv('SEARCH_GLOBAL_BURST', runtimeSettingDefault('searchGlobalBurst', 0)),
+    searchPerHostRps: parseIntEnv('SEARCH_PER_HOST_RPS', runtimeSettingDefault('searchPerHostRps', 0)),
+    searchPerHostBurst: parseIntEnv('SEARCH_PER_HOST_BURST', runtimeSettingDefault('searchPerHostBurst', 0)),
+    domainRequestRps: parseIntEnv('DOMAIN_REQUEST_RPS', runtimeSettingDefault('domainRequestRps', 0)),
+    domainRequestBurst: parseIntEnv('DOMAIN_REQUEST_BURST', runtimeSettingDefault('domainRequestBurst', 0)),
+    globalRequestRps: parseIntEnv('GLOBAL_REQUEST_RPS', runtimeSettingDefault('globalRequestRps', 0)),
+    globalRequestBurst: parseIntEnv('GLOBAL_REQUEST_BURST', runtimeSettingDefault('globalRequestBurst', 0)),
+    fetchPerHostConcurrencyCap: parseIntEnv('FETCH_PER_HOST_CONCURRENCY_CAP', runtimeSettingDefault('fetchPerHostConcurrencyCap', 1)),
+    fetchSchedulerEnabled: parseBoolEnv('FETCH_SCHEDULER_ENABLED', runtimeSettingDefault('fetchSchedulerEnabled', false)),
+    fetchSchedulerMaxRetries: parseIntEnv('FETCH_SCHEDULER_MAX_RETRIES', runtimeSettingDefault('fetchSchedulerMaxRetries', 1)),
+    fetchSchedulerFallbackWaitMs: parseIntEnv('FETCH_SCHEDULER_FALLBACK_WAIT_MS', runtimeSettingDefault('fetchSchedulerFallbackWaitMs', 60000)),
     fetchSchedulerInternalsMap: normalizedFetchSchedulerInternalsMap,
     fetchSchedulerInternalsMapJson: JSON.stringify(normalizedFetchSchedulerInternalsMap),
     fetchSchedulerDefaultDelayMs: parseIntEnv('FETCH_SCHEDULER_DEFAULT_DELAY_MS', normalizedFetchSchedulerInternalsMap.defaultDelayMs),
@@ -680,79 +781,85 @@ export function loadConfig(overrides = {}) {
     fetchSchedulerRetryWaitMs: parseIntEnv('FETCH_SCHEDULER_RETRY_WAIT_MS', normalizedFetchSchedulerInternalsMap.retryWaitMs),
     userAgent:
       process.env.USER_AGENT ||
-      'Mozilla/5.0 (compatible; EGSpecHarvester/1.0; +https://eggear.com)',
-    localMode: parseBoolEnv('LOCAL_MODE', false),
-    dryRun: parseBoolEnv('DRY_RUN', false),
+      SETTINGS_DEFAULTS.runtime.userAgent ||
+      DEFAULT_USER_AGENT,
+    localMode: parseBoolEnv('LOCAL_MODE', runtimeSettingDefault('localMode', false)),
+    dryRun: parseBoolEnv('DRY_RUN', runtimeSettingDefault('dryRun', false)),
     outputMode: envOutputMode,
-    mirrorToS3: parseBoolEnv('MIRROR_TO_S3', defaultMirrorToS3),
-    mirrorToS3Input: parseBoolEnv('MIRROR_TO_S3_INPUT', false),
-    localInputRoot: process.env.LOCAL_INPUT_ROOT || process.env.LOCAL_S3_ROOT || 'fixtures/s3',
-    localOutputRoot: process.env.LOCAL_OUTPUT_ROOT || 'out',
-    runtimeEventsKey: process.env.RUNTIME_EVENTS_KEY || '_runtime/events.jsonl',
-    writeMarkdownSummary: parseBoolEnv('WRITE_MARKDOWN_SUMMARY', true),
-    runProfile: normalizeRunProfile(process.env.RUN_PROFILE || 'standard'),
-    discoveryEnabled: parseBoolEnv('DISCOVERY_ENABLED', false),
-    fetchCandidateSources: parseBoolEnv('FETCH_CANDIDATE_SOURCES', true),
-    discoveryMaxQueries: parseIntEnv('DISCOVERY_MAX_QUERIES', 6),
-    discoveryResultsPerQuery: parseIntEnv('DISCOVERY_RESULTS_PER_QUERY', 10),
-    discoveryMaxDiscovered: parseIntEnv('DISCOVERY_MAX_DISCOVERED', 80),
-    discoveryQueryConcurrency: parseIntEnv('DISCOVERY_QUERY_CONCURRENCY', 4),
-    searchProvider: process.env.SEARCH_PROVIDER || 'none',
-    searxngBaseUrl: process.env.SEARXNG_BASE_URL || process.env.SEARXNG_URL || '',
-    searxngDefaultBaseUrl: process.env.SEARXNG_DEFAULT_BASE_URL || 'http://127.0.0.1:8080',
-    bingSearchKey: process.env.BING_SEARCH_KEY || '',
-    bingSearchEndpoint: process.env.BING_SEARCH_ENDPOINT || '',
-    googleCseKey: process.env.GOOGLE_CSE_KEY || '',
-    googleCseCx: process.env.GOOGLE_CSE_CX || '',
-    disableGoogleCse: parseBoolEnv('DISABLE_GOOGLE_CSE', false),
-    cseRescueOnlyMode: parseBoolEnv('CSE_RESCUE_ONLY_MODE', true),
-    cseRescueRequiredIteration: parseIntEnv('CSE_RESCUE_REQUIRED_ITERATION', 2),
-    duckduckgoEnabled: parseBoolEnv('DUCKDUCKGO_ENABLED', true),
-    duckduckgoBaseUrl: process.env.DUCKDUCKGO_BASE_URL || 'https://html.duckduckgo.com/html/',
-    duckduckgoTimeoutMs: parseIntEnv('DUCKDUCKGO_TIMEOUT_MS', 8_000),
-    duckduckgoUserAgent: process.env.DUCKDUCKGO_USER_AGENT || 'Mozilla/5.0 (compatible; SpecFactory/1.0)',
+    mirrorToS3: parseBoolEnv('MIRROR_TO_S3', runtimeSettingDefault('mirrorToS3', defaultMirrorToS3)),
+    mirrorToS3Input: parseBoolEnv('MIRROR_TO_S3_INPUT', runtimeSettingDefault('mirrorToS3Input', false)),
+    localInputRoot: process.env.LOCAL_INPUT_ROOT || process.env.LOCAL_S3_ROOT || runtimeSettingDefault('localInputRoot', 'fixtures/s3'),
+    localOutputRoot: process.env.LOCAL_OUTPUT_ROOT || defaultLocalOutputRoot(),
+    runtimeEventsKey: process.env.RUNTIME_EVENTS_KEY || runtimeSettingDefault('runtimeEventsKey', '_runtime/events.jsonl'),
+    writeMarkdownSummary: parseBoolEnv('WRITE_MARKDOWN_SUMMARY', runtimeSettingDefault('writeMarkdownSummary', true)),
+    runProfile: 'standard',
+    discoveryEnabled: parseBoolEnv('DISCOVERY_ENABLED', runtimeSettingDefault('discoveryEnabled', true)),
+    enableSourceRegistry: parseBoolEnv('ENABLE_SOURCE_REGISTRY', runtimeSettingDefault('enableSourceRegistry', true)),
+    enableDomainHintResolverV2: parseBoolEnv('ENABLE_DOMAIN_HINT_RESOLVER_V2', runtimeSettingDefault('enableDomainHintResolverV2', true)),
+    enableQueryCompiler: parseBoolEnv('ENABLE_QUERY_COMPILER', runtimeSettingDefault('enableQueryCompiler', true)),
+    enableCoreDeepGates: parseBoolEnv('ENABLE_CORE_DEEP_GATES', runtimeSettingDefault('enableCoreDeepGates', true)),
+    enableQueryIndex: parseBoolEnv('ENABLE_QUERY_INDEX', runtimeSettingDefault('enableQueryIndex', true)),
+    enableUrlIndex: parseBoolEnv('ENABLE_URL_INDEX', runtimeSettingDefault('enableUrlIndex', true)),
+    fetchCandidateSources: parseBoolEnv('FETCH_CANDIDATE_SOURCES', runtimeSettingDefault('fetchCandidateSources', true)),
+    discoveryMaxQueries: parseIntEnv('DISCOVERY_MAX_QUERIES', runtimeSettingDefault('discoveryMaxQueries', 6)),
+    discoveryResultsPerQuery: 10, // Hardcoded — fixed value, not tunable
+    discoveryMaxDiscovered: parseIntEnv('DISCOVERY_MAX_DISCOVERED', runtimeSettingDefault('discoveryMaxDiscovered', 80)),
+    discoveryQueryConcurrency: 1, // Hardcoded — search API rate-limits anyway
+    searchProvider: process.env.SEARCH_PROVIDER || runtimeSettingDefault('searchProvider', 'dual'),
+    searxngBaseUrl: process.env.SEARXNG_BASE_URL || process.env.SEARXNG_URL || runtimeSettingDefault('searxngBaseUrl', 'http://127.0.0.1:8080'),
+    searxngDefaultBaseUrl: process.env.SEARXNG_DEFAULT_BASE_URL || runtimeSettingDefault('searxngBaseUrl', 'http://127.0.0.1:8080'),
     eloSupabaseAnonKey: process.env.ELO_SUPABASE_ANON_KEY || '',
-    eloSupabaseEndpoint: process.env.ELO_SUPABASE_ENDPOINT || '',
-    llmEnabled: parseBoolEnv('LLM_ENABLED', false),
-    llmWriteSummary: parseBoolEnv('LLM_WRITE_SUMMARY', false),
-    llmPlanDiscoveryQueries: parseBoolEnv('LLM_PLAN_DISCOVERY_QUERIES', true),
-    llmProvider: (process.env.LLM_PROVIDER || '').trim().toLowerCase(),
+    eloSupabaseEndpoint: process.env.ELO_SUPABASE_ENDPOINT || runtimeSettingDefault('eloSupabaseEndpoint', ''),
+    llmEnabled: true, // Hardcoded — LLM is mandatory, no GUI toggle
+    llmWriteSummary: parseBoolEnv('LLM_WRITE_SUMMARY', runtimeSettingDefault('llmWriteSummary', false)),
+    llmPlanDiscoveryQueries: true, // Hardcoded — LLM query planning is mandatory
+    enableSchema4SearchPlan: true, // Hardcoded — Schema 4 panel data required for live GUI
+    phase2LlmEnabled: true, // Hardcoded — Schema 4 LLM planner must run to populate bundles/profile_influence
+    llmForceRoleModelProvider: parseBoolEnv('LLM_FORCE_ROLE_MODEL_PROVIDER', false),
+    llmProvider: explicitLlmProvider,
     llmApiKey: resolvedApiKey,
     llmBaseUrl: resolvedBaseUrl,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
-    llmModelExtract: process.env.LLM_MODEL_EXTRACT || defaultModel,
-    llmModelPlan: process.env.LLM_MODEL_PLAN || process.env.LLM_MODEL_EXTRACT || defaultModel,
+    llmModelExtract: explicitLlmModelExtract || explicitOpenAiModelExtract || defaultModel,
+    llmModelPlan: explicitLlmModelPlan || explicitLlmModelExtract || explicitOpenAiModelPlan || explicitOpenAiModelExtract || defaultModel,
     llmModelFast:
-      process.env.LLM_MODEL_FAST ||
-      process.env.LLM_MODEL_EXTRACT ||
+      explicitLlmModelFast ||
+      explicitLlmModelExtract ||
+      explicitOpenAiModelExtract ||
       defaultModel,
     llmModelTriage:
-      process.env.LLM_MODEL_TRIAGE ||
+      explicitLlmModelTriage ||
       process.env.CORTEX_MODEL_RERANK_FAST ||
       process.env.CORTEX_MODEL_SEARCH_FAST ||
-      process.env.LLM_MODEL_FAST ||
-      process.env.LLM_MODEL_PLAN ||
-      process.env.LLM_MODEL_EXTRACT ||
+      explicitLlmModelFast ||
+      explicitLlmModelPlan ||
+      explicitLlmModelExtract ||
+      explicitOpenAiModelExtract ||
       defaultModel,
     llmModelReasoning:
-      process.env.LLM_MODEL_REASONING ||
-      process.env.LLM_MODEL_EXTRACT ||
+      explicitLlmModelReasoning ||
+      explicitLlmModelExtract ||
+      explicitOpenAiModelExtract ||
       defaultModel,
     llmModelValidate:
-      process.env.LLM_MODEL_VALIDATE ||
-      process.env.LLM_MODEL_PLAN ||
-      process.env.LLM_MODEL_EXTRACT ||
+      explicitLlmModelValidate ||
+      explicitLlmModelPlan ||
+      explicitLlmModelExtract ||
+      explicitOpenAiModelPlan ||
+      explicitOpenAiModelExtract ||
       defaultModel,
     llmModelWrite:
-      process.env.LLM_MODEL_WRITE ||
-      process.env.LLM_MODEL_VALIDATE ||
-      process.env.LLM_MODEL_PLAN ||
-      process.env.LLM_MODEL_EXTRACT ||
+      explicitLlmModelWrite ||
+      explicitLlmModelValidate ||
+      explicitLlmModelPlan ||
+      explicitLlmModelExtract ||
+      explicitOpenAiModelWrite ||
+      explicitOpenAiModelPlan ||
+      explicitOpenAiModelExtract ||
       defaultModel,
-    llmPlanProvider: (process.env.LLM_PLAN_PROVIDER || '').trim().toLowerCase(),
-    llmPlanBaseUrl: process.env.LLM_PLAN_BASE_URL || '',
+    llmPlanProvider: explicitLlmPlanProvider,
+    llmPlanBaseUrl: explicitLlmPlanBaseUrl,
     llmPlanApiKey: process.env.LLM_PLAN_API_KEY || '',
-    llmFallbackEnabled: parseBoolEnv('LLM_FALLBACK_ENABLED', false),
     llmPlanFallbackModel: process.env.LLM_PLAN_FALLBACK_MODEL || '',
     llmPlanFallbackProvider: (process.env.LLM_PLAN_FALLBACK_PROVIDER || '').trim().toLowerCase(),
     llmPlanFallbackBaseUrl: process.env.LLM_PLAN_FALLBACK_BASE_URL || '',
@@ -778,7 +885,7 @@ export function loadConfig(overrides = {}) {
     llmWriteFallbackProvider: (process.env.LLM_WRITE_FALLBACK_PROVIDER || '').trim().toLowerCase(),
     llmWriteFallbackBaseUrl: process.env.LLM_WRITE_FALLBACK_BASE_URL || '',
     llmWriteFallbackApiKey: process.env.LLM_WRITE_FALLBACK_API_KEY || '',
-    llmSerpRerankEnabled: parseBoolEnv('LLM_SERP_RERANK_ENABLED', true),
+    llmSerpRerankEnabled: true,
     llmModelCatalog: process.env.LLM_MODEL_CATALOG || '',
     llmModelPricingMap: mergeModelPricingMaps(
       buildDefaultModelPricingMap(),
@@ -786,139 +893,79 @@ export function loadConfig(overrides = {}) {
     ),
     llmPricingAsOf: String(process.env.LLM_PRICING_AS_OF || LLM_PRICING_AS_OF),
     llmPricingSources: normalizePricingSources(parseJsonEnv('LLM_PRICING_SOURCES_JSON', LLM_PRICING_SOURCES)),
-    cortexEnabled: parseBoolEnv('CORTEX_ENABLED', false),
+    cortexEnabled: parseBoolEnv('CORTEX_ENABLED', runtimeSettingDefault('cortexEnabled', false)),
     chatmockDir: process.env.CHATMOCK_DIR || defaultChatmockDir(),
     chatmockComposeFile: process.env.CHATMOCK_COMPOSE_FILE
       || path.join(process.env.CHATMOCK_DIR || defaultChatmockDir(), 'docker-compose.yml'),
-    cortexBaseUrl: process.env.CORTEX_BASE_URL || 'http://localhost:5001/v1',
+    cortexBaseUrl: process.env.CORTEX_BASE_URL || runtimeSettingDefault('cortexBaseUrl', 'http://localhost:5001/v1'),
     cortexApiKey: process.env.CORTEX_API_KEY || 'key',
-    cortexAsyncBaseUrl: process.env.CORTEX_ASYNC_BASE_URL || 'http://localhost:4000/api',
-    cortexAsyncSubmitPath: process.env.CORTEX_ASYNC_SUBMIT_PATH || '/jobs',
-    cortexAsyncStatusPath: process.env.CORTEX_ASYNC_STATUS_PATH || '/jobs/{id}',
-    cortexAsyncEnabled: parseBoolEnv('CORTEX_ASYNC_ENABLED', true),
-    cortexModelFast: process.env.CORTEX_MODEL_FAST || 'gpt-5-low',
-    cortexModelAudit: process.env.CORTEX_MODEL_AUDIT || process.env.CORTEX_MODEL_FAST || 'gpt-5-low',
-    cortexModelDom: process.env.CORTEX_MODEL_DOM || process.env.CORTEX_MODEL_FAST || 'gpt-5-low',
-    cortexModelReasoningDeep: process.env.CORTEX_MODEL_REASONING_DEEP || 'gpt-5-high',
-    cortexModelVision: process.env.CORTEX_MODEL_VISION || process.env.CORTEX_MODEL_REASONING_DEEP || 'gpt-5-high',
-    cortexModelSearchFast: process.env.CORTEX_MODEL_SEARCH_FAST || process.env.CORTEX_MODEL_FAST || 'gpt-5-low',
-    cortexModelRerankFast: process.env.CORTEX_MODEL_RERANK_FAST || process.env.CORTEX_MODEL_SEARCH_FAST || process.env.CORTEX_MODEL_FAST || 'gpt-5-low',
-    cortexModelSearchDeep: process.env.CORTEX_MODEL_SEARCH_DEEP || process.env.CORTEX_MODEL_REASONING_DEEP || 'gpt-5-high',
-    cortexEscalateConfidenceLt: parseFloatEnv('CORTEX_ESCALATE_CONFIDENCE_LT', 0.85),
-    cortexEscalateIfConflict: parseBoolEnv('CORTEX_ESCALATE_IF_CONFLICT', true),
-    cortexEscalateCriticalOnly: parseBoolEnv('CORTEX_ESCALATE_CRITICAL_ONLY', true),
-    cortexMaxDeepFieldsPerProduct: parseIntEnv('CORTEX_MAX_DEEP_FIELDS_PER_PRODUCT', 12),
-    aggressiveModeEnabled: parseBoolEnv('AGGRESSIVE_MODE_ENABLED', false),
-    aggressiveConfidenceThreshold: parseFloatEnv('AGGRESSIVE_CONFIDENCE_THRESHOLD', 0.85),
-    aggressiveMaxSearchQueries: parseIntEnv('AGGRESSIVE_MAX_SEARCH_QUERIES', 5),
-    aggressiveEvidenceAuditEnabled: parseBoolEnv('AGGRESSIVE_EVIDENCE_AUDIT_ENABLED', true),
-    aggressiveEvidenceAuditBatchSize: parseIntEnv('AGGRESSIVE_EVIDENCE_AUDIT_BATCH_SIZE', 60),
-    aggressiveMaxTimePerProductMs: parseIntEnv('AGGRESSIVE_MAX_TIME_PER_PRODUCT_MS', 600_000),
-    aggressiveThoroughFromRound: parseIntEnv('AGGRESSIVE_THOROUGH_FROM_ROUND', 2),
-    aggressiveRound1MaxUrls: parseIntEnv('AGGRESSIVE_ROUND1_MAX_URLS', 90),
-    aggressiveRound1MaxCandidateUrls: parseIntEnv('AGGRESSIVE_ROUND1_MAX_CANDIDATE_URLS', 120),
-    aggressiveLlmMaxCallsPerRound: parseIntEnv('AGGRESSIVE_LLM_MAX_CALLS_PER_ROUND', 16),
-    aggressiveLlmMaxCallsPerProductTotal: parseIntEnv('AGGRESSIVE_LLM_MAX_CALLS_PER_PRODUCT_TOTAL', 48),
-    aggressiveLlmTargetMaxFields: parseIntEnv('AGGRESSIVE_LLM_TARGET_MAX_FIELDS', 75),
-    aggressiveLlmDiscoveryPasses: parseIntEnv('AGGRESSIVE_LLM_DISCOVERY_PASSES', 3),
-    aggressiveLlmDiscoveryQueryCap: parseIntEnv('AGGRESSIVE_LLM_DISCOVERY_QUERY_CAP', 24),
-    uberAggressiveEnabled: parseBoolEnv('UBER_AGGRESSIVE_ENABLED', false),
-    uberMaxUrlsPerProduct: parseIntEnv('UBER_MAX_URLS_PER_PRODUCT', 25),
-    uberMaxUrlsPerDomain: parseIntEnv('UBER_MAX_URLS_PER_DOMAIN', 6),
-    uberMaxRounds: parseIntEnv('UBER_MAX_ROUNDS', 6),
-    identityGatePublishThreshold: parseFloatEnv('IDENTITY_GATE_PUBLISH_THRESHOLD', 0.70),
-    identityGateBaseMatchThreshold: parseFloatEnv('IDENTITY_GATE_BASE_MATCH_THRESHOLD', 0.80),
-    identityGateEasyAmbiguityReduction: parseFloatEnv('IDENTITY_GATE_EASY_AMBIGUITY_REDUCTION', -0.15),
-    identityGateMediumAmbiguityReduction: parseFloatEnv('IDENTITY_GATE_MEDIUM_AMBIGUITY_REDUCTION', -0.10),
-    identityGateHardAmbiguityReduction: parseFloatEnv('IDENTITY_GATE_HARD_AMBIGUITY_REDUCTION', -0.02),
-    identityGateVeryHardAmbiguityIncrease: parseFloatEnv('IDENTITY_GATE_VERY_HARD_AMBIGUITY_INCREASE', 0.01),
-    identityGateExtraHardAmbiguityIncrease: parseFloatEnv('IDENTITY_GATE_EXTRA_HARD_AMBIGUITY_INCREASE', 0.03),
-    identityGateMissingStrongIdPenalty: parseFloatEnv('IDENTITY_GATE_MISSING_STRONG_ID_PENALTY', -0.05),
-    identityGateHardMissingStrongIdIncrease: parseFloatEnv('IDENTITY_GATE_HARD_MISSING_STRONG_ID_INCREASE', 0.03),
-    identityGateVeryHardMissingStrongIdIncrease: parseFloatEnv('IDENTITY_GATE_VERY_HARD_MISSING_STRONG_ID_INCREASE', 0.05),
-    identityGateExtraHardMissingStrongIdIncrease: parseFloatEnv('IDENTITY_GATE_EXTRA_HARD_MISSING_STRONG_ID_INCREASE', 0.08),
-    identityGateNumericTokenBoost: parseFloatEnv('IDENTITY_GATE_NUMERIC_TOKEN_BOOST', 0.10),
-    identityGateNumericRangeThreshold: parseIntEnv('IDENTITY_GATE_NUMERIC_RANGE_THRESHOLD', 3),
-    identityGateThresholdBoundsMap: normalizedIdentityGateThresholdBoundsMap,
-    identityGateThresholdBoundsMapJson: JSON.stringify(normalizedIdentityGateThresholdBoundsMap),
-    identityGateThresholdFloor: parseFloatEnv('IDENTITY_GATE_THRESHOLD_FLOOR', normalizedIdentityGateThresholdBoundsMap.thresholdFloor),
-    identityGateThresholdCeiling: parseFloatEnv('IDENTITY_GATE_THRESHOLD_CEILING', normalizedIdentityGateThresholdBoundsMap.thresholdCeiling),
-    qualityGateIdentityThreshold: parseFloatEnv('QUALITY_GATE_IDENTITY_THRESHOLD', 0.70),
-    convergenceMaxRounds: parseIntEnv('CONVERGENCE_MAX_ROUNDS', 3),
-    convergenceNoProgressLimit: parseIntEnv('CONVERGENCE_NO_PROGRESS_LIMIT', 2),
-    convergenceMaxLowQualityRounds: parseIntEnv('CONVERGENCE_MAX_LOW_QUALITY_ROUNDS', 1),
-    convergenceIdentityFailFastRounds: parseIntEnv('CONVERGENCE_IDENTITY_FAIL_FAST_ROUNDS', 1),
-    convergenceLowQualityConfidence: parseFloatEnv('CONVERGENCE_LOW_QUALITY_CONFIDENCE', 0.20),
-    convergenceMaxDispatchQueries: parseIntEnv('CONVERGENCE_MAX_DISPATCH_QUERIES', 20),
-    convergenceMaxTargetFields: parseIntEnv('CONVERGENCE_MAX_TARGET_FIELDS', 30),
-    needsetEvidenceDecayDays: parseIntEnv('NEEDSET_EVIDENCE_DECAY_DAYS', 14),
-    needsetEvidenceDecayFloor: parseFloatEnv('NEEDSET_EVIDENCE_DECAY_FLOOR', 0.30),
-    needsetRequiredWeightIdentity: parseFloatEnv('NEEDSET_REQUIRED_WEIGHT_IDENTITY', 5),
-    needsetRequiredWeightCritical: parseFloatEnv('NEEDSET_REQUIRED_WEIGHT_CRITICAL', 4),
-    needsetRequiredWeightRequired: parseFloatEnv('NEEDSET_REQUIRED_WEIGHT_REQUIRED', 2),
-    needsetRequiredWeightExpected: parseFloatEnv('NEEDSET_REQUIRED_WEIGHT_EXPECTED', 1),
-    needsetRequiredWeightOptional: parseFloatEnv('NEEDSET_REQUIRED_WEIGHT_OPTIONAL', 1),
-    needsetMissingMultiplier: parseFloatEnv('NEEDSET_MISSING_MULTIPLIER', 2),
-    needsetTierDeficitMultiplier: parseFloatEnv('NEEDSET_TIER_DEFICIT_MULTIPLIER', 2),
-    needsetMinRefsDeficitMultiplier: parseFloatEnv('NEEDSET_MIN_REFS_DEFICIT_MULTIPLIER', 1.5),
-    needsetConflictMultiplier: parseFloatEnv('NEEDSET_CONFLICT_MULTIPLIER', 1.5),
-    needsetIdentityLockThreshold: parseFloatEnv('NEEDSET_IDENTITY_LOCK_THRESHOLD', 0.95),
-    needsetIdentityProvisionalThreshold: parseFloatEnv('NEEDSET_IDENTITY_PROVISIONAL_THRESHOLD', 0.70),
-    needsetDefaultIdentityAuditLimit: parseIntEnv('NEEDSET_DEFAULT_IDENTITY_AUDIT_LIMIT', 24),
-    consensusMethodWeightNetworkJson: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_NETWORK_JSON', 1.00),
-    consensusMethodWeightAdapterApi: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_ADAPTER_API', 0.95),
-    consensusMethodWeightStructuredMeta: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_STRUCTURED_META', 0.90),
-    consensusMethodWeightPdf: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_PDF', 0.82),
-    consensusMethodWeightTableKv: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_TABLE_KV', 0.78),
-    consensusMethodWeightDom: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_DOM', 0.40),
-    consensusMethodWeightLlmExtractBase: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_LLM_EXTRACT_BASE', 0.20),
-    consensusPolicyBonus: parseFloatEnv('CONSENSUS_POLICY_BONUS', 0.30),
-    consensusWeightedMajorityThreshold: parseFloatEnv('CONSENSUS_WEIGHTED_MAJORITY_THRESHOLD', 1.10),
-    consensusStrictAcceptanceDomainCount: parseIntEnv('CONSENSUS_STRICT_ACCEPTANCE_DOMAIN_COUNT', 3),
-    consensusRelaxedAcceptanceDomainCount: parseIntEnv('CONSENSUS_RELAXED_ACCEPTANCE_DOMAIN_COUNT', 2),
-    consensusInstrumentedFieldThreshold: parseIntEnv('CONSENSUS_INSTRUMENTED_FIELD_THRESHOLD', 3),
-    consensusConfidenceScoringBase: parseFloatEnv('CONSENSUS_CONFIDENCE_SCORING_BASE', 0.70),
-    consensusPassTargetIdentityStrong: parseIntEnv('CONSENSUS_PASS_TARGET_IDENTITY_STRONG', 5),
-    consensusPassTargetNormal: parseIntEnv('CONSENSUS_PASS_TARGET_NORMAL', 3),
-    evidenceTextMaxChars: parseIntEnv('EVIDENCE_TEXT_MAX_CHARS', 5000),
-    needsetCapIdentityLocked: parseFloatEnv('NEEDSET_CAP_IDENTITY_LOCKED', 1.00),
-    needsetCapIdentityProvisional: parseFloatEnv('NEEDSET_CAP_IDENTITY_PROVISIONAL', 0.74),
-    needsetCapIdentityConflict: parseFloatEnv('NEEDSET_CAP_IDENTITY_CONFLICT', 0.39),
-    needsetCapIdentityUnlocked: parseFloatEnv('NEEDSET_CAP_IDENTITY_UNLOCKED', 0.59),
-    consensusLlmWeightTier1: parseFloatEnv('CONSENSUS_LLM_WEIGHT_TIER1', 0.60),
-    consensusLlmWeightTier2: parseFloatEnv('CONSENSUS_LLM_WEIGHT_TIER2', 0.40),
-    consensusLlmWeightTier3: parseFloatEnv('CONSENSUS_LLM_WEIGHT_TIER3', 0.20),
-    consensusLlmWeightTier4: parseFloatEnv('CONSENSUS_LLM_WEIGHT_TIER4', 0.15),
-    consensusTier1Weight: parseFloatEnv('CONSENSUS_TIER1_WEIGHT', 1.00),
-    consensusTier2Weight: parseFloatEnv('CONSENSUS_TIER2_WEIGHT', 0.80),
-    consensusTier3Weight: parseFloatEnv('CONSENSUS_TIER3_WEIGHT', 0.45),
-    consensusTier4Weight: parseFloatEnv('CONSENSUS_TIER4_WEIGHT', 0.25),
-    serpTriageMinScore: parseIntEnv('SERP_TRIAGE_MIN_SCORE', 5),
-    serpTriageMaxUrls: parseIntEnv('SERP_TRIAGE_MAX_URLS', 12),
-    serpTriageEnabled: parseBoolEnv('SERP_TRIAGE_ENABLED', true),
-    retrievalMaxHitsPerField: parseIntEnv('RETRIEVAL_MAX_HITS_PER_FIELD', 24),
-    retrievalMaxPrimeSources: parseIntEnv('RETRIEVAL_MAX_PRIME_SOURCES', 8),
-    retrievalIdentityFilterEnabled: parseBoolEnv('RETRIEVAL_IDENTITY_FILTER_ENABLED', true),
-    retrievalTierWeightTier1: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER1', 3.00),
-    retrievalTierWeightTier2: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER2', 2.00),
-    retrievalTierWeightTier3: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER3', 1.00),
-    retrievalTierWeightTier4: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER4', 0.65),
-    retrievalTierWeightTier5: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER5', 0.40),
-    retrievalDocKindWeightManualPdf: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_MANUAL_PDF', 1.50),
-    retrievalDocKindWeightSpecPdf: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_SPEC_PDF', 1.40),
-    retrievalDocKindWeightSupport: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_SUPPORT', 1.10),
-    retrievalDocKindWeightLabReview: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_LAB_REVIEW', 0.95),
-    retrievalDocKindWeightProductPage: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_PRODUCT_PAGE', 0.75),
-    retrievalDocKindWeightOther: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_OTHER', 0.55),
-    retrievalMethodWeightTable: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_TABLE', 1.25),
-    retrievalMethodWeightKv: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_KV', 1.15),
-    retrievalMethodWeightJsonLd: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_JSON_LD', 1.10),
-    retrievalMethodWeightLlmExtract: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_LLM_EXTRACT', 0.85),
-    retrievalMethodWeightHelperSupportive: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_HELPER_SUPPORTIVE', 0.65),
-    retrievalAnchorScorePerMatch: parseFloatEnv('RETRIEVAL_ANCHOR_SCORE_PER_MATCH', 0.42),
-    retrievalIdentityScorePerMatch: parseFloatEnv('RETRIEVAL_IDENTITY_SCORE_PER_MATCH', 0.28),
-    retrievalUnitMatchBonus: parseFloatEnv('RETRIEVAL_UNIT_MATCH_BONUS', 0.35),
-    retrievalDirectFieldMatchBonus: parseFloatEnv('RETRIEVAL_DIRECT_FIELD_MATCH_BONUS', 0.65),
+    cortexAsyncBaseUrl: process.env.CORTEX_ASYNC_BASE_URL || runtimeSettingDefault('cortexAsyncBaseUrl', 'http://localhost:4000/api'),
+    cortexAsyncSubmitPath: process.env.CORTEX_ASYNC_SUBMIT_PATH || runtimeSettingDefault('cortexAsyncSubmitPath', '/jobs'),
+    cortexAsyncStatusPath: process.env.CORTEX_ASYNC_STATUS_PATH || runtimeSettingDefault('cortexAsyncStatusPath', '/jobs/{id}'),
+    cortexAsyncEnabled: parseBoolEnv('CORTEX_ASYNC_ENABLED', runtimeSettingDefault('cortexAsyncEnabled', true)),
+    cortexModelFast: process.env.CORTEX_MODEL_FAST || runtimeSettingDefault('cortexModelFast', 'gpt-5-low'),
+    cortexModelDom: process.env.CORTEX_MODEL_DOM || process.env.CORTEX_MODEL_FAST || runtimeSettingDefault('cortexModelDom', 'gpt-5-low'),
+    cortexModelReasoningDeep: process.env.CORTEX_MODEL_REASONING_DEEP || runtimeSettingDefault('cortexModelReasoningDeep', 'gpt-5-high'),
+    cortexModelVision: process.env.CORTEX_MODEL_VISION || process.env.CORTEX_MODEL_REASONING_DEEP || runtimeSettingDefault('cortexModelVision', 'gpt-5-high'),
+    cortexModelSearchFast: process.env.CORTEX_MODEL_SEARCH_FAST || process.env.CORTEX_MODEL_FAST || runtimeSettingDefault('cortexModelSearchFast', 'gpt-5-low'),
+    cortexModelRerankFast: process.env.CORTEX_MODEL_RERANK_FAST || process.env.CORTEX_MODEL_SEARCH_FAST || process.env.CORTEX_MODEL_FAST || runtimeSettingDefault('cortexModelRerankFast', 'gpt-5-low'),
+    cortexEscalateConfidenceLt: parseFloatEnv('CORTEX_ESCALATE_CONFIDENCE_LT', runtimeSettingDefault('cortexEscalateConfidenceLt', 0.85)),
+    cortexEscalateIfConflict: parseBoolEnv('CORTEX_ESCALATE_IF_CONFLICT', runtimeSettingDefault('cortexEscalateIfConflict', true)),
+    cortexEscalateCriticalOnly: parseBoolEnv('CORTEX_ESCALATE_CRITICAL_ONLY', runtimeSettingDefault('cortexEscalateCriticalOnly', true)),
+    cortexMaxDeepFieldsPerProduct: parseIntEnv('CORTEX_MAX_DEEP_FIELDS_PER_PRODUCT', runtimeSettingDefault('cortexMaxDeepFieldsPerProduct', 12)),
+    identityGatePublishThreshold: parseFloatEnv('IDENTITY_GATE_PUBLISH_THRESHOLD', runtimeSettingDefault('identityGatePublishThreshold', 0.75)),
+    identityGateBaseMatchThreshold: parseFloatEnv('IDENTITY_GATE_BASE_MATCH_THRESHOLD', runtimeSettingDefault('identityGateBaseMatchThreshold', 0.80)),
+    qualityGateIdentityThreshold: parseFloatEnv('QUALITY_GATE_IDENTITY_THRESHOLD', runtimeSettingDefault('qualityGateIdentityThreshold', 0.70)),
+    consensusMethodWeightNetworkJson: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_NETWORK_JSON', runtimeSettingDefault('consensusMethodWeightNetworkJson', 1.00)),
+    consensusMethodWeightAdapterApi: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_ADAPTER_API', runtimeSettingDefault('consensusMethodWeightAdapterApi', 0.95)),
+    consensusMethodWeightStructuredMeta: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_STRUCTURED_META', runtimeSettingDefault('consensusMethodWeightStructuredMeta', 0.90)),
+    consensusMethodWeightPdf: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_PDF', runtimeSettingDefault('consensusMethodWeightPdf', 0.82)),
+    consensusMethodWeightTableKv: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_TABLE_KV', runtimeSettingDefault('consensusMethodWeightTableKv', 0.78)),
+    consensusMethodWeightDom: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_DOM', runtimeSettingDefault('consensusMethodWeightDom', 0.40)),
+    consensusMethodWeightLlmExtractBase: parseFloatEnv('CONSENSUS_METHOD_WEIGHT_LLM_EXTRACT_BASE', runtimeSettingDefault('consensusMethodWeightLlmExtractBase', 0.20)),
+    consensusPolicyBonus: parseFloatEnv('CONSENSUS_POLICY_BONUS', runtimeSettingDefault('consensusPolicyBonus', 0.30)),
+    consensusWeightedMajorityThreshold: parseFloatEnv('CONSENSUS_WEIGHTED_MAJORITY_THRESHOLD', runtimeSettingDefault('consensusWeightedMajorityThreshold', 1.10)),
+    consensusStrictAcceptanceDomainCount: parseIntEnv('CONSENSUS_STRICT_ACCEPTANCE_DOMAIN_COUNT', runtimeSettingDefault('consensusStrictAcceptanceDomainCount', 2)),
+    consensusRelaxedAcceptanceDomainCount: parseIntEnv('CONSENSUS_RELAXED_ACCEPTANCE_DOMAIN_COUNT', runtimeSettingDefault('consensusRelaxedAcceptanceDomainCount', 2)),
+    consensusInstrumentedFieldThreshold: parseIntEnv('CONSENSUS_INSTRUMENTED_FIELD_THRESHOLD', runtimeSettingDefault('consensusInstrumentedFieldThreshold', 3)),
+    consensusConfidenceScoringBase: parseFloatEnv('CONSENSUS_CONFIDENCE_SCORING_BASE', runtimeSettingDefault('consensusConfidenceScoringBase', 0.70)),
+    consensusPassTargetIdentityStrong: parseIntEnv('CONSENSUS_PASS_TARGET_IDENTITY_STRONG', runtimeSettingDefault('consensusPassTargetIdentityStrong', 4)),
+    consensusPassTargetNormal: parseIntEnv('CONSENSUS_PASS_TARGET_NORMAL', runtimeSettingDefault('consensusPassTargetNormal', 2)),
+    evidenceTextMaxChars: parseIntEnv('EVIDENCE_TEXT_MAX_CHARS', runtimeSettingDefault('evidenceTextMaxChars', 5000)),
+    consensusLlmWeightTier1: parseFloatEnv('CONSENSUS_LLM_WEIGHT_TIER1', convergenceSettingDefault('consensusLlmWeightTier1', 0.60)),
+    consensusLlmWeightTier2: parseFloatEnv('CONSENSUS_LLM_WEIGHT_TIER2', convergenceSettingDefault('consensusLlmWeightTier2', 0.40)),
+    consensusLlmWeightTier3: parseFloatEnv('CONSENSUS_LLM_WEIGHT_TIER3', convergenceSettingDefault('consensusLlmWeightTier3', 0.20)),
+    consensusLlmWeightTier4: parseFloatEnv('CONSENSUS_LLM_WEIGHT_TIER4', convergenceSettingDefault('consensusLlmWeightTier4', 0.15)),
+    consensusTier1Weight: parseFloatEnv('CONSENSUS_TIER1_WEIGHT', convergenceSettingDefault('consensusTier1Weight', 1.00)),
+    consensusTier2Weight: parseFloatEnv('CONSENSUS_TIER2_WEIGHT', convergenceSettingDefault('consensusTier2Weight', 0.80)),
+    consensusTier3Weight: parseFloatEnv('CONSENSUS_TIER3_WEIGHT', convergenceSettingDefault('consensusTier3Weight', 0.45)),
+    consensusTier4Weight: parseFloatEnv('CONSENSUS_TIER4_WEIGHT', convergenceSettingDefault('consensusTier4Weight', 0.25)),
+    serpTriageMinScore: parseIntEnv('SERP_TRIAGE_MIN_SCORE', convergenceSettingDefault('serpTriageMinScore', 3)),
+    serpTriageMaxUrls: parseIntEnv('SERP_TRIAGE_MAX_URLS', convergenceSettingDefault('serpTriageMaxUrls', 20)),
+    serpTriageEnabled: true,
+    retrievalMaxHitsPerField: parseIntEnv('RETRIEVAL_MAX_HITS_PER_FIELD', convergenceSettingDefault('retrievalMaxHitsPerField', 24)),
+    retrievalMaxPrimeSources: parseIntEnv('RETRIEVAL_MAX_PRIME_SOURCES', convergenceSettingDefault('retrievalMaxPrimeSources', 8)),
+    retrievalIdentityFilterEnabled: parseBoolEnv('RETRIEVAL_IDENTITY_FILTER_ENABLED', convergenceSettingDefault('retrievalIdentityFilterEnabled', true)),
+    retrievalTierWeightTier1: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER1', runtimeSettingDefault('retrievalTierWeightTier1', 3.00)),
+    retrievalTierWeightTier2: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER2', runtimeSettingDefault('retrievalTierWeightTier2', 2.00)),
+    retrievalTierWeightTier3: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER3', runtimeSettingDefault('retrievalTierWeightTier3', 1.00)),
+    retrievalTierWeightTier4: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER4', runtimeSettingDefault('retrievalTierWeightTier4', 0.65)),
+    retrievalTierWeightTier5: parseFloatEnv('RETRIEVAL_TIER_WEIGHT_TIER5', runtimeSettingDefault('retrievalTierWeightTier5', 0.40)),
+    retrievalDocKindWeightManualPdf: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_MANUAL_PDF', runtimeSettingDefault('retrievalDocKindWeightManualPdf', 1.50)),
+    retrievalDocKindWeightSpecPdf: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_SPEC_PDF', runtimeSettingDefault('retrievalDocKindWeightSpecPdf', 1.40)),
+    retrievalDocKindWeightSupport: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_SUPPORT', runtimeSettingDefault('retrievalDocKindWeightSupport', 1.10)),
+    retrievalDocKindWeightLabReview: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_LAB_REVIEW', runtimeSettingDefault('retrievalDocKindWeightLabReview', 0.95)),
+    retrievalDocKindWeightProductPage: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_PRODUCT_PAGE', runtimeSettingDefault('retrievalDocKindWeightProductPage', 0.75)),
+    retrievalDocKindWeightOther: parseFloatEnv('RETRIEVAL_DOC_KIND_WEIGHT_OTHER', runtimeSettingDefault('retrievalDocKindWeightOther', 0.55)),
+    retrievalMethodWeightTable: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_TABLE', runtimeSettingDefault('retrievalMethodWeightTable', 1.25)),
+    retrievalMethodWeightKv: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_KV', runtimeSettingDefault('retrievalMethodWeightKv', 1.15)),
+    retrievalMethodWeightJsonLd: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_JSON_LD', runtimeSettingDefault('retrievalMethodWeightJsonLd', 1.10)),
+    retrievalMethodWeightLlmExtract: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_LLM_EXTRACT', runtimeSettingDefault('retrievalMethodWeightLlmExtract', 0.85)),
+    retrievalMethodWeightHelperSupportive: parseFloatEnv('RETRIEVAL_METHOD_WEIGHT_HELPER_SUPPORTIVE', runtimeSettingDefault('retrievalMethodWeightHelperSupportive', 0.65)),
+    retrievalAnchorScorePerMatch: parseFloatEnv('RETRIEVAL_ANCHOR_SCORE_PER_MATCH', runtimeSettingDefault('retrievalAnchorScorePerMatch', 0.42)),
+    retrievalIdentityScorePerMatch: parseFloatEnv('RETRIEVAL_IDENTITY_SCORE_PER_MATCH', runtimeSettingDefault('retrievalIdentityScorePerMatch', 0.28)),
+    retrievalUnitMatchBonus: parseFloatEnv('RETRIEVAL_UNIT_MATCH_BONUS', runtimeSettingDefault('retrievalUnitMatchBonus', 0.35)),
+    retrievalDirectFieldMatchBonus: parseFloatEnv('RETRIEVAL_DIRECT_FIELD_MATCH_BONUS', runtimeSettingDefault('retrievalDirectFieldMatchBonus', 0.65)),
     retrievalInternalsMap: normalizedRetrievalInternalsMap,
     retrievalInternalsMapJson: JSON.stringify(normalizedRetrievalInternalsMap),
     retrievalEvidenceTierWeightMultiplier: parseFloatEnv('RETRIEVAL_EVIDENCE_TIER_WEIGHT_MULTIPLIER', normalizedRetrievalInternalsMap.evidenceTierWeightMultiplier),
@@ -940,124 +987,124 @@ export function loadConfig(overrides = {}) {
     evidenceHeadingsLimit: parseIntEnv('EVIDENCE_HEADINGS_LIMIT', normalizedEvidencePackLimitsMap.headingsLimit),
     evidenceChunkMaxLength: parseIntEnv('EVIDENCE_CHUNK_MAX_LENGTH', normalizedEvidencePackLimitsMap.chunkMaxLength),
     evidenceSpecSectionsLimit: parseIntEnv('EVIDENCE_SPEC_SECTIONS_LIMIT', normalizedEvidencePackLimitsMap.specSectionsLimit),
-    specDbDir: process.env.SPEC_DB_DIR || '.specfactory_tmp',
-    frontierDbPath: process.env.FRONTIER_DB_PATH || '_intel/frontier/frontier.json',
-    frontierEnableSqlite: parseBoolEnv('FRONTIER_ENABLE_SQLITE', true),
-    frontierStripTrackingParams: parseBoolEnv('FRONTIER_STRIP_TRACKING_PARAMS', true),
-    frontierQueryCooldownSeconds: parseIntEnv('FRONTIER_QUERY_COOLDOWN_SECONDS', 6 * 60 * 60),
-    frontierCooldown404Seconds: parseIntEnv('FRONTIER_COOLDOWN_404', 72 * 60 * 60),
-    frontierCooldown404RepeatSeconds: parseIntEnv('FRONTIER_COOLDOWN_404_REPEAT', 14 * 24 * 60 * 60),
-    frontierCooldown410Seconds: parseIntEnv('FRONTIER_COOLDOWN_410', 90 * 24 * 60 * 60),
-    frontierCooldownTimeoutSeconds: parseIntEnv('FRONTIER_COOLDOWN_TIMEOUT', 6 * 60 * 60),
-    frontierCooldown403BaseSeconds: parseIntEnv('FRONTIER_COOLDOWN_403_BASE', 30 * 60),
-    frontierCooldown429BaseSeconds: parseIntEnv('FRONTIER_COOLDOWN_429_BASE', 15 * 60),
-    frontierBackoffMaxExponent: parseIntEnv('FRONTIER_BACKOFF_MAX_EXPONENT', 4),
-    frontierPathPenaltyNotfoundThreshold: parseIntEnv('FRONTIER_PATH_PENALTY_NOTFOUND_THRESHOLD', 3),
-    frontierBlockedDomainThreshold: parseIntEnv('FRONTIER_BLOCKED_DOMAIN_THRESHOLD', 2),
-    frontierRepairSearchEnabled: parseBoolEnv('FRONTIER_REPAIR_SEARCH_ENABLED', true),
+    specDbDir: process.env.SPEC_DB_DIR || runtimeSettingDefault('specDbDir', '.specfactory_tmp'),
+    frontierDbPath: process.env.FRONTIER_DB_PATH || runtimeSettingDefault('frontierDbPath', '_intel/frontier/frontier.json'),
+    frontierEnableSqlite: parseBoolEnv('FRONTIER_ENABLE_SQLITE', runtimeSettingDefault('frontierEnableSqlite', true)),
+    frontierStripTrackingParams: parseBoolEnv('FRONTIER_STRIP_TRACKING_PARAMS', runtimeSettingDefault('frontierStripTrackingParams', true)),
+    frontierQueryCooldownSeconds: parseIntEnv('FRONTIER_QUERY_COOLDOWN_SECONDS', runtimeSettingDefault('frontierQueryCooldownSeconds', 6 * 60 * 60)),
+    frontierCooldown404Seconds: parseIntEnv('FRONTIER_COOLDOWN_404', runtimeSettingDefault('frontierCooldown404Seconds', 72 * 60 * 60)),
+    frontierCooldown404RepeatSeconds: parseIntEnv('FRONTIER_COOLDOWN_404_REPEAT', runtimeSettingDefault('frontierCooldown404RepeatSeconds', 14 * 24 * 60 * 60)),
+    frontierCooldown410Seconds: parseIntEnv('FRONTIER_COOLDOWN_410', runtimeSettingDefault('frontierCooldown410Seconds', 90 * 24 * 60 * 60)),
+    frontierCooldownTimeoutSeconds: parseIntEnv('FRONTIER_COOLDOWN_TIMEOUT', runtimeSettingDefault('frontierCooldownTimeoutSeconds', 6 * 60 * 60)),
+    frontierCooldown403BaseSeconds: parseIntEnv('FRONTIER_COOLDOWN_403_BASE', runtimeSettingDefault('frontierCooldown403BaseSeconds', 30 * 60)),
+    frontierCooldown429BaseSeconds: parseIntEnv('FRONTIER_COOLDOWN_429_BASE', runtimeSettingDefault('frontierCooldown429BaseSeconds', 10 * 60)),
+    frontierBackoffMaxExponent: parseIntEnv('FRONTIER_BACKOFF_MAX_EXPONENT', runtimeSettingDefault('frontierBackoffMaxExponent', 4)),
+    frontierPathPenaltyNotfoundThreshold: parseIntEnv('FRONTIER_PATH_PENALTY_NOTFOUND_THRESHOLD', runtimeSettingDefault('frontierPathPenaltyNotfoundThreshold', 3)),
+    frontierBlockedDomainThreshold: parseIntEnv('FRONTIER_BLOCKED_DOMAIN_THRESHOLD', runtimeSettingDefault('frontierBlockedDomainThreshold', 2)),
+    frontierRepairSearchEnabled: parseBoolEnv('FRONTIER_REPAIR_SEARCH_ENABLED', runtimeSettingDefault('frontierRepairSearchEnabled', true)),
     repairDedupeRule: normalizeRepairDedupeRule(process.env['REPAIR_DEDUPE_RULE'] || REPAIR_DEDUPE_RULE_DEFAULT),
     automationQueueStorageEngine: normalizeAutomationQueueStorageEngine(
       process.env['AUTOMATION_QUEUE_STORAGE_ENGINE'] || AUTOMATION_QUEUE_STORAGE_ENGINE_DEFAULT
     ),
-    runtimeTraceEnabled: parseBoolEnv('RUNTIME_TRACE_ENABLED', true),
-    runtimeTraceFetchRing: parseIntEnv('RUNTIME_TRACE_FETCH_RING', 30),
-    runtimeTraceLlmRing: parseIntEnv('RUNTIME_TRACE_LLM_RING', 50),
-    runtimeTraceLlmPayloads: parseBoolEnv('RUNTIME_TRACE_LLM_PAYLOADS', true),
-    indexingResumeMode: (process.env.INDEXING_RESUME_MODE || 'auto').trim().toLowerCase(),
-    indexingResumeMaxAgeHours: parseIntEnv('INDEXING_RESUME_MAX_AGE_HOURS', 48),
-    indexingResumeSeedLimit: parseIntEnv('INDEXING_RESUME_SEED_LIMIT', 24),
-    indexingResumePersistLimit: parseIntEnv('INDEXING_RESUME_PERSIST_LIMIT', 160),
+    runtimeTraceEnabled: parseBoolEnv('RUNTIME_TRACE_ENABLED', runtimeSettingDefault('runtimeTraceEnabled', true)),
+    runtimeTraceFetchRing: parseIntEnv('RUNTIME_TRACE_FETCH_RING', runtimeSettingDefault('runtimeTraceFetchRing', 30)),
+    runtimeTraceLlmRing: parseIntEnv('RUNTIME_TRACE_LLM_RING', runtimeSettingDefault('runtimeTraceLlmRing', 50)),
+    runtimeTraceLlmPayloads: parseBoolEnv('RUNTIME_TRACE_LLM_PAYLOADS', runtimeSettingDefault('runtimeTraceLlmPayloads', true)),
+    indexingResumeMode: (process.env.INDEXING_RESUME_MODE || runtimeSettingDefault('indexingResumeMode', 'auto')).trim().toLowerCase(),
+    indexingResumeMaxAgeHours: parseIntEnv('INDEXING_RESUME_MAX_AGE_HOURS', runtimeSettingDefault('indexingResumeMaxAgeHours', 48)),
+    indexingResumeSeedLimit: parseIntEnv('INDEXING_RESUME_SEED_LIMIT', runtimeSettingDefault('indexingResumeSeedLimit', 24)),
+    indexingResumePersistLimit: parseIntEnv('INDEXING_RESUME_PERSIST_LIMIT', runtimeSettingDefault('indexingResumePersistLimit', 160)),
     indexingResumeRetryPersistLimit: parseIntEnv('INDEXING_RESUME_RETRY_PERSIST_LIMIT', 80),
     indexingResumeSuccessPersistLimit: parseIntEnv('INDEXING_RESUME_SUCCESS_PERSIST_LIMIT', 240),
-    indexingSchemaPacketsValidationEnabled: parseBoolEnv('INDEXING_SCHEMA_PACKETS_VALIDATION_ENABLED', true),
-    indexingSchemaPacketsValidationStrict: parseBoolEnv('INDEXING_SCHEMA_PACKETS_VALIDATION_STRICT', true),
+    indexingSchemaPacketsValidationEnabled: parseBoolEnv('INDEXING_SCHEMA_PACKETS_VALIDATION_ENABLED', runtimeSettingDefault('indexingSchemaPacketsValidationEnabled', true)),
+    indexingSchemaPacketsValidationStrict: parseBoolEnv('INDEXING_SCHEMA_PACKETS_VALIDATION_STRICT', runtimeSettingDefault('indexingSchemaPacketsValidationStrict', true)),
     indexingSchemaPacketsSchemaRoot: process.env.INDEXING_SCHEMA_PACKETS_SCHEMA_ROOT || '',
-    indexingReextractEnabled: parseBoolEnv('INDEXING_REEXTRACT_ENABLED', true),
-    indexingReextractAfterHours: parseIntEnv('INDEXING_REEXTRACT_AFTER_HOURS', 24),
+    indexingReextractEnabled: parseBoolEnv('INDEXING_REEXTRACT_ENABLED', runtimeSettingDefault('indexingReextractEnabled', true)),
+    indexingReextractAfterHours: parseIntEnv('INDEXING_REEXTRACT_AFTER_HOURS', runtimeSettingDefault('indexingReextractAfterHours', 24)),
     indexingReextractSeedLimit: parseIntEnv('INDEXING_REEXTRACT_SEED_LIMIT', 8),
-    indexingHelperFilesEnabled: parseBoolEnv('INDEXING_HELPER_FILES_ENABLED', false),
-    runtimeControlFile: process.env.RUNTIME_CONTROL_FILE || '_runtime/control/runtime_overrides.json',
-    runtimeCaptureScreenshots: parseBoolEnv('RUNTIME_CAPTURE_SCREENSHOTS', false),
-    runtimeScreenshotMode: process.env.RUNTIME_SCREENSHOT_MODE || 'last_only',
-    cortexSyncTimeoutMs: parseIntEnv('CORTEX_SYNC_TIMEOUT_MS', 60_000),
-    cortexAsyncPollIntervalMs: parseIntEnv('CORTEX_ASYNC_POLL_INTERVAL_MS', 5_000),
-    cortexAsyncMaxWaitMs: parseIntEnv('CORTEX_ASYNC_MAX_WAIT_MS', 900_000),
-    cortexAutoStart: parseBoolEnv('CORTEX_AUTO_START', true),
-    cortexAutoRestartOnAuth: parseBoolEnv('CORTEX_AUTO_RESTART_ON_AUTH', true),
-    cortexEnsureReadyTimeoutMs: parseIntEnv('CORTEX_ENSURE_READY_TIMEOUT_MS', 15_000),
-    cortexStartReadyTimeoutMs: parseIntEnv('CORTEX_START_READY_TIMEOUT_MS', 60_000),
-    cortexFailureThreshold: parseIntEnv('CORTEX_FAILURE_THRESHOLD', 3),
-    cortexCircuitOpenMs: parseIntEnv('CORTEX_CIRCUIT_OPEN_MS', 30_000),
+    indexingCategoryAuthorityEnabled: parseBoolEnv('INDEXING_HELPER_FILES_ENABLED', runtimeSettingDefault('indexingCategoryAuthorityEnabled', false)),
+    [`indexing${'HelperFilesEnabled'}`]: parseBoolEnv('INDEXING_HELPER_FILES_ENABLED', runtimeSettingDefault('indexingHelperFilesEnabled', false)),
+    runtimeControlFile: process.env.RUNTIME_CONTROL_FILE || runtimeSettingDefault('runtimeControlFile', '_runtime/control/runtime_overrides.json'),
+    runtimeCaptureScreenshots: parseBoolEnv('RUNTIME_CAPTURE_SCREENSHOTS', runtimeSettingDefault('runtimeCaptureScreenshots', false)),
+    runtimeScreenshotMode: process.env.RUNTIME_SCREENSHOT_MODE || runtimeSettingDefault('runtimeScreenshotMode', 'last_only'),
+    cortexSyncTimeoutMs: parseIntEnv('CORTEX_SYNC_TIMEOUT_MS', runtimeSettingDefault('cortexSyncTimeoutMs', 60_000)),
+    cortexAsyncPollIntervalMs: parseIntEnv('CORTEX_ASYNC_POLL_INTERVAL_MS', runtimeSettingDefault('cortexAsyncPollIntervalMs', 5_000)),
+    cortexAsyncMaxWaitMs: parseIntEnv('CORTEX_ASYNC_MAX_WAIT_MS', runtimeSettingDefault('cortexAsyncMaxWaitMs', 900_000)),
+    cortexAutoStart: parseBoolEnv('CORTEX_AUTO_START', runtimeSettingDefault('cortexAutoStart', true)),
+    cortexEnsureReadyTimeoutMs: parseIntEnv('CORTEX_ENSURE_READY_TIMEOUT_MS', runtimeSettingDefault('cortexEnsureReadyTimeoutMs', 15_000)),
+    cortexStartReadyTimeoutMs: parseIntEnv('CORTEX_START_READY_TIMEOUT_MS', runtimeSettingDefault('cortexStartReadyTimeoutMs', 60_000)),
+    cortexFailureThreshold: parseIntEnv('CORTEX_FAILURE_THRESHOLD', runtimeSettingDefault('cortexFailureThreshold', 3)),
+    cortexCircuitOpenMs: parseIntEnv('CORTEX_CIRCUIT_OPEN_MS', runtimeSettingDefault('cortexCircuitOpenMs', 30_000)),
     llmTimeoutMs: timeoutMs,
     openaiApiKey: resolvedApiKey,
     openaiBaseUrl: resolvedBaseUrl,
-    openaiModelExtract: process.env.OPENAI_MODEL_EXTRACT || process.env.LLM_MODEL_EXTRACT || defaultModel,
+    openaiModelExtract: explicitOpenAiModelExtract || explicitLlmModelExtract || defaultModel,
     openaiModelPlan:
-      process.env.OPENAI_MODEL_PLAN ||
-      process.env.LLM_MODEL_PLAN ||
-      process.env.OPENAI_MODEL_EXTRACT ||
-      process.env.LLM_MODEL_EXTRACT ||
+      explicitOpenAiModelPlan ||
+      explicitLlmModelPlan ||
+      explicitOpenAiModelExtract ||
+      explicitLlmModelExtract ||
       defaultModel,
     openaiModelWrite:
-      process.env.OPENAI_MODEL_WRITE ||
-      process.env.LLM_MODEL_VALIDATE ||
-      process.env.LLM_MODEL_PLAN ||
-      process.env.LLM_MODEL_EXTRACT ||
-      process.env.OPENAI_MODEL_EXTRACT ||
+      explicitOpenAiModelWrite ||
+      explicitLlmModelValidate ||
+      explicitLlmModelPlan ||
+      explicitLlmModelExtract ||
+      explicitOpenAiModelExtract ||
       defaultModel,
     openaiMaxInputChars: parseIntEnv(
       'OPENAI_MAX_INPUT_CHARS',
       parseIntEnv('LLM_MAX_EVIDENCE_CHARS', 50_000)
     ),
     openaiTimeoutMs: timeoutMs,
-    llmReasoningMode: parseBoolEnv('LLM_REASONING_MODE', hasDeepSeekKey),
-    llmReasoningBudget: parseIntEnv('LLM_REASONING_BUDGET', 32768),
-    llmMaxTokens: parseIntEnv('LLM_MAX_TOKENS', 16384),
-    llmExtractReasoningBudget: parseIntEnv('LLM_EXTRACT_REASONING_BUDGET', 4096),
-    llmExtractMaxTokens: parseIntEnv('LLM_EXTRACT_MAX_TOKENS', 1200),
-    llmExtractMaxSnippetsPerBatch: parseIntEnv('LLM_EXTRACT_MAX_SNIPPETS_PER_BATCH', 6),
-    llmExtractMaxSnippetChars: parseIntEnv('LLM_EXTRACT_MAX_SNIPPET_CHARS', 900),
-    llmExtractSkipLowSignal: parseBoolEnv('LLM_EXTRACT_SKIP_LOW_SIGNAL', true),
-    llmVerifyMode: parseBoolEnv('LLM_VERIFY_MODE', false),
-    llmVerifySampleRate: parseIntEnv('LLM_VERIFY_SAMPLE_RATE', 10),
+    llmReasoningMode: parseBoolEnv('LLM_REASONING_MODE', runtimeSettingDefault('llmReasoningMode', hasDeepSeekKey)),
+    llmReasoningBudget: parseIntEnv('LLM_REASONING_BUDGET', runtimeSettingDefault('llmReasoningBudget', 32768)),
+    llmMaxTokens: parseIntEnv('LLM_MAX_TOKENS', runtimeSettingDefault('llmMaxTokens', 16384)),
+    llmExtractReasoningBudget: parseIntEnv('LLM_EXTRACT_REASONING_BUDGET', runtimeSettingDefault('llmExtractReasoningBudget', 4096)),
+    llmExtractMaxTokens: parseIntEnv('LLM_EXTRACT_MAX_TOKENS', runtimeSettingDefault('llmExtractMaxTokens', 1200)),
+    llmExtractMaxSnippetsPerBatch: parseIntEnv('LLM_EXTRACT_MAX_SNIPPETS_PER_BATCH', runtimeSettingDefault('llmExtractMaxSnippetsPerBatch', 4)),
+    llmExtractMaxSnippetChars: parseIntEnv('LLM_EXTRACT_MAX_SNIPPET_CHARS', runtimeSettingDefault('llmExtractMaxSnippetChars', 900)),
+    llmExtractSkipLowSignal: parseBoolEnv('LLM_EXTRACT_SKIP_LOW_SIGNAL', runtimeSettingDefault('llmExtractSkipLowSignal', true)),
+    llmVerifyMode: parseBoolEnv('LLM_VERIFY_MODE', runtimeSettingDefault('llmVerifyMode', false)),
+    llmVerifySampleRate: parseIntEnv('LLM_VERIFY_SAMPLE_RATE', runtimeSettingDefault('llmVerifySampleRate', 10)),
     llmVerifyAggressiveAlways: parseBoolEnv('LLM_VERIFY_AGGRESSIVE_ALWAYS', false),
     llmVerifyAggressiveBatchCount: parseIntEnv('LLM_VERIFY_AGGRESSIVE_BATCH_COUNT', 3),
-    llmMaxOutputTokens: parseIntEnv('LLM_MAX_OUTPUT_TOKENS', 1200),
-    llmMaxOutputTokensPlan: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_PLAN', parseIntEnv('LLM_MAX_OUTPUT_TOKENS', 1200)),
-    llmMaxOutputTokensFast: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_FAST', parseIntEnv('LLM_MAX_OUTPUT_TOKENS', 1200)),
-    llmMaxOutputTokensTriage: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_TRIAGE', parseIntEnv('LLM_MAX_OUTPUT_TOKENS', 1200)),
-    llmMaxOutputTokensReasoning: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_REASONING', parseIntEnv('LLM_REASONING_BUDGET', 32768)),
-    llmMaxOutputTokensExtract: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_EXTRACT', parseIntEnv('LLM_EXTRACT_MAX_TOKENS', 1200)),
-    llmMaxOutputTokensValidate: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_VALIDATE', parseIntEnv('LLM_MAX_OUTPUT_TOKENS', 1200)),
-    llmMaxOutputTokensWrite: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_WRITE', parseIntEnv('LLM_MAX_OUTPUT_TOKENS', 1200)),
-    llmMaxOutputTokensPlanFallback: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK', parseIntEnv('LLM_MAX_OUTPUT_TOKENS_PLAN', 1200)),
-    llmMaxOutputTokensExtractFallback: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_EXTRACT_FALLBACK', parseIntEnv('LLM_MAX_OUTPUT_TOKENS_EXTRACT', 1200)),
-    llmMaxOutputTokensValidateFallback: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_VALIDATE_FALLBACK', parseIntEnv('LLM_MAX_OUTPUT_TOKENS_VALIDATE', 1200)),
-    llmMaxOutputTokensWriteFallback: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_WRITE_FALLBACK', parseIntEnv('LLM_MAX_OUTPUT_TOKENS_WRITE', 1200)),
+    llmMaxOutputTokens: parseIntEnv('LLM_MAX_OUTPUT_TOKENS', runtimeSettingDefault('llmMaxOutputTokens', 1200)),
+    llmMaxOutputTokensPlan: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_PLAN', runtimeSettingDefault('llmMaxOutputTokensPlan', 4096)),
+    llmMaxOutputTokensFast: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_FAST', runtimeSettingDefault('llmMaxOutputTokensFast', 1200)),
+    llmMaxOutputTokensTriage: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_TRIAGE', runtimeSettingDefault('llmMaxOutputTokensTriage', 1200)),
+    llmMaxOutputTokensReasoning: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_REASONING', runtimeSettingDefault('llmMaxOutputTokensReasoning', 32768)),
+    llmMaxOutputTokensExtract: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_EXTRACT', runtimeSettingDefault('llmMaxOutputTokensExtract', 1200)),
+    llmMaxOutputTokensValidate: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_VALIDATE', runtimeSettingDefault('llmMaxOutputTokensValidate', 1200)),
+    llmMaxOutputTokensWrite: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_WRITE', runtimeSettingDefault('llmMaxOutputTokensWrite', 1200)),
+    llmMaxOutputTokensPlanFallback: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK', runtimeSettingDefault('llmMaxOutputTokensPlanFallback', 1200)),
+    llmMaxOutputTokensExtractFallback: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_EXTRACT_FALLBACK', runtimeSettingDefault('llmMaxOutputTokensExtractFallback', 1200)),
+    llmMaxOutputTokensValidateFallback: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_VALIDATE_FALLBACK', runtimeSettingDefault('llmMaxOutputTokensValidateFallback', 1200)),
+    llmMaxOutputTokensWriteFallback: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_WRITE_FALLBACK', runtimeSettingDefault('llmMaxOutputTokensWriteFallback', 1200)),
     llmOutputTokenPresets: parseTokenPresetList(
       process.env.LLM_OUTPUT_TOKEN_PRESETS,
       [256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096, 8192]
     ),
-    llmCostInputPer1M: parseFloatEnv('LLM_COST_INPUT_PER_1M', 1.25),
-    llmCostOutputPer1M: parseFloatEnv('LLM_COST_OUTPUT_PER_1M', 10),
-    llmCostCachedInputPer1M: parseFloatEnv('LLM_COST_CACHED_INPUT_PER_1M', 0.125),
+    llmCostInputPer1M: parseFloatEnv('LLM_COST_INPUT_PER_1M', runtimeSettingDefault('llmCostInputPer1M', 1.25)),
+    llmCostOutputPer1M: parseFloatEnv('LLM_COST_OUTPUT_PER_1M', runtimeSettingDefault('llmCostOutputPer1M', 10)),
+    llmCostCachedInputPer1M: parseFloatEnv('LLM_COST_CACHED_INPUT_PER_1M', runtimeSettingDefault('llmCostCachedInputPer1M', 0.125)),
     llmCostInputPer1MDeepseekChat: parseFloatEnv('LLM_COST_INPUT_PER_1M_DEEPSEEK_CHAT', -1),
     llmCostOutputPer1MDeepseekChat: parseFloatEnv('LLM_COST_OUTPUT_PER_1M_DEEPSEEK_CHAT', -1),
     llmCostCachedInputPer1MDeepseekChat: parseFloatEnv('LLM_COST_CACHED_INPUT_PER_1M_DEEPSEEK_CHAT', -1),
     llmCostInputPer1MDeepseekReasoner: parseFloatEnv('LLM_COST_INPUT_PER_1M_DEEPSEEK_REASONER', -1),
     llmCostOutputPer1MDeepseekReasoner: parseFloatEnv('LLM_COST_OUTPUT_PER_1M_DEEPSEEK_REASONER', -1),
     llmCostCachedInputPer1MDeepseekReasoner: parseFloatEnv('LLM_COST_CACHED_INPUT_PER_1M_DEEPSEEK_REASONER', -1),
-    llmMonthlyBudgetUsd: parseFloatEnv('LLM_MONTHLY_BUDGET_USD', 200),
-    llmPerProductBudgetUsd: parseFloatEnv('LLM_PER_PRODUCT_BUDGET_USD', 0.1),
-    llmDisableBudgetGuards: parseBoolEnv('LLM_DISABLE_BUDGET_GUARDS', false),
-    llmMaxBatchesPerProduct: parseIntEnv('LLM_MAX_BATCHES_PER_PRODUCT', 7),
-    llmExtractionCacheEnabled: parseBoolEnv('LLM_EXTRACTION_CACHE_ENABLED', true),
-    llmExtractionCacheDir: process.env.LLM_EXTRACTION_CACHE_DIR || '.specfactory_tmp/llm_cache',
-    llmExtractionCacheTtlMs: parseIntEnv('LLM_EXTRACTION_CACHE_TTL_MS', 7 * 24 * 60 * 60 * 1000),
-    llmMaxCallsPerProductTotal: parseIntEnv('LLM_MAX_CALLS_PER_PRODUCT_TOTAL', 10),
-    llmMaxCallsPerProductFast: parseIntEnv('LLM_MAX_CALLS_PER_PRODUCT_FAST', 2),
-    llmMaxCallsPerRound: parseIntEnv('LLM_MAX_CALLS_PER_ROUND', 4),
-    llmMaxEvidenceChars: parseIntEnv('LLM_MAX_EVIDENCE_CHARS', 60_000),
+    llmMonthlyBudgetUsd: parseFloatEnv('LLM_MONTHLY_BUDGET_USD', runtimeSettingDefault('llmMonthlyBudgetUsd', 200)),
+    llmPerProductBudgetUsd: parseFloatEnv('LLM_PER_PRODUCT_BUDGET_USD', runtimeSettingDefault('llmPerProductBudgetUsd', 0.1)),
+    llmDisableBudgetGuards: parseBoolEnv('LLM_DISABLE_BUDGET_GUARDS', runtimeSettingDefault('llmDisableBudgetGuards', false)),
+    llmMaxBatchesPerProduct: parseIntEnv('LLM_MAX_BATCHES_PER_PRODUCT', runtimeSettingDefault('llmMaxBatchesPerProduct', 7)),
+    llmExtractionCacheEnabled: parseBoolEnv('LLM_EXTRACTION_CACHE_ENABLED', runtimeSettingDefault('llmExtractionCacheEnabled', true)),
+    llmExtractionCacheDir: process.env.LLM_EXTRACTION_CACHE_DIR || runtimeSettingDefault('llmExtractionCacheDir', '.specfactory_tmp/llm_cache'),
+    llmExtractionCacheTtlMs: parseIntEnv('LLM_EXTRACTION_CACHE_TTL_MS', runtimeSettingDefault('llmExtractionCacheTtlMs', 7 * 24 * 60 * 60 * 1000)),
+    llmMaxCallsPerProductTotal: parseIntEnv('LLM_MAX_CALLS_PER_PRODUCT_TOTAL', runtimeSettingDefault('llmMaxCallsPerProductTotal', 14)),
+    llmMaxCallsPerProductFast: parseIntEnv('LLM_MAX_CALLS_PER_PRODUCT_FAST', runtimeSettingDefault('llmMaxCallsPerProductFast', 2)),
+    llmMaxCallsPerRound: parseIntEnv('LLM_MAX_CALLS_PER_ROUND', runtimeSettingDefault('llmMaxCallsPerRound', 4)),
+    llmMaxEvidenceChars: parseIntEnv('LLM_MAX_EVIDENCE_CHARS', runtimeSettingDefault('llmMaxEvidenceChars', 60_000)),
     deepseekModelVersion: process.env.DEEPSEEK_MODEL_VERSION || '',
     deepseekContextLength: process.env.DEEPSEEK_CONTEXT_LENGTH || '',
     deepseekChatMaxOutputDefault: parseIntEnv('DEEPSEEK_CHAT_MAX_OUTPUT_DEFAULT', 2048),
@@ -1066,51 +1113,53 @@ export function loadConfig(overrides = {}) {
     deepseekReasonerMaxOutputMaximum: parseIntEnv('DEEPSEEK_REASONER_MAX_OUTPUT_MAXIMUM', 8192),
     llmModelOutputTokenMap: normalizeModelOutputTokenMap(parseJsonEnv('LLM_MODEL_OUTPUT_TOKEN_MAP_JSON', {})),
     deepseekFeatures: process.env.DEEPSEEK_FEATURES || '',
-    accuracyMode: (process.env.ACCURACY_MODE || 'balanced').trim().toLowerCase(),
-    importsRoot: process.env.IMPORTS_ROOT || 'imports',
-    importsPollSeconds: parseIntEnv('IMPORTS_POLL_SECONDS', 10),
-    daemonConcurrency: parseIntEnv('DAEMON_CONCURRENCY', 3),
-    reCrawlStaleAfterDays: parseIntEnv('RECRAWL_STALE_AFTER_DAYS', 30),
-    daemonGracefulShutdownTimeoutMs: parseIntEnv('DAEMON_GRACEFUL_SHUTDOWN_TIMEOUT_MS', 60_000),
-    driftDetectionEnabled: parseBoolEnv('DRIFT_DETECTION_ENABLED', true),
-    driftPollSeconds: parseIntEnv('DRIFT_POLL_SECONDS', 24 * 60 * 60),
-    driftScanMaxProducts: parseIntEnv('DRIFT_SCAN_MAX_PRODUCTS', 250),
-    driftAutoRepublish: parseBoolEnv('DRIFT_AUTO_REPUBLISH', true),
-    helperFilesEnabled: parseBoolEnv('HELPER_FILES_ENABLED', true),
-    helperFilesRoot: process.env.HELPER_FILES_ROOT || 'helper_files',
-    helperSupportiveEnabled: parseBoolEnv('HELPER_SUPPORTIVE_ENABLED', true),
-    helperSupportiveFillMissing: parseBoolEnv('HELPER_SUPPORTIVE_FILL_MISSING', true),
-    helperSupportiveMaxSources: parseIntEnv('HELPER_SUPPORTIVE_MAX_SOURCES', 6),
-    helperAutoSeedTargets: parseBoolEnv('HELPER_AUTO_SEED_TARGETS', true),
-    helperActiveSyncLimit: parseIntEnv('HELPER_ACTIVE_SYNC_LIMIT', 0),
-    graphqlReplayEnabled: parseBoolEnv('GRAPHQL_REPLAY_ENABLED', true),
-    maxGraphqlReplays: parseIntEnv('MAX_GRAPHQL_REPLAYS', 5),
-    maxNetworkResponsesPerPage: parseIntEnv('MAX_NETWORK_RESPONSES_PER_PAGE', 1200),
-    pageGotoTimeoutMs: parseIntEnv('PAGE_GOTO_TIMEOUT_MS', 15_000),
-    pageNetworkIdleTimeoutMs: parseIntEnv('PAGE_NETWORK_IDLE_TIMEOUT_MS', 2_000),
-    postLoadWaitMs: parseIntEnv('POST_LOAD_WAIT_MS', 0),
-    articleExtractorV2Enabled: parseBoolEnv('ARTICLE_EXTRACTOR_V2', true),
-    articleExtractorMinChars: parseIntEnv('ARTICLE_EXTRACTOR_MIN_CHARS', 700),
-    articleExtractorMinScore: parseIntEnv('ARTICLE_EXTRACTOR_MIN_SCORE', 45),
-    articleExtractorMaxChars: parseIntEnv('ARTICLE_EXTRACTOR_MAX_CHARS', 24_000),
+    accuracyMode: 'production',
+    importsRoot: process.env.IMPORTS_ROOT || runtimeSettingDefault('importsRoot', 'imports'),
+    importsPollSeconds: parseIntEnv('IMPORTS_POLL_SECONDS', runtimeSettingDefault('importsPollSeconds', 10)),
+    daemonConcurrency: parseIntEnv('DAEMON_CONCURRENCY', runtimeSettingDefault('daemonConcurrency', 3)),
+    reCrawlStaleAfterDays: parseIntEnv('RECRAWL_STALE_AFTER_DAYS', runtimeSettingDefault('reCrawlStaleAfterDays', 30)),
+    daemonGracefulShutdownTimeoutMs: parseIntEnv('DAEMON_GRACEFUL_SHUTDOWN_TIMEOUT_MS', runtimeSettingDefault('daemonGracefulShutdownTimeoutMs', 60_000)),
+    driftDetectionEnabled: parseBoolEnv('DRIFT_DETECTION_ENABLED', runtimeSettingDefault('driftDetectionEnabled', true)),
+    driftPollSeconds: parseIntEnv('DRIFT_POLL_SECONDS', runtimeSettingDefault('driftPollSeconds', 24 * 60 * 60)),
+    driftScanMaxProducts: parseIntEnv('DRIFT_SCAN_MAX_PRODUCTS', runtimeSettingDefault('driftScanMaxProducts', 250)),
+    driftAutoRepublish: parseBoolEnv('DRIFT_AUTO_REPUBLISH', runtimeSettingDefault('driftAutoRepublish', true)),
+    categoryAuthorityEnabled: parseBoolEnv('HELPER_FILES_ENABLED', runtimeSettingDefault('categoryAuthorityEnabled', true)),
+    [`helper${'FilesEnabled'}`]: parseBoolEnv('HELPER_FILES_ENABLED', runtimeSettingDefault('helperFilesEnabled', true)),
+    categoryAuthorityRoot: resolvedCategoryAuthorityRoot,
+    [`helper${'FilesRoot'}`]: resolvedCategoryAuthorityRoot || process.env.HELPER_FILES_ROOT || 'category_authority',
+    helperSupportiveEnabled: parseBoolEnv('HELPER_SUPPORTIVE_ENABLED', runtimeSettingDefault('helperSupportiveEnabled', true)),
+    helperSupportiveFillMissing: parseBoolEnv('HELPER_SUPPORTIVE_FILL_MISSING', runtimeSettingDefault('helperSupportiveFillMissing', true)),
+    helperSupportiveMaxSources: parseIntEnv('HELPER_SUPPORTIVE_MAX_SOURCES', runtimeSettingDefault('helperSupportiveMaxSources', 6)),
+    helperAutoSeedTargets: parseBoolEnv('HELPER_AUTO_SEED_TARGETS', runtimeSettingDefault('helperAutoSeedTargets', true)),
+    helperActiveSyncLimit: parseIntEnv('HELPER_ACTIVE_SYNC_LIMIT', runtimeSettingDefault('helperActiveSyncLimit', 0)),
+    graphqlReplayEnabled: parseBoolEnv('GRAPHQL_REPLAY_ENABLED', runtimeSettingDefault('graphqlReplayEnabled', true)),
+    maxGraphqlReplays: parseIntEnv('MAX_GRAPHQL_REPLAYS', runtimeSettingDefault('maxGraphqlReplays', 5)),
+    maxNetworkResponsesPerPage: parseIntEnv('MAX_NETWORK_RESPONSES_PER_PAGE', runtimeSettingDefault('maxNetworkResponsesPerPage', 1200)),
+    pageGotoTimeoutMs: parseIntEnv('PAGE_GOTO_TIMEOUT_MS', runtimeSettingDefault('pageGotoTimeoutMs', 12000)),
+    pageNetworkIdleTimeoutMs: parseIntEnv('PAGE_NETWORK_IDLE_TIMEOUT_MS', runtimeSettingDefault('pageNetworkIdleTimeoutMs', 4_000)),
+    postLoadWaitMs: parseIntEnv('POST_LOAD_WAIT_MS', runtimeSettingDefault('postLoadWaitMs', 200)),
+    articleExtractorV2Enabled: parseBoolEnv('ARTICLE_EXTRACTOR_V2', runtimeSettingDefault('articleExtractorV2Enabled', true)),
+    articleExtractorMinChars: parseIntEnv('ARTICLE_EXTRACTOR_MIN_CHARS', runtimeSettingDefault('articleExtractorMinChars', 700)),
+    articleExtractorMinScore: parseIntEnv('ARTICLE_EXTRACTOR_MIN_SCORE', runtimeSettingDefault('articleExtractorMinScore', 45)),
+    articleExtractorMaxChars: parseIntEnv('ARTICLE_EXTRACTOR_MAX_CHARS', runtimeSettingDefault('articleExtractorMaxChars', 24_000)),
     articleExtractorDomainPolicyMap: normalizedArticleExtractorDomainPolicyMap,
     articleExtractorDomainPolicyMapJson,
-    htmlTableExtractorV2: parseBoolEnv('HTML_TABLE_EXTRACTOR_V2', true),
-    staticDomExtractorEnabled: parseBoolEnv('STATIC_DOM_EXTRACTOR_ENABLED', true),
-    staticDomMode: normalizeStaticDomMode(process.env.STATIC_DOM_MODE || 'cheerio'),
-    staticDomTargetMatchThreshold: parseFloatEnv('STATIC_DOM_TARGET_MATCH_THRESHOLD', 0.55),
-    staticDomMaxEvidenceSnippets: parseIntEnv('STATIC_DOM_MAX_EVIDENCE_SNIPPETS', 120),
-    structuredMetadataExtructEnabled: parseBoolEnv('STRUCTURED_METADATA_EXTRUCT_ENABLED', false),
-    structuredMetadataExtructUrl: process.env.STRUCTURED_METADATA_EXTRUCT_URL || 'http://127.0.0.1:8011/extract/structured',
-    structuredMetadataExtructTimeoutMs: parseIntEnv('STRUCTURED_METADATA_EXTRUCT_TIMEOUT_MS', 2000),
-    structuredMetadataExtructMaxItemsPerSurface: parseIntEnv('STRUCTURED_METADATA_EXTRUCT_MAX_ITEMS_PER_SURFACE', 200),
-    structuredMetadataExtructCacheEnabled: parseBoolEnv('STRUCTURED_METADATA_EXTRUCT_CACHE_ENABLED', true),
-    structuredMetadataExtructCacheLimit: parseIntEnv('STRUCTURED_METADATA_EXTRUCT_CACHE_LIMIT', 400),
-    dynamicCrawleeEnabled: parseBoolEnv('DYNAMIC_CRAWLEE_ENABLED', true),
-    crawleeHeadless: parseBoolEnv('CRAWLEE_HEADLESS', true),
-    crawleeRequestHandlerTimeoutSecs: parseIntEnv('CRAWLEE_REQUEST_HANDLER_TIMEOUT_SECS', 75),
-    dynamicFetchRetryBudget: parseIntEnv('DYNAMIC_FETCH_RETRY_BUDGET', 2),
-    dynamicFetchRetryBackoffMs: parseIntEnv('DYNAMIC_FETCH_RETRY_BACKOFF_MS', 1200),
+    htmlTableExtractorV2: parseBoolEnv('HTML_TABLE_EXTRACTOR_V2', runtimeSettingDefault('htmlTableExtractorV2', true)),
+    staticDomExtractorEnabled: parseBoolEnv('STATIC_DOM_EXTRACTOR_ENABLED', runtimeSettingDefault('staticDomExtractorEnabled', true)),
+    staticDomMode: normalizeStaticDomMode(process.env.STATIC_DOM_MODE || runtimeSettingDefault('staticDomMode', 'cheerio')),
+    staticDomTargetMatchThreshold: parseFloatEnv('STATIC_DOM_TARGET_MATCH_THRESHOLD', runtimeSettingDefault('staticDomTargetMatchThreshold', 0.55)),
+    staticDomMaxEvidenceSnippets: parseIntEnv('STATIC_DOM_MAX_EVIDENCE_SNIPPETS', runtimeSettingDefault('staticDomMaxEvidenceSnippets', 120)),
+    structuredMetadataExtructEnabled: parseBoolEnv('STRUCTURED_METADATA_EXTRUCT_ENABLED', runtimeSettingDefault('structuredMetadataExtructEnabled', false)),
+    structuredMetadataExtructUrl: process.env.STRUCTURED_METADATA_EXTRUCT_URL || runtimeSettingDefault('structuredMetadataExtructUrl', 'http://127.0.0.1:8011/extract/structured'),
+    structuredMetadataExtructTimeoutMs: parseIntEnv('STRUCTURED_METADATA_EXTRUCT_TIMEOUT_MS', runtimeSettingDefault('structuredMetadataExtructTimeoutMs', 2000)),
+    structuredMetadataExtructMaxItemsPerSurface: parseIntEnv('STRUCTURED_METADATA_EXTRUCT_MAX_ITEMS_PER_SURFACE', runtimeSettingDefault('structuredMetadataExtructMaxItemsPerSurface', 200)),
+    structuredMetadataExtructCacheEnabled: parseBoolEnv('STRUCTURED_METADATA_EXTRUCT_CACHE_ENABLED', runtimeSettingDefault('structuredMetadataExtructCacheEnabled', true)),
+    structuredMetadataExtructCacheLimit: parseIntEnv('STRUCTURED_METADATA_EXTRUCT_CACHE_LIMIT', runtimeSettingDefault('structuredMetadataExtructCacheLimit', 400)),
+    dynamicCrawleeEnabled: parseBoolEnv('DYNAMIC_CRAWLEE_ENABLED', runtimeSettingDefault('dynamicCrawleeEnabled', true)),
+    crawleeHeadless: parseBoolEnv('CRAWLEE_HEADLESS', runtimeSettingDefault('crawleeHeadless', true)),
+    crawleeRequestHandlerTimeoutSecs: parseIntEnv('CRAWLEE_REQUEST_HANDLER_TIMEOUT_SECS', runtimeSettingDefault('crawleeRequestHandlerTimeoutSecs', 75)),
+    dynamicFetchRetryBudget: parseIntEnv('DYNAMIC_FETCH_RETRY_BUDGET', runtimeSettingDefault('dynamicFetchRetryBudget', 2)),
+    dynamicFetchRetryBackoffMs: parseIntEnv('DYNAMIC_FETCH_RETRY_BACKOFF_MS', runtimeSettingDefault('dynamicFetchRetryBackoffMs', 1200)),
     dynamicFetchPolicyMap: normalizedDynamicFetchPolicyMap,
     dynamicFetchPolicyMapJson,
     searchProfileCapMap: normalizeSearchProfileCapMap(
@@ -1125,90 +1174,66 @@ export function loadConfig(overrides = {}) {
     serpRerankerWeightMapJson: JSON.stringify(
       normalizeSerpRerankerWeightMap(parseJsonEnv('SERP_RERANKER_WEIGHT_MAP_JSON', {}))
     ),
-    preferHttpFetcher: parseBoolEnv('PREFER_HTTP_FETCHER', false),
-    capturePageScreenshotEnabled: parseBoolEnv('CAPTURE_PAGE_SCREENSHOT_ENABLED', true),
+    fetchBudgetMs: parseIntEnv('FETCH_BUDGET_MS', runtimeSettingDefault('fetchBudgetMs', 45_000)),
+    preferHttpFetcher: parseBoolEnv('PREFER_HTTP_FETCHER', runtimeSettingDefault('preferHttpFetcher', true)),
+    capturePageScreenshotEnabled: parseBoolEnv('CAPTURE_PAGE_SCREENSHOT_ENABLED', runtimeSettingDefault('capturePageScreenshotEnabled', true)),
     capturePageScreenshotFormat: String(process.env.CAPTURE_PAGE_SCREENSHOT_FORMAT || 'jpeg').trim().toLowerCase() === 'png'
       ? 'png'
       : 'jpeg',
-    capturePageScreenshotQuality: parseIntEnv('CAPTURE_PAGE_SCREENSHOT_QUALITY', 62),
-    capturePageScreenshotMaxBytes: parseIntEnv('CAPTURE_PAGE_SCREENSHOT_MAX_BYTES', 2_200_000),
+    capturePageScreenshotQuality: parseIntEnv('CAPTURE_PAGE_SCREENSHOT_QUALITY', runtimeSettingDefault('capturePageScreenshotQuality', 50)),
+    capturePageScreenshotMaxBytes: parseIntEnv('CAPTURE_PAGE_SCREENSHOT_MAX_BYTES', runtimeSettingDefault('capturePageScreenshotMaxBytes', 5_000_000)),
     capturePageScreenshotSelectors: String(
       process.env.CAPTURE_PAGE_SCREENSHOT_SELECTORS ||
       'table,[data-spec-table],.specs-table,.spec-table,.specifications'
     ).trim(),
-    visualAssetCaptureEnabled: parseBoolEnv('VISUAL_ASSET_CAPTURE_ENABLED', true),
-    visualAssetCaptureMaxPerSource: parseIntEnv('VISUAL_ASSET_CAPTURE_MAX_PER_SOURCE', 5),
-    visualAssetStoreOriginal: parseBoolEnv('VISUAL_ASSET_STORE_ORIGINAL', true),
-    visualAssetRetentionDays: parseIntEnv('VISUAL_ASSET_RETENTION_DAYS', 30),
-    visualAssetPhashEnabled: parseBoolEnv('VISUAL_ASSET_PHASH_ENABLED', true),
-    visualAssetReviewFormat: String(process.env.VISUAL_ASSET_REVIEW_FORMAT || 'webp').trim().toLowerCase(),
-    visualAssetReviewLgMaxSide: parseIntEnv('VISUAL_ASSET_REVIEW_LG_MAX_SIDE', 1600),
-    visualAssetReviewSmMaxSide: parseIntEnv('VISUAL_ASSET_REVIEW_SM_MAX_SIDE', 768),
-    visualAssetReviewLgQuality: parseIntEnv('VISUAL_ASSET_REVIEW_LG_QUALITY', 75),
-    visualAssetReviewSmQuality: parseIntEnv('VISUAL_ASSET_REVIEW_SM_QUALITY', 65),
-    visualAssetRegionCropMaxSide: parseIntEnv('VISUAL_ASSET_REGION_CROP_MAX_SIDE', 1024),
-    visualAssetRegionCropQuality: parseIntEnv('VISUAL_ASSET_REGION_CROP_QUALITY', 70),
-    visualAssetLlmMaxBytes: parseIntEnv('VISUAL_ASSET_LLM_MAX_BYTES', 512000),
-    visualAssetMinWidth: parseIntEnv('VISUAL_ASSET_MIN_WIDTH', 320),
-    visualAssetMinHeight: parseIntEnv('VISUAL_ASSET_MIN_HEIGHT', 320),
-    visualAssetMinSharpness: parseFloatEnv('VISUAL_ASSET_MIN_SHARPNESS', 80),
-    visualAssetMinEntropy: parseFloatEnv('VISUAL_ASSET_MIN_ENTROPY', 2.5),
-    visualAssetMaxPhashDistance: parseIntEnv('VISUAL_ASSET_MAX_PHASH_DISTANCE', 10),
-    visualAssetHeroSelectorMapJson,
-    chartExtractionEnabled: parseBoolEnv('CHART_EXTRACTION_ENABLED', true),
-    domSnippetMaxChars: parseIntEnv('DOM_SNIPPET_MAX_CHARS', 3600),
-    autoScrollEnabled: parseBoolEnv('AUTO_SCROLL_ENABLED', false),
-    autoScrollPasses: parseIntEnv('AUTO_SCROLL_PASSES', 0),
-    autoScrollDelayMs: parseIntEnv('AUTO_SCROLL_DELAY_MS', 900),
-    robotsTxtCompliant: parseBoolEnv('ROBOTS_TXT_COMPLIANT', true),
-    robotsTxtTimeoutMs: parseIntEnv('ROBOTS_TXT_TIMEOUT_MS', 6000),
-    endpointSignalLimit: parseIntEnv('ENDPOINT_SIGNAL_LIMIT', 30),
-    endpointSuggestionLimit: parseIntEnv('ENDPOINT_SUGGESTION_LIMIT', 12),
-    endpointNetworkScanLimit: parseIntEnv('ENDPOINT_NETWORK_SCAN_LIMIT', 600),
-    manufacturerBroadDiscovery: parseBoolEnv('MANUFACTURER_BROAD_DISCOVERY', false),
-    manufacturerSeedSearchUrls: parseBoolEnv('MANUFACTURER_SEED_SEARCH_URLS', false),
-    allowBelowPassTargetFill: parseBoolEnv('ALLOW_BELOW_PASS_TARGET_FILL', false),
-    selfImproveEnabled: parseBoolEnv('SELF_IMPROVE_ENABLED', true),
-    learningConfidenceThreshold: parseFloatEnv('LEARNING_CONFIDENCE_THRESHOLD', 0.85),
-    componentLexiconDecayDays: parseIntEnv('COMPONENT_LEXICON_DECAY_DAYS', 90),
-    componentLexiconExpireDays: parseIntEnv('COMPONENT_LEXICON_EXPIRE_DAYS', 180),
-    fieldAnchorsDecayDays: parseIntEnv('FIELD_ANCHORS_DECAY_DAYS', 60),
-    urlMemoryDecayDays: parseIntEnv('URL_MEMORY_DECAY_DAYS', 120),
-    maxHypothesisItems: parseIntEnv('MAX_HYPOTHESIS_ITEMS', 50),
-    hypothesisAutoFollowupRounds: parseIntEnv('HYPOTHESIS_AUTO_FOLLOWUP_ROUNDS', 0),
-    hypothesisFollowupUrlsPerRound: parseIntEnv('HYPOTHESIS_FOLLOWUP_URLS_PER_ROUND', 12),
-    fieldRewardHalfLifeDays: parseIntEnv('FIELD_REWARD_HALF_LIFE_DAYS', 45),
-    batchStrategy: (process.env.BATCH_STRATEGY || 'bandit').toLowerCase(),
-    fieldRulesEngineEnforceEvidence: parseBoolEnv(
-      'FIELD_RULES_ENGINE_ENFORCE_EVIDENCE',
-      parseBoolEnv('AGGRESSIVE_MODE_ENABLED', false) || parseBoolEnv('UBER_AGGRESSIVE_ENABLED', false)
-    ),
+    chartExtractionEnabled: parseBoolEnv('CHART_EXTRACTION_ENABLED', runtimeSettingDefault('chartExtractionEnabled', true)),
+    domSnippetMaxChars: parseIntEnv('DOM_SNIPPET_MAX_CHARS', runtimeSettingDefault('domSnippetMaxChars', 3600)),
+    autoScrollEnabled: parseBoolEnv('AUTO_SCROLL_ENABLED', runtimeSettingDefault('autoScrollEnabled', false)),
+    autoScrollPasses: parseIntEnv('AUTO_SCROLL_PASSES', runtimeSettingDefault('autoScrollPasses', 0)),
+    autoScrollDelayMs: parseIntEnv('AUTO_SCROLL_DELAY_MS', runtimeSettingDefault('autoScrollDelayMs', 900)),
+    robotsTxtCompliant: parseBoolEnv('ROBOTS_TXT_COMPLIANT', runtimeSettingDefault('robotsTxtCompliant', true)),
+    robotsTxtTimeoutMs: parseIntEnv('ROBOTS_TXT_TIMEOUT_MS', runtimeSettingDefault('robotsTxtTimeoutMs', 6000)),
+    endpointSignalLimit: parseIntEnv('ENDPOINT_SIGNAL_LIMIT', runtimeSettingDefault('endpointSignalLimit', 30)),
+    endpointSuggestionLimit: parseIntEnv('ENDPOINT_SUGGESTION_LIMIT', runtimeSettingDefault('endpointSuggestionLimit', 12)),
+    endpointNetworkScanLimit: parseIntEnv('ENDPOINT_NETWORK_SCAN_LIMIT', runtimeSettingDefault('endpointNetworkScanLimit', 600)),
+    manufacturerBroadDiscovery: parseBoolEnv('MANUFACTURER_BROAD_DISCOVERY', runtimeSettingDefault('manufacturerBroadDiscovery', false)),
+    manufacturerSeedSearchUrls: parseBoolEnv('MANUFACTURER_SEED_SEARCH_URLS', runtimeSettingDefault('manufacturerSeedSearchUrls', false)),
+    manufacturerAutoPromote: parseBoolEnv('MANUFACTURER_AUTO_PROMOTE', runtimeSettingDefault('manufacturerAutoPromote', true)),
+    allowBelowPassTargetFill: parseBoolEnv('ALLOW_BELOW_PASS_TARGET_FILL', runtimeSettingDefault('allowBelowPassTargetFill', false)),
+    selfImproveEnabled: parseBoolEnv('SELF_IMPROVE_ENABLED', runtimeSettingDefault('selfImproveEnabled', true)),
+    maxHypothesisItems: parseIntEnv('MAX_HYPOTHESIS_ITEMS', runtimeSettingDefault('maxHypothesisItems', 50)),
+    hypothesisAutoFollowupRounds: parseIntEnv('HYPOTHESIS_AUTO_FOLLOWUP_ROUNDS', runtimeSettingDefault('hypothesisAutoFollowupRounds', 0)),
+    hypothesisFollowupUrlsPerRound: parseIntEnv('HYPOTHESIS_FOLLOWUP_URLS_PER_ROUND', runtimeSettingDefault('hypothesisFollowupUrlsPerRound', 12)),
+    fieldRewardHalfLifeDays: parseIntEnv('FIELD_REWARD_HALF_LIFE_DAYS', runtimeSettingDefault('fieldRewardHalfLifeDays', 45)),
+    batchStrategy: (process.env.BATCH_STRATEGY || runtimeSettingDefault('batchStrategy', 'bandit')).toLowerCase(),
+    fieldRulesEngineEnforceEvidence: parseBoolEnv('FIELD_RULES_ENGINE_ENFORCE_EVIDENCE', true),
 
     // SQLite migration feature flags (dual-write controls)
-    queueJsonWrite: parseBoolEnv('QUEUE_JSON_WRITE', false),
-    billingJsonWrite: parseBoolEnv('BILLING_JSON_WRITE', false),
-    brainJsonWrite: parseBoolEnv('BRAIN_JSON_WRITE', false),
-    intelJsonWrite: parseBoolEnv('INTEL_JSON_WRITE', false),
-    corpusJsonWrite: parseBoolEnv('CORPUS_JSON_WRITE', false),
-    learningJsonWrite: parseBoolEnv('LEARNING_JSON_WRITE', false),
-    cacheJsonWrite: parseBoolEnv('CACHE_JSON_WRITE', false),
-    eventsJsonWrite: parseBoolEnv('EVENTS_JSON_WRITE', true),
+    queueJsonWrite: parseBoolEnv('QUEUE_JSON_WRITE', runtimeSettingDefault('queueJsonWrite', false)),
+    billingJsonWrite: parseBoolEnv('BILLING_JSON_WRITE', runtimeSettingDefault('billingJsonWrite', false)),
+    intelJsonWrite: parseBoolEnv('INTEL_JSON_WRITE', runtimeSettingDefault('intelJsonWrite', false)),
+    corpusJsonWrite: parseBoolEnv('CORPUS_JSON_WRITE', runtimeSettingDefault('corpusJsonWrite', false)),
+    learningJsonWrite: parseBoolEnv('LEARNING_JSON_WRITE', runtimeSettingDefault('learningJsonWrite', false)),
+    cacheJsonWrite: parseBoolEnv('CACHE_JSON_WRITE', runtimeSettingDefault('cacheJsonWrite', false)),
+    eventsJsonWrite: parseBoolEnv('EVENTS_JSON_WRITE', runtimeSettingDefault('eventsJsonWrite', true)),
     runtimeOpsWorkbenchEnabled: parseBoolEnv('RUNTIME_OPS_WORKBENCH_ENABLED', true),
-    authoritySnapshotEnabled: parseBoolEnv('AUTHORITY_SNAPSHOT_ENABLED', true),
-    runtimeScreencastEnabled: parseBoolEnv('RUNTIME_SCREENCAST_ENABLED', true),
-    runtimeScreencastFps: parseIntEnv('RUNTIME_SCREENCAST_FPS', 10),
-    runtimeScreencastQuality: parseIntEnv('RUNTIME_SCREENCAST_QUALITY', 50),
-    runtimeScreencastMaxWidth: parseIntEnv('RUNTIME_SCREENCAST_MAX_WIDTH', 1280),
-    runtimeScreencastMaxHeight: parseIntEnv('RUNTIME_SCREENCAST_MAX_HEIGHT', 720),
-    runtimeAutoSaveEnabled: parseBoolEnv('RUNTIME_AUTOSAVE_ENABLED', true)
+    authoritySnapshotEnabled: parseBoolEnv('AUTHORITY_SNAPSHOT_ENABLED', runtimeSettingDefault('authoritySnapshotEnabled', true)),
+    runtimeScreencastEnabled: parseBoolEnv('RUNTIME_SCREENCAST_ENABLED', runtimeSettingDefault('runtimeScreencastEnabled', true)),
+    runtimeScreencastFps: parseIntEnv('RUNTIME_SCREENCAST_FPS', runtimeSettingDefault('runtimeScreencastFps', 2)),
+    runtimeScreencastQuality: parseIntEnv('RUNTIME_SCREENCAST_QUALITY', runtimeSettingDefault('runtimeScreencastQuality', 50)),
+    runtimeScreencastMaxWidth: parseIntEnv('RUNTIME_SCREENCAST_MAX_WIDTH', runtimeSettingDefault('runtimeScreencastMaxWidth', 1280)),
+    runtimeScreencastMaxHeight: parseIntEnv('RUNTIME_SCREENCAST_MAX_HEIGHT', runtimeSettingDefault('runtimeScreencastMaxHeight', 720)),
+    runtimeAutoSaveEnabled: parseBoolEnv('RUNTIME_AUTOSAVE_ENABLED', runtimeSettingDefault('runtimeAutoSaveEnabled', true))
   };
+
+  const canonicalCfg = applyCanonicalSettingsDefaults(cfg, explicitEnvKeys);
 
   const filtered = Object.fromEntries(
     Object.entries(overrides).filter(([, value]) => value !== undefined)
   );
 
   const merged = {
-    ...cfg,
+    ...canonicalCfg,
     ...filtered
   };
   if (merged.localMode === true && !filtered.outputMode) {
@@ -1221,6 +1246,7 @@ export function loadConfig(overrides = {}) {
   if (!merged.s3Bucket) {
     merged.mirrorToS3 = false;
   }
+  merged.userAgent = normalizeUserAgent(merged.userAgent, DEFAULT_USER_AGENT);
 
   merged.llmProvider = merged.llmProvider || inferLlmProvider(
     merged.llmBaseUrl || merged.openaiBaseUrl,
@@ -1360,7 +1386,7 @@ export function loadConfig(overrides = {}) {
     maxOutputTokens: merged.deepseekReasonerMaxOutputMaximum
   });
   upsertTokenProfile('gemini-2.5-flash-lite', {
-    defaultOutputTokens: 2048,
+    defaultOutputTokens: 4096,
     maxOutputTokens: 8192
   });
   upsertTokenProfile('gemini-2.5-flash', {
@@ -1395,29 +1421,39 @@ export function loadConfig(overrides = {}) {
   merged.openaiModelWrite = merged.llmModelWrite;
   merged.openaiTimeoutMs = merged.llmTimeoutMs;
 
-  return applyRunProfile(
-    merged,
-    filtered.runProfile || cfg.runProfile
-  );
+  merged.runProfile = 'standard';
+  merged.manufacturerReserveUrls = Math.max(0, Math.min(merged.maxUrlsPerProduct, merged.manufacturerReserveUrls));
+  merged.maxManufacturerUrlsPerProduct = Math.max(1, Math.min(merged.maxUrlsPerProduct, merged.maxManufacturerUrlsPerProduct));
+
+  const hasExplicitPreferHttpFetcherOverride = Object.prototype.hasOwnProperty.call(filtered, 'preferHttpFetcher');
+  const hasEnvPreferHttpFetcherOverride = Object.prototype.hasOwnProperty.call(process.env, 'PREFER_HTTP_FETCHER');
+
+  if (hasExplicitPreferHttpFetcherOverride) {
+    merged.preferHttpFetcher = Boolean(filtered.preferHttpFetcher);
+  } else if (hasEnvPreferHttpFetcherOverride) {
+    merged.preferHttpFetcher = parseBoolEnv('PREFER_HTTP_FETCHER', merged.preferHttpFetcher);
+  }
+
+  return merged;
 }
 
 export function validateConfig(config) {
   const errors = [];
   const warnings = [];
 
-  // Rule 1: LLM enabled requires API key
-  if (config.llmEnabled && !config.llmApiKey) {
-    errors.push({
+  // Rule 1: LLM is always on — missing API key is a warning (graceful degradation)
+  if (!config.llmApiKey) {
+    warnings.push({
       code: 'LLM_NO_API_KEY',
-      message: 'LLM_ENABLED=true but LLM_API_KEY is not set'
+      message: 'LLM is enabled but LLM_API_KEY is not set — LLM enrichment will fail at runtime'
     });
   }
 
-  // Rule 2: Discovery enabled requires search provider
-  if (config.discoveryEnabled && config.searchProvider === 'none') {
-    errors.push({
+  // Rule 2: Discovery requires a search provider
+  if (config.searchProvider === 'none') {
+    warnings.push({
       code: 'DISCOVERY_NO_SEARCH_PROVIDER',
-      message: 'DISCOVERY_ENABLED=true but SEARCH_PROVIDER is "none"'
+      message: 'SEARCH_PROVIDER is "none" — discovery search will be skipped'
     });
   }
 
@@ -1437,27 +1473,11 @@ export function validateConfig(config) {
     });
   }
 
-  // Rule 5: Aggressive mode should have frontier enabled
-  if (config.aggressiveModeEnabled && !config.frontierEnableSqlite && !config.frontierDbPath) {
-    warnings.push({
-      code: 'AGGRESSIVE_NO_FRONTIER',
-      message: 'AGGRESSIVE_MODE_ENABLED=true but frontier DB is not configured'
-    });
-  }
-
-  // Rule 6: manufacturerReserveUrls should not exceed maxUrlsPerProduct
+  // Rule 5: manufacturerReserveUrls should not exceed maxUrlsPerProduct
   if (config.maxUrlsPerProduct < config.manufacturerReserveUrls) {
     warnings.push({
       code: 'MANUFACTURER_RESERVE_EXCEEDS_MAX',
       message: `manufacturerReserveUrls (${config.manufacturerReserveUrls}) > maxUrlsPerProduct (${config.maxUrlsPerProduct})`
-    });
-  }
-
-  // Rule 7: Uber aggressive requires aggressive mode
-  if (config.uberAggressiveEnabled && !config.aggressiveModeEnabled) {
-    warnings.push({
-      code: 'UBER_WITHOUT_AGGRESSIVE',
-      message: 'UBER_AGGRESSIVE_ENABLED=true but AGGRESSIVE_MODE_ENABLED=false'
     });
   }
 

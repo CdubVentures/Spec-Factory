@@ -1,0 +1,82 @@
+type IndexingRunLearningPayloadPrimitive = string | number | boolean;
+
+export interface BuildIndexingRunLearningPayloadInput {
+  llmEnabled: boolean;
+  llmWriteSummary: boolean;
+  llmProvider: string;
+  llmBaseUrl: string;
+  openaiApiKey: string;
+  anthropicApiKey: string;
+  allowBelowPassTargetFill: boolean;
+  indexingCategoryAuthorityEnabled: boolean;
+  parsedMaxManufacturerUrlsPerProduct: number;
+  parsedMaxManufacturerPagesPerDomain: number;
+  parsedManufacturerReserveUrls: number;
+  userAgent: string;
+  selfImproveEnabled: boolean;
+  parsedMaxHypothesisItems: number;
+  parsedHypothesisAutoFollowupRounds: number;
+  parsedHypothesisFollowupUrlsPerRound: number;
+  searxngBaseUrl: string;
+  llmPlanProvider: string;
+  llmPlanBaseUrl: string;
+  llmPlanApiKey: string;
+  llmExtractionCacheEnabled: boolean;
+  llmExtractionCacheDir: string;
+  parsedLlmExtractionCacheTtlMs: number;
+  parsedLlmMaxCallsPerProductTotal: number;
+  parsedLlmMaxCallsPerProductFast: number;
+  parsedLlmExtractMaxTokens: number;
+  llmExtractMinTokens: number;
+  parsedLlmExtractMaxSnippetsPerBatch: number;
+  parsedLlmExtractMaxSnippetChars: number;
+  llmExtractMinSnippetChars: number;
+  llmExtractSkipLowSignal: boolean;
+  parsedLlmExtractReasoningBudget: number;
+  llmReasoningMode: boolean | string;
+  parsedLlmReasoningBudget: number;
+  parsedLlmMonthlyBudgetUsd: number;
+  parsedLlmPerProductBudgetUsd: number;
+}
+
+export function buildIndexingRunLearningPayload(
+  input: BuildIndexingRunLearningPayloadInput,
+): Record<string, IndexingRunLearningPayloadPrimitive> {
+  return {
+    // WHY: llmEnabled is a hardcoded invariant per the rollout plan — always on.
+    llmEnabled: true,
+    llmWriteSummary: input.llmWriteSummary,
+    llmProvider: String(input.llmProvider || '').trim(),
+    llmBaseUrl: String(input.llmBaseUrl || '').trim(),
+    openaiApiKey: String(input.openaiApiKey || '').trim(),
+    anthropicApiKey: String(input.anthropicApiKey || '').trim(),
+    allowBelowPassTargetFill: input.allowBelowPassTargetFill,
+    indexingCategoryAuthorityEnabled: input.indexingCategoryAuthorityEnabled,
+    maxManufacturerUrlsPerProduct: Math.max(1, input.parsedMaxManufacturerUrlsPerProduct),
+    maxManufacturerPagesPerDomain: Math.max(1, input.parsedMaxManufacturerPagesPerDomain),
+    manufacturerReserveUrls: Math.max(0, input.parsedManufacturerReserveUrls),
+    userAgent: String(input.userAgent || '').trim(),
+    selfImproveEnabled: input.selfImproveEnabled,
+    maxHypothesisItems: Math.max(1, input.parsedMaxHypothesisItems),
+    hypothesisAutoFollowupRounds: Math.max(0, input.parsedHypothesisAutoFollowupRounds),
+    hypothesisFollowupUrlsPerRound: Math.max(1, input.parsedHypothesisFollowupUrlsPerRound),
+    searxngBaseUrl: String(input.searxngBaseUrl || '').trim(),
+    llmPlanProvider: String(input.llmPlanProvider || '').trim(),
+    llmPlanBaseUrl: String(input.llmPlanBaseUrl || '').trim(),
+    llmPlanApiKey: String(input.llmPlanApiKey || '').trim(),
+    llmExtractionCacheEnabled: input.llmExtractionCacheEnabled,
+    llmExtractionCacheDir: String(input.llmExtractionCacheDir || '').trim(),
+    llmExtractionCacheTtlMs: Math.max(60000, input.parsedLlmExtractionCacheTtlMs),
+    llmMaxCallsPerProductTotal: Math.max(1, input.parsedLlmMaxCallsPerProductTotal),
+    llmMaxCallsPerProductFast: Math.max(0, input.parsedLlmMaxCallsPerProductFast),
+    llmExtractMaxTokens: Math.max(input.llmExtractMinTokens, input.parsedLlmExtractMaxTokens),
+    llmExtractMaxSnippetsPerBatch: Math.max(1, input.parsedLlmExtractMaxSnippetsPerBatch),
+    llmExtractMaxSnippetChars: Math.max(input.llmExtractMinSnippetChars, input.parsedLlmExtractMaxSnippetChars),
+    llmExtractSkipLowSignal: input.llmExtractSkipLowSignal,
+    llmExtractReasoningBudget: Math.max(256, input.parsedLlmExtractReasoningBudget),
+    llmReasoningMode: input.llmReasoningMode,
+    llmReasoningBudget: Math.max(256, input.parsedLlmReasoningBudget),
+    llmMonthlyBudgetUsd: Math.max(0, input.parsedLlmMonthlyBudgetUsd),
+    llmPerProductBudgetUsd: Math.max(0, input.parsedLlmPerProductBudgetUsd),
+  };
+}

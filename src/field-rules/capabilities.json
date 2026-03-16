@@ -106,10 +106,14 @@
       "description": "Minimum distinct evidence references required"
     },
     "evidence.tier_preference": {
-      "status": "deferred",
-      "consumer": null,
-      "reason": "Documents preferred tiers; runtime uses fixed tier weighting in consensusEngine",
-      "description": "Preferred evidence tier ordering"
+      "status": "live",
+      "consumer": "src/field-rules/compiler.js:deriveEvidenceTierMinimum + src/features/indexing/discovery/coreDeepGate.js:classifyFieldCoreDeep",
+      "description": "Preferred evidence tier ordering — drives evidence_tier_minimum derivation"
+    },
+    "core_fields": {
+      "status": "live",
+      "consumer": "src/features/indexing/discovery/coreDeepGate.js:classifyFieldCoreDeep",
+      "description": "Top-level array of field keys classified as core facts (derived from priority.required_level during compilation)"
     },
     "evidence.conflict_policy": {
       "status": "deferred",
@@ -185,12 +189,12 @@
     },
     "ai_assist.mode": {
       "status": "live",
-      "consumer": "src/llm/fieldBatching.js:getRuleDifficulty + buildFieldBatches + src/llm/extractCandidatesLLM.js:verification routing",
+      "consumer": "src/features/indexing/extraction/fieldBatching.js:getRuleDifficulty + buildFieldBatches + src/features/indexing/extraction/extractCandidatesLLM.js:verification routing",
       "description": "AI assist level (off, advisory, planner, judge). Auto-derived from priority+difficulty when not set."
     },
     "ai_assist.model_strategy": {
       "status": "live",
-      "consumer": "src/llm/fieldBatching.js:resolveBatchModel",
+      "consumer": "src/features/indexing/extraction/fieldBatching.js:resolveBatchModel",
       "description": "Model tier strategy (auto, force_fast, force_deep)"
     },
     "ai_assist.max_calls": {
@@ -200,12 +204,12 @@
     },
     "ai_assist.max_tokens": {
       "status": "live",
-      "consumer": "src/llm/fieldBatching.js:resolveBatchModel → src/llm/extractCandidatesLLM.js → openaiClient.js:body.max_tokens",
+      "consumer": "src/features/indexing/extraction/fieldBatching.js:resolveBatchModel -> src/features/indexing/extraction/extractCandidatesLLM.js -> openaiClient.js:body.max_tokens",
       "description": "Per-field token budget for LLM output. Auto-derived from mode: advisory=4096, planner=8192, judge=16384. Batch uses MAX across fields."
     },
     "ai_assist.reasoning_note": {
       "status": "live",
-      "consumer": "src/llm/extractCandidatesLLM.js:buildPromptFieldContracts (passed as extraction_guidance to LLM)",
+      "consumer": "src/features/indexing/extraction/extractCandidatesLLM.js:buildPromptFieldContracts (passed as extraction_guidance to LLM)",
       "description": "Per-field extraction guidance injected into LLM prompts. Auto-generated from field properties when not explicitly set."
     },
     "ui.label": {

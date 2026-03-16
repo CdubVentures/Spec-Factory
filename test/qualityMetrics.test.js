@@ -4,7 +4,7 @@ import {
   computeCompletenessRequired,
   computeCoverageOverall
 } from '../src/scoring/qualityScoring.js';
-import { evaluateValidationGate } from '../src/validator/qualityGate.js';
+import { evaluateValidationGate } from '../src/features/indexing/validation/qualityGate.js';
 
 test('computeCompletenessRequired treats unk as missing and reports missing fields', () => {
   const normalized = {

@@ -1,0 +1,73 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+
+// ---------------------------------------------------------------------------
+// B1: Search providers stay on the supported allowlist
+// ---------------------------------------------------------------------------
+describe('B1: Search provider allowlist stays constrained', () => {
+  it('providerCapabilities exposes only supported providers', async () => {
+    const { listProviders } = await import('../src/features/indexing/discovery/providerCapabilities.js');
+    assert.deepEqual(listProviders().slice().sort(), ['bing', 'dual', 'google', 'none', 'searxng']);
+  });
+
+  it('unknown provider tokens normalize to none', async () => {
+    const { searchProviderAvailability } = await import('../src/features/indexing/search/searchProviders.js');
+    const result = searchProviderAvailability({
+      searchProvider: 'legacy_provider',
+      searxngBaseUrl: 'http://127.0.0.1:8080',
+    });
+    assert.equal(result.provider, 'none');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// B2: SEARCH_PROVIDER default is dual
+// ---------------------------------------------------------------------------
+describe('B2: Default search provider is dual', () => {
+  it('config searchProvider defaults to dual without an explicit override', async () => {
+    const { loadConfig } = await import('../src/config.js');
+    const previous = process.env.SEARCH_PROVIDER;
+    delete process.env.SEARCH_PROVIDER;
+    try {
+      const config = loadConfig();
+      assert.equal(config.searchProvider, 'dual');
+    } finally {
+      if (previous === undefined) {
+        delete process.env.SEARCH_PROVIDER;
+      } else {
+        process.env.SEARCH_PROVIDER = previous;
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// B3: SearXNG base URL is configured
+// ---------------------------------------------------------------------------
+describe('B3: SearXNG fallback is configured', () => {
+  it('searchProviderAvailability with searxng base URL reports internet_ready', async () => {
+    const { searchProviderAvailability } = await import('../src/features/indexing/search/searchProviders.js');
+    const result = searchProviderAvailability({
+      searchProvider: 'google',
+      searxngBaseUrl: 'http://127.0.0.1:8080',
+    });
+    assert.ok(
+      result.searxng_ready || result.searxng_base_url || result.internet_ready !== false,
+      'SearXNG is available as fallback',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// B4: Legacy Google CSE alias is removed from provider normalization
+// ---------------------------------------------------------------------------
+describe('B4: Legacy Google CSE alias is removed', () => {
+  it('searchProviders.js does not normalize google_cse as an active provider', async () => {
+    const { searchProviderAvailability } = await import('../src/features/indexing/search/searchProviders.js');
+    const result = searchProviderAvailability({
+      searchProvider: 'google_cse',
+      searxngBaseUrl: 'http://127.0.0.1:8080',
+    });
+    assert.equal(result.provider, 'none');
+  });
+});

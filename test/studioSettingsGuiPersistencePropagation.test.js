@@ -110,7 +110,7 @@ async function ensureStudioAutoSaveAllPersisted(page, baseUrl) {
 test('GUI studio autosave settings persist across reload and propagate across shared tabs', { timeout: 240_000 }, async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'studio-settings-gui-'));
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files'),
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
     localOutputRoot: path.join(tempRoot, 'out'),
   };
   const repoRoot = path.resolve('.');
@@ -126,8 +126,8 @@ test('GUI studio autosave settings persist across reload and propagate across sh
     await ensureGuiBuilt();
 
     // Default "mouse" routes may be requested before category selection settles.
-    await seedStudioCategory(config.helperFilesRoot, 'mouse');
-    await seedStudioCategory(config.helperFilesRoot, CATEGORY);
+    await seedStudioCategory(config.categoryAuthorityRoot, 'mouse');
+    await seedStudioCategory(config.categoryAuthorityRoot, CATEGORY);
 
     const port = await findFreePort();
     const baseUrl = `http://127.0.0.1:${port}`;
@@ -136,7 +136,7 @@ test('GUI studio autosave settings persist across reload and propagate across sh
       cwd: tempRoot,
       env: {
         ...process.env,
-        HELPER_FILES_ROOT: config.helperFilesRoot,
+        HELPER_FILES_ROOT: config.categoryAuthorityRoot,
         LOCAL_OUTPUT_ROOT: config.localOutputRoot,
         LOCAL_INPUT_ROOT: path.join(tempRoot, 'fixtures'),
         OUTPUT_MODE: 'local',

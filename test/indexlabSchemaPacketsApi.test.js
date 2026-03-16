@@ -44,6 +44,7 @@ async function writeJson(filePath, value) {
 test('indexlab schema packet endpoints return source/item/run-meta packets', { timeout: 60_000 }, async (t) => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexlab-schema-packets-api-'));
   const indexlabRoot = path.join(tempRoot, 'indexlab');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const runId = 'run-schema-001';
   const category = 'mouse';
   const productId = 'mouse-logitech-g-pro-x-superlight-2';
@@ -192,7 +193,9 @@ test('indexlab schema packet endpoints return source/item/run-meta packets', { t
       cwd: process.cwd(),
       env: {
         ...process.env,
-        LOCAL_MODE: 'true'
+        LOCAL_MODE: 'true',
+        HELPER_FILES_ROOT: helperRoot,
+        CATEGORY_AUTHORITY_ROOT: helperRoot,
       },
       stdio: ['ignore', 'ignore', 'pipe']
     }

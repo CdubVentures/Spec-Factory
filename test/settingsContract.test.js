@@ -17,7 +17,7 @@ import {
   UI_SETTINGS_KEYS,
   UI_SETTINGS_VALUE_TYPES,
   validateUserSettingsSnapshot,
-} from '../src/api/services/settingsContract.js';
+} from '../src/features/settings-authority/settingsContract.js';
 
 test('settings contract exposes version, precedence, and migration metadata', () => {
   assert.equal(Number.isInteger(SETTINGS_DOCUMENT_SCHEMA_VERSION), true);
@@ -33,15 +33,13 @@ test('settings contract exposes version, precedence, and migration metadata', ()
 test('migration normalizes legacy top-level runtime/convergence/ui keys into section envelopes', () => {
   const migrated = migrateUserSettingsDocument({
     schemaVersion: 1,
-    runProfile: 'thorough',
-    convergenceMaxRounds: 11,
+    serpTriageMinScore: 5,
     runtimeAutoSaveEnabled: false,
     unknownRootValue: 'ignored',
   });
   assert.equal(migrated.schemaVersion, SETTINGS_DOCUMENT_SCHEMA_VERSION);
   assert.equal(migrated.migratedFrom, 1);
-  assert.equal(migrated.runtime.runProfile, 'thorough');
-  assert.equal(migrated.convergence.convergenceMaxRounds, 11);
+  assert.equal(migrated.convergence.serpTriageMinScore, 5);
   assert.equal(migrated.ui.runtimeAutoSaveEnabled, false);
   assert.equal(Object.hasOwn(migrated, 'unknownRootValue'), false);
 });
@@ -49,11 +47,11 @@ test('migration normalizes legacy top-level runtime/convergence/ui keys into sec
 test('migration keeps only canonical runtime/convergence/ui keys', () => {
   const migrated = migrateUserSettingsDocument({
     runtime: {
-      runProfile: 'fast',
+      searchProvider: 'searxng',
       unknownRuntimeKey: 'drop-me',
     },
     convergence: {
-      convergenceMaxRounds: 4,
+      serpTriageMinScore: 4,
       unknownConvergenceKey: true,
     },
     ui: {
@@ -61,9 +59,10 @@ test('migration keeps only canonical runtime/convergence/ui keys', () => {
       unknownUiKey: false,
     },
   });
-  assert.equal(Object.hasOwn(migrated.runtime, 'runProfile'), true);
+  assert.equal(Object.hasOwn(migrated.runtime, 'searchProvider'), true);
   assert.equal(Object.hasOwn(migrated.runtime, 'unknownRuntimeKey'), false);
-  assert.equal(Object.hasOwn(migrated.convergence, 'convergenceMaxRounds'), true);
+  assert.equal(Object.hasOwn(migrated.runtime, 'runProfile'), false);
+  assert.equal(Object.hasOwn(migrated.convergence, 'serpTriageMinScore'), true);
   assert.equal(Object.hasOwn(migrated.convergence, 'unknownConvergenceKey'), false);
   assert.equal(Object.hasOwn(migrated.ui, 'studioAutoSaveEnabled'), true);
   assert.equal(Object.hasOwn(migrated.ui, 'unknownUiKey'), false);
@@ -106,6 +105,19 @@ test('runtime GET route maps include all runtime PUT frontend keys', () => {
   assert.deepEqual(missing, []);
 });
 
+test('runtime route contract keeps serpTriageMaxUrls writable through PUT mapping', () => {
+  assert.equal(
+    Object.hasOwn(RUNTIME_SETTINGS_ROUTE_GET.intMap, 'serpTriageMaxUrls'),
+    true,
+    'runtime GET contract should expose serpTriageMaxUrls',
+  );
+  assert.equal(
+    Object.hasOwn(RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap, 'serpTriageMaxUrls'),
+    true,
+    'runtime PUT contract should accept serpTriageMaxUrls updates',
+  );
+});
+
 test('convergence route contract keys resolve to canonical convergence settings keys', () => {
   const convergenceSet = new Set(CONVERGENCE_SETTINGS_KEYS);
   const routeKeys = new Set([
@@ -131,7 +143,7 @@ test('readUserSettingsDocumentMeta flags stale payload versions only when payloa
   assert.equal(missing.hasPayload, false);
   assert.equal(missing.stale, false);
 
-  const stale = readUserSettingsDocumentMeta({ schemaVersion: 1, runtime: { runProfile: 'fast' } });
+  const stale = readUserSettingsDocumentMeta({ schemaVersion: 1, runtime: { searchProvider: 'searxng' } });
   assert.equal(stale.hasPayload, true);
   assert.equal(stale.stale, true);
   assert.equal(stale.schemaVersion, 1);
@@ -141,13 +153,13 @@ test('readUserSettingsDocumentMeta flags stale payload versions only when payloa
 test('validateUserSettingsSnapshot enforces canonical envelope and rejects unknown keys', () => {
   const validPayload = {
     schemaVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
-    runtime: { runProfile: 'fast' },
-    convergence: { convergenceMaxRounds: 3 },
+    runtime: { searchProvider: 'searxng' },
+    convergence: { serpTriageMinScore: 3 },
     storage: {
       enabled: false,
       destinationType: 'local',
       localDirectory: '',
-      s3Region: 'us-east-2',
+      awsRegion: 'us-east-2',
       s3Bucket: '',
       s3Prefix: 'spec-factory-runs',
       s3AccessKeyId: '',

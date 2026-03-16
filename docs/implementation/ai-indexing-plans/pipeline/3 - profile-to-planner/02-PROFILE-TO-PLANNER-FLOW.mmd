@@ -1,0 +1,30 @@
+flowchart TD
+  A["discoverCandidateSources()"] --> B["Resolve caps<br/>profileMaxQueries = max(6, discoveryMaxQueries * 2)"]
+  B --> C["buildSearchProfile()<br/>job + categoryConfig + missingFields + learnedQueries + brandResolution"]
+
+  subgraph P["buildSearchProfile() live path"]
+    C --> P1["Resolve identity<br/>base_templates = searchTemplates<br/>focus_fields = normalize(missingFields by fieldOrder)"]
+    P1 --> P2["buildDeterministicAliases(aliasValidationCap)<br/>variant_guard_terms"]
+    P1 --> P3["buildQueryRows()<br/>search_hints.query_terms<br/>domain_hints<br/>preferred_content_types<br/>tooltip gate<br/>learned queries"]
+    P3 --> P4["Select queries<br/>base_templates first<br/>round-robin rows<br/>dedup<br/>cap to maxQueries"]
+    P4 --> P5["Return 17-key Search Profile<br/>queries<br/>query_rows<br/>targeted_queries<br/>field/doc maps"]
+  end
+
+  P5 --> D["searchDiscovery extracts<br/>baseQueries = base_templates<br/>targetedQueries = queries<br/>profileQueryRowsByQuery metadata map"]
+  D --> E["planDiscoveryQueriesLLM()<br/>baseQueries: [...baseQueries, ...targetedQueries]<br/>missingCriticalFields"]
+
+  subgraph L["LLM planner live behavior"]
+    E --> L1["Gate: llmEnabled && llmPlanDiscoveryQueries && plan-role API key"]
+    L1 --> L2["Payload<br/>product<br/>criticalFields<br/>missingCriticalFields<br/>existingQueries = filterRelevantQueries(...).slice(0,20)"]
+    L2 --> L3["Standard mode: primary pass only<br/>Aggressive mode: fast + reason + validate passes"]
+    L3 --> L4["callLlmWithRouting()<br/>role=plan<br/>reasoningMode = pass.reasoningMode OR llmReasoningMode<br/>timeout = llmTimeoutMs"]
+    L4 --> L5["Normalize + dedupe + cap<br/>standard: max(8, discoveryMaxQueries)<br/>aggressive: max(12, aggressiveLlmDiscoveryQueryCap)"]
+  end
+
+  L5 --> F["llmQueries returned to searchDiscovery"]
+  D --> G["Uber planner only when mode = uber_aggressive<br/>baseQueries = base_templates + queries + llmQueries"]
+  G --> H["planUberQueries()<br/>source = llm | deterministic | deterministic_fallback"]
+
+  F --> I["Merge back into query candidates<br/>base_template + targeted + llm + uber + runtime_extra"]
+  H --> I
+  I --> J["dedupeQueryRows() -> prioritizeQueryRows()<br/>post-planner cap usually falls back to discoveryMaxQueries"]

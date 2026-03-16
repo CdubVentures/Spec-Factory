@@ -1,0 +1,16 @@
+## Purpose
+Own truly shared settings defaults and option metadata that can be consumed by multiple domains without bringing in feature logic.
+This boundary stays intentionally small so shared values remain stable and dependency-light.
+
+## Public API (The Contract)
+- `src/shared/settingsDefaults.js`: `SETTINGS_DEFAULTS`, `SETTINGS_OPTION_VALUES`.
+- `src/shared/settingsDefaults.d.ts`: TypeScript declarations for the settings defaults contract.
+
+## Dependencies
+- Allowed: dependency-light modules that remain generic across the repo.
+- Forbidden: feature code, app wiring, API route logic, or domain-specific state.
+
+## Domain Invariants
+- `SETTINGS_DEFAULTS` and `SETTINGS_OPTION_VALUES` are frozen canonical values, not mutable runtime state.
+- Shared exports must remain generic and reusable; feature-specific defaults do not belong here.
+- Downstream settings contracts should derive from this boundary instead of duplicating default values.

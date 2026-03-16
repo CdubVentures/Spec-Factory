@@ -132,6 +132,19 @@ export class FrontierDbSqlite {
     return Number.isFinite(lastMs) && (now - lastMs) < this._queryCooldownMs;
   }
 
+  getQueryRecord({ productId, query } = {}) {
+    const hash = makeQueryHash(productId, query);
+    const row = this.db.prepare('SELECT * FROM queries WHERE query_hash = ?').get(hash);
+    if (!row) {
+      return null;
+    }
+    return {
+      ...row,
+      fields: JSON.parse(row.fields || '[]'),
+      results: JSON.parse(row.results || '[]')
+    };
+  }
+
   recordQuery({ productId, query, provider = '', fields = [], results = [], ts = nowIso() } = {}) {
     const text = normalizeQuery(query);
     if (!text) return null;

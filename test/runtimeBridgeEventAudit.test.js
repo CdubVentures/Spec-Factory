@@ -57,6 +57,85 @@ test('visual_asset_captured event is emitted by bridge', async () => {
   assert.equal(captured[0].stage, 'fetch');
 });
 
+test('bridge persists last screencast frame for a fetch worker when the fetch closes', async () => {
+  const { bridge, tmpDir } = await makeBridge();
+  await startRun(bridge);
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'source_fetch_started',
+    ts: '2025-01-01T00:00:30Z',
+    url: 'https://razer.com/viper',
+    host: 'razer.com',
+    tier: 1,
+    fetcher_kind: 'crawlee',
+  }));
+  await bridge.queue;
+
+  bridge.broadcastScreencastFrame({
+    worker_id: 'fetch-1',
+    data: 'abc123',
+    width: 1280,
+    height: 720,
+    ts: '2025-01-01T00:00:31Z',
+  });
+  await bridge.queue;
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'source_fetch_failed',
+    ts: '2025-01-01T00:00:32Z',
+    url: 'https://razer.com/viper',
+    host: 'razer.com',
+    fetcher_kind: 'crawlee',
+    fetch_ms: 1000,
+    status: 451,
+    message: 'HTTP 451',
+  }));
+  await bridge.queue;
+
+  const persistedPath = path.join(tmpDir, 'run-audit-001', 'runtime_screencast', 'fetch-1.json');
+  const persisted = JSON.parse(await fs.readFile(persistedPath, 'utf8'));
+  assert.equal(persisted.worker_id, 'fetch-1');
+  assert.equal(persisted.data, 'abc123');
+  assert.equal(persisted.width, 1280);
+  assert.equal(persisted.height, 720);
+});
+
+test('bridge finalize persists last screencast frame for active fetch workers', async () => {
+  const { bridge, tmpDir } = await makeBridge();
+  await startRun(bridge);
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'source_fetch_started',
+    ts: '2025-01-01T00:00:30Z',
+    url: 'https://razer.com/viper',
+    host: 'razer.com',
+    tier: 1,
+    fetcher_kind: 'playwright',
+  }));
+  await bridge.queue;
+
+  bridge.broadcastScreencastFrame({
+    worker_id: 'fetch-1',
+    data: 'finalframe',
+    width: 1024,
+    height: 768,
+    ts: '2025-01-01T00:00:31Z',
+  });
+  await bridge.queue;
+
+  await bridge.finalize({
+    ended_at: '2025-01-01T00:01:00Z',
+    status: 'completed',
+  });
+
+  const persistedPath = path.join(tmpDir, 'run-audit-001', 'runtime_screencast', 'fetch-1.json');
+  const persisted = JSON.parse(await fs.readFile(persistedPath, 'utf8'));
+  assert.equal(persisted.worker_id, 'fetch-1');
+  assert.equal(persisted.data, 'finalframe');
+  assert.equal(persisted.width, 1024);
+  assert.equal(persisted.height, 768);
+});
+
 test('run_completed event is emitted by bridge', async () => {
   const { bridge, events } = await makeBridge();
   await startRun(bridge);
@@ -105,10 +184,164 @@ test('source_processed triggers parse_finished and fetch_finished', async () => 
   const fetchFinished = events.filter((e) => e.event === 'fetch_finished');
   assert.ok(fetchFinished.length >= 1, 'source_processed should trigger fetch_finished');
 
+  const sourceProcessed = events.filter((e) => e.event === 'source_processed');
+  assert.equal(sourceProcessed.length, 1, 'source_processed should be emitted into normalized run events');
+  assert.equal(sourceProcessed[0].payload.url, 'https://razer.com/viper');
+
   const parseFinished = events.filter((e) => e.event === 'parse_finished');
   assert.equal(parseFinished.length, 1, 'source_processed should trigger parse_finished');
   assert.equal(parseFinished[0].payload.url, 'https://razer.com/viper');
   assert.equal(parseFinished[0].payload.candidate_count, 5);
+});
+
+test('source_processed normalized event preserves bytes, content hash, and extraction method for downstream GUI routes', async () => {
+  const { bridge, events } = await makeBridge();
+  await startRun(bridge);
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'source_fetch_started',
+    ts: '2025-01-01T00:00:30Z',
+    url: 'https://www.rtings.com/mouse/reviews/razer/viper-v3-pro',
+    host: 'www.rtings.com',
+    tier: 1,
+  }));
+  await bridge.queue;
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'source_processed',
+    ts: '2025-01-01T00:01:00Z',
+    url: 'https://www.rtings.com/mouse/reviews/razer/viper-v3-pro',
+    final_url: 'https://www.rtings.com/mouse/reviews/razer/viper-v3-pro',
+    host: 'www.rtings.com',
+    status: 200,
+    fetch_ms: 30702,
+    parse_ms: 12348,
+    candidate_count: 1644,
+    content_type: 'text/html',
+    content_hash: 'd0d8a9d07ae54ee7db145521bf7b73583e224bed8047c337e9a0ee98d1586bbe',
+    bytes: 436975,
+    article_extraction_method: 'readability',
+    static_dom_mode: 'cheerio',
+  }));
+  await bridge.queue;
+
+  const sourceProcessed = events.find((e) => e.event === 'source_processed');
+  assert.ok(sourceProcessed);
+  assert.equal(sourceProcessed.payload.status, 200);
+  assert.equal(sourceProcessed.payload.bytes, 436975);
+  assert.equal(
+    sourceProcessed.payload.content_hash,
+    'd0d8a9d07ae54ee7db145521bf7b73583e224bed8047c337e9a0ee98d1586bbe'
+  );
+  assert.equal(sourceProcessed.payload.article_extraction_method, 'readability');
+  assert.equal(sourceProcessed.payload.static_dom_mode, 'cheerio');
+});
+
+test('fetch_trace_written closes an active fetch when downstream source_processed telemetry never arrives', async () => {
+  const { bridge, events } = await makeBridge();
+  await startRun(bridge);
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'source_fetch_started',
+    ts: '2025-01-01T00:00:30Z',
+    url: 'https://www.rtings.com/mouse/reviews/razer/viper-v3-pro',
+    host: 'www.rtings.com',
+    tier: 1,
+    fetcher_kind: 'playwright',
+  }));
+  await bridge.queue;
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'fetch_trace_written',
+    ts: '2025-01-01T00:00:47Z',
+    url: 'https://www.rtings.com/mouse/reviews/razer/viper-v3-pro',
+    status: 200,
+    fetch_ms: 17000,
+    content_type: 'text/html',
+  }));
+  await bridge.queue;
+
+  const fetchStarted = events.filter((e) => e.event === 'fetch_started' && e.payload.scope === 'url');
+  const fetchFinished = events.filter((e) => e.event === 'fetch_finished' && e.payload.scope === 'url');
+
+  assert.equal(fetchStarted.length, 1);
+  assert.equal(fetchFinished.length, 1, 'fetch_trace_written should close the active fetch');
+  assert.equal(fetchFinished[0].payload.url, 'https://www.rtings.com/mouse/reviews/razer/viper-v3-pro');
+  assert.equal(fetchFinished[0].payload.status, 200);
+  assert.equal(fetchFinished[0].payload.content_type, 'text/html');
+  assert.equal(fetchFinished[0].payload.worker_id, fetchStarted[0].payload.worker_id);
+});
+
+test('fetch_trace_written does not duplicate fetch_finished after source_fetch_failed already closed the worker', async () => {
+  const { bridge, events } = await makeBridge();
+  await startRun(bridge);
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'source_fetch_started',
+    ts: '2025-01-01T00:00:30Z',
+    url: 'https://blocked.example/spec',
+    host: 'blocked.example',
+    tier: 1,
+    fetcher_kind: 'crawlee',
+  }));
+  await bridge.queue;
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'source_fetch_failed',
+    ts: '2025-01-01T00:00:31Z',
+    url: 'https://blocked.example/spec',
+    host: 'blocked.example',
+    fetcher_kind: 'crawlee',
+    fetch_ms: 1000,
+    status: 0,
+    message: 'Crawlee fetch failed: no_result',
+  }));
+  await bridge.queue;
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'fetch_trace_written',
+    ts: '2025-01-01T00:00:31.100Z',
+    url: 'https://blocked.example/spec',
+    status: 0,
+    fetch_ms: 1000,
+    content_type: '',
+  }));
+  await bridge.queue;
+
+  const fetchFinished = events.filter((e) => e.event === 'fetch_finished' && e.payload.scope === 'url');
+  assert.equal(fetchFinished.length, 1, 'fetch_trace_written should ignore already-closed fetches');
+});
+
+test('source_fetch_failed preserves blocked HTTP status in normalized fetch_finished event', async () => {
+  const { bridge, events } = await makeBridge();
+  await startRun(bridge);
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'source_fetch_started',
+    ts: '2025-01-01T00:00:30Z',
+    url: 'https://blocked.example/spec',
+    host: 'blocked.example',
+    tier: 1,
+    fetcher_kind: 'playwright',
+  }));
+  await bridge.queue;
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'source_fetch_failed',
+    ts: '2025-01-01T00:00:31Z',
+    url: 'https://blocked.example/spec',
+    host: 'blocked.example',
+    fetcher_kind: 'playwright',
+    fetch_ms: 1000,
+    status: 403,
+    message: 'HTTP 403',
+  }));
+  await bridge.queue;
+
+  const fetchFinished = events.filter((e) => e.event === 'fetch_finished' && e.payload.scope === 'url');
+  assert.equal(fetchFinished.length, 1);
+  assert.equal(fetchFinished[0].payload.status, 403);
+  assert.equal(fetchFinished[0].payload.error, 'HTTP 403');
 });
 
 test('all spec events have handlers: search, fetch, parse, index, llm, needset', async () => {
@@ -448,6 +681,32 @@ test('search_finished event includes worker_id with search- prefix', async () =>
   assert.ok(searchFinished[0].payload.worker_id.startsWith('search-'));
 });
 
+test('search_request_throttled event is emitted by bridge with throttle payload', async () => {
+  const { bridge, events } = await makeBridge();
+  await startRun(bridge);
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'search_request_throttled',
+    ts: '2025-01-01T00:00:12Z',
+    query: 'razer viper v3 pro specs',
+    provider: 'google',
+    key: 'www.google.com',
+    wait_ms: 375
+  }));
+  await bridge.queue;
+
+  const throttled = events.filter((e) => e.event === 'search_request_throttled');
+  assert.equal(throttled.length, 1, 'search_request_throttled should be emitted');
+  assert.equal(throttled[0].stage, 'search');
+  assert.equal(throttled[0].payload.scope, 'query');
+  assert.equal(throttled[0].payload.query, 'razer viper v3 pro specs');
+  assert.equal(throttled[0].payload.provider, 'google');
+  assert.equal(throttled[0].payload.key, 'www.google.com');
+  assert.equal(throttled[0].payload.wait_ms, 375);
+  assert.ok(throttled[0].payload.worker_id, 'search_request_throttled must include worker_id');
+  assert.ok(throttled[0].payload.worker_id.startsWith('search-'));
+});
+
 test('llm_started event includes worker_id with llm- prefix', async () => {
   const { bridge, events } = await makeBridge();
   await startRun(bridge);
@@ -507,7 +766,7 @@ test('search query events update search_profile artifact in run directory', asyn
     event: 'discovery_query_started',
     ts: '2025-01-01T00:00:10Z',
     query: 'razer viper v3 pro specs',
-    provider: 'duckduckgo'
+    provider: 'searxng'
   }));
   await bridge.queue;
 
@@ -515,7 +774,7 @@ test('search query events update search_profile artifact in run directory', asyn
     event: 'discovery_query_completed',
     ts: '2025-01-01T00:00:12Z',
     query: 'razer viper v3 pro specs',
-    provider: 'duckduckgo',
+    provider: 'searxng',
     result_count: 11
   }));
   await bridge.queue;

@@ -1,0 +1,1132 @@
+{
+  "category": "keyboard",
+  "component_type": "switch",
+  "generated_at": "2026-03-16T00:08:03.587Z",
+  "items": [
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "MX Red",
+        "Cherry Red"
+      ],
+      "maker": "cherry",
+      "name": "Cherry MX Red",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "45",
+        "bottom_out_force": "75",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "MX Blue",
+        "Cherry Blue"
+      ],
+      "maker": "cherry",
+      "name": "Cherry MX Blue",
+      "properties": {
+        "actuation_distance": "2.2",
+        "actuation_force": "50",
+        "bottom_out_force": "60",
+        "hot_swappable": "Yes",
+        "switch_feel": "Clicky",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "MX Brown",
+        "Cherry Brown"
+      ],
+      "maker": "cherry",
+      "name": "Cherry MX Brown",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "Yes",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "MX Black",
+        "Cherry Black"
+      ],
+      "maker": "cherry",
+      "name": "Cherry MX Black",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "60",
+        "bottom_out_force": "80",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "MX Speed",
+        "Cherry Speed Silver",
+        "MX Silver"
+      ],
+      "maker": "cherry",
+      "name": "Cherry MX Speed Silver",
+      "properties": {
+        "actuation_distance": "1.2",
+        "actuation_force": "45",
+        "bottom_out_force": "75",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "3.4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "MX Silent Red",
+        "Cherry Silent Red"
+      ],
+      "maker": "cherry",
+      "name": "Cherry MX Silent Red",
+      "properties": {
+        "actuation_distance": "1.9",
+        "actuation_force": "45",
+        "bottom_out_force": "75",
+        "hot_swappable": "Yes",
+        "switch_feel": "Silent Linear",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "3.7"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "MX Clear",
+        "Cherry Clear"
+      ],
+      "maker": "cherry",
+      "name": "Cherry MX Clear",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "55",
+        "bottom_out_force": "95",
+        "hot_swappable": "Yes",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "MX Green",
+        "Cherry Green"
+      ],
+      "maker": "cherry",
+      "name": "Cherry MX Green",
+      "properties": {
+        "actuation_distance": "2.2",
+        "actuation_force": "70",
+        "bottom_out_force": "90",
+        "hot_swappable": "Yes",
+        "switch_feel": "Clicky",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Gateron Red",
+        "G Pro Red"
+      ],
+      "maker": "gateron",
+      "name": "Gateron G Pro Red",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "80",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Gateron Brown",
+        "G Pro Brown"
+      ],
+      "maker": "gateron",
+      "name": "Gateron G Pro Brown",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "Yes",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "80",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Gateron Blue",
+        "G Pro Blue"
+      ],
+      "maker": "gateron",
+      "name": "Gateron G Pro Blue",
+      "properties": {
+        "actuation_distance": "2.3",
+        "actuation_force": "55",
+        "bottom_out_force": "65",
+        "hot_swappable": "Yes",
+        "switch_feel": "Clicky",
+        "switch_lifespan": "80",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Gateron Black",
+        "G Pro Black"
+      ],
+      "maker": "gateron",
+      "name": "Gateron G Pro Black",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "60",
+        "bottom_out_force": "70",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "80",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Gateron Yellow",
+        "G Pro Yellow",
+        "Milky Yellow"
+      ],
+      "maker": "gateron",
+      "name": "Gateron G Pro Yellow",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "50",
+        "bottom_out_force": "60",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "80",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Gateron White",
+        "G Pro White"
+      ],
+      "maker": "gateron",
+      "name": "Gateron G Pro White",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "35",
+        "bottom_out_force": "45",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "80",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Box Red"
+      ],
+      "maker": "kailh",
+      "name": "Kailh Box Red",
+      "properties": {
+        "actuation_distance": "1.8",
+        "actuation_force": "45",
+        "bottom_out_force": "60",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "80",
+        "switch_output_type": "Digital",
+        "total_travel": "3.6"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Box White"
+      ],
+      "maker": "kailh",
+      "name": "Kailh Box White",
+      "properties": {
+        "actuation_distance": "1.8",
+        "actuation_force": "50",
+        "bottom_out_force": "55",
+        "hot_swappable": "Yes",
+        "switch_feel": "Clicky",
+        "switch_lifespan": "80",
+        "switch_output_type": "Digital",
+        "total_travel": "3.6"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Box Brown"
+      ],
+      "maker": "kailh",
+      "name": "Kailh Box Brown",
+      "properties": {
+        "actuation_distance": "1.8",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "Yes",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "80",
+        "switch_output_type": "Digital",
+        "total_travel": "3.6"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Box Black"
+      ],
+      "maker": "kailh",
+      "name": "Kailh Box Black",
+      "properties": {
+        "actuation_distance": "1.8",
+        "actuation_force": "60",
+        "bottom_out_force": "70",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "80",
+        "switch_output_type": "Digital",
+        "total_travel": "3.6"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Speed Silver"
+      ],
+      "maker": "kailh",
+      "name": "Kailh Speed Silver",
+      "properties": {
+        "actuation_distance": "1.1",
+        "actuation_force": "40",
+        "bottom_out_force": "50",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "70",
+        "switch_output_type": "Digital",
+        "total_travel": "3.5"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Speed Copper"
+      ],
+      "maker": "kailh",
+      "name": "Kailh Speed Copper",
+      "properties": {
+        "actuation_distance": "1.1",
+        "actuation_force": "40",
+        "bottom_out_force": "50",
+        "hot_swappable": "Yes",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "70",
+        "switch_output_type": "Digital",
+        "total_travel": "3.5"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Speed Bronze"
+      ],
+      "maker": "kailh",
+      "name": "Kailh Speed Bronze",
+      "properties": {
+        "actuation_distance": "1.1",
+        "actuation_force": "40",
+        "bottom_out_force": "50",
+        "hot_swappable": "Yes",
+        "switch_feel": "Clicky",
+        "switch_lifespan": "70",
+        "switch_output_type": "Digital",
+        "total_travel": "3.5"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Razer Green Switch"
+      ],
+      "maker": "razer",
+      "name": "Razer Green",
+      "properties": {
+        "actuation_distance": "1.9",
+        "actuation_force": "50",
+        "bottom_out_force": "70",
+        "hot_swappable": "Yes",
+        "switch_feel": "Clicky",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Razer Yellow Switch"
+      ],
+      "maker": "razer",
+      "name": "Razer Yellow",
+      "properties": {
+        "actuation_distance": "1.2",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "3.5"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Razer Orange Switch"
+      ],
+      "maker": "razer",
+      "name": "Razer Orange",
+      "properties": {
+        "actuation_distance": "1.9",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "Yes",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Razer Purple Switch",
+        "Razer Optical"
+      ],
+      "maker": "razer",
+      "name": "Razer Purple Optical",
+      "properties": {
+        "actuation_distance": "1.5",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "Yes",
+        "switch_feel": "Clicky",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "3.5"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Razer Red Optical"
+      ],
+      "maker": "razer",
+      "name": "Razer Red Linear Optical",
+      "properties": {
+        "actuation_distance": "1.2",
+        "actuation_force": "40",
+        "bottom_out_force": "50",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "3.5"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "GX Red",
+        "Logitech GX Red"
+      ],
+      "maker": "logitech_g",
+      "name": "Logitech G GX Red",
+      "properties": {
+        "actuation_distance": "1.9",
+        "actuation_force": "50",
+        "bottom_out_force": "75",
+        "hot_swappable": "No",
+        "switch_feel": "Linear",
+        "switch_lifespan": "70",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "GX Blue",
+        "Logitech GX Blue"
+      ],
+      "maker": "logitech_g",
+      "name": "Logitech G GX Blue",
+      "properties": {
+        "actuation_distance": "2.2",
+        "actuation_force": "50",
+        "bottom_out_force": "65",
+        "hot_swappable": "No",
+        "switch_feel": "Clicky",
+        "switch_lifespan": "70",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "GX Brown",
+        "Logitech GX Brown"
+      ],
+      "maker": "logitech_g",
+      "name": "Logitech G GX Brown",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "50",
+        "bottom_out_force": "75",
+        "hot_swappable": "No",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "70",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "GL Tactile"
+      ],
+      "maker": "logitech_g",
+      "name": "Logitech G GL Tactile",
+      "properties": {
+        "actuation_distance": "1.5",
+        "actuation_force": "50",
+        "bottom_out_force": "65",
+        "hot_swappable": "No",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "70",
+        "switch_output_type": "Digital",
+        "total_travel": "2.7"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "GL Linear"
+      ],
+      "maker": "logitech_g",
+      "name": "Logitech G GL Linear",
+      "properties": {
+        "actuation_distance": "1.5",
+        "actuation_force": "50",
+        "bottom_out_force": "65",
+        "hot_swappable": "No",
+        "switch_feel": "Linear",
+        "switch_lifespan": "70",
+        "switch_output_type": "Digital",
+        "total_travel": "2.7"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "GL Clicky"
+      ],
+      "maker": "logitech_g",
+      "name": "Logitech G GL Clicky",
+      "properties": {
+        "actuation_distance": "1.5",
+        "actuation_force": "50",
+        "bottom_out_force": "65",
+        "hot_swappable": "No",
+        "switch_feel": "Clicky",
+        "switch_lifespan": "70",
+        "switch_output_type": "Digital",
+        "total_travel": "2.7"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "override_allowed",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "OmniPoint 2.0",
+        "OmniPoint Adjustable"
+      ],
+      "maker": "steelseries",
+      "name": "SteelSeries OmniPoint 2.0",
+      "properties": {
+        "actuation_distance": "0.2",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "No",
+        "switch_feel": "Linear",
+        "switch_lifespan": "100",
+        "switch_output_type": "Adjustable Actuation",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "HyperX Red Switch"
+      ],
+      "maker": "hyperx",
+      "name": "HyperX Red",
+      "properties": {
+        "actuation_distance": "1.8",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "80",
+        "switch_output_type": "Digital",
+        "total_travel": "3.8"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "HyperX Aqua Switch"
+      ],
+      "maker": "hyperx",
+      "name": "HyperX Aqua",
+      "properties": {
+        "actuation_distance": "1.8",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "Yes",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "80",
+        "switch_output_type": "Digital",
+        "total_travel": "3.8"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Topre 45g EC Switch"
+      ],
+      "maker": "topre",
+      "name": "Topre 45g",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "No",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "50",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Topre 55g EC Switch"
+      ],
+      "maker": "topre",
+      "name": "Topre 55g",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "55",
+        "bottom_out_force": "65",
+        "hot_swappable": "No",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "50",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Topre 30g EC Switch"
+      ],
+      "maker": "topre",
+      "name": "Topre 30g",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "30",
+        "bottom_out_force": "40",
+        "hot_swappable": "No",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "50",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "K Pro Red",
+        "Keychron Red"
+      ],
+      "maker": "keychron",
+      "name": "Keychron K Pro Red",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "40",
+        "bottom_out_force": "50",
+        "hot_swappable": "5-pin",
+        "switch_feel": "Linear",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "K Pro Brown",
+        "Keychron Brown"
+      ],
+      "maker": "keychron",
+      "name": "Keychron K Pro Brown",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "50",
+        "bottom_out_force": "60",
+        "hot_swappable": "5-pin",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "K Pro Banana",
+        "Keychron Banana"
+      ],
+      "maker": "keychron",
+      "name": "Keychron K Pro Banana",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "5-pin",
+        "switch_feel": "Tactile",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "override_allowed",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Wooting Lekker L45"
+      ],
+      "maker": "gateron",
+      "name": "Gateron Lekker L45",
+      "properties": {
+        "actuation_distance": "0.1",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "100",
+        "switch_output_type": "Analog",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "override_allowed",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Wooting Lekker L60"
+      ],
+      "maker": "gateron",
+      "name": "Gateron Lekker L60",
+      "properties": {
+        "actuation_distance": "0.1",
+        "actuation_force": "60",
+        "bottom_out_force": "70",
+        "hot_swappable": "Yes",
+        "switch_feel": "Linear",
+        "switch_lifespan": "100",
+        "switch_output_type": "Analog",
+        "total_travel": "4"
+      }
+    },
+    {
+      "__variance_policies": {
+        "actuation_distance": "authoritative",
+        "actuation_force": "authoritative",
+        "bottom_out_force": "authoritative",
+        "hot_swappable": "override_allowed",
+        "switch_lifespan": "authoritative",
+        "total_travel": "authoritative"
+      },
+      "aliases": [
+        "Ducky POM Switch"
+      ],
+      "maker": "ducky",
+      "name": "Ducky POM",
+      "properties": {
+        "actuation_distance": "2",
+        "actuation_force": "45",
+        "bottom_out_force": "55",
+        "hot_swappable": "5-pin",
+        "switch_feel": "Linear",
+        "switch_lifespan": "100",
+        "switch_output_type": "Digital",
+        "total_travel": "4"
+      }
+    }
+  ],
+  "version": 1
+}

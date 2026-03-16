@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { registerConfigRoutes } from '../src/api/routes/configRoutes.js';
-import { registerQueueBillingLearningRoutes } from '../src/api/routes/queueBillingLearningRoutes.js';
+import { registerConfigRoutes } from '../src/features/settings/api/configRoutes.js';
+import { registerQueueBillingLearningRoutes } from '../src/features/indexing/api/queueBillingLearningRoutes.js';
 
 function makeConfigCtx(overrides = {}) {
   const ctx = {

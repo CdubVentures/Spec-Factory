@@ -1,4 +1,4 @@
-import { canonicalUnitToken } from './normalization-functions.js';
+import { canonicalUnitToken } from './normalizationFunctions.js';
 
 function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);

@@ -1,0 +1,19 @@
+{
+  "label": "backend",
+  "generated_at": "2026-03-12T06:31:23.718Z",
+  "root": "src",
+  "files": 629,
+  "edges": 1400,
+  "cycle_count": 1,
+  "cycles": [
+    [
+      "src/features/catalog/index.js",
+      "src/features/catalog/products/reconciler.js",
+      "src/queue/queueState.js"
+    ]
+  ],
+  "top_outgoing_zones": [],
+  "top_incoming_zones": [],
+  "top_cross_zone_edges": [],
+  "bidirectional_zone_pairs": []
+}

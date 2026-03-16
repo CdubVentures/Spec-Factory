@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createDataChangeInvalidationScheduler } from '../tools/gui-react/src/components/layout/dataChangeInvalidationScheduler.js';
+import { createDataChangeInvalidationScheduler } from '../tools/gui-react/src/features/data-change/index.js';
 
 function createFakeTimers() {
   let nextId = 1;

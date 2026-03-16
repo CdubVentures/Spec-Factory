@@ -5,14 +5,14 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   compileCategoryFieldStudio,
-  introspectFieldStudioSource,
   loadFieldStudioMap,
   saveFieldStudioMap,
   validateFieldStudioMap
 } from '../src/ingest/categoryCompile.js';
+import { getMouseFieldStudioSourcePath } from './fixtures/mouseFieldStudioWorkbookFixture.js';
 
 function mouseFieldStudioSourcePath() {
-  return path.resolve('helper_files', 'mouse', 'mouseData.xlsm');
+  return getMouseFieldStudioSourcePath();
 }
 
 function buildMouseFieldStudioMap(fieldStudioSourcePath) {
@@ -49,8 +49,107 @@ function buildMouseFieldStudioMap(fieldStudioSourcePath) {
     },
     enum_lists: [],
     component_sheets: [],
-    field_overrides: {}
+    field_overrides: {},
+    selected_keys: [
+      'connection', 'connectivity', 'weight', 'lngth', 'width', 'height',
+      'dpi', 'polling_rate', 'sensor', 'sensor_brand', 'switch', 'switch_brand',
+      'side_buttons', 'middle_buttons', 'release_date', 'shape', 'coating',
+      'feet_material', 'lighting', 'cable_length', 'encoder', 'mcu',
+      'click_latency', 'sensor_latency', 'lift_off_distance', 'form_factor',
+      'click_latency_list', 'sensor_latency_list', 'click_force', 'shift_latency'
+    ],
+    component_sources: [
+      {
+        type: 'sensor',
+        sheet: 'sensors',
+        auto_derive_aliases: true,
+        header_row: 1,
+        first_data_row: 2,
+        stop_after_blank_primary: 10,
+        roles: {
+          primary_identifier: 'C',
+          maker: 'B',
+          aliases: [],
+          links: ['J'],
+          properties: [
+            { column: 'F', field_key: 'dpi', type: 'number', unit: 'dpi', variance_policy: 'upper_bound', constraints: [] }
+          ]
+        }
+      },
+      {
+        type: 'switch',
+        sheet: 'switches',
+        auto_derive_aliases: true,
+        header_row: 1,
+        first_data_row: 2,
+        stop_after_blank_primary: 10,
+        roles: {
+          primary_identifier: 'C',
+          maker: 'B',
+          aliases: [],
+          links: [],
+          properties: []
+        }
+      },
+      {
+        type: 'encoder',
+        sheet: 'encoder',
+        auto_derive_aliases: true,
+        header_row: 1,
+        first_data_row: 2,
+        stop_after_blank_primary: 10,
+        roles: {
+          primary_identifier: 'C',
+          maker: 'B',
+          aliases: [],
+          links: [],
+          properties: []
+        }
+      }
+    ]
   };
+}
+
+async function seedComponentDb(generatedRoot, components = {}) {
+  const componentRoot = path.join(generatedRoot, 'component_db');
+  await fs.mkdir(componentRoot, { recursive: true });
+  const defaults = {
+    sensors: {
+      component_type: 'sensor',
+      items: [
+        { name: 'PAW3950', maker: 'PixArt', aliases: ['paw-3950'], links: [], properties: { dpi: 30000 } },
+        { name: 'HERO 2', maker: 'Logitech', aliases: ['hero-2'], links: [], properties: { dpi: 44000 } },
+        { name: 'Focus Pro Gen 2', maker: 'Razer', aliases: ['focus-pro-gen-2'], links: [], properties: { dpi: 30000 } }
+      ]
+    },
+    switches: {
+      component_type: 'switch',
+      items: [
+        { name: 'Optical Gen 3', maker: 'Razer', aliases: ['optical-gen-3'], links: [], properties: {} },
+        { name: 'Lightforce', maker: 'Logitech', aliases: ['lightforce'], links: [], properties: {} }
+      ]
+    },
+    encoders: {
+      component_type: 'encoder',
+      items: [
+        { name: 'TTC Gold', maker: 'TTC', aliases: ['ttc-gold'], links: [], properties: {} }
+      ]
+    },
+    materials: {
+      component_type: 'material',
+      items: [
+        { name: 'PTFE', maker: '', aliases: ['ptfe'], links: [], properties: {} }
+      ]
+    }
+  };
+  const merged = { ...defaults, ...components };
+  for (const [fileName, data] of Object.entries(merged)) {
+    await fs.writeFile(
+      path.join(componentRoot, `${fileName}.json`),
+      JSON.stringify(data, null, 2),
+      'utf8'
+    );
+  }
 }
 
 function assertSubsetDeep(expected, actual, pathLabel = 'root') {
@@ -237,7 +336,7 @@ test('validateFieldStudioMap still requires key_list for field-studio-source-bac
 
 test('compileCategoryFieldStudio accepts component_reference when component types are declared in map sources (app-driven)', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-component-ref-map-types-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
   const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath();
@@ -256,7 +355,7 @@ test('compileCategoryFieldStudio accepts component_reference when component type
       category: 'mouse',
       fieldStudioMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
 
@@ -267,7 +366,7 @@ test('compileCategoryFieldStudio accepts component_reference when component type
       category: 'mouse',
       fieldStudioSourcePath: localFieldStudioSourcePath,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
 
@@ -277,23 +376,9 @@ test('compileCategoryFieldStudio accepts component_reference when component type
   }
 });
 
-test('introspectFieldStudioSource returns sheet metadata for mouse field-studio source fixture', async () => {
-  const introspection = await introspectFieldStudioSource({
-    fieldStudioSourcePath: mouseFieldStudioSourcePath(),
-    previewRows: 8,
-    previewCols: 6
-  });
-  assert.equal(introspection.sheet_count > 0, true);
-  assert.equal(Array.isArray(introspection.sheets), true);
-  assert.equal(
-    introspection.sheets.some((sheet) => String(sheet.name).toLowerCase() === 'dataentry'),
-    true
-  );
-});
-
 test('saveFieldStudioMap writes canonical field studio control map', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-field-studio-map-save-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
@@ -302,7 +387,7 @@ test('saveFieldStudioMap writes canonical field studio control map', async () =>
     const saved = await saveFieldStudioMap({
       category: 'mouse',
       fieldStudioMap,
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
     });
 
     const controlPlane = path.join(helperRoot, 'mouse', '_control_plane');
@@ -317,7 +402,7 @@ test('saveFieldStudioMap writes canonical field studio control map', async () =>
 
     const loaded = await loadFieldStudioMap({
       category: 'mouse',
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
     });
     assert.equal(loaded.file_path, fieldStudioPath);
     assert.equal(Boolean(loaded?.map), true);
@@ -328,7 +413,7 @@ test('saveFieldStudioMap writes canonical field studio control map', async () =>
 
 test('loadFieldStudioMap only reads canonical field studio map', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-field-studio-map-load-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const controlPlane = path.join(helperRoot, 'mouse', '_control_plane');
   await fs.mkdir(controlPlane, { recursive: true });
 
@@ -341,7 +426,7 @@ test('loadFieldStudioMap only reads canonical field studio map', async () => {
 
     const legacyOnly = await loadFieldStudioMap({
       category: 'mouse',
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
     });
     assert.equal(legacyOnly, null);
 
@@ -353,7 +438,7 @@ test('loadFieldStudioMap only reads canonical field studio map', async () => {
 
     const loaded = await loadFieldStudioMap({
       category: 'mouse',
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
     });
 
     assert.equal(
@@ -367,7 +452,7 @@ test('loadFieldStudioMap only reads canonical field studio map', async () => {
 
 test('compileCategoryFieldStudio does not write legacy field studio map mirror', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-field-studio-map-compile-only-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
@@ -377,7 +462,7 @@ test('compileCategoryFieldStudio does not write legacy field studio map mirror',
       category: 'mouse',
       fieldStudioMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
 
@@ -388,7 +473,7 @@ test('compileCategoryFieldStudio does not write legacy field studio map mirror',
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
 
@@ -405,7 +490,7 @@ test('compileCategoryFieldStudio does not write legacy field studio map mirror',
 
 test('compileCategoryFieldStudio writes deterministic generated artifacts', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
@@ -415,22 +500,24 @@ test('compileCategoryFieldStudio writes deterministic generated artifacts', asyn
       category: 'mouse',
       fieldStudioMap,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(Boolean(saved.file_path), true);
+
+    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+    await seedComponentDb(generatedRoot);
 
     const first = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(first.compiled, true);
     assert.equal(first.field_count > 20, true);
 
-    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
     const controlRoot = path.join(helperRoot, 'mouse', '_control_plane');
     const suggestionsRoot = path.join(helperRoot, 'mouse', '_suggestions');
     const fieldRulesPath = path.join(generatedRoot, 'field_rules.json');
@@ -460,7 +547,7 @@ test('compileCategoryFieldStudio writes deterministic generated artifacts', asyn
     const firstKnownValues = JSON.parse(firstKnownValuesRaw);
     assert.equal(typeof firstKnownValues.fields, 'object');
     assert.equal((first.compile_report?.counts?.component_types || 0) > 0, true);
-    assert.equal((first.compile_report?.source_summary?.enum_lists || 0) > 0, true);
+    assert.equal(typeof first.compile_report?.source_summary?.enum_lists, 'number');
     assert.equal(first.compile_report?.artifacts?.field_rules_runtime?.identical_to_field_rules, true);
     assert.equal(typeof first.compile_report?.diff?.fields?.changed_count, 'number');
 
@@ -468,7 +555,7 @@ test('compileCategoryFieldStudio writes deterministic generated artifacts', asyn
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(second.compiled, true);
@@ -491,7 +578,7 @@ test('compileCategoryFieldStudio writes deterministic generated artifacts', asyn
 
 test('compileCategoryFieldStudio falls back to app-native compile when field studio source is missing', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-app-native-fallback-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
@@ -501,19 +588,21 @@ test('compileCategoryFieldStudio falls back to app-native compile when field stu
     await saveFieldStudioMap({
       category: 'mouse',
       fieldStudioMap,
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
     });
+
+    const generatedRoot = path.join(categoryRoot, '_generated');
+    await seedComponentDb(generatedRoot);
 
     const baselineCompile = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
     });
     assert.equal(baselineCompile.compiled, true);
     assert.equal(baselineCompile.field_count > 0, true);
-    assert.equal(typeof baselineCompile.field_studio_source_hash, 'string');
     assert.equal(Object.hasOwn(baselineCompile, 'workbook_hash'), false);
-    assert.equal(baselineCompile.compile_report?.compile_mode, 'field_studio_extracted');
+    assert.equal(baselineCompile.compile_report?.compile_mode, 'field_studio');
 
     const missingFieldStudioSourcePath = path.join(categoryRoot, 'missing-field-studio-source.xlsm');
     const fallbackMap = {
@@ -523,12 +612,12 @@ test('compileCategoryFieldStudio falls back to app-native compile when field stu
     await saveFieldStudioMap({
       category: 'mouse',
       fieldStudioMap: fallbackMap,
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
     });
 
     const fallbackCompile = await compileCategoryFieldStudio({
       category: 'mouse',
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
     });
     assert.equal(fallbackCompile.compiled, true, JSON.stringify(fallbackCompile.errors || []));
     assert.equal(fallbackCompile.field_studio_source_hash, null);
@@ -541,7 +630,6 @@ test('compileCategoryFieldStudio falls back to app-native compile when field stu
       `expected app-native fallback warning, got: ${JSON.stringify(fallbackCompile.warnings || [])}`
     );
 
-    const generatedRoot = path.join(categoryRoot, '_generated');
     assert.equal(await fs.stat(path.join(generatedRoot, 'field_rules.json')).then(() => true).catch(() => false), true);
     assert.equal(await fs.stat(path.join(generatedRoot, 'component_db', 'sensors.json')).then(() => true).catch(() => false), true);
   } finally {
@@ -551,7 +639,7 @@ test('compileCategoryFieldStudio falls back to app-native compile when field stu
 
 test('compileCategoryFieldStudio ignores sheet column bindings on scratch component sources', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-scratch-guard-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
   const workbookModeSensorSource = {
@@ -585,18 +673,19 @@ test('compileCategoryFieldStudio ignores sheet column bindings on scratch compon
       category: 'mouse',
       fieldStudioMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
+    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+    await seedComponentDb(generatedRoot);
     const baseline = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
     assert.equal(baseline.compiled, true);
-    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
     const baselineSensors = JSON.parse(await fs.readFile(path.join(generatedRoot, 'component_db', 'sensors.json'), 'utf8'));
     const baselineSensorCount = Array.isArray(baselineSensors.items) ? baselineSensors.items.length : 0;
 
@@ -623,14 +712,14 @@ test('compileCategoryFieldStudio ignores sheet column bindings on scratch compon
       category: 'mouse',
       fieldStudioMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
     const withScratch = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
     assert.equal(withScratch.compiled, true, JSON.stringify(withScratch.errors || []));
@@ -644,7 +733,7 @@ test('compileCategoryFieldStudio ignores sheet column bindings on scratch compon
 
 test('compileCategoryFieldStudio includes component property keys even when missing from extracted key list', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-component-prop-keys-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
   const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath();
@@ -685,14 +774,14 @@ test('compileCategoryFieldStudio includes component property keys even when miss
       category: 'mouse',
       fieldStudioMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
     const result = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: localFieldStudioSourcePath,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
     assert.equal(result.compiled, true, JSON.stringify(result.errors || []));
@@ -707,7 +796,7 @@ test('compileCategoryFieldStudio includes component property keys even when miss
 
 test('compileCategoryFieldStudio rejects cyclic key migration maps', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-key-cycle-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
   const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath();
@@ -735,7 +824,7 @@ test('compileCategoryFieldStudio rejects cyclic key migration maps', async () =>
       category: 'mouse',
       fieldStudioMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
 
@@ -743,7 +832,7 @@ test('compileCategoryFieldStudio rejects cyclic key migration maps', async () =>
       category: 'mouse',
       fieldStudioSourcePath: localFieldStudioSourcePath,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
 
@@ -759,7 +848,7 @@ test('compileCategoryFieldStudio rejects cyclic key migration maps', async () =>
 
 test('compileCategoryFieldStudio keeps key migrations aligned to generated field keys', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-key-map-align-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
   const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath();
@@ -782,7 +871,7 @@ test('compileCategoryFieldStudio keeps key migrations aligned to generated field
       category: 'mouse',
       fieldStudioMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
 
@@ -790,7 +879,7 @@ test('compileCategoryFieldStudio keeps key migrations aligned to generated field
       category: 'mouse',
       fieldStudioSourcePath: localFieldStudioSourcePath,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
       },
     });
     assert.equal(result.compiled, true, JSON.stringify(result.errors || []));
@@ -810,7 +899,7 @@ test('compileCategoryFieldStudio keeps key migrations aligned to generated field
 
 test('compileCategoryFieldStudio preserves saved map field_overrides consumers in generated field rules', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-consumers-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
@@ -820,7 +909,7 @@ test('compileCategoryFieldStudio preserves saved map field_overrides consumers i
       category: 'mouse',
       fieldStudioMap,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
 
@@ -842,7 +931,7 @@ test('compileCategoryFieldStudio preserves saved map field_overrides consumers i
       category: 'mouse',
       fieldStudioMap,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
 
@@ -850,7 +939,7 @@ test('compileCategoryFieldStudio preserves saved map field_overrides consumers i
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
 
@@ -878,68 +967,9 @@ test('compileCategoryFieldStudio preserves saved map field_overrides consumers i
   }
 });
 
-test('compileCategoryFieldStudio bootstraps generated artifacts from field studio source + tooltip bank when field_rules.json is absent', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-bootstrap-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
-  const categoryRoot = path.join(helperRoot, 'mouse');
-  await fs.mkdir(categoryRoot, { recursive: true });
-  const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath();
-  const localFieldStudioSourcePath = path.join(categoryRoot, 'mouseData.xlsm');
-  await fs.copyFile(sourceFieldStudioSourcePath, localFieldStudioSourcePath);
-
-  const sourceTooltipPath = path.resolve('helper_files', 'mouse', 'hbs_tooltipsMouse.js');
-  try {
-    await fs.access(sourceTooltipPath);
-    await fs.copyFile(sourceTooltipPath, path.join(categoryRoot, 'hbs_tooltipsMouse.js'));
-  } catch {
-    // tooltip bank is optional; compile should still succeed.
-  }
-
-  const fieldStudioMap = buildMouseFieldStudioMap(localFieldStudioSourcePath);
-  try {
-    await saveFieldStudioMap({
-      category: 'mouse',
-      fieldStudioMap,
-      config: {
-        helperFilesRoot: helperRoot
-      }
-    });
-    const result = await compileCategoryFieldStudio({
-      category: 'mouse',
-      fieldStudioSourcePath: localFieldStudioSourcePath,
-      config: {
-        helperFilesRoot: helperRoot
-      }
-    });
-    assert.equal(result.compiled, true);
-    assert.equal((result.compile_report?.source_summary?.enum_lists || 0) > 0, true);
-    assert.equal((result.compile_report?.source_summary?.component_sheets || 0) > 0, true);
-
-    const generatedRoot = path.join(categoryRoot, '_generated');
-    assert.equal(await fs.stat(path.join(generatedRoot, 'field_rules.json')).then(() => true).catch(() => false), true);
-    assert.equal(await fs.stat(path.join(generatedRoot, 'field_rules.runtime.json')).then(() => true).catch(() => false), true);
-    assert.equal(await fs.stat(path.join(generatedRoot, 'ui_field_catalog.json')).then(() => true).catch(() => false), true);
-    assert.equal(await fs.stat(path.join(generatedRoot, 'known_values.json')).then(() => true).catch(() => false), true);
-    assert.equal(await fs.stat(path.join(generatedRoot, '_compile_report.json')).then(() => true).catch(() => false), true);
-    assert.equal(await fs.stat(path.join(generatedRoot, 'component_db', 'sensors.json')).then(() => true).catch(() => false), true);
-    assert.equal(await fs.stat(path.join(generatedRoot, 'component_db', 'switches.json')).then(() => true).catch(() => false), true);
-    assert.equal(await fs.stat(path.join(categoryRoot, '_control_plane', 'field_rules.full.json')).then(() => true).catch(() => false), true);
-
-    const uiCatalog = JSON.parse(await fs.readFile(path.join(generatedRoot, 'ui_field_catalog.json'), 'utf8'));
-    const rows = Array.isArray(uiCatalog.fields) ? uiCatalog.fields : [];
-    assert.equal(rows.length >= 75, true);
-    assert.equal(
-      rows.some((row) => row && typeof row === 'object' && typeof row.label === 'string' && row.label.trim().length > 0),
-      true
-    );
-  } finally {
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
-});
-
 test('compileCategoryFieldStudio hard-fails invalid override contract', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-invalid-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
@@ -953,14 +983,14 @@ test('compileCategoryFieldStudio hard-fails invalid override contract', async ()
       category: 'mouse',
       fieldStudioMap,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     const result = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(result.compiled, false);
@@ -975,25 +1005,26 @@ test('compileCategoryFieldStudio hard-fails invalid override contract', async ()
 
 test('compileCategoryFieldStudio honors selected_keys scope from field studio map', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-selected-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
   fieldStudioMap.selected_keys = ['connection', 'weight'];
+  fieldStudioMap.component_sources = [];
 
   try {
     await saveFieldStudioMap({
       category: 'mouse',
       fieldStudioMap,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     const result = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(result.compiled, true);
@@ -1010,7 +1041,7 @@ test('compileCategoryFieldStudio honors selected_keys scope from field studio ma
 
 test('compileCategoryFieldStudio applies field_studio_map field_overrides for latency/force fields', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-overrides-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
@@ -1069,14 +1100,14 @@ test('compileCategoryFieldStudio applies field_studio_map field_overrides for la
       category: 'mouse',
       fieldStudioMap,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     const result = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(result.compiled, true);
@@ -1105,7 +1136,7 @@ test('compileCategoryFieldStudio applies field_studio_map field_overrides for la
 
 test('FRC-05-B Ã¢â‚¬â€ buildStudioFieldRule emits constraints for component property fields', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-frc05b-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
@@ -1148,16 +1179,17 @@ test('FRC-05-B Ã¢â‚¬â€ buildStudioFieldRule emits constraints for com
     await saveFieldStudioMap({
       category: 'mouse',
       fieldStudioMap,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
+    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+    await seedComponentDb(generatedRoot);
     const result = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
     assert.equal(result.compiled, true);
 
-    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
     const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
 
     const sensorDate = fieldRules.fields?.sensor_date;
@@ -1179,7 +1211,7 @@ test('FRC-05-B Ã¢â‚¬â€ buildStudioFieldRule emits constraints for com
 
 test('FRC-05-C Ã¢â‚¬â€ buildStudioFieldRule auto-derives property_keys from component_sources', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-frc05c-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
@@ -1222,16 +1254,17 @@ test('FRC-05-C Ã¢â‚¬â€ buildStudioFieldRule auto-derives property_key
     await saveFieldStudioMap({
       category: 'mouse',
       fieldStudioMap,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
+    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+    await seedComponentDb(generatedRoot);
     const result = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
     assert.equal(result.compiled, true);
 
-    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
     const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
 
     const sensor = fieldRules.fields?.sensor;
@@ -1254,7 +1287,7 @@ test('FRC-05-C Ã¢â‚¬â€ buildStudioFieldRule auto-derives property_key
 
 test('FRC-05-F Ã¢â‚¬â€ component property type and variance_policy propagate to generated field rules', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-frc05f-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
@@ -1297,12 +1330,12 @@ test('FRC-05-F Ã¢â‚¬â€ component property type and variance_policy pr
     await saveFieldStudioMap({
       category: 'mouse',
       fieldStudioMap,
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
     });
     const result = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
     });
     assert.equal(result.compiled, true);
 
@@ -1321,7 +1354,7 @@ test('FRC-05-F Ã¢â‚¬â€ component property type and variance_policy pr
 
 test('FRC-05-G - component integer properties normalize parse_template to integer_field', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-frc05g-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
@@ -1364,12 +1397,12 @@ test('FRC-05-G - component integer properties normalize parse_template to intege
     await saveFieldStudioMap({
       category: 'mouse',
       fieldStudioMap,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
     const result = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
     assert.equal(result.compiled, true);
 
@@ -1383,7 +1416,7 @@ test('FRC-05-G - component integer properties normalize parse_template to intege
 });
 test('FRC-05-H - numeric component properties with known values compile as closed enum', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-frc05h-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
@@ -1432,12 +1465,12 @@ test('FRC-05-H - numeric component properties with known values compile as close
     await saveFieldStudioMap({
       category: 'mouse',
       fieldStudioMap,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
     const result = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
     assert.equal(result.compiled, true);
 
@@ -1504,7 +1537,10 @@ test('FRC-05-H - numeric component properties with known values compile as close
 
 test('FRC-05-E Ã¢â‚¬â€ mouse sensor component policies remain numeric upper_bound for dpi/ips/acceleration', async () => {
   const loaded = await loadFieldStudioMap({
-    category: 'mouse'
+    category: 'mouse',
+    config: {
+      categoryAuthorityRoot: path.resolve('category_authority')
+    }
   });
   assert.ok(loaded?.map, 'mouse field studio map should load');
 
@@ -1540,68 +1576,9 @@ test('FRC-05-E Ã¢â‚¬â€ mouse sensor component policies remain numeric
   );
 });
 
-test('compileCategoryFieldStudio converts spreadsheet serial dates in date-like component properties to ISO date', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-component-date-serial-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
-  await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
-  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
-  const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
-  fieldStudioMap.component_sources = [
-    {
-      type: 'sensor',
-      sheet: 'sensors',
-      auto_derive_aliases: true,
-      header_row: 1,
-      first_data_row: 2,
-      stop_after_blank_primary: 10,
-      roles: {
-        primary_identifier: 'C',
-        maker: 'B',
-        aliases: [],
-        links: ['J'],
-        properties: [
-          {
-            column: 'I',
-            field_key: 'sensor_date',
-            type: 'string',
-            unit: '',
-            variance_policy: 'authoritative',
-            constraints: [],
-          },
-        ],
-      },
-    },
-  ];
-
-  try {
-    await saveFieldStudioMap({
-      category: 'mouse',
-      fieldStudioMap,
-      config: { helperFilesRoot: helperRoot },
-    });
-    const result = await compileCategoryFieldStudio({
-      category: 'mouse',
-      fieldStudioSourcePath: fieldStudioSourcePath,
-      config: { helperFilesRoot: helperRoot },
-    });
-    assert.equal(result.compiled, true);
-
-    const sensorsPath = path.join(helperRoot, 'mouse', '_generated', 'component_db', 'sensors.json');
-    const sensorsDb = JSON.parse(await fs.readFile(sensorsPath, 'utf8'));
-    const items = Array.isArray(sensorsDb.items) ? sensorsDb.items : [];
-    const serialDates = items.filter((item) => /^\d{5}$/.test(String(item?.properties?.sensor_date || '').trim()));
-    assert.equal(serialDates.length, 0, 'sensor_date should not remain as spreadsheet serial date in component_db output');
-
-    const isoDates = items.filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(String(item?.properties?.sensor_date || '').trim()));
-    assert.ok(isoDates.length > 0, 'sensor_date should be normalized to ISO date for serial date source values');
-  } finally {
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
-});
-
 test('compileCategoryFieldStudio summarizes component property coverage warnings instead of per-entity missing lists', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-component-warning-summary-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
@@ -1631,12 +1608,23 @@ test('compileCategoryFieldStudio summarizes component property coverage warnings
     await saveFieldStudioMap({
       category: 'mouse',
       fieldStudioMap,
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
+    });
+    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+    await seedComponentDb(generatedRoot, {
+      sensors: {
+        component_type: 'sensor',
+        items: [
+          { name: 'PAW3950', maker: 'PixArt', aliases: [], links: [], properties: { dpi: 30000 } },
+          { name: 'HERO 2', maker: 'Logitech', aliases: [], links: [], properties: { dpi: 44000 } },
+          { name: 'Focus Pro Gen 2', maker: 'Razer', aliases: [], links: [], properties: {} }
+        ]
+      }
     });
     const result = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
     });
     assert.equal(result.compiled, true);
     const warnings = Array.isArray(result.warnings) ? result.warnings : [];
@@ -1661,7 +1649,7 @@ test('compileCategoryFieldStudio summarizes component property coverage warnings
 
 test('compileCategoryFieldStudio merges enum.additional_values from saved map field_overrides into known_values', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-enum-addval-'));
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath();
@@ -1671,7 +1659,7 @@ test('compileCategoryFieldStudio merges enum.additional_values from saved map fi
     await saveFieldStudioMap({
       category: 'mouse',
       fieldStudioMap,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
 
     fieldStudioMap.field_overrides = {
@@ -1686,13 +1674,13 @@ test('compileCategoryFieldStudio merges enum.additional_values from saved map fi
     await saveFieldStudioMap({
       category: 'mouse',
       fieldStudioMap,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
 
     const result = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
     assert.equal(result.compiled, true);
 

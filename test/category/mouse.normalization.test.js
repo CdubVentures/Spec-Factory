@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runDeterministicCritic } from '../../src/validator/critic.js';
+import { runDeterministicCritic } from '../../src/features/indexing/validation/critic.js';
 
 const ALIAS_CASES = [
   {

@@ -1,0 +1,118 @@
+{
+  "_doc": "Brand Resolver output gap analysis. Compares the correction-note target for Brand Resolver against the actual output returned by resolveBrandDomain() and consumed in searchDiscovery(). Updated 2026-03-16.",
+
+  "_spec_vs_actual_summary": {
+    "correction_target_keys": [
+      "officialDomain",
+      "supportDomain",
+      "aliases",
+      "host_hints"
+    ],
+    "actual_output_keys": [
+      "officialDomain",
+      "aliases",
+      "supportDomain",
+      "confidence",
+      "reasoning"
+    ],
+    "call_site_statuses": [
+      "resolved",
+      "resolved_empty",
+      "skipped",
+      "failed"
+    ],
+    "downstream_consumers": {
+      "search_profile_hints": "searchDiscovery.js:373-378 and queryBuilder.js:943-950 reuse officialDomain + aliases as brandResolutionHints for later Search Profile planning.",
+      "manufacturer_auto_promote": "searchDiscovery.js:223-258 uses officialDomain and supportDomain for source-host auto-promotion when config.manufacturerAutoPromote is enabled. Aliases are NOT promoted.",
+      "telemetry": "searchDiscovery.js:202-219 logs brand_resolved with status, skip_reason, official_domain, aliases, support_domain, and confidence."
+    }
+  },
+
+  "officialDomain": {
+    "spec": "Official manufacturer domain string.",
+    "actual": "MATCH - brandResolver.js:19 and 36 returns officialDomain from cache or normalized LLM output.",
+    "status": "MATCH"
+  },
+
+  "supportDomain": {
+    "spec": "Support-domain string when one exists.",
+    "actual": "MATCH - brandResolver.js:21 and 38 returns supportDomain from cache or normalized LLM output.",
+    "status": "MATCH"
+  },
+
+  "aliases": {
+    "spec": "Alias array for known brand-domain variants.",
+    "actual": "MATCH - brandResolver.js:17 and 37 returns aliases from cache or normalized LLM output.",
+    "status": "MATCH",
+    "_note": "Aliases are text-only labels. They are NOT promoted as manufacturer hosts by manufacturerPromoter.js. Only officialDomain and supportDomain are promoted into the source registry."
+  },
+
+  "host_hints": {
+    "spec": "Dedicated host_hints output for downstream search planning.",
+    "actual": "CLOSED — resolveBrandDomain() never returns a host_hints field. Hints are synthesized downstream from officialDomain + aliases at searchDiscovery.js:373-378. No consumer reads brandResolution.host_hints directly. This is by design, not a gap.",
+    "status": "CLOSED"
+  },
+
+  "confidence": {
+    "spec": "Not required by the correction note.",
+    "actual": "EXTRA - brandResolver.js:22 and 52 returns cached confidence or 0.8 after a successful LLM resolution.",
+    "status": "EXTRA"
+  },
+
+  "reasoning": {
+    "spec": "Not required by the correction note.",
+    "actual": "EXTRA - brandResolver.js:24 and 39-52 returns an LLM-provided reasoning array; cached hits return reasoning: [].",
+    "status": "EXTRA"
+  },
+
+  "no_direct_query_rows": {
+    "spec": "Brand Resolver should not emit direct final search rows.",
+    "actual": "MATCH - resolveBrandDomain() returns only brand-domain metadata. It emits no queries, query_rows, or final search candidates.",
+    "status": "MATCH"
+  },
+
+  "failure_shape": {
+    "spec": "Safe empty output when Brand Resolver cannot or should not resolve.",
+    "actual": "MATCH - brandResolver.js:10, 12, 27, and 54 returns { officialDomain: '', aliases: [], supportDomain: '', confidence: 0, reasoning: [] } on no brand, no callLlmFn, or exception.",
+    "status": "MATCH"
+  },
+
+  "artifact_persistence": {
+    "spec": "A standalone Brand Resolver artifact is optional.",
+    "actual": "INFO - there is no dedicated persisted brand_resolver.json artifact today. The output is kept in memory, logged in searchDiscovery.js:166-180, and then folded into downstream Search Profile planning.",
+    "status": "INFO"
+  },
+
+  "_gap_summary": {
+    "total_gaps_observed": 4,
+    "open_material": 0,
+    "extra_but_harmless": 2,
+    "informational": 1,
+    "gaps": [
+      {
+        "id": "BRAND-OUT-1",
+        "field": "host_hints",
+        "severity": "HIGH",
+        "status": "CLOSED — host_hints is not a real gap. Hints are synthesized downstream from officialDomain + aliases at searchDiscovery.js:373-378. No code reads brandResolution.host_hints."
+      },
+      {
+        "id": "BRAND-OUT-2",
+        "field": "confidence",
+        "severity": "LOW",
+        "status": "EXTRA - useful telemetry field, but outside the correction-note contract."
+      },
+      {
+        "id": "BRAND-OUT-3",
+        "field": "reasoning",
+        "severity": "LOW",
+        "status": "EXTRA - useful telemetry/debug field, but outside the correction-note contract."
+      },
+      {
+        "id": "BRAND-OUT-4",
+        "field": "standalone persisted artifact",
+        "severity": "LOW",
+        "status": "INFO - resolver output is not written as its own artifact today."
+      }
+    ]
+  }
+}

@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { registerConfigRoutes } from '../src/api/routes/configRoutes.js';
+import { registerConfigRoutes } from '../src/features/settings/api/configRoutes.js';
 import {
   getSettingsPersistenceCountersSnapshot,
   resetSettingsPersistenceCounters,
@@ -39,7 +39,7 @@ function makeCtx(overrides = {}) {
       enabled: false,
       destinationType: 'local',
       localDirectory: '',
-      s3Region: 'us-east-2',
+      awsRegion: 'us-east-2',
       s3Bucket: '',
       s3Prefix: 'spec-factory-runs',
       s3AccessKeyId: '',
@@ -91,13 +91,13 @@ test('convergence-settings PUT returns error when persistence writes fail', asyn
   resetSettingsPersistenceCounters();
   const helperRootFile = await makeInvalidHelperRoot();
   const config = {
-    convergenceMaxRounds: 3,
+    serpTriageMinScore: 3,
   };
   const handler = registerConfigRoutes(makeCtx({
     HELPER_ROOT: helperRootFile,
     config,
     readJsonBody: async () => ({
-      convergenceMaxRounds: 7,
+      serpTriageMinScore: 7,
     }),
   }));
 
@@ -105,7 +105,7 @@ test('convergence-settings PUT returns error when persistence writes fail', asyn
   assert.equal(result.status, 500);
   assert.equal(result.body?.ok, false);
   assert.equal(result.body?.error, 'convergence_settings_persist_failed');
-  assert.equal(config.convergenceMaxRounds, 3, 'convergence config should roll back when persistence fails');
+  assert.equal(config.serpTriageMinScore, 3, 'convergence config should roll back when persistence fails');
   const counters = getSettingsPersistenceCountersSnapshot();
   assert.equal(counters.writes.by_target['convergence-settings-route']?.failed_total, 1);
 });
@@ -118,7 +118,7 @@ test('storage-settings PUT returns error when persistence writes fail', async ()
     enabled: false,
     destinationType: 'local',
     localDirectory,
-    s3Region: 'us-east-2',
+    awsRegion: 'us-east-2',
     s3Bucket: '',
     s3Prefix: 'spec-factory-runs',
     s3AccessKeyId: '',

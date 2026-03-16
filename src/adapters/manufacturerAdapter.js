@@ -8,8 +8,8 @@ import {
   normalizePdfBackend,
   normalizePdfPair,
   splitPdfPairsBySurface,
-  summarizePdfDoc
-} from '../extract/pdfBackendRouter.js';
+  summarizePdfDoc,
+} from '../features/indexing/extraction/index.js';
 import { normalizeWhitespace } from '../utils/common.js';
 
 function filenameFromUrl(url) {

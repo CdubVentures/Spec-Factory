@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractLdJsonBlocks } from '../src/extractors/ldjsonExtractor.js';
+import { extractLdJsonBlocks } from '../src/features/indexing/extraction/parsers/ldjsonExtractor.js';
 
 test('extractLdJsonBlocks parses valid JSON-LD scripts and ignores invalid', () => {
   const html = `

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planDiscoveryQueriesLLM, normalizeQueryRows } from '../src/llm/discoveryPlanner.js';
+import { planDiscoveryQueriesLLM, normalizeQueryRows } from '../src/features/indexing/discovery/discoveryPlanner.js';
 
 function makeChatCompletionResponse(payload) {
   return {
@@ -19,60 +19,7 @@ function makeChatCompletionResponse(payload) {
   };
 }
 
-test('planDiscoveryQueriesLLM runs single planning pass outside aggressive mode', async () => {
-  const originalFetch = global.fetch;
-  const seenModels = [];
-  global.fetch = async (_url, init) => {
-    const body = JSON.parse(String(init?.body || '{}'));
-    const model = String(body?.model || '');
-    seenModels.push(model);
-    return makeChatCompletionResponse({
-      queries: ['razer viper v3 pro specs', 'razer viper v3 pro manual pdf']
-    });
-  };
-
-  try {
-    const queries = await planDiscoveryQueriesLLM({
-      job: {
-        productId: 'mouse-razer-viper-v3-pro',
-        category: 'mouse',
-        identityLock: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' }
-      },
-      categoryConfig: {
-        category: 'mouse',
-        schema: { critical_fields: ['weight'] }
-      },
-      baseQueries: ['razer viper v3 pro specs'],
-      missingCriticalFields: ['weight'],
-      config: {
-        llmEnabled: true,
-        llmPlanDiscoveryQueries: true,
-        llmApiKey: 'sk-test',
-        llmBaseUrl: 'https://api.openai.com',
-        llmProvider: 'openai',
-        llmModelPlan: 'gpt-5-low',
-        llmModelFast: 'gpt-5-low',
-        llmModelReasoning: 'gpt-5.1-high',
-        llmTimeoutMs: 5_000
-      },
-      llmContext: {
-        mode: 'balanced',
-        budgetGuard: {
-          canCall: () => ({ allowed: true }),
-          recordCall: () => {}
-        }
-      }
-    });
-
-    assert.equal(seenModels.length, 1);
-    const queryStrings = queries.map((r) => typeof r === 'object' ? r.query : r);
-    assert.deepEqual(queryStrings, ['razer viper v3 pro specs', 'razer viper v3 pro manual pdf']);
-  } finally {
-    global.fetch = originalFetch;
-  }
-});
-
-test('planDiscoveryQueriesLLM runs multi-pass planning in aggressive mode and dedupes output', async () => {
+test('planDiscoveryQueriesLLM runs multi-pass planning and dedupes output', async () => {
   const originalFetch = global.fetch;
   const calls = [];
   global.fetch = async (_url, init) => {
@@ -117,12 +64,9 @@ test('planDiscoveryQueriesLLM runs multi-pass planning in aggressive mode and de
         llmModelFast: 'gpt-5-low',
         llmModelReasoning: 'gpt-5.1-high',
         llmModelValidate: 'gpt-5.2-high',
-        aggressiveLlmDiscoveryPasses: 3,
-        aggressiveLlmDiscoveryQueryCap: 10,
         llmTimeoutMs: 5_000
       },
       llmContext: {
-        mode: 'aggressive',
         budgetGuard: {
           canCall: () => ({ allowed: true }),
           recordCall: () => {}
@@ -203,7 +147,6 @@ test('planDiscoveryQueriesLLM returns structured rows with query and target_fiel
         llmTimeoutMs: 5_000
       },
       llmContext: {
-        mode: 'balanced',
         budgetGuard: { canCall: () => ({ allowed: true }), recordCall: () => {} }
       }
     });

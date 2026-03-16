@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeStructuredMetadataCandidates } from '../src/extract/structuredMetadataMerger.js';
+import { mergeStructuredMetadataCandidates } from '../src/features/indexing/extraction/structuredMetadataMerger.js';
 
 function pickFieldFromPath(path = '') {
   const token = String(path || '').toLowerCase();

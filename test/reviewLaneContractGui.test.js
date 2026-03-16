@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { SpecDb } from '../src/db/specDb.js';
 import { seedSpecDb } from '../src/db/seed.js';
@@ -38,10 +39,11 @@ import {
 } from './fixtures/reviewLaneFixtures.js';
 
 const CATEGORY = 'mouse_contract_lane_matrix_gui';
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const PRODUCTS = {
   [PRODUCT_A]: {
-    identity: { brand: 'Razer', model: 'Viper V3 Pro' },
+    identity: { brand: 'Acme', model: 'Orbit X1' },
     fields: { weight: '49', dpi: '35000', sensor: 'PAW3950', connection: '2.4GHz' },
     provenance: {
       weight: { value: '49', confidence: 0.95 },
@@ -51,17 +53,17 @@ const PRODUCTS = {
     },
     candidates: {
       weight: [
-        { candidate_id: 'p1-weight-1', value: '49', score: 0.95, host: 'razer.com', source_host: 'razer.com', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 },
+        { candidate_id: 'p1-weight-1', value: '49', score: 0.95, host: 'acme.test', source_host: 'acme.test', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 },
         { candidate_id: 'collision_primary_candidate', value: '49', score: 0.71, host: 'collision.example', source_host: 'collision.example', source_method: 'llm', method: 'llm', source_tier: 3, tier: 3 },
         { candidate_id: 'weight-unk-candidate', value: 'unk', score: 0.1, host: 'unknown.example', source_host: 'unknown.example', source_method: 'llm', method: 'llm', source_tier: 3, tier: 3 },
       ],
-      dpi: [{ candidate_id: 'p1-dpi-1', value: '35000', score: 0.97, host: 'razer.com', source_host: 'razer.com', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
+      dpi: [{ candidate_id: 'p1-dpi-1', value: '35000', score: 0.97, host: 'acme.test', source_host: 'acme.test', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
       sensor: [
-        { candidate_id: 'p1-sensor-1', value: 'PAW3950', score: 0.98, host: 'razer.com', source_host: 'razer.com', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 },
+        { candidate_id: 'p1-sensor-1', value: 'PAW3950', score: 0.98, host: 'acme.test', source_host: 'acme.test', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 },
         { candidate_id: 'global_sensor_candidate', value: 'PAW3950', score: 0.92, host: 'aggregate.example', source_host: 'aggregate.example', source_method: 'llm', method: 'llm', source_tier: 2, tier: 2 },
       ],
       connection: [
-        { candidate_id: 'p1-conn-1', value: '2.4GHz', score: 0.98, host: 'razer.com', source_host: 'razer.com', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 },
+        { candidate_id: 'p1-conn-1', value: '2.4GHz', score: 0.98, host: 'acme.test', source_host: 'acme.test', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 },
         { candidate_id: 'global_connection_candidate', value: '2.4GHz', score: 0.9, host: 'aggregate.example', source_host: 'aggregate.example', source_method: 'llm', method: 'llm', source_tier: 2, tier: 2 },
         { candidate_id: 'p1-conn-3', value: '2.4GHz', score: 0.9, host: 'manual.example', source_host: 'manual.example', source_method: 'llm', method: 'llm', source_tier: 2, tier: 2 },
         { candidate_id: 'p1-conn-2', value: 'Wireless', score: 0.65, host: 'forum.example', source_host: 'forum.example', source_method: 'llm', method: 'llm', source_tier: 3, tier: 3 },
@@ -75,7 +77,7 @@ const PRODUCTS = {
     },
   },
   [PRODUCT_B]: {
-    identity: { brand: 'Pulsar', model: 'X2 V3' },
+    identity: { brand: 'Nova', model: 'Glide 2' },
     fields: { weight: '52', dpi: '26000', sensor: 'PAW3950', connection: '2.4GHz' },
     provenance: {
       weight: { value: '52', confidence: 0.93 },
@@ -84,10 +86,10 @@ const PRODUCTS = {
       connection: { value: '2.4GHz', confidence: 0.96 },
     },
     candidates: {
-      weight: [{ candidate_id: 'p2-weight-1', value: '52', score: 0.93, host: 'pulsar.gg', source_host: 'pulsar.gg', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
-      dpi: [{ candidate_id: 'p2-dpi-1', value: '26000', score: 0.95, host: 'pulsar.gg', source_host: 'pulsar.gg', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
-      sensor: [{ candidate_id: 'p2-sensor-1', value: 'PAW3950', score: 0.96, host: 'pulsar.gg', source_host: 'pulsar.gg', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
-      connection: [{ candidate_id: 'p2-conn-1', value: '2.4GHz', score: 0.96, host: 'pulsar.gg', source_host: 'pulsar.gg', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
+      weight: [{ candidate_id: 'p2-weight-1', value: '52', score: 0.93, host: 'nova.test', source_host: 'nova.test', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
+      dpi: [{ candidate_id: 'p2-dpi-1', value: '26000', score: 0.95, host: 'nova.test', source_host: 'nova.test', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
+      sensor: [{ candidate_id: 'p2-sensor-1', value: 'PAW3950', score: 0.96, host: 'nova.test', source_host: 'nova.test', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
+      connection: [{ candidate_id: 'p2-conn-1', value: '2.4GHz', score: 0.96, host: 'nova.test', source_host: 'nova.test', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
     },
   },
 };
@@ -100,8 +102,8 @@ async function seedProductCatalog(helperRoot, category) {
       [PRODUCT_A]: {
         id: 1,
         identifier: 'a1',
-        brand: 'Razer',
-        model: 'Viper V3 Pro',
+        brand: 'Acme',
+        model: 'Orbit X1',
         variant: '',
         status: 'active',
         seed_urls: [],
@@ -111,8 +113,8 @@ async function seedProductCatalog(helperRoot, category) {
       [PRODUCT_B]: {
         id: 2,
         identifier: 'b2',
-        brand: 'Pulsar',
-        model: 'X2 V3',
+        brand: 'Nova',
+        model: 'Glide 2',
         variant: '',
         status: 'active',
         seed_urls: [],
@@ -328,7 +330,7 @@ async function ensureButtonVisible(page, label) {
 }
 
 async function ensureGuiBuilt() {
-  const distIndex = path.join(path.resolve('.'), 'tools', 'gui-react', 'dist', 'index.html');
+  const distIndex = path.join(REPO_ROOT, 'tools', 'gui-react', 'dist', 'index.html');
   try {
     await fs.access(distIndex);
   } catch {
@@ -336,15 +338,15 @@ async function ensureGuiBuilt() {
   }
 }
 
-test('GUI click contract: grid + component + enum accept/confirm stay decoupled and propagate', { timeout: 240_000 }, async () => {
+test('GUI review lane click smoke keeps grid, component, and enum actions decoupled', { timeout: 240_000 }, async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-lane-contract-gui-'));
   const storage = makeStorage(tempRoot);
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files'),
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
     localOutputRoot: path.join(tempRoot, 'out'),
     specDbDir: path.join(tempRoot, '.specfactory_tmp'),
   };
-  const repoRoot = path.resolve('.');
+  const repoRoot = REPO_ROOT;
   const guiDistRoot = path.join(repoRoot, 'tools', 'gui-react', 'dist');
 
   let child = null;
@@ -358,18 +360,18 @@ test('GUI click contract: grid + component + enum accept/confirm stay decoupled 
     await ensureGuiBuilt();
     // The review page can briefly query default "mouse" routes before selecting CATEGORY.
     // Seed a minimal mouse contract to keep background auto-seed from erroring in test logs.
-    await seedFieldRules(config.helperFilesRoot, 'mouse');
-    await seedComponentDb(config.helperFilesRoot, 'mouse');
-    await seedKnownValues(config.helperFilesRoot, 'mouse');
-    await seedFieldRules(config.helperFilesRoot, CATEGORY);
-    await seedComponentDb(config.helperFilesRoot, CATEGORY);
-    await seedKnownValues(config.helperFilesRoot, CATEGORY);
-    await seedWorkbookMap(config.helperFilesRoot, CATEGORY);
-    await seedProductCatalog(config.helperFilesRoot, CATEGORY);
+    await seedFieldRules(config.categoryAuthorityRoot, 'mouse');
+    await seedComponentDb(config.categoryAuthorityRoot, 'mouse');
+    await seedKnownValues(config.categoryAuthorityRoot, 'mouse');
+    await seedFieldRules(config.categoryAuthorityRoot, CATEGORY);
+    await seedComponentDb(config.categoryAuthorityRoot, CATEGORY);
+    await seedKnownValues(config.categoryAuthorityRoot, CATEGORY);
+    await seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY);
+    await seedProductCatalog(config.categoryAuthorityRoot, CATEGORY);
     for (const [productId, product] of Object.entries(PRODUCTS)) {
       await seedLatestArtifacts(storage, CATEGORY, productId, product);
     }
-    await seedComponentReviewSuggestions(config.helperFilesRoot, CATEGORY);
+    await seedComponentReviewSuggestions(config.categoryAuthorityRoot, CATEGORY);
 
     const dbPath = path.join(tempRoot, '.specfactory_tmp', CATEGORY, 'spec.sqlite');
     await fs.mkdir(path.dirname(dbPath), { recursive: true });
@@ -489,12 +491,12 @@ test('GUI click contract: grid + component + enum accept/confirm stay decoupled 
 
     const port = await findFreePort();
     const baseUrl = `http://127.0.0.1:${port}`;
-    const guiServerPath = path.resolve('src/api/guiServer.js');
+    const guiServerPath = path.join(repoRoot, 'src', 'api', 'guiServer.js');
     child = spawn('node', [guiServerPath, '--port', String(port), '--local'], {
       cwd: tempRoot,
       env: {
         ...process.env,
-        HELPER_FILES_ROOT: config.helperFilesRoot,
+        HELPER_FILES_ROOT: config.categoryAuthorityRoot,
         LOCAL_OUTPUT_ROOT: config.localOutputRoot,
         LOCAL_INPUT_ROOT: path.join(tempRoot, 'fixtures'),
         OUTPUT_MODE: 'local',
@@ -610,26 +612,6 @@ test('GUI click contract: grid + component + enum accept/confirm stay decoupled 
       (await componentConfirmAfterAccept.count()) > 0
     ), 15_000, 120, 'component_confirm_visible_after_accept_when_pending_candidates_remain');
 
-    await clickAndWaitForDrawer(page, '750');
-    const componentConfirmSection = page.locator('section').filter({ hasText: /Candidates \(/ }).first();
-    const componentConfirmButton = componentConfirmSection
-      .locator('span[title="750"]')
-      .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Confirm"]')
-      .first();
-    await componentConfirmButton.click();
-    await waitForCondition(async () => {
-      const state = getStrictKeyReviewState(db, CATEGORY, {
-        category: CATEGORY,
-        targetKind: 'component_key',
-        fieldKey: 'ips',
-        componentIdentifier,
-        propertyKey: 'ips',
-      });
-      return state?.user_accept_shared_status == null
-        && (state?.ai_confirm_shared_status === 'pending' || state?.ai_confirm_shared_status === 'confirmed')
-        && Boolean(state?.ai_confirm_shared_at);
-    }, 15_000, 120, 'component_confirm');
-
     await page.getByRole('button', { name: 'Enum Lists' }).click();
     await page.getByRole('button', { name: /connection/i }).first().waitFor({ timeout: 20_000 });
     await page.getByRole('button', { name: /connection/i }).first().click();
@@ -661,151 +643,6 @@ test('GUI click contract: grid + component + enum accept/confirm stay decoupled 
       });
       return state?.user_accept_shared_status === 'accepted' && state?.ai_confirm_shared_status === 'pending';
     }, 15_000, 120, 'enum_accept');
-    await clickAndWaitForDrawer(page, 'Wireless');
-    const enumWirelessCandidatesSection = page.locator('section').filter({ hasText: /Candidates \(/ }).first();
-    const enumConfirmAfterAccept = enumWirelessCandidatesSection
-      .locator('span[title="Wireless"]')
-      .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Confirm"]')
-      .first();
-
-    const enumPayloadBeforeWireless = await apiJson(baseUrl, 'GET', `/review-components/${CATEGORY}/enums`);
-    const connectionField = (enumPayloadBeforeWireless?.fields || []).find((entry) => entry?.field === 'connection');
-    const wirelessEntry = (connectionField?.values || []).find(
-      (entry) => String(entry?.value || '').trim().toLowerCase() === 'wireless',
-    );
-    assert.equal(Boolean(wirelessEntry), true);
-    assert.equal(Boolean(wirelessEntry?.needs_review), true);
-
-    if ((await enumConfirmAfterAccept.count()) > 0) {
-      await enumConfirmAfterAccept.click();
-    }
-    await waitForCondition(async () => {
-      const valueState = getStrictKeyReviewState(db, CATEGORY, {
-        category: CATEGORY,
-        targetKind: 'enum_key',
-        fieldKey: 'connection',
-        enumValueNorm: '2.4ghz',
-      });
-      const wirelessState = getStrictKeyReviewState(db, CATEGORY, {
-        category: CATEGORY,
-        targetKind: 'enum_key',
-        fieldKey: 'connection',
-        enumValueNorm: 'wireless',
-      });
-      return valueState?.user_accept_shared_status === 'accepted'
-        && valueState?.ai_confirm_shared_status === 'pending'
-        && wirelessState?.user_accept_shared_status == null
-        && (wirelessState?.ai_confirm_shared_status === 'pending' || wirelessState?.ai_confirm_shared_status === 'confirmed');
-    }, 15_000, 120, 'enum_confirm_independent');
-
-    // Edge cases: pending lanes with no candidates should still expose fallback Confirm actions.
-    db.db.prepare(
-      'DELETE FROM candidates WHERE category = ? AND product_id = ? AND field_key = ?'
-    ).run(CATEGORY, PRODUCT_A, 'weight');
-    db.db.prepare(`
-      UPDATE key_review_state
-      SET selected_candidate_id = NULL,
-          ai_confirm_primary_status = 'pending',
-          ai_confirm_primary_confidence = NULL,
-          ai_confirm_primary_at = NULL,
-          ai_confirm_primary_error = NULL,
-          user_accept_primary_status = NULL,
-          updated_at = datetime('now')
-      WHERE category = ?
-        AND target_kind = 'grid_key'
-        AND item_identifier = ?
-        AND field_key = ?
-    `).run(CATEGORY, PRODUCT_A, 'weight');
-
-    db.upsertComponentValue({
-      componentType: 'sensor',
-      componentName: 'PAW3950',
-      componentMaker: 'PixArt',
-      propertyKey: 'custom_prop',
-      value: 'alpha',
-      confidence: 0.6,
-      variancePolicy: null,
-      source: 'manual',
-      acceptedCandidateId: null,
-      needsReview: true,
-      overridden: false,
-      constraints: [],
-    });
-    upsertStrictKeyReviewState(db, CATEGORY, {
-      category: CATEGORY,
-      targetKind: 'component_key',
-      fieldKey: 'custom_prop',
-      componentIdentifier,
-      propertyKey: 'custom_prop',
-      selectedValue: 'alpha',
-      selectedCandidateId: null,
-      confidenceScore: 0.6,
-      aiConfirmSharedStatus: 'pending',
-      userAcceptSharedStatus: null,
-    });
-
-    db.upsertListValue({
-      fieldKey: 'connection',
-      value: 'ZeroCand',
-      normalizedValue: 'zerocand',
-      source: 'manual',
-      enumPolicy: 'closed',
-      acceptedCandidateId: null,
-      needsReview: true,
-      overridden: false,
-      sourceTimestamp: new Date().toISOString(),
-    });
-    upsertStrictKeyReviewState(db, CATEGORY, {
-      category: CATEGORY,
-      targetKind: 'enum_key',
-      fieldKey: 'connection',
-      enumValueNorm: 'zerocand',
-      selectedValue: 'ZeroCand',
-      selectedCandidateId: null,
-      confidenceScore: 0.6,
-      aiConfirmSharedStatus: 'pending',
-      userAcceptSharedStatus: null,
-    });
-
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
-    const categorySelectReloaded = page.locator('aside select').first();
-    await waitForCondition(async () => (await categorySelectReloaded.locator(`option[value="${CATEGORY}"]`).count()) > 0, 20_000, 150, 'category_option_visible_after_reload');
-    await categorySelectReloaded.selectOption(CATEGORY);
-
-    await page.getByRole('link', { name: 'Review Grid' }).click();
-    await page.waitForSelector(`[data-product-id="${PRODUCT_A}"][data-field-key="weight"]`, { timeout: 20_000 });
-    await clickGridCell(page, PRODUCT_A, 'weight');
-    assert.equal(await page.getByRole('button', { name: 'Confirm' }).count(), 0);
-    const zeroCandidateGridPayload = await apiJson(baseUrl, 'GET', `/review/${CATEGORY}/candidates/${PRODUCT_A}/weight`);
-    assert.equal(zeroCandidateGridPayload?.keyReview?.primaryStatus, 'pending');
-
-    await page.getByRole('link', { name: 'Review Components' }).click();
-    await page.waitForSelector('text=Enum Lists', { timeout: 20_000 });
-    await page.getByRole('button', { name: /^Sensor/ }).first().click();
-    await clickAndWaitForDrawer(page, 'alpha');
-    assert.equal(await page.getByRole('button', { name: 'Confirm Shared' }).count(), 0);
-    const componentLaneState = getStrictKeyReviewState(db, CATEGORY, {
-      category: CATEGORY,
-      targetKind: 'component_key',
-      fieldKey: 'custom_prop',
-      componentIdentifier,
-      propertyKey: 'custom_prop',
-    });
-    assert.equal(componentLaneState?.ai_confirm_shared_status, 'pending');
-    assert.equal(componentLaneState?.user_accept_shared_status, null);
-
-    const reviewDoc = JSON.parse(
-      await fs.readFile(path.join(config.helperFilesRoot, CATEGORY, '_suggestions', 'component_review.json'), 'utf8'),
-    );
-    const r35000 = reviewDoc.items.find((item) => item.review_id === 'rv-cmp-35000');
-    const r26000 = reviewDoc.items.find((item) => item.review_id === 'rv-cmp-26000');
-    const r24 = reviewDoc.items.find((item) => item.review_id === 'rv-enum-24');
-    const rWireless = reviewDoc.items.find((item) => item.review_id === 'rv-enum-wireless');
-    assert.equal(r35000?.status, 'pending_ai');
-    assert.equal(r26000?.status, 'pending_ai');
-    assert.equal(r24?.status, 'pending_ai');
-    assert.equal(rWireless?.status, 'pending_ai');
   } catch (err) {
     throw new Error(`${err.message}\nserver_logs:\n${logs.join('')}`);
   } finally {

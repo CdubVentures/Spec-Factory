@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Tip } from './Tip';
 import { TagPicker } from './TagPicker';
-import { selectCls, inputCls, labelCls, STUDIO_TIPS } from '../../pages/studio/studioConstants';
-import { usePersistedTab } from '../../stores/tabStore';
+import { selectCls, inputCls, labelCls, STUDIO_TIPS } from '../../utils/studioConstants';
+import { usePersistedTab } from '../../hooks/useSessionPersistence';
 import type { EnumEntry } from '../../types/studio';
 
 // ── Types ────────────────────────────────────────────────────────────

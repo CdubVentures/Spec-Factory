@@ -9,7 +9,7 @@ import {
   parseDateSerial,
   normalizeBoolean,
   stripUnitSuffix
-} from '../src/engine/normalization-functions.js';
+} from '../src/engine/normalizationFunctions.js';
 
 test('parsePollingList sorts desc and de-duplicates values', () => {
   const row = parsePollingList('1000, 4000, 2000,1000');

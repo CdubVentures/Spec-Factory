@@ -7,7 +7,7 @@ import {
   deriveStrategy,
   deriveLlmPlannerStatus,
   buildQueryDetailPayload,
-} from '../tools/gui-react/src/pages/indexing/panels/searchProfileHelpers.js';
+} from '../tools/gui-react/src/features/runtime-ops/selectors/searchProfileHelpers.js';
 
 function makeNeedRow(overrides = {}) {
   return {

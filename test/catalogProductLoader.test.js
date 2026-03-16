@@ -7,7 +7,7 @@ import {
   loadCatalogProducts,
   loadCatalogProductsWithFields,
   discoverCategoriesLocal
-} from '../src/catalog/catalogProductLoader.js';
+} from '../src/features/catalog/products/catalogProductLoader.js';
 
 async function tmpDir() {
   return await fs.mkdtemp(path.join(os.tmpdir(), 'wb-loader-'));
@@ -44,7 +44,7 @@ test('discoverCategoriesLocal: lists category directories', async () => {
     await fs.mkdir(path.join(root, '_global'));
     await fs.mkdir(path.join(root, '_generated'));
 
-    const cats = await discoverCategoriesLocal({ helperFilesRoot: root });
+    const cats = await discoverCategoriesLocal({ categoryAuthorityRoot: root });
     assert.deepEqual(cats, ['headset', 'keyboard', 'mouse']);
   } finally {
     await cleanup(root);
@@ -52,14 +52,14 @@ test('discoverCategoriesLocal: lists category directories', async () => {
 });
 
 test('discoverCategoriesLocal: returns empty for missing root', async () => {
-  const cats = await discoverCategoriesLocal({ helperFilesRoot: '/nonexistent/path' });
+  const cats = await discoverCategoriesLocal({ categoryAuthorityRoot: '/nonexistent/path' });
   assert.deepEqual(cats, []);
 });
 
 test('discoverCategoriesLocal: returns empty for empty directory', async () => {
   const root = await tmpDir();
   try {
-    const cats = await discoverCategoriesLocal({ helperFilesRoot: root });
+    const cats = await discoverCategoriesLocal({ categoryAuthorityRoot: root });
     assert.deepEqual(cats, []);
   } finally {
     await cleanup(root);
@@ -72,7 +72,7 @@ test('discoverCategoriesLocal: excludes files (only directories)', async () => {
     await fs.mkdir(path.join(root, 'mouse'));
     await fs.writeFile(path.join(root, 'config.json'), '{}');
 
-    const cats = await discoverCategoriesLocal({ helperFilesRoot: root });
+    const cats = await discoverCategoriesLocal({ categoryAuthorityRoot: root });
     assert.deepEqual(cats, ['mouse']);
   } finally {
     await cleanup(root);
@@ -90,7 +90,7 @@ test('loadCatalogProducts: returns empty when no catalog is configured', async (
   const root = await tmpDir();
   try {
     await fs.mkdir(path.join(root, 'mouse', '_control_plane'), { recursive: true });
-    const products = await loadCatalogProducts({ category: 'mouse', config: { helperFilesRoot: root } });
+    const products = await loadCatalogProducts({ category: 'mouse', config: { categoryAuthorityRoot: root } });
     assert.deepEqual(products, []);
   } finally {
     await cleanup(root);
@@ -119,7 +119,7 @@ test('loadCatalogProducts: reads identities from product catalog', async () => {
     });
     const products = await loadCatalogProducts({
       category: 'mouse',
-      config: { helperFilesRoot: root }
+      config: { categoryAuthorityRoot: root }
     });
     assert.deepEqual(products, [
       { brand: 'Logitech', model: 'G502', variant: '' },
@@ -141,7 +141,7 @@ test('loadCatalogProductsWithFields: returns empty when no catalog is configured
   const root = await tmpDir();
   try {
     await fs.mkdir(path.join(root, 'mouse', '_control_plane'), { recursive: true });
-    const products = await loadCatalogProductsWithFields({ category: 'mouse', config: { helperFilesRoot: root } });
+    const products = await loadCatalogProductsWithFields({ category: 'mouse', config: { categoryAuthorityRoot: root } });
     assert.deepEqual(products, []);
   } finally {
     await cleanup(root);
@@ -186,7 +186,7 @@ test('loadCatalogProductsWithFields: merges catalog identities with override val
 
     const products = await loadCatalogProductsWithFields({
       category: 'mouse',
-      config: { helperFilesRoot: root }
+      config: { categoryAuthorityRoot: root }
     });
     assert.equal(products.length, 2);
     assert.deepEqual(products[0], {

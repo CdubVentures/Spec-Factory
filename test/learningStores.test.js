@@ -6,7 +6,7 @@ import {
   FieldAnchorsStore,
   UrlMemoryStore,
   DomainFieldYieldStore
-} from '../src/learning/learningStores.js';
+} from '../src/features/indexing/learning/learningStores.js';
 
 function makeDb() {
   return new Database(':memory:');

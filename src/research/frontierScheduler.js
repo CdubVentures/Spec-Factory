@@ -17,17 +17,10 @@ function missingCount(summary = {}) {
 
 export function resolveDeepeningTier({
   round = 0,
-  mode = 'balanced',
   previousSummary = {},
   noProgressRounds = 0
 } = {}) {
   const missing = missingCount(previousSummary || {});
-  const normalizedMode = String(mode || '').trim().toLowerCase();
-  if (normalizedMode !== 'uber_aggressive') {
-    if (round === 0) return 'tier0';
-    if (round <= 2) return 'tier1';
-    return 'tier2';
-  }
 
   if (round === 0) return 'tier0';
   if (missing.required > 0 || missing.critical > 0) {

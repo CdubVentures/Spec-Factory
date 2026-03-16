@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractMainArticle } from '../src/extract/articleExtractor.js';
+import { extractMainArticle } from '../src/features/indexing/extraction/articleExtractor.js';
 
 test('article extractor: readability keeps article body and drops nav/footer noise', () => {
   const html = `
@@ -102,4 +102,21 @@ test('article extractor: policy mode prefer_readability keeps readability output
   });
   assert.equal(extracted.method, 'readability');
   assert.equal(extracted.low_quality, true);
+});
+
+test('article extractor: oversized rendered pages bypass readability and use heuristic fallback', () => {
+  const repeatedSection = '<section><p>Razer Viper V3 Pro weight 54 g polling rate 8000 Hz sensor Focus Pro 35K.</p></section>';
+  const html = `<html><body><article><h1>Razer Viper V3 Pro</h1>${repeatedSection.repeat(7000)}</article></body></html>`;
+
+  const extracted = extractMainArticle(html, {
+    title: 'Razer Viper V3 Pro',
+    minChars: 200,
+    minScore: 20,
+    maxReadabilityHtmlChars: 400_000
+  });
+
+  assert.equal(extracted.method, 'heuristic_fallback');
+  assert.equal(extracted.fallback_reason, 'html_too_large_for_readability');
+  assert.ok(extracted.text.includes('Razer Viper V3 Pro'));
+  assert.ok(extracted.text.includes('polling rate 8000 Hz'));
 });

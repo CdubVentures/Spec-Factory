@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   resolveDataChangeScopedCategories,
   applyDataChangeInvalidation,
-} from '../tools/gui-react/src/components/layout/dataChangeScope.js';
+} from '../tools/gui-react/src/features/data-change/index.js';
 
 test('resolveDataChangeScopedCategories uses explicit category from field-studio-map event', () => {
   const categories = resolveDataChangeScopedCategories({

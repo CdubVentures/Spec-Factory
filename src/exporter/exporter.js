@@ -64,47 +64,51 @@ function compactSummary(summary) {
 }
 
 async function writePageArtifacts({ writes, storage, runBase, host, artifact }) {
-  writes.push(
-    storage.writeObject(
-      `${runBase}/raw/pages/${host}/page.html.gz`,
-      gzipBuffer(artifact.html || ''),
-      {
-        contentType: 'text/html',
-        contentEncoding: 'gzip'
-      }
-    )
-  );
+  const rawPageAlreadyPersisted = Boolean(artifact?.pageArtifactsPersisted);
 
-  writes.push(
-    storage.writeObject(
-      `${runBase}/raw/pages/${host}/ldjson.json`,
-      jsonBuffer(artifact.ldjsonBlocks || []),
-      {
-        contentType: 'application/json'
-      }
-    )
-  );
+  if (!rawPageAlreadyPersisted) {
+    writes.push(
+      storage.writeObject(
+        `${runBase}/raw/pages/${host}/page.html.gz`,
+        gzipBuffer(artifact.html || ''),
+        {
+          contentType: 'text/html',
+          contentEncoding: 'gzip'
+        }
+      )
+    );
 
-  writes.push(
-    storage.writeObject(
-      `${runBase}/raw/pages/${host}/embedded_state.json`,
-      jsonBuffer(artifact.embeddedState || {}),
-      {
-        contentType: 'application/json'
-      }
-    )
-  );
+    writes.push(
+      storage.writeObject(
+        `${runBase}/raw/pages/${host}/ldjson.json`,
+        jsonBuffer(artifact.ldjsonBlocks || []),
+        {
+          contentType: 'application/json'
+        }
+      )
+    );
 
-  writes.push(
-    storage.writeObject(
-      `${runBase}/raw/network/${host}/responses.ndjson.gz`,
-      gzipBuffer(toNdjson(artifact.networkResponses || [])),
-      {
-        contentType: 'application/x-ndjson',
-        contentEncoding: 'gzip'
-      }
-    )
-  );
+    writes.push(
+      storage.writeObject(
+        `${runBase}/raw/pages/${host}/embedded_state.json`,
+        jsonBuffer(artifact.embeddedState || {}),
+        {
+          contentType: 'application/json'
+        }
+      )
+    );
+
+    writes.push(
+      storage.writeObject(
+        `${runBase}/raw/network/${host}/responses.ndjson.gz`,
+        gzipBuffer(toNdjson(artifact.networkResponses || [])),
+        {
+          contentType: 'application/x-ndjson',
+          contentEncoding: 'gzip'
+        }
+      )
+    );
+  }
 
   const domSnippetHtml = String(artifact?.domSnippet?.html || '').trim();
   if (domSnippetHtml) {

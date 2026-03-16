@@ -1,0 +1,15 @@
+{
+  "ts": "2026-03-11T20:45:30.783Z",
+  "url": "https://razer.com/robots.txt",
+  "final_url": "https://www.razer.com/robots.txt",
+  "host": "razer.com",
+  "status": 200,
+  "outcome": "ok",
+  "fetch_ms": 13427,
+  "content_type": "text/html",
+  "title": "",
+  "html_chars": 1485,
+  "network_count": 0,
+  "dom_snippet_uri": "specs/outputs/mouse/mouse-razer-viper-v3-pro/runs/20260311203758-d48ea2/raw/dom/razer.com__0000/dom_snippet.html",
+  "screenshot_uri": null
+}

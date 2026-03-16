@@ -28,6 +28,17 @@ function extractRunIdFromCliArgs(cliArgs = []) {
   return '';
 }
 
+function extractCliArgValue(cliArgs = [], argName = '') {
+  const args = Array.isArray(cliArgs) ? cliArgs : [];
+  const needle = String(argName || '').trim();
+  if (!needle) return '';
+  for (let idx = 0; idx < args.length; idx += 1) {
+    if (String(args[idx] || '').trim() !== needle) continue;
+    return String(args[idx + 1] || '').trim();
+  }
+  return '';
+}
+
 function normalizeUrlToken(value, fallback) {
   const raw = String(value || '').trim() || String(fallback || '').trim();
   try {
@@ -373,14 +384,18 @@ export function createProcessRuntime({
       if (value === undefined || value === null || value === '') continue;
       runtimeEnv[String(key)] = String(value);
     }
-    const child = spawn('node', [cmd, ...cliArgs], {
-      cwd: path.resolve('.'),
+    const childNodeCommand = String(processRef.execPath || '').trim() || 'node';
+    const child = spawn(childNodeCommand, [cmd, ...cliArgs], {
+      cwd: resolveProjectPath('.'),
       stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
       env: runtimeEnv,
+      windowsHide: true,
     });
-    child._cmd = `node ${cmd} ${cliArgs.join(' ')}`;
+    child._cmd = `${childNodeCommand} ${cmd} ${cliArgs.join(' ')}`;
     child._startedAt = new Date().toISOString();
     child._runId = runId || null;
+    child._outputRoot = resolveProjectPath(envOverrides.LOCAL_OUTPUT_ROOT || outputRoot || '.');
+    child._indexLabRoot = resolveProjectPath(extractCliArgValue(cliArgs, '--out') || indexLabRoot || '.');
     lastProcessSnapshot = {
       pid: child.pid || null,
       command: child._cmd,
@@ -441,8 +456,8 @@ export function createProcessRuntime({
               cliArgs,
               startedAt: child._startedAt || '',
               runDataStorageSettings: runDataStorageState,
-              indexLabRoot: indexLabRoot,
-              outputRoot: outputRoot,
+              indexLabRoot: child._indexLabRoot || indexLabRoot,
+              outputRoot: child._outputRoot || outputRoot,
               outputPrefix,
               broadcastWs,
             });
@@ -615,13 +630,17 @@ export function createProcessRuntime({
     const force = Boolean(options?.force);
     const runningProc = childProc;
     if (!runningProc || runningProc.exitCode !== null) {
-      const orphanStop = await stopOrphanIndexLabProcesses(timeoutMs);
       const status = {
         ...processStatus(),
-        stop_attempted: Boolean(orphanStop.attempted || force),
+        stop_attempted: force,
         stop_confirmed: true,
-        orphan_killed: orphanStop.killed,
+        orphan_killed: 0,
       };
+      if (force) {
+        const orphanStop = await stopOrphanIndexLabProcesses(timeoutMs);
+        status.stop_attempted = Boolean(orphanStop.attempted || force);
+        status.orphan_killed = orphanStop.killed;
+      }
       broadcastWs('process-status', status);
       return status;
     }
@@ -639,13 +658,6 @@ export function createProcessRuntime({
       exited = await waitForProcessExit(runningProc, Math.max(1000, timeoutMs - 5000));
     }
     let orphanKilled = 0;
-    if (!exited && runningProc.exitCode === null) {
-      const orphanStop = await stopOrphanIndexLabProcesses(timeoutMs);
-      orphanKilled = orphanStop.killed;
-      if (orphanStop.killed > 0) {
-        exited = true;
-      }
-    }
     if (force) {
       const orphanStop = await stopOrphanIndexLabProcesses(timeoutMs);
       orphanKilled += Number(orphanStop.killed || 0);

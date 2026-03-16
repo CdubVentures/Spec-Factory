@@ -224,3 +224,45 @@ test('realtime bridge watcher fanout publishes runtime and indexlab deltas', asy
   assert.equal(channels.includes('events'), true);
   assert.equal(channels.includes('indexlab-event'), true);
 });
+
+test('realtime bridge caches the last screencast frame by run and worker', async () => {
+  const watchHarness = createWatchHarness();
+  const wsHarness = createWebSocketHarness();
+  const fakeFs = createFakeFs();
+  const server = new EventEmitter();
+
+  const bridge = createRealtimeBridge({
+    path,
+    fs: fakeFs,
+    outputRoot: path.resolve('out'),
+    indexLabRoot: path.resolve('artifacts/indexlab'),
+    parseNdjson,
+    dataChangeMatchesCategory: () => true,
+    processStatus: () => ({ running: true, run_id: 'run-cache-1' }),
+    forwardScreencastControl: () => false,
+    watchFactory: watchHarness.watchFactory,
+    webSocketServerClass: wsHarness.FakeWebSocketServer,
+  });
+
+  bridge.attachWebSocketUpgrade(server);
+  bridge.broadcastWs('screencast-fetch-9', {
+    __screencast: true,
+    channel: 'screencast-fetch-9',
+    worker_id: 'fetch-9',
+    data: 'abc123',
+    width: 1280,
+    height: 720,
+    ts: '2026-03-08T08:10:00.000Z',
+  });
+
+  assert.deepEqual(bridge.getLastScreencastFrame('run-cache-1', 'fetch-9'), {
+    run_id: 'run-cache-1',
+    worker_id: 'fetch-9',
+    data: 'abc123',
+    width: 1280,
+    height: 720,
+    ts: '2026-03-08T08:10:00.000Z',
+  });
+  assert.equal(bridge.getLastScreencastFrame('run-cache-1', 'fetch-missing'), null);
+  assert.equal(bridge.getLastScreencastFrame('run-other', 'fetch-9'), null);
+});

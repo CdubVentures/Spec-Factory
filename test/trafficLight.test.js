@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTrafficLight } from '../src/validator/trafficLight.js';
+import { buildTrafficLight } from '../src/features/indexing/validation/trafficLight.js';
 
 test('buildTrafficLight maps tiers and unknowns to expected colors', () => {
   const traffic = buildTrafficLight({

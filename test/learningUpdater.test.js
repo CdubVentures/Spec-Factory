@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateLearningGate } from '../src/learning/learningUpdater.js';
+import { evaluateLearningGate } from '../src/features/indexing/learning/learningUpdater.js';
 
 test('rejects when confidence below threshold', () => {
   const result = evaluateLearningGate({

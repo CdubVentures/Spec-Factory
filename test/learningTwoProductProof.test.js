@@ -6,9 +6,9 @@ import {
   FieldAnchorsStore,
   UrlMemoryStore,
   DomainFieldYieldStore
-} from '../src/learning/learningStores.js';
+} from '../src/features/indexing/learning/learningStores.js';
 import { populateLearningStores } from '../src/pipeline/learningGatePhase.js';
-import { readLearningHintsFromStores } from '../src/learning/learningReadback.js';
+import { readLearningHintsFromStores } from '../src/features/indexing/learning/learningReadback.js';
 
 function makeDb() {
   return new Database(':memory:');
@@ -258,6 +258,55 @@ test('readLearningHintsFromStores returns empty gracefully when stores have no d
   assert.deepStrictEqual(hints.highYieldDomains, []);
 
   db.close();
+});
+
+test('readLearningHintsFromStores forwards configured decay windows to store readers', () => {
+  const calls = [];
+  const stores = {
+    fieldAnchors: {
+      queryWithDecay(args) {
+        calls.push(['anchors', args]);
+        return [];
+      }
+    },
+    urlMemory: {
+      queryWithDecay(args) {
+        calls.push(['urls', args]);
+        return [];
+      }
+    },
+    componentLexicon: {
+      queryWithDecay(args) {
+        calls.push(['lexicon', args]);
+        return [];
+      }
+    },
+    domainFieldYield: {
+      _db: {
+        prepare() {
+          return { all() { return []; } };
+        }
+      }
+    }
+  };
+
+  readLearningHintsFromStores({
+    stores,
+    category: 'mouse',
+    focusFields: ['sensor'],
+    config: {
+      componentLexiconDecayDays: 33,
+      componentLexiconExpireDays: 66,
+      fieldAnchorsDecayDays: 22,
+      urlMemoryDecayDays: 44,
+    }
+  });
+
+  assert.deepEqual(calls, [
+    ['anchors', { field: 'sensor', category: 'mouse', decayDays: 22 }],
+    ['urls', { field: 'sensor', category: 'mouse', decayDays: 44 }],
+    ['lexicon', { field: 'sensor', category: 'mouse', decayDays: 33, expireDays: 66 }],
+  ]);
 });
 
 test('readLearningHintsFromStores respects decay on old anchors', () => {

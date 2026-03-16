@@ -14,7 +14,7 @@ test('normalizeCategoryToken canonicalizes casing and separators', () => {
 });
 
 test('category alias resolver redirects test_ aliases to canonical underscored category when needed', () => {
-  const helperRoot = path.join('C:', 'helper_files');
+  const helperRoot = path.join('C:', 'category_authority');
   const existing = new Set([
     path.join(helperRoot, '_test_mouse'),
     path.join(helperRoot, 'test_keyboard'),

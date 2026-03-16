@@ -21,8 +21,7 @@ import {
   computeCoverageOverall,
   computeConfidence
 } from '../scoring/qualityScoring.js';
-import { evaluateValidationGate } from '../validator/qualityGate.js';
-import { buildTrafficLight } from '../validator/trafficLight.js';
+import { evaluateValidationGate, buildTrafficLight } from '../features/indexing/validation/index.js';
 import { normalizeFieldList } from '../utils/fieldKeys.js';
 import { createFieldRulesEngine } from '../engine/fieldRulesEngine.js';
 import { applyRuntimeFieldRules } from '../engine/runtimeGate.js';
@@ -37,7 +36,7 @@ import {
   writeProductReviewArtifacts
 } from '../review/reviewGridData.js';
 import { evaluateConstraintGraph } from '../scoring/constraintSolver.js';
-import { buildHypothesisQueue } from '../learning/hypothesisQueue.js';
+import { buildHypothesisQueue } from '../features/indexing/learning/index.js';
 import { buildMarkdownSummary } from '../exporter/summaryWriter.js';
 import { EventLogger } from '../logger.js';
 
@@ -353,7 +352,7 @@ export async function runTestProduct({
     productId,
     runId,
     category,
-    run_profile: 'test',
+    run_profile: 'standard',
     validated: gate.validated,
     reason: gate.validatedReason || '',
     validated_reason: gate.validatedReason || '',
@@ -385,7 +384,7 @@ export async function runTestProduct({
     discovery: { enabled: false, candidates_key: null, candidate_count: 0 },
     searches_attempted: [],
     urls_fetched: sourceResults.map(s => s.url).filter(Boolean),
-    helper_files: { enabled: false },
+    category_authority: { enabled: false },
     components: { prior_fields_filled_count: 0, prior_fields_filled: [], matched_components: [] },
     critic: { accept_count: 0, reject_count: 0, unknown_count: 0, decisions: {} },
     runtime_engine: {

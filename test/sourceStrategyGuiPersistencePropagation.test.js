@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import {
   seedFieldRules,
@@ -16,10 +17,11 @@ import {
   stopProcess,
 } from './fixtures/reviewLaneFixtures.js';
 
-const CATEGORY = 'mouse_source_strategy_gui';
+const CATEGORY = 'mouse';
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 async function ensureGuiBuilt() {
-  const distIndex = path.join(path.resolve('.'), 'tools', 'gui-react', 'dist', 'index.html');
+  const distIndex = path.join(REPO_ROOT, 'tools', 'gui-react', 'dist', 'index.html');
   try {
     await fs.access(distIndex);
   } catch {
@@ -30,10 +32,8 @@ async function ensureGuiBuilt() {
 async function waitForCondition(predicate, timeoutMs = 20_000, intervalMs = 150, label = 'condition') {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
-    // eslint-disable-next-line no-await-in-loop
     const ok = await predicate();
     if (ok) return;
-    // eslint-disable-next-line no-await-in-loop
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
   throw new Error(`timeout_waiting_for_condition:${label}`);
@@ -62,47 +62,43 @@ async function openSourceStrategySection(page) {
   await sourceStrategySectionButton.click();
 }
 
-async function seedCategory(helperRoot, category) {
-  await seedFieldRules(helperRoot, category);
-  await seedComponentDb(helperRoot, category);
-  await seedKnownValues(helperRoot, category);
-  await seedWorkbookMap(helperRoot, category);
+async function seedCategory(categoryAuthorityRoot, category) {
+  await seedFieldRules(categoryAuthorityRoot, category);
+  await seedComponentDb(categoryAuthorityRoot, category);
+  await seedKnownValues(categoryAuthorityRoot, category);
+  await seedWorkbookMap(categoryAuthorityRoot, category);
 }
 
-async function ensureSourceStrategyRow(baseUrl, category) {
-  const existingRows = await apiJson(baseUrl, 'GET', `/source-strategy?category=${encodeURIComponent(category)}`);
-  if (Array.isArray(existingRows) && existingRows.length > 0) {
-    return existingRows[0];
-  }
-  const host = `gui-source-${Date.now()}.example.com`;
-  const created = await apiJson(baseUrl, 'POST', `/source-strategy?category=${encodeURIComponent(category)}`, {
-    host,
-    display_name: 'GUI Source Strategy',
-    source_type: 'lab_review',
-    default_tier: 2,
-    discovery_method: 'search_first',
-    priority: 55,
-    enabled: 1,
-  });
-  const createdId = Number(created?.id || 0);
-  if (!Number.isFinite(createdId) || createdId <= 0) {
-    throw new Error(`source_strategy_seed_failed:${JSON.stringify(created)}`);
-  }
-  const rowsAfterCreate = await apiJson(baseUrl, 'GET', `/source-strategy?category=${encodeURIComponent(category)}`);
-  const createdRow = Array.isArray(rowsAfterCreate)
-    ? rowsAfterCreate.find((row) => Number(row?.id || 0) === createdId)
-    : null;
-  if (!createdRow) {
-    throw new Error(`source_strategy_seed_row_missing:${createdId}`);
-  }
-  return createdRow;
+async function seedSourcesJson(categoryAuthorityRoot, category) {
+  const dir = path.join(categoryAuthorityRoot, category);
+  await fs.mkdir(dir, { recursive: true });
+  const sourcesData = {
+    category,
+    version: '1.0.0',
+    approved: { manufacturer: [], lab: ['gui-source.example.com'], database: [], retailer: [] },
+    denylist: [],
+    sources: {
+      gui_sourceexamplecom: {
+        display_name: 'GUI Source Strategy',
+        tier: 'tier2_lab',
+        authority: 'instrumented',
+        base_url: 'https://gui-source.example.com',
+        content_types: ['review'],
+        doc_kinds: ['review'],
+        crawl_config: { method: 'http', rate_limit_ms: 2000, timeout_ms: 12000, robots_txt_compliant: true },
+        field_coverage: { high: [], medium: [], low: [] },
+        discovery: { method: 'search_first', source_type: 'lab_review', search_pattern: '', priority: 55, enabled: true, notes: '' },
+      },
+    },
+  };
+  await fs.writeFile(path.join(dir, 'sources.json'), JSON.stringify(sourcesData, null, 2));
 }
 
 test('GUI source strategy toggle persists across reload in pipeline settings', { timeout: 300_000 }, async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'source-strategy-gui-'));
-  const helperFilesRoot = path.join(tempRoot, 'helper_files');
+  const categoryAuthorityRoot = path.join(tempRoot, 'category_authority');
   const localOutputRoot = path.join(tempRoot, 'out');
-  const repoRoot = path.resolve('.');
+  const repoRoot = REPO_ROOT;
   const guiDistRoot = path.join(repoRoot, 'tools', 'gui-react', 'dist');
 
   let child = null;
@@ -113,17 +109,17 @@ test('GUI source strategy toggle persists across reload in pipeline settings', {
 
   try {
     await ensureGuiBuilt();
-    await seedCategory(helperFilesRoot, 'mouse');
-    await seedCategory(helperFilesRoot, CATEGORY);
+    await seedCategory(categoryAuthorityRoot, CATEGORY);
+    await seedSourcesJson(categoryAuthorityRoot, CATEGORY);
 
     const port = await findFreePort();
     const baseUrl = `http://127.0.0.1:${port}`;
-    const guiServerPath = path.resolve('src/api/guiServer.js');
+    const guiServerPath = path.join(repoRoot, 'src', 'api', 'guiServer.js');
     child = spawn('node', [guiServerPath, '--port', String(port), '--local'], {
       cwd: tempRoot,
       env: {
         ...process.env,
-        HELPER_FILES_ROOT: helperFilesRoot,
+        HELPER_FILES_ROOT: categoryAuthorityRoot,
         LOCAL_OUTPUT_ROOT: localOutputRoot,
         LOCAL_INPUT_ROOT: path.join(tempRoot, 'fixtures'),
         OUTPUT_MODE: 'local',
@@ -136,10 +132,11 @@ test('GUI source strategy toggle persists across reload in pipeline settings', {
     child.stderr.on('data', (chunk) => logs.push(String(chunk)));
     await waitForServerReady(baseUrl, child);
 
-    const sourceRow = await ensureSourceStrategyRow(baseUrl, CATEGORY);
-    const rowId = Number(sourceRow.id);
-    const host = String(sourceRow.host || '');
-    const targetEnabled = Number(sourceRow.enabled ? 0 : 1);
+    const sourceEntries = await apiJson(baseUrl, 'GET', `/source-strategy?category=${encodeURIComponent(CATEGORY)}`);
+    assert.ok(Array.isArray(sourceEntries) && sourceEntries.length > 0, 'should have source entries');
+    const entry = sourceEntries[0];
+    const sourceId = String(entry.sourceId || '');
+    const host = entry.base_url ? new URL(entry.base_url).hostname : sourceId.replace(/_/g, '.');
 
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
@@ -158,9 +155,9 @@ test('GUI source strategy toggle persists across reload in pipeline settings', {
     await toggleButton.click();
 
     await waitForCondition(async () => {
-      const rows = await apiJson(baseUrl, 'GET', `/source-strategy?category=${encodeURIComponent(CATEGORY)}`);
-      const row = Array.isArray(rows) ? rows.find((entry) => Number(entry?.id || 0) === rowId) : null;
-      return Number(row?.enabled || 0) === targetEnabled;
+      const entries = await apiJson(baseUrl, 'GET', `/source-strategy?category=${encodeURIComponent(CATEGORY)}`);
+      const found = Array.isArray(entries) ? entries.find((e) => e.sourceId === sourceId) : null;
+      return found && found.discovery && found.discovery.enabled === false;
     }, 25_000, 150, 'source_strategy_toggle_persisted');
 
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -172,20 +169,19 @@ test('GUI source strategy toggle persists across reload in pipeline settings', {
     await rowAfterReload.waitFor({ state: 'visible', timeout: 25_000 });
     const toggleAfterReload = rowAfterReload.locator('button').filter({ hasText: /ON|OFF/ }).first();
     await toggleAfterReload.waitFor({ state: 'visible', timeout: 20_000 });
-    const expectedButtonText = targetEnabled ? 'ON' : 'OFF';
     assert.equal(
       String(await toggleAfterReload.innerText()).trim(),
-      expectedButtonText,
+      'OFF',
       'source strategy toggle text should persist after reload',
     );
 
-    const persistedRows = await apiJson(baseUrl, 'GET', `/source-strategy?category=${encodeURIComponent(CATEGORY)}`);
-    const persistedRow = Array.isArray(persistedRows)
-      ? persistedRows.find((entry) => Number(entry?.id || 0) === rowId)
+    const persistedEntries = await apiJson(baseUrl, 'GET', `/source-strategy?category=${encodeURIComponent(CATEGORY)}`);
+    const persistedEntry = Array.isArray(persistedEntries)
+      ? persistedEntries.find((e) => e.sourceId === sourceId)
       : null;
     assert.equal(
-      Number(persistedRow?.enabled || 0),
-      targetEnabled,
+      persistedEntry?.discovery?.enabled,
+      false,
       'source strategy endpoint should retain toggled enabled value after reload',
     );
   } catch (error) {

@@ -5,6 +5,7 @@ import {
   S3Client,
   PutObjectCommand,
 } from '@aws-sdk/client-s3';
+import { defaultIndexLabRoot, defaultLocalOutputRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 const DEFAULT_LOCAL_FOLDER_NAME = 'SpecFactoryRuns';
 const DEFAULT_S3_PREFIX = 'spec-factory-runs';
@@ -288,8 +289,11 @@ export function normalizeRunDataStorageSettings(input = {}, fallback = {}) {
     ),
     destinationType,
     localDirectory,
-    s3Region: toToken(
-      Object.hasOwn(next, 's3Region') ? next.s3Region : previous.s3Region,
+    awsRegion: toToken(
+      Object.hasOwn(next, 'awsRegion') ? next.awsRegion
+        : Object.hasOwn(next, 's3Region') ? next.s3Region
+        : Object.hasOwn(previous, 'awsRegion') ? previous.awsRegion
+        : previous.s3Region,
     ) || DEFAULT_S3_REGION,
     s3Bucket: toToken(
       Object.hasOwn(next, 's3Bucket') ? next.s3Bucket : previous.s3Bucket,
@@ -318,7 +322,7 @@ export function sanitizeRunDataStorageSettingsForResponse(settings = {}) {
     enabled: normalized.enabled,
     destinationType: normalized.destinationType,
     localDirectory: normalized.localDirectory,
-    s3Region: normalized.s3Region,
+    awsRegion: normalized.awsRegion,
     s3Bucket: normalized.s3Bucket,
     s3Prefix: normalized.s3Prefix,
     s3AccessKeyId: normalized.s3AccessKeyId,
@@ -336,7 +340,7 @@ export function shouldRelocateRunData(settings = {}) {
     return Boolean(normalized.localDirectory);
   }
   if (normalized.destinationType === S3_DESTINATION) {
-    return Boolean(normalized.s3Region && normalized.s3Bucket && normalized.s3Prefix);
+    return Boolean(normalized.awsRegion && normalized.s3Bucket && normalized.s3Prefix);
   }
   return false;
 }
@@ -349,7 +353,7 @@ export function validateRunDataStorageSettings(settings = {}) {
     return null;
   }
   if (normalized.destinationType === S3_DESTINATION) {
-    if (!normalized.s3Region) return 's3_region_required';
+    if (!normalized.awsRegion) return 's3_region_required';
     if (!normalized.s3Bucket) return 's3_bucket_required';
     if (!normalized.s3Prefix) return 's3_prefix_required';
     return null;
@@ -393,9 +397,9 @@ export async function listLocalStorageDirectories({
 export async function relocateRunDataForCompletedRun({
   settings = {},
   runMeta = {},
-  outputRoot = 'out',
+  outputRoot = defaultLocalOutputRoot(),
   outputPrefix = 'specs/outputs',
-  indexLabRoot = path.resolve('artifacts/indexlab'),
+  indexLabRoot = defaultIndexLabRoot(),
 } = {}) {
   const normalizedSettings = normalizeRunDataStorageSettings(settings, settings);
   const validationError = validateRunDataStorageSettings(normalizedSettings);
@@ -418,8 +422,8 @@ export async function relocateRunDataForCompletedRun({
     throw new Error('missing_run_id');
   }
 
-  const outputRootAbs = path.resolve(String(outputRoot || 'out'));
-  const indexLabRootAbs = path.resolve(String(indexLabRoot || 'artifacts/indexlab'));
+  const outputRootAbs = path.resolve(String(outputRoot || defaultLocalOutputRoot()));
+  const indexLabRootAbs = path.resolve(String(indexLabRoot || defaultIndexLabRoot()));
 
   const runOutputDir = resolveOutputPathFromKey(outputRootAbs, runBaseKey);
   const latestOutputDir = resolveOutputPathFromKey(outputRootAbs, latestBaseKey);
@@ -572,7 +576,7 @@ export async function relocateRunDataForCompletedRun({
 
   const uploadResult = await uploadDirectoryToS3({
     rootDir: stageRunRoot,
-    region: normalizedSettings.s3Region,
+    region: normalizedSettings.awsRegion,
     bucket: normalizedSettings.s3Bucket,
     prefix: destinationPrefix,
     credentials: toS3Credentials(normalizedSettings),

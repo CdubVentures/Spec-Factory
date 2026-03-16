@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildFieldBatches,
   resolveBatchModel
-} from '../src/llm/fieldBatching.js';
+} from '../src/features/indexing/extraction/fieldBatching.js';
 
 test('buildFieldBatches groups fields into at most seven batches', () => {
   const fields = [

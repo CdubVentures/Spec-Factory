@@ -4,7 +4,7 @@ import {
   inferIdentityFromProductId,
   resolveAuthoritativeProductIdentity,
   resolveProductIdentity,
-} from '../src/catalog/productIdentityAuthority.js';
+} from '../src/features/catalog/identity/productIdentityAuthority.js';
 
 test('inferIdentityFromProductId parses category-prefixed product ids', () => {
   const identity = inferIdentityFromProductId('mouse-razer-viper-v3-pro', 'mouse');

@@ -7,7 +7,7 @@ import { verifyGeneratedFieldRules } from '../src/ingest/fieldRulesVerify.js';
 
 test('verifyGeneratedFieldRules passes when generated file matches golden fixture bytes', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-field-rules-verify-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const category = 'mouse';
   const generatedPath = path.join(helperRoot, category, '_generated', 'field_rules.json');
   const fixturePath = path.join(root, 'test-fixture.json');
@@ -29,7 +29,7 @@ test('verifyGeneratedFieldRules passes when generated file matches golden fixtur
     const result = await verifyGeneratedFieldRules({
       category,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       },
       fixturePath
     });
@@ -43,7 +43,7 @@ test('verifyGeneratedFieldRules passes when generated file matches golden fixtur
 
 test('verifyGeneratedFieldRules passes semantic comparison when only volatile keys differ', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-field-rules-verify-semantic-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const category = 'mouse';
   const generatedPath = path.join(helperRoot, category, '_generated', 'field_rules.json');
   const fixturePath = path.join(root, 'test-fixture.json');
@@ -72,7 +72,7 @@ test('verifyGeneratedFieldRules passes semantic comparison when only volatile ke
     const result = await verifyGeneratedFieldRules({
       category,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       },
       fixturePath
     });
@@ -87,7 +87,7 @@ test('verifyGeneratedFieldRules passes semantic comparison when only volatile ke
 
 test('verifyGeneratedFieldRules fails when semantic field keys differ', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-field-rules-verify-mismatch-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const category = 'mouse';
   const generatedPath = path.join(helperRoot, category, '_generated', 'field_rules.json');
   const fixturePath = path.join(root, 'test-fixture.json');
@@ -117,7 +117,7 @@ test('verifyGeneratedFieldRules fails when semantic field keys differ', async ()
     const result = await verifyGeneratedFieldRules({
       category,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       },
       fixturePath
     });

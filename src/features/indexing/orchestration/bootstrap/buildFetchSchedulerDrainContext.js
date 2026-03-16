@@ -1,0 +1,31 @@
+export function buildFetchSchedulerDrainContext({
+  planner,
+  config,
+  initialMode,
+  prepareNextPlannerSource,
+  fetchFn,
+  fetchWithModeFn,
+  shouldSkipPreflight,
+  shouldStopScheduler,
+  classifyOutcomeFn,
+  handleSchedulerFetchError,
+  handleSchedulerSkipped,
+  emitSchedulerEvent,
+  createFetchScheduler,
+} = {}) {
+  return {
+    planner,
+    config,
+    initialMode,
+    prepareNextPlannerSourceFn: prepareNextPlannerSource,
+    fetchFn,
+    fetchWithModeFn,
+    shouldSkipFn: shouldSkipPreflight,
+    shouldStopFn: shouldStopScheduler,
+    classifyOutcomeFn,
+    onFetchError: handleSchedulerFetchError,
+    onSkipped: handleSchedulerSkipped,
+    emitEvent: emitSchedulerEvent,
+    createFetchSchedulerFn: createFetchScheduler,
+  };
+}

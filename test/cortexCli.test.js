@@ -1,26 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import path from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
-const execFileAsync = promisify(execFile);
-const cliPath = path.resolve('src/cli/spec.js');
-
-async function runCli(args, { env = {} } = {}) {
-  const { stdout } = await execFileAsync(
-    process.execPath,
-    [cliPath, ...args],
-    {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        ...env
-      }
-    }
-  );
-  return JSON.parse(stdout);
-}
+import { runCliJson as runCli } from '../tests/support/cliJsonHarness.js';
 
 test('cortex-route-plan CLI produces capped deep-tier assignments', async () => {
   const output = await runCli([

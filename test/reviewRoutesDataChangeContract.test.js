@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import path from 'node:path';
-import { registerReviewRoutes } from '../src/api/routes/reviewRoutes.js';
+import { registerReviewRoutes } from '../src/features/review/api/reviewRoutes.js';
 
 function makeReviewCtx(overrides = {}) {
   const ctx = {
@@ -16,7 +16,7 @@ function makeReviewCtx(overrides = {}) {
     config: {},
     storage: {},
     OUTPUT_ROOT: 'out',
-    HELPER_ROOT: 'helper_files',
+    HELPER_ROOT: 'category_authority',
     path,
     fs: { mkdir: async () => {}, writeFile: async () => {} },
     getSpecDb: () => null,

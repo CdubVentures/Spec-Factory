@@ -34,10 +34,10 @@ test('sqlite frontier: recordQuery stores and retrieves query', () => {
     const frontier = new FrontierDbSqlite({ dbPath });
     const result = frontier.recordQuery({
       productId: 'mouse-001',
-      query: 'Razer Viper V3 Pro specs',
+      query: 'Acme Orbit X1 specs',
       provider: 'google',
       fields: ['weight', 'sensor'],
-      results: [{ rank: 1, url: 'https://example.com/viper', title: 'Viper Specs', host: 'example.com', snippet: 'The Viper V3 Pro...' }]
+      results: [{ rank: 1, url: 'https://example.com/orbit-x1', title: 'Orbit X1 Specs', host: 'example.com', snippet: 'The Orbit X1 overview...' }]
     });
     assert.ok(result);
     assert.ok(result.query_hash);
@@ -66,6 +66,38 @@ test('sqlite frontier: shouldSkipQuery force overrides cooldown', () => {
     const frontier = new FrontierDbSqlite({ dbPath });
     frontier.recordQuery({ productId: 'p1', query: 'test', provider: 'google' });
     assert.equal(frontier.shouldSkipQuery({ productId: 'p1', query: 'test', force: true }), false);
+    frontier.close();
+  } finally {
+    cleanup(dbPath);
+  }
+});
+
+test('sqlite frontier: getQueryRecord returns cached query results', () => {
+  const dbPath = tmpDbPath();
+  try {
+    const frontier = new FrontierDbSqlite({ dbPath });
+    frontier.recordQuery({
+      productId: 'p1',
+      query: 'Acme Orbit X1 specs',
+      provider: 'google',
+      fields: ['weight'],
+      results: [
+        {
+          rank: 1,
+          url: 'https://example.com/acme-orbit-x1',
+          title: 'Acme Orbit X1',
+          host: 'example.com',
+          snippet: 'Official product page'
+        }
+      ]
+    });
+    const row = frontier.getQueryRecord({
+      productId: 'p1',
+      query: 'acme orbit x1 specs'
+    });
+    assert.equal(Array.isArray(row?.results), true);
+    assert.equal(row?.results?.length, 1);
+    assert.equal(row?.results?.[0]?.url, 'https://example.com/acme-orbit-x1');
     frontier.close();
   } finally {
     cleanup(dbPath);
@@ -129,6 +161,28 @@ test('sqlite frontier: 403 triggers cooldown', () => {
     assert.equal(skip.skip, true);
     const row = frontier.getUrlRow('https://example.com/forbidden');
     assert.equal(row?.cooldown?.reason, 'status_403_backoff');
+    frontier.close();
+  } finally {
+    cleanup(dbPath);
+  }
+});
+
+test('sqlite frontier: frontierBackoffMaxExponent caps repeated 403 cooldown growth', () => {
+  const dbPath = tmpDbPath();
+  try {
+    const frontier = new FrontierDbSqlite({
+      dbPath,
+      config: {
+        frontierCooldown403BaseSeconds: 60,
+        frontierBackoffMaxExponent: 2,
+      }
+    });
+    for (let idx = 0; idx < 6; idx += 1) {
+      frontier.recordFetch({ productId: 'p1', url: 'https://example.com/rate-limited', status: 403 });
+    }
+    const row = frontier.getUrlRow('https://example.com/rate-limited');
+    assert.equal(row?.cooldown?.reason, 'status_403_backoff');
+    assert.equal(row?.cooldown?.seconds, 240);
     frontier.close();
   } finally {
     cleanup(dbPath);

@@ -1,0 +1,31 @@
+export function buildSelfImproveLearningStoresContext({
+  config,
+  learningGateResult,
+  provenance,
+  category,
+  runId,
+  runtimeFieldRulesEngine,
+  logger,
+  importSpecDb,
+  UrlMemoryStoreClass,
+  DomainFieldYieldStoreClass,
+  FieldAnchorsStoreClass,
+  ComponentLexiconStoreClass,
+  populateLearningStores,
+} = {}) {
+  return {
+    config,
+    learningGateResult,
+    provenance,
+    category,
+    runId,
+    runtimeFieldRulesEngine,
+    logger,
+    importSpecDbFn: importSpecDb,
+    createUrlMemoryStoreFn: UrlMemoryStoreClass,
+    createDomainFieldYieldStoreFn: DomainFieldYieldStoreClass,
+    createFieldAnchorsStoreFn: FieldAnchorsStoreClass,
+    createComponentLexiconStoreFn: ComponentLexiconStoreClass,
+    populateLearningStoresFn: populateLearningStores,
+  };
+}

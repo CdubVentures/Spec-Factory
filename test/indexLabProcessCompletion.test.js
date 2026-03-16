@@ -64,7 +64,7 @@ test('handleIndexLabProcessCompletion relocates successful indexlab runs and emi
       enabled: true,
       destinationType: 'local',
       localDirectory: destinationRoot,
-      s3Region: 'us-east-2',
+      awsRegion: 'us-east-2',
       s3Bucket: '',
       s3Prefix: 'spec-factory-runs',
       s3AccessKeyId: '',
@@ -151,7 +151,7 @@ test('handleIndexLabProcessCompletion relocates interrupted runs (non-zero exit 
       enabled: true,
       destinationType: 'local',
       localDirectory: destinationRoot,
-      s3Region: 'us-east-2',
+      awsRegion: 'us-east-2',
       s3Bucket: '',
       s3Prefix: 'spec-factory-runs',
       s3AccessKeyId: '',
@@ -224,6 +224,79 @@ test('handleIndexLabProcessCompletion relocates SIGKILL runs (exit code 1)', asy
   assert.equal(await pathExists(path.join(archiveRoot, 'indexlab', 'run.json')), true);
 });
 
+test('handleIndexLabProcessCompletion closes interrupted running meta and appends terminal error event before relocation', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-indexlab-replaced-'));
+  const indexLabRoot = path.join(tempRoot, 'artifacts', 'indexlab');
+  const destinationRoot = path.join(tempRoot, 'archive');
+
+  const runId = 'run-replaced-001';
+  const category = 'mouse';
+  const productId = 'mouse-razer-viper-v3-pro';
+
+  await writeUtf8(
+    path.join(indexLabRoot, runId, 'run.json'),
+    JSON.stringify({
+      run_id: runId,
+      category,
+      product_id: productId,
+      started_at: '2026-02-24T00:00:00.000Z',
+      ended_at: '',
+      status: 'running',
+      stages: {
+        search: { started_at: '2026-02-24T00:00:00.000Z', ended_at: '2026-02-24T00:00:05.000Z' },
+        fetch: { started_at: '2026-02-24T00:00:05.000Z', ended_at: '' },
+        parse: { started_at: '', ended_at: '' },
+        index: { started_at: '', ended_at: '' },
+      },
+    }, null, 2),
+  );
+  await writeUtf8(
+    path.join(indexLabRoot, runId, 'run_events.ndjson'),
+    `${JSON.stringify({
+      run_id: runId,
+      ts: '2026-02-24T00:00:05.000Z',
+      stage: 'fetch',
+      event: 'fetch_started',
+      payload: { url: 'https://example.com/spec' },
+    })}\n`,
+  );
+
+  const result = await handleIndexLabProcessCompletion({
+    exitCode: null,
+    cliArgs: ['indexlab', '--local', '--run-id', runId, '--category', category, '--product-id', productId],
+    startedAt: '2026-02-24T00:00:01.000Z',
+    runDataStorageSettings: {
+      enabled: true,
+      destinationType: 'local',
+      localDirectory: destinationRoot,
+    },
+    indexLabRoot,
+    outputRoot: path.join(tempRoot, 'out'),
+    outputPrefix: 'specs/outputs',
+    broadcastWs: () => {},
+    logError: () => {},
+  });
+
+  assert.equal(result?.ok, true);
+  assert.equal(result?.run_id, runId);
+
+  const archiveRoot = path.join(destinationRoot, category, productId, runId);
+  const archivedMeta = JSON.parse(await fs.readFile(path.join(archiveRoot, 'indexlab', 'run.json'), 'utf8'));
+  const archivedEvents = (await fs.readFile(path.join(archiveRoot, 'indexlab', 'run_events.ndjson'), 'utf8'))
+    .trim()
+    .split('\n')
+    .map((line) => JSON.parse(line));
+  const terminalEvent = archivedEvents.at(-1);
+
+  assert.equal(archivedMeta.status, 'failed');
+  assert.equal(typeof archivedMeta.ended_at, 'string');
+  assert.notEqual(archivedMeta.ended_at, '');
+  assert.equal(archivedMeta.stages.fetch.ended_at, archivedMeta.ended_at);
+  assert.equal(terminalEvent?.event, 'error');
+  assert.equal(terminalEvent?.stage, 'error');
+  assert.equal(terminalEvent?.payload?.event, 'process_interrupted');
+});
+
 test('handleIndexLabProcessCompletion emits failure event when relocation throws', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-indexlab-fail-'));
   const outputRoot = path.join(tempRoot, 'out');
@@ -256,7 +329,7 @@ test('handleIndexLabProcessCompletion emits failure event when relocation throws
       enabled: true,
       destinationType: 'local',
       localDirectory: destinationRoot,
-      s3Region: 'us-east-2',
+      awsRegion: 'us-east-2',
       s3Bucket: '',
       s3Prefix: 'spec-factory-runs',
       s3AccessKeyId: '',

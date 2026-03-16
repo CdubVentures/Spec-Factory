@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildHypothesisQueue, nextBestUrlsFromHypotheses } from '../src/learning/hypothesisQueue.js';
+import { buildHypothesisQueue, nextBestUrlsFromHypotheses } from '../src/features/indexing/learning/hypothesisQueue.js';
 
 test('hypothesis queue prioritizes critical missing fields with suggestions', () => {
   const queue = buildHypothesisQueue({

@@ -7,6 +7,7 @@ import {
   resolveTierForHost,
   resolveTierNameForHost
 } from '../categories/loader.js';
+import { isLowValueHost, validateFetchUrl } from '../pipeline/urlQualityGate.js';
 
 function normalizeHost(host) {
   return String(host || '').trim().toLowerCase().replace(/^www\./, '');
@@ -62,23 +63,46 @@ const BRAND_HOST_HINTS = {
   pulsar: ['pulsar'],
   corsair: ['corsair'],
   glorious: ['glorious'],
-  endgame: ['endgamegear', 'endgame-gear']
+  endgame: ['endgamegear', 'endgame-gear'],
+  cooler: ['coolermaster', 'cooler-master'],
+  asus: ['asus', 'rog'],
 };
 
 const BRAND_DOMAIN_OVERRIDES = {
   alienware: ['alienware.com', 'dell.com'],
   logitech: ['logitechg.com', 'logitech.com'],
   steelseries: ['steelseries.com'],
-  razer: ['razer.com']
+  razer: ['razer.com'],
+  cooler: ['coolermaster.com'],
+  asus: ['asus.com', 'rog.asus.com'],
 };
 
+const BRAND_PREFIXED_CATEGORY_HOSTS = new Set(['razer.com']);
+
 function manufacturerHostHintsForBrand(brand) {
-  const hints = new Set(tokenize(brand));
+  const rawTokens = tokenize(brand);
+  const hints = new Set(rawTokens);
   const brandSlug = slug(brand);
+  const matchedRawTokens = new Set();
   for (const [key, aliases] of Object.entries(BRAND_HOST_HINTS)) {
     if (brandSlug.includes(key) || hints.has(key)) {
       for (const alias of aliases) {
         hints.add(alias);
+      }
+      // Mark raw tokens that were part of this brand match
+      // so we can suppress them as standalone domain guesses.
+      for (const rt of rawTokens) {
+        if (brandSlug.includes(rt)) matchedRawTokens.add(rt);
+      }
+    }
+  }
+  // When brand hints matched, remove raw partial tokens (e.g. "cooler", "master")
+  // that would produce wrong domains like cooler.com, master.com.
+  if (matchedRawTokens.size > 0 && matchedRawTokens.size < hints.size) {
+    for (const rt of matchedRawTokens) {
+      // Only remove if the hint set has proper aliases beyond the raw tokens
+      if (hints.size - matchedRawTokens.size >= 1) {
+        hints.delete(rt);
       }
     }
   }
@@ -104,7 +128,7 @@ function manufacturerSeedHostsForBrand(brand = '', hints = []) {
     if (!token || token.length < 3 || !/^[a-z0-9-]+$/.test(token)) {
       continue;
     }
-    if (['logi', 'mice', 'mouse', 'gaming', 'wireless', 'wired'].includes(token)) {
+    if (['logi', 'mice', 'mouse', 'gaming', 'wireless', 'wired', 'master', 'model', 'pro', 'ace'].includes(token)) {
       continue;
     }
     seeds.add(`${token}.com`);
@@ -118,6 +142,18 @@ function slug(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+function buildAllowedCategoryProductSlugs({ brand = '', modelSlug = '' }) {
+  if (!modelSlug) {
+    return [];
+  }
+  const variants = [modelSlug];
+  const brandSlug = slug(brand);
+  if (brandSlug && !modelSlug.startsWith(`${brandSlug}-`)) {
+    variants.push(`${brandSlug}-${modelSlug}`);
+  }
+  return [...new Set(variants)];
 }
 
 function countQueueHost(queue, host) {
@@ -141,26 +177,91 @@ function urlPath(url) {
 function normalizeSourcePath(url) {
   try {
     const parsed = new URL(url);
-    const rawPath = String(parsed.pathname || '/')
-      .toLowerCase()
-      .replace(/\/+/g, '/');
-    if (!rawPath || rawPath === '/') {
-      return '/';
-    }
-    return rawPath.endsWith('/') ? rawPath.slice(0, -1) : rawPath;
+    return normalizeComparablePath(parsed.pathname || '/');
   } catch {
     return '/';
   }
 }
 
-function isSitemapLikePath(pathname) {
-  const token = String(pathname || '').toLowerCase();
-  return token.includes('sitemap') || token.endsWith('.xml');
+function normalizeComparablePath(pathname = '/') {
+  const rawPath = String(pathname || '/')
+    .toLowerCase()
+    .replace(/\/+/g, '/');
+  if (!rawPath || rawPath === '/') {
+    return '/';
+  }
+  return rawPath.endsWith('/') ? rawPath.slice(0, -1) : rawPath;
+}
+
+const CATEGORY_PRODUCT_PATH_RE = /\/(?:gaming-)?(?:mice|mouse|keyboards?|headsets?|monitors?)\//;
+
+function extractCategoryProductSlug(pathname = '') {
+  const match = String(pathname || '').toLowerCase().match(
+    /^\/(?:gaming-)?(?:mice|mouse|keyboards?|headsets?|monitors?)\/([^/]+)/
+  );
+  return String(match?.[1] || '').trim();
+}
+
+function extractManufacturerProductishSlug(pathname = '') {
+  const normalizedPath = String(pathname || '').toLowerCase();
+  const matchers = [
+    /^\/(?:gaming-)?(?:mice|mouse|keyboards?|headsets?|monitors?)\/([^/?#]+)/,
+    /^\/product\/([^/?#]+)/,
+    /^\/products\/([^/?#]+)$/,
+    /^\/products\/[^/]+\/([^/?#]+)$/,
+    /\/variant\/products\/([^/?#]+)/,
+    /\/products\/([^/?#]+)$/
+  ];
+  for (const matcher of matchers) {
+    const match = normalizedPath.match(matcher);
+    const token = String(match?.[1] || '').trim();
+    if (token) {
+      return token;
+    }
+  }
+  return '';
+}
+
+function slugIdentityTokens(value = '') {
+  return String(value || '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/g)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2);
+}
+
+const BENIGN_LOCKED_PRODUCT_SUFFIX_TOKENS = new Set(['base']);
+
+function isSitemapLikePath(pathname, search = '') {
+  const token = `${String(pathname || '')} ${String(search || '')}`.toLowerCase();
+  return token.includes('sitemap');
+}
+
+function isNonProductSitemapPointer(parsed) {
+  const haystack = [
+    normalizeHost(parsed?.hostname || ''),
+    String(parsed?.pathname || ''),
+    String(parsed?.search || '')
+  ].join(' ').toLowerCase();
+  if (!haystack.trim()) {
+    return false;
+  }
+  return [
+    'image',
+    'images',
+    'video',
+    'videos',
+    'news',
+    'blog',
+    'blogs',
+    'press',
+    'media'
+  ].some((token) => haystack.includes(token));
 }
 
 function stripLocalePrefix(pathname) {
   const raw = String(pathname || '').toLowerCase();
-  const match = raw.match(/^\/([a-z]{2}(?:-[a-z]{2})?)\/(.+)$/);
+  const match = raw.match(/^\/([a-z]{2}|[a-z]{2,5}-[a-z]{2})\/(.+)$/);
   if (!match) {
     return {
       pathname: raw,
@@ -182,6 +283,12 @@ function decodeXmlEntities(value) {
     .replace(/&#39;/g, "'");
 }
 
+function extractFirstHttpUrlToken(value = '') {
+  const decoded = decodeXmlEntities(value);
+  const match = decoded.match(/https?:\/\/[^\s<>"']+/i);
+  return String(match?.[0] || '').trim();
+}
+
 function countTokenHits(text, tokens) {
   const haystack = String(text || '').toLowerCase();
   let hits = 0;
@@ -195,6 +302,33 @@ function countTokenHits(text, tokens) {
     }
   }
   return hits;
+}
+
+function isHighSignalManufacturerSeedUrl(url, brandTokens, modelTokens) {
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+
+  const host = normalizeHost(parsed.hostname);
+  const pathAndQuery = `${parsed.pathname || ''} ${parsed.search || ''}`.toLowerCase();
+  const modelHits = countTokenHits(pathAndQuery, modelTokens);
+  const brandHits = countTokenHits(`${host} ${pathAndQuery}`, brandTokens);
+  const hasManufacturerSignal =
+    /support|manual|spec|product|products|download|datasheet|article|pdf/.test(pathAndQuery);
+
+  if (!hasManufacturerSignal) {
+    return false;
+  }
+
+  if (modelTokens.length > 0) {
+    const minModelHits = modelTokens.length >= 3 ? 2 : 1;
+    return modelHits >= minModelHits;
+  }
+
+  return brandHits >= 1;
 }
 
 export class SourcePlanner {
@@ -231,6 +365,7 @@ export class SourcePlanner {
       : 0;
 
     this.manufacturerQueue = [];
+    this.priorityQueue = [];
     this.queue = [];
     this.candidateQueue = [];
 
@@ -288,6 +423,17 @@ export class SourcePlanner {
       ...tokenize(job.identityLock?.variant),
       ...tokenize(job.productId)
     ])].filter((token) => !this.brandTokens.includes(token) && !genericModelTokens.has(token));
+    this.modelSlug = slug(job.identityLock?.model || job.productId || '');
+    this.modelSlugIdentityTokens = [...new Set([
+      ...slugIdentityTokens(job.identityLock?.model || ''),
+      ...slugIdentityTokens(job.identityLock?.variant || '')
+    ])];
+    this.allowedCategoryProductSlugs = new Set(
+      buildAllowedCategoryProductSlugs({
+        brand: job.identityLock?.brand || '',
+        modelSlug: this.modelSlug
+      })
+    );
 
     this.seed(job.seedUrls || []);
     this.seedManufacturerDeepUrls();
@@ -387,11 +533,12 @@ export class SourcePlanner {
     }
 
     const encodedQuery = encodeURIComponent(queryText);
-    const modelSlug = slug(this.job.identityLock?.model || this.job.productId || '');
-
     const fallbackBrandSeeds = manufacturerSeedHostsForBrand(
       this.job.identityLock?.brand || '',
       this.brandHostHints
+    );
+    const suppressGuessSeeds = (this.job.seedUrls || []).some((seedUrl) =>
+      isHighSignalManufacturerSeedUrl(seedUrl, this.brandTokens, this.modelTokens)
     );
     const manufacturerHosts = new Set(
       this.brandManufacturerHostSet.size
@@ -415,19 +562,9 @@ export class SourcePlanner {
       }
 
       const seeds = [
-        `https://${host}/products/${modelSlug}`,
-        `https://${host}/product/${modelSlug}`,
-        `https://${host}/gaming-mice/${modelSlug}`,
-        `https://${host}/support/${modelSlug}`,
-        `https://${host}/downloads/${modelSlug}`,
-        `https://${host}/manual/${modelSlug}`,
-        `https://${host}/specs/${modelSlug}`,
         `https://${host}/robots.txt`,
-        `https://${host}/sitemap.xml`,
-        `https://${host}/sitemap_index.xml`,
-        `https://${host}/sitemaps.xml`
       ];
-      if (this.manufacturerSeedSearchUrls) {
+      if (this.manufacturerSeedSearchUrls && !suppressGuessSeeds) {
         seeds.unshift(
           `https://${host}/support/search?query=${encodedQuery}`,
           `https://${host}/shop/search?q=${encodedQuery}`,
@@ -508,6 +645,79 @@ export class SourcePlanner {
     return hostInSet(host, this.allowlistHosts);
   }
 
+  isResumeSeed(discoveredFrom = '') {
+    return String(discoveredFrom || '').startsWith('resume_');
+  }
+
+  matchesAllowedLockedProductSlug(productSlug = '') {
+    const normalizedSlug = String(productSlug || '').toLowerCase().trim();
+    if (!normalizedSlug || this.allowedCategoryProductSlugs.size === 0) {
+      return false;
+    }
+    if (this.allowedCategoryProductSlugs.has(normalizedSlug)) {
+      return true;
+    }
+
+    for (const allowedSlug of this.allowedCategoryProductSlugs) {
+      if (!allowedSlug || !normalizedSlug.startsWith(`${allowedSlug}-`)) {
+        continue;
+      }
+      const suffixTokens = slugIdentityTokens(normalizedSlug.slice(allowedSlug.length + 1));
+      if (suffixTokens.length > 0 && suffixTokens.every((token) => BENIGN_LOCKED_PRODUCT_SUFFIX_TOKENS.has(token))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  shouldRejectLockedManufacturerUrl(parsed) {
+    if (this.allowedCategoryProductSlugs.size === 0) {
+      return false;
+    }
+
+    const localizedPath = stripLocalePrefix(parsed.pathname || '');
+    const productSlug = extractManufacturerProductishSlug(localizedPath.pathname);
+    if (!productSlug) {
+      return false;
+    }
+
+    if (this.matchesAllowedLockedProductSlug(productSlug)) {
+      return false;
+    }
+
+    const slugTokens = slugIdentityTokens(productSlug);
+    if (slugTokens.length === 0) {
+      return true;
+    }
+
+    const matchingLockedTokens = this.modelSlugIdentityTokens.filter((token) => slugTokens.includes(token));
+    if (matchingLockedTokens.length === 0) {
+      return true;
+    }
+
+    const minLockedHits = this.modelSlugIdentityTokens.length >= 2 ? 2 : 1;
+    return matchingLockedTokens.length >= minLockedHits;
+  }
+
+  shouldRejectLockedManufacturerLocaleDuplicateUrl(parsed, { allowResume = false } = {}) {
+    if (allowResume || this.allowedCategoryProductSlugs.size === 0) {
+      return false;
+    }
+
+    const localizedPath = stripLocalePrefix(parsed.pathname || '');
+    if (!localizedPath.hadLocalePrefix) {
+      return false;
+    }
+
+    const categoryProductSlug = extractCategoryProductSlug(localizedPath.pathname || '');
+    if (!categoryProductSlug) {
+      return false;
+    }
+
+    return this.matchesAllowedLockedProductSlug(categoryProductSlug);
+  }
+
   enqueue(url, discoveredFrom = 'unknown', options = {}) {
     const { forceApproved = false, forceCandidate = false, forceBrandBypass = false } = options;
 
@@ -539,6 +749,10 @@ export class SourcePlanner {
       return false;
     }
 
+    if (this.priorityQueue.find((item) => item.url === normalizedUrl)) {
+      return false;
+    }
+
     if (this.candidateQueue.find((item) => item.url === normalizedUrl)) {
       return false;
     }
@@ -549,6 +763,19 @@ export class SourcePlanner {
     }
     if (hostInSet(host, this.blockedHosts)) {
       return false;
+    }
+    const seededApprovedLowValueBypass =
+      forceApproved && (discoveredFrom === 'seed' || discoveredFrom === 'learning_seed');
+    if (isLowValueHost(parsed.hostname) && !seededApprovedLowValueBypass) {
+      return false;
+    }
+    // Full URL quality gate check (search page rejection, etc.)
+    // Seed URLs bypass the gate — they were explicitly provided.
+    if (!seededApprovedLowValueBypass) {
+      const urlGate = validateFetchUrl(normalizedUrl);
+      if (!urlGate.valid) {
+        return false;
+      }
     }
 
     const approvedDomain = this.shouldUseApprovedQueue(host, forceApproved, forceCandidate);
@@ -566,7 +793,17 @@ export class SourcePlanner {
     if (manufacturerBrandRestricted && !forceBrandBypass) {
       return false;
     }
+    const isResumeSeed = this.isResumeSeed(discoveredFrom);
+    if (role === 'manufacturer') {
+      if (this.shouldRejectLockedManufacturerLocaleDuplicateUrl(parsed, { allowResume: isResumeSeed })) {
+        return false;
+      }
+      if (this.shouldRejectLockedManufacturerUrl(parsed)) {
+        return false;
+      }
+    }
     const totalApprovedPlanned =
+      this.priorityQueue.length +
       this.manufacturerQueue.length +
       this.queue.length +
       this.manufacturerVisitedCount +
@@ -593,7 +830,7 @@ export class SourcePlanner {
         if (plannedCount >= this.maxPagesPerDomain) {
           return false;
         }
-        if (this.manufacturerReserveUrls > 0) {
+        if (this.manufacturerReserveUrls > 0 && !this.shouldBypassManufacturerReserve(discoveredFrom)) {
           const reservedRemaining = Math.max(
             0,
             this.manufacturerReserveUrls -
@@ -625,11 +862,15 @@ export class SourcePlanner {
         fieldCoverage: isObject(hostMeta?.fieldCoverage) ? hostMeta.fieldCoverage : null,
         robotsTxtCompliant: hostMeta?.robotsTxtCompliant === null || hostMeta?.robotsTxtCompliant === undefined
           ? null
-          : Boolean(hostMeta.robotsTxtCompliant)
+          : Boolean(hostMeta.robotsTxtCompliant),
+        requires_js: Boolean(hostMeta?.requires_js)
       };
       row.priorityScore = this.sourcePriority(row);
 
-      if (isManufacturerSource) {
+      if (this.shouldFrontloadApprovedSource(row)) {
+        this.priorityQueue.push(row);
+        this.sortPriorityQueue();
+      } else if (isManufacturerSource) {
         this.manufacturerQueue.push(row);
         this.sortManufacturerQueue();
       } else {
@@ -681,6 +922,7 @@ export class SourcePlanner {
 
   hasNext() {
     return (
+      this.priorityQueue.length > 0 ||
       this.manufacturerQueue.length > 0 ||
       this.queue.length > 0 ||
       this.candidateQueue.length > 0
@@ -689,7 +931,9 @@ export class SourcePlanner {
 
   next() {
     const source =
-      this.manufacturerQueue.length > 0
+      this.priorityQueue.length > 0
+        ? this.priorityQueue.shift()
+        : this.manufacturerQueue.length > 0
         ? this.manufacturerQueue.shift()
         : this.queue.length > 0
           ? this.queue.shift()
@@ -729,6 +973,18 @@ export class SourcePlanner {
     const baseHost = getHost(baseUrl);
     const manufacturerContext =
       baseHost && resolveTierNameForHost(baseHost, this.categoryConfig) === 'manufacturer';
+    let baseParsed = null;
+    let baseNormalizedPath = '';
+    let baseProductSlug = '';
+    try {
+      baseParsed = new URL(baseUrl);
+      baseNormalizedPath = stripLocalePrefix(baseParsed.pathname || '').pathname;
+      baseProductSlug = baseNormalizedPath.split('/').filter(Boolean).at(-1) || '';
+    } catch {
+      baseParsed = null;
+      baseNormalizedPath = '';
+      baseProductSlug = '';
+    }
     const matches = html.matchAll(/href\s*=\s*["']([^"']+)["']/gi);
     for (const match of matches) {
       const href = match[1];
@@ -743,6 +999,41 @@ export class SourcePlanner {
         }
         if (baseHost && host !== baseHost && !host.endsWith(`.${baseHost}`) && !baseHost.endsWith(`.${host}`)) {
           if (!isApprovedHost(host, this.categoryConfig)) {
+            continue;
+          }
+        }
+        if (manufacturerContext && host === baseHost && baseParsed) {
+          const localized = stripLocalePrefix(parsed.pathname || '');
+          const normalizedPath = localized.pathname;
+          const sameSearch = String(parsed.search || '') === String(baseParsed.search || '');
+          const sameNormalizedPath = Boolean(
+            normalizedPath &&
+            baseNormalizedPath &&
+            normalizedPath === baseNormalizedPath
+          );
+          if (sameNormalizedPath && sameSearch) {
+            continue;
+          }
+          if (isSitemapLikePath(normalizedPath)) {
+            continue;
+          }
+          const baseLooksLikeProductPath = CATEGORY_PRODUCT_PATH_RE.test(baseNormalizedPath);
+          const candidateLooksLikeProductPath = CATEGORY_PRODUCT_PATH_RE.test(normalizedPath);
+          const candidateProductSlug = normalizedPath.split('/').filter(Boolean).at(-1) || '';
+          const sameProductFamilyPath = Boolean(
+            baseLooksLikeProductPath &&
+            candidateLooksLikeProductPath &&
+            baseProductSlug &&
+            candidateProductSlug &&
+            candidateProductSlug !== baseProductSlug &&
+            (
+              normalizedPath.startsWith(`${baseNormalizedPath}-`) ||
+              candidateProductSlug.startsWith(`${baseProductSlug}-`) ||
+              candidateProductSlug.endsWith(`-${baseProductSlug}`) ||
+              candidateProductSlug.includes(`-${baseProductSlug}-`)
+            )
+          );
+          if (sameProductFamilyPath) {
             continue;
           }
         }
@@ -761,20 +1052,33 @@ export class SourcePlanner {
       return 0;
     }
 
+    const baseHost = getHost(baseUrl);
+    const manufacturerContext =
+      baseHost && resolveTierNameForHost(baseHost, this.categoryConfig) === 'manufacturer';
     const matches = String(body).matchAll(/^\s*sitemap:\s*(\S+)\s*$/gim);
     let discovered = 0;
     for (const match of matches) {
-      const raw = decodeXmlEntities(match[1] || '');
+      const raw = extractFirstHttpUrlToken(match[1] || '');
       if (!raw) {
         continue;
       }
       try {
-        const sitemapUrl = new URL(raw, baseUrl).toString();
+        const parsedSitemap = new URL(raw, baseUrl);
+        if (manufacturerContext && isNonProductSitemapPointer(parsedSitemap)) {
+          continue;
+        }
+        const sitemapUrl = parsedSitemap.toString();
         const before =
-          this.queue.length + this.manufacturerQueue.length + this.candidateQueue.length;
+          this.priorityQueue.length +
+          this.queue.length +
+          this.manufacturerQueue.length +
+          this.candidateQueue.length;
         this.enqueue(sitemapUrl, `robots:${baseUrl}`, { forceApproved: true });
         const after =
-          this.queue.length + this.manufacturerQueue.length + this.candidateQueue.length;
+          this.priorityQueue.length +
+          this.queue.length +
+          this.manufacturerQueue.length +
+          this.candidateQueue.length;
         if (after > before) {
           discovered += 1;
         }
@@ -833,15 +1137,39 @@ export class SourcePlanner {
         }
       }
 
-      if (!isSitemapLikePath(parsed.pathname)) {
+      const localizedPath = stripLocalePrefix(parsed.pathname || '');
+      const localizedComparablePath = normalizeComparablePath(localizedPath.pathname || '/');
+      const categoryProductSlug = extractCategoryProductSlug(localizedComparablePath);
+      const isLockedProductPath =
+        categoryProductSlug &&
+        this.allowedCategoryProductSlugs.size > 0 &&
+        this.allowedCategoryProductSlugs.has(categoryProductSlug);
+      if (isLockedProductPath) {
+        if (localizedPath.hadLocalePrefix) {
+          continue;
+        }
+        if (this.hasQueuedOrVisitedComparableUrl(parsed, { stripLocale: true })) {
+          continue;
+        }
+      }
+
+      if (!isSitemapLikePath(parsed.pathname, parsed.search)) {
         if (!this.isRelevantDiscoveredUrl(parsed, { manufacturerContext, sitemapContext: true })) {
           continue;
         }
       }
 
-      const before = this.queue.length + this.manufacturerQueue.length + this.candidateQueue.length;
+      const before =
+        this.priorityQueue.length +
+        this.queue.length +
+        this.manufacturerQueue.length +
+        this.candidateQueue.length;
       this.enqueue(parsed.toString(), `sitemap:${baseUrl}`, { forceApproved: true });
-      const after = this.queue.length + this.manufacturerQueue.length + this.candidateQueue.length;
+      const after =
+        this.priorityQueue.length +
+        this.queue.length +
+        this.manufacturerQueue.length +
+        this.candidateQueue.length;
       if (after > before) {
         discovered += 1;
       }
@@ -851,7 +1179,59 @@ export class SourcePlanner {
     return discovered;
   }
 
+  hasQueuedOrVisitedComparableUrl(parsed, options = {}) {
+    const candidateHost = normalizeHost(parsed?.hostname || '');
+    if (!candidateHost) {
+      return false;
+    }
+    const candidatePath = options.stripLocale
+      ? normalizeComparablePath(stripLocalePrefix(parsed.pathname || '').pathname || '/')
+      : normalizeComparablePath(parsed.pathname || '/');
+    const candidateSearch = String(parsed.search || '');
+    const comparableUrls = [
+      ...this.visitedUrls,
+      ...this.priorityQueue.map((row) => row.url),
+      ...this.manufacturerQueue.map((row) => row.url),
+      ...this.queue.map((row) => row.url),
+      ...this.candidateQueue.map((row) => row.url)
+    ];
+    for (const existingUrl of comparableUrls) {
+      let existingParsed;
+      try {
+        existingParsed = new URL(existingUrl);
+      } catch {
+        continue;
+      }
+      if (normalizeHost(existingParsed.hostname) !== candidateHost) {
+        continue;
+      }
+      const existingPath = options.stripLocale
+        ? normalizeComparablePath(stripLocalePrefix(existingParsed.pathname || '').pathname || '/')
+        : normalizeComparablePath(existingParsed.pathname || '/');
+      if (existingPath !== candidatePath) {
+        continue;
+      }
+      if (String(existingParsed.search || '') !== candidateSearch) {
+        continue;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  shouldFrontloadApprovedSource(row) {
+    if (!row?.approvedDomain) {
+      return false;
+    }
+    return row.discoveredFrom === 'seed' || row.discoveredFrom === 'learning_seed';
+  }
+
+  shouldBypassManufacturerReserve(discoveredFrom = '') {
+    return discoveredFrom === 'seed' || discoveredFrom === 'learning_seed';
+  }
+
   isRelevantDiscoveredUrl(parsed, context = {}) {
+    const host = normalizeHost(parsed.hostname);
     const localizedPath = stripLocalePrefix(parsed.pathname || '');
     const hasLocalePrefix = localizedPath.hadLocalePrefix;
     const effectivePath = localizedPath.pathname;
@@ -861,6 +1241,9 @@ export class SourcePlanner {
     const minModelHits = this.modelTokens.length >= 3 ? 2 : 1;
     const hasModelToken = this.modelTokens.length > 0 && modelTokenHits >= minModelHits;
     const hasBrandToken = this.brandTokens.some((token) => pathAndQuery.includes(token));
+    const role = String(
+      this.sourceHostMap.get(host)?.role || inferRoleForHost(host, this.categoryConfig)
+    ).toLowerCase();
 
     if (/\.(css|js|svg|png|jpe?g|webp|gif|ico|woff2?|ttf|map|json)$/i.test(pathname)) {
       return false;
@@ -893,9 +1276,47 @@ export class SourcePlanner {
       return false;
     }
 
-    if (isSitemapLikePath(pathname)) {
+    if (
+      role !== 'manufacturer' &&
+      ['/blog', '/newsroom', '/forum', '/forums', '/community'].some((keyword) => pathAndQuery.includes(keyword))
+    ) {
+      return false;
+    }
+
+    if (isSitemapLikePath(pathname, parsed.search)) {
       return true;
     }
+
+    const categoryProductSlug = extractCategoryProductSlug(pathname);
+    if (
+      context.manufacturerContext &&
+      categoryProductSlug &&
+      this.allowedCategoryProductSlugs.size > 0
+    ) {
+      if (!categoryProductSlug || !this.allowedCategoryProductSlugs.has(categoryProductSlug)) {
+        return false;
+      }
+    }
+
+    const requiresBrandPrefixedFollowups =
+      Boolean(context.manufacturerContext) &&
+      this.brandKey.length >= 4 &&
+      BRAND_PREFIXED_CATEGORY_HOSTS.has(host);
+    const isNonPdfManufacturerFollowupPath =
+      !pathname.endsWith('.pdf') &&
+      (
+        CATEGORY_PRODUCT_PATH_RE.test(pathname) ||
+        /\/(?:support|manual|specs?|product|products)\//.test(pathname)
+      );
+    if (
+      requiresBrandPrefixedFollowups &&
+      hasModelToken &&
+      isNonPdfManufacturerFollowupPath &&
+      !pathname.includes(this.brandKey)
+    ) {
+      return false;
+    }
+
     if (hasModelToken) {
       return true;
     }
@@ -990,6 +1411,9 @@ export class SourcePlanner {
     for (const row of this.queue) {
       row.priorityScore = this.sourcePriority(row);
     }
+    for (const row of this.priorityQueue) {
+      row.priorityScore = this.sourcePriority(row);
+    }
     for (const row of this.manufacturerQueue) {
       row.priorityScore = this.sourcePriority(row);
     }
@@ -999,6 +1423,15 @@ export class SourcePlanner {
     this.sortManufacturerQueue();
     this.sortApprovedQueue();
     this.sortCandidateQueue();
+  }
+
+  sortPriorityQueue() {
+    this.priorityQueue.sort(
+      (a, b) =>
+        b.priorityScore - a.priorityScore ||
+        a.tier - b.tier ||
+        a.url.localeCompare(b.url)
+    );
   }
 
   sortManufacturerQueue() {
@@ -1037,6 +1470,7 @@ export class SourcePlanner {
     };
 
     this.manufacturerQueue = this.manufacturerQueue.filter(filterFn);
+    this.priorityQueue = this.priorityQueue.filter(filterFn);
     this.queue = this.queue.filter(filterFn);
     this.candidateQueue = this.candidateQueue.filter(filterFn);
     return removed;
@@ -1179,10 +1613,18 @@ export class SourcePlanner {
     }
 
     if (role === 'manufacturer') {
-      if (/\/products?\//.test(path)) {
-        score += 0.28;
+      const categoryProductPath = CATEGORY_PRODUCT_PATH_RE.test(path);
+      const pathIncludesBrand = this.brandKey.length >= 4 && path.includes(this.brandKey);
+
+      if (categoryProductPath) {
+        score += 0.34;
+      } else if (/\/products?\//.test(path)) {
+        score += 0.12;
+        if (!pathIncludesBrand) {
+          score -= 0.08;
+        }
       }
-      if (/\/gaming-mice\//.test(path)) {
+      if (categoryProductPath && pathIncludesBrand) {
         score += 0.18;
       }
       if (/\/support\//.test(path)) {
@@ -1239,6 +1681,7 @@ export class SourcePlanner {
 
   getStats() {
     return {
+      priority_queue_count: this.priorityQueue.length,
       manufacturer_queue_count: this.manufacturerQueue.length,
       non_manufacturer_queue_count: this.queue.length,
       candidate_queue_count: this.candidateQueue.length,

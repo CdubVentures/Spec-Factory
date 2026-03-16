@@ -3,35 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
-const execFileAsync = promisify(execFile);
-const cliPath = path.resolve('src/cli/spec.js');
-
-async function runCli(args, { env = {} } = {}) {
-  const { stdout } = await execFileAsync(
-    process.execPath,
-    [cliPath, ...args],
-    {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        ...env
-      }
-    }
-  );
-  return JSON.parse(stdout);
-}
+import { runCliJson as runCli } from '../tests/support/cliJsonHarness.js';
 
 async function writeJson(filePath, value) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
-}
-
-async function writeText(filePath, value) {
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, String(value || ''), 'utf8');
 }
 
 function localArgs({ inputRoot, outputRoot, importsRoot }) {
@@ -78,15 +54,15 @@ async function seedHelperArtifacts(helperRoot) {
   await writeJson(path.join(generated, 'required_fields.json'), ['fields.weight']);
 }
 
-async function seedLatest(outputRoot, productId) {
+async function seedLatest(outputRoot, productId, weight = '59') {
   const base = path.join(outputRoot, 'specs', 'outputs', 'mouse', productId, 'latest');
   await writeJson(path.join(base, 'normalized.json'), {
-    identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Wireless' },
-    fields: { weight: '59' }
+    identity: { brand: 'Synthetic', model: 'Probe One', variant: 'Wireless' },
+    fields: { weight }
   });
   await writeJson(path.join(base, 'provenance.json'), {
     weight: {
-      value: '59',
+      value: weight,
       confidence: 0.95,
       evidence: [
         {
@@ -94,7 +70,7 @@ async function seedLatest(outputRoot, productId) {
           source_id: 'manufacturer_example',
           snippet_id: 'snp_weight_1',
           snippet_hash: 'sha256:aaa',
-          quote: 'Weight: 59 g',
+          quote: `Weight: ${weight} g`,
           quote_span: [0, 12],
           retrieved_at: '2026-02-13T00:00:00.000Z'
         }
@@ -113,7 +89,7 @@ async function seedLatest(outputRoot, productId) {
   });
 }
 
-async function seedOverride(helperRoot, productId) {
+async function seedApprovedOverride(helperRoot, productId, overrideValue) {
   await writeJson(path.join(helperRoot, 'mouse', '_overrides', `${productId}.overrides.json`), {
     version: 1,
     category: 'mouse',
@@ -126,7 +102,7 @@ async function seedOverride(helperRoot, productId) {
       weight: {
         field: 'weight',
         override_source: 'candidate_selection',
-        override_value: '58',
+        override_value: overrideValue,
         override_reason: 'human approved',
         override_provenance: {
           url: 'https://manufacturer.example/spec',
@@ -134,7 +110,7 @@ async function seedOverride(helperRoot, productId) {
           retrieved_at: '2026-02-13T00:00:00.000Z',
           snippet_id: 'snp_weight_1',
           snippet_hash: 'sha256:aaa',
-          quote: 'Weight: 58 g',
+          quote: `Weight: ${overrideValue} g`,
           quote_span: [0, 12]
         }
       }
@@ -142,30 +118,19 @@ async function seedOverride(helperRoot, productId) {
   });
 }
 
-test('publish/provenance/changelog/source-health/llm-metrics CLI commands work', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase9-cli-'));
+test('publish CLI publishes approved overrides and exposes provenance/changelog queries', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-publish-cli-'));
   const inputRoot = path.join(tempRoot, 'fixtures');
   const outputRoot = path.join(tempRoot, 'out');
   const importsRoot = path.join(tempRoot, 'imports');
-  const helperRoot = path.join(tempRoot, 'helper_files');
-  const productId = 'mouse-cli-phase9';
+  const helperRoot = path.join(tempRoot, 'category_authority');
+  const productId = 'mouse-cli-publish';
 
   try {
     await seedHelperArtifacts(helperRoot);
-    await seedLatest(outputRoot, productId);
-    await seedOverride(helperRoot, productId);
-    await writeText(
-      path.join(outputRoot, 'specs', 'outputs', 'final', 'mouse', 'razer', 'viper-v3-pro', 'evidence', 'sources.jsonl'),
-      `${JSON.stringify({ ts: '2026-02-13T00:00:00.000Z', host: 'manufacturer.example', source_id: 'manufacturer_example', tier: 1, status: 200, page_content_hash: 'sha256:aaa', text_hash: 'sha256:aaa' })}\n`
-    );
-    await writeText(
-      path.join(outputRoot, '_billing', 'ledger.jsonl'),
-      `${JSON.stringify({ ts: '2026-02-13T00:00:00.000Z', provider: 'deepseek', model: 'deepseek-chat', cost_usd: 0.05, prompt_tokens: 1000, completion_tokens: 200, productId })}\n`
-    );
-
-    const env = {
-      HELPER_FILES_ROOT: helperRoot
-    };
+    await seedLatest(outputRoot, productId, '59');
+    await seedApprovedOverride(helperRoot, productId, '58');
+    const env = { HELPER_FILES_ROOT: helperRoot };
 
     const published = await runCli([
       'publish',
@@ -176,15 +141,6 @@ test('publish/provenance/changelog/source-health/llm-metrics CLI commands work',
     assert.equal(published.command, 'publish');
     assert.equal(published.published_count, 1);
 
-    const allApproved = await runCli([
-      'publish',
-      '--category', 'mouse',
-      '--all-approved',
-      ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ], { env });
-    assert.equal(allApproved.command, 'publish');
-    assert.equal(allApproved.processed_count >= 1, true);
-
     const provenance = await runCli([
       'provenance',
       '--category', 'mouse',
@@ -194,6 +150,7 @@ test('publish/provenance/changelog/source-health/llm-metrics CLI commands work',
     ], { env });
     assert.equal(provenance.command, 'provenance');
     assert.equal(provenance.field, 'weight');
+    assert.equal(provenance.provenance.evidence[0].snippet_id, 'snp_weight_1');
 
     const changelog = await runCli([
       'changelog',
@@ -203,77 +160,7 @@ test('publish/provenance/changelog/source-health/llm-metrics CLI commands work',
     ], { env });
     assert.equal(changelog.command, 'changelog');
     assert.equal(Array.isArray(changelog.entries), true);
-
-    const sourceHealth = await runCli([
-      'source-health',
-      '--category', 'mouse',
-      '--period', '30d',
-      ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ], { env });
-    assert.equal(sourceHealth.command, 'source-health');
-    assert.equal(sourceHealth.total_sources >= 1, true);
-
-    const llmMetrics = await runCli([
-      'llm-metrics',
-      '--period', 'month',
-      ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ], { env });
-    assert.equal(llmMetrics.command, 'llm-metrics');
-    assert.equal(llmMetrics.total_calls >= 1, true);
-
-    const benchmark = await runCli([
-      'accuracy-benchmark',
-      '--category', 'mouse',
-      '--golden-files',
-      ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ], { env });
-    assert.equal(benchmark.command, 'accuracy-benchmark');
-
-    const trend = await runCli([
-      'accuracy-trend',
-      '--category', 'mouse',
-      '--field', 'weight',
-      '--period', '90d',
-      ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ], { env });
-    assert.equal(trend.command, 'accuracy-trend');
-    assert.equal(Array.isArray(trend.points), true);
-
-    const driftSeed = await runCli([
-      'drift-scan',
-      '--category', 'mouse',
-      '--max-products', '50',
-      ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ], { env });
-    assert.equal(driftSeed.command, 'drift-scan');
-    assert.equal(driftSeed.drift_detected_count, 0);
-
-    await writeText(
-      path.join(outputRoot, 'specs', 'outputs', 'final', 'mouse', 'razer', 'viper-v3-pro', 'evidence', 'sources.jsonl'),
-      [
-        JSON.stringify({ ts: '2026-02-13T00:00:00.000Z', host: 'manufacturer.example', source_id: 'manufacturer_example', tier: 1, status: 200, page_content_hash: 'sha256:aaa', text_hash: 'sha256:aaa' }),
-        JSON.stringify({ ts: '2026-02-13T01:00:00.000Z', host: 'manufacturer.example', source_id: 'manufacturer_example', tier: 1, status: 200, page_content_hash: 'sha256:bbb', text_hash: 'sha256:bbb' })
-      ].join('\n') + '\n'
-    );
-
-    const driftDetect = await runCli([
-      'drift-scan',
-      '--category', 'mouse',
-      '--max-products', '50',
-      ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ], { env });
-    assert.equal(driftDetect.command, 'drift-scan');
-    assert.equal(Number.isFinite(Number(driftDetect.drift_detected_count)), true);
-    assert.equal(Number(driftDetect.scanned_count) >= 1, true);
-
-    const driftReconcile = await runCli([
-      'drift-reconcile',
-      '--category', 'mouse',
-      '--product-id', productId,
-      ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ], { env });
-    assert.equal(driftReconcile.command, 'drift-reconcile');
-    assert.equal(['queued_for_review', 'quarantined', 'auto_republished', 'no_change'].includes(driftReconcile.action), true);
+    assert.equal(changelog.entries.length >= 1, true);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

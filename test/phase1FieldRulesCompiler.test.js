@@ -3,15 +3,19 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   compileRules,
   initCategory,
   normalizeFieldRulesForPhase1,
   validateRules
 } from '../src/field-rules/compiler.js';
+import { getMouseFieldStudioSourcePath } from './fixtures/mouseFieldStudioWorkbookFixture.js';
+
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function mouseWorkbookPath() {
-  return path.resolve('helper_files', 'mouse', 'mouseData.xlsm');
+  return getMouseFieldStudioSourcePath();
 }
 
 function buildMouseWorkbookMap(workbookPath) {
@@ -48,7 +52,12 @@ function buildMouseWorkbookMap(workbookPath) {
     },
     enum_lists: [],
     component_sheets: [],
-    field_overrides: {}
+    field_overrides: {},
+    selected_keys: [
+      'brand', 'model', 'variant', 'category',
+      'connection', 'weight', 'dpi', 'polling_rate',
+      'side_buttons', 'sensor', 'release_date'
+    ]
   };
 }
 
@@ -60,8 +69,11 @@ function buildMouseWorkbookMapWithOverrides({
 }) {
   const resolvedSourcePath = String(fieldStudioSourcePath || workbookPath || '').trim();
   const base = buildMouseWorkbookMap(resolvedSourcePath);
+  const overrideKeys = Object.keys(fieldOverrides);
+  const mergedKeys = [...new Set([...(base.selected_keys || []), ...overrideKeys])];
   return {
     ...base,
+    selected_keys: mergedKeys,
     expectations: {
       ...base.expectations,
       ...expectations
@@ -81,7 +93,7 @@ async function exists(filePath) {
 
 test('compileRules writes Phase 1 generated artifacts and validateRules passes', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
     const workbookPath = mouseWorkbookPath();
@@ -91,7 +103,7 @@ test('compileRules writes Phase 1 generated artifacts and validateRules passes',
       fieldStudioSourcePath: workbookPath,
       fieldStudioMap: workbookMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -112,7 +124,7 @@ test('compileRules writes Phase 1 generated artifacts and validateRules passes',
     const validation = await validateRules({
       category: 'mouse',
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -128,7 +140,7 @@ test('compileRules writes Phase 1 generated artifacts and validateRules passes',
 
 test('compileRules dry-run reports no diff after stable compile', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-dry-run-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
     const workbookPath = mouseWorkbookPath();
@@ -138,7 +150,7 @@ test('compileRules dry-run reports no diff after stable compile', async () => {
       fieldStudioSourcePath: workbookPath,
       fieldStudioMap: workbookMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -150,7 +162,7 @@ test('compileRules dry-run reports no diff after stable compile', async () => {
       fieldStudioMap: workbookMap,
       dryRun: true,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -163,7 +175,7 @@ test('compileRules dry-run reports no diff after stable compile', async () => {
 
 test('compileRules dry-run uses existing control-plane map when workbookMap is not provided', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-dry-run-existing-map-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
     const workbookPath = mouseWorkbookPath();
@@ -173,7 +185,7 @@ test('compileRules dry-run uses existing control-plane map when workbookMap is n
       fieldStudioSourcePath: workbookPath,
       fieldStudioMap: workbookMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -183,7 +195,7 @@ test('compileRules dry-run uses existing control-plane map when workbookMap is n
       category: 'mouse',
       dryRun: true,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -200,7 +212,7 @@ test('compileRules dry-run uses existing control-plane map when workbookMap is n
 
 test('compileRules enforces critical and identity buckets from expectations and canonical identity keys', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-buckets-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
     const workbookPath = mouseWorkbookPath();
@@ -229,7 +241,7 @@ test('compileRules enforces critical and identity buckets from expectations and 
       fieldStudioSourcePath: workbookPath,
       fieldStudioMap: workbookMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -252,7 +264,7 @@ test('compileRules enforces critical and identity buckets from expectations and 
 
 test('validateRules reports missing required artifacts', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-missing-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
     const workbookPath = mouseWorkbookPath();
@@ -262,7 +274,7 @@ test('validateRules reports missing required artifacts', async () => {
       fieldStudioSourcePath: workbookPath,
       fieldStudioMap: workbookMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -274,7 +286,7 @@ test('validateRules reports missing required artifacts', async () => {
     const validation = await validateRules({
       category: 'mouse',
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -290,7 +302,7 @@ test('validateRules reports missing required artifacts', async () => {
 
 test('validateRules fails when artifact violates shared JSON schema', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-schema-invalid-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
     const workbookPath = mouseWorkbookPath();
@@ -300,7 +312,7 @@ test('validateRules fails when artifact violates shared JSON schema', async () =
       fieldStudioSourcePath: workbookPath,
       fieldStudioMap: workbookMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -316,7 +328,7 @@ test('validateRules fails when artifact violates shared JSON schema', async () =
     const validation = await validateRules({
       category: 'mouse',
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -333,7 +345,7 @@ test('validateRules fails when artifact violates shared JSON schema', async () =
 
 test('validateRules reports missing required per-field metadata', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-metadata-invalid-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
     const workbookPath = mouseWorkbookPath();
@@ -343,7 +355,7 @@ test('validateRules reports missing required per-field metadata', async () => {
       fieldStudioSourcePath: workbookPath,
       fieldStudioMap: workbookMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -359,7 +371,7 @@ test('validateRules reports missing required per-field metadata', async () => {
     const validation = await validateRules({
       category: 'mouse',
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -374,16 +386,16 @@ test('validateRules reports missing required per-field metadata', async () => {
   }
 });
 
-test('initCategory creates category scaffolding in helper_files and categories roots', async () => {
+test('initCategory creates category scaffolding only in category_authority for category-specific config', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-init-category-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
     const initResult = await initCategory({
       category: 'monitor',
       template: 'electronics',
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -392,11 +404,16 @@ test('initCategory creates category scaffolding in helper_files and categories r
     assert.equal(await exists(path.join(helperRoot, 'monitor', '_generated')), true);
     assert.equal(await exists(path.join(helperRoot, 'monitor', '_suggestions')), true);
     assert.equal(await exists(path.join(helperRoot, 'monitor', '_overrides')), true);
-    assert.equal(await exists(path.join(categoriesRoot, 'monitor', 'schema.json')), true);
-    assert.equal(await exists(path.join(categoriesRoot, 'monitor', 'sources.json')), true);
-    assert.equal(await exists(path.join(categoriesRoot, 'monitor', 'required_fields.json')), true);
-    assert.equal(await exists(path.join(categoriesRoot, 'monitor', 'search_templates.json')), true);
-    assert.equal(await exists(path.join(categoriesRoot, 'monitor', 'anchors.json')), true);
+    assert.equal(await exists(path.join(helperRoot, 'monitor', 'schema.json')), true);
+    assert.equal(await exists(path.join(helperRoot, 'monitor', 'sources.json')), true);
+    assert.equal(await exists(path.join(helperRoot, 'monitor', 'required_fields.json')), true);
+    assert.equal(await exists(path.join(helperRoot, 'monitor', 'search_templates.json')), true);
+    assert.equal(await exists(path.join(helperRoot, 'monitor', 'anchors.json')), true);
+    assert.equal(initResult.shared_schema_root, path.join(helperRoot, '_global', '_shared'));
+    assert.equal(await exists(path.join(helperRoot, '_global', '_shared', 'base_field_schema.json')), true);
+    assert.equal(await exists(path.join(helperRoot, '_global', '_shared', 'base_component_schema.json')), true);
+    assert.equal(await exists(path.join(categoriesRoot, '_shared')), false);
+    assert.equal(await exists(path.join(categoriesRoot, 'monitor')), false);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }

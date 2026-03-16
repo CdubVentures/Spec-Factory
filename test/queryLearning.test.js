@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { defaultQueryLearning, updateQueryLearning } from '../src/learning/queryLearning.js';
+import { defaultQueryLearning, updateQueryLearning } from '../src/features/indexing/learning/queryLearning.js';
 
 test('updateQueryLearning normalizes required-field paths to raw non-identity keys', () => {
   const artifact = defaultQueryLearning();

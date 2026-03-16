@@ -1,107 +1,132 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import path from 'node:path';
 import fs from 'node:fs';
-import { SpecDb } from '../src/db/specDb.js';
+import path from 'node:path';
+import {
+  readSourcesFile,
+  writeSourcesFile,
+  generateSourceId,
+  listSourceEntries,
+  addSourceEntry,
+  updateSourceEntry,
+  removeSourceEntry,
+} from '../src/features/indexing/sources/sourceFileService.js';
 
-function makeTempDb() {
+function makeTempRoot() {
   const tmpDir = path.join('test', '_tmp_source_strategy_' + Date.now());
   fs.mkdirSync(tmpDir, { recursive: true });
-  const dbPath = path.join(tmpDir, 'test.db');
-  const db = new SpecDb({ dbPath, category: 'mouse' });
-  return { db, tmpDir, dbPath };
+  return tmpDir;
 }
 
-function cleanupDb(ctx) {
-  try { ctx.db.close(); } catch {}
-  try { fs.rmSync(ctx.tmpDir, { recursive: true, force: true }); } catch {}
-}
+const ENTRY = {
+  display_name: 'RTINGS',
+  tier: 'tier2_lab',
+  authority: 'instrumented',
+  base_url: 'https://www.rtings.com',
+  content_types: ['review', 'benchmark'],
+  doc_kinds: ['review'],
+  crawl_config: { method: 'playwright', rate_limit_ms: 3000, timeout_ms: 20000, robots_txt_compliant: true },
+  field_coverage: { high: ['click_latency', 'weight'], medium: ['sensor'], low: [] },
+  discovery: { method: 'search_first', source_type: 'lab_review', search_pattern: '', priority: 90, enabled: true, notes: '' },
+};
 
-describe('sourceStrategy', () => {
-  let ctx;
+describe('sourceStrategy (file-backed)', () => {
+  let tmpDir;
+  let data;
 
-  before(() => {
-    ctx = makeTempDb();
+  before(async () => {
+    tmpDir = makeTempRoot();
+    data = {
+      category: 'mouse',
+      version: '1.0.0',
+      approved: {},
+      denylist: [],
+      sources: {},
+    };
   });
 
   after(() => {
-    cleanupDb(ctx);
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* */ }
   });
 
-  it('CRUD: insert, read, update, delete', () => {
-    const { id } = ctx.db.insertSourceStrategy({
-      host: 'rtings.com',
-      display_name: 'RTINGS',
-      source_type: 'lab_review',
-      default_tier: 2,
-      discovery_method: 'search_first',
-      priority: 90
-    });
-    assert.ok(id);
+  it('CRUD: add, read, update, remove', async () => {
+    data = addSourceEntry(data, 'rtings_com', ENTRY);
+    assert.ok(data.sources.rtings_com);
 
-    const all = ctx.db.listSourceStrategies();
-    assert.ok(all.length >= 1);
-    const found = all.find(r => r.host === 'rtings.com');
+    const entries = listSourceEntries(data);
+    assert.ok(entries.length >= 1);
+    const found = entries.find((entry) => entry.sourceId === 'rtings_com');
     assert.ok(found);
     assert.equal(found.display_name, 'RTINGS');
-    assert.equal(found.source_type, 'lab_review');
-    assert.equal(found.priority, 90);
+    assert.equal(found.discovery.priority, 90);
 
-    const updated = ctx.db.updateSourceStrategy(id, { priority: 95, notes: 'Top tier review site' });
-    assert.equal(updated.priority, 95);
-    assert.equal(updated.notes, 'Top tier review site');
+    data = updateSourceEntry(data, 'rtings_com', { display_name: 'RTINGS Updated', discovery: { priority: 95, notes: 'Top tier' } });
+    assert.equal(data.sources.rtings_com.display_name, 'RTINGS Updated');
+    assert.equal(data.sources.rtings_com.discovery.priority, 95);
 
-    ctx.db.deleteSourceStrategy(id);
-    const afterDelete = ctx.db.getSourceStrategy(id);
-    assert.equal(afterDelete, null);
+    data = removeSourceEntry(data, 'rtings_com');
+    assert.equal(data.sources.rtings_com, undefined);
   });
 
-  it('discovery reads enabled sources from table', () => {
-    ctx.db.insertSourceStrategy({
-      host: 'techpowerup.com',
+  it('discovery reads enabled sources from file entries', () => {
+    let testData = addSourceEntry(data, 'techpowerup_com', {
+      ...ENTRY,
       display_name: 'TechPowerUp',
-      source_type: 'lab_review',
-      default_tier: 2,
-      priority: 85,
-      enabled: 1
+      base_url: 'https://techpowerup.com',
+      discovery: { method: 'search_first', source_type: 'lab_review', search_pattern: '', priority: 85, enabled: true, notes: '' },
     });
-    ctx.db.insertSourceStrategy({
-      host: 'eloshapes.com',
+    testData = addSourceEntry(testData, 'eloshapes_com', {
+      ...ENTRY,
       display_name: 'Eloshapes',
-      source_type: 'spec_database',
-      default_tier: 2,
-      priority: 70,
-      enabled: 1
+      base_url: 'https://eloshapes.com',
+      discovery: { method: 'search_first', source_type: 'spec_database', search_pattern: '', priority: 70, enabled: true, notes: '' },
     });
 
-    const enabled = ctx.db.listEnabledSourceStrategies();
+    const entries = listSourceEntries(testData);
+    const enabled = entries.filter((entry) => entry.discovery.enabled);
     assert.ok(enabled.length >= 2);
-    assert.ok(enabled.some(r => r.host === 'techpowerup.com'));
-    assert.ok(enabled.some(r => r.host === 'eloshapes.com'));
+    assert.ok(enabled.some((entry) => entry.sourceId === 'techpowerup_com'));
+    assert.ok(enabled.some((entry) => entry.sourceId === 'eloshapes_com'));
   });
 
-  it('disabled sources are skipped', () => {
-    ctx.db.insertSourceStrategy({
-      host: 'disabled-site.com',
-      display_name: 'Disabled Site',
-      source_type: 'retail',
-      default_tier: 3,
-      priority: 10,
-      enabled: 0
+  it('disabled sources stay in sources.json but are excluded from enabled source entry lists', () => {
+    const testData = addSourceEntry(data, 'disabled_com', {
+      ...ENTRY,
+      base_url: 'https://disabled-site.com',
+      discovery: { method: 'search_first', source_type: 'retail', search_pattern: '', priority: 10, enabled: false, notes: '' },
     });
 
-    const enabled = ctx.db.listEnabledSourceStrategies();
-    assert.ok(!enabled.some(r => r.host === 'disabled-site.com'));
+    const entries = listSourceEntries(testData);
+    const disabledEntry = entries.find((entry) => entry.host === 'disabled-site.com');
+    const enabledEntries = entries.filter((entry) => entry.discovery.enabled !== false);
+    assert.ok(disabledEntry);
+    assert.equal(disabledEntry.discovery.enabled, false);
+    assert.equal(enabledEntries.some((entry) => entry.host === 'disabled-site.com'), false);
   });
 
-  it('search_first method generates site: queries for the host', () => {
-    const sources = ctx.db.listEnabledSourceStrategies();
-    const searchFirstSources = sources.filter(s => s.discovery_method === 'search_first');
-    assert.ok(searchFirstSources.length > 0);
+  it('search_first method remains nested under discovery on file-backed source entries', () => {
+    const testData = addSourceEntry(data, 'techpowerup_com2', {
+      ...ENTRY,
+      display_name: 'TechPowerUp',
+      base_url: 'https://techpowerup.com',
+      discovery: { method: 'search_first', source_type: 'lab_review', search_pattern: '', priority: 85, enabled: true, notes: '' },
+    });
 
-    const tpu = searchFirstSources.find(s => s.host === 'techpowerup.com');
+    const entries = listSourceEntries(testData);
+    const tpu = entries.find((entry) => entry.host === 'techpowerup.com');
     assert.ok(tpu);
+    assert.equal(tpu.discovery.method, 'search_first');
+    assert.equal(Object.hasOwn(tpu, 'discovery_method'), false);
     const siteQuery = `site:${tpu.host} Razer Viper V3 Pro`;
     assert.ok(siteQuery.includes('site:techpowerup.com'));
+  });
+
+  it('file write and readback round-trip', async () => {
+    const testData = addSourceEntry(data, 'rtings_com', ENTRY);
+    await writeSourcesFile(tmpDir, 'mouse', testData);
+    const readBack = await readSourcesFile(tmpDir, 'mouse');
+    assert.equal(readBack.sources.rtings_com.display_name, 'RTINGS');
+    const entries = listSourceEntries(readBack);
+    assert.equal(entries[0].sourceId, 'rtings_com');
   });
 });

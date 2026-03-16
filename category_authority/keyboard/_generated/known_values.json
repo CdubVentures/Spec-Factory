@@ -1,0 +1,429 @@
+{
+  "category": "keyboard",
+  "fields": {
+    "adjustable_feet": [
+      "2-stage",
+      "3-stage",
+      "No"
+    ],
+    "adjustable_input_granularity": [
+      "0.1 mm",
+      "0.2 mm",
+      "0.4 mm",
+      "No"
+    ],
+    "analog_input": [
+      "Controller Input",
+      "No",
+      "Yes"
+    ],
+    "anti_ghosting": [
+      "Full anti-ghosting",
+      "No",
+      "Yes"
+    ],
+    "arrow_keys": [
+      "No",
+      "Yes"
+    ],
+    "backlighting": [
+      "None",
+      "Per-key RGB",
+      "RGB",
+      "White"
+    ],
+    "bluetooth_version": [
+      "5.0",
+      "5.1",
+      "5.2",
+      "5.3",
+      "5.4",
+      "None"
+    ],
+    "cable_type": [
+      "Attached USB-A",
+      "Attached USB-C",
+      "Braided USB-C",
+      "Coiled USB-C",
+      "USB-C to USB-A",
+      "USB-C to USB-C"
+    ],
+    "case_material": [
+      "ABS",
+      "Aluminum",
+      "CNC Aluminum",
+      "Plastic",
+      "Polycarbonate",
+      "Wood"
+    ],
+    "category": [
+      "keyboard"
+    ],
+    "charging_method": [
+      "AA batteries",
+      "USB-C",
+      "USB-C fast charge",
+      "Wireless charging dock"
+    ],
+    "color": [
+      "Black",
+      "Gray",
+      "Green",
+      "Navy",
+      "Pink",
+      "Silver",
+      "Two-tone",
+      "White"
+    ],
+    "compatible_os": [
+      "ChromeOS",
+      "Linux",
+      "macOS",
+      "PlayStation",
+      "Windows",
+      "Xbox"
+    ],
+    "connection": [
+      "2.4 GHz Wireless",
+      "Bluetooth",
+      "Hybrid",
+      "Wired"
+    ],
+    "detachable_cable": [
+      "No",
+      "Yes"
+    ],
+    "discontinued": [
+      "No",
+      "Yes"
+    ],
+    "doubleshot": [
+      "No",
+      "Yes"
+    ],
+    "foam_dampening": [
+      "Case + Plate + PCB Foam",
+      "Case + Plate Foam",
+      "Case Foam",
+      "None",
+      "Plate Foam"
+    ],
+    "form_factor": [
+      "1800 Compact",
+      "40%",
+      "60%",
+      "65%",
+      "70%",
+      "75%",
+      "96%",
+      "Full-size (100%)",
+      "TKL (80%)"
+    ],
+    "function_row": [
+      "No",
+      "Yes"
+    ],
+    "gasket_mount": [
+      "Double Gasket",
+      "No",
+      "Yes"
+    ],
+    "hot_swappable": [
+      "3-pin",
+      "3-pin and 5-pin",
+      "5-pin",
+      "No",
+      "Yes"
+    ],
+    "included_accessories": [
+      "Detachable cable",
+      "Dust cover",
+      "Extra switches",
+      "Keycap puller",
+      "Mac keycaps",
+      "Switch puller",
+      "USB receiver",
+      "Wrist rest"
+    ],
+    "key_rollover": [
+      "10KRO",
+      "6KRO",
+      "NKRO"
+    ],
+    "keycap_material": [
+      "ABS",
+      "PBT",
+      "PC",
+      "POM"
+    ],
+    "keycap_profile": [
+      "Cherry",
+      "DSA",
+      "KSA",
+      "Low Profile",
+      "OEM",
+      "OSA",
+      "SA",
+      "XDA"
+    ],
+    "knob_dial": [
+      "Dual knobs",
+      "No",
+      "Yes"
+    ],
+    "layout": [
+      "Alice",
+      "Compact",
+      "Low-profile",
+      "Numpad",
+      "Ortholinear",
+      "Split",
+      "Standard"
+    ],
+    "layout_standard": [
+      "ANSI",
+      "ISO",
+      "JIS"
+    ],
+    "legends": [
+      "Double-shot ABS",
+      "Double-shot PBT",
+      "Dye-Sub PBT",
+      "Laser Etched",
+      "Pad Printed",
+      "Side-Printed"
+    ],
+    "macro_keys": [
+      "5 dedicated",
+      "6 dedicated",
+      "All keys programmable",
+      "None"
+    ],
+    "media_controls": [
+      "Dedicated keys",
+      "Dedicated keys and roller",
+      "Knob",
+      "Knob and keys",
+      "None"
+    ],
+    "mounting_style": [
+      "Gasket Mount",
+      "Integrated Plate",
+      "Leaf Spring",
+      "Sandwich Mount",
+      "Top Mount",
+      "Tray Mount"
+    ],
+    "multi_device_pairing": [
+      "2 devices",
+      "3 devices",
+      "4 devices",
+      "None"
+    ],
+    "numpad": [
+      "Detached",
+      "No",
+      "Yes"
+    ],
+    "onboard_memory": [
+      "3 profiles",
+      "5 profiles",
+      "No",
+      "Yes"
+    ],
+    "os_mode_switch": [
+      "No",
+      "Windows / Mac",
+      "Windows / Mac / Linux",
+      "Yes"
+    ],
+    "per_key_rgb": [
+      "No",
+      "Yes"
+    ],
+    "plate_material": [
+      "Aluminum",
+      "Brass",
+      "FR4",
+      "Polycarbonate",
+      "POM",
+      "Steel"
+    ],
+    "qmk_via_support": [
+      "No",
+      "QMK",
+      "QMK + VIA",
+      "VIA"
+    ],
+    "rapid_trigger": [
+      "No",
+      "Yes"
+    ],
+    "rgb_zones": [
+      "10 zones",
+      "24 zones",
+      "4 zones",
+      "None",
+      "Per-key",
+      "Single zone"
+    ],
+    "shine_through": [
+      "No",
+      "North-facing only",
+      "Partial",
+      "Yes"
+    ],
+    "socd_cleaning": [
+      "Last input priority",
+      "Neutral",
+      "No",
+      "Snap Tap",
+      "Yes"
+    ],
+    "software": [
+      "iCUE",
+      "Keychron Launcher",
+      "Logitech G HUB",
+      "NGENUITY",
+      "None",
+      "QMK VIA",
+      "Razer Synapse",
+      "SteelSeries GG"
+    ],
+    "software_required": [
+      "No",
+      "Optional",
+      "Required for advanced features"
+    ],
+    "sound_dampening": [
+      "Basic",
+      "Heavy",
+      "Moderate",
+      "None"
+    ],
+    "sound_profile": [
+      "Bright",
+      "Clacky",
+      "Muted",
+      "Neutral",
+      "Thocky"
+    ],
+    "south_facing_leds": [
+      "No",
+      "Yes"
+    ],
+    "stabilizer_lubed": [
+      "Factory lubed",
+      "No",
+      "Yes"
+    ],
+    "stabilizer_mount": [
+      "Clip-in PCB",
+      "Plate-mount",
+      "Plate-mount TPU",
+      "Screw-in PCB"
+    ],
+    "stabilizer_type": [
+      "Costar",
+      "PCB-mounted",
+      "Plate-mounted",
+      "Pre-lubed Screw-in",
+      "Screw-in"
+    ],
+    "switch_brand": [
+      "Cherry",
+      "Ducky",
+      "Gateron",
+      "HyperX",
+      "Kailh",
+      "Keychron",
+      "Logitech G",
+      "Razer",
+      "SteelSeries",
+      "Topre"
+    ],
+    "switch_compatibility": [
+      "Hall effect magnetic only",
+      "Low-profile mechanical only",
+      "MX-style 3-pin",
+      "MX-style 3-pin and 5-pin",
+      "MX-style 5-pin",
+      "MX-style mechanical",
+      "Proprietary optical only"
+    ],
+    "switch_feel": [
+      "Clicky",
+      "Linear",
+      "Silent Linear",
+      "Silent Tactile",
+      "Tactile"
+    ],
+    "switch_name": [
+      "Cherry MX Blue",
+      "Cherry MX Brown",
+      "Cherry MX Red",
+      "Gateron G Pro Brown",
+      "Gateron G Pro Red",
+      "Gateron Jupiter Banana",
+      "Kailh Box White",
+      "Kailh Speed Silver",
+      "Keychron K Pro Brown",
+      "Keychron K Pro Red",
+      "Logitech GL Tactile",
+      "Razer Green",
+      "Razer Yellow",
+      "SteelSeries OmniPoint 2.0",
+      "Topre 45g"
+    ],
+    "switch_output_type": [
+      "Adjustable Actuation",
+      "Analog",
+      "Digital"
+    ],
+    "switch_pin_support": [
+      "3-pin",
+      "3-pin and 5-pin",
+      "5-pin",
+      "Center-magnet HE only",
+      "None",
+      "Proprietary"
+    ],
+    "switch_type": [
+      "Hall Effect",
+      "Hybrid",
+      "Low-profile Mechanical",
+      "Magnetic",
+      "Mechanical",
+      "Membrane",
+      "Optical",
+      "Scissor"
+    ],
+    "typing_noise": [
+      "Loud",
+      "Moderate",
+      "Silent"
+    ],
+    "usb_passthrough": [
+      "No",
+      "USB 2.0",
+      "USB 3.0",
+      "USB-C passthrough"
+    ],
+    "wired_interface": [
+      "Attached USB-A",
+      "Attached USB-C",
+      "Detachable USB-C",
+      "USB-A to USB-C",
+      "USB-C"
+    ],
+    "wireless_technology": [
+      "2.4 GHz",
+      "Bluetooth 5.0",
+      "Bluetooth 5.1",
+      "Bluetooth 5.2",
+      "Bluetooth 5.3"
+    ]
+  },
+  "generated_at": "2026-03-16T00:08:03.587Z",
+  "version": 1
+}

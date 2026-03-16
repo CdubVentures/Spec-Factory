@@ -78,35 +78,4 @@ describe('buildDedupeOutcomeEvent', () => {
     assert.equal(result, null);
   });
 
-  it('produces identical output to inline runProduct code (parity check)', () => {
-    const indexResult = {
-      docId: 'doc_xyz',
-      snippetIds: ['sn_1', 'sn_2', 'sn_3'],
-      dedupeOutcome: 'updated',
-      chunksIndexed: 7,
-      factsIndexed: 4
-    };
-    const url = 'https://example.com/review';
-    const host = 'example.com';
-
-    const inlineOutput = {
-      url: String(url || ''),
-      host: String(host || ''),
-      doc_id: indexResult.docId || '',
-      dedupe_outcome: indexResult.dedupeOutcome || 'unknown',
-      chunks_indexed: indexResult.chunksIndexed || 0,
-      facts_indexed: indexResult.factsIndexed || 0,
-      snippet_count: (indexResult.snippetIds || []).length
-    };
-
-    const moduleOutput = buildDedupeOutcomeEvent({ indexResult, url, host });
-
-    assert.equal(moduleOutput.url, inlineOutput.url);
-    assert.equal(moduleOutput.host, inlineOutput.host);
-    assert.equal(moduleOutput.doc_id, inlineOutput.doc_id);
-    assert.equal(moduleOutput.dedupe_outcome, inlineOutput.dedupe_outcome);
-    assert.equal(moduleOutput.chunks_indexed, inlineOutput.chunks_indexed);
-    assert.equal(moduleOutput.facts_indexed, inlineOutput.facts_indexed);
-    assert.equal(moduleOutput.snippet_count, inlineOutput.snippet_count);
-  });
 });

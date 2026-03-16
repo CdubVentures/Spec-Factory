@@ -9,7 +9,7 @@ import {
   autoGenerateExtractionGuidance,
   resolveAiModeWithInheritance
 } from '../src/engine/ruleAccessors.js';
-import { buildFieldBatches, resolveBatchModel } from '../src/llm/fieldBatching.js';
+import { buildFieldBatches, resolveBatchModel } from '../src/features/indexing/extraction/fieldBatching.js';
 
 // ---------------------------------------------------------------------------
 // ruleAiMode — auto-derivation from priority + difficulty

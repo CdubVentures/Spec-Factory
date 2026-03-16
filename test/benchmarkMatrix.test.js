@@ -93,9 +93,9 @@ test('benchmark matrix: buildModeScorecard handles empty products', () => {
   assert.equal(card.mean_accuracy, 0);
 });
 
-test('benchmark matrix: buildModeScorecard normalizes mode name', () => {
+test('benchmark matrix: buildModeScorecard preserves free-form mode label', () => {
   const card = buildModeScorecard({ mode: 'uber-aggressive', productScores: [] });
-  assert.equal(card.mode, 'uber_aggressive');
+  assert.equal(card.mode, 'uber-aggressive');
 });
 
 // =========================================================================

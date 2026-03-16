@@ -108,3 +108,49 @@ test('HttpFetcher retries once on transient 5xx status when retry budget is conf
     global.fetch = originalFetch;
   }
 });
+
+test('HttpFetcher invokes request throttler on each network attempt', async () => {
+  const originalFetch = global.fetch;
+  let attempts = 0;
+  const throttleCalls = [];
+
+  global.fetch = async (url) => {
+    attempts += 1;
+    if (attempts === 1) {
+      throw new Error('network timeout while connecting');
+    }
+    return mockResponse({
+      status: 200,
+      url: String(url),
+      headers: { 'content-type': 'text/html' },
+      body: '<html><head><title>Recovered</title></head><body>ok</body></html>'
+    });
+  };
+
+  try {
+    const fetcher = new HttpFetcher({
+      perHostMinDelayMs: 0,
+      pageGotoTimeoutMs: 1000,
+      userAgent: 'SpecHarvester/1.0',
+      robotsTxtCompliant: false,
+      dynamicFetchRetryBudget: 1,
+      dynamicFetchRetryBackoffMs: 0,
+      requestThrottler: {
+        async acquire({ key }) {
+          throttleCalls.push(String(key || ''));
+        }
+      }
+    });
+
+    const page = await fetcher.fetch({
+      url: 'https://example.com/specs',
+      host: 'example.com'
+    });
+
+    assert.equal(page.status, 200);
+    assert.equal(throttleCalls.length, 2);
+    assert.deepEqual(throttleCalls, ['example.com', 'example.com']);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});

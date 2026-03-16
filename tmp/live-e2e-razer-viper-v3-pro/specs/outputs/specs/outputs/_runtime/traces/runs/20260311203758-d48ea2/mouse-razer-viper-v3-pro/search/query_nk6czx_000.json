@@ -1,0 +1,77 @@
+{
+  "query": "Razer Viper V3 Pro connection connectivity dpi height lngth middle_buttons polling_rate sensor sensor_brand side_buttons switch switch_brand weight width manual site:razer.com filetype:pdf",
+  "provider": "google",
+  "result_count": 10,
+  "results": [
+    {
+      "url": "https://razer.com/product/viper-v3-pro",
+      "title": "razer.com planned manufacturer path",
+      "snippet": "planned manufacturer candidate URL",
+      "provider": "plan_fallback",
+      "query": "Razer Viper V3 Pro"
+    },
+    {
+      "url": "https://razer.com/products/viper-v3-pro",
+      "title": "razer.com planned manufacturer path",
+      "snippet": "planned manufacturer candidate URL",
+      "provider": "plan_fallback",
+      "query": "Razer Viper V3 Pro"
+    },
+    {
+      "url": "https://razer.com/p/viper-v3-pro",
+      "title": "razer.com planned manufacturer path",
+      "snippet": "planned manufacturer candidate URL",
+      "provider": "plan_fallback",
+      "query": "Razer Viper V3 Pro"
+    },
+    {
+      "url": "https://razer.com/viper-v3-pro",
+      "title": "razer.com planned manufacturer path",
+      "snippet": "planned manufacturer candidate URL",
+      "provider": "plan_fallback",
+      "query": "Razer Viper V3 Pro"
+    },
+    {
+      "url": "https://razer.com/support/viper-v3-pro",
+      "title": "razer.com planned manufacturer path",
+      "snippet": "planned manufacturer candidate URL",
+      "provider": "plan_fallback",
+      "query": "Razer Viper V3 Pro"
+    },
+    {
+      "url": "https://razer.com/manual/viper-v3-pro",
+      "title": "razer.com planned manufacturer path",
+      "snippet": "planned manufacturer candidate URL",
+      "provider": "plan_fallback",
+      "query": "Razer Viper V3 Pro"
+    },
+    {
+      "url": "https://razer.com/downloads/viper-v3-pro",
+      "title": "razer.com planned manufacturer path",
+      "snippet": "planned manufacturer candidate URL",
+      "provider": "plan_fallback",
+      "query": "Razer Viper V3 Pro"
+    },
+    {
+      "url": "https://razer.com/specs/viper-v3-pro",
+      "title": "razer.com planned manufacturer path",
+      "snippet": "planned manufacturer candidate URL",
+      "provider": "plan_fallback",
+      "query": "Razer Viper V3 Pro"
+    },
+    {
+      "url": "https://razer.com/mouse/viper-v3-pro",
+      "title": "razer.com planned manufacturer path",
+      "snippet": "planned manufacturer candidate URL",
+      "provider": "plan_fallback",
+      "query": "Razer Viper V3 Pro"
+    },
+    {
+      "url": "https://razer.com/mice/viper-v3-pro",
+      "title": "razer.com planned manufacturer path",
+      "snippet": "planned manufacturer candidate URL",
+      "provider": "plan_fallback",
+      "query": "Razer Viper V3 Pro"
+    }
+  ]
+}

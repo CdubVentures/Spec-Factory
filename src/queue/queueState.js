@@ -3,7 +3,7 @@ import {
   evaluateIdentityGate,
   loadCanonicalIdentityIndex,
   registerCanonicalIdentity
-} from '../catalog/identityGate.js';
+} from '../features/catalog/index.js';
 
 function round(value, digits = 8) {
   return Number.parseFloat(Number(value || 0).toFixed(digits));

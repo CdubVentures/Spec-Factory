@@ -1,0 +1,970 @@
+{
+  "category": "keyboard",
+  "version": "1.0.0",
+  "approved": {
+    "manufacturer": [],
+    "lab": [
+      "rtings.com",
+      "techpowerup.com",
+      "tomshardware.com",
+      "lttlabs.com",
+      "techgearlab.com"
+    ],
+    "database": [
+      "pcpartpicker.com",
+      "versus.com",
+      "reddit.com",
+      "geekhack.org",
+      "keebtalk.com",
+      "theremingoat.com",
+      "keybumps.com",
+      "keeb-finder.com",
+      "switchesdb.com",
+      "hlplanet.com",
+      "prosettings.net",
+      "deskthority.net"
+    ],
+    "retailer": [
+      "amazon.com",
+      "bestbuy.com",
+      "newegg.com",
+      "bhphotovideo.com",
+      "mechanicalkeyboards.com",
+      "drop.com"
+    ]
+  },
+  "denylist": [],
+  "manufacturer_defaults": {
+    "method": "http",
+    "rate_limit_ms": 2000,
+    "timeout_ms": 12000,
+    "robots_txt_compliant": true
+  },
+  "manufacturer_crawl_overrides": {
+    "corsair.com": { "method": "playwright", "rate_limit_ms": 2000, "timeout_ms": 15000 },
+    "razer.com": { "method": "playwright", "rate_limit_ms": 2000, "timeout_ms": 15000 },
+    "logitechg.com": { "method": "playwright", "rate_limit_ms": 2000, "timeout_ms": 15000 },
+    "steelseries.com": { "method": "playwright", "rate_limit_ms": 2200, "timeout_ms": 15000 },
+    "hyperx.com": { "method": "playwright", "rate_limit_ms": 2000, "timeout_ms": 15000 },
+    "asus.com": { "method": "playwright", "rate_limit_ms": 2200, "timeout_ms": 15000 },
+    "keychron.com": { "method": "http", "rate_limit_ms": 2000, "timeout_ms": 12000 },
+    "wooting.io": { "method": "http", "rate_limit_ms": 2000, "timeout_ms": 12000 },
+    "duckychannel.com.tw": { "method": "http", "rate_limit_ms": 2000, "timeout_ms": 12000 }
+  },
+  "sources": {
+    "rtings_com": {
+      "display_name": "RTINGS",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.rtings.com",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "playwright",
+        "rate_limit_ms": 3000,
+        "timeout_ms": 20000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "latency",
+          "typing_quality",
+          "build_quality"
+        ],
+        "medium": [
+          "switch_type",
+          "keycap_material"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 90,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "techpowerup_com": {
+      "display_name": "TechPowerUp",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.techpowerup.com",
+      "content_types": [
+        "review"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "switch_type"
+        ],
+        "medium": [
+          "layout",
+          "build_quality"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 85,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "tomshardware_com": {
+      "display_name": "Tom's Hardware",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.tomshardware.com",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "latency"
+        ],
+        "medium": [
+          "switch_type",
+          "build_quality"
+        ],
+        "low": [
+          "polling_rate"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 80,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "amazon_com": {
+      "display_name": "Amazon",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.amazon.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1500,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "width", "depth",
+          "weight"
+        ],
+        "medium": [
+          "connection",
+          "layout"
+        ],
+        "low": [
+          "switch_type"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 45,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "bestbuy_com": {
+      "display_name": "Best Buy",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.bestbuy.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1400,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "width", "depth",
+          "weight"
+        ],
+        "medium": [
+          "connection"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 40,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "newegg_com": {
+      "display_name": "Newegg",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.newegg.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1500,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "width", "depth",
+          "weight"
+        ],
+        "medium": [
+          "connection",
+          "switch_type"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 40,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "bhphotovideo_com": {
+      "display_name": "B&H Photo",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://www.bhphotovideo.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1500,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "width", "depth"
+        ],
+        "medium": [
+          "weight",
+          "connection"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 35,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "mechanicalkeyboards_com": {
+      "display_name": "MechanicalKeyboards.com",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://mechanicalkeyboards.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "switch_type",
+          "layout",
+          "hot_swappable"
+        ],
+        "medium": [
+          "keycap_material",
+          "weight"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 45,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "pcpartpicker_com": {
+      "display_name": "PCPartPicker",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://pcpartpicker.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 10000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [],
+        "medium": [
+          "switch_type",
+          "connection",
+          "layout"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "aggregator",
+        "search_pattern": "",
+        "priority": 35,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "versus_com": {
+      "display_name": "Versus",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://versus.com",
+      "content_types": [
+        "comparison"
+      ],
+      "doc_kinds": [
+        "comparison"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1500,
+        "timeout_ms": 10000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [],
+        "medium": [
+          "switch_type",
+          "weight",
+          "width", "depth"
+        ],
+        "low": [
+          "backlighting"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "aggregator",
+        "search_pattern": "",
+        "priority": 30,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "reddit_com": {
+      "display_name": "Reddit",
+      "tier": "tier4_community",
+      "authority": "community",
+      "base_url": "https://www.reddit.com",
+      "content_types": [
+        "discussion"
+      ],
+      "doc_kinds": [
+        "forum"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2500,
+        "timeout_ms": 10000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [],
+        "medium": [],
+        "low": [
+          "switch_type",
+          "build_quality"
+        ]
+      },
+      "discovery": {
+        "method": "manual",
+        "source_type": "community",
+        "search_pattern": "",
+        "priority": 20,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "geekhack_org": {
+      "display_name": "GeekHack",
+      "tier": "tier4_community",
+      "authority": "community",
+      "base_url": "https://geekhack.org",
+      "content_types": [
+        "discussion",
+        "review"
+      ],
+      "doc_kinds": [
+        "forum"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 3000,
+        "timeout_ms": 10000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [],
+        "medium": [
+          "switch_type",
+          "keycap_material"
+        ],
+        "low": [
+          "build_quality"
+        ]
+      },
+      "discovery": {
+        "method": "manual",
+        "source_type": "community",
+        "search_pattern": "",
+        "priority": 15,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "keebtalk_com": {
+      "display_name": "KeebTalk",
+      "tier": "tier4_community",
+      "authority": "community",
+      "base_url": "https://www.keebtalk.com",
+      "content_types": [
+        "discussion",
+        "review"
+      ],
+      "doc_kinds": [
+        "forum"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 3000,
+        "timeout_ms": 10000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [],
+        "medium": [
+          "switch_type"
+        ],
+        "low": [
+          "keycap_material",
+          "build_quality"
+        ]
+      },
+      "discovery": {
+        "method": "manual",
+        "source_type": "community",
+        "search_pattern": "",
+        "priority": 15,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "drop_com": {
+      "display_name": "Drop",
+      "tier": "tier3_retailer",
+      "authority": "aggregator",
+      "base_url": "https://drop.com",
+      "content_types": [
+        "product_page"
+      ],
+      "doc_kinds": [
+        "product_page"
+      ],
+      "crawl_config": {
+        "method": "playwright",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 15000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "switch_type",
+          "layout",
+          "hot_swappable"
+        ],
+        "medium": [
+          "keycap_material",
+          "connection",
+          "weight"
+        ],
+        "low": [
+          "backlighting"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "retailer",
+        "search_pattern": "",
+        "priority": 42,
+        "enabled": true,
+        "notes": ""
+      }
+    },
+    "theremingoat_com": {
+      "display_name": "ThereminGoat's Switches",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.theremingoat.com",
+      "content_types": [
+        "review",
+        "reference",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review",
+        "reference"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "switch_type",
+          "switch_feel",
+          "actuation_force",
+          "total_travel",
+          "actuation_distance",
+          "bottom_out_force"
+        ],
+        "medium": [
+          "switch_brand",
+          "switch_name",
+          "switch_lifespan",
+          "sound_profile"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 88,
+        "enabled": true,
+        "notes": "200+ switch reviews with force curves and measurements, the gold standard for switch data"
+      }
+    },
+    "keybumps_com": {
+      "display_name": "Keybumps",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://keybumps.com",
+      "content_types": [
+        "comparison",
+        "reference"
+      ],
+      "doc_kinds": [
+        "comparison",
+        "reference"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "switch_type",
+          "switch_feel",
+          "actuation_force",
+          "total_travel"
+        ],
+        "medium": [
+          "switch_brand",
+          "switch_name",
+          "actuation_distance",
+          "sound_profile"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 84,
+        "enabled": true,
+        "notes": "530+ switch comparison database with specs, force curves, and filtering"
+      }
+    },
+    "lttlabs_com": {
+      "display_name": "LTT Labs",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.lttlabs.com",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2200,
+        "timeout_ms": 14000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "single_key_latency",
+          "multi_key_latency"
+        ],
+        "medium": [
+          "switch_type",
+          "polling_rate_wired",
+          "weight",
+          "width",
+          "depth"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 86,
+        "enabled": true,
+        "notes": "instrumented keyboard latency testing with solenoid + USB analyzer"
+      }
+    },
+    "keeb_finder_com": {
+      "display_name": "KeebFinder",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://keeb-finder.com",
+      "content_types": [
+        "product_page",
+        "comparison",
+        "reference"
+      ],
+      "doc_kinds": [
+        "spec_sheet",
+        "comparison"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "switch_type",
+          "layout",
+          "connection",
+          "hot_swappable"
+        ],
+        "medium": [
+          "weight",
+          "width",
+          "depth",
+          "keycap_material",
+          "actuation_force",
+          "total_travel",
+          "switch_brand"
+        ],
+        "low": [
+          "backlighting",
+          "battery_hours"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 80,
+        "enabled": true,
+        "notes": "2000+ keyboards, 700+ switches, daily automated updates, side-by-side comparison"
+      }
+    },
+    "switchesdb_com": {
+      "display_name": "SwitchesDB",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.switchesdb.com",
+      "content_types": [
+        "reference",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "reference"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "actuation_force",
+          "bottom_out_force",
+          "total_travel",
+          "actuation_distance",
+          "switch_feel"
+        ],
+        "medium": [
+          "switch_type",
+          "switch_brand",
+          "switch_name"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 82,
+        "enabled": true,
+        "notes": "measured force curve data with overlay comparison, sourced from ThereminGoat and HaaTa measurements"
+      }
+    },
+    "hlplanet_com": {
+      "display_name": "HLPlanet",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.hlplanet.com",
+      "content_types": [
+        "reference",
+        "comparison"
+      ],
+      "doc_kinds": [
+        "reference"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "rapid_trigger",
+          "adjustable_actuation_min",
+          "adjustable_actuation_max",
+          "switch_output_type",
+          "analog_input"
+        ],
+        "medium": [
+          "switch_type",
+          "polling_rate",
+          "layout",
+          "connection"
+        ],
+        "low": [
+          "weight"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "spec_database",
+        "search_pattern": "",
+        "priority": 70,
+        "enabled": true,
+        "notes": "definitive rapid trigger and Hall effect keyboard tracker, 37+ keyboards personally tested"
+      }
+    },
+    "prosettings_net": {
+      "display_name": "ProSettings.net",
+      "tier": "tier5_aggregator",
+      "authority": "aggregator",
+      "base_url": "https://www.prosettings.net",
+      "content_types": [
+        "comparison",
+        "reference"
+      ],
+      "doc_kinds": [
+        "comparison"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 1800,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "switch_type",
+          "layout",
+          "polling_rate"
+        ],
+        "medium": [
+          "connection",
+          "weight",
+          "rapid_trigger"
+        ],
+        "low": []
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "aggregator",
+        "search_pattern": "",
+        "priority": 55,
+        "enabled": true,
+        "notes": "2210+ pro player keyboard usage tracking across esports titles"
+      }
+    },
+    "deskthority_net": {
+      "display_name": "Deskthority Wiki",
+      "tier": "tier4_community",
+      "authority": "community",
+      "base_url": "https://deskthority.net",
+      "content_types": [
+        "reference",
+        "review"
+      ],
+      "doc_kinds": [
+        "reference"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 3000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "switch_type",
+          "switch_feel",
+          "actuation_force",
+          "total_travel"
+        ],
+        "medium": [
+          "switch_brand",
+          "switch_name",
+          "switch_lifespan"
+        ],
+        "low": [
+          "keycap_material"
+        ]
+      },
+      "discovery": {
+        "method": "manual",
+        "source_type": "community",
+        "search_pattern": "",
+        "priority": 20,
+        "enabled": true,
+        "notes": "2000+ articles, deepest historical switch/keyboard wiki, covers vintage and obscure switches"
+      }
+    },
+    "techgearlab_com": {
+      "display_name": "TechGearLab",
+      "tier": "tier2_lab",
+      "authority": "instrumented",
+      "base_url": "https://www.techgearlab.com",
+      "content_types": [
+        "review",
+        "benchmark"
+      ],
+      "doc_kinds": [
+        "review"
+      ],
+      "crawl_config": {
+        "method": "http",
+        "rate_limit_ms": 2000,
+        "timeout_ms": 12000,
+        "robots_txt_compliant": true
+      },
+      "field_coverage": {
+        "high": [
+          "actuation_force",
+          "actuation_distance",
+          "total_travel",
+          "latency"
+        ],
+        "medium": [
+          "switch_type",
+          "weight",
+          "sound_profile"
+        ],
+        "low": [
+          "layout"
+        ]
+      },
+      "discovery": {
+        "method": "search_first",
+        "source_type": "lab_review",
+        "search_pattern": "",
+        "priority": 78,
+        "enabled": true,
+        "notes": "MecMesin force-displacement tester (0.01gf precision) + custom latency rig (ms precision)"
+      }
+    }
+  }
+}

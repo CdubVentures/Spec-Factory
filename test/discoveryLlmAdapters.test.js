@@ -3,9 +3,8 @@ import assert from 'node:assert/strict';
 import {
   createBrandResolverCallLlm,
   createDomainSafetyCallLlm,
-  createUrlPredictorCallLlm,
   createEscalationPlannerCallLlm
-} from '../src/llm/discoveryLlmAdapters.js';
+} from '../src/features/indexing/discovery/discoveryLlmAdapters.js';
 
 function makeCallRoutedLlm(returnValue = {}) {
   const calls = [];
@@ -82,26 +81,19 @@ describe('discoveryLlmAdapters', () => {
       assert.ok(schema);
       assert.ok(schema.properties.classifications);
     });
-  });
 
-  describe('createUrlPredictorCallLlm', () => {
-    it('formats prompt with product and sources and returns URLs', async () => {
-      const routed = makeCallRoutedLlm([
-        { url: 'https://rtings.com/review/razer-viper', source_host: 'rtings.com', predicted_tier: 2 }
-      ]);
-      const callLlm = createUrlPredictorCallLlm({
+    it('passes the shared logger through to routed llm calls', async () => {
+      const routed = makeCallRoutedLlm([]);
+      const logger = { info() {} };
+      const callLlm = createDomainSafetyCallLlm({
         callRoutedLlmFn: routed.fn,
-        config: { llmModelTriage: 'test-model' }
+        config: { llmModelTriage: 'test-model' },
+        logger
       });
-      const result = await callLlm({
-        product: { brand: 'Razer', model: 'Viper V3 Pro', category: 'mouse' },
-        sources: [{ host: 'rtings.com', source_type: 'lab_review' }],
-        config: {}
-      });
-      assert.ok(Array.isArray(result));
-      assert.equal(result[0].url, 'https://rtings.com/review/razer-viper');
-      assert.ok(routed.calls[0].user.includes('Razer'));
-      assert.ok(routed.calls[0].user.includes('rtings.com'));
+
+      await callLlm({ domains: ['test.com'], category: 'mouse', config: {} });
+
+      assert.equal(routed.calls[0].logger, logger);
     });
   });
 

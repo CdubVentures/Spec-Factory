@@ -45,41 +45,6 @@ test('loadConfig reads Phase 11 cortex environment settings', () => {
   });
 });
 
-test('loadConfig reads Phase 12 aggressive extraction environment settings', () => {
-  withEnv({
-    AGGRESSIVE_MODE_ENABLED: 'true',
-    AGGRESSIVE_CONFIDENCE_THRESHOLD: '0.91',
-    AGGRESSIVE_MAX_SEARCH_QUERIES: '7',
-    AGGRESSIVE_EVIDENCE_AUDIT_ENABLED: 'true',
-    AGGRESSIVE_EVIDENCE_AUDIT_BATCH_SIZE: '88',
-    AGGRESSIVE_MAX_TIME_PER_PRODUCT_MS: '120000',
-    AGGRESSIVE_LLM_MAX_CALLS_PER_ROUND: '18',
-    AGGRESSIVE_LLM_MAX_CALLS_PER_PRODUCT_TOTAL: '64',
-    AGGRESSIVE_LLM_TARGET_MAX_FIELDS: '75',
-    AGGRESSIVE_LLM_DISCOVERY_PASSES: '4',
-    AGGRESSIVE_LLM_DISCOVERY_QUERY_CAP: '36',
-    LLM_VERIFY_AGGRESSIVE_ALWAYS: 'true',
-    LLM_VERIFY_AGGRESSIVE_BATCH_COUNT: '5',
-    LLM_DISABLE_BUDGET_GUARDS: 'true'
-  }, () => {
-    const config = loadConfig();
-    assert.equal(config.aggressiveModeEnabled, true);
-    assert.equal(config.aggressiveConfidenceThreshold, 0.91);
-    assert.equal(config.aggressiveMaxSearchQueries, 7);
-    assert.equal(config.aggressiveEvidenceAuditEnabled, true);
-    assert.equal(config.aggressiveEvidenceAuditBatchSize, 88);
-    assert.equal(config.aggressiveMaxTimePerProductMs, 120000);
-    assert.equal(config.aggressiveLlmMaxCallsPerRound, 18);
-    assert.equal(config.aggressiveLlmMaxCallsPerProductTotal, 64);
-    assert.equal(config.aggressiveLlmTargetMaxFields, 75);
-    assert.equal(config.aggressiveLlmDiscoveryPasses, 4);
-    assert.equal(config.aggressiveLlmDiscoveryQueryCap, 36);
-    assert.equal(config.llmVerifyAggressiveAlways, true);
-    assert.equal(config.llmVerifyAggressiveBatchCount, 5);
-    assert.equal(config.llmDisableBudgetGuards, true);
-  });
-});
-
 test('loadConfig reads role-based LLM routing settings and safe fast-model default', () => {
   withEnv({
     LLM_PROVIDER: 'deepseek',
@@ -115,6 +80,6 @@ test('loadConfig reads indexing helper toggle settings', () => {
     INDEXING_HELPER_FILES_ENABLED: 'true'
   }, () => {
     const config = loadConfig();
-    assert.equal(config.indexingHelperFilesEnabled, true);
+    assert.equal(config.indexingCategoryAuthorityEnabled, true);
   });
 });

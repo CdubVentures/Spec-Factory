@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DeterministicParser } from '../src/extract/deterministicParser.js';
+import { DeterministicParser } from '../src/features/indexing/extraction/deterministicParser.js';
 
 function buildEngineStub() {
   return {

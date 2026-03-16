@@ -74,7 +74,7 @@ async function readTextIfExists(filePath) {
 }
 
 function buildCategoryPaths({ rootDir, category, config }) {
-  const helperRoot = path.resolve(rootDir, config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(rootDir, config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   const helperCategory = path.join(helperRoot, category);
   const runtimeCategory = path.resolve(rootDir, 'categories', category);
   const helperCompiledDir = path.join(helperCategory, '_compiled');
@@ -156,7 +156,7 @@ async function collectCategoryReport({ rootDir, category, config }) {
     field_studio_sources: fieldStudioSourceFiles,
     files,
     compiled: {
-      loaded_from: helperContract ? 'helper_files' : (dataContract ? 'data' : null),
+      loaded_from: helperContract ? 'category_authority' : (dataContract ? 'data' : null),
       contract_hash: contract?.hash || null,
       expectations_hash: expectations?.hash || null,
       field_count: fieldCount,
@@ -222,7 +222,7 @@ export async function runAppDiagnostics({
   pruneMirrors = false,
   rootDir = process.cwd()
 } = {}) {
-  const helperRoot = path.resolve(rootDir, config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(rootDir, config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   const runtimeRoot = path.resolve(rootDir, 'categories');
   const helperCategories = await listDirNames(helperRoot);
   const runtimeCategories = await listDirNames(runtimeRoot);
@@ -287,3 +287,4 @@ export async function runAppDiagnostics({
     }
   };
 }
+

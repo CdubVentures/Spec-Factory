@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 
-const baseDir = path.join('implementation', 'data-managament', 'diagrams', 'authority-flows');
+const baseDir = path.join('docs', 'data-management', 'diagrams', 'authority-flows');
 
 const diagrams = [
   '01-authoritative-store-end-to-end',

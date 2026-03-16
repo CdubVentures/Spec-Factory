@@ -12,7 +12,7 @@ import {
   parseNumberAndUnit,
   convertUnit,
   canonicalUnitToken
-} from './normalization-functions.js';
+} from './normalizationFunctions.js';
 import {
   ruleRequiredLevel as requiredLevel,
   ruleAvailability as availabilityLevel,
@@ -297,6 +297,19 @@ export class FieldRulesEngine {
 
   getPublishGate() {
     return this.loaded?.rules?.publish_gate || null;
+  }
+
+  // WHY: Exposes core_fields + per-field evidence_tier_minimum for coreDeepGate.js
+  getCoreDeepFieldRules() {
+    const rules = this.loaded?.rules || {};
+    const coreFields = Array.isArray(rules.core_fields) ? rules.core_fields : [];
+    const fields = {};
+    for (const [key, rule] of Object.entries(this.rules)) {
+      if (!isObject(rule)) continue;
+      const evidence = isObject(rule.evidence) ? rule.evidence : {};
+      fields[key] = { evidence_tier_minimum: evidence.evidence_tier_minimum ?? 3 };
+    }
+    return { core_fields: coreFields, fields };
   }
 
   getAllFieldKeys() {

@@ -780,7 +780,7 @@ export async function buildComponentReviewLayout({ config = {}, category, specDb
 }
 
 async function buildComponentReviewLayoutLegacy({ config = {}, category, fieldRules = null }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   const dbDir = path.join(helperRoot, category, '_generated', 'component_db');
   const files = await listJsonFiles(dbDir);
 
@@ -851,7 +851,7 @@ export async function buildComponentReviewPayloads({ config = {}, category, comp
 // ── SpecDb-primary component payloads ────────────────────────────────
 
 async function buildComponentReviewPayloadsSpecDb({ config = {}, category, componentType, specDb, fieldRules = null }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
 
   let allComponents = specDb.getAllComponentsForType(componentType);
 
@@ -1549,7 +1549,7 @@ async function buildComponentReviewPayloadsSpecDb({ config = {}, category, compo
 }
 
 async function buildComponentReviewPayloadsLegacy({ config = {}, category, componentType, specDb = null, fieldRules = null }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   const dbDir = path.join(helperRoot, category, '_generated', 'component_db');
   const overrideDir = path.join(helperRoot, category, '_overrides', 'components');
   const files = await listJsonFiles(dbDir);
@@ -2442,7 +2442,7 @@ async function buildEnumReviewPayloadsSpecDb({ config = {}, category, specDb, en
 }
 
 async function buildEnumReviewPayloadsLegacy({ config = {}, category, specDb = null, enabledEnumFields = null }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   const kvPath = path.join(helperRoot, category, '_generated', 'known_values.json');
   const suggestPath = path.join(helperRoot, category, '_suggestions', 'enums.json');
   const controlPlaneRoot = path.join(helperRoot, category, '_control_plane');
@@ -2656,3 +2656,4 @@ async function buildEnumReviewPayloadsLegacy({ config = {}, category, specDb = n
 
   return { category, fields };
 }
+

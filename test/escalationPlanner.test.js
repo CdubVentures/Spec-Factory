@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { planEscalationQueries } from '../src/discovery/escalationPlanner.js';
+import { planEscalationQueries } from '../src/features/indexing/discovery/escalationPlanner.js';
 
 function makeLlmFn({ queries = [], shouldFail = false } = {}) {
   let called = false;

@@ -23,9 +23,9 @@ function catalogKey(brand, model, variant) {
 test('catalog builder merges storage enrichment onto seeded catalog rows and skips orphans', async () => {
   const loadProductCatalog = async () => ({
     products: {
-      'mouse-acer-cestus-310': {
-        brand: 'Acer',
-        model: 'Cestus 310',
+      'mouse-acme-orbit-x1': {
+        brand: 'Acme',
+        model: 'Orbit X1',
         variant: '',
         id: 10,
       },
@@ -39,8 +39,8 @@ test('catalog builder merges storage enrichment onto seeded catalog rows and ski
     async readJsonOrNull(key) {
       if (key === 'inputs/seed.json') {
         return {
-          productId: 'mouse-acer-cestus-310',
-          identityLock: { brand: 'Acer', model: 'Cestus 310', variant: '' },
+          productId: 'mouse-acme-orbit-x1',
+          identityLock: { brand: 'Acme', model: 'Orbit X1', variant: '' },
           active: true,
         };
       }
@@ -50,7 +50,7 @@ test('catalog builder merges storage enrichment onto seeded catalog rows and ski
           identityLock: { brand: 'Ghost', model: 'Phantom', variant: '' },
         };
       }
-      if (key.includes('mouse-acer-cestus-310') && key.includes('/summary.json')) {
+      if (key.includes('mouse-acme-orbit-x1') && key.includes('/summary.json')) {
         return {
           validated: true,
           confidence: 0.86,
@@ -60,12 +60,12 @@ test('catalog builder merges storage enrichment onto seeded catalog rows and ski
           generated_at: '2026-02-26T10:00:00.000Z',
         };
       }
-      if (key.includes('mouse-acer-cestus-310') && key.includes('/normalized.json')) {
+      if (key.includes('mouse-acme-orbit-x1') && key.includes('/normalized.json')) {
         return {
           identity: {
-            brand: 'Acer',
-            model: 'Cestus 310',
-            variant: 'Wireless',
+            brand: 'Acme',
+            model: 'Orbit X1',
+            variant: 'Core',
           },
         };
       }
@@ -75,7 +75,7 @@ test('catalog builder merges storage enrichment onto seeded catalog rows and ski
       return `out/${category}/${productId}/latest`;
     },
     async objectExists(key) {
-      return key.includes('mouse-acer-cestus-310');
+      return key.includes('mouse-acme-orbit-x1');
     },
   };
 
@@ -86,7 +86,7 @@ test('catalog builder merges storage enrichment onto seeded catalog rows and ski
     loadQueueState: async () => ({
       state: {
         products: {
-          'mouse-acer-cestus-310': { status: 'complete' },
+          'mouse-acme-orbit-x1': { status: 'complete' },
         },
       },
     }),
@@ -98,7 +98,7 @@ test('catalog builder merges storage enrichment onto seeded catalog rows and ski
 
   const rows = await buildCatalog('mouse');
   assert.equal(rows.length, 1);
-  assert.equal(rows[0].productId, 'mouse-acer-cestus-310');
+  assert.equal(rows[0].productId, 'mouse-acme-orbit-x1');
   assert.equal(rows[0].status, 'complete');
   assert.equal(rows[0].hasFinal, true);
   assert.equal(rows[0].validated, true);

@@ -12,7 +12,6 @@ import {
   makeNeedsetComputedEvent,
   makeRunCompletedEvent,
   makeEvidenceIndexEvent,
-  makeConvergenceEvents
 } from './helpers/phase00AuditHarness.js';
 import { buildRoundSummaryFromEvents } from '../src/api/roundSummary.js';
 import { buildEvidenceSearchPayload } from '../src/api/evidenceSearch.js';
@@ -116,7 +115,7 @@ describe('Phase 00 — Event Model Audit', () => {
     it('needset_computed is emitted', async () => {
       const events = await harness.getEmittedEvents();
       const evt = harness.assertEventExists(events, 'needset_computed', 'SPEC');
-      harness.assertPayloadHasKeys(evt, ['needset_size', 'total_fields', 'needs'], 'needset_computed');
+      harness.assertPayloadHasKeys(evt, ['needset_size', 'total_fields', 'fields'], 'needset_computed');
       console.log(`[SPEC] needset_computed ✓ — size=${evt.payload.needset_size} total=${evt.payload.total_fields}`);
     });
 
@@ -187,10 +186,10 @@ describe('Phase 00 — Event Model Audit', () => {
       assert.equal(needset.run_id, RUN_ID);
       assert.equal(needset.total_fields, 60);
       assert.equal(needset.needset_size, 25);
-      assert.ok(needset.identity_lock_state, 'identity_lock_state should exist');
-      assert.equal(needset.identity_lock_state.status, 'locked');
-      assert.ok(Array.isArray(needset.needs), 'needs should be an array');
-      console.log(`[NEEDSET] ✓ — size=${needset.needset_size} total=${needset.total_fields} lock=${needset.identity_lock_state.status}`);
+      assert.ok(needset.identity, 'identity should exist');
+      assert.equal(needset.identity.state, 'locked');
+      assert.ok(Array.isArray(needset.fields), 'fields should be an array');
+      console.log(`[NEEDSET] ✓ — size=${needset.needset_size} total=${needset.total_fields} identity=${needset.identity.state}`);
     });
   });
 
@@ -259,77 +258,10 @@ describe('Phase 00 — Event Model Audit', () => {
     });
   });
 
-  describe('convergence events', () => {
-    it('emits convergence_round_started, convergence_round_completed, convergence_stop', async () => {
-      const h2 = createAuditHarness();
-      await h2.setup();
-      const runId = 'r_convergence_test_001';
-      const convEvents = makeConvergenceEvents(runId);
-      await h2.feedEvents([makeRunStartedEvent(runId), ...convEvents]);
-      const events = await h2.getEmittedEvents();
-      h2.assertEventExists(events, 'convergence_round_started', 'convergence');
-      h2.assertEventExists(events, 'convergence_round_completed', 'convergence');
-      h2.assertEventExists(events, 'convergence_stop', 'convergence');
-
-      const roundCompleted = events.find((e) => e.event === 'convergence_round_completed');
-      h2.assertPayloadHasKeys(roundCompleted, ['round', 'needset_size', 'confidence', 'improved'], 'convergence_round_completed');
-      console.log(`[CONVERGENCE] round_completed payload: round=${roundCompleted.payload.round} needset=${roundCompleted.payload.needset_size} conf=${roundCompleted.payload.confidence}`);
-
-      const stop = events.find((e) => e.event === 'convergence_stop');
-      h2.assertPayloadHasKeys(stop, ['stop_reason', 'round_count', 'complete', 'final_confidence'], 'convergence_stop');
-      console.log(`[CONVERGENCE] stop payload: reason="${stop.payload.stop_reason}" rounds=${stop.payload.round_count} complete=${stop.payload.complete}`);
-      await h2.cleanup();
-    });
-  });
 });
 
 describe('Phase 00 — BUG: roundSummary.js payload nesting (CSV Item 1)', () => {
-  it('buildRoundSummaryFromEvents reads NDJSON-format events with payload wrapper', () => {
-    const ndjsonEvents = [
-      {
-        run_id: 'r_test', ts: '2026-02-20T00:00:00Z', stage: 'convergence',
-        event: 'convergence_round_completed',
-        payload: {
-          round: 0, needset_size: 42, missing_required_count: 10,
-          critical_count: 3, confidence: 0.55, validated: false,
-          improved: false, improvement_reasons: []
-        }
-      },
-      {
-        run_id: 'r_test', ts: '2026-02-20T00:01:00Z', stage: 'convergence',
-        event: 'convergence_round_completed',
-        payload: {
-          round: 1, needset_size: 30, missing_required_count: 5,
-          critical_count: 1, confidence: 0.78, validated: false,
-          improved: true, improvement_reasons: ['missing_required_decreased']
-        }
-      },
-      {
-        run_id: 'r_test', ts: '2026-02-20T00:02:00Z', stage: 'convergence',
-        event: 'convergence_stop',
-        payload: {
-          stop_reason: 'complete', round_count: 2, complete: true,
-          final_confidence: 0.95, final_needset_size: 10
-        }
-      }
-    ];
-
-    const result = buildRoundSummaryFromEvents(ndjsonEvents);
-    console.log(`[BUG-CSV1] roundSummary result: ${JSON.stringify(result, null, 2)}`);
-    console.log(`[BUG-CSV1] round[0].round = ${result.rounds[0]?.round} (expected: 0)`);
-    console.log(`[BUG-CSV1] round[0].needset_size = ${result.rounds[0]?.needset_size} (expected: 42)`);
-    console.log(`[BUG-CSV1] round[0].confidence = ${result.rounds[0]?.confidence} (expected: 0.55)`);
-    console.log(`[BUG-CSV1] round[1].improved = ${result.rounds[1]?.improved} (expected: true)`);
-    console.log(`[BUG-CSV1] stop_reason = ${result.stop_reason} (expected: "complete")`);
-
-    assert.equal(result.rounds[0].round, 0, 'round[0].round should be 0, not NaN — reads r.round instead of r.payload.round');
-    assert.equal(result.rounds[0].needset_size, 42, 'round[0].needset_size should be 42 — reads r.needset_size instead of r.payload.needset_size');
-    assert.equal(result.rounds[0].confidence, 0.55, 'round[0].confidence should be 0.55');
-    assert.equal(result.rounds[1].improved, true, 'round[1].improved should be true');
-    assert.equal(result.stop_reason, 'complete', 'stop_reason should be "complete"');
-  });
-
-  it('single-pass fallback reads NDJSON-format run_completed with payload wrapper', () => {
+  it('single-pass reads NDJSON-format run_completed with payload wrapper', () => {
     const ndjsonEvents = [
       {
         run_id: 'r_test', ts: '2026-02-20T00:00:00Z', stage: 'index',
@@ -391,40 +323,5 @@ describe('Phase 00 — BUG: guiServer evidence-index dedupe filter (CSV Item 2)'
     assert.equal(result.dedupe_stream.reused_count, 1, 'reused_count should be 1');
     assert.equal(result.dedupe_stream.updated_count, 1, 'updated_count should be 1');
     assert.equal(result.dedupe_stream.total_chunks_indexed, 11, 'total_chunks_indexed should be 11');
-  });
-});
-
-describe('Phase 00 — dedupeOutcomeEvent.js is wired into production (CSV Item 85 fixed)', () => {
-  it('dedupeOutcomeEvent.js is imported by runtimeBridge.js', async () => {
-    const fs = await import('node:fs/promises');
-    const path = await import('node:path');
-
-    const srcRoot = path.resolve('src');
-    const entries = [];
-
-    async function walk(dir) {
-      const items = await fs.readdir(dir, { withFileTypes: true });
-      for (const item of items) {
-        const full = path.join(dir, item.name);
-        if (item.isDirectory()) {
-          await walk(full);
-        } else if (item.name.endsWith('.js')) {
-          entries.push(full);
-        }
-      }
-    }
-    await walk(srcRoot);
-
-    const importers = [];
-    for (const filePath of entries) {
-      if (filePath.endsWith('dedupeOutcomeEvent.js')) continue;
-      const content = await fs.readFile(filePath, 'utf8');
-      if (content.includes('dedupeOutcomeEvent')) {
-        importers.push(filePath);
-      }
-    }
-
-    assert.ok(importers.length > 0, 'dedupeOutcomeEvent.js should be imported by at least one production module (runtimeBridge.js)');
-    assert.ok(importers.some((f) => f.includes('runtimeBridge')), 'runtimeBridge.js should import dedupeOutcomeToEventKey from dedupeOutcomeEvent.js');
   });
 });

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dedupeSerpResults } from '../src/search/serpDedupe.js';
+import { dedupeSerpResults } from '../src/features/indexing/search/serpDedupe.js';
 
 // ---------------------------------------------------------------------------
 // Phase 13 — Cross-provider SERP Deduplication Tests
@@ -38,11 +38,11 @@ test('serp dedupe: tracks all providers that found the URL', () => {
   const results = [
     { url: 'https://example.com/page', provider: 'google' },
     { url: 'https://example.com/page', provider: 'bing' },
-    { url: 'https://example.com/page', provider: 'duckduckgo' }
+    { url: 'https://example.com/page', provider: 'searxng' }
   ];
   const { deduped } = dedupeSerpResults(results);
   assert.equal(deduped.length, 1);
-  assert.deepEqual(deduped[0].seen_by_providers.sort(), ['bing', 'duckduckgo', 'google']);
+  assert.deepEqual(deduped[0].seen_by_providers.sort(), ['bing', 'google', 'searxng']);
   assert.equal(deduped[0].cross_provider_count, 3);
 });
 

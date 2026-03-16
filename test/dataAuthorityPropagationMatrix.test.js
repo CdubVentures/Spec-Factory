@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { registerStudioRoutes } from '../src/api/routes/studioRoutes.js';
-import { registerCatalogRoutes } from '../src/api/routes/catalogRoutes.js';
-import { registerBrandRoutes } from '../src/api/routes/brandRoutes.js';
+import { registerStudioRoutes } from '../src/features/studio/api/studioRoutes.js';
+import { registerCatalogRoutes } from '../src/features/catalog/api/catalogRoutes.js';
+import { registerBrandRoutes } from '../src/features/catalog/api/brandRoutes.js';
 import { handleCompileProcessCompletion } from '../src/api/services/compileProcessCompletion.js';
-import { resolveDataChangeScopedCategories } from '../tools/gui-react/src/components/layout/dataChangeScope.js';
-import { resolveDataChangeInvalidationQueryKeys } from '../tools/gui-react/src/api/dataChangeInvalidationMap.js';
+import { resolveDataChangeScopedCategories } from '../tools/gui-react/src/features/data-change/index.js';
+import { resolveDataChangeInvalidationQueryKeys } from '../tools/gui-react/src/features/data-change/index.js';
 
 function keySet(keys) {
   return new Set(keys.map((queryKey) => JSON.stringify(queryKey)));
@@ -20,7 +20,7 @@ function studioCtx(overrides = {}) {
     jsonRes: (_res, status, body) => ({ status, body }),
     readJsonBody: async () => ({}),
     config: {},
-    HELPER_ROOT: 'helper_files',
+    HELPER_ROOT: 'category_authority',
     safeReadJson: async () => null,
     safeStat: async () => null,
     listFiles: async () => [],
@@ -86,7 +86,7 @@ function catalogCtx(overrides = {}) {
     sessionCache: { getSessionRules: async () => ({ cleanFieldOrder: [] }) },
     resolveCategoryAlias: (value) => String(value || '').trim().toLowerCase(),
     listDirs: async () => [],
-    HELPER_ROOT: 'helper_files',
+    HELPER_ROOT: 'category_authority',
     broadcastWs: () => {},
     loadQueueState: async () => ({ state: { products: {} } }),
     saveQueueState: async () => ({ ok: true }),

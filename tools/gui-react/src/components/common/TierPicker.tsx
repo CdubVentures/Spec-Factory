@@ -1,4 +1,4 @@
-import { TIER_DEFS } from '../../pages/studio/studioConstants';
+import { TIER_DEFS } from '../../utils/studioConstants';
 
 // Canonical order map: tier id → sort index
 const CANONICAL_ORDER: Record<string, number> = {};

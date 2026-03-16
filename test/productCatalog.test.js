@@ -11,11 +11,11 @@ import {
   removeProduct,
   seedFromCatalog,
   listProducts
-} from '../src/catalog/productCatalog.js';
+} from '../src/features/catalog/products/productCatalog.js';
 
 async function tmpConfig() {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'prod-cat-'));
-  return { helperFilesRoot: dir, _tmpDir: dir, s3InputPrefix: 'specs/inputs' };
+  return { categoryAuthorityRoot: dir, _tmpDir: dir, s3InputPrefix: 'specs/inputs' };
 }
 
 async function cleanup(config) {
@@ -65,7 +65,7 @@ test('loadProductCatalog: returns empty catalog when file does not exist', async
 test('loadProductCatalog: reads existing catalog', async () => {
   const config = await tmpConfig();
   try {
-    const cpDir = path.join(config.helperFilesRoot, 'mouse', '_control_plane');
+    const cpDir = path.join(config.categoryAuthorityRoot, 'mouse', '_control_plane');
     await fs.mkdir(cpDir, { recursive: true });
     await fs.writeFile(path.join(cpDir, 'product_catalog.json'), JSON.stringify({
       _version: 1,

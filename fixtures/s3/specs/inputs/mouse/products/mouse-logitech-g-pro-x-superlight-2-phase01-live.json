@@ -1,0 +1,15 @@
+{
+  "productId": "mouse-logitech-g-pro-x-superlight-2-phase01-live",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Logitech G",
+    "model": "Pro X Superlight 2",
+    "variant": "",
+    "sku": "",
+    "title": "Logitech G Pro X Superlight 2"
+  },
+  "seedUrls": [
+    "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse",
+    "https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf"
+  ]
+}

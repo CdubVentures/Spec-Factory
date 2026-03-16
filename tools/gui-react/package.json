@@ -4,8 +4,6 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "predev": "node ../../tools/sync-settings-defaults-from-env.mjs",
-    "prebuild": "node ../../tools/sync-settings-defaults-from-env.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview"

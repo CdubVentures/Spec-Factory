@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SearchTracker } from '../src/extract/searchTracker.js';
+import { SearchTracker } from '../src/features/indexing/extraction/searchTracker.js';
 
 function createStorage(initial = {}) {
   const data = new Map(Object.entries(initial));

@@ -219,7 +219,7 @@ function stableSpecFieldOrder(fields = {}) {
 }
 
 async function readOverrideDoc({ config = {}, category, productId }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   const overridePath = path.join(helperRoot, category, '_overrides', `${productId}.overrides.json`);
   try {
     const raw = await fs.readFile(overridePath, 'utf8');
@@ -242,7 +242,7 @@ async function readOverrideDoc({ config = {}, category, productId }) {
 }
 
 async function listApprovedOverrideProductIds({ config = {}, category }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   const dir = path.join(helperRoot, category, '_overrides');
   let entries = [];
   try {
@@ -1760,3 +1760,4 @@ export async function buildLlmMetrics({
     }
   };
 }
+

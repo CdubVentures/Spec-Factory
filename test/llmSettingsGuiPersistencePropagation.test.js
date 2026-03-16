@@ -1,4 +1,4 @@
-﻿import test from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -84,9 +84,9 @@ async function readRouteRow(baseUrl, category, routeKey) {
   return rows.find((row) => String(row?.route_key || '') === routeKey) || null;
 }
 
-test('GUI llm route knobs persist across manual save/autosave reload and keep autosave mode global', { timeout: 300_000 }, async () => {
+test('GUI llm route knobs persist across manual save/autosave hard reload and keep autosave mode global', { timeout: 300_000 }, async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'llm-settings-gui-'));
-  const helperFilesRoot = path.join(tempRoot, 'helper_files');
+  const categoryAuthorityRoot = path.join(tempRoot, 'category_authority');
   const localOutputRoot = path.join(tempRoot, 'out');
   const repoRoot = path.resolve('.');
   const guiDistRoot = path.join(repoRoot, 'tools', 'gui-react', 'dist');
@@ -99,8 +99,8 @@ test('GUI llm route knobs persist across manual save/autosave reload and keep au
 
   try {
     await ensureGuiBuilt();
-    await seedCategory(helperFilesRoot, 'mouse');
-    await seedCategory(helperFilesRoot, CATEGORY);
+    await seedCategory(categoryAuthorityRoot, 'mouse');
+    await seedCategory(categoryAuthorityRoot, CATEGORY);
 
     const port = await findFreePort();
     const baseUrl = `http://127.0.0.1:${port}`;
@@ -109,7 +109,7 @@ test('GUI llm route knobs persist across manual save/autosave reload and keep au
       cwd: tempRoot,
       env: {
         ...process.env,
-        HELPER_FILES_ROOT: helperFilesRoot,
+        HELPER_FILES_ROOT: categoryAuthorityRoot,
         LOCAL_OUTPUT_ROOT: localOutputRoot,
         LOCAL_INPUT_ROOT: path.join(tempRoot, 'fixtures'),
         OUTPUT_MODE: 'local',
@@ -192,35 +192,23 @@ test('GUI llm route knobs persist across manual save/autosave reload and keep au
       return row?.enable_websearch === autosaveWebsearchTarget;
     }, 25_000, 150, 'llm_autosave_persisted');
 
-    await page.getByRole('link', { name: 'Indexing Lab' }).click();
-    await page.waitForURL(/#\/indexing/, { timeout: 20_000 });
-    await page.getByRole('link', { name: 'Review LLM' }).click();
-    await page.waitForURL(/#\/llm-settings/, { timeout: 20_000 });
-    await selectCategory(page, CATEGORY);
-    await page.waitForSelector('text=LLM Settings Studio', { timeout: 20_000 });
-    await openRouteEditor(page, targetRouteKey, targetScope);
-
-    const enableWebSearchAfterReload = page.locator('label:has-text("Enable Web Search") input[type="checkbox"]').first();
-    assert.equal(
-      await enableWebSearchAfterReload.isChecked(),
-      autosaveWebsearchTarget,
-      'enable web search knob should persist after autosave route change',
-    );
-    assert.equal(
-      await autoSaveCheckbox.isChecked(),
-      true,
-      'llm autosave checkbox should remain enabled after reload',
-    );
-
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
     await selectCategory(page, CATEGORY);
     await page.waitForSelector('text=LLM Settings Studio', { timeout: 20_000 });
     await openRouteEditor(page, targetRouteKey, targetScope);
+    const autoSaveCheckboxAfterReload = page.locator('label:has-text("Auto-Save") input[type="checkbox"]').first();
+    const enableWebSearchAfterReload = page.locator('label:has-text("Enable Web Search") input[type="checkbox"]').first();
+    await autoSaveCheckboxAfterReload.waitFor({ state: 'visible', timeout: 20_000 });
     assert.equal(
-      await page.locator('label:has-text("Enable Web Search") input[type="checkbox"]').first().isChecked(),
+      await enableWebSearchAfterReload.isChecked(),
       autosaveWebsearchTarget,
       'enable web search knob should remain persisted after hard reload',
+    );
+    assert.equal(
+      await autoSaveCheckboxAfterReload.isChecked(),
+      true,
+      'llm autosave checkbox should remain enabled after hard reload',
     );
 
     const persistedUiSettings = await apiJson(baseUrl, 'GET', '/ui-settings');

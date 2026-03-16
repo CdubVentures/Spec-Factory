@@ -434,26 +434,26 @@ function buildFieldRulesForSeed() {
 async function createFullFixture(tempRoot) {
   const storage = makeStorage(tempRoot);
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files'),
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
     localOutputRoot: path.join(tempRoot, 'out'),
     specDbDir: path.join(tempRoot, '.specfactory_tmp'),
   };
 
-  await seedFieldRules(config.helperFilesRoot, CATEGORY);
-  await seedAllComponentDbs(config.helperFilesRoot, CATEGORY);
-  await seedKnownValues(config.helperFilesRoot, CATEGORY, {
+  await seedFieldRules(config.categoryAuthorityRoot, CATEGORY);
+  await seedAllComponentDbs(config.categoryAuthorityRoot, CATEGORY);
+  await seedKnownValues(config.categoryAuthorityRoot, CATEGORY, {
     connection: KNOWN_VALUE_ENUMS.connection.values,
     cable_type: KNOWN_VALUE_ENUMS.cable_type.values,
     coating: KNOWN_VALUE_ENUMS.coating.values,
   });
-  await seedWorkbookMap(config.helperFilesRoot, CATEGORY, {
+  await seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY, {
     cable_type: ['Braided'],
     coating: ['Soft-touch'],
   });
-  await seedAllProducts(storage, config.helperFilesRoot, CATEGORY);
+  await seedAllProducts(storage, config.categoryAuthorityRoot, CATEGORY);
 
   // component_review.json — pipeline candidates from products for shared-source testing
-  await seedComponentReviewSuggestions(config.helperFilesRoot, CATEGORY, [
+  await seedComponentReviewSuggestions(config.categoryAuthorityRoot, CATEGORY, [
     // PAW3950 shared by razer and pulsar
     { component_type: 'sensor', matched_component: 'PAW3950', product_id: 'mouse-razer-viper-v3-pro', status: 'pending_ai', raw_query: 'PAW3950', match_type: 'exact', combined_score: 0.95, product_attributes: { dpi_max: '35000', sensor_brand: 'PixArt' }, created_at: '2026-02-15T10:00:00.000Z' },
     { component_type: 'sensor', matched_component: 'PAW3950', product_id: 'mouse-pulsar-x2-v3', status: 'pending_ai', raw_query: 'PAW3950', match_type: 'exact', combined_score: 0.92, product_attributes: { dpi_max: '26000', sensor_brand: 'PixArt' }, created_at: '2026-02-15T11:00:00.000Z' },
@@ -865,7 +865,7 @@ test('COMP-02: Override sets source=user, overridden=true', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-eco-'));
   try {
     const { config } = await createFullFixture(tempRoot);
-    await seedComponentOverride(config.helperFilesRoot, CATEGORY, 'sensor', 'PAW3950', {
+    await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'sensor', 'PAW3950', {
       properties: { dpi_max: '40000' },
     });
     const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor' });
@@ -896,7 +896,7 @@ test('COMP-04: Name override tracked correctly', async () => {
   try {
     const { config } = await createFullFixture(tempRoot);
     const nameTs = '2026-02-15T14:00:00.000Z';
-    await seedComponentOverride(config.helperFilesRoot, CATEGORY, 'sensor', 'PMW3389', {
+    await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'sensor', 'PMW3389', {
       identity: { name: 'PAW-3389' },
       timestamps: { __name: nameTs },
       updated_at: nameTs,
@@ -914,7 +914,7 @@ test('COMP-05: Maker override tracked correctly', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-eco-'));
   try {
     const { config } = await createFullFixture(tempRoot);
-    await seedComponentOverride(config.helperFilesRoot, CATEGORY, 'switch', 'TTC Gold', {
+    await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'switch', 'TTC Gold', {
       identity: { maker: 'TTC Electronics' },
     });
     const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'switch' });
@@ -929,7 +929,7 @@ test('COMP-06: Aliases override sets aliases_overridden=true', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-eco-'));
   try {
     const { config } = await createFullFixture(tempRoot);
-    await seedComponentOverride(config.helperFilesRoot, CATEGORY, 'encoder', 'TTC Gold Encoder', {
+    await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'encoder', 'TTC Gold Encoder', {
       identity: { aliases: ['TTC Encoder', 'TTC Gold Scroll Encoder'] },
     });
     const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'encoder' });
@@ -956,7 +956,7 @@ test('COMP-08: Multiple items — override only affects target', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-eco-'));
   try {
     const { config } = await createFullFixture(tempRoot);
-    await seedComponentOverride(config.helperFilesRoot, CATEGORY, 'switch', 'Kailh GM 8.0', {
+    await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'switch', 'Kailh GM 8.0', {
       properties: { actuation_force: '50' },
     });
     const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'switch' });
@@ -1084,7 +1084,7 @@ test('ENUM-02: Pipeline suggestion gets source=pipeline, needs_review=true', asy
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-eco-'));
   try {
     const { config } = await createFullFixture(tempRoot);
-    await seedEnumSuggestions(config.helperFilesRoot, CATEGORY, {
+    await seedEnumSuggestions(config.categoryAuthorityRoot, CATEGORY, {
       fields: { connection: ['USB-A'] },
     });
     const payload = await buildEnumPayloadFromSpecDb(config);
@@ -1110,7 +1110,7 @@ test('ENUM-03: User-added fresh value gets source=manual', async () => {
     // So Braided won't appear. That's correct for enum review (only known + suggested values shown)
 
     // Test manual source: add 'Braided' to known_values too
-    await seedKnownValues(config.helperFilesRoot, CATEGORY, {
+    await seedKnownValues(config.categoryAuthorityRoot, CATEGORY, {
       connection: KNOWN_VALUE_ENUMS.connection.values,
       cable_type: [...KNOWN_VALUE_ENUMS.cable_type.values, 'Braided'],
       coating: KNOWN_VALUE_ENUMS.coating.values,
@@ -1128,7 +1128,7 @@ test('ENUM-04: Pipeline suggestion already in field-studio source is not duplica
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-eco-'));
   try {
     const { config } = await createFullFixture(tempRoot);
-    await seedEnumSuggestions(config.helperFilesRoot, CATEGORY, {
+    await seedEnumSuggestions(config.categoryAuthorityRoot, CATEGORY, {
       fields: { connection: ['Wired', 'USB-A'] }, // Wired already in field-studio source
     });
     const payload = await buildEnumPayloadFromSpecDb(config);
@@ -1143,7 +1143,7 @@ test('ENUM-05: Metrics correctly count flags', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-eco-'));
   try {
     const { config } = await createFullFixture(tempRoot);
-    await seedEnumSuggestions(config.helperFilesRoot, CATEGORY, {
+    await seedEnumSuggestions(config.categoryAuthorityRoot, CATEGORY, {
       fields: { connection: ['USB-A', 'Thunderbolt'] },
     });
     const payload = await buildEnumPayloadFromSpecDb(config);
@@ -1157,7 +1157,7 @@ test('ENUM-06: Multiple fields independently tracked', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-eco-'));
   try {
     const { config } = await createFullFixture(tempRoot);
-    await seedEnumSuggestions(config.helperFilesRoot, CATEGORY, {
+    await seedEnumSuggestions(config.categoryAuthorityRoot, CATEGORY, {
       fields: { cable_type: ['Braided'] },
     });
     const payload = await buildEnumPayloadFromSpecDb(config);
@@ -1180,7 +1180,7 @@ test('ENUM-07: Curation format suggestions with pending/dismissed status', async
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-eco-'));
   try {
     const { config } = await createFullFixture(tempRoot);
-    await seedEnumSuggestions(config.helperFilesRoot, CATEGORY, {
+    await seedEnumSuggestions(config.categoryAuthorityRoot, CATEGORY, {
       suggestions: [
         { field_key: 'cable_type', value: 'Braided', status: 'pending' },
         { field_key: 'cable_type', value: 'Coiled', status: 'dismissed' },
@@ -1200,7 +1200,7 @@ test('ENUM-08: Case-insensitive deduplication', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-eco-'));
   try {
     const { config } = await createFullFixture(tempRoot);
-    await seedEnumSuggestions(config.helperFilesRoot, CATEGORY, {
+    await seedEnumSuggestions(config.categoryAuthorityRoot, CATEGORY, {
       fields: { cable_type: ['usb-c', 'Braided'] }, // usb-c matches USB-C in field-studio source
     });
     const payload = await buildEnumPayloadFromSpecDb(config);
@@ -1215,12 +1215,12 @@ test('ENUM-09: User-accepted pipeline value retains source=pipeline', async () =
   try {
     const { config } = await createFullFixture(tempRoot);
     // 'Braided' in known_values + pipeline suggestions + manual_enum_values → source=pipeline
-    await seedKnownValues(config.helperFilesRoot, CATEGORY, {
+    await seedKnownValues(config.categoryAuthorityRoot, CATEGORY, {
       connection: KNOWN_VALUE_ENUMS.connection.values,
       cable_type: [...KNOWN_VALUE_ENUMS.cable_type.values, 'Braided'],
       coating: KNOWN_VALUE_ENUMS.coating.values,
     });
-    await seedEnumSuggestions(config.helperFilesRoot, CATEGORY, {
+    await seedEnumSuggestions(config.categoryAuthorityRoot, CATEGORY, {
       suggestions: [{ field_key: 'cable_type', value: 'Braided', status: 'accepted' }],
     });
     // Braided is already in field_studio_map manual_enum_values from createFullFixture
@@ -1240,12 +1240,12 @@ test('ENUM-10: Enum manual value includes source_timestamp', async () => {
     const { config } = await createFullFixture(tempRoot);
     const ts = '2026-02-15T15:00:00.000Z';
     // Override field_studio_map with timestamps
-    await seedWorkbookMap(config.helperFilesRoot, CATEGORY,
+    await seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY,
       { cable_type: ['Braided'], coating: ['Soft-touch'] },
       { 'cable_type::braided': ts },
     );
     // Need Braided in known_values too
-    await seedKnownValues(config.helperFilesRoot, CATEGORY, {
+    await seedKnownValues(config.categoryAuthorityRoot, CATEGORY, {
       connection: KNOWN_VALUE_ENUMS.connection.values,
       cable_type: [...KNOWN_VALUE_ENUMS.cable_type.values, 'Braided'],
       coating: KNOWN_VALUE_ENUMS.coating.values,
@@ -1300,7 +1300,7 @@ test('TS-04: Component property override includes source_timestamp', async () =>
   try {
     const { config } = await createFullFixture(tempRoot);
     const propTs = '2026-02-15T16:00:00.000Z';
-    await seedComponentOverride(config.helperFilesRoot, CATEGORY, 'sensor', 'PAW3950', {
+    await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'sensor', 'PAW3950', {
       properties: { dpi_max: '40000' },
       timestamps: { dpi_max: propTs },
       updated_at: propTs,
@@ -1319,7 +1319,7 @@ test('TS-05: Component name override includes source_timestamp', async () => {
   try {
     const { config } = await createFullFixture(tempRoot);
     const nameTs = '2026-02-15T17:00:00.000Z';
-    await seedComponentOverride(config.helperFilesRoot, CATEGORY, 'sensor', 'PMW3389', {
+    await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'sensor', 'PMW3389', {
       identity: { name: 'PAW-3389' },
       timestamps: { __name: nameTs },
       updated_at: nameTs,
@@ -1336,7 +1336,7 @@ test('TS-06: Component override without per-property timestamp falls back to upd
   try {
     const { config } = await createFullFixture(tempRoot);
     const fileTs = '2026-02-15T18:00:00.000Z';
-    await seedComponentOverride(config.helperFilesRoot, CATEGORY, 'switch', 'Razer Optical Gen-3', {
+    await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'switch', 'Razer Optical Gen-3', {
       properties: { actuation_force: '42' },
       updated_at: fileTs,
     });
@@ -1353,7 +1353,7 @@ test('TS-07: Multiple component properties each have independent timestamps', as
     const { config } = await createFullFixture(tempRoot);
     const ts1 = '2026-02-15T19:00:00.000Z';
     const ts2 = '2026-02-15T19:05:00.000Z';
-    await seedComponentOverride(config.helperFilesRoot, CATEGORY, 'sensor', 'PMW3395', {
+    await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'sensor', 'PMW3395', {
       properties: { dpi_max: '30000', ips: '700' },
       timestamps: { dpi_max: ts1, ips: ts2 },
       updated_at: ts2,
@@ -1371,7 +1371,7 @@ test('TS-08: Component links override includes source_timestamp', async () => {
   try {
     const { config } = await createFullFixture(tempRoot);
     const linksTs = '2026-02-15T20:00:00.000Z';
-    await seedComponentOverride(config.helperFilesRoot, CATEGORY, 'sensor', 'PAW3950', {
+    await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'sensor', 'PAW3950', {
       identity: { links: ['https://new-spec.com/paw3950'] },
       timestamps: { __links: linksTs },
       updated_at: linksTs,
@@ -1389,7 +1389,7 @@ test('TS-09: Pipeline enum suggestion has no source_timestamp', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-ts-'));
   try {
     const { config } = await createFullFixture(tempRoot);
-    await seedEnumSuggestions(config.helperFilesRoot, CATEGORY, { fields: { cable_type: ['Braided'] } });
+    await seedEnumSuggestions(config.categoryAuthorityRoot, CATEGORY, { fields: { cable_type: ['Braided'] } });
     const payload = await buildEnumPayloadFromSpecDb(config);
     const field = payload.fields.find((f) => f.field === 'cable_type');
     const braided = field.values.find((v) => v.value === 'Braided');
@@ -1406,12 +1406,12 @@ test('TS-10: Multiple enum fields have independent timestamps', async () => {
     const ts1 = '2026-02-15T21:00:00.000Z';
     const ts2 = '2026-02-15T21:30:00.000Z';
     // Need to add values to known_values and set timestamps
-    await seedKnownValues(config.helperFilesRoot, CATEGORY, {
+    await seedKnownValues(config.categoryAuthorityRoot, CATEGORY, {
       connection: [...KNOWN_VALUE_ENUMS.connection.values, 'USB-A'],
       cable_type: [...KNOWN_VALUE_ENUMS.cable_type.values, 'Braided'],
       coating: KNOWN_VALUE_ENUMS.coating.values,
     });
-    await seedWorkbookMap(config.helperFilesRoot, CATEGORY,
+    await seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY,
       { connection: ['USB-A'], cable_type: ['Braided'] },
       { 'connection::usb-a': ts1, 'cable_type::braided': ts2 },
     );

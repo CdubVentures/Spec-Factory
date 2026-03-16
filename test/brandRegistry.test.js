@@ -13,11 +13,11 @@ import {
   findBrandByAlias,
   seedBrandsFromActiveFiltering,
   seedBrandsFromCatalog
-} from '../src/catalog/brandRegistry.js';
+} from '../src/features/catalog/identity/brandRegistry.js';
 
 async function tmpConfig() {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'brand-reg-'));
-  return { helperFilesRoot: dir, _tmpDir: dir };
+  return { categoryAuthorityRoot: dir, _tmpDir: dir };
 }
 
 async function cleanup(config) {
@@ -40,7 +40,7 @@ test('loadBrandRegistry: returns empty registry when file does not exist', async
 test('loadBrandRegistry: reads existing registry', async () => {
   const config = await tmpConfig();
   try {
-    const globalDir = path.join(config.helperFilesRoot, '_global');
+    const globalDir = path.join(config.categoryAuthorityRoot, '_global');
     await fs.mkdir(globalDir, { recursive: true });
     await fs.writeFile(path.join(globalDir, 'brand_registry.json'), JSON.stringify({
       _version: 1,
@@ -186,7 +186,7 @@ test('removeBrand: warns when products reference the brand', async () => {
   const config = await tmpConfig();
   try {
     await addBrand({ config, name: 'Razer', categories: ['mouse'] });
-    const cpDir = path.join(config.helperFilesRoot, 'mouse', '_control_plane');
+    const cpDir = path.join(config.categoryAuthorityRoot, 'mouse', '_control_plane');
     await fs.mkdir(cpDir, { recursive: true });
     await fs.writeFile(path.join(cpDir, 'product_catalog.json'), JSON.stringify({
       _version: 1,
@@ -277,7 +277,7 @@ test('findBrandByAlias: returns null for unknown brand', async () => {
 // Note: seedBrandsFromCatalog reads app-native catalog/override sources.
 // Without those files, it gracefully returns empty results.
 
-test('seedBrandsFromCatalog: handles empty helper_files gracefully', async () => {
+test('seedBrandsFromCatalog: handles empty category_authority gracefully', async () => {
   const config = await tmpConfig();
   try {
     const result = await seedBrandsFromCatalog({ config });
@@ -292,8 +292,8 @@ test('seedBrandsFromCatalog: scans categories without catalogs gracefully', asyn
   const config = await tmpConfig();
   try {
     // Create category dirs without catalog sources
-    const mouseDir = path.join(config.helperFilesRoot, 'mouse');
-    const kbDir = path.join(config.helperFilesRoot, 'keyboard');
+    const mouseDir = path.join(config.categoryAuthorityRoot, 'mouse');
+    const kbDir = path.join(config.categoryAuthorityRoot, 'keyboard');
     await fs.mkdir(path.join(mouseDir, '_control_plane'), { recursive: true });
     await fs.mkdir(path.join(kbDir, '_control_plane'), { recursive: true });
 
@@ -309,8 +309,8 @@ test('seedBrandsFromCatalog: scans categories without catalogs gracefully', asyn
 test('seedBrandsFromCatalog: single category mode only scans that category', async () => {
   const config = await tmpConfig();
   try {
-    const mouseDir = path.join(config.helperFilesRoot, 'mouse');
-    const kbDir = path.join(config.helperFilesRoot, 'keyboard');
+    const mouseDir = path.join(config.categoryAuthorityRoot, 'mouse');
+    const kbDir = path.join(config.categoryAuthorityRoot, 'keyboard');
     await fs.mkdir(path.join(mouseDir, '_control_plane'), { recursive: true });
     await fs.mkdir(path.join(kbDir, '_control_plane'), { recursive: true });
 
@@ -325,8 +325,8 @@ test('seedBrandsFromCatalog: single category mode only scans that category', asy
 test('seedBrandsFromCatalog: category=all scans all categories', async () => {
   const config = await tmpConfig();
   try {
-    const mouseDir = path.join(config.helperFilesRoot, 'mouse');
-    const kbDir = path.join(config.helperFilesRoot, 'keyboard');
+    const mouseDir = path.join(config.categoryAuthorityRoot, 'mouse');
+    const kbDir = path.join(config.categoryAuthorityRoot, 'keyboard');
     await fs.mkdir(path.join(mouseDir, '_control_plane'), { recursive: true });
     await fs.mkdir(path.join(kbDir, '_control_plane'), { recursive: true });
 
@@ -340,20 +340,24 @@ test('seedBrandsFromCatalog: category=all scans all categories', async () => {
 
 // --- seedBrandsFromActiveFiltering ---
 
-test('seedBrandsFromActiveFiltering: scans activeFiltering across categories', async () => {
+test('seedBrandsFromActiveFiltering: scans product catalogs across categories', async () => {
   const config = await tmpConfig();
   try {
-    const mouseDir = path.join(config.helperFilesRoot, 'mouse');
-    const kbDir = path.join(config.helperFilesRoot, 'keyboard');
-    await fs.mkdir(mouseDir, { recursive: true });
-    await fs.mkdir(kbDir, { recursive: true });
-    await fs.writeFile(path.join(mouseDir, 'activeFiltering.json'), JSON.stringify([
-      { brand: 'Logitech', model: 'G Pro X Superlight 2', variant: '' },
-      { brand: 'Razer', model: 'Viper V3 Pro', variant: '' }
-    ], null, 2), 'utf8');
-    await fs.writeFile(path.join(kbDir, 'activeFiltering.json'), JSON.stringify([
-      { brand: 'Logitech', model: 'G915', variant: '' }
-    ], null, 2), 'utf8');
+    const mouseCp = path.join(config.categoryAuthorityRoot, 'mouse', '_control_plane');
+    const kbCp = path.join(config.categoryAuthorityRoot, 'keyboard', '_control_plane');
+    await fs.mkdir(mouseCp, { recursive: true });
+    await fs.mkdir(kbCp, { recursive: true });
+    await fs.writeFile(path.join(mouseCp, 'product_catalog.json'), JSON.stringify({
+      products: {
+        'mouse-logitech-g-pro-x-superlight-2': { brand: 'Logitech', model: 'G Pro X Superlight 2', variant: '' },
+        'mouse-razer-viper-v3-pro': { brand: 'Razer', model: 'Viper V3 Pro', variant: '' }
+      }
+    }, null, 2), 'utf8');
+    await fs.writeFile(path.join(kbCp, 'product_catalog.json'), JSON.stringify({
+      products: {
+        'keyboard-logitech-g915': { brand: 'Logitech', model: 'G915', variant: '' }
+      }
+    }, null, 2), 'utf8');
 
     const result = await seedBrandsFromActiveFiltering({ config, category: 'all' });
     assert.equal(result.ok, true);
@@ -370,16 +374,20 @@ test('seedBrandsFromActiveFiltering: scans activeFiltering across categories', a
 test('seedBrandsFromActiveFiltering: single category mode only scans target category', async () => {
   const config = await tmpConfig();
   try {
-    const mouseDir = path.join(config.helperFilesRoot, 'mouse');
-    const kbDir = path.join(config.helperFilesRoot, 'keyboard');
-    await fs.mkdir(mouseDir, { recursive: true });
-    await fs.mkdir(kbDir, { recursive: true });
-    await fs.writeFile(path.join(mouseDir, 'activeFiltering.json'), JSON.stringify([
-      { brand: 'Razer', model: 'Viper V3 Pro', variant: '' }
-    ], null, 2), 'utf8');
-    await fs.writeFile(path.join(kbDir, 'activeFiltering.json'), JSON.stringify([
-      { brand: 'Wooting', model: '80HE', variant: '' }
-    ], null, 2), 'utf8');
+    const mouseCp = path.join(config.categoryAuthorityRoot, 'mouse', '_control_plane');
+    const kbCp = path.join(config.categoryAuthorityRoot, 'keyboard', '_control_plane');
+    await fs.mkdir(mouseCp, { recursive: true });
+    await fs.mkdir(kbCp, { recursive: true });
+    await fs.writeFile(path.join(mouseCp, 'product_catalog.json'), JSON.stringify({
+      products: {
+        'mouse-razer-viper-v3-pro': { brand: 'Razer', model: 'Viper V3 Pro', variant: '' }
+      }
+    }, null, 2), 'utf8');
+    await fs.writeFile(path.join(kbCp, 'product_catalog.json'), JSON.stringify({
+      products: {
+        'keyboard-wooting-80he': { brand: 'Wooting', model: '80HE', variant: '' }
+      }
+    }, null, 2), 'utf8');
 
     const result = await seedBrandsFromActiveFiltering({ config, category: 'mouse' });
     assert.equal(result.ok, true);

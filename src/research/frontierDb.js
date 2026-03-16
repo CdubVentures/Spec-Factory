@@ -142,6 +142,18 @@ export class FrontierDb {
     };
   }
 
+  getQueryRecord({ productId, query } = {}) {
+    const { row } = this._queryRow(productId, query);
+    if (!row) {
+      return null;
+    }
+    return {
+      ...row,
+      fields: ensureArray(row.fields),
+      results: ensureArray(row.results)
+    };
+  }
+
   shouldSkipQuery({ productId, query, force = false, now = nowMs() } = {}) {
     if (force) {
       return false;

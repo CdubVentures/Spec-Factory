@@ -6,7 +6,7 @@ import {
   llmRoutingSnapshot,
   resolveLlmFallbackRoute,
   resolveLlmRoute
-} from '../src/llm/routing.js';
+} from '../src/core/llm/client/routing.js';
 
 test('resolveLlmRoute selects per-role provider/base/model with reason mapping', () => {
   const config = {
@@ -117,4 +117,27 @@ test('model override switches route provider and credentials by model family', (
   assert.equal(deepseekRoute.baseUrl, 'https://api.deepseek.com');
   assert.equal(deepseekRoute.apiKey, 'ds-key');
   assert.equal(deepseekRoute.model, 'deepseek-chat');
+});
+
+test('model override does not switch provider when role model family pin is enabled', () => {
+  const config = {
+    llmProvider: 'gemini',
+    llmApiKey: 'gem-key',
+    llmBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    llmForceRoleModelProvider: true,
+    llmModelExtract: 'gemini-2.5-flash-lite',
+    llmExtractProvider: 'gemini',
+    llmExtractApiKey: 'gem-key',
+    llmExtractBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai'
+  };
+
+  const route = resolveLlmRoute(config, {
+    role: 'extract',
+    modelOverride: 'gpt-5.1-medium'
+  });
+
+  assert.equal(route.provider, 'gemini');
+  assert.equal(route.baseUrl, 'https://generativelanguage.googleapis.com/v1beta/openai');
+  assert.equal(route.apiKey, 'gem-key');
+  assert.equal(route.model, 'gemini-2.5-flash-lite');
 });

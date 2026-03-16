@@ -4,17 +4,24 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 
 const SCHEMA_FILES = {
-  source_packet: '12-source-indexing-extraction-schema.v1.json',
-  item_packet: '13-item-indexing-extraction-schema.v1.json',
-  run_meta_packet: '14-run-meta-schema.v1.json'
+  source_packet: 'source-indexing-extraction-schema.v1.json',
+  item_packet: 'item-indexing-extraction-schema.v1.json',
+  run_meta_packet: 'run-meta-schema.v1.json'
 };
 
 const validatorCache = new Map();
 
 function normalizeSchemaRoot(schemaRoot = '') {
   const token = String(schemaRoot || '').trim();
-  if (token) return path.resolve(token);
-  return path.resolve(process.cwd(), 'implementation', 'ai-indexing-plans', 'parsing-managament');
+  if (!token) {
+    return path.resolve(process.cwd(), 'docs', 'implementation', 'ai-indexing-plans', 'schema');
+  }
+
+  const resolved = path.resolve(token);
+  if (path.basename(resolved).toLowerCase() === 'parsing-managament') {
+    return path.resolve(path.dirname(resolved), 'schema');
+  }
+  return resolved;
 }
 
 function schemaErrorToText(error = {}) {

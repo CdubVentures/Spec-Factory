@@ -13,7 +13,7 @@ async function writeJson(filePath, value) {
 
 async function createEngineFixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-gate-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
 
   await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -130,7 +130,7 @@ test('applyRuntimeFieldRules normalizes values via engine contracts', async () =
   const fixture = await createEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = applyRuntimeFieldRules({
       engine,
@@ -156,7 +156,7 @@ test('applyRuntimeFieldRules rejects closed enum values outside known set', asyn
   const fixture = await createEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = applyRuntimeFieldRules({
       engine,
@@ -181,7 +181,7 @@ test('applyRuntimeFieldRules enforces cross-validation errors', async () => {
   const fixture = await createEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = applyRuntimeFieldRules({
       engine,
@@ -206,7 +206,7 @@ test('applyRuntimeFieldRules can enforce strict evidence audit', async () => {
   const fixture = await createEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = applyRuntimeFieldRules({
       engine,
@@ -241,7 +241,7 @@ test('applyRuntimeFieldRules reports open-enum curation suggestions', async () =
   const fixture = await createEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = applyRuntimeFieldRules({
       engine,
@@ -283,7 +283,7 @@ test('applyRuntimeFieldRules reports open-enum curation suggestions', async () =
  */
 async function createEvidenceFixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'runtimegate-evidence-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
 
   await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -384,7 +384,7 @@ async function withEvidenceEngine(fn) {
   const fixture = await createEvidenceFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     await fn(engine);
   } finally {
@@ -678,7 +678,7 @@ test('edge: field with no rule definition is not evidence-checked in per-field m
   // The key verification: a field with no rule should NOT get evidence_required
   // treatment — its evidence_required should be treated as falsy/undefined.
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'runtimegate-norule-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
 
   await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -708,7 +708,7 @@ test('edge: field with no rule definition is not evidence-checked in per-field m
 
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
 
     // Verify the engine truly has no rule for 'extra_field'
@@ -734,7 +734,7 @@ test('edge: field where evidence_required is undefined is treated as false', asy
   const fixture = await createEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
 
     const result = applyRuntimeFieldRules({
@@ -820,7 +820,7 @@ test('no-op: applyRuntimeFieldRules returns early when engine is null', () => {
  */
 async function createMinRefsFixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'runtimegate-minrefs-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
 
   await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -938,7 +938,7 @@ async function withMinRefsEngine(fn) {
   const fixture = await createMinRefsFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     await fn(engine);
   } finally {

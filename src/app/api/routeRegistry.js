@@ -58,18 +58,18 @@ export function createGuiApiRouteRegistry({
   assertRegistrar('registerSourceStrategyRoutes', registerSourceStrategyRoutes);
 
   const handlersByKey = {
-    infra: registerInfraRoutes(routeCtx),
-    config: registerConfigRoutes(routeCtx),
-    indexlab: registerIndexlabRoutes(routeCtx),
-    runtimeOps: registerRuntimeOpsRoutes(routeCtx),
-    catalog: registerCatalogRoutes(routeCtx),
-    brand: registerBrandRoutes(routeCtx),
-    studio: registerStudioRoutes(routeCtx),
-    dataAuthority: registerDataAuthorityRoutes(routeCtx),
-    queueBillingLearning: registerQueueBillingLearningRoutes(routeCtx),
-    review: registerReviewRoutes(routeCtx),
-    testMode: registerTestModeRoutes(routeCtx),
-    sourceStrategy: registerSourceStrategyRoutes(routeCtx),
+    infra: registerInfraRoutes(routeCtx.infraRouteContext),
+    config: registerConfigRoutes(routeCtx.configRouteContext),
+    indexlab: registerIndexlabRoutes(routeCtx.indexlabRouteContext),
+    runtimeOps: registerRuntimeOpsRoutes(routeCtx.runtimeOpsRouteContext),
+    catalog: registerCatalogRoutes(routeCtx.catalogRouteContext),
+    brand: registerBrandRoutes(routeCtx.brandRouteContext),
+    studio: registerStudioRoutes(routeCtx.studioRouteContext),
+    dataAuthority: registerDataAuthorityRoutes(routeCtx.dataAuthorityRouteContext),
+    queueBillingLearning: registerQueueBillingLearningRoutes(routeCtx.queueBillingLearningRouteContext),
+    review: registerReviewRoutes(routeCtx.reviewRouteContext),
+    testMode: registerTestModeRoutes(routeCtx.testModeRouteContext),
+    sourceStrategy: registerSourceStrategyRoutes(routeCtx.sourceStrategyRouteContext),
   };
 
   for (const routeKey of GUI_API_ROUTE_ORDER) {

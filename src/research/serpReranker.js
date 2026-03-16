@@ -1,4 +1,4 @@
-import { callLlmWithRouting, hasLlmRouteApiKey } from '../llm/routing.js';
+import { callLlmWithRouting, hasLlmRouteApiKey } from '../core/llm/client/routing.js';
 
 function normalizeHost(value) {
   return String(value || '').toLowerCase().replace(/^www\./, '');
@@ -52,6 +52,12 @@ const SERP_RERANKER_WEIGHT_DEFAULTS = Object.freeze({
   multiModelHintPenalty: -1.5,
   tier1Bonus: 1.5,
   tier2Bonus: 0.5,
+  hostHealthDownrankPenalty: -0.4,
+  hostHealthExcludePenalty: -2.0,
+  operatorRiskPenalty: -0.5,
+  fieldAffinityBonus: 0.5,
+  diversityPenaltyPerDupe: -0.3,
+  needsetCoverageBonus: 0.2,
 });
 
 function resolveSerpRerankerWeights(config = {}) {
@@ -81,7 +87,7 @@ function resolveSerpRerankerWeights(config = {}) {
   };
 }
 
-function deterministicScoreWithBreakdown(row, { identity = {}, frontier = null, weights = SERP_RERANKER_WEIGHT_DEFAULTS } = {}) {
+export function deterministicScoreWithBreakdown(row, { identity = {}, frontier = null, weights = SERP_RERANKER_WEIGHT_DEFAULTS, hostPolicyMap = null, effectiveHostPlan = null, missingFields = null } = {}) {
   const url = normalizeText(row?.url);
   const text = `${row?.title || ''} ${row?.snippet || ''} ${url}`.toLowerCase();
   const brand = String(identity?.brand || '').toLowerCase();
@@ -119,7 +125,45 @@ function deterministicScoreWithBreakdown(row, { identity = {}, frontier = null, 
 
   const tierBonus = row?.tier === 1 ? weights.tier1Bonus : (row?.tier === 2 ? weights.tier2Bonus : 0);
 
-  const total = baseScore + frontierPenalty + identityBonus + variantGuardPenalty + multiModelPenalty + tierBonus;
+  // v2 enrichment: host health, operator risk, field affinity, diversity, needset coverage
+  const hasPolicy = hostPolicyMap && typeof hostPolicyMap === 'object';
+  const policy = hasPolicy ? hostPolicyMap[host] : null;
+  const tierSource = hasPolicy ? 'host_policy' : 'legacy';
+
+  let hostHealthPenalty = 0;
+  if (effectiveHostPlan && effectiveHostPlan.host_groups) {
+    const group = effectiveHostPlan.host_groups.find(g => g.host === host);
+    if (group) {
+      if (group.health_action === 'downranked') hostHealthPenalty = weights.hostHealthDownrankPenalty || 0;
+      else if (group.health_action === 'excluded') hostHealthPenalty = weights.hostHealthExcludePenalty || 0;
+    }
+  }
+
+  let operatorRiskPenalty = 0;
+  if (hasPolicy && row?.used_site_operator && policy?.operator_support?.site === false) {
+    operatorRiskPenalty = weights.operatorRiskPenalty || 0;
+  }
+
+  let fieldAffinityBonus = 0;
+  if (hasPolicy && policy?.field_coverage?.high && missingFields) {
+    const highFields = policy.field_coverage.high;
+    const overlap = toArray(missingFields).filter(f => highFields.includes(f));
+    if (overlap.length > 0) fieldAffinityBonus = weights.fieldAffinityBonus || 0;
+  }
+
+  let needsetCoverageBonus = 0;
+  if (hasPolicy && policy?.doc_kinds && missingFields) {
+    const docKinds = toArray(policy.doc_kinds);
+    if (docKinds.length > 0 && toArray(missingFields).length > 0) {
+      needsetCoverageBonus = weights.needsetCoverageBonus || 0;
+    }
+  }
+
+  // diversity_penalty is 0 per-row; batch applies it in rerankSerpResults
+  const diversityPenalty = 0;
+
+  const total = baseScore + frontierPenalty + identityBonus + variantGuardPenalty + multiModelPenalty + tierBonus
+    + hostHealthPenalty + operatorRiskPenalty + fieldAffinityBonus + needsetCoverageBonus + diversityPenalty;
 
   return {
     score: total,
@@ -129,7 +173,13 @@ function deterministicScoreWithBreakdown(row, { identity = {}, frontier = null, 
       identity_bonus: identityBonus,
       variant_guard_penalty: variantGuardPenalty,
       multi_model_penalty: multiModelPenalty,
-      tier_bonus: tierBonus
+      tier_bonus: tierBonus,
+      host_health_penalty: hostHealthPenalty,
+      operator_risk_penalty: operatorRiskPenalty,
+      field_affinity_bonus: fieldAffinityBonus,
+      diversity_penalty: diversityPenalty,
+      needset_coverage_bonus: needsetCoverageBonus,
+      tier_source: tierSource,
     }
   };
 }
@@ -250,20 +300,42 @@ export async function rerankSerpResults({
         score: Number.parseFloat(String(row?.score || '0')) || 0
       });
     }
+    const hasExplicitLlmSelections = pickedByUrl.size > 0;
     const merged = deterministic
       .map((row) => {
         const picked = pickedByUrl.get(row.url) || null;
+        const keep = picked ? picked.keep : !hasExplicitLlmSelections;
         return {
           ...row,
-          keep: picked ? picked.keep : true,
+          keep,
+          decision: keep ? 'keep' : 'drop',
           rerank_score: picked ? picked.score : row.score_det,
-          rerank_reason: picked?.reason || 'llm_default_keep'
+          rerank_reason: picked?.reason || (hasExplicitLlmSelections ? 'llm_omitted_drop' : 'llm_default_keep')
         };
       })
       .filter((row) => row.keep)
       .sort((a, b) => b.rerank_score - a.rerank_score || a.rank - b.rank)
       .slice(0, Math.max(1, topK));
     if (!merged.length) {
+      if (pickedByUrl.size > 0) {
+        const explicitAllDropRows = deterministic.map((row) => {
+          const picked = pickedByUrl.get(row.url) || null;
+          const rerankReason = picked?.reason || (hasExplicitLlmSelections ? 'llm_omitted_drop' : 'llm_explicit_drop');
+          return {
+            ...row,
+            keep: false,
+            decision: 'drop',
+            rerank_score: picked ? picked.score : 0,
+            rerank_reason: rerankReason
+          };
+        });
+        const explicitAllDrop = [];
+        explicitAllDrop.explicitAllDrop = true;
+        explicitAllDrop.explicitAllDropCount = explicitAllDropRows.length;
+        explicitAllDrop.explicitAllDropRows = explicitAllDropRows;
+        explicitAllDrop.fallbackReason = 'llm_explicit_all_drop';
+        return explicitAllDrop;
+      }
       return deterministic.slice(0, Math.max(1, topK)).map((row) => ({
         ...row,
         keep: true,

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { scanOrphans, reconcileOrphans } from '../src/catalog/reconciler.js';
+import { scanOrphans, reconcileOrphans } from '../src/features/catalog/products/reconciler.js';
 
 /**
  * In-memory storage mock that mimics the storage interface.
@@ -167,15 +167,39 @@ test('scanOrphans: handles empty category gracefully', async () => {
   assert.equal(result.orphan_count, 0);
 });
 
-test('scanOrphans: uses canonical source when helperFilesRoot is provided', async () => {
+test('scanOrphans: uses canonical source when categoryAuthorityRoot is provided', async () => {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'reconciler-canonical-'));
-  const helperRoot = path.join(tmp, 'helper_files');
+  const helperRoot = path.join(tmp, 'category_authority');
   const categoryDir = path.join(helperRoot, 'mouse');
-  await fs.mkdir(categoryDir, { recursive: true });
-  await fs.writeFile(path.join(categoryDir, 'activeFiltering.json'), JSON.stringify([
-    { brand: 'Acer', model: 'Cestus 310', variant: '' },
-    { brand: 'Razer', model: 'Viper V3 Pro', variant: '' }
-  ], null, 2), 'utf8');
+  await fs.mkdir(path.join(categoryDir, '_control_plane'), { recursive: true });
+  await fs.writeFile(path.join(categoryDir, '_control_plane', 'product_catalog.json'), JSON.stringify({
+    _doc: 'Per-category product catalog. Managed by GUI.',
+    _version: 1,
+    products: {
+      'mouse-acer-cestus-310': {
+        id: 1,
+        identifier: 'acer-cestus-310',
+        brand: 'Acer',
+        model: 'Cestus 310',
+        variant: '',
+        status: 'active',
+        seed_urls: [],
+        added_at: '2026-03-09T00:00:00.000Z',
+        added_by: 'test'
+      },
+      'mouse-razer-viper-v3-pro': {
+        id: 2,
+        identifier: 'razer-viper-v3-pro',
+        brand: 'Razer',
+        model: 'Viper V3 Pro',
+        variant: '',
+        status: 'active',
+        seed_urls: [],
+        added_at: '2026-03-09T00:00:01.000Z',
+        added_by: 'test'
+      }
+    }
+  }, null, 2), 'utf8');
 
   const storage = createMockStorage({
     'specs/inputs/mouse/products/mouse-acer-cestus-310.json':
@@ -190,10 +214,10 @@ test('scanOrphans: uses canonical source when helperFilesRoot is provided', asyn
     const result = await scanOrphans({
       storage,
       category: 'mouse',
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
 
-    assert.equal(result.canonical_source, 'active_filtering');
+    assert.equal(result.canonical_source, 'product_catalog');
     assert.equal(result.canonical_count, 1);
     assert.equal(result.orphan_count, 1);
     assert.equal(result.untracked_count, 1);

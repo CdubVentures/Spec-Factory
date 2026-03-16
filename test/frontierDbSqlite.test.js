@@ -101,7 +101,7 @@ test('A.2 query dedupe: first query is NOT skipped', async () => {
   });
   await db.load();
   assert.equal(
-    db.shouldSkipQuery({ productId: 'p1', query: 'razer viper v3 pro weight' }),
+    db.shouldSkipQuery({ productId: 'p1', query: 'acme orbit x1 weight' }),
     false
   );
 });
@@ -116,13 +116,13 @@ test('A.2 query dedupe: repeated query for SAME product IS skipped during cooldo
   await db.load();
   db.recordQuery({
     productId: 'p1',
-    query: 'razer viper v3 pro weight',
+    query: 'acme orbit x1 weight',
     provider: 'searxng',
     fields: ['weight'],
     results: []
   });
   assert.equal(
-    db.shouldSkipQuery({ productId: 'p1', query: 'razer viper v3 pro weight' }),
+    db.shouldSkipQuery({ productId: 'p1', query: 'acme orbit x1 weight' }),
     true
   );
 });
@@ -137,13 +137,13 @@ test('A.2 query dedupe: same query for DIFFERENT product is NOT skipped', async 
   await db.load();
   db.recordQuery({
     productId: 'p1',
-    query: 'razer viper specs',
+    query: 'acme orbit specs',
     provider: 'searxng',
     fields: ['weight'],
     results: []
   });
   assert.equal(
-    db.shouldSkipQuery({ productId: 'p2', query: 'razer viper specs' }),
+    db.shouldSkipQuery({ productId: 'p2', query: 'acme orbit specs' }),
     false
   );
 });
@@ -158,15 +158,47 @@ test('A.2 query dedupe: case-insensitive query normalization', async () => {
   await db.load();
   db.recordQuery({
     productId: 'p1',
-    query: 'Razer Viper SPECS',
+    query: 'Acme Orbit SPECS',
     provider: 'searxng',
     fields: [],
     results: []
   });
   assert.equal(
-    db.shouldSkipQuery({ productId: 'p1', query: 'razer viper specs' }),
+    db.shouldSkipQuery({ productId: 'p1', query: 'acme orbit specs' }),
     true
   );
+});
+
+test('A.2 query cache: stored query row exposes cached results for same product/query', async () => {
+  const storage = createStorage();
+  const db = new FrontierDb({
+    storage,
+    key: FRONTIER_KEY,
+    config: { frontierQueryCooldownSeconds: 3600 }
+  });
+  await db.load();
+  db.recordQuery({
+    productId: 'p1',
+    query: 'Acme Orbit X1 specs',
+    provider: 'google',
+    fields: ['weight'],
+    results: [
+      {
+        rank: 1,
+        url: 'https://example.com/acme-orbit-x1',
+        title: 'Acme Orbit X1',
+        host: 'example.com',
+        snippet: 'Official product page'
+      }
+    ]
+  });
+  const row = db.getQueryRecord({
+    productId: 'p1',
+    query: 'acme orbit x1 specs'
+  });
+  assert.equal(Array.isArray(row?.results), true);
+  assert.equal(row?.results?.length, 1);
+  assert.equal(row?.results?.[0]?.url, 'https://example.com/acme-orbit-x1');
 });
 
 // =========================================================================
@@ -301,29 +333,29 @@ test('A.2 snapshot: returns aggregate stats for a product', async () => {
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
   await db.load();
   db.recordQuery({
-    productId: 'mouse-razer-viper',
-    query: 'razer viper v3 pro specs',
+    productId: 'mouse-acme-orbit-x1',
+    query: 'acme orbit x1 specs',
     provider: 'google',
     fields: ['weight', 'dpi'],
     results: [
-      { url: 'https://rtings.com/viper' },
-      { url: 'https://razer.com/viper' }
+      { url: 'https://reviews.example.com/orbit-x1' },
+      { url: 'https://example.com/acme-orbit-x1' }
     ]
   });
   db.recordFetch({
-    productId: 'mouse-razer-viper',
-    url: 'https://rtings.com/viper',
+    productId: 'mouse-acme-orbit-x1',
+    url: 'https://reviews.example.com/orbit-x1',
     status: 200,
     fieldsFound: ['weight', 'dpi']
   });
   db.recordFetch({
-    productId: 'mouse-razer-viper',
-    url: 'https://razer.com/viper',
+    productId: 'mouse-acme-orbit-x1',
+    url: 'https://example.com/acme-orbit-x1',
     status: 200,
     fieldsFound: ['sensor']
   });
 
-  const snapshot = db.snapshotForProduct('mouse-razer-viper');
+  const snapshot = db.snapshotForProduct('mouse-acme-orbit-x1');
   assert.equal(snapshot.query_count, 1);
   assert.equal(snapshot.url_count >= 2, true);
   assert.ok(snapshot.field_yield);

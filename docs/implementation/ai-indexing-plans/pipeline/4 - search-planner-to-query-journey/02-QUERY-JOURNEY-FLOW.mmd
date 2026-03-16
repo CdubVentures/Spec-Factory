@@ -1,0 +1,57 @@
+flowchart LR
+  A["searchProfileBase + llmQueries + uberSearchPlan + planningHints.extraQueries"] --> B
+
+  subgraph Q["PHASE 1: PRE-EXECUTION QUERY SELECTION"]
+    direction TB
+    B["5 initial streams<br/>base_template + targeted(queries)<br/>llm + uber + runtime_extra"]
+    C["dedupeQueryRows()<br/>merge duplicate sources, fields, and hints<br/>cap = dedupeQueriesCap"]
+    D["prioritizeQueryRows()<br/>site/doc/brand/model/field/hint scoring"]
+    E["rankedCappedQueries<br/>slice(0, max(queryLimit, 6))"]
+    F["enforceIdentityQueryGuard()<br/>legacy query rows"]
+    G["Guard hostPlanQueryRows later<br/>drop duplicates against legacy rows<br/>append up to max(2, min(8, queryLimit))"]
+    H["Write searchProfilePlanned<br/>status = planned<br/>selected_queries + query_guard"]
+    B --> C --> D --> E --> F --> G --> H
+  end
+
+  subgraph X["PHASE 2: QUERY EXECUTION"]
+    direction TB
+    X1["Optional internal-first branch<br/>frontier query cache or searchSourceCorpus()"]
+    X2["Internal search only suppresses external search<br/>when required coverage is being enforced<br/>and internalMinResults is met"]
+    X3["searchProviderAvailability()<br/>google/bing/dual readiness is SearXNG-backed"]
+    X4["runSearchProviders()<br/>SearXNG attempt plans by provider mode"]
+    X5["If zero internet results<br/>buildQueryPlanFallbackResults()<br/>provider = plan_fallback"]
+    X6["If no provider and no raw results<br/>buildPlanOnlyResults()<br/>provider = plan"]
+    X1 --> X2 --> X3 --> X4 --> X5
+    X3 --> X6
+  end
+
+  subgraph Y["PHASE 3: URL NORMALIZATION + ADMISSION"]
+    direction TB
+    Y1["dedupeSerpResults()<br/>then frontier canonicalization"]
+    Y2["classifyUrlCandidate()<br/>host, tier, role, doc_kind_guess<br/>identity_match_level, variant_guard_hit, multi_model_hint"]
+    Y3["Hard rejects before admission map<br/>non_https, denied_host, url_cooldown<br/>manufacturer_brand_mismatch, low_relevance"]
+    Y4["Deterministic domain safety rows<br/>blocked / safe / caution<br/>no classifyDomains() call"]
+    Y5["Later admission exclusion map<br/>forum_subdomain, forum_classification<br/>sibling_model_page, non-manufacturer multi_model_hint"]
+    Y1 --> Y2 --> Y3 --> Y4 --> Y5
+  end
+
+  subgraph Z["PHASE 4: RERANK + TRIAGE"]
+    direction TB
+    Z1["rerankSearchResults()<br/>deterministic URL scoring"]
+    Z2["Outer triage gate<br/>serpTriageEnabled<br/>quality threshold<br/>uberMode or llmEnabled + llmSerpRerankEnabled"]
+    Z3["rerankSerpResults()<br/>reason = uber_serp_reranker<br/>role = plan<br/>inner function still falls back to deterministic if LLM gate is closed"]
+    Z4["Deterministic threshold triage fallback<br/>score >= serpTriageMinScore<br/>cap = serpTriageMaxUrls"]
+    Z5["Discovered URLs<br/>min(discoveryCap, serpTriageMaxUrls) when triage applies"]
+    Z1 --> Z2
+    Z2 --> Z3 --> Z5
+    Z2 --> Z4 --> Z5
+  end
+
+  subgraph O["PHASE 5: OUTPUTS"]
+    direction TB
+    O1["Write searchProfileFinal<br/>status = executed<br/>query_stats + serp_explorer"]
+    O2["Write discovery payload<br/>candidate payload<br/>approved and candidate URL lists"]
+    O1 --> O2
+  end
+
+  Q --> X --> Y --> Z --> O

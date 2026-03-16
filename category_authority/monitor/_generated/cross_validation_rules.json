@@ -1,0 +1,425 @@
+{
+  "category": "monitor",
+  "generated_at": "2026-03-16T00:08:03.693Z",
+  "rules": [
+    {
+      "check": {
+        "max": 100,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "black_uniformity must stay within configured plausible range",
+      "rule_id": "black_uniformity_plausibility",
+      "trigger_field": "black_uniformity"
+    },
+    {
+      "check": {
+        "max": 5000,
+        "min": 200,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "brightness_hdr_peak must stay within configured plausible range",
+      "rule_id": "brightness_hdr_peak_plausibility",
+      "trigger_field": "brightness_hdr_peak"
+    },
+    {
+      "check": {
+        "max": 2000,
+        "min": 100,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "brightness_sdr must stay within configured plausible range",
+      "rule_id": "brightness_sdr_plausibility",
+      "trigger_field": "brightness_sdr"
+    },
+    {
+      "check": {
+        "max": 10,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "color_accuracy_delta_e must stay within configured plausible range",
+      "rule_id": "color_accuracy_delta_e_plausibility",
+      "trigger_field": "color_accuracy_delta_e"
+    },
+    {
+      "check": {
+        "max": 150,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "color_gamut_adobe_rgb must stay within configured plausible range",
+      "rule_id": "color_gamut_adobe_rgb_plausibility",
+      "trigger_field": "color_gamut_adobe_rgb"
+    },
+    {
+      "check": {
+        "max": 150,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "color_gamut_dci_p3 must stay within configured plausible range",
+      "rule_id": "color_gamut_dci_p3_plausibility",
+      "trigger_field": "color_gamut_dci_p3"
+    },
+    {
+      "check": {
+        "max": 200,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "color_gamut_srgb must stay within configured plausible range",
+      "rule_id": "color_gamut_srgb_plausibility",
+      "trigger_field": "color_gamut_srgb"
+    },
+    {
+      "check": {
+        "max": 600,
+        "min": 20,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "depth must stay within configured plausible range",
+      "rule_id": "depth_plausibility",
+      "trigger_field": "depth"
+    },
+    {
+      "check": {
+        "max": 5000,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "flicker_frequency must stay within configured plausible range",
+      "rule_id": "flicker_frequency_plausibility",
+      "trigger_field": "flicker_frequency"
+    },
+    {
+      "check": {
+        "max": 100,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "gray_uniformity_50 must stay within configured plausible range",
+      "rule_id": "gray_uniformity_50_plausibility",
+      "trigger_field": "gray_uniformity_50"
+    },
+    {
+      "check": {
+        "max": 1500,
+        "min": 250,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "height must stay within configured plausible range",
+      "rule_id": "height_plausibility",
+      "trigger_field": "height"
+    },
+    {
+      "check": {
+        "max": 1700,
+        "min": 250,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "height_with_stand must stay within configured plausible range",
+      "rule_id": "height_with_stand_plausibility",
+      "trigger_field": "height_with_stand"
+    },
+    {
+      "check": {
+        "max": 180,
+        "min": 10,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "horizontal_viewing_angle must stay within configured plausible range",
+      "rule_id": "horizontal_viewing_angle_plausibility",
+      "trigger_field": "horizontal_viewing_angle"
+    },
+    {
+      "check": {
+        "max": 100,
+        "min": 0.1,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "input_lag must stay within configured plausible range",
+      "rule_id": "input_lag_plausibility",
+      "trigger_field": "input_lag"
+    },
+    {
+      "check": {
+        "max": 100,
+        "min": 0.1,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "input_lag_120hz must stay within configured plausible range",
+      "rule_id": "input_lag_120hz_plausibility",
+      "trigger_field": "input_lag_120hz"
+    },
+    {
+      "check": {
+        "max": 200,
+        "min": 0.1,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "input_lag_60hz must stay within configured plausible range",
+      "rule_id": "input_lag_60hz_plausibility",
+      "trigger_field": "input_lag_60hz"
+    },
+    {
+      "check": {
+        "max": 100,
+        "min": 0.1,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "input_lag_max_refresh must stay within configured plausible range",
+      "rule_id": "input_lag_max_refresh_plausibility",
+      "trigger_field": "input_lag_max_refresh"
+    },
+    {
+      "check": {
+        "max": 5000,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "local_dimming_zones must stay within configured plausible range",
+      "rule_id": "local_dimming_zones_plausibility",
+      "trigger_field": "local_dimming_zones"
+    },
+    {
+      "check": {
+        "max": 1200,
+        "min": 60,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "max_refresh_rate_displayport must stay within configured plausible range",
+      "rule_id": "max_refresh_rate_displayport_plausibility",
+      "trigger_field": "max_refresh_rate_displayport"
+    },
+    {
+      "check": {
+        "max": 1200,
+        "min": 60,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "max_refresh_rate_hdmi must stay within configured plausible range",
+      "rule_id": "max_refresh_rate_hdmi_plausibility",
+      "trigger_field": "max_refresh_rate_hdmi"
+    },
+    {
+      "check": {
+        "max": 100,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "overshoot_120hz must stay within configured plausible range",
+      "rule_id": "overshoot_120hz_plausibility",
+      "trigger_field": "overshoot_120hz"
+    },
+    {
+      "check": {
+        "max": 100,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "overshoot_60hz must stay within configured plausible range",
+      "rule_id": "overshoot_60hz_plausibility",
+      "trigger_field": "overshoot_60hz"
+    },
+    {
+      "check": {
+        "max": 100,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "overshoot_max_refresh must stay within configured plausible range",
+      "rule_id": "overshoot_max_refresh_plausibility",
+      "trigger_field": "overshoot_max_refresh"
+    },
+    {
+      "check": {
+        "max": 350,
+        "min": 50,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "pixel_density must stay within configured plausible range",
+      "rule_id": "pixel_density_plausibility",
+      "trigger_field": "pixel_density"
+    },
+    {
+      "check": {
+        "max": 1000,
+        "min": 10,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "power_consumption_max must stay within configured plausible range",
+      "rule_id": "power_consumption_max_plausibility",
+      "trigger_field": "power_consumption_max"
+    },
+    {
+      "check": {
+        "max": 500,
+        "min": 5,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "power_consumption_typical must stay within configured plausible range",
+      "rule_id": "power_consumption_typical_plausibility",
+      "trigger_field": "power_consumption_typical"
+    },
+    {
+      "check": {
+        "max": 20,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "reflections must stay within configured plausible range",
+      "rule_id": "reflections_plausibility",
+      "trigger_field": "reflections"
+    },
+    {
+      "check": {
+        "max": 1200,
+        "min": 50,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "refresh_rate must stay within configured plausible range",
+      "rule_id": "refresh_rate_plausibility",
+      "trigger_field": "refresh_rate"
+    },
+    {
+      "check": {
+        "max": 20,
+        "min": 0.01,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "response_time_120hz must stay within configured plausible range",
+      "rule_id": "response_time_120hz_plausibility",
+      "trigger_field": "response_time_120hz"
+    },
+    {
+      "check": {
+        "max": 40,
+        "min": 0.01,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "response_time_60hz must stay within configured plausible range",
+      "rule_id": "response_time_60hz_plausibility",
+      "trigger_field": "response_time_60hz"
+    },
+    {
+      "check": {
+        "max": 20,
+        "min": 0.01,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "response_time_gtg must stay within configured plausible range",
+      "rule_id": "response_time_gtg_plausibility",
+      "trigger_field": "response_time_gtg"
+    },
+    {
+      "check": {
+        "max": 20,
+        "min": 0.01,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "response_time_mprt must stay within configured plausible range",
+      "rule_id": "response_time_mprt_plausibility",
+      "trigger_field": "response_time_mprt"
+    },
+    {
+      "check": {
+        "max": 80,
+        "min": 18,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "screen_size must stay within configured plausible range",
+      "rule_id": "screen_size_plausibility",
+      "trigger_field": "screen_size"
+    },
+    {
+      "check": {
+        "max": 240,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "usb_power_delivery_watts must stay within configured plausible range",
+      "rule_id": "usb_power_delivery_watts_plausibility",
+      "trigger_field": "usb_power_delivery_watts"
+    },
+    {
+      "check": {
+        "max": 180,
+        "min": 10,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "vertical_viewing_angle must stay within configured plausible range",
+      "rule_id": "vertical_viewing_angle_plausibility",
+      "trigger_field": "vertical_viewing_angle"
+    },
+    {
+      "check": {
+        "max": 70000,
+        "min": 1000,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "weight_with_stand must stay within configured plausible range",
+      "rule_id": "weight_with_stand_plausibility",
+      "trigger_field": "weight_with_stand"
+    },
+    {
+      "check": {
+        "max": 50000,
+        "min": 1000,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "weight_without_stand must stay within configured plausible range",
+      "rule_id": "weight_without_stand_plausibility",
+      "trigger_field": "weight_without_stand"
+    },
+    {
+      "check": {
+        "max": 2000,
+        "min": 300,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "width must stay within configured plausible range",
+      "rule_id": "width_plausibility",
+      "trigger_field": "width"
+    }
+  ],
+  "version": 1
+}

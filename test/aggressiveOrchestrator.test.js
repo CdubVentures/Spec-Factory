@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AggressiveOrchestrator } from '../src/extract/aggressiveOrchestrator.js';
+import { AggressiveOrchestrator } from '../src/features/indexing/extraction/aggressiveOrchestrator.js';
 
 function createStorage(initial = {}) {
   const data = new Map(Object.entries(initial));
@@ -46,27 +46,6 @@ function baseRecord() {
     }
   };
 }
-
-test('AggressiveOrchestrator returns disabled when mode is not aggressive', async () => {
-  const storage = createStorage();
-  const orchestrator = new AggressiveOrchestrator({
-    storage,
-    config: {
-      aggressiveModeEnabled: false
-    }
-  });
-  const record = baseRecord();
-  const result = await orchestrator.run({
-    category: 'mouse',
-    productId: 'mouse-1',
-    normalized: record.normalized,
-    provenance: record.provenance,
-    fieldOrder: ['weight', 'dpi'],
-    roundContext: { mode: 'balanced' }
-  });
-  assert.equal(result.enabled, false);
-  assert.equal(result.stage, 'disabled');
-});
 
 test('AggressiveOrchestrator applies accepted audit candidates and persists search tracker', async () => {
   const storage = createStorage();
@@ -172,7 +151,7 @@ test('AggressiveOrchestrator applies accepted audit candidates and persists sear
     sourceResults: [{
       finalUrl: 'https://example.com/spec'
     }],
-    roundContext: { mode: 'aggressive' }
+    roundContext: {}
   });
 
   assert.equal(result.enabled, true);
@@ -263,7 +242,7 @@ test('AggressiveOrchestrator deep escalation honors max deep field cap', async (
     criticalFieldSet: new Set(['dpi', 'sensor']),
     fieldsBelowPassTarget: ['dpi', 'sensor'],
     criticalFieldsBelowPassTarget: ['dpi', 'sensor'],
-    roundContext: { mode: 'aggressive' }
+    roundContext: {}
   });
 
   assert.equal(result.escalation.deep_triggered, true);

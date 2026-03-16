@@ -4,7 +4,7 @@ import {
   cleanVariant,
   isFabricatedVariant,
   normalizeProductIdentity
-} from '../src/catalog/identityDedup.js';
+} from '../src/features/catalog/identity/identityDedup.js';
 
 // --- cleanVariant ---
 

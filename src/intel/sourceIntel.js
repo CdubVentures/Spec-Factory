@@ -29,7 +29,8 @@ function normalizeSourcePath(url) {
 
 function isHelperDomainToken(value) {
   const token = String(value || '').trim().toLowerCase();
-  return token === 'helper-files.local' || token.includes('helper_files://');
+  return token === 'helper-files.local' ||
+    token === 'category-authority.local' ||    token.includes('category_authority://');
 }
 
 function isHelperSourceRecord(source = {}) {
@@ -1178,3 +1179,5 @@ export async function persistSourceIntel({
     intel: payload
   };
 }
+
+

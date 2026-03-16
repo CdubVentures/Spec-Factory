@@ -4,8 +4,8 @@ import {
   buildDeterministicAliases,
   buildSearchProfile,
   buildTargetedQueries
-} from '../src/search/queryBuilder.js';
-import { normalizeQueryRows } from '../src/llm/discoveryPlanner.js';
+} from '../src/features/indexing/search/queryBuilder.js';
+import { normalizeQueryRows } from '../src/features/indexing/discovery/discoveryPlanner.js';
 
 function makeJob(overrides = {}) {
   return {

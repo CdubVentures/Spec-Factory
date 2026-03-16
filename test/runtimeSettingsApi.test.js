@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import net from 'node:net';
+import os from 'node:os';
 import { spawn } from 'node:child_process';
+import { SETTINGS_DEFAULTS } from '../src/shared/settingsDefaults.js';
 
 function getFreePort() {
   return new Promise((resolve, reject) => {
@@ -35,42 +37,60 @@ async function waitForHttpReady(url, timeoutMs = 25_000) {
   throw new Error(`timeout_waiting_for_http_ready:${url}`);
 }
 
-async function readJsonFileUntil(filePath, predicate, timeoutMs = 3_000) {
+async function readJsonFileUntil(filePathOrPaths, predicate, timeoutMs = 6_000) {
   const started = Date.now();
+  const filePaths = Array.isArray(filePathOrPaths) ? filePathOrPaths : [filePathOrPaths];
   let lastValue = null;
   while ((Date.now() - started) < timeoutMs) {
-    try {
-      const raw = await fs.readFile(filePath, 'utf8');
-      const parsed = JSON.parse(raw);
-      lastValue = parsed;
-      if (predicate(parsed)) {
-        return parsed;
+    for (const filePath of filePaths) {
+      try {
+        const raw = await fs.readFile(filePath, 'utf8');
+        const parsed = JSON.parse(raw);
+        lastValue = parsed;
+        if (predicate(parsed)) {
+          return parsed;
+        }
+      } catch {
+        // keep waiting
       }
-    } catch {
-      // keep waiting
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  throw new Error(`timeout_waiting_for_json_persist:${filePath}:${JSON.stringify(lastValue)}`);
+  throw new Error(`timeout_waiting_for_json_persist:${filePaths.join('|')}:${JSON.stringify(lastValue)}`);
 }
 
 let _port;
 let _proc;
 let _baseUrl;
+let _helperRoot;
+let _outputRoot;
 
 test('runtime-settings API', { timeout: 60_000 }, async (t) => {
+  _helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-settings-helper-'));
+  _outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-settings-output-'));
+  await fs.mkdir(path.join(_helperRoot, '_runtime'), { recursive: true });
   _port = await getFreePort();
   _proc = spawn(
     process.execPath,
     ['src/api/guiServer.js', '--port', String(_port), '--local'],
-    { cwd: process.cwd(), stdio: ['ignore', 'ignore', 'pipe'] }
+    {
+      cwd: process.cwd(),
+      stdio: ['ignore', 'ignore', 'pipe'],
+      env: {
+        ...process.env,
+        HELPER_FILES_ROOT: _helperRoot,
+        LOCAL_OUTPUT_ROOT: _outputRoot,
+        OUTPUT_MODE: 'local',
+        LOCAL_MODE: 'true',
+      },
+    }
   );
   let stderr = '';
   _proc.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
   t.after(() => { if (_proc && !_proc.killed) _proc.kill('SIGTERM'); });
   t.after(async () => {
-    const runtimeDir = path.join(process.cwd(), 'helper_files', '_runtime');
-    await fs.rm(path.join(runtimeDir, 'user-settings.json'), { force: true }).catch(() => {});
+    await fs.rm(_helperRoot, { recursive: true, force: true }).catch(() => {});
+    await fs.rm(_outputRoot, { recursive: true, force: true }).catch(() => {});
   });
 
   _baseUrl = `http://127.0.0.1:${_port}/api/v1`;
@@ -82,12 +102,11 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const body = await res.json();
 
     const STRING_KEYS = [
-      'profile', 'searchProvider',
-      'searxngBaseUrl', 'bingSearchEndpoint', 'googleCseCx', 'duckduckgoBaseUrl',
+      'searchProvider',
+      'searxngBaseUrl',
       'frontierDbPath',
       'phase2LlmModel', 'phase3LlmModel', 'llmModelFast', 'llmModelReasoning',
       'llmModelExtract', 'llmModelValidate', 'llmModelWrite',
-      'llmFallbackPlanModel', 'llmFallbackExtractModel', 'llmFallbackValidateModel', 'llmFallbackWriteModel',
       'resumeMode', 'scannedPdfOcrBackend',
     ];
     for (const key of STRING_KEYS) {
@@ -96,6 +115,11 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
 
     const INT_KEYS = [
       'fetchConcurrency', 'perHostMinDelayMs',
+      'searchGlobalRps', 'searchGlobalBurst',
+      'searchPerHostRps', 'searchPerHostBurst',
+      'domainRequestRps', 'domainRequestBurst',
+      'globalRequestRps', 'globalRequestBurst',
+      'fetchPerHostConcurrencyCap',
       'llmTokensPlan', 'llmTokensTriage', 'llmTokensFast', 'llmTokensReasoning',
       'llmTokensExtract', 'llmTokensValidate', 'llmTokensWrite',
       'llmTokensPlanFallback', 'llmTokensExtractFallback', 'llmTokensValidateFallback', 'llmTokensWriteFallback',
@@ -109,8 +133,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'autoScrollPasses', 'autoScrollDelayMs', 'maxGraphqlReplays', 'maxNetworkResponsesPerPage', 'robotsTxtTimeoutMs',
       'runtimeScreencastFps', 'runtimeScreencastQuality', 'runtimeScreencastMaxWidth', 'runtimeScreencastMaxHeight',
       'endpointSignalLimit', 'endpointSuggestionLimit', 'endpointNetworkScanLimit',
-      'cseRescueRequiredIteration',
-      'duckduckgoTimeoutMs',
       'runtimeTraceFetchRing', 'runtimeTraceLlmRing',
     ];
     for (const key of INT_KEYS) {
@@ -124,23 +146,66 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     }
 
     const BOOL_KEYS = [
-      'discoveryEnabled', 'phase2LlmEnabled', 'phase3LlmTriageEnabled', 'llmFallbackEnabled',
+      // discoveryEnabled removed — hardcoded invariant, no longer in GET boolMap
+      'phase2LlmEnabled',
       'reextractIndexed', 'scannedPdfOcrEnabled', 'scannedPdfOcrPromoteCandidates',
       'dynamicCrawleeEnabled', 'crawleeHeadless', 'fetchSchedulerEnabled', 'preferHttpFetcher', 'runtimeScreencastEnabled',
       'frontierEnableSqlite', 'frontierStripTrackingParams', 'frontierRepairSearchEnabled',
       'autoScrollEnabled', 'graphqlReplayEnabled', 'robotsTxtCompliant',
       'fetchCandidateSources', 'manufacturerBroadDiscovery', 'manufacturerSeedSearchUrls',
-      'disableGoogleCse', 'cseRescueOnlyMode', 'duckduckgoEnabled',
       'runtimeTraceEnabled', 'runtimeTraceLlmPayloads',
       'eventsJsonWrite', 'authoritySnapshotEnabled',
     ];
     for (const key of BOOL_KEYS) {
       assert.equal(typeof body[key], 'boolean', `expected boolean for ${key}, got ${typeof body[key]}`);
     }
+
+    const RETIRED_KEYS = [
+      'bingSearchKey',
+      'googleCseCx',
+      'googleCseKey',
+      'disableGoogleCse',
+      'cseRescueOnlyMode',
+      'cseRescueRequiredIteration',
+    ];
+    for (const key of RETIRED_KEYS) {
+      assert.equal(Object.hasOwn(body, key), false, `retired key should not be surfaced: ${key}`);
+    }
+  });
+
+  await t.test('GET /runtime-settings exposes canonical sampled defaults from settingsDefaults on a clean authority root', async () => {
+    const res = await fetch(`${_baseUrl}/runtime-settings`);
+    assert.equal(res.status, 200, `unexpected status ${res.status} stderr=${stderr}`);
+    const body = await res.json();
+
+    const expected = {
+      fetchConcurrency: SETTINGS_DEFAULTS.runtime.fetchConcurrency,
+      fetchPerHostConcurrencyCap: SETTINGS_DEFAULTS.runtime.fetchPerHostConcurrencyCap,
+      discoveryMaxDiscovered: SETTINGS_DEFAULTS.runtime.discoveryMaxDiscovered,
+      pageGotoTimeoutMs: SETTINGS_DEFAULTS.runtime.pageGotoTimeoutMs,
+      postLoadWaitMs: SETTINGS_DEFAULTS.runtime.postLoadWaitMs,
+      frontierCooldown403BaseSeconds: SETTINGS_DEFAULTS.runtime.frontierCooldown403BaseSeconds,
+      frontierCooldown429BaseSeconds: SETTINGS_DEFAULTS.runtime.frontierCooldown429BaseSeconds,
+      frontierBlockedDomainThreshold: SETTINGS_DEFAULTS.runtime.frontierBlockedDomainThreshold,
+      dynamicFetchRetryBudget: SETTINGS_DEFAULTS.runtime.dynamicFetchRetryBudget,
+      dynamicFetchRetryBackoffMs: SETTINGS_DEFAULTS.runtime.dynamicFetchRetryBackoffMs,
+      fetchSchedulerEnabled: SETTINGS_DEFAULTS.runtime.fetchSchedulerEnabled,
+      fetchSchedulerInternalsMapJson: SETTINGS_DEFAULTS.runtime.fetchSchedulerInternalsMapJson,
+      serpRerankerWeightMapJson: SETTINGS_DEFAULTS.runtime.serpRerankerWeightMapJson,
+      preferHttpFetcher: SETTINGS_DEFAULTS.runtime.preferHttpFetcher,
+      userAgent: SETTINGS_DEFAULTS.runtime.userAgent,
+    };
+
+    for (const [key, value] of Object.entries(expected)) {
+      assert.deepEqual(body[key], value, `runtime-settings GET should serve canonical default for ${key}`);
+    }
+
+    assert.equal(Object.hasOwn(body, 'bingSearchEndpoint'), false, 'retired bingSearchEndpoint should stay removed');
   });
 
   await t.test('PUT with valid partial payload applies changes and returns applied', async () => {
-    const payload = { fetchConcurrency: 8, discoveryEnabled: false, profile: 'thorough' };
+    // discoveryEnabled removed from PUT boolMap — it's a hardcoded invariant.
+    const payload = { fetchConcurrency: 8, searchProvider: 'google' };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -150,14 +215,12 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const body = await res.json();
     assert.equal(body.ok, true);
     assert.equal(body.applied.fetchConcurrency, 8);
-    assert.equal(body.applied.discoveryEnabled, false);
-    assert.equal(body.applied.profile, 'thorough');
+    assert.equal(body.applied.searchProvider, 'google');
 
     const getRes = await fetch(`${_baseUrl}/runtime-settings`);
     const getBody = await getRes.json();
     assert.equal(getBody.fetchConcurrency, 8);
-    assert.equal(getBody.discoveryEnabled, false);
-    assert.equal(getBody.profile, 'thorough');
+    assert.equal(getBody.searchProvider, 'google');
   });
 
   await t.test('PUT with invalid values returns rejected for those keys', async () => {
@@ -176,7 +239,13 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   });
 
   await t.test('PUT clamps out-of-range values', async () => {
-    const payload = { fetchConcurrency: 999, perHostMinDelayMs: -5 };
+    const payload = {
+      fetchConcurrency: 999,
+      perHostMinDelayMs: -5,
+      searchGlobalRps: -1,
+      searchGlobalBurst: 9999,
+      fetchPerHostConcurrencyCap: 999,
+    };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -186,10 +255,13 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const body = await res.json();
     assert.equal(body.applied.fetchConcurrency, 64);
     assert.equal(body.applied.perHostMinDelayMs, 0);
+    assert.equal(body.applied.searchGlobalRps, 0);
+    assert.equal(body.applied.searchGlobalBurst, 1000);
+    assert.equal(body.applied.fetchPerHostConcurrencyCap, 64);
   });
 
-  await t.test('PUT validates string enums (profile must be fast/standard/thorough)', async () => {
-    const payload = { profile: 'invalid_profile', resumeMode: 'bogus' };
+  await t.test('PUT validates active string enums', async () => {
+    const payload = { searchProvider: 'invalid_provider', resumeMode: 'bogus' };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -198,7 +270,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.ok(body.rejected);
-    assert.equal(body.rejected.profile, 'invalid_enum');
+    assert.equal(body.rejected.searchProvider, 'invalid_enum');
     assert.equal(body.rejected.resumeMode, 'invalid_enum');
   });
 
@@ -227,9 +299,11 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(putBody.applied.fetchConcurrency, 7);
     assert.equal(putBody.applied.perHostMinDelayMs, 1234);
 
-    const userSettingsPath = path.join(process.cwd(), 'helper_files', '_runtime', 'user-settings.json');
+    const userSettingsPaths = [
+      path.join(_helperRoot, '_runtime', 'user-settings.json'),
+    ];
     const userSettings = await readJsonFileUntil(
-      userSettingsPath,
+      userSettingsPaths,
       (json) => (
         json
         && json.runtime
@@ -237,19 +311,20 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
         && json.runtime.concurrency === 7
         && json.runtime.perHostMinDelayMs === 1234
       ),
+      8_000,
     );
     assert.equal(userSettings.runtime.llmModelExtract, 'test-persist-model-xyz');
     assert.equal(userSettings.runtime.concurrency, 7);
     assert.equal(userSettings.runtime.perHostMinDelayMs, 1234);
 
-    const legacySettingsExists = await fs.access(path.join(process.cwd(), 'helper_files', '_runtime', 'settings.json'))
-      .then(() => true)
-      .catch(() => false);
+    const legacySettingsExists = await Promise.all([
+      fs.access(path.join(_helperRoot, '_runtime', 'settings.json')).then(() => true).catch(() => false),
+    ]).then((results) => results.some(Boolean));
     assert.equal(legacySettingsExists, false, 'legacy settings.json should not be written');
   });
 
   await t.test('PUT persists convergence settings to canonical user-settings snapshot', async () => {
-    const payload = { convergenceMaxRounds: 12, serpTriageEnabled: false };
+    const payload = { serpTriageMinScore: 5 };
     const putRes = await fetch(`${_baseUrl}/convergence-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -257,25 +332,25 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     });
     assert.equal(putRes.status, 200);
     const putBody = await putRes.json();
-    assert.equal(putBody.applied.convergenceMaxRounds, 12);
-    assert.equal(putBody.applied.serpTriageEnabled, false);
+    assert.equal(putBody.applied.serpTriageMinScore, 5);
 
-    const userSettingsPath = path.join(process.cwd(), 'helper_files', '_runtime', 'user-settings.json');
+    const userSettingsPaths = [
+      path.join(_helperRoot, '_runtime', 'user-settings.json'),
+    ];
     const userSettings = await readJsonFileUntil(
-      userSettingsPath,
+      userSettingsPaths,
       (json) => (
         json
         && json.convergence
-        && json.convergence.convergenceMaxRounds === 12
-        && json.convergence.serpTriageEnabled === false
+        && json.convergence.serpTriageMinScore === 5
       ),
+      8_000,
     );
-    assert.equal(userSettings.convergence.convergenceMaxRounds, 12);
-    assert.equal(userSettings.convergence.serpTriageEnabled, false);
+    assert.equal(userSettings.convergence.serpTriageMinScore, 5);
 
-    const legacyConvergenceExists = await fs.access(path.join(process.cwd(), 'helper_files', '_runtime', 'convergence-settings.json'))
-      .then(() => true)
-      .catch(() => false);
+    const legacyConvergenceExists = await Promise.all([
+      fs.access(path.join(_helperRoot, '_runtime', 'convergence-settings.json')).then(() => true).catch(() => false),
+    ]).then((results) => results.some(Boolean));
     assert.equal(legacyConvergenceExists, false, 'legacy convergence-settings.json should not be written');
   });
 });

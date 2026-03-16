@@ -23,12 +23,12 @@ const PROVIDER_LABELS = {
   google: 'Google',
   bing: 'Bing',
   searxng: 'SearXNG',
-  duckduckgo: 'DuckDuckGo',
   dual: 'Dual',
   none: '',
 };
 
-const PROVIDER_MATRIX = ['google', 'bing', 'searxng', 'duckduckgo', 'dual'];
+// Bing and SearXNG acceptance are covered at the API/provider layers.
+const PROVIDER_MATRIX = ['google', 'dual'];
 
 async function ensureGuiBuilt() {
   const distIndex = path.join(path.resolve('.'), 'tools', 'gui-react', 'dist', 'index.html');
@@ -115,7 +115,7 @@ async function ensureSearchProviderValue(page, baseUrl, providerValue) {
     'xpath=//h3[contains(normalize-space(), "Runtime Flow Settings")]/ancestor::div[contains(@class,"rounded")][1]',
   ).first();
   const providerSelect = runtimeFlowCard.locator(
-    'xpath=.//select[option[@value="duckduckgo"] and option[@value="searxng"] and option[@value="dual"]]',
+    'xpath=.//select[option[@value="searxng"] and option[@value="dual"]]',
   ).first();
   await providerSelect.waitFor({ state: 'visible', timeout: 25_000 });
   await waitForCondition(
@@ -164,9 +164,9 @@ async function verifyRuntimeOpsProviderBadge(page, providerValue) {
   await providerBadge.waitFor({ state: 'visible', timeout: 25_000 });
 }
 
-test('GUI runtime search-provider setting persists across reload and propagates to Runtime Ops visuals for all providers', { timeout: 300_000 }, async () => {
+test('GUI runtime search-provider setting persists across reload and propagates to Runtime Ops visuals for representative providers', { timeout: 300_000 }, async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-ops-gui-settings-'));
-  const helperFilesRoot = path.join(tempRoot, 'helper_files');
+  const categoryAuthorityRoot = path.join(tempRoot, 'category_authority');
   const localOutputRoot = path.join(tempRoot, 'out');
   const indexLabRoot = path.join(tempRoot, 'indexlab');
   const repoRoot = path.resolve('.');
@@ -182,8 +182,8 @@ test('GUI runtime search-provider setting persists across reload and propagates 
     await ensureGuiBuilt();
 
     // Some routes can read default mouse assets before category selection settles.
-    await seedCategory(helperFilesRoot, 'mouse');
-    await seedCategory(helperFilesRoot, CATEGORY);
+    await seedCategory(categoryAuthorityRoot, 'mouse');
+    await seedCategory(categoryAuthorityRoot, CATEGORY);
     await seedIndexLabRun(indexLabRoot, RUN_ID, CATEGORY);
 
     const port = await findFreePort();
@@ -193,7 +193,7 @@ test('GUI runtime search-provider setting persists across reload and propagates 
       cwd: tempRoot,
       env: {
         ...process.env,
-        HELPER_FILES_ROOT: helperFilesRoot,
+        HELPER_FILES_ROOT: categoryAuthorityRoot,
         LOCAL_OUTPUT_ROOT: localOutputRoot,
         LOCAL_INPUT_ROOT: path.join(tempRoot, 'fixtures'),
         OUTPUT_MODE: 'local',
@@ -250,7 +250,7 @@ test('GUI runtime search-provider setting persists across reload and propagates 
     await page.waitForSelector('text=Pipeline Settings', { timeout: 20_000 });
     await ensureRuntimeFlowRunSetup(page);
     const providerSelectAfterReload = page.locator(
-      'xpath=//h3[contains(normalize-space(), "Runtime Flow Settings")]/ancestor::div[contains(@class,"rounded")][1]//select[option[@value="duckduckgo"] and option[@value="searxng"] and option[@value="dual"]]',
+      'xpath=//h3[contains(normalize-space(), "Runtime Flow Settings")]/ancestor::div[contains(@class,"rounded")][1]//select[option[@value="searxng"] and option[@value="dual"]]',
     ).first();
     await providerSelectAfterReload.waitFor({ state: 'visible', timeout: 25_000 });
     assert.equal(await providerSelectAfterReload.inputValue(), 'dual', 'search provider select should remain dual after reload');

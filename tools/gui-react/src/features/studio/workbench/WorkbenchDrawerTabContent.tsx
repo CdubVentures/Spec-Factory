@@ -1,0 +1,103 @@
+import type { EnumEntry, ComponentDbResponse, ComponentSource } from '../../../types/studio';
+import type { DrawerTab } from './workbenchTypes';
+import {
+  ContractTab,
+  DepsTab,
+  EnumTab,
+  EvidenceTab,
+  ParseTab,
+  PreviewTab,
+  SearchTab,
+  type BadgeSlot,
+} from './WorkbenchDrawerTabPanels';
+
+export interface WorkbenchDrawerTabContentProps {
+  activeTab: DrawerTab;
+  category: string;
+  fieldKey: string;
+  rule: Record<string, unknown>;
+  knownValues: Record<string, string[]>;
+  enumLists: EnumEntry[];
+  componentDb: ComponentDbResponse;
+  componentSources: ComponentSource[];
+  consistencyPending: boolean;
+  consistencyMessage: string;
+  consistencyError: string;
+  onRunConsistency: (options?: {
+    formatGuidance?: string;
+    reviewEnabled?: boolean;
+  }) => Promise<void>;
+  onUpdate: (path: string, value: unknown) => void;
+  onNavigate: (key: string) => void;
+  B: BadgeSlot;
+}
+
+export function WorkbenchDrawerTabContent({
+  activeTab,
+  category,
+  fieldKey,
+  rule,
+  knownValues,
+  enumLists,
+  componentDb,
+  componentSources,
+  consistencyPending,
+  consistencyMessage,
+  consistencyError,
+  onRunConsistency,
+  onUpdate,
+  onNavigate,
+  B,
+}: WorkbenchDrawerTabContentProps) {
+  if (activeTab === 'contract') {
+    return <ContractTab fieldKey={fieldKey} rule={rule} onUpdate={onUpdate} B={B} />;
+  }
+  if (activeTab === 'parse') {
+    return <ParseTab rule={rule} onUpdate={onUpdate} B={B} />;
+  }
+  if (activeTab === 'enum') {
+    return (
+      <EnumTab
+        category={category}
+        fieldKey={fieldKey}
+        rule={rule}
+        knownValues={knownValues}
+        enumLists={enumLists}
+        onUpdate={onUpdate}
+        onRunConsistency={onRunConsistency}
+        consistencyPending={consistencyPending}
+        consistencyMessage={consistencyMessage}
+        consistencyError={consistencyError}
+        B={B}
+      />
+    );
+  }
+  if (activeTab === 'evidence') {
+    return <EvidenceTab rule={rule} onUpdate={onUpdate} B={B} />;
+  }
+  if (activeTab === 'search') {
+    return <SearchTab rule={rule} onUpdate={onUpdate} B={B} />;
+  }
+  if (activeTab === 'deps') {
+    return (
+      <DepsTab
+        rule={rule}
+        fieldKey={fieldKey}
+        onUpdate={onUpdate}
+        componentSources={componentSources}
+        knownValues={knownValues}
+        onNavigate={onNavigate}
+        B={B}
+      />
+    );
+  }
+  return (
+    <PreviewTab
+      fieldKey={fieldKey}
+      rule={rule}
+      knownValues={knownValues}
+      componentDb={componentDb}
+      enumLists={enumLists}
+    />
+  );
+}

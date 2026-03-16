@@ -1,0 +1,167 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontSize': '16px', 'fontFamily': 'Segoe UI', 'primaryColor': '#1565c0', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0d47a1', 'lineColor': '#444', 'secondaryColor': '#e3f2fd', 'tertiaryColor': '#bbdefb'}}}%%
+
+flowchart LR
+    subgraph PHASE1["PHASE 1: POST-CONSENSUS REFINEMENT"]
+        direction TB
+
+        subgraph IDENTITY["Identity Consensus"]
+            direction TB
+            ID1["<b>evaluateIdentityGate()</b><br/>cross-source validation"]
+            ID2["<b>Requirements:</b><br/>manufacturer OR 2+ labs<br/>+ 2+ credible domains<br/>+ no contradictions<br/>+ no major anchors"]
+            ID3["<b>Certainty:</b><br/>base 0.40 + mfr 0.25<br/>+ credible 0.20<br/>+ no-conflict 0.10<br/>+ no-anchor 0.10"]
+            ID4["<b>Status:</b><br/>CONFIRMED / CONFLICT<br/>FAILED / LOW_CONFIDENCE"]
+            ID1 --> ID2 --> ID3 --> ID4
+        end
+
+        subgraph COMPONENT["Component Prior"]
+            direction TB
+            CP1["<b>Component DB match</b><br/>sensor → known properties"]
+            CP2["<b>Fill fields:</b><br/>dpi, ips, acceleration<br/>method: component_db<br/>confidence: 0.85"]
+            CP3["<b>Traffic light:</b><br/>rank 100 (highest)<br/>→ always GREEN"]
+            CP1 --> CP2 --> CP3
+        end
+
+        subgraph CRITIC["Deterministic Critic"]
+            direction TB
+            CR1["<b>runDeterministicCritic()</b><br/>normalize + validate"]
+            CR2["<b>Booleans (14 fields):</b><br/>true/yes/1 → 'yes'<br/>false/no/0 → 'no'"]
+            CR3["<b>Units:</b><br/>kg→g, oz→g, in→mm<br/>cm→mm, k→×1000"]
+            CR4["<b>Plausibility:</b><br/>weight: 10-300g<br/>dims: 20-200mm<br/>dpi: 100-100K"]
+            CR5["<b>Accept:</b> conf ≥ 0.90<br/><b>Reject:</b> conf ≤ 0.20<br/><b>Cross-field:</b><br/>wired → battery n/a"]
+            CR1 --> CR2 --> CR3 --> CR4 --> CR5
+        end
+
+        subgraph OPTIONAL["Optional Phases"]
+            direction TB
+            OP1["<b>LLM Validator</b><br/>review uncertain fields<br/>(skipped if budget out)"]
+            OP2["<b>Inference Policy</b><br/>temporal signals<br/>cross-field rules"]
+            OP3["<b>Aggressive Extraction</b><br/>last-chance DOM/screenshot<br/>(skipped if budget out)"]
+            OP4["<b>Runtime Gate</b><br/>field rules enforcement<br/>curation suggestions<br/><b>FINAL MODIFICATION</b>"]
+            OP1 --> OP2 --> OP3 --> OP4
+        end
+
+        IDENTITY --> COMPONENT --> CRITIC --> OPTIONAL
+    end
+
+    subgraph PHASE2["PHASE 2: ANCHOR CONFLICTS + CONFIDENCE"]
+        direction TB
+
+        subgraph ANCHORS["Anchor Conflict Evaluation"]
+            direction TB
+            AN1["<b>evaluateAnchorConflicts()</b><br/>21 anchor fields checked"]
+            AN2["<b>Weight:</b> ≤2g MINOR<br/>>2g MAJOR (3× outlier)<br/><b>Dims:</b> ≤1mm MINOR<br/>>1mm MAJOR (2.2× outlier)"]
+            AN3["<b>polling_rate, dpi:</b><br/>max value must match<br/>any diff → MAJOR"]
+            AN4["<b>sensor:</b> 2+ token overlap<br/>OR perf token match<br/><b>Categorical (10):</b><br/>exact match → MAJOR"]
+            AN5["<b>mergeAnchorConflictLists()</b><br/>dedup across sources<br/>by field|expected|actual"]
+            AN1 --> AN2 --> AN3 --> AN4 --> AN5
+        end
+
+        subgraph CONFIDENCE["Confidence Scoring"]
+            direction TB
+            CO1["<b>computeConfidence()</b>"]
+            CO2["<b>identityConfidence × 0.50</b><br/>from identity gate certainty"]
+            CO3["<b>provenanceConfidence × 0.35</b><br/>avg of all per-field<br/>provenance.confidence"]
+            CO4["<b>agreementScore × 0.15</b><br/>from consensus engine<br/>cross-source agreement"]
+            CO5["<b>Penalty:</b><br/>-0.06 per anchor conflict<br/>(MAJOR + MINOR)<br/>max penalty: -0.40"]
+            CO1 --> CO2 --> CO3 --> CO4 --> CO5
+        end
+
+        subgraph METRICS["Completeness & Coverage"]
+            direction TB
+            ME1["<b>computeCompletenessRequired()</b><br/>16 required fields (mouse)"]
+            ME2["<b>filled / total required</b><br/>target: ≥ 90%<br/>'unk' = not filled"]
+            ME3["<b>computeCoverageOverall()</b><br/>all non-editorial fields"]
+            ME4["<b>filled / total considered</b><br/>editorial fields excluded<br/>(cardTags, featured, etc.)"]
+            ME1 --> ME2 --> ME3 --> ME4
+        end
+
+        ANCHORS --> CONFIDENCE --> METRICS
+    end
+
+    subgraph PHASE3["PHASE 3: QUALITY GATE + PUBLISHABLE"]
+        direction TB
+
+        subgraph GATE["Validation Gate (6 Checks)"]
+            direction TB
+            GC1["<b>evaluateValidationGate()</b><br/>all 6 must pass"]
+            GC2["<b>1.</b> identity_gate_ok<br/><b>2.</b> identity_confidence ≥ 0.70<br/><b>3.</b> anchor_conflicts_ok<br/>(MAJOR count = 0)"]
+            GC3["<b>4.</b> completeness ≥ 90%<br/><b>5.</b> confidence ≥ 80%<br/><b>6.</b> critical fields OK<br/>(all at pass target)"]
+            GC4["<b>validated =</b><br/>all 6 checks pass<br/><b>validatedReason:</b><br/>'OK' or first failure"]
+            GC1 --> GC2 --> GC3 --> GC4
+        end
+
+        subgraph PUBLISH["Publishable Decision"]
+            direction TB
+            PB1["<b>4 conditions:</b>"]
+            PB2["<b>1.</b> gate.validated = true<br/><b>2.</b> identityFull = true"]
+            PB3["<b>3.</b> identityConfidence<br/>≥ 0.75 (publish threshold)<br/><b>4.</b> !identityGate<br/>.needsReview"]
+            PB4["<b>publishBlockers:</b><br/>gate.reasons +<br/>identityGate.reasonCodes<br/>always populated<br/>when publishable = false"]
+            PB1 --> PB2 --> PB3 --> PB4
+        end
+
+        subgraph REASONS["Failure Reasons"]
+            direction TB
+            FR1["<b>Gate failures:</b>"]
+            FR2["MODEL_AMBIGUITY_ALERT<br/>HAS_ANCHOR_CONFLICTS<br/>BELOW_REQUIRED_<br/>COMPLETENESS"]
+            FR3["BELOW_CONFIDENCE_<br/>THRESHOLD<br/>CRITICAL_FIELDS_BELOW_<br/>PASS_TARGET"]
+            FR4["<b>Identity failures:</b><br/>missing_manufacturer<br/>missing_credible_sources<br/>identity_conflict<br/>major_anchor_conflict"]
+            FR1 --> FR2 --> FR3 --> FR4
+        end
+
+        GATE --> PUBLISH --> REASONS
+    end
+
+    subgraph PHASE4["PHASE 4: REASONING + OUTPUT"]
+        direction TB
+
+        subgraph REASONING["Field Reasoning"]
+            direction TB
+            RE1["<b>buildFieldReasoning()</b><br/>per-field classification"]
+            RE2["<b>Reason codes:</b><br/>below_pass_target<br/>critical_field_below<br/>missing_required<br/>no_accepted_value<br/>constraint_conflict"]
+            RE3["<b>Unknown reasons</b><br/>(priority cascade):<br/>1. identity_ambiguous<br/>2. budget_exhausted<br/>3. conflicting_sources"]
+            RE4["4. blocked_by_robots<br/>5. parse_failure<br/>6. not_publicly_disclosed<br/>7. not_found_after_search"]
+            RE1 --> RE2 --> RE3 --> RE4
+        end
+
+        subgraph TRAFFIC["Traffic Light"]
+            direction TB
+            TL1["<b>buildTrafficLight()</b><br/>per-field color"]
+            TL2["<b>GREEN:</b> component_db<br/>or tier 1 or critic_normalize"]
+            TL3["<b>YELLOW:</b> tier 2<br/>(lab / database)"]
+            TL4["<b>RED:</b> tier 3+ or<br/>no evidence or 'unk'<br/><b>counts:</b><br/>{ green, yellow, red }"]
+            TL1 --> TL2 --> TL3 --> TL4
+        end
+
+        subgraph HYPOTHESIS["Repair Signals"]
+            direction TB
+            HQ1["<b>hypothesisQueue</b><br/>from fields below target"]
+            HQ2["<b>Priority boosts:</b><br/>critical: +2<br/>missing required: +0.8<br/>low confidence: +gap"]
+            HQ3["<b>needSet</b><br/>prioritized field needs<br/>for next run/repair"]
+            HQ4["<b>summary.json</b><br/>all signals aggregated<br/><b>→ spec.json</b><br/><b>→ provenance.json</b><br/><b>→ traffic_light.json</b><br/><b>→ SpecDb</b>"]
+            HQ1 --> HQ2 --> HQ3 --> HQ4
+        end
+
+        REASONING --> TRAFFIC --> HYPOTHESIS
+    end
+
+    PHASE1 ==>|"refined fields +<br/>provenance"| PHASE2
+    PHASE2 ==>|"confidence +<br/>completeness"| PHASE3
+    PHASE3 ==>|"validated +<br/>publishable"| PHASE4
+
+    style PHASE1 fill:#e3f2fd,stroke:#1565c0,stroke-width:3px
+    style PHASE2 fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
+    style PHASE3 fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style PHASE4 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
+    style IDENTITY fill:#e8eaf6,stroke:#283593,stroke-width:1px
+    style COMPONENT fill:#e0f7fa,stroke:#00838f,stroke-width:1px
+    style CRITIC fill:#fff8e1,stroke:#f9a825,stroke-width:2px
+    style OPTIONAL fill:#efebe9,stroke:#5d4037,stroke-width:1px
+    style ANCHORS fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    style CONFIDENCE fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style METRICS fill:#e0f7fa,stroke:#00838f,stroke-width:1px
+    style GATE fill:#fce4ec,stroke:#c62828,stroke-width:2px
+    style PUBLISH fill:#ede7f6,stroke:#512da8,stroke-width:2px
+    style REASONS fill:#fff3e0,stroke:#e65100,stroke-width:1px
+    style REASONING fill:#e8eaf6,stroke:#283593,stroke-width:2px
+    style TRAFFIC fill:#fff8e1,stroke:#f9a825,stroke-width:2px
+    style HYPOTHESIS fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px

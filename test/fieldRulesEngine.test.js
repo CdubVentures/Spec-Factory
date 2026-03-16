@@ -12,7 +12,7 @@ async function writeJson(filePath, value) {
 
 async function createEngineFixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase3-engine-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
 
   await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -164,7 +164,7 @@ async function createEngineFixtureRoot() {
 
 async function createAdvancedEngineFixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase3-engine-advanced-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
 
   await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -336,7 +336,7 @@ test('FieldRulesEngine.create loads artifacts and exposes metadata selectors', a
   try {
     const engine = await FieldRulesEngine.create('mouse', {
       config: {
-        helperFilesRoot: fixture.helperRoot
+        categoryAuthorityRoot: fixture.helperRoot
       }
     });
     const keys = engine.getAllFieldKeys();
@@ -353,7 +353,7 @@ test('normalizeCandidate converts units and enforces range', async () => {
   const fixture = await createEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const ok = engine.normalizeCandidate('weight', '3.5 oz');
     assert.equal(ok.ok, true);
@@ -371,7 +371,7 @@ test('normalizeCandidate enforces scalar shape for array and object payloads', a
   const fixture = await createEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
 
     const singleton = engine.normalizeCandidate('connection', ['wireless']);
@@ -394,7 +394,7 @@ test('enforceEnumPolicy supports alias resolution and closed-policy rejection', 
   const fixture = await createEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const aliased = engine.enforceEnumPolicy('connection', 'usb wired');
     assert.equal(aliased.ok, true);
@@ -421,7 +421,7 @@ test('auditEvidence enforces url/snippet/quote and snippet text match', async ()
   const fixture = await createEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const missing = engine.auditEvidence('weight', 54, {
       url: 'https://example.com/specs'
@@ -476,7 +476,7 @@ test('applyKeyMigrations rewrites legacy keys and normalizeFullRecord produces u
   const fixture = await createEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const migrated = engine.applyKeyMigrations({
       mouse_side_connector: 'wired'
@@ -523,7 +523,7 @@ test('normalizeCandidate validates url fields and resolves component_ref aliases
   const fixture = await createAdvancedEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
 
     const okUrl = engine.normalizeCandidate('spec_url', 'https://example.com/specs');
@@ -546,7 +546,7 @@ test('normalizeCandidate reports curation signal for open enums', async () => {
   const fixture = await createAdvancedEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const curationQueue = [];
     const row = engine.normalizeCandidate('coating', 'satin microtexture', { curationQueue });
@@ -563,7 +563,7 @@ test('crossValidate supports component lookup, group completeness, and mutual ex
   const fixture = await createAdvancedEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
 
     const componentViolation = engine.crossValidate('dpi', 30000, {
@@ -596,7 +596,7 @@ test('auditEvidence strict mode validates source_id/snippet_hash/quote_span/retr
   const fixture = await createAdvancedEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const bad = engine.auditEvidence(
       'sensor',
@@ -655,7 +655,7 @@ test('normalizeCandidate applies normalization_fn for polling list fields', asyn
   const fixture = await createAdvancedEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const row = engine.normalizeCandidate('polling_rates', '1000, 4000, 2000,1000');
     assert.equal(row.ok, true);
@@ -670,7 +670,7 @@ test('normalizeFullRecord is deterministic across repeated runs', async () => {
   const fixture = await createEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const input = {
       mouse_side_connector: 'wireless',
@@ -708,7 +708,7 @@ test('crossValidate compound boundary: value between field-rule max and componen
   const fixture = await createAdvancedEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = engine.crossValidate('dpi', 28000, {
       sensor: 'PAW3395',
@@ -730,7 +730,7 @@ test('crossValidate compound boundary: value within compound range passes', asyn
   const fixture = await createAdvancedEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = engine.crossValidate('dpi', 25000, {
       sensor: 'PAW3395',
@@ -746,7 +746,7 @@ test('crossValidate compound boundary: value exceeds both field-rule and compone
   const fixture = await createAdvancedEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = engine.crossValidate('dpi', 55000, {
       sensor: 'PAW3395',
@@ -756,6 +756,57 @@ test('crossValidate compound boundary: value exceeds both field-rule and compone
     const violation = result.violations.find(v => v.rule === 'sensor_dpi_limit');
     assert.ok(violation, 'should have sensor_dpi_limit violation');
     assert.equal(violation.reason_code, 'compound_range_conflict');
+  } finally {
+    await fs.rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// WP2 — getCoreDeepFieldRules accessor
+// ---------------------------------------------------------------------------
+
+test('getCoreDeepFieldRules returns core_fields array from loaded rules', async () => {
+  const fixture = await createEngineFixtureRoot();
+  try {
+    // Patch fixture to include core_fields in the rules JSON
+    const rulesPath = path.join(fixture.root, 'category_authority', 'mouse', '_generated', 'field_rules.json');
+    const rulesRaw = JSON.parse(await fs.readFile(rulesPath, 'utf8'));
+    rulesRaw.core_fields = ['weight', 'sensor'];
+    await writeJson(rulesPath, rulesRaw);
+
+    const engine = await FieldRulesEngine.create('mouse', {
+      config: { categoryAuthorityRoot: path.join(fixture.root, 'category_authority') },
+      reload: true,
+    });
+    const result = engine.getCoreDeepFieldRules();
+    assert.ok(Array.isArray(result.core_fields));
+    assert.ok(result.core_fields.includes('weight'));
+    assert.ok(result.core_fields.includes('sensor'));
+  } finally {
+    await fs.rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('getCoreDeepFieldRules returns fields map with evidence_tier_minimum', async () => {
+  const fixture = await createEngineFixtureRoot();
+  try {
+    // Patch fixture to include evidence.evidence_tier_minimum
+    const rulesPath = path.join(fixture.root, 'category_authority', 'mouse', '_generated', 'field_rules.json');
+    const rulesRaw = JSON.parse(await fs.readFile(rulesPath, 'utf8'));
+    rulesRaw.fields.weight.evidence = { evidence_tier_minimum: 2 };
+    rulesRaw.fields.sensor.evidence = { evidence_tier_minimum: 1 };
+    await writeJson(rulesPath, rulesRaw);
+
+    const engine = await FieldRulesEngine.create('mouse', {
+      config: { categoryAuthorityRoot: path.join(fixture.root, 'category_authority') },
+      reload: true,
+    });
+    const result = engine.getCoreDeepFieldRules();
+    assert.ok(result.fields.weight);
+    assert.equal(result.fields.weight.evidence_tier_minimum, 2);
+    assert.equal(result.fields.sensor.evidence_tier_minimum, 1);
+    // Default when missing
+    assert.equal(result.fields.connection.evidence_tier_minimum, 3);
   } finally {
     await fs.rm(fixture.root, { recursive: true, force: true });
   }

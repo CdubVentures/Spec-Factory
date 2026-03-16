@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDeterministicAliases, buildSearchProfile, buildTargetedQueries } from '../src/search/queryBuilder.js';
+import { buildDeterministicAliases, buildSearchProfile, buildTargetedQueries } from '../src/features/indexing/search/queryBuilder.js';
 
 test('buildTargetedQueries uses normalized missing fields and helper tooltip hints', () => {
   const queries = buildTargetedQueries({
@@ -77,6 +77,43 @@ test('buildSearchProfile uses field rules search hints and emits provenance', ()
   assert.equal(profile.query_rows.some((row) => row.hint_source === 'field_rules.search_hints'), true);
   assert.equal(profile.queries.some((query) => query.includes('site:support.dell.com')), true);
   assert.equal(profile.queries.some((query) => query.includes('polling_rate')), false);
+});
+
+test('buildSearchProfile falls back to top-level job identity when identityLock is absent', () => {
+  const profile = buildSearchProfile({
+    job: {
+      category: 'mouse',
+      brand: 'Logitech',
+      model: 'G Pro X Superlight 2',
+      variant: ''
+    },
+    categoryConfig: {
+      category: 'mouse',
+      fieldOrder: ['connection'],
+      sourceHosts: [
+        { host: 'logitechg.com', tierName: 'manufacturer' }
+      ],
+      searchTemplates: ['{brand} {model} specifications'],
+      fieldRules: {
+        fields: {
+          connection: {
+            search_hints: {
+              query_terms: ['connection'],
+              preferred_content_types: ['manual_pdf']
+            }
+          }
+        }
+      }
+    },
+    missingFields: ['connection'],
+    maxQueries: 24
+  });
+
+  assert.equal(profile.identity.brand, 'Logitech');
+  assert.equal(profile.identity.model, 'G Pro X Superlight 2');
+  assert.ok(profile.identity_aliases.length > 0, 'expected deterministic aliases from top-level identity');
+  assert.ok(profile.variant_guard_terms.length > 0, 'expected variant guard terms from top-level identity');
+  assert.ok(profile.queries.some((query) => query.includes('Logitech G Pro X Superlight 2')));
 });
 
 test('buildDeterministicAliases emits spacing and hyphen model variants', () => {
@@ -233,4 +270,55 @@ test('buildSearchProfile keeps token-only domain_hints as 0/N effective counts',
     status: 'zero'
   });
   assert.equal(profile.queries.some((query) => query.includes('site:razer.com')), true);
+});
+
+test('buildSearchProfile ignores tooltip-derived IDX terms when ui.tooltip_md is disabled for indexlab', () => {
+  const profile = buildSearchProfile({
+    job: {
+      category: 'mouse',
+      identityLock: {
+        brand: 'Razer',
+        model: 'Viper V3 Pro',
+        variant: ''
+      }
+    },
+    categoryConfig: {
+      category: 'mouse',
+      fieldOrder: ['polling_rate'],
+      sourceHosts: [
+        { host: 'razer.com', tierName: 'manufacturer' }
+      ],
+      searchTemplates: [],
+      fieldRules: {
+        fields: {
+          polling_rate: {
+            ui: {
+              tooltip_md: 'Precision cadence verification string in Hz'
+            },
+            consumers: {
+              'ui.tooltip_md': {
+                indexlab: false
+              }
+            }
+          }
+        }
+      }
+    },
+    tooltipHints: {
+      polling_rate: ['precision cadence']
+    },
+    missingFields: ['polling_rate'],
+    maxQueries: 24
+  });
+
+  assert.equal(
+    profile.queries.some((query) => query.includes('precision cadence')),
+    false,
+    'ui.tooltip_md should not leak tooltip-derived query terms into IndexLab when the IDX consumer is disabled'
+  );
+  assert.equal(
+    profile.queries.some((query) => query.includes('polling rate')),
+    true,
+    'default field synonyms should still contribute queries'
+  );
 });

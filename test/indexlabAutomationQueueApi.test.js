@@ -50,6 +50,7 @@ async function writeJsonl(filePath, rows) {
 test('indexlab automation queue endpoint returns phase 06b jobs and transitions', { timeout: 60_000 }, async (t) => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexlab-automation-queue-'));
   const indexlabRoot = path.join(tempRoot, 'indexlab');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const runId = 'run-automation-queue-001';
   const category = 'mouse';
   const productId = 'mouse-corsair-m55-wireless';
@@ -69,14 +70,14 @@ test('indexlab automation queue endpoint returns phase 06b jobs and transitions'
     run_id: runId,
     category,
     product_id: productId,
-    provider: 'duckduckgo',
+    provider: 'searxng',
     query_rows: [
       {
         query: 'Corsair M55 Wireless polling rate specification',
         target_fields: ['polling_rate'],
         result_count: 5,
         attempts: 1,
-        providers: ['duckduckgo']
+        providers: ['searxng']
       }
     ]
   });
@@ -88,18 +89,20 @@ test('indexlab automation queue endpoint returns phase 06b jobs and transitions'
     generated_at: '2026-02-19T10:03:30.000Z',
     needset_size: 2,
     total_fields: 75,
-    needs: [
+    rows: [
       {
         field_key: 'polling_rate',
         required_level: 'critical',
-        need_score: 18.0,
-        reasons: ['missing', 'tier_pref_unmet', 'min_refs_fail']
+        priority_bucket: 'core',
+        state: 'missing',
+        bundle_id: null
       },
       {
         field_key: 'sensor',
         required_level: 'required',
-        need_score: 12.0,
-        reasons: ['missing', 'min_refs_fail']
+        priority_bucket: 'core',
+        state: 'missing',
+        bundle_id: null
       }
     ]
   });
@@ -117,7 +120,7 @@ test('indexlab automation queue endpoint returns phase 06b jobs and transitions'
         host: 'corsair.com',
         query: 'Corsair M55 Wireless manual',
         reason: 'status_404',
-        provider: 'duckduckgo',
+        provider: 'searxng',
         doc_hint: 'manual',
         field_targets: ['polling_rate']
       }
@@ -132,7 +135,7 @@ test('indexlab automation queue endpoint returns phase 06b jobs and transitions'
       payload: {
         scope: 'query',
         query: 'Corsair M55 Wireless manual',
-        provider: 'duckduckgo'
+        provider: 'searxng'
       }
     },
     {
@@ -145,7 +148,7 @@ test('indexlab automation queue endpoint returns phase 06b jobs and transitions'
       payload: {
         scope: 'query',
         query: 'Corsair M55 Wireless manual',
-        provider: 'duckduckgo',
+        provider: 'searxng',
         result_count: 6
       }
     },
@@ -245,7 +248,9 @@ test('indexlab automation queue endpoint returns phase 06b jobs and transitions'
       cwd: process.cwd(),
       env: {
         ...process.env,
-        LOCAL_MODE: 'true'
+        LOCAL_MODE: 'true',
+        HELPER_FILES_ROOT: helperRoot,
+        CATEGORY_AUTHORITY_ROOT: helperRoot,
       },
       stdio: ['ignore', 'ignore', 'pipe']
     }

@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "updated_at": "2026-03-11T20:48:26.271Z",
+  "brands": {
+    "logitech-g": {
+      "brand": "Logitech G",
+      "brand_key": "logitech-g",
+      "models": {
+        "pro-x-superlight-2": {
+          "model": "Pro X Superlight 2",
+          "model_key": "pro-x-superlight-2",
+          "count": 1,
+          "variant_tokens": {
+            "unk": 1
+          },
+          "sku_prefixes": {
+            "910-0": 1
+          },
+          "mpn_prefixes": {
+            "910-0": 1
+          },
+          "gtin_prefixes": {
+            "UNK": 1
+          },
+          "updated_at": "2026-03-11T20:48:26.271Z"
+        }
+      },
+      "updated_at": "2026-03-11T20:48:26.271Z"
+    }
+  },
+  "normalization_rules": {
+    "token_aliases": {}
+  },
+  "stats": {
+    "updates_total": 1,
+    "validated_updates": 0
+  }
+}

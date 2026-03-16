@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DATA_CHANGE_EVENT_DOMAIN_MAP } from '../src/api/events/dataChangeContract.js';
-import { DATA_CHANGE_EVENT_DOMAIN_FALLBACK } from '../tools/gui-react/src/api/dataChangeInvalidationMap.js';
+import { DATA_CHANGE_EVENT_DOMAIN_FALLBACK } from '../tools/gui-react/src/features/data-change/index.js';
 
 function normalizedDomainSet(value) {
   const source = Array.isArray(value) ? value : [];

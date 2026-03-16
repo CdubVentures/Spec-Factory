@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sha256, sha256Buffer, stableHash, screenshotMimeType, screenshotExtension } from '../src/pipeline/helpers/cryptoHelpers.js';
+import { sha256, sha256Buffer, stableHash, screenshotMimeType, screenshotExtension } from '../src/features/indexing/orchestration/shared/cryptoHelpers.js';
 
 test('sha256 produces hex hash of string input', () => {
   const hash = sha256('hello');

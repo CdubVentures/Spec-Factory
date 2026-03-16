@@ -1,0 +1,3912 @@
+{
+  "run_id": "20260311203758-d48ea2",
+  "category": "mouse",
+  "product_id": "mouse-razer-viper-v3-pro",
+  "generated_at": "2026-03-11T20:46:08.504Z",
+  "summary": {
+    "fields_attempted": 80,
+    "fields_with_hits": 0,
+    "fields_satisfied_min_refs": 0,
+    "fields_unsatisfied_min_refs": 80,
+    "refs_selected_total": 0,
+    "distinct_sources_selected": 0,
+    "avg_hits_per_field": 0,
+    "evidence_pool_size": 0,
+    "evidence_pool_provenance_size": 0,
+    "evidence_pool_fallback_size": 0,
+    "evidence_pool_fallback_used": false
+  },
+  "fields": [
+    {
+      "field_key": "sku",
+      "required_level": "identity",
+      "need_score": 36,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "sku",
+        "part number",
+        "model number",
+        "product code",
+        "sku / part #"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | sku | part number | model number | product code | sku / part # | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "polling_rate",
+      "required_level": "critical",
+      "need_score": 28.8,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "polling rate",
+        "report rate",
+        "hz",
+        "usb polling rate",
+        "wireless polling rate",
+        "4000hz"
+      ],
+      "unit_hint": "hz",
+      "parse_template_hint": "list_of_numbers_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | polling rate | report rate | hz | usb polling rate | wireless polling rate | 4000hz | hz | list_of_numbers_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 2
+      },
+      "min_refs_required": 2,
+      "distinct_sources_required": true,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "connection",
+      "required_level": "required",
+      "need_score": 14.4,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "connection",
+        "wired",
+        "wireless",
+        "2.4ghz",
+        "bluetooth",
+        "dual-mode"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | connection | wired | wireless | 2.4ghz | bluetooth | dual-mode | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "connectivity",
+      "required_level": "required",
+      "need_score": 14.4,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "connectivity",
+        "wireless technology",
+        "dongle",
+        "receiver",
+        "pairing",
+        "wireless"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "list_of_tokens_delimited",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | connectivity | wireless technology | dongle | receiver | pairing | wireless | list_of_tokens_delimited",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "dpi",
+      "required_level": "required",
+      "need_score": 14.4,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "dpi",
+        "cpi",
+        "max dpi",
+        "resolution",
+        "sensitivity",
+        "dots per inch"
+      ],
+      "unit_hint": "dpi",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | dpi | cpi | max dpi | resolution | sensitivity | dots per inch | dpi | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 2
+      },
+      "min_refs_required": 2,
+      "distinct_sources_required": true,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "height",
+      "required_level": "required",
+      "need_score": 14.4,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "height",
+        "height mm",
+        "mouse height",
+        "hump height",
+        "profile height"
+      ],
+      "unit_hint": "mm",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | height | height mm | mouse height | hump height | profile height | mm | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 2
+      },
+      "min_refs_required": 2,
+      "distinct_sources_required": true,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "lngth",
+      "required_level": "required",
+      "need_score": 14.4,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "length",
+        "length mm",
+        "mouse length",
+        "front to back",
+        "depth",
+        "lngth"
+      ],
+      "unit_hint": "mm",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | length | length mm | mouse length | front to back | depth | lngth | mm | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 2
+      },
+      "min_refs_required": 2,
+      "distinct_sources_required": true,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "middle_buttons",
+      "required_level": "required",
+      "need_score": 14.4,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "middle button",
+        "dpi button",
+        "top buttons",
+        "middle click",
+        "middle_buttons",
+        "middle buttons"
+      ],
+      "unit_hint": "none",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | middle button | dpi button | top buttons | middle click | middle_buttons | middle buttons | none | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "sensor",
+      "required_level": "required",
+      "need_score": 14.4,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "sensor",
+        "optical sensor",
+        "sensor model",
+        "sensor name",
+        "mouse sensor",
+        "paw3395"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "component_reference",
+      "component_hint": "sensor",
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "lab"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | sensor | optical sensor | sensor model | sensor name | mouse sensor | paw3395 | component_reference | sensor",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 2
+      },
+      "min_refs_required": 2,
+      "distinct_sources_required": true,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "sensor_brand",
+      "required_level": "required",
+      "need_score": 14.4,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "sensor brand",
+        "sensor manufacturer",
+        "pixart",
+        "razer focus",
+        "hero",
+        "sensor_brand"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | sensor brand | sensor manufacturer | pixart | razer focus | hero | sensor_brand | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "side_buttons",
+      "required_level": "required",
+      "need_score": 14.4,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "side buttons",
+        "thumb buttons",
+        "forward back buttons",
+        "side button count",
+        "side_buttons",
+        "sidebuttons"
+      ],
+      "unit_hint": "none",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | side buttons | thumb buttons | forward back buttons | side button count | side_buttons | sidebuttons | none | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "switch",
+      "required_level": "required",
+      "need_score": 14.4,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "mouse switch",
+        "main switch",
+        "micro switch",
+        "switch model",
+        "primary switch",
+        "switch"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "component_reference",
+      "component_hint": "switch",
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "lab"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | mouse switch | main switch | micro switch | switch model | primary switch | switch | component_reference | switch",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 2
+      },
+      "min_refs_required": 2,
+      "distinct_sources_required": true,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "switch_brand",
+      "required_level": "required",
+      "need_score": 14.4,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "switch brand",
+        "switch manufacturer",
+        "omron",
+        "kailh",
+        "huano",
+        "ttc"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | switch brand | switch manufacturer | omron | kailh | huano | ttc | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "weight",
+      "required_level": "required",
+      "need_score": 14.4,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "weight",
+        "weight grams",
+        "mouse weight",
+        "weight without cable",
+        "actual weight",
+        "grams"
+      ],
+      "unit_hint": "g",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | weight | weight grams | mouse weight | weight without cable | actual weight | grams | g | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 2
+      },
+      "min_refs_required": 2,
+      "distinct_sources_required": true,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "width",
+      "required_level": "required",
+      "need_score": 14.4,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "width",
+        "width mm",
+        "mouse width",
+        "grip width"
+      ],
+      "unit_hint": "mm",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | width | width mm | mouse width | grip width | mm | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 2
+      },
+      "min_refs_required": 2,
+      "distinct_sources_required": true,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "acceleration",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "max acceleration",
+        "acceleration",
+        "g",
+        "g-force",
+        "max g"
+      ],
+      "unit_hint": "g",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | max acceleration | acceleration | g | g-force | max g | g | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "adjustable_scroll_wheel",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "adjustable scroll wheel",
+        "scroll tension",
+        "free-spin scroll",
+        "scroll wheel resistance",
+        "adjustable_scroll_wheel",
+        "adjustablescrollwheel"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | adjustable scroll wheel | scroll tension | free-spin scroll | scroll wheel resistance | adjustable_scroll_wheel | adjustablescrollwheel | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "adjustable_weight",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "adjustable weight",
+        "weight tuning",
+        "removable weights",
+        "weight system",
+        "adjustable_weight",
+        "adjustableweight"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | adjustable weight | weight tuning | removable weights | weight system | adjustable_weight | adjustableweight | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "battery_hours",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "battery life",
+        "battery hours",
+        "runtime",
+        "charge time",
+        "battery duration",
+        "battery_hours"
+      ],
+      "unit_hint": "h",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | battery life | battery hours | runtime | charge time | battery duration | battery_hours | h | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "bluetooth",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "bluetooth",
+        "ble",
+        "bluetooth version",
+        "bluetooth 5.0",
+        "bluetooth connectivity"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | bluetooth | ble | bluetooth version | bluetooth 5.0 | bluetooth connectivity | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "cable_type",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "cable type",
+        "paracord",
+        "braided cable",
+        "rubber cable",
+        "speedflex",
+        "cable material"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | cable type | paracord | braided cable | rubber cable | speedflex | cable material | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "click_force",
+      "required_level": "optional",
+      "need_score": 6,
+      "tier_preference": [
+        2,
+        1,
+        3
+      ],
+      "anchors": [
+        "click force",
+        "actuation force",
+        "button force",
+        "click pressure",
+        "grams force",
+        "click_force"
+      ],
+      "unit_hint": "gf",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "spec",
+        "manual",
+        "pdf",
+        "support",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | click force | actuation force | button force | click pressure | grams force | click_force | gf | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "click_latency",
+      "required_level": "optional",
+      "need_score": 6,
+      "tier_preference": [
+        2,
+        1,
+        3
+      ],
+      "anchors": [
+        "click latency",
+        "click response time",
+        "button latency",
+        "end-to-end latency",
+        "click delay ms",
+        "click_latency"
+      ],
+      "unit_hint": "ms",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "spec",
+        "manual",
+        "pdf",
+        "support",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | click latency | click response time | button latency | end-to-end latency | click delay ms | click_latency | ms | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "click_latency_list",
+      "required_level": "optional",
+      "need_score": 6,
+      "tier_preference": [
+        2,
+        1,
+        3
+      ],
+      "anchors": [
+        "click latency wired wireless",
+        "click latency all modes",
+        "latency comparison",
+        "click_latency_list",
+        "click latency list",
+        "clicklatencylist"
+      ],
+      "unit_hint": "ms",
+      "parse_template_hint": "latency_list_modes_ms",
+      "component_hint": null,
+      "doc_hints": [
+        "spec",
+        "manual",
+        "pdf",
+        "support",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | click latency wired wireless | click latency all modes | latency comparison | click_latency_list | click latency list | clicklatencylist | ms | latency_list_modes_ms",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "coating",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "coating",
+        "surface coating",
+        "matte",
+        "glossy",
+        "textured",
+        "grip coating"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "list_of_tokens_delimited",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | coating | surface coating | matte | glossy | textured | grip coating | list_of_tokens_delimited",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "colors",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "colors",
+        "color options",
+        "available colors",
+        "colorways"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "list_of_tokens_delimited",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | colors | color options | available colors | colorways | list_of_tokens_delimited",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "computer_side_connector",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "usb connector",
+        "usb-a",
+        "computer side connector",
+        "pc connector",
+        "dongle connector",
+        "computer_side_connector"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | usb connector | usb-a | computer side connector | pc connector | dongle connector | computer_side_connector | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "debounce",
+      "required_level": "optional",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "debounce",
+        "debounce time",
+        "debounce delay",
+        "double click prevention",
+        "debounce ms"
+      ],
+      "unit_hint": "ms",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | debounce | debounce time | debounce delay | double click prevention | debounce ms | ms | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "design",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "design",
+        "aesthetics",
+        "build design",
+        "look"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "list_of_tokens_delimited",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | design | aesthetics | build design | look | list_of_tokens_delimited",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "discontinued",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "discontinued",
+        "end of life",
+        "no longer available"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | discontinued | end of life | no longer available | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "encoder",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "encoder",
+        "scroll wheel encoder",
+        "encoder model",
+        "rotary encoder"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "component_reference",
+      "component_hint": "encoder",
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "lab"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | encoder | scroll wheel encoder | encoder model | rotary encoder | component_reference | encoder",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "encoder_brand",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "encoder brand",
+        "encoder manufacturer",
+        "alps",
+        "ttc",
+        "kailh",
+        "encoder_brand"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | encoder brand | encoder manufacturer | alps | ttc | kailh | encoder_brand | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "encoder_life_span",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "encoder lifespan",
+        "scroll wheel lifespan",
+        "encoder durability",
+        "encoder_life_span",
+        "encoder life span",
+        "encoderlifespan"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "integer_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | encoder lifespan | scroll wheel lifespan | encoder durability | encoder_life_span | encoder life span | encoderlifespan | integer_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "encoder_link",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "encoder datasheet",
+        "encoder specifications",
+        "encoder_link",
+        "encoder link",
+        "encoderlink"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "url_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | encoder datasheet | encoder specifications | encoder_link | encoder link | encoderlink | url_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "encoder_steps",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "encoder steps",
+        "notches",
+        "scroll steps",
+        "detents",
+        "encoder resolution",
+        "encoder_steps"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "integer_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | encoder steps | notches | scroll steps | detents | encoder resolution | encoder_steps | integer_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "encoder_type",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "encoder type",
+        "mechanical encoder",
+        "optical encoder",
+        "encoder technology",
+        "encoder_type",
+        "encodertype"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | encoder type | mechanical encoder | optical encoder | encoder technology | encoder_type | encodertype | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "feet_material",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "feet material",
+        "mouse feet",
+        "ptfe",
+        "skates",
+        "glide pads",
+        "teflon"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | feet material | mouse feet | ptfe | skates | glide pads | teflon | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "flawless_sensor",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "flawless sensor",
+        "no acceleration",
+        "no smoothing",
+        "no prediction",
+        "flawless tracking",
+        "flawless_sensor"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | flawless sensor | no acceleration | no smoothing | no prediction | flawless tracking | flawless_sensor | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "form_factor",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "form factor",
+        "mouse size",
+        "medium",
+        "large",
+        "small",
+        "mini"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | form factor | mouse size | medium | large | small | mini | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "front_flare",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "front flare",
+        "button flare",
+        "front width",
+        "front shape",
+        "button splay",
+        "front_flare"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | front flare | button flare | front width | front shape | button splay | front_flare | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "grip",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "grip style",
+        "palm grip",
+        "claw grip",
+        "fingertip grip",
+        "recommended grip",
+        "grip type"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "list_of_tokens_delimited",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | grip style | palm grip | claw grip | fingertip grip | recommended grip | grip type | list_of_tokens_delimited",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "hand_size",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "hand size",
+        "recommended hand size",
+        "hand length",
+        "suitable hand size",
+        "hand_size",
+        "handsize"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "list_of_tokens_delimited",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | hand size | recommended hand size | hand length | suitable hand size | hand_size | handsize | list_of_tokens_delimited",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "hardware_acceleration",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "hardware acceleration",
+        "angle snapping",
+        "prediction",
+        "built-in acceleration",
+        "hardware_acceleration",
+        "hardwareacceleration"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | hardware acceleration | angle snapping | prediction | built-in acceleration | hardware_acceleration | hardwareacceleration | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "honeycomb_frame",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "honeycomb",
+        "perforated shell",
+        "holes",
+        "honeycomb design",
+        "lightweight shell",
+        "honeycomb_frame"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | honeycomb | perforated shell | holes | honeycomb design | lightweight shell | honeycomb_frame | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "hot_swappable",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "hot swappable",
+        "hot-swap switches",
+        "switch sockets",
+        "replaceable switches",
+        "hot_swappable",
+        "hotswappable"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | hot swappable | hot-swap switches | switch sockets | replaceable switches | hot_swappable | hotswappable | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "hump",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "hump",
+        "hump position",
+        "hump placement",
+        "back hump",
+        "center hump",
+        "hump height"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | hump | hump position | hump placement | back hump | center hump | hump height | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "ips",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "ips",
+        "tracking speed",
+        "inches per second",
+        "max tracking speed",
+        "max ips"
+      ],
+      "unit_hint": "ips",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | ips | tracking speed | inches per second | max tracking speed | max ips | ips | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "lift",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "lift-off distance",
+        "lod",
+        "lift off distance",
+        "lift distance",
+        "tracking cutoff",
+        "lift"
+      ],
+      "unit_hint": "mm",
+      "parse_template_hint": "list_numbers_or_ranges_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | lift-off distance | lod | lift off distance | lift distance | tracking cutoff | lift | mm | list_numbers_or_ranges_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "lift_settings",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "lod settings",
+        "lift-off distance adjustment",
+        "lod configurable",
+        "low lod",
+        "lift_settings",
+        "lift settings"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "list_of_tokens_delimited",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | lod settings | lift-off distance adjustment | lod configurable | low lod | lift_settings | lift settings | list_of_tokens_delimited",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "lighting",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "lighting",
+        "led lighting",
+        "rgb zones",
+        "light effects"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "list_of_tokens_delimited",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | lighting | led lighting | rgb zones | light effects | list_of_tokens_delimited",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "material",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "material",
+        "shell material",
+        "housing material",
+        "plastic type",
+        "build material"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "component_reference",
+      "component_hint": "material",
+      "doc_hints": [
+        "support",
+        "spec",
+        "manual",
+        "pdf",
+        "lab"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | material | shell material | housing material | plastic type | build material | component_reference | material",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "mcu",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "mcu",
+        "microcontroller",
+        "processor",
+        "chip",
+        "mouse mcu",
+        "controller chip"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | mcu | microcontroller | processor | chip | mouse mcu | controller chip | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "mcu_link",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "mcu datasheet",
+        "mcu specifications",
+        "mcu_link",
+        "mcu link",
+        "mculink"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "url_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | mcu datasheet | mcu specifications | mcu_link | mcu link | mculink | url_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "motion_sync",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "motion sync",
+        "motionsync",
+        "frame sync",
+        "sensor sync",
+        "motion_sync"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | motion sync | motionsync | frame sync | sensor sync | motion_sync | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "mouse_side_connector",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "mouse connector",
+        "usb-c mouse end",
+        "micro-usb",
+        "mouse side port",
+        "mouse_side_connector",
+        "mouse side connector"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | mouse connector | usb-c mouse end | micro-usb | mouse side port | mouse_side_connector | mouse side connector | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "nvidia_reflex",
+      "required_level": "optional",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "nvidia reflex",
+        "reflex analyzer",
+        "system latency",
+        "click-to-display",
+        "nvidia_reflex",
+        "nvidiareflex"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "spec",
+        "manual",
+        "pdf",
+        "support",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | nvidia reflex | reflex analyzer | system latency | click-to-display | nvidia_reflex | nvidiareflex | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "onboard_memory",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "onboard memory",
+        "built-in memory",
+        "profile storage",
+        "on-mouse memory",
+        "onboard_memory",
+        "onboardmemory"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | onboard memory | built-in memory | profile storage | on-mouse memory | onboard_memory | onboardmemory | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "onboard_memory_value",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "memory profiles",
+        "number of profiles",
+        "stored profiles",
+        "memory slots",
+        "onboard_memory_value",
+        "onboard memory value"
+      ],
+      "unit_hint": "none",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | memory profiles | number of profiles | stored profiles | memory slots | onboard_memory_value | onboard memory value | none | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "paracord",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "paracord",
+        "paracord cable",
+        "lightweight cable",
+        "flexible cable"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | paracord | paracord cable | lightweight cable | flexible cable | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "price_range",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "price",
+        "msrp",
+        "retail price",
+        "buy",
+        "price_range",
+        "price range"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | price | msrp | retail price | buy | price_range | price range | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "profile_switching",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "profile switching",
+        "profile button",
+        "dpi switching",
+        "on-the-fly switching",
+        "profile_switching",
+        "profileswitching"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | profile switching | profile button | dpi switching | on-the-fly switching | profile_switching | profileswitching | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "programmable_buttons",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "programmable buttons",
+        "button count",
+        "total buttons",
+        "remappable buttons",
+        "customizable buttons",
+        "programmable_buttons"
+      ],
+      "unit_hint": "none",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | programmable buttons | button count | total buttons | remappable buttons | customizable buttons | programmable_buttons | none | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "release_date",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "release date",
+        "launch date",
+        "available since",
+        "announced",
+        "release_date",
+        "releasedate"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "date_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | release date | launch date | available since | announced | release_date | releasedate | date_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "releasing_force",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "releasing force",
+        "click release force",
+        "reset force",
+        "tactile force",
+        "releasing_force",
+        "releasingforce"
+      ],
+      "unit_hint": "g",
+      "parse_template_hint": "integer_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | releasing force | click release force | reset force | tactile force | releasing_force | releasingforce | g | integer_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "rgb",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "rgb",
+        "rgb lighting",
+        "chroma",
+        "lightsync",
+        "prism"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | rgb | rgb lighting | chroma | lightsync | prism | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "sensor_date",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "sensor release date",
+        "sensor launch",
+        "sensor generation",
+        "sensor_date",
+        "sensor date",
+        "sensordate"
+      ],
+      "unit_hint": "year",
+      "parse_template_hint": "date_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | sensor release date | sensor launch | sensor generation | sensor_date | sensor date | sensordate | year | date_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "sensor_latency",
+      "required_level": "optional",
+      "need_score": 6,
+      "tier_preference": [
+        2,
+        1,
+        3
+      ],
+      "anchors": [
+        "sensor latency",
+        "motion latency",
+        "motion delay",
+        "sensor response time",
+        "motion-to-screen latency",
+        "sensor_latency"
+      ],
+      "unit_hint": "ms",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "spec",
+        "manual",
+        "pdf",
+        "support",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | sensor latency | motion latency | motion delay | sensor response time | motion-to-screen latency | sensor_latency | ms | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "sensor_latency_list",
+      "required_level": "optional",
+      "need_score": 6,
+      "tier_preference": [
+        2,
+        1,
+        3
+      ],
+      "anchors": [
+        "sensor latency by polling rate",
+        "motion latency results",
+        "latency per hz",
+        "sensor_latency_list",
+        "sensor latency list",
+        "sensorlatencylist"
+      ],
+      "unit_hint": "ms",
+      "parse_template_hint": "latency_list_modes_ms",
+      "component_hint": null,
+      "doc_hints": [
+        "spec",
+        "manual",
+        "pdf",
+        "support",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | sensor latency by polling rate | motion latency results | latency per hz | sensor_latency_list | sensor latency list | sensorlatencylist | ms | latency_list_modes_ms",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "sensor_link",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "sensor datasheet",
+        "sensor specifications page",
+        "sensor details",
+        "sensor_link",
+        "sensor link",
+        "sensorlink"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "url_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | sensor datasheet | sensor specifications page | sensor details | sensor_link | sensor link | sensorlink | url_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "sensor_type",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "sensor type",
+        "optical",
+        "laser",
+        "sensor technology",
+        "sensor_type",
+        "sensortype"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | sensor type | optical | laser | sensor technology | sensor_type | sensortype | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "shape",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "shape",
+        "mouse shape",
+        "ergonomic shape",
+        "ambidextrous",
+        "symmetrical",
+        "right-handed"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | shape | mouse shape | ergonomic shape | ambidextrous | symmetrical | right-handed | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "shift_latency",
+      "required_level": "optional",
+      "need_score": 6,
+      "tier_preference": [
+        2,
+        1,
+        3
+      ],
+      "anchors": [
+        "shift latency",
+        "motion shift",
+        "cursor shift delay",
+        "shift_latency",
+        "shiftlatency",
+        "dpi shift latency"
+      ],
+      "unit_hint": "ms",
+      "parse_template_hint": "number_with_unit",
+      "component_hint": null,
+      "doc_hints": [
+        "spec",
+        "manual",
+        "pdf",
+        "support",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | shift latency | motion shift | cursor shift delay | shift_latency | shiftlatency | dpi shift latency | ms | number_with_unit",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "silent_clicks",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "silent clicks",
+        "silent switches",
+        "quiet clicks",
+        "noise level",
+        "silent mouse",
+        "silent_clicks"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | silent clicks | silent switches | quiet clicks | noise level | silent mouse | silent_clicks | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "smoothing",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "smoothing",
+        "sensor smoothing",
+        "filtering",
+        "signal smoothing",
+        "angle correction"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | smoothing | sensor smoothing | filtering | signal smoothing | angle correction | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "switch_life_span",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "switch lifespan",
+        "switch durability",
+        "click lifespan",
+        "million clicks",
+        "rated clicks",
+        "switch_life_span"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | switch lifespan | switch durability | click lifespan | million clicks | rated clicks | switch_life_span | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "switch_type",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "switch type",
+        "mechanical switch",
+        "optical switch",
+        "switch technology",
+        "switch_type",
+        "switchtype"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | switch type | mechanical switch | optical switch | switch technology | switch_type | switchtype | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "switches_link",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "switches link",
+        "switches_link",
+        "switcheslink",
+        "switch_link"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | switches link | switches_link | switcheslink | switch_link | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "thumb_rest",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "thumb rest",
+        "thumb groove",
+        "thumb area",
+        "side grip",
+        "thumb support",
+        "thumb_rest"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "text_field",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | thumb rest | thumb groove | thumb area | side grip | thumb support | thumb_rest | text_field",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "tilt_scroll_wheel",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "tilt scroll wheel",
+        "horizontal scroll",
+        "side scroll",
+        "scroll wheel tilt",
+        "tilt_scroll_wheel",
+        "tiltscrollwheel"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | tilt scroll wheel | horizontal scroll | side scroll | scroll wheel tilt | tilt_scroll_wheel | tiltscrollwheel | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    },
+    {
+      "field_key": "wireless_charging",
+      "required_level": "expected",
+      "need_score": 6,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        "wireless charging",
+        "qi charging",
+        "charging dock",
+        "powerplay",
+        "wireless charge",
+        "wireless_charging"
+      ],
+      "unit_hint": null,
+      "parse_template_hint": "boolean_yes_no_unk",
+      "component_hint": null,
+      "doc_hints": [
+        "support",
+        "manual",
+        "spec",
+        "pdf",
+        "product_page"
+      ],
+      "retrieval_query": "Razer Viper V3 Pro unk | wireless charging | qi charging | charging dock | powerplay | wireless charge | wireless_charging | boolean_yes_no_unk",
+      "hits": [],
+      "identity_rejected": [],
+      "miss_diagnostics": {
+        "status": "miss",
+        "reasons": [
+          "pool_empty"
+        ],
+        "pool_rows_scanned": 0,
+        "anchor_match_count": 0,
+        "preferred_tier_hit_count": 0,
+        "identity_filtered_count": 0,
+        "min_refs_gap": 1
+      },
+      "min_refs_required": 1,
+      "distinct_sources_required": false,
+      "hits_count": 0,
+      "refs_selected": 0,
+      "distinct_sources_selected": 0,
+      "min_refs_satisfied": false,
+      "prime_sources": []
+    }
+  ]
+}

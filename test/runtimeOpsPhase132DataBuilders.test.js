@@ -5,7 +5,7 @@ import {
   buildExtractionFields,
   buildFallbackEvents,
   buildQueueState,
-} from '../src/api/routes/runtimeOpsDataBuilders.js';
+} from '../src/features/indexing/api/builders/runtimeOpsDataBuilders.js';
 
 function makeEvent(event, payload = {}, ts = '2026-02-23T12:00:00.000Z') {
   return { event, ts, payload };
@@ -245,6 +245,96 @@ test('buildExtractionFields: candidates array contains all raw candidates for a 
   assert.ok(Array.isArray(row.candidates));
   assert.equal(row.candidates.length, 2);
   assert.equal(row.candidates[0].snippet_id, 's1');
+});
+
+test('buildExtractionFields: fills from sourcePackets when events lack candidates', () => {
+  // Events with no candidates (mimics real source_processed events that have stripped payload)
+  const events = [
+    makeEvent('fields_filled_from_source', { url: 'https://mfr.com', fields: ['sensor'] }),
+  ];
+  const sourcePackets = [
+    {
+      canonical_url: 'https://mfr.com/product',
+      source_key: 'https://mfr.com/product',
+      source_metadata: { source_url: 'https://mfr.com/product' },
+      field_key_map: {
+        sensor: {
+          contexts: [{
+            assertions: [{
+              field_key: 'sensor',
+              value_raw: 'PAW3950',
+              value_normalized: 'PAW3950',
+              confidence: 0.92,
+              extraction_method: 'spec_table_match',
+              parser_phase: 'phase_04_html_spec_table',
+            }],
+          }],
+        },
+        dpi: {
+          contexts: [{
+            assertions: [{
+              field_key: 'dpi',
+              value_raw: '30000',
+              value_normalized: '30000',
+              confidence: 0.88,
+              extraction_method: 'dom',
+              parser_phase: 'phase_01_static_html',
+            }],
+          }],
+        },
+      },
+    },
+  ];
+  const result = buildExtractionFields(events, { sourcePackets });
+  assert.ok(result.fields.length >= 2, `expected >= 2 fields, got ${result.fields.length}`);
+
+  const sensor = result.fields.find((f) => f.field === 'sensor');
+  assert.ok(sensor, 'sensor field should exist');
+  assert.equal(sensor.value, 'PAW3950');
+  assert.equal(sensor.method, 'spec_table_match');
+  assert.equal(sensor.status, 'accepted'); // because fields_filled_from_source has 'sensor'
+
+  const dpi = result.fields.find((f) => f.field === 'dpi');
+  assert.ok(dpi, 'dpi field should exist');
+  assert.equal(dpi.value, '30000');
+  assert.equal(dpi.method, 'dom');
+});
+
+test('buildExtractionFields: prefers event candidates over sourcePacket data for same field', () => {
+  const events = [
+    makeEvent('source_processed', {
+      url: 'https://mfr.com',
+      round: 1,
+      candidates: [
+        { field: 'weight', value: '55g', confidence: 0.95, method: 'html_spec_table', source_url: 'https://mfr.com' },
+      ],
+    }),
+  ];
+  const sourcePackets = [
+    {
+      canonical_url: 'https://mfr.com',
+      source_key: 'https://mfr.com',
+      source_metadata: { source_url: 'https://mfr.com' },
+      field_key_map: {
+        weight: {
+          contexts: [{
+            assertions: [{
+              field_key: 'weight',
+              value_raw: '58g',
+              confidence: 0.88,
+              extraction_method: 'dom',
+            }],
+          }],
+        },
+      },
+    },
+  ];
+  const result = buildExtractionFields(events, { sourcePackets });
+  const row = result.fields.find((f) => f.field === 'weight');
+  assert.ok(row, 'weight field should exist');
+  // Event candidate has higher confidence and same host, so it wins
+  assert.equal(row.value, '55g');
+  assert.equal(row.confidence, 0.95);
 });
 
 // ── buildFallbackEvents ─────────────────────────────────────────

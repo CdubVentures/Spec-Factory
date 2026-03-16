@@ -1,0 +1,46 @@
+{
+  "category": "mouse",
+  "generated_at": "2026-03-09T19:55:27.491Z",
+  "rules": [
+    {
+      "condition": "connection IN ['wireless','hybrid','bluetooth']",
+      "description": "Wireless products should provide battery_hours",
+      "on_fail": "set_unknown_with_reason",
+      "requires_field": "battery_hours",
+      "rule_id": "wireless_battery_required",
+      "trigger_field": "connection",
+      "unknown_reason": "not_found_after_search"
+    },
+    {
+      "check": {
+        "compare": "dpi <= sensors[sensor].properties.max_dpi",
+        "db": "sensors",
+        "lookup_field": "sensor",
+        "on_fail": "flag_for_review",
+        "tolerance_percent": 5,
+        "type": "component_db_lookup"
+      },
+      "depends_on": [
+        "sensor"
+      ],
+      "description": "Claimed DPI should be consistent with sensor capabilities",
+      "rule_id": "sensor_dpi_consistency",
+      "trigger_field": "dpi"
+    },
+    {
+      "check": {
+        "minimum_present": 3,
+        "on_fail": "flag_for_review",
+        "type": "group_completeness"
+      },
+      "description": "Dimensions should be captured as a complete triplet",
+      "related_fields": [
+        "width",
+        "height"
+      ],
+      "rule_id": "dimensions_consistency",
+      "trigger_field": "lngth"
+    }
+  ],
+  "version": 1
+}

@@ -6,8 +6,8 @@ import path from 'node:path';
 
 import {
   initIndexLabDataBuilders,
-} from '../src/api/routes/indexlabDataBuilders.js';
-import { registerRuntimeOpsRoutes } from '../src/api/routes/runtimeOpsRoutes.js';
+} from '../src/features/indexing/api/builders/indexlabDataBuilders.js';
+import { registerRuntimeOpsRoutes } from '../src/features/indexing/api/runtimeOpsRoutes.js';
 
 function createStorageStub() {
   return {

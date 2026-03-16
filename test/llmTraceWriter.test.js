@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { callOpenAI } from '../src/llm/openaiClient.js';
+import { callOpenAI } from '../src/core/llm/client/openaiClient.js';
 
 function makeTraceWriter() {
   const traces = [];

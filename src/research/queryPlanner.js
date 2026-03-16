@@ -1,4 +1,4 @@
-import { callLlmWithRouting, hasLlmRouteApiKey } from '../llm/routing.js';
+import { callLlmWithRouting, hasLlmRouteApiKey } from '../core/llm/client/routing.js';
 
 function toArray(value) {
   return Array.isArray(value) ? value : [];

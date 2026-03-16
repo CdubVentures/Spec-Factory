@@ -1,0 +1,54 @@
+{
+  "algorithm": "sha256",
+  "artifact_count": 9,
+  "artifacts": [
+    {
+      "bytes": 32934,
+      "path": "component_db/switches.json",
+      "sha256": "bb472c7c383e3096299ef9e68e49a8390be555119b7aaaa4047b6b554b0be7ad"
+    },
+    {
+      "bytes": 8951,
+      "path": "cross_validation_rules.json",
+      "sha256": "ab842a6b261cd39f0e7e5a50c2d5d70259304bdafaef9b7c72badd23cb7b34ff"
+    },
+    {
+      "bytes": 6796,
+      "path": "field_groups.json",
+      "sha256": "3650531a0d69db1ff33acc786dc50b19cf01873e4dabb35cf71543c865542e1f"
+    },
+    {
+      "bytes": 340210,
+      "path": "field_rules.json",
+      "sha256": "cf0f2b89e447b620767ef7ec2e6feb832c04046464aef1a70ef229ffc4a1904d"
+    },
+    {
+      "bytes": 340210,
+      "path": "field_rules.runtime.json",
+      "sha256": "cf0f2b89e447b620767ef7ec2e6feb832c04046464aef1a70ef229ffc4a1904d"
+    },
+    {
+      "bytes": 201,
+      "path": "key_migrations.json",
+      "sha256": "f586186d31cee70ccb52f334fc38e4b83e4768abed23aab8b1e711cd73aeecf5"
+    },
+    {
+      "bytes": 7467,
+      "path": "known_values.json",
+      "sha256": "04a4c921b381a61b6f49a1b437ff496a451f0a50ba56faf93fdf7569d048dad7"
+    },
+    {
+      "bytes": 22609,
+      "path": "parse_templates.json",
+      "sha256": "e106de3ea7509d9036cf6a6b606663ef6c39a298584822408823224c21696b94"
+    },
+    {
+      "bytes": 105278,
+      "path": "ui_field_catalog.json",
+      "sha256": "e7f6f7a0521ec370bd2e0d2e46a990c7e4357076b8128f0401ed22475bbed7a1"
+    }
+  ],
+  "category": "keyboard",
+  "generated_at": "2026-03-16T05:55:10.182Z",
+  "version": 1
+}

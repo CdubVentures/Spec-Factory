@@ -28,11 +28,6 @@ export class UberAggressiveOrchestrator {
     this.frontier = frontier || null;
   }
 
-  isEnabled(mode = '') {
-    const token = String(mode || '').trim().toLowerCase();
-    return token === 'uber_aggressive';
-  }
-
   async buildSearchPlan({
     llmContext = {},
     identity = {},
@@ -43,7 +38,6 @@ export class UberAggressiveOrchestrator {
   } = {}) {
     const tier = resolveDeepeningTier({
       round,
-      mode: 'uber_aggressive',
       previousSummary
     });
     const frontierSummary = this.frontier?.snapshotForProduct?.(identity?.productId || '') || {};

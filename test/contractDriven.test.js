@@ -28,7 +28,7 @@ import { buildProductReviewPayload } from '../src/review/reviewGridData.js';
 import { buildComponentReviewPayloads, buildEnumReviewPayloads } from '../src/review/componentReviewData.js';
 
 const CATEGORY = 'mouse';
-const HELPER_ROOT = path.resolve('helper_files');
+const HELPER_ROOT = path.resolve('category_authority');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -243,7 +243,7 @@ test('Contract-Driven End-to-End Test', async (t) => {
     tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'contract-e2e-'));
     const storage = makeStorage(tempRoot);
     const config = {
-      helperFilesRoot: path.join(tempRoot, 'helper_files'),
+      categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
       localOutputRoot: path.join(tempRoot, 'out'),
       specDbDir: path.join(tempRoot, '.specfactory_tmp'),
     };
@@ -276,7 +276,7 @@ test('Contract-Driven End-to-End Test', async (t) => {
 
     // 3. Copy real contract files to temp dir
     const realGenDir = path.join(HELPER_ROOT, CATEGORY, '_generated');
-    const tempGenDir = path.join(config.helperFilesRoot, CATEGORY, '_generated');
+    const tempGenDir = path.join(config.categoryAuthorityRoot, CATEGORY, '_generated');
 
     for (const file of [
       'field_rules.json', 'known_values.json', 'cross_validation_rules.json',
@@ -295,7 +295,7 @@ test('Contract-Driven End-to-End Test', async (t) => {
 
     // 5. Write support files
     await writeJson(
-      path.join(config.helperFilesRoot, CATEGORY, '_control_plane', 'field_studio_map.json'),
+      path.join(config.categoryAuthorityRoot, CATEGORY, '_control_plane', 'field_studio_map.json'),
       { manual_enum_values: {}, manual_enum_timestamps: {} }
     );
     const openPKCatalogs = (contractAnalysis._raw.knownValuesCatalogs || [])
@@ -310,11 +310,11 @@ test('Contract-Driven End-to-End Test', async (t) => {
         source: 'pipeline',
       }));
     await writeJson(
-      path.join(config.helperFilesRoot, CATEGORY, '_suggestions', 'enums.json'),
+      path.join(config.categoryAuthorityRoot, CATEGORY, '_suggestions', 'enums.json'),
       { suggestions: enumSuggestions }
     );
     await writeJson(
-      path.join(config.helperFilesRoot, CATEGORY, '_suggestions', 'component_review.json'),
+      path.join(config.categoryAuthorityRoot, CATEGORY, '_suggestions', 'component_review.json'),
       { items: [] }
     );
 

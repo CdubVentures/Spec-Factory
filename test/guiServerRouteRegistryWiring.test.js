@@ -127,9 +127,11 @@ test('api http request handler applies preflight, api 404, static fallback, and 
   assert.equal(corsCount, 4);
 });
 
-test('gui api route registry wires handlers in canonical order', () => {
+test('gui api route registry wires handlers in canonical order using pre-built contexts', () => {
   const registrationCalls = [];
-  const routeCtx = { token: 'ctx' };
+  const routeCtx = Object.fromEntries(
+    GUI_API_ROUTE_ORDER.map((name) => [`${name}RouteContext`, { _sentinel: name }]),
+  );
 
   const makeRegistrar = (name) => (ctx) => {
     registrationCalls.push({ name, ctx });
@@ -153,10 +155,68 @@ test('gui api route registry wires handlers in canonical order', () => {
   });
 
   assert.equal(registrationCalls.length, GUI_API_ROUTE_ORDER.length);
+
+  // Each registrar receives its own pre-built context object (not the full routeCtx)
   for (const call of registrationCalls) {
-    assert.equal(call.ctx, routeCtx);
+    assert.equal(call.ctx, routeCtx[`${call.name}RouteContext`],
+      `${call.name} should receive its pre-built context`);
   }
 
   const routeOrderFromHandlers = registry.routeHandlers.map((handler) => handler());
   assert.deepEqual(routeOrderFromHandlers, GUI_API_ROUTE_ORDER);
+});
+
+test('gui api route registry passes each pre-built context to the correct registrar', () => {
+  const registrationCalls = [];
+  const infraCtx = { token: 'infra-ctx' };
+  const configCtx = { token: 'config-ctx' };
+  const routeCtx = {
+    infraRouteContext: infraCtx,
+    configRouteContext: configCtx,
+    indexlabRouteContext: { token: 'indexlab-ctx' },
+    runtimeOpsRouteContext: { token: 'runtimeOps-ctx' },
+    catalogRouteContext: { token: 'catalog-ctx' },
+    brandRouteContext: { token: 'brand-ctx' },
+    studioRouteContext: { token: 'studio-ctx' },
+    dataAuthorityRouteContext: { token: 'dataAuthority-ctx' },
+    queueBillingLearningRouteContext: { token: 'queueBillingLearning-ctx' },
+    reviewRouteContext: { token: 'review-ctx' },
+    testModeRouteContext: { token: 'testMode-ctx' },
+    sourceStrategyRouteContext: { token: 'sourceStrategy-ctx' },
+  };
+
+  const makeRegistrar = (name) => (ctx) => {
+    registrationCalls.push({ name, ctx });
+    return () => name;
+  };
+
+  createGuiApiRouteRegistry({
+    routeCtx,
+    registerInfraRoutes: makeRegistrar('infra'),
+    registerConfigRoutes: makeRegistrar('config'),
+    registerIndexlabRoutes: makeRegistrar('indexlab'),
+    registerRuntimeOpsRoutes: makeRegistrar('runtimeOps'),
+    registerCatalogRoutes: makeRegistrar('catalog'),
+    registerBrandRoutes: makeRegistrar('brand'),
+    registerStudioRoutes: makeRegistrar('studio'),
+    registerDataAuthorityRoutes: makeRegistrar('dataAuthority'),
+    registerQueueBillingLearningRoutes: makeRegistrar('queueBillingLearning'),
+    registerReviewRoutes: makeRegistrar('review'),
+    registerTestModeRoutes: makeRegistrar('testMode'),
+    registerSourceStrategyRoutes: makeRegistrar('sourceStrategy'),
+  });
+
+  assert.equal(
+    registrationCalls.find((call) => call.name === 'infra')?.ctx,
+    infraCtx,
+  );
+  assert.equal(
+    registrationCalls.find((call) => call.name === 'config')?.ctx,
+    configCtx,
+  );
+
+  // No registrar receives the full routeCtx
+  for (const call of registrationCalls) {
+    assert.notEqual(call.ctx, routeCtx, `${call.name} should get its pre-built context, not the full routeCtx`);
+  }
 });

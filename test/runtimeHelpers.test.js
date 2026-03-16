@@ -10,7 +10,7 @@ import {
   defaultRuntimeOverrides,
   normalizeRuntimeOverrides,
   applyRuntimeOverridesToPlanner
-} from '../src/pipeline/helpers/runtimeHelpers.js';
+} from '../src/features/indexing/orchestration/shared/runtimeHelpers.js';
 
 // --- parseMinEvidenceRefs ---
 

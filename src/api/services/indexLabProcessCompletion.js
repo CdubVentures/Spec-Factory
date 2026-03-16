@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { emitDataChange } from '../events/dataChangeContract.js';
+import { defaultIndexLabRoot, defaultLocalOutputRoot } from '../../core/config/runtimeArtifactRoots.js';
 import {
   shouldRelocateRunData,
   relocateRunDataForCompletedRun,
@@ -11,6 +12,28 @@ function parseCliArg(cliArgs, argName) {
   const index = cliArgs.findIndex((value) => String(value || '').trim() === argName);
   if (index < 0 || !cliArgs[index + 1]) return '';
   return String(cliArgs[index + 1]).trim();
+}
+
+async function safeReadJson(filePath) {
+  try {
+    const text = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+async function safeReadJsonLines(filePath) {
+  try {
+    const text = await fs.readFile(filePath, 'utf8');
+    return String(text || '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+  } catch {
+    return [];
+  }
 }
 
 function isIndexLabCommand(cliArgs) {
@@ -42,7 +65,15 @@ async function resolveCompletedRunMeta({
   cliArgs,
   startedAt,
 } = {}) {
-  const rootDir = path.resolve(String(indexLabRoot || 'artifacts/indexlab'));
+  const rootDir = path.resolve(String(indexLabRoot || defaultIndexLabRoot()));
+  const requestedRunId = parseCliArg(cliArgs, '--run-id');
+  if (requestedRunId) {
+    const directMeta = await safeReadJson(path.join(rootDir, requestedRunId, 'run.json'));
+    if (directMeta && typeof directMeta === 'object') {
+      return directMeta;
+    }
+  }
+
   let entries = [];
   try {
     entries = await fs.readdir(rootDir, { withFileTypes: true });
@@ -84,22 +115,126 @@ async function resolveCompletedRunMeta({
   return sorted[0] || null;
 }
 
+function closeOpenStages(stages = {}, endedAt = '') {
+  const source = stages && typeof stages === 'object' ? stages : {};
+  const next = {};
+  for (const [stageName, stageState] of Object.entries(source)) {
+    const safeState = stageState && typeof stageState === 'object' ? stageState : {};
+    const startedAt = String(safeState.started_at || '').trim();
+    const stageEndedAt = String(safeState.ended_at || '').trim();
+    next[stageName] = {
+      ...safeState,
+      ended_at: startedAt && !stageEndedAt ? endedAt : stageEndedAt,
+    };
+  }
+  return next;
+}
+
+function extractTerminalErrorReason(events = []) {
+  for (let i = events.length - 1; i >= 0; i -= 1) {
+    const row = events[i] || {};
+    if (String(row.event || '').trim() === 'run_completed') {
+      return '';
+    }
+    if (String(row.event || '').trim() !== 'error') continue;
+    const payload = row.payload && typeof row.payload === 'object' ? row.payload : {};
+    const reason = String(
+      payload.event
+      || payload.reason
+      || payload.code
+      || payload.message
+      || '',
+    ).trim();
+    if (reason) return reason;
+  }
+  return '';
+}
+
+async function reconcileInterruptedRunArtifacts({
+  exitCode,
+  cliArgs,
+  indexLabRoot,
+} = {}) {
+  if (exitCode === 0) return null;
+
+  const runId = parseCliArg(cliArgs, '--run-id');
+  if (!runId) return null;
+
+  const rootDir = path.resolve(String(indexLabRoot || defaultIndexLabRoot()));
+  const runDir = path.join(rootDir, runId);
+  const runMetaPath = path.join(runDir, 'run.json');
+  const runEventsPath = path.join(runDir, 'run_events.ndjson');
+
+  const meta = await safeReadJson(runMetaPath);
+  if (!meta || typeof meta !== 'object') return null;
+
+  const events = await safeReadJsonLines(runEventsPath);
+  const hasCompletedEvent = events.some((row) => String(row?.event || '').trim() === 'run_completed');
+  const terminalReason = extractTerminalErrorReason(events) || (hasCompletedEvent ? '' : 'process_interrupted');
+  const endedAt = String(meta.ended_at || '').trim() || new Date().toISOString();
+
+  if (!hasCompletedEvent && !extractTerminalErrorReason(events)) {
+    await fs.mkdir(path.dirname(runEventsPath), { recursive: true });
+    await fs.appendFile(
+      runEventsPath,
+      `${JSON.stringify({
+        run_id: runId,
+        category: String(meta.category || '').trim(),
+        product_id: String(meta.product_id || meta.productId || '').trim(),
+        ts: endedAt,
+        stage: 'error',
+        event: 'error',
+        payload: {
+          event: terminalReason,
+          message: 'IndexLab process exited before run_completed.',
+        },
+      })}\n`,
+      'utf8',
+    );
+  }
+
+  const nextStatus = hasCompletedEvent ? 'completed' : 'failed';
+  await fs.writeFile(
+    runMetaPath,
+    JSON.stringify({
+      ...meta,
+      status: nextStatus,
+      ended_at: endedAt,
+      stages: closeOpenStages(meta.stages, endedAt),
+    }, null, 2),
+    'utf8',
+  );
+
+  return {
+    ...meta,
+    status: nextStatus,
+    ended_at: endedAt,
+    stages: closeOpenStages(meta.stages, endedAt),
+  };
+}
+
 export async function handleIndexLabProcessCompletion({
   exitCode,
   cliArgs,
   startedAt = '',
   runDataStorageSettings = {},
-  indexLabRoot = 'artifacts/indexlab',
-  outputRoot = 'out',
+  indexLabRoot = defaultIndexLabRoot(),
+  outputRoot = defaultLocalOutputRoot(),
   outputPrefix = 'specs/outputs',
   broadcastWs,
   logError = console.error,
 } = {}) {
   if (!isIndexLabCommand(cliArgs)) return null;
-  if (!shouldRelocateRunData(runDataStorageSettings)) return null;
 
   const customOutRoot = parseCliArg(cliArgs, '--out');
   const effectiveIndexLabRoot = customOutRoot || indexLabRoot;
+  await reconcileInterruptedRunArtifacts({
+    exitCode,
+    cliArgs,
+    indexLabRoot: effectiveIndexLabRoot,
+  });
+
+  if (!shouldRelocateRunData(runDataStorageSettings)) return null;
   const runMeta = await resolveCompletedRunMeta({
     indexLabRoot: effectiveIndexLabRoot,
     cliArgs,

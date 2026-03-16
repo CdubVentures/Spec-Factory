@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateAnchorConflicts } from '../src/validator/anchors.js';
+import { evaluateAnchorConflicts } from '../src/features/indexing/validation/anchors.js';
 
 test('evaluateAnchorConflicts flags major and minor mismatches by rules', () => {
   const anchors = {

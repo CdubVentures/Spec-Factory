@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AggressiveReasoningResolver } from '../src/extract/aggressiveReasoning.js';
+import { AggressiveReasoningResolver } from '../src/features/indexing/extraction/aggressiveReasoning.js';
 
 test('AggressiveReasoningResolver resolves obvious winner by confidence margin', async () => {
   const resolver = new AggressiveReasoningResolver();

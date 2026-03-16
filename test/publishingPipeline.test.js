@@ -202,7 +202,7 @@ async function seedApprovedOverride(helperRoot, category, productId, value) {
 test('publishProducts merges approved overrides, writes artifacts, and versions diffs', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase9-publish-'));
   const storage = makeStorage(tempRoot);
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const category = 'mouse';
   const productId = 'mouse-razer-viper-v3-pro-wireless';
 
@@ -213,7 +213,7 @@ test('publishProducts merges approved overrides, writes artifacts, and versions 
 
     const first = await publishProducts({
       storage,
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
       category,
       productIds: [productId]
     });
@@ -241,7 +241,7 @@ test('publishProducts merges approved overrides, writes artifacts, and versions 
     await seedApprovedOverride(helperRoot, category, productId, '57');
     const second = await publishProducts({
       storage,
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
       category,
       productIds: [productId]
     });
@@ -263,10 +263,37 @@ test('publishProducts merges approved overrides, writes artifacts, and versions 
   }
 });
 
+test('publishProducts resolves approved override targets via allApproved', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase9-publish-all-approved-'));
+  const storage = makeStorage(tempRoot);
+  const helperRoot = path.join(tempRoot, 'category_authority');
+  const category = 'mouse';
+  const productId = 'mouse-synthetic-all-approved';
+
+  try {
+    await createCategoryFixture(helperRoot, category);
+    await seedLatest(storage, category, productId, { weight: '59', dpi: '26000' });
+    await seedApprovedOverride(helperRoot, category, productId, '58');
+
+    const result = await publishProducts({
+      storage,
+      config: { categoryAuthorityRoot: helperRoot },
+      category,
+      allApproved: true
+    });
+
+    assert.equal(result.processed_count, 1);
+    assert.equal(result.published_count, 1);
+    assert.equal(result.results[0]?.product_id, productId);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('publishProducts blocks invalid override values via runtime validation', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase9-publish-block-'));
   const storage = makeStorage(tempRoot);
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const category = 'mouse';
   const productId = 'mouse-invalid-override';
 
@@ -277,7 +304,7 @@ test('publishProducts blocks invalid override values via runtime validation', as
 
     const result = await publishProducts({
       storage,
-      config: { helperFilesRoot: helperRoot },
+      config: { categoryAuthorityRoot: helperRoot },
       category,
       productIds: [productId]
     });
@@ -294,7 +321,7 @@ test('publishProducts blocks invalid override values via runtime validation', as
 test('monitoring helpers produce trend, source health, and llm metrics', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase9-monitoring-'));
   const storage = makeStorage(tempRoot);
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const category = 'mouse';
   const productId = 'mouse-monitoring-case';
 
@@ -306,7 +333,7 @@ test('monitoring helpers produce trend, source health, and llm metrics', async (
     const benchmark = await runAccuracyBenchmarkReport({
       storage,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         goldenRoot: path.join(tempRoot, 'golden')
       },
       category,
@@ -349,12 +376,15 @@ test('monitoring helpers produce trend, source health, and llm metrics', async (
     assert.equal(trend.points.length >= 2, true);
     assert.equal(Number.isFinite(trend.delta), true);
 
+    const recentTs = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    const recentTs2 = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 3600_000).toISOString();
+    const recentTs3 = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 7200_000).toISOString();
     await writeText(
       path.join(tempRoot, 'out', 'specs', 'outputs', 'final', category, 'razer', 'viper-v3-pro', 'evidence', 'sources.jsonl'),
       [
-        JSON.stringify({ ts: '2026-02-12T00:00:00.000Z', host: 'manufacturer.example', status: 200 }),
-        JSON.stringify({ ts: '2026-02-12T01:00:00.000Z', host: 'manufacturer.example', status: 403 }),
-        JSON.stringify({ ts: '2026-02-12T02:00:00.000Z', host: 'review.example', status: 200 })
+        JSON.stringify({ ts: recentTs, host: 'manufacturer.example', status: 200 }),
+        JSON.stringify({ ts: recentTs2, host: 'manufacturer.example', status: 403 }),
+        JSON.stringify({ ts: recentTs3, host: 'review.example', status: 200 })
       ].join('\n') + '\n'
     );
 
@@ -366,12 +396,15 @@ test('monitoring helpers produce trend, source health, and llm metrics', async (
     assert.equal(sourceHealth.total_sources >= 2, true);
     assert.equal(sourceHealth.sources.some((row) => row.host === 'manufacturer.example'), true);
 
+    const recentBilling1 = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    const recentBilling2 = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 30_000).toISOString();
+    const recentBilling3 = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 3600_000).toISOString();
     await writeText(
       path.join(tempRoot, 'out', '_billing', 'ledger.jsonl'),
       [
-        JSON.stringify({ ts: '2026-02-12T00:00:00.000Z', provider: 'deepseek', model: 'deepseek-chat', productId: productId, runId: 'run-001', cost_usd: 0.05, prompt_tokens: 1000, completion_tokens: 200, reason: 'extract' }),
-        JSON.stringify({ ts: '2026-02-12T00:00:30.000Z', provider: 'deepseek', model: 'deepseek-reasoner', productId: productId, runId: 'run-001', cost_usd: 0.02, prompt_tokens: 500, completion_tokens: 120, reason: 'verify' }),
-        JSON.stringify({ ts: '2026-02-12T01:00:00.000Z', provider: 'deepseek', model: 'deepseek-reasoner', productId: productId, cost_usd: 0.08, prompt_tokens: 1200, completion_tokens: 300, reason: 'verify' })
+        JSON.stringify({ ts: recentBilling1, provider: 'deepseek', model: 'deepseek-chat', productId: productId, runId: 'run-001', cost_usd: 0.05, prompt_tokens: 1000, completion_tokens: 200, reason: 'extract' }),
+        JSON.stringify({ ts: recentBilling2, provider: 'deepseek', model: 'deepseek-reasoner', productId: productId, runId: 'run-001', cost_usd: 0.02, prompt_tokens: 500, completion_tokens: 120, reason: 'verify' }),
+        JSON.stringify({ ts: recentBilling3, provider: 'deepseek', model: 'deepseek-reasoner', productId: productId, cost_usd: 0.08, prompt_tokens: 1200, completion_tokens: 300, reason: 'verify' })
       ].join('\n') + '\n'
     );
 
@@ -401,7 +434,7 @@ test('monitoring helpers produce trend, source health, and llm metrics', async (
 
 async function createBlockerFixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'publish-blocker-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
 
   await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -484,7 +517,7 @@ test('checkPublishBlockers: block_publish_when_unk=true + unk field → blocked'
   const fixture = await createBlockerFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = checkPublishBlockers({
       engine,
@@ -506,7 +539,7 @@ test('checkPublishBlockers: block_publish_when_unk=true + all fields present →
   const fixture = await createBlockerFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = checkPublishBlockers({
       engine,
@@ -526,7 +559,7 @@ test('checkPublishBlockers: block_publish_when_unk=false + unk field → passes'
   const fixture = await createBlockerFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = checkPublishBlockers({
       engine,
@@ -546,7 +579,7 @@ test('checkPublishBlockers: no priority object → treated as block=false', asyn
   const fixture = await createBlockerFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = checkPublishBlockers({
       engine,
@@ -567,7 +600,7 @@ test('checkPublishBlockers: multiple blocked fields → all listed', async () =>
   const fixture = await createBlockerFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = checkPublishBlockers({
       engine,
@@ -589,7 +622,7 @@ test('checkPublishBlockers: publish_gate_reason is included in each blocker', as
   const fixture = await createBlockerFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = checkPublishBlockers({
       engine,
@@ -613,7 +646,7 @@ test('checkPublishBlockers: unknown-token variants all treated as unk', async ()
   const fixture = await createBlockerFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     // weight='' and dpi='unknown' → both should be treated as unknown
     const result = checkPublishBlockers({
@@ -635,7 +668,7 @@ test('checkPublishBlockers: unknown-token variants all treated as unk', async ()
 
 async function createPublishGateFixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'publish-gate-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
 
   await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -731,7 +764,7 @@ test('evaluatePublishGate: gate=none → passes even with missing fields', async
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = evaluatePublishGate({
       engine,
@@ -755,7 +788,7 @@ test('evaluatePublishGate: identity_complete + missing identity → blocked', as
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = evaluatePublishGate({
       engine,
@@ -780,7 +813,7 @@ test('evaluatePublishGate: identity_complete + identity present → passes', asy
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = evaluatePublishGate({
       engine,
@@ -803,7 +836,7 @@ test('evaluatePublishGate: required_complete + missing required → blocked', as
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = evaluatePublishGate({
       engine,
@@ -829,7 +862,7 @@ test('evaluatePublishGate: required_complete + all required present → passes',
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = evaluatePublishGate({
       engine,
@@ -852,7 +885,7 @@ test('evaluatePublishGate: evidence_complete + value without evidence → blocke
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = evaluatePublishGate({
       engine,
@@ -885,7 +918,7 @@ test('evaluatePublishGate: evidence_complete + all evidence present → passes',
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = evaluatePublishGate({
       engine,
@@ -909,7 +942,7 @@ test('evaluatePublishGate: evidence_complete + unk evidence-required field → n
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = evaluatePublishGate({
       engine,
@@ -937,7 +970,7 @@ test('evaluatePublishGate: all_validations_pass + runtimeGate failures → block
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = evaluatePublishGate({
       engine,
@@ -965,7 +998,7 @@ test('evaluatePublishGate: all_validations_pass + clean runtimeGate → passes',
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = evaluatePublishGate({
       engine,
@@ -988,7 +1021,7 @@ test('evaluatePublishGate: strict + runtimeGate warnings → blocked', async () 
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = evaluatePublishGate({
       engine,
@@ -1016,7 +1049,7 @@ test('evaluatePublishGate: strict + all clean → passes', async () => {
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = evaluatePublishGate({
       engine,
@@ -1039,7 +1072,7 @@ test('evaluatePublishGate: undefined gate defaults to required_complete', async 
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     // brand_name=unk → identity field missing → should block under required_complete
     const blocked = evaluatePublishGate({
@@ -1071,7 +1104,7 @@ test('evaluatePublishGate: blockers have machine-readable shape', async () => {
   const fixture = await createPublishGateFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = evaluatePublishGate({
       engine,

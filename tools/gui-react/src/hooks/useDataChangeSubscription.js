@@ -1,19 +1,12 @@
 import { useEffect, useMemo } from 'react';
 import { wsManager } from '../api/ws';
 import {
+  collectDataChangeDomains,
   resolveDataChangeEventName,
   dataChangeAffectsCategory,
   dataChangeAffectsDomains,
   shouldHandleDataChangeMessage,
-} from './dataChangeSubscriptionHelpers.js';
-
-function normalizedToken(value) {
-  return String(value || '').trim();
-}
-
-function normalizedLowerToken(value) {
-  return normalizedToken(value).toLowerCase();
-}
+} from '../utils/data-change/index.js';
 
 export {
   resolveDataChangeEventName,
@@ -29,7 +22,7 @@ export function useDataChangeSubscription({
   onDataChange,
 }) {
   const normalizedDomains = useMemo(
-    () => (Array.isArray(domains) ? domains.map((domain) => normalizedLowerToken(domain)).filter(Boolean) : []),
+    () => collectDataChangeDomains(domains),
     [domains],
   );
   const domainsToken = normalizedDomains.join('|');

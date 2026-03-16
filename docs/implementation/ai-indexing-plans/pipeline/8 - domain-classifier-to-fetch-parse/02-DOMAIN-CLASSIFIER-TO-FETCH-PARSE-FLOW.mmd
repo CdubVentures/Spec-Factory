@@ -1,0 +1,51 @@
+flowchart TD
+    A[Folder 7 output<br/>seeded SourcePlanner queue] --> B[runPlannerQueueSnapshotPhase]
+    B --> C[runFetcherStartPhase]
+    C --> D{fetcher.start ok?}
+    D -->|yes| E[base fetcher ready]
+    D -->|no and not dryrun/http| F[fallback to HttpFetcher.start]
+    F --> E
+    E --> G[createModeAwareFetcherRegistry]
+    G --> H[runProcessPlannerQueuePhase]
+
+    H --> I{fetchSchedulerEnabled}
+    I -->|true| J[runFetchSchedulerDrain]
+    I -->|false| K[direct while planner.hasNext]
+
+    J --> L[runSourcePreflightPhase]
+    K --> L
+
+    L --> M{preflight.mode}
+    M -->|skip| L
+    M -->|stop| Z[stop queue drain]
+    M -->|process| N[preflight payload<br/>source + sourceHost + hostBudgetRow]
+
+    N --> O{runSourceSkipBeforeFetchPhase}
+    O -->|runtime blocked domain| L
+    O -->|frontier cooldown| L
+    O -->|host budget blocked/backoff| L
+    O -->|fetch allowed| P[runSourceFetchDispatchPhase]
+
+    P --> Q[assign workerId fetch-N]
+    Q --> R[runSourceFetchPhase]
+    R --> S[resolve requested mode<br/>override -> discovery/http -> static/http -> requires_js/playwright -> base mode]
+    S --> T[host concurrency gate + wrapper retry]
+    T --> U[fetcher.fetch or registry.fetchWithMode]
+    U --> V[inner fetcher builds pageData<br/>robots + pacing + throttling + navigation + capture]
+
+    V --> W{fetch ok?}
+    W -->|no| X[classify failure<br/>host budget/backoff<br/>frontier record<br/>repair handoff<br/>trace write]
+    X --> Y[scheduler may retry or switch modes<br/>otherwise continue queue]
+    Y --> L
+
+    W -->|yes| AA[sourceFetch<br/>ok + pageData + fetchDurationMs + fetcherModeUsed]
+    AA --> AB[runSourceProcessingPhase]
+    AB --> AC[Folder 9 begins]
+
+    classDef phase fill:#eef6ff,stroke:#245b99,color:#0f172a
+    classDef outcome fill:#f5f5f5,stroke:#666,color:#111
+    classDef handoff fill:#ecfdf3,stroke:#1f7a45,color:#0f172a
+
+    class B,C,G,H,J,K,L,N,P,Q,R,S,T,U,V phase
+    class X,Y,Z outcome
+    class AA,AB,AC handoff

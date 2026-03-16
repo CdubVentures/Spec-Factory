@@ -1,0 +1,321 @@
+{
+  "category": "monitor",
+  "generated_at": "2026-03-16T00:08:03.693Z",
+  "group_index": {
+    "color_image_quality": [
+      "backlight_type",
+      "black_uniformity",
+      "brightness_hdr_peak",
+      "brightness_sdr",
+      "color_accuracy_delta_e",
+      "color_gamut_adobe_rgb",
+      "color_gamut_dci_p3",
+      "color_gamut_srgb",
+      "contrast_ratio",
+      "contrast_ratio_dynamic",
+      "factory_calibrated",
+      "gradient_handling",
+      "gray_uniformity_50",
+      "hdr_support",
+      "horizontal_viewing_angle",
+      "local_dimming_zones",
+      "reflections",
+      "text_clarity",
+      "vertical_viewing_angle",
+      "wide_color_gamut"
+    ],
+    "connectivity": [
+      "audio_output",
+      "daisy_chain",
+      "display_stream_compression",
+      "displayport_ports",
+      "displayport_version",
+      "ethernet_rj45",
+      "hdmi_ports",
+      "hdmi_version",
+      "headphone_jack",
+      "kvm_switch",
+      "thunderbolt_ports",
+      "thunderbolt_version",
+      "usb_c_ports",
+      "usb_hub"
+    ],
+    "dimensions_weight": [
+      "depth",
+      "height",
+      "height_with_stand",
+      "vesa_mount",
+      "weight_with_stand",
+      "weight_without_stand",
+      "width"
+    ],
+    "display_panel": [
+      "aspect_ratio",
+      "curve_radius",
+      "curved",
+      "frc",
+      "native_colors",
+      "panel_bit_depth",
+      "panel_coating",
+      "panel_manufacturer",
+      "panel_type",
+      "pixel_density",
+      "resolution",
+      "screen_size",
+      "subpixel_layout"
+    ],
+    "ergonomics": [
+      "height_adjustment",
+      "pivot_rotation",
+      "swivel_range",
+      "tilt_range",
+      "wall_mountable"
+    ],
+    "features": [
+      "cables_included",
+      "crosshair_overlay",
+      "flicker_free",
+      "flicker_frequency",
+      "low_blue_light",
+      "macos_compatibility",
+      "microphone",
+      "osd_type",
+      "pip_pbp",
+      "ps5_compatibility",
+      "speakers",
+      "usb_power_delivery_watts",
+      "webcam",
+      "xbox_series_xs_compatibility"
+    ],
+    "general": [
+      "cable_length",
+      "cable_type",
+      "color",
+      "discontinued",
+      "material",
+      "price_range",
+      "release_date",
+      "warranty"
+    ],
+    "identity": [
+      "base_model",
+      "brand",
+      "category",
+      "gtin",
+      "model",
+      "mpn",
+      "sku",
+      "variant"
+    ],
+    "performance": [
+      "adaptive_sync",
+      "input_lag",
+      "input_lag_120hz",
+      "input_lag_60hz",
+      "input_lag_max_refresh",
+      "max_refresh_rate_displayport",
+      "max_refresh_rate_hdmi",
+      "motion_blur_reduction",
+      "overdrive",
+      "overshoot_120hz",
+      "overshoot_60hz",
+      "overshoot_max_refresh",
+      "refresh_rate",
+      "response_time_120hz",
+      "response_time_60hz",
+      "response_time_gtg",
+      "response_time_mprt",
+      "variable_refresh_rate",
+      "vrr_range"
+    ],
+    "power": [
+      "energy_rating",
+      "power_consumption_max",
+      "power_consumption_typical"
+    ]
+  },
+  "groups": [
+    {
+      "count": 20,
+      "display_name": "Color & Image Quality",
+      "field_keys": [
+        "backlight_type",
+        "black_uniformity",
+        "brightness_hdr_peak",
+        "brightness_sdr",
+        "color_accuracy_delta_e",
+        "color_gamut_adobe_rgb",
+        "color_gamut_dci_p3",
+        "color_gamut_srgb",
+        "contrast_ratio",
+        "contrast_ratio_dynamic",
+        "factory_calibrated",
+        "gradient_handling",
+        "gray_uniformity_50",
+        "hdr_support",
+        "horizontal_viewing_angle",
+        "local_dimming_zones",
+        "reflections",
+        "text_clarity",
+        "vertical_viewing_angle",
+        "wide_color_gamut"
+      ],
+      "group_key": "color_image_quality"
+    },
+    {
+      "count": 14,
+      "display_name": "Connectivity",
+      "field_keys": [
+        "audio_output",
+        "daisy_chain",
+        "display_stream_compression",
+        "displayport_ports",
+        "displayport_version",
+        "ethernet_rj45",
+        "hdmi_ports",
+        "hdmi_version",
+        "headphone_jack",
+        "kvm_switch",
+        "thunderbolt_ports",
+        "thunderbolt_version",
+        "usb_c_ports",
+        "usb_hub"
+      ],
+      "group_key": "connectivity"
+    },
+    {
+      "count": 7,
+      "display_name": "Dimensions & Weight",
+      "field_keys": [
+        "depth",
+        "height",
+        "height_with_stand",
+        "vesa_mount",
+        "weight_with_stand",
+        "weight_without_stand",
+        "width"
+      ],
+      "group_key": "dimensions_weight"
+    },
+    {
+      "count": 13,
+      "display_name": "Display Panel",
+      "field_keys": [
+        "aspect_ratio",
+        "curve_radius",
+        "curved",
+        "frc",
+        "native_colors",
+        "panel_bit_depth",
+        "panel_coating",
+        "panel_manufacturer",
+        "panel_type",
+        "pixel_density",
+        "resolution",
+        "screen_size",
+        "subpixel_layout"
+      ],
+      "group_key": "display_panel"
+    },
+    {
+      "count": 5,
+      "display_name": "Ergonomics",
+      "field_keys": [
+        "height_adjustment",
+        "pivot_rotation",
+        "swivel_range",
+        "tilt_range",
+        "wall_mountable"
+      ],
+      "group_key": "ergonomics"
+    },
+    {
+      "count": 14,
+      "display_name": "Features",
+      "field_keys": [
+        "cables_included",
+        "crosshair_overlay",
+        "flicker_free",
+        "flicker_frequency",
+        "low_blue_light",
+        "macos_compatibility",
+        "microphone",
+        "osd_type",
+        "pip_pbp",
+        "ps5_compatibility",
+        "speakers",
+        "usb_power_delivery_watts",
+        "webcam",
+        "xbox_series_xs_compatibility"
+      ],
+      "group_key": "features"
+    },
+    {
+      "count": 8,
+      "display_name": "General",
+      "field_keys": [
+        "cable_length",
+        "cable_type",
+        "color",
+        "discontinued",
+        "material",
+        "price_range",
+        "release_date",
+        "warranty"
+      ],
+      "group_key": "general"
+    },
+    {
+      "count": 8,
+      "display_name": "Identity",
+      "field_keys": [
+        "base_model",
+        "brand",
+        "category",
+        "gtin",
+        "model",
+        "mpn",
+        "sku",
+        "variant"
+      ],
+      "group_key": "identity"
+    },
+    {
+      "count": 19,
+      "display_name": "Performance",
+      "field_keys": [
+        "adaptive_sync",
+        "input_lag",
+        "input_lag_120hz",
+        "input_lag_60hz",
+        "input_lag_max_refresh",
+        "max_refresh_rate_displayport",
+        "max_refresh_rate_hdmi",
+        "motion_blur_reduction",
+        "overdrive",
+        "overshoot_120hz",
+        "overshoot_60hz",
+        "overshoot_max_refresh",
+        "refresh_rate",
+        "response_time_120hz",
+        "response_time_60hz",
+        "response_time_gtg",
+        "response_time_mprt",
+        "variable_refresh_rate",
+        "vrr_range"
+      ],
+      "group_key": "performance"
+    },
+    {
+      "count": 3,
+      "display_name": "Power",
+      "field_keys": [
+        "energy_rating",
+        "power_consumption_max",
+        "power_consumption_typical"
+      ],
+      "group_key": "power"
+    }
+  ],
+  "version": 1
+}

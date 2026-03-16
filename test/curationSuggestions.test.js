@@ -11,7 +11,7 @@ import {
 test('appendEnumCurationSuggestions appends and de-duplicates enum suggestions', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-curation-'));
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files')
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority')
   };
   try {
     const first = await appendEnumCurationSuggestions({

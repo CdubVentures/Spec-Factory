@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { callOpenAI } from '../src/llm/openaiClient.js';
+import { callOpenAI } from '../src/core/llm/client/openaiClient.js';
 
 test('callOpenAI deepseek mode avoids json_schema and parses fenced JSON', async () => {
   const originalFetch = global.fetch;
@@ -113,6 +113,61 @@ test('callOpenAI retries without json_schema when provider rejects response_form
     assert.equal(callCount, 2);
     assert.equal('response_format' in requests[0], true);
     assert.equal('response_format' in requests[1], false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('callOpenAI rejects truncated structured output instead of accepting nested JSON fragments', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    async text() {
+      return JSON.stringify({
+        choices: [
+          {
+            message: {
+              content: '{"selected_urls":[{"url":"https://example.com/a","keep":false,"reason":"drop a","score":0},{"url":"https://example.com/b","keep":false'
+            }
+          }
+        ]
+      });
+    }
+  });
+
+  try {
+    await assert.rejects(
+      () => callOpenAI({
+        model: 'gemini-2.5-flash',
+        system: 'system',
+        user: 'user',
+        jsonSchema: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            selected_urls: {
+              type: 'array',
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                  url: { type: 'string' },
+                  keep: { type: 'boolean' },
+                  reason: { type: 'string' },
+                  score: { type: 'number' }
+                },
+                required: ['url', 'keep']
+              }
+            }
+          },
+          required: ['selected_urls']
+        },
+        apiKey: 'gm-test',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai'
+      }),
+      /structured output/i
+    );
   } finally {
     global.fetch = originalFetch;
   }

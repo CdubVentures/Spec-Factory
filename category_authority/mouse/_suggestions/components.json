@@ -1,0 +1,31 @@
+{
+  "category": "mouse",
+  "suggestions": [
+    {
+      "suggestion_id": "comp_sensor_focus_pro_35k_optical_sensor_gen_2",
+      "suggestion_type": "new_component",
+      "component_type": "sensor",
+      "field_key": "sensor",
+      "value": "Focus Pro 35K Optical Sensor Gen-2",
+      "status": "pending",
+      "source": "runtime_field_rules_engine",
+      "product_id": "mouse-razer-viper-v3-pro",
+      "run_id": "phase01-bl1b-razer-viper-v3-pro",
+      "first_seen_at": "2026-03-09T20:40:44.688Z"
+    },
+    {
+      "suggestion_id": "comp_sensor_optical",
+      "suggestion_type": "new_component",
+      "component_type": "sensor",
+      "field_key": "sensor",
+      "value": "Optical",
+      "status": "pending",
+      "source": "runtime_field_rules_engine",
+      "product_id": "mouse-logitech-g-pro-x-superlight-2-indexlab-1773120648779",
+      "run_id": "20260310053047-bd16ec",
+      "first_seen_at": "2026-03-10T05:32:39.686Z"
+    }
+  ],
+  "version": 1,
+  "updated_at": "2026-03-11T09:04:19.018Z"
+}

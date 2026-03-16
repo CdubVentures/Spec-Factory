@@ -1,0 +1,27 @@
+## Purpose
+Own repo-wide infrastructure for config manifests, runtime artifact root resolution, and LLM provider/client/prompt plumbing.
+This boundary is the canonical home for low-level configuration and model-routing mechanics consumed by higher-level domains.
+
+## Public API (The Contract)
+- No root `src/core/index.js` exists; consumers import specific entrypoints.
+- `src/core/config/manifest.js`: `CONFIG_MANIFEST_VERSION`, `CONFIG_MANIFEST`, `CONFIG_MANIFEST_KEYS`, `CONFIG_MANIFEST_DEFAULTS`.
+- `src/core/config/runtimeArtifactRoots.js`: `defaultLocalOutputRoot()`, `defaultIndexLabRoot()`.
+- `src/core/llm/client/routing.js`: `resolveLlmRoute()`, `resolveLlmFallbackRoute()`, `hasLlmRouteApiKey()`, `hasAnyLlmApiKey()`, `llmRoutingSnapshot()`, `callLlmWithRouting()`.
+- `src/core/llm/client/openaiClient.js`: `getProviderHealth()`, `redactOpenAiError()`, `callOpenAI()`.
+- `src/core/llm/client/healthCheck.js`: `runLlmHealthCheck()`.
+- `src/core/llm/client/llmCache.js`: `LLMCache`.
+- `src/core/llm/client/providerHealth.js`: `LlmProviderHealth`, `normalizeProviderBaseUrl()`.
+- `src/core/llm/providers/index.js`: `selectLlmProvider()`.
+- `src/core/llm/providers/{gemini,deepseek,openaiCompatible}.js`: provider request functions.
+- `src/core/llm/prompts/{planner,extractor,validator}.js`: prompt builders.
+- `src/core/llm/cortex/*.js`: `CortexClient`, `CortexCircuitBreaker`, `CortexLifecycle`, and Cortex routing helpers.
+
+## Dependencies
+- Allowed: Node built-ins, internal `src/core/**`, `src/billing/**`, and existing low-level helpers in `src/utils/**`.
+- Forbidden: feature internals, review/catalog/indexing domain logic, or UI-specific state.
+
+## Domain Invariants
+- Config manifest defaults are assembled from manifest group modules and exposed through the shim in `src/core/config/manifest.js`.
+- Runtime artifact roots resolve deterministically from the local temp root plus fixed `output` and `indexlab` subpaths.
+- Prompt builders stay pure; provider selection, HTTP concerns, caching, and health checks stay inside `src/core/llm/**`.
+- Secrets and provider credentials must not leak out of this boundary through logs or higher-level contracts.

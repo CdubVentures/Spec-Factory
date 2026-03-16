@@ -4,7 +4,7 @@ import {
   buildDossier,
   rankSnippets,
   estimateTokenCount
-} from '../src/llm/dossierBuilder.js';
+} from '../src/features/indexing/extraction/dossierBuilder.js';
 
 // ---------------------------------------------------------------------------
 // IP05-5C — Token Efficiency / Dossier Builder Tests

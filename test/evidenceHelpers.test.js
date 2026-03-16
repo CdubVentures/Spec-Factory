@@ -7,7 +7,7 @@ import {
   normalizedSnippetRows,
   enrichFieldCandidatesWithEvidenceRefs,
   buildTopEvidenceReferences
-} from '../src/pipeline/helpers/evidenceHelpers.js';
+} from '../src/features/indexing/orchestration/shared/evidenceHelpers.js';
 
 test('selectAggressiveEvidencePack returns best evidence pack', () => {
   const result = selectAggressiveEvidencePack([
@@ -45,6 +45,87 @@ test('buildDomSnippetArtifact extracts table from html', () => {
 test('buildDomSnippetArtifact returns null for empty html', () => {
   assert.equal(buildDomSnippetArtifact(''), null);
   assert.equal(buildDomSnippetArtifact(), null);
+});
+
+test('buildDomSnippetArtifact ignores featured-categories chrome and captures the real spec-bearing section', () => {
+  const html = [
+    '<html><body>',
+    '<div id="alg-featured-categories" class="alg-featured-categories alg-chip-list d-none"><div id="trendingFacets"></div></div>',
+    '<section class="product-specs">',
+    '<h2>Technical Specifications</h2>',
+    '<ul>',
+    '<li>Sensor: Focus Pro 35K</li>',
+    '<li>Polling rate: 8000 Hz</li>',
+    '<li>Weight: 54 g</li>',
+    '</ul>',
+    '</section>',
+    '</body></html>',
+  ].join('');
+
+  const result = buildDomSnippetArtifact(html, 2000);
+
+  assert.ok(result);
+  assert.equal(result.kind, 'spec_section');
+  assert.equal(result.html.includes('alg-featured-categories'), false);
+  assert.equal(result.html.includes('Focus Pro 35K'), true);
+  assert.equal(result.html.includes('8000 Hz'), true);
+  assert.equal(result.html.includes('54 g'), true);
+});
+
+test('buildDomSnippetArtifact fallback ignores head and style noise before searching for spec keywords', () => {
+  const html = [
+    '<html>',
+    '<head>',
+    '<style>.hero-title { font-weight: 700; }</style>',
+    '<script>window.__boot = { fontWeight: 500 };</script>',
+    '</head>',
+    '<body>',
+    '<div class="hero-title">Razer Viper V3 Pro</div>',
+    '<div class="overview-copy">',
+    'The Focus Pro 35K sensor supports up to 8000 Hz polling and a 54 g design.',
+    '</div>',
+    '</body>',
+    '</html>',
+  ].join('');
+
+  const result = buildDomSnippetArtifact(html, 600);
+
+  assert.ok(result);
+  assert.equal(result.kind, 'html_window');
+  assert.equal(result.html.includes('font-weight'), false);
+  assert.equal(result.html.includes('Focus Pro 35K'), true);
+  assert.equal(result.html.includes('8000 Hz'), true);
+  assert.equal(result.html.includes('54 g'), true);
+});
+
+test('buildDomSnippetArtifact fallback prefers dense numeric spec windows over early navigation keyword hits', () => {
+  const html = [
+    '<html><body>',
+    '<nav class="mega-menu">',
+    '<a href="/gaming-mice/razer-naga-left-handed-edition/buy">Razer Naga Left-handed Wireless</a>',
+    '<a href="/gaming-keyboards/razer-huntsman-signature-edition/buy">Razer Huntsman Signature Edition</a>',
+    '<a href="/gaming-mice/razer-basilisk-v3-pro-35k/buy">Razer Basilisk V3 Pro 35K Wireless</a>',
+    '</nav>',
+    '<div class="product-story">',
+    '<h2>Razer Viper V3 Pro</h2>',
+    '<p>The Focus Pro 35K optical sensor supports up to 8000 Hz polling with a 54 g design.</p>',
+    '<ul>',
+    '<li>Sensitivity (DPI): 35,000</li>',
+    '<li>Max Speed (IPS): 750</li>',
+    '<li>Max Acceleration (G): 70</li>',
+    '</ul>',
+    '</div>',
+    '</body></html>',
+  ].join('');
+
+  const result = buildDomSnippetArtifact(html, 1000);
+
+  assert.ok(result);
+  assert.equal(result.kind, 'html_window');
+  assert.equal(result.html.includes('Razer Naga Left-handed Wireless'), false);
+  assert.equal(result.html.includes('Focus Pro 35K'), true);
+  assert.equal(result.html.includes('8000 Hz'), true);
+  assert.equal(result.html.includes('35,000'), true);
 });
 
 test('normalizedSnippetRows parses array snippets', () => {

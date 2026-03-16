@@ -1,4 +1,4 @@
-import { evaluateLearningGate } from '../learning/learningUpdater.js';
+import { evaluateLearningGate } from '../features/indexing/learning/index.js';
 
 export function evaluateFieldLearningGates({
   fieldOrder,

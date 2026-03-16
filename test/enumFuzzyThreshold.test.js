@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FieldRulesEngine } from '../src/engine/fieldRulesEngine.js';
-import { ComponentResolver } from '../src/extract/componentResolver.js';
+import { ComponentResolver } from '../src/features/indexing/extraction/componentResolver.js';
 
 // ---------------------------------------------------------------------------
 // enum_fuzzy_threshold tests

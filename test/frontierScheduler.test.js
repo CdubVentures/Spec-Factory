@@ -2,10 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveDeepeningTier, uberStopDecision } from '../src/research/frontierScheduler.js';
 
-test('resolveDeepeningTier escalates in uber_aggressive mode when criticals remain', () => {
+test('resolveDeepeningTier escalates to tier3 when criticals remain with no progress', () => {
   const tier = resolveDeepeningTier({
     round: 3,
-    mode: 'uber_aggressive',
     previousSummary: {
       missing_required_fields: ['dpi'],
       critical_fields_below_pass_target: ['dpi']

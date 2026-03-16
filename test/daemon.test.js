@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { runDaemon } from '../src/daemon/daemon.js';
 
 function makeJob(id) {
@@ -25,7 +28,7 @@ test('runDaemon respects daemon concurrency cap per iteration', async () => {
     storage: {},
     config: {
       importsPollSeconds: 1,
-      helperFilesEnabled: false,
+      categoryAuthorityEnabled: false,
       daemonConcurrency: 3
     },
     once: true,
@@ -71,7 +74,7 @@ test('runDaemon exits after SIGTERM with graceful drain of active work', async (
     storage: {},
     config: {
       importsPollSeconds: 1,
-      helperFilesEnabled: false,
+      categoryAuthorityEnabled: false,
       daemonConcurrency: 1
     },
     once: false,
@@ -121,7 +124,7 @@ test('runDaemon performs drift scan and drift reconcile for drift re-extract job
     storage: {},
     config: {
       importsPollSeconds: 1,
-      helperFilesEnabled: false,
+      categoryAuthorityEnabled: false,
       daemonConcurrency: 1,
       driftDetectionEnabled: true,
       driftPollSeconds: 1
@@ -167,4 +170,48 @@ test('runDaemon performs drift scan and drift reconcile for drift re-extract job
   assert.equal(scanCalls, 1);
   assert.equal(reconcileCalls, 1);
   assert.equal(result.run_count, 1);
+});
+
+test('runDaemon discovers all categories from category_authority when running in all mode', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'daemon-category-discovery-'));
+  const helperRoot = path.join(root, 'category_authority');
+  const importsRoot = path.join(root, 'imports');
+  const previousCwd = process.cwd();
+  try {
+    process.chdir(root);
+    await fs.mkdir(path.join(helperRoot, 'monitor', '_generated'), { recursive: true });
+    await fs.writeFile(
+      path.join(helperRoot, 'monitor', '_generated', 'field_rules.json'),
+      `${JSON.stringify({ category: 'monitor', fields: {} }, null, 2)}\n`,
+      'utf8'
+    );
+
+    const result = await runDaemon({
+      storage: {},
+      config: {
+        importsPollSeconds: 1,
+        daemonConcurrency: 1,
+        categoryAuthorityRoot: helperRoot
+      },
+      importsRoot,
+      all: true,
+      once: true,
+      runtimeHooks: {
+        ingestIncomingCsvs: async ({ category }) => ({
+          category,
+          discovered_csv_count: 0,
+          processed_count: 0,
+          failed_count: 0
+        }),
+        selectNextRunnableJob: async () => null,
+        markStaleQueueProducts: async () => ({ stale_marked: 0, products: [] }),
+        wait: async () => {}
+      }
+    });
+
+    assert.deepEqual(result.categories, ['monitor']);
+  } finally {
+    process.chdir(previousCwd);
+    await fs.rm(root, { recursive: true, force: true });
+  }
 });

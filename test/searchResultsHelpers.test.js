@@ -18,6 +18,7 @@ import {
   parseDomainFromUrl,
   enrichResultDomains,
   resolveDomainCapSummary,
+  resolveRuntimeDomainCapSummary,
 } from '../tools/gui-react/src/pages/runtime-ops/panels/searchResultsHelpers.js';
 
 function makeResult(overrides = {}) {
@@ -597,7 +598,7 @@ describe('providerDisplayLabel', () => {
   });
 
   it('formats compound provider with + separator', () => {
-    assert.equal(providerDisplayLabel('duckduckgo+searxng'), 'DuckDuckGo + SearXNG');
+    assert.equal(providerDisplayLabel('google+searxng'), 'Google + SearXNG');
     assert.equal(providerDisplayLabel('google+bing'), 'Google + Bing');
   });
 
@@ -611,10 +612,6 @@ describe('providerDisplayLabel', () => {
 
   it('returns capitalized name for bing', () => {
     assert.equal(providerDisplayLabel('bing'), 'Bing');
-  });
-
-  it('returns "DuckDuckGo" for duckduckgo', () => {
-    assert.equal(providerDisplayLabel('duckduckgo'), 'DuckDuckGo');
   });
 
   it('returns raw value for unknown providers', () => {
@@ -654,8 +651,8 @@ describe('parseDomainFromUrl', () => {
     assert.equal(parseDomainFromUrl('https://localhost:3000/api/test'), 'localhost');
   });
 
-  it('extracts hostname from DuckDuckGo tracking URL', () => {
-    assert.equal(parseDomainFromUrl('https://duckduckgo.com/y.js?ad_domain=amazon.com'), 'duckduckgo.com');
+  it('extracts hostname from tracking URL with query params', () => {
+    assert.equal(parseDomainFromUrl('https://example.com/y.js?ad_domain=amazon.com'), 'example.com');
   });
 });
 
@@ -741,14 +738,41 @@ describe('resolveDomainCapSummary', () => {
       discoveryResultsPerQuery: 14,
       discoveryMaxDiscovered: 140,
       serpTriageMaxUrls: 18,
-      uberMaxUrlsPerDomain: 9,
     });
     assert.equal(summary.value, '5');
     assert.equal(summary.queryCap, 14);
     assert.equal(summary.discoveredCap, 140);
     assert.equal(summary.triageCap, 18);
-    assert.equal(summary.uberDomainFloor, 9);
+    assert.equal(summary.uberDomainFloor, 6);
     assert.match(summary.tooltip, /Current domain cap display: 5/);
     assert.match(summary.tooltip, /SERP triage cap keeps up to 18 URLs after triage/);
+  });
+});
+
+describe('resolveRuntimeDomainCapSummary', () => {
+  it('stays in hydrating state until runtime settings become available', () => {
+    const summary = resolveRuntimeDomainCapSummary(undefined);
+    assert.equal(summary.value, 'hydrating');
+    assert.match(summary.tooltip, /still hydrating/i);
+  });
+
+  it('stays in hydrating state for an empty runtime snapshot payload', () => {
+    const summary = resolveRuntimeDomainCapSummary({});
+    assert.equal(summary.value, 'hydrating');
+    assert.match(summary.tooltip, /still hydrating/i);
+  });
+
+  it('delegates to the resolved cap summary once runtime settings are hydrated', () => {
+    const summary = resolveRuntimeDomainCapSummary({
+      maxPagesPerDomain: 5,
+      discoveryResultsPerQuery: 14,
+      discoveryMaxDiscovered: 140,
+      serpTriageMaxUrls: 18,
+    });
+    assert.equal(summary.value, '5');
+    assert.equal(summary.queryCap, 14);
+    assert.equal(summary.discoveredCap, 140);
+    assert.equal(summary.triageCap, 18);
+    assert.equal(summary.uberDomainFloor, 6);
   });
 });

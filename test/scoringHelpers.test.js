@@ -7,7 +7,7 @@ import {
   isAnchorLocked,
   resolveTargets,
   resolveLlmTargetFields
-} from '../src/pipeline/helpers/scoringHelpers.js';
+} from '../src/features/indexing/orchestration/shared/scoringHelpers.js';
 
 // --- PASS_TARGET_EXEMPT_FIELDS ---
 

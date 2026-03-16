@@ -279,16 +279,31 @@ describe('Phase 05 Audit — Outcome Classification Edge Cases', () => {
     assert.equal(outcome, 'network_timeout');
   });
 
-  it('FETCH_OUTCOME_KEYS has exactly 10 entries', () => {
+  it('FETCH_OUTCOME_KEYS exposes the canonical outcome buckets without duplicates', () => {
     console.log('[P05-CLASSIFY-09] keys:', FETCH_OUTCOME_KEYS);
-    assert.equal(FETCH_OUTCOME_KEYS.length, 10);
+    assert.equal(new Set(FETCH_OUTCOME_KEYS).size, FETCH_OUTCOME_KEYS.length);
+    for (const key of [
+      'ok',
+      'not_found',
+      'blocked',
+      'rate_limited',
+      'login_wall',
+      'bot_challenge',
+      'bad_content',
+      'soft_block',
+      'server_error',
+      'network_timeout',
+      'fetch_error',
+    ]) {
+      assert.equal(FETCH_OUTCOME_KEYS.includes(key), true, `missing outcome key ${key}`);
+    }
   });
 
-  it('createFetchOutcomeCounters initializes all keys to 0', () => {
+  it('createFetchOutcomeCounters initializes every published outcome bucket to 0', () => {
     const counters = createFetchOutcomeCounters();
     const nonZero = Object.values(counters).filter(v => v !== 0);
     console.log('[P05-CLASSIFY-10] counter keys:', Object.keys(counters).length);
-    assert.equal(Object.keys(counters).length, 10);
+    assert.deepEqual(Object.keys(counters).sort(), [...FETCH_OUTCOME_KEYS].sort());
     assert.equal(nonZero.length, 0);
   });
 });

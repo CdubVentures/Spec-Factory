@@ -21,7 +21,7 @@ async function writeJson(filePath, value) {
 
 async function createListRulesFixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'list-rules-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
 
   await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -128,7 +128,7 @@ test('list_rules dedupe: removes case-insensitive string duplicates, preserves f
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = engine.normalizeCandidate('colors', 'Black, White, black, WHITE, white');
     assert.equal(result.ok, true);
@@ -142,7 +142,7 @@ test('list_rules dedupe: whitespace-normalized comparison', async () => {
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = engine.normalizeCandidate('colors', '  Black  , Black,  black ');
     assert.equal(result.ok, true);
@@ -156,7 +156,7 @@ test('list_rules dedupe: number list removes exact duplicates', async () => {
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = engine.normalizeCandidate('sizes', '100, 200, 100, 300, 200');
     assert.equal(result.ok, true);
@@ -174,7 +174,7 @@ test('list_rules dedupe: disabled when dedupe=false — preserves duplicates', a
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     const result = engine.normalizeCandidate('tags', 'alpha, beta, alpha, gamma');
     assert.equal(result.ok, true);
@@ -188,7 +188,7 @@ test('list_rules dedupe: empty list after dedupe stays empty', async () => {
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     // Empty input
     const result = engine.normalizeCandidate('colors', '');
@@ -207,7 +207,7 @@ test('list_rules sort: asc sorts strings case-insensitively', async () => {
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     // features has sort: 'asc'
     const result = applyRuntimeFieldRules({
@@ -225,7 +225,7 @@ test('list_rules sort: desc sorts numbers descending', async () => {
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     // sizes has sort: 'desc', type: 'number'
     const result = applyRuntimeFieldRules({
@@ -243,7 +243,7 @@ test('list_rules sort: none preserves original order', async () => {
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     // colors has sort: 'none'
     const result = applyRuntimeFieldRules({
@@ -265,7 +265,7 @@ test('list_rules max_items: truncates list and records change', async () => {
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     // features has max_items: 5, sort: 'asc'
     const result = applyRuntimeFieldRules({
@@ -290,7 +290,7 @@ test('list_rules min_items: violation sets field to unk with failure', async () 
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     // sizes has min_items: 2, but only 1 value provided
     const result = applyRuntimeFieldRules({
@@ -313,7 +313,7 @@ test('list_rules min_items: exactly min_items passes', async () => {
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     // sizes has min_items: 2, providing exactly 2
     const result = applyRuntimeFieldRules({
@@ -337,7 +337,7 @@ test('list_rules min_items: after dedupe — duplicates collapse below minimum',
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     // sizes has min_items: 2, but both values are same → dedupe to 1 → below min
     const result = applyRuntimeFieldRules({
@@ -363,7 +363,7 @@ test('list_rules combined: dedupe + sort + truncate in full pipeline', async () 
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     // features: sort asc, max_items 5, dedupe true
     // Input: 8 items with duplicates → dedupe to 6 → sort asc → truncate to 5
@@ -386,7 +386,7 @@ test('list_rules: scalar field is unaffected by list_rules logic', async () => {
   const fixture = await createListRulesFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: fixture.helperRoot }
+      config: { categoryAuthorityRoot: fixture.helperRoot }
     });
     // weight is a scalar number field, should normalize normally
     const result = applyRuntimeFieldRules({
@@ -405,7 +405,7 @@ test('list_rules: scalar field is unaffected by list_rules logic', async () => {
 test('list_rules: no list_rules in contract → no enforcement applied', async () => {
   // Create a fixture with a list field that has no list_rules at all
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'list-rules-noconfig-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
 
   await writeJson(path.join(generatedRoot, 'field_rules.json'), {
@@ -435,7 +435,7 @@ test('list_rules: no list_rules in contract → no enforcement applied', async (
 
   try {
     const engine = await FieldRulesEngine.create('mouse', {
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
     // Duplicates should survive when there are no list_rules
     const result = applyRuntimeFieldRules({

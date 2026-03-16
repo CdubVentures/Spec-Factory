@@ -1,17 +1,29 @@
 #!/usr/bin/env node
 import { loadConfig, loadDotEnvFile, validateConfig } from '../config.js';
+import { defaultIndexLabRoot } from '../core/config/runtimeArtifactRoots.js';
 import { createStorage, toPosixKey } from '../s3/storage.js';
 import { parseArgs, asBool } from './args.js';
 import { createCliCommandDispatcher } from '../app/cli/commandDispatch.js';
+import { createMigrateToSqliteCommand } from '../app/cli/commands/migrateToSqliteCommand.js';
+import { createQueueCommand } from '../app/cli/commands/queueCommand.js';
+import { createDiscoverCommand } from '../app/cli/commands/discoverCommand.js';
+import { createSourcesReportCommand } from '../app/cli/commands/sourcesReportCommand.js';
+import { createSourcesPlanCommand } from '../app/cli/commands/sourcesPlanCommand.js';
+import { createRebuildIndexCommand } from '../app/cli/commands/rebuildIndexCommand.js';
+import { createBenchmarkCommand } from '../app/cli/commands/benchmarkCommand.js';
+import { createIntelGraphApiCommand } from '../app/cli/commands/intelGraphApiCommand.js';
+import { createBillingReportCommand } from '../app/cli/commands/billingReportCommand.js';
+import { createLearningReportCommand } from '../app/cli/commands/learningReportCommand.js';
+import { createExplainUnkCommand } from '../app/cli/commands/explainUnkCommand.js';
+import { createLlmHealthCommand } from '../app/cli/commands/llmHealthCommand.js';
+import { createReviewCommand } from '../app/cli/commands/reviewCommand.js';
 import { runProduct } from '../pipeline/runProduct.js';
-import { runConvergenceLoop, bridgeAsLogger } from '../pipeline/runOrchestrator.js';
-import { computeNeedSet } from '../indexlab/needsetEngine.js';
 import { loadCategoryConfig } from '../categories/loader.js';
-import { discoverCandidateSources } from '../discovery/searchDiscovery.js';
+import { discoverCandidateSources } from '../features/indexing/discovery/index.js';
 import { rebuildCategoryIndex } from '../indexer/rebuildIndex.js';
 import { buildRunId } from '../utils/common.js';
 import { EventLogger } from '../logger.js';
-import { runS3Integration } from './s3-integration.js';
+import { runS3Integration } from './s3Integration.js';
 import {
   generateSourceExpansionPlans,
   loadSourceIntel,
@@ -19,7 +31,7 @@ import {
 } from '../intel/sourceIntel.js';
 import { startIntelGraphApi } from '../api/intelGraphApi.js';
 import { runGoldenBenchmark } from '../benchmark/goldenBenchmark.js';
-import { rankBatchWithBandit } from '../learning/banditScheduler.js';
+import { rankBatchWithBandit } from '../features/indexing/learning/index.js';
 import { ingestCsvFile } from '../ingest/csvIngestor.js';
 import { compileCategoryFieldStudio } from '../ingest/categoryCompile.js';
 import { runWatchImports, runDaemon } from '../daemon/daemon.js';
@@ -47,12 +59,11 @@ import {
 } from '../review/overrideWorkflow.js';
 import { appendReviewSuggestion } from '../review/suggestions.js';
 import { buildBillingReport } from '../billing/costLedger.js';
-import { buildLearningReport } from '../learning/categoryBrain.js';
-import { syncJobsFromActiveFiltering } from '../helperFiles/index.js';
-import { runLlmHealthCheck } from '../llm/healthCheck.js';
-import { CortexLifecycle } from '../llm/cortex_lifecycle.js';
-import { buildCortexTaskPlan } from '../llm/cortex_router.js';
-import { CortexClient } from '../llm/cortex_client.js';
+import { buildLearningReport } from '../features/indexing/learning/index.js';
+import { runLlmHealthCheck } from '../core/llm/client/healthCheck.js';
+import { CortexLifecycle } from '../core/llm/cortex/cortexLifecycle.js';
+import { buildCortexTaskPlan } from '../core/llm/cortex/cortexRouter.js';
+import { CortexClient } from '../core/llm/cortex/cortexClient.js';
 import {
   bootstrapExpansionCategories,
   parseExpansionCategories,
@@ -60,7 +71,7 @@ import {
   runFuzzSourceHealthHarness,
   runProductionHardeningReport,
   runQueueLoadHarness
-} from '../phase10/expansionHardening.js';
+} from '../features/expansion-hardening/index.js';
 import {
   buildAccuracyTrend,
   buildLlmMetrics,
@@ -97,10 +108,11 @@ import {
 import { generateTypesForCategory } from '../build/generate-types.js';
 import { runQaJudge } from '../review/qaJudge.js';
 import { computeCalibrationReport } from '../calibration/confidenceCalibrator.js';
-import { reconcileOrphans } from '../catalog/reconciler.js';
+import { reconcileOrphans } from '../features/catalog/products/reconciler.js';
 import { IndexLabRuntimeBridge } from '../indexlab/runtimeBridge.js';
 import fsNode from 'node:fs/promises';
 import pathNode from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 async function openSpecDbForCategory(config, category) {
   const normalizedCategory = String(category || '').trim();
@@ -122,11 +134,11 @@ function usage() {
     '',
     'Commands:',
     '  run-one --s3key <key> [--local] [--dry-run]',
-    '  indexlab --category <category> --seed <product_id|s3key|url|title> [--product-id <id>] [--s3key <key>] [--brand <brand>] [--model <model>] [--variant <variant>] [--sku <sku>] [--fields <csv>] [--providers <csv>] [--out <dir>] [--run-id <run_id>] [--convergence] [--max-rounds <n>] [--mode <mode>] [--local]',
-    '  run-ad-hoc <category> <brand> <model> [<variant>] [--seed-urls <csv>] [--until-complete] [--mode uber_aggressive|aggressive|balanced] [--max-rounds <n>] [--local]',
-    '  run-ad-hoc --category <category> --brand <brand> --model <model> [--variant <variant>] [--seed-urls <csv>] [--until-complete] [--mode uber_aggressive|aggressive|balanced] [--max-rounds <n>] [--local]',
+    '  indexlab --category <category> --seed <product_id|s3key|url|title> [--product-id <id>] [--s3key <key>] [--brand <brand>] [--model <model>] [--variant <variant>] [--sku <sku>] [--fields <csv>] [--providers <csv>] [--out <dir>] [--run-id <run_id>] [--local]',
+    '  run-ad-hoc <category> <brand> <model> [<variant>] [--seed-urls <csv>] [--until-complete] [--max-rounds <n>] [--local]',
+    '  run-ad-hoc --category <category> --brand <brand> --model <model> [--variant <variant>] [--seed-urls <csv>] [--until-complete] [--max-rounds <n>] [--local]',
     '  run-batch --category <category> [--brand <brand>] [--strategy <explore|exploit|mixed|bandit>] [--local] [--dry-run]',
-    '  run-until-complete --s3key <key> [--max-rounds <n>] [--mode uber_aggressive|aggressive|balanced] [--local]',
+    '  run-until-complete --s3key <key> [--max-rounds <n>] [--local]',
     '  category-compile --category <category> [--field-studio-source <path>] [--map <path>] [--local]',
     '  compile-rules --category <category> [--field-studio-source <path>] [--map <path>] [--dry-run] [--watch] [--watch-seconds <n>] [--max-events <n>] [--local]',
     '  compile-rules --all [--dry-run] [--local]',
@@ -150,7 +162,7 @@ function usage() {
     '  changelog --category <category> --product-id <id> [--local]',
     '  source-health --category <category> [--source <host_or_source_id>] [--period <n>d|week|month] [--local]',
     '  llm-metrics [--period <n>d|week|month] [--model <model>] [--local]',
-    '  phase10-bootstrap [--categories monitor,keyboard] [--template electronics] [--helper-root <path>] [--categories-root <path>] [--golden-root <path>] [--local]',
+    '  expansion-bootstrap [--categories monitor,keyboard] [--template electronics] [--helper-root <path>] [--categories-root <path>] [--golden-root <path>] [--local]',
     '  hardening-harness --category <category> [--products <n>] [--cycles <n>] [--fuzz-iterations <n>] [--seed <n>] [--failure-attempts <n>] [--local]',
     '  hardening-report [--root-dir <path>] [--local]',
     '  drift-scan --category <category> [--max-products <n>] [--enqueue true|false] [--local]',
@@ -158,7 +170,7 @@ function usage() {
     '  discover --category <category> [--brand <brand>] [--local]',
     '  ingest-csv --category <category> --path <csv> [--imports-root <path>] [--local]',
     '  watch-imports [--imports-root <path>] [--category <category>|--all] [--once] [--local]',
-    '  daemon [--imports-root <path>] [--category <category>|--all] [--mode uber_aggressive|aggressive|balanced] [--once] [--local]',
+    '  daemon [--imports-root <path>] [--category <category>|--all] [--once] [--local]',
     '  queue add --category <category> --brand <brand> --model <model> [--variant <variant>] [--priority <1-5>] [--local]',
     '  queue add --category <category> --product-id <id> [--s3key <key>] [--priority <1-5>] [--local]',
     '  queue add-batch --category <category> --file <csv> [--imports-root <path>] [--local]',
@@ -207,17 +219,51 @@ function usage() {
   ].join('\n');
 }
 
+const CLI_DOTENV_OVERRIDE_KEYS = [
+  'CONCURRENCY',
+  'PER_HOST_MIN_DELAY_MS',
+  'SERP_TRIAGE_MIN_SCORE',
+  'SERP_TRIAGE_MAX_URLS',
+  'LLM_PLAN_DISCOVERY_QUERIES',
+  'LLM_FORCE_ROLE_MODEL_PROVIDER',
+  'LLM_MAX_CALLS_PER_PRODUCT_TOTAL',
+  'LLM_MAX_CALLS_PER_ROUND',
+  'LLM_MAX_BATCHES_PER_PRODUCT',
+  'LLM_VERIFY_MODE'
+];
+
+function applyEnvOverrides(env) {
+  const previous = new Map();
+  for (const [key, value] of Object.entries(env || {})) {
+    if (Object.prototype.hasOwnProperty.call(process.env, key)) {
+      previous.set(key, process.env[key]);
+    } else {
+      previous.set(key, undefined);
+    }
+    if (value === undefined || value === null || value === '') {
+      delete process.env[key];
+    } else {
+      process.env[key] = String(value);
+    }
+  }
+  return () => {
+    for (const [key, value] of previous.entries()) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  };
+}
+
 function buildConfig(args) {
-  const profileOverride = asBool(args.thorough, false)
-    ? 'thorough'
-    : (args.profile || args['run-profile'] || undefined);
   const overrides = {
     writeMarkdownSummary: asBool(args['write-md'], true),
     localInputRoot: args['local-input-root'] || undefined,
     localOutputRoot: args['local-output-root'] || undefined,
     outputMode: args['output-mode'] || undefined,
-    batchStrategy: args.strategy || undefined,
-    runProfile: profileOverride
+    batchStrategy: args.strategy || undefined
   };
   if (args.local !== undefined) overrides.localMode = asBool(args.local);
   if (args['dry-run'] !== undefined) overrides.dryRun = asBool(args['dry-run']);
@@ -473,7 +519,7 @@ async function assertCategorySchemaReady({ category, storage, config }) {
     categoryConfig = await loadCategoryConfig(category, { storage, config });
   } catch (error) {
     throw new Error(
-      `Category '${category}' is not configured. Generate helper_files/${category}/_generated/field_rules.json first. (${error.message})`
+      `Category '${category}' is not configured. Generate category_authority/${category}/_generated/field_rules.json first. (${error.message})`
     );
   }
 
@@ -505,7 +551,7 @@ async function commandRunOne(config, storage, args) {
 async function commandIndexLab(config, storage, args) {
   const category = String(args.category || 'mouse').trim();
   const seed = String(args.seed || '').trim();
-  const outRoot = String(args.out || pathNode.join('artifacts', 'indexlab')).trim();
+  const outRoot = String(args.out || defaultIndexLabRoot()).trim();
   const requestedRunIdRaw = String(args['run-id'] || '').trim();
   const requestedRunId = /^[A-Za-z0-9._-]{8,96}$/.test(requestedRunIdRaw)
     ? requestedRunIdRaw
@@ -601,6 +647,39 @@ async function commandIndexLab(config, storage, args) {
     onRuntimeEvent: (row) => bridge.onRuntimeEvent(row),
     onScreencastFrame
   };
+  const maxRunSecondsArg = Number.parseInt(String(args['max-run-seconds'] || '').trim(), 10);
+  if (Number.isFinite(maxRunSecondsArg) && maxRunSecondsArg > 0) {
+    runConfig.maxRunSeconds = maxRunSecondsArg;
+    const runBudgetMs = maxRunSecondsArg * 1000;
+    const boundedFetchTimeoutMs = Math.max(
+      1_000,
+      Math.min(
+        Number(runConfig.pageGotoTimeoutMs || config.pageGotoTimeoutMs || 15_000),
+        Math.floor(runBudgetMs / 3)
+      )
+    );
+    runConfig.pageGotoTimeoutMs = boundedFetchTimeoutMs;
+    runConfig.pageNetworkIdleTimeoutMs = Math.max(
+      500,
+      Math.min(
+        Number(runConfig.pageNetworkIdleTimeoutMs || config.pageNetworkIdleTimeoutMs || 2_000),
+        Math.floor(boundedFetchTimeoutMs / 2)
+      )
+    );
+    runConfig.robotsTxtTimeoutMs = Math.max(
+      500,
+      Math.min(
+        Number(runConfig.robotsTxtTimeoutMs || config.robotsTxtTimeoutMs || 6_000),
+        boundedFetchTimeoutMs
+      )
+    );
+    runConfig.dynamicFetchRetryBudget = 0;
+    runConfig.dynamicFetchRetryBackoffMs = 0;
+    runConfig.fetchSchedulerMaxRetries = 0;
+    runConfig.fetchSchedulerDefaultMaxRetries = 0;
+    runConfig.sourceFetchWrapperAttempts = 1;
+    runConfig.sourceFetchWrapperBackoffMs = 0;
+  }
   const discoveryEnabledArg = asBool(args['discovery-enabled'], undefined);
   const searchProviderArg = String(args['search-provider'] || '').trim().toLowerCase();
   if (providerTokens.length === 1) {
@@ -616,35 +695,38 @@ async function commandIndexLab(config, storage, args) {
   } else if (String(runConfig.searchProvider || '').trim().toLowerCase() !== 'none') {
     runConfig.discoveryEnabled = true;
   }
-
-  const convergenceEnabled = asBool(args.convergence, asBool(config.convergenceEnabled, false));
-  const convergenceMaxRounds = Math.max(1, Number.parseInt(String(args['max-rounds'] || '0'), 10) || 0) || undefined;
-  const convergenceMode = String(args.mode || config.accuracyMode || 'balanced').toLowerCase();
-
-  let result;
-  if (convergenceEnabled) {
-    const job = await storage.readJson(s3Key);
-    const loopResult = await runConvergenceLoop({
-      runProductFn: runProduct,
-      computeNeedSetFn: computeNeedSet,
-      storage,
-      config: runConfig,
-      s3Key,
-      job,
-      maxRounds: convergenceMaxRounds,
-      mode: convergenceMode,
-      initialRunId: requestedRunId || undefined,
-      logger: bridgeAsLogger(bridge)
-    });
-    result = loopResult.final_result;
-  } else {
-    result = await runProduct({
-      storage,
-      config: runConfig,
-      s3Key,
-      runIdOverride: requestedRunId || undefined,
-    });
+  if (
+    Number.isFinite(maxRunSecondsArg) && maxRunSecondsArg > 0
+    && discoveryEnabledArg === false
+    && String(runConfig.searchProvider || '').trim().toLowerCase() === 'none'
+  ) {
+    runConfig.preferHttpFetcher = true;
+    runConfig.concurrency = 1;
+    runConfig.fetchPerHostConcurrencyCap = 1;
+    runConfig.maxUrlsPerProduct = Math.min(
+      Number(runConfig.maxUrlsPerProduct || config.maxUrlsPerProduct || 12),
+      4
+    );
+    runConfig.maxManufacturerUrlsPerProduct = Math.min(
+      Number(runConfig.maxManufacturerUrlsPerProduct || config.maxManufacturerUrlsPerProduct || 6),
+      2
+    );
+    runConfig.maxPagesPerDomain = Math.min(
+      Number(runConfig.maxPagesPerDomain || config.maxPagesPerDomain || 4),
+      2
+    );
+    runConfig.maxManufacturerPagesPerDomain = Math.min(
+      Number(runConfig.maxManufacturerPagesPerDomain || config.maxManufacturerPagesPerDomain || 4),
+      2
+    );
   }
+
+  const result = await runProduct({
+    storage,
+    config: runConfig,
+    s3Key,
+    runIdOverride: requestedRunId || undefined,
+  });
 
   bridge.setContext({
     category,
@@ -731,14 +813,12 @@ async function commandRunAdHoc(config, storage, args) {
   );
 
   if (asBool(args['until-complete'], false)) {
-    const mode = String(args.mode || config.accuracyMode || 'balanced').toLowerCase();
     const maxRounds = Math.max(1, Number.parseInt(String(args['max-rounds'] || '0'), 10) || 0);
     const completed = await runUntilComplete({
       storage,
       config,
       s3key: s3Key,
       maxRounds: maxRounds || undefined,
-      mode
     });
     return {
       command: 'run-ad-hoc',
@@ -772,13 +852,11 @@ async function commandRunUntilComplete(config, storage, args) {
     throw new Error('run-until-complete requires --s3key <key>');
   }
   const maxRounds = Math.max(1, Number.parseInt(String(args['max-rounds'] || '0'), 10) || 0);
-  const mode = String(args.mode || config.accuracyMode || 'balanced').toLowerCase();
   const result = await runUntilComplete({
     storage,
     config,
     s3key,
     maxRounds: maxRounds || undefined,
-    mode
   });
   return {
     command: 'run-until-complete',
@@ -1190,16 +1268,19 @@ async function commandLlmMetrics(config, storage, args) {
   };
 }
 
-async function commandPhase10Bootstrap(config, _storage, args) {
+async function commandExpansionBootstrap(config, _storage, args, commandName = 'expansion-bootstrap') {
   const categories = parseExpansionCategories(args.categories, ['monitor', 'keyboard']);
   const template = String(args.template || 'electronics').trim() || 'electronics';
-  const helperRoot = String(args['helper-root'] || config.helperFilesRoot || 'helper_files').trim();
+  const helperRoot = String(
+    args['helper-root'] || config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority'
+  ).trim();
   const categoriesRoot = String(args['categories-root'] || 'categories').trim();
   const goldenRoot = String(args['golden-root'] || 'fixtures/golden').trim();
   const result = await bootstrapExpansionCategories({
     config: {
       ...config,
-      helperFilesRoot: helperRoot,
+      categoryAuthorityRoot: helperRoot,
+      ['helper' + 'FilesRoot']: helperRoot,
       categoriesRoot
     },
     categories,
@@ -1207,7 +1288,7 @@ async function commandPhase10Bootstrap(config, _storage, args) {
     goldenRoot
   });
   return {
-    command: 'phase10-bootstrap',
+    command: commandName,
     ...result
   };
 }
@@ -1469,7 +1550,6 @@ async function commandDaemon(config, storage, args) {
   const importsRoot = args['imports-root'] || config.importsRoot;
   const category = args.category || null;
   const all = asBool(args.all, !category);
-  const mode = String(args.mode || config.accuracyMode || 'balanced').toLowerCase();
   const once = asBool(args.once, false);
   const logger = new EventLogger({
     storage,
@@ -1485,7 +1565,6 @@ async function commandDaemon(config, storage, args) {
     importsRoot,
     category,
     all,
-    mode,
     once,
     logger
   });
@@ -1503,553 +1582,42 @@ function parseQueuePriority(value, fallback = 3) {
   return Math.max(1, Math.min(5, resolved));
 }
 
-function queueStatusSummary(products = {}) {
-  const status = {};
-  const priority = {};
-  for (const row of Object.values(products || {})) {
-    const statusKey = String(row?.status || 'pending').trim().toLowerCase() || 'pending';
-    const priorityKey = String(Math.max(1, Math.min(5, Number.parseInt(String(row?.priority || '3'), 10) || 3)));
-    status[statusKey] = (status[statusKey] || 0) + 1;
-    priority[priorityKey] = (priority[priorityKey] || 0) + 1;
-  }
-  return {
-    status,
-    priority
-  };
-}
+const commandQueue = createQueueCommand({
+  slug,
+  toPosixKey,
+  parseCsvList,
+  parseJsonArg,
+  parseQueuePriority,
+  asBool,
+  ingestCsvFile,
+  upsertQueueProduct,
+  syncQueueFromInputs,
+  listQueueProducts,
+  loadQueueState,
+  clearQueueByStatus,
+});
 
-async function commandQueue(config, storage, args) {
-  const category = String(args.category || 'mouse').trim() || 'mouse';
-  const action = String(args._?.[0] || '').trim().toLowerCase();
-  if (!action) {
-    throw new Error('queue requires a subcommand: add|add-batch|list|stats|retry|pause|clear');
-  }
-
-  if (action === 'add') {
-    const brand = String(args.brand || '').trim();
-    const model = String(args.model || '').trim();
-    const variant = String(args.variant || '').trim();
-    const productId = String(
-      args['product-id'] || [category, slug(brand), slug(model), slug(variant)].filter(Boolean).join('-')
-    ).trim();
-    if (!productId) {
-      throw new Error('queue add requires --product-id or --brand/--model');
-    }
-
-    const s3key = String(
-      args.s3key || toPosixKey(config.s3InputPrefix, category, 'products', `${productId}.json`)
-    ).trim();
-    if (!s3key) {
-      throw new Error('queue add could not resolve s3key');
-    }
-
-    const hasJobPayload = await storage.objectExists(s3key);
-    if (!hasJobPayload) {
-      if (!brand || !model) {
-        throw new Error('queue add requires an existing --s3key job or --brand/--model to create one');
-      }
-      const identityLock = {
-        brand,
-        model,
-        variant,
-        sku: String(args.sku || '').trim(),
-        mpn: String(args.mpn || '').trim(),
-        gtin: String(args.gtin || '').trim()
-      };
-      const job = {
-        productId,
-        category,
-        identityLock,
-        seedUrls: parseCsvList(args['seed-urls']),
-        anchors: parseJsonArg('anchors-json', args['anchors-json'], {})
-      };
-      const requirements = parseJsonArg('requirements-json', args['requirements-json'], null);
-      if (requirements && typeof requirements === 'object') {
-        job.requirements = requirements;
-      }
-      await storage.writeObject(
-        s3key,
-        Buffer.from(JSON.stringify(job, null, 2), 'utf8'),
-        { contentType: 'application/json' }
-      );
-    }
-
-    const priority = parseQueuePriority(args.priority, 3);
-    const product = await upsertQueueProduct({
-      storage,
-      category,
-      productId,
-      s3key,
-      patch: {
-        status: 'pending',
-        priority,
-        retry_count: 0,
-        next_retry_at: '',
-        next_action_hint: 'fast_pass',
-        priority_reason: String(args['priority-reason'] || 'manual_add').trim() || 'manual_add'
-      }
-    });
-    return {
-      command: 'queue',
-      action,
-      category,
-      product: product.product
-    };
-  }
-
-  if (action === 'add-batch') {
-    const csvPath = String(args.file || args.path || '').trim();
-    if (!csvPath) {
-      throw new Error('queue add-batch requires --file <csv>');
-    }
-    const result = await ingestCsvFile({
-      storage,
-      config,
-      category,
-      csvPath,
-      importsRoot: args['imports-root'] || config.importsRoot
-    });
-    return {
-      command: 'queue',
-      action,
-      category,
-      ...result
-    };
-  }
-
-  if (action === 'list') {
-    const sync = asBool(args.sync, false);
-    if (sync) {
-      await syncQueueFromInputs({ storage, category });
-    }
-    const status = String(args.status || '').trim().toLowerCase();
-    const limit = Math.max(1, Number.parseInt(String(args.limit || '100'), 10) || 100);
-    const rows = await listQueueProducts({
-      storage,
-      category,
-      status,
-      limit
-    });
-    return {
-      command: 'queue',
-      action,
-      category,
-      status: status || null,
-      count: rows.length,
-      products: rows
-    };
-  }
-
-  if (action === 'stats') {
-    const sync = asBool(args.sync, false);
-    if (sync) {
-      await syncQueueFromInputs({ storage, category });
-    }
-    const loaded = await loadQueueState({ storage, category });
-    const products = loaded.state.products || {};
-    return {
-      command: 'queue',
-      action,
-      category,
-      total_products: Object.keys(products).length,
-      ...queueStatusSummary(products)
-    };
-  }
-
-  if (action === 'retry' || action === 'pause') {
-    const productId = String(args['product-id'] || '').trim();
-    if (!productId) {
-      throw new Error(`queue ${action} requires --product-id <id>`);
-    }
-    const loaded = await loadQueueState({ storage, category });
-    const existing = loaded.state.products?.[productId];
-    if (!existing) {
-      throw new Error(`queue ${action} could not find product '${productId}'`);
-    }
-    const nextStatus = action === 'retry' ? 'pending' : 'paused';
-    const nextActionHint = action === 'retry' ? 'retry_manual' : 'manual_pause';
-    const patched = await upsertQueueProduct({
-      storage,
-      category,
-      productId,
-      s3key: String(existing.s3key || '').trim(),
-      patch: {
-        status: nextStatus,
-        next_action_hint: nextActionHint,
-        last_error: action === 'retry' ? '' : existing.last_error || '',
-        retry_count: action === 'retry' ? 0 : existing.retry_count,
-        next_retry_at: action === 'retry' ? '' : existing.next_retry_at
-      }
-    });
-    return {
-      command: 'queue',
-      action,
-      category,
-      product: patched.product
-    };
-  }
-
-  if (action === 'clear') {
-    const status = String(args.status || '').trim().toLowerCase();
-    if (!status) {
-      throw new Error('queue clear requires --status <status>');
-    }
-    const result = await clearQueueByStatus({
-      storage,
-      category,
-      status
-    });
-    return {
-      command: 'queue',
-      action,
-      category,
-      status,
-      ...result
-    };
-  }
-
-  throw new Error(`Unknown queue subcommand: ${action}`);
-}
-
-async function commandReview(config, storage, args) {
-  const category = String(args.category || 'mouse').trim() || 'mouse';
-  const action = String(args._?.[0] || '').trim().toLowerCase();
-  if (!action) {
-    throw new Error('review requires a subcommand: layout|queue|product|build|ws-queue|override|approve-greens|manual-override|finalize|metrics|suggest');
-  }
-
-  if (action === 'layout') {
-    const layout = await buildReviewLayout({ storage, config, category });
-    return {
-      command: 'review',
-      action,
-      ...layout
-    };
-  }
-
-  if (action === 'queue') {
-    const status = String(args.status || 'needs_review').trim().toLowerCase();
-    const limit = Math.max(1, Number.parseInt(String(args.limit || '100'), 10) || 100);
-    const specDb = await openSpecDbForCategory(config, category);
-    let items;
-    try {
-      items = await buildReviewQueue({
-        storage,
-        config,
-        category,
-        status,
-        limit,
-        specDb
-      });
-    } finally {
-      try { specDb?.close(); } catch { /* no-op */ }
-    }
-    return {
-      command: 'review',
-      action,
-      category,
-      status,
-      count: items.length,
-      items
-    };
-  }
-
-  if (action === 'product') {
-    const productId = String(args['product-id'] || '').trim();
-    if (!productId) {
-      throw new Error('review product requires --product-id <id>');
-    }
-    const includeCandidates = !asBool(args['without-candidates'], false) && !asBool(args['selected-only'], false);
-    const specDb = await openSpecDbForCategory(config, category);
-    let payload;
-    try {
-      payload = await buildProductReviewPayload({
-        storage,
-        config,
-        category,
-        productId,
-        includeCandidates,
-        specDb
-      });
-    } finally {
-      try { specDb?.close(); } catch { /* no-op */ }
-    }
-    return {
-      command: 'review',
-      action,
-      category,
-      ...payload
-    };
-  }
-
-  if (action === 'build') {
-    const productId = String(args['product-id'] || '').trim();
-    const status = String(args.status || 'needs_review').trim().toLowerCase();
-    const limit = Math.max(1, Number.parseInt(String(args.limit || '500'), 10) || 500);
-    const product = productId
-      ? await writeProductReviewArtifacts({
-        storage,
-        config,
-        category,
-        productId
-      })
-      : null;
-    const queue = await writeCategoryReviewArtifacts({
-      storage,
-      config,
-      category,
-      status,
-      limit
-    });
-    return {
-      command: 'review',
-      action,
-      category,
-      product: product || null,
-      queue
-    };
-  }
-
-  if (action === 'ws-queue') {
-    const status = String(args.status || 'needs_review').trim().toLowerCase();
-    const limit = Math.max(1, Number.parseInt(String(args.limit || '200'), 10) || 200);
-    const host = String(args.host || '127.0.0.1').trim() || '127.0.0.1';
-    const port = Math.max(1, Number.parseInt(String(args.port || '8789'), 10) || 8789);
-    const pollSeconds = Math.max(1, Number.parseInt(String(args['poll-seconds'] || '5'), 10) || 5);
-    const durationSeconds = Math.max(0, Number.parseInt(String(args['duration-seconds'] || '0'), 10) || 0);
-    const wsServer = await startReviewQueueWebSocket({
-      storage,
-      config,
-      category,
-      status,
-      limit,
-      host,
-      port,
-      pollSeconds
-    });
-
-    let stopReason = 'duration_elapsed';
-    if (durationSeconds > 0) {
-      await new Promise((resolve) => setTimeout(resolve, durationSeconds * 1000));
-    } else {
-      stopReason = await new Promise((resolve) => {
-        const onSigInt = () => {
-          process.off('SIGTERM', onSigTerm);
-          resolve('signal:SIGINT');
-        };
-        const onSigTerm = () => {
-          process.off('SIGINT', onSigInt);
-          resolve('signal:SIGTERM');
-        };
-        process.once('SIGINT', onSigInt);
-        process.once('SIGTERM', onSigTerm);
-      });
-    }
-    await wsServer.stop();
-    return {
-      command: 'review',
-      action,
-      category,
-      status,
-      limit,
-      host,
-      port: wsServer.port,
-      poll_seconds: wsServer.poll_seconds,
-      ws_url: wsServer.ws_url,
-      health_url: wsServer.health_url,
-      stop_reason: stopReason
-    };
-  }
-
-  if (action === 'override') {
-    const productId = String(args['product-id'] || '').trim();
-    const field = String(args.field || '').trim();
-    const candidateId = String(args['candidate-id'] || '').trim();
-    if (!productId || !field || !candidateId) {
-      throw new Error('review override requires --product-id --field --candidate-id');
-    }
-    const specDb = await openSpecDbForCategory(config, category);
-    let result;
-    try {
-      result = await setOverrideFromCandidate({
-        storage,
-        config,
-        category,
-        productId,
-        field,
-        candidateId,
-        reason: String(args.reason || '').trim(),
-        reviewer: String(args.reviewer || '').trim(),
-        specDb
-      });
-    } finally {
-      try { specDb?.close(); } catch { /* no-op */ }
-    }
-    return {
-      command: 'review',
-      action,
-      category,
-      ...result
-    };
-  }
-
-  if (action === 'approve-greens') {
-    const productId = String(args['product-id'] || '').trim();
-    if (!productId) {
-      throw new Error('review approve-greens requires --product-id <id>');
-    }
-    const result = await approveGreenOverrides({
-      storage,
-      config,
-      category,
-      productId,
-      reason: String(args.reason || '').trim(),
-      reviewer: String(args.reviewer || '').trim()
-    });
-    return {
-      command: 'review',
-      action,
-      category,
-      product_id: productId,
-      ...result
-    };
-  }
-
-  if (action === 'manual-override') {
-    const productId = String(args['product-id'] || '').trim();
-    const field = String(args.field || '').trim();
-    const value = String(args.value || '').trim();
-    if (!productId || !field || !value) {
-      throw new Error('review manual-override requires --product-id --field --value');
-    }
-    const specDb = await openSpecDbForCategory(config, category);
-    let result;
-    try {
-      result = await setManualOverride({
-        storage,
-        config,
-        category,
-        productId,
-        field,
-        value,
-        reason: String(args.reason || '').trim(),
-        reviewer: String(args.reviewer || '').trim(),
-        evidence: {
-          url: String(args['evidence-url'] || '').trim(),
-          quote: String(args['evidence-quote'] || '').trim(),
-          quote_span: parseJsonArg('evidence-quote-span', args['evidence-quote-span'], null),
-          snippet_id: String(args['evidence-snippet-id'] || '').trim(),
-          snippet_hash: String(args['evidence-snippet-hash'] || '').trim(),
-          source_id: String(args['evidence-source-id'] || '').trim(),
-          retrieved_at: String(args['evidence-retrieved-at'] || '').trim()
-        },
-        specDb
-      });
-    } finally {
-      try { specDb?.close(); } catch { /* no-op */ }
-    }
-    return {
-      command: 'review',
-      action,
-      category,
-      ...result
-    };
-  }
-
-  if (action === 'finalize') {
-    const productId = String(args['product-id'] || '').trim();
-    if (!productId) {
-      throw new Error('review finalize requires --product-id <id>');
-    }
-    const specDb = await openSpecDbForCategory(config, category);
-    let result;
-    try {
-      result = await finalizeOverrides({
-        storage,
-        config,
-        category,
-        productId,
-        applyOverrides: asBool(args.apply, false),
-        saveAsDraft: asBool(args.draft, false),
-        reviewer: String(args.reviewer || '').trim(),
-        specDb
-      });
-    } finally {
-      try { specDb?.close(); } catch { /* no-op */ }
-    }
-    return {
-      command: 'review',
-      action,
-      category,
-      ...result
-    };
-  }
-
-  if (action === 'metrics') {
-    const windowHours = Math.max(1, Number.parseInt(String(args['window-hours'] || '24'), 10) || 24);
-    const result = await buildReviewMetrics({
-      config,
-      category,
-      windowHours
-    });
-    return {
-      command: 'review',
-      action,
-      ...result
-    };
-  }
-
-  if (action === 'suggest') {
-    const type = String(args.type || '').trim().toLowerCase();
-    const field = String(args.field || '').trim();
-    const value = String(args.value || '').trim();
-    if (!type || !field || !value) {
-      throw new Error('review suggest requires --type --field --value');
-    }
-    const result = await appendReviewSuggestion({
-      config,
-      category,
-      type,
-      payload: {
-        product_id: String(args['product-id'] || '').trim(),
-        field,
-        value,
-        canonical: String(args.canonical || '').trim(),
-        reason: String(args.reason || '').trim(),
-        reviewer: String(args.reviewer || '').trim(),
-        evidence: {
-          url: String(args['evidence-url'] || '').trim(),
-          quote: String(args['evidence-quote'] || '').trim(),
-          quote_span: parseJsonArg('evidence-quote-span', args['evidence-quote-span'], null),
-          snippet_id: String(args['evidence-snippet-id'] || '').trim(),
-          snippet_hash: String(args['evidence-snippet-hash'] || '').trim()
-        }
-      }
-    });
-    return {
-      command: 'review',
-      action,
-      category,
-      ...result
-    };
-  }
-
-  throw new Error(`Unknown review subcommand: ${action}`);
-}
+const commandReview = createReviewCommand({
+  asBool,
+  parseJsonArg,
+  openSpecDbForCategory,
+  buildReviewLayout,
+  buildReviewQueue,
+  buildProductReviewPayload,
+  writeProductReviewArtifacts,
+  writeCategoryReviewArtifacts,
+  startReviewQueueWebSocket,
+  setOverrideFromCandidate,
+  approveGreenOverrides,
+  setManualOverride,
+  finalizeOverrides,
+  buildReviewMetrics,
+  appendReviewSuggestion,
+});
 
 async function commandRunBatch(config, storage, args) {
   const category = args.category || 'mouse';
   const categoryConfig = await loadCategoryConfig(category, { storage, config });
-  let helperSync = null;
-  if (config.helperFilesEnabled && config.helperAutoSeedTargets) {
-    helperSync = await syncJobsFromActiveFiltering({
-      storage,
-      config,
-      category,
-      categoryConfig,
-      limit: Math.max(0, Number.parseInt(String(config.helperActiveSyncLimit || '0'), 10) || 0)
-    });
-  }
   const allKeys = await storage.listInputKeys(category);
   const keys = await filterKeysByBrand(storage, allKeys, args.brand);
   const strategy = normalizeBatchStrategy(args.strategy || config.batchStrategy || 'mixed');
@@ -2087,7 +1655,6 @@ async function commandRunBatch(config, storage, args) {
     command: 'run-batch',
     category,
     brand: args.brand || null,
-    helper_sync: helperSync,
     strategy,
     total_inputs: allKeys.length,
     selected_inputs: keys.length,
@@ -2109,284 +1676,50 @@ async function commandRunBatch(config, storage, args) {
   };
 }
 
-async function commandDiscover(config, storage, args) {
-  const category = args.category || 'mouse';
-  const categoryConfig = await loadCategoryConfig(category, { storage, config });
-  let helperSync = null;
-  if (config.helperFilesEnabled && config.helperAutoSeedTargets) {
-    helperSync = await syncJobsFromActiveFiltering({
-      storage,
-      config,
-      category,
-      categoryConfig,
-      limit: Math.max(0, Number.parseInt(String(config.helperActiveSyncLimit || '0'), 10) || 0)
-    });
-  }
-  const allKeys = await storage.listInputKeys(category);
-  const keys = await filterKeysByBrand(storage, allKeys, args.brand);
-  const logger = new EventLogger({
-    storage,
-    runtimeEventsKey: config.runtimeEventsKey || '_runtime/events.jsonl',
-    context: {
-      category
-    }
-  });
+const commandDiscover = createDiscoverCommand({
+  loadCategoryConfig,
+  discoverCandidateSources,
+  EventLogger,
+  buildRunId,
+});
 
-  const runs = [];
-  for (const key of keys) {
-    const job = await storage.readJson(key);
-    const runId = buildRunId();
-    const result = await discoverCandidateSources({
-      config: {
-        ...config,
-        discoveryEnabled: true
-      },
-      storage,
-      categoryConfig,
-      job,
-      runId,
-      logger,
-      planningHints: {
-        missingCriticalFields: categoryConfig.schema?.critical_fields || []
-      }
-    });
+const commandSourcesReport = createSourcesReportCommand({
+  loadSourceIntel,
+  promotionSuggestionsKey,
+});
 
-    runs.push({
-      key,
-      productId: job.productId,
-      runId,
-      candidates_key: result.candidatesKey,
-      candidate_count: result.candidates.length
-    });
-  }
-  await logger.flush();
+const commandSourcesPlan = createSourcesPlanCommand({
+  loadCategoryConfig,
+  generateSourceExpansionPlans,
+});
 
-  return {
-    command: 'discover',
-    category,
-    brand: args.brand || null,
-    helper_sync: helperSync,
-    total_inputs: allKeys.length,
-    selected_inputs: keys.length,
-    runs
-  };
-}
+const commandRebuildIndex = createRebuildIndexCommand({
+  rebuildCategoryIndex,
+});
 
-async function commandSourcesReport(config, storage, args) {
-  const category = args.category || 'mouse';
-  const top = Math.max(1, Number.parseInt(args.top || '25', 10) || 25);
-  const topPaths = Math.max(1, Number.parseInt(args['top-paths'] || '8', 10) || 8);
+const commandBenchmark = createBenchmarkCommand({
+  runGoldenBenchmark,
+});
 
-  const intel = await loadSourceIntel({ storage, config, category });
-  const domains = Object.values(intel.data.domains || {}).sort(
-    (a, b) => (b.planner_score || 0) - (a.planner_score || 0)
-  );
+const commandIntelGraphApi = createIntelGraphApiCommand({
+  startIntelGraphApi,
+});
 
-  const suggestionKey = promotionSuggestionsKey(config, category);
-  const suggestions = await storage.readJsonOrNull(suggestionKey);
+const commandBillingReport = createBillingReportCommand({
+  buildBillingReport,
+});
 
-  return {
-    command: 'sources-report',
-    category,
-    domain_stats_key: intel.key,
-    domain_count: domains.length,
-    top_domains: domains.slice(0, top).map((item) => ({
-      rootDomain: item.rootDomain,
-      planner_score: item.planner_score,
-      attempts: item.attempts,
-      identity_match_rate: item.identity_match_rate,
-      major_anchor_conflict_rate: item.major_anchor_conflict_rate,
-      fields_accepted_count: item.fields_accepted_count,
-      products_seen: item.products_seen,
-      approved_attempts: item.approved_attempts,
-      candidate_attempts: item.candidate_attempts,
-      top_paths: Object.values(item.per_path || {})
-        .sort((a, b) => (b.planner_score || 0) - (a.planner_score || 0))
-        .slice(0, topPaths)
-        .map((pathRow) => ({
-          path: pathRow.path || '/',
-          planner_score: pathRow.planner_score || 0,
-          attempts: pathRow.attempts || 0,
-          identity_match_rate: pathRow.identity_match_rate || 0,
-          major_anchor_conflict_rate: pathRow.major_anchor_conflict_rate || 0,
-          fields_accepted_count: pathRow.fields_accepted_count || 0
-        }))
-    })),
-    promotion_suggestions_key: suggestionKey,
-    promotion_suggestion_count: suggestions?.suggestion_count || 0
-  };
-}
+const commandLearningReport = createLearningReportCommand({
+  buildLearningReport,
+});
 
-async function commandSourcesPlan(config, storage, args) {
-  const category = args.category || 'mouse';
-  const categoryConfig = await loadCategoryConfig(category, { storage, config });
-  const result = await generateSourceExpansionPlans({
-    storage,
-    config,
-    category,
-    categoryConfig
-  });
+const commandExplainUnk = createExplainUnkCommand({
+  slug,
+});
 
-  return {
-    command: 'sources-plan',
-    category,
-    expansion_plan_key: result.expansionPlanKey,
-    brand_plan_count: result.planCount,
-    brand_plan_keys: result.brandPlanKeys
-  };
-}
-
-async function commandRebuildIndex(config, storage, args) {
-  const category = args.category || 'mouse';
-  const result = await rebuildCategoryIndex({ storage, config, category });
-  return {
-    command: 'rebuild-index',
-    category,
-    index_key: result.indexKey,
-    total_products: result.totalProducts
-  };
-}
-
-async function commandBenchmark(config, storage, args, commandName = 'benchmark') {
-  const category = args.category || 'mouse';
-  const fixturePath = args.fixture || null;
-  const maxCases = Math.max(0, Number.parseInt(String(args['max-cases'] || '0'), 10) || 0);
-
-  const result = await runGoldenBenchmark({
-    storage,
-    category,
-    fixturePath,
-    maxCases
-  });
-
-  return {
-    command: commandName,
-    category,
-    fixture_path: result.fixture_path,
-    case_count: result.case_count,
-    pass_case_count: result.pass_case_count,
-    fail_case_count: result.fail_case_count,
-    missing_case_count: result.missing_case_count,
-    field_checks: result.field_checks,
-    field_passed: result.field_passed,
-    field_pass_rate: result.field_pass_rate,
-    results: result.results
-  };
-}
-
-async function commandIntelGraphApi(config, storage, args) {
-  const category = args.category || 'mouse';
-  const host = String(args.host || '0.0.0.0');
-  const port = Math.max(1, Number.parseInt(String(args.port || '8787'), 10) || 8787);
-
-  const started = await startIntelGraphApi({
-    storage,
-    config,
-    category,
-    host,
-    port
-  });
-
-  return {
-    command: 'intel-graph-api',
-    category,
-    host: started.host,
-    port: started.port,
-    graphql_url: started.graphqlUrl,
-    health_url: started.healthUrl
-  };
-}
-
-async function commandBillingReport(config, storage, args) {
-  const month = args.month || new Date().toISOString().slice(0, 7);
-  const report = await buildBillingReport({
-    storage,
-    month,
-    config
-  });
-  return {
-    command: 'billing-report',
-    ...report
-  };
-}
-
-async function commandLearningReport(_config, storage, args) {
-  const category = String(args.category || 'mouse').trim();
-  const report = await buildLearningReport({
-    storage,
-    category
-  });
-  return {
-    command: 'learning-report',
-    ...report
-  };
-}
-
-async function commandExplainUnk(_config, storage, args) {
-  const category = String(args.category || 'mouse').trim();
-  const brand = String(args.brand || '').trim();
-  const model = String(args.model || '').trim();
-  const variant = String(args.variant || '').trim();
-  const productId = String(
-    args['product-id'] ||
-    [category, slug(brand), slug(model), slug(variant)].filter(Boolean).join('-')
-  ).trim();
-
-  if (!productId) {
-    throw new Error('explain-unk requires --product-id or --category/--brand/--model');
-  }
-
-  const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-  const summary = await storage.readJsonOrNull(`${latestBase}/summary.json`);
-  const normalized = await storage.readJsonOrNull(`${latestBase}/normalized.json`);
-  if (!summary && !normalized) {
-    throw new Error(`No latest run found for productId '${productId}' in category '${category}'`);
-  }
-
-  const fieldReasoning = summary?.field_reasoning || {};
-  const fields = normalized?.fields || {};
-  const unknownFields = [];
-  for (const [field, value] of Object.entries(fields)) {
-    if (String(value || '').trim().toLowerCase() !== 'unk') {
-      continue;
-    }
-    const row = fieldReasoning[field] || {};
-    unknownFields.push({
-      field,
-      unknown_reason: row.unknown_reason || 'not_found_after_search',
-      reasons: row.reasons || [],
-      contradictions: row.contradictions || []
-    });
-  }
-
-  return {
-    command: 'explain-unk',
-    category,
-    productId,
-    run_id: summary?.runId || summary?.run_id || null,
-    validated: Boolean(summary?.validated),
-    unknown_field_count: unknownFields.length,
-    unknown_fields: unknownFields,
-    searches_attempted: summary?.searches_attempted || [],
-    urls_fetched_count: (summary?.urls_fetched || []).length,
-    top_evidence_references: summary?.top_evidence_references || []
-  };
-}
-
-async function commandLlmHealth(config, storage, args) {
-  const provider = String(args.provider || '').trim().toLowerCase();
-  const model = String(args.model || '').trim();
-  const result = await runLlmHealthCheck({
-    storage,
-    config,
-    provider,
-    model
-  });
-  return {
-    command: 'llm-health',
-    ...result
-  };
-}
+const commandLlmHealth = createLlmHealthCommand({
+  runLlmHealthCheck,
+});
 
 function parseJsonArgSafe(name, value, fallback) {
   if (value === undefined || value === null || value === '') {
@@ -2507,206 +1840,13 @@ async function commandSeedDb(config, _storage, args) {
   }
 }
 
-async function commandMigrateToSqlite(config, storage, args) {
-  const category = String(args.category || '').trim();
-  if (!category) throw new Error('migrate-to-sqlite requires --category');
-  const phase = args.phase ? Number.parseInt(String(args.phase), 10) : 0;
-  const specDb = await openSpecDbForCategory(config, category);
-  if (!specDb) throw new Error(`Could not open SpecDb for category: ${category}`);
-
-  const results = {};
-
-  try {
-    // Phase 1: Queue state — verify SQLite has rows (already migrated via dual-write)
-    if (!phase || phase === 1) {
-      const rows = specDb.getAllQueueProducts();
-      results.phase1_queue = { status: 'verified', rows: rows.length };
-    }
-
-    // Phase 2: Billing ledger — import NDJSON files
-    if (!phase || phase === 2) {
-      let imported = 0;
-      const billingPrefix = toPosixKey(config.s3OutputPrefix, '_billing');
-      const keys = await storage.listKeys(billingPrefix);
-      const ledgerKeys = keys.filter((k) => k.endsWith('.jsonl') && k.includes('ledger'));
-      for (const key of ledgerKeys) {
-        const text = await storage.readTextOrNull(key);
-        if (!text) continue;
-        for (const line of text.split(/\r?\n/)) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          try {
-            const entry = JSON.parse(trimmed);
-            const ts = String(entry.ts || '');
-            specDb.insertBillingEntry({
-              ts,
-              month: ts.slice(0, 7),
-              day: ts.slice(0, 10),
-              provider: entry.provider || 'unknown',
-              model: entry.model || 'unknown',
-              category: entry.category || '',
-              product_id: entry.productId || entry.product_id || '',
-              run_id: entry.runId || entry.run_id || '',
-              round: entry.round || 0,
-              prompt_tokens: entry.prompt_tokens || 0,
-              completion_tokens: entry.completion_tokens || 0,
-              cached_prompt_tokens: entry.cached_prompt_tokens || 0,
-              total_tokens: entry.total_tokens || 0,
-              cost_usd: entry.cost_usd || 0,
-              reason: entry.reason || 'extract',
-              host: entry.host || '',
-              url_count: entry.url_count || 0,
-              evidence_chars: entry.evidence_chars || 0,
-              estimated_usage: entry.estimated_usage ? 1 : 0,
-              meta: JSON.stringify(entry.meta || {})
-            });
-            imported += 1;
-          } catch { /* skip malformed lines */ }
-        }
-      }
-      results.phase2_billing = { status: 'imported', entries: imported, files: ledgerKeys.length };
-    }
-
-    // Phase 3: LLM cache — import cache dir files
-    if (!phase || phase === 3) {
-      let imported = 0;
-      const cacheDir = config.llmExtractionCacheDir || '.specfactory_tmp/llm_cache';
-      try {
-        const files = await fsNode.readdir(cacheDir);
-        for (const file of files) {
-          if (!file.endsWith('.json')) continue;
-          const key = file.replace(/\.json$/, '');
-          try {
-            const raw = await fsNode.readFile(pathNode.join(cacheDir, file), 'utf8');
-            const parsed = JSON.parse(raw);
-            if (parsed.response !== undefined && parsed.timestamp > 0) {
-              const ttl = parsed.ttl || 7 * 24 * 60 * 60 * 1000;
-              if ((Date.now() - parsed.timestamp) <= ttl) {
-                specDb.setLlmCacheEntry(key, JSON.stringify(parsed.response), parsed.timestamp, ttl);
-                imported += 1;
-              }
-            }
-          } catch { /* skip bad files */ }
-        }
-      } catch { /* cache dir may not exist */ }
-      results.phase3_cache = { status: 'imported', entries: imported };
-    }
-
-    // Phase 4: Learning profiles — import profile JSONs
-    if (!phase || phase === 4) {
-      let imported = 0;
-      const learningPrefix = toPosixKey(config.s3OutputPrefix, '_learning', category, 'profiles');
-      const keys = await storage.listKeys(learningPrefix);
-      for (const key of keys) {
-        if (!key.endsWith('.json')) continue;
-        try {
-          const profile = await storage.readJsonOrNull(key);
-          if (!profile) continue;
-          const profileId = profile.profile_id || key.split('/').pop()?.replace(/\.json$/, '') || '';
-          specDb.upsertLearningProfile({
-            profile_id: profileId,
-            category: profile.category || category,
-            brand: profile.brand || '',
-            model: profile.model || '',
-            variant: profile.variant || '',
-            runs_total: profile.runs_total || 0,
-            validated_runs: profile.validated_runs || 0,
-            validated: profile.validated ? 1 : 0,
-            unknown_field_rate: profile.unknown_field_rate || 0,
-            unknown_field_rate_avg: profile.unknown_field_rate_avg || 0,
-            parser_health_avg: profile.parser_health_avg || 0,
-            preferred_urls: JSON.stringify(profile.preferred_urls || []),
-            feedback_urls: JSON.stringify(profile.feedback_urls || []),
-            uncertain_fields: JSON.stringify(profile.uncertain_fields || []),
-            host_stats: JSON.stringify(profile.host_stats || []),
-            critical_fields_below: JSON.stringify(profile.critical_fields_below_pass_target || []),
-            last_run: JSON.stringify(profile.last_run || {}),
-            parser_health: JSON.stringify(profile.parser_health || {}),
-            updated_at: profile.updated_at || new Date().toISOString()
-          });
-          imported += 1;
-        } catch { /* skip bad files */ }
-      }
-      results.phase4_learning = { status: 'imported', profiles: imported };
-    }
-
-    // Phase 5: Category brain — import 8 artifact files
-    if (!phase || phase === 5) {
-      let imported = 0;
-      const artifactNames = [
-        'field_lexicon', 'constraints', 'field_yield', 'identity_grammar',
-        'query_templates', 'source_promotions', 'stats', 'field_availability'
-      ];
-      for (const name of artifactNames) {
-        const key = toPosixKey(config.s3OutputPrefix, '_learning', category, `${name}.json`);
-        try {
-          const data = await storage.readJsonOrNull(key);
-          if (data) {
-            specDb.upsertCategoryBrainArtifact(category, name, data);
-            imported += 1;
-          }
-        } catch { /* skip */ }
-      }
-      results.phase5_brain = { status: 'imported', artifacts: imported };
-    }
-
-    // Phase 6: Source intel — decompose domain_stats.json
-    if (!phase || phase === 6) {
-      const intelKey = toPosixKey(config.s3OutputPrefix, '_source_intel', category, 'domain_stats.json');
-      const data = await storage.readJsonOrNull(intelKey);
-      if (data && data.domains) {
-        specDb.persistSourceIntelFull(category, data.domains);
-        results.phase6_intel = { status: 'imported', domains: Object.keys(data.domains).length };
-      } else {
-        results.phase6_intel = { status: 'skipped', reason: 'no domain_stats.json found' };
-      }
-    }
-
-    // Phase 7: Source corpus — import corpus.json
-    if (!phase || phase === 7) {
-      const corpusKey = toPosixKey(config.s3OutputPrefix, '_source_intel', category, 'corpus.json');
-      const data = await storage.readJsonOrNull(corpusKey);
-      if (data && Array.isArray(data.documents || data)) {
-        const docs = data.documents || data;
-        specDb.upsertSourceCorpusBatch(docs.map((doc) => ({
-          url: doc.url || '',
-          category,
-          host: doc.host || '',
-          root_domain: doc.rootDomain || doc.root_domain || '',
-          path: doc.path || '',
-          title: doc.title || '',
-          snippet: doc.snippet || '',
-          tier: doc.tier ?? 99,
-          role: doc.role || '',
-          fields: JSON.stringify(doc.fields || []),
-          methods: JSON.stringify(doc.methods || []),
-          identity_match: doc.identity_match ? 1 : 0,
-          first_seen_at: doc.first_seen_at || null,
-          last_seen_at: doc.last_seen_at || null
-        })));
-        results.phase7_corpus = { status: 'imported', documents: docs.length };
-      } else {
-        results.phase7_corpus = { status: 'skipped', reason: 'no corpus.json found' };
-      }
-    }
-
-    // Phase 8: Frontier — already has its own migration
-    if (!phase || phase === 8) {
-      results.phase8_frontier = { status: 'skipped', note: 'frontier has built-in migration' };
-    }
-
-    const counts = specDb.counts();
-    return {
-      command: 'migrate-to-sqlite',
-      category,
-      phase: phase || 'all',
-      results,
-      table_counts: counts
-    };
-  } finally {
-    specDb.close();
-  }
-}
+const commandMigrateToSqlite = createMigrateToSqliteCommand({
+  openSpecDbForCategory,
+  toPosixKey,
+  fsNode,
+  pathNode,
+  now: () => Date.now(),
+});
 
 const dispatchCliCommand = createCliCommandDispatcher({
   handlers: {
@@ -2736,7 +1876,9 @@ const dispatchCliCommand = createCliCommandDispatcher({
     changelog: ({ config, storage, args }) => commandChangelog(config, storage, args),
     'source-health': ({ config, storage, args }) => commandSourceHealth(config, storage, args),
     'llm-metrics': ({ config, storage, args }) => commandLlmMetrics(config, storage, args),
-    'phase10-bootstrap': ({ config, storage, args }) => commandPhase10Bootstrap(config, storage, args),
+    'expansion-bootstrap': ({ config, storage, args }) => (
+      commandExpansionBootstrap(config, storage, args, 'expansion-bootstrap')
+    ),
     'hardening-harness': ({ config, storage, args }) => commandHardeningHarness(config, storage, args),
     'hardening-report': ({ config, storage, args }) => commandHardeningReport(config, storage, args),
     'drift-scan': ({ config, storage, args }) => commandDriftScan(config, storage, args),
@@ -2773,41 +1915,84 @@ const dispatchCliCommand = createCliCommandDispatcher({
   }
 });
 
-async function main() {
-  const [command, ...rest] = process.argv.slice(2);
-  if (!command) {
-    process.stdout.write(`${usage()}\n`);
-    process.exitCode = 1;
-    return;
-  }
-
-  const args = parseArgs(rest);
-  loadDotEnvFile(args.env || '.env');
-  const config = buildConfig(args);
-  const validation = validateConfig(config);
-  for (const warning of validation.warnings) {
-    process.stderr.write(`[config-warning] ${warning.code}: ${warning.message}\n`);
-  }
-  if (!validation.valid) {
-    for (const error of validation.errors) {
-      process.stderr.write(`[config-error] ${error.code}: ${error.message}\n`);
+export async function executeCli(argv, { env = {}, stdout = process.stdout, stderr = process.stderr } = {}) {
+  const restoreEnv = applyEnvOverrides(env);
+  try {
+    const [command, ...rest] = Array.isArray(argv) ? argv : [];
+    if (!command) {
+      stdout.write(`${usage()}\n`);
+      return { exitCode: 1, output: undefined };
     }
-    process.exitCode = 1;
-    return;
+
+    const args = parseArgs(rest);
+    loadDotEnvFile(args.env || '.env', {
+      overrideExistingKeys: CLI_DOTENV_OVERRIDE_KEYS
+    });
+    const config = buildConfig(args);
+    const validation = validateConfig(config);
+    for (const warning of validation.warnings) {
+      stderr.write(`[config-warning] ${warning.code}: ${warning.message}\n`);
+    }
+    if (!validation.valid) {
+      for (const error of validation.errors) {
+        stderr.write(`[config-error] ${error.code}: ${error.message}\n`);
+      }
+      return { exitCode: 1, output: undefined };
+    }
+    const storage = createStorage(config);
+
+    const output = await dispatchCliCommand({ command, config, storage, args });
+
+    if (output && typeof output === 'object') {
+      output.run_profile = 'standard';
+    }
+
+    return { exitCode: 0, output };
+  } finally {
+    restoreEnv();
+    if (typeof process.disconnect === 'function' && process.connected) {
+      try { process.disconnect(); } catch { /* best effort */ }
+    }
   }
-  const storage = createStorage(config);
-
-  const output = await dispatchCliCommand({ command, config, storage, args });
-
-  if (output && typeof output === 'object') {
-    output.run_profile = config.runProfile;
-  }
-
-  process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
 }
 
-main().catch((error) => {
-  process.stderr.write(`${error.stack || error.message}\n`);
-  process.stderr.write(`${usage()}\n`);
-  process.exitCode = 1;
-});
+async function main(argv = process.argv.slice(2)) {
+  const { exitCode, output } = await executeCli(argv);
+  if (output !== undefined) {
+    process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
+  }
+  process.exitCode = exitCode;
+}
+
+function isDirectCliExecution() {
+  const entryPath = process.argv[1];
+  if (!entryPath) {
+    return false;
+  }
+  try {
+    return import.meta.url === pathToFileURL(pathNode.resolve(entryPath)).href;
+  } catch {
+    return false;
+  }
+}
+
+if (isDirectCliExecution()) {
+  main().catch((error) => {
+    process.stderr.write(`${error.stack || error.message}\n`);
+    process.stderr.write(`${usage()}\n`);
+    process.exitCode = 1;
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -9,7 +9,7 @@ import {
   isSafeManufacturerFollowupUrl,
   isHelperSyntheticUrl,
   isHelperSyntheticSource
-} from '../src/pipeline/helpers/urlHelpers.js';
+} from '../src/features/indexing/orchestration/shared/urlHelpers.js';
 
 test('isDiscoveryOnlySourceUrl detects robots.txt', () => {
   assert.ok(isDiscoveryOnlySourceUrl('https://example.com/robots.txt'));
@@ -63,16 +63,21 @@ test('isSafeManufacturerFollowupUrl checks domain and path signals', () => {
   assert.ok(!isSafeManufacturerFollowupUrl(source, 'https://razer.com/blog/news'));
 });
 
-test('isHelperSyntheticUrl detects helper_files:// prefix', () => {
-  assert.ok(isHelperSyntheticUrl('helper_files://mouse/known_values.json'));
+test('isHelperSyntheticUrl detects canonical helper synthetic scheme only', () => {
+  assert.ok(isHelperSyntheticUrl('category_authority://mouse/known_values.json'));
+  const legacyUrl = `helper${'_files'}://mouse/known_values.json`;
+  assert.ok(!isHelperSyntheticUrl(legacyUrl));
   assert.ok(!isHelperSyntheticUrl('https://example.com'));
   assert.ok(!isHelperSyntheticUrl(''));
 });
 
 test('isHelperSyntheticSource detects helper source objects', () => {
   assert.ok(isHelperSyntheticSource({ helperSource: true, url: 'https://a.com' }));
-  assert.ok(isHelperSyntheticSource({ url: 'helper_files://test' }));
-  assert.ok(isHelperSyntheticSource({ finalUrl: 'helper_files://test' }));
+  assert.ok(isHelperSyntheticSource({ url: 'category_authority://test' }));
+  assert.ok(isHelperSyntheticSource({ finalUrl: 'category_authority://test' }));
+  const legacyUrl = `helper${'_files'}://test`;
+  assert.ok(!isHelperSyntheticSource({ url: legacyUrl }));
+  assert.ok(!isHelperSyntheticSource({ finalUrl: legacyUrl }));
   assert.ok(!isHelperSyntheticSource({ url: 'https://a.com' }));
   assert.ok(!isHelperSyntheticSource(null));
 });

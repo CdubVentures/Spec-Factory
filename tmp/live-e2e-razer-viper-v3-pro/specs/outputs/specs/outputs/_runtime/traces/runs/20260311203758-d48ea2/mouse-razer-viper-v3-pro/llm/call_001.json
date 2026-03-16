@@ -1,0 +1,89 @@
+{
+  "ts": "2026-03-11T20:38:01.343Z",
+  "status": "ok",
+  "provider": "gemini",
+  "model": "gemini-2.5-flash-lite",
+  "purpose": "discovery_planner_primary",
+  "target_fields": [
+    "polling_rate"
+  ],
+  "target_fields_count": 1,
+  "route_role": "plan",
+  "retry_without_schema": false,
+  "deepseek_mode_detected": false,
+  "json_schema_requested": true,
+  "prompt": {
+    "system": "You generate focused web research queries for hardware specification collection.\nOutput 5-12 short search queries.\nPrioritize manufacturer docs, manuals, instrumented labs, and trusted databases.\nDo not include junk domains, login workflows, or irrelevant topics.\nThe existingQueries show searches already tried. Generate DIFFERENT query patterns covering new angles.\nVary strategies: official product pages, spec databases, review sites, teardowns, comparison pages.\nKeep queries compact and practical.\nUse deliberate internal reasoning before finalizing output.",
+    "user": "{\"product\":{\"category\":\"mouse\",\"brand\":\"Razer\",\"model\":\"Viper V3 Pro\",\"variant\":\"\"},\"criticalFields\":[\"polling_rate\"],\"missingCriticalFields\":[\"polling_rate\"],\"existingQueries\":[\"Razer Viper V3 Pro connection specification\",\"Razer Viper V3 Pro connectivity specification\",\"Razer Viper V3 Pro DPI specification\",\"Razer Viper V3 Pro connection manual pdf\",\"Razer Viper V3 Pro connectivity manual pdf\",\"Razer Viper V3 Pro DPI manual pdf\",\"Razer Viper V3 Pro connection support\",\"Razer Viper V3 Pro connectivity support\",\"Razer Viper V3 Pro DPI support\",\"Razer Viper V3 Pro connection manual\",\"Razer Viper V3 Pro connectivity manual\",\"Razer Viper V3 Pro DPI manual\",\"Razer Viper V3 Pro connection pdf\",\"Razer Viper V3 Pro connectivity pdf\",\"Razer Viper V3 Pro DPI pdf\",\"site:razer.com Razer Viper V3 Pro connection\",\"site:razer.com Razer Viper V3 Pro connectivity\",\"site:razer.com Razer Viper V3 Pro DPI\",\"site:razerzone.com Razer Viper V3 Pro connection\",\"site:razerzone.com Razer Viper V3 Pro connectivity\"]}",
+    "multimodal_image_count": 0,
+    "images": []
+  },
+  "request_body": {
+    "model": "gemini-2.5-flash-lite",
+    "temperature": 0,
+    "messages": [
+      {
+        "role": "system",
+        "content": "You generate focused web research queries for hardware specification collection.\nOutput 5-12 short search queries.\nPrioritize manufacturer docs, manuals, instrumented labs, and trusted databases.\nDo not include junk domains, login workflows, or irrelevant topics.\nThe existingQueries show searches already tried. Generate DIFFERENT query patterns covering new angles.\nVary strategies: official product pages, spec databases, review sites, teardowns, comparison pages.\nKeep queries compact and practical.\nUse deliberate internal reasoning before finalizing output."
+      },
+      {
+        "role": "user",
+        "content": "{\"product\":{\"category\":\"mouse\",\"brand\":\"Razer\",\"model\":\"Viper V3 Pro\",\"variant\":\"\"},\"criticalFields\":[\"polling_rate\"],\"missingCriticalFields\":[\"polling_rate\"],\"existingQueries\":[\"Razer Viper V3 Pro connection specification\",\"Razer Viper V3 Pro connectivity specification\",\"Razer Viper V3 Pro DPI specification\",\"Razer Viper V3 Pro connection manual pdf\",\"Razer Viper V3 Pro connectivity manual pdf\",\"Razer Viper V3 Pro DPI manual pdf\",\"Razer Viper V3 Pro connection support\",\"Razer Viper V3 Pro connectivity support\",\"Razer Viper V3 Pro DPI support\",\"Razer Viper V3 Pro connection manual\",\"Razer Viper V3 Pro connectivity manual\",\"Razer Viper V3 Pro DPI manual\",\"Razer Viper V3 Pro connection pdf\",\"Razer Viper V3 Pro connectivity pdf\",\"Razer Viper V3 Pro DPI pdf\",\"site:razer.com Razer Viper V3 Pro connection\",\"site:razer.com Razer Viper V3 Pro connectivity\",\"site:razer.com Razer Viper V3 Pro DPI\",\"site:razerzone.com Razer Viper V3 Pro connection\",\"site:razerzone.com Razer Viper V3 Pro connectivity\"]}"
+      }
+    ],
+    "max_tokens": 2048,
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "structured_output",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "queries": {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "query": {
+                        "type": "string"
+                      },
+                      "target_fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "query"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "required": [
+            "queries"
+          ]
+        }
+      }
+    }
+  },
+  "response": {
+    "text": "{\n  \"queries\": [\n    \"Razer Viper V3 Pro polling rate specification\",\n    \"Razer Viper V3 Pro wireless polling rate\",\n    \"Razer Viper V3 Pro polling rate manual\",\n    \"Razer Viper V3 Pro polling rate pdf\",\n    \"Razer Viper V3 Pro sensor polling rate\",\n    \"Razer Viper V3 Pro technical specifications polling rate\",\n    \"Razer Viper V3 Pro official specs polling rate\",\n    \"Razer Viper V3 Pro review polling rate\",\n    \"Razer Viper V3 Pro teardown polling rate\",\n    \"Razer Viper V3 Pro vs other mice polling rate\"\n  ]\n}"
+  },
+  "usage": {
+    "completion_tokens": 147,
+    "prompt_tokens": 355,
+    "total_tokens": 504
+  },
+  "max_tokens_applied": 2048,
+  "error": ""
+}

@@ -1,0 +1,1877 @@
+{
+  "product_id": "mouse-logitech-g-pro-x-superlight-2-phase01-live",
+  "category": "mouse",
+  "identity": {
+    "id": 0,
+    "identifier": "",
+    "brand": "Logitech G",
+    "model": "Pro X Superlight 2",
+    "variant": "unk"
+  },
+  "fields": {
+    "release_date": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "discontinued": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "sku": {
+      "selected": {
+        "value": "910-006636",
+        "confidence": 0.75,
+        "status": "needs_review",
+        "color": "yellow"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 3,
+      "candidates": [
+        {
+          "candidate_id": "cand-item_mouse-logitech-g-pro-x-superlight-2-phase01-live_sku_910-006636_1_4ku7vi",
+          "value": "910-006636",
+          "score": 0.75,
+          "source_id": "logitechg_com",
+          "source": "logitechg.com",
+          "tier": 1,
+          "method": "ldjson",
+          "evidence": {
+            "url": "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse",
+            "retrieved_at": "2026-03-11T20:48:26.359Z",
+            "snippet_id": "",
+            "snippet_hash": "",
+            "quote": "",
+            "quote_span": null,
+            "snippet_text": "",
+            "source_id": "logitechg_com"
+          },
+          "llm_extract_model": null,
+          "llm_extract_provider": null,
+          "llm_validate_model": null,
+          "llm_validate_provider": null
+        },
+        {
+          "candidate_id": "cand-item_mouse-logitech-g-pro-x-superlight-2-phase01-live_sku_910-006628_2_1r6kl9o",
+          "value": "910-006628",
+          "score": 0.75,
+          "source_id": "logitechg_com",
+          "source": "logitechg.com",
+          "tier": 1,
+          "method": "ldjson",
+          "evidence": {
+            "url": "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse",
+            "retrieved_at": "2026-03-11T20:48:26.360Z",
+            "snippet_id": "sn_d2b8a3f95f41e058",
+            "snippet_hash": "sha256:828742f34c233eecd94f5568d43836c7edbe0be736ced25ae690c00d25132230",
+            "quote": "{\"response\":{\"Limit\":8,\"Offset\":0,\"TotalResults\":403,\"Locale\":\"en_US\",\"Results\":[{\"Id\":\"380442678\",\"CID\":\"55353a29-9b43-5d96-b1ac-66bf5db7a279\",\"SourceClient\":\"logitech-inc\",\"Badges\":{\"verifiedPurchaser\":{\"ContentType\":\"REVIEW\",\"Id\":\"verifiedPurchaser\",\"BadgeType\":\"Custom\"}},\"BadgesOrder\":[\"verifiedPurchaser\"],\"LastModeratedTime\":\"2026-03-01T18:33:19.000+00:00\",\"LastModificationTime\":\"2026-03-01T18:33:19.000+00:00\",\"ProductId\":\"910-006628\",\"OriginalProductName\":\"PRO X SUPERLIGHT 2\",\"CampaignId\":\"BV_PIE_FOLLOWUP_MPR\",\"ContextDataValuesOrder\":[\"IncentivizedReview\"],\"UserLocation\":\"Washington\",\"AuthorId\":\"tglj6ar1ugmsxwkl7n7gnwrqo\",\"ContentLocale\":\"en_US\",\"IsFeatured\":false,\"TotalInappropriateFeedbackCount\":0,\"TotalClientResponseCount\":0,\"TotalCommentCount\":0,\"Rating\":5,\"SecondaryRatingsOrder\":[\"Quality\",\"Value\",\"EaseOfUse\",\"Performance\"],\"IsRatingsOnly\":false,\"IsRecommended\":true,\"TotalFeedbackCount\":0,\"TotalNegativeFeedbackCount\":0,\"TotalPositiveFeedbackCount\":0,\"ModerationStatus\":\"APPROVED\",\"SubmissionId\":\"r127309_6__17723887o2TSwn55nI\",\"SubmissionTime\":\"2026-03-01T18:12:50.000+00:00\",\"ReviewText\":\"It fits nicely in my hand, much lighter than my previous mouse.\",\"Title\":\"Awesome mouse\",\"UserNickname\":\"Daniel\",\"SecondaryRatings\":{\"Value\":{\"Value\":5,\"Id\":\"Value\",\"DisplayType\":\"NORMAL\",\"ValueLabel\":null,\"Label\":null,\"MinLabel\":null,\"MaxLabel\":null,\"ValueRange\":5},\"Performance\":{\"Value\":5,\"Id\":\"Performance\",\"DisplayType\":\"NORMAL\",\"ValueLabel\":null,\"Label\":null,\"MinLabel\":null,\"MaxLabel\":null,\"ValueRange\":5},\"EaseOfUse\":{\"Value\":5,\"Id\":\"EaseOfUse\",\"DisplayType\":\"NORMAL\",\"ValueLabel\":null,\"Label\":null,\"MinLabel\":null,\"MaxLabel\":null,\"ValueRange\":5},\"Quality\":{\"Value\":5,\"Id\":\"Quality\",\"DisplayType\":\"NORMAL\",\"ValueLabel\":null,\"Label\":null,\"MinLabel\":null,\"MaxLabel\":null,\"ValueRange\":5}},\"ContextDataValues\":{\"Incentiv",
+            "quote_span": [
+              432,
+              442
+            ],
+            "snippet_text": "{\"response\":{\"Limit\":8,\"Offset\":0,\"TotalResults\":403,\"Locale\":\"en_US\",\"Results\":[{\"Id\":\"380442678\",\"CID\":\"55353a29-9b43-5d96-b1ac-66bf5db7a279\",\"SourceClient\":\"logitech-inc\",\"Badges\":{\"verifiedPurchaser\":{\"ContentType\":\"REVIEW\",\"Id\":\"verifiedPurchaser\",\"BadgeType\":\"Custom\"}},\"BadgesOrder\":[\"verifiedPurchaser\"],\"LastModeratedTime\":\"2026-03-01T18:33:19.000+00:00\",\"LastModificationTime\":\"2026-03-01T18:33:19.000+00:00\",\"ProductId\":\"910-006628\",\"OriginalProductName\":\"PRO X SUPERLIGHT 2\",\"CampaignId\":\"BV_PIE_FOLLOWUP_MPR\",\"ContextDataValuesOrder\":[\"IncentivizedReview\"],\"UserLocation\":\"Washington\",\"AuthorId\":\"tglj6ar1ugmsxwkl7n7gnwrqo\",\"ContentLocale\":\"en_US\",\"IsFeatured\":false,\"TotalInappropriateFeedbackCount\":0,\"TotalClientResponseCount\":0,\"TotalCommentCount\":0,\"Rating\":5,\"SecondaryRatingsOrder\":[\"Quality\",\"Value\",\"EaseOfUse\",\"Performance\"],\"IsRatingsOnly\":false,\"IsRecommended\":true,\"TotalFeedbackCount\":0,\"TotalNegativeFeedbackCount\":0,\"TotalPositiveFeedbackCount\":0,\"ModerationStatus\":\"APPROVED\",\"SubmissionId\":\"r127309_6__17723887o2TSwn55nI\",\"SubmissionTime\":\"2026-03-01T18:12:50.000+00:00\",\"ReviewText\":\"It fits nicely in my hand, much lighter than my previous mouse.\",\"Title\":\"Awesome mouse\",\"UserNickname\":\"Daniel\",\"SecondaryRatings\":{\"Value\":{\"Value\":5,\"Id\":\"Value\",\"DisplayType\":\"NORMAL\",\"ValueLabel\":null,\"Label\":null,\"MinLabel\":null,\"MaxLabel\":null,\"ValueRange\":5},\"Performance\":{\"Value\":5,\"Id\":\"Performance\",\"DisplayType\":\"NORMAL\",\"ValueLabel\":null,\"Label\":null,\"MinLabel\":null,\"MaxLabel\":null,\"ValueRange\":5},\"EaseOfUse\":{\"Value\":5,\"Id\":\"EaseOfUse\",\"DisplayType\":\"NORMAL\",\"ValueLabel\":null,\"Label\":null,\"MinLabel\":null,\"MaxLabel\":null,\"ValueRange\":5},\"Quality\":{\"Value\":5,\"Id\":\"Quality\",\"DisplayType\":\"NORMAL\",\"ValueLabel\":null,\"Label\":null,\"MinLabel\":null,\"MaxLabel\":null,\"ValueRange\":5}},\"ContextDataValues\":{\"Incentiv",
+            "source_id": "brand_logitechg_com"
+          },
+          "llm_extract_model": null,
+          "llm_extract_provider": null,
+          "llm_validate_model": null,
+          "llm_validate_provider": null
+        },
+        {
+          "candidate_id": "cand-item_mouse-logitech-g-pro-x-superlight-2-phase01-live_sku_910-006795_3_1egdwe8",
+          "value": "910-006795",
+          "score": 0.75,
+          "source_id": "logitechg_com",
+          "source": "logitechg.com",
+          "tier": 1,
+          "method": "ldjson",
+          "evidence": {
+            "url": "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse",
+            "retrieved_at": "2026-03-11T20:48:26.360Z",
+            "snippet_id": "",
+            "snippet_hash": "",
+            "quote": "",
+            "quote_span": null,
+            "snippet_text": "",
+            "source_id": "logitechg_com"
+          },
+          "llm_extract_model": null,
+          "llm_extract_provider": null,
+          "llm_validate_model": null,
+          "llm_validate_provider": null
+        }
+      ],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": "cand-item_mouse-logitech-g-pro-x-superlight-2-phase01-live_sku_910-006636_1_4ku7vi",
+      "source": "logitechg.com",
+      "method": "ldjson",
+      "tier": 1,
+      "evidence_url": "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse",
+      "evidence_quote": ""
+    },
+    "price_range": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "colors": {
+      "selected": {
+        "value": "White",
+        "confidence": 0.75,
+        "status": "needs_review",
+        "color": "yellow"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 3,
+      "candidates": [
+        {
+          "candidate_id": "cand-item_mouse-logitech-g-pro-x-superlight-2-phase01-live_colors_white_1_1y3o1xu",
+          "value": "White",
+          "score": 0.75,
+          "source_id": "logitechg_com",
+          "source": "logitechg.com",
+          "tier": 1,
+          "method": "ldjson",
+          "evidence": {
+            "url": "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse",
+            "retrieved_at": "2026-03-11T20:48:14.719Z",
+            "snippet_id": "sn_6727aa72e39a7589",
+            "snippet_hash": "sha256:17592a8c875f1d5b7761c51cdcad8fe09898de2af7c7b1a317af4b161b874010",
+            "quote": "Sale See all Pro Series LIGHTSPEED Wireless Gaming Mouse $149.99 $179.99 $30.00 off Color White In stock. Ready to ship Description The next evolution of our championship-winning mouse. Meet the new weapon of choice for the world’s top esports athletes. 8.28 8.28 kg CO2e carbon footprint PRO X SUPERLIGHT 2 The Logitech® G PRO X Superlight 2 is the next evolution of a pro gaming icon—helping you level up your game with enhanced speed and precision. Our championship-winning 60g gaming mouse was designed in collaboration with the world’s leading pro gamers to break down any barrier between you and the win, whether you’re dropping in on Fortnite or flanking the enemy in League of Legends. LIGHTFORCE Hybrid Switches Rated for 70 million clicks Our exclusive hybrid optical-mechanical switch technology inside the Logitech G PRO X Superlight 2 combines the speed and reliability of optical switches with the low power consumption and satisfying clicky feel of a traditional galvanic (or mechanical) microswitch. Get the performance pros count on without sacrificing battery life or your win streak. HERO 2 Sensor Supports 44K DPI The Logitech G PRO X Superlight 2 gaming mouse gives you pro-level precision with the most advanced sensor in gaming. Experience the reliability of tracking over 888+ IPS, and up to 44,000 DPI. In other words, this mouse won’t miss a beat while you focus on not missing your shot. LIGHTSPEED Wireless for Reliable Connectivity The PRO X Superlight 2 wireless gaming mouse is equipped with LIGHTSPEED wireless with up to 8 kHz polling. Designed for tournament play, it ensures total reliability even in extreme RF environments. Your character might have a stamina limit, but this bad boy doesn’t. Loading Reviews...",
+            "quote_span": [
+              90,
+              95
+            ],
+            "snippet_text": "Sale See all Pro Series LIGHTSPEED Wireless Gaming Mouse $149.99 $179.99 $30.00 off Color White In stock. Ready to ship Description The next evolution of our championship-winning mouse. Meet the new weapon of choice for the world’s top esports athletes. 8.28 8.28 kg CO2e carbon footprint PRO X SUPERLIGHT 2 The Logitech® G PRO X Superlight 2 is the next evolution of a pro gaming icon—helping you level up your game with enhanced speed and precision. Our championship-winning 60g gaming mouse was designed in collaboration with the world’s leading pro gamers to break down any barrier between you and the win, whether you’re dropping in on Fortnite or flanking the enemy in League of Legends. LIGHTFORCE Hybrid Switches Rated for 70 million clicks Our exclusive hybrid optical-mechanical switch technology inside the Logitech G PRO X Superlight 2 combines the speed and reliability of optical switches with the low power consumption and satisfying clicky feel of a traditional galvanic (or mechanical) microswitch. Get the performance pros count on without sacrificing battery life or your win streak. HERO 2 Sensor Supports 44K DPI The Logitech G PRO X Superlight 2 gaming mouse gives you pro-level precision with the most advanced sensor in gaming. Experience the reliability of tracking over 888+ IPS, and up to 44,000 DPI. In other words, this mouse won’t miss a beat while you focus on not missing your shot. LIGHTSPEED Wireless for Reliable Connectivity The PRO X Superlight 2 wireless gaming mouse is equipped with LIGHTSPEED wireless with up to 8 kHz polling. Designed for tournament play, it ensures total reliability even in extreme RF environments. Your character might have a stamina limit, but this bad boy doesn’t. Loading Reviews...",
+            "source_id": "brand_logitechg_com"
+          },
+          "llm_extract_model": null,
+          "llm_extract_provider": null,
+          "llm_validate_model": null,
+          "llm_validate_provider": null
+        },
+        {
+          "candidate_id": "cand-item_mouse-logitech-g-pro-x-superlight-2-phase01-live_colors_black_2_1xlvvml",
+          "value": "Black",
+          "score": 0.75,
+          "source_id": "logitechg_com",
+          "source": "logitechg.com",
+          "tier": 1,
+          "method": "ldjson",
+          "evidence": {
+            "url": "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse",
+            "retrieved_at": "2026-03-11T20:48:14.719Z",
+            "snippet_id": "sn_d509682d057c5f67",
+            "snippet_hash": "sha256:71fd72454e1d0cfcc82e0b9b71cee8dd0d3ce9e554414bc64477eae68c4e7002",
+            "quote": "{\"id\":\"69b1d50857ac826428aba82c\",\"campaignResponses\":[{\"type\":\"ng\",\"campaignId\":\"UGSV2\",\"campaignName\":\"Logi G | Prod | CDP-227 | Buy Module Add-on - web | 03APR25\",\"campaignType\":\"ServerSide\",\"experienceId\":\"MNMKm\",\"experienceName\":\"Experience 1\",\"experienceSourceCode\":\"\",\"state\":\"Published\",\"campaignJavascriptContent\":null,\"userGroup\":\"Default\",\"templateNames\":[\"[ServerSide] UC#6 Buy Module Add-on\"],\"payload\":{\"recsConfig2\":{\"itemTypeIsRestricted\":true,\"itemType\":\"Product\",\"maxResultsIsRestricted\":true,\"maxResults\":3,\"onPageAnchorId\":null,\"onPageAnchorType\":null,\"recipe\":{\"id\":\"3RqS9\",\"label\":\"[Logi G] Add-on fallback\"},\"recipeId\":null},\"contentZone\":\"gaming-pdp-add-on\",\"recsConfig\":{\"itemTypeIsRestricted\":true,\"itemType\":\"Product\",\"maxResultsIsRestricted\":true,\"maxResults\":3,\"onPageAnchorId\":null,\"onPageAnchorType\":null,\"recipe\":{\"id\":\"WhoXq\",\"label\":\"[Logi G] Add-on\"},\"recipeId\":null},\"enableRecipePriority2\":true,\"campaign\":\"UGSV2\",\"experience\":\"MNMKm\",\"userGroup\":\"Test\",\"itemType\":\"Product\",\"recommendedItems\":{\"g840-cloth-xl-gaming-mouse-pad-en_us\":{\"name\":\"G840 Gaming Mouse Pad\",\"category\":\"gamingmousepads\",\"pageUrl\":\"https://www.logitechg.com/en-us/shop/p/g840-cloth-xl-gaming-mouse-pad\",\"pdpPath\":\"/content/logitechg/amr/live/en_us/shop/p/g840-cloth-xl-gaming-mouse-pad\",\"productImage\":\"/content/dam/gaming/en/products/g840/g840-gallery-1-new.png\",\"series\":\"G Series\",\"thumbnailURL\":\"https://resource.logitechg.com/content/dam/gaming/en/products/g840/g840-cart.png\",\"skus\":\"943-000776\",\"subtitle\":\"Extra-Large Cloth Gaming Mouse Pad\"},\"g-sleeve-en_us\":{\"name\":\"LOGITECH G KEYBOARD + MOUSE SLEEVE\",\"category\":\"accessories\",\"pageUrl\":\"https://www.logitechg.com/en-us/shop/p/g-sleeve\",\"pdpPath\":\"/content/logitechg/amr/live/en_us/shop/p/g-sleeve\",\"productImage\":\"/content/dam/gaming/en/products/apparel/g-keyboard-sleeve-gallery-1.png\",\"thumbnailURL\":\"https://resource.logitechg.com/content/dam/gaming/en/products/apparel/g-keyboard-sleeve-cart.png\",\"skus\":\"943-001209\",\"subtitle\":\"\"},\"pro-x-tkl-wireless-keyboard-en_us\":{\"name\":\"PRO X TKL WIRELESS GAMING KEYBOARD\",\"category\":\"gamingkeyboards\",\"pageUrl\":\"https://www.logitechg.com/en-us/shop/p/pro-x-tkl-wireless-keyboard\",\"pdpPath\":\"/content/logitechg/amr/live/en_us/shop/p/pro-x-tkl-wireless-keyboard\",\"productImage\":\"/content/dam/gaming/en/products/pro-x-tkl/gallery-2-pro-x-tkl-black-lightspeed-gaming-keyboard.png.png\",\"series\":\"Pro Series\",\"thumbnailURL\":\"https://resource.logitechg.com/content/dam/gaming/en/products/pro-x-tkl/cart-pro-x-tkl-white-lightspeed-gaming-keyboard.png\",\"skus\":\"920-012118,920-012122,920-012154,920-012143,920-012127\",\"subtitle\":\"Wireless Gaming Keyboard- Mechanical Switches\"}}}}],\"compiledCampaignTemplates\":[{\"id\":\"yFLFg\",\"name\":null,\"bundle\":\"\\n function registerTemplate(source) {\\n return TemplateService.registerTemplate(Object.assign({}, source, {\\n name: '[ServerSide] UC#6 Buy Module Add-on',\\n \\n \\n }));\\n }\\n \\n \\n \\n //# sourceURL=ServerSideUCBuyModuleAddon.js\\n \"}],\"errorCode\":0,\"resolvedUserId\":\"79e1cb1c0610afb2\"}",
+            "quote_span": [
+              2356,
+              2361
+            ],
+            "snippet_text": "{\"id\":\"69b1d50857ac826428aba82c\",\"campaignResponses\":[{\"type\":\"ng\",\"campaignId\":\"UGSV2\",\"campaignName\":\"Logi G | Prod | CDP-227 | Buy Module Add-on - web | 03APR25\",\"campaignType\":\"ServerSide\",\"experienceId\":\"MNMKm\",\"experienceName\":\"Experience 1\",\"experienceSourceCode\":\"\",\"state\":\"Published\",\"campaignJavascriptContent\":null,\"userGroup\":\"Default\",\"templateNames\":[\"[ServerSide] UC#6 Buy Module Add-on\"],\"payload\":{\"recsConfig2\":{\"itemTypeIsRestricted\":true,\"itemType\":\"Product\",\"maxResultsIsRestricted\":true,\"maxResults\":3,\"onPageAnchorId\":null,\"onPageAnchorType\":null,\"recipe\":{\"id\":\"3RqS9\",\"label\":\"[Logi G] Add-on fallback\"},\"recipeId\":null},\"contentZone\":\"gaming-pdp-add-on\",\"recsConfig\":{\"itemTypeIsRestricted\":true,\"itemType\":\"Product\",\"maxResultsIsRestricted\":true,\"maxResults\":3,\"onPageAnchorId\":null,\"onPageAnchorType\":null,\"recipe\":{\"id\":\"WhoXq\",\"label\":\"[Logi G] Add-on\"},\"recipeId\":null},\"enableRecipePriority2\":true,\"campaign\":\"UGSV2\",\"experience\":\"MNMKm\",\"userGroup\":\"Test\",\"itemType\":\"Product\",\"recommendedItems\":{\"g840-cloth-xl-gaming-mouse-pad-en_us\":{\"name\":\"G840 Gaming Mouse Pad\",\"category\":\"gamingmousepads\",\"pageUrl\":\"https://www.logitechg.com/en-us/shop/p/g840-cloth-xl-gaming-mouse-pad\",\"pdpPath\":\"/content/logitechg/amr/live/en_us/shop/p/g840-cloth-xl-gaming-mouse-pad\",\"productImage\":\"/content/dam/gaming/en/products/g840/g840-gallery-1-new.png\",\"series\":\"G Series\",\"thumbnailURL\":\"https://resource.logitechg.com/content/dam/gaming/en/products/g840/g840-cart.png\",\"skus\":\"943-000776\",\"subtitle\":\"Extra-Large Cloth Gaming Mouse Pad\"},\"g-sleeve-en_us\":{\"name\":\"LOGITECH G KEYBOARD + MOUSE SLEEVE\",\"category\":\"accessories\",\"pageUrl\":\"https://www.logitechg.com/en-us/shop/p/g-sleeve\",\"pdpPath\":\"/content/logitechg/amr/live/en_us/shop/p/g-sleeve\",\"productImage\":\"/content/dam/gaming/en/products/apparel/g-keyboard-sleeve-gallery-1.png\",\"thumbnailURL\":\"https://resource.logitechg.com/content/dam/gaming/en/products/apparel/g-keyboard-sleeve-cart.png\",\"skus\":\"943-001209\",\"subtitle\":\"\"},\"pro-x-tkl-wireless-keyboard-en_us\":{\"name\":\"PRO X TKL WIRELESS GAMING KEYBOARD\",\"category\":\"gamingkeyboards\",\"pageUrl\":\"https://www.logitechg.com/en-us/shop/p/pro-x-tkl-wireless-keyboard\",\"pdpPath\":\"/content/logitechg/amr/live/en_us/shop/p/pro-x-tkl-wireless-keyboard\",\"productImage\":\"/content/dam/gaming/en/products/pro-x-tkl/gallery-2-pro-x-tkl-black-lightspeed-gaming-keyboard.png.png\",\"series\":\"Pro Series\",\"thumbnailURL\":\"https://resource.logitechg.com/content/dam/gaming/en/products/pro-x-tkl/cart-pro-x-tkl-white-lightspeed-gaming-keyboard.png\",\"skus\":\"920-012118,920-012122,920-012154,920-012143,920-012127\",\"subtitle\":\"Wireless Gaming Keyboard- Mechanical Switches\"}}}}],\"compiledCampaignTemplates\":[{\"id\":\"yFLFg\",\"name\":null,\"bundle\":\"\\n function registerTemplate(source) {\\n return TemplateService.registerTemplate(Object.assign({}, source, {\\n name: '[ServerSide] UC#6 Buy Module Add-on',\\n \\n \\n }));\\n }\\n \\n \\n \\n //# sourceURL=ServerSideUCBuyModuleAddon.js\\n \"}],\"errorCode\":0,\"resolvedUserId\":\"79e1cb1c0610afb2\"}",
+            "source_id": "brand_logitechg_com"
+          },
+          "llm_extract_model": null,
+          "llm_extract_provider": null,
+          "llm_validate_model": null,
+          "llm_validate_provider": null
+        },
+        {
+          "candidate_id": "cand-item_mouse-logitech-g-pro-x-superlight-2-phase01-live_colors_pink_3_unx9yz",
+          "value": "Pink",
+          "score": 0.75,
+          "source_id": "logitechg_com",
+          "source": "logitechg.com",
+          "tier": 1,
+          "method": "ldjson",
+          "evidence": {
+            "url": "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse",
+            "retrieved_at": "2026-03-11T20:48:14.719Z",
+            "snippet_id": "sn_d509682d057c5f67",
+            "snippet_hash": "sha256:71fd72454e1d0cfcc82e0b9b71cee8dd0d3ce9e554414bc64477eae68c4e7002",
+            "quote": "{\"id\":\"69b1d50857ac826428aba82c\",\"campaignResponses\":[{\"type\":\"ng\",\"campaignId\":\"UGSV2\",\"campaignName\":\"Logi G | Prod | CDP-227 | Buy Module Add-on - web | 03APR25\",\"campaignType\":\"ServerSide\",\"experienceId\":\"MNMKm\",\"experienceName\":\"Experience 1\",\"experienceSourceCode\":\"\",\"state\":\"Published\",\"campaignJavascriptContent\":null,\"userGroup\":\"Default\",\"templateNames\":[\"[ServerSide] UC#6 Buy Module Add-on\"],\"payload\":{\"recsConfig2\":{\"itemTypeIsRestricted\":true,\"itemType\":\"Product\",\"maxResultsIsRestricted\":true,\"maxResults\":3,\"onPageAnchorId\":null,\"onPageAnchorType\":null,\"recipe\":{\"id\":\"3RqS9\",\"label\":\"[Logi G] Add-on fallback\"},\"recipeId\":null},\"contentZone\":\"gaming-pdp-add-on\",\"recsConfig\":{\"itemTypeIsRestricted\":true,\"itemType\":\"Product\",\"maxResultsIsRestricted\":true,\"maxResults\":3,\"onPageAnchorId\":null,\"onPageAnchorType\":null,\"recipe\":{\"id\":\"WhoXq\",\"label\":\"[Logi G] Add-on\"},\"recipeId\":null},\"enableRecipePriority2\":true,\"campaign\":\"UGSV2\",\"experience\":\"MNMKm\",\"userGroup\":\"Test\",\"itemType\":\"Product\",\"recommendedItems\":{\"g840-cloth-xl-gaming-mouse-pad-en_us\":{\"name\":\"G840 Gaming Mouse Pad\",\"category\":\"gamingmousepads\",\"pageUrl\":\"https://www.logitechg.com/en-us/shop/p/g840-cloth-xl-gaming-mouse-pad\",\"pdpPath\":\"/content/logitechg/amr/live/en_us/shop/p/g840-cloth-xl-gaming-mouse-pad\",\"productImage\":\"/content/dam/gaming/en/products/g840/g840-gallery-1-new.png\",\"series\":\"G Series\",\"thumbnailURL\":\"https://resource.logitechg.com/content/dam/gaming/en/products/g840/g840-cart.png\",\"skus\":\"943-000776\",\"subtitle\":\"Extra-Large Cloth Gaming Mouse Pad\"},\"g-sleeve-en_us\":{\"name\":\"LOGITECH G KEYBOARD + MOUSE SLEEVE\",\"category\":\"accessories\",\"pageUrl\":\"https://www.logitechg.com/en-us/shop/p/g-sleeve\",\"pdpPath\":\"/content/logitechg/amr/live/en_us/shop/p/g-sleeve\",\"productImage\":\"/content/dam/gaming/en/products/apparel/g-keyboard-sleeve-gallery-1.png\",\"thumbnailURL\":\"https://resource.logitechg.com/content/dam/gaming/en/products/apparel/g-keyboard-sleeve-cart.png\",\"skus\":\"943-001209\",\"subtitle\":\"\"},\"pro-x-tkl-wireless-keyboard-en_us\":{\"name\":\"PRO X TKL WIRELESS GAMING KEYBOARD\",\"category\":\"gamingkeyboards\",\"pageUrl\":\"https://www.logitechg.com/en-us/shop/p/pro-x-tkl-wireless-keyboard\",\"pdpPath\":\"/content/logitechg/amr/live/en_us/shop/p/pro-x-tkl-wireless-keyboard\",\"productImage\":\"/content/dam/gaming/en/products/pro-x-tkl/gallery-2-pro-x-tkl-black-lightspeed-gaming-keyboard.png.png\",\"series\":\"Pro Series\",\"thumbnailURL\":\"https://resource.logitechg.com/content/dam/gaming/en/products/pro-x-tkl/cart-pro-x-tkl-white-lightspeed-gaming-keyboard.png\",\"skus\":\"920-012118,920-012122,920-012154,920-012143,920-012127\",\"subtitle\":\"Wireless Gaming Keyboard- Mechanical Switches\"}}}}],\"compiledCampaignTemplates\":[{\"id\":\"yFLFg\",\"name\":null,\"bundle\":\"\\n function registerTemplate(source) {\\n return TemplateService.registerTemplate(Object.assign({}, source, {\\n name: '[ServerSide] UC#6 Buy Module Add-on',\\n \\n \\n }));\\n }\\n \\n \\n \\n //# sourceURL=ServerSideUCBuyModuleAddon.js\\n \"}],\"errorCode\":0,\"resolvedUserId\":\"79e1cb1c0610afb2\"}",
+            "quote_span": null,
+            "snippet_text": "{\"id\":\"69b1d50857ac826428aba82c\",\"campaignResponses\":[{\"type\":\"ng\",\"campaignId\":\"UGSV2\",\"campaignName\":\"Logi G | Prod | CDP-227 | Buy Module Add-on - web | 03APR25\",\"campaignType\":\"ServerSide\",\"experienceId\":\"MNMKm\",\"experienceName\":\"Experience 1\",\"experienceSourceCode\":\"\",\"state\":\"Published\",\"campaignJavascriptContent\":null,\"userGroup\":\"Default\",\"templateNames\":[\"[ServerSide] UC#6 Buy Module Add-on\"],\"payload\":{\"recsConfig2\":{\"itemTypeIsRestricted\":true,\"itemType\":\"Product\",\"maxResultsIsRestricted\":true,\"maxResults\":3,\"onPageAnchorId\":null,\"onPageAnchorType\":null,\"recipe\":{\"id\":\"3RqS9\",\"label\":\"[Logi G] Add-on fallback\"},\"recipeId\":null},\"contentZone\":\"gaming-pdp-add-on\",\"recsConfig\":{\"itemTypeIsRestricted\":true,\"itemType\":\"Product\",\"maxResultsIsRestricted\":true,\"maxResults\":3,\"onPageAnchorId\":null,\"onPageAnchorType\":null,\"recipe\":{\"id\":\"WhoXq\",\"label\":\"[Logi G] Add-on\"},\"recipeId\":null},\"enableRecipePriority2\":true,\"campaign\":\"UGSV2\",\"experience\":\"MNMKm\",\"userGroup\":\"Test\",\"itemType\":\"Product\",\"recommendedItems\":{\"g840-cloth-xl-gaming-mouse-pad-en_us\":{\"name\":\"G840 Gaming Mouse Pad\",\"category\":\"gamingmousepads\",\"pageUrl\":\"https://www.logitechg.com/en-us/shop/p/g840-cloth-xl-gaming-mouse-pad\",\"pdpPath\":\"/content/logitechg/amr/live/en_us/shop/p/g840-cloth-xl-gaming-mouse-pad\",\"productImage\":\"/content/dam/gaming/en/products/g840/g840-gallery-1-new.png\",\"series\":\"G Series\",\"thumbnailURL\":\"https://resource.logitechg.com/content/dam/gaming/en/products/g840/g840-cart.png\",\"skus\":\"943-000776\",\"subtitle\":\"Extra-Large Cloth Gaming Mouse Pad\"},\"g-sleeve-en_us\":{\"name\":\"LOGITECH G KEYBOARD + MOUSE SLEEVE\",\"category\":\"accessories\",\"pageUrl\":\"https://www.logitechg.com/en-us/shop/p/g-sleeve\",\"pdpPath\":\"/content/logitechg/amr/live/en_us/shop/p/g-sleeve\",\"productImage\":\"/content/dam/gaming/en/products/apparel/g-keyboard-sleeve-gallery-1.png\",\"thumbnailURL\":\"https://resource.logitechg.com/content/dam/gaming/en/products/apparel/g-keyboard-sleeve-cart.png\",\"skus\":\"943-001209\",\"subtitle\":\"\"},\"pro-x-tkl-wireless-keyboard-en_us\":{\"name\":\"PRO X TKL WIRELESS GAMING KEYBOARD\",\"category\":\"gamingkeyboards\",\"pageUrl\":\"https://www.logitechg.com/en-us/shop/p/pro-x-tkl-wireless-keyboard\",\"pdpPath\":\"/content/logitechg/amr/live/en_us/shop/p/pro-x-tkl-wireless-keyboard\",\"productImage\":\"/content/dam/gaming/en/products/pro-x-tkl/gallery-2-pro-x-tkl-black-lightspeed-gaming-keyboard.png.png\",\"series\":\"Pro Series\",\"thumbnailURL\":\"https://resource.logitechg.com/content/dam/gaming/en/products/pro-x-tkl/cart-pro-x-tkl-white-lightspeed-gaming-keyboard.png\",\"skus\":\"920-012118,920-012122,920-012154,920-012143,920-012127\",\"subtitle\":\"Wireless Gaming Keyboard- Mechanical Switches\"}}}}],\"compiledCampaignTemplates\":[{\"id\":\"yFLFg\",\"name\":null,\"bundle\":\"\\n function registerTemplate(source) {\\n return TemplateService.registerTemplate(Object.assign({}, source, {\\n name: '[ServerSide] UC#6 Buy Module Add-on',\\n \\n \\n }));\\n }\\n \\n \\n \\n //# sourceURL=ServerSideUCBuyModuleAddon.js\\n \"}],\"errorCode\":0,\"resolvedUserId\":\"79e1cb1c0610afb2\"}",
+            "source_id": "logitechg_com"
+          },
+          "llm_extract_model": null,
+          "llm_extract_provider": null,
+          "llm_validate_model": null,
+          "llm_validate_provider": null
+        }
+      ],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": "cand-item_mouse-logitech-g-pro-x-superlight-2-phase01-live_colors_white_1_1y3o1xu",
+      "source": "logitechg.com",
+      "method": "ldjson",
+      "tier": 1,
+      "evidence_url": "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse",
+      "evidence_quote": "Sale See all Pro Series LIGHTSPEED Wireless Gaming Mouse $149.99 $179.99 $30.00 off Color White In stock. Ready to ship Description The next evolution of our championship-winning mouse. Meet the new weapon of choice for the world’s top esports athletes. 8.28 8.28 kg CO2e carbon footprint PRO X SUPERLIGHT 2 The Logitech® G PRO X Superlight 2 is the next evolution of a pro gaming icon—helping you level up your game with enhanced speed and precision. Our championship-winning 60g gaming mouse was designed in collaboration with the world’s leading pro gamers to break down any barrier between you and the win, whether you’re dropping in on Fortnite or flanking the enemy in League of Legends. LIGHTFORCE Hybrid Switches Rated for 70 million clicks Our exclusive hybrid optical-mechanical switch technology inside the Logitech G PRO X Superlight 2 combines the speed and reliability of optical switches with the low power consumption and satisfying clicky feel of a traditional galvanic (or mechanical) microswitch. Get the performance pros count on without sacrificing battery life or your win streak. HERO 2 Sensor Supports 44K DPI The Logitech G PRO X Superlight 2 gaming mouse gives you pro-level precision with the most advanced sensor in gaming. Experience the reliability of tracking over 888+ IPS, and up to 44,000 DPI. In other words, this mouse won’t miss a beat while you focus on not missing your shot. LIGHTSPEED Wireless for Reliable Connectivity The PRO X Superlight 2 wireless gaming mouse is equipped with LIGHTSPEED wireless with up to 8 kHz polling. Designed for tournament play, it ensures total reliability even in extreme RF environments. Your character might have a stamina limit, but this bad boy doesn’t. Loading Reviews..."
+    },
+    "design": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "lighting": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "rgb": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "connection": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "connectivity": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "computer_side_connector": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "mouse_side_connector": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "bluetooth": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "cable_type": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "paracord": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "wireless_charging": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "battery_hours": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "adjustable_weight": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "feet_material": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "coating": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "honeycomb_frame": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "silent_clicks": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "weight": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "material": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "lngth": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "width": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "height": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "form_factor": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "shape": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "hump": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "front_flare": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "thumb_rest": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "grip": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "hand_size": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "mcu": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "mcu_link": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "sensor": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "sensor_brand": {
+      "selected": {
+        "value": "docid",
+        "confidence": 0.46,
+        "status": "needs_review",
+        "color": "red"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 1,
+      "candidates": [
+        {
+          "candidate_id": "cand-item_mouse-logitech-g-pro-x-superlight-2-phase01-live_sensor-brand_docid_1_jx4lts",
+          "value": "docid",
+          "score": 0.1,
+          "source_id": "logitech_com",
+          "source": "logitech.com",
+          "tier": 4,
+          "method": "spec_table_match",
+          "evidence": {
+            "url": "https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf",
+            "retrieved_at": "2026-03-11T20:48:05.877Z",
+            "snippet_id": "sn_bca282c99271c971",
+            "snippet_hash": "sha256:cad75046b3fb489bc7bb20a9dcef0b3a1b82685645c72d7ff101b5a78cc65475",
+            "quote": "stream adobe: docid",
+            "quote_span": [
+              14,
+              19
+            ],
+            "snippet_text": "stream adobe: docid",
+            "source_id": "logitech_com"
+          },
+          "llm_extract_model": null,
+          "llm_extract_provider": null,
+          "llm_validate_model": null,
+          "llm_validate_provider": null
+        }
+      ],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": "cand-item_mouse-logitech-g-pro-x-superlight-2-phase01-live_sensor-brand_docid_1_jx4lts",
+      "source": "logitech.com",
+      "method": "spec_table_match",
+      "tier": 4,
+      "evidence_url": "https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf",
+      "evidence_quote": "stream adobe: docid"
+    },
+    "sensor_date": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "sensor_link": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "sensor_type": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "flawless_sensor": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "sensor_latency": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "sensor_latency_list": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "shift_latency": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "polling_rate": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "dpi": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "ips": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "acceleration": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "lift": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "lift_settings": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "motion_sync": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "hardware_acceleration": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "smoothing": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "nvidia_reflex": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "switch": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "switch_brand": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "switch_type": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "hot_swappable": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "debounce": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "click_latency": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "click_latency_list": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "click_force": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "encoder": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "encoder_brand": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "encoder_link": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "side_buttons": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "middle_buttons": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "programmable_buttons": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "tilt_scroll_wheel": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "adjustable_scroll_wheel": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "onboard_memory": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "onboard_memory_value": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "profile_switching": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "switches_link": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "encoder_life_span": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "encoder_steps": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "encoder_type": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "releasing_force": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    },
+    "switch_life_span": {
+      "selected": {
+        "value": "unk",
+        "confidence": 0,
+        "status": "needs_review",
+        "color": "gray"
+      },
+      "needs_review": true,
+      "reason_codes": [
+        "identity_ambiguous"
+      ],
+      "candidate_count": 0,
+      "candidates": [],
+      "accepted_candidate_id": null,
+      "selected_candidate_id": null,
+      "source": "",
+      "method": null,
+      "tier": null,
+      "evidence_url": "",
+      "evidence_quote": ""
+    }
+  },
+  "metrics": {
+    "confidence": 0.416809375,
+    "coverage": 0,
+    "flags": 0,
+    "missing": 77,
+    "has_run": true,
+    "updated_at": "2026-03-11T20:48:25.956Z"
+  }
+}

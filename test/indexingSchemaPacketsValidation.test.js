@@ -93,7 +93,7 @@ test('indexing schema packets: generated packets validate against v1 schemas', a
     sourceCollection: packets.sourceCollection,
     itemPacket: packets.itemPacket,
     runMetaPacket: packets.runMetaPacket,
-    schemaRoot: path.resolve(process.cwd(), 'implementation', 'ai-indexing-plans', 'parsing-managament')
+    schemaRoot: path.resolve(process.cwd(), 'docs', 'implementation', 'ai-indexing-plans', 'schema')
   });
   assert.equal(result.valid, true, JSON.stringify(result.errors, null, 2));
   assert.equal(result.error_count, 0);
@@ -110,9 +110,64 @@ test('indexing schema packets: invalid packet shape is rejected', async () => {
     sourceCollection: packets.sourceCollection,
     itemPacket: brokenItem,
     runMetaPacket: packets.runMetaPacket,
-    schemaRoot: path.resolve(process.cwd(), 'implementation', 'ai-indexing-plans', 'parsing-managament')
+    schemaRoot: path.resolve(process.cwd(), 'docs', 'implementation', 'ai-indexing-plans', 'schema')
   });
   assert.equal(result.valid, false);
   assert.ok(result.error_count > 0);
   assert.ok(result.errors.some((row) => String(row.packet_type) === 'item_packet'));
+});
+
+test('indexing schema packets: fallback source packet stays schema-valid when normalized identity is unk', async () => {
+  const packets = buildIndexingSchemaPackets({
+    runId: 'run-schema-validation-fallback-001',
+    category: 'mouse',
+    productId: 'mouse-probe-alpha-fallback',
+    startMs: Date.now() - 1000,
+    summary: {
+      generated_at: new Date().toISOString(),
+      duration_ms: 1000,
+      validated: false,
+      completeness_required: 0,
+      coverage_overall: 0,
+    },
+    categoryConfig: {
+      requiredFields: ['dpi'],
+      criticalFieldSet: new Set(['dpi']),
+      fieldOrder: ['dpi', 'model'],
+    },
+    sourceResults: [],
+    normalized: {
+      identity: {
+        brand: 'unk',
+        model: 'unk',
+        variant: 'unk',
+        sku: 'unk',
+      },
+      fields: {
+        model: 'unk',
+      },
+    },
+    provenance: {},
+    needSet: {
+      needs: [{ field_key: 'model' }],
+    },
+    phase08Extraction: {
+      summary: {
+        batch_count: 0,
+      },
+    },
+  });
+
+  const result = await validateIndexingSchemaPackets({
+    sourceCollection: packets.sourceCollection,
+    itemPacket: packets.itemPacket,
+    runMetaPacket: packets.runMetaPacket,
+    schemaRoot: path.resolve(process.cwd(), 'docs', 'implementation', 'ai-indexing-plans', 'schema'),
+  });
+
+  assert.equal(result.valid, true, JSON.stringify(result.errors, null, 2));
+  assert.equal(packets.sourceCollection.packets.length, 1);
+  assert.equal(packets.itemPacket.source_packet_refs.length, 1);
+  assert.ok(Object.keys(packets.itemPacket.field_source_index).includes('model'));
+  assert.ok(Object.keys(packets.itemPacket.field_key_map).includes('model'));
 });

@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractCandidatesLLM } from '../src/llm/extractCandidatesLLM.js';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { extractCandidatesLLM } from '../src/features/indexing/extraction/extractCandidatesLLM.js';
 
 function mockChatCompletionPayload(contentJson) {
   return {
@@ -270,6 +273,117 @@ test('extractCandidatesLLM uses route matrix model ladder + token cap override',
     assert.equal(observed.maxTokens, 4321);
   } finally {
     global.fetch = originalFetch;
+  }
+});
+
+test('extractCandidatesLLM sends promoted visual assets as multimodal images when route policy allows prime-source visuals', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'extract-llm-visuals-'));
+  const imagePath = path.join(tmpDir, 'hero.png');
+  await fs.writeFile(imagePath, Buffer.from('fake-image-bytes'));
+
+  const originalFetch = global.fetch;
+  const infoCalls = [];
+  let observedUserContent = null;
+  global.fetch = async (_url, init) => {
+    const body = JSON.parse(String(init?.body || '{}'));
+    const messages = Array.isArray(body?.messages) ? body.messages : [];
+    observedUserContent = messages.find((row) => row?.role === 'user')?.content ?? null;
+    return {
+      ok: true,
+      status: 200,
+      async text() {
+        return JSON.stringify(
+          mockChatCompletionPayload({
+            identityCandidates: {},
+            fieldCandidates: [
+              {
+                field: 'sensor',
+                value: 'Focus Pro 35K',
+                evidenceRefs: ['ref-1'],
+                keyPath: 'llm.sensor'
+              }
+            ],
+            conflicts: [],
+            notes: []
+          })
+        );
+      }
+    };
+  };
+
+  try {
+    const result = await extractCandidatesLLM({
+      job: {
+        productId: 'mouse-route-multimodal-visuals',
+        category: 'mouse',
+        identityLock: {},
+        anchors: {}
+      },
+      categoryConfig: {
+        category: 'mouse',
+        fieldOrder: ['sensor']
+      },
+      evidencePack: {
+        meta: {
+          host: 'example.com',
+          total_chars: 1200,
+          source_id: 'example_source'
+        },
+        references: [
+          { id: 'ref-1', url: 'https://example.com/specs', source_id: 'vendor:example' }
+        ],
+        snippets: [
+          { id: 'ref-1', source_id: 'vendor:example', normalized_text: 'Sensor: Focus Pro 35K' }
+        ],
+        visual_assets: [
+          {
+            id: 'img-1',
+            kind: 'screenshot_capture',
+            source_id: 'example_source',
+            source_url: 'https://example.com/specs',
+            file_uri: imagePath,
+            mime_type: 'image/png',
+            content_hash: 'sha256:image-1'
+          }
+        ]
+      },
+      llmContext: {
+        route_matrix_policy: {
+          prime_sources_visual_send: true,
+          min_evidence_refs_effective: 1
+        }
+      },
+      config: {
+        llmEnabled: true,
+        llmApiKey: 'sk-test',
+        llmBaseUrl: 'https://api.openai.com',
+        llmProvider: 'openai',
+        llmModelExtract: 'test-model',
+        llmModelFast: 'test-model',
+        llmModelPlan: 'test-model',
+        llmTimeoutMs: 5_000
+      },
+      logger: {
+        info: (...args) => infoCalls.push(args),
+        warn() {},
+        error() {}
+      }
+    });
+
+    const multimodalProfile = infoCalls.find((row) => row[0] === 'llm_extract_multimodal_profile')?.[1] || null;
+
+    assert.equal(result.fieldCandidates.length, 1);
+    assert.equal(Array.isArray(observedUserContent), true);
+    assert.equal(observedUserContent.some((row) => row?.type === 'text'), true);
+    assert.equal(observedUserContent.some((row) => row?.type === 'image_url'), true);
+    const imagePart = observedUserContent.find((row) => row?.type === 'image_url');
+    assert.equal(String(imagePart?.image_url?.url || '').startsWith('data:image/png;base64,'), true);
+    assert.equal(multimodalProfile?.scoped_visual_asset_count, 1);
+    assert.equal(multimodalProfile?.multimodal_image_count, 1);
+    assert.deepEqual(multimodalProfile?.multimodal_image_uris, [imagePath]);
+  } finally {
+    global.fetch = originalFetch;
+    await fs.rm(tmpDir, { recursive: true, force: true });
   }
 });
 

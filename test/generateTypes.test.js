@@ -5,9 +5,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { compileRules } from '../src/field-rules/compiler.js';
 import { generateTypesForCategory } from '../src/build/generate-types.js';
+import { getMouseFieldStudioSourcePath } from './fixtures/mouseFieldStudioWorkbookFixture.js';
 
 function mouseWorkbookPath() {
-  return path.resolve('helper_files', 'mouse', 'mouseData.xlsm');
+  return getMouseFieldStudioSourcePath();
 }
 
 function buildMouseWorkbookMap(workbookPath) {
@@ -44,13 +45,18 @@ function buildMouseWorkbookMap(workbookPath) {
     },
     enum_lists: [],
     component_sheets: [],
-    field_overrides: {}
+    field_overrides: {},
+    selected_keys: [
+      'brand', 'model', 'variant', 'category',
+      'connection', 'weight', 'dpi', 'polling_rate',
+      'side_buttons', 'sensor', 'release_date'
+    ]
   };
 }
 
 test('generateTypesForCategory writes Zod and TS artifacts from field rules', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase2-generate-types-'));
-  const helperRoot = path.join(root, 'helper_files');
+  const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   const outDir = path.join(root, 'src', 'generated');
   try {
@@ -61,7 +67,7 @@ test('generateTypesForCategory writes Zod and TS artifacts from field rules', as
       fieldStudioSourcePath: workbookPath,
       fieldStudioMap: workbookMap,
       config: {
-        helperFilesRoot: helperRoot,
+        categoryAuthorityRoot: helperRoot,
         categoriesRoot
       }
     });
@@ -71,7 +77,7 @@ test('generateTypesForCategory writes Zod and TS artifacts from field rules', as
       category: 'mouse',
       outDir,
       config: {
-        helperFilesRoot: helperRoot
+        categoryAuthorityRoot: helperRoot
       }
     });
     assert.equal(generated.generated, true);

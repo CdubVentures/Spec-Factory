@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { EvidenceAuditor } from '../src/extract/evidenceAudit.js';
+import { EvidenceAuditor } from '../src/features/indexing/extraction/evidenceAudit.js';
 
 const evidencePack = {
   references: [

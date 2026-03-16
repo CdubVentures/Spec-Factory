@@ -1,18 +1,9 @@
 /**
  * Benchmark Matrix (IP03-3C).
  *
- * Compares pipeline output across modes: balanced, aggressive, uber_aggressive.
- * Generates a scorecard per mode with coverage, conflicts, runtime, cost metrics.
+ * Generates a scorecard per label with coverage, conflicts, runtime, cost metrics.
  * Results are comparable for regression tracking.
  */
-
-const MODES = ['balanced', 'aggressive', 'uber_aggressive'];
-
-function normalizeMode(value) {
-  const token = String(value || '').trim().toLowerCase().replace(/-/g, '_');
-  if (MODES.includes(token)) return token;
-  return 'balanced';
-}
 
 function normalizeFieldValue(value) {
   const token = String(value ?? '').trim().toLowerCase();
@@ -63,12 +54,12 @@ export function scoreProductRun({ fields = {}, expectedFields = {}, summary = {}
  * Build a scorecard for a single mode across multiple products.
  */
 export function buildModeScorecard({ mode, productScores = [], runtimeMs = 0, costUsd = 0, urlsFetched = 0, llmCalls = 0 }) {
-  const normalizedMode = normalizeMode(mode);
+  const label = String(mode || '').trim() || 'default';
   const productCount = productScores.length;
 
   if (productCount === 0) {
     return {
-      mode: normalizedMode,
+      mode: label,
       product_count: 0,
       mean_accuracy: 0,
       mean_coverage: 0,
@@ -95,7 +86,7 @@ export function buildModeScorecard({ mode, productScores = [], runtimeMs = 0, co
   const totalMismatches = productScores.reduce((s, p) => s + p.mismatches.length, 0);
 
   return {
-    mode: normalizedMode,
+    mode: label,
     product_count: productCount,
     mean_accuracy: sumAccuracy / productCount,
     mean_coverage: sumCoverage / productCount,

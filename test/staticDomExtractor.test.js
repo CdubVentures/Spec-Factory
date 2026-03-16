@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractStaticDomCandidates } from '../src/extractors/staticDomExtractor.js';
+import { extractStaticDomCandidates } from '../src/features/indexing/extraction/parsers/staticDomExtractor.js';
 
 test('staticDomExtractor extracts table candidates with deterministic evidence metadata', () => {
   const html = `

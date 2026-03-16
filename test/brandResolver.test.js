@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveBrandDomain } from '../src/discovery/brandResolver.js';
+import { resolveBrandDomain } from '../src/features/indexing/discovery/brandResolver.js';
 
 function makeMockStorage() {
   const rows = new Map();
@@ -100,8 +100,22 @@ describe('brandResolver', () => {
     assert.ok(llm.called, 'should call LLM when cache is unavailable');
   });
 
+  it('calls LLM even when global llmEnabled is false', async () => {
+    const storage = makeMockStorage();
+    const llm = makeLlmContext();
+    const result = await resolveBrandDomain({
+      brand: 'Logitech',
+      category: 'mouse',
+      config: { llmEnabled: false, llmModelPlan: 'test-model' },
+      callLlmFn: llm.callLlm,
+      storage
+    });
+    assert.equal(result.officialDomain, 'cougargaming.com');
+    assert.equal(llm.called, true);
+  });
+
   it('resolved aliases flow through selectManufacturerHosts', async () => {
-    const { buildSearchProfile } = await import('../src/search/queryBuilder.js');
+    const { buildSearchProfile } = await import('../src/features/indexing/search/queryBuilder.js');
     const profile = buildSearchProfile({
       job: {
         identityLock: { brand: 'Cougar', model: 'AirBlader Tournament', variant: '' },

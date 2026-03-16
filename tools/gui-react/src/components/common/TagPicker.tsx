@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { inputCls } from '../../pages/studio/studioConstants';
+import { inputCls } from '../../utils/studioConstants';
 
 interface TagPickerProps {
   values: string[];

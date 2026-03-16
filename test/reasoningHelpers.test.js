@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildFieldReasoning, emitFieldDecisionEvents } from '../src/pipeline/helpers/reasoningHelpers.js';
+import { buildFieldReasoning, emitFieldDecisionEvents } from '../src/features/indexing/orchestration/shared/reasoningHelpers.js';
 
 test('buildFieldReasoning returns reasoning per field', () => {
   const result = buildFieldReasoning({

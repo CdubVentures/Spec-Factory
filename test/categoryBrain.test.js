@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { updateCategoryBrain, buildLearningReport } from '../src/learning/categoryBrain.js';
+import { updateCategoryBrain, buildLearningReport } from '../src/features/indexing/learning/categoryBrain.js';
 
 function makeMemoryStorage() {
   const map = new Map();

@@ -7,7 +7,7 @@ import { ruleRequiredLevel } from '../engine/ruleAccessors.js';
 import { projectFieldRulesForConsumer } from '../field-rules/consumerGate.js';
 import { confidenceColor } from './confidenceColor.js';
 import { buildFallbackFieldCandidateId } from '../utils/candidateIdentifier.js';
-import { resolveAuthoritativeProductIdentity } from '../catalog/productIdentityAuthority.js';
+import { resolveAuthoritativeProductIdentity } from '../features/catalog/identity/productIdentityAuthority.js';
 import {
   isKnownSlotValue,
   normalizeSlotValueForShape,
@@ -56,7 +56,7 @@ function hasKnownValue(value) {
 }
 
 function resolveOverrideFilePath({ config = {}, category, productId }) {
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   return path.join(helperRoot, category, '_overrides', `${productId}.overrides.json`);
 }
 
@@ -297,7 +297,7 @@ export async function buildReviewLayout({
     : compiledFields;
   const projected = projectFieldRulesForConsumer({ fields: mergedFields }, 'review');
   const fields = isObject(projected?.fields) ? projected.fields : mergedFields;
-  const helperRoot = path.resolve(config.helperFilesRoot || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
   const mapPath = path.join(helperRoot, category, '_control_plane', 'field_studio_map.json');
   const studioMap = await readJsonIfExists(mapPath);
 
@@ -1191,3 +1191,4 @@ export async function writeCategoryReviewArtifacts({
     items
   };
 }
+

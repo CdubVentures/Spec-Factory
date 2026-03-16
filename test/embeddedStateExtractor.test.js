@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractEmbeddedState } from '../src/extractors/embeddedStateExtractor.js';
+import { extractEmbeddedState } from '../src/features/indexing/extraction/parsers/embeddedStateExtractor.js';
 
 test('extractEmbeddedState parses NEXT_DATA, NUXT and APOLLO assignments', () => {
   const html = `

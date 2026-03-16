@@ -1,0 +1,2415 @@
+{
+  "productId": "mouse-logitech-g-pro-x-superlight-2-phase01-live",
+  "runId": "20260311204802-704f3b",
+  "validated": false,
+  "reason": "MODEL_AMBIGUITY_ALERT",
+  "validated_reason": "MODEL_AMBIGUITY_ALERT",
+  "validation_reasons": [
+    "MODEL_AMBIGUITY_ALERT",
+    "BELOW_REQUIRED_COMPLETENESS",
+    "BELOW_CONFIDENCE_THRESHOLD",
+    "CRITICAL_FIELDS_BELOW_PASS_TARGET"
+  ],
+  "confidence": 0.416809375,
+  "completeness_required_percent": 0,
+  "coverage_overall_percent": 0,
+  "missing_required_fields": [
+    "fields.connection",
+    "fields.connectivity",
+    "fields.dpi",
+    "fields.height",
+    "fields.lngth",
+    "fields.middle_buttons",
+    "fields.polling_rate",
+    "fields.sensor",
+    "fields.sensor_brand",
+    "fields.side_buttons",
+    "fields.switch",
+    "fields.switch_brand",
+    "fields.weight",
+    "fields.width"
+  ],
+  "fields_below_pass_target": [
+    "release_date",
+    "discontinued",
+    "price_range",
+    "colors",
+    "design",
+    "lighting",
+    "rgb",
+    "connection",
+    "connectivity",
+    "computer_side_connector",
+    "mouse_side_connector",
+    "bluetooth",
+    "cable_type",
+    "paracord",
+    "wireless_charging",
+    "battery_hours",
+    "adjustable_weight",
+    "feet_material",
+    "coating",
+    "honeycomb_frame",
+    "silent_clicks",
+    "weight",
+    "material",
+    "lngth",
+    "width",
+    "height",
+    "form_factor",
+    "shape",
+    "hump",
+    "front_flare",
+    "thumb_rest",
+    "grip",
+    "hand_size",
+    "mcu",
+    "mcu_link",
+    "sensor",
+    "sensor_brand",
+    "sensor_date",
+    "sensor_link",
+    "sensor_type",
+    "flawless_sensor",
+    "sensor_latency",
+    "sensor_latency_list",
+    "shift_latency",
+    "polling_rate",
+    "dpi",
+    "ips",
+    "acceleration",
+    "lift",
+    "lift_settings",
+    "switches_link",
+    "motion_sync",
+    "hardware_acceleration",
+    "smoothing",
+    "nvidia_reflex",
+    "switch",
+    "switch_brand",
+    "switch_type",
+    "hot_swappable",
+    "debounce",
+    "click_latency",
+    "click_latency_list",
+    "click_force",
+    "encoder",
+    "encoder_brand",
+    "encoder_link",
+    "encoder_life_span",
+    "side_buttons",
+    "encoder_steps",
+    "middle_buttons",
+    "encoder_type",
+    "programmable_buttons",
+    "releasing_force",
+    "tilt_scroll_wheel",
+    "adjustable_scroll_wheel",
+    "switch_life_span",
+    "onboard_memory",
+    "onboard_memory_value",
+    "profile_switching"
+  ],
+  "critical_fields_below_pass_target": [
+    "polling_rate"
+  ],
+  "anchor_conflicts": [],
+  "identity_confidence": 0.6,
+  "identity_gate_validated": false,
+  "publishable": false,
+  "publish_blockers": [
+    "MODEL_AMBIGUITY_ALERT",
+    "BELOW_REQUIRED_COMPLETENESS",
+    "BELOW_CONFIDENCE_THRESHOLD",
+    "CRITICAL_FIELDS_BELOW_PASS_TARGET",
+    "missing_manufacturer_confirmation",
+    "missing_additional_credible_sources",
+    "model_ambiguity_alert",
+    "certainty_below_publish_threshold"
+  ],
+  "identity_report": {
+    "status": "IDENTITY_FAILED",
+    "needs_review": true,
+    "reason_codes": [
+      "missing_manufacturer_confirmation",
+      "missing_additional_credible_sources",
+      "model_ambiguity_alert",
+      "certainty_below_publish_threshold"
+    ],
+    "page_count": 2,
+    "contradiction_count": 0,
+    "contradictions": [],
+    "accepted_exact_match_sources": [],
+    "accepted_conflict_contributors": [],
+    "rejected_sibling_sources": [],
+    "first_conflict_trigger": null,
+    "key": "specs/outputs/mouse/mouse-logitech-g-pro-x-superlight-2-phase01-live/runs/20260311204802-704f3b/identity_report.json"
+  },
+  "hypothesis_queue": [
+    {
+      "field": "polling_rate",
+      "priority": 4.2,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.connection",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.connectivity",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.dpi",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.height",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.lngth",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.middle_buttons",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.polling_rate",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.sensor",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.sensor_brand",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.side_buttons",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.switch",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.switch_brand",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.weight",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    },
+    {
+      "field": "fields.width",
+      "priority": 2.8,
+      "suggestion_count": 0,
+      "suggestions": []
+    }
+  ],
+  "constraint_analysis": {
+    "contradiction_count": 0,
+    "contradictions": [],
+    "field_uncertainty": {
+      "release_date": 0.97,
+      "discontinued": 0.97,
+      "sku": 0.97,
+      "price_range": 0.97,
+      "colors": 0.97,
+      "design": 0.97,
+      "lighting": 0.97,
+      "rgb": 0.97,
+      "connection": 0.97,
+      "connectivity": 0.97,
+      "computer_side_connector": 0.97,
+      "mouse_side_connector": 0.97,
+      "bluetooth": 0.97,
+      "cable_type": 0.97,
+      "paracord": 0.97,
+      "wireless_charging": 0.97,
+      "battery_hours": 0.97,
+      "adjustable_weight": 0.97,
+      "feet_material": 0.97,
+      "coating": 0.97,
+      "honeycomb_frame": 0.97,
+      "silent_clicks": 0.97,
+      "weight": 0.97,
+      "material": 0.97,
+      "lngth": 0.97,
+      "width": 0.97,
+      "height": 0.97,
+      "form_factor": 0.97,
+      "shape": 0.97,
+      "hump": 0.97,
+      "front_flare": 0.97,
+      "thumb_rest": 0.97,
+      "grip": 0.97,
+      "hand_size": 0.97,
+      "mcu": 0.97,
+      "mcu_link": 0.97,
+      "sensor": 0.97,
+      "sensor_brand": 0.97,
+      "sensor_date": 0.97,
+      "sensor_link": 0.97,
+      "sensor_type": 0.97,
+      "flawless_sensor": 0.97,
+      "sensor_latency": 0.97,
+      "sensor_latency_list": 0.97,
+      "shift_latency": 0.97,
+      "polling_rate": 1,
+      "dpi": 0.97,
+      "ips": 0.97,
+      "acceleration": 0.97,
+      "lift": 0.97,
+      "lift_settings": 0.97,
+      "switches_link": 0.97,
+      "motion_sync": 0.97,
+      "hardware_acceleration": 0.97,
+      "smoothing": 0.97,
+      "nvidia_reflex": 0.97,
+      "switch": 0.97,
+      "switch_brand": 0.97,
+      "switch_type": 0.97,
+      "hot_swappable": 0.97,
+      "debounce": 0.97,
+      "click_latency": 0.97,
+      "click_latency_list": 0.97,
+      "click_force": 0.97,
+      "encoder": 0.97,
+      "encoder_brand": 0.97,
+      "encoder_link": 0.97,
+      "encoder_life_span": 0.97,
+      "side_buttons": 0.97,
+      "encoder_steps": 0.97,
+      "middle_buttons": 0.97,
+      "encoder_type": 0.97,
+      "programmable_buttons": 0.97,
+      "releasing_force": 0.97,
+      "tilt_scroll_wheel": 0.97,
+      "adjustable_scroll_wheel": 0.97,
+      "switch_life_span": 0.97,
+      "onboard_memory": 0.97,
+      "onboard_memory_value": 0.97,
+      "profile_switching": 0.97,
+      "id": 1,
+      "brand": 1,
+      "model": 1,
+      "base_model": 1,
+      "category": 1
+    },
+    "global_uncertainty": 0.972118,
+    "top_uncertain_fields": [
+      {
+        "field": "polling_rate",
+        "uncertainty": 1
+      },
+      {
+        "field": "id",
+        "uncertainty": 1
+      },
+      {
+        "field": "brand",
+        "uncertainty": 1
+      },
+      {
+        "field": "model",
+        "uncertainty": 1
+      },
+      {
+        "field": "base_model",
+        "uncertainty": 1
+      },
+      {
+        "field": "category",
+        "uncertainty": 1
+      },
+      {
+        "field": "release_date",
+        "uncertainty": 0.97
+      },
+      {
+        "field": "discontinued",
+        "uncertainty": 0.97
+      },
+      {
+        "field": "sku",
+        "uncertainty": 0.97
+      },
+      {
+        "field": "price_range",
+        "uncertainty": 0.97
+      },
+      {
+        "field": "colors",
+        "uncertainty": 0.97
+      },
+      {
+        "field": "design",
+        "uncertainty": 0.97
+      },
+      {
+        "field": "lighting",
+        "uncertainty": 0.97
+      },
+      {
+        "field": "rgb",
+        "uncertainty": 0.97
+      },
+      {
+        "field": "connection",
+        "uncertainty": 0.97
+      },
+      {
+        "field": "connectivity",
+        "uncertainty": 0.97
+      },
+      {
+        "field": "computer_side_connector",
+        "uncertainty": 0.97
+      },
+      {
+        "field": "mouse_side_connector",
+        "uncertainty": 0.97
+      },
+      {
+        "field": "bluetooth",
+        "uncertainty": 0.97
+      },
+      {
+        "field": "cable_type",
+        "uncertainty": 0.97
+      }
+    ]
+  },
+  "runtime_engine": {
+    "enabled": true,
+    "enforce_evidence": true,
+    "failure_count": 0,
+    "warning_count": 0,
+    "change_count": 0,
+    "curation_suggestions_count": 0,
+    "curation_suggestions_appended_count": 0,
+    "curation_suggestions_total_count": 0,
+    "curation_suggestions_path": null,
+    "failures": [],
+    "warnings": []
+  },
+  "field_reasoning": {
+    "release_date": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "discontinued": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sku": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 0,
+      "reasons": [
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "price_range": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "colors": {
+      "value": "unk",
+      "confidence": 0.525,
+      "meets_pass_target": false,
+      "approved_confirmations": 1,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "design": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "lighting": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "rgb": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "connection": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "connectivity": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "computer_side_connector": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "mouse_side_connector": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "bluetooth": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "cable_type": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "paracord": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "wireless_charging": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "battery_hours": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "adjustable_weight": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "feet_material": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "coating": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "honeycomb_frame": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "silent_clicks": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "weight": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 4,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "material": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "lngth": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 4,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "width": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 4,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "height": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 4,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "form_factor": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "shape": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "hump": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "front_flare": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "thumb_rest": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "grip": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "hand_size": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "mcu": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "mcu_link": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 4,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor_brand": {
+      "value": "unk",
+      "confidence": 0.46,
+      "meets_pass_target": false,
+      "approved_confirmations": 1,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor_date": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor_link": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor_type": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "flawless_sensor": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor_latency": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "sensor_latency_list": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "shift_latency": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "polling_rate": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 4,
+      "reasons": [
+        "below_pass_target",
+        "critical_field_below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "dpi": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 4,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "ips": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 4,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "acceleration": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 4,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "lift": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "lift_settings": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "switches_link": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "motion_sync": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "hardware_acceleration": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "smoothing": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "nvidia_reflex": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "switch": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 4,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "switch_brand": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "switch_type": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "hot_swappable": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "debounce": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "click_latency": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "click_latency_list": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "click_force": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "encoder": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "encoder_brand": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "encoder_link": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "encoder_life_span": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "side_buttons": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 4,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "encoder_steps": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "middle_buttons": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 4,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "encoder_type": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "programmable_buttons": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "releasing_force": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "tilt_scroll_wheel": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "adjustable_scroll_wheel": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "switch_life_span": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "onboard_memory": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "onboard_memory_value": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    },
+    "profile_switching": {
+      "value": "unk",
+      "confidence": 0,
+      "meets_pass_target": false,
+      "approved_confirmations": 0,
+      "pass_target": 2,
+      "reasons": [
+        "below_pass_target",
+        "no_accepted_value"
+      ],
+      "contradictions": [],
+      "unknown_reason": "identity_ambiguous"
+    }
+  },
+  "needset": {
+    "size": 80,
+    "total_fields": 80,
+    "reason_counts": {
+      "missing": 80,
+      "tier_pref_unmet": 79,
+      "min_refs_fail": 78,
+      "conflict": 0,
+      "low_conf": 79,
+      "publish_gate_block": 15
+    },
+    "required_level_counts": {
+      "identity": 1,
+      "critical": 1,
+      "required": 13,
+      "expected": 57,
+      "optional": 8
+    },
+    "identity_lock_state": {
+      "status": "unlocked",
+      "confidence": 0.6,
+      "identity_gate_validated": false,
+      "extraction_gate_open": true,
+      "family_model_count": 1,
+      "ambiguity_level": "easy",
+      "publishable": false,
+      "publish_blockers": [
+        "model_ambiguity_alert",
+        "below_required_completeness",
+        "below_confidence_threshold",
+        "critical_fields_below_pass_target",
+        "missing_manufacturer_confirmation",
+        "missing_additional_credible_sources",
+        "certainty_below_publish_threshold"
+      ],
+      "reason_codes": [
+        "missing_manufacturer_confirmation",
+        "missing_additional_credible_sources",
+        "model_ambiguity_alert",
+        "certainty_below_publish_threshold"
+      ],
+      "page_count": 2,
+      "contradiction_count": 0,
+      "contradictions": [],
+      "accepted_exact_match_sources": [],
+      "accepted_conflict_contributors": [],
+      "rejected_sibling_sources": [],
+      "first_conflict_trigger": null,
+      "max_match_score": 0.75,
+      "updated_at": "2026-03-11T20:48:25.564Z"
+    },
+    "identity_audit_rows_count": 2,
+    "top_fields": [
+      "sku",
+      "polling_rate",
+      "connection",
+      "connectivity",
+      "dpi",
+      "height",
+      "lngth",
+      "middle_buttons",
+      "sensor",
+      "side_buttons",
+      "switch",
+      "switch_brand"
+    ],
+    "generated_at": "2026-03-11T20:48:25.564Z",
+    "key": "specs/outputs/mouse/mouse-logitech-g-pro-x-superlight-2-phase01-live/runs/20260311204802-704f3b/analysis/needset.json",
+    "latest_key": "specs/outputs/mouse/mouse-logitech-g-pro-x-superlight-2-phase01-live/latest/needset.json"
+  },
+  "parser_health": {
+    "source_count": 4,
+    "average_health_score": 0.1,
+    "fingerprints_seen": 4
+  },
+  "temporal_evidence": {
+    "date_hint_count": 18,
+    "version_hint_count": 11,
+    "top_dates": [
+      {
+        "value": "2023-01-01",
+        "precision": "year",
+        "evidence_count": 2,
+        "source_count": 2,
+        "sources": [
+          "source:https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf",
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 1.2
+      },
+      {
+        "value": "2026-03-01",
+        "precision": "month",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 1
+      },
+      {
+        "value": "2026-02-01",
+        "precision": "month",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 1
+      },
+      {
+        "value": "2025-10-01",
+        "precision": "month",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 1
+      },
+      {
+        "value": "2025-09-01",
+        "precision": "month",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 1
+      },
+      {
+        "value": "2021-12-08",
+        "precision": "day",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf"
+        ],
+        "score": 1
+      },
+      {
+        "value": "2026-01-01",
+        "precision": "year",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.8
+      },
+      {
+        "value": "2025-01-01",
+        "precision": "year",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.8
+      },
+      {
+        "value": "2023-09-01",
+        "precision": "month",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.8
+      },
+      {
+        "value": "2023-05-01",
+        "precision": "month",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf"
+        ],
+        "score": 0.8
+      },
+      {
+        "value": "2023-04-01",
+        "precision": "month",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf"
+        ],
+        "score": 0.8
+      },
+      {
+        "value": "2022-09-01",
+        "precision": "month",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.8
+      },
+      {
+        "value": "2021-12-01",
+        "precision": "month",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf"
+        ],
+        "score": 0.8
+      },
+      {
+        "value": "2015-07-01",
+        "precision": "month",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf"
+        ],
+        "score": 0.8
+      },
+      {
+        "value": "2022-01-01",
+        "precision": "year",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.6
+      },
+      {
+        "value": "2021-01-01",
+        "precision": "year",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf"
+        ],
+        "score": 0.6
+      },
+      {
+        "value": "2019-01-01",
+        "precision": "year",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.6
+      },
+      {
+        "value": "2015-01-01",
+        "precision": "year",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitech.com/assets/66332/logitech-g-pro-x-superlight-2-lightspeed-gaming-mouse.pdf"
+        ],
+        "score": 0.6
+      }
+    ],
+    "top_versions": [
+      {
+        "value": "REVIEW",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.6
+      },
+      {
+        "value": "REVIEW_SUMMARY",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.6
+      },
+      {
+        "value": "reviewCount",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.6
+      },
+      {
+        "value": "Reviewers",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.6
+      },
+      {
+        "value": "ReviewIds",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.6
+      },
+      {
+        "value": "Reviews",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.6
+      },
+      {
+        "value": "REVIEWS_N_STATS",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.6
+      },
+      {
+        "value": "reviews.json",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.6
+      },
+      {
+        "value": "ReviewStatistics",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.6
+      },
+      {
+        "value": "reviewsummary",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.6
+      },
+      {
+        "value": "ReviewText",
+        "evidence_count": 1,
+        "source_count": 1,
+        "sources": [
+          "source:https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ],
+        "score": 0.6
+      }
+    ],
+    "latest_date_hint": "2023-01-01"
+  },
+  "endpoint_mining": {
+    "endpoint_count": 26,
+    "top_endpoints": [
+      {
+        "signature": "POST yellow.ai/api/plugin/:token",
+        "rootDomain": "yellow.ai",
+        "host": "r4.cloud.yellow.ai",
+        "method": "POST",
+        "endpoint": "yellow.ai/api/plugin/:token",
+        "normalized_path": "/api/plugin/:token",
+        "sample_url": "https://r4.cloud.yellow.ai/api/plugin/bot-load-details",
+        "hit_count": 4,
+        "graphql_hits": 2,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "product_payload"
+        ],
+        "field_hints": [],
+        "signal_score": 7,
+        "max_signal_score": 7,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET logitechg.com/en-us/api/promotions/toasterg",
+        "rootDomain": "logitechg.com",
+        "host": "logitechg.com",
+        "method": "GET",
+        "endpoint": "logitechg.com/en-us/api/promotions/toasterg",
+        "normalized_path": "/en-us/api/promotions/toasterg",
+        "sample_url": "https://www.logitechg.com/en-us/api/promotions/toasterg",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "specs"
+        ],
+        "field_hints": [],
+        "signal_score": 4,
+        "max_signal_score": 4,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "POST evergage.com/api2/event/logitech_prod",
+        "rootDomain": "evergage.com",
+        "host": "logitecheurope.us-6.evergage.com",
+        "method": "POST",
+        "endpoint": "evergage.com/api2/event/logitech_prod",
+        "normalized_path": "/api2/event/logitech_prod",
+        "sample_url": "https://logitecheurope.us-6.evergage.com/api2/event/logitech_prod",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "product_payload"
+        ],
+        "field_hints": [],
+        "signal_score": 4,
+        "max_signal_score": 4,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "POST yellow.ai/api/plugin/analytics",
+        "rootDomain": "yellow.ai",
+        "host": "r4.cloud.yellow.ai",
+        "method": "POST",
+        "endpoint": "yellow.ai/api/plugin/analytics",
+        "normalized_path": "/api/plugin/analytics",
+        "sample_url": "https://r4.cloud.yellow.ai/api/plugin/analytics",
+        "hit_count": 2,
+        "graphql_hits": 1,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 4,
+        "max_signal_score": 4,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET logitechg.com/api/commerce/:token/v1/organizations/f_ecom_bjdd_prd/products",
+        "rootDomain": "logitechg.com",
+        "host": "logitechg.com",
+        "method": "GET",
+        "endpoint": "logitechg.com/api/commerce/:token/v1/organizations/f_ecom_bjdd_prd/products",
+        "normalized_path": "/api/commerce/:token/v1/organizations/f_ecom_bjdd_prd/products",
+        "sample_url": "https://www.logitechg.com/api/commerce/shopper-products/v1/organizations/f_ecom_bjdd_prd/products",
+        "hit_count": 6,
+        "graphql_hits": 3,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "pricing"
+        ],
+        "field_hints": [],
+        "signal_score": 3,
+        "max_signal_score": 3,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET cookielaw.org/consent/:token/:token/en.json",
+        "rootDomain": "cookielaw.org",
+        "host": "cdn.cookielaw.org",
+        "method": "GET",
+        "endpoint": "cookielaw.org/consent/:token/:token/en.json",
+        "normalized_path": "/consent/:token/:token/en.json",
+        "sample_url": "https://cdn.cookielaw.org/consent/69f4502c-95ac-4557-a363-86871fcb3f92/018e2e69-7810-760a-83b5-957ce42a2b03/en.json",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "specs"
+        ],
+        "field_hints": [],
+        "signal_score": 3,
+        "max_signal_score": 3,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET evergage.com/api2/event/logitech_prod",
+        "rootDomain": "evergage.com",
+        "host": "logitecheurope.us-6.evergage.com",
+        "method": "GET",
+        "endpoint": "evergage.com/api2/event/logitech_prod",
+        "normalized_path": "/api2/event/logitech_prod",
+        "sample_url": "https://logitecheurope.us-6.evergage.com/api2/event/logitech_prod",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "specs"
+        ],
+        "field_hints": [],
+        "signal_score": 3,
+        "max_signal_score": 3,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET logitechg.com/en-us/api/products/g840-cloth-xl-gaming-mouse-pad,g-sleeve,pro-x-tkl-wireless-keyboard",
+        "rootDomain": "logitechg.com",
+        "host": "logitechg.com",
+        "method": "GET",
+        "endpoint": "logitechg.com/en-us/api/products/g840-cloth-xl-gaming-mouse-pad,g-sleeve,pro-x-tkl-wireless-keyboard",
+        "normalized_path": "/en-us/api/products/g840-cloth-xl-gaming-mouse-pad,g-sleeve,pro-x-tkl-wireless-keyboard",
+        "sample_url": "https://www.logitechg.com/en-us/api/products/g840-cloth-xl-gaming-mouse-pad,g-sleeve,pro-x-tkl-wireless-keyboard",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "variant_matrix"
+        ],
+        "field_hints": [],
+        "signal_score": 3,
+        "max_signal_score": 3,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET yellow.ai/api/plugin/push-to-metrics",
+        "rootDomain": "yellow.ai",
+        "host": "r4.cloud.yellow.ai",
+        "method": "GET",
+        "endpoint": "yellow.ai/api/plugin/push-to-metrics",
+        "normalized_path": "/api/plugin/push-to-metrics",
+        "sample_url": "https://r4.cloud.yellow.ai/api/plugin/push-to-metrics",
+        "hit_count": 2,
+        "graphql_hits": 1,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 3,
+        "max_signal_score": 3,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET yellow.ai/api/plugin/:token",
+        "rootDomain": "yellow.ai",
+        "host": "r4.cloud.yellow.ai",
+        "method": "GET",
+        "endpoint": "yellow.ai/api/plugin/:token",
+        "normalized_path": "/api/plugin/:token",
+        "sample_url": "https://r4.cloud.yellow.ai/api/plugin/active-ticket-details",
+        "hit_count": 2,
+        "graphql_hits": 1,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 3,
+        "max_signal_score": 3,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET cookielaw.org/consent/:token/69f4502c-95ac-4557-a363-86871fcb3f92.json",
+        "rootDomain": "cookielaw.org",
+        "host": "cdn.cookielaw.org",
+        "method": "GET",
+        "endpoint": "cookielaw.org/consent/:token/69f4502c-95ac-4557-a363-86871fcb3f92.json",
+        "normalized_path": "/consent/:token/69f4502c-95ac-4557-a363-86871fcb3f92.json",
+        "sample_url": "https://cdn.cookielaw.org/consent/69f4502c-95ac-4557-a363-86871fcb3f92/69f4502c-95ac-4557-a363-86871fcb3f92.json",
+        "hit_count": 4,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "variant_matrix"
+        ],
+        "field_hints": [],
+        "signal_score": 2,
+        "max_signal_score": 2,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET bazaarvoice.com/bfd/v1/clients/logitech-inc/api-products/cv2/resources/data",
+        "rootDomain": "bazaarvoice.com",
+        "host": "apps.bazaarvoice.com",
+        "method": "GET",
+        "endpoint": "bazaarvoice.com/bfd/v1/clients/logitech-inc/api-products/cv2/resources/data",
+        "normalized_path": "/bfd/v1/clients/logitech-inc/api-products/cv2/resources/data",
+        "sample_url": "https://apps.bazaarvoice.com/bfd/v1/clients/logitech-inc/api-products/cv2/resources/data/products.json",
+        "hit_count": 10,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "reviews"
+        ],
+        "field_hints": [],
+        "signal_score": 1,
+        "max_signal_score": 1,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "POST logitech.com/events/:hex",
+        "rootDomain": "logitech.com",
+        "host": "capiv2.logitech.com",
+        "method": "POST",
+        "endpoint": "logitech.com/events/:hex",
+        "normalized_path": "/events/:hex",
+        "sample_url": "https://capiv2.logitech.com/events/831b255860ed4283dc3a079e25fedb8383aac8438037fe8d03c2c269e8a2861f",
+        "hit_count": 4,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 1,
+        "max_signal_score": 1,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "POST yellow.ai/integrations/yellowmessenger/receive",
+        "rootDomain": "yellow.ai",
+        "host": "r4.cloud.yellow.ai",
+        "method": "POST",
+        "endpoint": "yellow.ai/integrations/yellowmessenger/receive",
+        "normalized_path": "/integrations/yellowmessenger/receive",
+        "sample_url": "https://r4.cloud.yellow.ai/integrations/yellowmessenger/receive",
+        "hit_count": 4,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 1,
+        "max_signal_score": 1,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "POST quantummetric.com/horizon/logitech",
+        "rootDomain": "quantummetric.com",
+        "host": "ingest.quantummetric.com",
+        "method": "POST",
+        "endpoint": "quantummetric.com/horizon/logitech",
+        "normalized_path": "/horizon/logitech",
+        "sample_url": "https://ingest.quantummetric.com/horizon/logitech",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 1,
+        "max_signal_score": 1,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "POST adsrvr.org/track/:token",
+        "rootDomain": "adsrvr.org",
+        "host": "insight.adsrvr.org",
+        "method": "POST",
+        "endpoint": "adsrvr.org/track/:token",
+        "normalized_path": "/track/:token",
+        "sample_url": "https://insight.adsrvr.org/track/realtimeconversion",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 1,
+        "max_signal_score": 1,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET yellow.ai/api/engagements/inbound/list-campaigns",
+        "rootDomain": "yellow.ai",
+        "host": "r4.cloud.yellow.ai",
+        "method": "GET",
+        "endpoint": "yellow.ai/api/engagements/inbound/list-campaigns",
+        "normalized_path": "/api/engagements/inbound/list-campaigns",
+        "sample_url": "https://r4.cloud.yellow.ai/api/engagements/inbound/list-campaigns",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 0,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 1,
+        "max_signal_score": 1,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET onetrust.com/:token/v1/geo/location",
+        "rootDomain": "onetrust.com",
+        "host": "geolocation.onetrust.com",
+        "method": "GET",
+        "endpoint": "onetrust.com/:token/v1/geo/location",
+        "normalized_path": "/:token/v1/geo/location",
+        "sample_url": "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "hit_count": 4,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 0,
+        "max_signal_score": 0,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET pinterest.com/user",
+        "rootDomain": "pinterest.com",
+        "host": "ct.pinterest.com",
+        "method": "GET",
+        "endpoint": "pinterest.com/user",
+        "normalized_path": "/user",
+        "sample_url": "https://ct.pinterest.com/user/",
+        "hit_count": 4,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "pricing",
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 0,
+        "max_signal_score": 0,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET klarna.com/web-sdk/config/runtime-config.json",
+        "rootDomain": "klarna.com",
+        "host": "js.klarna.com",
+        "method": "GET",
+        "endpoint": "klarna.com/web-sdk/config/runtime-config.json",
+        "normalized_path": "/web-sdk/config/runtime-config.json",
+        "sample_url": "https://js.klarna.com/web-sdk/config/runtime-config.json",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 0,
+        "max_signal_score": 0,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET cookielaw.org/scripttemplates/202502.1.0/assets/otfloatingroundedcorner.json",
+        "rootDomain": "cookielaw.org",
+        "host": "cdn.cookielaw.org",
+        "method": "GET",
+        "endpoint": "cookielaw.org/scripttemplates/202502.1.0/assets/otfloatingroundedcorner.json",
+        "normalized_path": "/scripttemplates/202502.1.0/assets/otfloatingroundedcorner.json",
+        "sample_url": "https://cdn.cookielaw.org/scripttemplates/202502.1.0/assets/otFloatingRoundedCorner.json",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 0,
+        "max_signal_score": 0,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET klarna.com/na/cma/v3/messaging",
+        "rootDomain": "klarna.com",
+        "host": "js.klarna.com",
+        "method": "GET",
+        "endpoint": "klarna.com/na/cma/v3/messaging",
+        "normalized_path": "/na/cma/v3/messaging",
+        "sample_url": "https://js.klarna.com/na/cma/v3/messaging",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 0,
+        "max_signal_score": 0,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET demdex.net/id",
+        "rootDomain": "demdex.net",
+        "host": "dpm.demdex.net",
+        "method": "GET",
+        "endpoint": "demdex.net/id",
+        "normalized_path": "/id",
+        "sample_url": "https://dpm.demdex.net/id",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 0,
+        "max_signal_score": 0,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET linkedin.com/:token",
+        "rootDomain": "linkedin.com",
+        "host": "px.ads.linkedin.com",
+        "method": "GET",
+        "endpoint": "linkedin.com/:token",
+        "normalized_path": "/:token",
+        "sample_url": "https://px.ads.linkedin.com/attribution_trigger",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 0,
+        "max_signal_score": 0,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET reddit.com/pixels/a2_fosia6bb2dp5/config",
+        "rootDomain": "reddit.com",
+        "host": "pixel-config.reddit.com",
+        "method": "GET",
+        "endpoint": "reddit.com/pixels/a2_fosia6bb2dp5/config",
+        "normalized_path": "/pixels/a2_fosia6bb2dp5/config",
+        "sample_url": "https://pixel-config.reddit.com/pixels/a2_fosia6bb2dp5/config",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 0,
+        "max_signal_score": 0,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      },
+      {
+        "signature": "GET googleadservices.com/pagead/conversion/:id",
+        "rootDomain": "googleadservices.com",
+        "host": "googleadservices.com",
+        "method": "GET",
+        "endpoint": "googleadservices.com/pagead/conversion/:id",
+        "normalized_path": "/pagead/conversion/:id",
+        "sample_url": "https://www.googleadservices.com/pagead/conversion/818993388/",
+        "hit_count": 2,
+        "graphql_hits": 0,
+        "status_ok_rate": 1,
+        "top_classifications": [
+          "unknown"
+        ],
+        "field_hints": [],
+        "signal_score": 0,
+        "max_signal_score": 0,
+        "source_count": 1,
+        "source_urls": [
+          "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse"
+        ]
+      }
+    ]
+  },
+  "fields_below_pass_target_count": 79,
+  "anchor_conflicts_count": 0,
+  "duration_ms": 22898,
+  "generated_at": "2026-03-11T20:48:25.956Z"
+}

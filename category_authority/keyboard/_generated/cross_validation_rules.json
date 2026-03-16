@@ -1,0 +1,315 @@
+{
+  "category": "keyboard",
+  "generated_at": "2026-03-16T00:08:03.587Z",
+  "rules": [
+    {
+      "check": {
+        "max": 0.5,
+        "min": 0.01,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "actuation_adjustment_step must stay within configured plausible range",
+      "rule_id": "actuation_adjustment_step_plausibility",
+      "trigger_field": "actuation_adjustment_step"
+    },
+    {
+      "check": {
+        "max": 4,
+        "min": 0.1,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "actuation_distance must stay within configured plausible range",
+      "rule_id": "actuation_distance_plausibility",
+      "trigger_field": "actuation_distance"
+    },
+    {
+      "check": {
+        "max": 100,
+        "min": 20,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "actuation_force must stay within configured plausible range",
+      "rule_id": "actuation_force_plausibility",
+      "trigger_field": "actuation_force"
+    },
+    {
+      "check": {
+        "max": 4.5,
+        "min": 0.5,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "adjustable_actuation_max must stay within configured plausible range",
+      "rule_id": "adjustable_actuation_max_plausibility",
+      "trigger_field": "adjustable_actuation_max"
+    },
+    {
+      "check": {
+        "max": 2.5,
+        "min": 0.01,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "adjustable_actuation_min must stay within configured plausible range",
+      "rule_id": "adjustable_actuation_min_plausibility",
+      "trigger_field": "adjustable_actuation_min"
+    },
+    {
+      "check": {
+        "max": 10000,
+        "min": 100,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "battery_capacity must stay within configured plausible range",
+      "rule_id": "battery_capacity_plausibility",
+      "trigger_field": "battery_capacity"
+    },
+    {
+      "check": {
+        "max": 400,
+        "min": 1,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "battery_life_off must stay within configured plausible range",
+      "rule_id": "battery_life_off_plausibility",
+      "trigger_field": "battery_life_off"
+    },
+    {
+      "check": {
+        "max": 300,
+        "min": 1,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "battery_life_rgb must stay within configured plausible range",
+      "rule_id": "battery_life_rgb_plausibility",
+      "trigger_field": "battery_life_rgb"
+    },
+    {
+      "check": {
+        "max": 120,
+        "min": 30,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "bottom_out_force must stay within configured plausible range",
+      "rule_id": "bottom_out_force_plausibility",
+      "trigger_field": "bottom_out_force"
+    },
+    {
+      "check": {
+        "max": 3,
+        "min": 0.5,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "cable_length must stay within configured plausible range",
+      "rule_id": "cable_length_plausibility",
+      "trigger_field": "cable_length"
+    },
+    {
+      "check": {
+        "max": 50,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "debounce_time must stay within configured plausible range",
+      "rule_id": "debounce_time_plausibility",
+      "trigger_field": "debounce_time"
+    },
+    {
+      "check": {
+        "max": 250,
+        "min": 50,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "depth must stay within configured plausible range",
+      "rule_id": "depth_plausibility",
+      "trigger_field": "depth"
+    },
+    {
+      "check": {
+        "max": 50,
+        "min": 5,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "height_front must stay within configured plausible range",
+      "rule_id": "height_front_plausibility",
+      "trigger_field": "height_front"
+    },
+    {
+      "check": {
+        "max": 70,
+        "min": 5,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "height_rear must stay within configured plausible range",
+      "rule_id": "height_rear_plausibility",
+      "trigger_field": "height_rear"
+    },
+    {
+      "check": {
+        "max": 120,
+        "min": 20,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "key_count must stay within configured plausible range",
+      "rule_id": "key_count_plausibility",
+      "trigger_field": "key_count"
+    },
+    {
+      "check": {
+        "max": 2.5,
+        "min": 0.8,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "keycap_thickness must stay within configured plausible range",
+      "rule_id": "keycap_thickness_plausibility",
+      "trigger_field": "keycap_thickness"
+    },
+    {
+      "check": {
+        "max": 8,
+        "min": 1,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "multi_device_pairing_count must stay within configured plausible range",
+      "rule_id": "multi_device_pairing_count_plausibility",
+      "trigger_field": "multi_device_pairing_count"
+    },
+    {
+      "check": {
+        "max": 50,
+        "min": 0.2,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "multi_key_latency must stay within configured plausible range",
+      "rule_id": "multi_key_latency_plausibility",
+      "trigger_field": "multi_key_latency"
+    },
+    {
+      "check": {
+        "max": 100,
+        "min": 1,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "onboard_profile_count must stay within configured plausible range",
+      "rule_id": "onboard_profile_count_plausibility",
+      "trigger_field": "onboard_profile_count"
+    },
+    {
+      "check": {
+        "max": 8000,
+        "min": 125,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "polling_rate_wired must stay within configured plausible range",
+      "rule_id": "polling_rate_wired_plausibility",
+      "trigger_field": "polling_rate_wired"
+    },
+    {
+      "check": {
+        "max": 8000,
+        "min": 125,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "polling_rate_wireless must stay within configured plausible range",
+      "rule_id": "polling_rate_wireless_plausibility",
+      "trigger_field": "polling_rate_wireless"
+    },
+    {
+      "check": {
+        "max": 8000,
+        "min": 125,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "scan_rate must stay within configured plausible range",
+      "rule_id": "scan_rate_plausibility",
+      "trigger_field": "scan_rate"
+    },
+    {
+      "check": {
+        "max": 50,
+        "min": 0.2,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "single_key_latency must stay within configured plausible range",
+      "rule_id": "single_key_latency_plausibility",
+      "trigger_field": "single_key_latency"
+    },
+    {
+      "check": {
+        "max": 200,
+        "min": 10,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "switch_lifespan must stay within configured plausible range",
+      "rule_id": "switch_lifespan_plausibility",
+      "trigger_field": "switch_lifespan"
+    },
+    {
+      "check": {
+        "max": 5.5,
+        "min": 1,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "total_travel must stay within configured plausible range",
+      "rule_id": "total_travel_plausibility",
+      "trigger_field": "total_travel"
+    },
+    {
+      "check": {
+        "max": 15,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "typing_angle must stay within configured plausible range",
+      "rule_id": "typing_angle_plausibility",
+      "trigger_field": "typing_angle"
+    },
+    {
+      "check": {
+        "max": 3.5,
+        "min": 0.2,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "weight must stay within configured plausible range",
+      "rule_id": "weight_plausibility",
+      "trigger_field": "weight"
+    },
+    {
+      "check": {
+        "max": 500,
+        "min": 80,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "width must stay within configured plausible range",
+      "rule_id": "width_plausibility",
+      "trigger_field": "width"
+    }
+  ],
+  "version": 1
+}

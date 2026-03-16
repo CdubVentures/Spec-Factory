@@ -1,0 +1,4181 @@
+{
+  "run_id": "20260311203758-d48ea2",
+  "category": "mouse",
+  "product_id": "mouse-razer-viper-v3-pro",
+  "generated_at": "2026-03-11T20:46:08.503Z",
+  "total_fields": 80,
+  "needset_size": 80,
+  "identity_lock_state": {
+    "status": "unlocked",
+    "confidence": 0.6,
+    "identity_gate_validated": false,
+    "extraction_gate_open": true,
+    "family_model_count": 1,
+    "ambiguity_level": "easy",
+    "publishable": false,
+    "publish_blockers": [
+      "model_ambiguity_alert",
+      "below_required_completeness",
+      "below_confidence_threshold",
+      "critical_fields_below_pass_target",
+      "missing_manufacturer_confirmation",
+      "missing_additional_credible_sources",
+      "certainty_below_publish_threshold"
+    ],
+    "reason_codes": [
+      "missing_manufacturer_confirmation",
+      "missing_additional_credible_sources",
+      "model_ambiguity_alert",
+      "certainty_below_publish_threshold"
+    ],
+    "page_count": 0,
+    "contradiction_count": 0,
+    "contradictions": [],
+    "accepted_exact_match_sources": [],
+    "accepted_conflict_contributors": [],
+    "rejected_sibling_sources": [],
+    "first_conflict_trigger": null,
+    "max_match_score": 0.39999999999999997,
+    "updated_at": "2026-03-11T20:46:08.503Z"
+  },
+  "identity_audit_rows": [],
+  "reason_counts": {
+    "missing": 80,
+    "tier_pref_unmet": 80,
+    "min_refs_fail": 80,
+    "conflict": 0,
+    "low_conf": 79,
+    "publish_gate_block": 15
+  },
+  "required_level_counts": {
+    "identity": 1,
+    "critical": 1,
+    "required": 13,
+    "expected": 57,
+    "optional": 8
+  },
+  "needs": [
+    {
+      "field_key": "sku",
+      "required_level": "identity",
+      "required_weight": 5,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 0,
+      "meets_pass_target": true,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": null,
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "publish_gate_block"
+      ],
+      "need_score": 36,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "polling_rate",
+      "required_level": "critical",
+      "required_weight": 4,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 2,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 28.8,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "connection",
+      "required_level": "required",
+      "required_weight": 2,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 14.4,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "connectivity",
+      "required_level": "required",
+      "required_weight": 2,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 14.4,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "dpi",
+      "required_level": "required",
+      "required_weight": 2,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 2,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 14.4,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "height",
+      "required_level": "required",
+      "required_weight": 2,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 2,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 14.4,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "lngth",
+      "required_level": "required",
+      "required_weight": 2,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 2,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 14.4,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "middle_buttons",
+      "required_level": "required",
+      "required_weight": 2,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 14.4,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "sensor",
+      "required_level": "required",
+      "required_weight": 2,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 2,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 14.4,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "sensor_brand",
+      "required_level": "required",
+      "required_weight": 2,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 14.4,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "side_buttons",
+      "required_level": "required",
+      "required_weight": 2,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 14.4,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "switch",
+      "required_level": "required",
+      "required_weight": 2,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 2,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 14.4,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "switch_brand",
+      "required_level": "required",
+      "required_weight": 2,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 14.4,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "weight",
+      "required_level": "required",
+      "required_weight": 2,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 2,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 14.4,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "width",
+      "required_level": "required",
+      "required_weight": 2,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 2,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [
+        "publish_gate"
+      ],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": "publish_gate"
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf",
+        "publish_gate_block"
+      ],
+      "need_score": 14.4,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "acceleration",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "adjustable_scroll_wheel",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "adjustable_weight",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "battery_hours",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "bluetooth",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "cable_type",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "click_force",
+      "required_level": "optional",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        2,
+        1,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "click_latency",
+      "required_level": "optional",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        2,
+        1,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "click_latency_list",
+      "required_level": "optional",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        2,
+        1,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "coating",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "colors",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "computer_side_connector",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "debounce",
+      "required_level": "optional",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "design",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "discontinued",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "encoder",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "encoder_brand",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "encoder_life_span",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "encoder_link",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "encoder_steps",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "encoder_type",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "feet_material",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "flawless_sensor",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "form_factor",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "front_flare",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "grip",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "hand_size",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "hardware_acceleration",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "honeycomb_frame",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "hot_swappable",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "hump",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "ips",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "lift",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "lift_settings",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "lighting",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "material",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "mcu",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "mcu_link",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "motion_sync",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "mouse_side_connector",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "nvidia_reflex",
+      "required_level": "optional",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "onboard_memory",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "onboard_memory_value",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "paracord",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "price_range",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "profile_switching",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "programmable_buttons",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "release_date",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "releasing_force",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "rgb",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "sensor_date",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "sensor_latency",
+      "required_level": "optional",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        2,
+        1,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "sensor_latency_list",
+      "required_level": "optional",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        2,
+        1,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "sensor_link",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "sensor_type",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "shape",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "shift_latency",
+      "required_level": "optional",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        2,
+        1,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "silent_clicks",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "smoothing",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "switch_life_span",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "switch_type",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "switches_link",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "thumb_rest",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "tilt_scroll_wheel",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    },
+    {
+      "field_key": "wireless_charging",
+      "required_level": "expected",
+      "required_weight": 1,
+      "status": "unknown",
+      "value": "unk",
+      "confidence": 0,
+      "effective_confidence": 0,
+      "confidence_capped": false,
+      "pass_target": 1,
+      "meets_pass_target": false,
+      "refs_found": 0,
+      "min_refs": 1,
+      "best_tier_seen": null,
+      "tier_preference": [
+        1,
+        2,
+        3
+      ],
+      "identity_state": "unlocked",
+      "best_identity_match": 0.39999999999999997,
+      "blocked_by": [],
+      "quarantined": false,
+      "unknown_reason": "identity_ambiguous",
+      "reason_payload": {
+        "why_missing": "identity_ambiguous",
+        "why_low_conf": "below_pass_target",
+        "why_blocked": null
+      },
+      "conflict": false,
+      "reasons": [
+        "missing",
+        "tier_pref_unmet",
+        "min_refs_fail",
+        "low_conf"
+      ],
+      "need_score": 6,
+      "snippet_retrieved_at": null,
+      "evidence_age_hours": null
+    }
+  ],
+  "snapshots": [
+    {
+      "ts": "2026-03-11T20:46:08.503Z",
+      "needset_size": 80
+    }
+  ],
+  "schema_version": "needset_planner_output.v2",
+  "round": 0,
+  "round_mode": "seed",
+  "bundles": [
+    {
+      "key": "sensor_performance",
+      "label": "Sensor & Performance",
+      "desc": "DPI, tracking speed, polling rate",
+      "priority": "core",
+      "phase": "now",
+      "source_target": "manufacturer",
+      "content_target": "spec_sheet",
+      "search_intent": "Find dpi, tracking speed, polling rate for Razer Viper V3 Pro",
+      "host_class": "manufacturer",
+      "query_family_mix": "manufacturer_html+review_lookup",
+      "reason_active": "9 missing core fields",
+      "queries": [
+        {
+          "q": "razer viper v3 pro sensor & performance specs",
+          "family": "manufacturer_html"
+        },
+        {
+          "q": "razer viper v3 pro dpi",
+          "family": "review_lookup"
+        }
+      ],
+      "fields": [
+        {
+          "key": "sensor",
+          "state": "missing",
+          "bucket": "secondary"
+        },
+        {
+          "key": "dpi",
+          "state": "missing",
+          "bucket": "secondary"
+        },
+        {
+          "key": "max_dpi",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "polling_rate",
+          "state": "missing",
+          "bucket": "core"
+        },
+        {
+          "key": "tracking_speed",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "max_tracking_speed",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "ips",
+          "state": "missing",
+          "bucket": "expected"
+        },
+        {
+          "key": "acceleration",
+          "state": "missing",
+          "bucket": "expected"
+        },
+        {
+          "key": "lift_off_distance",
+          "state": "missing",
+          "bucket": "optional"
+        }
+      ]
+    },
+    {
+      "key": "connectivity",
+      "label": "Connectivity",
+      "desc": "Wired/wireless, USB, Bluetooth",
+      "priority": "core",
+      "phase": "now",
+      "source_target": "manufacturer",
+      "content_target": "spec_sheet",
+      "search_intent": "Find wired/wireless, usb, bluetooth for Razer Viper V3 Pro",
+      "host_class": "manufacturer",
+      "query_family_mix": "manufacturer_html+review_lookup",
+      "reason_active": "5 missing core fields",
+      "queries": [
+        {
+          "q": "razer viper v3 pro connectivity specs",
+          "family": "manufacturer_html"
+        },
+        {
+          "q": "razer viper v3 pro wired/wireless",
+          "family": "review_lookup"
+        }
+      ],
+      "fields": [
+        {
+          "key": "connection",
+          "state": "missing",
+          "bucket": "secondary"
+        },
+        {
+          "key": "wireless_tech",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "bluetooth",
+          "state": "missing",
+          "bucket": "expected"
+        },
+        {
+          "key": "usb_type",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "dongle_type",
+          "state": "missing",
+          "bucket": "optional"
+        }
+      ]
+    },
+    {
+      "key": "physical_design",
+      "label": "Physical Design",
+      "desc": "Weight, dimensions, shape, grip",
+      "priority": "core",
+      "phase": "now",
+      "source_target": "manufacturer",
+      "content_target": "spec_sheet",
+      "search_intent": "Find weight, dimensions, shape, grip for Razer Viper V3 Pro",
+      "host_class": "manufacturer",
+      "query_family_mix": "manufacturer_html+review_lookup",
+      "reason_active": "8 missing core fields",
+      "queries": [
+        {
+          "q": "razer viper v3 pro physical design specs",
+          "family": "manufacturer_html"
+        },
+        {
+          "q": "razer viper v3 pro weight",
+          "family": "review_lookup"
+        }
+      ],
+      "fields": [
+        {
+          "key": "weight",
+          "state": "missing",
+          "bucket": "secondary"
+        },
+        {
+          "key": "length",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "width",
+          "state": "missing",
+          "bucket": "secondary"
+        },
+        {
+          "key": "height",
+          "state": "missing",
+          "bucket": "secondary"
+        },
+        {
+          "key": "shape",
+          "state": "missing",
+          "bucket": "expected"
+        },
+        {
+          "key": "grip_style",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "hand_size",
+          "state": "missing",
+          "bucket": "expected"
+        },
+        {
+          "key": "ambidextrous",
+          "state": "missing",
+          "bucket": "optional"
+        }
+      ]
+    },
+    {
+      "key": "buttons_switches",
+      "label": "Buttons & Switches",
+      "desc": "Button count, switch type, scroll wheel",
+      "priority": "secondary",
+      "phase": "now",
+      "source_target": "review",
+      "content_target": "article",
+      "search_intent": "Find button count, switch type, scroll wheel for Razer Viper V3 Pro",
+      "host_class": null,
+      "query_family_mix": "manufacturer_html+review_lookup",
+      "reason_active": "5 missing secondary fields",
+      "queries": [
+        {
+          "q": "razer viper v3 pro buttons & switches specs",
+          "family": "manufacturer_html"
+        },
+        {
+          "q": "razer viper v3 pro button count",
+          "family": "review_lookup"
+        }
+      ],
+      "fields": [
+        {
+          "key": "buttons",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "switch_type",
+          "state": "missing",
+          "bucket": "expected"
+        },
+        {
+          "key": "switch_lifecycle",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "scroll_wheel",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "scroll_type",
+          "state": "missing",
+          "bucket": "optional"
+        }
+      ]
+    },
+    {
+      "key": "battery_power",
+      "label": "Battery & Power",
+      "desc": "Battery life, charging, cable",
+      "priority": "secondary",
+      "phase": "next",
+      "source_target": "review",
+      "content_target": "article",
+      "search_intent": "Find battery life, charging, cable for Razer Viper V3 Pro",
+      "host_class": null,
+      "query_family_mix": null,
+      "reason_active": "5 missing secondary fields",
+      "queries": [],
+      "fields": [
+        {
+          "key": "battery_life",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "battery_type",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "charging_type",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "cable_type",
+          "state": "missing",
+          "bucket": "expected"
+        },
+        {
+          "key": "cable_length",
+          "state": "missing",
+          "bucket": "optional"
+        }
+      ]
+    },
+    {
+      "key": "surface_materials",
+      "label": "Surface & Materials",
+      "desc": "Material, coating, feet type",
+      "priority": "secondary",
+      "phase": "next",
+      "source_target": "review",
+      "content_target": "article",
+      "search_intent": "Find material, coating, feet type for Razer Viper V3 Pro",
+      "host_class": null,
+      "query_family_mix": null,
+      "reason_active": "5 missing secondary fields",
+      "queries": [],
+      "fields": [
+        {
+          "key": "material",
+          "state": "missing",
+          "bucket": "expected"
+        },
+        {
+          "key": "coating",
+          "state": "missing",
+          "bucket": "expected"
+        },
+        {
+          "key": "feet_type",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "feet_material",
+          "state": "missing",
+          "bucket": "expected"
+        },
+        {
+          "key": "rgb",
+          "state": "missing",
+          "bucket": "expected"
+        }
+      ]
+    },
+    {
+      "key": "software_features",
+      "label": "Software & Features",
+      "desc": "Software, profiles, macros",
+      "priority": "optional",
+      "phase": "hold",
+      "source_target": "review",
+      "content_target": "article",
+      "search_intent": null,
+      "host_class": null,
+      "query_family_mix": null,
+      "reason_active": "5 missing optional fields",
+      "queries": [],
+      "fields": [
+        {
+          "key": "software",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "onboard_memory",
+          "state": "missing",
+          "bucket": "expected"
+        },
+        {
+          "key": "profiles",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "macro_support",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "dpi_presets",
+          "state": "missing",
+          "bucket": "optional"
+        }
+      ]
+    },
+    {
+      "key": "compatibility",
+      "label": "Compatibility",
+      "desc": "OS support, platform compatibility",
+      "priority": "optional",
+      "phase": "hold",
+      "source_target": "review",
+      "content_target": "article",
+      "search_intent": null,
+      "host_class": null,
+      "query_family_mix": null,
+      "reason_active": "2 missing optional fields",
+      "queries": [],
+      "fields": [
+        {
+          "key": "os_compatibility",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "platform",
+          "state": "missing",
+          "bucket": "optional"
+        }
+      ]
+    },
+    {
+      "key": "packaging_warranty",
+      "label": "Packaging & Warranty",
+      "desc": "Box contents, warranty info",
+      "priority": "optional",
+      "phase": "hold",
+      "source_target": "review",
+      "content_target": "article",
+      "search_intent": null,
+      "host_class": null,
+      "query_family_mix": null,
+      "reason_active": "2 missing optional fields",
+      "queries": [],
+      "fields": [
+        {
+          "key": "warranty",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "in_the_box",
+          "state": "missing",
+          "bucket": "optional"
+        }
+      ]
+    },
+    {
+      "key": "identity_core",
+      "label": "Identity Core",
+      "desc": "Brand, model, SKU identification",
+      "priority": "core",
+      "phase": "now",
+      "source_target": "manufacturer",
+      "content_target": "spec_sheet",
+      "search_intent": "Find brand, model, sku identification for Razer Viper V3 Pro",
+      "host_class": "manufacturer",
+      "query_family_mix": "manufacturer_html+review_lookup",
+      "reason_active": "7 missing core fields",
+      "queries": [
+        {
+          "q": "razer viper v3 pro identity core specs",
+          "family": "manufacturer_html"
+        },
+        {
+          "q": "razer viper v3 pro brand",
+          "family": "review_lookup"
+        }
+      ],
+      "fields": [
+        {
+          "key": "brand",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "model",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "sku",
+          "state": "missing",
+          "bucket": "core"
+        },
+        {
+          "key": "upc",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "ean",
+          "state": "missing",
+          "bucket": "optional"
+        },
+        {
+          "key": "release_date",
+          "state": "missing",
+          "bucket": "expected"
+        },
+        {
+          "key": "msrp",
+          "state": "missing",
+          "bucket": "optional"
+        }
+      ]
+    },
+    {
+      "key": "encoder_internals",
+      "label": "Encoder Internals",
+      "desc": "Encoder type and specifications",
+      "priority": "secondary",
+      "phase": "next",
+      "source_target": "review",
+      "content_target": "article",
+      "search_intent": "Find encoder type and specifications for Razer Viper V3 Pro",
+      "host_class": null,
+      "query_family_mix": null,
+      "reason_active": "2 missing secondary fields",
+      "queries": [],
+      "fields": [
+        {
+          "key": "encoder_type",
+          "state": "missing",
+          "bucket": "expected"
+        },
+        {
+          "key": "encoder_resolution",
+          "state": "missing",
+          "bucket": "optional"
+        }
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "field_key": "sensor",
+      "priority_bucket": "secondary",
+      "state": "missing",
+      "bundle_id": "sensor_performance"
+    },
+    {
+      "field_key": "dpi",
+      "priority_bucket": "secondary",
+      "state": "missing",
+      "bundle_id": "sensor_performance"
+    },
+    {
+      "field_key": "max_dpi",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "sensor_performance"
+    },
+    {
+      "field_key": "polling_rate",
+      "priority_bucket": "core",
+      "state": "missing",
+      "bundle_id": "sensor_performance"
+    },
+    {
+      "field_key": "tracking_speed",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "sensor_performance"
+    },
+    {
+      "field_key": "max_tracking_speed",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "sensor_performance"
+    },
+    {
+      "field_key": "ips",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "sensor_performance"
+    },
+    {
+      "field_key": "acceleration",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "sensor_performance"
+    },
+    {
+      "field_key": "lift_off_distance",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "sensor_performance"
+    },
+    {
+      "field_key": "connection",
+      "priority_bucket": "secondary",
+      "state": "missing",
+      "bundle_id": "connectivity"
+    },
+    {
+      "field_key": "wireless_tech",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "connectivity"
+    },
+    {
+      "field_key": "bluetooth",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "connectivity"
+    },
+    {
+      "field_key": "usb_type",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "connectivity"
+    },
+    {
+      "field_key": "dongle_type",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "connectivity"
+    },
+    {
+      "field_key": "weight",
+      "priority_bucket": "secondary",
+      "state": "missing",
+      "bundle_id": "physical_design"
+    },
+    {
+      "field_key": "length",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "physical_design"
+    },
+    {
+      "field_key": "width",
+      "priority_bucket": "secondary",
+      "state": "missing",
+      "bundle_id": "physical_design"
+    },
+    {
+      "field_key": "height",
+      "priority_bucket": "secondary",
+      "state": "missing",
+      "bundle_id": "physical_design"
+    },
+    {
+      "field_key": "shape",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "physical_design"
+    },
+    {
+      "field_key": "grip_style",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "physical_design"
+    },
+    {
+      "field_key": "hand_size",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "physical_design"
+    },
+    {
+      "field_key": "ambidextrous",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "physical_design"
+    },
+    {
+      "field_key": "buttons",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "buttons_switches"
+    },
+    {
+      "field_key": "switch_type",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "buttons_switches"
+    },
+    {
+      "field_key": "switch_lifecycle",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "buttons_switches"
+    },
+    {
+      "field_key": "scroll_wheel",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "buttons_switches"
+    },
+    {
+      "field_key": "scroll_type",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "buttons_switches"
+    },
+    {
+      "field_key": "battery_life",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "battery_power"
+    },
+    {
+      "field_key": "battery_type",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "battery_power"
+    },
+    {
+      "field_key": "charging_type",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "battery_power"
+    },
+    {
+      "field_key": "cable_type",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "battery_power"
+    },
+    {
+      "field_key": "cable_length",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "battery_power"
+    },
+    {
+      "field_key": "material",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "surface_materials"
+    },
+    {
+      "field_key": "coating",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "surface_materials"
+    },
+    {
+      "field_key": "feet_type",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "surface_materials"
+    },
+    {
+      "field_key": "feet_material",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "surface_materials"
+    },
+    {
+      "field_key": "rgb",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "surface_materials"
+    },
+    {
+      "field_key": "software",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "software_features"
+    },
+    {
+      "field_key": "onboard_memory",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "software_features"
+    },
+    {
+      "field_key": "profiles",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "software_features"
+    },
+    {
+      "field_key": "macro_support",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "software_features"
+    },
+    {
+      "field_key": "dpi_presets",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "software_features"
+    },
+    {
+      "field_key": "os_compatibility",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "compatibility"
+    },
+    {
+      "field_key": "platform",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "compatibility"
+    },
+    {
+      "field_key": "warranty",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "packaging_warranty"
+    },
+    {
+      "field_key": "in_the_box",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "packaging_warranty"
+    },
+    {
+      "field_key": "brand",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "identity_core"
+    },
+    {
+      "field_key": "model",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "identity_core"
+    },
+    {
+      "field_key": "sku",
+      "priority_bucket": "core",
+      "state": "missing",
+      "bundle_id": "identity_core"
+    },
+    {
+      "field_key": "upc",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "identity_core"
+    },
+    {
+      "field_key": "ean",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "identity_core"
+    },
+    {
+      "field_key": "release_date",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "identity_core"
+    },
+    {
+      "field_key": "msrp",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "identity_core"
+    },
+    {
+      "field_key": "encoder_type",
+      "priority_bucket": "expected",
+      "state": "missing",
+      "bundle_id": "encoder_internals"
+    },
+    {
+      "field_key": "encoder_resolution",
+      "priority_bucket": "optional",
+      "state": "missing",
+      "bundle_id": "encoder_internals"
+    }
+  ],
+  "deltas": [
+    {
+      "field": "dpi",
+      "from": "missing",
+      "to": "satisfied"
+    },
+    {
+      "field": "sensor",
+      "from": "missing",
+      "to": "weak"
+    },
+    {
+      "field": "weight",
+      "from": "missing",
+      "to": "satisfied"
+    }
+  ],
+  "profile_influence": {
+    "manufacturer_html": 8,
+    "manual_pdf": 2,
+    "support_docs": 3,
+    "review_lookup": 6,
+    "benchmark_lookup": 2,
+    "fallback_web": 1,
+    "targeted_single": 0,
+    "duplicates_suppressed": 4,
+    "focused_bundles": 5,
+    "targeted_exceptions": 1,
+    "total_queries": 22,
+    "trusted_host_share": 11,
+    "docs_manual_share": 2
+  },
+  "summary": {
+    "core_unresolved": 29,
+    "secondary_unresolved": 17,
+    "optional_unresolved": 9,
+    "conflicts": 0,
+    "bundles_planned": 5
+  }
+}

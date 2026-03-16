@@ -1,0 +1,21 @@
+{
+  "query": "Razer Viper V3 Pro connection connectivity dpi height lngth middle_buttons polling_rate sensor sensor_brand side_buttons switch switch_brand weight width manual site:techpowerup.com filetype:pdf",
+  "provider": "google",
+  "result_count": 2,
+  "results": [
+    {
+      "url": "https://techpowerup.com/search?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Atechpowerup.com%20filetype%3Apdf",
+      "title": "techpowerup.com search",
+      "snippet": "planned source search URL",
+      "provider": "plan_fallback",
+      "query": "Razer Viper V3 Pro connection connectivity dpi height lngth middle_buttons polling_rate sensor sensor_brand side_buttons switch switch_brand weight width manual site:techpowerup.com filetype:pdf"
+    },
+    {
+      "url": "https://techpowerup.com/search/?q=Razer%20Viper%20V3%20Pro%20connection%20connectivity%20dpi%20height%20lngth%20middle_buttons%20polling_rate%20sensor%20sensor_brand%20side_buttons%20switch%20switch_brand%20weight%20width%20manual%20site%3Atechpowerup.com%20filetype%3Apdf",
+      "title": "techpowerup.com search",
+      "snippet": "planned source search URL",
+      "provider": "plan_fallback",
+      "query": "Razer Viper V3 Pro connection connectivity dpi height lngth middle_buttons polling_rate sensor sensor_brand side_buttons switch switch_brand weight width manual site:techpowerup.com filetype:pdf"
+    }
+  ]
+}

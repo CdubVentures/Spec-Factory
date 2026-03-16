@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-logitech-g-pro-x-superlight-2-black",
+  "category": "mouse",
+  "identityLock": {
+    "id": 2,
+    "identifier": "6e006659",
+    "brand": "Logitech",
+    "model": "G Pro X Superlight 2",
+    "variant": "Black",
+    "sku": "",
+    "mpn": "",
+    "gtin": ""
+  },
+  "seedUrls": [],
+  "anchors": {}
+}

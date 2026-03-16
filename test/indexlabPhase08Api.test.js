@@ -44,6 +44,7 @@ async function writeJson(filePath, value) {
 test('indexlab phase08 endpoint returns extraction context payload', { timeout: 60_000 }, async (t) => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexlab-phase08-api-'));
   const indexlabRoot = path.join(tempRoot, 'indexlab');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const runId = 'run-phase08-001';
   const category = 'mouse';
   const productId = 'mouse-fnatic-x-lamzu-maya-x-8k';
@@ -139,7 +140,9 @@ test('indexlab phase08 endpoint returns extraction context payload', { timeout: 
       cwd: process.cwd(),
       env: {
         ...process.env,
-        LOCAL_MODE: 'true'
+        LOCAL_MODE: 'true',
+        HELPER_FILES_ROOT: helperRoot,
+        CATEGORY_AUTHORITY_ROOT: helperRoot,
       },
       stdio: ['ignore', 'ignore', 'pipe']
     }

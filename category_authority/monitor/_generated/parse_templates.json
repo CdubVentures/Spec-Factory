@@ -1,0 +1,1100 @@
+{
+  "category": "monitor",
+  "generated_at": "2026-03-16T00:08:03.693Z",
+  "template_library": {
+    "boolean_yes_no_unk": {
+      "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
+      "tests": [
+        {
+          "expected": true,
+          "raw": "Yes"
+        },
+        {
+          "expected": false,
+          "raw": "no"
+        },
+        {
+          "expected": "unk",
+          "raw": "unk"
+        }
+      ]
+    },
+    "component_reference": {
+      "description": "Match a component entity name/alias against a component_db type; output canonical component name.",
+      "tests": [
+        {
+          "expected": "PAW3395",
+          "raw": "PAW 3395"
+        },
+        {
+          "expected": "Kailh GM 8.0",
+          "raw": "Kailh GM 8.0"
+        }
+      ]
+    },
+    "date_field": {
+      "description": "Parse date strings to ISO-8601 (YYYY-MM-DD) when possible.",
+      "tests": [
+        {
+          "expected": "2024-10-01",
+          "raw": "2024-10-01"
+        },
+        {
+          "expected": "2024-10-01",
+          "raw": "Oct 2024"
+        }
+      ]
+    },
+    "list_numbers_or_ranges_with_unit": {
+      "description": "Parse mixed lists containing numbers and ranges (e.g. '1-3, 4'). Canonical output is list of intervals {min,max}.",
+      "tests": [
+        {
+          "expected": [
+            {
+              "max": 4,
+              "min": 4
+            }
+          ],
+          "raw": "4"
+        },
+        {
+          "expected": [
+            {
+              "max": 3,
+              "min": 1
+            }
+          ],
+          "raw": "1-3"
+        },
+        {
+          "expected": [
+            {
+              "max": 3,
+              "min": 1
+            },
+            {
+              "max": 4,
+              "min": 4
+            }
+          ],
+          "raw": "1-3, 4"
+        }
+      ]
+    },
+    "list_of_numbers_with_unit": {
+      "description": "Parse list of numbers with optional unit into list<number> (or list<int>) in target unit.",
+      "tests": [
+        {
+          "expected": [
+            125,
+            500,
+            1000
+          ],
+          "raw": "125, 500, 1000 Hz"
+        },
+        {
+          "expected": [
+            1000
+          ],
+          "raw": "1000"
+        },
+        {
+          "expected": [
+            1000,
+            2000
+          ],
+          "raw": "1k, 2k"
+        }
+      ]
+    },
+    "list_of_tokens_delimited": {
+      "description": "Parse delimited tokens into list<string> with optional token_map normalization.",
+      "tests": [
+        {
+          "expected": [
+            "white",
+            "black"
+          ],
+          "raw": "white, black"
+        },
+        {
+          "expected": [
+            "gray",
+            "black"
+          ],
+          "raw": "gray+black"
+        },
+        {
+          "expected": [
+            "red",
+            "blue"
+          ],
+          "raw": "  Red / Blue  "
+        }
+      ]
+    },
+    "number_with_unit": {
+      "description": "Parse a single number with optional unit. Convert to target unit when allowed.",
+      "tests": [
+        {
+          "expected_mm": 120,
+          "raw": "120 mm"
+        },
+        {
+          "expected_mm": 120,
+          "raw": "12 cm"
+        },
+        {
+          "expected_mm": 114.3,
+          "raw": "4.5 in"
+        }
+      ]
+    },
+    "url_field": {
+      "description": "Parse and validate URL. Normalize by trimming and ensuring scheme.",
+      "tests": [
+        {
+          "expected": "https://example.com/spec",
+          "raw": "https://example.com/spec"
+        },
+        {
+          "expected": "https://example.com/spec",
+          "raw": "example.com/spec"
+        }
+      ]
+    }
+  },
+  "templates": {
+    "adaptive_sync": {
+      "context_keywords": [
+        "adaptive sync",
+        "FreeSync",
+        "G-Sync"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "aspect_ratio": {
+      "context_keywords": [
+        "aspect ratio"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "audio_output": {
+      "context_keywords": [
+        "audio out",
+        "audio output"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "backlight_type": {
+      "context_keywords": [
+        "backlight",
+        "backlight type",
+        "illumination"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "base_model": {
+      "patterns": [],
+      "template": "text_field"
+    },
+    "black_uniformity": {
+      "context_keywords": [
+        "black uniformity"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "%"
+    },
+    "brand": {
+      "patterns": [],
+      "template": "text_field"
+    },
+    "brightness_hdr_peak": {
+      "context_keywords": [
+        "HDR brightness",
+        "HDR peak",
+        "peak brightness"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "nits"
+    },
+    "brightness_sdr": {
+      "context_keywords": [
+        "brightness",
+        "SDR brightness",
+        "typical brightness"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "nits"
+    },
+    "cable_length": {
+      "context_keywords": [
+        "cable length"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "cable_type": {
+      "context_keywords": [
+        "cable type"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "cables_included": {
+      "context_keywords": [
+        "accessories",
+        "cables included",
+        "included cables"
+      ],
+      "patterns": [],
+      "template": "list_of_tokens_delimited"
+    },
+    "category": {
+      "patterns": [],
+      "template": "text_field"
+    },
+    "color": {
+      "context_keywords": [
+        "chassis color"
+      ],
+      "patterns": [],
+      "template": "list_of_tokens_delimited"
+    },
+    "color_accuracy_delta_e": {
+      "context_keywords": [
+        "color accuracy",
+        "dE",
+        "delta E"
+      ],
+      "patterns": [],
+      "template": "integer_field"
+    },
+    "color_gamut_adobe_rgb": {
+      "context_keywords": [
+        "Adobe RGB coverage",
+        "Adobe RGB gamut"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "%"
+    },
+    "color_gamut_dci_p3": {
+      "context_keywords": [
+        "DCI-P3 coverage",
+        "P3 gamut"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "%"
+    },
+    "color_gamut_srgb": {
+      "context_keywords": [
+        "sRGB coverage",
+        "sRGB gamut"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "%"
+    },
+    "contrast_ratio": {
+      "context_keywords": [
+        "contrast",
+        "contrast ratio",
+        "static contrast"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "contrast_ratio_dynamic": {
+      "context_keywords": [
+        "DCR",
+        "dynamic contrast"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "crosshair_overlay": {
+      "context_keywords": [
+        "aim point",
+        "crosshair",
+        "on-screen crosshair"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "curve_radius": {
+      "context_keywords": [
+        "curvature",
+        "curve radius"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "curved": {
+      "context_keywords": [
+        "curved display"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "daisy_chain": {
+      "context_keywords": [
+        "daisy chain",
+        "DP out",
+        "MST"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "depth": {
+      "context_keywords": [
+        "thickness"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "discontinued": {
+      "context_keywords": [
+        "end of life"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "display_stream_compression": {
+      "context_keywords": [
+        "Display Stream Compression",
+        "DSC"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "displayport_ports": {
+      "context_keywords": [
+        "DisplayPort",
+        "DisplayPort ports",
+        "DP"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "displayport_version": {
+      "context_keywords": [
+        "DisplayPort revision",
+        "DisplayPort version",
+        "DP version"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "energy_rating": {
+      "context_keywords": [
+        "energy class",
+        "energy rating",
+        "Energy Star"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "ethernet_rj45": {
+      "context_keywords": [
+        "Ethernet",
+        "LAN port",
+        "RJ45"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "factory_calibrated": {
+      "context_keywords": [
+        "factory calibrated",
+        "pre-calibrated"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "flicker_free": {
+      "context_keywords": [
+        "flicker free",
+        "flicker-free"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "flicker_frequency": {
+      "context_keywords": [
+        "flicker frequency",
+        "image flicker frequency",
+        "PWM frequency"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "Hz"
+    },
+    "frc": {
+      "context_keywords": [
+        "dithering",
+        "frame rate control",
+        "FRC"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "gradient_handling": {
+      "context_keywords": [
+        "color gradient performance",
+        "gradient handling"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "gray_uniformity_50": {
+      "context_keywords": [
+        "50% gray uniformity",
+        "gray uniformity 50%"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "%"
+    },
+    "gtin": {
+      "patterns": [],
+      "template": "text_field"
+    },
+    "hdmi_ports": {
+      "context_keywords": [
+        "HDMI",
+        "HDMI ports"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "hdmi_version": {
+      "context_keywords": [
+        "HDMI revision",
+        "HDMI specification",
+        "HDMI version"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "hdr_support": {
+      "context_keywords": [
+        "HDR",
+        "HDR certification",
+        "HDR support"
+      ],
+      "patterns": [],
+      "template": "list_of_tokens_delimited"
+    },
+    "headphone_jack": {
+      "context_keywords": [
+        "3.5mm",
+        "audio out",
+        "headphone jack"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "height": {
+      "context_keywords": [
+        "display height",
+        "monitor height",
+        "panel height"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "height_adjustment": {
+      "context_keywords": [
+        "height adjustable",
+        "height adjustment"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "height_with_stand": {
+      "context_keywords": [
+        "height with stand"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "horizontal_viewing_angle": {
+      "context_keywords": [
+        "horizontal viewing angle",
+        "viewing angle horizontal"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "deg"
+    },
+    "input_lag": {
+      "context_keywords": [
+        "display lag",
+        "input lag"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "ms"
+    },
+    "input_lag_120hz": {
+      "context_keywords": [
+        "120Hz input lag",
+        "input lag 120Hz"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "ms"
+    },
+    "input_lag_60hz": {
+      "context_keywords": [
+        "60Hz input lag",
+        "input lag 60Hz"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "ms"
+    },
+    "input_lag_max_refresh": {
+      "context_keywords": [
+        "input lag highest refresh",
+        "input lag max refresh"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "ms"
+    },
+    "kvm_switch": {
+      "context_keywords": [
+        "KVM",
+        "KVM switch"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "local_dimming_zones": {
+      "context_keywords": [
+        "dimming zones",
+        "FALD zones",
+        "local dimming"
+      ],
+      "patterns": [],
+      "template": "integer_field"
+    },
+    "low_blue_light": {
+      "context_keywords": [
+        "blue light filter",
+        "eye care",
+        "low blue light"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "macos_compatibility": {
+      "context_keywords": [
+        "Mac compatibility",
+        "macOS compatibility"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "material": {
+      "context_keywords": [
+        "body material"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "max_refresh_rate_displayport": {
+      "context_keywords": [
+        "DisplayPort max refresh rate",
+        "DP max refresh",
+        "max refresh rate displayport"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "Hz"
+    },
+    "max_refresh_rate_hdmi": {
+      "context_keywords": [
+        "HDMI max Hz",
+        "HDMI max refresh rate",
+        "max refresh rate hdmi"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "Hz"
+    },
+    "microphone": {
+      "context_keywords": [
+        "integrated microphone",
+        "mic array",
+        "microphone"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "model": {
+      "patterns": [],
+      "template": "text_field"
+    },
+    "motion_blur_reduction": {
+      "context_keywords": [
+        "backlight strobing",
+        "DyAc",
+        "ELMB",
+        "motion blur reduction"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "mpn": {
+      "patterns": [],
+      "template": "text_field"
+    },
+    "native_colors": {
+      "context_keywords": [
+        "colors",
+        "display colors",
+        "number of colors"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "osd_type": {
+      "context_keywords": [
+        "on screen display",
+        "OSD",
+        "OSD type"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "overdrive": {
+      "context_keywords": [
+        "response time overdrive"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "overshoot_120hz": {
+      "context_keywords": [
+        "inverse ghosting 120Hz",
+        "overshoot 120Hz"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "%"
+    },
+    "overshoot_60hz": {
+      "context_keywords": [
+        "inverse ghosting 60Hz",
+        "overshoot 60Hz"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "%"
+    },
+    "overshoot_max_refresh": {
+      "context_keywords": [
+        "inverse ghosting max refresh",
+        "overshoot max refresh"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "%"
+    },
+    "panel_bit_depth": {
+      "context_keywords": [
+        "bit depth",
+        "color depth",
+        "panel bit depth"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "panel_coating": {
+      "context_keywords": [
+        "panel coating",
+        "screen coating",
+        "surface treatment"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "panel_manufacturer": {
+      "context_keywords": [
+        "panel maker",
+        "panel manufacturer"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "panel_type": {
+      "context_keywords": [
+        "display type",
+        "panel technology",
+        "panel type"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "pip_pbp": {
+      "context_keywords": [
+        "PbP",
+        "picture by picture",
+        "picture in picture",
+        "PiP"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "pivot_rotation": {
+      "context_keywords": [
+        "pivot",
+        "portrait mode",
+        "rotation"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "pixel_density": {
+      "context_keywords": [
+        "pixel density",
+        "pixels per inch",
+        "PPI"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "ppi"
+    },
+    "power_consumption_max": {
+      "context_keywords": [
+        "max power",
+        "maximum power consumption"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "W"
+    },
+    "power_consumption_typical": {
+      "context_keywords": [
+        "power consumption",
+        "typical power"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "W"
+    },
+    "price_range": {
+      "context_keywords": [
+        "MSRP",
+        "price",
+        "retail price"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "ps5_compatibility": {
+      "context_keywords": [
+        "PlayStation 5 support",
+        "PS5 compatibility"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "reflections": {
+      "context_keywords": [
+        "reflection handling",
+        "total reflections"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "%"
+    },
+    "refresh_rate": {
+      "context_keywords": [
+        "max refresh rate",
+        "refresh rate"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "Hz"
+    },
+    "release_date": {
+      "context_keywords": [
+        "launch date",
+        "release date"
+      ],
+      "patterns": [],
+      "template": "date_field"
+    },
+    "resolution": {
+      "context_keywords": [
+        "display resolution",
+        "native resolution"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "response_time_120hz": {
+      "context_keywords": [
+        "120Hz response time",
+        "response time 120Hz"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "ms"
+    },
+    "response_time_60hz": {
+      "context_keywords": [
+        "60Hz response time",
+        "response time 60Hz"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "ms"
+    },
+    "response_time_gtg": {
+      "context_keywords": [
+        "gray to gray",
+        "GtG",
+        "response time"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "ms"
+    },
+    "response_time_mprt": {
+      "context_keywords": [
+        "motion picture response time",
+        "MPRT"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "ms"
+    },
+    "screen_size": {
+      "context_keywords": [
+        "diagonal",
+        "display size",
+        "screen size"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "in"
+    },
+    "sku": {
+      "patterns": [],
+      "template": "text_field"
+    },
+    "speakers": {
+      "context_keywords": [
+        "built-in speakers"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "subpixel_layout": {
+      "context_keywords": [
+        "subpixel layout",
+        "subpixel structure"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "swivel_range": {
+      "context_keywords": [
+        "swivel",
+        "swivel range"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "text_clarity": {
+      "context_keywords": [
+        "desktop text clarity",
+        "text clarity"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "thunderbolt_ports": {
+      "context_keywords": [
+        "Thunderbolt",
+        "Thunderbolt input",
+        "Thunderbolt ports"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "thunderbolt_version": {
+      "context_keywords": [
+        "TB4",
+        "TB5",
+        "Thunderbolt specification",
+        "Thunderbolt version"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "tilt_range": {
+      "context_keywords": [
+        "tilt",
+        "tilt adjustment",
+        "tilt range"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "usb_c_ports": {
+      "context_keywords": [
+        "Thunderbolt",
+        "USB Type-C",
+        "USB-C"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "usb_hub": {
+      "context_keywords": [
+        "USB hub",
+        "USB ports"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "usb_power_delivery_watts": {
+      "context_keywords": [
+        "power delivery",
+        "USB-C charging",
+        "USB-C PD"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "W"
+    },
+    "variable_refresh_rate": {
+      "context_keywords": [
+        "variable refresh rate",
+        "VRR"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "variant": {
+      "patterns": [],
+      "template": "text_field"
+    },
+    "vertical_viewing_angle": {
+      "context_keywords": [
+        "vertical viewing angle",
+        "viewing angle vertical"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "deg"
+    },
+    "vesa_mount": {
+      "context_keywords": [
+        "mount pattern",
+        "VESA",
+        "VESA mount"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "vrr_range": {
+      "context_keywords": [
+        "FreeSync range",
+        "variable refresh rate range",
+        "VRR range"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "wall_mountable": {
+      "context_keywords": [
+        "wall mount",
+        "wall mountable"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "warranty": {
+      "context_keywords": [
+        "guarantee",
+        "warranty",
+        "warranty period"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "webcam": {
+      "context_keywords": [
+        "built-in webcam",
+        "camera",
+        "integrated webcam"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    },
+    "weight_with_stand": {
+      "context_keywords": [
+        "total weight",
+        "weight with stand"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "g"
+    },
+    "weight_without_stand": {
+      "context_keywords": [
+        "panel weight",
+        "weight without stand"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "g"
+    },
+    "wide_color_gamut": {
+      "context_keywords": [
+        "wide color gamut",
+        "wide gamut"
+      ],
+      "patterns": [],
+      "template": "boolean_yes_no_unk"
+    },
+    "width": {
+      "context_keywords": [
+        "display width",
+        "monitor width",
+        "panel width"
+      ],
+      "patterns": [],
+      "template": "number_with_unit",
+      "unit": "mm"
+    },
+    "xbox_series_xs_compatibility": {
+      "context_keywords": [
+        "Xbox compatibility",
+        "Xbox Series S compatibility",
+        "Xbox Series X compatibility"
+      ],
+      "patterns": [],
+      "template": "text_field"
+    }
+  },
+  "version": 1
+}

@@ -309,24 +309,10 @@ export function makeNeedsetComputedEvent(runId, overrides = {}) {
     productId: 'mouse-test-product',
     total_fields: 60,
     needset_size: 25,
-    size: 25,
-    identity_lock_state: {
-      status: 'locked',
-      confidence: 0.95,
-      identity_gate_validated: true,
-      extraction_gate_open: true,
-      family_model_count: 1,
-      ambiguity_level: 'none',
-      publishable: true,
-      publish_blockers: [],
-      reason_codes: [],
-      page_count: 3,
-      max_match_score: 0.98
-    },
-    identity_audit_rows: [],
-    reason_counts: { missing: 15, low_confidence: 8, conflict: 2 },
-    required_level_counts: { identity: 0, critical: 3, required: 12, expected: 8, optional: 2 },
-    needs: [{ field: 'weight', need: 0.85, reason: 'missing' }],
+    identity: { state: 'locked', confidence: 0.95, manufacturer: 'TestBrand', model: 'TestModel' },
+    fields: [{ field_key: 'weight', state: 'missing', need_score: 0.85, required_level: 'required' }],
+    summary: { total: 60, resolved: 35, core_unresolved: 15, secondary_unresolved: 8, optional_unresolved: 2, conflicts: 2 },
+    blockers: { missing: 15, weak: 8, conflict: 2 },
     ...overrides
   };
 }
@@ -368,45 +354,3 @@ export function makeEvidenceIndexEvent(runId, overrides = {}) {
   };
 }
 
-export function makeConvergenceEvents(runId) {
-  return [
-    {
-      event: 'convergence_round_started',
-      runId,
-      ts: new Date().toISOString(),
-      level: 'info',
-      round: 0,
-      mode: 'bootstrap',
-      needset_size: 42,
-      llm_target_field_count: 30,
-      extra_query_count: 0
-    },
-    {
-      event: 'convergence_round_completed',
-      runId,
-      ts: new Date().toISOString(),
-      level: 'info',
-      round: 0,
-      needset_size: 42,
-      missing_required_count: 10,
-      critical_count: 3,
-      confidence: 0.55,
-      validated: false,
-      improved: false,
-      improvement_reasons: [],
-      no_progress_streak: 0,
-      low_quality_rounds: 0
-    },
-    {
-      event: 'convergence_stop',
-      runId,
-      ts: new Date().toISOString(),
-      level: 'info',
-      stop_reason: 'complete',
-      round_count: 1,
-      complete: true,
-      final_confidence: 0.90,
-      final_needset_size: 10
-    }
-  ];
-}

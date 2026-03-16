@@ -7,7 +7,7 @@ import {
   buildRuntimeOpsDocuments,
   buildRuntimeOpsDocumentDetail,
   buildRuntimeOpsMetricsRail,
-} from '../src/api/routes/runtimeOpsDataBuilders.js';
+} from '../src/features/indexing/api/builders/runtimeOpsDataBuilders.js';
 
 function makeMeta(overrides = {}) {
   return {
@@ -71,6 +71,21 @@ test('buildRuntimeOpsSummary: mixed fetch events produce correct counters and er
   assert.ok(result.error_rate < 1);
 });
 
+test('buildRuntimeOpsSummary: fetch_finished status payload emitted by runtime bridge counts as a real fetch result', () => {
+  const events = [
+    makeEvent('fetch_started', { url: 'https://a.com/1' }),
+    makeEvent('fetch_finished', { url: 'https://a.com/1', status: 200 }),
+    makeEvent('fetch_started', { url: 'https://b.com/2' }),
+    makeEvent('fetch_finished', { url: 'https://b.com/2', status: 403 }),
+  ];
+
+  const result = buildRuntimeOpsSummary(events, makeMeta());
+
+  assert.equal(result.total_fetches, 2);
+  assert.ok(result.error_rate > 0);
+  assert.ok(result.error_rate < 1);
+});
+
 test('buildRuntimeOpsSummary: llm_started/finished events increment total_llm_calls', () => {
   const events = [
     makeEvent('llm_started', { batch_id: 'b1' }),
@@ -80,6 +95,38 @@ test('buildRuntimeOpsSummary: llm_started/finished events increment total_llm_ca
   ];
   const result = buildRuntimeOpsSummary(events, makeMeta());
   assert.equal(result.total_llm_calls, 2);
+});
+
+test('buildRuntimeOpsSummary: ignores stage-scope fetch/parse lifecycle markers when counting real work', () => {
+  const events = [
+    makeEvent('fetch_started', { scope: 'stage', trigger: 'run_started' }),
+    makeEvent('fetch_started', { scope: 'url', url: 'https://a.com/1' }),
+    makeEvent('fetch_finished', { scope: 'url', url: 'https://a.com/1', status: 200 }),
+    makeEvent('fetch_finished', { scope: 'stage', reason: 'run_completed' }),
+    makeEvent('parse_started', { scope: 'stage', trigger: 'source_processed' }),
+    makeEvent('parse_finished', { scope: 'url', url: 'https://a.com/1' }),
+    makeEvent('parse_finished', { scope: 'stage', reason: 'run_completed' }),
+  ];
+
+  const result = buildRuntimeOpsSummary(events, makeMeta());
+
+  assert.equal(result.total_fetches, 1);
+  assert.equal(result.total_parses, 1);
+});
+
+test('buildRuntimeOpsSummary: fields_per_min uses indexed field counts when index_finished events are present', () => {
+  const events = [
+    makeEvent('fetch_started', { url: 'https://a.com/1' }, { ts: '2026-02-20T00:01:00.000Z' }),
+    makeEvent('parse_finished', { url: 'https://a.com/1' }, { ts: '2026-02-20T00:02:00.000Z' }),
+    makeEvent('index_finished', { url: 'https://a.com/1', count: 11 }, { ts: '2026-02-20T00:03:00.000Z' }),
+    makeEvent('llm_finished', { batch_id: 'b1', fields_extracted: 2 }, { ts: '2026-02-20T00:04:00.000Z' }),
+  ];
+
+  const result = buildRuntimeOpsSummary(events, makeMeta());
+
+  assert.equal(result.total_parses, 1);
+  assert.ok(result.fields_per_min > 1);
+  assert.ok(result.fields_per_min < 1.2);
 });
 
 test('buildRuntimeOpsWorkers: empty events returns empty array', () => {
@@ -98,6 +145,22 @@ test('buildRuntimeOpsWorkers: paired fetch_started/finished produces idle worker
   const w1 = result.find((r) => r.worker_id === 'w1');
   assert.ok(w1);
   assert.equal(w1.state, 'idle');
+});
+
+test('buildRuntimeOpsWorkers: fetch_finished status payload emitted by runtime bridge does not collapse to HTTP 0', () => {
+  const events = [
+    makeEvent('fetch_started', { url: 'https://a.com/1', worker_id: 'w1' }, { ts: '2026-02-20T00:01:00.000Z' }),
+    makeEvent('fetch_finished', { url: 'https://a.com/1', worker_id: 'w1', status: 200 }, { ts: '2026-02-20T00:01:05.000Z' }),
+    makeEvent('fetch_started', { url: 'https://b.com/2', worker_id: 'w2' }, { ts: '2026-02-20T00:02:00.000Z' }),
+    makeEvent('fetch_finished', { url: 'https://b.com/2', worker_id: 'w2', status: 403 }, { ts: '2026-02-20T00:02:05.000Z' }),
+  ];
+
+  const result = buildRuntimeOpsWorkers(events, {});
+  const okWorker = result.find((row) => row.worker_id === 'w1');
+  const blockedWorker = result.find((row) => row.worker_id === 'w2');
+
+  assert.equal(okWorker?.last_error, null);
+  assert.equal(blockedWorker?.last_error, 'HTTP 403');
 });
 
 test('buildRuntimeOpsWorkers: unmatched fetch_started beyond threshold marks worker stuck', () => {
@@ -146,6 +209,66 @@ test('buildRuntimeOpsDocuments: aggregates fetch+parse events into document rows
   assert.equal(result[1].url, 'https://a.com/page1');
 });
 
+test('buildRuntimeOpsDocuments: fetch_finished status payload emitted by runtime bridge sets document status and code', () => {
+  const events = [
+    makeEvent('fetch_started', { url: 'https://a.com/page1' }, { ts: '2026-02-20T00:01:00.000Z' }),
+    makeEvent('fetch_finished', { url: 'https://a.com/page1', status: 200, bytes: 5000 }, { ts: '2026-02-20T00:01:02.000Z' }),
+  ];
+
+  const result = buildRuntimeOpsDocuments(events, {});
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0].status, 'fetched');
+  assert.equal(result[0].status_code, 200);
+});
+
+test('buildRuntimeOpsDocuments: source_processed backfills parsed document bytes and content hash', () => {
+  const events = [
+    makeEvent('fetch_started', { url: 'https://a.com/page1' }, { ts: '2026-02-20T00:01:00.000Z' }),
+    makeEvent('parse_finished', { url: 'https://a.com/page1' }, { ts: '2026-02-20T00:01:03.000Z' }),
+    makeEvent('source_processed', {
+      url: 'https://a.com/page1',
+      status: 200,
+      bytes: 436975,
+      content_type: 'text/html',
+      content_hash: 'd0d8a9d07ae54ee7db145521bf7b73583e224bed8047c337e9a0ee98d1586bbe',
+      article_extraction_method: 'readability',
+    }, { ts: '2026-02-20T00:01:04.000Z' }),
+  ];
+
+  const result = buildRuntimeOpsDocuments(events, {});
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0].status, 'parsed');
+  assert.equal(result[0].status_code, 200);
+  assert.equal(result[0].bytes, 436975);
+  assert.equal(result[0].content_type, 'text/html');
+  assert.equal(result[0].content_hash, 'd0d8a9d0');
+  assert.equal(result[0].parse_method, 'readability');
+});
+
+test('buildRuntimeOpsDocuments: empty parse_finished payload does not erase parse method already learned from source_processed', () => {
+  const events = [
+    makeEvent('source_processed', {
+      url: 'https://a.com/page1',
+      status: 200,
+      bytes: 436975,
+      content_type: 'text/html',
+      content_hash: 'd0d8a9d07ae54ee7db145521bf7b73583e224bed8047c337e9a0ee98d1586bbe',
+      article_extraction_method: 'readability',
+    }, { ts: '2026-02-20T00:01:04.000Z' }),
+    makeEvent('parse_finished', {
+      url: 'https://a.com/page1',
+      parse_method: '',
+    }, { ts: '2026-02-20T00:01:04.000Z' }),
+  ];
+
+  const result = buildRuntimeOpsDocuments(events, {});
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0].parse_method, 'readability');
+});
+
 test('buildRuntimeOpsDocuments: newest-first ordering', () => {
   const events = [
     makeEvent('fetch_started', { url: 'https://a.com/1' }, { ts: '2026-02-20T00:01:00.000Z' }),
@@ -192,6 +315,61 @@ test('buildRuntimeOpsDocumentDetail: returns full lifecycle timeline for known U
   assert.equal(result.status_code, 200);
   assert.equal(result.bytes, 3000);
   assert.equal(result.evidence_chunks, 3);
+});
+
+test('buildRuntimeOpsDocumentDetail: fetch_finished status payload emitted by runtime bridge populates status_code', () => {
+  const events = [
+    makeEvent('fetch_started', { url: 'https://a.com/page' }, { ts: '2026-02-20T00:01:00.000Z' }),
+    makeEvent('fetch_finished', { url: 'https://a.com/page', status: 200, bytes: 3000 }, { ts: '2026-02-20T00:01:02.000Z' }),
+  ];
+
+  const result = buildRuntimeOpsDocumentDetail(events, 'https://a.com/page');
+
+  assert.ok(result);
+  assert.equal(result.status_code, 200);
+  assert.equal(result.bytes, 3000);
+});
+
+test('buildRuntimeOpsDocumentDetail: source_processed backfills bytes and parse method when fetch_finished is thin', () => {
+  const events = [
+    makeEvent('fetch_started', { url: 'https://a.com/page' }, { ts: '2026-02-20T00:01:00.000Z' }),
+    makeEvent('parse_finished', { url: 'https://a.com/page' }, { ts: '2026-02-20T00:01:03.000Z' }),
+    makeEvent('source_processed', {
+      url: 'https://a.com/page',
+      status: 200,
+      bytes: 39138,
+      content_type: 'text/html',
+      article_extraction_method: 'readability',
+    }, { ts: '2026-02-20T00:01:04.000Z' }),
+  ];
+
+  const result = buildRuntimeOpsDocumentDetail(events, 'https://a.com/page');
+
+  assert.ok(result);
+  assert.equal(result.status_code, 200);
+  assert.equal(result.bytes, 39138);
+  assert.equal(result.parse_method, 'readability');
+});
+
+test('buildRuntimeOpsDocumentDetail: empty parse_finished payload does not erase parse method already learned from source_processed', () => {
+  const events = [
+    makeEvent('source_processed', {
+      url: 'https://a.com/page',
+      status: 200,
+      bytes: 39138,
+      content_type: 'text/html',
+      article_extraction_method: 'readability',
+    }, { ts: '2026-02-20T00:01:04.000Z' }),
+    makeEvent('parse_finished', {
+      url: 'https://a.com/page',
+      parse_method: '',
+    }, { ts: '2026-02-20T00:01:04.000Z' }),
+  ];
+
+  const result = buildRuntimeOpsDocumentDetail(events, 'https://a.com/page');
+
+  assert.ok(result);
+  assert.equal(result.parse_method, 'readability');
 });
 
 test('buildRuntimeOpsMetricsRail: empty events returns baseline shape', () => {
@@ -243,6 +421,21 @@ test('buildRuntimeOpsMetricsRail: failure metrics from fallback events', () => {
   assert.equal(result.failure_metrics.total_fetches, 3);
   assert.equal(result.failure_metrics.fallback_count, 2);
   assert.ok(result.failure_metrics.fallback_rate > 0);
+});
+
+test('buildRuntimeOpsMetricsRail: scheduler fallback events count toward fallback metrics and blocked hosts', () => {
+  const events = [
+    makeEvent('fetch_finished', { url: 'https://blocked.com/1', status_code: 451 }),
+    makeEvent('scheduler_fallback_started', { url: 'https://blocked.com/1', from_mode: 'playwright', to_mode: 'http', attempt: 1 }),
+    makeEvent('fetch_finished', { url: 'https://blocked.com/2', status_code: 403 }),
+    makeEvent('scheduler_fallback_started', { url: 'https://blocked.com/2', from_mode: 'http', to_mode: 'crawlee', attempt: 1 }),
+  ];
+
+  const result = buildRuntimeOpsMetricsRail(events, {});
+
+  assert.equal(result.failure_metrics.total_fetches, 2);
+  assert.equal(result.failure_metrics.fallback_count, 2);
+  assert.equal(result.failure_metrics.blocked_hosts, 1);
 });
 
 test('buildRuntimeOpsWorkers: search_started events produce worker with search pool', () => {
@@ -307,6 +500,31 @@ test('buildRuntimeOpsWorkers: docs_processed increments on fetch_finished', () =
   assert.equal(w.docs_processed, 2);
 });
 
+test('buildRuntimeOpsWorkers: docs_processed counts a completed url once even when parse/index events also arrive', () => {
+  const events = [
+    makeEvent('fetch_started', { url: 'https://a.com/1', worker_id: 'fetch-1' }, { ts: '2026-02-20T00:01:00.000Z' }),
+    makeEvent('fetch_finished', { url: 'https://a.com/1', worker_id: 'fetch-1', status_code: 200 }, { ts: '2026-02-20T00:01:02.000Z' }),
+    makeEvent('source_processed', {
+      url: 'https://a.com/1',
+      worker_id: 'fetch-1',
+      status: 200,
+      content_type: 'text/html',
+    }, { ts: '2026-02-20T00:01:03.000Z' }),
+    makeEvent('index_finished', {
+      url: 'https://a.com/1',
+      worker_id: 'fetch-1',
+      count: 2,
+      filled_fields: ['weight', 'sensor'],
+    }, { ts: '2026-02-20T00:01:04.000Z' }),
+  ];
+
+  const result = buildRuntimeOpsWorkers(events, {});
+  const w = result.find((row) => row.worker_id === 'fetch-1');
+
+  assert.ok(w);
+  assert.equal(w.docs_processed, 1);
+});
+
 test('buildRuntimeOpsWorkers: fields_extracted increments on source_processed candidates', () => {
   const events = [
     makeEvent('fetch_started', { url: 'https://a.com/1', worker_id: 'fetch-1' }, { ts: '2026-02-20T00:01:00.000Z' }),
@@ -323,6 +541,60 @@ test('buildRuntimeOpsWorkers: fields_extracted increments on source_processed ca
   const w = result.find((r) => r.worker_id === 'fetch-1');
   assert.ok(w);
   assert.equal(w.fields_extracted, 2);
+});
+
+test('buildRuntimeOpsWorkers: fields_extracted backfills from index_finished filled_fields when runtime parse events omit inline candidates', () => {
+  const events = [
+    makeEvent('fetch_started', { url: 'https://a.com/1', worker_id: 'fetch-1' }, { ts: '2026-02-20T00:01:00.000Z' }),
+    makeEvent('source_processed', {
+      url: 'https://a.com/1',
+      worker_id: 'fetch-1',
+      status: 200,
+      candidate_count: 650,
+    }, { ts: '2026-02-20T00:01:03.000Z' }),
+    makeEvent('index_finished', {
+      url: 'https://a.com/1',
+      worker_id: 'fetch-1',
+      count: 3,
+      filled_fields: ['weight', 'sensor', 'polling_rate'],
+    }, { ts: '2026-02-20T00:01:04.000Z' }),
+  ];
+
+  const result = buildRuntimeOpsWorkers(events, {});
+  const w = result.find((row) => row.worker_id === 'fetch-1');
+
+  assert.ok(w);
+  assert.equal(w.fields_extracted, 3);
+});
+
+test('buildRuntimeOpsWorkers: source indexing packets backfill extraction-ready field counts for matched fetch workers', () => {
+  const events = [
+    makeEvent('fetch_started', { url: 'https://support.example.com/specs/mouse-pro', worker_id: 'fetch-1' }, { ts: '2026-02-20T00:01:00.000Z' }),
+    makeEvent('source_processed', {
+      url: 'https://support.example.com/specs/mouse-pro',
+      worker_id: 'fetch-1',
+      status: 200,
+      candidate_count: 650,
+    }, { ts: '2026-02-20T00:01:03.000Z' }),
+  ];
+  const sourceIndexingPacketCollection = {
+    packets: [
+      {
+        canonical_url: 'https://support.example.com/specs/mouse-pro',
+        field_key_map: {
+          weight: { contexts: [] },
+          sensor: { contexts: [] },
+          polling_rate: { contexts: [] },
+        },
+      },
+    ],
+  };
+
+  const result = buildRuntimeOpsWorkers(events, { sourceIndexingPacketCollection });
+  const w = result.find((row) => row.worker_id === 'fetch-1');
+
+  assert.ok(w);
+  assert.equal(w.fields_extracted, 3);
 });
 
 test('buildRuntimeOpsSummary: top_blockers populated from error events', () => {

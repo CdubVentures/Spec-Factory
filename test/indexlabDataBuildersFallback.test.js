@@ -8,7 +8,7 @@ import {
   initIndexLabDataBuilders,
   readIndexLabRunNeedSet,
   readIndexLabRunSearchProfile
-} from '../src/api/routes/indexlabDataBuilders.js';
+} from '../src/features/indexing/api/builders/indexlabDataBuilders.js';
 
 function createStorageStub() {
   return {
@@ -73,8 +73,8 @@ test('readIndexLabRunNeedSet: falls back to empty payload when run exists withou
 
     const payload = await readIndexLabRunNeedSet(runId);
     assert.ok(payload && typeof payload === 'object');
-    assert.ok(Array.isArray(payload.needs));
-    assert.equal(payload.needs.length, 0);
+    assert.ok(Array.isArray(payload.fields));
+    assert.equal(payload.fields.length, 0);
     assert.equal(payload.total_fields, 0);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });

@@ -77,7 +77,7 @@ async function createCache(deps) {
     writeFile: deps.writeFile,
     mkdir: deps.mkdir,
     statFile: deps.statFile,
-    helperRoot: 'helper_files',
+    helperRoot: 'category_authority',
   });
 }
 

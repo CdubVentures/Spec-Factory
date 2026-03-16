@@ -1,23 +1,56 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { loadConfig, loadDotEnvFile } from '../src/config.js';
+import { loadConfig } from '../src/config.js';
+import { CONFIG_MANIFEST_DEFAULTS, CONFIG_MANIFEST_KEYS } from '../src/core/config/manifest.js';
 import {
   CONVERGENCE_SETTINGS_KEYS,
   RUNTIME_SETTINGS_KEYS,
   RUNTIME_SETTINGS_ROUTE_GET,
-} from '../src/api/services/settingsContract.js';
+} from '../src/features/settings-authority/settingsContract.js';
 import { SETTINGS_DEFAULTS } from '../src/shared/settingsDefaults.js';
 
 const SECRET_RUNTIME_KEYS = new Set([
-  'bingSearchKey',
-  'googleCseKey',
   'llmPlanApiKey',
   'openaiApiKey',
   'anthropicApiKey',
   'cortexApiKey',
   'eloSupabaseAnonKey',
 ]);
+const NON_CANONICAL_RUNTIME_KEYS = new Set([
+  'localOutputRoot',
+]);
+const CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
+  'fetchConcurrency',
+  'perHostMinDelayMs',
+  'fetchPerHostConcurrencyCap',
+  'discoveryEnabled',
+  'discoveryMaxDiscovered',
+  'identityGatePublishThreshold',
+  'llmExtractMaxSnippetsPerBatch',
+  'llmMaxCallsPerProductTotal',
+  'consensusStrictAcceptanceDomainCount',
+  'consensusPassTargetIdentityStrong',
+  'consensusPassTargetNormal',
+  'fetchSchedulerEnabled',
+  'fetchSchedulerInternalsMapJson',
+  'dynamicFetchRetryBudget',
+  'dynamicFetchRetryBackoffMs',
+  'frontierBlockedDomainThreshold',
+  'serpRerankerWeightMapJson',
+  'pageGotoTimeoutMs',
+  'pageNetworkIdleTimeoutMs',
+  'postLoadWaitMs',
+  'runtimeScreencastEnabled',
+  'runtimeScreencastFps',
+  'runtimeScreencastQuality',
+  'runtimeScreencastMaxWidth',
+  'runtimeScreencastMaxHeight',
+  'userAgent',
+]);
+// WHY: NeedSet scoring knobs (requiredWeightMap, multipliers, identity thresholds)
+// were removed in Phase 12 NeedSet Legacy Removal. No runtime defaults needed.
+const REQUIRED_NEEDSET_RUNTIME_DEFAULT_KEYS = [];
 
 function buildRuntimeConfigKeyMap() {
   const pairs = [
@@ -42,101 +75,255 @@ function readEnvKeysFromFile(filePath) {
   return keys;
 }
 
-function buildConfigKeyToEnvKeyMap() {
-  const text = fs.readFileSync('src/config.js', 'utf8');
-  const map = new Map();
-  for (const row of text.split(/\r?\n/g)) {
-    const keyMatch = row.match(/^\s*([A-Za-z0-9_]+):\s*(.*)$/);
-    if (!keyMatch) continue;
-    const configKey = keyMatch[1];
-    const rhs = keyMatch[2];
-    const envMatch =
-      rhs.match(/parse(?:Int|Float|Bool|Json)Env\(\s*'([A-Z0-9_]+)'/) ||
-      rhs.match(/process\.env\.([A-Z0-9_]+)/) ||
-      rhs.match(/process\.env\[['"]([A-Z0-9_]+)['"]\]/);
-    if (!envMatch) continue;
-    if (!map.has(configKey)) {
-      map.set(configKey, envMatch[1]);
-    }
-  }
-  return map;
+function isSecretEnvKey(key) {
+  return (
+    /(API_KEY|SECRET|TOKEN|ACCESS_KEY_ID|SECRET_ACCESS_KEY|ANON_KEY)$/.test(key)
+    || key === 'BING_SEARCH_KEY'
+  );
 }
+
+const MANUAL_ENV_KEY_MAP = Object.freeze({
+  llmModelTriage: 'LLM_MODEL_TRIAGE',
+  llmModelFast: 'LLM_MODEL_FAST',
+  llmModelReasoning: 'LLM_MODEL_REASONING',
+  llmModelValidate: 'LLM_MODEL_VALIDATE',
+  llmModelWrite: 'LLM_MODEL_WRITE',
+  llmTimeoutMs: 'LLM_TIMEOUT_MS',
+  llmBaseUrl: 'LLM_BASE_URL',
+  openaiApiKey: 'LLM_API_KEY',
+  outputMode: 'OUTPUT_MODE',
+  userAgent: 'USER_AGENT',
+  maxCandidateUrls: 'MAX_CANDIDATE_URLS_PER_PRODUCT',
+  searchProfileCapMapJson: 'SEARCH_PROFILE_CAP_MAP_JSON',
+  serpRerankerWeightMapJson: 'SERP_RERANKER_WEIGHT_MAP_JSON',
+  dynamicFetchPolicyMap: 'DYNAMIC_FETCH_POLICY_MAP_JSON',
+  dynamicFetchPolicyMapJson: 'DYNAMIC_FETCH_POLICY_MAP_JSON',
+  articleExtractorDomainPolicyMapJson: 'ARTICLE_EXTRACTOR_DOMAIN_POLICY_MAP_JSON',
+  retrievalInternalsMapJson: 'RETRIEVAL_INTERNALS_MAP_JSON',
+  evidencePackLimitsMapJson: 'EVIDENCE_PACK_LIMITS_MAP_JSON',
+  parsingConfidenceBaseMapJson: 'PARSING_CONFIDENCE_BASE_MAP_JSON',
+  fetchSchedulerInternalsMapJson: 'FETCH_SCHEDULER_INTERNALS_MAP_JSON',
+  automationQueueStorageEngine: 'AUTOMATION_QUEUE_STORAGE_ENGINE',
+  capturePageScreenshotSelectors: 'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
+  categoryAuthorityRoot: 'HELPER_FILES_ROOT',
+});
 
 function resolveManualEnvKey(configKey) {
-  const manual = Object.freeze({
-    llmModelTriage: 'LLM_MODEL_TRIAGE',
-    llmModelFast: 'LLM_MODEL_FAST',
-    llmModelReasoning: 'LLM_MODEL_REASONING',
-    llmModelValidate: 'LLM_MODEL_VALIDATE',
-    llmModelWrite: 'LLM_MODEL_WRITE',
-    llmTimeoutMs: 'LLM_TIMEOUT_MS',
-    llmBaseUrl: 'LLM_BASE_URL',
-    openaiApiKey: 'LLM_API_KEY',
-    outputMode: 'OUTPUT_MODE',
-    userAgent: 'USER_AGENT',
-    maxCandidateUrls: 'MAX_CANDIDATE_URLS_PER_PRODUCT',
-    searchProfileCapMapJson: 'SEARCH_PROFILE_CAP_MAP_JSON',
-    serpRerankerWeightMapJson: 'SERP_RERANKER_WEIGHT_MAP_JSON',
-    dynamicFetchPolicyMap: 'DYNAMIC_FETCH_POLICY_MAP_JSON',
-    dynamicFetchPolicyMapJson: 'DYNAMIC_FETCH_POLICY_MAP_JSON',
-    articleExtractorDomainPolicyMapJson: 'ARTICLE_EXTRACTOR_DOMAIN_POLICY_MAP_JSON',
-    retrievalInternalsMapJson: 'RETRIEVAL_INTERNALS_MAP_JSON',
-    evidencePackLimitsMapJson: 'EVIDENCE_PACK_LIMITS_MAP_JSON',
-    identityGateThresholdBoundsMapJson: 'IDENTITY_GATE_THRESHOLD_BOUNDS_MAP_JSON',
-    parsingConfidenceBaseMapJson: 'PARSING_CONFIDENCE_BASE_MAP_JSON',
-    fetchSchedulerInternalsMapJson: 'FETCH_SCHEDULER_INTERNALS_MAP_JSON',
-    visualAssetHeroSelectorMapJson: 'VISUAL_ASSET_HERO_SELECTOR_MAP_JSON',
-    automationQueueStorageEngine: 'AUTOMATION_QUEUE_STORAGE_ENGINE',
-    capturePageScreenshotSelectors: 'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
-  });
-  return manual[configKey] || null;
+  return MANUAL_ENV_KEY_MAP[configKey] || null;
 }
 
-test('pipeline defaults are sourced from .env-backed config', () => {
-  loadDotEnvFile('.env');
-  const config = loadConfig();
-  const runtimeConfigKeyMap = buildRuntimeConfigKeyMap();
+function buildKnownConfigEnvKeys() {
+  return [
+    ...new Set([
+      ...Object.keys(CONFIG_MANIFEST_DEFAULTS || {}),
+      ...Object.values(MANUAL_ENV_KEY_MAP),
+    ]),
+  ];
+}
 
-  for (const key of CONVERGENCE_SETTINGS_KEYS) {
-    assert.equal(
-      SETTINGS_DEFAULTS.convergence[key],
-      config[key],
-      `convergence default "${key}" should match config.${key}`,
-    );
+function withUnsetEnv(keys, fn) {
+  const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+  try {
+    for (const key of keys) {
+      delete process.env[key];
+    }
+    return fn();
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
   }
+}
 
-  for (const key of RUNTIME_SETTINGS_KEYS) {
-    if (SECRET_RUNTIME_KEYS.has(key)) continue;
-    const configKey = runtimeConfigKeyMap.get(key) || key;
+test('convergence defaults and canonical runtime defaults are sourced from shared settings defaults', () => {
+  const runtimeConfigKeyMap = buildRuntimeConfigKeyMap();
+  withUnsetEnv(buildKnownConfigEnvKeys(), () => {
+    const config = loadConfig({ runProfile: 'standard' });
+
+    for (const key of CONVERGENCE_SETTINGS_KEYS) {
+      assert.equal(
+        SETTINGS_DEFAULTS.convergence[key],
+        config[key],
+        `convergence default "${key}" should match config.${key}`,
+      );
+    }
+
+    for (const key of CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS) {
+      const configKey = runtimeConfigKeyMap.get(key) || key;
+      assert.equal(
+        Object.hasOwn(config, configKey),
+        true,
+        `runtime default "${key}" should map to config.${configKey}`,
+      );
+      assert.deepEqual(
+        SETTINGS_DEFAULTS.runtime[key],
+        config[configKey],
+        `runtime default "${key}" should match config.${configKey}`,
+      );
+    }
+  });
+});
+
+test('shared runtime defaults are the single default owner when env is not explicit', () => {
+  const runtimeConfigKeyMap = buildRuntimeConfigKeyMap();
+  const canonicalRuntimeKeys = Object.keys(SETTINGS_DEFAULTS.runtime).filter((key) => (
+    !SECRET_RUNTIME_KEYS.has(key)
+    && !NON_CANONICAL_RUNTIME_KEYS.has(key)
+  ));
+
+  withUnsetEnv(buildKnownConfigEnvKeys(), () => {
+    const config = loadConfig({ runProfile: 'standard' });
+
+    for (const key of canonicalRuntimeKeys) {
+      const configKey = runtimeConfigKeyMap.get(key) || key;
+      if (!Object.hasOwn(config, configKey)) continue;
+      assert.deepEqual(
+        config[configKey],
+        SETTINGS_DEFAULTS.runtime[key],
+        `runtime default "${key}" should resolve from settingsDefaults.js via config.${configKey}`,
+      );
+    }
+  });
+});
+
+test('needset runtime scoring knobs were retired in Phase 12 Legacy Removal', () => {
+  // WHY: All NeedSet scoring/weight knobs were removed. This test confirms they stay absent.
+  const runtimeDefaults = SETTINGS_DEFAULTS.runtime || {};
+  const retiredKeys = [
+    'needsetRequiredWeightIdentity',
+    'needsetRequiredWeightCritical',
+    'needsetRequiredWeightRequired',
+    'needsetRequiredWeightExpected',
+    'needsetRequiredWeightOptional',
+    'needsetMissingMultiplier',
+    'needsetTierDeficitMultiplier',
+    'needsetMinRefsDeficitMultiplier',
+    'needsetConflictMultiplier',
+    'needsetIdentityLockThreshold',
+    'needsetIdentityProvisionalThreshold',
+    'needsetDefaultIdentityAuditLimit',
+  ];
+  for (const key of retiredKeys) {
     assert.equal(
-      Object.hasOwn(config, configKey),
-      true,
-      `runtime default "${key}" should map to config.${configKey}`,
-    );
-    assert.deepEqual(
-      SETTINGS_DEFAULTS.runtime[key],
-      config[configKey],
-      `runtime default "${key}" should match config.${configKey}`,
+      Object.hasOwn(runtimeDefaults, key),
+      false,
+      `retired needset knob '${key}' should be absent from runtime defaults`,
     );
   }
 });
 
-test('pipeline runtime/convergence defaults are explicitly declared in .env', () => {
-  const runtimeConfigKeyMap = buildRuntimeConfigKeyMap();
-  const configKeyToEnvKey = buildConfigKeyToEnvKeyMap();
-  const envKeys = readEnvKeysFromFile('.env');
+test('hotfix-sensitive runtime defaults stay aligned across shared defaults and config fallbacks', () => {
+  const rows = [
+    { settingsKey: 'fetchConcurrency', configKey: 'concurrency', envKey: 'CONCURRENCY' },
+    { settingsKey: 'perHostMinDelayMs', configKey: 'perHostMinDelayMs', envKey: 'PER_HOST_MIN_DELAY_MS' },
+    { settingsKey: 'fetchPerHostConcurrencyCap', configKey: 'fetchPerHostConcurrencyCap', envKey: 'FETCH_PER_HOST_CONCURRENCY_CAP' },
+    { settingsKey: 'discoveryEnabled', configKey: 'discoveryEnabled', envKey: 'DISCOVERY_ENABLED' },
+    { settingsKey: 'discoveryMaxDiscovered', configKey: 'discoveryMaxDiscovered', envKey: 'DISCOVERY_MAX_DISCOVERED' },
+    { settingsKey: 'identityGatePublishThreshold', configKey: 'identityGatePublishThreshold', envKey: 'IDENTITY_GATE_PUBLISH_THRESHOLD' },
+    { settingsKey: 'serpTriageMinScore', configKey: 'serpTriageMinScore', envKey: 'SERP_TRIAGE_MIN_SCORE' },
+    { settingsKey: 'serpTriageMaxUrls', configKey: 'serpTriageMaxUrls', envKey: 'SERP_TRIAGE_MAX_URLS' },
+    { settingsKey: 'serpRerankerWeightMapJson', configKey: 'serpRerankerWeightMapJson', envKey: 'SERP_RERANKER_WEIGHT_MAP_JSON' },
+    { settingsKey: 'llmExtractMaxSnippetsPerBatch', configKey: 'llmExtractMaxSnippetsPerBatch', envKey: 'LLM_EXTRACT_MAX_SNIPPETS_PER_BATCH' },
+    { settingsKey: 'llmMaxCallsPerProductTotal', configKey: 'llmMaxCallsPerProductTotal', envKey: 'LLM_MAX_CALLS_PER_PRODUCT_TOTAL' },
+    { settingsKey: 'consensusStrictAcceptanceDomainCount', configKey: 'consensusStrictAcceptanceDomainCount', envKey: 'CONSENSUS_STRICT_ACCEPTANCE_DOMAIN_COUNT' },
+    { settingsKey: 'consensusPassTargetIdentityStrong', configKey: 'consensusPassTargetIdentityStrong', envKey: 'CONSENSUS_PASS_TARGET_IDENTITY_STRONG' },
+    { settingsKey: 'consensusPassTargetNormal', configKey: 'consensusPassTargetNormal', envKey: 'CONSENSUS_PASS_TARGET_NORMAL' },
+    { settingsKey: 'fetchSchedulerEnabled', configKey: 'fetchSchedulerEnabled', envKey: 'FETCH_SCHEDULER_ENABLED' },
+    { settingsKey: 'fetchSchedulerInternalsMapJson', configKey: 'fetchSchedulerInternalsMapJson', envKey: 'FETCH_SCHEDULER_INTERNALS_MAP_JSON' },
+    { settingsKey: 'dynamicFetchRetryBudget', configKey: 'dynamicFetchRetryBudget', envKey: 'DYNAMIC_FETCH_RETRY_BUDGET' },
+    { settingsKey: 'dynamicFetchRetryBackoffMs', configKey: 'dynamicFetchRetryBackoffMs', envKey: 'DYNAMIC_FETCH_RETRY_BACKOFF_MS' },
+    { settingsKey: 'frontierBlockedDomainThreshold', configKey: 'frontierBlockedDomainThreshold', envKey: 'FRONTIER_BLOCKED_DOMAIN_THRESHOLD' },
+    { settingsKey: 'pageGotoTimeoutMs', configKey: 'pageGotoTimeoutMs', envKey: 'PAGE_GOTO_TIMEOUT_MS' },
+    { settingsKey: 'postLoadWaitMs', configKey: 'postLoadWaitMs', envKey: 'POST_LOAD_WAIT_MS' },
+    { settingsKey: 'userAgent', configKey: 'userAgent', envKey: 'USER_AGENT' },
+  ];
 
-  for (const key of CONVERGENCE_SETTINGS_KEYS) {
-    const envKey = configKeyToEnvKey.get(key) || resolveManualEnvKey(key);
-    assert.equal(envKey !== null, true, `convergence key "${key}" should resolve to an env variable`);
-    assert.equal(envKeys.has(envKey), true, `convergence key "${key}" should be declared in .env via ${envKey}`);
+  const getSharedDefault = (settingsKey) =>
+    SETTINGS_DEFAULTS.runtime?.[settingsKey] ?? SETTINGS_DEFAULTS.convergence?.[settingsKey];
+
+  withUnsetEnv(rows.map(({ envKey }) => envKey), () => {
+    const config = loadConfig({ runProfile: 'standard' });
+
+    for (const { settingsKey, configKey } of rows) {
+      const sharedDefault = getSharedDefault(settingsKey);
+      assert.notEqual(sharedDefault, undefined, `shared defaults should define ${settingsKey}`);
+      assert.equal(
+        config[configKey],
+        sharedDefault,
+        `config fallback ${configKey} should match shared default ${settingsKey}`,
+      );
+    }
+  });
+});
+
+test('retired bing endpoint stays removed from settings defaults and config', () => {
+  const config = loadConfig({ runProfile: 'standard' });
+  assert.equal(Object.hasOwn(SETTINGS_DEFAULTS.runtime, 'bingSearchEndpoint'), false);
+  assert.equal(Object.hasOwn(config, 'bingSearchEndpoint'), false);
+});
+
+test('.env files are secret-only', () => {
+  for (const filePath of ['.env', '.env.example']) {
+    const envKeys = readEnvKeysFromFile(filePath);
+    for (const envKey of envKeys) {
+      assert.equal(
+        isSecretEnvKey(envKey),
+        true,
+        `${filePath} should only declare secret env keys, found ${envKey}`,
+      );
+    }
+  }
+});
+
+test('retired CSE/paid search knobs are removed from config/default/manifest surfaces', () => {
+  const config = loadConfig({ runProfile: 'standard' });
+  const manifestKeys = new Set(CONFIG_MANIFEST_KEYS || []);
+  const runtimeDefaults = SETTINGS_DEFAULTS.runtime || {};
+
+  const retiredConfigKeys = [
+    'bingSearchKey',
+    'googleCseKey',
+    'googleCseCx',
+    'disableGoogleCse',
+    'cseRescueOnlyMode',
+    'cseRescueRequiredIteration',
+  ];
+  for (const key of retiredConfigKeys) {
+    assert.equal(Object.hasOwn(config, key), false, `config should not expose retired key ${key}`);
+    assert.equal(Object.hasOwn(runtimeDefaults, key), false, `settings defaults should not include retired key ${key}`);
   }
 
-  for (const key of RUNTIME_SETTINGS_KEYS) {
-    if (SECRET_RUNTIME_KEYS.has(key)) continue;
-    const configKey = runtimeConfigKeyMap.get(key) || key;
-    const envKey = configKeyToEnvKey.get(configKey) || resolveManualEnvKey(configKey);
-    assert.equal(envKey !== null, true, `runtime key "${key}" should resolve to an env variable`);
-    assert.equal(envKeys.has(envKey), true, `runtime key "${key}" should be declared in .env via ${envKey}`);
+  const retiredManifestEnvKeys = [
+    'BING_SEARCH_KEY',
+    'GOOGLE_CSE_KEY',
+    'GOOGLE_CSE_CX',
+    'DISABLE_GOOGLE_CSE',
+    'CSE_RESCUE_ONLY_MODE',
+    'CSE_RESCUE_REQUIRED_ITERATION',
+  ];
+  for (const envKey of retiredManifestEnvKeys) {
+    assert.equal(manifestKeys.has(envKey), false, `manifest should not expose retired env ${envKey}`);
+  }
+});
+
+test('repo env files remove retired Google CSE declarations', () => {
+  const retiredEnvKeys = [
+    'GOOGLE_CSE_KEY',
+    'GOOGLE_CSE_CX',
+    'DISABLE_GOOGLE_CSE',
+    'CSE_RESCUE_ONLY_MODE',
+    'CSE_RESCUE_REQUIRED_ITERATION',
+  ];
+
+  for (const filePath of ['.env', '.env.example']) {
+    const envKeys = readEnvKeysFromFile(filePath);
+    for (const envKey of retiredEnvKeys) {
+      assert.equal(
+        envKeys.has(envKey),
+        false,
+        `${filePath} should not declare retired env ${envKey}`,
+      );
+    }
   }
 });

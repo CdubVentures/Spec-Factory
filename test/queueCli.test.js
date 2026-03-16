@@ -3,20 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
-const execFileAsync = promisify(execFile);
-const cliPath = path.resolve('src/cli/spec.js');
-
-async function runCli(args, { cwd } = {}) {
-  const { stdout } = await execFileAsync(
-    process.execPath,
-    [cliPath, ...args],
-    { cwd: cwd || process.cwd(), env: process.env }
-  );
-  return JSON.parse(stdout);
-}
+import { runCliJson as runCli } from '../tests/support/cliJsonHarness.js';
 
 function baseCliArgs({ inputRoot, outputRoot, importsRoot }) {
   return [

@@ -11,7 +11,7 @@ test('seed consumer gate disables component link creation when component.type is
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'seed-consumer-gate-'));
   const category = 'mouse';
   const config = {
-    helperFilesRoot: path.join(tempRoot, 'helper_files'),
+    categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
     localOutputRoot: path.join(tempRoot, 'out')
   };
   const dbPath = path.join(tempRoot, 'spec.db');

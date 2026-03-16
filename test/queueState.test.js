@@ -204,7 +204,7 @@ test('loadQueueState recovers from corrupt queue state json and allows rewrite o
 test('syncQueueFromInputs applies identity gate and skips conflicting variant files', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-queue-gate-'));
   const storage = makeStorage(tempRoot);
-  const helperRoot = path.join(tempRoot, 'helper_files');
+  const helperRoot = path.join(tempRoot, 'category_authority');
   const category = 'mouse';
 
   try {
@@ -245,7 +245,7 @@ test('syncQueueFromInputs applies identity gate and skips conflicting variant fi
     const sync = await syncQueueFromInputs({
       storage,
       category,
-      config: { helperFilesRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot }
     });
 
     assert.equal(sync.added, 1);

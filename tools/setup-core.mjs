@@ -293,7 +293,7 @@ export async function getCommandOutput(command, args = [], options = {}) {
 }
 
 export function searxLikelyNeeded(envVars) {
-  const provider = String(envVars.SEARCH_PROVIDER || 'none').trim().toLowerCase();
+  const provider = String(envVars.SEARCH_PROVIDER || 'dual').trim().toLowerCase();
   if (provider === 'searxng') {
     return true;
   }
