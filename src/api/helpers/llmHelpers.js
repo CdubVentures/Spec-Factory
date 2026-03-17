@@ -1,5 +1,6 @@
 import { normalizeModelToken, toInt, toFloat, hasKnownValue, parseCsvTokens } from './valueNormalizers.js';
 
+// TODO: consolidate with routeResolver.js — registry should be sole provider authority
 export function llmProviderFromModel(model) {
   const token = normalizeModelToken(model);
   if (!token) return 'openai';
@@ -41,7 +42,7 @@ export function resolveLlmRoleDefaults(cfg = {}) {
   return {
     plan: String(cfg.llmModelPlan || '').trim(),
     fast: String(cfg.llmModelFast || '').trim(),
-    triage: String(cfg.llmModelTriage || cfg.cortexModelRerankFast || cfg.cortexModelSearchFast || cfg.llmModelFast || '').trim(),
+    triage: String(cfg.llmModelTriage || cfg.llmModelFast || '').trim(),
     reasoning: String(cfg.llmModelReasoning || '').trim(),
     extract: String(cfg.llmModelExtract || '').trim(),
     validate: String(cfg.llmModelValidate || '').trim(),
@@ -207,12 +208,6 @@ export function collectLlmModels(cfg = {}) {
     cfg.llmModelReasoning,
     cfg.llmModelValidate,
     cfg.llmModelWrite,
-    cfg.cortexModelFast,
-    cfg.cortexModelSearchFast,
-    cfg.cortexModelRerankFast,
-    cfg.cortexModelSearchDeep,
-    cfg.cortexModelReasoningDeep,
-    cfg.cortexModelVision,
     cfg.llmPlanFallbackModel,
     cfg.llmExtractFallbackModel,
     cfg.llmValidateFallbackModel,

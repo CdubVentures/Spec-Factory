@@ -63,19 +63,11 @@ export function formatContextTokens(tokens: number): string {
   return String(tokens);
 }
 
-const ROLE_PREFIX: Record<string, string> = {
-  primary: '[Primary]',
-  fast: '[Fast]',
-  reasoning: '[Reasoning]',
-  embedding: '[Embedding]',
-};
-
 function buildEnrichedLabel(
   providerName: string,
   modelId: string,
   costInputPer1M: number,
   maxContextTokens: number | null,
-  role?: string,
 ): string {
   const base = providerName ? `${providerName} / ${modelId}` : modelId;
   const parts: string[] = [];
@@ -87,21 +79,31 @@ function buildEnrichedLabel(
     parts.push(`$${formatted} in`);
   }
   const suffix = parts.length > 0 ? ` (${parts.join(', ')})` : '';
-  const prefix = role && ROLE_PREFIX[role] ? `${ROLE_PREFIX[role]} ` : '';
-  return `${prefix}${base}${suffix}`;
+  return `${base}${suffix}`;
 }
 
 export function buildModelDropdownOptions(
   flatModelOptions: readonly string[],
   registry: LlmProviderEntry[],
   roleFilter?: LlmModelRole | LlmModelRole[],
+  apiKeyFilter?: (provider: LlmProviderEntry) => boolean,
 ): DropdownModelOption[] {
   const result: DropdownModelOption[] = [];
   const registryModelIds = new Set<string>();
 
+  // WHY: Track ALL models from ALL registry providers (regardless of enabled/filter status)
+  // so filtered-out registry models cannot leak back as flat options.
+  const registryKnownModelIds = new Set<string>();
+  for (const provider of registry) {
+    for (const model of provider.models) {
+      registryKnownModelIds.add(model.modelId);
+    }
+  }
+
   // 1. Collect enabled registry models matching role filter
   for (const provider of registry) {
     if (!provider.enabled) continue;
+    if (apiKeyFilter && !apiKeyFilter(provider)) continue;
     for (const model of provider.models) {
       if (roleFilter) {
         const roles = Array.isArray(roleFilter) ? roleFilter : [roleFilter];
@@ -109,7 +111,7 @@ export function buildModelDropdownOptions(
       }
       result.push({
         value: model.modelId,
-        label: buildEnrichedLabel(provider.name, model.modelId, model.costInputPer1M, model.maxContextTokens, model.role),
+        label: buildEnrichedLabel(provider.name, model.modelId, model.costInputPer1M, model.maxContextTokens),
         providerId: provider.id,
         role: model.role,
         costInputPer1M: model.costInputPer1M,
@@ -119,18 +121,31 @@ export function buildModelDropdownOptions(
     }
   }
 
-  // 2. Append flat options not already covered by registry (registry version wins)
-  for (const modelId of flatModelOptions) {
-    if (registryModelIds.has(modelId)) continue;
-    result.push({
-      value: modelId,
-      label: modelId,
-      providerId: null,
-    });
+  // 2. Append flat options not already covered by registry (registry version wins).
+  //    When a role filter is active, skip unregistered flat options — they have no
+  //    role metadata, so we cannot verify they belong in this dropdown.
+  if (!roleFilter) {
+    for (const modelId of flatModelOptions) {
+      if (registryKnownModelIds.has(modelId)) continue;
+      result.push({
+        value: modelId,
+        label: modelId,
+        providerId: null,
+      });
+    }
   }
 
   // 3. Sort using 3-tier comparator (stable sort preserves insertion order for equal keys)
   result.sort(compareModelsByRoleTokensCost);
 
   return result;
+}
+
+export function ensureValueInOptions(
+  options: readonly DropdownModelOption[],
+  value: string,
+): DropdownModelOption | null {
+  if (!value) return null;
+  if (options.some((o) => o.value === value)) return null;
+  return { value, label: `${value} (not available)`, providerId: null };
 }

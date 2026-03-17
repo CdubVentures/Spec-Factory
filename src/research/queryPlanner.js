@@ -121,7 +121,7 @@ export async function planUberQueries({
       config,
       reason: 'uber_query_planner',
       role: 'plan',
-      modelOverride: String(config.cortexModelSearchFast || config.llmModelFast || config.llmModelPlan || '').trim(),
+      modelOverride: String(config.llmModelFast || config.llmModelPlan || '').trim(),
       system: [
         'You are a search planner for evidence-first hardware specification extraction.',
         'Return strict JSON only.',

@@ -160,7 +160,7 @@ export function CompoundTab({ category, runs, isRunning }: CompoundTabProps) {
       {activeSubTab === 'queries' && <QueryIndexSubTab data={querySummary} />}
       {activeSubTab === 'urls' && <UrlIndexSubTab urlData={urlSummary} hostData={hostHealth} />}
       {activeSubTab === 'plan-diff' && <PlanDiffSubTab runs={runs} category={category} />}
-      {activeSubTab === 'knobs' && <KnobTelemetrySubTab data={knobSnapshots} />}
+      {activeSubTab === 'knobs' && <KnobTelemetrySubTab data={knobSnapshots} category={category} />}
     </div>
   );
 }

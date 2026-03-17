@@ -8,7 +8,10 @@ const { RUNTIME_SETTINGS_ROUTE_PUT } = await import(
   '../src/features/settings-authority/runtimeSettingsRoutePut.js'
 );
 
-const PROVIDER_OVERRIDE_KEYS = [
+// WHY: Per-role extract/validate/write provider overrides were retired in model
+// stack simplification. All roles alias to llmModelPlan — per-role provider
+// routing is no longer exposed. Plan provider keys remain (global provider route).
+const RETIRED_PROVIDER_OVERRIDE_KEYS = [
   'llmExtractProvider',
   'llmExtractBaseUrl',
   'llmExtractApiKey',
@@ -20,81 +23,71 @@ const PROVIDER_OVERRIDE_KEYS = [
   'llmWriteApiKey',
 ];
 
-test('all 9 per-role provider override keys exist in SETTINGS_DEFAULTS.runtime', () => {
-  for (const key of PROVIDER_OVERRIDE_KEYS) {
+test('retired per-role provider override keys still have defaults (backward compat hydration)', () => {
+  for (const key of RETIRED_PROVIDER_OVERRIDE_KEYS) {
     assert.ok(
       Object.hasOwn(SETTINGS_DEFAULTS.runtime, key),
-      `Missing default: ${key}`,
+      `Default should still exist for backward compat: ${key}`,
     );
     assert.equal(
       SETTINGS_DEFAULTS.runtime[key],
       '',
-      `Default for ${key} should be empty string (fall-through to global)`,
+      `Default for ${key} should be empty string`,
     );
   }
 });
 
-test('all 9 per-role provider override keys are in GET stringMap', () => {
-  for (const key of PROVIDER_OVERRIDE_KEYS) {
+test('retired per-role provider override keys are still in GET stringMap (backward compat read)', () => {
+  for (const key of RETIRED_PROVIDER_OVERRIDE_KEYS) {
     assert.ok(
       Object.hasOwn(RUNTIME_SETTINGS_ROUTE_GET.stringMap, key),
-      `Missing from GET stringMap: ${key}`,
-    );
-    assert.equal(
-      RUNTIME_SETTINGS_ROUTE_GET.stringMap[key],
-      key,
-      `GET stringMap value mismatch for ${key}`,
+      `GET stringMap should still include ${key} for backward compat`,
     );
   }
 });
 
-test('all 9 per-role provider override keys are in PUT stringFreeMap', () => {
-  for (const key of PROVIDER_OVERRIDE_KEYS) {
+test('retired per-role provider override keys are NOT in PUT stringFreeMap', () => {
+  for (const key of RETIRED_PROVIDER_OVERRIDE_KEYS) {
+    assert.ok(
+      !Object.hasOwn(RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap, key),
+      `PUT stringFreeMap should not include retired key ${key}`,
+    );
+  }
+});
+
+test('PUT contract includes fallback model keys and parsingConfidenceBaseMapJson', () => {
+  const requiredKeys = [
+    'llmPlanFallbackModel',
+    'llmReasoningFallbackModel',
+    'parsingConfidenceBaseMapJson',
+  ];
+  for (const key of requiredKeys) {
     assert.ok(
       Object.hasOwn(RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap, key),
-      `Missing from PUT stringFreeMap: ${key}`,
-    );
-    assert.equal(
-      RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap[key],
-      key,
-      `PUT stringFreeMap value mismatch for ${key}`,
+      `PUT stringFreeMap must include ${key}`,
     );
   }
 });
 
-test('normalizeProvider accepts cortex as a valid provider', async () => {
-  // Import routing internals via the public resolveLlmRoute
-  const { resolveLlmRoute } = await import(
-    '../src/core/llm/client/routing.js'
-  );
-
-  const config = {
-    llmProvider: 'cortex',
-    llmBaseUrl: 'http://localhost:5001/v1',
-    openaiApiKey: 'cortex-key',
-    llmModelExtract: 'gpt-5-low',
-    cortexBaseUrl: 'http://localhost:5001/v1',
-    cortexApiKey: 'cortex-key',
-  };
-
-  const route = resolveLlmRoute(config, { reason: 'extract' });
-  assert.equal(route.provider, 'cortex', 'cortex should be a recognized provider');
+test('PUT contract does not include retired per-role model keys', () => {
+  const retiredModelKeys = [
+    'llmModelTriage',
+    'llmModelFast',
+    'llmModelExtract',
+    'llmModelValidate',
+    'llmModelWrite',
+  ];
+  for (const key of retiredModelKeys) {
+    assert.ok(
+      !Object.hasOwn(RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap, key),
+      `PUT stringFreeMap should not include retired key ${key}`,
+    );
+  }
 });
 
-test('cortex provider resolves baseUrl and apiKey from cortex config keys', async () => {
-  const { resolveLlmRoute } = await import(
-    '../src/core/llm/client/routing.js'
+test('PUT contract does not include llmTriageUseReasoning', () => {
+  assert.ok(
+    !Object.hasOwn(RUNTIME_SETTINGS_ROUTE_PUT.boolMap, 'llmTriageUseReasoning'),
+    'PUT boolMap should not include retired llmTriageUseReasoning',
   );
-
-  const config = {
-    llmProvider: 'cortex',
-    llmModelExtract: 'gpt-5-low',
-    cortexBaseUrl: 'http://localhost:5001/v1',
-    cortexApiKey: 'my-cortex-key',
-  };
-
-  const route = resolveLlmRoute(config, { reason: 'extract' });
-  assert.equal(route.provider, 'cortex');
-  assert.equal(route.baseUrl, 'http://localhost:5001/v1');
-  assert.equal(route.apiKey, 'my-cortex-key');
 });

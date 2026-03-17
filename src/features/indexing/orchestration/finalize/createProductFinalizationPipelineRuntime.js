@@ -47,7 +47,6 @@ export function createProductFinalizationPipelineRuntime({
         curationSuggestionResult: finalizationDerivation.curationSuggestionResult,
         contribution: finalizationDerivation.contribution,
         llmBudgetBlockedReason: finalizationDerivation.llmBudgetBlockedReason,
-        cortexSidecar: finalizationDerivation.cortexSidecar,
         aggressiveExtraction: finalizationDerivation.aggressiveExtraction,
         manufacturerSources: finalizationDerivation.manufacturerSources,
         manufacturerMajorConflicts: finalizationDerivation.manufacturerMajorConflicts,

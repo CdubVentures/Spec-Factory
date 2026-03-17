@@ -38,17 +38,24 @@ const noopStorage: StateStorage = {
   removeItem: (_name) => {},
 };
 
-function getSessionStorage() {
-  if (typeof window === 'undefined' || !window.sessionStorage) {
+function getLocalStorage() {
+  if (typeof window === 'undefined' || !window.localStorage) {
     return noopStorage;
   }
-  return window.sessionStorage;
+  return window.localStorage;
 }
 
-function readSessionStorageItem(name: string) {
-  if (typeof window === 'undefined' || !window.sessionStorage) return null;
+function readStorageItem(name: string) {
+  if (typeof window === 'undefined') return null;
   try {
-    return window.sessionStorage.getItem(name);
+    const local = window.localStorage?.getItem(name) ?? null;
+    if (local) return local;
+    const session = window.sessionStorage?.getItem(name) ?? null;
+    if (session) {
+      window.localStorage?.setItem(name, session);
+      window.sessionStorage?.removeItem(name);
+    }
+    return session;
   } catch {
     return null;
   }
@@ -62,7 +69,7 @@ function loadInitialPickerState(): PersistedPickerState {
     pickerRunId: '',
   };
   try {
-    const raw = readSessionStorageItem(STORAGE_KEY);
+    const raw = readStorageItem(STORAGE_KEY);
     if (!raw) return defaults;
     const parsed = JSON.parse(raw);
     const values = parsed?.state;
@@ -78,7 +85,7 @@ function loadInitialPickerState(): PersistedPickerState {
 }
 
 const initialPickerState = loadInitialPickerState();
-const storage = createJSONStorage(() => getSessionStorage());
+const storage = createJSONStorage(() => getLocalStorage());
 
 export const useIndexLabStore = create<IndexLabState>()(
   persist(

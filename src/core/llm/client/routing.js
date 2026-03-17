@@ -1,4 +1,5 @@
 import { callOpenAI } from './openaiClient.js';
+import { resolveModelFromRegistry } from '../routeResolver.js';
 
 const ROLE_KEYS = {
   plan: {
@@ -79,12 +80,13 @@ function routeRoleFromReason(reason = '') {
 
 function normalizeProvider(value) {
   const token = normalized(value).toLowerCase();
-  if (token === 'openai' || token === 'deepseek' || token === 'gemini' || token === 'cortex') {
+  if (token === 'openai' || token === 'deepseek' || token === 'gemini') {
     return token;
   }
   return '';
 }
 
+// TODO: consolidate with routeResolver.js — registry should be sole provider authority
 function providerFromModel(value) {
   const token = normalized(value).toLowerCase();
   if (!token) {
@@ -143,9 +145,6 @@ function providerDefaults(config = {}, provider = '', role = 'extract') {
   } else if (wanted === 'deepseek') {
     baseCandidates.push('https://api.deepseek.com');
     keyCandidates.push(process.env.DEEPSEEK_API_KEY || '');
-  } else if (wanted === 'cortex') {
-    baseCandidates.push(config.cortexBaseUrl);
-    keyCandidates.push(config.cortexApiKey);
   } else {
     baseCandidates.push('https://api.openai.com');
     keyCandidates.push(process.env.OPENAI_API_KEY || '');
@@ -163,13 +162,6 @@ function providerDefaults(config = {}, provider = '', role = 'extract') {
 function alignRouteToModelProvider(config = {}, route = {}) {
   const next = { ...route };
   const currentProvider = normalizeProvider(next.provider);
-  // WHY: cortex is a proxy layer — model-name inference does not apply
-  if (currentProvider === 'cortex') {
-    const defaults = providerDefaults(config, 'cortex', next.role);
-    if (!next.baseUrl && defaults.baseUrl) next.baseUrl = defaults.baseUrl;
-    if (!next.apiKey && defaults.apiKey) next.apiKey = defaults.apiKey;
-    return next;
-  }
   const inferredProvider = providerFromModel(next.model);
   if (!inferredProvider) {
     return next;
@@ -202,10 +194,26 @@ function roleKeySet(role) {
 
 function baseRouteForRole(config = {}, role = 'extract') {
   const keys = roleKeySet(role);
+  const modelKey = normalized(config[keys.model] || config.llmModelExtract || '');
+
+  // Registry-first: composite or bare key
+  const resolved = resolveModelFromRegistry(config._registryLookup, modelKey);
+  if (resolved) {
+    return {
+      role,
+      provider: resolved.providerType,
+      model: resolved.modelId,
+      baseUrl: resolved.baseUrl,
+      apiKey: resolved.apiKey || normalized(config[keys.apiKey] || config.llmApiKey || config.openaiApiKey || ''),
+      _registryEntry: resolved,
+    };
+  }
+
+  // Flat-key fallback
   return {
     role,
     provider: normalizeProvider(config[keys.provider] || config.llmProvider || ''),
-    model: normalized(config[keys.model] || config.llmModelExtract || ''),
+    model: modelKey,
     baseUrl: normalized(config[keys.baseUrl] || config.llmBaseUrl || config.openaiBaseUrl || ''),
     apiKey: normalized(config[keys.apiKey] || config.llmApiKey || config.openaiApiKey || '')
   };
@@ -217,12 +225,36 @@ function fallbackRouteForRole(config = {}, role = 'extract') {
   if (!model) {
     return null;
   }
+
+  // Registry-first for fallback model too
+  const resolved = resolveModelFromRegistry(config._registryLookup, model);
+  if (resolved) {
+    return {
+      role,
+      provider: resolved.providerType,
+      model: resolved.modelId,
+      baseUrl: resolved.baseUrl,
+      apiKey: resolved.apiKey || normalized(config[keys.fallbackApiKey] || config[keys.apiKey] || config.llmApiKey || config.openaiApiKey || ''),
+      _registryEntry: resolved,
+    };
+  }
+
   return {
     role,
     provider: normalizeProvider(config[keys.fallbackProvider] || config[keys.provider] || config.llmProvider || ''),
     model,
     baseUrl: normalized(config[keys.fallbackBaseUrl] || config[keys.baseUrl] || config.llmBaseUrl || config.openaiBaseUrl || ''),
     apiKey: normalized(config[keys.fallbackApiKey] || config[keys.apiKey] || config.llmApiKey || config.openaiApiKey || '')
+  };
+}
+
+export function buildEffectiveCostRates(registryEntry, callerCostRates) {
+  const costs = registryEntry?.costs;
+  if (!costs) return callerCostRates;
+  return {
+    llmCostInputPer1M: costs.inputPer1M,
+    llmCostOutputPer1M: costs.outputPer1M,
+    llmCostCachedInputPer1M: costs.cachedPer1M,
   };
 }
 
@@ -323,11 +355,29 @@ export function resolveLlmRoute(config = {}, { reason = '', role = '', modelOver
       const roleProvider = normalizeProvider(route.provider || providerFromModel(route.model));
       const overrideProvider = providerFromModel(overrideModel);
       if (roleProvider && overrideProvider && roleProvider !== overrideProvider) {
+        // WHY: registry routes already have correct provider/baseUrl/apiKey
+        if (route._registryEntry) return route;
         return alignRouteToModelProvider(config, route);
       }
     }
+    // Re-resolve override model through registry if available
+    if (config._registryLookup) {
+      const overrideResolved = resolveModelFromRegistry(config._registryLookup, overrideModel);
+      if (overrideResolved) {
+        route.provider = overrideResolved.providerType;
+        route.model = overrideResolved.modelId;
+        route.baseUrl = overrideResolved.baseUrl;
+        route.apiKey = overrideResolved.apiKey || route.apiKey;
+        route._registryEntry = overrideResolved;
+        return route;
+      }
+    }
+    // Override model not in registry — clear stale registry entry
+    delete route._registryEntry;
     route.model = overrideModel;
   }
+  // WHY: registry routes already have correct provider/baseUrl/apiKey — alignment would overwrite them
+  if (route._registryEntry) return route;
   return alignRouteToModelProvider(config, route);
 }
 
@@ -337,7 +387,10 @@ export function resolveLlmFallbackRoute(config = {}, { reason = '', role = '', m
   if (!fallback) {
     return null;
   }
-  const alignedFallback = alignRouteToModelProvider(config, fallback);
+  // WHY: registry routes already have correct provider/baseUrl/apiKey — alignment would overwrite them
+  const alignedFallback = fallback._registryEntry
+    ? fallback
+    : alignRouteToModelProvider(config, fallback);
   if (modelOverride && normalized(modelOverride) === normalized(fallback.model)) {
     return null;
   }
@@ -490,9 +543,19 @@ export async function callLlmWithRouting({
     logger
   };
 
+  // Cost flow-through: prefer registry costs over flat config keys
+  const effectiveCostRates = buildEffectiveCostRates(primary._registryEntry, costRates);
+
+  const effectiveSharedParams = { ...sharedParams, costRates: effectiveCostRates };
+
+  // Dispatch-type seam: cortex providers use a different transport
+  if (primary._registryEntry?.providerType === 'cortex') {
+    throw new Error('cortex provider dispatch not yet re-implemented — route via openai-compatible provider or remove cortex entry');
+  }
+
   try {
     return await callOpenAI({
-      ...sharedParams,
+      ...effectiveSharedParams,
       model: primary.model,
       apiKey: primary.apiKey,
       baseUrl: primary.baseUrl,
@@ -513,8 +576,10 @@ export async function callLlmWithRouting({
       fallback_base_url: fallback.baseUrl || null,
       message: error.message
     });
+    const effectiveFallbackCostRates = buildEffectiveCostRates(fallback._registryEntry, costRates);
     return callOpenAI({
       ...sharedParams,
+      costRates: effectiveFallbackCostRates,
       model: fallback.model,
       apiKey: fallback.apiKey,
       baseUrl: fallback.baseUrl,

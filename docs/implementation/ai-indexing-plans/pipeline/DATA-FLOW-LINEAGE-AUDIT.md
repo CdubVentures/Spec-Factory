@@ -24,7 +24,7 @@ Source files: `needsetEngine.js:342-604`, `buildFieldHistories.js`
 
 | Field | Tag | Source | Notes |
 |-------|-----|--------|-------|
-| `round` | **passthrough** | caller param | incremented externally by convergence loop |
+| `round` | **passthrough** | caller param | set by the active caller (`seedRound0NeedSet()`, bootstrap/discovery seed, or defaults in finalization snapshot) |
 | `round_mode` | **passthrough** | caller param `roundMode` | seed / carry_forward / repair |
 
 ### Identity Block
@@ -103,9 +103,8 @@ Source files: `needsetEngine.js:342-604`, `buildFieldHistories.js`
 |-------|-----|-------|
 | `run_id`, `category`, `product_id` | **passthrough** | consumed by runtimeBridge |
 | `generated_at`, `total_fields` | **recomputed** | consumed by runtimeBridge, buildRunSummary |
-| `focus_fields`, `bundles`, `profile_mix` | **recomputed** | consumed by buildNeedSetDispatch, needsetStoryProjection |
-| `rows` | **recomputed** | consumed by convergence loop + needsetStoryProjection |
-| `deltas` | **recomputed** | no known consumer — candidate for removal |
+| `focus_fields`, `bundles`, `profile_mix` | **recomputed** | consumed by needsetStoryProjection and runtime-bridge payload normalization |
+| `rows` | **recomputed** | consumed by needsetStoryProjection and runtime-bridge payload normalization |
 
 ---
 
@@ -327,7 +326,7 @@ Source files: `searchPlanBuilder.js:130-261`
 | `panel.bundles[].queries` | **enriched** | LLM response | projected `{ q, family }` per bundle |
 | `panel.bundles[].fields` | **recomputed** | Schema 3 focus_group field breakdowns + field_priority_map | `{ key, state, bucket }` per field |
 | `panel.profile_influence.*` (14 keys) | **recomputed** | post-LLM aggregation | 7 family counts + duplicates_suppressed + focused_bundles + targeted_exceptions + total_queries + trusted_host_share + docs_manual_share |
-| `panel.deltas` | **recomputed** | `computeDeltas(previous_round_fields, current)` | `{ field, from, to }` for state changes. Empty on round 0. |
+| `panel.deltas` | **recomputed** | `computeDeltas(previous_round_fields, current)` | `{ field, from, to }` for state changes. On round 0, all current fields are emitted as `{ from: 'none', to: <state> }`. |
 
 ### Learning Writeback
 
@@ -424,23 +423,22 @@ All schemas audited — **no updates required** for existing files. Three new co
 
 | Schema | File | Gaps | Status |
 |--------|------|------|--------|
-| Schema 1 (NeedSetStartInput) | `1/need-set-input.json` | 10 original → 0 remaining | all resolved or dropped by design |
-| Schema 2 (NeedSetOutput) | `1/need-set-output.json` | 6 original → 0 material | 7 ghost consumers documented |
-| Schema 3 (SearchPlanningContext) | `1/needset-planner-context.json` | 12 original → 0 remaining | all closed |
-| Schema 4 (NeedSetPlannerOutput) | `1/needset-planner-output.json` | 16 original → 0 remaining | all closed |
-| Brand Resolver Input | `2/brand-resolver-input.json` | 3 original → 0 material | all closed or informational |
-| Brand Resolver Output | `2/brand-resolver-output.json` | 4 original → 0 material | 2 extra (confidence, reasoning) |
-| Handoff Input | `3/search-plan-handoff-input.json` | 0 | complete |
-| Handoff Output | `3/search-plan-handoff-output.json` | 0 | complete |
-| **Search Planner Input** | `3/search-planner-input.json` | — | **NEW** — Schema 3 consumption contract with field-level tags |
-| **Search Planner Output** | `3/search-planner-output.json` | — | **NEW** — Schema 4 output contract with field-level tags |
-| **Search Planner LLM Call** | `3/search-planner-llm-call.json` | — | **NEW** — prompt, payload, response schema, post-processing rules |
-| **Query Journey Input** | `4/query-journey-input.json` | — | **NEW** — 5-phase input contract (adapter → guard → exec → classify → rerank) |
-| **Query Journey Output** | `4/query-journey-output.json` | — | **NEW** — per-phase output shapes with cumulative artifact list |
-| **Query Journey LLM Call** | `4/query-journey-llm-call.json` | — | **NEW** — SERP reranker LLM (uber_serp_reranker): prompt, payload, weights, response schema |
-| Execution Dispatch | `4/execution-dispatch-contract.md` | 0 | existing — Schema 4 vs old path gate |
+| Schema 1 (NeedSetStartInput) | `planning/01-needset-input.json` | 10 original → 0 remaining | all resolved or dropped by design |
+| Schema 2 (NeedSetOutput) | `planning/01-needset-output.json` | 6 original → 0 material | ghost consumers documented; live output corrected |
+| Schema 3 (SearchPlanningContext) | `planning/01-needset-planner-context.json` | 12 original → 0 remaining | all closed |
+| Schema 4 (NeedSetPlannerOutput) | `planning/01-needset-planner-output.json` | 16 original → 0 remaining | all closed |
+| Brand Resolver Input | `planning/02-brand-resolver-input.json` | 3 original → 0 material | all closed or informational |
+| Brand Resolver Output | `planning/02-brand-resolver-output.json` | 4 original → 0 material | 2 extra (confidence, reasoning) |
+| Handoff Input | `planning/03-search-plan-handoff-input.json` | 0 | complete |
+| Handoff Output | `planning/03-search-plan-handoff-output.json` | 0 | complete |
+| **Search Planner Input** | `planning/03-search-planner-input.json` | — | **NEW** — Schema 3 consumption contract with field-level tags |
+| **Search Planner Output** | `planning/03-search-planner-output.json` | — | **NEW** — Schema 4 output contract with field-level tags |
+| **Search Planner LLM Call** | `planning/03-search-planner-llm-call.json` | — | **NEW** — prompt, payload, response schema, post-processing rules |
+| **Query Journey Input** | `planning/04-query-journey-input.json` | — | **NEW** — 5-phase input contract (adapter → guard → exec → classify → rerank) |
+| **Query Journey Output** | `planning/04-query-journey-output.json` | — | **NEW** — per-phase output shapes with cumulative artifact list |
+| **Query Journey LLM Call** | `planning/04-query-journey-llm-call.json` | — | **NEW** — SERP reranker LLM (`uber_serp_reranker`) prompt, weights, and response schema |
+| SearXNG Execution Input | `planning/05-searxng-execution-input.json` | 0 | complete |
 
 ### Flow Diagrams
 
-- `3/02-PROFILE-TO-PLANNER-FLOW.mmd` — Schema 4 NeedSet Planner path + old multi-pass path with `enableSchema4SearchPlan` gate
-- `4/02-QUERY-JOURNEY-FLOW.mmd` — 6-phase journey: adapter → guard → execution → classify+admit → rerank/triage → outputs
+- No dedicated prefetch Mermaid sources currently exist under `pipeline/`; the current prefetch authority in this folder is `planning/PREFETCH-PIPELINE-OVERVIEW.md` plus `planning/QUERY-JOURNEY-RANKING.md`.

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { PrefetchNeedSetData, PrefetchSchema4Bundle, PrefetchNeedSetPlannerRow, NeedSetField } from '../../types';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
 import { Tip } from '../../../../shared/ui/feedback/Tip';
@@ -7,6 +7,8 @@ import {
   formatNumber,
   queryFamilyBadge,
 } from '../../../indexing/helpers';
+import { usePersistedTab, usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore';
+import { usePersistedToggle } from '../../../../stores/collapseStore';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 
@@ -312,19 +314,20 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 
 /* ── Main Panel ─────────────────────────────────────────────────────── */
 
-export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: PrefetchNeedSetPanelProps) {
-  const [plannerSortKey, setPlannerSortKey] = useState<PlannerSortKey>('required_level');
-  const [plannerSortDir, setPlannerSortDir] = useState<'asc' | 'desc'>('asc');
-  const [fieldFilter, setFieldFilter] = useState('');
-  const [expandedBundles, setExpandedBundles] = useState<Record<string, boolean>>({});
-  const [showQueryPreview, setShowQueryPreview] = useState(false);
-  const [drilldownFilter, setDrilldownFilter] = useState<'unresolved' | 'escalated' | 'all'>('unresolved');
-  const [drilldownOpen, setDrilldownOpen] = useState(true);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [expandedHistoryField, setExpandedHistoryField] = useState<string | null>(null);
+const PLANNER_SORT_KEYS = ['field_key', 'required_level', 'state', 'bundle_id'] as const;
+const SORT_DIRS = ['asc', 'desc'] as const;
+const DRILLDOWN_FILTERS = ['unresolved', 'escalated', 'all'] as const;
 
-  const toggleBundle = (key: string) =>
-    setExpandedBundles(prev => ({ ...prev, [key]: !prev[key] }));
+export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: PrefetchNeedSetPanelProps) {
+  const [plannerSortKey, setPlannerSortKey] = usePersistedTab<PlannerSortKey>(`runtimeOps:needset:sortKey:${persistScope}`, 'required_level', { validValues: PLANNER_SORT_KEYS });
+  const [plannerSortDir, setPlannerSortDir] = usePersistedTab<'asc' | 'desc'>(`runtimeOps:needset:sortDir:${persistScope}`, 'asc', { validValues: SORT_DIRS });
+  const [fieldFilter, setFieldFilter] = usePersistedTab<string>(`runtimeOps:needset:fieldFilter:${persistScope}`, '');
+  const [expandedBundles, toggleBundle, replaceExpandedBundles] = usePersistedExpandMap(`runtimeOps:needset:expandedBundles:${persistScope}`);
+  const [showQueryPreview, toggleShowQueryPreview] = usePersistedToggle(`runtimeOps:needset:showQueryPreview:${persistScope}`, false);
+  const [drilldownFilter, setDrilldownFilter] = usePersistedTab<'unresolved' | 'escalated' | 'all'>(`runtimeOps:needset:drilldownFilter:${persistScope}`, 'unresolved', { validValues: DRILLDOWN_FILTERS });
+  const [drilldownOpen, toggleDrilldownOpen, setDrilldownOpen] = usePersistedToggle(`runtimeOps:needset:drilldownOpen:${persistScope}`, true);
+  const [historyOpen, toggleHistoryOpen, setHistoryOpen] = usePersistedToggle(`runtimeOps:needset:historyOpen:${persistScope}`, false);
+  const [expandedHistoryField, setExpandedHistoryField] = usePersistedNullableTab(`runtimeOps:needset:expandedHistory:${persistScope}`, null);
 
   const summary = data.summary;
   const blockers = data.blockers;
@@ -395,7 +398,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
 
   const handlePlannerSort = (key: PlannerSortKey) => {
     if (key === plannerSortKey) {
-      setPlannerSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      setPlannerSortDir(plannerSortDir === 'asc' ? 'desc' : 'asc');
     } else {
       setPlannerSortKey(key);
       setPlannerSortDir('asc');
@@ -634,7 +637,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
               <span>dupes suppressed <strong className="sf-text-primary">{profileInfluence.duplicates_suppressed ?? 0}</strong></span>
               <span className="flex-1" />
               <button
-                onClick={() => setShowQueryPreview(prev => !prev)}
+                onClick={toggleShowQueryPreview}
                 className="text-[10px] font-bold uppercase tracking-[0.04em] text-[var(--sf-token-accent)] hover:underline cursor-pointer bg-transparent border-none p-0"
               >
                 {showQueryPreview ? 'hide preview \u25B4' : 'queued search preview \u25BE'}
@@ -731,7 +734,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
       {historyFields.length > 0 && (
         <div>
           <div
-            onClick={() => setHistoryOpen(prev => !prev)}
+            onClick={toggleHistoryOpen}
             className="flex items-baseline gap-2 pt-2 pb-1.5 border-b-[1.5px] border-[var(--sf-token-text-primary)] cursor-pointer select-none"
           >
             <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary flex-1">field history</span>
@@ -852,7 +855,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
       {plannerRows.length > 0 && (
         <div>
           <div
-            onClick={() => setDrilldownOpen(prev => !prev)}
+            onClick={toggleDrilldownOpen}
             className="flex items-baseline gap-2 pt-2 pb-1.5 border-b-[1.5px] border-[var(--sf-token-text-primary)] cursor-pointer select-none"
           >
             <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary flex-1">field drilldown</span>

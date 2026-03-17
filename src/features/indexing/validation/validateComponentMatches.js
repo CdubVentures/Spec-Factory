@@ -112,6 +112,7 @@ export async function validateComponentMatches({
   logger,
   budgetGuard,
   costRates,
+  onUsage,
 }) {
   const enabled = Boolean(hasLlmRouteApiKey(config, { role: 'validate' }));
   if (!enabled || items.length === 0) {
@@ -192,10 +193,11 @@ export async function validateComponentMatches({
           item_count: typeItems.length,
         },
         costRates,
-        reasoningMode: true,
-        reasoningBudget: 4096,
-        maxTokens: 4096,
-        timeoutMs: 60_000,
+        onUsage,
+        reasoningMode: Boolean(config?.llmReasoningMode ?? true),
+        reasoningBudget: Number(config?.llmReasoningBudget || 4096),
+        maxTokens: Number(config?.llmMaxOutputTokensValidate || config?.llmMaxOutputTokens || 4096),
+        timeoutMs: Number(config?.llmTimeoutMs || config?.openaiTimeoutMs || 60_000),
         logger,
       });
 

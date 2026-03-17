@@ -43,8 +43,8 @@ const DEFAULTS: LlmProviderEntry[] = [
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
     enabled: true,
     models: [
-      makeModel('default-gemini-flash-lite', 'gemini-2.5-flash-lite', 'primary'),
-      makeModel('default-gemini-flash', 'gemini-2.5-flash', 'fast'),
+      makeModel('default-gemini-flash', 'gemini-2.5-flash', 'primary'),
+      makeModel('default-gemini-flash-lite', 'gemini-2.5-flash-lite', 'fast'),
     ],
   }),
   makeProvider({
@@ -62,14 +62,14 @@ const DEFAULTS: LlmProviderEntry[] = [
     name: 'Anthropic',
     type: 'anthropic',
     baseUrl: 'https://api.anthropic.com',
-    enabled: true,
+    enabled: false,
     models: [makeModel('default-anthropic-sonnet', 'claude-sonnet-4-20250514', 'reasoning')],
   }),
   makeProvider({
     id: 'default-openai',
     name: 'OpenAI',
     baseUrl: 'https://api.openai.com/v1',
-    enabled: true,
+    enabled: false,
     models: [
       makeModel('default-openai-gpt-4-1', 'gpt-4.1', 'primary'),
       makeModel('default-openai-gpt-4-1-mini', 'gpt-4.1-mini', 'fast'),
@@ -155,7 +155,7 @@ describe('mergeDefaultsIntoRegistry', () => {
   it('gemini role preserved after merge', () => {
     const result = mergeDefaultsIntoRegistry([], DEFAULTS);
     const gemini = result.find((p) => p.id === 'default-gemini');
-    const flash = gemini?.models.find((m) => m.modelId === 'gemini-2.5-flash-lite');
+    const flash = gemini?.models.find((m) => m.modelId === 'gemini-2.5-flash');
     strictEqual(flash?.role, 'primary');
   });
 
@@ -197,7 +197,7 @@ describe('mergeDefaultsIntoRegistry', () => {
     const result = mergeDefaultsIntoRegistry([], DEFAULTS);
     const openai = result.find((p) => p.id === 'default-openai');
     strictEqual(openai?.name, 'OpenAI');
-    strictEqual(openai?.enabled, true);
+    strictEqual(openai?.enabled, false);
     strictEqual(openai?.models.length, 3);
     const gpt41 = openai?.models.find((m) => m.modelId === 'gpt-4.1');
     strictEqual(gpt41?.role, 'primary');

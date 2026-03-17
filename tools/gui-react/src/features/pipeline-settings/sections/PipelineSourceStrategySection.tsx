@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
+import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
 import { type SourceEntry, type DiscoveryConfig, type CrawlConfig, type FieldCoverage } from '../state/sourceStrategyAuthority';
 import { SectionNavIcon } from '../components/PipelineSettingsPageShell';
 
@@ -169,6 +170,7 @@ function SourceStrategyTable({
   onToggleEntry,
   onEditEntry,
   onDeleteEntry,
+  category,
 }: {
   entries: SourceEntry[];
   isLoading: boolean;
@@ -177,9 +179,12 @@ function SourceStrategyTable({
   onToggleEntry: (entry: SourceEntry) => void;
   onEditEntry: (entry: SourceEntry) => void;
   onDeleteEntry: (sourceId: string) => void;
+  category: string;
 }) {
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>('priority');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const SORT_COLUMN_VALUES = ['host', 'name', 'tier', 'authority', 'discovery', 'priority', 'enabled'] as const;
+  const SORT_DIR_VALUES = ['asc', 'desc'] as const;
+  const [sortColumn, setSortColumn] = usePersistedNullableTab<SortColumn>(`pipelineSettings:sourceSort:column:${category}`, 'priority', { validValues: SORT_COLUMN_VALUES });
+  const [sortDirection, setSortDirection] = usePersistedTab<SortDirection>(`pipelineSettings:sourceSort:dir:${category}`, 'desc', { validValues: SORT_DIR_VALUES });
 
   const sortedEntries = useMemo(() => {
     if (!entries || entries.length === 0 || !sortColumn) return entries;
@@ -470,6 +475,7 @@ export function PipelineSourceStrategySection({
             onToggleEntry={onToggleEntry}
             onEditEntry={onEditEntry}
             onDeleteEntry={onDeleteEntry}
+            category={category}
           />
           {sourceDraftMode ? (
             <section className="rounded sf-surface-elevated p-3 space-y-4">

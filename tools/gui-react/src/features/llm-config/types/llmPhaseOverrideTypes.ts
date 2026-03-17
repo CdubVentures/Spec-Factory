@@ -5,8 +5,8 @@ export interface LlmPhaseOverride {
   maxOutputTokens: number | null;
 }
 
-export type LlmPhaseId = 'needset' | 'searchPlanner' | 'brandResolver' | 'serpTriage' | 'domainClassifier';
+export type LlmOverridePhaseId = 'needset' | 'searchPlanner' | 'brandResolver' | 'serpTriage' | 'domainClassifier' | 'extraction' | 'validate' | 'write';
 
 export type LlmPhaseOverrides = {
-  [K in LlmPhaseId]?: Partial<LlmPhaseOverride>;
+  [K in LlmOverridePhaseId]?: Partial<LlmPhaseOverride>;
 };

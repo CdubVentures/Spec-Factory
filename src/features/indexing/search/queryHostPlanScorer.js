@@ -4,8 +4,8 @@ import { compileQuery, compileQueryBatch } from '../discovery/queryCompiler.js';
 const INTENT_TO_FILETYPE = {
   datasheet: 'pdf',
   manual: 'pdf',
-  spec: 'pdf',
-  specification: 'pdf',
+  // WHY: spec/specification removed — spec pages are HTML product pages, not PDFs.
+  // Only manuals and datasheets are actually served as PDF documents.
   firmware: 'zip',
 };
 
@@ -30,7 +30,7 @@ const TIER_BONUS_BY_NUMERIC = Object.freeze({
  * Build logical query plans from an EffectiveHostPlan.
  * Each searchable host gets a logical plan shaped for QueryCompiler input.
  */
-export function buildLogicalPlansFromHostPlan(effectiveHostPlan, identity, focusFields) {
+export function buildLogicalPlansFromHostPlan(effectiveHostPlan, identity, focusFields, { resolvedTerms } = {}) {
   if (!effectiveHostPlan || effectiveHostPlan.blocked) return [];
 
   const searchableGroups = (effectiveHostPlan.host_groups || []).filter(g => g.searchable);
@@ -47,14 +47,23 @@ export function buildLogicalPlansFromHostPlan(effectiveHostPlan, identity, focus
     ? (INTENT_TO_FILETYPE[intents[0]] || null)
     : null;
 
+  // WHY: resolvedTerms come from field rule query_terms (human-readable).
+  // focusFields are raw field keys used for coverage scoring only.
+  const cleanTerms = (toArray(resolvedTerms).filter(Boolean).length > 0
+    ? toArray(resolvedTerms)
+    : toArray(focusFields).map(f => clean(f)).filter(Boolean)
+  ).slice(0, 3);
+
+  const manufacturerHosts = new Set(effectiveHostPlan.manufacturer_hosts || []);
   const plans = [];
   for (const group of searchableGroups) {
+    const isManufacturer = manufacturerHosts.has(group.host);
     plans.push({
       product,
-      terms: toArray(focusFields).map(f => clean(f)).filter(Boolean),
-      site_target: supportsSite ? group.host : null,
-      filetype,
-      doc_hint: docHint,
+      terms: cleanTerms,
+      site_target: (supportsSite && isManufacturer) ? group.host : null,
+      filetype: isManufacturer ? filetype : null,
+      doc_hint: isManufacturer ? docHint : group.host,
       exact_phrases: [],
       exclude_terms: [],
       time_pref: null,
@@ -173,10 +182,10 @@ function sumScoreBreakdown(scoreBreakdown = {}) {
   ].reduce((total, key) => total + Number(scoreBreakdown?.[key] || 0), 0);
 }
 
-export function buildScoredQueryRowsFromHostPlan(effectiveHostPlan, identity, focusFields) {
+export function buildScoredQueryRowsFromHostPlan(effectiveHostPlan, identity, focusFields, { resolvedTerms } = {}) {
   if (!effectiveHostPlan || effectiveHostPlan.blocked) return [];
 
-  const logicalPlans = buildLogicalPlansFromHostPlan(effectiveHostPlan, identity, focusFields);
+  const logicalPlans = buildLogicalPlansFromHostPlan(effectiveHostPlan, identity, focusFields, { resolvedTerms });
   const searchableGroups = toArray(effectiveHostPlan.host_groups).filter((group) => group?.searchable);
   const providerName = String(effectiveHostPlan?.provider_caps?.name || 'none').trim() || 'none';
   const deduped = new Map();

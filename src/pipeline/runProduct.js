@@ -95,8 +95,8 @@ import { defaultIndexLabRoot } from '../core/config/runtimeArtifactRoots.js';
 import { CONFIG_MANIFEST_DEFAULTS } from '../core/config/manifest.js';
 import { createBudgetGuard } from '../billing/budgetGuard.js';
 import { normalizeCostRates } from '../billing/costRates.js';
+// --- orchestration/shared: helpers, scoring, type coercion, identity, runtime ---
 import {
-  // shared helpers (via orchestration/shared barrel)
   sha256, sha256Buffer, stableHash, screenshotMimeType, screenshotExtension,
   isDiscoveryOnlySourceUrl, isRobotsTxtUrl, isSitemapUrl, hasSitemapXmlSignals,
   isLikelyIndexableEndpointUrl, isSafeManufacturerFollowupUrl,
@@ -119,14 +119,9 @@ import {
   buildIndexlabRuntimeCategoryConfig,
   PASS_TARGET_EXEMPT_FIELDS, markSatisfiedLlmFields,
   isAnchorLocked, resolveTargets, resolveLlmTargetFields,
-  // bootstrap / execution / finalize
-  createRunLlmRuntime,
-  bootstrapRunEventIndexing,
-  loadLearningStoreHintsForRun,
-  runPlannerProcessingLifecycle,
-  runProductFinalizationPipeline,
-  writeSummaryMarkdownLLM,
-  // orchestration phases
+} from '../features/indexing/orchestration/shared/index.js';
+// --- orchestration/bootstrap: run setup, logger, trace, planner, fetcher ---
+import {
   createRunRuntime,
   buildRunRuntimePhaseCallsiteContext,
   buildRunRuntimeContext,
@@ -159,8 +154,17 @@ import {
   buildFetcherStartPhaseCallsiteContext,
   buildFetcherStartContext,
   runFetcherStartPhase,
+  createRunLlmRuntime,
+  bootstrapRunEventIndexing,
+  loadLearningStoreHintsForRun,
+} from '../features/indexing/orchestration/bootstrap/index.js';
+// --- orchestration/discovery ---
+import {
   buildDiscoverySeedPlanContext,
   runDiscoverySeedPlan,
+} from '../features/indexing/orchestration/discovery/index.js';
+// --- orchestration/execution: source processing, planner queue, extraction ---
+import {
   buildHypothesisFollowupsContext,
   buildProcessPlannerQueuePhaseCallsiteContext,
   runProcessPlannerQueuePhase,
@@ -218,18 +222,18 @@ import {
   runSourceHostBudgetPhase,
   runSourceArtifactAggregationPhase,
   runSourceProcessedTelemetryPhase,
+  runPlannerProcessingLifecycle,
+} from '../features/indexing/orchestration/execution/index.js';
+// --- orchestration/finalize: derivation, persistence, telemetry, schema ---
+import {
   buildDedicatedSyntheticSourceIngestionContext,
   runDedicatedSyntheticSourceIngestionPhase,
   buildIndexingResumePersistenceContext,
   runIndexingResumePersistencePhase,
   resolveIndexingResumePersistenceState,
   createProductFinalizationPipelineRuntime,
-  applyRuntimeGateAndCuration,
-  runComponentPriorPhase,
-  runAggressiveExtractionPhase,
-  runInferencePolicyPhase,
-  runDeterministicCriticPhase,
-  runLlmValidatorPhase,
+  runProductFinalizationPipeline,
+  writeSummaryMarkdownLLM,
   buildIdentityConsensusPhaseCallsiteContext,
   buildIdentityConsensusContext,
   buildIdentityNormalizationPhaseCallsiteContext,
@@ -250,8 +254,6 @@ import {
   buildPhase08ExtractionContext,
   buildFinalizationMetricsPhaseCallsiteContext,
   buildFinalizationMetricsContext,
-  buildCortexSidecarPhaseCallsiteContext,
-  buildCortexSidecarContext,
   buildResearchArtifactsPhaseContext,
   applyResearchArtifactsContext,
   buildAnalysisArtifactKeyPhaseContext,
@@ -299,8 +301,17 @@ import {
   buildIndexingSchemaSummaryPayload,
   buildIndexingSchemaArtifactsPhaseCallsiteContext,
   buildIndexingSchemaArtifactsPhaseContext,
-  runIndexingSchemaArtifactsPhase
-} from '../features/indexing/orchestration/index.js';
+  runIndexingSchemaArtifactsPhase,
+} from '../features/indexing/orchestration/finalize/index.js';
+// --- orchestration/quality: gate, critic, validator, extraction, inference ---
+import {
+  applyRuntimeGateAndCuration,
+  runComponentPriorPhase,
+  runAggressiveExtractionPhase,
+  runInferencePolicyPhase,
+  runDeterministicCriticPhase,
+  runLlmValidatorPhase,
+} from '../features/indexing/orchestration/quality/index.js';
 import { updateComponentLibrary } from '../components/library.js';
 import { normalizeFieldList, toRawFieldKey } from '../utils/fieldKeys.js';
 import { createFieldRulesEngine } from '../engine/fieldRulesEngine.js';

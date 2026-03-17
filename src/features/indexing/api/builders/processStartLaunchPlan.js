@@ -388,16 +388,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     applyModelOverride('LLM_MODEL_WRITE', llmModelWrite),
   ].some(Boolean);
 
-  const normalizedTriageForCortex = String(llmModelTriage || '').trim();
-  if (normalizedTriageForCortex) {
-    if (!envOverrides.CORTEX_MODEL_RERANK_FAST) {
-      envOverrides.CORTEX_MODEL_RERANK_FAST = normalizedTriageForCortex;
-    }
-    if (!envOverrides.CORTEX_MODEL_SEARCH_FAST) {
-      envOverrides.CORTEX_MODEL_SEARCH_FAST = normalizedTriageForCortex;
-    }
-  }
-
   applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_PLAN', llmMaxOutputTokensPlan);
   applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_FAST', llmMaxOutputTokensFast);
   applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_TRIAGE', llmMaxOutputTokensTriage);

@@ -22,9 +22,11 @@ import {
   bestIdentityFromSources,
   PASS_TARGET_EXEMPT_FIELDS,
   isHelperSyntheticSource,
+} from '../../features/indexing/orchestration/shared/index.js';
+import {
   writeSummaryMarkdownLLM,
   finalizeRunLifecycle,
-} from '../../features/indexing/orchestration/index.js';
+} from '../../features/indexing/orchestration/finalize/index.js';
 import { buildIdentityObject, buildAbortedNormalized, buildValidatedNormalized } from '../../normalizer/mouseNormalizer.js';
 import { exportRunArtifacts } from '../../exporter/exporter.js';
 import { writeFinalOutputs } from '../../exporter/finalExporter.js';

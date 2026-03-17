@@ -27,7 +27,6 @@ export function buildRunSummaryOperationsSection({
   llmBudgetLimits = {},
   llmBudgetState = {},
   llmBudgetBlockedReason = null,
-  cortexSidecar = {},
   aggressiveExtraction = {},
   categoryConfig = {},
   fetcherMode = '',
@@ -136,7 +135,6 @@ export function buildRunSummaryOperationsSection({
         blocked_reason: llmBudgetBlockedReason || null,
       },
     },
-    cortex_sidecar: cortexSidecar,
     aggressive_extraction: aggressiveExtraction,
     source_registry: {
       override_key: categoryConfig.sources_override_key || null,

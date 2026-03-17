@@ -14,7 +14,6 @@ This boundary is the canonical home for low-level configuration and model-routin
 - `src/core/llm/providers/index.js`: `selectLlmProvider()`.
 - `src/core/llm/providers/{gemini,deepseek,openaiCompatible}.js`: provider request functions.
 - `src/core/llm/prompts/{planner,extractor,validator}.js`: prompt builders.
-- `src/core/llm/cortex/*.js`: `CortexClient`, `CortexCircuitBreaker`, `CortexLifecycle`, and Cortex routing helpers.
 
 ## Dependencies
 - Allowed: Node built-ins, internal `src/core/**`, `src/billing/**`, `src/shared/**`, and existing low-level helpers in `src/utils/**`.

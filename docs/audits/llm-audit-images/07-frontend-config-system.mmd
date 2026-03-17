@@ -1,0 +1,70 @@
+graph TB
+    subgraph PAGE["LlmConfigPage.tsx - Orchestrator"]
+        TAB["Tab Navigation\n7 LLM phases"]
+        ADAPTER["RuntimeSettingsEditorAdapter\nBootstrap + Auto-save"]
+    end
+
+    subgraph SECTIONS["UI Sections - Lazy Loaded"]
+        S_GLOBAL["LlmGlobalSection\nBudget + Timeout + Cache"]
+        S_PHASE["LlmPhaseSection\nPer-phase overrides"]
+        S_EXTRACT["LlmExtractionSection\nExtract + Validate + Write"]
+        S_REGISTRY["LlmProviderRegistrySection\nAdd + Edit providers"]
+        S_CATALOG["LlmModelCatalogSection\nRead-only model table"]
+        S_ALL["LlmAllModelsSection\nFlattened model list"]
+    end
+
+    subgraph STATE["State Management"]
+        BRIDGE_REG["llmProviderRegistryBridge\nJSON to Object bridge"]
+        BRIDGE_PHASE["llmPhaseOverridesBridge\nJSON to Object bridge"]
+        DROPDOWN["llmModelDropdownOptions\nBuild enriched options"]
+        MIX["llmMixDetection\n9 config warnings"]
+        GATE["llmProviderApiKeyGate\nKey availability check"]
+        TOKEN_VAL["llmTokenLimitValidation\nModel-aware limits"]
+        CATALOG["llmModelCatalog\nRegistry to catalog"]
+    end
+
+    subgraph TYPES["Type System"]
+        T_PHASE["llmPhaseTypes.ts\n7 phase definitions"]
+        T_PROVIDER["llmProviderRegistryTypes.ts\nProvider + Model + Role"]
+        T_OVERRIDE["llmPhaseOverrideTypes.ts\nOverride structure"]
+        T_SETTINGS["llmSettings.ts\n30+ route fields"]
+    end
+
+    subgraph BACKEND["Backend API"]
+        API1["GET /indexing/llm-config\nModel options + pricing"]
+        API2["GET/PUT /llm-settings/routes\nPer-field extraction config"]
+        API3["Runtime Settings\nProvider registry JSON"]
+    end
+
+    PAGE --> SECTIONS
+    TAB --> S_GLOBAL
+    TAB --> S_PHASE
+    TAB --> S_EXTRACT
+    TAB --> S_REGISTRY
+    TAB --> S_CATALOG
+    TAB --> S_ALL
+
+    S_GLOBAL --> BRIDGE_REG
+    S_GLOBAL --> MIX
+    S_GLOBAL --> TOKEN_VAL
+    S_PHASE --> BRIDGE_PHASE
+    S_EXTRACT --> DROPDOWN
+    S_REGISTRY --> BRIDGE_REG
+    S_CATALOG --> CATALOG
+    S_ALL --> CATALOG
+
+    BRIDGE_REG --> GATE
+    DROPDOWN --> BRIDGE_REG
+    CATALOG --> BRIDGE_REG
+
+    TYPES --> STATE
+
+    ADAPTER --> API1
+    ADAPTER --> API3
+    S_EXTRACT --> API2
+
+    style PAGE fill:#6c5ce7,stroke:#a29bfe,color:#fff
+    style SECTIONS fill:#0984e3,stroke:#74b9ff,color:#fff
+    style STATE fill:#00b894,stroke:#55efc4,color:#fff
+    style TYPES fill:#fdcb6e,stroke:#ffeaa7,color:#2d3436
+    style BACKEND fill:#e17055,stroke:#fab1a0,color:#fff

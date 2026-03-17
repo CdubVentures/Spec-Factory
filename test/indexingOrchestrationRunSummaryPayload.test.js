@@ -225,9 +225,6 @@ test('buildRunSummaryPayload assembles canonical run summary with stable helper/
       },
     },
     llmBudgetBlockedReason: 'none',
-    cortexSidecar: {
-      status: 'disabled',
-    },
     aggressiveExtraction: {
       enabled: false,
       stage: 'disabled',
@@ -427,7 +424,6 @@ test('buildRunSummaryPayload falls back to legacy helper root and excludes helpe
     contribution: {},
     llmContext: {},
     llmBudgetSnapshot: {},
-    cortexSidecar: {},
     aggressiveExtraction: {},
     categoryConfig: {},
     manufacturerSources: [],
@@ -505,7 +501,6 @@ test('buildRunSummaryPayload preserves disabled llm defaults and rounds numeric 
     curationSuggestionResult: {},
     contribution: {},
     llmContext: {},
-    cortexSidecar: {},
     aggressiveExtraction: {},
     categoryConfig: {},
     manufacturerSources: [],

@@ -1,0 +1,220 @@
+{
+  "_doc": "Schema 4 (NeedSetPlannerOutput) gap analysis. Compares spec (Data-Flow-Schemas.md lines 420-574) against actual assembleSchema4() output (searchPlanBuilder.js:130-261). Traces every spec field to its data source [S3|LLM|POST] and maps to current implementation status. Updated 2026-03-17.",
+
+  "_plan_alignment": {
+    "_question": "Does Schema 4 fulfill its two jobs? (1) Feed the current runtime-ops Schema 4 panels, (2) hand off deterministic search queries into discovery execution.",
+
+    "answer": "YES — Schema 4 fulfills both panel and handoff jobs. assembleSchema4() (searchPlanBuilder.js:130-261) emits full panel payload with bundles, profile_influence (14 keys), deltas, round/round_mode, and per-bundle fields[]/query_family_mix/reason_active. Handoff delivers deduplicated queries with hashes into discovery execution. Learning writeback uses canonical key names.",
+
+    "schema_4_two_jobs": {
+      "job_1_panel": "COMPLETE. assembleSchema4 emits panel.identity, panel.summary, panel.blockers, panel.round, panel.round_mode, panel.bundles (with key, label, desc, source_target, content_target, search_intent, host_class, query_family_mix, reason_active, queries[{q,family}], fields[{key,state,bucket}]), panel.profile_influence (14 keys), and panel.deltas for the runtime-ops Schema 4 views.",
+      "job_2_handoff": "COMPLETE. search_plan_handoff contains queries with q/family/query_hash/group_key/target_fields/preferred_domains/exact_match_required. Hashes are deduplicated and handed to discovery execution.",
+      "job_3_learning": "COMPLETE. learning_writeback uses canonical key names: query_hashes_generated, queries_generated, families_used, domains_targeted, groups_activated, duplicates_suppressed."
+    },
+
+    "what_must_change": "Nothing — all gaps resolved as of searchPlanBuilder.js refactor."
+  },
+
+  "_spec_vs_actual_summary": {
+    "schema_4_spec_sections": ["schema_version", "run", "planner", "panel", "search_plan_handoff", "learning_writeback"],
+    "actual_output_sections": ["schema_version", "run", "planner", "search_plan_handoff", "panel", "learning_writeback"],
+    "structural_diff": "None — actual matches spec section names."
+  },
+
+  "schema_version": {
+    "spec": "needset_planner_output.v2",
+    "actual": "MATCH — searchPlanBuilder.js:214 emits 'needset_planner_output.v2'",
+    "status": "MATCH"
+  },
+
+  "run": {
+    "run_id":     { "spec": "string [S3]", "actual": "searchPlanBuilder.js:215 — ctx.run passthrough", "status": "MATCH" },
+    "category":   { "spec": "string [S3]", "actual": "passthrough", "status": "MATCH" },
+    "product_id": { "spec": "string [S3]", "actual": "passthrough", "status": "MATCH" },
+    "brand":      { "spec": "string [S3]", "actual": "passthrough", "status": "MATCH" },
+    "model":      { "spec": "string [S3]", "actual": "passthrough", "status": "MATCH" },
+    "round":      { "spec": "number [S3]", "actual": "passthrough", "status": "MATCH" },
+    "round_mode": { "spec": "seed|carry_forward|repair [S3]", "actual": "passthrough", "status": "MATCH" }
+  },
+
+  "planner": {
+    "mode":                   { "spec": "llm|disabled|error [POST]", "actual": "searchPlanBuilder.js:217 — mode param", "status": "MATCH" },
+    "model":                  { "spec": "string [S3]", "actual": "searchPlanBuilder.js:218 — model || ''", "status": "MATCH" },
+    "planner_complete":       { "spec": "boolean [POST]", "actual": "searchPlanBuilder.js:219 — plannerComplete param", "status": "MATCH" },
+    "planner_confidence":     {
+      "spec": "number [LLM] — overall plan confidence 0-1",
+      "actual": "MATCH — searchPlanBuilder.js:220 emits llmResult?.planner_confidence ?? 0",
+      "status": "MATCH"
+    },
+    "queries_generated":      { "spec": "number [POST]", "actual": "searchPlanBuilder.js:221 — queries.length", "status": "MATCH" },
+    "duplicates_suppressed":  {
+      "spec": "number [POST] — queries dropped by dedup",
+      "actual": "MATCH — searchPlanBuilder.js:222 emits dupesDropped counter tracked during post-LLM dedup loop",
+      "status": "MATCH"
+    },
+    "targeted_exceptions":    {
+      "spec": "number [LLM] — exceptional queries added outside normal rules",
+      "actual": "MATCH — searchPlanBuilder.js:223 emits llmResult?.targeted_exceptions ?? 0",
+      "status": "MATCH"
+    },
+    "error":                  { "spec": "string|null [POST]", "actual": "searchPlanBuilder.js:224 — String(error.message || error)", "status": "MATCH" }
+  },
+
+  "panel": {
+    "_summary": "The panel block is the primary consumer contract for the current runtime-ops Schema 4 surfaces (`PrefetchNeedSetPanel`, `PrefetchSearchProfilePanel`, and related bundle/delta views). All sub-objects and scalar fields are emitted.",
+
+    "round": {
+      "spec": "number [S3] — ctx.run.round",
+      "actual": "MATCH — searchPlanBuilder.js:232 emits ctx.run?.round ?? 0",
+      "status": "MATCH"
+    },
+
+    "round_mode": {
+      "spec": "seed|carry_forward|repair [S3]",
+      "actual": "MATCH — searchPlanBuilder.js:233 emits ctx.run?.round_mode || 'seed'",
+      "status": "MATCH"
+    },
+
+    "identity": {
+      "spec": "object [S3] — { state, manufacturer, model, confidence, official_domain, support_domain }",
+      "actual": "searchPlanBuilder.js:234 — ctx.identity passthrough",
+      "status": "MATCH — passthrough gives full object"
+    },
+
+    "summary": {
+      "spec": "object [S3] — { total, resolved, core_total, core_unresolved, secondary_total, secondary_unresolved, optional_total, optional_unresolved, conflicts }",
+      "actual": "searchPlanBuilder.js:235 — ctx.needset?.summary || {}",
+      "status": "MATCH — passthrough from Schema 3"
+    },
+
+    "blockers": {
+      "spec": "object [S3] — { missing, weak, conflict, needs_exact_match, search_exhausted }",
+      "actual": "searchPlanBuilder.js:236 — ctx.needset?.blockers || {}",
+      "status": "MATCH — passthrough from Schema 3"
+    },
+
+    "profile_influence": {
+      "_spec_shape": {
+        "manufacturer_html": "number [POST] — count of queries with this family",
+        "manual_pdf": "number [POST]",
+        "support_docs": "number [POST]",
+        "review_lookup": "number [POST]",
+        "benchmark_lookup": "number [POST]",
+        "fallback_web": "number [POST]",
+        "targeted_single": "number [POST]",
+        "duplicates_suppressed": "number [POST] — queries dropped by dedup",
+        "focused_bundles": "number [POST] — bundles with >=1 query",
+        "targeted_exceptions": "number [LLM]",
+        "total_queries": "number [POST] — total after dedup",
+        "trusted_host_share": "number [POST] — manufacturer_html + support_docs count",
+        "docs_manual_share": "number [POST] — manual_pdf count"
+      },
+      "actual": "MATCH — searchPlanBuilder.js:241-249 emits full 14-key object: 7 family counts (initialized to 0, counted from queries), plus duplicates_suppressed, focused_bundles, targeted_exceptions, total_queries, trusted_host_share, docs_manual_share",
+      "status": "MATCH"
+    },
+
+    "bundles": {
+      "_spec_shape": "Array of { key, label, desc, priority, phase, source_target, content_target, search_intent, host_class, query_family_mix, reason_active, queries[], fields[] }",
+
+      "key":            { "spec": "string [S3]", "actual": "MATCH — searchPlanBuilder.js:149 emits key: gk (from fg.key || fg.group_key)", "status": "MATCH" },
+      "label":          { "spec": "string [S3] — from focus_groups[].label", "actual": "MATCH — searchPlanBuilder.js:150 emits fg.label || gk", "status": "MATCH" },
+      "desc":           { "spec": "string [S3] — from focus_groups[].desc", "actual": "MATCH — searchPlanBuilder.js:151 emits fg.desc || ''", "status": "MATCH" },
+      "priority":       { "spec": "core|secondary|optional [S3]", "actual": "searchPlanBuilder.js:157 — fg.priority", "status": "MATCH" },
+      "phase":          { "spec": "now|next|hold [S3]", "actual": "searchPlanBuilder.js:156 — fg.phase", "status": "MATCH" },
+      "source_target":  { "spec": "string [S3]", "actual": "MATCH — searchPlanBuilder.js:152 emits fg.source_target || ''", "status": "MATCH" },
+      "content_target": { "spec": "string [S3]", "actual": "MATCH — searchPlanBuilder.js:153 emits fg.content_target || ''", "status": "MATCH" },
+      "search_intent":  { "spec": "string|null [S3]", "actual": "MATCH — searchPlanBuilder.js:154 emits fg.search_intent || null", "status": "MATCH" },
+      "host_class":     { "spec": "string|null [S3]", "actual": "MATCH — searchPlanBuilder.js:155 emits fg.host_class || null", "status": "MATCH" },
+
+      "query_family_mix": {
+        "spec": "string|null [LLM] — human-readable strategy description",
+        "actual": "MATCH — searchPlanBuilder.js:186 attaches lg?.query_family_mix || null from LLM response groups matched by key",
+        "status": "MATCH"
+      },
+
+      "reason_active": {
+        "spec": "string|null [LLM] — why this group is being searched",
+        "actual": "MATCH — searchPlanBuilder.js:187 attaches lg?.reason_active || null from LLM response groups matched by key",
+        "status": "MATCH"
+      },
+
+      "queries": {
+        "spec": "Array<{ q, family }> [LLM+POST]",
+        "actual": "MATCH — searchPlanBuilder.js:188 projects bundle.queries to { q: q.q, family: q.family }. Full query objects kept in search_plan_handoff.queries.",
+        "status": "MATCH"
+      },
+
+      "fields": {
+        "spec": "Array<{ key, state, bucket }> [POST] — derived from Schema 3 field breakdowns + field_priority_map",
+        "actual": "MATCH — searchPlanBuilder.js:194-198 derives fields[] from working data: state from satisfied/weak/conflict/missing sets, bucket from requiredLevelToBucket(fpm[fk])",
+        "status": "MATCH"
+      }
+    },
+
+    "deltas": {
+      "spec": "Array<{ field, from, to }> [POST] — compare previous_round_fields vs current field states",
+      "actual": "MATCH — searchPlanBuilder.js:250 calls computeDeltas(ctx) (lines 93-115) which iterates previous_round_fields, compares to current state from focus_groups, emits { field, from, to } for changes. Round 0 returns [].",
+      "status": "MATCH"
+    }
+  },
+
+  "search_plan_handoff": {
+    "_note": "Spec and actual both use 'search_plan_handoff' — naming aligned.",
+
+    "queries": {
+      "spec": "Array<{ q, query_hash, family, group_key, target_fields, preferred_domains, exact_match_required }> [POST]",
+      "actual": "MATCH — searchPlanBuilder.js:227 emits full query objects",
+      "status": "MATCH"
+    },
+    "query_hashes": {
+      "spec": "string[] [POST]",
+      "actual": "MATCH — searchPlanBuilder.js:228 emits queryHashes",
+      "status": "MATCH"
+    },
+    "total": {
+      "spec": "number [POST]",
+      "actual": "MATCH — searchPlanBuilder.js:229 emits queries.length",
+      "status": "MATCH"
+    }
+  },
+
+  "learning_writeback": {
+    "query_hashes_generated": {
+      "spec": "string[] — hashes of all generated queries",
+      "actual": "MATCH — searchPlanBuilder.js:253 emits [...queryHashes]",
+      "status": "MATCH"
+    },
+    "queries_generated": {
+      "spec": "string[] — raw query text of all generated queries",
+      "actual": "MATCH — searchPlanBuilder.js:254 emits queries.map(q => q.q)",
+      "status": "MATCH"
+    },
+    "families_used": {
+      "spec": "QueryFamily[]",
+      "actual": "MATCH — searchPlanBuilder.js:255 emits [...familiesSet].sort()",
+      "status": "MATCH"
+    },
+    "domains_targeted": {
+      "spec": "string[]",
+      "actual": "MATCH — searchPlanBuilder.js:256 emits [...domainsSet].sort()",
+      "status": "MATCH"
+    },
+    "groups_activated": {
+      "spec": "string[]",
+      "actual": "MATCH — searchPlanBuilder.js:257 emits [...groupsSet].sort()",
+      "status": "MATCH"
+    },
+    "duplicates_suppressed": {
+      "spec": "number",
+      "actual": "MATCH — searchPlanBuilder.js:258 emits dupesDropped counter",
+      "status": "MATCH"
+    }
+  },
+
+  "_gap_summary": {
+    "total_gaps": 0,
+    "all_closed": true,
+    "gaps": [],
+    "_history": "16 gaps (GAP-1 through GAP-12f) identified on 2026-03-15 were all resolved in the searchPlanBuilder.js refactor. assembleSchema4() now reads group_catalog/focus_groups for bundle display fields, derives fields[] per bundle, computes full profile_influence, computes deltas, passes through LLM planner metadata, and uses canonical learning_writeback key names."
+  }
+}

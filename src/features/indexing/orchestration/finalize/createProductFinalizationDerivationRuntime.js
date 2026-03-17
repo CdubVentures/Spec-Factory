@@ -17,8 +17,6 @@ import { buildPhase08ExtractionPhaseCallsiteContext } from './buildPhase08Extrac
 import { buildPhase08ExtractionContext } from './buildPhase08ExtractionContext.js';
 import { buildFinalizationMetricsPhaseCallsiteContext } from './buildFinalizationMetricsPhaseCallsiteContext.js';
 import { buildFinalizationMetricsContext } from './buildFinalizationMetricsContext.js';
-import { buildCortexSidecarPhaseCallsiteContext } from './buildCortexSidecarPhaseCallsiteContext.js';
-import { buildCortexSidecarContext } from './buildCortexSidecarContext.js';
 import { applyRuntimeGateAndCuration } from '../quality/applyRuntimeGateAndCuration.js';
 import { runComponentPriorPhase } from '../quality/runComponentPriorPhase.js';
 import { runAggressiveExtractionPhase } from '../quality/runAggressiveExtractionPhase.js';
@@ -74,8 +72,6 @@ export function createProductFinalizationDerivationRuntime({
   buildPhase08ExtractionContextFn = buildPhase08ExtractionContext,
   buildFinalizationMetricsPhaseCallsiteContextFn = buildFinalizationMetricsPhaseCallsiteContext,
   buildFinalizationMetricsContextFn = buildFinalizationMetricsContext,
-  buildCortexSidecarPhaseCallsiteContextFn = buildCortexSidecarPhaseCallsiteContext,
-  buildCortexSidecarContextFn = buildCortexSidecarContext,
 } = {}) {
   return {
     async runDedicatedSyntheticSourceIngestion() {
@@ -440,26 +436,6 @@ export function createProductFinalizationDerivationRuntime({
           fieldOrder: context.fieldOrder,
           normalized,
           provenance,
-        }),
-      });
-    },
-    buildCortexSidecar({
-      constrainedFinalizationConfig,
-      confidence,
-      criticalFieldsBelowPassTarget,
-      anchorMajorConflictsCount,
-      constraintAnalysis,
-      completenessStats,
-    }) {
-      return buildCortexSidecarContextFn({
-        ...buildCortexSidecarPhaseCallsiteContextFn({
-          config: constrainedFinalizationConfig,
-          confidence,
-          criticalFieldsBelowPassTarget,
-          anchorMajorConflictsCount,
-          constraintAnalysis,
-          completenessStats,
-          logger: context.logger,
         }),
       });
     },

@@ -102,7 +102,7 @@ test('createProductFinalizationPipelineRuntime derives, summarizes, and complete
     fieldsBelowPassTarget: ['weight_g'],
     criticalFieldsBelowPassTarget: [],
     newValuesProposed: [{ field: 'weight_g', value: '59' }],
-    constrainedFinalizationConfig: { cortexEnabled: true },
+    constrainedFinalizationConfig: {},
     componentPriorFilledFields: ['shape'],
     componentPriorMatches: ['shell'],
     criticDecisions: { accept: [{ field: 'shape' }] },
@@ -137,7 +137,6 @@ test('createProductFinalizationPipelineRuntime derives, summarizes, and complete
     parserHealthAverage: 0.44,
     fingerprintCount: 7,
     contribution: { llmFields: ['shape'] },
-    cortexSidecar: { status: 'disabled' },
   };
   const summaryBuildResult = {
     summary: { runId: 'run-1', validated: true },

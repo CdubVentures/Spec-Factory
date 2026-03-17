@@ -4,54 +4,14 @@ import {
   SettingRow,
   SettingToggle,
 } from '../../pipeline-settings';
-
-/** Small "inherit from global" indicator rendered next to a select/input when it uses the global default. */
-function GlobalDefaultIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      className="h-3.5 w-3.5 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-label="Using global default"
-      style={{ color: 'var(--sf-muted)' }}
-    >
-      <circle cx="8" cy="8" r="6.5" />
-      <ellipse cx="8" cy="8" rx="3" ry="6.5" />
-      <path d="M1.5 8h13M2.5 4.5h11M2.5 11.5h11" />
-    </svg>
-  );
-}
 import type { LlmPhaseId } from '../types/llmPhaseTypes';
 import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes';
-import type { LlmPhaseId as OverridePhaseId } from '../types/llmPhaseOverrideTypes';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
-import { resolvePhaseModel } from '../state/llmPhaseOverridesBridge';
+import { resolvePhaseModel, uiPhaseIdToOverrideKey, type GlobalDraftSlice } from '../state/llmPhaseOverridesBridge';
 import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions';
 import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner';
 import { resolveProviderForModel } from '../state/llmProviderRegistryBridge';
-
-/** Maps hyphenated UI phase IDs to the camelCase keys used in LlmPhaseOverrides. */
-const TAB_TO_OVERRIDE_KEY: Partial<Record<LlmPhaseId, OverridePhaseId>> = {
-  'needset': 'needset',
-  'brand-resolver': 'brandResolver',
-  'search-planner': 'searchPlanner',
-  'serp-triage': 'serpTriage',
-  'domain-classifier': 'domainClassifier',
-};
-
-interface PhaseGlobalDraft {
-  llmModelPlan: string;
-  llmModelTriage: string;
-  llmModelReasoning: string;
-  llmPlanUseReasoning: boolean;
-  llmTriageUseReasoning: boolean;
-  llmMaxOutputTokensPlan: number;
-  llmMaxOutputTokensTriage: number;
-}
+import { ModelSelectDropdown, GlobalDefaultIcon } from '../components/ModelSelectDropdown';
 
 interface LlmPhaseSectionProps {
   phaseId: LlmPhaseId;
@@ -60,7 +20,8 @@ interface LlmPhaseSectionProps {
   phaseOverrides: LlmPhaseOverrides;
   onPhaseOverrideChange: (overrides: LlmPhaseOverrides) => void;
   registry: LlmProviderEntry[];
-  globalDraft: PhaseGlobalDraft;
+  globalDraft: GlobalDraftSlice;
+  apiKeyFilter?: (provider: LlmProviderEntry) => boolean;
 }
 
 export const LlmPhaseSection = memo(function LlmPhaseSection({
@@ -71,19 +32,20 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
   onPhaseOverrideChange,
   registry,
   globalDraft,
+  apiKeyFilter,
 }: LlmPhaseSectionProps) {
-  const overrideKey = TAB_TO_OVERRIDE_KEY[phaseId];
+  const overrideKey = uiPhaseIdToOverrideKey(phaseId);
   const resolved = overrideKey
     ? resolvePhaseModel(phaseOverrides, overrideKey, globalDraft)
     : null;
 
   const baseOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, ['primary', 'fast']),
-    [llmModelOptions, registry],
+    () => buildModelDropdownOptions(llmModelOptions, registry, ['primary', 'fast'], apiKeyFilter),
+    [llmModelOptions, registry, apiKeyFilter],
   );
   const reasoningOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, 'reasoning'),
-    [llmModelOptions, registry],
+    () => buildModelDropdownOptions(llmModelOptions, registry, 'reasoning', apiKeyFilter),
+    [llmModelOptions, registry, apiKeyFilter],
   );
 
   const updateOverrideField = useCallback((field: string, value: string | boolean | number | null) => {
@@ -119,16 +81,15 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
       <SettingRow label="Base Model" tip="Override the global base model for this phase. Leave on default to inherit.">
         <div className="flex items-center gap-1.5">
           {!phaseOverrides[overrideKey]?.baseModel && <GlobalDefaultIcon />}
-          <select
+          <ModelSelectDropdown
+            options={baseOptions}
             className={inputCls}
             value={phaseOverrides[overrideKey]?.baseModel ?? ''}
-            onChange={(e) => updateOverrideField('baseModel', e.target.value)}
-          >
-            <option value="">↩ {resolved.baseModel}</option>
-            {baseOptions.map((o) => (
-              <option key={o.providerId ? `reg-${o.providerId}-${o.value}` : o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+            onChange={(v) => updateOverrideField('baseModel', v)}
+            allowNone
+            noneLabel={`↩ ${resolved.baseModel}`}
+            noneModelId={resolved.baseModel}
+          />
         </div>
       </SettingRow>
       <SettingRow label="Use Reasoning" tip="Override reasoning toggle for this phase.">
@@ -140,17 +101,16 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
       <SettingRow label="Reasoning Model" tip="Override the reasoning model for this phase.">
         <div className="flex items-center gap-1.5">
           {!phaseOverrides[overrideKey]?.reasoningModel && <GlobalDefaultIcon />}
-          <select
+          <ModelSelectDropdown
+            options={reasoningOptions}
             className={inputCls}
             value={phaseOverrides[overrideKey]?.reasoningModel ?? ''}
-            onChange={(e) => updateOverrideField('reasoningModel', e.target.value)}
+            onChange={(v) => updateOverrideField('reasoningModel', v)}
             disabled={!resolved.useReasoning}
-          >
-            <option value="">↩ {globalDraft.llmModelReasoning}</option>
-            {reasoningOptions.map((o) => (
-              <option key={o.providerId ? `reg-${o.providerId}-${o.value}` : o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+            allowNone
+            noneLabel={`↩ ${globalDraft.llmModelReasoning}`}
+            noneModelId={globalDraft.llmModelReasoning}
+          />
         </div>
       </SettingRow>
       <SettingRow label="Token Cap" tip="Override the max output tokens for this phase. Leave empty to use global default.">

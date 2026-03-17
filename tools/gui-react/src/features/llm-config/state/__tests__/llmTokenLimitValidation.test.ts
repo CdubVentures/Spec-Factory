@@ -95,13 +95,13 @@ describe('validatePhaseTokenLimits', () => {
     const draft = {
       llmModelPlan: 'tiny',
       llmMaxOutputTokensPlan: 2048,
-      llmModelExtract: 'tiny',
-      llmMaxOutputTokensExtract: 4096,
+      llmModelReasoning: 'tiny',
+      llmMaxOutputTokensReasoning: 4096,
     };
     const warnings = validatePhaseTokenLimits(draft, registry);
     strictEqual(warnings.length, 2);
     strictEqual(warnings[0].phase, 'Plan');
-    strictEqual(warnings[1].phase, 'Extract');
+    strictEqual(warnings[1].phase, 'Reasoning');
   });
 
   it('no warning when token setting is zero', () => {

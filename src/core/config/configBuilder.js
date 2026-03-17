@@ -237,8 +237,6 @@ export function buildRawConfig({ manifestApplicator }) {
       defaultModel,
     llmModelTriage:
       explicitLlmModelTriage ||
-      process.env.CORTEX_MODEL_RERANK_FAST ||
-      process.env.CORTEX_MODEL_SEARCH_FAST ||
       explicitLlmModelFast ||
       explicitLlmModelPlan ||
       explicitLlmModelExtract ||
@@ -301,26 +299,9 @@ export function buildRawConfig({ manifestApplicator }) {
     ),
     llmPricingAsOf: String(process.env.LLM_PRICING_AS_OF || LLM_PRICING_AS_OF),
     llmPricingSources: normalizePricingSources(parseJsonEnv('LLM_PRICING_SOURCES_JSON', LLM_PRICING_SOURCES)),
-    cortexEnabled: parseBoolEnv('CORTEX_ENABLED', runtimeSettingDefault('cortexEnabled', false)),
     chatmockDir: process.env.CHATMOCK_DIR || defaultChatmockDir(),
     chatmockComposeFile: process.env.CHATMOCK_COMPOSE_FILE
       || path.join(process.env.CHATMOCK_DIR || defaultChatmockDir(), 'docker-compose.yml'),
-    cortexBaseUrl: process.env.CORTEX_BASE_URL || runtimeSettingDefault('cortexBaseUrl', 'http://localhost:5001/v1'),
-    cortexApiKey: process.env.CORTEX_API_KEY || 'key',
-    cortexAsyncBaseUrl: process.env.CORTEX_ASYNC_BASE_URL || runtimeSettingDefault('cortexAsyncBaseUrl', 'http://localhost:4000/api'),
-    cortexAsyncSubmitPath: process.env.CORTEX_ASYNC_SUBMIT_PATH || runtimeSettingDefault('cortexAsyncSubmitPath', '/jobs'),
-    cortexAsyncStatusPath: process.env.CORTEX_ASYNC_STATUS_PATH || runtimeSettingDefault('cortexAsyncStatusPath', '/jobs/{id}'),
-    cortexAsyncEnabled: parseBoolEnv('CORTEX_ASYNC_ENABLED', runtimeSettingDefault('cortexAsyncEnabled', true)),
-    cortexModelFast: process.env.CORTEX_MODEL_FAST || runtimeSettingDefault('cortexModelFast', 'gpt-5-low'),
-    cortexModelDom: process.env.CORTEX_MODEL_DOM || process.env.CORTEX_MODEL_FAST || runtimeSettingDefault('cortexModelDom', 'gpt-5-low'),
-    cortexModelReasoningDeep: process.env.CORTEX_MODEL_REASONING_DEEP || runtimeSettingDefault('cortexModelReasoningDeep', 'gpt-5-high'),
-    cortexModelVision: process.env.CORTEX_MODEL_VISION || process.env.CORTEX_MODEL_REASONING_DEEP || runtimeSettingDefault('cortexModelVision', 'gpt-5-high'),
-    cortexModelSearchFast: process.env.CORTEX_MODEL_SEARCH_FAST || process.env.CORTEX_MODEL_FAST || runtimeSettingDefault('cortexModelSearchFast', 'gpt-5-low'),
-    cortexModelRerankFast: process.env.CORTEX_MODEL_RERANK_FAST || process.env.CORTEX_MODEL_SEARCH_FAST || process.env.CORTEX_MODEL_FAST || runtimeSettingDefault('cortexModelRerankFast', 'gpt-5-low'),
-    cortexEscalateConfidenceLt: parseFloatEnv('CORTEX_ESCALATE_CONFIDENCE_LT', runtimeSettingDefault('cortexEscalateConfidenceLt', 0.85)),
-    cortexEscalateIfConflict: parseBoolEnv('CORTEX_ESCALATE_IF_CONFLICT', runtimeSettingDefault('cortexEscalateIfConflict', true)),
-    cortexEscalateCriticalOnly: parseBoolEnv('CORTEX_ESCALATE_CRITICAL_ONLY', runtimeSettingDefault('cortexEscalateCriticalOnly', true)),
-    cortexMaxDeepFieldsPerProduct: parseIntEnv('CORTEX_MAX_DEEP_FIELDS_PER_PRODUCT', runtimeSettingDefault('cortexMaxDeepFieldsPerProduct', 12)),
     consensusLlmWeightTier1: 0.60,
     consensusLlmWeightTier2: 0.40,
     consensusLlmWeightTier3: 0.20,
@@ -391,14 +372,6 @@ export function buildRawConfig({ manifestApplicator }) {
     runtimeControlFile: process.env.RUNTIME_CONTROL_FILE || runtimeSettingDefault('runtimeControlFile', '_runtime/control/runtime_overrides.json'),
     runtimeCaptureScreenshots: true,
     runtimeScreenshotMode: 'last_only',
-    cortexSyncTimeoutMs: parseIntEnv('CORTEX_SYNC_TIMEOUT_MS', runtimeSettingDefault('cortexSyncTimeoutMs', 60_000)),
-    cortexAsyncPollIntervalMs: parseIntEnv('CORTEX_ASYNC_POLL_INTERVAL_MS', runtimeSettingDefault('cortexAsyncPollIntervalMs', 5_000)),
-    cortexAsyncMaxWaitMs: parseIntEnv('CORTEX_ASYNC_MAX_WAIT_MS', runtimeSettingDefault('cortexAsyncMaxWaitMs', 900_000)),
-    cortexAutoStart: parseBoolEnv('CORTEX_AUTO_START', runtimeSettingDefault('cortexAutoStart', true)),
-    cortexEnsureReadyTimeoutMs: parseIntEnv('CORTEX_ENSURE_READY_TIMEOUT_MS', runtimeSettingDefault('cortexEnsureReadyTimeoutMs', 15_000)),
-    cortexStartReadyTimeoutMs: parseIntEnv('CORTEX_START_READY_TIMEOUT_MS', runtimeSettingDefault('cortexStartReadyTimeoutMs', 60_000)),
-    cortexFailureThreshold: parseIntEnv('CORTEX_FAILURE_THRESHOLD', runtimeSettingDefault('cortexFailureThreshold', 3)),
-    cortexCircuitOpenMs: parseIntEnv('CORTEX_CIRCUIT_OPEN_MS', runtimeSettingDefault('cortexCircuitOpenMs', 30_000)),
     llmTimeoutMs: timeoutMs,
     openaiApiKey: resolvedApiKey,
     openaiBaseUrl: resolvedBaseUrl,

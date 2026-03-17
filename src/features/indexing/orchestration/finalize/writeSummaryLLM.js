@@ -82,6 +82,7 @@ export async function writeSummaryMarkdownLLM({
       config,
       reason: 'write',
       role: 'write',
+      modelOverride: config._resolvedWriteBaseModel || '',
       system,
       user: JSON.stringify(payload),
       jsonSchema: summarySchema(),

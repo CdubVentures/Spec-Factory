@@ -284,6 +284,7 @@ function renderPrefetchPanel(tab: PrefetchTabKey, data: PreFetchPhasesResponse |
           searchResults={data?.search_results}
           liveSettings={liveSettings}
           idxRuntime={data?.idx_runtime?.search_planner}
+          persistScope={persistScope}
         />
       );
     case 'query_journey':

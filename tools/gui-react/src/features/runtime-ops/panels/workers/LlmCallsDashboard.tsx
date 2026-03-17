@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../api/client';
 import { getRefetchInterval } from '../../helpers';
-import { usePersistedTab } from '../../../../stores/tabStore';
+import { usePersistedTab, usePersistedExpandMap } from '../../../../stores/tabStore';
 import { usePersistedToggle } from '../../../../stores/collapseStore';
 import type { LlmCallsDashboardResponse, LlmCallRow, PrefetchTabKey, RuntimeIdxBadge } from '../../types';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
@@ -112,7 +112,7 @@ export function LlmCallsDashboard({
   onOpenPrefetchTab,
 }: LlmCallsDashboardProps) {
   const [activeFilter, setActiveFilter] = usePersistedTab<string>(`runtimeOps:llmDash:filter:${category}`, 'all');
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [expandedRows, toggleExpandedRow, replaceExpandedRows] = usePersistedExpandMap(`runtimeOps:llmDash:expandedRows:${category}`);
   const [summaryOpen, toggleSummaryOpen] = usePersistedToggle(`runtimeOps:llmDash:summary:${category}`, true);
 
   const { data: dashboard } = useQuery({
@@ -125,17 +125,12 @@ export function LlmCallsDashboard({
   const calls = dashboard?.calls ?? [];
   const summary = dashboard?.summary ?? null;
 
-  // When user clicks a different LLM worker tab, auto-expand that row
-  // and collapse the previous highlight so only the selected worker is open.
+  // When user clicks a different LLM worker tab, auto-expand that row.
   useEffect(() => {
     if (!highlightWorkerId) return;
-    setExpandedRows((prev) => {
-      const next = new Set(prev);
-      // Collapse any previously highlighted row (keep manually toggled ones)
-      // We expand only the highlighted one to show its prompt/response
-      next.add(highlightWorkerId);
-      return next;
-    });
+    if (!expandedRows[highlightWorkerId]) {
+      replaceExpandedRows({ ...expandedRows, [highlightWorkerId]: true });
+    }
   }, [highlightWorkerId]);
 
   const filteredCalls = useMemo(() => {
@@ -192,11 +187,7 @@ export function LlmCallsDashboard({
   }, [filteredCalls]);
 
   const toggleRow = (workerId: string) => {
-    setExpandedRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(workerId)) next.delete(workerId); else next.add(workerId);
-      return next;
-    });
+    toggleExpandedRow(workerId);
   };
 
   const handleTabClick = (tab: PrefetchTabKey, e: React.MouseEvent) => {
@@ -442,7 +433,7 @@ function MiniStat({ label, value, sub }: { label: string; value: string; sub: st
 function RoundGroup({ round, calls, expandedRows, onToggleRow, onTabClick, totalRounds, highlightWorkerId, allCalls }: {
   round: number;
   calls: LlmCallRow[];
-  expandedRows: Set<string>;
+  expandedRows: Record<string, boolean>;
   onToggleRow: (workerId: string) => void;
   onTabClick: (tab: PrefetchTabKey, e: React.MouseEvent) => void;
   totalRounds: number;
@@ -467,7 +458,7 @@ function RoundGroup({ round, calls, expandedRows, onToggleRow, onTabClick, total
         <CallRow
           key={call.worker_id}
           call={call}
-          expanded={expandedRows.has(call.worker_id)}
+          expanded={expandedRows[call.worker_id] === true}
           onToggle={() => onToggleRow(call.worker_id)}
           onTabClick={onTabClick}
           isHighlighted={call.worker_id === highlightWorkerId}

@@ -695,16 +695,10 @@ function buildHtml() {
         impact: 'Optional unless containerized services are enabled.'
       },
       svc_llm_sync: {
-        title: 'LLM/Cortex Sync Endpoint',
+        title: 'LLM Sync Endpoint',
         what: 'Primary synchronous model endpoint (typically localhost:5001).',
         does: 'Handles direct request/response model calls from SpecFactory.',
-        impact: 'Required when LLM/Cortex mode is enabled.'
-      },
-      svc_cortex_async: {
-        title: 'Cortex Async Endpoint',
-        what: 'Optional asynchronous job endpoint (often localhost:4000/api).',
-        does: 'Handles queued/background model jobs and job status polling.',
-        impact: 'Optional, but useful for long-running operations.'
+        impact: 'Required when LLM mode is enabled.'
       },
       svc_searxng: {
         title: 'SearXNG Endpoint',

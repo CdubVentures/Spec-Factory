@@ -4,9 +4,7 @@ import { AggressiveDomExtractor } from '../src/features/indexing/extraction/aggr
 
 test('AggressiveDomExtractor extracts basic field candidates from HTML text', async () => {
   const extractor = new AggressiveDomExtractor({
-    config: {
-      cortexModelDom: 'gpt-5-low'
-    }
+    config: {}
   });
   const result = await extractor.extractFromDom(
     '<html><body><div>weight: 59 g</div><div>dpi: 26000</div></body></html>',
@@ -23,10 +21,7 @@ test('AggressiveDomExtractor extracts basic field candidates from HTML text', as
 
 test('AggressiveDomExtractor uses deep model when forceDeep is true', async () => {
   const extractor = new AggressiveDomExtractor({
-    config: {
-      cortexModelDom: 'gpt-5-low',
-      cortexModelReasoningDeep: 'gpt-5-high'
-    }
+    config: {}
   });
   const result = await extractor.extractFromDom(
     '<div>weight: 58 g</div>',
@@ -39,48 +34,3 @@ test('AggressiveDomExtractor uses deep model when forceDeep is true', async () =
   assert.equal(result.force_deep, true);
 });
 
-test('AggressiveDomExtractor merges sidecar JSON candidates when available', async () => {
-  const extractor = new AggressiveDomExtractor({
-    cortexClient: {
-      async runPass() {
-        return {
-          mode: 'sidecar',
-          fallback_to_non_sidecar: false,
-          plan: { deep_task_count: 0 },
-          results: [{
-            response: {
-              choices: [{
-                message: {
-                  content: JSON.stringify({
-                    fieldCandidates: [{
-                      field: 'weight',
-                      value: '57 g',
-                      confidence: 0.73,
-                      quote: '57 g'
-                    }]
-                  })
-                }
-              }]
-            }
-          }]
-        };
-      }
-    },
-    config: {
-      cortexModelDom: 'gpt-5-low'
-    }
-  });
-
-  const result = await extractor.extractFromDom(
-    '<div>weight: 58 g</div>',
-    ['weight'],
-    { productId: 'mouse-3' },
-    { source_id: 'manufacturer' }
-  );
-
-  assert.equal(result.sidecar.mode, 'sidecar');
-  assert.equal(
-    result.fieldCandidates.some((row) => row.method === 'aggressive_dom_sidecar' && row.value === '57 g'),
-    true
-  );
-});

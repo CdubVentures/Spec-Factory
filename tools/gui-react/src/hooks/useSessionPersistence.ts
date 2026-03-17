@@ -8,24 +8,37 @@ interface PersistedTabOptions<T extends string> {
 }
 
 function readStorageEnvelope(storageKey: string): Record<string, unknown> {
-  if (typeof window === 'undefined' || !window.sessionStorage) return {};
+  if (typeof window === 'undefined') return {};
   try {
-    const raw = window.sessionStorage.getItem(storageKey);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    const values = parsed?.state?.values;
-    if (!values || typeof values !== 'object' || Array.isArray(values)) return {};
-    return values as Record<string, unknown>;
+    const local = window.localStorage?.getItem(storageKey) ?? null;
+    if (local) {
+      const parsed = JSON.parse(local);
+      const values = parsed?.state?.values;
+      if (values && typeof values === 'object' && !Array.isArray(values)) {
+        return values as Record<string, unknown>;
+      }
+    }
+    const session = window.sessionStorage?.getItem(storageKey) ?? null;
+    if (session) {
+      window.localStorage?.setItem(storageKey, session);
+      window.sessionStorage?.removeItem(storageKey);
+      const parsed = JSON.parse(session);
+      const values = parsed?.state?.values;
+      if (values && typeof values === 'object' && !Array.isArray(values)) {
+        return values as Record<string, unknown>;
+      }
+    }
+    return {};
   } catch {
     return {};
   }
 }
 
 function writeStorageEnvelope(storageKey: string, values: Record<string, unknown>) {
-  if (typeof window === 'undefined' || !window.sessionStorage) return;
+  if (typeof window === 'undefined' || !window.localStorage) return;
   const payload = JSON.stringify({ state: { values }, version: 0 });
   try {
-    window.sessionStorage.setItem(storageKey, payload);
+    window.localStorage.setItem(storageKey, payload);
   } catch {
     // Ignore storage write failures and keep in-memory state.
   }

@@ -36,33 +36,3 @@ test('AggressiveReasoningResolver leaves close non-critical conflicts unresolved
   assert.equal(result.resolved_by_field.dpi, undefined);
 });
 
-test('AggressiveReasoningResolver sends critical conflicts through deep sidecar path', async () => {
-  let taskCount = 0;
-  const resolver = new AggressiveReasoningResolver({
-    cortexClient: {
-      async runPass({ tasks }) {
-        taskCount = tasks.length;
-        return {
-          mode: 'sidecar',
-          fallback_to_non_sidecar: false,
-          plan: {
-            deep_task_count: tasks.length
-          }
-        };
-      }
-    }
-  });
-  const result = await resolver.resolve({
-    conflictsByField: {
-      sensor: [
-        { field: 'sensor', value: 'PAW3395', confidence: 0.65 },
-        { field: 'sensor', value: 'HERO 2', confidence: 0.64 }
-      ]
-    },
-    criticalFieldSet: new Set(['sensor'])
-  });
-
-  assert.equal(taskCount, 1);
-  assert.equal(result.deep_fields.includes('sensor'), true);
-  assert.equal(result.sidecar.mode, 'sidecar');
-});

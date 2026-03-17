@@ -21,7 +21,7 @@ test('createProductFinalizationDerivationRuntime builds derivation phases from s
       adapterArtifacts: { adapter: true },
       sourceResults: [{ url: 'https://example.com/spec' }],
       anchors: { shape: 'symmetrical' },
-      config: { cortexEnabled: true },
+      config: {},
       productId: 'product-1',
       categoryConfig: { criticalFieldSet: new Set(['weight_g']) },
       fieldOrder: ['shape', 'weight_g'],
@@ -74,14 +74,6 @@ test('createProductFinalizationDerivationRuntime builds derivation phases from s
         publishBlockers: [],
       };
     },
-    buildCortexSidecarPhaseCallsiteContextFn: (payload) => {
-      calls.push(['buildCortexSidecarPhaseCallsiteContextFn', payload]);
-      return { cortexSidecarPhaseCallsite: payload };
-    },
-    buildCortexSidecarContextFn: async (payload) => {
-      calls.push(['buildCortexSidecarContextFn', payload]);
-      return { status: 'disabled' };
-    },
   });
 
   await runtime.runDedicatedSyntheticSourceIngestion();
@@ -101,18 +93,8 @@ test('createProductFinalizationDerivationRuntime builds derivation phases from s
     computeConfidenceFn,
     evaluateValidationGateFn,
   });
-  const cortexSidecar = await runtime.buildCortexSidecar({
-    constrainedFinalizationConfig: { cortexEnabled: false },
-    confidence: validationGate.confidence,
-    criticalFieldsBelowPassTarget: [],
-    anchorMajorConflictsCount: identityConsensus.anchorMajorConflictsCount,
-    constraintAnalysis: { conflicts: [] },
-    completenessStats: validationGate.completenessStats,
-  });
-
   assert.deepEqual(identityConsensus.identity, { brand: 'Logitech' });
   assert.deepEqual(validationGate.gate, { validated: true, validatedReason: 'validated' });
-  assert.deepEqual(cortexSidecar, { status: 'disabled' });
   assert.deepEqual(
     calls.map(([name]) => name),
     [
@@ -122,8 +104,6 @@ test('createProductFinalizationDerivationRuntime builds derivation phases from s
       'buildIdentityConsensusContextFn',
       'buildValidationGatePhaseCallsiteContextFn',
       'buildValidationGateContextFn',
-      'buildCortexSidecarPhaseCallsiteContextFn',
-      'buildCortexSidecarContextFn',
     ],
   );
 });
@@ -134,7 +114,6 @@ test('runProductFinalizationDerivation can delegate through finalizationDerivati
   const result = await runProductFinalizationDerivation({
     config: {
       llmWriteSummary: true,
-      cortexEnabled: true,
     },
     terminalReason: '',
     startMs: 500,
@@ -357,17 +336,6 @@ test('runProductFinalizationDerivation can delegate through finalizationDerivati
           contribution: { llmFields: ['shape'] },
         };
       },
-      buildCortexSidecar: async ({
-        constrainedFinalizationConfig,
-        confidence,
-        anchorMajorConflictsCount,
-      }) => {
-        calls.push([
-          'buildCortexSidecar',
-          { constrainedFinalizationConfig, confidence, anchorMajorConflictsCount },
-        ]);
-        return { status: 'disabled' };
-      },
     },
   });
 
@@ -377,7 +345,6 @@ test('runProductFinalizationDerivation can delegate through finalizationDerivati
   assert.deepEqual(result.runtimeEvidencePack, { pack: true });
   assert.deepEqual(result.phase07PrimeSources, { summary: { refs_selected_total: 2 } });
   assert.deepEqual(result.phase08Extraction, { summary: { accepted_candidate_count: 3 } });
-  assert.deepEqual(result.cortexSidecar, { status: 'disabled' });
   assert.equal(result.durationMs, 1500);
   assert.deepEqual(
     calls,
@@ -450,14 +417,6 @@ test('runProductFinalizationDerivation can delegate through finalizationDerivati
       ['buildFinalizationMetrics', {
         normalized: { fields: { weight_g: '59' }, quality: {} },
         provenance: { weight_g: [{ url: 'https://example.com/spec' }] },
-      }],
-      ['buildCortexSidecar', {
-        constrainedFinalizationConfig: {
-          llmWriteSummary: true,
-          cortexEnabled: true,
-        },
-        confidence: 0.91,
-        anchorMajorConflictsCount: 1,
       }],
     ],
   );

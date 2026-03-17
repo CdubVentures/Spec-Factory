@@ -4,7 +4,7 @@ import { api } from '../../../api/client';
 import { useUiStore } from '../../../stores/uiStore';
 import { useRuntimeStore } from '../../runtime-ops/state/runtimeStore';
 import { useIndexLabStore } from '../state/indexlabStore';
-import { useCollapseStore } from '../../../stores/collapseStore';
+import { useCollapseStore, usePersistedToggle } from '../../../stores/collapseStore';
 import {
   readRuntimeSettingsBootstrap,
   useRuntimeSettingsReader,
@@ -89,7 +89,8 @@ export function IndexingPage() {
   const collapseValues = useCollapseStore((s) => s.values);
   const collapseToggle = useCollapseStore((s) => s.toggle);
   const panelCollapsed = useMemo(() => deriveIndexingPanelCollapsed(collapseValues), [collapseValues]);
-  const [stopForceKill, setStopForceKill] = useState(true), [replayPending, setReplayPending] = useState(false);
+  const [stopForceKill, , setStopForceKill] = usePersistedToggle(`indexing:stopForceKill:${category}`, true);
+  const [replayPending, setReplayPending] = useState(false);
   const previousCategoryRef = useRef(category);
 
   const { data: processStatus } = useQuery({

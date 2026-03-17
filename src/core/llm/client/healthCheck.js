@@ -1,5 +1,6 @@
 import { buildRunId } from '../../../utils/common.js';
 import { callOpenAI } from './openaiClient.js';
+import { resolveLlmRoute, buildEffectiveCostRates } from './routing.js';
 import { normalizeCostRates } from '../../../billing/costRates.js';
 import { appendCostLedgerEntry } from '../../../billing/costLedger.js';
 
@@ -41,15 +42,21 @@ export async function runLlmHealthCheck({
   model = '',
   logger = null
 }) {
-  if (!config.llmApiKey) {
+  // WHY: Use registry-resolved route when no explicit provider/model override
+  const route = resolveLlmRoute(config, { role: 'extract' });
+  const resolvedProvider = String(provider || route.provider || config.llmProvider || 'openai').trim().toLowerCase();
+  const resolvedModel = String(model || route.model || config.llmModelExtract || '').trim();
+  const resolvedApiKey = route.apiKey || config.llmApiKey || '';
+  const resolvedBaseUrl = route.baseUrl || config.llmBaseUrl || '';
+
+  if (!resolvedApiKey) {
     throw new Error('LLM_API_KEY is missing');
   }
 
   const runId = buildRunId();
-  const resolvedProvider = String(provider || config.llmProvider || 'openai').trim().toLowerCase();
-  const resolvedModel = String(model || config.llmModelExtract || '').trim();
   const echo = `spec-health-${Date.now()}`;
   const usage = defaultUsageRow();
+  const effectiveCostRates = buildEffectiveCostRates(route._registryEntry, normalizeCostRates(config));
 
   const response = await callOpenAI({
     model: resolvedModel,
@@ -63,8 +70,8 @@ export async function runLlmHealthCheck({
       request: 'Return ok=true and mirror provider/model and whether reasoning mode was enabled.'
     }),
     jsonSchema: healthSchema(),
-    apiKey: config.llmApiKey,
-    baseUrl: config.llmBaseUrl,
+    apiKey: resolvedApiKey,
+    baseUrl: resolvedBaseUrl,
     provider: resolvedProvider,
     usageContext: {
       category: 'health',
@@ -76,7 +83,7 @@ export async function runLlmHealthCheck({
       url_count: 0,
       evidence_chars: 0
     },
-    costRates: normalizeCostRates(config),
+    costRates: effectiveCostRates,
     onUsage: async (usageRow) => {
       Object.assign(usage, usageRow || {});
       await appendCostLedgerEntry({
@@ -127,7 +134,7 @@ export async function runLlmHealthCheck({
     ts: new Date().toISOString(),
     run_id: runId,
     provider_resolved: usage.provider || resolvedProvider,
-    base_url: config.llmBaseUrl,
+    base_url: resolvedBaseUrl,
     model: usage.model || resolvedModel,
     reasoning_mode: Boolean(config.llmReasoningMode),
     reasoning_budget: Number(config.llmReasoningBudget || 0),

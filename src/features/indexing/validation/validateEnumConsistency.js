@@ -234,6 +234,8 @@ export async function runEnumConsistencyReview({
   formatGuidance = '',
   config = {},
   logger = null,
+  onUsage,
+  costRates,
 } = {}) {
   const normalizedPending = dedupeValues(pendingValues);
   const normalizedCanonical = dedupeValues(canonicalValues);
@@ -281,6 +283,8 @@ export async function runEnumConsistencyReview({
         pending_count: normalizedPending.length,
         canonical_count: normalizedCanonical.length,
       },
+      costRates,
+      onUsage,
       reasoningMode: Boolean(config?.llmReasoningMode),
       reasoningBudget: Number(config?.llmReasoningBudget || 0),
       timeoutMs: Number(config?.llmTimeoutMs || config?.openaiTimeoutMs || 40_000),

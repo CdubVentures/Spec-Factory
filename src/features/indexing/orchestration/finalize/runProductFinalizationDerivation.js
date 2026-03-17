@@ -84,8 +84,6 @@ export async function runProductFinalizationDerivation({
   buildPhase08ExtractionContextFn,
   buildFinalizationMetricsPhaseCallsiteContextFn,
   buildFinalizationMetricsContextFn,
-  buildCortexSidecarPhaseCallsiteContextFn,
-  buildCortexSidecarContextFn,
   finalizationDerivationRuntime = null,
   createProductFinalizationDerivationRuntimeFn = createProductFinalizationDerivationRuntime,
 } = {}) {
@@ -168,8 +166,6 @@ export async function runProductFinalizationDerivation({
       buildPhase08ExtractionContextFn,
       buildFinalizationMetricsPhaseCallsiteContextFn,
       buildFinalizationMetricsContextFn,
-      buildCortexSidecarPhaseCallsiteContextFn,
-      buildCortexSidecarContextFn,
     });
 
   await resolvedFinalizationDerivationRuntime.runDedicatedSyntheticSourceIngestion();
@@ -206,7 +202,6 @@ export async function runProductFinalizationDerivation({
     ? {
         ...config,
         llmWriteSummary: false,
-        cortexEnabled: false,
       }
     : config;
 
@@ -413,15 +408,6 @@ export async function runProductFinalizationDerivation({
   const fingerprintCount = finalizationMetricsContext.fingerprintCount;
   const contribution = finalizationMetricsContext.contribution;
 
-  const cortexSidecar = await resolvedFinalizationDerivationRuntime.buildCortexSidecar({
-    constrainedFinalizationConfig,
-    confidence,
-    criticalFieldsBelowPassTarget,
-    anchorMajorConflictsCount,
-    constraintAnalysis,
-    completenessStats,
-  });
-
   return {
     identityGate,
     identityConfidence,
@@ -471,6 +457,5 @@ export async function runProductFinalizationDerivation({
     parserHealthAverage,
     fingerprintCount,
     contribution,
-    cortexSidecar,
   };
 }

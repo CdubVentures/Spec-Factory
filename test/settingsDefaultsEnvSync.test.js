@@ -14,11 +14,38 @@ const SECRET_RUNTIME_KEYS = new Set([
   'llmPlanApiKey',
   'openaiApiKey',
   'anthropicApiKey',
-  'cortexApiKey',
   'eloSupabaseAnonKey',
 ]);
 const NON_CANONICAL_RUNTIME_KEYS = new Set([
   'localOutputRoot',
+  // WHY: Model stack simplified — these keys default to '' in settingsDefaults
+  // but post-merge aliases them to llmModelPlan/llmPlanFallbackModel values.
+  'llmModelTriage',
+  'llmModelFast',
+  'llmModelExtract',
+  'llmModelValidate',
+  'llmModelWrite',
+  'llmExtractFallbackModel',
+  'llmValidateFallbackModel',
+  'llmWriteFallbackModel',
+  'llmMaxOutputTokensTriage',
+  'llmMaxOutputTokensFast',
+  'llmMaxOutputTokensExtract',
+  'llmMaxOutputTokensValidate',
+  'llmMaxOutputTokensWrite',
+  'llmMaxOutputTokensExtractFallback',
+  'llmMaxOutputTokensValidateFallback',
+  'llmMaxOutputTokensWriteFallback',
+  // Per-role provider/baseUrl/apiKey keys default to '' but alias to global in post-merge
+  'llmExtractProvider',
+  'llmExtractBaseUrl',
+  'llmExtractApiKey',
+  'llmValidateProvider',
+  'llmValidateBaseUrl',
+  'llmValidateApiKey',
+  'llmWriteProvider',
+  'llmWriteBaseUrl',
+  'llmWriteApiKey',
 ]);
 const CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
   'fetchConcurrency',

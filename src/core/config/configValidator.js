@@ -21,14 +21,6 @@ export function validateConfig(config) {
     });
   }
 
-  // Rule 3: Cortex enabled requires base URL
-  if (config.cortexEnabled && !config.cortexBaseUrl) {
-    errors.push({
-      code: 'CORTEX_NO_BASE_URL',
-      message: 'CORTEX_ENABLED=true but CORTEX_BASE_URL is not set'
-    });
-  }
-
   // Rule 4: S3 output mode requires AWS credentials
   if (config.outputMode === 's3' && !config.mirrorToS3) {
     warnings.push({

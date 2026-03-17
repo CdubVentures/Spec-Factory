@@ -1,0 +1,3714 @@
+{
+  "_doc": "Unified schema-process artifact combining all 15 planning JSON contracts and LLM-call specs for the prefetch pipeline.",
+  "generated_at": "2026-03-17T21:29:40.810Z",
+  "source_folder": "docs/implementation/ai-indexing-plans/pipeline/planning",
+  "source_files_count": 15,
+  "source_files": [
+    "01-needset-input.json",
+    "01-needset-output.json",
+    "01-needset-planner-context.json",
+    "01-needset-planner-output.json",
+    "02-brand-resolver-input.json",
+    "02-brand-resolver-output.json",
+    "03-search-planner-input.json",
+    "03-search-planner-llm-call.json",
+    "03-search-planner-output.json",
+    "03-search-plan-handoff-input.json",
+    "03-search-plan-handoff-output.json",
+    "04-query-journey-input.json",
+    "04-query-journey-llm-call.json",
+    "04-query-journey-output.json",
+    "05-searxng-execution-input.json"
+  ],
+  "process_sequence": [
+    {
+      "stage": "01",
+      "stage_name": "NeedSet",
+      "purpose": "Runtime product context to NeedSet output, planning context, and Schema 4 planner contract.",
+      "artifacts": [
+        "01-needset-input.json",
+        "01-needset-output.json",
+        "01-needset-planner-context.json",
+        "01-needset-planner-output.json"
+      ],
+      "llm_calls": []
+    },
+    {
+      "stage": "02",
+      "stage_name": "Brand Resolver",
+      "purpose": "Brand/domain sidecar resolution used to enrich search planning and host promotion.",
+      "artifacts": [
+        "02-brand-resolver-input.json",
+        "02-brand-resolver-output.json"
+      ],
+      "llm_calls": []
+    },
+    {
+      "stage": "03",
+      "stage_name": "Search Planner",
+      "purpose": "Schema 3 planning context to Schema 4 planner output and search-plan handoff.",
+      "artifacts": [
+        "03-search-planner-input.json",
+        "03-search-planner-llm-call.json",
+        "03-search-planner-output.json",
+        "03-search-plan-handoff-input.json",
+        "03-search-plan-handoff-output.json"
+      ],
+      "llm_calls": [
+        "03-search-planner-llm-call.json"
+      ]
+    },
+    {
+      "stage": "04",
+      "stage_name": "Query Journey",
+      "purpose": "Schema 4 handoff through adapter, guard, execution context, classification, and rerank/triage contracts.",
+      "artifacts": [
+        "04-query-journey-input.json",
+        "04-query-journey-llm-call.json",
+        "04-query-journey-output.json"
+      ],
+      "llm_calls": [
+        "04-query-journey-llm-call.json"
+      ]
+    },
+    {
+      "stage": "05",
+      "stage_name": "SearXNG Execution",
+      "purpose": "Final provider-facing query payload entering the search execution layer.",
+      "artifacts": [
+        "05-searxng-execution-input.json"
+      ],
+      "llm_calls": []
+    }
+  ],
+  "llm_call_files": [
+    "03-search-planner-llm-call.json",
+    "04-query-journey-llm-call.json"
+  ],
+  "schemas_and_calls": {
+    "01-needset-input": {
+      "file": "01-needset-input.json",
+      "stage": "01",
+      "kind": "input_contract",
+      "content": {
+        "_doc": "Schema 1 (NeedSetStartInput) field-by-field data source mapping. Updated 2026-03-17 against current seed, discovery, bootstrap, and finalization call sites.",
+        "schema_version": "needset_start_input.v2 — input contract only. computeNeedSet() emits 'needset_output.v2'; Schema 1 itself is not emitted as a runtime artifact.",
+        "run": {
+          "run_id": "SOURCE: seedRound0NeedSet() passes ''; bootstrapRunProductExecutionState.js, runDiscoverySeedPlan.js, and buildNeedsetReasoningContext.js pass the active runId.",
+          "category": "SOURCE: job.category — passed at all 4 call sites",
+          "product_id": "SOURCE: job.productId || s3Key — passed at all 4 call sites",
+          "brand": "SOURCE: job.identityLock?.brand || '' — passed from all main call sites",
+          "model": "SOURCE: job.identityLock?.model || '' — passed from all main call sites",
+          "base_model": "RESOLVED: Passed by bootstrapRunProductExecutionState.js, runDiscoverySeedPlan.js, and buildNeedsetReasoningContext.js via identityLock/base model context.",
+          "aliases": "RESOLVED: Passed by bootstrapRunProductExecutionState.js, runDiscoverySeedPlan.js, and buildNeedsetReasoningContext.js via job aliases or identityLock aliases.",
+          "round": "SOURCE: seedRound0NeedSet() and bootstrapRunProductExecutionState.js pass 0; runDiscoverySeedPlan.js passes roundContext.round || 0; buildNeedsetReasoningContext.js omits it so computeNeedSet() defaults to 0.",
+          "round_mode": "SOURCE: seedRound0NeedSet() and bootstrapRunProductExecutionState.js pass 'seed'; runDiscoverySeedPlan.js passes roundContext.round_mode || 'seed'; buildNeedsetReasoningContext.js omits it so computeNeedSet() defaults to 'seed'."
+        },
+        "identity": {
+          "state": "SOURCE: needsetEngine.js:526 via mapIdentityState(identityContext). Maps 'locked'|'provisional'|'conflict' → PanelIdentityState.",
+          "source_label_state": "SOURCE: needsetEngine.js:527 via deriveSourceLabelState(identityContext). Uses status + confidence + contradiction_count.",
+          "confidence": "SOURCE: needsetEngine.js:530 — toNumber(identityContext?.confidence, 0).",
+          "manufacturer": "SOURCE: needsetEngine.js:528 — String(brand || identityContext?.manufacturer || '').",
+          "official_domain": "SOURCE: needsetEngine.js:531 — identityContext?.official_domain || null.",
+          "support_domain": "SOURCE: needsetEngine.js:532 — identityContext?.support_domain || null.",
+          "publishable": "DROPPED: Not relevant for indexing/planning phase. Review/publish decisions happen downstream.",
+          "review_required": "DROPPED: Not relevant for indexing/planning phase. Review phase handles this."
+        },
+        "settings": {
+          "_note": "DROPPED FROM SCHEMA 1: Settings flow directly to Phase 2 via searchPlanningContext.js:derivePlannerLimits(). The settings param in computeNeedSet() is declared but never read. Config reaches the planner without Schema 1 as intermediary."
+        },
+        "fields": {
+          "_note": "Array of per-field objects. Below documents the source for each sub-field.",
+          "field_key": "SOURCE: needsetEngine.js:342 — collectFieldKeys() unions fieldOrder + provenance keys + fieldRules keys.",
+          "label": "SOURCE: needsetEngine.js:418 — String(rule.display_name || rule.ui?.label || field).",
+          "group_key": "SOURCE: needsetEngine.js:419 — String(rule.group || ''). From field_rules runtime JSON.",
+          "idx": {
+            "required_level": "SOURCE: needsetEngine.js:345 — normalizeRequiredLevel(ruleRequiredLevel(rule)).",
+            "min_evidence_refs": "SOURCE: needsetEngine.js:385 — toNumber(rule.min_evidence_refs, 0).",
+            "query_terms": "SOURCE: needsetEngine.js:430 — rule.search_hints.query_terms.",
+            "domain_hints": "SOURCE: needsetEngine.js:431 — rule.search_hints.domain_hints.",
+            "preferred_content_types": "SOURCE: needsetEngine.js:432 — rule.search_hints.preferred_content_types || content_types.",
+            "tooltip_md": "SOURCE: needsetEngine.js:434 — rule.ui?.tooltip_md || null.",
+            "aliases": "SOURCE: needsetEngine.js:435 — rule.aliases || []."
+          },
+          "pass_target": "SOURCE: needsetEngine.js:348 — clamp01(toNumber(prov.pass_target, 0.8)).",
+          "exact_match_required": "SOURCE: needsetEngine.js:422 — Boolean(rule.contract?.exact_match).",
+          "current": {
+            "status": "SOURCE: needsetEngine.js:353 → mapInternalToSchemaState(). covered→accepted, missing→unknown.",
+            "value": "SOURCE: needsetEngine.js:438 — prov.value ?? 'unk'.",
+            "confidence": "SOURCE: needsetEngine.js:439 — toNumber(confidence, 0).",
+            "effective_confidence": "SOURCE: needsetEngine.js:386 — clamp01(toNumber(confidence, 0)).",
+            "refs_found": "SOURCE: needsetEngine.js:384 — evidence.length || prov.confirmations.",
+            "best_tier_seen": "SOURCE: needsetEngine.js:389-391 — Math.min of evidence[].tier.",
+            "meets_pass_target": "SOURCE: needsetEngine.js:387 — covered || confidence >= passTarget.",
+            "reasons": "SOURCE: needsetEngine.js:393-404 via deriveFieldReasons()."
+          },
+          "history": {
+            "_note": "RESOLVED: buildFieldHistories.js builds per-field history after each round. Discovery passes roundContext.previousFieldHistories into computeNeedSet(), and finalization can merge the current round through enrichNeedSetFieldHistories.js.",
+            "existing_queries": "RESOLVED: buildFieldHistories merges searchPlanQueries[].target_fields → per-field query lists. Deduplicates via Set union.",
+            "domains_tried": "RESOLVED: buildFieldHistories unions prev.domains_tried + evidence[].rootDomain from current round provenance.",
+            "host_classes_tried": "RESOLVED: buildFieldHistories classifies each evidence entry via classifyHostClass(tier, tierName, host) → HostClass enum. Unions with previous.",
+            "evidence_classes_tried": "RESOLVED: buildFieldHistories classifies each evidence entry via classifyEvidenceClass(tier, tierName, method, host, url) → EvidenceClass enum. Unions with previous.",
+            "query_count": "RESOLVED: buildFieldHistories increments by count of new queries targeting this field per round.",
+            "urls_examined_count": "RESOLVED: buildFieldHistories counts unique evidence URLs per field per round and accumulates.",
+            "no_value_attempts": "RESOLVED: buildFieldHistories increments when field was targeted by queries but field value remains unknown.",
+            "duplicate_attempts_suppressed": "RESOLVED: buildFieldHistories distributes round-level suppression count to all targeted fields."
+          }
+        },
+        "debug": {
+          "idx_runtime_present": "SOURCE: needsetEngine.js:563-572. Backward-compat debug block."
+        },
+        "_gap_summary": {
+          "total_gaps_original": 10,
+          "resolved": 5,
+          "dropped_by_design": 5,
+          "remaining": 0,
+          "details": [
+            {
+              "id": "GAP-1",
+              "field": "run.base_model",
+              "status": "RESOLVED — present at bootstrap, discovery seed, and finalization call sites"
+            },
+            {
+              "id": "GAP-2",
+              "field": "run.aliases",
+              "status": "RESOLVED — present at bootstrap, discovery seed, and finalization call sites"
+            },
+            {
+              "id": "GAP-3",
+              "field": "identity.publishable",
+              "status": "DROPPED — not relevant for indexing/planning"
+            },
+            {
+              "id": "GAP-4",
+              "field": "identity.review_required",
+              "status": "DROPPED — not relevant for indexing/planning"
+            },
+            {
+              "id": "GAP-5",
+              "field": "settings block",
+              "status": "DROPPED — config flows directly to Phase 2, not through Schema 1"
+            },
+            {
+              "id": "GAP-6",
+              "field": "needsetIdentityLockThreshold",
+              "status": "DROPPED — informational only, actual value lives in config"
+            },
+            {
+              "id": "GAP-7",
+              "field": "needsetIdentityProvisionalThreshold",
+              "status": "DROPPED — informational only, actual value is hardcoded"
+            },
+            {
+              "id": "GAP-8",
+              "field": "host_classes_tried",
+              "status": "RESOLVED — classifyHostClass() in buildFieldHistories.js"
+            },
+            {
+              "id": "GAP-9",
+              "field": "evidence_classes_tried",
+              "status": "RESOLVED — classifyEvidenceClass() in buildFieldHistories.js"
+            },
+            {
+              "id": "GAP-10",
+              "field": "history counters",
+              "status": "RESOLVED — buildFieldHistories() feeds discovery/finalization round history"
+            }
+          ]
+        }
+      }
+    },
+    "01-needset-output": {
+      "file": "01-needset-output.json",
+      "stage": "01",
+      "kind": "output_contract",
+      "content": {
+        "_doc": "Schema 2 (NeedSetOutput) gap analysis. Compares spec (Data - Flow - Schemas.md) against actual computeNeedSet() output (needsetEngine.js). Updated 2026-03-17.",
+        "_spec_vs_actual_summary": {
+          "schema_2_spec_keys": [
+            "schema_version",
+            "round",
+            "round_mode",
+            "identity",
+            "summary",
+            "blockers",
+            "fields",
+            "planner_seed",
+            "debug"
+          ],
+          "actual_output_keys": [
+            "schema_version",
+            "round",
+            "round_mode",
+            "identity",
+            "fields",
+            "planner_seed",
+            "run_id",
+            "category",
+            "product_id",
+            "generated_at",
+            "total_fields",
+            "summary",
+            "blockers",
+            "focus_fields",
+            "bundles",
+            "profile_mix",
+            "rows",
+            "debug"
+          ],
+          "extra_backward_compat_keys": [
+            "run_id",
+            "category",
+            "product_id",
+            "generated_at",
+            "total_fields",
+            "focus_fields",
+            "bundles",
+            "profile_mix",
+            "rows"
+          ],
+          "consumers_of_backward_compat": {
+            "rows": [
+              "projectNeedSetStory (needsetStoryProjection.js:13)",
+              "toNeedSetSnapshot()/runtime bridge normalization (runtimeBridgePayloads.js)"
+            ],
+            "bundles": [
+              "projectNeedSetStory (needsetStoryProjection.js:21)",
+              "needset_computed runtime bridge handling (runtimeBridgeEventHandlers.js)"
+            ],
+            "focus_fields": [
+              "toNeedSetSnapshot()/runtime bridge normalization (runtimeBridgePayloads.js)"
+            ],
+            "profile_mix": [
+              "projectNeedSetStory (needsetStoryProjection.js:39)",
+              "toNeedSetSnapshot()/runtime bridge normalization (runtimeBridgePayloads.js)"
+            ],
+            "run_id_category_product_id": [
+              "toNeedSetSnapshot()/baseline payloads (runtimeBridgePayloads.js)"
+            ],
+            "total_fields_generated_at": [
+              "toNeedSetSnapshot()/baseline payloads (runtimeBridgePayloads.js)",
+              "buildRunSummaryAnalysisSection.js"
+            ]
+          }
+        },
+        "schema_version": {
+          "spec": "needset_output.v2",
+          "actual": "needset_output.v2 — needsetEngine.js:576",
+          "status": "MATCH"
+        },
+        "round": {
+          "spec": "number",
+          "actual": "needsetEngine.js:577 — passed through from input",
+          "status": "MATCH"
+        },
+        "round_mode": {
+          "spec": "seed | carry_forward | repair",
+          "actual": "needsetEngine.js:578 — passed through from input (roundMode param)",
+          "status": "MATCH"
+        },
+        "identity": {
+          "state": {
+            "spec": "PanelIdentityState",
+            "actual": "needsetEngine.js:526 — mapIdentityState(identityContext)",
+            "status": "MATCH"
+          },
+          "source_label_state": {
+            "spec": "matched|possible|different|unknown",
+            "actual": "needsetEngine.js:527 — deriveSourceLabelState(identityContext)",
+            "status": "MATCH"
+          },
+          "manufacturer": {
+            "spec": "string|null",
+            "actual": "needsetEngine.js:528 — brand || identityContext.manufacturer",
+            "status": "MATCH"
+          },
+          "model": {
+            "spec": "string|null",
+            "actual": "needsetEngine.js:529 — model param",
+            "status": "MATCH"
+          },
+          "confidence": {
+            "spec": "number",
+            "actual": "needsetEngine.js:530 — identityContext.confidence",
+            "status": "MATCH"
+          },
+          "official_domain": {
+            "spec": "string|null",
+            "actual": "needsetEngine.js:531",
+            "status": "MATCH"
+          },
+          "support_domain": {
+            "spec": "string|null",
+            "actual": "needsetEngine.js:532",
+            "status": "MATCH"
+          }
+        },
+        "summary": {
+          "total": {
+            "spec": "number",
+            "actual": "needsetEngine.js:500 — fieldKeys.length",
+            "status": "MATCH"
+          },
+          "resolved": {
+            "spec": "number",
+            "actual": "needsetEngine.js:501 — resolvedCount",
+            "status": "MATCH"
+          },
+          "core_total": {
+            "spec": "number",
+            "actual": "needsetEngine.js:502",
+            "status": "MATCH"
+          },
+          "core_unresolved": {
+            "spec": "number",
+            "actual": "needsetEngine.js:503",
+            "status": "MATCH"
+          },
+          "secondary_total": {
+            "spec": "number",
+            "actual": "needsetEngine.js:504",
+            "status": "MATCH"
+          },
+          "secondary_unresolved": {
+            "spec": "number",
+            "actual": "needsetEngine.js:505",
+            "status": "MATCH"
+          },
+          "optional_total": {
+            "spec": "number",
+            "actual": "needsetEngine.js:506",
+            "status": "MATCH"
+          },
+          "optional_unresolved": {
+            "spec": "number",
+            "actual": "needsetEngine.js:507",
+            "status": "MATCH"
+          },
+          "conflicts": {
+            "spec": "number",
+            "actual": "needsetEngine.js:508",
+            "status": "MATCH"
+          },
+          "bundles_planned": {
+            "spec": "NOT IN SPEC",
+            "actual": "needsetEngine.js:510 — backward compat extra",
+            "status": "EXTRA — consumers: needsetStoryProjection.js:11"
+          }
+        },
+        "blockers": {
+          "missing": {
+            "spec": "number",
+            "actual": "needsetEngine.js:591 — missingCount",
+            "status": "MATCH"
+          },
+          "weak": {
+            "spec": "number",
+            "actual": "needsetEngine.js:592 — weakCount",
+            "status": "MATCH"
+          },
+          "conflict": {
+            "spec": "number",
+            "actual": "needsetEngine.js:593 — conflictCount",
+            "status": "MATCH"
+          },
+          "needs_exact_match": {
+            "spec": "number",
+            "actual": "needsetEngine.js:594 — needsExactMatchCount",
+            "status": "MATCH"
+          },
+          "search_exhausted": {
+            "spec": "number",
+            "actual": "needsetEngine.js — derived from field history: no_value_attempts >= 3 AND evidence_classes_tried >= 3",
+            "status": "MATCH — now computed from buildFieldHistories feedback data"
+          }
+        },
+        "fields": {
+          "_shape_note": "Array of per-field objects. Individual field shape analysis below.",
+          "field_key": {
+            "spec": "string",
+            "actual": "needsetEngine.js:425",
+            "status": "MATCH"
+          },
+          "label": {
+            "spec": "string",
+            "actual": "needsetEngine.js:426",
+            "status": "MATCH"
+          },
+          "group_key": {
+            "spec": "string|null",
+            "actual": "needsetEngine.js:427",
+            "status": "MATCH"
+          },
+          "required_level": {
+            "spec": "RequiredLevel",
+            "actual": "needsetEngine.js:428",
+            "status": "MATCH"
+          },
+          "idx": {
+            "min_evidence_refs": {
+              "spec": "number",
+              "actual": "needsetEngine.js:430",
+              "status": "MATCH"
+            },
+            "query_terms": {
+              "spec": "string[]",
+              "actual": "needsetEngine.js:431 via normalizeStringArray()",
+              "status": "MATCH — lowercased, trimmed, deduped"
+            },
+            "domain_hints": {
+              "spec": "string[]",
+              "actual": "needsetEngine.js:432 via normalizeDomainHints()",
+              "status": "MATCH — canonical host form, lowercased, deduped"
+            },
+            "preferred_content_types": {
+              "spec": "string[]",
+              "actual": "needsetEngine.js:433 via normalizeStringArray()",
+              "status": "MATCH — lowercased, trimmed, deduped"
+            },
+            "tooltip_md": {
+              "spec": "string|null",
+              "actual": "needsetEngine.js:434",
+              "status": "MATCH"
+            },
+            "aliases": {
+              "spec": "string[]",
+              "actual": "needsetEngine.js:435",
+              "status": "MATCH"
+            }
+          },
+          "state": {
+            "spec": "FieldStatus (accepted|conflict|unknown|weak)",
+            "actual": "needsetEngine.js:437 — mapInternalToSchemaState()",
+            "status": "MATCH"
+          },
+          "value": {
+            "spec": "unknown|null",
+            "actual": "needsetEngine.js:438",
+            "status": "MATCH"
+          },
+          "confidence": {
+            "spec": "number",
+            "actual": "needsetEngine.js:439",
+            "status": "MATCH"
+          },
+          "effective_confidence": {
+            "spec": "number",
+            "actual": "needsetEngine.js:440",
+            "status": "MATCH"
+          },
+          "refs_found": {
+            "spec": "number",
+            "actual": "needsetEngine.js:441",
+            "status": "MATCH"
+          },
+          "min_refs": {
+            "spec": "number",
+            "actual": "needsetEngine.js:442",
+            "status": "MATCH"
+          },
+          "best_tier_seen": {
+            "spec": "0|1|2|3|4|5|null",
+            "actual": "needsetEngine.js:443",
+            "status": "MATCH"
+          },
+          "pass_target": {
+            "spec": "number",
+            "actual": "needsetEngine.js:444",
+            "status": "MATCH"
+          },
+          "meets_pass_target": {
+            "spec": "boolean",
+            "actual": "needsetEngine.js:445",
+            "status": "MATCH"
+          },
+          "exact_match_required": {
+            "spec": "boolean",
+            "actual": "needsetEngine.js:446",
+            "status": "MATCH"
+          },
+          "need_score": {
+            "spec": "number",
+            "actual": "needsetEngine.js:447",
+            "status": "MATCH"
+          },
+          "reasons": {
+            "spec": "Array of reason codes",
+            "actual": "needsetEngine.js:448 — deriveFieldReasons()",
+            "status": "MATCH — note: tier_pref_unmet reserved for future (line 257)"
+          },
+          "history": {
+            "existing_queries": {
+              "spec": "string[]",
+              "actual": "needsetEngine.js:449 via deriveFieldHistory()",
+              "status": "MATCH — now fed by buildFieldHistories"
+            },
+            "domains_tried": {
+              "spec": "string[]",
+              "actual": "needsetEngine.js via deriveFieldHistory():287-291",
+              "status": "MATCH"
+            },
+            "host_classes_tried": {
+              "spec": "HostClass[]",
+              "actual": "needsetEngine.js via deriveFieldHistory():296",
+              "status": "MATCH — now fed by buildFieldHistories.classifyHostClass()"
+            },
+            "evidence_classes_tried": {
+              "spec": "EvidenceClass[]",
+              "actual": "needsetEngine.js via deriveFieldHistory():297",
+              "status": "MATCH — now fed by buildFieldHistories.classifyEvidenceClass()"
+            },
+            "query_count": {
+              "spec": "number",
+              "actual": "needsetEngine.js via deriveFieldHistory():298",
+              "status": "MATCH — now fed by buildFieldHistories"
+            },
+            "urls_examined_count": {
+              "spec": "number",
+              "actual": "needsetEngine.js via deriveFieldHistory():299",
+              "status": "MATCH — now fed by buildFieldHistories"
+            },
+            "no_value_attempts": {
+              "spec": "number",
+              "actual": "needsetEngine.js via deriveFieldHistory():301",
+              "status": "MATCH — now fed by buildFieldHistories"
+            },
+            "duplicate_attempts_suppressed": {
+              "spec": "number",
+              "actual": "needsetEngine.js via deriveFieldHistory():302",
+              "status": "MATCH — now fed by buildFieldHistories"
+            }
+          }
+        },
+        "planner_seed": {
+          "missing_critical_fields": {
+            "spec": "string[]",
+            "actual": "needsetEngine.js:536-538",
+            "status": "MATCH"
+          },
+          "unresolved_fields": {
+            "spec": "string[]",
+            "actual": "needsetEngine.js:540-542",
+            "status": "MATCH"
+          },
+          "existing_queries": {
+            "spec": "string[]",
+            "actual": "needsetEngine.js:544-549 — union of all field histories",
+            "status": "MATCH"
+          },
+          "current_product_identity": {
+            "spec": "{ category, brand, model }",
+            "actual": "needsetEngine.js:555-559",
+            "status": "MATCH"
+          }
+        },
+        "debug": {
+          "idx_runtime_present": {
+            "spec": "string[] — array of badge strings like 'idx.priority.required_level'",
+            "actual": "needsetEngine.js:563-572 — DIFFERENT SHAPE: { suppressed_duplicate_rows, state_inputs, bundle_assignment_notes, identity_context }",
+            "status": "MISMATCH — actual debug block is backward-compat shape, not the spec badge array. Low priority since debug is optional."
+          }
+        },
+        "_logic_box_1_compliance": {
+          "step_1_normalize_field_rows": {
+            "lowercase_trim_query_terms": "RESOLVED — normalizeStringArray() in needsetEngine.js lowercases, trims, and deduplicates.",
+            "normalize_domain_hints_canonical_host": "RESOLVED — normalizeDomainHints() in needsetEngine.js strips protocol/path, lowercases, deduplicates.",
+            "deduplicate_preferred_content_types": "RESOLVED — normalizeStringArray() in needsetEngine.js deduplicates via Set.",
+            "deduplicate_existing_queries": "RESOLVED — buildFieldHistories uses Set union (deduped). needsetEngine.js:294 carries forward from previousFieldHistories which is already deduped."
+          },
+          "step_2_no_top_level_hints": "MATCH — hints stay per-field in idx block.",
+          "step_3_score_each_field": "MATCH — need_score, summary, blockers, unresolved/critical lists all computed.",
+          "step_4_preserve_field_history": "MATCH — deriveFieldHistory() carries forward, now fed by buildFieldHistories.",
+          "step_5_emit_field_first_artifact": "MATCH — fields array is primary output."
+        },
+        "_ghost_consumers": {
+          "_investigation_result": "CONFIRMED DEAD CODE. All 7 ghost properties are never set anywhere in the codebase. Consumers use defensive fallbacks (|| [], || null, toArray()) that silently produce empty values. Test mocks create these properties manually, hiding the mismatch.",
+          "needs": {
+            "consumers": [
+              "primeSourcesBuilder.js:151",
+              "indexingSchemaPackets.js:277",
+              "buildFinalizationEventPayloads.js:29",
+              "buildRunSummaryAnalysisSection.js:56"
+            ],
+            "accessed_shape": "Array of { field_key, need_score, required_level, min_refs }",
+            "status": "DEAD CODE — never set, always resolves to []. Equivalent data lives in computeNeedSet().fields[] (Schema 2).",
+            "cleanup": "Remove reads from 4 consumers. If needed, migrate to use Schema 2 fields[] array which has need_score, required_level, min_refs."
+          },
+          "needset_size": {
+            "consumers": [
+              "buildFinalizationEventPayloads.js:20",
+              "buildRunSummaryAnalysisSection.js:48"
+            ],
+            "status": "DEAD CODE — always undefined. Equivalent: summary.total - summary.resolved.",
+            "cleanup": "Replace with rows.length or summary derivation."
+          },
+          "identity_lock_state": {
+            "consumers": [
+              "buildFinalizationEventPayloads.js:22",
+              "buildRunSummaryAnalysisSection.js:52"
+            ],
+            "status": "DEAD CODE — always null. Equivalent data: identity.state from Schema 2 output.",
+            "cleanup": "Replace with identity.state or remove."
+          },
+          "identity_audit_rows": {
+            "consumers": [
+              "buildFinalizationEventPayloads.js:23",
+              "buildRunSummaryAnalysisSection.js:53-54"
+            ],
+            "status": "DEAD CODE — always undefined/falsy. No equivalent in computeNeedSet output.",
+            "cleanup": "Remove reads or source from identityContext if needed."
+          },
+          "reason_counts": {
+            "consumers": [
+              "buildFinalizationEventPayloads.js:26",
+              "buildRunSummaryAnalysisSection.js:50"
+            ],
+            "status": "DEAD CODE — always undefined. Derivable from fields[].reasons aggregation if needed.",
+            "cleanup": "Remove reads or derive from Schema 2 fields[]."
+          },
+          "required_level_counts": {
+            "consumers": [
+              "buildFinalizationEventPayloads.js:27",
+              "buildRunSummaryAnalysisSection.js:51"
+            ],
+            "status": "DEAD CODE — always undefined. Derivable from fields[].required_level aggregation.",
+            "cleanup": "Remove reads or derive from Schema 2 fields[]."
+          },
+          "snapshots": {
+            "consumers": [
+              "buildFinalizationEventPayloads.js:28"
+            ],
+            "status": "DEAD CODE — always resolves to []. No equivalent.",
+            "cleanup": "Remove read."
+          }
+        },
+        "_gap_summary": {
+          "total_gaps_original": 6,
+          "resolved": 2,
+          "investigated_dead_code": 2,
+          "remaining_low_priority": 2,
+          "gaps": [
+            {
+              "id": "OUTPUT-GAP-1",
+              "field": "Logic Box 1 normalization",
+              "status": "RESOLVED — normalizeStringArray() and normalizeDomainHints() added to extractSearchHints() in needsetEngine.js. 7 new tests pass."
+            },
+            {
+              "id": "OUTPUT-GAP-2",
+              "field": "blockers.search_exhausted",
+              "status": "RESOLVED — now derived from field history: no_value_attempts >= 3 AND evidence_classes_tried.length >= 3. 3 new tests pass."
+            },
+            {
+              "id": "OUTPUT-GAP-3",
+              "field": "debug.idx_runtime_present shape",
+              "severity": "LOW",
+              "status": "OPEN — cosmetic. Optional field. Can fix when convenient."
+            },
+            {
+              "id": "OUTPUT-GAP-4",
+              "field": "Ghost property: needs",
+              "status": "INVESTIGATED — CONFIRMED DEAD CODE. Property never set anywhere. 4 consumers read undefined → fallback to []. Tests mock it manually. Safe to remove reads or migrate to Schema 2 fields[]."
+            },
+            {
+              "id": "OUTPUT-GAP-5",
+              "field": "Ghost properties: needset_size, identity_lock_state, identity_audit_rows, reason_counts, required_level_counts, snapshots",
+              "status": "INVESTIGATED — CONFIRMED DEAD CODE. All 6 properties never set anywhere. Consumers use defensive fallbacks. Safe to remove or migrate."
+            },
+            {
+              "id": "OUTPUT-GAP-6",
+              "field": "Backward-compat keys still emitted",
+              "severity": "LOW",
+              "description": "run_id, category, product_id, generated_at, total_fields, focus_fields, bundles, profile_mix, and rows are not in the formal Schema 2 spec but are still emitted and consumed by needsetStoryProjection and the runtime bridge. These are legacy bridge keys.",
+              "fix": "NOT URGENT. These can coexist with Schema 2 keys. Migration path: consumers should migrate to using Schema 2 fields (for example, 'fields' instead of 'rows', 'summary' instead of 'total_fields'). Remove backward-compat keys once all consumers are migrated."
+            }
+          ]
+        }
+      }
+    },
+    "01-needset-planner-context": {
+      "file": "01-needset-planner-context.json",
+      "stage": "01",
+      "kind": "context_contract",
+      "content": {
+        "_doc": "Schema 3 (SearchPlanningContext) gap analysis. Compares spec against actual buildSearchPlanningContext() output (searchPlanningContext.js:288-377) and downstream consumer buildSearchPlan() (searchPlanBuilder.js:263-417). Updated 2026-03-16 — all body text aligned with code after gap fixes.",
+        "_plan_alignment": {
+          "_question": "Are we following the plans to achieve 00-PRODUCT-GOAL.md?",
+          "answer": "YES. The pipeline brain is now connected to its memory. Schema 3 computes anti-garbage intelligence (domains_tried, host_classes_tried, evidence_classes_tried, no_value_attempts, search_exhaustion) and inlines catalog metadata (source_target, content_target, search_intent, host_class). Schema 4 buildSearchPlan sends ALL of these to the LLM in the payload (searchPlanBuilder.js:298-338). The feedback loop from buildFieldHistories → Schema 2 → Schema 3 → Schema 4 LLM payload is complete.",
+          "current_status": {
+            "anti_garbage_signals": "CONNECTED — searchPlanBuilder.js:313-335 sends domains_tried_union, host_classes_tried_union, evidence_classes_tried_union, no_value_attempts, preferred_content_types_union, aliases_union, weak_field_keys, conflict_field_keys, host_class, source_target, search_intent, urls_examined_count, query_count to the LLM",
+            "catalog_metadata": "INLINED — searchPlanningContext.js:249-259 inlines label, desc, source_target, content_target, search_intent, host_class from catalog into each focus_group",
+            "search_exhaustion": "ACTIVE — searchPlanningContext.js:143-149 + 204-206 + 232-237 compute exhaustion and move fully-exhausted groups to hold phase",
+            "aliases": "FLOWING — searchPlanningContext.js:175,214,282 aggregates aliases_union per group; searchPlanBuilder.js:325 sends to LLM",
+            "feedback_loop": "COMPLETE — buildFieldHistories → previousFieldHistories → computeNeedSet → field.history → buildSearchPlanningContext → focus_groups unions → buildSearchPlan LLM payload"
+          }
+        },
+        "_spec_vs_actual_summary": {
+          "schema_3_spec_keys": [
+            "schema_version",
+            "run",
+            "identity",
+            "needset",
+            "planner_limits",
+            "group_catalog",
+            "focus_groups",
+            "field_priority_map",
+            "learning",
+            "previous_round_fields"
+          ],
+          "actual_output_keys": [
+            "schema_version",
+            "run",
+            "identity",
+            "needset",
+            "planner_limits",
+            "group_catalog",
+            "focus_groups",
+            "field_priority_map",
+            "learning",
+            "previous_round_fields"
+          ],
+          "top_level_key_match": "MATCH — all spec keys present, plus field_priority_map (used by Schema 4 for bundle fields[] derivation)"
+        },
+        "schema_version": {
+          "spec": "search_planning_context.v2",
+          "actual": "MATCH — searchPlanningContext.js:357"
+        },
+        "run": {
+          "run_id": {
+            "actual": "searchPlanningContext.js:359 — rc.run_id || ''",
+            "status": "MATCH"
+          },
+          "category": {
+            "actual": "searchPlanningContext.js:360 — rc.category || ''",
+            "status": "MATCH"
+          },
+          "product_id": {
+            "actual": "searchPlanningContext.js:361 — rc.product_id || ''",
+            "status": "MATCH"
+          },
+          "brand": {
+            "actual": "searchPlanningContext.js:362 — rc.brand || ''",
+            "status": "MATCH"
+          },
+          "model": {
+            "actual": "searchPlanningContext.js:363 — rc.model || ''",
+            "status": "MATCH"
+          },
+          "base_model": {
+            "actual": "MATCH — searchPlanningContext.js:364 — rc.base_model || ''",
+            "status": "MATCH"
+          },
+          "aliases": {
+            "actual": "MATCH — searchPlanningContext.js:365 — Array.isArray(rc.aliases) ? rc.aliases : []",
+            "status": "MATCH"
+          },
+          "round": {
+            "actual": "searchPlanningContext.js:366 — rc.round ?? 0",
+            "status": "MATCH"
+          },
+          "round_mode": {
+            "actual": "searchPlanningContext.js:367 — rc.round_mode || 'seed'",
+            "status": "MATCH"
+          }
+        },
+        "identity": {
+          "_note": "Passthrough from Schema 2 (NeedSetOutput.identity). Not transformed.",
+          "state": {
+            "actual": "searchPlanningContext.js:369 — ns.identity passthrough",
+            "status": "MATCH"
+          },
+          "source_label_state": {
+            "status": "MATCH — passthrough"
+          },
+          "manufacturer": {
+            "status": "MATCH — passthrough"
+          },
+          "model": {
+            "status": "MATCH — passthrough"
+          },
+          "confidence": {
+            "status": "MATCH — passthrough"
+          },
+          "official_domain": {
+            "status": "MATCH — passthrough"
+          },
+          "support_domain": {
+            "status": "MATCH — passthrough"
+          }
+        },
+        "needset": {
+          "_note": "Slim projection of Schema 2 output. Built in searchPlanningContext.js:347-354. Heavy fields[] passthrough removed to reduce payload size.",
+          "summary": {
+            "actual": "searchPlanningContext.js:349 — ns.summary || {}",
+            "status": "MATCH"
+          },
+          "blockers": {
+            "actual": "searchPlanningContext.js:350 — ns.blockers || {}",
+            "status": "MATCH"
+          },
+          "missing_critical_fields": {
+            "actual": "searchPlanningContext.js:351 — plannerSeed.missing_critical_fields || []",
+            "status": "MATCH — consumed by searchPlanBuilder.js:306 (sent to LLM)"
+          },
+          "unresolved_fields": {
+            "actual": "searchPlanningContext.js:352 — plannerSeed.unresolved_fields || []",
+            "status": "MATCH — not consumed by planner (per-group unresolved_field_keys used instead)"
+          },
+          "existing_queries": {
+            "actual": "searchPlanningContext.js:353 — plannerSeed.existing_queries || []",
+            "status": "MATCH — consumed by searchPlanBuilder.js:337,381 (sent to LLM + used for dedup)"
+          }
+        },
+        "planner_limits": {
+          "_note": "Derived from runtime config in searchPlanningContext.js:57-76 (derivePlannerLimits function).",
+          "phase2LlmEnabled": {
+            "actual": "line 62",
+            "status": "MATCH — guards LLM call in searchPlanBuilder.js:277"
+          },
+          "discoveryMaxQueries": {
+            "actual": "line 56",
+            "status": "MATCH — sent to LLM at searchPlanBuilder.js:308"
+          },
+          "maxUrlsPerProduct": {
+            "actual": "line 58",
+            "status": "MATCH — sent to LLM at searchPlanBuilder.js:309"
+          },
+          "llmModelPlan": {
+            "actual": "line 63",
+            "status": "MATCH"
+          },
+          "searchProfileCapMap": {
+            "actual": "line 69 — parseCapMap()",
+            "status": "MATCH"
+          },
+          "searchProvider": {
+            "actual": "line 70",
+            "status": "MATCH"
+          }
+        },
+        "group_catalog": {
+          "_note": "Static metadata map built from GROUP_DEFAULTS + fieldGroupsData. Still emitted as separate top-level key but now ALSO inlined into focus_groups. Catalog is redundant but harmless.",
+          "_source": "searchPlanningContext.js:108-134 (buildGroupCatalog). GROUP_DEFAULTS has 11 mouse-specific groups. resolveGroupMeta checks fieldGroupsData first for category-aware overrides.",
+          "_entry_shape": {
+            "label": "MATCH — searchPlanningContext.js:124",
+            "desc": "MATCH — line 125",
+            "source_target": "MATCH — line 126",
+            "content_target": "MATCH — line 127",
+            "search_intent": "MATCH — line 128",
+            "host_class": "MATCH — line 129"
+          }
+        },
+        "focus_groups": {
+          "_note": "Derived from Schema 2 fields[] grouped by group_key. Built in searchPlanningContext.js:151-285 (buildFocusGroup). Catalog metadata inlined. Anti-garbage unions from non-accepted fields only. Sorted by phase→priority→key.",
+          "key": {
+            "actual": "searchPlanningContext.js:253 — groupKey",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:314 — sent to LLM"
+          },
+          "label": {
+            "actual": "MATCH — searchPlanningContext.js:254 — cat.label || groupKey (inlined from catalog)",
+            "consumed_by": "Schema 4 panel bundles"
+          },
+          "desc": {
+            "actual": "MATCH — searchPlanningContext.js:255 — cat.desc || '' (inlined from catalog)",
+            "consumed_by": "Schema 4 panel bundles"
+          },
+          "source_target": {
+            "actual": "MATCH — searchPlanningContext.js:256 — cat.source_target || 'product_page' (inlined from catalog)",
+            "consumed_by": "searchPlanBuilder.js:332 — sent to LLM"
+          },
+          "content_target": {
+            "actual": "MATCH — searchPlanningContext.js:257 — cat.content_target || 'general' (inlined from catalog)",
+            "consumed_by": "Schema 4 panel bundles"
+          },
+          "search_intent": {
+            "actual": "MATCH — searchPlanningContext.js:258 — cat.search_intent || 'broad' (inlined from catalog)",
+            "consumed_by": "searchPlanBuilder.js:333 — sent to LLM"
+          },
+          "host_class": {
+            "actual": "MATCH — searchPlanningContext.js:259 — cat.host_class || 'any' (inlined from catalog)",
+            "consumed_by": "searchPlanBuilder.js:331 — sent to LLM"
+          },
+          "field_keys": {
+            "actual": "searchPlanningContext.js:260",
+            "status": "MATCH"
+          },
+          "satisfied_field_keys": {
+            "actual": "searchPlanningContext.js:261",
+            "status": "MATCH"
+          },
+          "unresolved_field_keys": {
+            "actual": "searchPlanningContext.js:262",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:317 — sent to LLM"
+          },
+          "weak_field_keys": {
+            "actual": "searchPlanningContext.js:263",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:318 — sent to LLM"
+          },
+          "conflict_field_keys": {
+            "actual": "searchPlanningContext.js:264",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:319 — sent to LLM"
+          },
+          "search_exhausted_field_keys": {
+            "actual": "searchPlanningContext.js:265",
+            "status": "MATCH — drives phase=hold when all non-accepted fields are exhausted"
+          },
+          "search_exhausted_count": {
+            "actual": "searchPlanningContext.js:266",
+            "status": "MATCH"
+          },
+          "core_unresolved_count": {
+            "actual": "searchPlanningContext.js:267",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:320 — sent to LLM"
+          },
+          "secondary_unresolved_count": {
+            "actual": "searchPlanningContext.js:268",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:321 — sent to LLM"
+          },
+          "optional_unresolved_count": {
+            "actual": "searchPlanningContext.js:269",
+            "status": "MATCH"
+          },
+          "exact_match_count": {
+            "actual": "searchPlanningContext.js:270",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js not directly — used for Schema 4 panel"
+          },
+          "no_value_attempts": {
+            "actual": "searchPlanningContext.js:271",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:330 — sent to LLM"
+          },
+          "duplicate_attempts_suppressed": {
+            "actual": "searchPlanningContext.js:272",
+            "status": "MATCH"
+          },
+          "urls_examined_count": {
+            "actual": "searchPlanningContext.js:273",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:334 — sent to LLM"
+          },
+          "query_count": {
+            "actual": "searchPlanningContext.js:274",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:335 — sent to LLM"
+          },
+          "query_terms_union": {
+            "actual": "searchPlanningContext.js:275 — unionSorted() from non-accepted fields only",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:322 — sent to LLM (capped to 5)"
+          },
+          "domain_hints_union": {
+            "actual": "searchPlanningContext.js:276 — unionSorted() from non-accepted fields only",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:289,323 — dead domains filtered then sent to LLM (capped to 5)"
+          },
+          "preferred_content_types_union": {
+            "actual": "searchPlanningContext.js:277 — unionSorted() from non-accepted fields only",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:326 — sent to LLM (capped to 5)"
+          },
+          "existing_queries_union": {
+            "actual": "searchPlanningContext.js:278 — unionSorted() from non-accepted fields only",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:290-293,324 — dead hashes filtered then sent to LLM (capped to 5)"
+          },
+          "domains_tried_union": {
+            "actual": "searchPlanningContext.js:279 — unionSorted() from non-accepted fields only",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:327 — sent to LLM (capped to 5)"
+          },
+          "host_classes_tried_union": {
+            "actual": "searchPlanningContext.js:280 — unionSorted() from non-accepted fields only",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:328 — sent to LLM"
+          },
+          "evidence_classes_tried_union": {
+            "actual": "searchPlanningContext.js:281 — unionSorted() from non-accepted fields only",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:329 — sent to LLM"
+          },
+          "aliases_union": {
+            "actual": "searchPlanningContext.js:282 — unionSorted() from non-accepted fields only",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:325 — sent to LLM (capped to 5)"
+          },
+          "priority": {
+            "actual": "searchPlanningContext.js:226-229 — derived from unresolved required_levels",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:316 — sent to LLM"
+          },
+          "phase": {
+            "actual": "searchPlanningContext.js:236-247 — derived from hasUnresolved + priority + hasCoreGroupAnywhere + allFieldsExhausted",
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:286 — filters groups to now|next for LLM"
+          }
+        },
+        "field_priority_map": {
+          "_note": "Map of field_key → required_level. Built in searchPlanningContext.js:332-335. Used by Schema 4 assembleSchema4() to derive bundle.fields[].bucket.",
+          "actual": "searchPlanningContext.js:374 — fieldPriorityMap",
+          "status": "MATCH",
+          "consumed_by": "searchPlanBuilder.js:183 (ctx.field_priority_map) → assembleSchema4 line 197 (requiredLevelToBucket)"
+        },
+        "learning": {
+          "_note": "Optional passthrough from external learning stores. searchPlanningContext.js:375 — learning || null.",
+          "dead_query_hashes": {
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:283 — pre-LLM anti-garbage filter"
+          },
+          "dead_domains": {
+            "status": "MATCH",
+            "consumed_by": "searchPlanBuilder.js:282 — pre-LLM anti-garbage filter"
+          },
+          "query_index_hits": {
+            "status": "MATCH — passthrough if provided"
+          },
+          "url_index_hits": {
+            "status": "MATCH — passthrough if provided"
+          }
+        },
+        "previous_round_fields": {
+          "_note": "Optional passthrough for round-over-round delta computation. searchPlanningContext.js:376.",
+          "spec": "Array<{ field_key, state }>",
+          "actual": "passthrough if provided",
+          "status": "MATCH",
+          "consumed_by": "searchPlanBuilder.js assembleSchema4():93-115 (computeDeltas) → panel.deltas"
+        },
+        "_gap_summary": {
+          "total_gaps_original": 12,
+          "all_closed": true,
+          "remaining": 0,
+          "_history": "All 12 gaps (PROFILE-GAP-1 through PROFILE-GAP-12) resolved. Catalog metadata inlined into focus_groups. Anti-garbage signals sent to LLM. aliases_union aggregated. Search exhaustion drives phase=hold. base_model/aliases in run block. Union sets filtered to non-accepted fields. resolveGroupMeta checks fieldGroupsData. urls_examined_count/query_count aggregated. previous_round_fields consumed by computeDeltas. key standardized. llmPlanApiKey removed from spec. weak/conflict/missing_critical sent to LLM."
+        }
+      }
+    },
+    "01-needset-planner-output": {
+      "file": "01-needset-planner-output.json",
+      "stage": "01",
+      "kind": "output_contract",
+      "content": {
+        "_doc": "Schema 4 (NeedSetPlannerOutput) gap analysis. Compares spec (Data-Flow-Schemas.md lines 420-574) against actual assembleSchema4() output (searchPlanBuilder.js:130-261). Traces every spec field to its data source [S3|LLM|POST] and maps to current implementation status. Updated 2026-03-17.",
+        "_plan_alignment": {
+          "_question": "Does Schema 4 fulfill its two jobs? (1) Feed the current runtime-ops Schema 4 panels, (2) hand off deterministic search queries into discovery execution.",
+          "answer": "YES — Schema 4 fulfills both panel and handoff jobs. assembleSchema4() (searchPlanBuilder.js:130-261) emits full panel payload with bundles, profile_influence (14 keys), deltas, round/round_mode, and per-bundle fields[]/query_family_mix/reason_active. Handoff delivers deduplicated queries with hashes into discovery execution. Learning writeback uses canonical key names.",
+          "schema_4_two_jobs": {
+            "job_1_panel": "COMPLETE. assembleSchema4 emits panel.identity, panel.summary, panel.blockers, panel.round, panel.round_mode, panel.bundles (with key, label, desc, source_target, content_target, search_intent, host_class, query_family_mix, reason_active, queries[{q,family}], fields[{key,state,bucket}]), panel.profile_influence (14 keys), and panel.deltas for the runtime-ops Schema 4 views.",
+            "job_2_handoff": "COMPLETE. search_plan_handoff contains queries with q/family/query_hash/group_key/target_fields/preferred_domains/exact_match_required. Hashes are deduplicated and handed to discovery execution.",
+            "job_3_learning": "COMPLETE. learning_writeback uses canonical key names: query_hashes_generated, queries_generated, families_used, domains_targeted, groups_activated, duplicates_suppressed."
+          },
+          "what_must_change": "Nothing — all gaps resolved as of searchPlanBuilder.js refactor."
+        },
+        "_spec_vs_actual_summary": {
+          "schema_4_spec_sections": [
+            "schema_version",
+            "run",
+            "planner",
+            "panel",
+            "search_plan_handoff",
+            "learning_writeback"
+          ],
+          "actual_output_sections": [
+            "schema_version",
+            "run",
+            "planner",
+            "search_plan_handoff",
+            "panel",
+            "learning_writeback"
+          ],
+          "structural_diff": "None — actual matches spec section names."
+        },
+        "schema_version": {
+          "spec": "needset_planner_output.v2",
+          "actual": "MATCH — searchPlanBuilder.js:214 emits 'needset_planner_output.v2'",
+          "status": "MATCH"
+        },
+        "run": {
+          "run_id": {
+            "spec": "string [S3]",
+            "actual": "searchPlanBuilder.js:215 — ctx.run passthrough",
+            "status": "MATCH"
+          },
+          "category": {
+            "spec": "string [S3]",
+            "actual": "passthrough",
+            "status": "MATCH"
+          },
+          "product_id": {
+            "spec": "string [S3]",
+            "actual": "passthrough",
+            "status": "MATCH"
+          },
+          "brand": {
+            "spec": "string [S3]",
+            "actual": "passthrough",
+            "status": "MATCH"
+          },
+          "model": {
+            "spec": "string [S3]",
+            "actual": "passthrough",
+            "status": "MATCH"
+          },
+          "round": {
+            "spec": "number [S3]",
+            "actual": "passthrough",
+            "status": "MATCH"
+          },
+          "round_mode": {
+            "spec": "seed|carry_forward|repair [S3]",
+            "actual": "passthrough",
+            "status": "MATCH"
+          }
+        },
+        "planner": {
+          "mode": {
+            "spec": "llm|disabled|error [POST]",
+            "actual": "searchPlanBuilder.js:217 — mode param",
+            "status": "MATCH"
+          },
+          "model": {
+            "spec": "string [S3]",
+            "actual": "searchPlanBuilder.js:218 — model || ''",
+            "status": "MATCH"
+          },
+          "planner_complete": {
+            "spec": "boolean [POST]",
+            "actual": "searchPlanBuilder.js:219 — plannerComplete param",
+            "status": "MATCH"
+          },
+          "planner_confidence": {
+            "spec": "number [LLM] — overall plan confidence 0-1",
+            "actual": "MATCH — searchPlanBuilder.js:220 emits llmResult?.planner_confidence ?? 0",
+            "status": "MATCH"
+          },
+          "queries_generated": {
+            "spec": "number [POST]",
+            "actual": "searchPlanBuilder.js:221 — queries.length",
+            "status": "MATCH"
+          },
+          "duplicates_suppressed": {
+            "spec": "number [POST] — queries dropped by dedup",
+            "actual": "MATCH — searchPlanBuilder.js:222 emits dupesDropped counter tracked during post-LLM dedup loop",
+            "status": "MATCH"
+          },
+          "targeted_exceptions": {
+            "spec": "number [LLM] — exceptional queries added outside normal rules",
+            "actual": "MATCH — searchPlanBuilder.js:223 emits llmResult?.targeted_exceptions ?? 0",
+            "status": "MATCH"
+          },
+          "error": {
+            "spec": "string|null [POST]",
+            "actual": "searchPlanBuilder.js:224 — String(error.message || error)",
+            "status": "MATCH"
+          }
+        },
+        "panel": {
+          "_summary": "The panel block is the primary consumer contract for the current runtime-ops Schema 4 surfaces (`PrefetchNeedSetPanel`, `PrefetchSearchProfilePanel`, and related bundle/delta views). All sub-objects and scalar fields are emitted.",
+          "round": {
+            "spec": "number [S3] — ctx.run.round",
+            "actual": "MATCH — searchPlanBuilder.js:232 emits ctx.run?.round ?? 0",
+            "status": "MATCH"
+          },
+          "round_mode": {
+            "spec": "seed|carry_forward|repair [S3]",
+            "actual": "MATCH — searchPlanBuilder.js:233 emits ctx.run?.round_mode || 'seed'",
+            "status": "MATCH"
+          },
+          "identity": {
+            "spec": "object [S3] — { state, manufacturer, model, confidence, official_domain, support_domain }",
+            "actual": "searchPlanBuilder.js:234 — ctx.identity passthrough",
+            "status": "MATCH — passthrough gives full object"
+          },
+          "summary": {
+            "spec": "object [S3] — { total, resolved, core_total, core_unresolved, secondary_total, secondary_unresolved, optional_total, optional_unresolved, conflicts }",
+            "actual": "searchPlanBuilder.js:235 — ctx.needset?.summary || {}",
+            "status": "MATCH — passthrough from Schema 3"
+          },
+          "blockers": {
+            "spec": "object [S3] — { missing, weak, conflict, needs_exact_match, search_exhausted }",
+            "actual": "searchPlanBuilder.js:236 — ctx.needset?.blockers || {}",
+            "status": "MATCH — passthrough from Schema 3"
+          },
+          "profile_influence": {
+            "_spec_shape": {
+              "manufacturer_html": "number [POST] — count of queries with this family",
+              "manual_pdf": "number [POST]",
+              "support_docs": "number [POST]",
+              "review_lookup": "number [POST]",
+              "benchmark_lookup": "number [POST]",
+              "fallback_web": "number [POST]",
+              "targeted_single": "number [POST]",
+              "duplicates_suppressed": "number [POST] — queries dropped by dedup",
+              "focused_bundles": "number [POST] — bundles with >=1 query",
+              "targeted_exceptions": "number [LLM]",
+              "total_queries": "number [POST] — total after dedup",
+              "trusted_host_share": "number [POST] — manufacturer_html + support_docs count",
+              "docs_manual_share": "number [POST] — manual_pdf count"
+            },
+            "actual": "MATCH — searchPlanBuilder.js:241-249 emits full 14-key object: 7 family counts (initialized to 0, counted from queries), plus duplicates_suppressed, focused_bundles, targeted_exceptions, total_queries, trusted_host_share, docs_manual_share",
+            "status": "MATCH"
+          },
+          "bundles": {
+            "_spec_shape": "Array of { key, label, desc, priority, phase, source_target, content_target, search_intent, host_class, query_family_mix, reason_active, queries[], fields[] }",
+            "key": {
+              "spec": "string [S3]",
+              "actual": "MATCH — searchPlanBuilder.js:149 emits key: gk (from fg.key || fg.group_key)",
+              "status": "MATCH"
+            },
+            "label": {
+              "spec": "string [S3] — from focus_groups[].label",
+              "actual": "MATCH — searchPlanBuilder.js:150 emits fg.label || gk",
+              "status": "MATCH"
+            },
+            "desc": {
+              "spec": "string [S3] — from focus_groups[].desc",
+              "actual": "MATCH — searchPlanBuilder.js:151 emits fg.desc || ''",
+              "status": "MATCH"
+            },
+            "priority": {
+              "spec": "core|secondary|optional [S3]",
+              "actual": "searchPlanBuilder.js:157 — fg.priority",
+              "status": "MATCH"
+            },
+            "phase": {
+              "spec": "now|next|hold [S3]",
+              "actual": "searchPlanBuilder.js:156 — fg.phase",
+              "status": "MATCH"
+            },
+            "source_target": {
+              "spec": "string [S3]",
+              "actual": "MATCH — searchPlanBuilder.js:152 emits fg.source_target || ''",
+              "status": "MATCH"
+            },
+            "content_target": {
+              "spec": "string [S3]",
+              "actual": "MATCH — searchPlanBuilder.js:153 emits fg.content_target || ''",
+              "status": "MATCH"
+            },
+            "search_intent": {
+              "spec": "string|null [S3]",
+              "actual": "MATCH — searchPlanBuilder.js:154 emits fg.search_intent || null",
+              "status": "MATCH"
+            },
+            "host_class": {
+              "spec": "string|null [S3]",
+              "actual": "MATCH — searchPlanBuilder.js:155 emits fg.host_class || null",
+              "status": "MATCH"
+            },
+            "query_family_mix": {
+              "spec": "string|null [LLM] — human-readable strategy description",
+              "actual": "MATCH — searchPlanBuilder.js:186 attaches lg?.query_family_mix || null from LLM response groups matched by key",
+              "status": "MATCH"
+            },
+            "reason_active": {
+              "spec": "string|null [LLM] — why this group is being searched",
+              "actual": "MATCH — searchPlanBuilder.js:187 attaches lg?.reason_active || null from LLM response groups matched by key",
+              "status": "MATCH"
+            },
+            "queries": {
+              "spec": "Array<{ q, family }> [LLM+POST]",
+              "actual": "MATCH — searchPlanBuilder.js:188 projects bundle.queries to { q: q.q, family: q.family }. Full query objects kept in search_plan_handoff.queries.",
+              "status": "MATCH"
+            },
+            "fields": {
+              "spec": "Array<{ key, state, bucket }> [POST] — derived from Schema 3 field breakdowns + field_priority_map",
+              "actual": "MATCH — searchPlanBuilder.js:194-198 derives fields[] from working data: state from satisfied/weak/conflict/missing sets, bucket from requiredLevelToBucket(fpm[fk])",
+              "status": "MATCH"
+            }
+          },
+          "deltas": {
+            "spec": "Array<{ field, from, to }> [POST] — compare previous_round_fields vs current field states",
+            "actual": "MATCH — searchPlanBuilder.js:250 calls computeDeltas(ctx) (lines 93-115) which iterates previous_round_fields, compares to current state from focus_groups, emits { field, from, to } for changes. Round 0 returns [].",
+            "status": "MATCH"
+          }
+        },
+        "search_plan_handoff": {
+          "_note": "Spec and actual both use 'search_plan_handoff' — naming aligned.",
+          "queries": {
+            "spec": "Array<{ q, query_hash, family, group_key, target_fields, preferred_domains, exact_match_required }> [POST]",
+            "actual": "MATCH — searchPlanBuilder.js:227 emits full query objects",
+            "status": "MATCH"
+          },
+          "query_hashes": {
+            "spec": "string[] [POST]",
+            "actual": "MATCH — searchPlanBuilder.js:228 emits queryHashes",
+            "status": "MATCH"
+          },
+          "total": {
+            "spec": "number [POST]",
+            "actual": "MATCH — searchPlanBuilder.js:229 emits queries.length",
+            "status": "MATCH"
+          }
+        },
+        "learning_writeback": {
+          "query_hashes_generated": {
+            "spec": "string[] — hashes of all generated queries",
+            "actual": "MATCH — searchPlanBuilder.js:253 emits [...queryHashes]",
+            "status": "MATCH"
+          },
+          "queries_generated": {
+            "spec": "string[] — raw query text of all generated queries",
+            "actual": "MATCH — searchPlanBuilder.js:254 emits queries.map(q => q.q)",
+            "status": "MATCH"
+          },
+          "families_used": {
+            "spec": "QueryFamily[]",
+            "actual": "MATCH — searchPlanBuilder.js:255 emits [...familiesSet].sort()",
+            "status": "MATCH"
+          },
+          "domains_targeted": {
+            "spec": "string[]",
+            "actual": "MATCH — searchPlanBuilder.js:256 emits [...domainsSet].sort()",
+            "status": "MATCH"
+          },
+          "groups_activated": {
+            "spec": "string[]",
+            "actual": "MATCH — searchPlanBuilder.js:257 emits [...groupsSet].sort()",
+            "status": "MATCH"
+          },
+          "duplicates_suppressed": {
+            "spec": "number",
+            "actual": "MATCH — searchPlanBuilder.js:258 emits dupesDropped counter",
+            "status": "MATCH"
+          }
+        },
+        "_gap_summary": {
+          "total_gaps": 0,
+          "all_closed": true,
+          "gaps": [],
+          "_history": "16 gaps (GAP-1 through GAP-12f) identified on 2026-03-15 were all resolved in the searchPlanBuilder.js refactor. assembleSchema4() now reads group_catalog/focus_groups for bundle display fields, derives fields[] per bundle, computes full profile_influence, computes deltas, passes through LLM planner metadata, and uses canonical learning_writeback key names."
+        }
+      }
+    },
+    "02-brand-resolver-input": {
+      "file": "02-brand-resolver-input.json",
+      "stage": "02",
+      "kind": "input_contract",
+      "content": {
+        "_doc": "Brand Resolver input contract for phase 2. Documents the real inputs feeding resolveBrandDomain() and the gating around its call site in searchDiscovery(). Updated 2026-03-16.",
+        "schema_version": "brand_resolver_input.runtime.v1 - boundary is resolveBrandDomain({ brand, category, config, callLlmFn, storage }) in brandResolver.js:1-52.",
+        "call_boundary": {
+          "brand": "SOURCE: searchDiscovery.js:181-187 passes variables.brand, which comes from the phase identity lock. searchDiscovery.js:169-171 skips the resolver when brand is empty.",
+          "category": "SOURCE: searchDiscovery.js:181-187 passes variables.category, derived from job.category || categoryConfig.category.",
+          "config": "SOURCE: searchDiscovery.js:181-187 passes config through unchanged. resolveBrandDomain() itself only forwards config into callLlmFn; the main LLM gating happens before the call.",
+          "callLlmFn": "SOURCE: searchDiscovery.js:173-178 constructs createBrandResolverCallLlm(...) only when config.llmEnabled && hasLlmRouteApiKey(config, { role: 'triage' }). Otherwise null is passed.",
+          "storage": "SOURCE: searchDiscovery.js:181-187 passes storage through unchanged for cache read/write via getBrandDomain() and upsertBrandDomain()."
+        },
+        "runtime_gates": {
+          "missing_brand": "SOURCE: searchDiscovery.js:169-171 sets skip_reason = 'no_brand_in_identity_lock' and does not call resolveBrandDomain() when variables.brand is empty.",
+          "triage_api_key": "SOURCE: searchDiscovery.js:173-178 requires hasLlmRouteApiKey(config, { role: 'triage' }) before constructing callLlmFn.",
+          "cache_short_circuit": "SOURCE: brandResolver.js:14-25 returns cached official_domain/support_domain/aliases immediately when storage.getBrandDomain(brandKey, categoryKey) yields a row.",
+          "llm_fallback": "SOURCE: brandResolver.js:27 returns the empty output object when callLlmFn is null.",
+          "error_fallback": "SOURCE: brandResolver.js:51-54 returns the empty output object on any resolver exception."
+        },
+        "storage_contract": {
+          "getBrandDomain": "SOURCE: brandResolver.js:14-25 expects storage.getBrandDomain(brandKey, categoryKey) to return cached official_domain, aliases, support_domain, and optionally confidence.",
+          "cached_aliases_shape": "SOURCE: brandResolver.js:17 and parseAliases() at 56-64 accepts either a JSON string or an array for cached aliases.",
+          "upsertBrandDomain": "SOURCE: brandResolver.js:40-49 writes brand, category, official_domain, aliases as a JSON string, support_domain, and confidence = 0.8 after an LLM resolution."
+        },
+        "llm_adapter_contract": {
+          "role": "SOURCE: createBrandResolverCallLlm() in discoveryLlmAdapters.js:65-86 uses role = 'triage' and reason = 'brand_resolution'.",
+          "model": "SOURCE: discoveryLlmAdapters.js:70 uses config.llmModelTriage || config.llmModelFast.",
+          "timeout_ms": "SOURCE: discoveryLlmAdapters.js:83 uses config.llmTimeoutMs || 15000.",
+          "system_prompt": "SOURCE: discoveryLlmAdapters.js:72-77 asks for the official domain, aliases, support subdomain, and a short reasoning array.",
+          "json_schema": "SOURCE: brandResolverSchema() in discoveryLlmAdapters.js:1-13 requires official_domain and allows aliases, support_domain, and reasoning."
+        },
+        "normalization": {
+          "brand_trim": "SOURCE: brandResolver.js:7 trims brand into brandKey.",
+          "category_trim": "SOURCE: brandResolver.js:8 trims category into categoryKey.",
+          "official_domain": "SOURCE: brandResolver.js:36 lowercases and trims the LLM result.",
+          "aliases": "SOURCE: brandResolver.js:37 lowercases, trims, and filters empty alias strings.",
+          "support_domain": "SOURCE: brandResolver.js:38 lowercases and trims the LLM result.",
+          "reasoning": "SOURCE: brandResolver.js:39 trims reasoning strings and filters empty entries."
+        },
+        "_gap_summary": {
+          "total_gaps_observed": 3,
+          "material_gaps": 0,
+          "informational_only": 2,
+          "details": [
+            {
+              "id": "BRAND-IN-1",
+              "field": "host_hints contract",
+              "status": "CLOSED — host_hints is not a real gap. Brand Resolver returns officialDomain + aliases; host hints are synthesized downstream at searchDiscovery.js:373-378. No code expects or reads a dedicated host_hints input to the brand resolver."
+            },
+            {
+              "id": "BRAND-IN-2",
+              "field": "config dependency surface",
+              "status": "INFO - resolveBrandDomain() receives the full config object even though only the LLM adapter meaningfully uses it."
+            },
+            {
+              "id": "BRAND-IN-3",
+              "field": "standalone persisted input artifact",
+              "status": "INFO - Brand Resolver has no dedicated persisted input artifact; the contract exists in memory only."
+            }
+          ]
+        }
+      }
+    },
+    "02-brand-resolver-output": {
+      "file": "02-brand-resolver-output.json",
+      "stage": "02",
+      "kind": "output_contract",
+      "content": {
+        "_doc": "Brand Resolver output gap analysis. Compares the correction-note target for Brand Resolver against the actual output returned by resolveBrandDomain() and consumed in searchDiscovery(). Updated 2026-03-16.",
+        "_spec_vs_actual_summary": {
+          "correction_target_keys": [
+            "officialDomain",
+            "supportDomain",
+            "aliases",
+            "host_hints"
+          ],
+          "actual_output_keys": [
+            "officialDomain",
+            "aliases",
+            "supportDomain",
+            "confidence",
+            "reasoning"
+          ],
+          "call_site_statuses": [
+            "resolved",
+            "resolved_empty",
+            "skipped",
+            "failed"
+          ],
+          "downstream_consumers": {
+            "search_profile_hints": "searchDiscovery.js:373-378 and queryBuilder.js:943-950 reuse officialDomain + aliases as brandResolutionHints for later Search Profile planning.",
+            "manufacturer_auto_promote": "searchDiscovery.js:223-258 uses officialDomain and supportDomain for source-host auto-promotion when config.manufacturerAutoPromote is enabled. Aliases are NOT promoted.",
+            "telemetry": "searchDiscovery.js:202-219 logs brand_resolved with status, skip_reason, official_domain, aliases, support_domain, and confidence."
+          }
+        },
+        "officialDomain": {
+          "spec": "Official manufacturer domain string.",
+          "actual": "MATCH - brandResolver.js:19 and 36 returns officialDomain from cache or normalized LLM output.",
+          "status": "MATCH"
+        },
+        "supportDomain": {
+          "spec": "Support-domain string when one exists.",
+          "actual": "MATCH - brandResolver.js:21 and 38 returns supportDomain from cache or normalized LLM output.",
+          "status": "MATCH"
+        },
+        "aliases": {
+          "spec": "Alias array for known brand-domain variants.",
+          "actual": "MATCH - brandResolver.js:17 and 37 returns aliases from cache or normalized LLM output.",
+          "status": "MATCH",
+          "_note": "Aliases are text-only labels. They are NOT promoted as manufacturer hosts by manufacturerPromoter.js. Only officialDomain and supportDomain are promoted into the source registry."
+        },
+        "host_hints": {
+          "spec": "Dedicated host_hints output for downstream search planning.",
+          "actual": "CLOSED — resolveBrandDomain() never returns a host_hints field. Hints are synthesized downstream from officialDomain + aliases at searchDiscovery.js:373-378. No consumer reads brandResolution.host_hints directly. This is by design, not a gap.",
+          "status": "CLOSED"
+        },
+        "confidence": {
+          "spec": "Not required by the correction note.",
+          "actual": "EXTRA - brandResolver.js:22 and 52 returns cached confidence or 0.8 after a successful LLM resolution.",
+          "status": "EXTRA"
+        },
+        "reasoning": {
+          "spec": "Not required by the correction note.",
+          "actual": "EXTRA - brandResolver.js:24 and 39-52 returns an LLM-provided reasoning array; cached hits return reasoning: [].",
+          "status": "EXTRA"
+        },
+        "no_direct_query_rows": {
+          "spec": "Brand Resolver should not emit direct final search rows.",
+          "actual": "MATCH - resolveBrandDomain() returns only brand-domain metadata. It emits no queries, query_rows, or final search candidates.",
+          "status": "MATCH"
+        },
+        "failure_shape": {
+          "spec": "Safe empty output when Brand Resolver cannot or should not resolve.",
+          "actual": "MATCH - brandResolver.js:10, 12, 27, and 54 returns { officialDomain: '', aliases: [], supportDomain: '', confidence: 0, reasoning: [] } on no brand, no callLlmFn, or exception.",
+          "status": "MATCH"
+        },
+        "artifact_persistence": {
+          "spec": "A standalone Brand Resolver artifact is optional.",
+          "actual": "INFO - there is no dedicated persisted brand_resolver.json artifact today. The output is kept in memory, logged in searchDiscovery.js:166-180, and then folded into downstream Search Profile planning.",
+          "status": "INFO"
+        },
+        "_gap_summary": {
+          "total_gaps_observed": 4,
+          "open_material": 0,
+          "extra_but_harmless": 2,
+          "informational": 1,
+          "gaps": [
+            {
+              "id": "BRAND-OUT-1",
+              "field": "host_hints",
+              "severity": "HIGH",
+              "status": "CLOSED — host_hints is not a real gap. Hints are synthesized downstream from officialDomain + aliases at searchDiscovery.js:373-378. No code reads brandResolution.host_hints."
+            },
+            {
+              "id": "BRAND-OUT-2",
+              "field": "confidence",
+              "severity": "LOW",
+              "status": "EXTRA - useful telemetry field, but outside the correction-note contract."
+            },
+            {
+              "id": "BRAND-OUT-3",
+              "field": "reasoning",
+              "severity": "LOW",
+              "status": "EXTRA - useful telemetry/debug field, but outside the correction-note contract."
+            },
+            {
+              "id": "BRAND-OUT-4",
+              "field": "standalone persisted artifact",
+              "severity": "LOW",
+              "status": "INFO - resolver output is not written as its own artifact today."
+            }
+          ]
+        }
+      }
+    },
+    "03-search-planner-input": {
+      "file": "03-search-planner-input.json",
+      "stage": "03",
+      "kind": "input_contract",
+      "content": {
+        "_doc": "Search Planner (buildSearchPlan) input contract. Documents the exact inputs consumed by searchPlanBuilder.js:269-276. This is the Schema 4 path — the NeedSet-driven single-call planner. Updated 2026-03-16.",
+        "call_boundary": {
+          "function": "buildSearchPlan({ searchPlanningContext, config, logger, llmContext, queryHashFn })",
+          "file": "src/indexlab/searchPlanBuilder.js:269-276",
+          "caller": "runDiscoverySeedPlan.js (orchestration layer)"
+        },
+        "searchPlanningContext": {
+          "_doc": "Schema 3 (SearchPlanningContext). Produced by buildSearchPlanningContext(). This is the primary input — everything the planner needs comes through here.",
+          "_schema_version": "search_planning_context.v2",
+          "run": {
+            "_tag": "passthrough",
+            "run_id": "string — used for LLM usageContext",
+            "category": "string — sent to LLM payload as identity.category",
+            "product_id": "string — used for LLM usageContext",
+            "brand": "string — sent to LLM payload as identity.manufacturer fallback",
+            "model": "string — sent to LLM payload as identity.model fallback",
+            "base_model": "string — not directly consumed by planner (passthrough to Schema 4)",
+            "aliases": "string[] — not directly consumed by planner (passthrough to Schema 4)",
+            "round": "number — sent to LLM payload; used for LLM usageContext",
+            "round_mode": "string — passthrough to Schema 4 panel"
+          },
+          "identity": {
+            "_tag": "passthrough",
+            "_note": "Passthrough from Schema 2. Used as LLM identity.manufacturer/model fallback and emitted in Schema 4 panel.",
+            "state": "PanelIdentityState",
+            "source_label_state": "string",
+            "manufacturer": "string|null — sent to LLM payload as identity.manufacturer",
+            "model": "string|null — sent to LLM payload as identity.model",
+            "confidence": "number",
+            "official_domain": "string|null",
+            "support_domain": "string|null"
+          },
+          "needset": {
+            "_tag": "passthrough (slim projection of Schema 2)",
+            "summary": "object — passthrough to Schema 4 panel",
+            "blockers": "object — passthrough to Schema 4 panel",
+            "missing_critical_fields": "string[] — CONSUMED: sent to LLM payload (searchPlanBuilder.js:312)",
+            "unresolved_fields": "string[] — NOT consumed by planner (per-group keys used instead)",
+            "existing_queries": "string[] — CONSUMED: sent to LLM payload (line 343) AND used for post-LLM dedup (lines 395-397)"
+          },
+          "planner_limits": {
+            "_tag": "consumed internally (not emitted in Schema 4)",
+            "phase2LlmEnabled": "boolean — gates LLM call via hasLlmRouteApiKey (line 283)",
+            "discoveryMaxQueries": "number — sent to LLM payload limits AND used for global cap (line 391)",
+            "maxUrlsPerProduct": "number — sent to LLM payload limits (line 315)",
+            "llmModelPlan": "string — resolved model for LLM call",
+            "searchProfileCapMap": "object — not consumed by buildSearchPlan",
+            "searchProvider": "string — not consumed by buildSearchPlan"
+          },
+          "group_catalog": {
+            "_tag": "dropped (metadata already inlined into focus_groups at Schema 3 boundary)",
+            "_note": "buildSearchPlan does not read group_catalog — all catalog metadata (label, desc, source_target, content_target, search_intent, host_class) is already on each focus_group entry."
+          },
+          "focus_groups": {
+            "_tag": "core input — the planner's primary working data",
+            "_consumed_fields": {
+              "key": "string — sent to LLM payload; used for grouping queries in Schema 4 bundles",
+              "phase": "string — 'now'|'next'|'hold'. GATE: only now/next groups are active (line 292)",
+              "priority": "string — sent to LLM payload (line 322)",
+              "label": "string — passthrough to Schema 4 bundle",
+              "desc": "string — passthrough to Schema 4 bundle",
+              "source_target": "string — sent to LLM payload (line 338); passthrough to bundle",
+              "content_target": "string — passthrough to Schema 4 bundle",
+              "search_intent": "string — sent to LLM payload (line 339); passthrough to bundle",
+              "host_class": "string — sent to LLM payload (line 337); passthrough to bundle",
+              "field_keys": "string[] — used for bundle fields[] derivation (line 200)",
+              "satisfied_field_keys": "string[] — used for bundle fields[].state derivation + delta computation",
+              "unresolved_field_keys": "string[] — sent to LLM payload (line 323)",
+              "weak_field_keys": "string[] — sent to LLM payload (line 324)",
+              "conflict_field_keys": "string[] — sent to LLM payload (line 325)",
+              "search_exhausted_field_keys": "string[] — not sent to LLM (phase=hold already filters these groups)",
+              "core_unresolved_count": "number — sent to LLM payload (line 326)",
+              "secondary_unresolved_count": "number — sent to LLM payload (line 327)",
+              "query_terms_union": "string[] — sent to LLM payload CAPPED TO 5 (line 328)",
+              "domain_hints_union": "string[] — FILTERED (dead domains removed, line 295) then sent to LLM CAPPED TO 5 (line 329)",
+              "preferred_content_types_union": "string[] — sent to LLM payload CAPPED TO 5 (line 332)",
+              "existing_queries_union": "string[] — FILTERED (dead hashes removed, lines 296-299) then sent to LLM CAPPED TO 5 (line 330)",
+              "domains_tried_union": "string[] — sent to LLM payload CAPPED TO 5 (line 333)",
+              "host_classes_tried_union": "string[] — sent to LLM payload UNCAPPED (line 334)",
+              "evidence_classes_tried_union": "string[] — sent to LLM payload UNCAPPED (line 335)",
+              "aliases_union": "string[] — sent to LLM payload CAPPED TO 5 (line 331)",
+              "no_value_attempts": "number — sent to LLM payload (line 336)",
+              "urls_examined_count": "number — sent to LLM payload (line 340)",
+              "query_count": "number — sent to LLM payload (line 341)"
+            }
+          },
+          "field_priority_map": {
+            "_tag": "consumed internally",
+            "_note": "Map of field_key → required_level. Used in assembleSchema4 (line 189) to derive bundle fields[].bucket via requiredLevelToBucket()."
+          },
+          "learning": {
+            "_tag": "consumed internally (pre-LLM anti-garbage filter)",
+            "dead_query_hashes": "string[] — hashes removed from existing_queries_union before LLM call (line 289-299)",
+            "dead_domains": "string[] — domains removed from domain_hints_union before LLM call (line 288-295)"
+          },
+          "previous_round_fields": {
+            "_tag": "consumed internally",
+            "_note": "Array<{ field_key, state }>. Used in computeDeltas() (line 91-121) to compute panel.deltas."
+          }
+        },
+        "config": {
+          "_tag": "runtime config object",
+          "_consumed_keys": {
+            "llmModelPlan": "string — resolved model for the LLM call (line 347)",
+            "discoveryMaxQueries": "number — global query cap fallback (line 391)",
+            "llmTimeoutMs": "number — LLM call timeout, default 40000ms (line 373)",
+            "llmEnabled": "boolean — implicit via hasLlmRouteApiKey() gate"
+          },
+          "_note": "Full config object is forwarded to callLlmWithRouting(). Only the above keys are explicitly consumed by buildSearchPlan logic."
+        },
+        "llmContext": {
+          "_tag": "LLM instrumentation context",
+          "runId": "string — for LLM usage tracking",
+          "traceWriter": "object|null — for trace capture",
+          "costRates": "object — LLM cost rate overrides",
+          "recordUsage": "function — async callback for usage row recording"
+        },
+        "queryHashFn": {
+          "_tag": "injectable dependency",
+          "_default": "defaultQueryHash() — stableHash of lowercased, trimmed, space-normalized query text",
+          "_note": "Used for dedup across existing queries and LLM-generated queries. Same algorithm as frontierDb.js (inlined to avoid coupling)."
+        }
+      }
+    },
+    "03-search-planner-llm-call": {
+      "file": "03-search-planner-llm-call.json",
+      "stage": "03",
+      "kind": "llm_call",
+      "content": {
+        "_doc": "Search Planner LLM call contract. Documents the exact prompt, payload shape, response schema, and post-processing rules for the Schema 4 NeedSet planner LLM call. Source: searchPlanBuilder.js:24-78 (schema+prompt), 305-374 (call), 383-434 (post-processing). Updated 2026-03-16.",
+        "call_site": {
+          "function": "buildSearchPlan()",
+          "file": "src/indexlab/searchPlanBuilder.js:352-375",
+          "routing": "callLlmWithRouting()",
+          "reason": "needset_search_planner",
+          "role": "plan",
+          "gate": "hasLlmRouteApiKey(config, { role: 'plan' }) — returns disabled result when false"
+        },
+        "system_prompt": {
+          "_source": "searchPlanBuilder.js:60-78 (PLANNER_SYSTEM_PROMPT)",
+          "role": "search planner for hardware specification data collection",
+          "rules": [
+            "Generate 1-3 queries per active group, each targeting different search strategies",
+            "Vary query families: manufacturer_html, manual_pdf, support_docs, review_lookup, benchmark_lookup, fallback_web, targeted_single",
+            "Prefer manufacturer docs, instrumented lab reviews, and trusted spec databases",
+            "Avoid junk domains, login pages, forums, and irrelevant topics",
+            "Do NOT repeat queries from existing_queries — generate DIFFERENT patterns",
+            "Use domains_tried_union to AVOID domains already visited — target DIFFERENT domains",
+            "Use host_classes_tried_union to diversify: if 'manufacturer' tried, try 'review' or 'database'",
+            "Use evidence_classes_tried_union to vary content types: if 'html' tried, target 'pdf' or 'json-ld'",
+            "When no_value_attempts is high (3+), radically change search strategy",
+            "weak_field_keys need CORROBORATION queries (authoritative sources to confirm)",
+            "conflict_field_keys need RESOLUTION queries (manufacturer/official sources to settle)",
+            "Use aliases_union to generate variant-aware queries",
+            "Each query must have 'family' (strategy type) and 'q' (search query text)",
+            "Optionally include 'target_fields', 'preferred_domains', and 'exact_match_required'",
+            "Return JSON with a 'groups' array where each group has 'key' and 'queries' array"
+          ]
+        },
+        "user_payload": {
+          "_source": "searchPlanBuilder.js:305-344 (llmPayload)",
+          "_encoding": "JSON.stringify — sent as the 'user' message",
+          "identity": {
+            "manufacturer": "string — identity.manufacturer || run.brand || ''",
+            "model": "string — identity.model || run.model || ''",
+            "category": "string — run.category || ''"
+          },
+          "round": "number — run.round || 0",
+          "missing_critical_fields": "string[] — ctx.needset.missing_critical_fields || []",
+          "limits": {
+            "discoveryMaxQueries": "number — plannerLimits.discoveryMaxQueries || 6",
+            "maxUrlsPerProduct": "number — plannerLimits.maxUrlsPerProduct || 20"
+          },
+          "focus_groups": {
+            "_note": "Only groups with phase='now' or phase='next' (hold groups filtered out). Dead domains and dead query hashes removed before inclusion.",
+            "_per_group_shape": {
+              "key": "string — group identifier",
+              "phase": "string — 'now' or 'next' (hold filtered out)",
+              "priority": "string — 'core' | 'secondary' | 'optional'",
+              "unresolved_field_keys": "string[] — fields still needing data",
+              "weak_field_keys": "string[] — fields needing corroboration",
+              "conflict_field_keys": "string[] — fields needing resolution",
+              "core_unresolved_count": "number",
+              "secondary_unresolved_count": "number",
+              "query_terms_union": "string[] — CAPPED TO 5",
+              "domain_hints_union": "string[] — dead domains removed, CAPPED TO 5",
+              "existing_queries_union": "string[] — dead hashes removed, CAPPED TO 5",
+              "aliases_union": "string[] — CAPPED TO 5",
+              "preferred_content_types_union": "string[] — CAPPED TO 5",
+              "domains_tried_union": "string[] — CAPPED TO 5",
+              "host_classes_tried_union": "string[] — UNCAPPED (small enum set)",
+              "evidence_classes_tried_union": "string[] — UNCAPPED (small enum set)",
+              "no_value_attempts": "number",
+              "host_class": "string",
+              "source_target": "string",
+              "search_intent": "string",
+              "urls_examined_count": "number",
+              "query_count": "number"
+            }
+          },
+          "existing_queries": "string[] — ctx.needset.existing_queries || [] — global de-dup list"
+        },
+        "response_schema": {
+          "_source": "searchPlanBuilder.js:24-58 (PLANNER_RESPONSE_SCHEMA)",
+          "_encoding": "JSON Schema passed via callLlmWithRouting({ jsonSchema })",
+          "planner_confidence": {
+            "type": "number",
+            "_note": "0-1 overall plan quality"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "key",
+                "queries"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "_note": "must match a focus_group key from the payload"
+                },
+                "phase": {
+                  "type": "string",
+                  "_note": "optional echo of input phase"
+                },
+                "reason_active": {
+                  "type": "string",
+                  "_note": "why this group is being searched"
+                },
+                "query_family_mix": {
+                  "type": "string",
+                  "_note": "human-readable strategy description"
+                },
+                "queries": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "family",
+                      "q"
+                    ],
+                    "properties": {
+                      "family": {
+                        "type": "string",
+                        "_note": "manufacturer_html | manual_pdf | support_docs | review_lookup | benchmark_lookup | fallback_web | targeted_single"
+                      },
+                      "q": {
+                        "type": "string",
+                        "_note": "the actual search query text"
+                      },
+                      "target_fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "_note": "optional field keys this query targets"
+                      },
+                      "preferred_domains": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "_note": "optional preferred domains"
+                      },
+                      "exact_match_required": {
+                        "type": "boolean",
+                        "_note": "optional exact match flag"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "duplicates_suppressed": {
+            "type": "integer",
+            "_note": "LLM self-reported dupe count (informational only — real dedup is post-LLM)"
+          },
+          "targeted_exceptions": {
+            "type": "integer",
+            "_note": "exceptional queries added outside normal rules"
+          }
+        },
+        "response_normalization": {
+          "_source": "searchPlanBuilder.js:383-390",
+          "_note": "Some models (e.g. Gemini) return a single group object { key, queries } instead of wrapping in { groups: [...] }. Both shapes are accepted.",
+          "array_groups": "if llmResult.groups is an array, use directly",
+          "single_group": "if llmResult.key exists and llmResult.queries is an array, wrap as [llmResult]",
+          "empty_fallback": "otherwise groups = []"
+        },
+        "post_processing": {
+          "_source": "searchPlanBuilder.js:393-434",
+          "dedup": {
+            "_note": "Queries are deduped by hash against (1) existing_queries from Schema 3 and (2) previously emitted queries in this call",
+            "hash_function": "queryHashFn (default: stableHash of lowercased/trimmed/space-normalized text)",
+            "existing_hashes_source": "ctx.needset.existing_queries mapped through queryHashFn"
+          },
+          "capping": {
+            "per_group_cap": "3 queries max per group (PER_GROUP_CAP constant, line 80)",
+            "global_cap": "max(1, parseInt(config.discoveryMaxQueries, 10) || 6) (line 391)",
+            "cap_overflow": "queries exceeding either cap are counted as dupesDropped"
+          },
+          "query_assembly": {
+            "_note": "Each accepted query is enriched with metadata before inclusion in Schema 4",
+            "q": "string — trimmed query text from LLM",
+            "family": "string — from LLM or 'unknown' fallback",
+            "query_hash": "string — deterministic hash for cross-round dedup",
+            "group_key": "string — from the LLM group.key",
+            "target_fields": "string[] — from LLM or [] fallback",
+            "preferred_domains": "string[] — from LLM or [] fallback",
+            "exact_match_required": "boolean — from LLM or false fallback"
+          }
+        },
+        "error_handling": {
+          "llm_call_failure": "catch block (line 376-379) returns makeErrorResult(ctx, error) — mode='error', plannerComplete=false, error message captured",
+          "no_api_key": "hasLlmRouteApiKey gate (line 283) returns makeDisabledResult(ctx) — mode='disabled', plannerComplete=true, zero queries",
+          "empty_llm_response": "normalized to groups=[] — returns Schema 4 with zero queries but full panel/bundle metadata"
+        },
+        "llm_call_parameters": {
+          "reason": "needset_search_planner",
+          "role": "plan",
+          "system": "PLANNER_SYSTEM_PROMPT (18 rules)",
+          "user": "JSON.stringify(llmPayload)",
+          "jsonSchema": "PLANNER_RESPONSE_SCHEMA",
+          "timeoutMs": "config.llmTimeoutMs || 40000",
+          "model": "config.llmModelPlan (resolved at call time)"
+        }
+      }
+    },
+    "03-search-planner-output": {
+      "file": "03-search-planner-output.json",
+      "stage": "03",
+      "kind": "output_contract",
+      "content": {
+        "_doc": "Search Planner (buildSearchPlan) output contract. Documents the exact Schema 4 (NeedSetPlannerOutput) shape returned by searchPlanBuilder.js:219-266 (assembleSchema4). This is what runDiscoverySeedPlan receives. Updated 2026-03-17.",
+        "schema_version": "needset_planner_output.v2",
+        "_output_modes": {
+          "llm": "Normal path — LLM called, queries generated, full Schema 4 emitted",
+          "disabled": "No API key — zero queries, plannerComplete=true, full panel/bundle metadata still emitted",
+          "error": "LLM call failed — zero queries, plannerComplete=false, error message captured, full panel/bundle metadata still emitted"
+        },
+        "run": {
+          "_tag": "passthrough from Schema 3",
+          "run_id": "string",
+          "category": "string",
+          "product_id": "string",
+          "brand": "string",
+          "model": "string",
+          "base_model": "string",
+          "aliases": "string[]",
+          "round": "number",
+          "round_mode": "string — seed | carry_forward | repair"
+        },
+        "planner": {
+          "_tag": "recomputed — describes what the planner did",
+          "mode": {
+            "type": "string",
+            "values": "llm | disabled | error",
+            "tag": "recomputed",
+            "source": "LLM gate result + call outcome"
+          },
+          "model": {
+            "type": "string",
+            "tag": "passthrough",
+            "source": "config.llmModelPlan"
+          },
+          "planner_complete": {
+            "type": "boolean",
+            "tag": "recomputed",
+            "source": "true on success/disabled, false on error"
+          },
+          "planner_confidence": {
+            "type": "number",
+            "tag": "enriched",
+            "source": "LLM response — 0 when disabled/error"
+          },
+          "queries_generated": {
+            "type": "number",
+            "tag": "recomputed",
+            "source": "queries.length after dedup+cap"
+          },
+          "duplicates_suppressed": {
+            "type": "number",
+            "tag": "recomputed",
+            "source": "count of queries dropped by hash dedup + cap overflow"
+          },
+          "targeted_exceptions": {
+            "type": "number",
+            "tag": "enriched",
+            "source": "LLM response — 0 when disabled/error"
+          },
+          "error": {
+            "type": "string|null",
+            "tag": "recomputed",
+            "source": "error.message on failure, null otherwise"
+          }
+        },
+        "search_plan_handoff": {
+          "_tag": "the queries that feed into search execution",
+          "_consumed_by": "runDiscoverySeedPlan.js -> searchDiscovery.js -> convertHandoffToExecutionPlan() -> executeSearchQueries()",
+          "queries": {
+            "_type": "array",
+            "_per_item": {
+              "q": {
+                "type": "string",
+                "tag": "enriched",
+                "source": "LLM response — trimmed"
+              },
+              "query_hash": {
+                "type": "string",
+                "tag": "recomputed",
+                "source": "stableHash(lowercase/trimmed/space-normalized q)"
+              },
+              "family": {
+                "type": "string",
+                "tag": "enriched",
+                "source": "LLM response — fallback 'unknown'"
+              },
+              "group_key": {
+                "type": "string",
+                "tag": "passthrough",
+                "source": "LLM group.key (must match Schema 3 focus_group key)"
+              },
+              "target_fields": {
+                "type": "string[]",
+                "tag": "enriched",
+                "source": "LLM response — fallback []"
+              },
+              "preferred_domains": {
+                "type": "string[]",
+                "tag": "enriched",
+                "source": "LLM response — fallback []"
+              },
+              "exact_match_required": {
+                "type": "boolean",
+                "tag": "enriched",
+                "source": "LLM response — fallback false"
+              }
+            }
+          },
+          "query_hashes": {
+            "_type": "string[]",
+            "_tag": "recomputed",
+            "_source": "flat array of all queries[].query_hash values"
+          },
+          "total": {
+            "_type": "number",
+            "_tag": "recomputed",
+            "_source": "queries.length"
+          }
+        },
+        "panel": {
+          "_tag": "GUI display payload — consumed by PrefetchNeedSetPanel and the embedded schema4 views in PrefetchSearchProfilePanel. Planner-call telemetry is rendered separately in PrefetchSearchPlannerPanel.",
+          "round": {
+            "tag": "passthrough",
+            "source": "Schema 3 run.round"
+          },
+          "round_mode": {
+            "tag": "passthrough",
+            "source": "Schema 3 run.round_mode"
+          },
+          "identity": {
+            "tag": "passthrough",
+            "source": "Schema 3 identity block"
+          },
+          "summary": {
+            "tag": "passthrough",
+            "source": "Schema 3 needset.summary"
+          },
+          "blockers": {
+            "tag": "passthrough",
+            "source": "Schema 3 needset.blockers"
+          },
+          "bundles": {
+            "_type": "array — one per Schema 3 focus_group (all groups, including hold)",
+            "_per_bundle": {
+              "key": {
+                "tag": "passthrough",
+                "source": "focus_group.key"
+              },
+              "label": {
+                "tag": "passthrough",
+                "source": "focus_group.label"
+              },
+              "desc": {
+                "tag": "passthrough",
+                "source": "focus_group.desc"
+              },
+              "source_target": {
+                "tag": "passthrough",
+                "source": "focus_group.source_target"
+              },
+              "content_target": {
+                "tag": "passthrough",
+                "source": "focus_group.content_target"
+              },
+              "search_intent": {
+                "tag": "passthrough",
+                "source": "focus_group.search_intent"
+              },
+              "host_class": {
+                "tag": "passthrough",
+                "source": "focus_group.host_class"
+              },
+              "phase": {
+                "tag": "passthrough",
+                "source": "focus_group.phase — now|next|hold"
+              },
+              "priority": {
+                "tag": "passthrough",
+                "source": "focus_group.priority — core|secondary|optional"
+              },
+              "query_family_mix": {
+                "tag": "enriched",
+                "source": "LLM response per-group — null when LLM disabled/error or group not in LLM response"
+              },
+              "reason_active": {
+                "tag": "enriched",
+                "source": "LLM response per-group — null when LLM disabled/error or group not in LLM response"
+              },
+              "queries": {
+                "tag": "enriched",
+                "source": "projected from search_plan_handoff queries matching this group — array of { q, family }"
+              },
+              "fields": {
+                "_tag": "recomputed",
+                "_per_item": {
+                  "key": "string — field_key",
+                  "state": "string — satisfied|weak|conflict|missing — derived from focus_group field key sets",
+                  "bucket": "string — core|secondary|expected|optional — derived from field_priority_map via requiredLevelToBucket()"
+                }
+              }
+            }
+          },
+          "profile_influence": {
+            "_tag": "recomputed — query family distribution stats",
+            "manufacturer_html": "number — count of queries with this family",
+            "manual_pdf": "number",
+            "support_docs": "number",
+            "review_lookup": "number",
+            "benchmark_lookup": "number",
+            "fallback_web": "number",
+            "targeted_single": "number",
+            "duplicates_suppressed": "number — queries dropped by dedup/cap",
+            "focused_bundles": "number — bundles with >=1 query",
+            "targeted_exceptions": "number — from LLM response",
+            "total_queries": "number — final query count",
+            "trusted_host_share": "number — manufacturer_html + support_docs",
+            "docs_manual_share": "number — manual_pdf count"
+          },
+          "deltas": {
+            "_tag": "recomputed",
+            "_source": "computeDeltas(ctx) — compares previous_round_fields vs current focus_group field states",
+            "_per_item": {
+              "field": "string — field_key",
+              "from": "string — previous state (or 'none' on round 0)",
+              "to": "string — current state (satisfied|weak|conflict|missing)"
+            },
+            "_note": "On round 0 with no previous_round_fields, ALL fields are emitted as { from: 'none', to: <current_state> }"
+          }
+        },
+        "learning_writeback": {
+          "_tag": "recomputed — summary for learning store persistence",
+          "_consumed_by": "runDiscoverySeedPlan.js attaches to handoff as _learning; searchDiscovery.js threads into searchProfilePlanned.schema4_learning",
+          "query_hashes_generated": {
+            "type": "string[]",
+            "source": "copy of search_plan_handoff.query_hashes"
+          },
+          "queries_generated": {
+            "type": "string[]",
+            "source": "queries.map(q => q.q)"
+          },
+          "families_used": {
+            "type": "string[]",
+            "source": "distinct families from queries, sorted"
+          },
+          "domains_targeted": {
+            "type": "string[]",
+            "source": "distinct preferred_domains from all queries, sorted"
+          },
+          "groups_activated": {
+            "type": "string[]",
+            "source": "distinct group_keys from queries, sorted"
+          },
+          "duplicates_suppressed": {
+            "type": "number",
+            "source": "total dedup+cap overflow count"
+          }
+        }
+      }
+    },
+    "03-search-plan-handoff-input": {
+      "file": "03-search-plan-handoff-input.json",
+      "stage": "03",
+      "kind": "input_contract",
+      "content": {
+        "_doc": "Schema 4 search_plan_handoff shape — input to the handoff adapter. Produced by buildSearchPlan() in searchPlanBuilder.js, then enriched by runDiscoverySeedPlan.js with planner/learning/panel metadata. Updated 2026-03-16.",
+        "search_plan_handoff": {
+          "queries": [
+            {
+              "q": "string — the search query text",
+              "query_hash": "string — deterministic hash for dedup across rounds",
+              "family": "string — query family: manufacturer_html | manual_pdf | review_lookup | benchmark_lookup | support_docs | fallback_web | targeted_single",
+              "group_key": "string — field group this query targets (e.g. sensor_performance, physical)",
+              "target_fields": [
+                "string — field keys this query is expected to resolve"
+              ],
+              "preferred_domains": [
+                "string — domains to prefer for this query (used as domain_hint)"
+              ],
+              "exact_match_required": "boolean — whether results must exact-match the product identity"
+            }
+          ],
+          "query_hashes": [
+            "string — flat array of all query_hash values for dedup"
+          ],
+          "total": "number — count of queries"
+        },
+        "_metadata_enrichment": {
+          "_doc": "runDiscoverySeedPlan.js attaches these underscore-prefixed fields to the handoff object after Schema 4 completes. They are NOT part of the buildSearchPlan() output — they are added at the orchestration layer so searchDiscovery.js can thread them into searchProfilePlanned.",
+          "_planner": {
+            "_source": "schema4.planner — from buildSearchPlan() return value",
+            "mode": "string — llm | disabled | error",
+            "model": "string — LLM model used for planning",
+            "planner_complete": "boolean — whether the planner finished successfully",
+            "planner_confidence": "number — overall plan confidence 0-1 from LLM response",
+            "queries_generated": "number — count of queries produced",
+            "duplicates_suppressed": "number — queries dropped during dedup",
+            "targeted_exceptions": "number — exceptional queries added outside normal rules",
+            "error": "string | null — error message if mode is 'error'"
+          },
+          "_learning": {
+            "_source": "schema4.learning_writeback — from buildSearchPlan() return value",
+            "query_hashes_generated": [
+              "string — hashes of all generated queries"
+            ],
+            "queries_generated": [
+              "string — raw query text of all generated queries"
+            ],
+            "families_used": [
+              "string — query families represented in the plan"
+            ],
+            "domains_targeted": [
+              "string — preferred domains across all queries"
+            ],
+            "groups_activated": [
+              "string — field groups that received queries"
+            ],
+            "duplicates_suppressed": "number — dedup counter"
+          },
+          "_panel": {
+            "_source": "schema4.panel — from buildSearchPlan() return value",
+            "round": "number — current round number",
+            "round_mode": "string — seed | carry_forward | repair",
+            "identity": "object — product identity context",
+            "summary": "object — needset summary stats",
+            "blockers": "object — blocking field issues",
+            "bundles": "Array<{ key, label, desc, priority, phase, source_target, content_target, search_intent, host_class, query_family_mix, reason_active, queries[], fields[] }>",
+            "profile_influence": "object — 14-key influence breakdown",
+            "deltas": "Array<{ field, from, to }> — round-over-round changes"
+          }
+        }
+      }
+    },
+    "03-search-plan-handoff-output": {
+      "file": "03-search-plan-handoff-output.json",
+      "stage": "03",
+      "kind": "output_contract",
+      "content": {
+        "_doc": "Cumulative pipeline output at the end of Stage 3: search plan → search execution → post-execution processing. Documents the full searchProfileFinal shape (the persisted search_profile artifact) and the discoverCandidateSources() return value. Updated 2026-03-16.",
+        "_pipeline_data_accumulated": {
+          "schema_1": "NeedSetStartInput — per-field provenance, identity context, field rules, round context",
+          "schema_2": "NeedSetOutput — field states, summary, blockers, planner_seed, history feedback",
+          "schema_3": "SearchPlanningContext — focus_groups with inlined catalog metadata, anti-garbage unions, search exhaustion, aliases, learning, previous_round_fields",
+          "schema_4": "NeedSetPlannerOutput — LLM-generated queries, planner confidence, panel bundles with fields[]/deltas, learning writeback",
+          "brand_resolver": "officialDomain, supportDomain, aliases, confidence, reasoning",
+          "search_execution": "raw SERP results, search attempts, search journal",
+          "post_execution": "SERP dedup, domain classification, admission filtering, deterministic + LLM triage reranking, serp_explorer, discovered URLs"
+        },
+        "searchProfileFinal": {
+          "_doc": "The persisted search_profile artifact. Built as { ...searchProfilePlanned, ...execution_additions }. Written to storage via writeSearchProfileArtifacts(). Available on discoverCandidateSources() return as result.search_profile.",
+          "_from_searchProfilePlanned_schema4_path": {
+            "category": "string — categoryConfig.category",
+            "product_id": "string — job.productId",
+            "run_id": "string — runId",
+            "base_model": "string — job.baseModel || '' — variant base model for shared-spec queries",
+            "aliases": "string[] — job.aliases || [] — known product name variants for diverse queries",
+            "generated_at": "string — ISO timestamp (overridden by final)",
+            "status": "string — 'planned' (overridden to 'executed' by final)",
+            "provider": "string — config.searchProvider",
+            "source": "string — 'schema4_planner' (Schema 4 path only)",
+            "selected_queries": "string[] — query strings that passed identity guard",
+            "selected_query_count": "number — selected_queries.length",
+            "query_rows": "Array<QueryRow> — per-query metadata (overridden by enriched rows in final)",
+            "query_reject_log": "Array<RejectEntry> — queries rejected by guard/dedup/cap (max 300)",
+            "query_guard": "{ brand_tokens, model_tokens, required_digit_groups, accepted_query_count, rejected_query_count }",
+            "effective_host_plan": "object|null — v2 host plan (null for Schema 4 path, populated for old path)",
+            "brand_resolution": "{ officialDomain, supportDomain, aliases, confidence, reasoning }|null — from brand resolver",
+            "schema4_planner": "{ mode, planner_confidence, duplicates_suppressed, targeted_exceptions }|null — Schema 4 planner metadata",
+            "schema4_learning": "{ query_hashes_generated, queries_generated, families_used, domains_targeted, groups_activated, duplicates_suppressed }|null — Schema 4 learning writeback",
+            "schema4_panel": "{ round, round_mode, identity, summary, blockers, bundles, profile_influence, deltas }|null — Schema 4 full panel payload",
+            "key": "string — S3 input key for search profile artifact",
+            "run_key": "string — S3 run-scoped key",
+            "latest_key": "string — S3 latest key (overwritten each run)"
+          },
+          "_from_searchProfilePlanned_old_path": {
+            "_note": "Old path spreads searchProfileBase (from buildSearchProfile) then overrides. Has all the same keys as Schema 4 path plus:",
+            "llm_queries": "Array — raw LLM-generated query objects (old path only, forward investment for review GUI)",
+            "source": "NOT SET — old path doesn't set a 'source' field",
+            "schema4_planner": "null — always null on old path",
+            "schema4_learning": "null — always null on old path",
+            "schema4_panel": "null — always null on old path"
+          },
+          "_from_execution_additions": {
+            "generated_at": "string — overridden: ISO timestamp of execution completion",
+            "status": "string — overridden: 'executed'",
+            "query_rows": "Array<EnrichedQueryRow> — overridden: original rows enriched with { result_count, attempts, providers, frontier_cache }",
+            "query_stats": "Array<QueryAttemptStat> — per-query execution stats: { query, result_count, attempts, providers, frontier_cache }",
+            "discovered_count": "number — total URLs that passed all filters",
+            "approved_count": "number — URLs on approved domains",
+            "candidate_count": "number — URLs on non-approved domains (candidates for fetch)",
+            "llm_query_planning": "boolean — whether LLM query planning was enabled",
+            "llm_query_model": "string — LLM model used for query planning",
+            "llm_serp_triage": "boolean — whether LLM SERP triage was enabled and applied",
+            "llm_serp_triage_model": "string — LLM model used for SERP triage",
+            "serp_explorer": "object — full SERP explorer payload (see below)"
+          }
+        },
+        "serp_explorer": {
+          "_doc": "SERP explorer — per-query breakdown of all candidate URLs with triage decisions.",
+          "generated_at": "string — ISO timestamp",
+          "provider": "string — search provider name",
+          "llm_triage_enabled": "boolean — was LLM triage enabled",
+          "llm_triage_applied": "boolean — was LLM triage actually applied (skipped when deterministic quality sufficient)",
+          "llm_triage_model": "string — LLM model used for triage",
+          "query_count": "number — total queries in breakdown",
+          "candidates_checked": "number — total unique URLs seen across all queries",
+          "urls_triaged": "number — URLs that entered triage (deterministic or LLM)",
+          "urls_selected": "number — URLs that made the final discovered list",
+          "urls_rejected": "number — URLs rejected by protocol/denylist/cooldown/relevance/admission/triage",
+          "dedupe_input": "number — raw SERP results before dedup",
+          "dedupe_output": "number — SERP results after cross-provider dedup",
+          "duplicates_removed": "number — cross-provider duplicates removed",
+          "queries": [
+            {
+              "query": "string — query text",
+              "hint_source": "string — where this query originated (v2.host_plan, schema4_search_plan, etc.)",
+              "target_fields": [
+                "string — field keys this query targets"
+              ],
+              "doc_hint": "string — expected document type",
+              "domain_hint": "string — preferred domain",
+              "result_count": "number — raw results returned by search provider",
+              "attempts": "number — execution attempts (includes retries)",
+              "providers": [
+                "string — search providers that executed this query"
+              ],
+              "candidate_count": "number — URLs from this query that entered triage",
+              "selected_count": "number — URLs from this query in final discovered list",
+              "candidates": [
+                {
+                  "url": "string",
+                  "title": "string (truncated to 220 chars)",
+                  "snippet": "string (truncated to 260 chars)",
+                  "host": "string — normalized hostname",
+                  "tier": "number|null — tier guess (1=manufacturer, 2=lab, 3=retailer, 4=aggregator, 5=unknown)",
+                  "tier_name": "string — human-readable tier name",
+                  "doc_kind": "string — guessed document type (spec_sheet, product_page, review, pdf, etc.)",
+                  "triage_score": "number — composite score from deterministic reranker or LLM triage",
+                  "triage_reason": "string — reason for score/decision",
+                  "decision": "string — selected|not_selected|rejected|eligible|pending",
+                  "reason_codes": [
+                    "string — up to 8 reason codes (approved_domain, tier_1, brand_match, model_match, domain_hint_match, etc.)"
+                  ],
+                  "providers": [
+                    "string — search providers that returned this URL"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "discoverCandidateSources_return": {
+          "_doc": "The full return value from discoverCandidateSources(). This is what runDiscoverySeedPlan receives back.",
+          "enabled": "boolean — true when discovery ran",
+          "discoveryKey": "string — S3 key for discovery artifact",
+          "candidatesKey": "string — S3 key for candidates artifact",
+          "candidates": "Array<DiscoveredURL> — all discovered URLs (approved + candidate)",
+          "approvedUrls": "string[] — URLs on approved domains (fed to planner.enqueue)",
+          "candidateUrls": "string[] — URLs on non-approved domains (fed to planner.seedCandidates)",
+          "queries": "string[] — executed query strings",
+          "llm_queries": "Array — raw LLM-generated query objects (forward investment)",
+          "search_profile": "searchProfileFinal — the full cumulative profile (see above)",
+          "search_profile_key": "string — S3 input key",
+          "search_profile_run_key": "string — S3 run-scoped key",
+          "search_profile_latest_key": "string — S3 latest key",
+          "provider_state": "object — search provider availability state",
+          "query_concurrency": "number — concurrent query execution limit used",
+          "uber_search_plan": "object|null — uber-aggressive plan (when mode=uber)",
+          "internal_satisfied": "boolean — whether internal sources satisfied the search need",
+          "external_search_reason": "string — reason external search was triggered",
+          "search_attempts": "Array<SearchAttempt> — per-query execution log with result counts",
+          "search_journal": "Array — execution journal entries",
+          "serp_explorer": "object — same serp_explorer as on searchProfileFinal",
+          "seed_search_plan_output": "object|null — full Schema 4 output (needset_planner_output.v2) attached by runDiscoverySeedPlan() after discovery. Contains panel, search_plan_handoff, planner, learning_writeback. Used by finalization derivation to enrich needSet without re-calling the LLM. Only present when config.enableSchema4SearchPlan is true and schema4 computation succeeded."
+        },
+        "adapter_conversion": {
+          "_doc": "convertHandoffToExecutionPlan() in searchPlanHandoffAdapter.js. Converts Schema 4 handoff queries into the shape executeSearchQueries() expects. This is an internal intermediate — NOT the cumulative output.",
+          "queries": [
+            "string — flat array of query strings extracted from handoff"
+          ],
+          "selectedQueryRowMap": "Map<lowercase_query, RowObject> — lookup by lowercase query",
+          "queryRows": [
+            {
+              "query": "string — original query text",
+              "source": "schema4_planner",
+              "target_fields": [
+                "string — field keys from handoff"
+              ],
+              "domain_hint": "string — first preferred_domain or empty string",
+              "doc_hint": "",
+              "hint_source": "schema4_search_plan",
+              "family": "string — query family from handoff",
+              "group_key": "string — field group from handoff",
+              "query_hash": "string — hash from handoff"
+            }
+          ],
+          "source": "schema4",
+          "_notes": {
+            "deduplication": "Duplicate q values are removed (first wins). Falsy q values are skipped.",
+            "identity_guard": "After conversion, enforceIdentityQueryGuard() filters out off-brand/off-model queries before execution.",
+            "interface_parity": "executeSearchQueries() receives queries and selectedQueryRowMap in exactly the same shape as the old 7-layer path."
+          }
+        }
+      }
+    },
+    "04-query-journey-input": {
+      "file": "04-query-journey-input.json",
+      "stage": "04",
+      "kind": "input_contract",
+      "content": {
+        "_doc": "Query Journey input contract. Documents the exact inputs consumed at each sub-phase of Stage 4: Schema 4 handoff → adapter → guard → execution → classification → rerank/triage. Updated 2026-03-16.",
+        "phase_1_handoff_adapter": {
+          "_function": "convertHandoffToExecutionPlan(handoff)",
+          "_file": "src/features/indexing/discovery/searchPlanHandoffAdapter.js:10-48",
+          "input": {
+            "_source": "Schema 4 search_plan_handoff (from buildSearchPlan → runDiscoverySeedPlan)",
+            "queries": {
+              "_type": "array",
+              "_per_item": {
+                "q": {
+                  "type": "string",
+                  "tag": "enriched",
+                  "source": "LLM response"
+                },
+                "query_hash": {
+                  "type": "string",
+                  "tag": "recomputed",
+                  "source": "stableHash of q"
+                },
+                "family": {
+                  "type": "string",
+                  "tag": "enriched",
+                  "source": "LLM response"
+                },
+                "group_key": {
+                  "type": "string",
+                  "tag": "passthrough",
+                  "source": "Schema 3 focus_group key"
+                },
+                "target_fields": {
+                  "type": "string[]",
+                  "tag": "enriched",
+                  "source": "LLM response"
+                },
+                "preferred_domains": {
+                  "type": "string[]",
+                  "tag": "enriched",
+                  "source": "LLM response"
+                },
+                "exact_match_required": {
+                  "type": "boolean",
+                  "tag": "enriched",
+                  "source": "LLM response"
+                }
+              }
+            },
+            "query_hashes": "string[] — not consumed by adapter",
+            "total": "number — not consumed by adapter"
+          },
+          "output": {
+            "queries": {
+              "type": "string[]",
+              "tag": "recomputed",
+              "note": "flat array of q strings, deduped by lowercase"
+            },
+            "queryRows": {
+              "type": "array",
+              "tag": "recomputed",
+              "note": "array of { query, source:'schema4_planner', target_fields, domain_hint (first preferred_domain), doc_hint:'', hint_source:'schema4_search_plan', family, group_key, query_hash }"
+            },
+            "selectedQueryRowMap": {
+              "type": "Map<string, Row>",
+              "tag": "recomputed",
+              "note": "lowercase(query) → row for fast lookup"
+            },
+            "source": {
+              "type": "string",
+              "value": "schema4",
+              "tag": "recomputed"
+            }
+          },
+          "transforms": {
+            "preferred_domains → domain_hint": "first preferred_domain becomes domain_hint; rest dropped",
+            "dedup": "duplicate q values (case-insensitive) are removed; first wins",
+            "falsy_filter": "queries with empty/null q are skipped"
+          }
+        },
+        "phase_2_identity_guard": {
+          "_function": "enforceIdentityQueryGuard({ rows, variables, variantGuardTerms })",
+          "_file": "src/features/indexing/discovery/discoveryQueryPlan.js:416-443",
+          "input": {
+            "rows": "array — queryRows from adapter output",
+            "variables": {
+              "brand": "string",
+              "model": "string",
+              "variant": "string",
+              "category": "string"
+            },
+            "variantGuardTerms": "string[] — additional variant aliases to reject"
+          },
+          "output": {
+            "rows": {
+              "type": "array",
+              "tag": "passthrough (filtered)",
+              "note": "queries that passed brand/model/variant validation"
+            },
+            "rejectLog": {
+              "type": "array",
+              "tag": "recomputed",
+              "note": "{ query, source, reason, stage:'pre_execution_guard', detail }"
+            },
+            "guardContext": {
+              "brandTokens": "string[] — compact brand tokens",
+              "modelTokens": "string[] — compact model tokens (excluding brand tokens + generic)",
+              "requiredDigitGroups": "string[] — digit sequences in model/variant",
+              "allowedModelTokens": "string[] — normalized model tokens + variants with trim/decomposition"
+            }
+          },
+          "validation_rules": [
+            "All brand tokens must appear in query (case-insensitive)",
+            "If model has digit groups (e.g. 'g502'), ALL digit groups must appear",
+            "If no digit groups but model tokens exist (>=4 chars), at least one model token must appear",
+            "Foreign model-like tokens (not in allowedModelTokens) → reason 'foreign_model_token:<token>'",
+            "Queries failing ANY check are rejected; passing queries are returned unchanged"
+          ]
+        },
+        "phase_3_execution": {
+          "_function": "executeSearchQueries({ queries, selectedQueryRowMap, ... })",
+          "_file": "src/features/indexing/discovery/discoverySearchExecution.js:29-446",
+          "input": {
+            "queries": "string[] — accepted query strings from guard",
+            "selectedQueryRowMap": "Map<string, Row> — from adapter output",
+            "profileQueryRowMap": "Map<string, Row> — profile-level query metadata",
+            "executionQueryLimit": "number — max queries to execute",
+            "queryConcurrency": "number — parallel query limit",
+            "resultsPerQuery": "number — target results per query from provider",
+            "queryLimit": "number — planner-level cap",
+            "config": "object — searchProvider, discoveryInternalFirst, discoveryInternalMinResults, etc.",
+            "storage": "StorageAdapter",
+            "frontierDb": "FrontierDatabase — cache + cooldown + dedup",
+            "categoryConfig": "object — sourceHosts, sourceHostMap, approvedRootDomains, etc.",
+            "job": "object — productId, category, etc.",
+            "runId": "string",
+            "providerState": "{ provider, internet_ready, active_providers, fallback_reason }"
+          },
+          "output": {
+            "rawResults": {
+              "type": "array",
+              "tag": "enriched",
+              "note": "{ url, title, snippet, provider, query, rank, ... } from search providers"
+            },
+            "searchAttempts": {
+              "type": "array",
+              "tag": "recomputed",
+              "note": "{ query, provider, result_count, reason_code, duration_ms }"
+            },
+            "searchJournal": {
+              "type": "array",
+              "tag": "recomputed",
+              "note": "{ ts, query, provider, action, reason, result_count, duration_ms }"
+            },
+            "internalSatisfied": {
+              "type": "boolean",
+              "tag": "recomputed",
+              "note": "true if internal results met required field target"
+            },
+            "externalSearchReason": {
+              "type": "string|null",
+              "tag": "recomputed",
+              "note": "why external search was triggered or skipped"
+            }
+          },
+          "execution_flow": [
+            "1. Provider diagnostics — log availability",
+            "2. Internal-first phase (if discoveryInternalFirst) — frontier cache + corpus search",
+            "3. Internet search phase — SearXNG with concurrency, per-query frontier check",
+            "4. Plan-only fallback — if no provider, generate URLs from manufacturer domain",
+            "5. Record to query index (NDJSON) and frontier DB"
+          ]
+        },
+        "phase_4_classification": {
+          "_function": "classifyUrlCandidate(result, categoryConfig, options)",
+          "_file": "src/features/indexing/discovery/discoveryUrlClassifier.js:130-174",
+          "input": {
+            "result": {
+              "url": "string",
+              "title": "string",
+              "snippet": "string",
+              "query": "string",
+              "provider": "string",
+              "rank": "number"
+            },
+            "categoryConfig": "object — sourceHosts, sourceHostMap, approvedRootDomains",
+            "options": {
+              "identityLock": "{ brand, model, variant }",
+              "variantGuardTerms": "string[]"
+            }
+          },
+          "output": {
+            "url": {
+              "tag": "normalized",
+              "note": "canonical URL"
+            },
+            "host": {
+              "tag": "recomputed",
+              "note": "lowercase, www stripped"
+            },
+            "rootDomain": {
+              "tag": "recomputed",
+              "note": "extracted root domain"
+            },
+            "path": {
+              "tag": "recomputed",
+              "note": "pathname lowercased"
+            },
+            "title": {
+              "tag": "passthrough"
+            },
+            "snippet": {
+              "tag": "passthrough"
+            },
+            "query": {
+              "tag": "passthrough"
+            },
+            "provider": {
+              "tag": "passthrough"
+            },
+            "approvedDomain": {
+              "tag": "recomputed",
+              "note": "isApprovedHost() from sourceHostMap"
+            },
+            "tier": {
+              "tag": "recomputed",
+              "note": "1=manufacturer, 2=approved, 3+=community"
+            },
+            "tierName": {
+              "tag": "recomputed",
+              "note": "manufacturer|approved|community"
+            },
+            "role": {
+              "tag": "recomputed",
+              "note": "inferred from categoryConfig sourceHosts"
+            },
+            "doc_kind_guess": {
+              "tag": "recomputed",
+              "note": "spec|manual_pdf|spec_pdf|teardown_review|lab_review|support|product_page|other"
+            },
+            "identity_match_level": {
+              "tag": "recomputed",
+              "note": "strong|partial|weak|none — brand+model+variant presence"
+            },
+            "variant_guard_hit": {
+              "tag": "recomputed",
+              "note": "true if wrong variant detected"
+            },
+            "multi_model_hint": {
+              "tag": "recomputed",
+              "note": "true if comparison/listing page pattern detected"
+            }
+          }
+        },
+        "phase_5_rerank_triage": {
+          "_function": "rerankSerpResults({ config, identity, missingFields, serpResults, ... })",
+          "_file": "src/research/serpReranker.js:187-356",
+          "_has_llm_call": true,
+          "input": {
+            "config": "object — weight map, LLM model settings, timeouts",
+            "identity": "{ brand, model, variant }",
+            "missingFields": "string[] — fields still needing data",
+            "serpResults": "array — classified URL candidates from phase 4",
+            "frontier": "FrontierDatabase — for rankPenaltyForUrl()",
+            "topK": "number — default 16, max results to rerank",
+            "domainSafetyResults": "Map<string, { safe: boolean }> — optional domain safety check"
+          },
+          "output_per_result": {
+            "url": {
+              "tag": "passthrough"
+            },
+            "title": {
+              "tag": "passthrough"
+            },
+            "snippet": {
+              "tag": "passthrough"
+            },
+            "host": {
+              "tag": "passthrough"
+            },
+            "rank": {
+              "tag": "passthrough"
+            },
+            "score_det": {
+              "tag": "recomputed",
+              "note": "deterministic composite score"
+            },
+            "score_breakdown": {
+              "tag": "recomputed",
+              "note": "14-key breakdown: base, frontier, identity, variant, multi_model, tier, host_health, operator_risk, field_affinity, diversity, needset_coverage, brand_presence, model_presence, spec_manual"
+            },
+            "keep": {
+              "tag": "enriched (LLM) or recomputed (deterministic)",
+              "note": "boolean — LLM decision or always true"
+            },
+            "decision": {
+              "tag": "enriched (LLM only)",
+              "note": "'keep'|'drop' from LLM response"
+            },
+            "rerank_score": {
+              "tag": "enriched (LLM) or recomputed (deterministic)",
+              "note": "LLM score or score_det fallback"
+            },
+            "rerank_reason": {
+              "tag": "enriched (LLM) or recomputed (deterministic)",
+              "note": "LLM reason or 'deterministic'|'deterministic_fallback'"
+            }
+          }
+        }
+      }
+    },
+    "04-query-journey-llm-call": {
+      "file": "04-query-journey-llm-call.json",
+      "stage": "04",
+      "kind": "llm_call",
+      "content": {
+        "_doc": "Query Journey LLM call contract. Stage 4 has exactly ONE optional LLM call: the SERP reranker/triage in rerankSerpResults(). All other phases are deterministic. Updated 2026-03-16.",
+        "_llm_calls_in_stage_4": {
+          "convertHandoffToExecutionPlan": "NO LLM",
+          "enforceIdentityQueryGuard": "NO LLM",
+          "executeSearchQueries": "NO LLM (pure search orchestration)",
+          "classifyUrlCandidate": "NO LLM (pure classification)",
+          "rerankSerpResults": "OPTIONAL LLM — uber_serp_reranker"
+        },
+        "serp_reranker_llm_call": {
+          "_function": "rerankSerpResults()",
+          "_file": "src/research/serpReranker.js:187-356",
+          "_call_site": "inner LLM call within rerank phase",
+          "gate": {
+            "conditions": [
+              "serpTriageEnabled is true",
+              "quality threshold check (deterministic scores indicate LLM value)",
+              "uberMode OR (llmEnabled AND llmSerpRerankEnabled)",
+              "hasLlmRouteApiKey(config, { role: 'plan' })"
+            ],
+            "fallback": "deterministic scoring only — all results get keep=true, rerank_reason='deterministic'"
+          },
+          "call_parameters": {
+            "reason": "uber_serp_reranker",
+            "role": "plan",
+            "model": "config.llmModelTriage (or config.llmModelReasoning if llmTriageUseReasoning=true)",
+            "timeoutMs": "config.llmTimeoutMs || config.openaiTimeoutMs || 30000"
+          },
+          "system_prompt": {
+            "_source": "serpReranker.js (inline constant)",
+            "text": [
+              "You rerank search results for evidence-first hardware spec extraction.",
+              "Return strict JSON only.",
+              "Keep URLs with strong identity match and likely field relevance.",
+              "Drop low-value, duplicate, or dead-pattern URLs."
+            ]
+          },
+          "user_payload": {
+            "_encoding": "JSON.stringify — sent as user message",
+            "identity_lock": {
+              "brand": "string — from identity.brand",
+              "model": "string — from identity.model",
+              "variant": "string — from identity.variant"
+            },
+            "missing_fields": "string[] — missingFields sliced to 40",
+            "results": {
+              "_type": "array — top K results (default 16)",
+              "_per_item": {
+                "rank": "number — original SERP rank",
+                "url": "string — full URL",
+                "host": "string — normalized hostname",
+                "title": "string — truncated to 240 chars",
+                "snippet": "string — truncated to 320 chars",
+                "score_det": "number — deterministic score rounded to 4 decimal places"
+              }
+            }
+          },
+          "response_schema": {
+            "_encoding": "JSON Schema passed via callLlmWithRouting({ jsonSchema })",
+            "selected_urls": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "_note": "must match a URL from the payload"
+                  },
+                  "keep": {
+                    "type": "boolean",
+                    "_note": "true to keep, false to drop"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "_note": "optional human-readable reason"
+                  },
+                  "score": {
+                    "type": "number",
+                    "_note": "optional LLM-assigned relevance score"
+                  }
+                }
+              }
+            }
+          },
+          "response_processing": {
+            "url_matching": "LLM selected_urls matched by url string to input results",
+            "unmatched_urls": "URLs not in LLM response get keep=true (default keep) or keep=false if LLM explicitly dropped all",
+            "score_fallback": "If LLM provides no score, falls back to score_det",
+            "reason_fallback": {
+              "in_llm_response": "reason from LLM response",
+              "omitted_from_response": "'llm_omitted_drop' (dropped) or 'llm_default_keep' (kept by default)",
+              "empty_llm_response": "'llm_empty_fallback'"
+            }
+          },
+          "error_handling": {
+            "llm_call_failure": "Falls back to deterministic scores, rerank_reason='deterministic_fallback'",
+            "empty_selections": "If LLM returns 0 selected_urls → deterministic fallback",
+            "explicit_all_drop": "If LLM explicitly drops ALL URLs → returns { explicitAllDrop: true, fallbackReason: 'llm_explicit_all_drop' }"
+          },
+          "deterministic_scoring": {
+            "_note": "Always computed regardless of LLM path. Used as baseline or fallback.",
+            "weight_map": {
+              "identityStrongBonus": {
+                "default": 2,
+                "note": "strong identity match (brand+model+variant)"
+              },
+              "identityPartialBonus": {
+                "default": 0.8,
+                "note": "partial match (brand+model)"
+              },
+              "identityWeakBonus": {
+                "default": 0,
+                "note": "weak match (brand only)"
+              },
+              "identityNoneBonus": {
+                "default": -1.5,
+                "note": "no identity match"
+              },
+              "brandPresenceBonus": {
+                "default": 2.5,
+                "note": "brand found in title+snippet+url"
+              },
+              "modelPresenceBonus": {
+                "default": 2.5,
+                "note": "model found in title+snippet+url"
+              },
+              "specManualKeywordBonus": {
+                "default": 1.3,
+                "note": "spec/manual/datasheet keywords"
+              },
+              "reviewBenchmarkBonus": {
+                "default": 0.9,
+                "note": "review/benchmark keywords"
+              },
+              "forumRedditPenalty": {
+                "default": -0.9,
+                "note": "forum/reddit content"
+              },
+              "brandInHostnameBonus": {
+                "default": 1.2,
+                "note": "brand appears in hostname"
+              },
+              "wikipediaPenalty": {
+                "default": -1,
+                "note": "wikipedia pages"
+              },
+              "variantGuardPenalty": {
+                "default": -3,
+                "note": "wrong variant detected"
+              },
+              "multiModelHintPenalty": {
+                "default": -1.5,
+                "note": "comparison/listing page"
+              },
+              "tier1Bonus": {
+                "default": 1.5,
+                "note": "tier 1 manufacturer source"
+              },
+              "tier2Bonus": {
+                "default": 0.5,
+                "note": "tier 2 approved source"
+              },
+              "hostHealthDownrankPenalty": {
+                "default": "varies",
+                "note": "from host health policy"
+              },
+              "hostHealthExcludePenalty": {
+                "default": "varies",
+                "note": "from host health policy"
+              },
+              "operatorRiskPenalty": {
+                "default": "varies",
+                "note": "site: operator risk"
+              },
+              "fieldAffinityBonus": {
+                "default": "varies",
+                "note": "query targets missing fields"
+              },
+              "needsetCoverageBonus": {
+                "default": "varies",
+                "note": "covers unresolved needset fields"
+              },
+              "diversityPenaltyPerDupe": {
+                "default": "varies",
+                "note": "per-domain duplicate penalty"
+              }
+            },
+            "score_breakdown_keys": [
+              "base_score",
+              "frontier_penalty",
+              "identity_bonus",
+              "variant_guard_penalty",
+              "multi_model_penalty",
+              "tier_bonus",
+              "host_health_penalty",
+              "operator_risk_penalty",
+              "field_affinity_bonus",
+              "diversity_penalty",
+              "needset_coverage_bonus",
+              "tier_source"
+            ]
+          }
+        }
+      }
+    },
+    "04-query-journey-output": {
+      "file": "04-query-journey-output.json",
+      "stage": "04",
+      "kind": "output_contract",
+      "content": {
+        "_doc": "Query Journey output contract. Documents the cumulative output of Stage 4 at each sub-phase boundary, ending with the discovered URL candidates that feed into Stage 5 (fetch/parse). Updated 2026-03-16.",
+        "phase_1_adapter_output": {
+          "_function": "convertHandoffToExecutionPlan()",
+          "_consumed_by": "enforceIdentityQueryGuard() → executeSearchQueries()",
+          "queries": {
+            "type": "string[]",
+            "tag": "recomputed",
+            "note": "deduped flat array of query strings"
+          },
+          "queryRows": {
+            "_type": "array",
+            "_tag": "recomputed",
+            "_per_item": {
+              "query": {
+                "tag": "passthrough",
+                "source": "handoff q"
+              },
+              "source": {
+                "tag": "recomputed",
+                "value": "schema4_planner"
+              },
+              "target_fields": {
+                "tag": "passthrough",
+                "source": "handoff target_fields"
+              },
+              "domain_hint": {
+                "tag": "recomputed",
+                "source": "first preferred_domain or ''"
+              },
+              "doc_hint": {
+                "tag": "recomputed",
+                "value": "'' (always empty at this stage)"
+              },
+              "hint_source": {
+                "tag": "recomputed",
+                "value": "schema4_search_plan"
+              },
+              "family": {
+                "tag": "passthrough",
+                "source": "handoff family"
+              },
+              "group_key": {
+                "tag": "passthrough",
+                "source": "handoff group_key"
+              },
+              "query_hash": {
+                "tag": "passthrough",
+                "source": "handoff query_hash"
+              }
+            }
+          },
+          "selectedQueryRowMap": {
+            "type": "Map<string, Row>",
+            "tag": "recomputed",
+            "note": "lowercase(query) → row"
+          },
+          "source": {
+            "type": "string",
+            "value": "schema4"
+          }
+        },
+        "phase_2_guard_output": {
+          "_function": "enforceIdentityQueryGuard()",
+          "_consumed_by": "executeSearchQueries() (accepted rows only)",
+          "rows": {
+            "_type": "array — subset of input rows that passed validation",
+            "_tag": "passthrough (filtered)",
+            "_note": "rows are unchanged — only the set is reduced"
+          },
+          "rejectLog": {
+            "_type": "array",
+            "_tag": "recomputed",
+            "_per_item": {
+              "query": "string — the rejected query text",
+              "source": "string[] — source labels",
+              "reason": "string — e.g. 'missing_brand_token', 'missing_model_token', 'foreign_model_token:abc'",
+              "stage": "'pre_execution_guard'",
+              "detail": "string — pipe-joined reasons list"
+            },
+            "_note": "written to searchProfilePlanned.query_reject_log"
+          },
+          "guardContext": {
+            "_tag": "recomputed — saved to searchProfilePlanned.query_guard",
+            "brandTokens": {
+              "type": "string[]",
+              "note": "compact brand identity tokens"
+            },
+            "modelTokens": {
+              "type": "string[]",
+              "note": "compact model tokens (excluding brand + generic)"
+            },
+            "requiredDigitGroups": {
+              "type": "string[]",
+              "note": "digit sequences from model/variant"
+            },
+            "allowedModelTokens": {
+              "type": "string[]",
+              "note": "full normalized model token set"
+            }
+          }
+        },
+        "phase_3_execution_output": {
+          "_function": "executeSearchQueries()",
+          "_consumed_by": "dedupeSerpResults() → classifyUrlCandidate() → admission filter → rerankSerpResults()",
+          "rawResults": {
+            "_type": "array",
+            "_tag": "enriched — new data from search providers",
+            "_per_item": {
+              "url": {
+                "tag": "enriched",
+                "source": "search provider (SearXNG/internal/frontier)"
+              },
+              "title": {
+                "tag": "enriched",
+                "source": "search provider"
+              },
+              "snippet": {
+                "tag": "enriched",
+                "source": "search provider"
+              },
+              "provider": {
+                "tag": "enriched",
+                "source": "'internal'|'google'|'bing'|'plan'|'frontier'|'plan_fallback'"
+              },
+              "query": {
+                "tag": "passthrough",
+                "source": "the query that produced this result"
+              },
+              "rank": {
+                "tag": "enriched",
+                "source": "SERP position or 0"
+              }
+            }
+          },
+          "searchAttempts": {
+            "_type": "array",
+            "_tag": "recomputed — execution log",
+            "_per_item": {
+              "query": "string",
+              "provider": "string",
+              "result_count": "number",
+              "reason_code": "string — 'internet_search'|'internal_corpus_lookup'|'frontier_query_cache'|'plan_only_no_provider'",
+              "duration_ms": "number"
+            }
+          },
+          "searchJournal": {
+            "_type": "array",
+            "_tag": "recomputed — detailed execution journal",
+            "_per_item": {
+              "ts": "string — ISO timestamp",
+              "query": "string",
+              "provider": "string",
+              "action": "string — 'reuse' for cache hits",
+              "reason": "string",
+              "result_count": "number",
+              "duration_ms": "number"
+            }
+          },
+          "internalSatisfied": {
+            "type": "boolean",
+            "tag": "recomputed"
+          },
+          "externalSearchReason": {
+            "type": "string|null",
+            "tag": "recomputed"
+          }
+        },
+        "phase_4_classification_output": {
+          "_function": "classifyUrlCandidate() — applied to each result after dedup",
+          "_consumed_by": "admission filter → rerankSerpResults()",
+          "_per_candidate": {
+            "url": {
+              "tag": "normalized",
+              "note": "canonical URL"
+            },
+            "host": {
+              "tag": "recomputed",
+              "note": "lowercase, www stripped"
+            },
+            "rootDomain": {
+              "tag": "recomputed",
+              "note": "extracted root domain"
+            },
+            "path": {
+              "tag": "recomputed",
+              "note": "pathname lowercased"
+            },
+            "title": {
+              "tag": "passthrough"
+            },
+            "snippet": {
+              "tag": "passthrough"
+            },
+            "query": {
+              "tag": "passthrough"
+            },
+            "provider": {
+              "tag": "passthrough"
+            },
+            "approvedDomain": {
+              "tag": "recomputed",
+              "note": "from sourceHostMap lookup"
+            },
+            "tier": {
+              "tag": "recomputed",
+              "note": "1=manufacturer, 2=approved, 3+=community"
+            },
+            "tierName": {
+              "tag": "recomputed",
+              "note": "manufacturer|approved|community"
+            },
+            "role": {
+              "tag": "recomputed",
+              "note": "from categoryConfig sourceHosts"
+            },
+            "doc_kind_guess": {
+              "tag": "recomputed",
+              "note": "spec|manual_pdf|spec_pdf|teardown_review|lab_review|support|product_page|other"
+            },
+            "identity_match_level": {
+              "tag": "recomputed",
+              "note": "strong|partial|weak|none"
+            },
+            "variant_guard_hit": {
+              "tag": "recomputed",
+              "note": "boolean — wrong variant detected"
+            },
+            "multi_model_hint": {
+              "tag": "recomputed",
+              "note": "boolean — comparison/listing page"
+            }
+          },
+          "admission_hard_rejects": {
+            "_note": "These filters run BEFORE reranking. Hard-rejected URLs never reach the reranker.",
+            "non_https": "protocol is not https",
+            "denied_host": "host is on denylist",
+            "url_cooldown": "URL is in frontier cooldown window",
+            "manufacturer_brand_mismatch": "tier 1 source but brand does not match identity lock",
+            "low_relevance": "none identity match AND no field affinity"
+          },
+          "admission_soft_exclusions": {
+            "_note": "These filters run after classification but before final discovery list.",
+            "forum_subdomain": "forum.* or community.* subdomain",
+            "forum_classification": "doc_kind_guess indicates forum content",
+            "sibling_model_page": "multi_model_hint AND not manufacturer tier",
+            "non_manufacturer_multi_model": "comparison page from non-official source"
+          }
+        },
+        "phase_5_rerank_output": {
+          "_function": "rerankSerpResults() — deterministic + optional LLM",
+          "_consumed_by": "final discovery list → discoverCandidateSources() return",
+          "_per_candidate": {
+            "url": {
+              "tag": "passthrough"
+            },
+            "title": {
+              "tag": "passthrough"
+            },
+            "snippet": {
+              "tag": "passthrough"
+            },
+            "host": {
+              "tag": "passthrough"
+            },
+            "rank": {
+              "tag": "passthrough"
+            },
+            "score_det": {
+              "tag": "recomputed",
+              "note": "deterministic composite score (always computed)"
+            },
+            "score_breakdown": {
+              "tag": "recomputed",
+              "note": "14-key breakdown object"
+            },
+            "keep": {
+              "tag": "enriched (LLM) or recomputed (det)",
+              "note": "LLM keep/drop decision or always true"
+            },
+            "decision": {
+              "tag": "enriched (LLM only)",
+              "note": "'keep'|'drop'"
+            },
+            "rerank_score": {
+              "tag": "enriched (LLM) or recomputed (det)",
+              "note": "LLM score or score_det"
+            },
+            "rerank_reason": {
+              "tag": "enriched (LLM) or recomputed (det)",
+              "note": "LLM reason or 'deterministic'"
+            }
+          },
+          "_final_discovery_list": {
+            "_note": "After reranking, results are filtered by keep=true, capped by serpTriageMaxUrls, and split into approved/candidate URLs.",
+            "approvedUrls": "string[] — URLs on approved domains → fed to planner.enqueue()",
+            "candidateUrls": "string[] — URLs on non-approved domains → fed to planner.seedCandidates()",
+            "candidates": "Array<DiscoveredURL> — all discovered URLs (approved + candidate)"
+          }
+        },
+        "cumulative_artifacts_written": {
+          "searchProfileFinal": {
+            "_note": "The searchProfilePlanned object is enriched with execution results and written to storage.",
+            "status": "overridden from 'planned' to 'executed'",
+            "generated_at": "overridden to execution completion timestamp",
+            "query_rows": "overridden with enriched rows including result_count, attempts, providers",
+            "query_stats": "per-query execution stats array",
+            "discovered_count": "total URLs that passed all filters",
+            "approved_count": "URLs on approved domains",
+            "candidate_count": "URLs on non-approved domains",
+            "llm_query_planning": "boolean — whether LLM planning was enabled",
+            "llm_serp_triage": "boolean — whether LLM triage was applied",
+            "serp_explorer": "full SERP explorer payload (see stage 3 handoff-output.json)"
+          },
+          "discovery_payload": "written to S3 with candidate URLs and approved URL lists",
+          "query_index": "NDJSON per-query execution log for observability"
+        }
+      }
+    },
+    "05-searxng-execution-input": {
+      "file": "05-searxng-execution-input.json",
+      "stage": "05",
+      "kind": "input_contract",
+      "content": {
+        "_doc": "Final query payload that hits SearXNG via runSearchProviders(). Identical regardless of Schema 4 or old path origin.",
+        "queries": [
+          "string — the actual search strings sent to SearXNG"
+        ],
+        "per_query_metadata": {
+          "resolved_from": "selectedQueryRowMap.get(query.toLowerCase()) or profileQueryRowMap.get(query.toLowerCase())",
+          "target_fields": [
+            "string — fields this query aims to resolve (used for post-triage field attribution)"
+          ],
+          "domain_hint": "string — preferred domain (used for site: prefix by some providers)",
+          "doc_hint": "string — expected document type (spec_sheet, review, manual)",
+          "hint_source": "string — origin of the hint: schema4_search_plan | targeted | host_plan | base_template",
+          "family": "string — query family (manufacturer_html, manual_pdf, etc.)"
+        },
+        "execution_config": {
+          "executionQueryLimit": "number — max queries to attempt",
+          "queryConcurrency": "number — parallel query slots (default 1)",
+          "resultsPerQuery": "number — max results per query (default 10)",
+          "searchProvider": "string — dual | searxng | bing | google | duckduckgo"
+        },
+        "execution_phases": [
+          "1. Internal corpus search (if discoveryInternalFirst=true) via _searchSourceCorpusFn",
+          "2. Internet search via _runSearchProvidersFn (concurrent per queryConcurrency)",
+          "3. Plan-only fallback (if no provider available) via buildPlanOnlyResults()"
+        ],
+        "output": {
+          "rawResults": [
+            "{ url, title, snippet, provider, query, ... }"
+          ],
+          "searchAttempts": [
+            "{ query, provider, result_count, reason_code, duration_ms }"
+          ],
+          "searchJournal": [
+            "{ ts, query, provider, result_count, reason_code }"
+          ],
+          "internalSatisfied": "boolean — internal corpus met required field targets",
+          "externalSearchReason": "string | null — why external search was run/skipped"
+        }
+      }
+    }
+  },
+  "llm_calls": {
+    "03-search-planner-llm-call": {
+      "file": "03-search-planner-llm-call.json",
+      "stage": "03",
+      "kind": "llm_call",
+      "content": {
+        "_doc": "Search Planner LLM call contract. Documents the exact prompt, payload shape, response schema, and post-processing rules for the Schema 4 NeedSet planner LLM call. Source: searchPlanBuilder.js:24-78 (schema+prompt), 305-374 (call), 383-434 (post-processing). Updated 2026-03-16.",
+        "call_site": {
+          "function": "buildSearchPlan()",
+          "file": "src/indexlab/searchPlanBuilder.js:352-375",
+          "routing": "callLlmWithRouting()",
+          "reason": "needset_search_planner",
+          "role": "plan",
+          "gate": "hasLlmRouteApiKey(config, { role: 'plan' }) — returns disabled result when false"
+        },
+        "system_prompt": {
+          "_source": "searchPlanBuilder.js:60-78 (PLANNER_SYSTEM_PROMPT)",
+          "role": "search planner for hardware specification data collection",
+          "rules": [
+            "Generate 1-3 queries per active group, each targeting different search strategies",
+            "Vary query families: manufacturer_html, manual_pdf, support_docs, review_lookup, benchmark_lookup, fallback_web, targeted_single",
+            "Prefer manufacturer docs, instrumented lab reviews, and trusted spec databases",
+            "Avoid junk domains, login pages, forums, and irrelevant topics",
+            "Do NOT repeat queries from existing_queries — generate DIFFERENT patterns",
+            "Use domains_tried_union to AVOID domains already visited — target DIFFERENT domains",
+            "Use host_classes_tried_union to diversify: if 'manufacturer' tried, try 'review' or 'database'",
+            "Use evidence_classes_tried_union to vary content types: if 'html' tried, target 'pdf' or 'json-ld'",
+            "When no_value_attempts is high (3+), radically change search strategy",
+            "weak_field_keys need CORROBORATION queries (authoritative sources to confirm)",
+            "conflict_field_keys need RESOLUTION queries (manufacturer/official sources to settle)",
+            "Use aliases_union to generate variant-aware queries",
+            "Each query must have 'family' (strategy type) and 'q' (search query text)",
+            "Optionally include 'target_fields', 'preferred_domains', and 'exact_match_required'",
+            "Return JSON with a 'groups' array where each group has 'key' and 'queries' array"
+          ]
+        },
+        "user_payload": {
+          "_source": "searchPlanBuilder.js:305-344 (llmPayload)",
+          "_encoding": "JSON.stringify — sent as the 'user' message",
+          "identity": {
+            "manufacturer": "string — identity.manufacturer || run.brand || ''",
+            "model": "string — identity.model || run.model || ''",
+            "category": "string — run.category || ''"
+          },
+          "round": "number — run.round || 0",
+          "missing_critical_fields": "string[] — ctx.needset.missing_critical_fields || []",
+          "limits": {
+            "discoveryMaxQueries": "number — plannerLimits.discoveryMaxQueries || 6",
+            "maxUrlsPerProduct": "number — plannerLimits.maxUrlsPerProduct || 20"
+          },
+          "focus_groups": {
+            "_note": "Only groups with phase='now' or phase='next' (hold groups filtered out). Dead domains and dead query hashes removed before inclusion.",
+            "_per_group_shape": {
+              "key": "string — group identifier",
+              "phase": "string — 'now' or 'next' (hold filtered out)",
+              "priority": "string — 'core' | 'secondary' | 'optional'",
+              "unresolved_field_keys": "string[] — fields still needing data",
+              "weak_field_keys": "string[] — fields needing corroboration",
+              "conflict_field_keys": "string[] — fields needing resolution",
+              "core_unresolved_count": "number",
+              "secondary_unresolved_count": "number",
+              "query_terms_union": "string[] — CAPPED TO 5",
+              "domain_hints_union": "string[] — dead domains removed, CAPPED TO 5",
+              "existing_queries_union": "string[] — dead hashes removed, CAPPED TO 5",
+              "aliases_union": "string[] — CAPPED TO 5",
+              "preferred_content_types_union": "string[] — CAPPED TO 5",
+              "domains_tried_union": "string[] — CAPPED TO 5",
+              "host_classes_tried_union": "string[] — UNCAPPED (small enum set)",
+              "evidence_classes_tried_union": "string[] — UNCAPPED (small enum set)",
+              "no_value_attempts": "number",
+              "host_class": "string",
+              "source_target": "string",
+              "search_intent": "string",
+              "urls_examined_count": "number",
+              "query_count": "number"
+            }
+          },
+          "existing_queries": "string[] — ctx.needset.existing_queries || [] — global de-dup list"
+        },
+        "response_schema": {
+          "_source": "searchPlanBuilder.js:24-58 (PLANNER_RESPONSE_SCHEMA)",
+          "_encoding": "JSON Schema passed via callLlmWithRouting({ jsonSchema })",
+          "planner_confidence": {
+            "type": "number",
+            "_note": "0-1 overall plan quality"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "key",
+                "queries"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "_note": "must match a focus_group key from the payload"
+                },
+                "phase": {
+                  "type": "string",
+                  "_note": "optional echo of input phase"
+                },
+                "reason_active": {
+                  "type": "string",
+                  "_note": "why this group is being searched"
+                },
+                "query_family_mix": {
+                  "type": "string",
+                  "_note": "human-readable strategy description"
+                },
+                "queries": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "family",
+                      "q"
+                    ],
+                    "properties": {
+                      "family": {
+                        "type": "string",
+                        "_note": "manufacturer_html | manual_pdf | support_docs | review_lookup | benchmark_lookup | fallback_web | targeted_single"
+                      },
+                      "q": {
+                        "type": "string",
+                        "_note": "the actual search query text"
+                      },
+                      "target_fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "_note": "optional field keys this query targets"
+                      },
+                      "preferred_domains": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "_note": "optional preferred domains"
+                      },
+                      "exact_match_required": {
+                        "type": "boolean",
+                        "_note": "optional exact match flag"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "duplicates_suppressed": {
+            "type": "integer",
+            "_note": "LLM self-reported dupe count (informational only — real dedup is post-LLM)"
+          },
+          "targeted_exceptions": {
+            "type": "integer",
+            "_note": "exceptional queries added outside normal rules"
+          }
+        },
+        "response_normalization": {
+          "_source": "searchPlanBuilder.js:383-390",
+          "_note": "Some models (e.g. Gemini) return a single group object { key, queries } instead of wrapping in { groups: [...] }. Both shapes are accepted.",
+          "array_groups": "if llmResult.groups is an array, use directly",
+          "single_group": "if llmResult.key exists and llmResult.queries is an array, wrap as [llmResult]",
+          "empty_fallback": "otherwise groups = []"
+        },
+        "post_processing": {
+          "_source": "searchPlanBuilder.js:393-434",
+          "dedup": {
+            "_note": "Queries are deduped by hash against (1) existing_queries from Schema 3 and (2) previously emitted queries in this call",
+            "hash_function": "queryHashFn (default: stableHash of lowercased/trimmed/space-normalized text)",
+            "existing_hashes_source": "ctx.needset.existing_queries mapped through queryHashFn"
+          },
+          "capping": {
+            "per_group_cap": "3 queries max per group (PER_GROUP_CAP constant, line 80)",
+            "global_cap": "max(1, parseInt(config.discoveryMaxQueries, 10) || 6) (line 391)",
+            "cap_overflow": "queries exceeding either cap are counted as dupesDropped"
+          },
+          "query_assembly": {
+            "_note": "Each accepted query is enriched with metadata before inclusion in Schema 4",
+            "q": "string — trimmed query text from LLM",
+            "family": "string — from LLM or 'unknown' fallback",
+            "query_hash": "string — deterministic hash for cross-round dedup",
+            "group_key": "string — from the LLM group.key",
+            "target_fields": "string[] — from LLM or [] fallback",
+            "preferred_domains": "string[] — from LLM or [] fallback",
+            "exact_match_required": "boolean — from LLM or false fallback"
+          }
+        },
+        "error_handling": {
+          "llm_call_failure": "catch block (line 376-379) returns makeErrorResult(ctx, error) — mode='error', plannerComplete=false, error message captured",
+          "no_api_key": "hasLlmRouteApiKey gate (line 283) returns makeDisabledResult(ctx) — mode='disabled', plannerComplete=true, zero queries",
+          "empty_llm_response": "normalized to groups=[] — returns Schema 4 with zero queries but full panel/bundle metadata"
+        },
+        "llm_call_parameters": {
+          "reason": "needset_search_planner",
+          "role": "plan",
+          "system": "PLANNER_SYSTEM_PROMPT (18 rules)",
+          "user": "JSON.stringify(llmPayload)",
+          "jsonSchema": "PLANNER_RESPONSE_SCHEMA",
+          "timeoutMs": "config.llmTimeoutMs || 40000",
+          "model": "config.llmModelPlan (resolved at call time)"
+        }
+      }
+    },
+    "04-query-journey-llm-call": {
+      "file": "04-query-journey-llm-call.json",
+      "stage": "04",
+      "kind": "llm_call",
+      "content": {
+        "_doc": "Query Journey LLM call contract. Stage 4 has exactly ONE optional LLM call: the SERP reranker/triage in rerankSerpResults(). All other phases are deterministic. Updated 2026-03-16.",
+        "_llm_calls_in_stage_4": {
+          "convertHandoffToExecutionPlan": "NO LLM",
+          "enforceIdentityQueryGuard": "NO LLM",
+          "executeSearchQueries": "NO LLM (pure search orchestration)",
+          "classifyUrlCandidate": "NO LLM (pure classification)",
+          "rerankSerpResults": "OPTIONAL LLM — uber_serp_reranker"
+        },
+        "serp_reranker_llm_call": {
+          "_function": "rerankSerpResults()",
+          "_file": "src/research/serpReranker.js:187-356",
+          "_call_site": "inner LLM call within rerank phase",
+          "gate": {
+            "conditions": [
+              "serpTriageEnabled is true",
+              "quality threshold check (deterministic scores indicate LLM value)",
+              "uberMode OR (llmEnabled AND llmSerpRerankEnabled)",
+              "hasLlmRouteApiKey(config, { role: 'plan' })"
+            ],
+            "fallback": "deterministic scoring only — all results get keep=true, rerank_reason='deterministic'"
+          },
+          "call_parameters": {
+            "reason": "uber_serp_reranker",
+            "role": "plan",
+            "model": "config.llmModelTriage (or config.llmModelReasoning if llmTriageUseReasoning=true)",
+            "timeoutMs": "config.llmTimeoutMs || config.openaiTimeoutMs || 30000"
+          },
+          "system_prompt": {
+            "_source": "serpReranker.js (inline constant)",
+            "text": [
+              "You rerank search results for evidence-first hardware spec extraction.",
+              "Return strict JSON only.",
+              "Keep URLs with strong identity match and likely field relevance.",
+              "Drop low-value, duplicate, or dead-pattern URLs."
+            ]
+          },
+          "user_payload": {
+            "_encoding": "JSON.stringify — sent as user message",
+            "identity_lock": {
+              "brand": "string — from identity.brand",
+              "model": "string — from identity.model",
+              "variant": "string — from identity.variant"
+            },
+            "missing_fields": "string[] — missingFields sliced to 40",
+            "results": {
+              "_type": "array — top K results (default 16)",
+              "_per_item": {
+                "rank": "number — original SERP rank",
+                "url": "string — full URL",
+                "host": "string — normalized hostname",
+                "title": "string — truncated to 240 chars",
+                "snippet": "string — truncated to 320 chars",
+                "score_det": "number — deterministic score rounded to 4 decimal places"
+              }
+            }
+          },
+          "response_schema": {
+            "_encoding": "JSON Schema passed via callLlmWithRouting({ jsonSchema })",
+            "selected_urls": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "_note": "must match a URL from the payload"
+                  },
+                  "keep": {
+                    "type": "boolean",
+                    "_note": "true to keep, false to drop"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "_note": "optional human-readable reason"
+                  },
+                  "score": {
+                    "type": "number",
+                    "_note": "optional LLM-assigned relevance score"
+                  }
+                }
+              }
+            }
+          },
+          "response_processing": {
+            "url_matching": "LLM selected_urls matched by url string to input results",
+            "unmatched_urls": "URLs not in LLM response get keep=true (default keep) or keep=false if LLM explicitly dropped all",
+            "score_fallback": "If LLM provides no score, falls back to score_det",
+            "reason_fallback": {
+              "in_llm_response": "reason from LLM response",
+              "omitted_from_response": "'llm_omitted_drop' (dropped) or 'llm_default_keep' (kept by default)",
+              "empty_llm_response": "'llm_empty_fallback'"
+            }
+          },
+          "error_handling": {
+            "llm_call_failure": "Falls back to deterministic scores, rerank_reason='deterministic_fallback'",
+            "empty_selections": "If LLM returns 0 selected_urls → deterministic fallback",
+            "explicit_all_drop": "If LLM explicitly drops ALL URLs → returns { explicitAllDrop: true, fallbackReason: 'llm_explicit_all_drop' }"
+          },
+          "deterministic_scoring": {
+            "_note": "Always computed regardless of LLM path. Used as baseline or fallback.",
+            "weight_map": {
+              "identityStrongBonus": {
+                "default": 2,
+                "note": "strong identity match (brand+model+variant)"
+              },
+              "identityPartialBonus": {
+                "default": 0.8,
+                "note": "partial match (brand+model)"
+              },
+              "identityWeakBonus": {
+                "default": 0,
+                "note": "weak match (brand only)"
+              },
+              "identityNoneBonus": {
+                "default": -1.5,
+                "note": "no identity match"
+              },
+              "brandPresenceBonus": {
+                "default": 2.5,
+                "note": "brand found in title+snippet+url"
+              },
+              "modelPresenceBonus": {
+                "default": 2.5,
+                "note": "model found in title+snippet+url"
+              },
+              "specManualKeywordBonus": {
+                "default": 1.3,
+                "note": "spec/manual/datasheet keywords"
+              },
+              "reviewBenchmarkBonus": {
+                "default": 0.9,
+                "note": "review/benchmark keywords"
+              },
+              "forumRedditPenalty": {
+                "default": -0.9,
+                "note": "forum/reddit content"
+              },
+              "brandInHostnameBonus": {
+                "default": 1.2,
+                "note": "brand appears in hostname"
+              },
+              "wikipediaPenalty": {
+                "default": -1,
+                "note": "wikipedia pages"
+              },
+              "variantGuardPenalty": {
+                "default": -3,
+                "note": "wrong variant detected"
+              },
+              "multiModelHintPenalty": {
+                "default": -1.5,
+                "note": "comparison/listing page"
+              },
+              "tier1Bonus": {
+                "default": 1.5,
+                "note": "tier 1 manufacturer source"
+              },
+              "tier2Bonus": {
+                "default": 0.5,
+                "note": "tier 2 approved source"
+              },
+              "hostHealthDownrankPenalty": {
+                "default": "varies",
+                "note": "from host health policy"
+              },
+              "hostHealthExcludePenalty": {
+                "default": "varies",
+                "note": "from host health policy"
+              },
+              "operatorRiskPenalty": {
+                "default": "varies",
+                "note": "site: operator risk"
+              },
+              "fieldAffinityBonus": {
+                "default": "varies",
+                "note": "query targets missing fields"
+              },
+              "needsetCoverageBonus": {
+                "default": "varies",
+                "note": "covers unresolved needset fields"
+              },
+              "diversityPenaltyPerDupe": {
+                "default": "varies",
+                "note": "per-domain duplicate penalty"
+              }
+            },
+            "score_breakdown_keys": [
+              "base_score",
+              "frontier_penalty",
+              "identity_bonus",
+              "variant_guard_penalty",
+              "multi_model_penalty",
+              "tier_bonus",
+              "host_health_penalty",
+              "operator_risk_penalty",
+              "field_affinity_bonus",
+              "diversity_penalty",
+              "needset_coverage_bonus",
+              "tier_source"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

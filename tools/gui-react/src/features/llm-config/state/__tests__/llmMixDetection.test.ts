@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import { deepStrictEqual, strictEqual } from 'node:assert';
-import { detectMixIssues, resolveRingColor } from '../llmMixDetection.ts';
+import { detectMixIssues, detectStaleModelIssues, resolveRingColor } from '../llmMixDetection.ts';
 import type { MixIssue } from '../llmMixDetection.ts';
 import type { LlmProviderEntry, LlmProviderType } from '../../types/llmProviderRegistryTypes.ts';
 
@@ -22,7 +22,7 @@ function makeProvider(
   };
 }
 
-function makeModel(modelId: string, role: 'base' | 'reasoning' | 'fast' | 'embedding' = 'base') {
+function makeModel(modelId: string, role: 'primary' | 'reasoning' | 'fast' | 'embedding' = 'primary') {
   return {
     id: `m-${modelId}`,
     modelId,
@@ -202,30 +202,6 @@ describe('detectMixIssues', () => {
     deepStrictEqual(mix!.ringFields, ['llmModelPlan', 'llmPlanFallbackModel']);
   });
 
-  it('cortex provider also counts as local for local/remote mix', () => {
-    const registry = [
-      makeProvider({
-        id: 'p-remote',
-        name: 'OpenAI',
-        type: 'openai-compatible',
-        models: [makeModel('gpt-4o')],
-      }),
-      makeProvider({
-        id: 'p-cortex',
-        name: 'Cortex',
-        type: 'cortex',
-        models: [makeModel('cortex-model')],
-      }),
-    ];
-    const defaults = makeDefaults({
-      llmModelPlan: 'gpt-4o',
-      llmPlanFallbackModel: 'cortex-model',
-    });
-    const issues = detectMixIssues(registry, defaults);
-    const mix = issues.find((i) => i.key === 'local-remote-mix');
-    strictEqual(mix !== undefined, true);
-  });
-
   it('different API formats emits info', () => {
     const registry = [
       makeProvider({
@@ -288,28 +264,6 @@ describe('detectMixIssues', () => {
     strictEqual(issues.find((i) => i.key === 'cross-provider-base-reasoning'), undefined);
   });
 
-  it('both local providers produce no local/remote mix', () => {
-    const registry = [
-      makeProvider({
-        id: 'p1',
-        name: 'Ollama',
-        type: 'ollama',
-        models: [makeModel('llama3')],
-      }),
-      makeProvider({
-        id: 'p2',
-        name: 'Cortex',
-        type: 'cortex',
-        models: [makeModel('cortex-model')],
-      }),
-    ];
-    const defaults = makeDefaults({
-      llmModelPlan: 'llama3',
-      llmPlanFallbackModel: 'cortex-model',
-    });
-    const issues = detectMixIssues(registry, defaults);
-    strictEqual(issues.find((i) => i.key === 'local-remote-mix'), undefined);
-  });
 });
 
 /* ------------------------------------------------------------------ */
@@ -345,7 +299,7 @@ describe('resolveRingColor', () => {
     const color = resolveRingColor(
       'llmPlanFallbackModel',
       [infoIssue, errorIssue, warningIssue],
-      new Set(),
+      {},
     );
     strictEqual(color, 'var(--sf-error, #dc2626)');
   });
@@ -354,7 +308,7 @@ describe('resolveRingColor', () => {
     const color = resolveRingColor(
       'llmModelPlan',
       [infoIssue, warningIssue],
-      new Set(),
+      {},
     );
     strictEqual(color, 'var(--sf-warning, #d97706)');
   });
@@ -363,7 +317,7 @@ describe('resolveRingColor', () => {
     const color = resolveRingColor(
       'llmPlanFallbackModel',
       [infoIssue],
-      new Set(),
+      {},
     );
     strictEqual(color, 'var(--sf-info, #2563eb)');
   });
@@ -372,7 +326,7 @@ describe('resolveRingColor', () => {
     const color = resolveRingColor(
       'llmPlanFallbackModel',
       [errorIssue, infoIssue],
-      new Set(['fallback-same-as-base', 'no-base-fallback']),
+      { 'fallback-same-as-base': true, 'no-base-fallback': true },
     );
     strictEqual(color, null);
   });
@@ -381,7 +335,7 @@ describe('resolveRingColor', () => {
     const color = resolveRingColor(
       'llmPlanFallbackModel',
       [errorIssue, infoIssue],
-      new Set(['fallback-same-as-base']),
+      { 'fallback-same-as-base': true },
     );
     strictEqual(color, 'var(--sf-info, #2563eb)');
   });
@@ -390,13 +344,91 @@ describe('resolveRingColor', () => {
     const color = resolveRingColor(
       'llmModelReasoning',
       [errorIssue, infoIssue],
-      new Set(),
+      {},
     );
     strictEqual(color, null);
   });
 
   it('returns null for empty issues array', () => {
-    const color = resolveRingColor('llmModelPlan', [], new Set());
+    const color = resolveRingColor('llmModelPlan', [], {});
     strictEqual(color, null);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  detectStaleModelIssues                                              */
+/* ------------------------------------------------------------------ */
+
+describe('detectStaleModelIssues', () => {
+  it('returns no issues when all models are in registry', () => {
+    const registry = [
+      makeProvider({
+        id: 'p1',
+        name: 'OpenAI',
+        models: [makeModel('gpt-4o')],
+      }),
+    ];
+    const issues = detectStaleModelIssues(registry, { llmModelPlan: 'gpt-4o' });
+    strictEqual(issues.length, 0);
+  });
+
+  it('returns warning when model is not in any enabled provider', () => {
+    const registry = [
+      makeProvider({
+        id: 'p1',
+        name: 'OpenAI',
+        models: [makeModel('gpt-4o')],
+      }),
+    ];
+    const issues = detectStaleModelIssues(registry, { llmModelPlan: 'deleted-model' });
+    strictEqual(issues.length, 1);
+    strictEqual(issues[0].severity, 'warning');
+    strictEqual(issues[0].ringFields.includes('llmModelPlan'), true);
+  });
+
+  it('skips empty model fields', () => {
+    const issues = detectStaleModelIssues([], { llmModelPlan: '' });
+    strictEqual(issues.length, 0);
+  });
+
+  it('does not warn if model is in knownModelOptions even if not in registry', () => {
+    const issues = detectStaleModelIssues(
+      [],
+      { llmModelPlan: 'gpt-4o' },
+      ['gpt-4o', 'claude-sonnet'],
+    );
+    strictEqual(issues.length, 0);
+  });
+
+  it('warns when model is not in registry AND not in knownModelOptions', () => {
+    const issues = detectStaleModelIssues(
+      [],
+      { llmModelPlan: 'deleted-model' },
+      ['gpt-4o', 'claude-sonnet'],
+    );
+    strictEqual(issues.length, 1);
+    strictEqual(issues[0].key, 'stale-model-llmModelPlan');
+  });
+
+  it('detects stale model in disabled provider', () => {
+    const registry = [
+      makeProvider({
+        id: 'p1',
+        name: 'OpenAI',
+        enabled: false,
+        models: [makeModel('gpt-4o')],
+      }),
+    ];
+    const issues = detectStaleModelIssues(registry, { llmModelPlan: 'gpt-4o' });
+    strictEqual(issues.length, 1);
+    strictEqual(issues[0].severity, 'warning');
+  });
+
+  it('detects multiple stale models', () => {
+    const issues = detectStaleModelIssues([], {
+      llmModelPlan: 'gone-a',
+      llmModelReasoning: 'gone-b',
+    });
+    strictEqual(issues.length, 2);
   });
 });

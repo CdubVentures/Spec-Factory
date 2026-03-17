@@ -55,7 +55,7 @@ test('AggressiveOrchestrator applies accepted audit candidates and persists sear
     config: {
       aggressiveModeEnabled: true,
       aggressiveMaxSearchQueries: 3,
-      cortexMaxDeepFieldsPerProduct: 2
+      maxDeepFieldsPerProduct: 2
     },
     evidenceAuditor: {
       auditCandidates() {
@@ -121,13 +121,6 @@ test('AggressiveOrchestrator applies accepted audit candidates and persists sear
         };
       }
     },
-    cortexClient: {
-      async runPass() {
-        return {
-          plan: { deep_task_count: 0 }
-        };
-      }
-    }
   });
   const record = baseRecord();
   const result = await orchestrator.run({
@@ -164,89 +157,3 @@ test('AggressiveOrchestrator applies accepted audit candidates and persists sear
   assert.equal(Boolean(storage.snapshot(trackerKey)), true);
 });
 
-test('AggressiveOrchestrator deep escalation honors max deep field cap', async () => {
-  const storage = createStorage();
-  let deepTasks = 0;
-  const orchestrator = new AggressiveOrchestrator({
-    storage,
-    config: {
-      aggressiveModeEnabled: true,
-      cortexMaxDeepFieldsPerProduct: 1
-    },
-    evidenceAuditor: {
-      auditCandidates({ candidatesByField }) {
-        const audits = Object.keys(candidatesByField || {}).map((field) => ({
-          field,
-          status: field === 'weight' ? 'ACCEPT' : 'REJECT',
-          reasons: field === 'weight' ? [] : ['missing_evidence_refs']
-        }));
-        return {
-          audits,
-          accepted_by_field: {
-            weight: [{
-              value: '60',
-              confidence: 0.8,
-              snippetId: 's1',
-              quote: '60'
-            }]
-          },
-          rejected_fields: audits.filter((row) => row.status === 'REJECT').length
-        };
-      }
-    },
-    domExtractor: {
-      async extractFromDom() {
-        return { fieldCandidates: [] };
-      }
-    },
-    reasoningResolver: {
-      async resolve() {
-        return { resolved_by_field: {} };
-      }
-    },
-    cortexClient: {
-      async runPass({ tasks }) {
-        deepTasks = tasks.length;
-        return {
-          plan: { deep_task_count: tasks.length }
-        };
-      }
-    }
-  });
-  const record = {
-    normalized: {
-      fields: {
-        weight: '60',
-        dpi: 'unk',
-        sensor: 'unk'
-      }
-    },
-    provenance: {
-      weight: {
-        value: '60',
-        confidence: 0.8,
-        meets_pass_target: true,
-        evidence: [{ snippet_id: 's1', quote: 'Weight: 60 g' }]
-      },
-      dpi: { value: 'unk', confidence: 0.2, meets_pass_target: false, evidence: [] },
-      sensor: { value: 'unk', confidence: 0.2, meets_pass_target: false, evidence: [] }
-    }
-  };
-  const result = await orchestrator.run({
-    category: 'mouse',
-    productId: 'mouse-3',
-    identity: { brand: 'Razer', productId: 'mouse-3' },
-    normalized: record.normalized,
-    provenance: record.provenance,
-    fieldOrder: ['weight', 'dpi', 'sensor'],
-    criticalFieldSet: new Set(['dpi', 'sensor']),
-    fieldsBelowPassTarget: ['dpi', 'sensor'],
-    criticalFieldsBelowPassTarget: ['dpi', 'sensor'],
-    roundContext: {}
-  });
-
-  assert.equal(result.escalation.deep_triggered, true);
-  assert.equal(result.escalation.deep_task_cap, 1);
-  assert.equal(result.escalation.deep_task_count, 1);
-  assert.equal(deepTasks, 1);
-});

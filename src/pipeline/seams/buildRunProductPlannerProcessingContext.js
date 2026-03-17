@@ -29,7 +29,7 @@ import {
   isIdentityLockedField,
   applyRuntimeOverridesToPlanner,
   markSatisfiedLlmFields, isAnchorLocked,
-} from '../../features/indexing/orchestration/index.js';
+} from '../../features/indexing/orchestration/shared/index.js';
 import { defaultIndexLabRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { recordQueryResult } from '../../features/indexing/discovery/index.js';
 import {
@@ -61,7 +61,7 @@ import {
   runSourceArtifactAggregationPhase,
   runSourceProcessedTelemetryPhase,
   runSourceArtifactsPhase,
-} from '../../features/indexing/orchestration/index.js';
+} from '../../features/indexing/orchestration/execution/index.js';
 import { extractTemporalSignals } from '../../intel/temporalSignals.js';
 import { mineEndpointSignals } from '../../intel/endpointMiner.js';
 import { buildSiteFingerprint, computeParserHealth } from '../../intel/siteFingerprint.js';

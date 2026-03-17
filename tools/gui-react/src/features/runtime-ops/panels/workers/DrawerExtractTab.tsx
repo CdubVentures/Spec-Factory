@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { usePersistedNullableTab } from '../../../../stores/tabStore';
 import type { WorkerExtractionField } from '../../types';
 import { methodBadgeClass, friendlyMethod, pctString } from '../../helpers';
 import { ConfidenceBar } from '../../components/ConfidenceBar';
@@ -7,6 +8,7 @@ import { resolveIndexedFieldHydrationNotice } from '../../selectors/prefetchUiCo
 interface DrawerExtractTabProps {
   fields: WorkerExtractionField[];
   indexedFieldNames?: string[];
+  category: string;
 }
 
 function hostFromUrl(url: string): string {
@@ -17,8 +19,8 @@ function hostFromUrl(url: string): string {
   }
 }
 
-export function DrawerExtractTab({ fields, indexedFieldNames = [] }: DrawerExtractTabProps) {
-  const [methodFilter, setMethodFilter] = useState<string | null>(null);
+export function DrawerExtractTab({ fields, indexedFieldNames = [], category }: DrawerExtractTabProps) {
+  const [methodFilter, setMethodFilter] = usePersistedNullableTab(`runtimeOps:drawerExtract:methodFilter:${category}`, null);
   const hydrationNotice = resolveIndexedFieldHydrationNotice(fields, indexedFieldNames);
 
   const summary = useMemo(() => {

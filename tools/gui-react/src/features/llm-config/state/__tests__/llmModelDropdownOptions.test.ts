@@ -1,7 +1,8 @@
 import { describe, it } from 'node:test';
-import { deepStrictEqual } from 'node:assert';
-import { buildModelDropdownOptions } from '../llmModelDropdownOptions.ts';
+import { deepStrictEqual, strictEqual } from 'node:assert';
+import { buildModelDropdownOptions, ensureValueInOptions } from '../llmModelDropdownOptions.ts';
 import type { LlmProviderEntry } from '../../types/llmProviderRegistryTypes.ts';
+import type { DropdownModelOption } from '../llmModelDropdownOptions.ts';
 
 function makeProvider(overrides: Partial<LlmProviderEntry> & { id: string; name: string }): LlmProviderEntry {
   return {
@@ -54,8 +55,8 @@ describe('buildModelDropdownOptions', () => {
     ];
     const result = buildModelDropdownOptions([], registry);
     deepStrictEqual(result, [
-      { value: 'gpt-4o', label: '[Primary] OpenAI / gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
-      { value: 'gpt-4o-mini', label: '[Primary] OpenAI / gpt-4o-mini', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'gpt-4o', label: 'OpenAI / gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'gpt-4o-mini', label: 'OpenAI / gpt-4o-mini', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
     ]);
   });
 
@@ -73,7 +74,7 @@ describe('buildModelDropdownOptions', () => {
     ];
     const result = buildModelDropdownOptions([], registry, 'fast');
     deepStrictEqual(result, [
-      { value: 'claude-haiku', label: '[Fast] Anthropic / claude-haiku', providerId: 'p1', role: 'fast', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'claude-haiku', label: 'Anthropic / claude-haiku', providerId: 'p1', role: 'fast', costInputPer1M: 0, maxContextTokens: null },
     ]);
   });
 
@@ -92,8 +93,8 @@ describe('buildModelDropdownOptions', () => {
     ];
     const result = buildModelDropdownOptions([], registry, ['primary', 'reasoning']);
     deepStrictEqual(result, [
-      { value: 'model-reasoning', label: '[Reasoning] Mixed / model-reasoning', providerId: 'p1', role: 'reasoning', costInputPer1M: 0, maxContextTokens: null },
-      { value: 'model-base', label: '[Primary] Mixed / model-base', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'model-reasoning', label: 'Mixed / model-reasoning', providerId: 'p1', role: 'reasoning', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'model-base', label: 'Mixed / model-base', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
     ]);
   });
 
@@ -107,7 +108,7 @@ describe('buildModelDropdownOptions', () => {
     ];
     const result = buildModelDropdownOptions(['gpt-4o', 'other-model'], registry);
     deepStrictEqual(result, [
-      { value: 'gpt-4o', label: '[Primary] OpenAI / gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'gpt-4o', label: 'OpenAI / gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
       { value: 'other-model', label: 'other-model', providerId: null },
     ]);
   });
@@ -127,8 +128,8 @@ describe('buildModelDropdownOptions', () => {
     ];
     const result = buildModelDropdownOptions([], registry);
     deepStrictEqual(result, [
-      { value: 'shared-model', label: '[Primary] Provider A / shared-model', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
-      { value: 'shared-model', label: '[Primary] Provider B / shared-model', providerId: 'p2', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'shared-model', label: 'Provider A / shared-model', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'shared-model', label: 'Provider B / shared-model', providerId: 'p2', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
     ]);
   });
 
@@ -148,7 +149,7 @@ describe('buildModelDropdownOptions', () => {
     ];
     const result = buildModelDropdownOptions([], registry);
     deepStrictEqual(result, [
-      { value: 'claude-sonnet', label: '[Primary] Enabled / claude-sonnet', providerId: 'p2', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'claude-sonnet', label: 'Enabled / claude-sonnet', providerId: 'p2', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
     ]);
   });
 
@@ -162,7 +163,7 @@ describe('buildModelDropdownOptions', () => {
     ];
     const result = buildModelDropdownOptions([], registry);
     deepStrictEqual(result, [
-      { value: 'gpt-4o', label: '[Primary] gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'gpt-4o', label: 'gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
     ]);
   });
 
@@ -179,13 +180,13 @@ describe('buildModelDropdownOptions', () => {
       registry,
     );
     deepStrictEqual(result, [
-      { value: 'gpt-4o', label: '[Primary] OpenAI / gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
-      { value: 'gpt-4o-mini', label: '[Fast] OpenAI / gpt-4o-mini', providerId: 'p1', role: 'fast', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'gpt-4o', label: 'OpenAI / gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'gpt-4o-mini', label: 'OpenAI / gpt-4o-mini', providerId: 'p1', role: 'fast', costInputPer1M: 0, maxContextTokens: null },
       { value: 'standalone', label: 'standalone', providerId: null },
     ]);
   });
 
-  it('role filter excludes registry models but still appends unmatched flat options', () => {
+  it('role filter excludes unregistered flat options (unknown role)', () => {
     const registry = [
       makeProvider({
         id: 'p1',
@@ -194,13 +195,13 @@ describe('buildModelDropdownOptions', () => {
       }),
     ];
     const result = buildModelDropdownOptions(['flat-only'], registry, 'fast');
+    // flat-only has unknown role — must NOT leak into a role-filtered dropdown
     deepStrictEqual(result, [
-      { value: 'fast-model', label: '[Fast] Provider / fast-model', providerId: 'p1', role: 'fast', costInputPer1M: 0, maxContextTokens: null },
-      { value: 'flat-only', label: 'flat-only', providerId: null },
+      { value: 'fast-model', label: 'Provider / fast-model', providerId: 'p1', role: 'fast', costInputPer1M: 0, maxContextTokens: null },
     ]);
   });
 
-  it('deduplication uses registry models that pass the role filter', () => {
+  it('role filter excludes flat options whose registry role does not match', () => {
     const registry = [
       makeProvider({
         id: 'p1',
@@ -208,12 +209,25 @@ describe('buildModelDropdownOptions', () => {
         models: [makeModel('shared', 'primary'), makeModel('shared-fast', 'fast')],
       }),
     ];
-    // Filter for 'fast' only; 'shared' is primary role so excluded from registry results.
-    // 'shared' in flat options should appear since no registry entry passed filter for it.
+    // Filter for 'fast' only; 'shared' is primary role — must NOT appear even as flat option
     const result = buildModelDropdownOptions(['shared', 'shared-fast'], registry, 'fast');
     deepStrictEqual(result, [
-      { value: 'shared-fast', label: '[Fast] Provider / shared-fast', providerId: 'p1', role: 'fast', costInputPer1M: 0, maxContextTokens: null },
-      { value: 'shared', label: 'shared', providerId: null },
+      { value: 'shared-fast', label: 'Provider / shared-fast', providerId: 'p1', role: 'fast', costInputPer1M: 0, maxContextTokens: null },
+    ]);
+  });
+
+  it('no role filter still appends unregistered flat options', () => {
+    const registry = [
+      makeProvider({
+        id: 'p1',
+        name: 'Provider',
+        models: [makeModel('reg-model', 'primary')],
+      }),
+    ];
+    const result = buildModelDropdownOptions(['flat-only'], registry);
+    deepStrictEqual(result, [
+      { value: 'reg-model', label: 'Provider / reg-model', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'flat-only', label: 'flat-only', providerId: null },
     ]);
   });
 
@@ -306,7 +320,7 @@ describe('buildModelDropdownOptions', () => {
       }),
     ];
     const result = buildModelDropdownOptions([], registry);
-    deepStrictEqual(result[0].label, '[Primary] DeepSeek / deepseek-chat (1M ctx, $1.25 in)');
+    deepStrictEqual(result[0].label, 'DeepSeek / deepseek-chat (1M ctx, $1.25 in)');
   });
 
   it('enriched labels use K suffix for sub-million context tokens', () => {
@@ -320,7 +334,7 @@ describe('buildModelDropdownOptions', () => {
       }),
     ];
     const result = buildModelDropdownOptions([], registry);
-    deepStrictEqual(result[0].label, '[Primary] OpenAI / gpt-4o (128K ctx, $2.50 in)');
+    deepStrictEqual(result[0].label, 'OpenAI / gpt-4o (128K ctx, $2.50 in)');
   });
 
   it('enriched labels omit metadata when cost is 0 and tokens null', () => {
@@ -332,6 +346,118 @@ describe('buildModelDropdownOptions', () => {
       }),
     ];
     const result = buildModelDropdownOptions([], registry);
-    deepStrictEqual(result[0].label, '[Primary] OpenAI / gpt-4o');
+    deepStrictEqual(result[0].label, 'OpenAI / gpt-4o');
+  });
+
+  // ── API key gate filter tests ──
+
+  it('apiKeyFilter excludes models from providers that fail the filter', () => {
+    const registry = [
+      makeProvider({ id: 'has-key', name: 'HasKey', models: [makeModel('model-a')] }),
+      makeProvider({ id: 'no-key', name: 'NoKey', models: [makeModel('model-b')] }),
+    ];
+    const filter = (p: LlmProviderEntry) => p.id === 'has-key';
+    const result = buildModelDropdownOptions([], registry, undefined, filter);
+    deepStrictEqual(result.length, 1);
+    deepStrictEqual(result[0].value, 'model-a');
+  });
+
+  it('registry model filtered by apiKeyFilter does not reappear as flat option', () => {
+    const registry = [
+      makeProvider({ id: 'no-key', name: 'NoKey', models: [makeModel('reg-model')] }),
+    ];
+    const filter = () => false;
+    const result = buildModelDropdownOptions(['reg-model', 'flat-model'], registry, undefined, filter);
+    // reg-model is a known registry model whose provider was filtered — must NOT leak back as flat
+    deepStrictEqual(result.length, 1);
+    deepStrictEqual(result[0].value, 'flat-model');
+  });
+
+  it('disabled provider models do not appear as flat options', () => {
+    const registry = [
+      makeProvider({ id: 'off', name: 'Off', enabled: false, models: [makeModel('disabled-model')] }),
+    ];
+    const result = buildModelDropdownOptions(['disabled-model', 'truly-flat'], registry);
+    // disabled-model belongs to a disabled registry provider — must NOT leak as flat
+    deepStrictEqual(result.length, 1);
+    deepStrictEqual(result[0].value, 'truly-flat');
+  });
+
+  it('truly unregistered flat model still appears when apiKeyFilter is active', () => {
+    const registry = [
+      makeProvider({ id: 'keyed', name: 'Keyed', models: [makeModel('reg-only')] }),
+    ];
+    const filter = (p: LlmProviderEntry) => p.id === 'keyed';
+    const result = buildModelDropdownOptions(['unregistered-model'], registry, undefined, filter);
+    // reg-only passes filter → appears as registry option
+    // unregistered-model is not in any registry → still appears as flat
+    deepStrictEqual(result.length, 2);
+    deepStrictEqual(result[0].value, 'reg-only');
+    deepStrictEqual(result[1].value, 'unregistered-model');
+  });
+
+  it('apiKeyFilter works together with role filter', () => {
+    const registry = [
+      makeProvider({
+        id: 'keyed',
+        name: 'Keyed',
+        models: [makeModel('m-primary', 'primary'), makeModel('m-fast', 'fast')],
+      }),
+      makeProvider({
+        id: 'keyless',
+        name: 'Keyless',
+        models: [makeModel('m-fast-2', 'fast')],
+      }),
+    ];
+    const filter = (p: LlmProviderEntry) => p.id === 'keyed';
+    const result = buildModelDropdownOptions([], registry, 'fast', filter);
+    deepStrictEqual(result.length, 1);
+    deepStrictEqual(result[0].value, 'm-fast');
+  });
+
+  it('apiKeyFilter=undefined preserves existing behavior (no filtering)', () => {
+    const registry = [
+      makeProvider({ id: 'p1', name: 'P1', models: [makeModel('m1')] }),
+      makeProvider({ id: 'p2', name: 'P2', models: [makeModel('m2')] }),
+    ];
+    const result = buildModelDropdownOptions([], registry, undefined, undefined);
+    deepStrictEqual(result.length, 2);
+  });
+});
+
+describe('ensureValueInOptions', () => {
+  it('empty value returns null', () => {
+    const options: DropdownModelOption[] = [
+      { value: 'gpt-4o', label: 'gpt-4o', providerId: null },
+    ];
+    strictEqual(ensureValueInOptions(options, ''), null);
+  });
+
+  it('value present in options returns null', () => {
+    const options: DropdownModelOption[] = [
+      { value: 'gpt-4o', label: 'OpenAI / gpt-4o', providerId: 'p1' },
+    ];
+    strictEqual(ensureValueInOptions(options, 'gpt-4o'), null);
+  });
+
+  it('value missing from options returns fallback option with "(not available)" label', () => {
+    const options: DropdownModelOption[] = [
+      { value: 'gpt-4o', label: 'OpenAI / gpt-4o', providerId: 'p1' },
+    ];
+    const result = ensureValueInOptions(options, 'claude-sonnet');
+    deepStrictEqual(result, {
+      value: 'claude-sonnet',
+      label: 'claude-sonnet (not available)',
+      providerId: null,
+    });
+  });
+
+  it('value missing from empty options returns fallback option', () => {
+    const result = ensureValueInOptions([], 'some-model');
+    deepStrictEqual(result, {
+      value: 'some-model',
+      label: 'some-model (not available)',
+      providerId: null,
+    });
   });
 });

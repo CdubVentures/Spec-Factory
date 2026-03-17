@@ -5,6 +5,12 @@ export type { NumberBound, RuntimeDraft } from '../state/RuntimeFlowDraftContrac
 export interface SettingGroupBlockProps {
   title: string;
   children: ReactNode;
+  /** When true the block can be collapsed/expanded by clicking the header. */
+  collapsible?: boolean;
+  /** Initial collapsed state (only used when collapsible is true). Defaults to false. */
+  defaultCollapsed?: boolean;
+  /** sessionStorage key for persisting collapsed state across the session. */
+  storageKey?: string;
 }
 
 export interface SettingRowProps {

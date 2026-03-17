@@ -87,15 +87,22 @@ describe('queryBuilder v2 integration — buildLogicalPlansFromHostPlan', () => 
     assert.ok(Array.isArray(logicalPlans));
     assert.ok(logicalPlans.length > 0);
     // Should have plan for amazon.com (bestbuy is connector_only)
-    const amazonPlan = logicalPlans.find(p => p.site_target === 'amazon.com');
+    const amazonPlan = logicalPlans.find(p => p.host_pref === 'amazon.com');
     assert.ok(amazonPlan, 'should have logical plan for amazon.com');
+    // Non-manufacturer hosts get soft doc_hint instead of site:
+    assert.equal(amazonPlan.site_target, null, 'non-manufacturer hosts get null site_target');
+    assert.equal(amazonPlan.doc_hint, 'amazon.com', 'host becomes doc_hint for non-manufacturer');
   });
 
-  it('2. logical plans include site_target only when provider supports site:', () => {
+  it('2. non-manufacturer hosts get soft doc_hint instead of site_target', () => {
     const plan = makePlan({ providerName: 'searxng', domainHints: ['rtings.com'] });
     const logicalPlans = buildLogicalPlansFromHostPlan(plan, IDENTITY, FOCUS_FIELDS);
-    const rtingsPlan = logicalPlans.find(p => p.site_target === 'rtings.com');
-    assert.ok(rtingsPlan, 'searxng supports site:');
+    const rtingsPlan = logicalPlans.find(p => p.host_pref === 'rtings.com');
+    assert.ok(rtingsPlan, 'should have logical plan for rtings.com');
+    // rtings.com is not a manufacturer — gets soft anchor via doc_hint
+    assert.equal(rtingsPlan.site_target, null, 'non-manufacturer host should not get site:');
+    assert.equal(rtingsPlan.doc_hint, 'rtings.com', 'non-manufacturer host becomes doc_hint');
+    assert.equal(rtingsPlan.filetype, null, 'non-manufacturer host should not get filetype');
 
     const nonePlan = makePlan({ providerName: 'none', domainHints: ['rtings.com'] });
     const noneLogical = buildLogicalPlansFromHostPlan(nonePlan, IDENTITY, FOCUS_FIELDS);
@@ -184,14 +191,45 @@ describe('queryBuilder v2 integration — buildLogicalPlansFromHostPlan', () => 
     assert.ok(withDocHint.length > 0, 'at least one plan should have doc_hint from intent');
   });
 
-  it('10. manufacturer hosts from plan used in logical plans', () => {
+  it('10. manufacturer hosts retain site_target and filetype', () => {
     const plan = makePlan({
       domainHints: [],
       brandResolutionHints: ['razer.com'],
     });
     const logicalPlans = buildLogicalPlansFromHostPlan(plan, IDENTITY, FOCUS_FIELDS);
     const razerPlan = logicalPlans.find(p => p.site_target === 'razer.com');
-    assert.ok(razerPlan, 'razer.com from manufacturer_hosts should have a plan');
+    assert.ok(razerPlan, 'razer.com from manufacturer_hosts should have site_target');
+    assert.equal(razerPlan.host_pref, 'razer.com');
+  });
+
+  it('14. field terms capped at 3 per logical plan', () => {
+    const manyFields = ['sensor', 'weight', 'dpi', 'polling_rate', 'battery_life'];
+    const plan = makePlan({
+      domainHints: [],
+      brandResolutionHints: ['razer.com'],
+    });
+    const logicalPlans = buildLogicalPlansFromHostPlan(plan, IDENTITY, manyFields);
+    for (const p of logicalPlans) {
+      assert.ok(p.terms.length <= 3, `terms should be capped at 3, got ${p.terms.length}`);
+    }
+  });
+
+  it('15. manufacturer hosts get site: + filetype, non-manufacturer get doc_hint only', () => {
+    const plan = makePlan({
+      domainHints: ['rtings.com'],
+      brandResolutionHints: ['razer.com'],
+    });
+    const logicalPlans = buildLogicalPlansFromHostPlan(plan, IDENTITY, FOCUS_FIELDS);
+    const razerPlan = logicalPlans.find(p => p.host_pref === 'razer.com');
+    const rtingsPlan = logicalPlans.find(p => p.host_pref === 'rtings.com');
+    assert.ok(razerPlan, 'manufacturer host present');
+    assert.ok(rtingsPlan, 'non-manufacturer host present');
+    // Manufacturer: hard site: + filetype
+    assert.equal(razerPlan.site_target, 'razer.com');
+    // Non-manufacturer: soft doc_hint, no site:, no filetype
+    assert.equal(rtingsPlan.site_target, null);
+    assert.equal(rtingsPlan.filetype, null);
+    assert.equal(rtingsPlan.doc_hint, 'rtings.com');
   });
 
   it('11. compiled warnings propagated to query_rows', () => {
@@ -236,5 +274,62 @@ describe('queryBuilder v2 integration — buildLogicalPlansFromHostPlan', () => 
     assert.ok(rows.every((row) => Array.isArray(row.warnings)));
     assert.ok(rows.every((row) => typeof row.source_host === 'string' && row.source_host.length > 0));
     assert.ok(rows.some((row) => row.score_breakdown.operator_risk_penalty <= 0));
+  });
+
+  it('16. spec intent does not produce filetype:pdf (spec pages are HTML)', () => {
+    const plan = makePlan({
+      providerName: 'searxng',
+      domainHints: [],
+      brandResolutionHints: ['razer.com'],
+    });
+    plan.content_intents = ['spec'];
+    const logicalPlans = buildLogicalPlansFromHostPlan(plan, IDENTITY, FOCUS_FIELDS);
+    // Even manufacturer hosts should not get filetype:pdf for spec intent
+    for (const p of logicalPlans) {
+      assert.equal(p.filetype, null, `spec intent should not produce filetype:pdf, got ${p.filetype}`);
+    }
+  });
+
+  it('17. datasheet/manual intent still produces filetype:pdf for manufacturer hosts', () => {
+    // WHY: google supports filetype:, searxng does not (measured: 0 results in meta mode)
+    const plan = makePlan({
+      providerName: 'google',
+      domainHints: [],
+      brandResolutionHints: ['razer.com'],
+    });
+    plan.content_intents = ['datasheet'];
+    const logicalPlans = buildLogicalPlansFromHostPlan(plan, IDENTITY, FOCUS_FIELDS);
+    const mfgPlan = logicalPlans.find(p => p.site_target === 'razer.com');
+    assert.ok(mfgPlan, 'manufacturer plan should exist');
+    assert.equal(mfgPlan.filetype, 'pdf', 'datasheet intent should produce filetype:pdf');
+  });
+
+  it('18. resolvedTerms override raw field keys in logical plans', () => {
+    const plan = makePlan({
+      providerName: 'searxng',
+      domainHints: [],
+      brandResolutionHints: ['razer.com'],
+    });
+    const rawFields = ['polling_rate_hz', 'lod_distance', 'sensor'];
+    const resolvedTerms = ['polling rate', 'lift off distance', 'sensor'];
+    const logicalPlans = buildLogicalPlansFromHostPlan(plan, IDENTITY, rawFields, { resolvedTerms });
+    for (const p of logicalPlans) {
+      assert.ok(!p.terms.some(t => t.includes('_')), `terms should not contain underscores: ${p.terms}`);
+      assert.deepStrictEqual(p.terms, resolvedTerms);
+    }
+  });
+
+  it('19. resolvedTerms fallback: without resolvedTerms, raw fields are cleaned', () => {
+    const plan = makePlan({
+      providerName: 'searxng',
+      domainHints: [],
+      brandResolutionHints: ['razer.com'],
+    });
+    const rawFields = ['sensor', 'weight'];
+    const logicalPlans = buildLogicalPlansFromHostPlan(plan, IDENTITY, rawFields);
+    for (const p of logicalPlans) {
+      assert.ok(p.terms.length > 0, 'terms should not be empty');
+      assert.ok(p.terms.every(t => typeof t === 'string'), 'terms should be strings');
+    }
   });
 });

@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { usePersistedNullableTab } from '../../../../stores/tabStore';
+import { usePersistedToggle } from '../../../../stores/collapseStore';
 import type { PrefetchLlmCall, BrandResolutionData, BrandCandidate, PrefetchLiveSettings } from '../../types';
 import { llmCallStatusBadgeClass, formatMs, pctString } from '../../helpers';
 import { ScoreBar } from '../../components/ScoreBar';
@@ -128,7 +129,7 @@ function CandidateDrawer({ candidate, call, onClose }: { candidate: BrandCandida
 export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScope, liveSettings, idxRuntime }: PrefetchBrandResolverPanelProps) {
   const br = brandResolution;
   const llmBadgeEnabled: boolean | undefined = true;
-  const [llmCallsOpen, setLlmCallsOpen] = useState(false);
+  const [llmCallsOpen, toggleLlmCallsOpen] = usePersistedToggle(`runtimeOps:brandResolver:llmCalls:${persistScope}`, false);
   const candidateValues = useMemo(
     () => (br?.candidates ?? []).map((candidate) => candidate.name),
     [br?.candidates],
@@ -478,7 +479,7 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
       {calls.length > 0 && (
         <div>
           <div
-            onClick={() => setLlmCallsOpen(prev => !prev)}
+            onClick={toggleLlmCallsOpen}
             className="flex items-baseline gap-2 pt-2 pb-1.5 border-b-[1.5px] border-[var(--sf-token-text-primary)] cursor-pointer select-none"
           >
             <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary flex-1">llm call details</span>

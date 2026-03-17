@@ -19,12 +19,10 @@ function uniqueValues(candidates = []) {
 
 export class AggressiveReasoningResolver {
   constructor({
-    cortexClient,
     config = {}
   } = {}) {
-    this.cortexClient = cortexClient;
-    this.modelFast = String(config.cortexModelFast || 'gpt-5-low');
-    this.modelDeep = String(config.cortexModelReasoningDeep || 'gpt-5-high');
+    this.modelFast = String(config.llmModelFast || 'gpt-5-low');
+    this.modelDeep = String(config.llmModelReasoning || 'gpt-5-high');
   }
 
   async resolve({
@@ -70,27 +68,7 @@ export class AggressiveReasoningResolver {
       }
     }
 
-    let sidecar = null;
-    if (this.cortexClient && typeof this.cortexClient.runPass === 'function' && deepFields.length > 0) {
-      const result = await this.cortexClient.runPass({
-        tasks: deepFields.map((field, idx) => ({
-          id: `reasoning-${idx + 1}`,
-          type: 'critical_conflict_resolution',
-          critical: true,
-          payload: { field, model_hint: this.modelDeep }
-        })),
-        context: {
-          confidence: 0.8,
-          critical_conflicts_remain: true,
-          critical_gaps_remain: false
-        }
-      });
-      sidecar = {
-        mode: result.mode,
-        deep_task_count: Number(result?.plan?.deep_task_count || 0),
-        fallback_to_non_sidecar: Boolean(result?.fallback_to_non_sidecar)
-      };
-    }
+    const sidecar = null;
 
     return {
       model_fast: this.modelFast,

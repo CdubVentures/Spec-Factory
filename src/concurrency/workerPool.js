@@ -5,7 +5,6 @@
  *   - crawl/fetch pool
  *   - extraction pool
  *   - LLM pool
- *   - Cortex pool
  *
  * Each pool enforces a maximum concurrency limit and queues
  * excess tasks until a slot opens.

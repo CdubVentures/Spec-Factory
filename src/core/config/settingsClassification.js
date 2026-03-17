@@ -18,7 +18,6 @@ export const SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
   'llmPlanApiKey',
   'openaiApiKey',
   'anthropicApiKey',
-  'cortexApiKey',
   'eloSupabaseAnonKey',
 ]);
 

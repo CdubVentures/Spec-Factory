@@ -31,6 +31,7 @@ function isDeepSeekRequest({ baseUrl, model }) {
   return url.includes('deepseek.com') || modelToken.startsWith('deepseek');
 }
 
+// TODO: consolidate with routeResolver.js — registry should be sole provider authority
 function providerName({ baseUrl, model }) {
   if (isDeepSeekRequest({ baseUrl, model })) {
     return 'deepseek';

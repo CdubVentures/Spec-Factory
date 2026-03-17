@@ -10,6 +10,7 @@ import {
 } from './indexingRunMutationCallbacks';
 import { buildRequestedRunId } from './indexingRunId';
 import type { SearxngStatusResponse } from '../types';
+import type { PreflightResult } from '../../llm-config';
 
 type RunControlPayloadValue = string | number | boolean;
 
@@ -35,6 +36,7 @@ interface UseIndexingRunMutationsInput {
   runtimeSettingsLoading: boolean;
   isAll: boolean;
   replayPending: boolean;
+  preflightCheck?: () => PreflightResult | null;
 }
 
 export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
@@ -60,6 +62,7 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
     runtimeSettingsLoading,
     isAll,
     replayPending,
+    preflightCheck,
   } = input;
 
   type StartIndexLabMutationVariables = {
@@ -163,7 +166,10 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
     || (startSearxngMut.error as Error)?.message
     || '';
 
+  const preflightResult = preflightCheck?.() ?? null;
+
   const handleRunIndexLab = () => {
+    if (preflightResult && !preflightResult.valid) return;
     // Contract anchor: run-id timestamp sanitization is split/join based.
     // .split('-').join('')
     // .split(':').join('')
@@ -185,5 +191,6 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
     canRunSingle,
     actionError,
     handleRunIndexLab,
+    preflightResult,
   };
 }

@@ -620,8 +620,6 @@ export async function processDiscoveryResults({
     llm_triage_model: llmTriageEnabled
       ? String(
         config.llmModelTriage ||
-        config.cortexModelRerankFast ||
-        config.cortexModelSearchFast ||
         config.llmModelFast ||
         ''
       ).trim()
@@ -649,7 +647,7 @@ export async function processDiscoveryResults({
     llm_query_planning: true,
     llm_query_model: String(config.llmModelPlan || '').trim(),
     llm_serp_triage: llmTriageEnabled,
-    llm_serp_triage_model: String(config.llmModelTriage || config.cortexModelRerankFast || config.cortexModelSearchFast || config.llmModelFast || '').trim(),
+    llm_serp_triage_model: String(config.llmModelTriage || config.llmModelFast || '').trim(),
     serp_explorer: serpExplorer
   };
   await writeSearchProfileArtifacts({
@@ -683,7 +681,7 @@ export async function processDiscoveryResults({
     llm_query_planning: true,
     llm_query_model: String(config.llmModelPlan || '').trim(),
     llm_serp_triage: llmTriageEnabled,
-    llm_serp_triage_model: String(config.llmModelTriage || config.cortexModelRerankFast || config.cortexModelSearchFast || config.llmModelFast || '').trim(),
+    llm_serp_triage_model: String(config.llmModelTriage || config.llmModelFast || '').trim(),
     query_count: queries.length,
     query_reject_count: toArray(searchProfileFinal?.query_reject_log).length,
     discovered_count: discovered.length,

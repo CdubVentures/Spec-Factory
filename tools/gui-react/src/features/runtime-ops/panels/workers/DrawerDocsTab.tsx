@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { usePersistedTab, usePersistedNullableTab } from '../../../../stores/tabStore';
 import type { RuntimeOpsDocumentRow, WorkerExtractionField, WorkerScreenshot, QueueJobRow } from '../../types';
 import {
   formatBytes,
@@ -44,10 +45,10 @@ export function dedupeBadgeClass(outcome: string | null): string {
 export const STATUS_FLOW = ['discovered', 'fetching', 'fetched', 'parsed', 'indexed'] as const;
 
 export function DrawerDocsTab({ documents, extractionFields, screenshots, queueJobs, runId, isRunning, category }: DrawerDocsTabProps) {
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedDocUrl, setSelectedDocUrl] = useState<string | null>(null);
+  const [search, setSearch] = usePersistedTab<string>(`runtimeOps:drawerDocs:search:${category}`, '');
+  const [typeFilter, setTypeFilter] = usePersistedTab<string>(`runtimeOps:drawerDocs:typeFilter:${category}`, 'all');
+  const [statusFilter, setStatusFilter] = usePersistedTab<string>(`runtimeOps:drawerDocs:statusFilter:${category}`, 'all');
+  const [selectedDocUrl, setSelectedDocUrl] = usePersistedNullableTab(`runtimeOps:drawerDocs:selectedDoc:${category}`, null);
 
   const summary = useMemo(() => {
     const totalBytes = documents.reduce((s, d) => s + (d.bytes ?? 0), 0);

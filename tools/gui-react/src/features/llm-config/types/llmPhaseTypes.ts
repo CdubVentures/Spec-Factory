@@ -5,7 +5,9 @@ export type LlmPhaseId =
   | 'search-planner'
   | 'serp-triage'
   | 'domain-classifier'
-  | 'extraction';
+  | 'extraction'
+  | 'validate'
+  | 'write';
 
 export interface LlmPhaseDefinition {
   id: LlmPhaseId;

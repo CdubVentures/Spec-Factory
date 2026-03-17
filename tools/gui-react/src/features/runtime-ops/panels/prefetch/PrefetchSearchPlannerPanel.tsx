@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { usePersistedExpandMap } from '../../../../stores/tabStore';
+import { usePersistedToggle } from '../../../../stores/collapseStore';
 import type { PrefetchLlmCall, SearchPlanPass, PrefetchLiveSettings, PrefetchSearchResult } from '../../types';
 import { llmCallStatusBadgeClass, formatMs } from '../../helpers';
 import { VerticalStepper, Step } from '../../components/VerticalStepper';
@@ -14,6 +16,7 @@ interface PrefetchSearchPlannerPanelProps {
   searchResults?: PrefetchSearchResult[];
   liveSettings?: PrefetchLiveSettings;
   idxRuntime?: RuntimeIdxBadge[];
+  persistScope?: string;
 }
 
 interface PlannerPromptInput {
@@ -162,8 +165,9 @@ function Schema4PlannerView({
   searchResults,
   liveSettings,
   idxRuntime,
+  persistScope = '',
 }: PrefetchSearchPlannerPanelProps) {
-  const [llmCallsOpen, setLlmCallsOpen] = useState(false);
+  const [llmCallsOpen, toggleLlmCallsOpen] = usePersistedToggle(`runtimeOps:searchPlanner:llmCalls:${persistScope}`, false);
   const plans = searchPlans || [];
 
   const totalQueries = plans.reduce((sum, plan) => sum + plan.queries_generated.length, 0);
@@ -335,7 +339,7 @@ function Schema4PlannerView({
       {calls.length > 0 && (
         <div>
           <div
-            onClick={() => setLlmCallsOpen((prev) => !prev)}
+            onClick={toggleLlmCallsOpen}
             className="flex items-baseline gap-2 pt-2 pb-1.5 border-b-[1.5px] border-[var(--sf-token-text-primary)] cursor-pointer select-none"
           >
             <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary flex-1">llm call details</span>
@@ -484,8 +488,9 @@ export function PrefetchSearchPlannerPanel({
   searchResults,
   liveSettings,
   idxRuntime,
+  persistScope = '',
 }: PrefetchSearchPlannerPanelProps) {
-  const [expandedPassQueries, setExpandedPassQueries] = useState<Record<string, boolean>>({});
+  const [expandedPassQueries, toggleExpandedPassQuery, replaceExpandedPassQueries] = usePersistedExpandMap(`runtimeOps:searchPlanner:expandedPass:${persistScope}`);
   const plans = searchPlans || [];
   const executedQueryTokens = useMemo(() => new Set(
     (searchResults || []).map((result) => normalizeToken(normalizeQuery(result.query))),
@@ -989,7 +994,7 @@ export function PrefetchSearchPlannerPanel({
                       {hasMoreQueries && (
                         <button
                           type="button"
-                          onClick={() => setExpandedPassQueries((prev) => ({ ...prev, [passRowKey]: !queriesExpanded }))}
+                          onClick={() => toggleExpandedPassQuery(passRowKey)}
                           className="mt-1 inline-flex items-center gap-1 sf-text-label font-semibold sf-link-accent hover:underline"
                         >
                           <span className="inline-flex h-4 w-4 items-center justify-center rounded-full sf-icon-badge text-[12px] leading-none">

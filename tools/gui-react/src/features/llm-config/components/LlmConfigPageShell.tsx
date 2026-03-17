@@ -8,6 +8,7 @@ interface LlmConfigPageShellProps {
   onSelectPhase: (phase: LlmPhaseId) => void;
   headerActions: ReactNode;
   activePanel: ReactNode;
+  settingsScope?: 'default' | 'user';
 }
 
 function PhaseNavIcon({ phaseId, active }: { phaseId: LlmPhaseId; active: boolean }) {
@@ -69,6 +70,18 @@ function PhaseNavIcon({ phaseId, active }: { phaseId: LlmPhaseId; active: boolea
             <circle cx="12" cy="12" r="2" />
           </>
         )}
+        {phaseId === 'validate' && (
+          <>
+            <path d="M9 12l2 2 4-4" />
+            <circle cx="12" cy="12" r="9" />
+          </>
+        )}
+        {phaseId === 'write' && (
+          <>
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z" />
+          </>
+        )}
       </svg>
     </span>
   );
@@ -79,6 +92,7 @@ export function LlmConfigPageShell({
   onSelectPhase,
   headerActions,
   activePanel,
+  settingsScope,
 }: LlmConfigPageShellProps) {
   const activePhaseData = LLM_PHASES.find((p) => p.id === activePhase) ?? LLM_PHASES[0];
 
@@ -134,9 +148,28 @@ export function LlmConfigPageShell({
                 </h2>
                 <Tip text={activePhaseData.tip} />
               </div>
-              <p className="mt-1 sf-text-label" style={{ color: 'var(--sf-muted)' }}>
-                {activePhaseData.subtitle}
-              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="sf-text-label" style={{ color: 'var(--sf-muted)' }}>
+                  {activePhaseData.subtitle}
+                </p>
+                {settingsScope && (
+                  <span
+                    className="sf-text-nano font-semibold uppercase tracking-wide"
+                    style={{
+                      color: settingsScope === 'default'
+                        ? 'rgb(var(--sf-color-accent-strong-rgb))'
+                        : 'var(--sf-state-success-fg)',
+                      backgroundColor: settingsScope === 'default'
+                        ? 'rgb(var(--sf-color-accent-strong-rgb) / 0.10)'
+                        : 'var(--sf-state-success-bg)',
+                      borderRadius: 'var(--sf-radius-chip)',
+                      padding: 'var(--sf-space-0-5) var(--sf-space-1-5)',
+                    }}
+                  >
+                    {settingsScope === 'default' ? 'Saves to Default Settings' : 'Saves to User Settings'}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex flex-wrap items-start justify-end gap-3 shrink-0">{headerActions}</div>

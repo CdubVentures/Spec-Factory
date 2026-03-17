@@ -1168,6 +1168,7 @@ html[data-sf-theme-mode='dark'] .sf-dk-hover-fg-white:hover {
 
 .sf-input,
 .sf-select,
+.sf-custom-select-trigger,
 .sf-primitive-input {
   width: 100%;
   color: rgb(var(--sf-color-text-primary-rgb));
@@ -1182,6 +1183,100 @@ html[data-sf-theme-mode='dark'] .sf-dk-hover-fg-white:hover {
 
 .sf-select {
   appearance: none;
+}
+
+/* ── Custom model select with SVG role badges ── */
+
+.sf-custom-select {
+  position: relative;
+  width: 100%;
+}
+
+.sf-custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sf-space-1-5);
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sf-custom-select-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sf-custom-select-value {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-1);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sf-custom-select-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sf-custom-select-chevron {
+  flex-shrink: 0;
+  color: rgb(var(--sf-color-text-muted-rgb));
+}
+
+.sf-custom-select-panel {
+  position: absolute;
+  z-index: 120;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: var(--sf-space-1);
+  border-radius: var(--sf-radius-md);
+  border: 1px solid rgb(var(--sf-color-border-subtle-rgb) / 0.55);
+  color: rgb(var(--sf-color-text-primary-rgb));
+  background: rgb(var(--sf-color-surface-elevated-rgb));
+  box-shadow: 0 10px 24px rgb(15 23 42 / 0.22);
+}
+
+html[data-sf-theme-mode='dark'] .sf-custom-select-panel {
+  border-color: rgb(var(--sf-color-border-subtle-rgb) / 0.7);
+  box-shadow: 0 12px 28px rgb(2 6 23 / 0.6);
+}
+
+.sf-custom-select-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-1);
+  padding: var(--sf-space-1) var(--sf-space-1-5);
+  border-radius: var(--sf-radius-sm);
+  font-family: var(--sf-font-family-ui);
+  font-size: calc(var(--sf-token-font-size-caption) + 1px);
+  line-height: var(--sf-token-line-height-normal);
+  cursor: pointer;
+  user-select: none;
+}
+
+.sf-custom-select-item-focused {
+  background: rgb(var(--sf-color-accent-rgb) / 0.10);
+}
+
+.sf-custom-select-item-selected {
+  font-weight: 600;
+}
+
+.sf-custom-select-role-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--sf-token-font-size-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
 }
 
 .sf-icon-button {
@@ -3405,6 +3500,7 @@ html[data-sf-theme='arctic'] .sf-shell-header-control {
 
 html[data-sf-theme='arctic'] .sf-input,
 html[data-sf-theme='arctic'] .sf-select,
+html[data-sf-theme='arctic'] .sf-custom-select-trigger,
 html[data-sf-theme='arctic'] .sf-primitive-input {
   background: rgb(255 255 255 / 0.70);
   backdrop-filter: blur(6px);
@@ -3413,8 +3509,16 @@ html[data-sf-theme='arctic'] .sf-primitive-input {
 
 html[data-sf-theme='arctic'] .sf-input:focus,
 html[data-sf-theme='arctic'] .sf-select:focus,
+html[data-sf-theme='arctic'] .sf-custom-select-trigger:focus,
 html[data-sf-theme='arctic'] .sf-primitive-input:focus {
   box-shadow: 0 0 0 2px rgb(8 145 178 / 0.24);
+}
+
+html[data-sf-theme='arctic'] .sf-custom-select-panel {
+  background: rgb(255 255 255 / 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 12px 32px rgb(140 160 185 / 0.18);
 }
 
 html[data-sf-theme='arctic'] .sf-run-ai-button {
@@ -3628,6 +3732,7 @@ html[data-sf-theme='obsidian'] .sf-icon-button:hover {
 
 html[data-sf-theme='obsidian'] .sf-input,
 html[data-sf-theme='obsidian'] .sf-select,
+html[data-sf-theme='obsidian'] .sf-custom-select-trigger,
 html[data-sf-theme='obsidian'] .sf-primitive-input {
   background: #0e0e10;
   border-color: rgb(42 42 48);
@@ -3635,9 +3740,16 @@ html[data-sf-theme='obsidian'] .sf-primitive-input {
 
 html[data-sf-theme='obsidian'] .sf-input:focus,
 html[data-sf-theme='obsidian'] .sf-select:focus,
+html[data-sf-theme='obsidian'] .sf-custom-select-trigger:focus,
 html[data-sf-theme='obsidian'] .sf-primitive-input:focus {
   border-color: rgb(236 72 153 / 0.52);
   box-shadow: 0 0 8px rgb(236 72 153 / 0.18);
+}
+
+html[data-sf-theme='obsidian'] .sf-custom-select-panel {
+  border-color: rgb(236 72 153 / 0.28);
+  background: rgb(14 14 16 / 0.96);
+  box-shadow: 0 0 20px rgb(236 72 153 / 0.16);
 }
 
 html[data-sf-theme='obsidian'] .sf-table-shell,
@@ -3960,6 +4072,7 @@ html[data-sf-theme='slate'] .sf-tooltip-arrow {
 
 html[data-sf-theme='slate'] .sf-input,
 html[data-sf-theme='slate'] .sf-select,
+html[data-sf-theme='slate'] .sf-custom-select-trigger,
 html[data-sf-theme='slate'] .sf-primitive-input {
   background: #0f1117;
   border-color: #252d3d;
@@ -3967,9 +4080,16 @@ html[data-sf-theme='slate'] .sf-primitive-input {
 
 html[data-sf-theme='slate'] .sf-input:focus,
 html[data-sf-theme='slate'] .sf-select:focus,
+html[data-sf-theme='slate'] .sf-custom-select-trigger:focus,
 html[data-sf-theme='slate'] .sf-primitive-input:focus {
   border-color: rgb(56 189 248 / 0.50);
   box-shadow: none;
+}
+
+html[data-sf-theme='slate'] .sf-custom-select-panel {
+  background: #1e2535;
+  border-color: #2e3a50;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.50);
 }
 
 /* ── Tables: flat, hairline borders ── */

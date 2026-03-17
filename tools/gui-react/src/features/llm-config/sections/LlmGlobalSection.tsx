@@ -1,4 +1,4 @@
-import { memo, Suspense, lazy, useMemo, useState, useCallback } from 'react';
+import { memo, Suspense, lazy, useMemo, useCallback } from 'react';
 import {
   MasterSwitchRow,
   SettingGroupBlock,
@@ -7,13 +7,16 @@ import {
   type RuntimeDraft,
 } from '../../pipeline-settings';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
-import { resolveProviderForModel } from '../state/llmProviderRegistryBridge';
+import { resolveProviderForModel, bridgeRegistryToFlatKeys } from '../state/llmProviderRegistryBridge';
 import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions';
-import { detectMixIssues, resolveRingColor } from '../state/llmMixDetection';
+import { detectMixIssues, detectStaleModelIssues, resolveRingColor } from '../state/llmMixDetection';
+import { detectEmptyModelFields } from '../state/llmModelValidation';
 import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner';
+import { usePersistedExpandMap } from '../../../stores/tabStore';
 import { validatePhaseTokenLimits } from '../state/llmTokenLimitValidation';
 import { HealthDot } from '../../../shared/ui/feedback/HealthDot';
 import { LlmAllModelsSection } from './LlmAllModelsSection';
+import { ModelSelectDropdown } from '../components/ModelSelectDropdown';
 
 const LlmProviderRegistrySection = lazy(async () => {
   const module = await import('./LlmProviderRegistrySection');
@@ -29,6 +32,7 @@ interface LlmGlobalSectionProps {
   getNumberBounds: <K extends keyof RuntimeDraft>(key: K) => NumberBound;
   registry: LlmProviderEntry[];
   onRegistryChange: (registry: LlmProviderEntry[]) => void;
+  apiKeyFilter?: (provider: LlmProviderEntry) => boolean;
 }
 
 export const LlmGlobalSection = memo(function LlmGlobalSection({
@@ -40,21 +44,27 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
   getNumberBounds,
   registry,
   onRegistryChange,
+  apiKeyFilter,
 }: LlmGlobalSectionProps) {
-  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  const [dismissedAlerts, , replaceDismissedAlerts] = usePersistedExpandMap('llmConfig:global:dismissedAlerts');
 
   const baseOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, ['primary', 'fast']),
-    [llmModelOptions, registry],
+    () => buildModelDropdownOptions(llmModelOptions, registry, ['primary', 'fast'], apiKeyFilter),
+    [llmModelOptions, registry, apiKeyFilter],
   );
   const reasoningOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, 'reasoning'),
-    [llmModelOptions, registry],
+    () => buildModelDropdownOptions(llmModelOptions, registry, 'reasoning', apiKeyFilter),
+    [llmModelOptions, registry, apiKeyFilter],
   );
   const allOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry),
-    [llmModelOptions, registry],
+    () => buildModelDropdownOptions(llmModelOptions, registry, undefined, apiKeyFilter),
+    [llmModelOptions, registry, apiKeyFilter],
   );
+
+  const globalModelFields = useMemo(() => ({
+    llmModelPlan: runtimeDraft.llmModelPlan,
+    llmModelReasoning: runtimeDraft.llmModelReasoning,
+  }), [runtimeDraft.llmModelPlan, runtimeDraft.llmModelReasoning]);
 
   const mixIssues = useMemo(
     () => detectMixIssues(registry, {
@@ -66,14 +76,39 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
     [registry, runtimeDraft.llmModelPlan, runtimeDraft.llmModelReasoning, runtimeDraft.llmPlanFallbackModel, runtimeDraft.llmReasoningFallbackModel],
   );
 
+  const emptyIssues = useMemo(
+    () => detectEmptyModelFields(globalModelFields),
+    [globalModelFields],
+  );
+
+  const staleIssues = useMemo(
+    () => detectStaleModelIssues(registry, globalModelFields, llmModelOptions),
+    [registry, globalModelFields, llmModelOptions],
+  );
+
+  const allIssues = useMemo(
+    () => [...emptyIssues, ...mixIssues, ...staleIssues],
+    [emptyIssues, mixIssues, staleIssues],
+  );
+
   const dismissAlert = useCallback((key: string) => {
-    setDismissedAlerts((prev) => new Set([...prev, key]));
-  }, []);
+    replaceDismissedAlerts({ ...dismissedAlerts, [key]: true });
+  }, [dismissedAlerts, replaceDismissedAlerts]);
+
+  const handleBaseModelChange = useCallback((newModelId: string) => {
+    updateDraft('llmModelPlan', newModelId);
+    const bridged = bridgeRegistryToFlatKeys(registry, newModelId);
+    if (bridged) {
+      updateDraft('llmCostInputPer1M', bridged.llmCostInputPer1M);
+      updateDraft('llmCostOutputPer1M', bridged.llmCostOutputPer1M);
+      updateDraft('llmCostCachedInputPer1M', bridged.llmCostCachedInputPer1M);
+    }
+  }, [updateDraft, registry]);
 
   const ringStyle = useCallback((field: string) => {
-    const color = resolveRingColor(field, mixIssues, dismissedAlerts);
+    const color = resolveRingColor(field, allIssues, dismissedAlerts);
     return color ? { boxShadow: `0 0 0 2px ${color}` } : undefined;
-  }, [mixIssues, dismissedAlerts]);
+  }, [allIssues, dismissedAlerts]);
 
   const tokenWarnings = useMemo(
     () => validatePhaseTokenLimits(runtimeDraft as unknown as Record<string, unknown>, registry),
@@ -88,7 +123,11 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
   return (
     <>
       {/* ── Section 1: Provider Registry ── */}
-      <SettingGroupBlock title="Provider Registry">
+      <SettingGroupBlock
+        title="Provider Registry"
+        collapsible
+        storageKey="sf:llm-global:provider-registry"
+      >
         <Suspense fallback={null}>
           <LlmProviderRegistrySection
             registry={registry}
@@ -98,17 +137,26 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
       </SettingGroupBlock>
 
       {/* ── Section 2: All Models ── */}
-      <SettingGroupBlock title="All Models">
+      <SettingGroupBlock
+        title="All Models"
+        collapsible
+        defaultCollapsed
+        storageKey="sf:llm-global:all-models"
+      >
         <LlmAllModelsSection registry={registry} />
       </SettingGroupBlock>
 
       {/* ── Section 3: Global Defaults ── */}
-      <SettingGroupBlock title="Global Defaults">
+      <SettingGroupBlock
+        title="Global Defaults"
+        collapsible
+        storageKey="sf:llm-global:defaults"
+      >
         {/* A — Model Selection */}
-        <div className="sf-text-label font-medium" style={{ color: 'var(--sf-muted)' }}>
+        <div className="sf-text-caption font-semibold uppercase tracking-wide" style={{ color: 'var(--sf-muted)' }}>
           Model selection
         </div>
-        <div className="sf-text-caption mb-2" style={{ color: 'var(--sf-muted)' }}>
+        <div className="sf-text-caption mb-2" style={{ color: 'var(--sf-muted)', opacity: 0.8 }}>
           These propagate to all phases. Override per-phase if needed.
         </div>
         <div className="grid grid-cols-2 gap-x-3.5 gap-y-2.5">
@@ -116,32 +164,26 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
           <div className="flex flex-col gap-1">
             <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Base model</label>
             <div className="flex items-center gap-1.5">
-              <select
+              <ModelSelectDropdown
+                options={baseOptions}
                 className={inputCls}
                 value={runtimeDraft.llmModelPlan}
-                onChange={(e) => updateDraft('llmModelPlan', e.target.value)}
+                onChange={handleBaseModelChange}
                 style={ringStyle('llmModelPlan')}
-              >
-                {baseOptions.map((o) => (
-                  <option key={o.providerId ? `reg-${o.providerId}-${o.value}` : o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+              />
               <HealthDot status={baseProv?.health ?? 'gray'} />
             </div>
           </div>
           <div className="flex flex-col gap-1">
             <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Reasoning model</label>
             <div className="flex items-center gap-1.5">
-              <select
+              <ModelSelectDropdown
+                options={reasoningOptions}
                 className={inputCls}
                 value={runtimeDraft.llmModelReasoning}
-                onChange={(e) => updateDraft('llmModelReasoning', e.target.value)}
+                onChange={(v) => updateDraft('llmModelReasoning', v)}
                 style={ringStyle('llmModelReasoning')}
-              >
-                {reasoningOptions.map((o) => (
-                  <option key={o.providerId ? `reg-${o.providerId}-${o.value}` : o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+              />
               <HealthDot status={reasonProv?.health ?? 'gray'} />
             </div>
           </div>
@@ -149,44 +191,38 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
           <div className="flex flex-col gap-1">
             <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Base fallback</label>
             <div className="flex items-center gap-1.5">
-              <select
+              <ModelSelectDropdown
+                options={allOptions}
                 className={inputCls}
                 value={runtimeDraft.llmPlanFallbackModel}
-                onChange={(e) => updateDraft('llmPlanFallbackModel', e.target.value)}
+                onChange={(v) => updateDraft('llmPlanFallbackModel', v)}
                 style={ringStyle('llmPlanFallbackModel')}
-              >
-                <option value="">(none)</option>
-                {allOptions.map((o) => (
-                  <option key={o.providerId ? `reg-${o.providerId}-${o.value}` : o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+                allowNone
+              />
               <HealthDot status={baseFbProv?.health ?? 'gray'} />
             </div>
           </div>
           <div className="flex flex-col gap-1">
             <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Reasoning fallback</label>
             <div className="flex items-center gap-1.5">
-              <select
+              <ModelSelectDropdown
+                options={allOptions}
                 className={inputCls}
                 value={runtimeDraft.llmReasoningFallbackModel}
-                onChange={(e) => updateDraft('llmReasoningFallbackModel', e.target.value)}
+                onChange={(v) => updateDraft('llmReasoningFallbackModel', v)}
                 style={ringStyle('llmReasoningFallbackModel')}
-              >
-                <option value="">(none)</option>
-                {allOptions.map((o) => (
-                  <option key={o.providerId ? `reg-${o.providerId}-${o.value}` : o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+                allowNone
+              />
               <HealthDot status={reasonFbProv?.health ?? 'gray'} />
             </div>
           </div>
         </div>
 
-        {/* Mix detection alerts */}
-        {mixIssues.filter((i) => !dismissedAlerts.has(i.key)).length > 0 && (
+        {/* Model validation + mix detection alerts */}
+        {allIssues.filter((i) => !dismissedAlerts[i.key]).length > 0 && (
           <div className="flex flex-col gap-1.5 mt-3">
-            {mixIssues
-              .filter((i) => !dismissedAlerts.has(i.key))
+            {allIssues
+              .filter((i) => !dismissedAlerts[i.key])
               .map((issue) => (
                 <AlertBanner
                   key={issue.key}
@@ -200,10 +236,10 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
         )}
 
         {/* Divider */}
-        <div className="border-t" style={{ borderColor: 'var(--sf-border)', margin: '16px 0' }} />
+        <div className="border-t" style={{ borderColor: 'var(--sf-border)', margin: 'var(--sf-space-4) 0' }} />
 
         {/* B — Limits */}
-        <div className="sf-text-label font-medium mb-2" style={{ color: 'var(--sf-muted)' }}>
+        <div className="sf-text-caption font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--sf-muted)' }}>
           Limits
         </div>
         <div className="grid grid-cols-3 gap-x-3.5 gap-y-2.5">
@@ -287,10 +323,10 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
         )}
 
         {/* Divider */}
-        <div className="border-t" style={{ borderColor: 'var(--sf-border)', margin: '16px 0' }} />
+        <div className="border-t" style={{ borderColor: 'var(--sf-border)', margin: 'var(--sf-space-4) 0' }} />
 
         {/* C — Budget */}
-        <div className="sf-text-label font-medium mb-2" style={{ color: 'var(--sf-muted)' }}>
+        <div className="sf-text-caption font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--sf-muted)' }}>
           Budget
         </div>
         <div className="grid grid-cols-3 gap-x-3.5 gap-y-2.5">

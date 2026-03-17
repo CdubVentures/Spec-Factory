@@ -1,4 +1,4 @@
-export type LlmProviderType = 'openai-compatible' | 'anthropic' | 'ollama' | 'cortex';
+export type LlmProviderType = 'openai-compatible' | 'anthropic' | 'ollama';
 export type LlmModelRole = 'primary' | 'reasoning' | 'fast' | 'embedding';
 
 export interface LlmProviderModel {
@@ -10,6 +10,8 @@ export interface LlmProviderModel {
   costCachedPer1M: number;
   maxContextTokens: number | null;
   maxOutputTokens: number | null;
+  tier?: 'fast' | 'deep' | 'vision';
+  transport?: 'sync' | 'async';
 }
 
 export type LlmProviderHealthStatus = 'green' | 'gray' | 'red';

@@ -100,8 +100,6 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
   assert.equal(result.envOverrides.CATEGORY_AUTHORITY_ROOT, overrideRoot);
   assert.equal(result.envOverrides.RUNTIME_TRACE_FETCH_RING, '2000');
   assert.equal(result.envOverrides.LLM_MODEL_TRIAGE, 'triage-model');
-  assert.equal(result.envOverrides.CORTEX_MODEL_RERANK_FAST, 'triage-model');
-  assert.equal(result.envOverrides.CORTEX_MODEL_SEARCH_FAST, 'triage-model');
   assert.equal(
     Object.hasOwn(result.envOverrides, 'LLM_ENABLED'),
     false,

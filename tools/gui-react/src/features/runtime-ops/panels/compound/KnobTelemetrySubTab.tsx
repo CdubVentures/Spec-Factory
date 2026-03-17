@@ -1,14 +1,17 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
+import { usePersistedNumber } from '../../../../stores/tabStore';
+import { usePersistedToggle } from '../../../../stores/collapseStore';
 import type { KnobSnapshotsResponse } from '../../types';
 
 interface KnobTelemetrySubTabProps {
   data: KnobSnapshotsResponse | undefined;
+  category: string;
 }
 
-export function KnobTelemetrySubTab({ data }: KnobTelemetrySubTabProps) {
+export function KnobTelemetrySubTab({ data, category }: KnobTelemetrySubTabProps) {
   const snapshots = data?.snapshots ?? [];
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const [showAll, setShowAll] = useState(true);
+  const [selectedIdx, setSelectedIdx] = usePersistedNumber(`runtimeOps:knobTelemetry:selectedIdx:${category}`, 0);
+  const [showAll, toggleShowAll, setShowAll] = usePersistedToggle(`runtimeOps:knobTelemetry:showAll:${category}`, true);
 
   const snapshot = snapshots[selectedIdx] ?? null;
 

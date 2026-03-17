@@ -45,12 +45,10 @@ function parseAssistantJsonContent(response = {}) {
 
 export class AggressiveDomExtractor {
   constructor({
-    cortexClient,
     config = {}
   } = {}) {
-    this.cortexClient = cortexClient;
-    this.modelFast = String(config.cortexModelDom || 'gpt-5-low');
-    this.modelDeep = String(config.cortexModelReasoningDeep || 'gpt-5-high');
+    this.modelFast = String(config.llmModelFast || 'gpt-5-low');
+    this.modelDeep = String(config.llmModelReasoning || 'gpt-5-high');
   }
 
   async extractFromDom(rawHtml, targetFields = [], identity = {}, sourceMetadata = {}, opts = {}) {
@@ -75,52 +73,7 @@ export class AggressiveDomExtractor {
 
     const forceDeep = Boolean(opts.forceDeep);
     const selectedModel = forceDeep ? this.modelDeep : this.modelFast;
-    let sidecar = null;
-    if (this.cortexClient && typeof this.cortexClient.runPass === 'function') {
-      const pass = await this.cortexClient.runPass({
-        tasks: [{
-          id: 'aggressive-dom',
-          type: forceDeep ? 'dom_deep' : 'dom',
-          critical: forceDeep,
-          payload: {
-            product_id: identity?.productId || '',
-            field_count: fields.length,
-            model_hint: selectedModel
-          }
-        }],
-        context: {
-          confidence: Number(opts.confidence || 0.9),
-          critical_conflicts_remain: Boolean(opts.criticalConflictsRemain),
-          critical_gaps_remain: Boolean(opts.criticalGapsRemain)
-        }
-      });
-      sidecar = {
-        mode: pass.mode,
-        deep_task_count: Number(pass?.plan?.deep_task_count || 0),
-        fallback_to_non_sidecar: Boolean(pass.fallback_to_non_sidecar)
-      };
-
-      const responsePayload = pass?.results?.[0]?.response;
-      const parsed = parseAssistantJsonContent(responsePayload);
-      if (parsed?.fieldCandidates && Array.isArray(parsed.fieldCandidates)) {
-        for (const row of parsed.fieldCandidates) {
-          const field = String(row?.field || '').trim();
-          const value = normalizeWhitespace(row?.value || '');
-          if (!field || !value || !fields.includes(field)) {
-            continue;
-          }
-          fieldCandidates.push({
-            field,
-            value,
-            method: 'aggressive_dom_sidecar',
-            confidence: Number(row?.confidence || 0.66),
-            evidenceRefs: Array.isArray(row?.evidenceRefs) ? row.evidenceRefs : [],
-            source_id: String(sourceMetadata?.source_id || sourceMetadata?.host || 'dom'),
-            quote: String(row?.quote || value)
-          });
-        }
-      }
-    }
+    const sidecar = null;
 
     return {
       model: selectedModel,

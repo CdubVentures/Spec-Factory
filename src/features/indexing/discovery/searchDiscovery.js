@@ -7,6 +7,7 @@ import {
   collectHostPlanHintTokens,
 } from '../search/queryBuilder.js';
 import { normalizeFieldList } from '../../../utils/fieldKeys.js';
+import { lookupFieldRule } from '../search/queryFieldRuleGates.js';
 import { planUberQueries } from '../../../research/queryPlanner.js';
 import { buildEffectiveHostPlan } from './domainHintResolver.js';
 import { resolveBrandDomain } from './brandResolver.js';
@@ -403,6 +404,15 @@ export async function discoverCandidateSources({
       brandResolutionHints,
     });
     if (!effectiveHostPlan?.blocked) {
+      // WHY: Resolve raw field keys (e.g. polling_rate_hz) to human-readable
+      // query terms (e.g. "polling rate") from field rules. Raw keys would
+      // keyword-stuff queries and hurt search precision.
+      const hostPlanFocusTerms = missingFields.slice(0, 3).map(field => {
+        const rule = lookupFieldRule(categoryConfig, field);
+        const terms = toArray(rule?.search_hints?.query_terms)
+          .map(t => String(t || '').trim()).filter(Boolean);
+        return terms[0] || field.replace(/_/g, ' ');
+      });
       hostPlanQueryRows = buildScoredQueryRowsFromHostPlan(
         effectiveHostPlan,
         {
@@ -410,7 +420,8 @@ export async function discoverCandidateSources({
           model: variables.model,
           variant: variables.variant,
         },
-        missingFields
+        missingFields,
+        { resolvedTerms: hostPlanFocusTerms }
       );
     }
   }
@@ -553,10 +564,33 @@ export async function discoverCandidateSources({
       seenQueries.add(token);
       return true;
     });
-    const hostPlanExtraCap = Math.max(2, Math.min(8, queryLimit));
-    appendedHostPlanRows = uniqueHostPlanRows.slice(0, hostPlanExtraCap);
+    appendedHostPlanRows = uniqueHostPlanRows;
   }
-  const selectedQueryRows = [...legacySelectedRows, ...appendedHostPlanRows];
+  const mergedSelectedRows = [...legacySelectedRows, ...appendedHostPlanRows];
+  // WHY: One global deterministic budget replaces the old two-cap approach
+  // (DETERMINISTIC_CAP on base/targeted + hostPlanExtraCap on host plan rows).
+  // Two separate caps could stack to 6 deterministic rows total.
+  const DETERMINISTIC_BUDGET = 3;
+  const isDeterministicRow = (row) => {
+    const sources = toArray(row?.sources);
+    // Mixed-source rows (deduped LLM + deterministic) count as planner
+    return !sources.some(s => s === 'llm' || s === 'uber');
+  };
+  let deterministicCount = 0;
+  let budgetRejectLog = [];
+  const selectedQueryRows = mergedSelectedRows.filter(row => {
+    if (!isDeterministicRow(row)) return true;
+    deterministicCount++;
+    if (deterministicCount <= DETERMINISTIC_BUDGET) return true;
+    budgetRejectLog.push({
+      query: String(row?.query || '').trim(),
+      source: toArray(row?.sources),
+      reason: 'deterministic_budget',
+      stage: 'post_merge_budget',
+      detail: `budget:${DETERMINISTIC_BUDGET}`
+    });
+    return false;
+  });
   queries = selectedQueryRows.map((row) => String(row?.query || '').trim()).filter(Boolean);
   if (!queries.length && rankedCappedQueries.length > 0) {
     const fallback = String(rankedCappedQueries[0]?.query || '').trim();
@@ -580,7 +614,8 @@ export async function discoverCandidateSources({
     ...toArray(mergedQueries.rejectLog),
     ...toArray(rankedCapRejectLog),
     ...toArray(guardedQueries.rejectLog),
-    ...toArray(hostPlanRejectLog)
+    ...toArray(hostPlanRejectLog),
+    ...budgetRejectLog,
   ].slice(0, 300);
   executionQueryLimit = Math.max(queryLimit, queries.length);
   selectedQueryRowMap = new Map(

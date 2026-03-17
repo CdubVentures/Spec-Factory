@@ -72,6 +72,11 @@ function createReactStub() {
       const value = typeof initialValue === 'function' ? initialValue() : initialValue;
       return [value, () => {}];
     }
+    export function useCallback(fn) {
+      return fn;
+    }
+    const React = { useMemo, useState, useCallback };
+    export default React;
   `;
 }
 
@@ -127,6 +132,25 @@ async function loadSearchPlannerModule() {
         }
         export function Step(props) {
           return { type: 'step', props: { ...props, children: props.children } };
+        }
+      `,
+      '../../../../stores/tabStore': `
+        export function usePersistedTab(_key, defaultValue) {
+          return [defaultValue, () => {}];
+        }
+        export function usePersistedNullableTab(_key, initialValue) {
+          return [initialValue ?? null, () => {}];
+        }
+        export function usePersistedExpandMap(_key, defaultValue) {
+          return [defaultValue || {}, () => {}, () => {}];
+        }
+        export function usePersistedNumber(_key, defaultValue) {
+          return [defaultValue, () => {}];
+        }
+      `,
+      '../../../../stores/collapseStore': `
+        export function usePersistedToggle(_key, initialValue) {
+          return [initialValue, () => {}, () => {}];
         }
       `,
     },

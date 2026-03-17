@@ -1,4 +1,5 @@
-import type { LlmPhaseId, LlmPhaseOverride, LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes';
+import type { LlmOverridePhaseId, LlmPhaseOverride, LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes';
+import type { LlmPhaseId } from '../types/llmPhaseTypes';
 
 export function parsePhaseOverrides(json: string): LlmPhaseOverrides {
   if (!json || !json.trim() || json.trim() === '{}') return {};
@@ -12,7 +13,7 @@ export function parsePhaseOverrides(json: string): LlmPhaseOverrides {
 }
 
 export function serializePhaseOverrides(overrides: LlmPhaseOverrides): string {
-  const keys = Object.keys(overrides) as LlmPhaseId[];
+  const keys = Object.keys(overrides) as LlmOverridePhaseId[];
   const hasContent = keys.some((k) => {
     const phase = overrides[k];
     if (!phase) return false;
@@ -35,35 +36,55 @@ export interface ResolvedPhaseModel {
   effectiveModel: string;
 }
 
-interface GlobalDraftSlice {
+export interface GlobalDraftSlice {
   llmModelPlan: string;
-  llmModelTriage: string;
   llmModelReasoning: string;
   llmPlanUseReasoning: boolean;
-  llmTriageUseReasoning: boolean;
   llmMaxOutputTokensPlan: number;
-  llmMaxOutputTokensTriage: number;
 }
 
-const PHASE_GLOBAL_MAP: Record<LlmPhaseId, {
+export interface PhaseOverrideRegistryEntry {
+  uiPhaseId: LlmPhaseId;
+  overrideKey: LlmOverridePhaseId;
   globalModel: keyof GlobalDraftSlice;
   groupToggle: keyof GlobalDraftSlice;
   globalTokens: keyof GlobalDraftSlice;
-}> = {
-  needset: { globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-  searchPlanner: { globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-  brandResolver: { globalModel: 'llmModelTriage', groupToggle: 'llmTriageUseReasoning', globalTokens: 'llmMaxOutputTokensTriage' },
-  serpTriage: { globalModel: 'llmModelTriage', groupToggle: 'llmTriageUseReasoning', globalTokens: 'llmMaxOutputTokensTriage' },
-  domainClassifier: { globalModel: 'llmModelTriage', groupToggle: 'llmTriageUseReasoning', globalTokens: 'llmMaxOutputTokensTriage' },
-};
+}
+
+/** SSOT for phase override mappings. Adding a new overrideable phase = add one entry. */
+export const PHASE_OVERRIDE_REGISTRY: readonly PhaseOverrideRegistryEntry[] = [
+  { uiPhaseId: 'needset',           overrideKey: 'needset',          globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+  { uiPhaseId: 'search-planner',    overrideKey: 'searchPlanner',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+  { uiPhaseId: 'brand-resolver',    overrideKey: 'brandResolver',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+  { uiPhaseId: 'serp-triage',       overrideKey: 'serpTriage',       globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+  { uiPhaseId: 'domain-classifier', overrideKey: 'domainClassifier', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+  { uiPhaseId: 'extraction',        overrideKey: 'extraction',       globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+  { uiPhaseId: 'validate',          overrideKey: 'validate',         globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+  { uiPhaseId: 'write',             overrideKey: 'write',            globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+];
+
+/* Derived from registry — replaces manual PHASE_GLOBAL_MAP */
+const PHASE_GLOBAL_MAP: ReadonlyMap<LlmOverridePhaseId, PhaseOverrideRegistryEntry> =
+  new Map(PHASE_OVERRIDE_REGISTRY.map((e) => [e.overrideKey, e]));
+
+/* Derived from registry — replaces manual TAB_TO_OVERRIDE_KEY in LlmPhaseSection */
+const UI_TO_OVERRIDE: ReadonlyMap<LlmPhaseId, LlmOverridePhaseId> =
+  new Map(PHASE_OVERRIDE_REGISTRY.map((e) => [e.uiPhaseId, e.overrideKey]));
+
+/** Maps a UI-tab phase ID to its camelCase override key. Returns undefined for non-overrideable phases (global, extraction). */
+export function uiPhaseIdToOverrideKey(uiPhaseId: LlmPhaseId): LlmOverridePhaseId | undefined {
+  return UI_TO_OVERRIDE.get(uiPhaseId);
+}
 
 export function resolvePhaseModel(
   overrides: LlmPhaseOverrides,
-  phaseId: LlmPhaseId,
+  phaseId: LlmOverridePhaseId,
   globalDraft: GlobalDraftSlice,
-): ResolvedPhaseModel {
+): ResolvedPhaseModel | null {
+  const mapping = PHASE_GLOBAL_MAP.get(phaseId);
+  if (!mapping) return null;
+
   const phaseOverride: Partial<LlmPhaseOverride> = overrides[phaseId] || {};
-  const mapping = PHASE_GLOBAL_MAP[phaseId];
 
   const baseModel = phaseOverride.baseModel || (globalDraft[mapping.globalModel] as string);
   const reasoningModel = phaseOverride.reasoningModel || globalDraft.llmModelReasoning;
@@ -77,12 +98,4 @@ export function resolvePhaseModel(
     maxOutputTokens,
     effectiveModel: useReasoning ? reasoningModel : baseModel,
   };
-}
-
-export function clampPhaseTokenCap(
-  currentTokens: number | null,
-  modelMaxOutputTokens: number | null,
-): number | null {
-  if (currentTokens === null || modelMaxOutputTokens === null) return currentTokens;
-  return Math.min(currentTokens, modelMaxOutputTokens);
 }

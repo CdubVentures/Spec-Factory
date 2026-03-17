@@ -171,7 +171,12 @@ test('discoverCandidateSources attaches effective_host_plan and scored host-plan
     assert.ok(v2Rows.length > 0, 'expected compiled host-plan query rows');
     assert.ok(v2Rows.every((row) => typeof row.score_breakdown?.needset_coverage_bonus === 'number'));
     assert.ok(v2Rows.every((row) => typeof row.score_breakdown?.field_affinity_bonus === 'number'));
-    assert.ok(v2Rows.some((row) => String(row.query || '').includes('site:')));
+    // WHY: Non-manufacturer hosts get soft doc_hint anchors (plain-text host name)
+    // instead of site: operators. Verify host name appears as soft anchor.
+    assert.ok(v2Rows.some((row) => {
+      const q = String(row.query || '');
+      return q.includes(TEST_HOSTS.retailer) || q.includes(TEST_HOSTS.lab);
+    }), 'expected soft host anchor (plain-text host name) in host-plan query rows');
   } finally {
     global.fetch = originalFetch;
     await fs.rm(tempRoot, { recursive: true, force: true });

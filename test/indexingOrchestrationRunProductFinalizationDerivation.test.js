@@ -16,7 +16,6 @@ test('runProductFinalizationDerivation preserves derivation phase ordering and s
     anchors: { shape: 'symmetrical' },
     config: {
       llmWriteSummary: true,
-      cortexEnabled: true,
     },
     productId: 'product-1',
     categoryConfig: { criticalFieldSet: new Set(['weight_g']) },
@@ -256,14 +255,6 @@ test('runProductFinalizationDerivation preserves derivation phase ordering and s
         contribution: { llmFields: ['shape'] },
       };
     },
-    buildCortexSidecarPhaseCallsiteContextFn: (payload) => {
-      calls.push(['buildCortexSidecarPhaseCallsiteContextFn', payload]);
-      return payload;
-    },
-    buildCortexSidecarContextFn: async (payload) => {
-      calls.push(['buildCortexSidecarContextFn', payload]);
-      return { status: 'disabled' };
-    },
   });
 
   assert.deepEqual(
@@ -295,8 +286,6 @@ test('runProductFinalizationDerivation preserves derivation phase ordering and s
       'buildPhase08ExtractionContextFn',
       'buildFinalizationMetricsPhaseCallsiteContextFn',
       'buildFinalizationMetricsContextFn',
-      'buildCortexSidecarPhaseCallsiteContextFn',
-      'buildCortexSidecarContextFn',
     ],
   );
 
@@ -312,7 +301,6 @@ test('runProductFinalizationDerivation preserves derivation phase ordering and s
   assert.deepEqual(result.phase07PrimeSources, { summary: { refs_selected_total: 2 } });
   assert.deepEqual(result.phase08Extraction, { summary: { accepted_candidate_count: 3 } });
   assert.equal(result.durationMs, 1500);
-  assert.deepEqual(result.cortexSidecar, { status: 'disabled' });
 });
 
 test('runProductFinalizationDerivation disables expensive finalization phases when max run budget is already reached', async () => {
@@ -324,7 +312,6 @@ test('runProductFinalizationDerivation disables expensive finalization phases wh
     sourceResults: [],
     config: {
       llmWriteSummary: true,
-      cortexEnabled: true,
     },
     categoryConfig: { criticalFieldSet: new Set() },
     terminalReason: 'max_run_seconds_reached',
@@ -434,23 +421,12 @@ test('runProductFinalizationDerivation disables expensive finalization phases wh
       fingerprintCount: 0,
       contribution: {},
     }),
-    buildCortexSidecarPhaseCallsiteContextFn: (payload) => {
-      calls.push(payload.config);
-      return payload;
-    },
-    buildCortexSidecarContextFn: async () => ({ status: 'disabled' }),
   });
 
-  assert.deepEqual(calls, [
-    {
-      llmWriteSummary: false,
-      cortexEnabled: false,
-    },
-  ]);
+  assert.deepEqual(calls, []);
   assert.deepEqual(result.llmValidatorDecisions, { enabled: false, prior: true });
   assert.equal(result.aggressiveExtraction, null);
   assert.equal(result.constrainedFinalizationConfig.llmWriteSummary, false);
-  assert.equal(result.constrainedFinalizationConfig.cortexEnabled, false);
 });
 
 test('runProductFinalizationDerivation uses seed schema4 from discoveryResult instead of calling LLM', async () => {
@@ -526,8 +502,6 @@ test('runProductFinalizationDerivation uses seed schema4 from discoveryResult in
     buildPhase08ExtractionContextFn: () => ({ phase08Extraction: {} }),
     buildFinalizationMetricsPhaseCallsiteContextFn: (p) => p,
     buildFinalizationMetricsContextFn: () => ({ parserHealthRows: [], parserHealthAverage: 0, fingerprintCount: 0, contribution: {} }),
-    buildCortexSidecarPhaseCallsiteContextFn: (p) => p,
-    buildCortexSidecarContextFn: async () => ({ status: 'disabled' }),
   });
 
   // needSet is enriched with seed Schema 4 panel data

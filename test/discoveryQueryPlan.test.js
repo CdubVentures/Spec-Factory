@@ -15,6 +15,7 @@ import {
   validateQueryAgainstIdentity,
   enforceIdentityQueryGuard,
 } from '../src/features/indexing/discovery/discoveryQueryPlan.js';
+import { toArray } from '../src/features/indexing/discovery/discoveryIdentity.js';
 
 // ---------------------------------------------------------------------------
 // buildManufacturerPlanUrls
@@ -171,6 +172,27 @@ test('prioritizeQueryRows: manual/datasheet queries score higher', () => {
     { query: 'razer viper v3 manual pdf' }
   ], { brand: 'Razer', model: 'Viper V3' });
   assert.ok(ranked[0].query.includes('manual'));
+});
+
+test('prioritizeQueryRows: LLM planner queries outrank deterministic site: queries', () => {
+  const ranked = prioritizeQueryRows([
+    { query: 'razer viper v3 pro site:razer.com', sources: ['base_template'] },
+    { query: 'razer viper v3 pro sensor weight manual', sources: ['llm'] },
+  ], { brand: 'Razer', model: 'Viper V3' });
+  const llmRow = ranked.find((r) => toArray(r.sources).includes('llm'));
+  const siteRow = ranked.find((r) => r.query.includes('site:'));
+  assert.ok(llmRow.score > siteRow.score, `LLM score ${llmRow.score} should beat site: score ${siteRow.score}`);
+  assert.equal(ranked[0].query, llmRow.query, 'LLM query should rank first');
+});
+
+test('prioritizeQueryRows: uber source queries receive source bonus', () => {
+  const ranked = prioritizeQueryRows([
+    { query: 'razer viper v3 review', sources: ['base_template'] },
+    { query: 'razer viper v3 review', sources: ['uber'] },
+  ], { brand: 'Razer', model: 'Viper V3' });
+  const uberRow = ranked.find((r) => toArray(r.sources).includes('uber'));
+  const baseRow = ranked.find((r) => toArray(r.sources).includes('base_template'));
+  assert.ok(uberRow.score > baseRow.score, `uber score ${uberRow.score} should beat base score ${baseRow.score}`);
 });
 
 test('prioritizeQueryRows: targeted missing fields boost score', () => {

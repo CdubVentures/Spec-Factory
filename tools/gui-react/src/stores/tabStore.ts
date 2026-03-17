@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 
@@ -55,17 +56,24 @@ const noopStorage: StateStorage = {
   removeItem: (_name) => {},
 };
 
-function getSessionStorage() {
-  if (typeof window === 'undefined' || !window.sessionStorage) {
+function getLocalStorage() {
+  if (typeof window === 'undefined' || !window.localStorage) {
     return noopStorage;
   }
-  return window.sessionStorage;
+  return window.localStorage;
 }
 
-function readSessionStorageItem(name: string) {
-  if (typeof window === 'undefined' || !window.sessionStorage) return null;
+function readStorageItem(name: string) {
+  if (typeof window === 'undefined') return null;
   try {
-    return window.sessionStorage.getItem(name);
+    const local = window.localStorage?.getItem(name) ?? null;
+    if (local) return local;
+    const session = window.sessionStorage?.getItem(name) ?? null;
+    if (session) {
+      window.localStorage?.setItem(name, session);
+      window.sessionStorage?.removeItem(name);
+    }
+    return session;
   } catch {
     return null;
   }
@@ -73,7 +81,7 @@ function readSessionStorageItem(name: string) {
 
 function loadInitialTabValues(): Record<string, string | null> {
   try {
-    const raw = readSessionStorageItem(TAB_STORAGE_KEY);
+    const raw = readStorageItem(TAB_STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     if (parsed?.state?.values && typeof parsed.state.values === 'object') {
@@ -84,7 +92,7 @@ function loadInitialTabValues(): Record<string, string | null> {
 }
 
 const initialTabValues = loadInitialTabValues();
-const storage = createJSONStorage(() => getSessionStorage());
+const storage = createJSONStorage(() => getLocalStorage());
 
 export const useTabStore = create<TabStoreState>()(
   persist(
@@ -144,4 +152,80 @@ export function usePersistedNullableTab<T extends string>(
     validValues: options.validValues,
   });
   return [value, (next: T | null) => setFn(key, next)];
+}
+
+/* ── Expand Map ────────────────────────────────────────────────────── */
+
+export function resolvePersistedExpandMap({
+  storedValue,
+  defaultValue = {},
+}: {
+  storedValue: string | null | undefined;
+  defaultValue?: Record<string, boolean>;
+}): Record<string, boolean> {
+  if (typeof storedValue !== 'string') return defaultValue;
+  try {
+    const parsed: unknown = JSON.parse(storedValue);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return defaultValue;
+    const result: Record<string, boolean> = {};
+    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof v === 'boolean') result[k] = v;
+    }
+    return result;
+  } catch {
+    return defaultValue;
+  }
+}
+
+export function usePersistedExpandMap(
+  key: string,
+  defaultValue: Record<string, boolean> = {},
+): [Record<string, boolean>, (id: string) => void, (next: Record<string, boolean>) => void] {
+  const storedValue = useTabStore((s) => s.values[key]);
+  const setFn = useTabStore((s) => s.set);
+
+  const value = resolvePersistedExpandMap({ storedValue, defaultValue });
+
+  const toggle = useCallback((id: string) => {
+    const currentRaw = useTabStore.getState().values[key];
+    const current = resolvePersistedExpandMap({ storedValue: currentRaw, defaultValue });
+    const next = { ...current, [id]: !current[id] };
+    setFn(key, JSON.stringify(next));
+  }, [key, defaultValue, setFn]);
+
+  const replace = useCallback((next: Record<string, boolean>) => {
+    setFn(key, JSON.stringify(next));
+  }, [key, setFn]);
+
+  return [value, toggle, replace];
+}
+
+/* ── Persisted Number ──────────────────────────────────────────────── */
+
+export function resolvePersistedNumber({
+  storedValue,
+  defaultValue,
+}: {
+  storedValue: string | null | undefined;
+  defaultValue: number;
+}): number {
+  if (typeof storedValue !== 'string' || storedValue === '') return defaultValue;
+  const num = Number(storedValue);
+  return Number.isFinite(num) ? num : defaultValue;
+}
+
+export function usePersistedNumber(
+  key: string,
+  defaultValue: number,
+): [number, (value: number) => void] {
+  const storedValue = useTabStore((s) => s.values[key]);
+  const setFn = useTabStore((s) => s.set);
+
+  const value = resolvePersistedNumber({ storedValue, defaultValue });
+
+  const setter = useCallback((next: number) => {
+    setFn(key, String(next));
+  }, [key, setFn]);
+
+  return [value, setter];
 }

@@ -70,6 +70,12 @@ export function createIndexingMetricsHandler({
         token_defaults: roleTokenDefaults,
         fallback_defaults: fallbackDefaults,
         routing_snapshot: llmRoutingSnapshot(config),
+        resolved_api_keys: {
+          geminiApiKey: String(config.geminiApiKey || config.llmPlanApiKey || '').trim(),
+          deepseekApiKey: String(config.deepseekApiKey || '').trim(),
+          anthropicApiKey: String(config.anthropicApiKey || '').trim(),
+          openaiApiKey: String(config.openaiApiKey || '').trim(),
+        },
         model_options: models,
         token_presets: Array.isArray(config.llmOutputTokenPresets)
           ? config.llmOutputTokenPresets.map((value) => toInt(value, 0)).filter((value) => value > 0)

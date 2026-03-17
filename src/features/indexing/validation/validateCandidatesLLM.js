@@ -280,6 +280,7 @@ export async function validateCandidatesLLM({
       config,
       reason: 'validate',
       role: 'validate',
+      modelOverride: config._resolvedValidateBaseModel || '',
       system: [
         'You validate uncertain hardware fields against evidence and constraints.',
         'Return JSON only.',

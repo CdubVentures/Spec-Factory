@@ -41,42 +41,42 @@ export const LlmModelCatalogSection = memo(function LlmModelCatalogSection({
 
       {entries.length === 0 ? (
         <div
-          className="sf-card text-center py-8"
-          style={{ color: 'var(--sf-muted)' }}
+          className="sf-surface-card text-center"
+          style={{ padding: 'var(--sf-space-8)', color: 'var(--sf-muted)' }}
         >
           <p className="sf-text-label">No models registered across any provider.</p>
         </div>
       ) : (
-        <div className="sf-table-wrap">
-          <table className="sf-table">
-            <thead>
+        <div className="sf-table-shell" style={{ overflow: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead className="sf-table-head">
               <tr>
-                <th className="sf-table-th">Provider</th>
-                <th className="sf-table-th">Model ID</th>
-                <th className="sf-table-th">Role</th>
-                <th className="sf-table-th">Ctx Tokens</th>
-                <th className="sf-table-th">Out Tokens</th>
-                <th className="sf-table-th">In $/1M</th>
-                <th className="sf-table-th">Out $/1M</th>
-                <th className="sf-table-th">Cache $/1M</th>
+                <th className="sf-table-head-cell">Provider</th>
+                <th className="sf-table-head-cell">Model ID</th>
+                <th className="sf-table-head-cell">Role</th>
+                <th className="sf-table-head-cell">Ctx Tokens</th>
+                <th className="sf-table-head-cell">Out Tokens</th>
+                <th className="sf-table-head-cell">In $/1M</th>
+                <th className="sf-table-head-cell">Out $/1M</th>
+                <th className="sf-table-head-cell">Cache $/1M</th>
               </tr>
             </thead>
             <tbody>
               {entries.map((entry, idx) => {
                 return (
-                  <tr key={`${entry.providerId}-${entry.modelId}-${idx}`}>
-                    <td className="sf-table-cell">{entry.providerName || '--'}</td>
-                    <td className="sf-table-cell">
+                  <tr key={`${entry.providerId}-${entry.modelId}-${idx}`} className="sf-table-row">
+                    <td style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>{entry.providerName || '--'}</td>
+                    <td style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>
                       <span className="font-medium">{entry.modelId}</span>
                     </td>
-                    <td className="sf-table-cell">
+                    <td style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>
                       <ModelRoleBadge role={entry.role} />
                     </td>
-                    <td className="sf-table-cell">{formatTokens(entry.maxContextTokens)}</td>
-                    <td className="sf-table-cell">{formatTokens(entry.maxOutputTokens)}</td>
-                    <td className="sf-table-cell">{formatCost(entry.costInputPer1M)}</td>
-                    <td className="sf-table-cell">{formatCost(entry.costOutputPer1M)}</td>
-                    <td className="sf-table-cell">{formatCost(entry.costCachedPer1M)}</td>
+                    <td style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>{formatTokens(entry.maxContextTokens)}</td>
+                    <td style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>{formatTokens(entry.maxOutputTokens)}</td>
+                    <td style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>{formatCost(entry.costInputPer1M)}</td>
+                    <td style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>{formatCost(entry.costOutputPer1M)}</td>
+                    <td style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>{formatCost(entry.costCachedPer1M)}</td>
                   </tr>
                 );
               })}

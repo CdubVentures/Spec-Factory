@@ -361,86 +361,17 @@ function inferEvalBenchHostPortFromCompose(composePath) {
   return Number.isFinite(hostPort) ? hostPort : null;
 }
 
-function inferCortexAsyncBaseUrl(envVars = {}) {
-  const fromEnv = normalizeUrl(envVars.CORTEX_ASYNC_BASE_URL, '');
-  if (fromEnv) {
-    return {
-      url: fromEnv,
-      source: 'env',
-      composeFile: ''
-    };
-  }
-
-  const composeFile = resolveChatmockComposeFile(envVars);
-  const hostPort = inferEvalBenchHostPortFromCompose(composeFile);
-  if (!hostPort) {
-    return {
-      url: '',
-      source: '',
-      composeFile: composeFile || ''
-    };
-  }
-  return {
-    url: `http://localhost:${hostPort}/api`,
-    source: 'chatmock_compose',
-    composeFile
-  };
-}
-
-export function resolveCortexAsyncBaseUrl(envVars = {}) {
-  const meta = inferCortexAsyncBaseUrl(envVars);
-  return {
-    url: meta.url || '',
-    source: meta.source || '',
-    compose_file: meta.composeFile || ''
-  };
-}
-
 export function buildServiceTargets(envVars = {}) {
   const targets = [];
-  const cortexEnabled = parseBool(envVars.CORTEX_ENABLED, false);
-  const asyncEnabledExplicit = hasOwn(envVars, 'CORTEX_ASYNC_ENABLED');
-  const cortexAsyncEnabled = parseBool(envVars.CORTEX_ASYNC_ENABLED, false);
-  const asyncDisabledExplicit = asyncEnabledExplicit && !cortexAsyncEnabled;
-  const asyncUrlMeta = inferCortexAsyncBaseUrl(envVars);
-  const asyncUrl = normalizeUrl(asyncUrlMeta.url, '');
-  let asyncPort = 4000;
-  if (asyncUrl) {
-    try {
-      asyncPort = hostAndPort(asyncUrl, 4000).port;
-    } catch {
-      asyncPort = 4000;
-    }
-  }
-  const asyncConfigured = !asyncDisabledExplicit &&
-    Boolean(asyncUrl) &&
-    (
-      cortexAsyncEnabled ||
-      hasOwn(envVars, 'CORTEX_ASYNC_BASE_URL') ||
-      asyncUrlMeta.source === 'chatmock_compose'
-    );
 
-  if (Boolean(envVars.LLM_API_KEY || envVars.LLM_BASE_URL) || cortexEnabled) {
+  if (Boolean(envVars.LLM_API_KEY || envVars.LLM_BASE_URL)) {
     targets.push({
       id: 'svc_llm_sync',
       category: 'services',
-      name: 'LLM/Cortex Sync Endpoint',
-      url: normalizeUrl(envVars.CORTEX_BASE_URL || envVars.LLM_BASE_URL, 'http://localhost:5001/v1'),
+      name: 'LLM Sync Endpoint',
+      url: normalizeUrl(envVars.LLM_BASE_URL, 'http://localhost:5001/v1'),
       fallbackPort: 5001,
       required: true
-    });
-  }
-
-  if (cortexEnabled && asyncConfigured) {
-    targets.push({
-      id: 'svc_cortex_async',
-      category: 'services',
-      name: 'Cortex Async Endpoint (optional)',
-      url: asyncUrl,
-      fallbackPort: asyncPort,
-      required: false,
-      source: asyncUrlMeta.source || 'default',
-      compose_file: asyncUrlMeta.composeFile || ''
     });
   }
 
@@ -559,8 +490,8 @@ async function waitForService(url, fallbackPort, timeoutMs = 90_000) {
   return false;
 }
 
-function resolveCortexSyncEndpoint(envVars = {}) {
-  const url = normalizeUrl(envVars.CORTEX_BASE_URL || envVars.LLM_BASE_URL, 'http://localhost:5001/v1');
+function resolveLlmSyncEndpoint(envVars = {}) {
+  const url = normalizeUrl(envVars.LLM_BASE_URL, 'http://localhost:5001/v1');
   let port = 5001;
   try {
     port = hostAndPort(url, 5001).port;
@@ -576,13 +507,7 @@ function resolveChatmockUiUrl(envVars = {}) {
     return explicit;
   }
 
-  const asyncMeta = inferCortexAsyncBaseUrl(envVars);
-  const asyncUrl = normalizeUrl(asyncMeta.url, '');
-  if (asyncUrl) {
-    return asyncUrl.replace(/\/api$/i, '');
-  }
-
-  const sync = resolveCortexSyncEndpoint(envVars).url;
+  const sync = resolveLlmSyncEndpoint(envVars).url;
   if (sync) {
     return sync.replace(/\/v1$/i, '');
   }
@@ -621,26 +546,11 @@ export async function startChatmockEvalBenchStack({
     throw new Error(`docker compose up failed (${up.error || up.code})`);
   }
 
-  const sync = resolveCortexSyncEndpoint(env);
-  const asyncMeta = inferCortexAsyncBaseUrl(env);
-  const asyncUrl = normalizeUrl(asyncMeta.url, '');
-  const asyncEnabled = parseBool(env.CORTEX_ASYNC_ENABLED, false)
-    || hasOwn(env, 'CORTEX_ASYNC_BASE_URL')
-    || asyncMeta.source === 'chatmock_compose';
-  let asyncPort = 4000;
-  if (asyncUrl) {
-    try {
-      asyncPort = hostAndPort(asyncUrl, 4000).port;
-    } catch {
-      asyncPort = 4000;
-    }
-  }
+  const sync = resolveLlmSyncEndpoint(env);
 
   const readiness = {
     sync_url: sync.url,
-    sync_ready: false,
-    async_url: asyncEnabled ? asyncUrl : '',
-    async_ready: false
+    sync_ready: false
   };
 
   if (waitForReady) {
@@ -650,16 +560,6 @@ export async function startChatmockEvalBenchStack({
     readiness.sync_ready = await waitForService(sync.url, sync.port, 120_000);
     if (!readiness.sync_ready && onLine) {
       onLine('ChatMock sync endpoint did not become ready in time.');
-    }
-
-    if (asyncEnabled && asyncUrl) {
-      if (onLine) {
-        onLine(`Waiting for async endpoint: ${asyncUrl}`);
-      }
-      readiness.async_ready = await waitForService(asyncUrl, asyncPort, 120_000);
-      if (!readiness.async_ready && onLine) {
-        onLine('ChatMock async endpoint did not become ready in time.');
-      }
     }
   }
 
@@ -686,7 +586,7 @@ async function maybeAutoStartChatmockStack({ root, envVars = {}, onLine = null }
   }
 
   if (onLine) {
-    onLine('LLM/Cortex sync endpoint is down. Attempting ChatMock stack start...');
+    onLine('LLM sync endpoint is down. Attempting ChatMock stack start...');
   }
 
   try {
@@ -822,11 +722,9 @@ function endpointActionForTarget({
       action_kind: 'launch'
     };
   }
-  if ((target.id === 'svc_llm_sync' || target.id === 'svc_cortex_async') && chatmockComposePath) {
+  if (target.id === 'svc_llm_sync' && chatmockComposePath) {
     if (reachable) {
-      const hasAsyncTarget = allTargets.some((row) => row.id === 'svc_cortex_async');
-      const exposeUiAction = target.id === 'svc_cortex_async' || !hasAsyncTarget;
-      if (exposeUiAction && resolveChatmockUiUrl(envVars)) {
+      if (resolveChatmockUiUrl(envVars)) {
         return {
           action_id: 'open_chatmock_ui',
           action_label: 'Open ChatMock UI',
@@ -896,10 +794,10 @@ export async function runEndpointChecks({ envVars = {}, strictServices = false, 
   let requiredFailures = 0;
 
   const chatmockTargets = targets.filter(
-    (target) => target.id === 'svc_llm_sync' || target.id === 'svc_cortex_async'
+    (target) => target.id === 'svc_llm_sync'
   );
   const otherTargets = targets.filter(
-    (target) => target.id !== 'svc_llm_sync' && target.id !== 'svc_cortex_async'
+    (target) => target.id !== 'svc_llm_sync'
   );
 
   for (const target of otherTargets) {
@@ -951,7 +849,6 @@ export async function runEndpointChecks({ envVars = {}, strictServices = false, 
 
   if (chatmockTargets.length > 0) {
     const syncTarget = chatmockTargets.find((target) => target.id === 'svc_llm_sync') || null;
-    const asyncTarget = chatmockTargets.find((target) => target.id === 'svc_cortex_async') || null;
 
     let syncResult = null;
     if (syncTarget) {
@@ -962,18 +859,8 @@ export async function runEndpointChecks({ envVars = {}, strictServices = false, 
       }
     }
 
-    let asyncResult = null;
-    if (asyncTarget) {
-      asyncResult = await checkSocket(asyncTarget.url, asyncTarget.fallbackPort);
-      if (onLine) {
-        const level = asyncResult.ok ? 'ok' : 'warn';
-        onLine(`[${level}] ${asyncTarget.name} ${asyncResult.ok ? '->' : 'not reachable ('}${asyncResult.host}:${asyncResult.port}${asyncResult.ok ? '' : `, ${asyncResult.error})`}`);
-      }
-    }
-
     const syncReady = Boolean(syncResult?.ok);
-    const asyncReady = Boolean(asyncResult?.ok);
-    const requiredReady = syncTarget ? syncReady : asyncReady;
+    const requiredReady = syncReady;
     const syncStrictFailure = Boolean(syncTarget && !syncReady && strictServices && syncTarget.required);
     if (syncStrictFailure) {
       requiredFailures += 1;
@@ -982,12 +869,6 @@ export async function runEndpointChecks({ envVars = {}, strictServices = false, 
     const detailParts = [];
     if (syncTarget && syncResult) {
       detailParts.push(`sync ${syncResult.host}:${syncResult.port} (${syncResult.ok ? 'up' : (syncResult.error || 'down')})`);
-    }
-    if (asyncTarget && asyncResult) {
-      const asyncState = asyncResult.ok
-        ? 'up'
-        : `${asyncResult.error || 'down'}, optional`;
-      detailParts.push(`async ${asyncResult.host}:${asyncResult.port} (${asyncState})`);
     }
     if (chatmockComposePath) {
       detailParts.push(`compose ${chatmockComposePath}`);

@@ -28,6 +28,8 @@ import {
   resolveLlmTargetFields,
   toInt,
   stableHash,
+} from '../../features/indexing/orchestration/shared/index.js';
+import {
   createRunLlmRuntime,
   loadLearningStoreHintsForRun,
   createPlannerBootstrap,
@@ -35,9 +37,11 @@ import {
   runPlannerQueueSnapshotPhase,
   buildFetcherStartContext,
   runFetcherStartPhase,
+} from '../../features/indexing/orchestration/bootstrap/index.js';
+import {
   buildDiscoverySeedPlanContext,
   runDiscoverySeedPlan,
-} from '../../features/indexing/orchestration/index.js';
+} from '../../features/indexing/orchestration/discovery/index.js';
 import { createAdapterManager } from '../../adapters/index.js';
 import { DeterministicParser, ComponentResolver, retrieveGoldenExamples } from '../../features/indexing/extraction/index.js';
 import { loadSourceIntel } from '../../intel/sourceIntel.js';

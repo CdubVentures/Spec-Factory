@@ -251,8 +251,8 @@ export async function rerankSerpResults({
       role: 'plan',
       modelOverride: String(
         Boolean(config._resolvedSerpTriageUseReasoning ?? config.llmTriageUseReasoning)
-          ? (config._resolvedSerpTriageReasoningModel || config.llmModelReasoning || config._resolvedSerpTriageBaseModel || config.llmModelTriage || config.cortexModelRerankFast || config.cortexModelSearchFast || config.llmModelFast || config.llmPlanFallbackModel || '')
-          : (config._resolvedSerpTriageBaseModel || config.llmModelTriage || config.cortexModelRerankFast || config.cortexModelSearchFast || config.llmModelFast || config.llmPlanFallbackModel || '')
+          ? (config._resolvedSerpTriageReasoningModel || config.llmModelReasoning || config._resolvedSerpTriageBaseModel || config.llmModelTriage || config.llmModelFast || config.llmPlanFallbackModel || '')
+          : (config._resolvedSerpTriageBaseModel || config.llmModelTriage || config.llmModelFast || config.llmPlanFallbackModel || '')
       ).trim(),
       system: [
         'You rerank search results for evidence-first hardware spec extraction.',

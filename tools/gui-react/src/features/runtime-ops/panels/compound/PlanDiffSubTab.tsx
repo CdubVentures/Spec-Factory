@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../api/client';
+import { usePersistedTab } from '../../../../stores/tabStore';
 import type { PlanDiffResponse, PlanDiffWinner } from '../../types';
 
 interface PlanDiffSubTabProps {
@@ -27,8 +28,13 @@ export function PlanDiffSubTab({ runs, category }: PlanDiffSubTabProps) {
     [runs, category],
   );
 
-  const [run1Id, setRun1Id] = useState(() => sortedRuns[1]?.run_id ?? '');
-  const [run2Id, setRun2Id] = useState(() => sortedRuns[0]?.run_id ?? '');
+  const runIds = useMemo(
+    () => sortedRuns.map((r) => r.run_id),
+    [sortedRuns],
+  );
+
+  const [run1Id, setRun1Id] = usePersistedTab(`runtimeOps:planDiff:run1:${category}`, sortedRuns[1]?.run_id ?? '', { validValues: runIds });
+  const [run2Id, setRun2Id] = usePersistedTab(`runtimeOps:planDiff:run2:${category}`, sortedRuns[0]?.run_id ?? '', { validValues: runIds });
 
   const canFetch = Boolean(run1Id && run2Id && run1Id !== run2Id);
 

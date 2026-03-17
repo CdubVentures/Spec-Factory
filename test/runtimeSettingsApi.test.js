@@ -281,7 +281,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   });
 
   await t.test('PUT persists runtime settings to canonical user-settings snapshot', async () => {
-    const payload = { llmModelExtract: 'test-persist-model-xyz', fetchConcurrency: 7, perHostMinDelayMs: 1234 };
+    const payload = { llmModelPlan: 'test-persist-model-xyz', fetchConcurrency: 7, perHostMinDelayMs: 1234 };
     const putRes = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -289,7 +289,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     });
     assert.equal(putRes.status, 200);
     const putBody = await putRes.json();
-    assert.equal(putBody.applied.llmModelExtract, 'test-persist-model-xyz');
+    assert.equal(putBody.applied.llmModelPlan, 'test-persist-model-xyz');
     assert.equal(putBody.applied.fetchConcurrency, 7);
     assert.equal(putBody.applied.perHostMinDelayMs, 1234);
 
@@ -301,13 +301,13 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       (json) => (
         json
         && json.runtime
-        && json.runtime.llmModelExtract === 'test-persist-model-xyz'
+        && json.runtime.llmModelPlan === 'test-persist-model-xyz'
         && json.runtime.concurrency === 7
         && json.runtime.perHostMinDelayMs === 1234
       ),
       8_000,
     );
-    assert.equal(userSettings.runtime.llmModelExtract, 'test-persist-model-xyz');
+    assert.equal(userSettings.runtime.llmModelPlan, 'test-persist-model-xyz');
     assert.equal(userSettings.runtime.concurrency, 7);
     assert.equal(userSettings.runtime.perHostMinDelayMs, 1234);
 

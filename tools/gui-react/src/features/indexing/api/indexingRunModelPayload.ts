@@ -17,7 +17,12 @@ export interface BuildIndexingRunModelPayloadInput {
   llmModelWrite: string;
   llmMaxOutputTokensWrite: number;
   llmPlanFallbackModel: string;
+  llmReasoningFallbackModel: string;
+  llmExtractFallbackModel: string;
+  llmValidateFallbackModel: string;
+  llmWriteFallbackModel: string;
   llmMaxOutputTokensPlanFallback: number;
+  llmMaxOutputTokensReasoningFallback: number;
   llmMaxOutputTokensExtractFallback: number;
   llmMaxOutputTokensValidateFallback: number;
   llmMaxOutputTokensWriteFallback: number;
@@ -44,7 +49,12 @@ export function buildIndexingRunModelPayload(
     llmModelWrite: input.llmModelWrite,
     llmMaxOutputTokensWrite: input.llmMaxOutputTokensWrite,
     llmPlanFallbackModel: input.llmPlanFallbackModel,
+    llmReasoningFallbackModel: input.llmReasoningFallbackModel,
+    llmExtractFallbackModel: input.llmExtractFallbackModel,
+    llmValidateFallbackModel: input.llmValidateFallbackModel,
+    llmWriteFallbackModel: input.llmWriteFallbackModel,
     llmMaxOutputTokensPlanFallback: input.llmMaxOutputTokensPlanFallback,
+    llmMaxOutputTokensReasoningFallback: input.llmMaxOutputTokensReasoningFallback,
     llmMaxOutputTokensExtractFallback: input.llmMaxOutputTokensExtractFallback,
     llmMaxOutputTokensValidateFallback: input.llmMaxOutputTokensValidateFallback,
     llmMaxOutputTokensWriteFallback: input.llmMaxOutputTokensWriteFallback,

@@ -90,3 +90,24 @@ test('resolveEnumConsistencyFormatGuidance infers placeholder template from cano
   assert.ok(guidance.includes('XXXX zone (YYYY)'));
   assert.ok(guidance.includes('Placeholder convention'));
 });
+
+// ---------------------------------------------------------------------------
+// Gap 1A: onUsage + costRates forwarding contract
+// ---------------------------------------------------------------------------
+
+test('runEnumConsistencyReview accepts onUsage and costRates params without error', async () => {
+  const usageCalls = [];
+  const result = await runEnumConsistencyReview({
+    fieldKey: 'lighting',
+    enumPolicy: 'open',
+    canonicalValues: ['RGB LED'],
+    pendingValues: ['Rgb Led'],
+    config: {},
+    onUsage: (row) => usageCalls.push(row),
+    costRates: { llmCostInputPer1M: 1, llmCostOutputPer1M: 2, llmCostCachedInputPer1M: 0.5 },
+  });
+
+  // LLM not called (no API key), but function should accept the new params cleanly
+  assert.equal(result.enabled, false);
+  assert.equal(result.skipped_reason, 'missing_api_key');
+});

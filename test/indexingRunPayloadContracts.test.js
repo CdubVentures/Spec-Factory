@@ -120,9 +120,6 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       llmMaxOutputTokensExtractFallback: '136',
       llmMaxOutputTokensValidateFallback: '137',
       llmMaxOutputTokensWriteFallback: '138',
-      cortexEnabled: true,
-      cortexBaseUrl: '  https://cortex.example.test  ',
-      cortexModelFast: '  cortex-fast  ',
     }),
     parsedValues: createParsedValues({
       parsedConcurrency: 7,
@@ -179,15 +176,6 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       parsedLlmReasoningBudget: 0,
       parsedLlmMonthlyBudgetUsd: -1,
       parsedLlmPerProductBudgetUsd: -1,
-      parsedCortexSyncTimeoutMs: 0,
-      parsedCortexAsyncPollIntervalMs: 0,
-      parsedCortexAsyncMaxWaitMs: 0,
-      parsedCortexEnsureReadyTimeoutMs: 0,
-      parsedCortexStartReadyTimeoutMs: 0,
-      parsedCortexFailureThreshold: 0,
-      parsedCortexCircuitOpenMs: 0,
-      parsedCortexEscalateConfidenceLt: 1.5,
-      parsedCortexMaxDeepFieldsPerProduct: 0,
     }),
     runControlPayload: {
       reviewMode: true,
@@ -223,10 +211,6 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
   assert.equal(payload.llmModelPlan, 'gpt-plan');
   assert.equal(payload.llmMaxOutputTokensPlan, 128);
   assert.equal(payload.llmPlanFallbackModel, 'gpt-plan-fallback');
-
-  assert.equal(payload.cortexBaseUrl, 'https://cortex.example.test');
-  assert.equal(payload.cortexFailureThreshold, 1);
-  assert.equal(payload.cortexEscalateConfidenceLt, 1);
 
   assert.equal(payload.reviewMode, true);
 });

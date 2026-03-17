@@ -1,4 +1,5 @@
-import { resolveIndexingResumeKey, toInt, filterResumeSeedUrls } from '../../features/indexing/orchestration/index.js';
+import { resolveIndexingResumeKey, toInt } from '../../features/indexing/orchestration/shared/index.js';
+import { filterResumeSeedUrls } from '../../features/indexing/orchestration/bootstrap/index.js';
 import {
   normalizeResumeMode,
   isResumeStateFresh,

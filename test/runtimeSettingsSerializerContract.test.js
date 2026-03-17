@@ -51,6 +51,20 @@ async function loadRuntimeSettingsDomain() {
   return runtimeSettingsDomainModulePromise;
 }
 
+// WHY: Per-role token cap keys remain in the PUT intRangeMap (clamping ranges)
+// for backward compatibility, but the frontend serializer no longer emits them
+// after the LLM model stack simplification. Exclude from the coverage check.
+const SERIALIZER_EXCLUDED_PUT_KEYS = new Set([
+  'llmMaxOutputTokensTriage',
+  'llmMaxOutputTokensFast',
+  'llmMaxOutputTokensExtract',
+  'llmMaxOutputTokensValidate',
+  'llmMaxOutputTokensWrite',
+  'llmMaxOutputTokensExtractFallback',
+  'llmMaxOutputTokensValidateFallback',
+  'llmMaxOutputTokensWriteFallback',
+]);
+
 function getRuntimePutFrontendKeys() {
   return new Set([
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.stringEnumMap || {}),
@@ -59,7 +73,7 @@ function getRuntimePutFrontendKeys() {
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap || {}),
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.boolMap || {}),
     String(RUNTIME_SETTINGS_ROUTE_PUT.dynamicFetchPolicyMapJsonKey || 'dynamicFetchPolicyMapJson'),
-  ]);
+  ].filter((key) => !SERIALIZER_EXCLUDED_PUT_KEYS.has(key)));
 }
 
 function createNumericBaseline(fallback = 11) {
@@ -76,13 +90,9 @@ function createSerializerInput(overrides = {}) {
     searxngBaseUrl: '  https://example.test/search  ',
     llmPlanApiKey: '  key-live  ',
     llmModelPlan: 'gpt-plan',
-    llmModelTriage: 'gpt-triage',
-    llmModelFast: 'gpt-fast',
     llmModelReasoning: 'gpt-reasoning',
-    llmModelExtract: 'gpt-extract',
-    llmModelValidate: 'gpt-validate',
-    llmModelWrite: 'gpt-write',
     llmPlanFallbackModel: 'gpt-plan-fallback',
+    llmReasoningFallbackModel: 'gpt-reasoning-fallback',
     runtimeSettingsFallbackBaseline: createNumericBaseline(),
     resolveModelTokenDefaults: () => ({
       default_output_tokens: 4096,

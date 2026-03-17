@@ -307,7 +307,9 @@ export function prioritizeQueryRows(rows = [], variables = {}, missingFields = [
       .filter(Boolean);
     const targetedMissingCount = targetFields.filter((field) => missingFieldSet.has(field)).length;
     let score = 0;
-    if (text.includes('site:')) score += 6;
+    if (text.includes('site:')) score += 1;
+    const sources = toArray(row?.sources);
+    if (sources.includes('llm') || sources.includes('uber')) score += 8;
     if (/manual|datasheet|support|spec|technical|pdf/.test(text)) score += 5;
     if (brandToken && text.includes(brandToken)) score += 3;
     if (brand && text.includes(brand)) score += 2;

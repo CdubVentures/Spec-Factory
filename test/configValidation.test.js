@@ -92,11 +92,6 @@ test('C.1 config defaults: indexing helper files disabled by default', () => {
   assert.equal(config.indexingCategoryAuthorityEnabled, false);
 });
 
-test('C.1 config defaults: cortex disabled by default', () => {
-  const config = loadConfig();
-  assert.equal(config.cortexEnabled, false);
-});
-
 // =========================================================================
 // SECTION 2: Config validation detects misconfigurations
 // =========================================================================
@@ -113,13 +108,6 @@ test('C.1 validate: no search provider emits warning', () => {
   const config = loadConfig({ searchProvider: 'none' });
   const result = validateConfig(config);
   assert.ok(result.warnings.some((w) => w.code === 'DISCOVERY_NO_SEARCH_PROVIDER'));
-});
-
-test('C.1 validate: cortex enabled without base URL is error', () => {
-  const config = loadConfig({ cortexEnabled: true, cortexBaseUrl: '' });
-  const result = validateConfig(config);
-  assert.equal(result.valid, false);
-  assert.ok(result.errors.some((e) => e.code === 'CORTEX_NO_BASE_URL'));
 });
 
 test('C.1 validate: budget guards disabled is warning', () => {

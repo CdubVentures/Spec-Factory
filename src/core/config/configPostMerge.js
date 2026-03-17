@@ -3,6 +3,7 @@
 // Clamping ranges derive from shared SSOT (settingsClampingRanges).
 
 import { inferLlmProvider } from './llmModelResolver.js';
+import { buildRegistryLookup } from '../llm/routeResolver.js';
 import {
   normalizeModelPricingMap,
   normalizePricingSources,
@@ -91,11 +92,20 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   merged.llmBaseUrl = merged.llmBaseUrl || merged.openaiBaseUrl;
   merged.llmModelExtract = merged.llmModelExtract || merged.openaiModelExtract;
   merged.llmModelPlan = merged.llmModelPlan || merged.openaiModelPlan;
-  merged.llmModelFast = merged.llmModelFast || merged.llmModelExtract || merged.llmModelPlan;
-  merged.llmModelTriage = merged.llmModelTriage || merged.cortexModelRerankFast || merged.cortexModelSearchFast || merged.llmModelFast;
-  merged.llmModelReasoning = merged.llmModelReasoning || merged.llmModelExtract;
-  merged.llmModelValidate = merged.llmModelValidate || merged.openaiModelWrite;
-  merged.llmModelWrite = merged.llmModelWrite || merged.llmModelValidate;
+  // WHY: Model stack simplified — one base model, one reasoning model.
+  // Per-role keys are aliases for backward compat. Phase overrides
+  // still allow per-phase model selection via llmPhaseOverridesJson.
+  merged.llmModelReasoning = merged.llmModelReasoning || merged.llmModelPlan;
+  merged.llmModelTriage = merged.llmModelPlan;
+  merged.llmModelFast = merged.llmModelPlan;
+  merged.llmModelExtract = merged.llmModelPlan;
+  merged.llmModelValidate = merged.llmModelPlan;
+  merged.llmModelWrite = merged.llmModelPlan;
+
+  // Fallback aliases — one base fallback, one reasoning fallback
+  merged.llmExtractFallbackModel = merged.llmPlanFallbackModel;
+  merged.llmValidateFallbackModel = merged.llmPlanFallbackModel;
+  merged.llmWriteFallbackModel = merged.llmPlanFallbackModel;
 
   // --- Normalizer calls ---
   merged.staticDomMode = normalizeStaticDomMode(merged.staticDomMode, 'cheerio');
@@ -127,8 +137,6 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   merged.llmWriteProvider = merged.llmWriteProvider || merged.llmProvider;
   merged.llmWriteBaseUrl = merged.llmWriteBaseUrl || merged.llmBaseUrl;
   merged.llmWriteApiKey = merged.llmWriteApiKey || merged.llmApiKey;
-  merged.cortexModelRerankFast = merged.cortexModelRerankFast || merged.cortexModelSearchFast || merged.llmModelTriage || merged.llmModelFast;
-
   // --- Pricing map + token normalization ---
   merged.llmModelPricingMap = normalizeModelPricingMap(
     mergeModelPricingMaps(buildDefaultModelPricingMap(), merged.llmModelPricingMap || {})
@@ -153,6 +161,16 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   merged.llmMaxOutputTokensExtractFallback = toTokenInt(merged.llmMaxOutputTokensExtractFallback, merged.llmMaxOutputTokensExtract);
   merged.llmMaxOutputTokensValidateFallback = toTokenInt(merged.llmMaxOutputTokensValidateFallback, merged.llmMaxOutputTokensValidate);
   merged.llmMaxOutputTokensWriteFallback = toTokenInt(merged.llmMaxOutputTokensWriteFallback, merged.llmMaxOutputTokensWrite);
+
+  // Token cap aliases — all roles use plan caps
+  merged.llmMaxOutputTokensTriage = merged.llmMaxOutputTokensPlan;
+  merged.llmMaxOutputTokensFast = merged.llmMaxOutputTokensPlan;
+  merged.llmMaxOutputTokensExtract = merged.llmMaxOutputTokensPlan;
+  merged.llmMaxOutputTokensValidate = merged.llmMaxOutputTokensPlan;
+  merged.llmMaxOutputTokensWrite = merged.llmMaxOutputTokensPlan;
+  merged.llmMaxOutputTokensExtractFallback = merged.llmMaxOutputTokensPlanFallback;
+  merged.llmMaxOutputTokensValidateFallback = merged.llmMaxOutputTokensPlanFallback;
+  merged.llmMaxOutputTokensWriteFallback = merged.llmMaxOutputTokensPlanFallback;
 
   // --- Token profile upserts ---
   const upsertTokenProfile = (modelName, defaults = {}) => {
@@ -207,6 +225,9 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
     merged.preferHttpFetcher = parseBoolEnv('PREFER_HTTP_FETCHER', merged.preferHttpFetcher);
   }
 
+  // WHY: registry lookup is SSOT for model→provider routing
+  merged._registryLookup = buildRegistryLookup(merged.llmProviderRegistryJson);
+
   resolvePhaseOverrides(merged);
 
   return merged;
@@ -224,11 +245,14 @@ function resolvePhaseOverrides(merged) {
   if (typeof overrides !== 'object' || Array.isArray(overrides)) overrides = {};
 
   const PHASE_DEFS = [
-    { id: 'needset', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-    { id: 'searchPlanner', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-    { id: 'brandResolver', globalModel: 'llmModelTriage', groupToggle: 'llmTriageUseReasoning', globalTokens: 'llmMaxOutputTokensTriage' },
-    { id: 'serpTriage', globalModel: 'llmModelTriage', groupToggle: 'llmTriageUseReasoning', globalTokens: 'llmMaxOutputTokensTriage' },
-    { id: 'domainClassifier', globalModel: 'llmModelTriage', groupToggle: 'llmTriageUseReasoning', globalTokens: 'llmMaxOutputTokensTriage' },
+    { id: 'needset',          globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+    { id: 'searchPlanner',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+    { id: 'brandResolver',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+    { id: 'serpTriage',       globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+    { id: 'domainClassifier', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+    { id: 'extraction',       globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+    { id: 'validate',         globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+    { id: 'write',            globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
   ];
 
   const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);

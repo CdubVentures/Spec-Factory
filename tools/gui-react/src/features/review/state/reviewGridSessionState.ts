@@ -9,6 +9,15 @@ export interface ReviewGridSessionState {
   selectedBrands: string[];
 }
 
+function getStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 function getSessionStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -78,10 +87,20 @@ export function parseReviewGridSessionState(raw: string | null | undefined): Rev
 }
 
 export function readReviewGridSessionState(category: string): ReviewGridSessionState {
-  const storage = getSessionStorage();
+  const storage = getStorage();
   if (!storage) return parseStateObject({});
+  const key = buildReviewGridSessionStorageKey(category);
   try {
-    const raw = storage.getItem(buildReviewGridSessionStorageKey(category));
+    let raw = storage.getItem(key);
+    if (!raw) {
+      const session = getSessionStorage();
+      const legacy = session?.getItem(key) ?? null;
+      if (legacy) {
+        storage.setItem(key, legacy);
+        session?.removeItem(key);
+        raw = legacy;
+      }
+    }
     return parseReviewGridSessionState(raw);
   } catch {
     return parseStateObject({});
@@ -89,7 +108,7 @@ export function readReviewGridSessionState(category: string): ReviewGridSessionS
 }
 
 export function writeReviewGridSessionState(category: string, state: ReviewGridSessionState): void {
-  const storage = getSessionStorage();
+  const storage = getStorage();
   if (!storage) return;
   try {
     const safeState = parseStateObject(state);

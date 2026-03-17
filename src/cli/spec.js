@@ -61,9 +61,6 @@ import { appendReviewSuggestion } from '../review/suggestions.js';
 import { buildBillingReport } from '../billing/costLedger.js';
 import { buildLearningReport } from '../features/indexing/learning/index.js';
 import { runLlmHealthCheck } from '../core/llm/client/healthCheck.js';
-import { CortexLifecycle } from '../core/llm/cortex/cortexLifecycle.js';
-import { buildCortexTaskPlan } from '../core/llm/cortex/cortexRouter.js';
-import { CortexClient } from '../core/llm/cortex/cortexClient.js';
 import {
   bootstrapExpansionCategories,
   parseExpansionCategories,
@@ -194,13 +191,6 @@ function usage() {
     '  learning-report --category <category> [--local]',
     '  explain-unk --category <category> --brand <brand> --model <model> [--variant <variant>] [--product-id <id>] [--local]',
     '  llm-health [--provider deepseek|openai|gemini] [--model <name>] [--local]',
-    '  cortex-start [--local]',
-    '  cortex-stop [--local]',
-    '  cortex-restart [--local]',
-    '  cortex-status [--local]',
-    '  cortex-ensure [--local]',
-    '  cortex-route-plan [--tasks-json <json>] [--context-json <json>] [--local]',
-    '  cortex-run-pass [--tasks-json <json>] [--context-json <json>] [--local]',
     '  test-s3 [--fixture <path>] [--s3key <key>] [--dry-run]',
     '  sources-plan --category <category> [--local]',
     '  sources-report --category <category> [--top <n>] [--top-paths <n>] [--local]',
@@ -1723,82 +1713,6 @@ function parseJsonArgSafe(name, value, fallback) {
   }
 }
 
-function createCortexLifecycle(config) {
-  return new CortexLifecycle({
-    CHATMOCK_DIR: config.chatmockDir,
-    CHATMOCK_COMPOSE_FILE: config.chatmockComposeFile,
-    CORTEX_BASE_URL: config.cortexBaseUrl,
-    CORTEX_AUTO_START: String(config.cortexAutoStart),
-    CORTEX_ENSURE_READY_TIMEOUT_MS: config.cortexEnsureReadyTimeoutMs,
-    CORTEX_START_READY_TIMEOUT_MS: config.cortexStartReadyTimeoutMs
-  });
-}
-
-async function commandCortexLifecycle(config, _storage, action) {
-  const lifecycle = createCortexLifecycle(config);
-  if (action === 'start') {
-    const result = await lifecycle.start();
-    return { command: 'cortex-start', ...result };
-  }
-  if (action === 'stop') {
-    const result = await lifecycle.stop();
-    return { command: 'cortex-stop', ...result };
-  }
-  if (action === 'restart') {
-    const result = await lifecycle.restart();
-    return { command: 'cortex-restart', ...result };
-  }
-  if (action === 'ensure') {
-    const result = await lifecycle.ensureRunning();
-    return { command: 'cortex-ensure', ...result };
-  }
-  const result = await lifecycle.status();
-  return { command: 'cortex-status', ...result };
-}
-
-async function commandCortexRoutePlan(config, _storage, args) {
-  const tasks = parseJsonArgSafe('tasks-json', args['tasks-json'], [
-    { id: 'audit-default', type: 'evidence_audit', critical: true },
-    { id: 'triage-default', type: 'conflict_resolution', critical: true }
-  ]);
-  const context = parseJsonArgSafe('context-json', args['context-json'], {
-    confidence: 0.9,
-    critical_conflicts_remain: false,
-    critical_gaps_remain: false,
-    evidence_audit_failed_on_critical: false
-  });
-  const plan = buildCortexTaskPlan({
-    tasks: Array.isArray(tasks) ? tasks : [],
-    context: (context && typeof context === 'object') ? context : {},
-    config
-  });
-  return {
-    command: 'cortex-route-plan',
-    ...plan
-  };
-}
-
-async function commandCortexRunPass(config, _storage, args) {
-  const tasks = parseJsonArgSafe('tasks-json', args['tasks-json'], [
-    { id: 'audit-default', type: 'evidence_audit', critical: true }
-  ]);
-  const context = parseJsonArgSafe('context-json', args['context-json'], {
-    confidence: 0.9,
-    critical_conflicts_remain: false,
-    critical_gaps_remain: false,
-    evidence_audit_failed_on_critical: false
-  });
-  const client = new CortexClient({ config });
-  const result = await client.runPass({
-    tasks: Array.isArray(tasks) ? tasks : [],
-    context: (context && typeof context === 'object') ? context : {}
-  });
-  return {
-    command: 'cortex-run-pass',
-    ...result
-  };
-}
-
 async function commandTestS3() {
   const output = await runS3Integration(process.argv.slice(3));
   return {
@@ -1885,13 +1799,6 @@ const dispatchCliCommand = createCliCommandDispatcher({
     'learning-report': ({ config, storage, args }) => commandLearningReport(config, storage, args),
     'explain-unk': ({ config, storage, args }) => commandExplainUnk(config, storage, args),
     'llm-health': ({ config, storage, args }) => commandLlmHealth(config, storage, args),
-    'cortex-start': ({ config, storage }) => commandCortexLifecycle(config, storage, 'start'),
-    'cortex-stop': ({ config, storage }) => commandCortexLifecycle(config, storage, 'stop'),
-    'cortex-restart': ({ config, storage }) => commandCortexLifecycle(config, storage, 'restart'),
-    'cortex-status': ({ config, storage }) => commandCortexLifecycle(config, storage, 'status'),
-    'cortex-ensure': ({ config, storage }) => commandCortexLifecycle(config, storage, 'ensure'),
-    'cortex-route-plan': ({ config, storage, args }) => commandCortexRoutePlan(config, storage, args),
-    'cortex-run-pass': ({ config, storage, args }) => commandCortexRunPass(config, storage, args),
     'test-s3': () => commandTestS3(),
     'sources-plan': ({ config, storage, args }) => commandSourcesPlan(config, storage, args),
     'sources-report': ({ config, storage, args }) => commandSourcesReport(config, storage, args),

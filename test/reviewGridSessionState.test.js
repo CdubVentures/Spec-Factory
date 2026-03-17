@@ -110,16 +110,29 @@ test('parseReviewGridSessionState sanitizes unknown mode values', async () => {
   });
 });
 
-test('read/write review grid session state round-trips via sessionStorage', async () => {
-  const storage = createSessionStorage();
-  const mod = await withWindowSessionStorage(storage, () => loadReviewGridSessionStateModule());
+test('read/write review grid session state round-trips via localStorage', async () => {
+  // Module migrated from sessionStorage → localStorage; mock must provide localStorage.
+  const localStorage = createSessionStorage();
+  const sessionStorage = createSessionStorage();
+  const withWindow = (run) => {
+    const prev = globalThis.window;
+    globalThis.window = { localStorage, sessionStorage };
+    try {
+      const result = run();
+      if (result && typeof result.then === 'function') return result.finally(() => { globalThis.window = prev; });
+      globalThis.window = prev;
+      return result;
+    } catch (err) { globalThis.window = prev; throw err; }
+  };
+
+  const mod = await withWindow(() => loadReviewGridSessionStateModule());
   const {
     buildReviewGridSessionStorageKey,
     readReviewGridSessionState,
     writeReviewGridSessionState,
   } = mod;
 
-  withWindowSessionStorage(storage, () => {
+  withWindow(() => {
     writeReviewGridSessionState('mouse', {
       sortMode: 'flags',
       showOnlyFlagged: true,
@@ -129,10 +142,10 @@ test('read/write review grid session state round-trips via sessionStorage', asyn
   });
 
   const key = buildReviewGridSessionStorageKey('mouse');
-  const raw = storage.getItem(key);
+  const raw = localStorage.getItem(key);
   assert.ok(typeof raw === 'string' && raw.length > 0, 'review grid state should be persisted');
 
-  const loaded = withWindowSessionStorage(storage, () => readReviewGridSessionState('mouse'));
+  const loaded = withWindow(() => readReviewGridSessionState('mouse'));
   assert.deepEqual(loaded, {
     sortMode: 'flags',
     showOnlyFlagged: true,

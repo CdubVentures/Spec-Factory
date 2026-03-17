@@ -1,299 +1,116 @@
 # Spec Factory Knobs Maintenance
 
-> **Purpose:** Preserve the live knob inventory snapshot and retired-knob history without treating this file as the canonical config surface.
+> **Purpose:** Track the current knob authority surfaces and verified inventory snapshots without treating this file as the canonical source of setting semantics.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../04-features/pipeline-and-runtime-settings.md](../04-features/pipeline-and-runtime-settings.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-17
 
-This is a supplemental maintenance log. The canonical current-state settings references remain `src/shared/settingsDefaults.js`, `src/core/config/manifest/index.js`, `src/config.js`, and the settings-authority contracts under `src/features/settings-authority/`.
-
-## Live Count Snapshot
-
-| Surface | Count | Evidence |
-|---------|-------|----------|
-| `SETTINGS_DEFAULTS.convergence` | 2 | `src/shared/settingsDefaults.js` |
-| `SETTINGS_DEFAULTS.runtime` | 260 | `src/shared/settingsDefaults.js` |
-| `SETTINGS_DEFAULTS.storage` | 7 | `src/shared/settingsDefaults.js` |
-| `SETTINGS_DEFAULTS.ui` | 6 | `src/shared/settingsDefaults.js` |
-| `SETTINGS_DEFAULTS.autosave` | 2 | `src/shared/settingsDefaults.js` |
-| **Total default keys** | **277** | flattened from `src/shared/settingsDefaults.js` |
-| Config manifest groups | 10 | `src/core/config/manifest/index.js` |
-| Config manifest env keys | 358 | flattened `CONFIG_MANIFEST_KEYS` from `src/core/config/manifest/index.js` |
+This log is supplemental. The canonical live definitions remain the source files that own defaults, manifests, contracts, and persistence behavior.
 
 ## Current Authority Surfaces
 
-| Surface | File | Role |
-|---------|------|------|
-| shared defaults | `src/shared/settingsDefaults.js` | canonical default values for runtime, convergence, storage, UI, and autosave |
-| env manifest | `src/core/config/manifest/index.js` | canonical env-backed key registry |
-| config assembly | `src/config.js` | merges env, manifest defaults, runtime defaults, and persisted settings |
-| settings contracts | `src/features/settings-authority/settingsContract.js` | exported runtime/convergence/UI/storage settings ownership |
-| frontend manifest typing | `tools/gui-react/src/stores/runtimeSettingsManifestTypes.ts` | GUI-facing runtime settings typing and manifest derivations |
-
-## Retirement History
-
-### Wave 1: Dead Convergence Loop And Legacy Knobs
-
-Removed on `2026-03-15`.
-
-The 13-phase convergence loop was removed and replaced by the collect-then-refine architecture. Convergence-loop knobs, needset cap knobs, lane-concurrency knobs tied to that loop, and legacy fallback-model knobs were retired because they controlled behavior that no longer exists.
-
-Representative removed keys:
-
-- `convergenceMaxRounds`
-- `convergenceNoProgressLimit`
-- `convergenceMaxLowQualityRounds`
-- `convergenceLowQualityConfidence`
-- `convergenceMaxDispatchQueries`
-- `convergenceMaxTargetFields`
-- `needsetEvidenceDecayDays`
-- `needsetEvidenceDecayFloor`
-- `needsetCapIdentityLocked`
-- `needsetCapIdentityProvisional`
-- `needsetCapIdentityConflict`
-- `needsetCapIdentityUnlocked`
-- `serpTriageEnabled`
-- `laneConcurrencySearch`
-- `laneConcurrencyFetch`
-- `laneConcurrencyParse`
-- `laneConcurrencyLlm`
-- `profile`
-
-### Wave 2: Aggressive / Uber Mode Knobs
-
-Removed on `2026-03-16`.
-
-Aggressive mode (`12` knobs) and uber-aggressive mode (`4` knobs) were escalation ladders for the older convergence pipeline. Both modes were already effectively hardcoded on in the live runtime, so the toggles were redundant. Their removal bakes the always-on behavior into the remaining implementation and removes the user-visible "mode" concept.
-
-Aggressive keys removed:
-
-- `aggressiveModeEnabled`
-- `aggressiveConfidenceThreshold`
-- `aggressiveMaxSearchQueries`
-- `aggressiveEvidenceAuditEnabled`
-- `aggressiveEvidenceAuditBatchSize`
-- `aggressiveMaxTimePerProductMs`
-- `aggressiveThoroughFromRound`
-- `aggressiveRound1MaxUrls`
-- `aggressiveRound1MaxCandidateUrls`
-- `aggressiveLlmTargetMaxFields`
-- `aggressiveLlmDiscoveryPasses`
-- `aggressiveLlmDiscoveryQueryCap`
-
-Uber keys removed:
-
-- `uberAggressiveEnabled`
-- `uberMaxRounds`
-- `uberMaxUrlsPerProduct`
-- `uberMaxUrlsPerDomain`
-
-Manifest-only dead entries removed at the same time:
-
-- `AGGRESSIVE_LLM_MAX_CALLS_PER_ROUND`
-- `AGGRESSIVE_LLM_MAX_CALLS_PER_PRODUCT_TOTAL`
-
-### Wave 3: Manufacturer Settings Knobs
-
-Removed on `2026-03-16`.
-
-The archetype query planner (v3) replaced field-first query planning with source-archetype-driven planning. 6 manufacturer-specific settings were redundant — the archetype planner handles manufacturer query budgeting via `V1_BUDGET_RATIOS` (15% manufacturer), and general URL caps (`maxUrlsPerProduct`, `maxPagesPerDomain`) provide sufficient fetch-time guardrails. `manufacturerAutoPromote` is kept.
-
-Keys removed:
-
-- `manufacturerBroadDiscovery`
-- `manufacturerDeepResearchEnabled`
-- `manufacturerSeedSearchUrls`
-- `maxManufacturerUrlsPerProduct`
-- `maxManufacturerPagesPerDomain`
-- `manufacturerReserveUrls`
-
-### Wave 4: Development-Era Feature Flags
-
-Removed on `2026-03-16`.
-
-Four boolean feature flags — `enableSourceRegistry`, `enableDomainHintResolverV2`, `enableQueryCompiler`, `enableCoreDeepGates` — were development-era toggles introduced during incremental subsystem buildout. All defaulted to `true`, nobody toggled them in production, and the "disabled" code paths were vestigial. The first three formed a redundant 3-way AND gate in `searchDiscovery.js`; their compound check was replaced by the one meaningful condition: `categoryConfig?.validatedRegistry`. The fourth guarded a no-op early return in `coreDeepGate.js`.
-
-Keys removed:
-
-- `enableSourceRegistry`
-- `enableDomainHintResolverV2`
-- `enableQueryCompiler`
-- `enableCoreDeepGates`
-
-### Wave 5: Scoring, Consensus, Identity Gate & Retrieval Knobs
-
-Removed on `2026-03-16`.
-
-The "Scoring and Evidence" GUI section exposed ~43 knobs for consensus engine tuning, identity gate thresholds, retrieval tier/doc/method weights, and evidence limits. Per the product goal, the architecture separates Collection (current pipeline) from Review (future phase). These knobs tune review-phase logic that runs prematurely during collection. All runtime consumers already have hardcoded `??` fallback defaults — removing the settings surface does not change runtime behavior.
-
-Bug fix included: `consensusEngine.js` used `Boolean(config.allowBelowPassTargetFill)` — `Boolean(undefined)` = `false`, but the intended default is `true`. Changed to `config?.allowBelowPassTargetFill ?? true`.
-
-Identity Gate keys removed:
-
-- `identityGatePublishThreshold`
-- `identityGateBaseMatchThreshold`
-- `qualityGateIdentityThreshold`
-
-Consensus Engine keys removed:
-
-- `consensusWeightedMajorityThreshold`
-- `consensusStrictAcceptanceDomainCount`
-- `consensusConfidenceScoringBase`
-- `consensusPassTargetIdentityStrong`
-- `consensusPassTargetNormal`
-- `allowBelowPassTargetFill`
-- `consensusMethodWeightNetworkJson`
-- `consensusMethodWeightAdapterApi`
-- `consensusMethodWeightStructuredMeta`
-- `consensusMethodWeightPdf`
-- `consensusMethodWeightTableKv`
-- `consensusMethodWeightDom`
-- `consensusMethodWeightLlmExtractBase`
-- `consensusPolicyBonus`
-- `consensusRelaxedAcceptanceDomainCount`
-- `consensusInstrumentedFieldThreshold`
-
-Retrieval & Evidence keys removed:
-
-- `retrievalTierWeightTier1`–`retrievalTierWeightTier5`
-- `retrievalDocKindWeightManualPdf`, `retrievalDocKindWeightSpecPdf`, `retrievalDocKindWeightSupport`, `retrievalDocKindWeightLabReview`, `retrievalDocKindWeightProductPage`, `retrievalDocKindWeightOther`
-- `retrievalMethodWeightTable`, `retrievalMethodWeightKv`, `retrievalMethodWeightJsonLd`, `retrievalMethodWeightLlmExtract`, `retrievalMethodWeightHelperSupportive`
-- `retrievalAnchorScorePerMatch`, `retrievalIdentityScorePerMatch`, `retrievalUnitMatchBonus`, `retrievalDirectFieldMatchBonus`
-- `evidenceTextMaxChars`
-
-JSON Maps removed:
-
-- `retrievalInternalsMapJson`
-- `evidencePackLimitsMapJson`
-- `parsingConfidenceBaseMapJson`
-
-Note: The unpacked individual keys derived from these JSON maps (e.g., `retrievalEvidenceTierWeightMultiplier`, `evidenceHeadingsLimit`, `parsingConfidenceBaseMap`) remain in config — only the user-facing JSON string knobs were retired.
-
-### Wave 6: All Remaining Retrieval Group Knobs
-
-Removed on `2026-03-16`.
-
-The entire `retrievalGroup.js` manifest file (54 entries) was deleted. 28 were dead manifest ghosts (retired from defaults/config in Wave 1 but the manifest was never cleaned). 26 were alive but algorithm internals masquerading as settings — nobody tunes them via GUI. All runtime consumers already have hardcoded `??` fallback defaults. Zero behavior change.
-
-Consensus LLM weight keys hardcoded:
-
-- `consensusLlmWeightTier1`–`consensusLlmWeightTier4`
-- `consensusTier1Weight`–`consensusTier4Weight`
-
-Consensus threshold keys removed (never consumed by runtime):
-
-- `consensusTier4OverrideThreshold`
-- `consensusMinConfidence`
-
-Retrieval core keys hardcoded:
-
-- `retrievalMaxHitsPerField`
-- `retrievalMaxPrimeSources`
-- `retrievalIdentityFilterEnabled`
-
-Retrieval internals (12) and evidence pack (3) keys: env override removed, values now read directly from normalized maps.
-
-`serpTriageMinScore` and `serpTriageMaxUrls` survive — they are NOT in the retrieval group and are NOT retired.
-
-### Wave 7: Dead Feature Knobs (Structured Metadata + Daemon Shutdown)
-
-Removed on `2026-03-16`.
-
-The `StructuredMetadataClient` was fully implemented but never instantiated in the pipeline — `pageData.structuredMetadata` was never populated, making all 6 knobs dead configuration for a dead feature. `daemonGracefulShutdownTimeoutMs` was loaded and clamped but never read by any runtime code.
-
-Structured Metadata knobs removed (6):
-
-- `structuredMetadataExtructEnabled`
-- `structuredMetadataExtructUrl`
-- `structuredMetadataExtructTimeoutMs`
-- `structuredMetadataExtructMaxItemsPerSurface`
-- `structuredMetadataExtructCacheEnabled`
-- `structuredMetadataExtructCacheLimit`
-
-Daemon knob removed (1):
-
-- `daemonGracefulShutdownTimeoutMs`
-
-All 7 values hardcoded in `configBuilder.js`. Zero behavior change (feature was already permanently off / value was never read).
-
-### Wave 8: Dead/Legacy Pipeline Settings Knobs
-
-Removed on `2026-03-16`.
-
-A full audit of all RuntimeFlow pipeline settings revealed 14 dead knobs (never consumed by runtime code) and 2 legacy aliases (redundant with their canonical counterparts). All 16 are removed from every settings surface, hardcoded in configBuilder, and scrubbed from the GUI. Zero runtime behavior change.
-
-Dead feature flags removed:
-
-- `enableQueryIndex`
-- `enableUrlIndex`
-
-Dead rate limiter knobs removed (never passed to requestThrottler):
-
-- `searchGlobalRps`
-- `searchGlobalBurst`
-- `searchPerHostRps`
-- `searchPerHostBurst`
-
-Dead GUI-only knobs removed:
-
-- `runtimeScreenshotMode`
-- `chartExtractionEnabled`
-- `runtimeCaptureScreenshots` (dead alias; `capturePageScreenshotEnabled` is the real gate)
-
-Dead helper knobs removed:
-
-- `helperSupportiveEnabled`
-- `helperAutoSeedTargets`
-- `helperActiveSyncLimit`
-- `helperSupportiveMaxSources`
-
-Legacy aliases removed:
-
-- `helperFilesEnabled` (legacy alias for `categoryAuthorityEnabled`)
-- `indexingHelperFilesEnabled` (legacy alias for `indexingCategoryAuthorityEnabled`)
-
-Dead queue engine knob removed:
-
-- `automationQueueStorageEngine` (only SQLite path exists)
-
-Runtime fixups: `config.helperFilesEnabled` → `config.categoryAuthorityEnabled`, `config.indexingHelperFilesEnabled` → `config.indexingCategoryAuthorityEnabled` in orchestration code. `?? helperFilesEnabled` fallback chains removed from `typeHelpers.js`.
-
-## Surfaces Cleaned By The Retirement Waves
-
-| Surface | Wave 1 | Wave 2 | Wave 3 | Wave 4 | Wave 5 | Wave 6 | Wave 7 | Wave 8 |
-|---------|--------|--------|--------|--------|--------|--------|--------|--------|
-| `src/shared/settingsDefaults.js` | convergence + runtime keys removed | 16 keys removed | 6 keys removed | 4 keys removed | 43 keys removed | convergence 15→2 keys | 7 runtime keys removed | 16 runtime keys removed |
-| `src/core/config/configBuilder.js` | — | — | — | — | — | — | — | 16 parseEnv calls → hardcoded values; 2 alias lines deleted |
-| `src/core/config/settingsKeyMap.js` | map entries removed | 16 entries removed | 6 entries removed | 4 entries removed | 43 entries removed across int/float/bool/string maps | CONVERGENCE_SETTINGS_KEYS 15→2 | 7 entries removed (3 int, 1 string, 2 bool, 1 int) | 16 entries removed (8 bool, 6 int, 2 string) |
-| `src/features/settings-authority/runtimeSettingsRoutePut.js` | validation/range entries removed | 16 range entries removed | 6 entries removed | 4 entries removed | 43 entries removed across all validation maps | — | 3 entries removed (1 string, 2 bool) | 10 entries removed (8 bool, 1 string, 1 enum) |
-| `src/features/settings-authority/convergenceSettingsRouteContract.js` | — | — | — | — | — | 13 keys removed; intKeys 4→2, floatKeys 10→0, boolKeys 1→0 | — | — |
-| `src/core/config/manifest/miscGroup.js` | obsolete manifest entries removed | 18 manifest entries removed | 6 entries removed | — | 3 entries removed | — | — | 2 entries removed |
-| `src/core/config/manifest/retrievalGroup.js` | — | — | — | — | 40 entries removed | FILE DELETED (54 entries) | — | — |
-| `src/core/config/manifest/runtimeGroup.js` | — | — | — | — | — | — | 6 STRUCTURED_METADATA entries removed | 9 entries removed |
-| `src/core/config/manifest/pathsGroup.js` | — | — | — | — | — | — | — | 1 entry removed |
-| `src/core/config/manifest/observabilityGroup.js` | — | — | — | — | — | — | 1 DAEMON_GRACEFUL entry removed | — |
-| GUI settings state files | deprecated keys removed from state mirrors | 16 keys removed across the affected TS files | 6 keys removed across TS files | 4 keys removed across TS files | 43 keys removed across 7 TS files | convergenceSettingsManifest.ts: 4 of 5 knob groups removed | 7 keys removed across 7 TS state files | 16 keys removed across 7 TS state files |
-| GUI settings sections | loop/mode UI removed | aggressive section removed | 6 manufacturer controls removed | 4 toggle controls removed | scoring-evidence section + 2 files deleted | — | Structured Metadata group removed from Parsing section; daemon shutdown control removed from Observability | controls removed from RunSetup, FetchNet, Browser, Parsing, Automation sections |
-| backend runtime behavior | obsolete mode checks removed | unconditional always-on behavior baked into the remaining code | manufacturer caps use general caps; gates always-on | 3-flag AND gate simplified; registry always loads; core/deep gate always applies | `allowBelowPassTargetFill` bug fixed (`?? true`); 7 passthrough files cleaned | zero behavior change; values hardcoded instead of env-parsed | zero behavior change; dead feature permanently off; dead plumbing removed | zero behavior change; legacy alias fallbacks removed; `helperFilesEnabled` → `categoryAuthorityEnabled` |
-| tests | stale disabled-mode assertions removed | fixture and contract updates aligned to the new runtime | fixture and gate-test cleanup | disabled-path tests deleted; fixtures cleaned | config/fixture assertions updated; behavioral tests kept | convergence key lists updated; manifest group order updated | clamping + normalization tests removed; fixture keys cleaned | 10 test files updated; retired key assertions removed |
-
-## Audit Notes
-
-- The corrected `2026-03-16` snapshot after Wave 8 is `runtime=260`, `convergence=2`, `total defaults=277`, `manifest groups=10`, `manifest keys=358`.
-- `autosave` is a distinct top-level section in `SETTINGS_DEFAULTS`; it should not be silently folded into `ui`.
-- Use this file for maintenance history, not for the primary definition of current key semantics.
+| Surface | Path | Current role |
+|---------|------|--------------|
+| shared defaults | `src/shared/settingsDefaults.js` | canonical defaults for `runtime`, `convergence`, `storage`, `ui`, and `autosave` |
+| env manifest | `src/core/config/manifest/index.js` | canonical env-backed config key registry |
+| config assembly | `src/config.js` | merges env, manifest defaults, shared defaults, and persisted settings |
+| settings authority | `src/features/settings-authority/` | runtime/convergence/ui/storage validation, migration, and persistence |
+| settings API | `src/features/settings/api/configRoutes.js` | `/runtime-settings`, `/convergence-settings`, `/ui-settings`, `/storage-settings`, `/llm-settings/*`, `/settings-manifest` |
+| source strategy SSOT | `category_authority/<category>/sources.json`, `src/features/indexing/sources/sourceFileService.js`, `src/features/indexing/api/sourceStrategyRoutes.js` | file-backed source strategy ownership and mutation |
+| LLM route defaults | `src/db/specDbHelpers.js`, `src/db/specDb.js` | default `llm_route_matrix` row seed and persistence |
+| GUI runtime settings | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx`, `tools/gui-react/src/features/pipeline-settings/components/RuntimeSettingsFlowCard.tsx` | current runtime/convergence/source-strategy editor surfaces |
+| GUI category LLM routes | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` | category-scoped route-matrix editor |
+| GUI storage and studio | `tools/gui-react/src/pages/storage/StoragePage.tsx`, `tools/gui-react/src/features/studio/components/StudioPage.tsx` | non-pipeline settings/editing surfaces |
+
+## Audit Corrections From 2026-03-17
+
+- The previous maintenance log in this repo overstated the current settings inventory. The live snapshot is now `265` default leaves, not `277`.
+- The current config manifest exports `10` groups and `330` env-backed keys, not `358`.
+- The current pipeline-settings UI is organized around `RuntimeSettingsFlowCard` plus `RuntimeFlow*Section` files. Older ownership references such as `RuntimeFlowLlmCortexSection.tsx` and `RuntimeFlowPlannerTriageSection.tsx` are stale.
+- Earlier retirement-wave claims in older copies no longer describe the live tree. Current source still contains keys such as `structuredMetadataExtruct*` and `daemonGracefulShutdownTimeoutMs` in `src/shared/settingsDefaults.js`.
+
+## Live Snapshot
+
+### Shared Defaults (`SETTINGS_DEFAULTS`)
+
+| Section | Leaf count | Evidence |
+|---------|------------|----------|
+| `convergence` | `2` | `src/shared/settingsDefaults.js` |
+| `runtime` | `243` | `src/shared/settingsDefaults.js` |
+| `storage` | `7` | `src/shared/settingsDefaults.js` |
+| `ui` | `6` | `src/shared/settingsDefaults.js` |
+| `autosave` | `7` | `src/shared/settingsDefaults.js` |
+| **Total** | **265** | flattened from `src/shared/settingsDefaults.js` |
+
+### Settings-Authority Key Ownership
+
+| Surface | Writable keys | Evidence |
+|---------|---------------|----------|
+| runtime | `212` | `src/features/settings-authority/settingsKeySets.js` |
+| convergence | `2` | `src/features/settings-authority/settingsKeySets.js` |
+| ui | `6` | `src/features/settings-authority/settingsKeySets.js` |
+| storage | `10` | `src/features/settings-authority/settingsValueTypes.js` |
+
+The storage count includes persisted Storage-page credentials that are not backed by `SETTINGS_DEFAULTS.storage`.
+
+### Config Manifest
+
+| Metric | Count | Evidence |
+|--------|-------|----------|
+| manifest groups | `10` | `src/core/config/manifest/index.js` |
+| manifest keys | `330` | `src/core/config/manifest/index.js` |
+
+### Source Strategy Inventory
+
+| Category | Detailed rows | Enabled rows | `search_first` | `manual` |
+|----------|---------------|--------------|----------------|----------|
+| `keyboard` | `23` | `23` | `19` | `4` |
+| `monitor` | `23` | `23` | `22` | `1` |
+| `mouse` | `22` | `22` | `21` | `1` |
+
+### LLM Route Matrix Defaults
+
+| Metric | Count | Evidence |
+|--------|-------|----------|
+| default rows | `15` | `src/db/specDbHelpers.js` |
+| field rows | `9` | `src/db/specDbHelpers.js` |
+| component rows | `3` | `src/db/specDbHelpers.js` |
+| list rows | `3` | `src/db/specDbHelpers.js` |
+
+## Current GUI Ownership Notes
+
+- Pipeline runtime/convergence editing flows through `PipelineSettingsPage.tsx`, `RuntimeSettingsFlowCard.tsx`, and the section files under `tools/gui-react/src/features/pipeline-settings/sections/`.
+- Source Strategy editing is exposed through `tools/gui-react/src/pages/pipeline-settings/PipelineSourceStrategySection.tsx`.
+- LLM route editing is isolated to `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`.
+- Storage credentials and destination settings are owned by `tools/gui-react/src/pages/storage/StoragePage.tsx`.
+- Studio autosave and authoring-state UX live under `tools/gui-react/src/features/studio/components/StudioPage.tsx`.
+
+## Maintenance Rules
+
+1. Update `src/shared/settingsDefaults.js` first when changing a shared default.
+2. Update `src/core/config/manifest/index.js` when adding, removing, or renaming an env-backed config key.
+3. Update `src/features/settings-authority/` contracts when a runtime/convergence/ui/storage key becomes writable or changes type/range.
+4. Update `category_authority/<category>/sources.json` and the source-strategy docs together when source rows or discovery semantics change.
+5. Update `src/db/specDbHelpers.js` and this file together when the default LLM route seed matrix changes.
+6. Do not use this file as the source of truth for exact runtime behavior when the source files disagree.
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/shared/settingsDefaults.js` | live settings-default sections and key counts |
-| source | `src/core/config/manifest/index.js` | manifest group count and flattened env-key count |
+| source | `src/shared/settingsDefaults.js` | live default sections and counts |
+| source | `src/core/config/manifest/index.js` | manifest group count and total key count |
 | source | `src/config.js` | config assembly still consumes the current settings surfaces |
-| source | `src/features/settings-authority/settingsContract.js` | settings-authority ownership boundaries |
-| source | `tools/gui-react/src/stores/runtimeSettingsManifestTypes.ts` | GUI runtime-settings manifest typing still reflects the live settings surface |
+| source | `src/features/settings-authority/settingsKeySets.js` | runtime/convergence/ui writable key inventories |
+| source | `src/features/settings-authority/settingsValueTypes.js` | storage writable key inventory |
+| source | `src/features/settings/api/configRoutes.js` | current settings route ownership |
+| source | `src/features/indexing/sources/sourceFileService.js` | source-strategy file ownership and defaults |
+| source | `src/features/indexing/api/sourceStrategyRoutes.js` | source-strategy write surface |
+| source | `src/db/specDbHelpers.js` | default LLM route seed matrix |
+| source | `tools/gui-react/src/features/pipeline-settings/components/RuntimeSettingsFlowCard.tsx` | current pipeline settings composition |
+| source | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` | current LLM settings surface |
 
 ## Related Documents
 
-- [Environment and Config](../02-dependencies/environment-and-config.md) - Canonical map of current env vars and settings surfaces.
-- [Pipeline and Runtime Settings](../04-features/pipeline-and-runtime-settings.md) - User-facing flow for editing the current settings surfaces.
-- [Known Issues](./known-issues.md) - Tracks the current `env:check` manifest drift.
+- [Pipeline and Runtime Settings](../04-features/pipeline-and-runtime-settings.md) - current verified settings persistence flow.
+- [Category Authority](../04-features/category-authority.md) - current authority snapshot flow and category artifact roots.
+- [Implementation copy of knobs maintenance](../implementation/ai-indexing-plans/spec_factory_knobs_maintenance.md) - preserved historical reference only.

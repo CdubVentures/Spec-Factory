@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadConfig, validateConfig, loadDotEnvFile } from '../src/config.js';
 import { SETTINGS_DEFAULTS } from '../src/shared/settingsDefaults.js';
+import { applyPostMergeNormalization } from '../src/core/config/configPostMerge.js';
 
 // ---------------------------------------------------------------------------
 // Phase 0 — Characterization tests for config.js
@@ -75,11 +76,6 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   // Token presets
   assert.ok(Array.isArray(cfg.llmOutputTokenPresets));
   assert.ok(cfg.llmOutputTokenPresets.length > 0);
-
-  // Cortex defaults
-  assert.equal(cfg.cortexEnabled, false);
-  assert.equal(typeof cfg.cortexBaseUrl, 'string');
-  assert.equal(typeof cfg.cortexApiKey, 'string');
 
   // Normalizer map outputs
   assert.equal(typeof cfg.searchProfileCapMap, 'object');
@@ -319,13 +315,9 @@ test('CHAR config: explicit overrides take precedence over defaults', () => {
   const cfg = loadConfig({
     maxUrlsPerProduct: 77,
     maxPagesPerDomain: 11,
-    cortexEnabled: true,
-    cortexBaseUrl: 'http://test.example.com'
   });
   assert.equal(cfg.maxUrlsPerProduct, 77);
   assert.equal(cfg.maxPagesPerDomain, 11);
-  assert.equal(cfg.cortexEnabled, true);
-  assert.equal(cfg.cortexBaseUrl, 'http://test.example.com');
 });
 
 test('CHAR config: undefined overrides are filtered out', () => {
@@ -344,7 +336,7 @@ test('CHAR validate: default config is valid', () => {
   assert.equal(result.errors.length, 0);
 });
 
-test('CHAR validate: all 5 validation rules produce correct codes', () => {
+test('CHAR validate: all 4 validation rules produce correct codes', () => {
   // Rule 1: LLM_NO_API_KEY (warning)
   const r1 = validateConfig(loadConfig({ llmApiKey: '' }));
   assert.ok(r1.warnings.some(w => w.code === 'LLM_NO_API_KEY'));
@@ -353,18 +345,13 @@ test('CHAR validate: all 5 validation rules produce correct codes', () => {
   const r2 = validateConfig(loadConfig({ searchProvider: 'none' }));
   assert.ok(r2.warnings.some(w => w.code === 'DISCOVERY_NO_SEARCH_PROVIDER'));
 
-  // Rule 3: CORTEX_NO_BASE_URL (error)
-  const r3 = validateConfig(loadConfig({ cortexEnabled: true, cortexBaseUrl: '' }));
-  assert.equal(r3.valid, false);
-  assert.ok(r3.errors.some(e => e.code === 'CORTEX_NO_BASE_URL'));
+  // Rule 3: S3_MODE_NO_CREDS (warning)
+  const r3 = validateConfig({ outputMode: 's3', mirrorToS3: false });
+  assert.ok(r3.warnings.some(w => w.code === 'S3_MODE_NO_CREDS'));
 
-  // Rule 4: S3_MODE_NO_CREDS (warning)
-  const r4 = validateConfig({ outputMode: 's3', mirrorToS3: false });
-  assert.ok(r4.warnings.some(w => w.code === 'S3_MODE_NO_CREDS'));
-
-  // Rule 5: BUDGET_GUARDS_DISABLED (warning)
-  const r5 = validateConfig(loadConfig({ llmDisableBudgetGuards: true }));
-  assert.ok(r5.warnings.some(w => w.code === 'BUDGET_GUARDS_DISABLED'));
+  // Rule 4: BUDGET_GUARDS_DISABLED (warning)
+  const r4 = validateConfig(loadConfig({ llmDisableBudgetGuards: true }));
+  assert.ok(r4.warnings.some(w => w.code === 'BUDGET_GUARDS_DISABLED'));
 });
 
 test('CHAR validate: return shape is { valid, errors, warnings }', () => {
@@ -525,5 +512,129 @@ test('SSOT: SETTINGS_DEFAULTS.runtime.serpRerankerWeightMapJson has all 21 reran
   for (const key of expected) {
     assert.ok(key in parsed, `serpRerankerWeightMapJson must have ${key}`);
     assert.equal(typeof parsed[key], 'number');
+  }
+});
+
+// =========================================================================
+// Fix 3: extraction/validate/write phases inherit reasoning from llmPlanUseReasoning
+// =========================================================================
+
+test('CHAR config: extraction/validate/write phases inherit useReasoning from llmPlanUseReasoning when true', () => {
+  // WHY: groupToggle for extraction/validate/write must be 'llmPlanUseReasoning',
+  // not null. When null, resolved value is always false regardless of the toggle.
+  // Pass llmPlanUseReasoning as an override so canonical defaults don't clobber it.
+  const resolved = applyPostMergeNormalization(
+    { ...SETTINGS_DEFAULTS },
+    { llmPlanUseReasoning: true },
+    new Set(),
+  );
+  assert.equal(resolved._resolvedExtractionUseReasoning, true,
+    'extraction useReasoning must inherit true from llmPlanUseReasoning');
+  assert.equal(resolved._resolvedValidateUseReasoning, true,
+    'validate useReasoning must inherit true from llmPlanUseReasoning');
+  assert.equal(resolved._resolvedWriteUseReasoning, true,
+    'write useReasoning must inherit true from llmPlanUseReasoning');
+});
+
+// =========================================================================
+// SECTION 18: Model stack simplification — aliasing
+// =========================================================================
+
+test('model aliasing: all role models resolve to llmModelPlan after post-merge', () => {
+  const cfg = loadConfig();
+  const roles = ['llmModelTriage', 'llmModelFast', 'llmModelExtract', 'llmModelValidate', 'llmModelWrite'];
+  for (const role of roles) {
+    assert.equal(cfg[role], cfg.llmModelPlan,
+      `${role} must alias to llmModelPlan (${cfg.llmModelPlan}), got ${cfg[role]}`);
+  }
+});
+
+test('model aliasing: llmModelReasoning preserves its own value (not aliased to plan)', () => {
+  const cfg = loadConfig();
+  assert.equal(typeof cfg.llmModelReasoning, 'string');
+  assert.ok(cfg.llmModelReasoning.length > 0);
+});
+
+test('model aliasing: explicit llmModelPlan override propagates to all roles', () => {
+  const cfg = loadConfig({ llmModelPlan: 'test-model-xyz' });
+  assert.equal(cfg.llmModelTriage, 'test-model-xyz');
+  assert.equal(cfg.llmModelFast, 'test-model-xyz');
+  assert.equal(cfg.llmModelExtract, 'test-model-xyz');
+  assert.equal(cfg.llmModelValidate, 'test-model-xyz');
+  assert.equal(cfg.llmModelWrite, 'test-model-xyz');
+});
+
+// =========================================================================
+// SECTION 19: Fallback model aliasing
+// =========================================================================
+
+test('fallback aliasing: extract/validate/write fallbacks resolve to llmPlanFallbackModel', () => {
+  const cfg = loadConfig();
+  assert.equal(cfg.llmExtractFallbackModel, cfg.llmPlanFallbackModel,
+    'llmExtractFallbackModel must alias to llmPlanFallbackModel');
+  assert.equal(cfg.llmValidateFallbackModel, cfg.llmPlanFallbackModel,
+    'llmValidateFallbackModel must alias to llmPlanFallbackModel');
+  assert.equal(cfg.llmWriteFallbackModel, cfg.llmPlanFallbackModel,
+    'llmWriteFallbackModel must alias to llmPlanFallbackModel');
+});
+
+// =========================================================================
+// SECTION 20: Token cap aliasing
+// =========================================================================
+
+test('token cap aliasing: all role token caps resolve to llmMaxOutputTokensPlan', () => {
+  const cfg = loadConfig();
+  const tokenRoles = [
+    'llmMaxOutputTokensTriage', 'llmMaxOutputTokensFast',
+    'llmMaxOutputTokensExtract', 'llmMaxOutputTokensValidate',
+    'llmMaxOutputTokensWrite',
+  ];
+  for (const key of tokenRoles) {
+    assert.equal(cfg[key], cfg.llmMaxOutputTokensPlan,
+      `${key} must alias to llmMaxOutputTokensPlan (${cfg.llmMaxOutputTokensPlan}), got ${cfg[key]}`);
+  }
+});
+
+test('token cap aliasing: extract/validate/write fallback tokens resolve to plan fallback', () => {
+  const cfg = loadConfig();
+  assert.equal(cfg.llmMaxOutputTokensExtractFallback, cfg.llmMaxOutputTokensPlanFallback,
+    'llmMaxOutputTokensExtractFallback must alias to llmMaxOutputTokensPlanFallback');
+  assert.equal(cfg.llmMaxOutputTokensValidateFallback, cfg.llmMaxOutputTokensPlanFallback,
+    'llmMaxOutputTokensValidateFallback must alias to llmMaxOutputTokensPlanFallback');
+  assert.equal(cfg.llmMaxOutputTokensWriteFallback, cfg.llmMaxOutputTokensPlanFallback,
+    'llmMaxOutputTokensWriteFallback must alias to llmMaxOutputTokensPlanFallback');
+});
+
+// =========================================================================
+// SECTION 21: PHASE_DEFS — all phases use llmPlanUseReasoning
+// =========================================================================
+
+test('PHASE_DEFS: triage phases (brandResolver, serpTriage, domainClassifier) use llmPlanUseReasoning', () => {
+  const resolved = applyPostMergeNormalization(
+    { ...SETTINGS_DEFAULTS },
+    { llmPlanUseReasoning: true },
+    new Set(),
+  );
+  assert.equal(resolved._resolvedBrandResolverUseReasoning, true,
+    'brandResolver must inherit from llmPlanUseReasoning');
+  assert.equal(resolved._resolvedSerpTriageUseReasoning, true,
+    'serpTriage must inherit from llmPlanUseReasoning');
+  assert.equal(resolved._resolvedDomainClassifierUseReasoning, true,
+    'domainClassifier must inherit from llmPlanUseReasoning');
+});
+
+test('PHASE_DEFS: all phases resolve baseModel to llmModelPlan', () => {
+  const resolved = applyPostMergeNormalization(
+    { ...SETTINGS_DEFAULTS },
+    { llmModelPlan: 'unified-model' },
+    new Set(),
+  );
+  const phases = [
+    'Needset', 'SearchPlanner', 'BrandResolver', 'SerpTriage',
+    'DomainClassifier', 'Extraction', 'Validate', 'Write',
+  ];
+  for (const phase of phases) {
+    assert.equal(resolved[`_resolved${phase}BaseModel`], 'unified-model',
+      `${phase} baseModel must resolve to llmModelPlan`);
   }
 });

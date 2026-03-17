@@ -74,6 +74,7 @@ export function resolveProviderForModel(
   registry: LlmProviderEntry[],
   modelId: string,
 ): LlmProviderEntry | undefined {
+  if (!modelId || !modelId.trim()) return undefined;
   return registry.find(
     (p) => p.enabled && p.models.some((m) => m.modelId === modelId),
   );
@@ -108,7 +109,6 @@ export const DEFAULT_BASE_URLS: Record<LlmProviderType, string> = {
   'openai-compatible': 'https://api.openai.com/v1',
   anthropic: 'https://api.anthropic.com',
   ollama: 'http://localhost:11434',
-  cortex: 'http://localhost:39281',
 };
 
 export function createDefaultProvider(type: LlmProviderType): LlmProviderEntry {

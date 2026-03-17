@@ -165,6 +165,7 @@ export function WorkerDataDrawer({
           <DrawerExtractTab
             fields={data?.extraction_fields ?? []}
             indexedFieldNames={data?.indexed_field_names ?? []}
+            category={category}
           />
         )}
         {activeTab === 'queue' && <DrawerQueueTab jobs={data?.queue_jobs ?? []} />}

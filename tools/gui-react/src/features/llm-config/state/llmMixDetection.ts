@@ -1,13 +1,6 @@
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
-
-function resolveProviderForModel(
-  registry: LlmProviderEntry[],
-  modelId: string,
-): LlmProviderEntry | undefined {
-  return registry.find(
-    (p) => p.enabled && p.models.some((m) => m.modelId === modelId),
-  );
-}
+import { resolveProviderForModel } from './llmProviderRegistryBridge';
+import { LLM_MODEL_FIELD_LABELS } from './llmModelRoleRegistry';
 
 export interface MixIssue {
   key: string;
@@ -102,7 +95,7 @@ export function detectMixIssues(
   }
 
   // Local+remote mix in fallback chain
-  const isLocal = (p: LlmProviderEntry | undefined) => p?.type === 'ollama' || p?.type === 'cortex';
+  const isLocal = (p: LlmProviderEntry | undefined) => p?.type === 'ollama';
   if (baseProv && baseFbProv && defaults.llmPlanFallbackModel) {
     if (isLocal(baseProv) !== isLocal(baseFbProv)) {
       issues.push({
@@ -129,14 +122,37 @@ export function detectMixIssues(
   return issues;
 }
 
+export function detectStaleModelIssues(
+  registry: LlmProviderEntry[],
+  modelFields: Record<string, string>,
+  knownModelOptions?: readonly string[],
+): MixIssue[] {
+  const issues: MixIssue[] = [];
+  for (const [field, modelId] of Object.entries(modelFields)) {
+    if (!modelId || !modelId.trim()) continue;
+    const provider = resolveProviderForModel(registry, modelId);
+    if (provider) continue;
+    if (knownModelOptions && knownModelOptions.includes(modelId)) continue;
+    const label = LLM_MODEL_FIELD_LABELS[field] ?? field;
+    issues.push({
+      key: `stale-model-${field}`,
+      severity: 'warning',
+      title: `${label} may be stale`,
+      message: `"${modelId}" is not found in any enabled provider. It may have been removed or its provider disabled.`,
+      ringFields: [field],
+    });
+  }
+  return issues;
+}
+
 export function resolveRingColor(
   field: string,
   issues: MixIssue[],
-  dismissedKeys: Set<string>,
+  dismissedKeys: Record<string, boolean>,
 ): string | null {
   let maxSeverity: 'error' | 'warning' | 'info' | null = null;
   for (const issue of issues) {
-    if (dismissedKeys.has(issue.key)) continue;
+    if (dismissedKeys[issue.key]) continue;
     if (!issue.ringFields.includes(field)) continue;
     if (issue.severity === 'error') return 'var(--sf-error, #dc2626)';
     if (issue.severity === 'warning') maxSeverity = 'warning';

@@ -2,8 +2,6 @@ import { EvidenceAuditor } from './evidenceAudit.js';
 import { AggressiveDomExtractor } from './aggressiveDom.js';
 import { AggressiveReasoningResolver } from './aggressiveReasoning.js';
 import { SearchTracker } from './searchTracker.js';
-import { CortexClient } from '../../../core/llm/cortex/cortexClient.js';
-
 function isKnownValue(value) {
   const token = String(value || '').trim().toLowerCase();
   return token !== '' && token !== 'unk' && token !== 'null' && token !== 'undefined' && token !== 'n/a';
@@ -224,7 +222,6 @@ export class AggressiveOrchestrator {
     storage,
     config = {},
     logger = null,
-    cortexClient = null,
     evidenceAuditor = null,
     domExtractor = null,
     reasoningResolver = null
@@ -232,17 +229,10 @@ export class AggressiveOrchestrator {
     this.storage = storage;
     this.config = config;
     this.logger = logger;
-    this.cortexClient = cortexClient || new CortexClient({ config });
     this.evidenceAuditor = evidenceAuditor || new EvidenceAuditor({ config });
-    this.domExtractor = domExtractor || new AggressiveDomExtractor({
-      cortexClient: this.cortexClient,
-      config
-    });
-    this.reasoningResolver = reasoningResolver || new AggressiveReasoningResolver({
-      cortexClient: this.cortexClient,
-      config
-    });
-    this.maxDeepFields = Math.max(0, toInt(config.cortexMaxDeepFieldsPerProduct, 12));
+    this.domExtractor = domExtractor || new AggressiveDomExtractor({ config });
+    this.reasoningResolver = reasoningResolver || new AggressiveReasoningResolver({ config });
+    this.maxDeepFields = Math.max(0, toInt(config.maxDeepFieldsPerProduct, 12));
     this.maxSearchQueries = 5;
     this.maxTimePerProductMs = 600_000;
     this.auditEnabled = true;
@@ -403,23 +393,6 @@ export class AggressiveOrchestrator {
     const needsDeep = criticalMissing.length > 0;
 
     let deepResult = null;
-    if (needsDeep && this.maxDeepFields > 0 && hasTimeBudget()) {
-      const deepTasks = criticalMissing.slice(0, this.maxDeepFields).map((field, idx) => ({
-        id: `critical-gap-${idx + 1}`,
-        type: 'critical_gap_fill',
-        critical: true,
-        payload: { field }
-      }));
-      deepResult = await this.cortexClient.runPass({
-        tasks: deepTasks,
-        context: {
-          confidence: 0.80,
-          critical_conflicts_remain: false,
-          critical_gaps_remain: true,
-          evidence_audit_failed_on_critical: true
-        }
-      });
-    }
 
     const finalCandidates = mergeCandidates(stage3Merged, {});
     const auditFinal = this.auditEnabled

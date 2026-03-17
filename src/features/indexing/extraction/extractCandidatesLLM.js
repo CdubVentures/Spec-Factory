@@ -331,7 +331,7 @@ export async function extractCandidatesLLM({
       });
       const routeModels = Array.isArray(batchRoutePolicy?.route_models) ? batchRoutePolicy.route_models : [];
       const routePrimaryModel = String(routeModels[0] || '').trim();
-      const model = routePrimaryModel || modelRoute.model || config.llmModelExtract;
+      const model = routePrimaryModel || modelRoute.model || config._resolvedExtractionBaseModel || config.llmModelExtract;
       const routeMaxTokens = Math.max(0, Number.parseInt(String(batchRoutePolicy?.max_tokens || 0), 10) || 0);
       const effectiveMaxTokens = routeMaxTokens > 0
         ? (modelRoute.maxTokens > 0 ? Math.min(routeMaxTokens, Number(modelRoute.maxTokens || 0)) : routeMaxTokens)

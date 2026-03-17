@@ -8,14 +8,16 @@ export const LLM_PHASE_IDS = [
   'serp-triage',
   'domain-classifier',
   'extraction',
+  'validate',
+  'write',
 ] as const satisfies readonly LlmPhaseId[];
 
 export const LLM_PHASES: readonly LlmPhaseDefinition[] = [
   {
     id: 'global',
     label: 'Global',
-    subtitle: 'Provider, budget, limits, cortex, cache',
-    tip: 'Global LLM provider, API keys, budget guards, token limits, reasoning mode, cortex sidecar, and extraction cache.',
+    subtitle: 'Provider, budget, limits, cache',
+    tip: 'Global LLM provider, API keys, budget guards, token limits, reasoning mode, and extraction cache.',
     roles: [],
   },
   {
@@ -61,8 +63,22 @@ export const LLM_PHASES: readonly LlmPhaseDefinition[] = [
   {
     id: 'extraction',
     label: 'Extraction',
-    subtitle: 'Extract + Validate + Write roles',
-    tip: 'LLM configuration for the extraction pipeline: per-sub-role model, tokens, provider overrides, verification, and cortex deep reasoning.',
-    roles: ['extract', 'validate', 'write'],
+    subtitle: 'Extract model + batching',
+    tip: 'LLM configuration for the extraction pipeline: model, tokens, batching, and verification.',
+    roles: ['extract'],
+  },
+  {
+    id: 'validate',
+    label: 'Validate',
+    subtitle: 'Base Model',
+    tip: 'Model override for the validation pass that confirms uncertain field candidates.',
+    roles: ['validate'],
+  },
+  {
+    id: 'write',
+    label: 'Write',
+    subtitle: 'Base Model',
+    tip: 'Model override for the summary writer that produces final markdown output.',
+    roles: ['write'],
   },
 ] as const;

@@ -22,6 +22,11 @@ function parseBoolean(value: unknown, fallback: boolean): boolean {
   return fallback;
 }
 
+function parseNumber(value: unknown, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 function parseString(value: unknown, fallback: string, allowEmpty = false): string {
   if (typeof value !== 'string') return fallback;
   if (allowEmpty) return value;
@@ -433,6 +438,12 @@ export function normalizeRuntimeDraft(
       fallback.domSnippetMaxChars,
       RUNTIME_NUMBER_BOUNDS.domSnippetMaxChars,
     ),
+    structuredMetadataExtructEnabled: parseBoolean(raw.structuredMetadataExtructEnabled, fallback.structuredMetadataExtructEnabled),
+    structuredMetadataExtructUrl: parseString(raw.structuredMetadataExtructUrl, fallback.structuredMetadataExtructUrl, true),
+    structuredMetadataExtructTimeoutMs: parseNumber(raw.structuredMetadataExtructTimeoutMs, fallback.structuredMetadataExtructTimeoutMs),
+    structuredMetadataExtructMaxItemsPerSurface: parseNumber(raw.structuredMetadataExtructMaxItemsPerSurface, fallback.structuredMetadataExtructMaxItemsPerSurface),
+    structuredMetadataExtructCacheEnabled: parseBoolean(raw.structuredMetadataExtructCacheEnabled, fallback.structuredMetadataExtructCacheEnabled),
+    structuredMetadataExtructCacheLimit: parseNumber(raw.structuredMetadataExtructCacheLimit, fallback.structuredMetadataExtructCacheLimit),
     llmExtractionCacheTtlMs: parseBoundedNumber(
       raw.llmExtractionCacheTtlMs,
       fallback.llmExtractionCacheTtlMs,
@@ -583,6 +594,7 @@ export function normalizeRuntimeDraft(
       fallback.daemonConcurrency,
       RUNTIME_NUMBER_BOUNDS.daemonConcurrency,
     ),
+    daemonGracefulShutdownTimeoutMs: parseNumber(raw.daemonGracefulShutdownTimeoutMs, fallback.daemonGracefulShutdownTimeoutMs),
     importsPollSeconds: parseBoundedNumber(
       raw.importsPollSeconds,
       fallback.importsPollSeconds,
@@ -608,51 +620,6 @@ export function normalizeRuntimeDraft(
       fallback.reCrawlStaleAfterDays,
       RUNTIME_NUMBER_BOUNDS.reCrawlStaleAfterDays,
     ),
-    cortexSyncTimeoutMs: parseBoundedNumber(
-      raw.cortexSyncTimeoutMs,
-      fallback.cortexSyncTimeoutMs,
-      RUNTIME_NUMBER_BOUNDS.cortexSyncTimeoutMs,
-    ),
-    cortexAsyncPollIntervalMs: parseBoundedNumber(
-      raw.cortexAsyncPollIntervalMs,
-      fallback.cortexAsyncPollIntervalMs,
-      RUNTIME_NUMBER_BOUNDS.cortexAsyncPollIntervalMs,
-    ),
-    cortexAsyncMaxWaitMs: parseBoundedNumber(
-      raw.cortexAsyncMaxWaitMs,
-      fallback.cortexAsyncMaxWaitMs,
-      RUNTIME_NUMBER_BOUNDS.cortexAsyncMaxWaitMs,
-    ),
-    cortexEnsureReadyTimeoutMs: parseBoundedNumber(
-      raw.cortexEnsureReadyTimeoutMs,
-      fallback.cortexEnsureReadyTimeoutMs,
-      RUNTIME_NUMBER_BOUNDS.cortexEnsureReadyTimeoutMs,
-    ),
-    cortexStartReadyTimeoutMs: parseBoundedNumber(
-      raw.cortexStartReadyTimeoutMs,
-      fallback.cortexStartReadyTimeoutMs,
-      RUNTIME_NUMBER_BOUNDS.cortexStartReadyTimeoutMs,
-    ),
-    cortexFailureThreshold: parseBoundedNumber(
-      raw.cortexFailureThreshold,
-      fallback.cortexFailureThreshold,
-      RUNTIME_NUMBER_BOUNDS.cortexFailureThreshold,
-    ),
-    cortexCircuitOpenMs: parseBoundedNumber(
-      raw.cortexCircuitOpenMs,
-      fallback.cortexCircuitOpenMs,
-      RUNTIME_NUMBER_BOUNDS.cortexCircuitOpenMs,
-    ),
-    cortexEscalateConfidenceLt: parseBoundedNumber(
-      raw.cortexEscalateConfidenceLt,
-      fallback.cortexEscalateConfidenceLt,
-      RUNTIME_NUMBER_BOUNDS.cortexEscalateConfidenceLt,
-    ),
-    cortexMaxDeepFieldsPerProduct: parseBoundedNumber(
-      raw.cortexMaxDeepFieldsPerProduct,
-      fallback.cortexMaxDeepFieldsPerProduct,
-      RUNTIME_NUMBER_BOUNDS.cortexMaxDeepFieldsPerProduct,
-    ),
     userAgent: parseString(raw.userAgent, fallback.userAgent, true),
     pdfPreferredBackend: parseString(raw.pdfPreferredBackend, fallback.pdfPreferredBackend, true),
     capturePageScreenshotFormat: parseString(raw.capturePageScreenshotFormat, fallback.capturePageScreenshotFormat, true),
@@ -661,17 +628,6 @@ export function normalizeRuntimeDraft(
     staticDomMode: parseString(raw.staticDomMode, fallback.staticDomMode, true),
     specDbDir: parseString(raw.specDbDir, fallback.specDbDir, true),
     articleExtractorDomainPolicyMapJson: parseString(raw.articleExtractorDomainPolicyMapJson, fallback.articleExtractorDomainPolicyMapJson, true),
-    cortexBaseUrl: parseString(raw.cortexBaseUrl, fallback.cortexBaseUrl, true),
-    cortexApiKey: parseString(raw.cortexApiKey, fallback.cortexApiKey, true),
-    cortexAsyncBaseUrl: parseString(raw.cortexAsyncBaseUrl, fallback.cortexAsyncBaseUrl, true),
-    cortexAsyncSubmitPath: parseString(raw.cortexAsyncSubmitPath, fallback.cortexAsyncSubmitPath, true),
-    cortexAsyncStatusPath: parseString(raw.cortexAsyncStatusPath, fallback.cortexAsyncStatusPath, true),
-    cortexModelFast: parseString(raw.cortexModelFast, fallback.cortexModelFast, true),
-    cortexModelDom: parseString(raw.cortexModelDom, fallback.cortexModelDom, true),
-    cortexModelReasoningDeep: parseString(raw.cortexModelReasoningDeep, fallback.cortexModelReasoningDeep, true),
-    cortexModelVision: parseString(raw.cortexModelVision, fallback.cortexModelVision, true),
-    cortexModelSearchFast: parseString(raw.cortexModelSearchFast, fallback.cortexModelSearchFast, true),
-    cortexModelRerankFast: parseString(raw.cortexModelRerankFast, fallback.cortexModelRerankFast, true),
     categoryAuthorityRoot: parseString(
       raw.categoryAuthorityRoot ?? raw.helperFilesRoot,
       fallback.categoryAuthorityRoot,
@@ -718,11 +674,6 @@ export function normalizeRuntimeDraft(
     helperSupportiveFillMissing: parseBoolean(raw.helperSupportiveFillMissing, fallback.helperSupportiveFillMissing),
     driftDetectionEnabled: parseBoolean(raw.driftDetectionEnabled, fallback.driftDetectionEnabled),
     driftAutoRepublish: parseBoolean(raw.driftAutoRepublish, fallback.driftAutoRepublish),
-    cortexEnabled: parseBoolean(raw.cortexEnabled, fallback.cortexEnabled),
-    cortexAsyncEnabled: parseBoolean(raw.cortexAsyncEnabled, fallback.cortexAsyncEnabled),
-    cortexAutoStart: parseBoolean(raw.cortexAutoStart, fallback.cortexAutoStart),
-    cortexEscalateIfConflict: parseBoolean(raw.cortexEscalateIfConflict, fallback.cortexEscalateIfConflict),
-    cortexEscalateCriticalOnly: parseBoolean(raw.cortexEscalateCriticalOnly, fallback.cortexEscalateCriticalOnly),
     indexingCategoryAuthorityEnabled: parseBoolean(
       raw.indexingCategoryAuthorityEnabled ?? raw.indexingHelperFilesEnabled,
       fallback.indexingCategoryAuthorityEnabled,

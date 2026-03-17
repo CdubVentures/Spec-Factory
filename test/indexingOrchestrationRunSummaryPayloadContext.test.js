@@ -64,7 +64,6 @@ test('buildRunSummaryPayloadContext maps runProduct summary inputs to payload co
     llmCostUsd: 0.01,
     llmBudgetSnapshot: { limits: {}, state: {} },
     llmBudgetBlockedReason: null,
-    cortexSidecar: { status: 'disabled' },
     aggressiveExtraction: { enabled: false },
     categoryConfig: { sources_override_key: null },
     fetcherMode: 'playwright',

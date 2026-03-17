@@ -11,28 +11,72 @@ function settingLabel(label: string, tip: string) {
   );
 }
 
+function readCollapsed(storageKey: string | undefined, fallback: boolean): boolean {
+  if (!storageKey) return fallback;
+  try {
+    const raw = sessionStorage.getItem(storageKey);
+    if (raw === '1') return true;
+    if (raw === '0') return false;
+  } catch { /* SSR / security sandbox */ }
+  return fallback;
+}
+
 export function SettingGroupBlock({
   title,
   children,
+  collapsible = false,
+  defaultCollapsed = false,
+  storageKey,
 }: {
   title: string;
   children: ReactNode;
+  collapsible?: boolean;
+  defaultCollapsed?: boolean;
+  storageKey?: string;
 }) {
+  const [collapsed, setCollapsed] = useState(() => collapsible ? readCollapsed(storageKey, defaultCollapsed) : false);
+
+  const toggle = () => {
+    if (!collapsible) return;
+    const next = !collapsed;
+    setCollapsed(next);
+    if (storageKey) {
+      try { sessionStorage.setItem(storageKey, next ? '1' : '0'); } catch { /* noop */ }
+    }
+  };
+
   return (
     <section
-      className="space-y-2.5 rounded border px-3 py-2.5"
+      className={`rounded border px-3 py-2.5 ${collapsed ? '' : 'space-y-2.5'}`}
       style={{
         borderColor: 'var(--sf-border)',
         backgroundColor: 'var(--sf-surface)',
       }}
     >
-      <div className="flex items-center gap-2">
+      <div
+        className={`flex items-center gap-2 ${collapsible ? 'cursor-pointer select-none' : ''}`}
+        onClick={collapsible ? toggle : undefined}
+        role={collapsible ? 'button' : undefined}
+        tabIndex={collapsible ? 0 : undefined}
+        onKeyDown={collapsible ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } } : undefined}
+      >
+        {collapsible && (
+          <svg
+            viewBox="0 0 20 20"
+            className={`h-3.5 w-3.5 shrink-0 transition-transform ${collapsed ? '' : 'rotate-90'}`}
+            fill="currentColor"
+            style={{ color: 'var(--sf-muted)' }}
+            aria-hidden="true"
+          >
+            <path d="M6.3 3.7a1 1 0 0 1 1.4 0l5 5a1 1 0 0 1 0 1.4l-5 5a1 1 0 0 1-1.4-1.4L10.58 10 6.3 5.7a1 1 0 0 1 0-1.4Z" />
+          </svg>
+        )}
         <div className="sf-text-label font-semibold uppercase tracking-wide" style={{ color: 'var(--sf-muted)' }}>
           {title}
         </div>
         <div className="h-px flex-1" style={{ backgroundColor: 'var(--sf-border)' }} />
       </div>
-      {children}
+      {!collapsed && children}
     </section>
   );
 }

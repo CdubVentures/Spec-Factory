@@ -1,0 +1,42 @@
+graph LR
+    subgraph PHASE0["Phase 0: Bootstrap"]
+        B0["createRunLlmRuntime\nBudget + Cost + Context"]
+    end
+
+    subgraph PHASE2["Phase 2: Discovery"]
+        B2A["discoveryPlanner\nrole: plan"]
+        B2B["brandResolver\nrole: triage"]
+        B2C["domainSafetyGate\nrole: triage"]
+        B2D["escalationPlanner\nrole: plan"]
+    end
+
+    subgraph PHASE5["Phase 5: Extraction"]
+        B5A["extractCandidatesLLM\nrole: extract"]
+        B5B["invokeExtractionModel\nMultimodal"]
+        B5C["executeExtractionBatch\nCache + Retry"]
+        B5D["runExtractionVerification\nVerify Pass"]
+    end
+
+    subgraph PHASE6["Phase 6: Validation"]
+        B6A["validateCandidatesLLM\nrole: validate"]
+        B6B["validateEnumConsistency\nComponent Variance"]
+    end
+
+    subgraph PHASE8["Phase 8: Finalization"]
+        B8["writeSummaryLLM\nrole: write"]
+    end
+
+    PHASE0 --> PHASE2
+    PHASE2 --> PHASE5
+    PHASE5 --> PHASE6
+    PHASE6 --> PHASE8
+
+    B5A --> B5B
+    B5B --> B5C
+    B5C --> B5D
+
+    style PHASE0 fill:#2d3436,stroke:#636e72,color:#dfe6e9
+    style PHASE2 fill:#0984e3,stroke:#74b9ff,color:#fff
+    style PHASE5 fill:#d63031,stroke:#ff7675,color:#fff
+    style PHASE6 fill:#e17055,stroke:#fab1a0,color:#fff
+    style PHASE8 fill:#00b894,stroke:#55efc4,color:#fff

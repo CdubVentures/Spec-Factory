@@ -105,15 +105,6 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   | 'driftPollSeconds'
   | 'driftScanMaxProducts'
   | 'reCrawlStaleAfterDays'
-  | 'cortexSyncTimeoutMs'
-  | 'cortexAsyncPollIntervalMs'
-  | 'cortexAsyncMaxWaitMs'
-  | 'cortexEnsureReadyTimeoutMs'
-  | 'cortexStartReadyTimeoutMs'
-  | 'cortexFailureThreshold'
-  | 'cortexCircuitOpenMs'
-  | 'cortexEscalateConfidenceLt'
-  | 'cortexMaxDeepFieldsPerProduct'
   | 'scannedPdfOcrMaxPages'
   | 'scannedPdfOcrMaxPairs'
   | 'scannedPdfOcrMinCharsPerPage'
@@ -164,15 +155,6 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   fieldRewardHalfLifeDays: { min: 1, max: 365, int: true },
   driftPollSeconds: { min: 60, max: 604_800, int: true },
   driftScanMaxProducts: { min: 1, max: 10_000, int: true },
-  cortexSyncTimeoutMs: { min: 1000, max: 600_000, int: true },
-  cortexAsyncPollIntervalMs: { min: 250, max: 120_000, int: true },
-  cortexAsyncMaxWaitMs: { min: 1000, max: 3_600_000, int: true },
-  cortexEnsureReadyTimeoutMs: { min: 1000, max: 300_000, int: true },
-  cortexStartReadyTimeoutMs: { min: 1000, max: 300_000, int: true },
-  cortexFailureThreshold: { min: 1, max: 20, int: true },
-  cortexCircuitOpenMs: { min: 1000, max: 600_000, int: true },
-  cortexEscalateConfidenceLt: { min: 0, max: 1 },
-  cortexMaxDeepFieldsPerProduct: { min: 1, max: 200, int: true },
   endpointSignalLimit: { min: 1, max: 500, int: true },
   endpointSuggestionLimit: { min: 1, max: 200, int: true },
   endpointNetworkScanLimit: { min: 50, max: 10_000, int: true },
