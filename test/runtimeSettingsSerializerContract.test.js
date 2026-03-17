@@ -119,7 +119,6 @@ test('runtime settings serializer applies fallback baselines and shared model-to
     llmTokensPlan: 'bad-plan-tokens',
     llmTokensPlanFallback: 'bad-fallback-plan-tokens',
     dynamicFetchPolicyMapJson: '  {"mouse":"full"}  ',
-    phase2LlmEnabled: true,
   }));
 
   assert.equal(payload.fetchConcurrency, 11);
@@ -130,7 +129,6 @@ test('runtime settings serializer applies fallback baselines and shared model-to
   assert.equal(payload.llmMaxOutputTokensPlanFallback, 4096);
   assert.equal(payload.llmTokensPlanFallback, 4096);
   assert.equal(payload.dynamicFetchPolicyMapJson, '{"mouse":"full"}');
-  assert.equal(payload.llmPlanDiscoveryQueries, true);
 });
 
 test('runtime settings serializer preserves budget and reasoning knobs as parsed runtime payload', async () => {

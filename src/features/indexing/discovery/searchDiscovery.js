@@ -159,7 +159,7 @@ export async function discoverCandidateSources({
     brandSkipReason = 'no_brand_in_identity_lock';
   } else {
     try {
-      const canCallBrandResolverLlm = Boolean(config.llmEnabled && hasLlmRouteApiKey(config, { role: 'triage' }));
+      const canCallBrandResolverLlm = Boolean(hasLlmRouteApiKey(config, { role: 'triage' }));
       const brandCallLlm = canCallBrandResolverLlm
         ? createBrandResolverCallLlm({
           callRoutedLlmFn: callLlmWithRouting,
@@ -181,7 +181,7 @@ export async function discoverCandidateSources({
         brandStatus = 'resolved_empty';
       } else {
         brandStatus = 'skipped';
-        brandSkipReason = config.llmEnabled ? 'no_api_key_for_triage_role' : 'llm_disabled';
+        brandSkipReason = 'no_api_key_for_triage_role';
       }
     } catch (err) {
       brandStatus = 'failed';
@@ -417,6 +417,18 @@ export async function discoverCandidateSources({
     })
   );
   const resolveProfileQueryRow = (query) => profileQueryRowsByQuery.get(String(query || '').trim().toLowerCase()) || null;
+
+  // Build compressed archetype context for planner blindness fix
+  const archetypeSummary = searchProfileBase?.archetype_summary || {};
+  const coverageAnalysis = searchProfileBase?.coverage_analysis || {};
+  const archetypeContext = {
+    archetypes_emitted: Object.keys(archetypeSummary),
+    hosts_targeted: Object.values(archetypeSummary).flatMap((a) => a?.hosts || []),
+    uncovered_search_worthy: coverageAnalysis.uncovered_search_worthy || [],
+    representative_gaps: (coverageAnalysis.uncovered_search_worthy || []).slice(0, 10)
+  };
+  const enrichedLlmContext = { ...llmContext, archetypeContext };
+
   llmQueries = await planDiscoveryQueriesLLM({
     job,
     categoryConfig,
@@ -424,7 +436,7 @@ export async function discoverCandidateSources({
     missingCriticalFields: planningHints.missingCriticalFields || [],
     config,
     logger,
-    llmContext
+    llmContext: enrichedLlmContext
   });
 
   if (toArray(llmQueries).length > 0) {
@@ -452,7 +464,7 @@ export async function discoverCandidateSources({
     ? await planUberQueries({
       config,
       logger,
-      llmContext,
+      llmContext: enrichedLlmContext,
       identity: identityLock,
       missingFields,
       baseQueries: [...baseQueries, ...targetedQueries, ...llmQueries],

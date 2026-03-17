@@ -14,7 +14,7 @@ export async function buildSummaryArtifactsContext({
   let markdownSummary = '';
 
   if (config.writeMarkdownSummary) {
-    if (config.llmEnabled && config.llmWriteSummary) {
+    if (config.llmWriteSummary) {
       markdownSummary = await writeSummaryMarkdownLLMFn({
         normalized,
         provenance,

@@ -3,9 +3,8 @@ Own API route registration for field studio payloads, map management, known-valu
 This boundary coordinates studio-facing control-plane actions while delegating settings persistence and indexing review logic to explicit seams.
 
 ## Public API (The Contract)
-- `src/features/studio/api/studioRoutes.js`: `registerStudioRoutes(ctx)`.
-- `src/features/studio/api/studioRouteHelpers.js`: internal helper exports for enum token normalization, studio payload derivation, map preference, and suggestion application.
-- No root `src/features/studio/index.js` exists yet; route registration is the primary boundary contract.
+- `src/features/studio/index.js`: `registerStudioRoutes`, `createStudioRouteContext`, plus 14 domain helpers from `studioRouteHelpers.js`.
+- Consumers must import from `index.js`, not from internal `api/` paths.
 
 ## Dependencies
 - Allowed: `src/features/settings-authority/index.js`, `src/features/indexing/index.js`, `src/api/events/dataChangeContract.js`, and `src/field-rules/consumerGate.js`.

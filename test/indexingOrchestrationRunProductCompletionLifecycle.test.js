@@ -15,7 +15,6 @@ test('runProductCompletionLifecycle preserves publication and learning lifecycle
 
   const result = await runProductCompletionLifecycle({
     constrainedFinalizationConfig: {
-      llmEnabled: false,
       writeMarkdownSummary: true,
     },
     storage: { id: 'storage' },
@@ -427,8 +426,6 @@ test('runProductCompletionLifecycle preserves publication and learning lifecycle
   });
 
   const summaryArtifactsCall = calls.find(([name]) => name === 'buildSummaryArtifactsPhaseCallsiteContextFn')[1];
-  assert.equal(summaryArtifactsCall.config.llmEnabled, false);
-
   const completedEventCall = calls.find(([name]) => name === 'buildRunCompletedEventCallsiteContextFn')[1];
   assert.equal(completedEventCall.runCompletedPayload, runCompletedPayload);
 

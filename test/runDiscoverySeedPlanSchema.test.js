@@ -16,7 +16,6 @@ function makeConfig(overrides = {}) {
     maxCandidateUrls: 10,
     fetchCandidateSources: true,
     enableSchema4SearchPlan: true,
-    llmEnabled: true,
     ...overrides,
   };
 }
@@ -70,7 +69,7 @@ function stubNormalizeFieldList(fields) { return fields; }
 function stubLoadSourceEntries() { return []; }
 
 describe('runDiscoverySeedPlan Schema 4 wiring', () => {
-  it('passes searchPlanHandoff to discoverCandidateSourcesFn when schema path enabled', async () => {
+  it('passes searchPlanHandoff to discoverCandidateSourcesFn and attaches seed_search_plan_output when schema path enabled', async () => {
     const handoff = makeHandoff();
     let capturedArgs = null;
 
@@ -98,13 +97,16 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       run: {},
     });
 
-    const stubBuildPlan = async () => ({
+    const schema4Output = {
       schema_version: 'needset_planner_output.v2',
       search_plan_handoff: handoff,
       planner: { mode: 'llm' },
-    });
+      panel: { bundles: [{ queries: ['q1'] }] },
+    };
 
-    await runDiscoverySeedPlan({
+    const stubBuildPlan = async () => schema4Output;
+
+    const result = await runDiscoverySeedPlan({
       config: makeConfig(),
       storage: {},
       category: 'mouse',
@@ -131,6 +133,10 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
     assert.ok(capturedArgs.searchPlanHandoff, 'searchPlanHandoff should be passed');
     assert.equal(capturedArgs.searchPlanHandoff.queries.length, 1);
     assert.equal(capturedArgs.searchPlanHandoff.queries[0].q, 'TestBrand TestModel sensor specs');
+
+    // seed_search_plan_output is attached to discoveryResult
+    assert.ok(result.seed_search_plan_output, 'seed_search_plan_output should be attached');
+    assert.equal(result.seed_search_plan_output.schema_version, 'needset_planner_output.v2');
   });
 
   it('passes null handoff when enableSchema4SearchPlan is false', async () => {

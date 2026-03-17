@@ -164,14 +164,12 @@ export function buildProcessStartLaunchPlan(options = {}) {
     s3OutputPrefix,
     eloSupabaseAnonKey,
     eloSupabaseEndpoint,
-    llmEnabled,
     llmWriteSummary,
     llmProvider,
     llmBaseUrl,
     openaiApiKey,
     anthropicApiKey,
     searchProvider,
-    phase2LlmEnabled,
     phase2LlmModel,
     phase3LlmModel,
     llmModelPlan,
@@ -325,7 +323,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
   assignString(envOverrides, 'LOCAL_OUTPUT_ROOT', effectiveLocalOutputRoot);
   assignString(envOverrides, 'RUNTIME_EVENTS_KEY', runtimeEventsKey);
   assignBoolean(envOverrides, 'WRITE_MARKDOWN_SUMMARY', writeMarkdownSummary);
-  assignBoolean(envOverrides, 'LLM_ENABLED', llmEnabled);
   assignBoolean(envOverrides, 'LLM_WRITE_SUMMARY', llmWriteSummary);
   assignString(envOverrides, 'AWS_REGION', awsRegion);
   assignString(envOverrides, 'S3_BUCKET', s3Bucket);
@@ -386,8 +383,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     return true;
   };
 
-  const hasPhase2LlmOverride = typeof phase2LlmEnabled === 'boolean';
-  assignBoolean(envOverrides, 'LLM_PLAN_DISCOVERY_QUERIES', phase2LlmEnabled);
   assignString(envOverrides, 'LLM_MODEL_PLAN', phase2LlmModel);
 
   const normalizedPhase3LlmModel = String(phase3LlmModel || '').trim();
@@ -446,9 +441,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_WRITE_FALLBACK', llmTokensWriteFallback);
   }
 
-  if ((hasPhase2LlmOverride && phase2LlmEnabled) || hasRoleModelOverride) {
-    envOverrides.LLM_ENABLED = 'true';
-  }
 
   return {
     ok: true,

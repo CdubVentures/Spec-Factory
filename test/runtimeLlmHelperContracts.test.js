@@ -171,7 +171,6 @@ test('runtime hydration bindings accept alias keys and skip local resets when th
     llmMaxOutputTokensPlan: 1536,
     llmMaxOutputTokensPlanFallback: 2048,
     llmTokensWriteFallback: 2304,
-    llmPlanDiscoveryQueries: true,
   };
 
   assert.equal(
@@ -192,5 +191,4 @@ test('runtime hydration bindings accept alias keys and skip local resets when th
   assert.equal(state.setLlmTokensPlan, 1536);
   assert.equal(state.setLlmTokensPlanFallback, 2048);
   assert.equal(state.setLlmTokensWriteFallback, 2304);
-  assert.equal(state.setPhase2LlmEnabled, true);
 });

@@ -229,7 +229,6 @@ export function PrefetchSearchPlannerPanel({
   liveSettings,
   idxRuntime,
 }: PrefetchSearchPlannerPanelProps) {
-  const plannerEnabledLive = liveSettings?.phase2LlmEnabled;
   const [expandedPassQueries, setExpandedPassQueries] = useState<Record<string, boolean>>({});
   const plans = searchPlans || [];
   const executedQueryTokens = useMemo(() => new Set(
@@ -319,11 +318,6 @@ export function PrefetchSearchPlannerPanel({
             Search plans will appear after the Planner LLM generates targeted queries across multiple passes
             (Primary, Fast, Reason, Validate) to close missing field coverage gaps identified by the NeedSet.
           </p>
-          {liveSettings?.phase2LlmEnabled !== undefined && (
-            <span className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${liveSettings.phase2LlmEnabled ? 'sf-chip-neutral' : 'sf-chip-danger'}`}>
-              LLM Planner: {liveSettings.phase2LlmEnabled ? 'Enabled' : 'Disabled'}
-            </span>
-          )}
         </div>
       </div>
     );
@@ -336,28 +330,6 @@ export function PrefetchSearchPlannerPanel({
           Search Planner
           <Tip text="The Search Planner LLM generates targeted queries in multiple passes (Primary, Fast, Reason, Validate) to close missing field coverage gaps identified by the NeedSet." />
         </h3>
-        {plannerEnabledLive !== undefined && (
-          <TooltipBadge
-            className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${
-              plannerEnabledLive
-                ? 'sf-chip-warning'
-                : 'sf-chip-neutral'
-            }`}
-            tooltip={plannerEnabledLive
-              ? formatTooltip({
-                what: 'Planner LLM is enabled.',
-                effect: 'Planner can add query ideas before search runs.',
-                setBy: 'Runtime Settings > LLM Planner (phase2LlmEnabled / llmPlanDiscoveryQueries).',
-              })
-              : formatTooltip({
-                what: 'Planner LLM is disabled.',
-                effect: 'No planner-generated query ideas are added.',
-                setBy: 'Runtime Settings > LLM Planner (phase2LlmEnabled / llmPlanDiscoveryQueries).',
-              })}
-          >
-            LLM Planner: {plannerEnabledLive ? 'ON' : 'OFF'}
-          </TooltipBadge>
-        )}
         {hasCalls && (
           <TooltipBadge
             className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${
@@ -418,12 +390,12 @@ export function PrefetchSearchPlannerPanel({
           tooltipOn={formatTooltip({
             what: `Primary pass ran ${reasonSummary.discovery_planner_primary} time(s).`,
             effect: 'Generates core query ideas from planner inputs.',
-            setBy: 'phase2LlmEnabled + planner model (phase2LlmModel/llmModelPlan).',
+            setBy: 'Planner model (phase2LlmModel/llmModelPlan).',
           })}
           tooltipOff={formatTooltip({
             what: 'Primary pass not observed.',
             effect: 'No base planner output in this sample.',
-            setBy: 'phase2LlmEnabled and phase2LlmModel/llmModelPlan.',
+            setBy: 'Planner model (phase2LlmModel/llmModelPlan).',
           })}
         />
         <PlannerPassBadge

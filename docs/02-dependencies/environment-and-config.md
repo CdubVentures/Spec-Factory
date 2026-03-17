@@ -2,7 +2,7 @@
 
 > **Purpose:** Map the live configuration surfaces, environment manifests, and user-editable settings contracts so an arriving LLM can locate the single source of truth for each knob.
 > **Prerequisites:** [stack-and-toolchain.md](./stack-and-toolchain.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Config Surfaces
 
@@ -25,6 +25,7 @@
 - It contains a partial set of secrets and integration keys only.
 - The file itself instructs operators to tune many defaults in `src/shared/settingsDefaults.js`.
 - Do not infer missing config keys from `.env.example`; use `src/core/config/manifest/*.js` and `src/config.js`.
+- `npm run env:check` still fails on 2026-03-16 because manifest coverage is incomplete; the current missing-key set is tracked in [../05-operations/known-issues.md](../05-operations/known-issues.md).
 
 ## Manifest Group Inventory
 

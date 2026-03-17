@@ -122,11 +122,13 @@ export async function planDiscoveryQueriesLLM({
   logger,
   llmContext = {}
 }) {
-  if (!config.llmEnabled || !config.llmPlanDiscoveryQueries || !hasLlmRouteApiKey(config, { role: 'plan' })) {
+  if (!hasLlmRouteApiKey(config, { role: 'plan' })) {
     return [];
   }
 
   const budgetGuard = llmContext?.budgetGuard;
+  // Archetype context from search profile (if available via llmContext)
+  const archetypeContext = llmContext?.archetypeContext || {};
   const payload = {
     product: {
       category: job.category || categoryConfig.category,
@@ -136,18 +138,26 @@ export async function planDiscoveryQueriesLLM({
     },
     criticalFields: categoryConfig.schema?.critical_fields || [],
     missingCriticalFields,
-    existingQueries: filterRelevantQueries(baseQueries, missingCriticalFields).slice(0, 20)
+    existingQueries: filterRelevantQueries(baseQueries, missingCriticalFields).slice(0, 50),
+    archetypes_emitted: archetypeContext.archetypes_emitted || [],
+    hosts_targeted: archetypeContext.hosts_targeted || [],
+    uncovered_search_worthy: archetypeContext.uncovered_search_worthy || [],
+    representative_gaps: archetypeContext.representative_gaps || []
   };
   const payloadSize = JSON.stringify(payload).length;
 
+  const archetypeHint = (payload.archetypes_emitted || []).length > 0
+    ? `Archetype queries already target: ${payload.archetypes_emitted.join(', ')}. Focus on GAPS not covered by these source types.`
+    : '';
   const baseSystem = [
     'You generate focused web research queries for hardware specification collection.',
     'Output 5-12 short search queries.',
     'Prioritize manufacturer docs, manuals, instrumented labs, and trusted databases.',
     'Do not include junk domains, login workflows, or irrelevant topics.',
     'The existingQueries show searches already tried. Generate DIFFERENT query patterns covering new angles.',
-    'Vary strategies: official product pages, spec databases, review sites, teardowns, comparison pages.'
-  ];
+    'Vary strategies: official product pages, spec databases, review sites, teardowns, comparison pages.',
+    archetypeHint
+  ].filter(Boolean);
 
   const passCap = 3;
   const passSpecs = [

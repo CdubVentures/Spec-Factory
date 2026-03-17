@@ -16,7 +16,7 @@ test('runSourceFinalizationPhase consumes grouped context contracts without flat
   const extractionContext = buildSourceExtractionPhaseContext({
     logger: { info() {}, warn() {}, error() {} },
     planner: { enqueue() {} },
-    config: { llmEnabled: false },
+    config: {},
     category: 'mouse',
     productId: 'mouse-test',
     sourceResults,

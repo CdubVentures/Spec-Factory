@@ -41,6 +41,16 @@ export function normalizeToken(value) {
     .trim();
 }
 
+const LOW_VALUE_SUBDOMAIN_PREFIXES = new Set([
+  'mysupport', 'support', 'help', 'community', 'forum', 'forums',
+  'status', 'blog', 'careers', 'jobs', 'investor', 'ir',
+]);
+
+export function isLowValueSubdomain(host) {
+  const parts = String(host || '').toLowerCase().split('.');
+  return parts.length > 2 && LOW_VALUE_SUBDOMAIN_PREFIXES.has(parts[0]);
+}
+
 export function extractRootDomain(hostname) {
   const host = (hostname || '').toLowerCase();
   const parts = host.split('.').filter(Boolean);

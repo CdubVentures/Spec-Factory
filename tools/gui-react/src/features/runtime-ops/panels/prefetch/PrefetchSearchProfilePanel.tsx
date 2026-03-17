@@ -164,7 +164,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
     () => deriveLlmPlannerStatus(data as unknown as Record<string, unknown>),
     [data],
   );
-  const llmPlannerActive = liveSettings?.phase2LlmEnabled ?? llmPlannerFromArtifact;
+  const llmPlannerActive = llmPlannerFromArtifact;
   const liveProvider = liveSettings?.searchProvider || '';
   const llmPlannedQueries = useMemo(() => {
     const planned = new Set<string>();

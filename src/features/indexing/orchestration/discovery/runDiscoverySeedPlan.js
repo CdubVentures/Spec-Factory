@@ -86,6 +86,7 @@ export async function runDiscoverySeedPlan({
   // WHY: Compute Schema 2→3→4 BEFORE discovery so the search_plan_handoff
   // is available as input to discoverCandidateSources (Schema 4 path).
   let searchPlanHandoff = null;
+  let seedSchema4 = null;
   if (config.enableSchema4SearchPlan) {
     try {
       const schema2 = computeNeedSetFn({
@@ -100,9 +101,9 @@ export async function runDiscoverySeedPlan({
         identityContext: roundContext?.identityContext || {},
         round: roundContext?.round || 0,
         roundMode: roundContext?.round_mode || 'seed',
-        brand: job?.brand || '',
-        model: job?.model || '',
-        baseModel: job?.baseModel || '',
+        brand: job?.brand || job?.identityLock?.brand || '',
+        model: job?.model || job?.identityLock?.model || '',
+        baseModel: job?.baseModel || job?.identityLock?.base_model || '',
         aliases: job?.aliases || [],
         settings: config,
         previousFieldHistories: roundContext?.previousFieldHistories || {},
@@ -116,8 +117,8 @@ export async function runDiscoverySeedPlan({
           run_id: runId,
           category: categoryConfig?.category || category,
           product_id: job?.productId || '',
-          brand: job?.brand || '',
-          model: job?.model || '',
+          brand: job?.brand || job?.identityLock?.brand || '',
+          model: job?.model || job?.identityLock?.model || '',
           aliases: job?.aliases || [],
         },
         learning: null,
@@ -131,6 +132,7 @@ export async function runDiscoverySeedPlan({
         llmContext,
       });
 
+      seedSchema4 = schema4;
       searchPlanHandoff = schema4?.search_plan_handoff || null;
 
       // WHY: Emit needset_computed with Schema 4 panel data so the runtime bridge
@@ -179,6 +181,12 @@ export async function runDiscoverySeedPlan({
     sourceEntries,
     searchPlanHandoff,
   });
+
+  // WHY: Attach the seed-phase schema4 so finalization can reuse it
+  // instead of re-calling the LLM. The needset planner fires once at run start.
+  if (seedSchema4) {
+    discoveryResult.seed_search_plan_output = seedSchema4;
+  }
 
   for (const url of discoveryResult.approvedUrls || []) {
     planner.enqueue(url, 'discovery_approved', { forceApproved: true, forceBrandBypass: false });

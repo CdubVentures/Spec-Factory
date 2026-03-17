@@ -2,7 +2,7 @@
 
 > **Purpose:** Map the live GUI route table, shared layouts, and client/server boundaries with exact file ownership.
 > **Prerequisites:** [frontend-architecture.md](./frontend-architecture.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Route Map
 

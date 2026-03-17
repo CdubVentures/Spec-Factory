@@ -8,7 +8,7 @@ test('buildSummaryArtifactsContext computes rowTsv and leaves markdown empty whe
   const tsvCalls = [];
 
   const result = await buildSummaryArtifactsContext({
-    config: { writeMarkdownSummary: false, llmEnabled: true, llmWriteSummary: true },
+    config: { writeMarkdownSummary: false, llmWriteSummary: true },
     fieldOrder: ['dpi'],
     normalized: { fields: { dpi: 32000 } },
     provenance: { dpi: [] },
@@ -41,7 +41,7 @@ test('buildSummaryArtifactsContext uses llm summary and falls back to determinis
   const markdownCalls = [];
 
   const result = await buildSummaryArtifactsContext({
-    config: { writeMarkdownSummary: true, llmEnabled: true, llmWriteSummary: true },
+    config: { writeMarkdownSummary: true, llmWriteSummary: true },
     fieldOrder: ['dpi'],
     normalized: { fields: { dpi: 32000 } },
     provenance: { dpi: [{ source: 'a' }] },

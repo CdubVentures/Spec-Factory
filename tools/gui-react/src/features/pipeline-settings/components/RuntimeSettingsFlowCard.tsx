@@ -220,7 +220,6 @@ export function RuntimeSettingsFlowCard({
     llmTokensWriteFallback,
     dynamicCrawleeEnabled,
     scannedPdfOcrEnabled,
-    phase2LlmEnabled,
     reextractIndexed,
     runtimeTraceEnabled,
   } = runtimeDraft;
@@ -288,7 +287,6 @@ export function RuntimeSettingsFlowCard({
   } = deriveRuntimeFlowControlLocks({
     dynamicCrawleeEnabled,
     scannedPdfOcrEnabled,
-    phase2LlmEnabled,
     reextractIndexed,
     runtimeTraceEnabled,
   });
@@ -682,7 +680,6 @@ export function RuntimeSettingsFlowCard({
           interface RuntimeSettingsLlmConfigResponse {
           llmModelPlan
           llmModelTriage
-          llmPlanDiscoveryQueries
           llmSerpRerankEnabled
           llmPlanFallbackModel
           llmExtractFallbackModel

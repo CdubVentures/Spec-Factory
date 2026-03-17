@@ -93,8 +93,6 @@ export async function runCategoryTrainer({
   const trainingConfig = {
     ...config,
     runProfile: 'standard',
-    llmExplicitlySet: true,
-    llmExplicitlyEnabled: Boolean(config.llmEnabled)
   };
   if (budgetPerProduct !== null && Number.isFinite(toFloat(budgetPerProduct, NaN))) {
     trainingConfig.llmPerProductBudgetUsd = Math.max(0, toFloat(budgetPerProduct, 0));

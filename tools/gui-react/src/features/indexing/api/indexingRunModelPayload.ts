@@ -2,7 +2,6 @@ type IndexingRunModelPayloadPrimitive = string | number | boolean;
 
 export interface BuildIndexingRunModelPayloadInput {
   searchProvider: string;
-  phase2LlmEnabled: boolean;
   phase2LlmModel: string;
   phase3LlmModel: string;
   llmTokensPlan: number;
@@ -29,8 +28,6 @@ export function buildIndexingRunModelPayload(
 ): Record<string, IndexingRunModelPayloadPrimitive> {
   return {
     searchProvider: input.searchProvider,
-    phase2LlmEnabled: input.phase2LlmEnabled,
-    llmPlanDiscoveryQueries: input.phase2LlmEnabled,
     phase2LlmModel: input.phase2LlmModel,
     phase3LlmModel: input.phase3LlmModel,
     runProfile: 'standard',

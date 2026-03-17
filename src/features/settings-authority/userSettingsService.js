@@ -23,8 +23,17 @@ import {
   recordSettingsWriteAttempt,
   recordSettingsWriteOutcome,
 } from '../../observability/settingsPersistenceCounters.js';
+import { DUAL_KEY_PAIRS } from '../../core/config/settingsKeyMap.js';
+
 const RUNTIME_KEYS_TO_PERSIST = new Set(RUNTIME_SETTINGS_KEYS);
 const CONVERGENCE_KEYS_TO_PERSIST = new Set(CONVERGENCE_SETTINGS_KEYS);
+
+// WHY: Maps each dual-key to its partner for runtime sync.
+// When one key is updated, the partner must also update to maintain SSOT.
+const DUAL_KEY_PARTNER = new Map();
+for (const [a, b] of DUAL_KEY_PAIRS) {
+  if (a !== b) { DUAL_KEY_PARTNER.set(a, b); DUAL_KEY_PARTNER.set(b, a); }
+}
 let userSettingsPersistQueue = Promise.resolve();
 
 function isMissingFileError(error) {
@@ -595,6 +604,8 @@ export function applyRuntimeSettingsToConfig(config, runtimeSettings = {}) {
   for (const [key, value] of Object.entries(source)) {
     if (Object.hasOwn(config, key)) {
       config[key] = value;
+      const partner = DUAL_KEY_PARTNER.get(key);
+      if (partner && Object.hasOwn(config, partner)) config[partner] = value;
     }
   }
 }
@@ -605,6 +616,8 @@ export function applyConvergenceSettingsToConfig(config, convergenceSettings = {
   for (const [key, value] of Object.entries(source)) {
     if (Object.hasOwn(config, key)) {
       config[key] = value;
+      const partner = DUAL_KEY_PARTNER.get(key);
+      if (partner && Object.hasOwn(config, partner)) config[partner] = value;
     }
   }
 }

@@ -63,13 +63,11 @@ function makePlannerLimits(overrides = {}) {
     maxCandidateUrls: 50,
     maxPagesPerDomain: 2,
     maxRunSeconds: 300,
-    phase2LlmEnabled: true,
     llmModelPlan: 'gemini-2.5-flash-lite',
     llmPlanProvider: 'gemini',
     llmPlanBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
     llmTokensPlan: 2048,
     llmMaxOutputTokensPlan: 2048,
-    llmPlanDiscoveryQueries: true,
     searchProfileCapMap: null,
     searchProvider: 'dual',
     ...overrides
@@ -133,7 +131,6 @@ function makeSearchPlanningContext(overrides = {}) {
 
 function makeConfig(overrides = {}) {
   return {
-    phase2LlmEnabled: true,
     llmModelPlan: 'gemini-2.5-flash-lite',
     llmPlanProvider: 'gemini',
     llmPlanBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
@@ -142,7 +139,6 @@ function makeConfig(overrides = {}) {
     llmBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
     llmTimeoutMs: 30000,
     discoveryMaxQueries: 6,
-    llmPlanDiscoveryQueries: true,
     ...overrides
   };
 }
@@ -266,18 +262,6 @@ describe('buildSearchPlan', () => {
       assert.equal(result.planner.planner_complete, true);
     });
 
-    it('phase2LlmEnabled=false → mode=disabled', async () => {
-      const ctx = makeSearchPlanningContext({
-        planner_limits: makePlannerLimits({ phase2LlmEnabled: false }),
-      });
-      const result = await buildSearchPlan({
-        searchPlanningContext: ctx,
-        config: makeConfig(),
-      });
-
-      assert.equal(result.planner.mode, 'disabled');
-      assert.equal(result.search_plan_handoff.queries.length, 0);
-    });
   });
 
   // ===== LLM request projection =====

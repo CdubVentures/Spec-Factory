@@ -33,7 +33,7 @@ describe('escalationPlanner', () => {
       missingFields: ['click_latency', 'sensor'],
       product,
       previousQueries: ['Razer Viper V3 Pro specifications'],
-      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      config: { llmModelPlan: 'test-model' },
       callLlmFn: llm.callLlm
     });
     assert.ok(Array.isArray(result));
@@ -51,7 +51,7 @@ describe('escalationPlanner', () => {
       missingFields: ['weight'],
       product,
       previousQueries: [],
-      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      config: { llmModelPlan: 'test-model' },
       callLlmFn: llm.callLlm
     });
     assert.equal(result.length, 1);
@@ -66,7 +66,7 @@ describe('escalationPlanner', () => {
       missingFields: ['weight'],
       product,
       previousQueries: [],
-      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      config: { llmModelPlan: 'test-model' },
       callLlmFn: llm.callLlm
     });
     assert.ok(Array.isArray(result));

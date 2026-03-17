@@ -55,8 +55,6 @@ test('planDiscoveryQueriesLLM runs multi-pass planning and dedupes output', asyn
       baseQueries: ['logitech g pro x superlight 2 specs'],
       missingCriticalFields: ['click_latency'],
       config: {
-        llmEnabled: true,
-        llmPlanDiscoveryQueries: true,
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
@@ -138,8 +136,6 @@ test('planDiscoveryQueriesLLM returns structured rows with query and target_fiel
       baseQueries: [],
       missingCriticalFields: ['weight'],
       config: {
-        llmEnabled: true,
-        llmPlanDiscoveryQueries: true,
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',

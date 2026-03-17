@@ -341,7 +341,6 @@ test('process/start forwards representative runtime override families into child
       localOutputRoot: path.resolve('fixtures', 'output'),
       runtimeEventsKey: '_runtime/custom-events.jsonl',
       writeMarkdownSummary: false,
-      llmEnabled: true,
       llmWriteSummary: true,
       awsRegion: 'us-west-2',
       s3Bucket: 'spec-bucket',
@@ -402,7 +401,6 @@ test('process/start forwards representative runtime override families into child
   assert.equal(capturedEnv?.LOCAL_OUTPUT_ROOT, path.resolve('fixtures', 'output'));
   assert.equal(capturedEnv?.RUNTIME_EVENTS_KEY, '_runtime/custom-events.jsonl');
   assert.equal(capturedEnv?.WRITE_MARKDOWN_SUMMARY, 'false');
-  assert.equal(capturedEnv?.LLM_ENABLED, 'true');
   assert.equal(capturedEnv?.LLM_WRITE_SUMMARY, 'true');
   assert.equal(capturedEnv?.AWS_REGION, 'us-west-2');
   assert.equal(capturedEnv?.S3_BUCKET, 'spec-bucket');

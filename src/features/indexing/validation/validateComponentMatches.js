@@ -113,7 +113,7 @@ export async function validateComponentMatches({
   budgetGuard,
   costRates,
 }) {
-  const enabled = Boolean(config.llmEnabled && hasLlmRouteApiKey(config, { role: 'validate' }));
+  const enabled = Boolean(hasLlmRouteApiKey(config, { role: 'validate' }));
   if (!enabled || items.length === 0) {
     return { enabled: false, decisions: [] };
   }

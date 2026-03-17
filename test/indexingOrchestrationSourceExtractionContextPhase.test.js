@@ -39,7 +39,7 @@ test('buildSourceExtractionPhaseContext assembles a frozen grouped source finali
   const context = buildSourceExtractionPhaseContext({
     logger,
     planner,
-    config: { llmEnabled: false },
+    config: {},
     category: 'mouse',
     productId: 'mouse-test',
     sourceResults: [],

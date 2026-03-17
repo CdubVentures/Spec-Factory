@@ -218,7 +218,7 @@ export async function rerankSerpResults({
     .sort((a, b) => b.score_det - a.score_det || a.rank - b.rank)
     .slice(0, Math.max(1, topK));
 
-  if (!config?.llmEnabled || !hasLlmRouteApiKey(config, { role: 'plan' })) {
+  if (!hasLlmRouteApiKey(config, { role: 'plan' })) {
     return deterministic.map((row) => ({
       ...row,
       keep: true,

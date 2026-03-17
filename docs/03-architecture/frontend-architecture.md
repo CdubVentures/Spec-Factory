@@ -2,7 +2,7 @@
 
 > **Purpose:** Describe the verified GUI framework, routing, state, data-fetching boundaries, and component ownership with exact file paths.
 > **Prerequisites:** [system-map.md](./system-map.md), [../02-dependencies/stack-and-toolchain.md](../02-dependencies/stack-and-toolchain.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Framework and Build Model
 

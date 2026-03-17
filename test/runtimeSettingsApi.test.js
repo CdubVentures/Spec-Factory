@@ -147,7 +147,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
 
     const BOOL_KEYS = [
       // discoveryEnabled removed — hardcoded invariant, no longer in GET boolMap
-      'phase2LlmEnabled',
+      // phase2LlmEnabled removed — hardcoded invariant, no longer in GET boolMap
       'reextractIndexed', 'scannedPdfOcrEnabled', 'scannedPdfOcrPromoteCandidates',
       'dynamicCrawleeEnabled', 'crawleeHeadless', 'fetchSchedulerEnabled', 'preferHttpFetcher', 'runtimeScreencastEnabled',
       'frontierEnableSqlite', 'frontierStripTrackingParams', 'frontierRepairSearchEnabled',

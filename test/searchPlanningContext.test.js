@@ -159,20 +159,18 @@ describe('buildSearchPlanningContext', () => {
         runContext: makeRunContext()
       });
 
-      assert.equal(result.planner_limits.discoveryEnabled, false);
+      assert.equal(result.planner_limits.discoveryEnabled, true);
       assert.equal(result.planner_limits.discoveryMaxQueries, 6);
       assert.equal(result.planner_limits.discoveryMaxDiscovered, 80);
       assert.equal(result.planner_limits.maxUrlsPerProduct, 20);
       assert.equal(result.planner_limits.maxCandidateUrls, 50);
       assert.equal(result.planner_limits.maxPagesPerDomain, 2);
       assert.equal(result.planner_limits.maxRunSeconds, 300);
-      assert.equal(result.planner_limits.phase2LlmEnabled, false);
       assert.equal(result.planner_limits.llmModelPlan, '');
       assert.equal(result.planner_limits.llmPlanProvider, '');
       assert.equal(result.planner_limits.llmPlanBaseUrl, '');
       assert.equal(result.planner_limits.llmTokensPlan, 2048);
       assert.equal(result.planner_limits.llmMaxOutputTokensPlan, 2048);
-      assert.equal(result.planner_limits.llmPlanDiscoveryQueries, true);
       assert.equal(result.planner_limits.searchProfileCapMap, null);
       assert.equal(result.planner_limits.searchProvider, 'dual');
     });
@@ -532,13 +530,11 @@ describe('buildSearchPlanningContext', () => {
         maxCandidateUrls: 60,
         maxPagesPerDomain: 3,
         maxRunSeconds: 600,
-        phase2LlmEnabled: true,
         llmModelPlan: 'gpt-4o',
         llmPlanProvider: 'openai',
         llmPlanBaseUrl: 'https://api.openai.com/v1',
         llmTokensPlan: 4096,
         llmMaxOutputTokensPlan: 4096,
-        llmPlanDiscoveryQueries: true,
         searchProfileCapMapJson: '{"deterministicAliasCap":6}',
         searchProvider: 'google'
       };
@@ -555,20 +551,17 @@ describe('buildSearchPlanningContext', () => {
       assert.equal(result.planner_limits.maxCandidateUrls, 60);
       assert.equal(result.planner_limits.maxPagesPerDomain, 3);
       assert.equal(result.planner_limits.maxRunSeconds, 600);
-      assert.equal(result.planner_limits.phase2LlmEnabled, true);
       assert.equal(result.planner_limits.llmModelPlan, 'gpt-4o');
       assert.equal(result.planner_limits.llmPlanProvider, 'openai');
       assert.equal(result.planner_limits.llmPlanBaseUrl, 'https://api.openai.com/v1');
       assert.equal(result.planner_limits.llmTokensPlan, 4096);
       assert.equal(result.planner_limits.llmMaxOutputTokensPlan, 4096);
-      assert.equal(result.planner_limits.llmPlanDiscoveryQueries, true);
       assert.deepStrictEqual(result.planner_limits.searchProfileCapMap, { deterministicAliasCap: 6 });
       assert.equal(result.planner_limits.searchProvider, 'google');
     });
 
     it('fallback keys used when primary missing', () => {
       const config = {
-        phase2LlmEnabled: true,
         phase2LlmModel: 'gemini-2.5-flash-lite',
         llmProvider: 'gemini',
         llmBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
@@ -584,21 +577,6 @@ describe('buildSearchPlanningContext', () => {
       assert.equal(result.planner_limits.llmPlanBaseUrl, 'https://generativelanguage.googleapis.com/v1beta/openai');
     });
 
-    it('llmPlanDiscoveryQueries false only when explicitly false', () => {
-      const result1 = buildSearchPlanningContext({
-        needSetOutput: makeNeedSetOutput(),
-        config: { llmPlanDiscoveryQueries: false },
-        runContext: makeRunContext()
-      });
-      assert.equal(result1.planner_limits.llmPlanDiscoveryQueries, false);
-
-      const result2 = buildSearchPlanningContext({
-        needSetOutput: makeNeedSetOutput(),
-        config: {},
-        runContext: makeRunContext()
-      });
-      assert.equal(result2.planner_limits.llmPlanDiscoveryQueries, true);
-    });
 
     it('invalid searchProfileCapMapJson → null', () => {
       const result = buildSearchPlanningContext({

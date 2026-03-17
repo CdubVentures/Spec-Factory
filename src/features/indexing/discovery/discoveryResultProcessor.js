@@ -334,7 +334,7 @@ export async function processDiscoveryResults({
   const triageMaxUrls = Math.max(1, Number.parseInt(String(config.serpTriageMaxUrls ?? discoveryCap), 10) || discoveryCap);
   const llmTriageConfigEnabled = Boolean(
     triageEnabledSetting
-    && (uberMode || (config.llmEnabled && config.llmSerpRerankEnabled)),
+    && (uberMode || config.llmSerpRerankEnabled),
   );
   // Conditional LLM triage: skip LLM when deterministic reranking already produces
   // enough high-quality results (>= 60% of triageMaxUrls above triageMinScore).
@@ -646,7 +646,7 @@ export async function processDiscoveryResults({
     discovered_count: discovered.length,
     approved_count: approvedOnly.length,
     candidate_count: candidateOnly.length,
-    llm_query_planning: Boolean(config.llmEnabled && config.llmPlanDiscoveryQueries),
+    llm_query_planning: true,
     llm_query_model: String(config.llmModelPlan || '').trim(),
     llm_serp_triage: llmTriageEnabled,
     llm_serp_triage_model: String(config.llmModelTriage || config.cortexModelRerankFast || config.cortexModelSearchFast || config.llmModelFast || '').trim(),
@@ -680,7 +680,7 @@ export async function processDiscoveryResults({
     provider: config.searchProvider,
     provider_state: providerState,
     query_concurrency: queryConcurrency,
-    llm_query_planning: Boolean(config.llmEnabled && config.llmPlanDiscoveryQueries),
+    llm_query_planning: true,
     llm_query_model: String(config.llmModelPlan || '').trim(),
     llm_serp_triage: llmTriageEnabled,
     llm_serp_triage_model: String(config.llmModelTriage || config.cortexModelRerankFast || config.cortexModelSearchFast || config.llmModelFast || '').trim(),

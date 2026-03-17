@@ -5,7 +5,7 @@ export async function planEscalationQueries({
   config,
   callLlmFn
 }) {
-  if (!config.llmEnabled || !callLlmFn) return [];
+  if (!callLlmFn) return [];
 
   const fields = toArray(missingFields);
   if (fields.length === 0) return [];

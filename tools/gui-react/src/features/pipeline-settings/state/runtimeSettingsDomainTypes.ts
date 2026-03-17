@@ -271,7 +271,6 @@ export interface RuntimeHydrationBindingSetters {
   setEnableCoreDeepGates: (value: boolean) => void;
   setEnableQueryIndex?: (value: boolean) => void;
   setEnableUrlIndex?: (value: boolean) => void;
-  setPhase2LlmEnabled: (value: boolean) => void;
   setLlmExtractionCacheEnabled: (value: boolean) => void;
   setReextractIndexed: (value: boolean) => void;
   setFetchCandidateSources: (value: boolean) => void;
@@ -314,7 +313,6 @@ export interface RuntimeHydrationBindingSetters {
   setMirrorToS3: (value: boolean) => void;
   setMirrorToS3Input: (value: boolean) => void;
   setWriteMarkdownSummary: (value: boolean) => void;
-  setLlmEnabled: (value: boolean) => void;
   setLlmWriteSummary: (value: boolean) => void;
   setFetchSchedulerEnabled: (value: boolean) => void;
   setPreferHttpFetcher: (value: boolean) => void;
@@ -615,8 +613,6 @@ export interface RuntimeSettingsPayloadSerializerInput {
   enableCoreDeepGates: boolean;
   enableQueryIndex?: boolean;
   enableUrlIndex?: boolean;
-  llmPlanDiscoveryQueries?: boolean;
-  phase2LlmEnabled: boolean;
   llmExtractionCacheEnabled: boolean;
   reextractIndexed: boolean;
   fetchCandidateSources: boolean;
@@ -662,7 +658,6 @@ export interface RuntimeSettingsPayloadSerializerInput {
   mirrorToS3: boolean;
   mirrorToS3Input: boolean;
   writeMarkdownSummary: boolean;
-  llmEnabled: boolean;
   llmWriteSummary: boolean;
   fetchSchedulerEnabled: boolean;
   preferHttpFetcher: boolean;

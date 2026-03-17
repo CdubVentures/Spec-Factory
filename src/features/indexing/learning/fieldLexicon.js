@@ -1,4 +1,4 @@
-import { nowIso, normalizeToken } from '../../../utils/common.js';
+import { nowIso, normalizeToken, extractRootDomain } from '../../../utils/common.js';
 
 const STOP_TOKENS = new Set([
   'html',
@@ -44,8 +44,9 @@ function bumpSynonym(fieldRow, token, host, seenAt) {
     };
   }
   fieldRow.synonyms[token].count += 1;
-  if (host) {
-    fieldRow.synonyms[token].hosts[host] = (fieldRow.synonyms[token].hosts[host] || 0) + 1;
+  const rootHost = host ? extractRootDomain(host) : '';
+  if (rootHost) {
+    fieldRow.synonyms[token].hosts[rootHost] = (fieldRow.synonyms[token].hosts[rootHost] || 0) + 1;
   }
   fieldRow.synonyms[token].last_seen_at = seenAt;
 }
@@ -120,7 +121,7 @@ export function updateFieldLexicon({
       for (const token of tokenizeKeyPath(evidence.keyPath)) {
         bumpSynonym(fieldRow, token, host, seenAt);
       }
-      bumpSynonym(fieldRow, normalizeToken(evidence.method), host, seenAt);
+      // WHY: method names (dom_xpath, ldjson, etc.) are extraction metadata, not field synonyms
     }
     trimFieldRow(fieldRow);
   }

@@ -453,3 +453,161 @@ describe('Phase 02 — buildTargetedQueries integration', () => {
     assert.ok(queries.every((q) => typeof q === 'string'));
   });
 });
+
+describe('Phase 02 — Archetype Integration', () => {
+  function makeArchetypeConfig() {
+    return makeCategoryConfig({
+      sourceRegistry: {
+        rtings_com: {
+          display_name: 'RTINGS',
+          base_url: 'https://www.rtings.com',
+          content_types: ['review', 'benchmark'],
+          field_coverage: {
+            high: ['click_latency', 'weight', 'sensor'],
+            medium: ['polling_rate', 'dpi'],
+            low: []
+          },
+          discovery: { source_type: 'lab_review', priority: 98, enabled: true }
+        },
+        techpowerup_com: {
+          display_name: 'TechPowerUp',
+          base_url: 'https://www.techpowerup.com',
+          content_types: ['review'],
+          field_coverage: {
+            high: ['sensor', 'lift', 'switch'],
+            medium: ['weight', 'dpi'],
+            low: []
+          },
+          discovery: { source_type: 'lab_review', priority: 94, enabled: true }
+        },
+        eloshapes_com: {
+          display_name: 'EloShapes',
+          base_url: 'https://www.eloshapes.com',
+          content_types: ['spec_database'],
+          field_coverage: {
+            high: ['weight', 'sensor'],
+            medium: ['dpi', 'connection'],
+            low: []
+          },
+          discovery: { source_type: 'spec_database', priority: 60, enabled: true }
+        }
+      },
+      fieldRules: {
+        fields: {
+          weight: {
+            required_level: 'critical',
+            search_hints: { query_terms: ['weight grams'], domain_hints: ['razer.com'], preferred_content_types: ['spec'] }
+          },
+          sensor: {
+            required_level: 'critical',
+            search_hints: { query_terms: ['optical sensor model'], domain_hints: ['techpowerup.com'], preferred_content_types: ['teardown_review', 'lab_review'] }
+          },
+          click_latency: {
+            required_level: 'required',
+            search_hints: { query_terms: ['click latency ms'], domain_hints: ['rtings.com'], preferred_content_types: ['lab_review', 'benchmark'] }
+          },
+          dpi: {
+            required_level: 'expected',
+            search_hints: { query_terms: ['max dpi'], preferred_content_types: ['spec'] }
+          },
+          polling_rate: {
+            required_level: 'critical',
+            search_hints: { query_terms: ['polling rate hz'], preferred_content_types: ['spec'] }
+          },
+          switch: {
+            required_level: 'expected',
+            search_hints: { query_terms: ['mouse switch type'], domain_hints: ['techpowerup.com'], preferred_content_types: ['teardown_review'] }
+          },
+          connection: {
+            required_level: 'expected',
+            search_hints: { query_terms: ['wireless connectivity'], preferred_content_types: ['spec'] }
+          }
+        }
+      }
+    });
+  }
+
+  it('4+ distinct domain_hint values when 5+ fields missing', () => {
+    const profile = buildSearchProfile({
+      job: makeJob(),
+      categoryConfig: makeArchetypeConfig(),
+      missingFields: ['weight', 'sensor', 'click_latency', 'dpi', 'polling_rate', 'switch', 'connection'],
+      maxQueries: 48
+    });
+
+    const domainHints = new Set(
+      profile.query_rows.map((r) => r.domain_hint).filter(Boolean)
+    );
+    console.log('[ARCHETYPE] distinct domain_hints:', [...domainHints]);
+    assert.ok(domainHints.size >= 4, `expected 4+ distinct domain_hints, got ${domainHints.size}: ${[...domainHints]}`);
+  });
+
+  it('3+ distinct doc_hint values', () => {
+    const profile = buildSearchProfile({
+      job: makeJob(),
+      categoryConfig: makeArchetypeConfig(),
+      missingFields: ['weight', 'sensor', 'click_latency', 'dpi', 'polling_rate'],
+      maxQueries: 48
+    });
+
+    const docHints = new Set(
+      profile.query_rows.map((r) => r.doc_hint).filter(Boolean)
+    );
+    console.log('[ARCHETYPE] distinct doc_hints:', [...docHints]);
+    assert.ok(docHints.size >= 3, `expected 3+ distinct doc_hints, got ${docHints.size}: ${[...docHints]}`);
+  });
+
+  it('no duplicate site: for same host within archetype emission (Set enforcement)', () => {
+    const profile = buildSearchProfile({
+      job: makeJob(),
+      categoryConfig: makeArchetypeConfig(),
+      missingFields: ['weight', 'sensor', 'click_latency', 'dpi', 'polling_rate'],
+      maxQueries: 48
+    });
+
+    const archetypeRows = profile.query_rows.filter((r) => r._meta?.archetype);
+    const siteQueries = archetypeRows.filter((r) => r.query.includes('site:'));
+    const seen = new Map();
+    for (const row of siteQueries) {
+      const match = row.query.match(/site:(\S+)/);
+      if (match) {
+        const key = `${row._meta.archetype}:${match[1]}`;
+        assert.ok(!seen.has(key), `duplicate site:${match[1]} in archetype ${row._meta.archetype}`);
+        seen.set(key, true);
+      }
+    }
+    console.log('[ARCHETYPE] site: hosts verified unique per archetype:', [...seen.keys()]);
+    assert.ok(seen.size > 0, 'at least one archetype site: query exists');
+  });
+
+  it('base_templates never empty when brand+model present', () => {
+    const profile = buildSearchProfile({
+      job: makeJob(),
+      categoryConfig: makeArchetypeConfig(),
+      missingFields: ['weight'],
+      maxQueries: 24
+    });
+
+    console.log('[ARCHETYPE] base_templates:', profile.base_templates);
+    assert.ok(profile.base_templates.length > 0, 'base_templates is non-empty');
+  });
+
+  it('archetype_summary present with manufacturer + lab_review keys and expected shape', () => {
+    const profile = buildSearchProfile({
+      job: makeJob(),
+      categoryConfig: makeArchetypeConfig(),
+      missingFields: ['weight', 'sensor', 'click_latency', 'dpi', 'polling_rate'],
+      maxQueries: 48
+    });
+
+    console.log('[ARCHETYPE] archetype_summary:', JSON.stringify(profile.archetype_summary));
+    assert.ok(typeof profile.archetype_summary === 'object', 'archetype_summary is object');
+    assert.ok(profile.archetype_summary.manufacturer, 'manufacturer key in summary');
+    assert.ok(profile.archetype_summary.lab_review, 'lab_review key in summary');
+    for (const [key, value] of Object.entries(profile.archetype_summary)) {
+      assert.ok(Array.isArray(value.hosts), `${key}.hosts is array`);
+      assert.equal(typeof value.queries_emitted, 'number', `${key}.queries_emitted is number`);
+      assert.equal(typeof value.coverage_hint_count, 'number', `${key}.coverage_hint_count is number`);
+    }
+  });
+});

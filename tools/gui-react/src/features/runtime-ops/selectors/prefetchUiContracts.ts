@@ -35,12 +35,8 @@ export function resolveNextPrefetchTabSelection({
   return activeTab === tabKey ? null : tabKey;
 }
 
-export function buildDisabledPrefetchTabs(liveSettings: PrefetchLiveSettings | undefined) {
+export function buildDisabledPrefetchTabs(_liveSettings: PrefetchLiveSettings | undefined) {
   const disabled = new Set<PrefetchTabKey>();
-  if (!liveSettings?.llmEnabled) {
-    disabled.add('brand_resolver');
-    disabled.add('search_planner');
-  }
   return disabled;
 }
 

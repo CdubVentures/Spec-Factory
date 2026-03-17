@@ -58,7 +58,6 @@ test('runLlmHealthCheck validates response and writes billing ledger', async () 
     const result = await runLlmHealthCheck({
       storage,
       config: {
-        llmEnabled: true,
         llmApiKey: 'ds-test',
         llmProvider: 'deepseek',
         llmBaseUrl: 'https://api.deepseek.com',

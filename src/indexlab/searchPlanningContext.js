@@ -63,13 +63,11 @@ function derivePlannerLimits(config) {
     maxCandidateUrls: toInt(config.maxCandidateUrls, 50),
     maxPagesPerDomain: toInt(config.maxPagesPerDomain, 2),
     maxRunSeconds: toInt(config.maxRunSeconds, 300),
-    phase2LlmEnabled: Boolean(config.phase2LlmEnabled),
     llmModelPlan: String(config.llmModelPlan || config.phase2LlmModel || ''),
     llmPlanProvider: String(config.llmPlanProvider || config.llmProvider || ''),
     llmPlanBaseUrl: String(config.llmPlanBaseUrl || config.llmBaseUrl || ''),
     llmTokensPlan: toInt(config.llmTokensPlan, 2048),
     llmMaxOutputTokensPlan: toInt(config.llmMaxOutputTokensPlan, 2048),
-    llmPlanDiscoveryQueries: config.llmPlanDiscoveryQueries !== false,
     searchProfileCapMap: parseCapMap(config.searchProfileCapMapJson),
     searchProvider: String(config.searchProvider || 'dual'),
   };

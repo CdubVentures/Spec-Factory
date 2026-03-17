@@ -398,7 +398,6 @@ export function resolveCortexAsyncBaseUrl(envVars = {}) {
 
 export function buildServiceTargets(envVars = {}) {
   const targets = [];
-  const llmEnabled = parseBool(envVars.LLM_ENABLED, false);
   const cortexEnabled = parseBool(envVars.CORTEX_ENABLED, false);
   const asyncEnabledExplicit = hasOwn(envVars, 'CORTEX_ASYNC_ENABLED');
   const cortexAsyncEnabled = parseBool(envVars.CORTEX_ASYNC_ENABLED, false);
@@ -421,7 +420,7 @@ export function buildServiceTargets(envVars = {}) {
       asyncUrlMeta.source === 'chatmock_compose'
     );
 
-  if (llmEnabled || cortexEnabled) {
+  if (Boolean(envVars.LLM_API_KEY || envVars.LLM_BASE_URL) || cortexEnabled) {
     targets.push({
       id: 'svc_llm_sync',
       category: 'services',

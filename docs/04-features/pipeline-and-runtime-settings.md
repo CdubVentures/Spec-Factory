@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified settings persistence flow for runtime, convergence, UI, storage, and LLM-route controls.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Entry Points
 

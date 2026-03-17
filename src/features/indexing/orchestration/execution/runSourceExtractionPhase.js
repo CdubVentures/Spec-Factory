@@ -371,7 +371,6 @@ export async function runSourceExtractionPhase({
   ));
 
   const llmEligibleSource =
-    config.llmEnabled &&
     !runtimeOverrides.disable_llm &&
     Boolean(evidencePack) &&
     sourceStatusCode < 400 &&
@@ -390,7 +389,7 @@ export async function runSourceExtractionPhase({
       componentDBs: runtimeFieldRulesEngine?.componentDBs || {},
       knownValues: runtimeFieldRulesEngine?.knownValues || {}
     });
-  } else if (config.llmEnabled) {
+  } else {
     llmSkipReason = discoveryOnlySource
       ? 'discovery_only_source'
       : sourceStatusCode >= 500

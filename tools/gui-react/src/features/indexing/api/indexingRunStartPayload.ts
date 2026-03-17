@@ -252,7 +252,6 @@ export function buildIndexingRunStartPayload(
     eloSupabaseAnonKey: readString(s.eloSupabaseAnonKey),
     eloSupabaseEndpoint: readString(s.eloSupabaseEndpoint),
     ...buildIndexingRunLearningPayload({
-      llmEnabled: readBool(s.llmEnabled),
       llmWriteSummary: readBool(s.llmWriteSummary),
       llmProvider: readString(s.llmProvider),
       llmBaseUrl: readString(s.llmBaseUrl),
@@ -309,7 +308,6 @@ export function buildIndexingRunStartPayload(
     }),
     ...buildIndexingRunModelPayload({
       searchProvider: readString(s.searchProvider),
-      phase2LlmEnabled: readBool(s.phase2LlmEnabled),
       phase2LlmModel: readString(s.phase2LlmModel),
       phase3LlmModel: readString(s.phase3LlmModel),
       llmTokensPlan: Number(s.llmTokensPlan || 0),

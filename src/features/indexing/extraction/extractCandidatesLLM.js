@@ -161,7 +161,7 @@ export async function extractCandidatesLLM({
   knownValues = {},
   specDb = null
 }) {
-  if (!config.llmEnabled || !hasAnyLlmApiKey(config)) {
+  if (!hasAnyLlmApiKey(config)) {
     return {
       identityCandidates: {},
       fieldCandidates: [],

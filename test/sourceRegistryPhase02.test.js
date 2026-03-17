@@ -927,12 +927,6 @@ describe('Phase02 — Default-Sync (safety-audited)', () => {
     );
   });
 
-  it('llmEnabled defaults to true (canonical SSOT: settingsDefaults.js)', () => {
-    assert.ok(
-      defaultConfig.llmEnabled === true,
-      'llmEnabled should default to true per settingsDefaults.js canonical override'
-    );
-  });
 });
 
 // ========================================================================

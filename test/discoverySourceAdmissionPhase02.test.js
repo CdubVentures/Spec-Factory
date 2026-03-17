@@ -21,8 +21,6 @@ function makeConfig(tempRoot, overrides = {}) {
     searchProvider: 'searxng',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
-    llmEnabled: false,
-    llmPlanDiscoveryQueries: false,
     ...overrides
   };
 }
@@ -95,7 +93,6 @@ function installCachedBrandAndDomainLookups(storage, {
 test('discoverCandidateSources rejects forum-classified hosts before selection', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase02-forum-'));
   const config = makeConfig(tempRoot, {
-    llmEnabled: true,
     llmProvider: 'openai',
     llmApiKey: 'test-key',
     llmBaseUrl: 'http://llm.test'
@@ -161,9 +158,7 @@ test('discoverCandidateSources rejects forum-classified hosts before selection',
 
 test('discoverCandidateSources rejects manufacturer community subdomains even when cached classification says manufacturer', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase02-manufacturer-community-'));
-  const config = makeConfig(tempRoot, {
-    llmEnabled: false
-  });
+  const config = makeConfig(tempRoot);
   const storage = createStorage(config);
   installCachedBrandAndDomainLookups(storage, {
     domains: {
@@ -225,9 +220,7 @@ test('discoverCandidateSources rejects manufacturer community subdomains even wh
 
 test('discoverCandidateSources does not retain manufacturer community subdomains when they are the only live search hits', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase02-manufacturer-community-only-'));
-  const config = makeConfig(tempRoot, {
-    llmEnabled: false
-  });
+  const config = makeConfig(tempRoot);
   const storage = createStorage(config);
   installCachedBrandAndDomainLookups(storage, {
     domains: {
@@ -431,7 +424,6 @@ test('discoverCandidateSources rejects sibling-model manufacturer product pages 
 test('discoverCandidateSources honors explicit all-drop LLM SERP triage without deterministic fallback', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase02-llm-all-drop-'));
   const config = makeConfig(tempRoot, {
-    llmEnabled: true,
     llmProvider: 'openai',
     llmApiKey: 'test-key',
     llmBaseUrl: 'http://localhost:4141',
@@ -542,7 +534,6 @@ test('discoverCandidateSources honors explicit all-drop LLM SERP triage without 
 test('discoverCandidateSources keeps only explicit LLM keep URLs when triage omits other retailer candidates', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase02-partial-llm-triage-'));
   const config = makeConfig(tempRoot, {
-    llmEnabled: true,
     llmProvider: 'openai',
     llmApiKey: 'test-key',
     llmBaseUrl: 'http://localhost:4141',

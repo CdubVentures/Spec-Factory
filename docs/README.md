@@ -2,9 +2,9 @@
 
 > **Purpose:** Master entrypoint for the LLM-oriented current-state documentation set for this repository.
 > **Prerequisites:** None.
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
-Spec Factory is a local-first product-spec indexing and review workbench. The live runtime is a Node.js HTTP/WebSocket server in `src/api/guiServer.js` that serves a Vite-built React GUI from `tools/gui-react/`, persists canonical operational data in SQLite through `src/db/specDb.js`, stores authored category/rule content under `category_authority/`, and orchestrates discovery, extraction, review, and runtime operations for product categories such as mice.
+Spec Factory is a local-first product-spec indexing and review workbench. The live runtime is a Node.js HTTP/WebSocket server in `src/api/guiServer.js` that serves a Vite-built React GUI from `tools/gui-react/`, persists canonical operational data in SQLite through `src/db/specDb.js`, stores authored category and settings content under `category_authority/`, and orchestrates discovery, extraction, review, billing, learning, and runtime-operations workflows for categories such as `mouse`, `keyboard`, and `monitor`.
 
 ## LLM Reading Order
 
@@ -88,8 +88,14 @@ Spec Factory is a local-first product-spec indexing and review workbench. The li
 
 ### Supplemental
 
-- [Documentation Audit Ledger](./audit/documentation-audit-ledger.md)
-- [Implementation Assets](./implementation/README.md)
+- [Documentation Audit Ledger](./audits/documentation-audit-ledger.md)
+- [Spec Factory Knobs Maintenance Log](./05-operations/spec_factory_knobs_maintenance.md)
+- [Archetype Query Planner Validation - Pass 1 Live 3 Mice](./audits/archetype-query-planner-validation-pass1-live-3mice.md)
+- [Test Surface Reduction Audit - 2026-03-16](./audits/test-surface-reduction-2026-03-16.md)
+
+## Excluded Subtree
+
+- `docs/implementation/` exists on disk but is explicitly excluded from this current-state documentation pass and from the LLM reading order. Do not treat it as current-state authority.
 
 ## Validated Against
 
@@ -100,9 +106,10 @@ Spec Factory is a local-first product-spec indexing and review workbench. The li
 | source | `src/db/specDbSchema.js` | Canonical SQLite table inventory for the data-model docs |
 | config | `package.json` | Root scripts, Node engine, and backend dependency declarations |
 | config | `tools/gui-react/package.json` | GUI package scripts and frontend dependency declarations |
+| runtime | `http://127.0.0.1:8788/api/v1/health` | Live server responded with `ok: true` during the 2026-03-16 audit |
 
 ## Related Documents
 
 - [Scope](./01-project-overview/scope.md) - Defines what this repo is and what it explicitly is not.
 - [System Map](./03-architecture/system-map.md) - Fastest architecture-level view after this entrypoint.
-- [Documentation Audit Ledger](./audit/documentation-audit-ledger.md) - Records what was retained, replaced, and deleted during the rebuild.
+- [Documentation Audit Ledger](./audits/documentation-audit-ledger.md) - Records what was retained, replaced, edited, and deleted during the rebuild.

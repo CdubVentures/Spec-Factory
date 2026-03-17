@@ -3,8 +3,8 @@ Own API route registration for runtime, convergence, storage, UI, and LLM settin
 This boundary exposes the HTTP layer for settings while delegating canonical persistence and schema logic to `settings-authority`.
 
 ## Public API (The Contract)
-- `src/features/settings/api/configRoutes.js`: `registerConfigRoutes(ctx)`.
-- No root `src/features/settings/index.js` exists yet; route registration is the boundary contract.
+- `src/features/settings/index.js`: `registerConfigRoutes`, `createConfigRouteContext`.
+- Consumers must import from `index.js`, not from internal `api/` paths.
 
 ## Dependencies
 - Allowed: `src/features/settings-authority/index.js`, `src/api/events/dataChangeContract.js`, `src/api/services/runDataRelocationService.js`, and `src/observability/settingsPersistenceCounters.js`.

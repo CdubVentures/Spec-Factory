@@ -3,8 +3,8 @@ Own HTTP route registration for product, component, and enum review workflows.
 This boundary coordinates review payload assembly and mutations while leaning on catalog, indexing, and legacy API seams for supporting behavior.
 
 ## Public API (The Contract)
-- `src/features/review/api/reviewRoutes.js`: `registerReviewRoutes(ctx)`.
-- No root `src/features/review/index.js` exists yet; route registration is the boundary contract.
+- `src/features/review/index.js`: `registerReviewRoutes`, `createReviewRouteContext`.
+- Consumers must import from `index.js`, not from internal `api/` paths.
 
 ## Dependencies
 - Allowed: `src/features/catalog/index.js`, `src/features/indexing/index.js`, legacy route helpers under `src/api/**`, and `src/field-rules/**`.

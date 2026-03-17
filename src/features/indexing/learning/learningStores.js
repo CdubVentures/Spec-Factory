@@ -116,6 +116,8 @@ export class FieldAnchorsStore {
   }
 }
 
+// WHY: UrlMemoryStore uses soft decay (120-day window, 'decayed' status, never hard-blocks).
+// URLs are never permanently blacklisted — decayed entries are deprioritized, not rejected.
 export class UrlMemoryStore {
   constructor(db) {
     this._db = db;

@@ -3,7 +3,7 @@
 
 export const EVIDENCE_REPORT_FIELDS = Object.freeze([
   'run_id', 'scenario', 'product', 'brand_model', 'start_end',
-  'exit_code', 'searchProvider', 'llm_enabled', 'discoveryEnabled',
+  'exit_code', 'searchProvider', 'discoveryEnabled',
   'preferHttpFetcher', 'dynamicCrawleeEnabled', 'queries_executed',
   'pages_fetched', 'pages_blocked_error_404', 'llm_calls',
   'accepted_sources', 'key_parser_phases', 'key_parser_methods',
@@ -58,7 +58,6 @@ export function buildEvidenceReport(runData) {
     start_end: startEnd,
     exit_code: meta.exit_code ?? null,
     searchProvider: snap.searchProvider || null,
-    llm_enabled: snap.llmEnabled ?? null,
     discoveryEnabled: snap.discoveryEnabled ?? null,
     preferHttpFetcher: snap.preferHttpFetcher ?? null,
     dynamicCrawleeEnabled: snap.dynamicCrawleeEnabled ?? null,

@@ -137,8 +137,6 @@ export interface RuntimeSettingDefaults {
   serpRerankerWeightMapJson: string;
   scannedPdfOcrEnabled: boolean;
   scannedPdfOcrPromoteCandidates: boolean;
-  llmPlanDiscoveryQueries: boolean;
-  phase2LlmEnabled: boolean;
   reextractIndexed: boolean;
   discoveryEnabled: boolean;
   enableSourceRegistry: boolean;
@@ -251,7 +249,6 @@ export interface RuntimeSettingDefaults {
   s3OutputPrefix: string;
   eloSupabaseAnonKey: string;
   eloSupabaseEndpoint: string;
-  llmEnabled: boolean;
   llmWriteSummary: boolean;
   llmProvider: string;
   llmBaseUrl: string;

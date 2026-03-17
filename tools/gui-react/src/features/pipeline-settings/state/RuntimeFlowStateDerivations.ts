@@ -3,7 +3,6 @@ import type { RuntimeStepId } from './RuntimeFlowStepRegistry';
 interface RuntimeFlowControlLockInputs {
   dynamicCrawleeEnabled: boolean;
   scannedPdfOcrEnabled: boolean;
-  phase2LlmEnabled: boolean;
   reextractIndexed: boolean;
   runtimeTraceEnabled: boolean;
 }
@@ -26,7 +25,6 @@ export interface RuntimeFlowControlLocks {
 export function deriveRuntimeFlowControlLocks({
   dynamicCrawleeEnabled,
   scannedPdfOcrEnabled,
-  phase2LlmEnabled,
   reextractIndexed,
   runtimeTraceEnabled,
 }: RuntimeFlowControlLockInputs): RuntimeFlowControlLocks {
@@ -34,7 +32,7 @@ export function deriveRuntimeFlowControlLocks({
     dynamicFetchControlsLocked: !dynamicCrawleeEnabled,
     ocrControlsLocked: !scannedPdfOcrEnabled,
     plannerControlsLocked: false,
-    plannerModelLocked: !phase2LlmEnabled,
+    plannerModelLocked: false,
     triageModelLocked: false,
     reextractWindowLocked: !reextractIndexed,
     traceControlsLocked: !runtimeTraceEnabled,

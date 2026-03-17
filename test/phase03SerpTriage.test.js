@@ -335,7 +335,7 @@ describe('Phase 03 — SerpReranker Deterministic Scoring (with breakdown)', () 
     ];
 
     const ranked = await rerankSerpResults({
-      config: { llmEnabled: false },
+      config: {},
       identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' },
       serpResults: results,
       topK: 10
@@ -371,7 +371,7 @@ describe('Phase 03 — SerpReranker Deterministic Scoring (with breakdown)', () 
     ];
 
     const ranked = await rerankSerpResults({
-      config: { llmEnabled: false },
+      config: {},
       identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' },
       serpResults: results,
       topK: 10
@@ -408,7 +408,7 @@ describe('Phase 03 — SerpReranker Deterministic Scoring (with breakdown)', () 
     ];
 
     const ranked = await rerankSerpResults({
-      config: { llmEnabled: false },
+      config: {},
       identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' },
       serpResults: results,
       topK: 10
@@ -444,7 +444,7 @@ describe('Phase 03 — SerpReranker Deterministic Scoring (with breakdown)', () 
     ];
 
     const ranked = await rerankSerpResults({
-      config: { llmEnabled: false },
+      config: {},
       identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' },
       serpResults: results,
       topK: 10
@@ -472,7 +472,7 @@ describe('Phase 03 — SerpReranker Deterministic Scoring (with breakdown)', () 
     }];
 
     const ranked = await rerankSerpResults({
-      config: { llmEnabled: false },
+      config: {},
       identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' },
       serpResults: results,
       topK: 10
@@ -499,7 +499,7 @@ describe('Phase 03 — SerpReranker Deterministic Scoring (with breakdown)', () 
     const safetyMap = new Map([['bad.com', { safe: false, classification: 'spam' }]]);
 
     const ranked = await rerankSerpResults({
-      config: { llmEnabled: false },
+      config: {},
       identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' },
       serpResults: results,
       topK: 10,
@@ -533,7 +533,7 @@ describe('Phase 03 — Two-Reranker Pipeline Integration', () => {
     }
 
     const finalRanked = await rerankSerpResults({
-      config: { llmEnabled: false },
+      config: {},
       identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' },
       missingFields: ['weight', 'sensor'],
       serpResults: deterministicReranked,

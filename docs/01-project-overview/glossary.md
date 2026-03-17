@@ -2,7 +2,7 @@
 
 > **Purpose:** Define project-specific domain terms and overloaded words that would otherwise cause an arriving LLM to hallucinate generic meanings.
 > **Prerequisites:** [scope.md](./scope.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 | Term | Meaning in this repo | Primary evidence |
 |------|----------------------|------------------|

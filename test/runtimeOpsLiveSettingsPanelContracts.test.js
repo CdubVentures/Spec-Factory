@@ -328,11 +328,12 @@ test('prefetch planner and triage panels hide live-setting badges until booleans
     'triage empty state should not render a runtime-mode badge before live triage settings hydrate',
   );
 
-  const plannerWithExplicitFalse = renderElement(PrefetchSearchPlannerPanel({
+  // phase2LlmEnabled retired — planner is always enabled, badge removed
+  const plannerWithLiveSettings = renderElement(PrefetchSearchPlannerPanel({
     calls: [],
     searchPlans: [],
     searchResults: [],
-    liveSettings: { phase2LlmEnabled: false },
+    liveSettings: {},
     idxRuntime: [],
   }));
   const triageWithExplicitFalse = renderElement(PrefetchSerpTriagePanel({
@@ -343,14 +344,13 @@ test('prefetch planner and triage panels hide live-setting badges until booleans
     idxRuntime: [],
   }));
 
-  const plannerDisabledText = textContent(plannerWithExplicitFalse);
+  const plannerText = textContent(plannerWithLiveSettings);
   const triageDeterministicText = textContent(triageWithExplicitFalse);
 
   assert.equal(
-    plannerDisabledText.includes('LLM Planner:')
-      && plannerDisabledText.includes('Disabled'),
-    true,
-    'planner empty state should surface the explicit disabled live setting once hydrated',
+    plannerText.includes('LLM Planner:'),
+    false,
+    'planner empty state should no longer show an LLM Planner badge (knob retired)',
   );
   assert.equal(
     triageDeterministicText.includes('Runtime Mode:')
@@ -362,29 +362,39 @@ test('prefetch planner and triage panels hide live-setting badges until booleans
 
 test('search profile planner badge falls back to artifact state until live settings arrive', async () => {
   const { PrefetchSearchProfilePanel } = await loadSearchProfileModule();
+  const populatedProfileData = createSearchProfileData({
+    artifactPlannerActive: true,
+    query_rows: [{ query: 'logitech g pro x superlight 2 sensor', target_fields: ['sensor'], result_count: 0 }],
+    query_count: 1,
+  });
 
   const artifactOnlyTree = renderElement(PrefetchSearchProfilePanel({
-    data: createSearchProfileData({ artifactPlannerActive: true }),
+    data: populatedProfileData,
     searchPlans: [],
     persistScope: 'runtime-ops-search-profile-contract',
     liveSettings: undefined,
     idxRuntime: [],
   }));
-  const explicitOffTree = renderElement(PrefetchSearchProfilePanel({
-    data: createSearchProfileData({ artifactPlannerActive: true }),
+  // phase2LlmEnabled retired — planner badge now derives solely from artifact state
+  const withLiveSettings = renderElement(PrefetchSearchProfilePanel({
+    data: populatedProfileData,
     searchPlans: [],
     persistScope: 'runtime-ops-search-profile-contract',
-    liveSettings: { phase2LlmEnabled: false, searchProvider: '' },
+    liveSettings: { searchProvider: '' },
     idxRuntime: [],
   }));
 
   const artifactOnlyBadge = collectNodes(
     artifactOnlyTree,
-    (node) => node.type === 'badge' && textContent(node).includes('LLM Planner'),
+    (node) => node.type === 'span'
+      && textContent(node).includes('LLM Planner')
+      && String(node.props?.className || '').includes('sf-chip'),
   )[0];
-  const explicitOffBadge = collectNodes(
-    explicitOffTree,
-    (node) => node.type === 'badge' && textContent(node).includes('LLM Planner'),
+  const withLiveBadge = collectNodes(
+    withLiveSettings,
+    (node) => node.type === 'span'
+      && textContent(node).includes('LLM Planner')
+      && String(node.props?.className || '').includes('sf-chip'),
   )[0];
 
   assert.equal(
@@ -393,8 +403,8 @@ test('search profile planner badge falls back to artifact state until live setti
     'search profile should treat artifact planner state as active until live settings hydrate',
   );
   assert.equal(
-    String(explicitOffBadge?.props?.className || '').includes('sf-chip-neutral'),
+    String(withLiveBadge?.props?.className || '').includes('sf-chip-warning'),
     true,
-    'explicit live planner OFF should override the artifact fallback state',
+    'planner badge always shows when artifact reports planner active (knob retired)',
   );
 });

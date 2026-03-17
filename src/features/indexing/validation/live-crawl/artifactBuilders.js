@@ -7,7 +7,6 @@ const UNKNOWN_VALUE_TOKENS = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'none',
 
 export const REQUIRED_SETTINGS_KEYS = Object.freeze([
   'searchProvider',
-  'llmEnabled',
   'discoveryEnabled',
   'preferHttpFetcher',
   'dynamicCrawleeEnabled',

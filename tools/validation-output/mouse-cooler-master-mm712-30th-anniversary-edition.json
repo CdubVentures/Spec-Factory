@@ -1,0 +1,1720 @@
+{
+  "seed": {
+    "productId": "mouse-cooler-master-mm712-30th-anniversary-edition",
+    "brand": "Cooler Master",
+    "model": "MM712 30th Anniversary Edition",
+    "variant": "",
+    "profile": "variant-heavy / manual-support-heavy"
+  },
+  "needSet": {
+    "schema_version": "needset_output.v2",
+    "identity": {
+      "state": "locked",
+      "source_label_state": "matched",
+      "manufacturer": "Cooler Master",
+      "model": "MM712 30th Anniversary Edition",
+      "confidence": 1,
+      "official_domain": null,
+      "support_domain": null
+    },
+    "field_count": 80,
+    "planner_seed": {
+      "missing_critical_fields": [
+        "sku",
+        "polling_rate"
+      ],
+      "unresolved_fields": [
+        "release_date",
+        "discontinued",
+        "sku",
+        "price_range",
+        "colors",
+        "design",
+        "lighting",
+        "rgb",
+        "connection",
+        "connectivity",
+        "computer_side_connector",
+        "mouse_side_connector",
+        "bluetooth",
+        "cable_type",
+        "paracord",
+        "wireless_charging",
+        "battery_hours",
+        "adjustable_weight",
+        "feet_material",
+        "coating",
+        "honeycomb_frame",
+        "silent_clicks",
+        "weight",
+        "material",
+        "lngth",
+        "width",
+        "height",
+        "form_factor",
+        "shape",
+        "hump",
+        "front_flare",
+        "thumb_rest",
+        "grip",
+        "hand_size",
+        "mcu",
+        "mcu_link",
+        "sensor",
+        "sensor_brand",
+        "sensor_date",
+        "sensor_link",
+        "sensor_type",
+        "flawless_sensor",
+        "sensor_latency",
+        "sensor_latency_list",
+        "shift_latency",
+        "polling_rate",
+        "dpi",
+        "ips",
+        "acceleration",
+        "lift",
+        "lift_settings",
+        "switches_link",
+        "motion_sync",
+        "hardware_acceleration",
+        "smoothing",
+        "nvidia_reflex",
+        "switch",
+        "switch_brand",
+        "switch_type",
+        "hot_swappable",
+        "debounce",
+        "click_latency",
+        "click_latency_list",
+        "click_force",
+        "encoder",
+        "encoder_brand",
+        "encoder_link",
+        "encoder_life_span",
+        "side_buttons",
+        "encoder_steps",
+        "middle_buttons",
+        "encoder_type",
+        "programmable_buttons",
+        "releasing_force",
+        "tilt_scroll_wheel",
+        "adjustable_scroll_wheel",
+        "switch_life_span",
+        "onboard_memory",
+        "onboard_memory_value",
+        "profile_switching"
+      ],
+      "existing_queries": [],
+      "current_product_identity": {
+        "category": "mouse",
+        "brand": "Cooler Master",
+        "model": "MM712 30th Anniversary Edition"
+      }
+    },
+    "fields_sample": [
+      {
+        "field_key": "release_date",
+        "label": "Release Date",
+        "group_key": "general",
+        "required_level": "expected",
+        "idx": {
+          "min_evidence_refs": 0,
+          "query_terms": [
+            "release date",
+            "launch date",
+            "available since",
+            "announced"
+          ],
+          "domain_hints": [
+            "mousespecs.org",
+            "eloshapes.com",
+            "pcpartpicker.com",
+            "techpowerup.com"
+          ],
+          "preferred_content_types": [
+            "support",
+            "manual",
+            "spec",
+            "pdf",
+            "product_page"
+          ],
+          "tooltip_md": "Define 'Release Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+          "aliases": []
+        },
+        "state": "unknown",
+        "value": "unk",
+        "confidence": 0,
+        "effective_confidence": 0,
+        "refs_found": 0,
+        "min_refs": 0,
+        "best_tier_seen": null,
+        "pass_target": 0.8,
+        "meets_pass_target": false,
+        "exact_match_required": false,
+        "need_score": 36,
+        "reasons": [
+          "missing"
+        ],
+        "history": {
+          "existing_queries": [],
+          "domains_tried": [],
+          "host_classes_tried": [],
+          "evidence_classes_tried": [],
+          "query_count": 0,
+          "urls_examined_count": 0,
+          "refs_found": 0,
+          "no_value_attempts": 0,
+          "duplicate_attempts_suppressed": 0
+        }
+      },
+      {
+        "field_key": "discontinued",
+        "label": "Discontinued",
+        "group_key": "general",
+        "required_level": "expected",
+        "idx": {
+          "min_evidence_refs": 0,
+          "query_terms": [
+            "discontinued",
+            "end of life",
+            "no longer available"
+          ],
+          "domain_hints": [
+            "pcpartpicker.com",
+            "eloshapes.com",
+            "bestbuy.com"
+          ],
+          "preferred_content_types": [
+            "support",
+            "manual",
+            "spec",
+            "pdf",
+            "product_page"
+          ],
+          "tooltip_md": "Define 'Discontinued' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+          "aliases": []
+        },
+        "state": "unknown",
+        "value": "unk",
+        "confidence": 0,
+        "effective_confidence": 0,
+        "refs_found": 0,
+        "min_refs": 0,
+        "best_tier_seen": null,
+        "pass_target": 0.8,
+        "meets_pass_target": false,
+        "exact_match_required": false,
+        "need_score": 36,
+        "reasons": [
+          "missing"
+        ],
+        "history": {
+          "existing_queries": [],
+          "domains_tried": [],
+          "host_classes_tried": [],
+          "evidence_classes_tried": [],
+          "query_count": 0,
+          "urls_examined_count": 0,
+          "refs_found": 0,
+          "no_value_attempts": 0,
+          "duplicate_attempts_suppressed": 0
+        }
+      },
+      {
+        "field_key": "sku",
+        "label": "SKU / Part #",
+        "group_key": "general",
+        "required_level": "identity",
+        "idx": {
+          "min_evidence_refs": 0,
+          "query_terms": [
+            "sku",
+            "part number",
+            "model number",
+            "product code"
+          ],
+          "domain_hints": [
+            "bestbuy.com",
+            "amazon.com",
+            "bhphotovideo.com",
+            "newegg.com",
+            "eloshapes.com"
+          ],
+          "preferred_content_types": [
+            "support",
+            "spec",
+            "manual",
+            "pdf",
+            "product_page"
+          ],
+          "tooltip_md": "Define 'SKU / Part #' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+          "aliases": []
+        },
+        "state": "unknown",
+        "value": "unk",
+        "confidence": 0,
+        "effective_confidence": 0,
+        "refs_found": 0,
+        "min_refs": 0,
+        "best_tier_seen": null,
+        "pass_target": 0.8,
+        "meets_pass_target": false,
+        "exact_match_required": false,
+        "need_score": 140,
+        "reasons": [
+          "missing",
+          "publish_gate_block"
+        ],
+        "history": {
+          "existing_queries": [],
+          "domains_tried": [],
+          "host_classes_tried": [],
+          "evidence_classes_tried": [],
+          "query_count": 0,
+          "urls_examined_count": 0,
+          "refs_found": 0,
+          "no_value_attempts": 0,
+          "duplicate_attempts_suppressed": 0
+        }
+      },
+      {
+        "field_key": "price_range",
+        "label": "Price (MSRP)",
+        "group_key": "general",
+        "required_level": "expected",
+        "idx": {
+          "min_evidence_refs": 0,
+          "query_terms": [
+            "price",
+            "msrp",
+            "retail price",
+            "buy"
+          ],
+          "domain_hints": [
+            "pcpartpicker.com",
+            "bestbuy.com",
+            "amazon.com",
+            "bhphotovideo.com"
+          ],
+          "preferred_content_types": [
+            "support",
+            "manual",
+            "spec",
+            "pdf",
+            "product_page"
+          ],
+          "tooltip_md": "MSRP price bracket or stated MSRP. Keep as a string token; do not guess if not public.",
+          "aliases": []
+        },
+        "state": "unknown",
+        "value": "unk",
+        "confidence": 0,
+        "effective_confidence": 0,
+        "refs_found": 0,
+        "min_refs": 0,
+        "best_tier_seen": null,
+        "pass_target": 0.8,
+        "meets_pass_target": false,
+        "exact_match_required": false,
+        "need_score": 36,
+        "reasons": [
+          "missing"
+        ],
+        "history": {
+          "existing_queries": [],
+          "domains_tried": [],
+          "host_classes_tried": [],
+          "evidence_classes_tried": [],
+          "query_count": 0,
+          "urls_examined_count": 0,
+          "refs_found": 0,
+          "no_value_attempts": 0,
+          "duplicate_attempts_suppressed": 0
+        }
+      },
+      {
+        "field_key": "colors",
+        "label": "Colors",
+        "group_key": "general",
+        "required_level": "expected",
+        "idx": {
+          "min_evidence_refs": 0,
+          "query_terms": [
+            "colors",
+            "color options",
+            "available colors",
+            "colorways"
+          ],
+          "domain_hints": [
+            "eloshapes.com",
+            "bestbuy.com",
+            "amazon.com",
+            "mousespecs.org"
+          ],
+          "preferred_content_types": [
+            "support",
+            "manual",
+            "spec",
+            "pdf",
+            "product_page"
+          ],
+          "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey?gray; multi-colorways may use '+'.",
+          "aliases": []
+        },
+        "state": "unknown",
+        "value": "unk",
+        "confidence": 0,
+        "effective_confidence": 0,
+        "refs_found": 0,
+        "min_refs": 0,
+        "best_tier_seen": null,
+        "pass_target": 0.8,
+        "meets_pass_target": false,
+        "exact_match_required": false,
+        "need_score": 36,
+        "reasons": [
+          "missing"
+        ],
+        "history": {
+          "existing_queries": [],
+          "domains_tried": [],
+          "host_classes_tried": [],
+          "evidence_classes_tried": [],
+          "query_count": 0,
+          "urls_examined_count": 0,
+          "refs_found": 0,
+          "no_value_attempts": 0,
+          "duplicate_attempts_suppressed": 0
+        }
+      }
+    ]
+  },
+  "brandResolution": {
+    "officialDomain": "coolermaster.com",
+    "aliases": [
+      "coolermaster.com"
+    ],
+    "supportDomain": "",
+    "confidence": 0.6,
+    "reasoning": [
+      "deterministic_fallback: no LLM available"
+    ]
+  },
+  "searchProfile": {
+    "category": "mouse",
+    "identity": {
+      "brand": "Cooler Master",
+      "model": "MM712 30th Anniversary Edition",
+      "variant": "",
+      "category": "mouse"
+    },
+    "variant_guard_terms": [
+      "cooler master mm712 30th anniversary edition",
+      "mm712 30th anniversary edition",
+      "coolermaster",
+      "mm71230thanniversaryedition",
+      "coolermastermm71230thanniversaryedition",
+      "mm712",
+      "30th",
+      "anniversary",
+      "712",
+      "30"
+    ],
+    "focus_fields": [
+      "release_date",
+      "discontinued",
+      "sku",
+      "price_range",
+      "colors",
+      "design",
+      "lighting",
+      "rgb",
+      "connection",
+      "connectivity",
+      "computer_side_connector",
+      "mouse_side_connector",
+      "bluetooth",
+      "cable_type",
+      "paracord",
+      "wireless_charging",
+      "battery_hours",
+      "adjustable_weight",
+      "feet_material",
+      "coating",
+      "honeycomb_frame",
+      "silent_clicks",
+      "weight",
+      "material",
+      "lngth",
+      "width",
+      "height",
+      "form_factor",
+      "shape",
+      "hump",
+      "front_flare",
+      "thumb_rest",
+      "grip",
+      "hand_size",
+      "mcu",
+      "mcu_link",
+      "sensor",
+      "sensor_brand",
+      "sensor_date",
+      "sensor_link",
+      "sensor_type",
+      "flawless_sensor",
+      "sensor_latency",
+      "sensor_latency_list",
+      "shift_latency",
+      "polling_rate",
+      "dpi",
+      "ips",
+      "acceleration",
+      "lift",
+      "lift_settings",
+      "switches_link",
+      "motion_sync",
+      "hardware_acceleration",
+      "smoothing",
+      "nvidia_reflex",
+      "switch",
+      "switch_brand",
+      "switch_type",
+      "hot_swappable",
+      "debounce",
+      "click_latency",
+      "click_latency_list",
+      "click_force",
+      "encoder",
+      "encoder_brand",
+      "encoder_link",
+      "encoder_life_span",
+      "side_buttons",
+      "encoder_steps",
+      "middle_buttons",
+      "encoder_type",
+      "programmable_buttons",
+      "releasing_force",
+      "tilt_scroll_wheel",
+      "adjustable_scroll_wheel",
+      "switch_life_span",
+      "onboard_memory",
+      "onboard_memory_value",
+      "profile_switching"
+    ],
+    "base_templates": [
+      "Cooler Master MM712 30th Anniversary Edition specifications",
+      "Cooler Master MM712 30th Anniversary Edition review"
+    ],
+    "queries": [
+      "Cooler Master MM712 30th Anniversary Edition review site:rtings.com",
+      "Cooler Master MM712 30th Anniversary Edition specs site:eloshapes.com",
+      "Cooler Master MM712 30th Anniversary Edition site:pcpartpicker.com",
+      "Cooler Master MM712 30th Anniversary Edition SKU",
+      "Cooler Master MM712 30th Anniversary Edition design",
+      "Cooler Master MM712 30th Anniversary Edition lighting",
+      "Cooler Master MM712 30th Anniversary Edition RGB",
+      "Cooler Master MM712 30th Anniversary Edition connectivity",
+      "Cooler Master MM712 30th Anniversary Edition USB connector",
+      "Cooler Master MM712 30th Anniversary Edition mouse connector",
+      "Cooler Master MM712 30th Anniversary Edition Bluetooth",
+      "Cooler Master MM712 30th Anniversary Edition paracord",
+      "Cooler Master MM712 30th Anniversary Edition wireless charging",
+      "Cooler Master MM712 30th Anniversary Edition adjustable weight",
+      "Cooler Master MM712 30th Anniversary Edition honeycomb",
+      "Cooler Master MM712 30th Anniversary Edition silent clicks",
+      "Cooler Master MM712 30th Anniversary Edition material",
+      "Cooler Master MM712 30th Anniversary Edition MCU datasheet",
+      "Cooler Master MM712 30th Anniversary Edition shift latency",
+      "Cooler Master MM712 30th Anniversary Edition Switches Link",
+      "Cooler Master MM712 30th Anniversary Edition switch brand",
+      "Cooler Master MM712 30th Anniversary Edition switch type",
+      "Cooler Master MM712 30th Anniversary Edition hot swappable",
+      "Cooler Master MM712 30th Anniversary Edition encoder brand",
+      "Cooler Master MM712 30th Anniversary Edition encoder datasheet",
+      "Cooler Master MM712 30th Anniversary Edition encoder lifespan",
+      "Cooler Master MM712 30th Anniversary Edition side buttons",
+      "Cooler Master MM712 30th Anniversary Edition encoder steps",
+      "Cooler Master MM712 30th Anniversary Edition middle button",
+      "Cooler Master MM712 30th Anniversary Edition encoder type",
+      "Cooler Master MM712 30th Anniversary Edition programmable buttons",
+      "Cooler Master MM712 30th Anniversary Edition releasing force",
+      "Cooler Master MM712 30th Anniversary Edition tilt scroll wheel",
+      "Cooler Master MM712 30th Anniversary Edition adjustable scroll wheel",
+      "Cooler Master MM712 30th Anniversary Edition switch lifespan",
+      "Cooler Master MM712 30th Anniversary Edition onboard memory",
+      "Cooler Master MM712 30th Anniversary Edition memory profiles",
+      "Cooler Master MM712 30th Anniversary Edition profile switching",
+      "Cooler Master MM712 30th Anniversary Edition release date specification",
+      "Cooler Master MM712 30th Anniversary Edition discontinued specification",
+      "Cooler Master MM712 30th Anniversary Edition price specification",
+      "Cooler Master MM712 30th Anniversary Edition specifications site:coolermaster.com",
+      "Cooler Master MM712 30th Anniversary Edition rtings.com review",
+      "Cooler Master MM712 30th Anniversary Edition specs site:mousespecs.org",
+      "Cooler Master MM712 30th Anniversary Edition site:versus.com",
+      "Cooler Master MM712 30th Anniversary Edition SKU specification",
+      "Cooler Master MM712 30th Anniversary Edition release date manual pdf",
+      "Cooler Master MM712 30th Anniversary Edition discontinued manual pdf"
+    ],
+    "query_rows": [
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition specifications site:coolermaster.com",
+        "hint_source": "archetype_planner",
+        "target_fields": [],
+        "doc_hint": "spec",
+        "alias": "",
+        "domain_hint": "coolermaster.com",
+        "source_host": "coolermaster.com",
+        "_meta": {
+          "archetype": "manufacturer",
+          "gap_reason": "manufacturer_spec",
+          "intent_fingerprint": "manufacturer:coolermaster.com:spec:",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition review site:rtings.com",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "click_latency",
+          "sensor_latency",
+          "click_latency_list",
+          "sensor_latency_list",
+          "weight",
+          "shape",
+          "polling_rate",
+          "dpi",
+          "sensor",
+          "grip",
+          "hand_size",
+          "lngth",
+          "width",
+          "height",
+          "battery_hours",
+          "lift",
+          "motion_sync",
+          "encoder",
+          "switch",
+          "sensor_brand",
+          "sensor_type",
+          "click_force",
+          "debounce",
+          "mcu",
+          "connection"
+        ],
+        "doc_hint": "review",
+        "alias": "",
+        "domain_hint": "rtings.com",
+        "source_host": "rtings.com",
+        "_meta": {
+          "archetype": "lab_review",
+          "gap_reason": "lab_measurements",
+          "intent_fingerprint": "lab_review:rtings.com:review:battery_hours,click_force,click_latency,click_latency_list,connection,debounce,dpi,encoder,grip,hand_size,height,lift,lngth,mcu,motion_sync,polling_rate,sensor,sensor_brand,sensor_latency,sensor_latency_list,sensor_type,shape,switch,weight,width",
+          "query_family": "review"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition rtings.com review",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "click_latency",
+          "sensor_latency",
+          "click_latency_list",
+          "sensor_latency_list",
+          "weight",
+          "shape",
+          "polling_rate",
+          "dpi",
+          "sensor",
+          "grip",
+          "hand_size",
+          "lngth",
+          "width",
+          "height",
+          "battery_hours",
+          "lift",
+          "motion_sync",
+          "encoder",
+          "switch",
+          "sensor_brand",
+          "sensor_type",
+          "click_force",
+          "debounce",
+          "mcu",
+          "connection"
+        ],
+        "doc_hint": "review",
+        "alias": "",
+        "domain_hint": "rtings.com",
+        "source_host": "rtings.com",
+        "_meta": {
+          "archetype": "lab_review",
+          "gap_reason": "lab_measurements",
+          "intent_fingerprint": "lab_review:rtings.com:review:battery_hours,click_force,click_latency,click_latency_list,connection,debounce,dpi,encoder,grip,hand_size,height,lift,lngth,mcu,motion_sync,polling_rate,sensor,sensor_brand,sensor_latency,sensor_latency_list,sensor_type,shape,switch,weight,width",
+          "query_family": "review"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition specs site:eloshapes.com",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "shape",
+          "lngth",
+          "width",
+          "height",
+          "weight",
+          "form_factor",
+          "hump",
+          "front_flare",
+          "thumb_rest",
+          "grip",
+          "hand_size",
+          "sensor",
+          "connection",
+          "dpi",
+          "polling_rate",
+          "release_date",
+          "battery_hours",
+          "switch",
+          "encoder",
+          "click_latency",
+          "sensor_brand",
+          "sensor_link",
+          "ips",
+          "acceleration",
+          "hardware_acceleration",
+          "flawless_sensor",
+          "smoothing",
+          "sensor_date",
+          "lift",
+          "lift_settings",
+          "motion_sync",
+          "nvidia_reflex",
+          "coating"
+        ],
+        "doc_hint": "spec_database",
+        "alias": "",
+        "domain_hint": "eloshapes.com",
+        "source_host": "eloshapes.com",
+        "_meta": {
+          "archetype": "spec_database",
+          "gap_reason": "spec_database_lookup",
+          "intent_fingerprint": "spec_database:eloshapes.com:spec:acceleration,battery_hours,click_latency,coating,connection,dpi,encoder,flawless_sensor,form_factor,front_flare,grip,hand_size,hardware_acceleration,height,hump,ips,lift,lift_settings,lngth,motion_sync,nvidia_reflex,polling_rate,release_date,sensor,sensor_brand,sensor_date,sensor_link,shape,smoothing,switch,thumb_rest,weight,width",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition specs site:mousespecs.org",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "shape",
+          "lngth",
+          "width",
+          "height",
+          "weight",
+          "form_factor",
+          "hump",
+          "front_flare",
+          "thumb_rest",
+          "grip",
+          "hand_size",
+          "sensor",
+          "connection",
+          "dpi",
+          "polling_rate",
+          "release_date",
+          "battery_hours",
+          "switch",
+          "encoder",
+          "click_latency",
+          "sensor_brand",
+          "sensor_link",
+          "ips",
+          "acceleration",
+          "hardware_acceleration",
+          "flawless_sensor",
+          "smoothing",
+          "sensor_date",
+          "lift",
+          "lift_settings",
+          "motion_sync",
+          "nvidia_reflex",
+          "coating"
+        ],
+        "doc_hint": "spec_database",
+        "alias": "",
+        "domain_hint": "mousespecs.org",
+        "source_host": "mousespecs.org",
+        "_meta": {
+          "archetype": "spec_database",
+          "gap_reason": "spec_database_lookup",
+          "intent_fingerprint": "spec_database:mousespecs.org:spec:acceleration,battery_hours,click_latency,coating,connection,dpi,encoder,flawless_sensor,form_factor,front_flare,grip,hand_size,hardware_acceleration,height,hump,ips,lift,lift_settings,lngth,motion_sync,nvidia_reflex,polling_rate,release_date,sensor,sensor_brand,sensor_date,sensor_link,shape,smoothing,switch,thumb_rest,weight,width",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition site:pcpartpicker.com",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "sensor",
+          "connection",
+          "price_range",
+          "release_date",
+          "weight",
+          "lngth",
+          "width",
+          "height",
+          "dpi",
+          "polling_rate",
+          "shape",
+          "debounce",
+          "click_force",
+          "grip",
+          "thumb_rest"
+        ],
+        "doc_hint": "",
+        "alias": "",
+        "domain_hint": "pcpartpicker.com",
+        "source_host": "pcpartpicker.com",
+        "_meta": {
+          "archetype": "aggregator",
+          "gap_reason": "aggregator_lookup",
+          "intent_fingerprint": "aggregator:pcpartpicker.com:aggregator:click_force,connection,debounce,dpi,grip,height,lngth,polling_rate,price_range,release_date,sensor,shape,thumb_rest,weight,width",
+          "query_family": "aggregator"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition site:versus.com",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "sensor",
+          "connection",
+          "price_range",
+          "release_date",
+          "weight",
+          "lngth",
+          "width",
+          "height",
+          "dpi",
+          "polling_rate",
+          "shape",
+          "debounce",
+          "click_force",
+          "grip",
+          "thumb_rest"
+        ],
+        "doc_hint": "",
+        "alias": "",
+        "domain_hint": "versus.com",
+        "source_host": "versus.com",
+        "_meta": {
+          "archetype": "aggregator",
+          "gap_reason": "aggregator_lookup",
+          "intent_fingerprint": "aggregator:versus.com:aggregator:click_force,connection,debounce,dpi,grip,height,lngth,polling_rate,price_range,release_date,sensor,shape,thumb_rest,weight,width",
+          "query_family": "aggregator"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition SKU",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "sku"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_sku",
+          "intent_fingerprint": "hard_field::spec:sku",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition design",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "design"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_design",
+          "intent_fingerprint": "hard_field::spec:design",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition lighting",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "lighting"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_lighting",
+          "intent_fingerprint": "hard_field::spec:lighting",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition RGB",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "rgb"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_rgb",
+          "intent_fingerprint": "hard_field::spec:rgb",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition connectivity",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "connectivity"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_connectivity",
+          "intent_fingerprint": "hard_field::spec:connectivity",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition USB connector",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "computer_side_connector"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_computer_side_connector",
+          "intent_fingerprint": "hard_field::spec:computer_side_connector",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition mouse connector",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "mouse_side_connector"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_mouse_side_connector",
+          "intent_fingerprint": "hard_field::spec:mouse_side_connector",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition Bluetooth",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "bluetooth"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_bluetooth",
+          "intent_fingerprint": "hard_field::spec:bluetooth",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition paracord",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "paracord"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_paracord",
+          "intent_fingerprint": "hard_field::spec:paracord",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition wireless charging",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "wireless_charging"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_wireless_charging",
+          "intent_fingerprint": "hard_field::spec:wireless_charging",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition adjustable weight",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "adjustable_weight"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_adjustable_weight",
+          "intent_fingerprint": "hard_field::spec:adjustable_weight",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition honeycomb",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "honeycomb_frame"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_honeycomb_frame",
+          "intent_fingerprint": "hard_field::spec:honeycomb_frame",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition silent clicks",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "silent_clicks"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_silent_clicks",
+          "intent_fingerprint": "hard_field::spec:silent_clicks",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition material",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "material"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_material",
+          "intent_fingerprint": "hard_field::spec:material",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition MCU datasheet",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "mcu_link"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_mcu_link",
+          "intent_fingerprint": "hard_field::spec:mcu_link",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition shift latency",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "shift_latency"
+        ],
+        "doc_hint": "spec",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_shift_latency",
+          "intent_fingerprint": "hard_field::spec:shift_latency",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition Switches Link",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "switches_link"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_switches_link",
+          "intent_fingerprint": "hard_field::spec:switches_link",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition switch brand",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "switch_brand"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_switch_brand",
+          "intent_fingerprint": "hard_field::spec:switch_brand",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition switch type",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "switch_type"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_switch_type",
+          "intent_fingerprint": "hard_field::spec:switch_type",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition hot swappable",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "hot_swappable"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_hot_swappable",
+          "intent_fingerprint": "hard_field::spec:hot_swappable",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition encoder brand",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "encoder_brand"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_encoder_brand",
+          "intent_fingerprint": "hard_field::spec:encoder_brand",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition encoder datasheet",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "encoder_link"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_encoder_link",
+          "intent_fingerprint": "hard_field::spec:encoder_link",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition encoder lifespan",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "encoder_life_span"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_encoder_life_span",
+          "intent_fingerprint": "hard_field::spec:encoder_life_span",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition side buttons",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "side_buttons"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_side_buttons",
+          "intent_fingerprint": "hard_field::spec:side_buttons",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition encoder steps",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "encoder_steps"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_encoder_steps",
+          "intent_fingerprint": "hard_field::spec:encoder_steps",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition middle button",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "middle_buttons"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_middle_buttons",
+          "intent_fingerprint": "hard_field::spec:middle_buttons",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition encoder type",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "encoder_type"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_encoder_type",
+          "intent_fingerprint": "hard_field::spec:encoder_type",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition programmable buttons",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "programmable_buttons"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_programmable_buttons",
+          "intent_fingerprint": "hard_field::spec:programmable_buttons",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition releasing force",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "releasing_force"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_releasing_force",
+          "intent_fingerprint": "hard_field::spec:releasing_force",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition tilt scroll wheel",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "tilt_scroll_wheel"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_tilt_scroll_wheel",
+          "intent_fingerprint": "hard_field::spec:tilt_scroll_wheel",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition adjustable scroll wheel",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "adjustable_scroll_wheel"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_adjustable_scroll_wheel",
+          "intent_fingerprint": "hard_field::spec:adjustable_scroll_wheel",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition switch lifespan",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "switch_life_span"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_switch_life_span",
+          "intent_fingerprint": "hard_field::spec:switch_life_span",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition onboard memory",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "onboard_memory"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_onboard_memory",
+          "intent_fingerprint": "hard_field::spec:onboard_memory",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition memory profiles",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "onboard_memory_value"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_onboard_memory_value",
+          "intent_fingerprint": "hard_field::spec:onboard_memory_value",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition profile switching",
+        "hint_source": "archetype_planner",
+        "target_fields": [
+          "profile_switching"
+        ],
+        "doc_hint": "support",
+        "alias": "",
+        "domain_hint": "",
+        "source_host": "",
+        "_meta": {
+          "archetype": "hard_field",
+          "gap_reason": "uncovered_profile_switching",
+          "intent_fingerprint": "hard_field::spec:profile_switching",
+          "query_family": "spec"
+        }
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition release date specification",
+        "hint_source": "field_rules.search_hints",
+        "target_fields": [
+          "release_date"
+        ],
+        "doc_hint": "spec",
+        "alias": "Cooler Master MM712 30th Anniversary Edition",
+        "domain_hint": "",
+        "source_host": ""
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition release date manual pdf",
+        "hint_source": "field_rules.search_hints",
+        "target_fields": [
+          "release_date"
+        ],
+        "doc_hint": "manual_pdf",
+        "alias": "Cooler Master MM712 30th Anniversary Edition",
+        "domain_hint": "",
+        "source_host": ""
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition discontinued specification",
+        "hint_source": "field_rules.search_hints",
+        "target_fields": [
+          "discontinued"
+        ],
+        "doc_hint": "spec",
+        "alias": "Cooler Master MM712 30th Anniversary Edition",
+        "domain_hint": "",
+        "source_host": ""
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition discontinued manual pdf",
+        "hint_source": "field_rules.search_hints",
+        "target_fields": [
+          "discontinued"
+        ],
+        "doc_hint": "manual_pdf",
+        "alias": "Cooler Master MM712 30th Anniversary Edition",
+        "domain_hint": "",
+        "source_host": ""
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition SKU specification",
+        "hint_source": "field_rules.search_hints",
+        "target_fields": [
+          "sku"
+        ],
+        "doc_hint": "spec",
+        "alias": "Cooler Master MM712 30th Anniversary Edition",
+        "domain_hint": "",
+        "source_host": ""
+      },
+      {
+        "query": "Cooler Master MM712 30th Anniversary Edition price specification",
+        "hint_source": "field_rules.search_hints",
+        "target_fields": [
+          "price_range"
+        ],
+        "doc_hint": "spec",
+        "alias": "Cooler Master MM712 30th Anniversary Edition",
+        "domain_hint": "",
+        "source_host": ""
+      }
+    ],
+    "targeted_queries": [
+      "Cooler Master MM712 30th Anniversary Edition specifications site:coolermaster.com",
+      "Cooler Master MM712 30th Anniversary Edition review site:rtings.com",
+      "Cooler Master MM712 30th Anniversary Edition rtings.com review",
+      "Cooler Master MM712 30th Anniversary Edition specs site:eloshapes.com",
+      "Cooler Master MM712 30th Anniversary Edition specs site:mousespecs.org",
+      "Cooler Master MM712 30th Anniversary Edition site:pcpartpicker.com",
+      "Cooler Master MM712 30th Anniversary Edition site:versus.com",
+      "Cooler Master MM712 30th Anniversary Edition SKU",
+      "Cooler Master MM712 30th Anniversary Edition design",
+      "Cooler Master MM712 30th Anniversary Edition lighting",
+      "Cooler Master MM712 30th Anniversary Edition RGB",
+      "Cooler Master MM712 30th Anniversary Edition connectivity",
+      "Cooler Master MM712 30th Anniversary Edition USB connector",
+      "Cooler Master MM712 30th Anniversary Edition mouse connector",
+      "Cooler Master MM712 30th Anniversary Edition Bluetooth",
+      "Cooler Master MM712 30th Anniversary Edition paracord",
+      "Cooler Master MM712 30th Anniversary Edition wireless charging",
+      "Cooler Master MM712 30th Anniversary Edition adjustable weight",
+      "Cooler Master MM712 30th Anniversary Edition honeycomb",
+      "Cooler Master MM712 30th Anniversary Edition silent clicks",
+      "Cooler Master MM712 30th Anniversary Edition material",
+      "Cooler Master MM712 30th Anniversary Edition MCU datasheet",
+      "Cooler Master MM712 30th Anniversary Edition shift latency",
+      "Cooler Master MM712 30th Anniversary Edition Switches Link",
+      "Cooler Master MM712 30th Anniversary Edition switch brand",
+      "Cooler Master MM712 30th Anniversary Edition switch type",
+      "Cooler Master MM712 30th Anniversary Edition hot swappable",
+      "Cooler Master MM712 30th Anniversary Edition encoder brand",
+      "Cooler Master MM712 30th Anniversary Edition encoder datasheet",
+      "Cooler Master MM712 30th Anniversary Edition encoder lifespan",
+      "Cooler Master MM712 30th Anniversary Edition side buttons",
+      "Cooler Master MM712 30th Anniversary Edition encoder steps",
+      "Cooler Master MM712 30th Anniversary Edition middle button",
+      "Cooler Master MM712 30th Anniversary Edition encoder type",
+      "Cooler Master MM712 30th Anniversary Edition programmable buttons",
+      "Cooler Master MM712 30th Anniversary Edition releasing force",
+      "Cooler Master MM712 30th Anniversary Edition tilt scroll wheel",
+      "Cooler Master MM712 30th Anniversary Edition adjustable scroll wheel",
+      "Cooler Master MM712 30th Anniversary Edition switch lifespan",
+      "Cooler Master MM712 30th Anniversary Edition onboard memory",
+      "Cooler Master MM712 30th Anniversary Edition memory profiles",
+      "Cooler Master MM712 30th Anniversary Edition profile switching",
+      "Cooler Master MM712 30th Anniversary Edition release date specification",
+      "Cooler Master MM712 30th Anniversary Edition release date manual pdf",
+      "Cooler Master MM712 30th Anniversary Edition discontinued specification",
+      "Cooler Master MM712 30th Anniversary Edition discontinued manual pdf",
+      "Cooler Master MM712 30th Anniversary Edition SKU specification",
+      "Cooler Master MM712 30th Anniversary Edition price specification"
+    ],
+    "archetype_summary": {
+      "manufacturer": {
+        "hosts": [
+          "coolermaster.com"
+        ],
+        "queries_emitted": 12,
+        "coverage_hint_count": 0
+      },
+      "lab_review": {
+        "hosts": [
+          "rtings.com",
+          "techpowerup.com",
+          "tomshardware.com",
+          "lttlabs.com",
+          "igorslab.de",
+          "techgearlab.com"
+        ],
+        "queries_emitted": 30,
+        "coverage_hint_count": 25
+      },
+      "spec_database": {
+        "hosts": [
+          "eloshapes.com",
+          "mousespecs.org",
+          "sensor.fyi",
+          "rocketjumpninja.com",
+          "gaminggem.com",
+          "thegamingsetup.com"
+        ],
+        "queries_emitted": 17,
+        "coverage_hint_count": 33
+      },
+      "aggregator": {
+        "hosts": [
+          "pcpartpicker.com",
+          "versus.com",
+          "prosettings.net",
+          "mousecompare.com"
+        ],
+        "queries_emitted": 8,
+        "coverage_hint_count": 15
+      },
+      "retailer": {
+        "hosts": [
+          "amazon.com",
+          "bestbuy.com",
+          "newegg.com",
+          "bhphotovideo.com",
+          "microcenter.com"
+        ],
+        "queries_emitted": 0,
+        "coverage_hint_count": 9
+      },
+      "community": {
+        "hosts": [
+          "reddit.com"
+        ],
+        "queries_emitted": 0,
+        "coverage_hint_count": 3
+      },
+      "base_template": {
+        "hosts": [],
+        "queries_emitted": 8,
+        "coverage_hint_count": 0
+      },
+      "learned": {
+        "hosts": [],
+        "queries_emitted": 6,
+        "coverage_hint_count": 0
+      },
+      "hard_field": {
+        "hosts": [],
+        "queries_emitted": 5,
+        "coverage_hint_count": 0
+      }
+    },
+    "coverage_analysis": {
+      "total_missing": 80,
+      "covered_by_archetypes": 42,
+      "uncovered_search_worthy": [
+        "discontinued",
+        "sku",
+        "design",
+        "lighting",
+        "rgb",
+        "connectivity",
+        "computer_side_connector",
+        "mouse_side_connector",
+        "bluetooth",
+        "paracord",
+        "wireless_charging",
+        "adjustable_weight",
+        "honeycomb_frame",
+        "silent_clicks",
+        "material",
+        "mcu_link",
+        "shift_latency",
+        "switches_link",
+        "switch_brand",
+        "switch_type",
+        "hot_swappable",
+        "encoder_brand",
+        "encoder_link",
+        "encoder_life_span",
+        "side_buttons",
+        "encoder_steps",
+        "middle_buttons",
+        "encoder_type",
+        "programmable_buttons",
+        "releasing_force",
+        "tilt_scroll_wheel",
+        "adjustable_scroll_wheel",
+        "switch_life_span",
+        "onboard_memory",
+        "onboard_memory_value",
+        "profile_switching"
+      ],
+      "uncovered_infer_first": [
+        "cable_type",
+        "feet_material"
+      ],
+      "hard_field_queries_emitted": 35
+    },
+    "hint_source_counts": {
+      "archetype_planner": 42,
+      "field_rules.search_hints": 6
+    },
+    "field_rule_gate_counts": {
+      "search_hints.query_terms": {
+        "value_count": 363,
+        "enabled_field_count": 80,
+        "disabled_field_count": 0,
+        "status": "active",
+        "total_value_count": 363,
+        "effective_value_count": 363
+      },
+      "search_hints.domain_hints": {
+        "value_count": 283,
+        "enabled_field_count": 80,
+        "disabled_field_count": 0,
+        "status": "active",
+        "total_value_count": 287,
+        "effective_value_count": 283
+      },
+      "search_hints.preferred_content_types": {
+        "value_count": 400,
+        "enabled_field_count": 80,
+        "disabled_field_count": 0,
+        "status": "active",
+        "total_value_count": 400,
+        "effective_value_count": 400
+      }
+    },
+    "identity_aliases_count": 12,
+    "alias_reject_log_count": 3,
+    "query_reject_log_count": 240
+  },
+  "metrics": {
+    "distinct_domain_hints": [
+      "coolermaster.com",
+      "rtings.com",
+      "eloshapes.com",
+      "mousespecs.org",
+      "pcpartpicker.com",
+      "versus.com"
+    ],
+    "distinct_doc_hints": [
+      "spec",
+      "review",
+      "spec_database",
+      "support",
+      "manual_pdf"
+    ],
+    "site_query_count": 6,
+    "duplicate_site_hosts": [],
+    "field_stuffed_count": 0,
+    "archetype_keys": [
+      "manufacturer",
+      "lab_review",
+      "spec_database",
+      "aggregator",
+      "retailer",
+      "community",
+      "base_template",
+      "learned",
+      "hard_field"
+    ],
+    "missing_required_keys": [],
+    "base_templates_empty": false
+  }
+}

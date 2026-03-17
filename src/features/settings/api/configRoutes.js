@@ -378,11 +378,11 @@ export function registerConfigRoutes(ctx) {
       return jsonRes(res, 200, {
         generated_at: new Date().toISOString(),
         phase2: {
-          enabled_default: Boolean(config.llmEnabled && config.llmPlanDiscoveryQueries),
+          enabled_default: true,
           model_default: roleDefaults.plan
         },
         phase3: {
-          enabled_default: Boolean(config.llmEnabled && config.llmSerpRerankEnabled),
+          enabled_default: Boolean(config.llmSerpRerankEnabled),
           model_default: roleDefaults.triage
         },
         model_defaults: roleDefaults,

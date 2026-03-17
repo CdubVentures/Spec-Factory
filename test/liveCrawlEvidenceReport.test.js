@@ -8,7 +8,7 @@ import {
 test('EVIDENCE_REPORT_FIELDS has all required fields from document', () => {
   const required = [
     'run_id', 'scenario', 'product', 'brand_model', 'start_end',
-    'exit_code', 'searchProvider', 'llm_enabled', 'discoveryEnabled',
+    'exit_code', 'searchProvider', 'discoveryEnabled',
     'preferHttpFetcher', 'dynamicCrawleeEnabled', 'queries_executed',
     'pages_fetched', 'pages_blocked_error_404', 'llm_calls',
     'accepted_sources', 'key_parser_phases', 'key_parser_methods',
@@ -26,7 +26,7 @@ test('EVIDENCE_REPORT_FIELDS has all required fields from document', () => {
 test('buildEvidenceReport populates from run data', () => {
   const runData = {
     run_meta: { run_id: 'run-001', product_id: 'mouse-razer-viper', started_at: '2026-03-09T12:00:00Z', ended_at: '2026-03-09T12:05:00Z', exit_code: 0 },
-    settings_snapshot: { searchProvider: 'searxng', llmEnabled: true, discoveryEnabled: true, preferHttpFetcher: true, dynamicCrawleeEnabled: true },
+    settings_snapshot: { searchProvider: 'searxng', discoveryEnabled: true, preferHttpFetcher: true, dynamicCrawleeEnabled: true },
     scenario: 'A',
     brand_model: 'Razer Viper V3 Pro',
     events: Array(5).fill({ event: 'search_query' }),
@@ -48,7 +48,6 @@ test('buildEvidenceReport populates from run data', () => {
   assert.equal(report.run_id, 'run-001');
   assert.equal(report.scenario, 'A');
   assert.equal(report.searchProvider, 'searxng');
-  assert.equal(report.llm_enabled, true);
   assert.equal(report.pages_fetched, 10);
   assert.equal(report.screenshot_count, 8);
   assert.equal(report.defaults_aligned, 'GREEN');

@@ -491,13 +491,10 @@ test('buildRoundConfig enables one expected-field search pass when required fiel
   assert.equal(roundConfig.searchProvider, 'searxng');
 });
 
-test('buildRoundConfig preserves explicit LLM enablement in fast round 0 with tiny call cap', () => {
+test('buildRoundConfig applies fast round 0 with tiny call cap', () => {
   const roundConfig = buildRoundConfig(
     {
       runProfile: 'standard',
-      llmEnabled: true,
-      llmExplicitlySet: true,
-      llmExplicitlyEnabled: true,
       llmMaxCallsPerRound: 4,
       llmMaxCallsPerProductFast: 2,
       discoveryEnabled: false,
@@ -513,33 +510,7 @@ test('buildRoundConfig preserves explicit LLM enablement in fast round 0 with ti
   );
 
   assert.equal(roundConfig.runProfile, 'standard');
-  assert.equal(roundConfig.llmEnabled, true);
   assert.equal(roundConfig.llmMaxCallsPerRound <= 2, true);
-});
-
-test('buildRoundConfig preserves explicit LLM disablement in fast round 0', () => {
-  const roundConfig = buildRoundConfig(
-    {
-      runProfile: 'standard',
-      llmEnabled: false,
-      llmExplicitlySet: true,
-      llmExplicitlyEnabled: false,
-      llmMaxCallsPerRound: 4,
-      llmMaxCallsPerProductFast: 2,
-      discoveryEnabled: false,
-      fetchCandidateSources: false,
-      searchProvider: 'none',
-      maxUrlsPerProduct: 30,
-      maxCandidateUrls: 40
-    },
-    {
-      round: 0,
-      missingRequiredCount: 3
-    }
-  );
-
-  assert.equal(roundConfig.runProfile, 'standard');
-  assert.equal(roundConfig.llmEnabled, false);
 });
 
 test('buildRoundConfig keeps aggressive round 1 in standard profile by default', () => {

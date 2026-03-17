@@ -411,7 +411,6 @@ export function buildRoundConfig(baseConfig, {
     next.maxJsonBytes = Math.max(next.maxJsonBytes || 0, 6000000);
     next.maxRunSeconds = Math.max(next.maxRunSeconds || 0, 3600);
     next.preferHttpFetcher = false;
-    next.llmPlanDiscoveryQueries = true;
     next.maxNetworkResponsesPerPage = Math.max(next.maxNetworkResponsesPerPage || 0, 2500);
     next.maxGraphqlReplays = Math.max(next.maxGraphqlReplays || 0, 20);
     next.maxHypothesisItems = Math.max(next.maxHypothesisItems || 0, 120);
@@ -538,11 +537,6 @@ export function buildRoundConfig(baseConfig, {
       next.llmMaxCallsPerRound = Math.max(next.llmMaxCallsPerRound || 0, roundCallFloor);
     }
     next.llmMaxCallsPerProductTotal = Math.max(next.llmMaxCallsPerProductTotal || 0, totalCallFloor);
-  }
-
-  if (Boolean(baseConfig.llmExplicitlySet)) {
-    const explicitEnabled = baseConfig.llmExplicitlyEnabled;
-    next.llmEnabled = explicitEnabled === undefined ? Boolean(baseConfig.llmEnabled) : Boolean(explicitEnabled);
   }
 
   return next;

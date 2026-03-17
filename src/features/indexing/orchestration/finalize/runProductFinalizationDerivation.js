@@ -1,6 +1,4 @@
 import { createProductFinalizationDerivationRuntime } from './createProductFinalizationDerivationRuntime.js';
-import { buildSearchPlanningContext } from '../../../../indexlab/searchPlanningContext.js';
-import { buildSearchPlan } from '../../../../indexlab/searchPlanBuilder.js';
 import { enrichNeedSetFieldHistories } from './enrichNeedSetFieldHistories.js';
 
 export async function runProductFinalizationDerivation({
@@ -90,8 +88,6 @@ export async function runProductFinalizationDerivation({
   buildCortexSidecarContextFn,
   finalizationDerivationRuntime = null,
   createProductFinalizationDerivationRuntimeFn = createProductFinalizationDerivationRuntime,
-  buildSearchPlanningContextFn = buildSearchPlanningContext,
-  buildSearchPlanFn = buildSearchPlan,
 } = {}) {
   const resolvedFinalizationDerivationRuntime =
     finalizationDerivationRuntime || createProductFinalizationDerivationRuntimeFn({
@@ -209,7 +205,6 @@ export async function runProductFinalizationDerivation({
   const constrainedFinalizationConfig = skipExpensiveFinalization
     ? {
         ...config,
-        llmEnabled: false,
         llmWriteSummary: false,
         cortexEnabled: false,
       }
@@ -354,38 +349,13 @@ export async function runProductFinalizationDerivation({
   const extractionGateOpen = needsetReasoningContext.extractionGateOpen;
   const needSet = needsetReasoningContext.needSet;
 
-  // Schema 3+4: build search plan for NeedSet panel
-  let searchPlanOutput = null;
-  try {
-    const searchPlanningCtx = buildSearchPlanningContextFn({
-      needSetOutput: needSet,
-      config,
-      fieldGroupsData: categoryConfig.fieldGroupsData || {},
-      runContext: {
-        runId,
-        category,
-        productId,
-        brand: job.identityLock?.brand || '',
-      },
-    });
-    searchPlanOutput = await buildSearchPlanFn({
-      searchPlanningContext: searchPlanningCtx,
-      config,
-      logger,
-      llmContext,
-    });
-  } catch (err) {
-    if (logger && typeof logger.warn === 'function') {
-      logger.warn('search_plan_build_failed', { error: err.message });
-    }
-  }
-  // WHY: Only overwrite Schema 4 panel data if the finalization planner actually
-  // generated queries. A disabled/error result has an empty panel that would
-  // overwrite the mid-run Schema 4 emission from runDiscoverySeedPlan.
-  const finalizationBundles = searchPlanOutput?.panel?.bundles || [];
-  const finalizationHasQueries = finalizationBundles.some((b) => b.queries?.length > 0);
-  if (searchPlanOutput?.panel && finalizationHasQueries) {
-    needSet.bundles = finalizationBundles;
+  // WHY: Use the seed-phase schema4 from discovery — the needset planner fires
+  // once at run start, not during finalization. Finalization derives from prior data.
+  const searchPlanOutput = discoveryResult?.seed_search_plan_output || null;
+  const seedBundles = searchPlanOutput?.panel?.bundles || [];
+  const seedHasQueries = seedBundles.some((b) => b.queries?.length > 0);
+  if (searchPlanOutput?.panel && seedHasQueries) {
+    needSet.bundles = seedBundles;
     needSet.profile_influence = searchPlanOutput.panel.profile_influence;
     needSet.deltas = searchPlanOutput.panel.deltas;
     needSet.round = searchPlanOutput.panel.round ?? 0;

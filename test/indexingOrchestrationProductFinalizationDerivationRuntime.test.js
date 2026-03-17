@@ -21,7 +21,7 @@ test('createProductFinalizationDerivationRuntime builds derivation phases from s
       adapterArtifacts: { adapter: true },
       sourceResults: [{ url: 'https://example.com/spec' }],
       anchors: { shape: 'symmetrical' },
-      config: { llmEnabled: true, cortexEnabled: true },
+      config: { cortexEnabled: true },
       productId: 'product-1',
       categoryConfig: { criticalFieldSet: new Set(['weight_g']) },
       fieldOrder: ['shape', 'weight_g'],
@@ -102,7 +102,7 @@ test('createProductFinalizationDerivationRuntime builds derivation phases from s
     evaluateValidationGateFn,
   });
   const cortexSidecar = await runtime.buildCortexSidecar({
-    constrainedFinalizationConfig: { llmEnabled: false, cortexEnabled: false },
+    constrainedFinalizationConfig: { cortexEnabled: false },
     confidence: validationGate.confidence,
     criticalFieldsBelowPassTarget: [],
     anchorMajorConflictsCount: identityConsensus.anchorMajorConflictsCount,
@@ -133,7 +133,6 @@ test('runProductFinalizationDerivation can delegate through finalizationDerivati
 
   const result = await runProductFinalizationDerivation({
     config: {
-      llmEnabled: true,
       llmWriteSummary: true,
       cortexEnabled: true,
     },
@@ -454,7 +453,6 @@ test('runProductFinalizationDerivation can delegate through finalizationDerivati
       }],
       ['buildCortexSidecar', {
         constrainedFinalizationConfig: {
-          llmEnabled: true,
           llmWriteSummary: true,
           cortexEnabled: true,
         },

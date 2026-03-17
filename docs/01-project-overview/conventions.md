@@ -2,7 +2,7 @@
 
 > **Purpose:** Record the enforced repository rules, code organization patterns, and notable absences so an LLM edits in-bounds.
 > **Prerequisites:** [scope.md](./scope.md), [folder-map.md](./folder-map.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Non-Negotiable Repo Rules
 
@@ -44,7 +44,7 @@
 - Primary test roots: `test/` and `tests/`.
 - Prefer behavior-level tests over implementation-level tests.
 - Existing suite includes GUI contract/browser tests using Playwright, for example `test/runtimeOpsWorkerContractsGui.test.js`.
-- Baseline on 2026-03-15 is not fully green; see [../05-operations/known-issues.md](../05-operations/known-issues.md).
+- Full-suite proof during this audit: `npm test` -> `5552/5552` passing on 2026-03-16.
 
 ## Branching, Commit, PR, Review Conventions
 
@@ -62,6 +62,7 @@
 | config | `package.json` | test runner and root toolchain expectations |
 | config | `tools/gui-react/package.json` | GUI TypeScript/Vite/Tailwind toolchain |
 | source | `tools/gui-react/src/App.tsx` | thin route-wrapper pattern in the GUI |
+| command | `npm test` | Current full-suite baseline is green |
 
 ## Related Documents
 

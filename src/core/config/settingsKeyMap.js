@@ -285,7 +285,6 @@ export const RUNTIME_SETTINGS_ROUTE_GET = Object.freeze({
     allowBelowPassTargetFill: 'allowBelowPassTargetFill',
     [INDEXING_CATEGORY_AUTHORITY_ENABLED_KEY]: INDEXING_CATEGORY_AUTHORITY_ENABLED_KEY,
     selfImproveEnabled: 'selfImproveEnabled',
-    phase2LlmEnabled: 'llmPlanDiscoveryQueries',
     llmExtractionCacheEnabled: 'llmExtractionCacheEnabled',
     reextractIndexed: 'indexingReextractEnabled',
     scannedPdfOcrEnabled: 'scannedPdfOcrEnabled',
@@ -301,7 +300,6 @@ export const RUNTIME_SETTINGS_ROUTE_GET = Object.freeze({
     mirrorToS3: 'mirrorToS3',
     mirrorToS3Input: 'mirrorToS3Input',
     writeMarkdownSummary: 'writeMarkdownSummary',
-    llmEnabled: 'llmEnabled',
     llmWriteSummary: 'llmWriteSummary',
     fetchSchedulerEnabled: 'fetchSchedulerEnabled',
     preferHttpFetcher: 'preferHttpFetcher',
@@ -346,3 +344,40 @@ export const CONVERGENCE_SETTINGS_KEYS = Object.freeze([
   'consensusMinConfidence',
   'retrievalIdentityFilterEnabled',
 ]);
+
+// WHY: Dual-key pairs must have identical values. GUI-alias keys and
+// backend-canonical keys refer to the same setting. If one is updated
+// without the other, read-path drift occurs (F12, F13).
+export const DUAL_KEY_PAIRS = Object.freeze([
+  ['phase2LlmModel', 'llmModelPlan'],
+  ['phase3LlmModel', 'llmModelTriage'],
+  ['llmTokensPlan', 'llmMaxOutputTokensPlan'],
+  ['llmTokensTriage', 'llmMaxOutputTokensTriage'],
+  ['llmTokensFast', 'llmMaxOutputTokensFast'],
+  ['llmTokensReasoning', 'llmMaxOutputTokensReasoning'],
+  ['llmTokensExtract', 'llmMaxOutputTokensExtract'],
+  ['llmTokensValidate', 'llmMaxOutputTokensValidate'],
+  ['llmTokensWrite', 'llmMaxOutputTokensWrite'],
+  ['llmTokensPlanFallback', 'llmMaxOutputTokensPlanFallback'],
+  ['llmTokensExtractFallback', 'llmMaxOutputTokensExtractFallback'],
+  ['llmTokensValidateFallback', 'llmMaxOutputTokensValidateFallback'],
+  ['llmTokensWriteFallback', 'llmMaxOutputTokensWriteFallback'],
+  ['llmPlanFallbackModel', 'llmPlanFallbackModel'],
+  ['llmExtractFallbackModel', 'llmExtractFallbackModel'],
+  ['llmValidateFallbackModel', 'llmValidateFallbackModel'],
+  ['llmWriteFallbackModel', 'llmWriteFallbackModel'],
+]);
+
+export function assertDualKeyConsistency(defaults) {
+  for (const [keyA, keyB] of DUAL_KEY_PAIRS) {
+    if (keyA === keyB) continue;
+    if (!Object.hasOwn(defaults, keyA) || !Object.hasOwn(defaults, keyB)) continue;
+    const valA = defaults[keyA];
+    const valB = defaults[keyB];
+    if (valA !== valB) {
+      throw new Error(
+        `Dual-key drift: ${keyA} (${JSON.stringify(valA)}) !== ${keyB} (${JSON.stringify(valB)})`
+      );
+    }
+  }
+}

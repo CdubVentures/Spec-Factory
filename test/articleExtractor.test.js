@@ -106,13 +106,13 @@ test('article extractor: policy mode prefer_readability keeps readability output
 
 test('article extractor: oversized rendered pages bypass readability and use heuristic fallback', () => {
   const repeatedSection = '<section><p>Razer Viper V3 Pro weight 54 g polling rate 8000 Hz sensor Focus Pro 35K.</p></section>';
-  const html = `<html><body><article><h1>Razer Viper V3 Pro</h1>${repeatedSection.repeat(7000)}</article></body></html>`;
+  const html = `<html><body><article><h1>Razer Viper V3 Pro</h1>${repeatedSection.repeat(1200)}</article></body></html>`;
 
   const extracted = extractMainArticle(html, {
     title: 'Razer Viper V3 Pro',
     minChars: 200,
     minScore: 20,
-    maxReadabilityHtmlChars: 400_000
+    maxReadabilityHtmlChars: 100_000
   });
 
   assert.equal(extracted.method, 'heuristic_fallback');

@@ -96,13 +96,11 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       scannedPdfOcrBackend: '  tesseract  ',
       dynamicFetchPolicyMapJson: '  {"mouse":"full"}  ',
       discoveryEnabled: true,
-      llmEnabled: true,
       llmProvider: '  openai  ',
       llmPlanProvider: '  openai  ',
       llmPlanBaseUrl: '  https://plan.example.test  ',
       llmPlanApiKey: '  plan-key  ',
       llmVerifyMode: '  strict  ',
-      phase2LlmEnabled: true,
       phase2LlmModel: '  gpt-plan  ',
       phase3LlmModel: '  gpt-triage  ',
       llmTokensPlan: '128',
@@ -222,7 +220,6 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
   assert.equal(payload.endpointNetworkScanLimit, 50);
 
   assert.equal(payload.searchProvider, 'searxng');
-  assert.equal(payload.llmPlanDiscoveryQueries, true);
   assert.equal(payload.llmModelPlan, 'gpt-plan');
   assert.equal(payload.llmMaxOutputTokensPlan, 128);
   assert.equal(payload.llmPlanFallbackModel, 'gpt-plan-fallback');

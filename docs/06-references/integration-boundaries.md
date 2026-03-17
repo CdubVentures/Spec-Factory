@@ -2,7 +2,7 @@
 
 > **Purpose:** Define where the local runtime stops and external systems or sidecars begin, including contract surfaces and failure behavior.
 > **Prerequisites:** [../02-dependencies/external-services.md](../02-dependencies/external-services.md), [../03-architecture/system-map.md](../03-architecture/system-map.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Boundary Matrix
 
@@ -15,7 +15,7 @@
 | Structured metadata sidecar | `src/features/indexing/extraction/structuredMetadataClient.js` | local HTTP extractor, default `http://127.0.0.1:8011/extract/structured` | structured metadata extraction POSTs | extraction degrades to best-effort behavior when sidecar is unavailable |
 | Browser crawling stack | `playwright`, `crawlee`, runtime fetch/extraction code | external websites | browser/http fetch plus runtime event capture | fetch failures are logged into runtime events and Runtime Ops |
 | Category-authority control plane | `category_authority/`, `src/features/settings-authority/index.js`, `src/api/services/specDbSyncService.js` | authored JSON control-plane content on disk | compiled rules, catalogs, sources, user settings | stale or missing authority artifacts produce compile-stale states, `specdb_not_ready`, or sync drift |
-| Runtime-used docs schemas | `src/indexlab/indexingSchemaPacketsValidator.js` | `docs/implementation/ai-indexing-plans/schema/*.json` | schema packet validation at runtime | validator/runtime code fails if required schema assets are missing or malformed |
+| Excluded schema assets | `src/indexlab/indexingSchemaPacketsValidator.js` | JSON schemas under the excluded `docs/implementation/ai-indexing-plans/schema/` subtree | schema packet validation at runtime | validator/runtime code fails if required schema assets are missing or malformed |
 
 ## Retry And Recovery Notes
 
@@ -32,7 +32,7 @@
 
 - Do not assume a hosted cloud control plane exists; the verified runtime is local-first.
 - Do not assume auth/session infrastructure protects these boundaries; the GUI API is effectively local/trusted-network only in the verified code.
-- Do not treat `docs/implementation/**/*.md` as integration contracts. Only the retained JSON schemas in `docs/implementation/ai-indexing-plans/schema/` are runtime-consumed.
+- Do not treat the excluded `docs/implementation/` subtree as current-state documentation authority. One exception exists at runtime: `src/indexlab/indexingSchemaPacketsValidator.js` defaults its schema root to JSON files under `docs/implementation/ai-indexing-plans/schema/`.
 
 ## Validated Against
 

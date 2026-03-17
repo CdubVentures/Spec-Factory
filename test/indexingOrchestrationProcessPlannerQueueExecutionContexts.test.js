@@ -32,7 +32,7 @@ function createMinimalExtractionContext() {
       nextBestUrls: [],
     }),
     categoryConfig: { criticalFieldSet: new Set() },
-    config: { llmEnabled: false },
+    config: {},
     buildSiteFingerprint: () => ({}),
     isLikelyIndexableEndpointUrl: () => false,
     isSafeManufacturerFollowupUrl: () => false,

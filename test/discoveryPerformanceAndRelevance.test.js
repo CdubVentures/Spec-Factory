@@ -25,8 +25,6 @@ function makeConfig(tempRoot, overrides = {}) {
     searchProvider: 'searxng',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
-    llmEnabled: false,
-    llmPlanDiscoveryQueries: false,
     ...overrides
   };
 }
@@ -177,14 +175,13 @@ test('discoverCandidateSources with logger emits search profile events without c
   }
 });
 
-test('discoverCandidateSources resolves brand from cache even when llmEnabled is false', async () => {
+test('discoverCandidateSources resolves brand from cache via deterministic path', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-brand-cache-'));
   const config = makeConfig(tempRoot, {
     searchProvider: 'google',
     googleCseKey: '',
     googleCseCx: '',
-    searxngBaseUrl: '',
-    llmEnabled: false
+    searxngBaseUrl: ''
   });
   const storage = createStorage(config);
   storage.getBrandDomain = (brand, category) => {
@@ -244,7 +241,6 @@ test('discoverCandidateSources emits deterministic triage and domain-classifier 
     discoveryMaxQueries: 2,
     discoveryQueryConcurrency: 1,
     searchProvider: 'searxng',
-    llmEnabled: false,
     serpTriageEnabled: true,
     serpTriageMaxUrls: 2
   });
@@ -330,12 +326,11 @@ test('discoverCandidateSources emits deterministic triage and domain-classifier 
   }
 });
 
-test('discoverCandidateSources uses deterministic domain classification even when llmEnabled=true (LLM domain safety eliminated)', async () => {
+test('discoverCandidateSources uses deterministic domain classification exclusively (LLM domain safety eliminated)', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-domain-deterministic-only-'));
   const config = makeConfig(tempRoot, {
     discoveryMaxQueries: 1,
     discoveryQueryConcurrency: 1,
-    llmEnabled: true,
     llmProvider: 'openai',
     llmBaseUrl: 'http://llm.test',
     llmApiKey: 'test-key',
@@ -449,9 +444,7 @@ test('discoverCandidateSources emits plan-only search result events when interne
     searchProvider: 'google',
     googleCseKey: '',
     googleCseCx: '',
-    searxngBaseUrl: '',
-    llmEnabled: false,
-    llmPlanDiscoveryQueries: false
+    searxngBaseUrl: ''
   });
   const storage = createStorage(config);
   const categoryConfig = {

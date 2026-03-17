@@ -15,7 +15,6 @@ test('runProductFinalizationDerivation preserves derivation phase ordering and s
     sourceResults: [{ url: 'https://example.com/spec' }],
     anchors: { shape: 'symmetrical' },
     config: {
-      llmEnabled: true,
       llmWriteSummary: true,
       cortexEnabled: true,
     },
@@ -259,7 +258,6 @@ test('runProductFinalizationDerivation preserves derivation phase ordering and s
     },
     buildCortexSidecarPhaseCallsiteContextFn: (payload) => {
       calls.push(['buildCortexSidecarPhaseCallsiteContextFn', payload]);
-      assert.equal(payload.config.llmEnabled, true);
       return payload;
     },
     buildCortexSidecarContextFn: async (payload) => {
@@ -325,7 +323,6 @@ test('runProductFinalizationDerivation disables expensive finalization phases wh
     runId: 'run-1',
     sourceResults: [],
     config: {
-      llmEnabled: true,
       llmWriteSummary: true,
       cortexEnabled: true,
     },
@@ -446,21 +443,26 @@ test('runProductFinalizationDerivation disables expensive finalization phases wh
 
   assert.deepEqual(calls, [
     {
-      llmEnabled: false,
       llmWriteSummary: false,
       cortexEnabled: false,
     },
   ]);
   assert.deepEqual(result.llmValidatorDecisions, { enabled: false, prior: true });
   assert.equal(result.aggressiveExtraction, null);
-  assert.equal(result.constrainedFinalizationConfig.llmEnabled, false);
   assert.equal(result.constrainedFinalizationConfig.llmWriteSummary, false);
   assert.equal(result.constrainedFinalizationConfig.cortexEnabled, false);
 });
 
-test('runProductFinalizationDerivation calls Schema 3+4 builders and enriches needSet with panel data', async () => {
+test('runProductFinalizationDerivation uses seed schema4 from discoveryResult instead of calling LLM', async () => {
   const schema4Panel = {
-    bundles: [{ key: 'sensor_performance', label: 'Sensor & Performance', priority: 'core', phase: 'now', fields: [] }],
+    bundles: [{
+      key: 'sensor_performance',
+      label: 'Sensor & Performance',
+      priority: 'core',
+      phase: 'now',
+      fields: [],
+      queries: ['logitech g pro x superlight 2 sensor'],
+    }],
     profile_influence: { manufacturer_html: 2, total_queries: 3 },
     deltas: [],
     round: 0,
@@ -471,13 +473,12 @@ test('runProductFinalizationDerivation calls Schema 3+4 builders and enriches ne
     panel: schema4Panel,
     search_plan_handoff: { queries: [{ q: 'logitech g pro x superlight 2 sensor', family: 'manufacturer_html' }] },
   };
-  const searchPlanCalls = [];
 
   const result = await runProductFinalizationDerivation({
     job: { identityLock: { brand: 'Logitech' } },
     runId: 'run-1',
     sourceResults: [],
-    config: { llmEnabled: true },
+    config: {},
     productId: 'product-1',
     category: 'mouse',
     categoryConfig: { criticalFieldSet: new Set(), fieldGroupsData: { sensor_performance: {} } },
@@ -486,6 +487,7 @@ test('runProductFinalizationDerivation calls Schema 3+4 builders and enriches ne
     llmBudgetGuard: { snapshot: () => ({ state: { blockedReason: '' } }) },
     logger: { warn: () => {} },
     llmContext: {},
+    discoveryResult: { enabled: true, seed_search_plan_output: schema4Output },
     buildDedicatedSyntheticSourceIngestionContextFn: (p) => p,
     runDedicatedSyntheticSourceIngestionPhaseFn: async () => {},
     buildIdentityConsensusPhaseCallsiteContextFn: (p) => p,
@@ -526,29 +528,15 @@ test('runProductFinalizationDerivation calls Schema 3+4 builders and enriches ne
     buildFinalizationMetricsContextFn: () => ({ parserHealthRows: [], parserHealthAverage: 0, fingerprintCount: 0, contribution: {} }),
     buildCortexSidecarPhaseCallsiteContextFn: (p) => p,
     buildCortexSidecarContextFn: async () => ({ status: 'disabled' }),
-    buildSearchPlanningContextFn: (args) => {
-      searchPlanCalls.push({ step: 'schema3', needSetOutput: args.needSetOutput });
-      return { identity: {}, run: {}, focus_groups: [], planner_limits: {} };
-    },
-    buildSearchPlanFn: async (args) => {
-      searchPlanCalls.push({ step: 'schema4', ctx: args.searchPlanningContext });
-      return schema4Output;
-    },
   });
 
-  // Schema 3+4 builders were called
-  assert.equal(searchPlanCalls.length, 2);
-  assert.equal(searchPlanCalls[0].step, 'schema3');
-  assert.equal(searchPlanCalls[0].needSetOutput.total_fields, 1);
-  assert.equal(searchPlanCalls[1].step, 'schema4');
-
-  // needSet is enriched with Schema 4 panel data
+  // needSet is enriched with seed Schema 4 panel data
   assert.deepEqual(result.needSet.bundles, schema4Panel.bundles);
   assert.deepEqual(result.needSet.profile_influence, schema4Panel.profile_influence);
   assert.equal(result.needSet.schema_version, 'needset_planner_output.v2');
   assert.equal(result.needSet.round, 0);
   assert.equal(result.needSet.round_mode, 'seed');
 
-  // searchPlanOutput is returned
+  // searchPlanOutput is the seed schema4 output (no LLM call in finalization)
   assert.deepEqual(result.searchPlanOutput, schema4Output);
 });

@@ -32,8 +32,25 @@ import {
 // Manufacturer URL plan generation
 // ---------------------------------------------------------------------------
 
-export function buildManufacturerPlanUrls({ host, variables, queries, maxQueries = 3, deterministicAliasCap = 6 }) {
+let _manufacturerPlanUrlCallCount = 0;
+
+export function getManufacturerPlanUrlCallCount() {
+  return _manufacturerPlanUrlCallCount;
+}
+
+export function resetManufacturerPlanUrlCallCount() {
+  _manufacturerPlanUrlCallCount = 0;
+}
+
+export function buildManufacturerPlanUrls({ host, variables, queries, maxQueries = 3, deterministicAliasCap = 6, logger = null, reason = '' }) {
+  _manufacturerPlanUrlCallCount += 1;
   const urls = [];
+
+  // Feature flag: DISABLE_URL_GUESS_FALLBACK (default: false)
+  if (process.env.DISABLE_URL_GUESS_FALLBACK === 'true') {
+    logger?.info?.('manufacturer_plan_urls_disabled', { host, reason });
+    return urls;
+  }
   const product = productText(variables);
   const queryText = product || queries[0] || '';
   const slugs = buildModelSlugCandidates(variables, deterministicAliasCap);
@@ -89,7 +106,14 @@ export function buildManufacturerPlanUrls({ host, variables, queries, maxQueries
     add(`/support/search?query=${encodeURIComponent(query)}`, query);
   }
 
-  return urls.slice(0, 40);
+  const result = urls.slice(0, 40);
+  logger?.info?.('manufacturer_plan_urls_generated', {
+    reason: reason || 'plan_only',
+    host,
+    url_count: result.length,
+    call_count: _manufacturerPlanUrlCallCount
+  });
+  return result;
 }
 
 // ---------------------------------------------------------------------------

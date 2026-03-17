@@ -22,7 +22,6 @@ interface PrefetchBrandResolverPanelProps {
 
 const SKIP_REASON_LABELS: Record<string, string> = {
   no_brand_in_identity_lock: 'No brand name was found in the product identity lock.',
-  llm_disabled: 'Global LLM runtime (llmEnabled) is turned off in the current configuration.',
   no_api_key_for_triage_role: 'No API key is configured for the triage LLM role.',
 };
 
@@ -128,9 +127,7 @@ function CandidateDrawer({ candidate, call, onClose }: { candidate: BrandCandida
 
 export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScope, liveSettings, idxRuntime }: PrefetchBrandResolverPanelProps) {
   const br = brandResolution;
-  const llmRuntimeEnabled = liveSettings?.llmEnabled;
-  const llmPlannerEnabled = liveSettings?.phase2LlmEnabled;
-  const llmBadgeEnabled = llmRuntimeEnabled !== undefined ? llmRuntimeEnabled : llmPlannerEnabled;
+  const llmBadgeEnabled: boolean | undefined = true;
   const [llmCallsOpen, setLlmCallsOpen] = useState(false);
   const candidateValues = useMemo(
     () => (br?.candidates ?? []).map((candidate) => candidate.name),
@@ -151,7 +148,7 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
   const isSkipped = status === 'skipped';
   const isFailed = status === 'failed';
   const isResolvedEmpty = status === 'resolved_empty';
-  const forcedLlmOffFromSkip = isSkipped && br?.skip_reason === 'llm_disabled';
+  const forcedLlmOffFromSkip = isSkipped && br?.skip_reason === 'no_api_key_for_triage_role';
   const effectiveLlmBadgeEnabled = forcedLlmOffFromSkip ? false : llmBadgeEnabled;
   const isLowConfidence = isResolved && br!.confidence < 0.7;
   const hasOfficialDomain = hasStructured && Boolean(br.official_domain);

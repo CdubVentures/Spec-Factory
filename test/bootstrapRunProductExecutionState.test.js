@@ -32,7 +32,6 @@ test('bootstrapRunProductExecutionState wires category/planner/fetcher bootstrap
       },
     },
     config: {
-      llmEnabled: true,
       selfImproveEnabled: true,
       globalRequestRps: 4,
       globalRequestBurst: 8,
@@ -172,9 +171,35 @@ test('bootstrapRunProductExecutionState wires category/planner/fetcher bootstrap
         calls.push(['loadLearningStoreHintsForRun', category, requiredFields]);
         return { hints: true };
       },
-      computeNeedSetFn: ({ category, productId }) => {
+      computeNeedSetFn: ({ category, productId, brand, model }) => {
         calls.push(['computeNeedSet', category, productId]);
-        return { total_fields: 1, rows: [{ field_key: 'dpi', required_level: 'required', priority_bucket: 'core', state: 'missing', bundle_id: '' }], focus_fields: ['dpi'], bundles: [], summary: { core_unresolved: 1, secondary_unresolved: 0, optional_unresolved: 0, conflicts: 0, bundles_planned: 0 }, blockers: { missing: 1, weak: 0, conflict: 0 } };
+        return {
+          total_fields: 1,
+          rows: [{ field_key: 'dpi', required_level: 'required', priority_bucket: 'core', state: 'missing', bundle_id: '' }],
+          focus_fields: ['dpi'],
+          bundles: [],
+          summary: { core_unresolved: 1, secondary_unresolved: 0, optional_unresolved: 0, conflicts: 0, bundles_planned: 0 },
+          blockers: { missing: 1, weak: 0, conflict: 0 },
+          identity: {
+            state: 'unverified',
+            source_label_state: 'none',
+            manufacturer: brand || null,
+            model: model || null,
+            confidence: 0,
+            official_domain: null,
+            support_domain: null,
+          },
+          planner_seed: {
+            missing_critical_fields: ['dpi'],
+            unresolved_fields: ['dpi'],
+            existing_queries: [],
+            current_product_identity: {
+              category: category || '',
+              brand: brand || '',
+              model: model || '',
+            },
+          },
+        };
       },
       buildDiscoverySeedPlanContextFn: (input) => {
         calls.push(['buildDiscoverySeedPlanContext', input.category, input.requiredFields]);
@@ -244,6 +269,16 @@ test('bootstrapRunProductExecutionState wires category/planner/fetcher bootstrap
   assert.deepEqual(result.phase08FieldContexts, {});
   assert.deepEqual(result.phase08PrimeRows, []);
   assert.equal(result.initialNeedSet.rows.length, 1);
+
+  // NeedSet identity block — brand/model resolved via job.identityLock fallback chain
+  assert.equal(result.initialNeedSet.identity.manufacturer, 'Probe');
+  assert.equal(result.initialNeedSet.identity.model, 'Alpha');
+
+  // NeedSet planner_seed — LLM planner receives product identity context
+  assert.ok(result.initialNeedSet.planner_seed, 'planner_seed must not be null');
+  assert.equal(result.initialNeedSet.planner_seed.current_product_identity.brand, 'Probe');
+  assert.equal(result.initialNeedSet.planner_seed.current_product_identity.model, 'Alpha');
+
   assert.equal(result.resumeMode, 'auto');
   assert.equal(result.resumeSeededReextractCount, 3);
   assert.ok(calls.some(([name]) => name === 'runPlannerQueueSnapshotPhase'));

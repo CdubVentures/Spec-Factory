@@ -2,7 +2,7 @@
 
 > **Purpose:** Show the verified runtime topology and file-backed relationships between the GUI, API server, workers, storage, and optional external services.
 > **Prerequisites:** [../02-dependencies/stack-and-toolchain.md](../02-dependencies/stack-and-toolchain.md), [../02-dependencies/external-services.md](../02-dependencies/external-services.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ```mermaid
 graph TD
@@ -16,7 +16,7 @@ graph TD
   Cli["CLI Commands (src/cli/spec.js)"]
   SpecDb["SQLite Boundary (src/db/specDb.js)"]
   Authority["Category Authority Files (category_authority/)"]
-  Output["Local Output Root (storage/, .specfactory_tmp, configured roots)"]
+  Output["Runtime Artifact Roots (src/core/config/runtimeArtifactRoots.js)"]
   S3["Optional S3 Storage (src/s3/storage.js)"]
   Searxng["Optional SearXNG Stack (tools/searxng/docker-compose.yml)"]
   Graphql["Local GraphQL Upstream :8787 (src/app/api/routes/infra/graphqlRoutes.js)"]
@@ -72,6 +72,7 @@ graph TD
 - WebSocket traffic goes through `/ws` and is backed by `src/app/api/realtimeBridge.js`.
 - Background/indexing work is launched through `src/app/api/processRuntime.js`, which shells into the CLI entrypoint in `src/cli/spec.js`.
 - Canonical persistent state is split between SQLite (`src/db/`) and the category authority content root.
+- The default local artifact roots are under the OS temp directory (`.../spec-factory/output` and `.../spec-factory/indexlab`), not a checked-in top-level `storage/` folder.
 
 ## Validated Against
 

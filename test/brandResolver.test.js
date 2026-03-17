@@ -38,7 +38,7 @@ describe('brandResolver', () => {
     const result = await resolveBrandDomain({
       brand: 'Cougar',
       category: 'mouse',
-      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      config: { llmModelPlan: 'test-model' },
       callLlmFn: llm.callLlm,
       storage
     });
@@ -63,7 +63,7 @@ describe('brandResolver', () => {
     const result = await resolveBrandDomain({
       brand: 'Razer',
       category: 'mouse',
-      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      config: { llmModelPlan: 'test-model' },
       callLlmFn: llm.callLlm,
       storage
     });
@@ -77,7 +77,7 @@ describe('brandResolver', () => {
     const result = await resolveBrandDomain({
       brand: 'Unknown',
       category: 'mouse',
-      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      config: { llmModelPlan: 'test-model' },
       callLlmFn: llm.callLlm,
       storage
     });
@@ -92,26 +92,12 @@ describe('brandResolver', () => {
     const result = await resolveBrandDomain({
       brand: 'Asus',
       category: 'mouse',
-      config: { llmEnabled: true },
+      config: {},
       callLlmFn: llm.callLlm,
       storage: fileStorage
     });
     assert.equal(result.officialDomain, 'cougargaming.com');
     assert.ok(llm.called, 'should call LLM when cache is unavailable');
-  });
-
-  it('calls LLM even when global llmEnabled is false', async () => {
-    const storage = makeMockStorage();
-    const llm = makeLlmContext();
-    const result = await resolveBrandDomain({
-      brand: 'Logitech',
-      category: 'mouse',
-      config: { llmEnabled: false, llmModelPlan: 'test-model' },
-      callLlmFn: llm.callLlm,
-      storage
-    });
-    assert.equal(result.officialDomain, 'cougargaming.com');
-    assert.equal(llm.called, true);
   });
 
   it('resolved aliases flow through selectManufacturerHosts', async () => {

@@ -246,3 +246,22 @@ test('enforceIdentityQueryGuard: empty rows returns empty', () => {
   assert.deepStrictEqual(rows, []);
   assert.deepStrictEqual(rejectLog, []);
 });
+
+// ---------------------------------------------------------------------------
+// Phase 5 — Import guard: buildManufacturerPlanUrls stays in discoveryQueryPlan
+// ---------------------------------------------------------------------------
+
+test('Phase 5 — buildManufacturerPlanUrls never imported in queryBuilder.js (import guard)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { resolve, dirname } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+
+  const testDir = dirname(fileURLToPath(import.meta.url));
+  const queryBuilderPath = resolve(testDir, '../src/features/indexing/search/queryBuilder.js');
+  const source = readFileSync(queryBuilderPath, 'utf-8');
+
+  assert.ok(
+    !source.includes('buildManufacturerPlanUrls'),
+    'queryBuilder.js must NOT import or reference buildManufacturerPlanUrls — URL guessing is gated to discoveryQueryPlan only'
+  );
+});

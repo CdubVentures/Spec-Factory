@@ -95,7 +95,7 @@ test('extractCandidatesLLM batches extraction into <=7 calls and reuses cache on
       },
       evidencePack,
       config: {
-        llmEnabled: true,
+
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
@@ -165,7 +165,7 @@ test('extractCandidatesLLM drops non-auditable candidates when evidence verifier
         snippets: [{ id: 'ref-sensor', normalized_text: 'Sensor type: optical tracking module' }]
       },
       config: {
-        llmEnabled: true,
+
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
@@ -255,7 +255,7 @@ test('extractCandidatesLLM skips repatch when budget guard disallows extra call'
         }
       },
       config: {
-        llmEnabled: true,
+
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
@@ -319,7 +319,7 @@ test('extractCandidatesLLM skips repatch when role model provider pin is enabled
         }
       },
       config: {
-        llmEnabled: true,
+
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',

@@ -431,7 +431,7 @@ test('studio enum consistency uses field format hint when request guidance is om
       calls.push(payload);
       return {
         enabled: false,
-        skipped_reason: 'llm_disabled_or_missing_key',
+        skipped_reason: 'missing_api_key',
         decisions: [],
       };
     },

@@ -2,14 +2,14 @@
 
 > **Purpose:** Record the exact live stack, resolved direct dependency versions, and runtime/tooling compatibility notes so an arriving LLM does not guess the framework mix.
 > **Prerequisites:** [../01-project-overview/scope.md](../01-project-overview/scope.md), [../01-project-overview/conventions.md](../01-project-overview/conventions.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Runtime and Build Toolchain
 
 | Dependency | Version | Purpose | Category |
 |-----------|---------|---------|----------|
-| Node.js | `v22.14.0` | audit/build/test runtime observed locally | runtime |
-| npm | `10.9.2` | package manager observed locally | runtime |
+| Node.js | `v24.13.1` | audit/build/test runtime observed locally | runtime |
+| npm | `11.8.0` | package manager observed locally | runtime |
 | `package.json` engines.node | `>=20` | minimum supported Node version | compatibility |
 | Vite | `6.4.1` resolved | GUI dev server and build | gui build |
 | TypeScript | `5.9.3` resolved | GUI type-check/build | gui build |
@@ -73,7 +73,8 @@
 - Backend is pure JavaScript ESM even though the GUI package is TypeScript.
 - The GUI route model is `HashRouter`, not filesystem routing.
 - The audit observed resolved versions from lockfiles, which are newer than some declared semver ranges.
-- The GUI build used `tsc -b && vite build` successfully on 2026-03-15.
+- The GUI build used `tsc -b && vite build` successfully on 2026-03-16.
+- The full backend and GUI-integrated test suite passed under Node `v24.13.1`, even though `package.json` only requires `>=20`.
 
 ## Validated Against
 

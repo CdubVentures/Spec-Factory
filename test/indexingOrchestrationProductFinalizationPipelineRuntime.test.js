@@ -102,7 +102,7 @@ test('createProductFinalizationPipelineRuntime derives, summarizes, and complete
     fieldsBelowPassTarget: ['weight_g'],
     criticalFieldsBelowPassTarget: [],
     newValuesProposed: [{ field: 'weight_g', value: '59' }],
-    constrainedFinalizationConfig: { llmEnabled: true, cortexEnabled: true },
+    constrainedFinalizationConfig: { cortexEnabled: true },
     componentPriorFilledFields: ['shape'],
     componentPriorMatches: ['shell'],
     criticDecisions: { accept: [{ field: 'shape' }] },

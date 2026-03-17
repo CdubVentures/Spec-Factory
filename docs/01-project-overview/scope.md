@@ -2,9 +2,9 @@
 
 > **Purpose:** Define the live system boundary, intended operators, and explicit non-goals so an arriving LLM does not invent missing systems.
 > **Prerequisites:** [../README.md](../README.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
-Spec Factory is a local-first spec indexing, review, and runtime-operations workbench. The live repo contains a Node.js server in `src/api/guiServer.js`, a React/Vite operator GUI in `tools/gui-react/`, a SQLite persistence layer in `src/db/`, authored category/rule content under `category_authority/`, and a CLI/orchestration surface in `src/cli/spec.js` for indexing, queue, review, reporting, and migration tasks.
+Spec Factory is a local-first spec indexing, review, and runtime-operations workbench. The live repo contains a Node.js server in `src/api/guiServer.js`, a React/Vite operator GUI in `tools/gui-react/`, a SQLite persistence layer in `src/db/`, authored category and user-settings content under `category_authority/`, and a CLI/orchestration surface in `src/cli/spec.js` for indexing, queue, review, reporting, drift, migration, and daemon tasks.
 
 ## What This Project Is
 
@@ -18,7 +18,7 @@ Spec Factory is a local-first spec indexing, review, and runtime-operations work
 - Not a public website or static-content site. No Astro, Next.js, Remix, or MDX app was found.
 - Not a multi-user SaaS with account management, org tenancy, or role-driven auth middleware.
 - Not a deployed cloud-native service with checked-in CI/CD workflows, Kubernetes manifests, or Terraform.
-- Not a repo where `docs/implementation/` is authoritative current-state documentation.
+- Not a repo where `docs/implementation/` is authoritative current-state documentation. That subtree exists on disk but is excluded from this documentation pass.
 
 ## Explicit Exclusions
 
@@ -40,8 +40,9 @@ Spec Factory is a local-first spec indexing, review, and runtime-operations work
 
 - Status: active local/internal development workbench.
 - Evidence:
-  - `npm run gui:build` succeeded during audit on 2026-03-15.
-  - `npm test` baseline is not green; the 2026-03-15 audit rerun observed 21 failing tests spanning GUI waits, missing GUI modules, field-rules compiler contracts, type generation, and IndexLab integration coverage.
+  - `npm run gui:build` succeeded during audit on 2026-03-16.
+  - `npm test` passed `5552/5552` tests on 2026-03-16.
+  - `http://127.0.0.1:8788/api/v1/health` returned `{"ok":true,...}` and `/api/v1/categories` returned `["keyboard","monitor","mouse"]` during the same audit.
   - `Dockerfile` references `src/cli/run-batch.js`, which does not exist in the live repo.
 
 ## Validated Against
@@ -53,9 +54,10 @@ Spec Factory is a local-first spec indexing, review, and runtime-operations work
 | source | `tools/gui-react/src/App.tsx` | GUI route inventory and operator surfaces |
 | config | `package.json` | Scripts and local-run surfaces |
 | config | `Dockerfile` | Confirms checked-in deployment artifact divergence |
+| runtime | `http://127.0.0.1:8788/api/v1/categories` | Live category inventory available from the running server |
 
 ## Related Documents
 
 - [Folder Map](./folder-map.md) - Shows where each runtime boundary lives on disk.
 - [Conventions](./conventions.md) - Lists the repo rules an LLM must follow before editing.
-- [Known Issues](../05-operations/known-issues.md) - Captures the current baseline failures and stale deployment artifacts.
+- [Known Issues](../05-operations/known-issues.md) - Captures the current env-sync drift, stale client route, and stale deployment artifacts.

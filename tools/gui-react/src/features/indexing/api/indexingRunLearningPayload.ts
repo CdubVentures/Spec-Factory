@@ -1,7 +1,6 @@
 type IndexingRunLearningPayloadPrimitive = string | number | boolean;
 
 export interface BuildIndexingRunLearningPayloadInput {
-  llmEnabled: boolean;
   llmWriteSummary: boolean;
   llmProvider: string;
   llmBaseUrl: string;
@@ -43,8 +42,6 @@ export function buildIndexingRunLearningPayload(
   input: BuildIndexingRunLearningPayloadInput,
 ): Record<string, IndexingRunLearningPayloadPrimitive> {
   return {
-    // WHY: llmEnabled is a hardcoded invariant per the rollout plan — always on.
-    llmEnabled: true,
     llmWriteSummary: input.llmWriteSummary,
     llmProvider: String(input.llmProvider || '').trim(),
     llmBaseUrl: String(input.llmBaseUrl || '').trim(),

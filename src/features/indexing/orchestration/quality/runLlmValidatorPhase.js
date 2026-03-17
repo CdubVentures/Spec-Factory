@@ -31,7 +31,7 @@ export async function runLlmValidatorPhase({
     fieldOrder,
   });
   const shouldRunLlmValidator =
-    Boolean(config.llmEnabled && config.llmApiKey)
+    Boolean(config.llmApiKey)
     && uncertainFieldsForValidator.length > 0
     && (
       (criticDecisions.reject || []).length > 0

@@ -3,6 +3,8 @@
  * Validates URLs before they enter the fetch queue to prevent wasted slots.
  */
 
+import { isLowValueSubdomain } from '../utils/common.js';
+
 /**
  * Hosts that never yield useful spec data.
  * Social/UGC sites that aggressively block bots or contain only discussion, not specs.
@@ -49,14 +51,7 @@ const LOW_VALUE_HOSTS = new Set([
   'm.media-amazon.com',
 ]);
 
-/**
- * Subdomain prefixes that indicate support portals, forums, or community sites
- * that rarely contain structured product spec data.
- */
-const LOW_VALUE_SUBDOMAIN_PREFIXES = [
-  'mysupport', 'support', 'help', 'community', 'forum', 'forums',
-  'status', 'blog', 'careers', 'jobs', 'investor', 'ir',
-];
+// WHY: Subdomain prefix list is shared via isLowValueSubdomain() from utils/common.js
 
 export function isLowValueHost(hostname) {
   const h = String(hostname || '').trim().toLowerCase();
@@ -68,9 +63,7 @@ export function isLowValueHost(hostname) {
   if (parts.length > 2) {
     const root = parts.slice(-2).join('.');
     if (LOW_VALUE_HOSTS.has(root)) return true;
-    // Check subdomain prefix (e.g. mysupport.razer.com, support.logitech.com)
-    const sub = parts[0];
-    if (LOW_VALUE_SUBDOMAIN_PREFIXES.includes(sub)) return true;
+    if (isLowValueSubdomain(h)) return true;
   }
   return false;
 }

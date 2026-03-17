@@ -29,7 +29,7 @@ export async function classifyDomains({
     }
   }
 
-  if (uncached.length === 0 || !config.llmEnabled || !callLlmFn) {
+  if (uncached.length === 0 || !callLlmFn) {
     for (const domain of uncached) {
       results.set(domain, { safe: true, classification: 'unknown', reason: 'no_llm' });
     }

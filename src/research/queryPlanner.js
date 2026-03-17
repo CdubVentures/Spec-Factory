@@ -8,6 +8,27 @@ function normalizeQuery(value) {
   return String(value || '').trim().replace(/\s+/g, ' ');
 }
 
+function groupFieldsByTier(fields, archetypeContext = {}) {
+  const uncoveredSearchWorthy = new Set(archetypeContext.uncovered_search_worthy || []);
+  const critical = [];
+  const covered = [];
+  const uncovered = [];
+  for (const field of fields) {
+    if (uncoveredSearchWorthy.has(field)) {
+      uncovered.push(field);
+    } else {
+      covered.push(field);
+    }
+  }
+  // Return full field set as grouped structure (no truncation)
+  return {
+    all: fields,
+    uncovered_search_worthy: uncovered,
+    covered_by_archetypes: covered,
+    total: fields.length
+  };
+}
+
 function dedupeQueries(rows = [], cap = 24) {
   const out = [];
   const seen = new Set();
@@ -65,7 +86,7 @@ export async function planUberQueries({
   cap = 16
 } = {}) {
   const fallbackQueries = dedupeQueries(baseQueries, Math.max(1, cap));
-  if (!config?.llmEnabled || !hasLlmRouteApiKey(config, { role: 'plan' })) {
+  if (!hasLlmRouteApiKey(config, { role: 'plan' })) {
     return {
       source: 'deterministic',
       queries: fallbackQueries,
@@ -77,6 +98,11 @@ export async function planUberQueries({
     };
   }
 
+  // Group fields by tier for compressed planner context
+  const archetypeContext = llmContext?.archetypeContext || {};
+  const allFields = toArray(missingFields);
+  const grouped = groupFieldsByTier(allFields, archetypeContext);
+
   const payload = {
     identity_lock: {
       brand: String(identity.brand || ''),
@@ -84,9 +110,10 @@ export async function planUberQueries({
       variant: String(identity.variant || ''),
       product_id: String(identity.productId || '')
     },
-    missing_fields: toArray(missingFields).slice(0, 40),
+    missing_fields: grouped,
     base_queries: fallbackQueries.slice(0, 24),
-    frontier_summary: frontierSummary
+    frontier_summary: frontierSummary,
+    archetypes_emitted: archetypeContext.archetypes_emitted || []
   };
 
   try {

@@ -20,9 +20,7 @@ test('discoverCandidateSources filters unrelated manufacturer domains for locked
     discoveryMaxQueries: 3,
     discoveryResultsPerQuery: 4,
     discoveryMaxDiscovered: 20,
-    searchProvider: 'none',
-    llmEnabled: false,
-    llmPlanDiscoveryQueries: false
+    searchProvider: 'none'
   };
   const storage = createStorage(config);
   const categoryConfig = {

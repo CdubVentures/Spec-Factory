@@ -43,8 +43,6 @@ function makeConfig(tempRoot, overrides = {}) {
     searchProvider: 'searxng',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
-    llmEnabled: false,
-    llmPlanDiscoveryQueries: false,
     enableSourceRegistry: true,
     enableDomainHintResolverV2: true,
     enableQueryCompiler: true,
@@ -302,7 +300,7 @@ test('discoverCandidateSources rescues zero-result internet queries with determi
     assert.equal(
       classifications.every((row) => String(row?.notes || '').trim() === 'deterministic_heuristic'),
       true,
-      'expected deterministic heuristic notes when llmEnabled=false',
+      'expected deterministic heuristic notes for rescued domains',
     );
   } finally {
     global.fetch = originalFetch;
@@ -314,7 +312,6 @@ test('discoverCandidateSources skips conditional triage at the 60 percent determ
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-triage-skip-'));
   const config = makeConfig(tempRoot, {
     discoveryMaxQueries: 1,
-    llmEnabled: true,
     llmSerpRerankEnabled: true,
     serpTriageEnabled: true,
     serpTriageMinScore: 0,
@@ -380,7 +377,6 @@ test('discoverCandidateSources enters triage flow when deterministic quality sta
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-triage-needed-'));
   const config = makeConfig(tempRoot, {
     discoveryMaxQueries: 1,
-    llmEnabled: true,
     llmSerpRerankEnabled: true,
     serpTriageEnabled: true,
     serpTriageMinScore: 0,

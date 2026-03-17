@@ -1,6 +1,17 @@
 import { normalizeFieldList } from '../../../utils/fieldKeys.js';
 import { resolveConsumerGate } from '../../../field-rules/consumerGate.js';
 import { compileQuery, compileQueryBatch } from '../discovery/queryCompiler.js';
+import {
+  classifySourceArchetypes,
+  computeArchetypeCoverage,
+  allocateArchetypeBudget,
+  emitArchetypeQueries,
+  identifyUncoveredFields,
+  emitHardFieldQueries,
+  intentFingerprint,
+  buildArchetypeSummary,
+  buildCoverageAnalysis
+} from './archetypeQueryPlanner.js';
 
 function clean(value) {
   return String(value || '')
@@ -408,7 +419,11 @@ function extractTooltipTerms(value) {
 function fieldSynonyms(field, lexicon, fieldRule = {}, tooltipHints = {}) {
   const defaults = FIELD_SYNONYMS[field] || [field];
   const learned = Object.entries(lexicon?.fields?.[field]?.synonyms || {})
-    .sort((a, b) => (b[1].count || 0) - (a[1].count || 0))
+    .sort((a, b) => {
+      const aScore = (a[1].count || 0) * Math.log2(1 + Math.max(1, Object.keys(a[1].hosts || {}).length));
+      const bScore = (b[1].count || 0) * Math.log2(1 + Math.max(1, Object.keys(b[1].hosts || {}).length));
+      return bScore - aScore || a[0].localeCompare(b[0]);
+    })
     .slice(0, 6)
     .map(([token]) => token)
     .filter(Boolean);
@@ -738,6 +753,68 @@ function buildQueryRows({
     );
   });
 
+  // ── Archetype pipeline: source-first query generation ──
+  const sourceRegistry = categoryConfig?.sourceRegistry || {};
+  const sourceHosts = toArray(categoryConfig?.sourceHosts);
+  let mfrHosts = selectManufacturerHosts(categoryConfig, brand, brandResolutionHints);
+  if (mfrHosts.length === 0) {
+    const officialHost = brandResolutionHints.find((h) => h.includes('.'));
+    if (officialHost) mfrHosts = [officialHost];
+  }
+
+  const archetypes = classifySourceArchetypes(sourceRegistry, sourceHosts, mfrHosts);
+  const archetypeCoverage = computeArchetypeCoverage(archetypes, focusFields);
+  const archetypeBudget = Math.max(4, Math.floor(rowCap * 0.6));
+  const allocatedSlots = allocateArchetypeBudget(archetypes, archetypeBudget, {});
+
+  // Collect all fields covered by archetypes (advisory)
+  const coveredFieldSet = new Set();
+  for (const a of archetypes) {
+    for (const f of (a.coveredFields || [])) {
+      coveredFieldSet.add(f);
+    }
+  }
+
+  // Emit archetype queries
+  for (const slot of allocatedSlots) {
+    if (slot.slots <= 0) continue;
+    const archetypeRows = emitArchetypeQueries(slot, { brand, model, variant }, product, focusFields);
+    for (const row of archetypeRows) {
+      addRow({
+        query: row.query,
+        hintSource: row.hint_source || 'archetype_planner',
+        targetFields: row.target_fields,
+        docHint: row.doc_hint,
+        domainHint: row.domain_hint
+      });
+      // Propagate _meta to the stored row (if addRow accepted it)
+      const stored = rows[rows.length - 1];
+      if (stored && stored.query === clean(row.query) && row._meta) {
+        stored._meta = row._meta;
+      }
+    }
+  }
+
+  // Hard-field queries for uncovered search-worthy fields
+  const uncovered = identifyUncoveredFields(focusFields, coveredFieldSet, categoryConfig);
+  const hardFieldRows = emitHardFieldQueries(
+    uncovered.searchWorthy, { brand, model, variant }, product, categoryConfig
+  );
+  for (const row of hardFieldRows) {
+    addRow({
+      query: row.query,
+      hintSource: row.hint_source || 'archetype_planner',
+      targetFields: row.target_fields,
+      docHint: row.doc_hint,
+      domainHint: row.domain_hint
+    });
+    const stored = rows[rows.length - 1];
+    if (stored && stored.query === clean(row.query) && row._meta) {
+      stored._meta = row._meta;
+    }
+  }
+
+  // Field-rules search hints + synonym fallback: per-field targeted queries
   for (const field of focusFields) {
     const fieldRule = lookupFieldRule(categoryConfig, field);
     const queryTermsGateEnabled = resolveConsumerGate(fieldRule, 'search_hints.query_terms', 'indexlab').enabled;
@@ -752,81 +829,62 @@ function buildQueryRows({
     const terms = [...new Set([
       ...searchHintTerms,
       ...fallbackSynonyms
-    ])].slice(0, 12);
+    ])].slice(0, 8);
     const preferredContent = contentTypesGateEnabled ? contentTypeSuffixes(fieldRule) : [];
     const ruleDomainHints = domainHintsGateEnabled ? domainHintsForField(fieldRule) : [];
-    let manufacturerHosts = selectManufacturerHosts(categoryConfig, brand, [...ruleDomainHints, ...brandResolutionHints]);
-    if (manufacturerHosts.length === 0) {
-      const officialHost = brandResolutionHints.find((h) => h.includes('.'));
-      if (officialHost) manufacturerHosts = [officialHost];
-    }
-    const hosts = [...new Set([...manufacturerHosts, ...ruleDomainHints])].slice(0, 8);
-
-    const perTypeCap = Math.max(2, Math.ceil(8 / Math.max(1, focusFields.length)));
-    const templateCounts = new Map();
-    const canEmit = (templateType) => {
-      const key = `${field}:${templateType}`;
-      const count = templateCounts.get(key) || 0;
-      if (count >= perTypeCap) return false;
-      templateCounts.set(key, count + 1);
-      return true;
-    };
 
     for (const term of terms) {
       const hintSource = searchHintTerms.includes(term)
         ? 'field_rules.search_hints'
         : 'deterministic';
-      if (canEmit('spec')) {
+      addRow({
+        query: `${product} ${term} specification`,
+        hintSource,
+        targetFields: [field],
+        docHint: 'spec',
+        alias: product
+      });
+      addRow({
+        query: `${product} ${term} manual pdf`,
+        hintSource,
+        targetFields: [field],
+        docHint: 'manual_pdf',
+        alias: product
+      });
+      for (const suffix of preferredContent.slice(0, 2)) {
         addRow({
-          query: `${product} ${term} specification`,
-          hintSource,
+          query: `${product} ${term} ${suffix}`,
+          hintSource: 'field_rules.search_hints',
           targetFields: [field],
-          docHint: 'spec',
+          docHint: suffix,
           alias: product
         });
-      }
-      if (canEmit('manual_pdf')) {
-        addRow({
-          query: `${product} ${term} manual pdf`,
-          hintSource,
-          targetFields: [field],
-          docHint: 'manual_pdf',
-          alias: product
-        });
-      }
-      for (const suffix of preferredContent) {
-        if (canEmit(`content:${suffix}`)) {
-          addRow({
-            query: `${product} ${term} ${suffix}`,
-            hintSource: 'field_rules.search_hints',
-            targetFields: [field],
-            docHint: suffix,
-            alias: product
-          });
-        }
-      }
-      for (const host of hosts) {
-        if (canEmit(`site:${host}`)) {
-          addRow({
-            query: `site:${host} ${brand} ${model} ${term}`,
-            hintSource: 'field_rules.search_hints',
-            targetFields: [field],
-            domainHint: host
-          });
-        }
-      }
-      for (const alias of queryAliasRows.slice(0, 4)) {
-        if (canEmit('alias')) {
-          addRow({
-            query: `${brand} ${alias} ${term} specification`,
-            hintSource,
-            targetFields: [field],
-            alias
-          });
-        }
       }
     }
 
+    // Emit domain_hint site: queries
+    for (const host of ruleDomainHints.slice(0, 4)) {
+      const primaryTerm = searchHintTerms[0] || field.replace(/_/g, ' ');
+      addRow({
+        query: `site:${host} ${brand} ${model} ${primaryTerm}`,
+        hintSource: 'field_rules.search_hints',
+        targetFields: [field],
+        domainHint: host
+      });
+    }
+
+    // Alias-driven queries
+    for (const alias of queryAliasRows.slice(0, 4)) {
+      const primaryTerm = terms[0] || field.replace(/_/g, ' ');
+      addRow({
+        query: `${brand} ${alias} ${primaryTerm} specification`,
+        hintSource: 'deterministic',
+        targetFields: [field],
+        alias
+      });
+    }
+
+    // Learned queries by field
     for (const row of toArray(learnedQueries?.templates_by_field?.[field]).slice(0, 4)) {
       addRow({
         query: clean(row?.query || ''),
@@ -836,6 +894,7 @@ function buildQueryRows({
     }
   }
 
+  // Learned queries by brand
   const brandKey = brand.toLowerCase();
   for (const row of toArray(learnedQueries?.templates_by_brand?.[brandKey]).slice(0, 6)) {
     addRow({
@@ -857,6 +916,11 @@ function buildQueryRows({
       docHint: 'datasheet_pdf'
     });
   }
+
+  // Stash archetype metadata on the result for buildSearchProfile
+  rows._archetypeSlots = allocatedSlots;
+  rows._coveredFieldSet = coveredFieldSet;
+  rows._hardFieldRows = hardFieldRows;
 
   return rows;
 }
@@ -1022,6 +1086,20 @@ export function buildSearchProfile({
     hintSourceCounts[token] = (hintSourceCounts[token] || 0) + 1;
   }
 
+  // Base templates fallback guarantee: never empty
+  const effectiveBaseTemplates = baseTemplates.length > 0
+    ? baseTemplates
+    : (brand && model)
+      ? [clean(`${brand} ${model} ${variant} specifications`), clean(`${brand} ${model} ${variant} review`)]
+      : [];
+
+  // Archetype summary + coverage analysis from stashed metadata
+  const archetypeSlots = queryRows._archetypeSlots || [];
+  const coveredFieldSet = queryRows._coveredFieldSet || new Set();
+  const hardFieldRowsMeta = queryRows._hardFieldRows || [];
+  const archetypeSummary = buildArchetypeSummary(archetypeSlots);
+  const coverageAnalysis = buildCoverageAnalysis(focusFields, coveredFieldSet, hardFieldRowsMeta);
+
   return {
     category,
     identity,
@@ -1031,12 +1109,14 @@ export function buildSearchProfile({
     query_reject_log: queryRejectLog.slice(0, 240),
     negative_terms: [],
     focus_fields: focusFields,
-    base_templates: baseTemplates,
+    base_templates: effectiveBaseTemplates,
     query_rows: boundedRows,
     queries: boundedQueries,
     targeted_queries: boundedRows.map((row) => row.query),
     field_target_queries: toFieldTargetMap(boundedRows, fieldTargetQueriesCap),
     doc_hint_queries: toDocHintRows(boundedRows, docHintQueriesCap),
+    archetype_summary: archetypeSummary,
+    coverage_analysis: coverageAnalysis,
     hint_source_counts: hintSourceCounts,
     field_rule_gate_counts: buildFieldRuleGateCounts(categoryConfig),
     field_rule_hint_counts_by_field: buildFieldRuleHintCountsByField(categoryConfig)

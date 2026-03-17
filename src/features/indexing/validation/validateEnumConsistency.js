@@ -251,11 +251,11 @@ export async function runEnumConsistencyReview({
     };
   }
 
-  const llmEnabled = Boolean(config?.llmEnabled && hasLlmRouteApiKey(config, { role: 'validate' }));
-  if (!llmEnabled) {
+  const llmValidateEnabled = Boolean(hasLlmRouteApiKey(config, { role: 'validate' }));
+  if (!llmValidateEnabled) {
     return {
       enabled: false,
-      skipped_reason: 'llm_disabled_or_missing_key',
+      skipped_reason: 'missing_api_key',
       format_guidance: effectiveFormatGuidance,
       decisions: normalizedPending.map((value) => defaultUncertainDecision(value)),
     };

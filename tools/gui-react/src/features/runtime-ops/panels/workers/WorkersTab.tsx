@@ -86,8 +86,6 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
     if (!runtimeSettingsSnapshot) return undefined;
     return {
       profile: toOptionalString(runtimeSettingsSnapshot.profile),
-      llmEnabled: toOptionalBoolean(runtimeSettingsSnapshot.llmEnabled),
-      phase2LlmEnabled: toOptionalBoolean(runtimeSettingsSnapshot.phase2LlmEnabled),
       phase3LlmTriageEnabled: toOptionalBoolean(runtimeSettingsSnapshot.phase3LlmTriageEnabled),
       searchProvider: toOptionalString(runtimeSettingsSnapshot.searchProvider),
       discoveryEnabled: toOptionalBoolean(runtimeSettingsSnapshot.discoveryEnabled),

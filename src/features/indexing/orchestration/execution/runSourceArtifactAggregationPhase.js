@@ -42,18 +42,16 @@ export function runSourceArtifactAggregationPhase({
   };
 
   adapterArtifacts.push(...(adapterExtra.adapterArtifacts || []));
-  if (config.llmEnabled) {
-    adapterArtifacts.push({
-      name: `llm_${source.host}`,
-      payload: {
-        url: source.url,
-        evidence_ref_count: evidencePack?.references?.length || 0,
-        llm_candidate_count: llmFieldCandidates.length,
-        llm_conflicts: llmExtraction.conflicts,
-        llm_notes: llmExtraction.notes
-      }
-    });
-  }
+  adapterArtifacts.push({
+    name: `llm_${source.host}`,
+    payload: {
+      url: source.url,
+      evidence_ref_count: evidencePack?.references?.length || 0,
+      llm_candidate_count: llmFieldCandidates.length,
+      llm_conflicts: llmExtraction.conflicts,
+      llm_notes: llmExtraction.notes
+    }
+  });
 
   return {
     llmSourcesUsedDelta: llmFieldCandidates.length > 0 ? 1 : 0,

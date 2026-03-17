@@ -47,20 +47,6 @@ test('prefetch tab contracts expose disabled aria state and ignore disabled tab 
   );
 });
 
-test('prefetch live-settings contracts disable only llm-driven tabs and clear stale selection', async () => {
-  const { buildDisabledPrefetchTabs, normalizeActivePrefetchTab } = await loadPrefetchUiContracts();
-
-  const disabledTabs = buildDisabledPrefetchTabs({
-    llmEnabled: false,
-    phase2LlmEnabled: true,
-  });
-
-  assert.deepEqual([...disabledTabs], ['brand_resolver', 'search_planner']);
-  assert.equal(normalizeActivePrefetchTab('brand_resolver', disabledTabs), null);
-  assert.equal(normalizeActivePrefetchTab('search_results', disabledTabs), 'search_results');
-  assert.equal(normalizeActivePrefetchTab(null, disabledTabs), null);
-});
-
 test('drawer extract contracts emit full and partial packet-hydration notices without dead empty states', async () => {
   const { resolveIndexedFieldHydrationNotice } = await loadPrefetchUiContracts();
 

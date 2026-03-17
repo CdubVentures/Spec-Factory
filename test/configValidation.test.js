@@ -20,11 +20,6 @@ test('C.1 config defaults: loadConfig returns valid defaults', () => {
   assert.equal(config.runProfile, 'standard');
 });
 
-test('C.1 config defaults: LLM enabled by default (hardcoded mandatory)', () => {
-  const config = loadConfig();
-  assert.equal(config.llmEnabled, true);
-});
-
 test('C.1 config defaults: discovery enabled by default', () => {
   const config = loadConfig();
   assert.equal(config.discoveryEnabled, true);
@@ -146,7 +141,6 @@ test('C.1 validate: default config with everything disabled is valid', () => {
 
 test('C.1 validate: LLM enabled with API key is valid', () => {
   const config = loadConfig({
-    llmEnabled: true,
     llmApiKey: 'sk-test-key-123'
   });
   const result = validateConfig(config);

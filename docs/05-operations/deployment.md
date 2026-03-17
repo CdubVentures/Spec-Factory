@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified build, packaging, startup, and promotion surfaces for the live local-first runtime.
 > **Prerequisites:** [../02-dependencies/setup-and-installation.md](../02-dependencies/setup-and-installation.md), [../03-architecture/system-map.md](../03-architecture/system-map.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Deployment Model
 
@@ -61,6 +61,7 @@
 
 - `Dockerfile` is not aligned with the live CLI entrypoints. It still launches `node src/cli/run-batch.js`, but that file does not exist; the supported batch entrypoint is `node src/cli/spec.js run-batch`.
 - No remote deployment manifests, Helm charts, Terraform, or container orchestration configs were verified.
+- Live runtime proof during this audit came from the already-running server on `http://127.0.0.1:8788`, not from starting a fresh second instance, because port `8788` was already occupied.
 
 ## Validated Against
 
@@ -73,6 +74,7 @@
 | source | `tools/build-setup-exe.mjs` | packaged launcher build pipeline |
 | source | `tools/specfactory-launcher.mjs` | launcher runtime and default port |
 | config | `Dockerfile` | stale container path and missing entrypoint mismatch |
+| runtime | `http://127.0.0.1:8788/api/v1/health` | live server responded during the audit |
 
 ## Related Documents
 

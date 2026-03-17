@@ -41,8 +41,8 @@ export async function runLlmHealthCheck({
   model = '',
   logger = null
 }) {
-  if (!config.llmEnabled || !config.llmApiKey) {
-    throw new Error('LLM is not enabled or LLM_API_KEY is missing');
+  if (!config.llmApiKey) {
+    throw new Error('LLM_API_KEY is missing');
   }
 
   const runId = buildRunId();

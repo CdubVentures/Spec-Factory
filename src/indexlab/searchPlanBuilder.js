@@ -274,7 +274,7 @@ export async function buildSearchPlan({
   const learning = ctx.learning || {};
 
   // Guard: disabled
-  if (!plannerLimits.phase2LlmEnabled || !hasLlmRouteApiKey(config, { role: 'plan' })) {
+  if (!hasLlmRouteApiKey(config, { role: 'plan' })) {
     return makeDisabledResult(ctx);
   }
 

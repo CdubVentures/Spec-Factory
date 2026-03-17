@@ -157,7 +157,7 @@ export async function validateCandidatesLLM({
   logger,
   llmContext = {}
 }) {
-  const enabled = Boolean(config.llmEnabled && hasLlmRouteApiKey(config, { role: 'validate' }));
+  const enabled = Boolean(hasLlmRouteApiKey(config, { role: 'validate' }));
   if (!enabled) {
     return {
       enabled: false,

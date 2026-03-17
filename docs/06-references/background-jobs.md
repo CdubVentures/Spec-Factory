@@ -2,14 +2,14 @@
 
 > **Purpose:** Inventory the verified long-running loops, child-process jobs, and batch workers used by the live runtime.
 > **Prerequisites:** [../05-operations/deployment.md](../05-operations/deployment.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Job Inventory
 
 | Job | Trigger | Schedule | File | Purpose |
 |-----|---------|----------|------|---------|
-| Import watch loop | CLI `watch-imports` | polls every `importsPollSeconds` | `src/daemon/daemon.js`, `src/cli/spec.js` | ingest incoming CSVs into category-authority inputs |
-| Daemon queue runner | CLI `daemon` | polls imports, stale queue state, and queue availability continuously | `src/daemon/daemon.js`, `src/cli/spec.js` | synchronize inputs, claim queued products, and run them to completion |
+| Import watch loop | CLI `watch-imports` | polls every `importsPollSeconds` | `src/daemon/daemon.js`, `src/cli/spec.js` | ingest incoming CSVs from the configured imports root into category-authority inputs |
+| Daemon queue runner | CLI `daemon` | polls imports, stale queue state, and queue availability continuously | `src/daemon/daemon.js`, `src/cli/spec.js` | synchronize the configured imports root, claim queued products, and run them to completion |
 | Drift scan inside daemon | daemon loop when enabled | every `driftPollSeconds` per category | `src/daemon/daemon.js`, `src/publish/driftScheduler.js` | detect drifted products and enqueue republishing |
 | GUI process child run | `POST /api/v1/process/start` | on demand | `src/app/api/processRuntime.js`, `src/app/api/routes/infra/processRoutes.js` | spawn `src/cli/spec.js` commands such as IndexLab or compile-rules |
 | Component review batch | `POST /api/v1/review-components/:category/run-component-review-batch` | on demand | `src/pipeline/componentReviewBatch.js`, `src/features/review/api/reviewRoutes.js` | run queued component-review decisions |
@@ -29,7 +29,7 @@
 
 | Job family | Reads | Writes |
 |------------|-------|--------|
-| Import watch / daemon | `imports/`, category config, queue state, authority files | category-authority outputs, queue state, runtime events |
+| Import watch / daemon | configured imports root (`config.importsRoot`, default `imports/`), category config, queue state, authority files | category-authority outputs, queue state, runtime events |
 | GUI child process | HTTP request body + live config | child stdout/stderr broadcasts, runtime artifacts, process status |
 | Review/component batches | SpecDb, authority artifacts, review queues | SpecDb review tables, suggestions, component review outputs |
 | Test mode | `_test_*` authority categories, fixture inputs | synthetic fixtures, outputs, suggestions, optional SpecDb sync |
@@ -39,6 +39,7 @@
 - `src/daemon/daemon.js` is the only verified recurring scheduler.
 - `src/app/api/processRuntime.js` is the only verified GUI-side child-process manager.
 - `src/pipeline/componentReviewBatch.js` is a batch processor, not a general-purpose worker framework.
+- The default imports root is still `imports/` via `src/shared/settingsDefaults.js` and `src/config.js`, but that directory is created or supplied by operators as needed and is not currently checked into the repo root.
 
 ## Validated Against
 

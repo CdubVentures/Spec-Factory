@@ -2,14 +2,14 @@
 
 > **Purpose:** Document the verified health checks, log sinks, WebSocket telemetry channels, and observability counters used by the live runtime.
 > **Prerequisites:** [deployment.md](./deployment.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Health And Status Endpoints
 
 | Surface | Path | What it reports | Source |
 |---------|------|-----------------|--------|
 | GUI/API health | `/health`, `/api/v1/health` | API process identity, dist root, cwd, pkg mode | `src/app/api/routes/infra/healthRoutes.js` |
-| Process status | `/api/v1/process/status` | active child-process status, run id, pid, relocation state | `src/app/api/routes/infra/processRoutes.js`, `src/app/api/processRuntime.js` |
+| Process status | `/api/v1/process/status` | active child-process status, last run id, pid, exit code, relocation state | `src/app/api/routes/infra/processRoutes.js`, `src/app/api/processRuntime.js` |
 | SearXNG status | `/api/v1/searxng/status` | Docker/process/http probe status for SearXNG | `src/app/api/routes/infra/searxngRoutes.js`, `src/app/api/processRuntime.js` |
 | Authority snapshot | `/api/v1/data-authority/:category/snapshot` | compile/map/sync freshness plus observability counters | `src/features/category-authority/api/dataAuthorityRoutes.js` |
 
@@ -64,6 +64,7 @@ The domain map in that file is the live source of truth for event-to-domain fan-
   - inspect Runtime Ops,
   - inspect `_runtime/events.jsonl`,
   - inspect `runtime_events` and other SpecDb telemetry tables.
+- Observed on 2026-03-16: `/api/v1/process/status` returned `running: false` plus the last completed run id, command, and `exitCode: 0`. Do not assume the idle shape clears those fields.
 
 ## Validated Against
 
@@ -77,6 +78,7 @@ The domain map in that file is the live source of truth for event-to-domain fan-
 | source | `src/api/events/dataChangeContract.js` | normalized data-change payload shape |
 | source | `src/observability/dataPropagationCounters.js` | data-change and queue cleanup counters |
 | source | `src/observability/settingsPersistenceCounters.js` | settings persistence counters |
+| runtime | `http://127.0.0.1:8788/api/v1/process/status` | idle process-status shape retains last-run metadata |
 
 ## Related Documents
 

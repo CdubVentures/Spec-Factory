@@ -2,7 +2,7 @@
 
 > **Purpose:** List every verified third-party or out-of-process integration boundary and distinguish active runtime use from config-only surfaces.
 > **Prerequisites:** [stack-and-toolchain.md](./stack-and-toolchain.md), [environment-and-config.md](./environment-and-config.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 | Service | Purpose | Access method | Config surface | Live consumer paths | Failure behavior | Status |
 |---------|---------|---------------|----------------|---------------------|------------------|--------|

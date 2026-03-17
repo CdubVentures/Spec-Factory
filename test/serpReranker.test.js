@@ -16,7 +16,7 @@ function makeResult({ url, title = '', snippet = '', host = '', tier, identity_m
 }
 
 describe('serpReranker enhancements', () => {
-  const baseConfig = { llmEnabled: false };
+  const baseConfig = {};
   const identity = { brand: 'Razer', model: 'Viper V3 Pro', variant: '' };
 
   it('deterministic scoring applies identity_match_level boost/penalty', async () => {
@@ -113,14 +113,13 @@ describe('serpReranker enhancements', () => {
     });
 
     const baseline = await rerankSerpResults({
-      config: { llmEnabled: false },
+      config: {},
       identity: identitySynthetic,
       serpResults: [forumResult],
       topK: 10
     });
     const overridden = await rerankSerpResults({
       config: {
-        llmEnabled: false,
         serpRerankerWeightMap: {
           forumRedditPenalty: -9,
         },
@@ -210,7 +209,6 @@ describe('serpReranker enhancements', () => {
     try {
       const ranked = await rerankSerpResults({
         config: {
-          llmEnabled: true,
           llmProvider: 'openai',
           llmApiKey: 'test-key',
           llmBaseUrl: 'http://localhost:4141',
@@ -289,7 +287,6 @@ describe('serpReranker enhancements', () => {
     try {
       const ranked = await rerankSerpResults({
         config: {
-          llmEnabled: true,
           llmProvider: 'openai',
           llmApiKey: 'test-key',
           llmBaseUrl: 'http://localhost:4141',
@@ -364,7 +361,6 @@ describe('serpReranker enhancements', () => {
     try {
       const ranked = await rerankSerpResults({
         config: {
-          llmEnabled: true,
           llmProvider: 'gemini',
           llmApiKey: 'test-key',
           llmBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
@@ -461,7 +457,6 @@ describe('serpReranker enhancements', () => {
     try {
       const ranked = await rerankSerpResults({
         config: {
-          llmEnabled: true,
           llmProvider: 'openai',
           llmApiKey: 'test-key',
           llmBaseUrl: 'http://localhost:4141',

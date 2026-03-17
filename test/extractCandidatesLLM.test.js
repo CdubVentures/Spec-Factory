@@ -98,7 +98,6 @@ test('extractCandidatesLLM keeps only candidates with valid evidenceRefs', async
         ]
       },
       config: {
-        llmEnabled: true,
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
@@ -175,7 +174,6 @@ test('extractCandidatesLLM returns known-answer candidates with evidence refs', 
         ]
       },
       config: {
-        llmEnabled: true,
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.deepseek.com',
         llmProvider: 'deepseek',
@@ -254,7 +252,6 @@ test('extractCandidatesLLM uses route matrix model ladder + token cap override',
         }
       },
       config: {
-        llmEnabled: true,
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
@@ -354,7 +351,6 @@ test('extractCandidatesLLM sends promoted visual assets as multimodal images whe
         }
       },
       config: {
-        llmEnabled: true,
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
@@ -447,7 +443,6 @@ test('extractCandidatesLLM applies route evidence source policy (single source +
         }
       },
       config: {
-        llmEnabled: true,
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
@@ -547,7 +542,6 @@ test('extractCandidatesLLM applies studio prompt flags from route policy', async
         }
       },
       config: {
-        llmEnabled: true,
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
@@ -624,7 +618,6 @@ test('extractCandidatesLLM supports insufficient_evidence_action=escalate', asyn
         }
       },
       config: {
-        llmEnabled: true,
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',

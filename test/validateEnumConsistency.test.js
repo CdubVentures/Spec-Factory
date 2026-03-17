@@ -61,11 +61,11 @@ test('runEnumConsistencyReview returns uncertain defaults when llm is disabled',
     enumPolicy: 'open_prefer_known',
     canonicalValues: ['RGB LED'],
     pendingValues: ['Rgb Led'],
-    config: { llmEnabled: false },
+    config: {},
   });
 
   assert.equal(result.enabled, false);
-  assert.equal(result.skipped_reason, 'llm_disabled_or_missing_key');
+  assert.equal(result.skipped_reason, 'missing_api_key');
   assert.equal(Array.isArray(result.decisions), true);
   assert.equal(result.decisions.length, 1);
   assert.equal(result.decisions[0].decision, 'uncertain');

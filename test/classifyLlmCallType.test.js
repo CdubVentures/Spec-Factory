@@ -1,0 +1,56 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+
+import { classifyLlmCallType } from '../src/indexlab/runtimeBridgeCoercers.js';
+
+describe('classifyLlmCallType', () => {
+  const cases = [
+    // brand resolver
+    ['brand_resolution', 'brand_resolver'],
+
+    // needset planner
+    ['needset_search_planner', 'needset_planner'],
+
+    // search planner — includes uber_query_planner
+    ['discovery_planner', 'search_planner'],
+    ['discovery_planner_v2', 'search_planner'],
+    ['uber_query_planner', 'search_planner'],
+
+    // serp triage
+    ['serp_triage', 'serp_triage'],
+    ['serp_rerank', 'serp_triage'],
+    ['triage_candidates', 'serp_triage'],
+
+    // domain classifier
+    ['domain_safety_classification', 'domain_classifier'],
+
+    // extraction
+    ['extract_batch', 'extraction'],
+    ['extract_candidates', 'extraction'],
+
+    // validation
+    ['validate', 'validation'],
+    ['validate_candidates', 'validation'],
+
+    // verification
+    ['verify_extract', 'verification'],
+
+    // summary writer
+    ['write', 'summary_writer'],
+    ['run_summary', 'summary_writer'],
+
+    // escalation planner
+    ['escalation_planner', 'escalation_planner'],
+    ['escalation_check', 'escalation_planner'],
+
+    // unknown
+    ['', 'unknown'],
+    ['completely_unrecognized', 'unknown'],
+  ];
+
+  for (const [input, expected] of cases) {
+    it(`classifies "${input}" → "${expected}"`, () => {
+      assert.equal(classifyLlmCallType(input), expected);
+    });
+  }
+});

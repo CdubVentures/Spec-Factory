@@ -35,7 +35,7 @@ export async function writeSummaryMarkdownLLM({
   logger,
   llmContext = {}
 }) {
-  if (!config.llmEnabled || !config.llmWriteSummary || !hasLlmRouteApiKey(config, { role: 'write' })) {
+  if (!config.llmWriteSummary || !hasLlmRouteApiKey(config, { role: 'write' })) {
     return null;
   }
 

@@ -30,7 +30,6 @@ test('buildRunSummaryPayload assembles canonical run summary with stable helper/
     config: {
       runProfile: 'thorough',
       fetchCandidateSources: true,
-      llmEnabled: true,
       llmApiKey: 'present',
       llmProvider: 'openai',
       llmModelExtract: 'gpt-4.1-mini',
@@ -466,7 +465,6 @@ test('buildRunSummaryPayload preserves disabled llm defaults and rounds numeric 
     runId: 'run-3',
     category: 'mouse',
     config: {
-      llmEnabled: false,
       llmProvider: 'openai',
       fieldRulesEngineEnforceEvidence: false,
     },

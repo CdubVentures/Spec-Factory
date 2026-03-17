@@ -25,7 +25,7 @@ export function resolveSmokeLocalOutputPaths(outputRoot = defaultLocalOutputRoot
 
 export async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const runLlmMode = asBool(args.llm, process.env.LLM_ENABLED === 'true');
+  const runLlmMode = asBool(args.llm, Boolean(process.env.LLM_API_KEY));
   const { outputRoot, normalizedOutPath, summaryOutPath } = resolveSmokeLocalOutputPaths();
 
   const config = loadConfig({
@@ -34,8 +34,7 @@ export async function main() {
     localInputRoot: 'fixtures/s3',
     localOutputRoot: outputRoot,
     writeMarkdownSummary: false,
-    discoveryEnabled: false,
-    llmEnabled: false
+    discoveryEnabled: false
   });
 
   const storage = createStorage(config);
@@ -71,8 +70,7 @@ export async function main() {
         localInputRoot: 'fixtures/s3',
         localOutputRoot: outputRoot,
         writeMarkdownSummary: false,
-        discoveryEnabled: false,
-        llmEnabled: true
+        discoveryEnabled: false
       });
       const llmStorage = createStorage(llmConfig);
       const llmResult = await runProduct({ storage: llmStorage, config: llmConfig, s3Key });

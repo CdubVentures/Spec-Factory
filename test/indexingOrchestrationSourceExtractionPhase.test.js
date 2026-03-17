@@ -30,7 +30,7 @@ function createGroupedExtractionContext({ runSourceFinalizationPhaseFn } = {}) {
       endpointNetworkScanLimit: 100,
       endpointSignalLimit: 10,
       endpointSuggestionLimit: 3,
-      llmEnabled: false,
+
     },
     buildSiteFingerprintFn: () => ({ fingerprint: 'fp' }),
     isLikelyIndexableEndpointUrlFn: () => false,
@@ -230,7 +230,7 @@ test('runSourceExtractionPhase filters manufacturer adapter follow-up urls throu
         endpointNetworkScanLimit: 100,
         endpointSignalLimit: 10,
         endpointSuggestionLimit: 3,
-        llmEnabled: false,
+  
       },
       buildSiteFingerprintFn: () => ({ fingerprint: 'fp' }),
       isLikelyIndexableEndpointUrlFn: () => false,

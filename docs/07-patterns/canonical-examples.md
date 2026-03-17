@@ -2,7 +2,7 @@
 
 > **Purpose:** Show the verified repository patterns for adding common work items without inventing new structure.
 > **Prerequisites:** [../01-project-overview/conventions.md](../01-project-overview/conventions.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Adding A New API Endpoint
 

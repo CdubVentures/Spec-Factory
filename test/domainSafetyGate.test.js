@@ -44,7 +44,7 @@ describe('domainSafetyGate', () => {
     const result = await classifyDomains({
       domains: ['rtings.com'],
       category: 'mouse',
-      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      config: { llmModelPlan: 'test-model' },
       callLlmFn: llm.callLlm,
       storage
     });
@@ -68,7 +68,7 @@ describe('domainSafetyGate', () => {
     const result = await classifyDomains({
       domains: ['techpowerup.com'],
       category: 'mouse',
-      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      config: { llmModelPlan: 'test-model' },
       callLlmFn: llm.callLlm,
       storage
     });
@@ -92,7 +92,7 @@ describe('domainSafetyGate', () => {
     const result = await classifyDomains({
       domains: ['cougar.com'],
       category: 'mouse',
-      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      config: { llmModelPlan: 'test-model' },
       callLlmFn: llm.callLlm,
       storage
     });
@@ -107,7 +107,7 @@ describe('domainSafetyGate', () => {
     const result = await classifyDomains({
       domains: ['dl.razerzone.com'],
       category: 'mouse',
-      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      config: { llmModelPlan: 'test-model' },
       callLlmFn: async () => [],
       storage
     });
@@ -125,7 +125,7 @@ describe('domainSafetyGate', () => {
     const result = await classifyDomains({
       domains: ['rtings.com', 'dl.razerzone.com'],
       category: 'mouse',
-      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      config: { llmModelPlan: 'test-model' },
       callLlmFn: async () => ([
         {
           domain: 'rtings.com',
@@ -166,7 +166,7 @@ describe('domainSafetyGate', () => {
     const result = await classifyDomains({
       domains: ['techpowerup.com'],
       category: 'mouse',
-      config: { llmEnabled: true, llmModelPlan: 'test-model' },
+      config: { llmModelPlan: 'test-model' },
       callLlmFn: llm.callLlm,
       storage: {}
     });

@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the live reality of authentication, session-like persistence, and permission checks so an arriving LLM does not invent a user-auth system.
 > **Prerequisites:** [backend-architecture.md](./backend-architecture.md), [frontend-architecture.md](./frontend-architecture.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Verified Reality
 

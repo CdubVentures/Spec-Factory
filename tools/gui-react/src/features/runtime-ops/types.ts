@@ -627,6 +627,7 @@ export interface PrefetchSearchProfileData {
   discovered_count?: number;
   approved_count?: number;
   candidate_count?: number;
+  status?: string;
   llm_serp_triage?: boolean;
   serp_explorer?: {
     query_count: number;
@@ -806,8 +807,6 @@ export interface LlmCallsDashboardResponse {
 
 export interface PrefetchLiveSettings {
   profile?: string;
-  llmEnabled?: boolean;
-  phase2LlmEnabled?: boolean;
   phase3LlmTriageEnabled?: boolean;
   searchProvider?: string;
   discoveryEnabled?: boolean;

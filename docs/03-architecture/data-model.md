@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified SQLite schema, migration path, and canonical-versus-derived data ownership boundaries.
 > **Prerequisites:** [backend-architecture.md](./backend-architecture.md), [frontend-architecture.md](./frontend-architecture.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Persistence Summary
 

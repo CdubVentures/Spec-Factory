@@ -104,7 +104,7 @@ function DomainDetailDrawer({
 }
 
 export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScope, liveSettings, idxRuntime }: PrefetchDomainClassifierPanelProps) {
-  const domainClassifierLlmLive = liveSettings?.llmEnabled;
+  const domainClassifierLlmLive: boolean | undefined = true;
   const health = domainHealth || [];
   const hasStructured = health.length > 0;
   const totalTokens = calls.reduce((sum, c) => sum + (c.tokens?.input ?? 0) + (c.tokens?.output ?? 0), 0);

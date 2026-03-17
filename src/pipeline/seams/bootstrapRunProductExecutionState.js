@@ -182,14 +182,12 @@ export async function bootstrapRunProductExecutionState({
   const fieldOrder = categoryConfig.fieldOrder;
   const requiredFields = job.requirements?.requiredFields || categoryConfig.requiredFields;
   const focus_fields = runtimeDeps.resolveLlmTargetFieldsFn(job, categoryConfig);
-  const goldenExamples = config.llmEnabled
-    ? await runtimeDeps.retrieveGoldenExamplesFn({
-      storage,
-      category,
-      job,
-      limit: 5,
-    })
-    : [];
+  const goldenExamples = await runtimeDeps.retrieveGoldenExamplesFn({
+    storage,
+    category,
+    job,
+    limit: 5,
+  });
   const targets = runtimeDeps.resolveTargetsFn(job, categoryConfig);
   const anchors = job.anchors || {};
   const indexingHelperFlowEnabled = false;
@@ -374,6 +372,11 @@ export async function bootstrapRunProductExecutionState({
       page_count: 0,
       max_match_score: 0,
     },
+    brand: String(identityLock.brand || job?.identityLock?.brand || job?.brand || '').trim(),
+    model: String(identityLock.model || job?.identityLock?.model || job?.model || '').trim(),
+    baseModel: String(identityLock.base_model || job?.identityLock?.base_model || '').trim(),
+    round: 0,
+    roundMode: 'seed',
   });
   // WHY: The runtime bridge + prefetch panel need the full NeedSet payload
   // (fields, summary, blockers, identity, planner_seed) — not just summary counts.

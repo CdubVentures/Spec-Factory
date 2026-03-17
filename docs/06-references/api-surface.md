@@ -2,7 +2,7 @@
 
 > **Purpose:** Inventory the verified HTTP endpoints exposed by the GUI server, grouped by route family and backed by concrete file paths.
 > **Prerequisites:** [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../04-features/feature-index.md](../04-features/feature-index.md)
-> **Last validated:** 2026-03-15
+> **Last validated:** 2026-03-16
 
 ## Global Notes
 

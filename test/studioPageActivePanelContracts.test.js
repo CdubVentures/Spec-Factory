@@ -98,6 +98,79 @@ async function loadStudioPageActivePanelModule() {
   );
 }
 
+function createActivePanelProps(activeTab) {
+  return {
+    activeTab,
+    category: 'mouse',
+    knownValuesSpecDbNotReady: false,
+    mappingTabProps: {
+      wbMap: { selected_keys: ['dpi'] },
+      tooltipCount: 2,
+      tooltipCoverage: 50,
+      tooltipFiles: ['tips.md'],
+      onSaveMap() {},
+      saving: false,
+      saveSuccess: true,
+      saveErrorMessage: '',
+      rules: { dpi: { label: 'DPI' } },
+      fieldOrder: ['dpi'],
+      knownValues: { dpi: ['800'] },
+      autoSaveMapEnabled: true,
+      setAutoSaveMapEnabled() {},
+      autoSaveMapLocked: false,
+    },
+    keyNavigatorTabProps: {
+      category: 'mouse',
+      selectedKey: '',
+      onSelectKey() {},
+      onSave() {},
+      saving: false,
+      saveSuccess: false,
+      knownValues: {},
+      enumLists: [],
+      componentDb: {},
+      componentSources: [],
+      autoSaveEnabled: false,
+      setAutoSaveEnabled() {},
+      autoSaveLocked: false,
+      autoSaveLockReason: '',
+      onRunEnumConsistency: async () => ({}),
+      enumConsistencyPending: false,
+    },
+    contractTabProps: {
+      category: 'mouse',
+      knownValues: {},
+      enumLists: [],
+      componentDb: {},
+      componentSources: [],
+      wbMap: {},
+      guardrails: undefined,
+      onSave() {},
+      saving: false,
+      saveSuccess: false,
+      autoSaveEnabled: false,
+      setAutoSaveEnabled() {},
+      autoSaveLocked: false,
+      autoSaveLockReason: '',
+    },
+    reportsTabProps: {
+      artifacts: [{ kind: 'report' }],
+      compileErrors: ['missing unit'],
+      compileWarnings: [],
+      guardrails: { errors: ['missing unit'] },
+      compilePending: false,
+      compileIsError: false,
+      compileErrorMessage: '',
+      validatePending: false,
+      validateIsError: false,
+      validateErrorMessage: '',
+      processStatus: { running: false },
+      onRunCompile() {},
+      onRunValidate() {},
+    },
+  };
+}
+
 test('StudioPageActivePanel preserves the known-values warning banner and mapping-tab props', async () => {
   const { StudioPageActivePanel } = await loadStudioPageActivePanelModule();
 
@@ -275,4 +348,26 @@ test('StudioPageActivePanel switches to reports and contract tabs without render
     collectNodes(reportsTree, (node) => node.type === 'KeyNavigatorTab').length,
     0,
   );
+});
+
+test('StudioPageActivePanel routes each tab to exactly its supported panel contract', async () => {
+  const { StudioPageActivePanel } = await loadStudioPageActivePanelModule();
+  const cases = [
+    { activeTab: 'mapping', expected: 'MappingStudioTab' },
+    { activeTab: 'keys', expected: 'KeyNavigatorTab' },
+    { activeTab: 'contract', expected: 'FieldRulesWorkbench' },
+    { activeTab: 'reports', expected: 'CompileReportsTab' },
+  ];
+  const panelTypes = ['MappingStudioTab', 'KeyNavigatorTab', 'FieldRulesWorkbench', 'CompileReportsTab'];
+
+  for (const { activeTab, expected } of cases) {
+    const tree = renderNode(StudioPageActivePanel(createActivePanelProps(activeTab)));
+    for (const panelType of panelTypes) {
+      assert.equal(
+        collectNodes(tree, (node) => node.type === panelType).length,
+        panelType === expected ? 1 : 0,
+        `${activeTab} should ${panelType === expected ? 'render' : 'not render'} ${panelType}`,
+      );
+    }
+  }
 });

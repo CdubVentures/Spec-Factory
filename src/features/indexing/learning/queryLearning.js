@@ -1,3 +1,10 @@
+// queryLearning.js — Cross-run query template learning artifact
+//
+// Learning loop coupling:
+//   Within-run: discoveryResult.search_profile.query_rows carry _meta with archetype provenance
+//   Across-run: templates_by_field, templates_by_brand, templates_by_archetype — all derived
+//               from the queries map after trimming. Consumed by queryBuilder for synonym
+//               ranking and by archetype planner for template reuse (consumption deferred).
 import { nowIso } from '../../../utils/common.js';
 import { isIdentityField, normalizeFieldList } from '../../../utils/fieldKeys.js';
 
@@ -25,6 +32,8 @@ function ensureQuery(artifact, query) {
       providers: {},
       brands: {},
       fields: {},
+      archetype: '',
+      query_family: '',
       last_seen_at: nowIso()
     };
   }
@@ -85,6 +94,33 @@ function topQueriesForField(queriesMap, field, limit = 40) {
   return rows;
 }
 
+function buildTemplatesByArchetype(queriesMap, limitPerBucket = 40) {
+  const buckets = {};
+  for (const row of Object.values(queriesMap || {})) {
+    const arch = row.archetype;
+    if (!arch) continue;
+    if (!buckets[arch]) buckets[arch] = [];
+    buckets[arch].push(row);
+  }
+  const result = {};
+  for (const [arch, rows] of Object.entries(buckets)) {
+    result[arch] = rows
+      .sort((a, b) => {
+        const left = (a.success_rate || 0) * Math.log(1 + (a.attempts || 1));
+        const right = (b.success_rate || 0) * Math.log(1 + (b.attempts || 1));
+        if (right !== left) return right - left;
+        return a.query.localeCompare(b.query);
+      })
+      .slice(0, limitPerBucket)
+      .map((r) => ({
+        query: r.query,
+        attempts: r.attempts,
+        success_rate: round(r.success_rate, 6)
+      }));
+  }
+  return result;
+}
+
 export function defaultQueryLearning() {
   return {
     version: 1,
@@ -92,6 +128,7 @@ export function defaultQueryLearning() {
     queries: {},
     templates_by_field: {},
     templates_by_brand: {},
+    templates_by_archetype: {},
     stats: {
       updates_total: 0
     }
@@ -127,6 +164,15 @@ export function updateQueryLearning({
     providers[provider] = (providers[provider] || 0) + 1;
   }
 
+  // Build lookup from search_profile query_rows for archetype provenance
+  const metaLookup = new Map();
+  for (const qr of toArray(discoveryResult?.search_profile?.query_rows)) {
+    const q = cleanQuery(qr?.query);
+    if (q && qr?._meta) {
+      metaLookup.set(q, qr._meta);
+    }
+  }
+
   const queries = toArray(discoveryResult?.queries || discoveryResult?.llm_queries || [])
     .map(cleanQuery)
     .filter(Boolean);
@@ -134,6 +180,10 @@ export function updateQueryLearning({
   for (const query of queries) {
     const row = ensureQuery(next, query);
     row.attempts += 1;
+    // Archetype provenance (last-write-wins)
+    const meta = metaLookup.get(query);
+    row.archetype = String(meta?.archetype || row.archetype || '');
+    row.query_family = String(meta?.query_family || row.query_family || '');
     row.success_count = round((row.success_count || 0) + successSignal, 6);
     row.success_rate = round(row.success_count / Math.max(1, row.attempts), 6);
     if (brand) {
@@ -153,6 +203,9 @@ export function updateQueryLearning({
   for (const field of focusFields) {
     next.templates_by_field[field] = topQueriesForField(next.queries, field);
   }
+
+  // Build templates_by_archetype aggregation
+  next.templates_by_archetype = buildTemplatesByArchetype(next.queries);
 
   if (brand) {
     const rows = Object.values(next.queries)
