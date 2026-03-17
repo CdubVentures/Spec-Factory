@@ -1,5 +1,4 @@
 import type {
-  RuntimeAutomationQueueStorageEngine,
   RuntimeOcrBackend,
   RuntimeProfile,
   RuntimeRepairDedupeRule,
@@ -77,6 +76,8 @@ export interface RuntimeHydrationBindingSetters {
   setLlmBaseUrl: (value: string) => void;
   setOpenaiApiKey: (value: string) => void;
   setAnthropicApiKey: (value: string) => void;
+  setGeminiApiKey: (value: string) => void;
+  setDeepseekApiKey: (value: string) => void;
   setResumeMode: (value: RuntimeResumeMode) => void;
   setImportsRoot: (value: string) => void;
   setScannedPdfOcrBackend: (value: RuntimeOcrBackend) => void;
@@ -88,14 +89,10 @@ export interface RuntimeHydrationBindingSetters {
   setFetchSchedulerInternalsMapJson?: (value: string) => void;
   setParsingConfidenceBaseMapJson?: (value: string) => void;
   setRepairDedupeRule?: (value: RuntimeRepairDedupeRule) => void;
-  setAutomationQueueStorageEngine?: (value: RuntimeAutomationQueueStorageEngine) => void;
   setFetchConcurrency: (value: string) => void;
   setFetchBudgetMs?: (value: string) => void;
   setPerHostMinDelayMs: (value: string) => void;
-  setSearchGlobalRps: (value: string) => void;
-  setSearchGlobalBurst: (value: string) => void;
-  setSearchPerHostRps: (value: string) => void;
-  setSearchPerHostBurst: (value: string) => void;
+  setSearxngMinQueryIntervalMs: (value: string) => void;
   setDomainRequestRps: (value: string) => void;
   setDomainRequestBurst: (value: string) => void;
   setGlobalRequestRps: (value: string) => void;
@@ -178,7 +175,6 @@ export interface RuntimeHydrationBindingSetters {
   setPdfPreferredBackend: (value: string) => void;
   setCapturePageScreenshotFormat: (value: string) => void;
   setCapturePageScreenshotSelectors: (value: string) => void;
-  setRuntimeScreenshotMode: (value: string) => void;
   setStaticDomMode: (value: string) => void;
   setSpecDbDir: (value: string) => void;
   setArticleExtractorDomainPolicyMapJson: (value: string) => void;
@@ -204,8 +200,6 @@ export interface RuntimeHydrationBindingSetters {
   setImportsPollSeconds: (value: string) => void;
   setIndexingResumeSeedLimit: (value: string) => void;
   setIndexingResumePersistLimit: (value: string) => void;
-  setHelperSupportiveMaxSources: (value: string) => void;
-  setHelperActiveSyncLimit: (value: string) => void;
   setFieldRewardHalfLifeDays: (value: string) => void;
   setDriftPollSeconds: (value: string) => void;
   setDriftScanMaxProducts: (value: string) => void;
@@ -220,23 +214,18 @@ export interface RuntimeHydrationBindingSetters {
   setCortexEscalateConfidenceLt: (value: string) => void;
   setCortexMaxDeepFieldsPerProduct: (value: string) => void;
   setDiscoveryEnabled: (value: boolean) => void;
-  setEnableQueryIndex?: (value: boolean) => void;
-  setEnableUrlIndex?: (value: boolean) => void;
   setLlmExtractionCacheEnabled: (value: boolean) => void;
   setReextractIndexed: (value: boolean) => void;
   setFetchCandidateSources: (value: boolean) => void;
   setManufacturerAutoPromote?: (value: boolean) => void;
   setPdfBackendRouterEnabled: (value: boolean) => void;
   setCapturePageScreenshotEnabled: (value: boolean) => void;
-  setRuntimeCaptureScreenshots: (value: boolean) => void;
-  setChartExtractionEnabled: (value: boolean) => void;
   setArticleExtractorV2Enabled: (value: boolean) => void;
   setStaticDomExtractorEnabled: (value: boolean) => void;
   setHtmlTableExtractorV2: (value: boolean) => void;
-  setHelperFilesEnabled: (value: boolean) => void;
-  setHelperSupportiveEnabled: (value: boolean) => void;
+  setCategoryAuthorityEnabled: (value: boolean) => void;
+  setIndexingCategoryAuthorityEnabled: (value: boolean) => void;
   setHelperSupportiveFillMissing: (value: boolean) => void;
-  setHelperAutoSeedTargets: (value: boolean) => void;
   setDriftDetectionEnabled: (value: boolean) => void;
   setDriftAutoRepublish: (value: boolean) => void;
   setCortexEnabled: (value: boolean) => void;
@@ -244,7 +233,6 @@ export interface RuntimeHydrationBindingSetters {
   setCortexAutoStart: (value: boolean) => void;
   setCortexEscalateIfConflict: (value: boolean) => void;
   setCortexEscalateCriticalOnly: (value: boolean) => void;
-  setIndexingHelperFilesEnabled: (value: boolean) => void;
   setScannedPdfOcrEnabled: (value: boolean) => void;
   setScannedPdfOcrPromoteCandidates: (value: boolean) => void;
   setDynamicCrawleeEnabled: (value: boolean) => void;
@@ -357,6 +345,8 @@ export interface RuntimeSettingsPayloadSerializerInput {
   llmBaseUrl: string;
   openaiApiKey: string;
   anthropicApiKey: string;
+  geminiApiKey: string;
+  deepseekApiKey: string;
   llmPlanProvider: string;
   llmPlanBaseUrl: string;
   llmExtractProvider: string;
@@ -374,10 +364,7 @@ export interface RuntimeSettingsPayloadSerializerInput {
   fetchBudgetMs?: number | string;
   fetchConcurrency: number | string;
   perHostMinDelayMs: number | string;
-  searchGlobalRps: number | string;
-  searchGlobalBurst: number | string;
-  searchPerHostRps: number | string;
-  searchPerHostBurst: number | string;
+  searxngMinQueryIntervalMs: number | string;
   domainRequestRps: number | string;
   domainRequestBurst: number | string;
   globalRequestRps: number | string;
@@ -466,8 +453,6 @@ export interface RuntimeSettingsPayloadSerializerInput {
   importsPollSeconds: number | string;
   indexingResumeSeedLimit: number | string;
   indexingResumePersistLimit: number | string;
-  helperSupportiveMaxSources: number | string;
-  helperActiveSyncLimit: number | string;
   fieldRewardHalfLifeDays: number | string;
   driftPollSeconds: number | string;
   driftScanMaxProducts: number | string;
@@ -489,12 +474,10 @@ export interface RuntimeSettingsPayloadSerializerInput {
   fetchSchedulerInternalsMapJson?: string;
   parsingConfidenceBaseMapJson?: string;
   repairDedupeRule?: RuntimeRepairDedupeRule;
-  automationQueueStorageEngine?: RuntimeAutomationQueueStorageEngine;
   userAgent: string;
   pdfPreferredBackend: string;
   capturePageScreenshotFormat: string;
   capturePageScreenshotSelectors: string;
-  runtimeScreenshotMode: string;
   runtimeControlFile: string;
   staticDomMode: string;
   specDbDir: string;
@@ -512,28 +495,20 @@ export interface RuntimeSettingsPayloadSerializerInput {
   cortexModelSearchFast: string;
   cortexModelRerankFast: string;
   categoryAuthorityRoot: string;
+  helperFilesRoot?: string;
   batchStrategy: string;
   discoveryEnabled: boolean;
-  enableQueryIndex?: boolean;
-  enableUrlIndex?: boolean;
   llmExtractionCacheEnabled: boolean;
   reextractIndexed: boolean;
   fetchCandidateSources: boolean;
   manufacturerAutoPromote?: boolean;
   pdfBackendRouterEnabled: boolean;
   capturePageScreenshotEnabled: boolean;
-  runtimeCaptureScreenshots: boolean;
-  chartExtractionEnabled: boolean;
   articleExtractorV2Enabled: boolean;
   staticDomExtractorEnabled: boolean;
   htmlTableExtractorV2: boolean;
   categoryAuthorityEnabled: boolean;
-  helperFilesEnabled?: boolean;
-  helperFilesRoot?: string;
-  indexingHelperFilesEnabled?: boolean;
-  helperSupportiveEnabled: boolean;
   helperSupportiveFillMissing: boolean;
-  helperAutoSeedTargets: boolean;
   driftDetectionEnabled: boolean;
   driftAutoRepublish: boolean;
   cortexEnabled: boolean;

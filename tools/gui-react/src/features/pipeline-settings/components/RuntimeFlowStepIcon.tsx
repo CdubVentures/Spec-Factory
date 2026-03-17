@@ -6,8 +6,7 @@ export type RuntimeStepId =
   | 'fetch-network'
   | 'browser-rendering'
   | 'parsing'
-  | 'ocr'
-  | 'planner-triage';
+  | 'ocr';
 
 interface RuntimeFlowStepIconProps {
   id: RuntimeStepId;
@@ -96,15 +95,6 @@ export function RuntimeFlowStepIcon({
             <path d="M5 4h4M15 4h4M5 20h4M15 20h4" />
             <path d="M4 5v4M4 15v4M20 5v4M20 15v4" />
             <path d="M8 9h8M8 12h6M8 15h8" />
-          </>
-        ) : null}
-        {id === 'planner-triage' ? (
-          <>
-            <circle cx="6" cy="6" r="2" />
-            <circle cx="18" cy="6" r="2" />
-            <circle cx="12" cy="18" r="2" />
-            <path d="M8 6h8" />
-            <path d="M12 8v8" />
           </>
         ) : null}
       </svg>

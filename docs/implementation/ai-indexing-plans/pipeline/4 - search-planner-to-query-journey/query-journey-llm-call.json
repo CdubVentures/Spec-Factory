@@ -1,0 +1,130 @@
+{
+  "_doc": "Query Journey LLM call contract. Stage 4 has exactly ONE optional LLM call: the SERP reranker/triage in rerankSerpResults(). All other phases are deterministic. Updated 2026-03-16.",
+
+  "_llm_calls_in_stage_4": {
+    "convertHandoffToExecutionPlan": "NO LLM",
+    "enforceIdentityQueryGuard": "NO LLM",
+    "executeSearchQueries": "NO LLM (pure search orchestration)",
+    "classifyUrlCandidate": "NO LLM (pure classification)",
+    "rerankSerpResults": "OPTIONAL LLM — uber_serp_reranker"
+  },
+
+  "serp_reranker_llm_call": {
+    "_function": "rerankSerpResults()",
+    "_file": "src/research/serpReranker.js:187-356",
+    "_call_site": "inner LLM call within rerank phase",
+
+    "gate": {
+      "conditions": [
+        "serpTriageEnabled is true",
+        "quality threshold check (deterministic scores indicate LLM value)",
+        "uberMode OR (llmEnabled AND llmSerpRerankEnabled)",
+        "hasLlmRouteApiKey(config, { role: 'plan' })"
+      ],
+      "fallback": "deterministic scoring only — all results get keep=true, rerank_reason='deterministic'"
+    },
+
+    "call_parameters": {
+      "reason": "uber_serp_reranker",
+      "role": "plan",
+      "model": "config.llmModelTriage (or config.llmModelReasoning if llmTriageUseReasoning=true)",
+      "timeoutMs": "config.llmTimeoutMs || config.openaiTimeoutMs || 30000"
+    },
+
+    "system_prompt": {
+      "_source": "serpReranker.js (inline constant)",
+      "text": [
+        "You rerank search results for evidence-first hardware spec extraction.",
+        "Return strict JSON only.",
+        "Keep URLs with strong identity match and likely field relevance.",
+        "Drop low-value, duplicate, or dead-pattern URLs."
+      ]
+    },
+
+    "user_payload": {
+      "_encoding": "JSON.stringify — sent as user message",
+      "identity_lock": {
+        "brand":   "string — from identity.brand",
+        "model":   "string — from identity.model",
+        "variant": "string — from identity.variant"
+      },
+      "missing_fields": "string[] — missingFields sliced to 40",
+      "results": {
+        "_type": "array — top K results (default 16)",
+        "_per_item": {
+          "rank":      "number — original SERP rank",
+          "url":       "string — full URL",
+          "host":      "string — normalized hostname",
+          "title":     "string — truncated to 240 chars",
+          "snippet":   "string — truncated to 320 chars",
+          "score_det": "number — deterministic score rounded to 4 decimal places"
+        }
+      }
+    },
+
+    "response_schema": {
+      "_encoding": "JSON Schema passed via callLlmWithRouting({ jsonSchema })",
+      "selected_urls": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "url":    { "type": "string", "_note": "must match a URL from the payload" },
+            "keep":   { "type": "boolean", "_note": "true to keep, false to drop" },
+            "reason": { "type": "string", "_note": "optional human-readable reason" },
+            "score":  { "type": "number", "_note": "optional LLM-assigned relevance score" }
+          }
+        }
+      }
+    },
+
+    "response_processing": {
+      "url_matching": "LLM selected_urls matched by url string to input results",
+      "unmatched_urls": "URLs not in LLM response get keep=true (default keep) or keep=false if LLM explicitly dropped all",
+      "score_fallback": "If LLM provides no score, falls back to score_det",
+      "reason_fallback": {
+        "in_llm_response": "reason from LLM response",
+        "omitted_from_response": "'llm_omitted_drop' (dropped) or 'llm_default_keep' (kept by default)",
+        "empty_llm_response": "'llm_empty_fallback'"
+      }
+    },
+
+    "error_handling": {
+      "llm_call_failure": "Falls back to deterministic scores, rerank_reason='deterministic_fallback'",
+      "empty_selections": "If LLM returns 0 selected_urls → deterministic fallback",
+      "explicit_all_drop": "If LLM explicitly drops ALL URLs → returns { explicitAllDrop: true, fallbackReason: 'llm_explicit_all_drop' }"
+    },
+
+    "deterministic_scoring": {
+      "_note": "Always computed regardless of LLM path. Used as baseline or fallback.",
+      "weight_map": {
+        "identityStrongBonus":        { "default": 2.0,  "note": "strong identity match (brand+model+variant)" },
+        "identityPartialBonus":       { "default": 0.8,  "note": "partial match (brand+model)" },
+        "identityWeakBonus":          { "default": 0.0,  "note": "weak match (brand only)" },
+        "identityNoneBonus":          { "default": -1.5, "note": "no identity match" },
+        "brandPresenceBonus":         { "default": 2.5,  "note": "brand found in title+snippet+url" },
+        "modelPresenceBonus":         { "default": 2.5,  "note": "model found in title+snippet+url" },
+        "specManualKeywordBonus":     { "default": 1.3,  "note": "spec/manual/datasheet keywords" },
+        "reviewBenchmarkBonus":       { "default": 0.9,  "note": "review/benchmark keywords" },
+        "forumRedditPenalty":         { "default": -0.9, "note": "forum/reddit content" },
+        "brandInHostnameBonus":       { "default": 1.2,  "note": "brand appears in hostname" },
+        "wikipediaPenalty":           { "default": -1.0, "note": "wikipedia pages" },
+        "variantGuardPenalty":        { "default": -3.0, "note": "wrong variant detected" },
+        "multiModelHintPenalty":      { "default": -1.5, "note": "comparison/listing page" },
+        "tier1Bonus":                 { "default": 1.5,  "note": "tier 1 manufacturer source" },
+        "tier2Bonus":                 { "default": 0.5,  "note": "tier 2 approved source" },
+        "hostHealthDownrankPenalty":  { "default": "varies", "note": "from host health policy" },
+        "hostHealthExcludePenalty":   { "default": "varies", "note": "from host health policy" },
+        "operatorRiskPenalty":        { "default": "varies", "note": "site: operator risk" },
+        "fieldAffinityBonus":         { "default": "varies", "note": "query targets missing fields" },
+        "needsetCoverageBonus":       { "default": "varies", "note": "covers unresolved needset fields" },
+        "diversityPenaltyPerDupe":    { "default": "varies", "note": "per-domain duplicate penalty" }
+      },
+      "score_breakdown_keys": [
+        "base_score", "frontier_penalty", "identity_bonus", "variant_guard_penalty",
+        "multi_model_penalty", "tier_bonus", "host_health_penalty", "operator_risk_penalty",
+        "field_affinity_bonus", "diversity_penalty", "needset_coverage_bonus", "tier_source"
+      ]
+    }
+  }
+}

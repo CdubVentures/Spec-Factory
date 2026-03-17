@@ -4,8 +4,6 @@ export const SEARCH_PROVIDER_OPTIONS = ['searxng', 'bing', 'google', 'dual'] as 
 export const OCR_BACKEND_OPTIONS = ['auto', 'tesseract', 'none'] as const;
 export const RESUME_MODE_OPTIONS = ['auto', 'force_resume', 'start_over'] as const;
 export const REPAIR_DEDUPE_RULE_OPTIONS = ['domain_once', 'domain_and_status', 'none'] as const;
-export const AUTOMATION_QUEUE_STORAGE_ENGINE_OPTIONS = ['sqlite', 'memory'] as const;
-
 export type RuntimeDraft = Omit<RuntimeSettingDefaults, 'runtimeAutoSaveEnabled'>;
 
 export interface NumberBound {
@@ -17,10 +15,7 @@ export interface NumberBound {
 export const RUNTIME_NUMBER_BOUNDS: Record<
   | 'fetchConcurrency'
   | 'perHostMinDelayMs'
-  | 'searchGlobalRps'
-  | 'searchGlobalBurst'
-  | 'searchPerHostRps'
-  | 'searchPerHostBurst'
+  | 'searxngMinQueryIntervalMs'
   | 'domainRequestRps'
   | 'domainRequestBurst'
   | 'globalRequestRps'
@@ -106,8 +101,6 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   | 'importsPollSeconds'
   | 'indexingResumeSeedLimit'
   | 'indexingResumePersistLimit'
-  | 'helperSupportiveMaxSources'
-  | 'helperActiveSyncLimit'
   | 'fieldRewardHalfLifeDays'
   | 'driftPollSeconds'
   | 'driftScanMaxProducts'
@@ -135,10 +128,7 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   fetchBudgetMs: { min: 5000, max: 300_000, int: true },
   fetchConcurrency: { min: 1, max: 128, int: true },
   perHostMinDelayMs: { min: 0, max: 120_000, int: true },
-  searchGlobalRps: { min: 0, max: 100, int: true },
-  searchGlobalBurst: { min: 0, max: 1000, int: true },
-  searchPerHostRps: { min: 0, max: 100, int: true },
-  searchPerHostBurst: { min: 0, max: 1000, int: true },
+  searxngMinQueryIntervalMs: { min: 0, max: 30_000, int: true },
   domainRequestRps: { min: 0, max: 100, int: true },
   domainRequestBurst: { min: 0, max: 1000, int: true },
   globalRequestRps: { min: 0, max: 100, int: true },
@@ -171,8 +161,6 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   runtimeScreencastQuality: { min: 10, max: 100, int: true },
   runtimeScreencastMaxWidth: { min: 320, max: 3840, int: true },
   runtimeScreencastMaxHeight: { min: 240, max: 2160, int: true },
-  helperSupportiveMaxSources: { min: 0, max: 100, int: true },
-  helperActiveSyncLimit: { min: 0, max: 5000, int: true },
   fieldRewardHalfLifeDays: { min: 1, max: 365, int: true },
   driftPollSeconds: { min: 60, max: 604_800, int: true },
   driftScanMaxProducts: { min: 1, max: 10_000, int: true },

@@ -33,7 +33,7 @@ export const RuntimeFlowBrowserRenderingSection = memo(function RuntimeFlowBrows
     <>
       <div id={runtimeSubStepDomId('browser-rendering-core')} className="scroll-mt-24" />
       <SettingGroupBlock title="Browser Core">
-        <MasterSwitchRow label="Dynamic Crawlee Enabled" tip="Master toggle for browser-based dynamic fetch fallback.">
+        <MasterSwitchRow label="Dynamic Crawlee Enabled" tip="Master toggle for browser-based dynamic fetch fallback." hint="Controls headless mode, timeouts, and dynamic fetch policy below">
           <SettingToggle
             checked={runtimeDraft.dynamicCrawleeEnabled}
             onChange={(next) => updateDraft('dynamicCrawleeEnabled', next)}
@@ -122,7 +122,7 @@ export const RuntimeFlowBrowserRenderingSection = memo(function RuntimeFlowBrows
 
       <div id={runtimeSubStepDomId('browser-rendering-screenshots')} className="scroll-mt-24" />
       <SettingGroupBlock title="Screenshots">
-        <MasterSwitchRow label="Capture Page Screenshot Enabled" tip="Enable screenshot capture in fetch pipeline.">
+        <MasterSwitchRow label="Capture Page Screenshot Enabled" tip="Enable screenshot capture in fetch pipeline." hint="Controls screenshot format, quality, and selector settings below">
           <SettingToggle
             checked={runtimeDraft.capturePageScreenshotEnabled}
             onChange={(next) => updateDraft('capturePageScreenshotEnabled', next)}
@@ -141,14 +141,7 @@ export const RuntimeFlowBrowserRenderingSection = memo(function RuntimeFlowBrows
         <SettingRow label="Capture Screenshot Quality" tip="Quality for screenshot encoder when supported." disabled={!runtimeDraft.capturePageScreenshotEnabled}>
           <SettingNumberInput draftKey="capturePageScreenshotQuality" value={runtimeDraft.capturePageScreenshotQuality} bounds={getNumberBounds('capturePageScreenshotQuality')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.capturePageScreenshotEnabled} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
-        <SettingRow label="Runtime Capture Screenshots" tip="Emit runtime screenshot events while process is running.">
-          <SettingToggle
-            checked={runtimeDraft.runtimeCaptureScreenshots}
-            onChange={(next) => updateDraft('runtimeCaptureScreenshots', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </SettingRow>
-        <AdvancedSettingsBlock title="Screenshot Limits & Selectors" count={3}>
+        <AdvancedSettingsBlock title="Screenshot Limits & Selectors" count={2}>
           <SettingRow label="Capture Screenshot Max Bytes" tip="Max screenshot payload bytes before truncation/rejection." disabled={!runtimeDraft.capturePageScreenshotEnabled}>
             <SettingNumberInput draftKey="capturePageScreenshotMaxBytes" value={runtimeDraft.capturePageScreenshotMaxBytes} bounds={getNumberBounds('capturePageScreenshotMaxBytes')} step={1024} disabled={!runtimeSettingsReady || !runtimeDraft.capturePageScreenshotEnabled} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
@@ -158,15 +151,6 @@ export const RuntimeFlowBrowserRenderingSection = memo(function RuntimeFlowBrows
               value={runtimeDraft.capturePageScreenshotSelectors}
               onChange={(event) => updateDraft('capturePageScreenshotSelectors', event.target.value)}
               disabled={!runtimeSettingsReady || !runtimeDraft.capturePageScreenshotEnabled}
-              className={inputCls}
-            />
-          </SettingRow>
-          <SettingRow label="Runtime Screenshot Mode" tip="Runtime screenshot persistence mode (last_only/all)." disabled={!runtimeDraft.runtimeCaptureScreenshots}>
-            <input
-              type="text"
-              value={runtimeDraft.runtimeScreenshotMode}
-              onChange={(event) => updateDraft('runtimeScreenshotMode', event.target.value)}
-              disabled={!runtimeSettingsReady || !runtimeDraft.runtimeCaptureScreenshots}
               className={inputCls}
             />
           </SettingRow>

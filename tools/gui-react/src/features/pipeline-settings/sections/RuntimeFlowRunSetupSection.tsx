@@ -1,15 +1,17 @@
 import { memo } from 'react';
+import type { ReactNode } from 'react';
 import {
   formatRuntimeSearchProviderLabel,
   RUNTIME_SEARCH_ROUTE_HELP_TEXT,
 } from '../../../stores/settingsManifest';
 import type { RuntimeDraft, NumberBound } from '../types/settingPrimitiveTypes';
-import { AdvancedSettingsBlock, MasterSwitchRow, SettingGroupBlock, SettingNumberInput, SettingRow, SettingToggle } from '../components/RuntimeFlowPrimitives';
+import { AdvancedSettingsBlock, SettingGroupBlock, SettingNumberInput, SettingRow, SettingToggle } from '../components/RuntimeFlowPrimitives';
 
 interface RuntimeFlowRunSetupSectionProps {
   runtimeDraft: RuntimeDraft;
   runtimeSettingsReady: boolean;
   reextractWindowLocked: boolean;
+  plannerControlsLocked: boolean;
   inputCls: string;
   runtimeSubStepDomId: (id: string) => string;
   searchProviderOptions: readonly RuntimeDraft['searchProvider'][];
@@ -17,12 +19,14 @@ interface RuntimeFlowRunSetupSectionProps {
   updateDraft: <K extends keyof RuntimeDraft>(key: K, value: RuntimeDraft[K]) => void;
   onNumberChange: <K extends keyof RuntimeDraft>(key: K, eventValue: string, bounds: NumberBound) => void;
   getNumberBounds: <K extends keyof RuntimeDraft>(key: K) => NumberBound;
+  renderDisabledHint: (message: string) => ReactNode;
 }
 
 export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSection({
   runtimeDraft,
   runtimeSettingsReady,
   reextractWindowLocked,
+  plannerControlsLocked,
   inputCls,
   runtimeSubStepDomId,
   searchProviderOptions,
@@ -30,6 +34,7 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
   updateDraft,
   onNumberChange,
   getNumberBounds,
+  renderDisabledHint,
 }: RuntimeFlowRunSetupSectionProps) {
   return (
     <>
@@ -59,11 +64,28 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
         <SettingRow label="Fetch Candidate Sources" tip="Allow candidate URL harvesting from discovered pages.">
           <SettingToggle checked={runtimeDraft.fetchCandidateSources} onChange={(next) => updateDraft('fetchCandidateSources', next)} disabled={!runtimeSettingsReady} />
         </SettingRow>
-        <AdvancedSettingsBlock title="Advanced Discovery" count={1}>
-          <SettingRow label="Search Profile Caps Map (JSON)" tip="JSON map for deterministic alias, validation, hint, and dedupe caps used by search profile generation.">
-            <textarea value={runtimeDraft.searchProfileCapMapJson} onChange={(event) => updateDraft('searchProfileCapMapJson', event.target.value)} disabled={!runtimeSettingsReady} className={`${inputCls} min-h-[88px] font-mono sf-text-label`} spellCheck={false} />
+        <SettingRow label="Discovery Max Queries" tip="Maximum discovery search queries emitted for each product.">
+          <SettingNumberInput draftKey="discoveryMaxQueries" value={runtimeDraft.discoveryMaxQueries} bounds={getNumberBounds('discoveryMaxQueries')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
+        </SettingRow>
+        <SettingRow label="Discovery Max Discovered" tip="Maximum discovered URLs admitted into the candidate set.">
+          <SettingNumberInput draftKey="discoveryMaxDiscovered" value={runtimeDraft.discoveryMaxDiscovered} bounds={getNumberBounds('discoveryMaxDiscovered')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
+        </SettingRow>
+        <AdvancedSettingsBlock title="Planner, Reranker & Manufacturer" count={4}>
+          <SettingRow label="Manufacturer Auto Promote" tip="Automatically promote manufacturer-domain sources to tier-1 classification.">
+            <SettingToggle
+              checked={runtimeDraft.manufacturerAutoPromote}
+              onChange={(next) => updateDraft('manufacturerAutoPromote', next)}
+              disabled={!runtimeSettingsReady}
+            />
+          </SettingRow>
+          <SettingRow label="Search Profile Caps Map (JSON)" tip="JSON cap map for search profile generation (alias caps, hint queries, field target queries, dedupe)." disabled={plannerControlsLocked}>
+            <textarea value={runtimeDraft.searchProfileCapMapJson} onChange={(event) => updateDraft('searchProfileCapMapJson', event.target.value)} disabled={!runtimeSettingsReady || plannerControlsLocked} className={`${inputCls} min-h-[88px] font-mono sf-text-label`} spellCheck={false} />
+          </SettingRow>
+          <SettingRow label="SERP Reranker Weight Map (JSON)" tip="JSON weight map used by deterministic SERP reranker scoring bonuses and penalties." disabled={plannerControlsLocked}>
+            <textarea value={runtimeDraft.serpRerankerWeightMapJson} onChange={(event) => updateDraft('serpRerankerWeightMapJson', event.target.value)} disabled={!runtimeSettingsReady || plannerControlsLocked} className={`${inputCls} min-h-[88px] font-mono sf-text-label`} spellCheck={false} />
           </SettingRow>
         </AdvancedSettingsBlock>
+        {plannerControlsLocked ? renderDisabledHint('Planner and reranker controls are disabled because Discovery Enabled is OFF.') : null}
       </SettingGroupBlock>
 
       {/* ── URL Budgets ── */}
@@ -89,43 +111,6 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
             <input type="text" value={runtimeDraft.userAgent} onChange={(event) => updateDraft('userAgent', event.target.value)} disabled={!runtimeSettingsReady} className={inputCls} />
           </SettingRow>
         </AdvancedSettingsBlock>
-      </SettingGroupBlock>
-
-      {/* ── Manufacturer Discovery ── */}
-      <div id={runtimeSubStepDomId('run-setup-manufacturer')} className="scroll-mt-24" />
-      <SettingGroupBlock title="Manufacturer Discovery">
-        <SettingRow label="Manufacturer Auto Promote" tip="Automatically promote manufacturer-domain sources to tier-1 classification.">
-          <SettingToggle
-            checked={runtimeDraft.manufacturerAutoPromote}
-            onChange={(next) => updateDraft('manufacturerAutoPromote', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </SettingRow>
-      </SettingGroupBlock>
-
-      {/* ── Discovery Results ── */}
-      <div id={runtimeSubStepDomId('run-setup-results')} className="scroll-mt-24" />
-      <SettingGroupBlock title="Discovery Results">
-        <SettingRow label="Discovery Max Queries" tip="Maximum discovery search queries emitted for each product.">
-          <SettingNumberInput draftKey="discoveryMaxQueries" value={runtimeDraft.discoveryMaxQueries} bounds={getNumberBounds('discoveryMaxQueries')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-        </SettingRow>
-        <SettingRow label="Discovery Max Discovered" tip="Maximum discovered URLs admitted into the candidate set.">
-          <SettingNumberInput draftKey="discoveryMaxDiscovered" value={runtimeDraft.discoveryMaxDiscovered} bounds={getNumberBounds('discoveryMaxDiscovered')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-        </SettingRow>
-        <SettingRow label="Query Index Enabled" tip="Persist search queries across runs for dedup and learning.">
-          <SettingToggle
-            checked={runtimeDraft.enableQueryIndex}
-            onChange={(next) => updateDraft('enableQueryIndex', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </SettingRow>
-        <SettingRow label="URL Index Enabled" tip="Persist discovered URLs across runs for dedup and learning.">
-          <SettingToggle
-            checked={runtimeDraft.enableUrlIndex}
-            onChange={(next) => updateDraft('enableUrlIndex', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </SettingRow>
       </SettingGroupBlock>
 
       {/* ── Resume & Re-extract ── */}

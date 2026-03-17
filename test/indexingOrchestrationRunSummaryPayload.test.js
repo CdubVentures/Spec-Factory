@@ -366,8 +366,8 @@ test('buildRunSummaryPayload falls back to legacy helper root and excludes helpe
     category: 'mouse',
     config: {
       fetchCandidateSources: false,
-      helperFilesEnabled: true,
-      indexingHelperFilesEnabled: true,
+      categoryAuthorityEnabled: true,
+      indexingCategoryAuthorityEnabled: true,
       helperSupportiveFillMissing: true,
     },
     runtimeMode: 'production',

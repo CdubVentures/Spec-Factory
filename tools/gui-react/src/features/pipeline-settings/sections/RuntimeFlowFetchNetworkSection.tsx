@@ -1,6 +1,5 @@
 import { memo } from 'react';
 import type {
-  RuntimeAutomationQueueStorageEngine,
   RuntimeRepairDedupeRule,
 } from '../../../stores/settingsManifest';
 import type {
@@ -10,7 +9,6 @@ import type {
 import { AdvancedSettingsBlock, MasterSwitchRow, SettingGroupBlock, SettingNumberInput, SettingRow, SettingToggle } from '../components/RuntimeFlowPrimitives';
 
 const REPAIR_DEDUPE_RULE_OPTIONS = ['domain_once', 'domain_and_status', 'none'] as const;
-const AUTOMATION_QUEUE_STORAGE_ENGINE_OPTIONS = ['sqlite', 'memory'] as const;
 
 interface RuntimeFlowFetchNetworkSectionProps {
   runtimeDraft: RuntimeDraft;
@@ -36,7 +34,7 @@ export const RuntimeFlowFetchNetworkSection = memo(function RuntimeFlowFetchNetw
     <>
       <div id={runtimeSubStepDomId('fetch-network-throughput')} className="scroll-mt-24" />
       <SettingGroupBlock title="Core Throughput">
-        <MasterSwitchRow label="Fetch Scheduler Enabled" tip="Enable scheduler-based fetch orchestration before fallback fetch paths.">
+        <MasterSwitchRow label="Fetch Scheduler Enabled" tip="Enable scheduler-based fetch orchestration before fallback fetch paths." hint="Controls concurrency, rate limits, and scheduler internals below">
           <SettingToggle
             checked={runtimeDraft.fetchSchedulerEnabled}
             onChange={(next) => updateDraft('fetchSchedulerEnabled', next)}
@@ -49,22 +47,10 @@ export const RuntimeFlowFetchNetworkSection = memo(function RuntimeFlowFetchNetw
         <SettingRow label="Per Host Min Delay (ms)" tip="Minimum delay inserted between requests to the same host.">
           <SettingNumberInput draftKey="perHostMinDelayMs" value={runtimeDraft.perHostMinDelayMs} bounds={getNumberBounds('perHostMinDelayMs')} step={100} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
-        <SettingRow label="Search Global RPS" tip="Global search request-per-second throttle across providers.">
-          <SettingNumberInput draftKey="searchGlobalRps" value={runtimeDraft.searchGlobalRps} bounds={getNumberBounds('searchGlobalRps')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-        </SettingRow>
-        <SettingRow label="Search Global Burst" tip="Global burst cap for search requests.">
-          <SettingNumberInput draftKey="searchGlobalBurst" value={runtimeDraft.searchGlobalBurst} bounds={getNumberBounds('searchGlobalBurst')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-        </SettingRow>
         <SettingRow label="Fetch Budget (ms)" tip="Total time budget for all fetch operations within a single convergence round.">
           <SettingNumberInput draftKey="fetchBudgetMs" value={runtimeDraft.fetchBudgetMs} bounds={getNumberBounds('fetchBudgetMs')} step={1000} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
-        <AdvancedSettingsBlock title="Rate Limits & Scheduler Internals" count={14}>
-          <SettingRow label="Search Per-Host RPS" tip="Per-host search request-per-second throttle.">
-            <SettingNumberInput draftKey="searchPerHostRps" value={runtimeDraft.searchPerHostRps} bounds={getNumberBounds('searchPerHostRps')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow label="Search Per-Host Burst" tip="Per-host burst cap for search requests.">
-            <SettingNumberInput draftKey="searchPerHostBurst" value={runtimeDraft.searchPerHostBurst} bounds={getNumberBounds('searchPerHostBurst')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
+        <AdvancedSettingsBlock title="Rate Limits & Scheduler Internals" count={12}>
           <SettingRow label="Domain Request RPS" tip="Per-domain request-per-second throttle.">
             <SettingNumberInput draftKey="domainRequestRps" value={runtimeDraft.domainRequestRps} bounds={getNumberBounds('domainRequestRps')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
@@ -119,7 +105,7 @@ export const RuntimeFlowFetchNetworkSection = memo(function RuntimeFlowFetchNetw
 
       <div id={runtimeSubStepDomId('fetch-network-frontier')} className="scroll-mt-24" />
       <SettingGroupBlock title="Frontier and Repair">
-        <MasterSwitchRow label="Frontier Repair Search Enabled" tip="Generate repair search passes after hard URL failures.">
+        <MasterSwitchRow label="Frontier Repair Search Enabled" tip="Generate repair search passes after hard URL failures." hint="Controls frontier cooldowns, dedupe rules, and repair settings below">
           <SettingToggle
             checked={runtimeDraft.frontierRepairSearchEnabled}
             onChange={(next) => updateDraft('frontierRepairSearchEnabled', next)}
@@ -154,18 +140,6 @@ export const RuntimeFlowFetchNetworkSection = memo(function RuntimeFlowFetchNetw
             className={inputCls}
           >
             {REPAIR_DEDUPE_RULE_OPTIONS.map((value) => (
-              <option key={value} value={value}>{value}</option>
-            ))}
-          </select>
-        </SettingRow>
-        <SettingRow label="Automation Queue Storage Engine" tip="Storage engine selector for automation queue persistence.">
-          <select
-            value={runtimeDraft.automationQueueStorageEngine}
-            onChange={(event) => updateDraft('automationQueueStorageEngine', event.target.value as RuntimeAutomationQueueStorageEngine)}
-            disabled={!runtimeSettingsReady}
-            className={inputCls}
-          >
-            {AUTOMATION_QUEUE_STORAGE_ENGINE_OPTIONS.map((value) => (
               <option key={value} value={value}>{value}</option>
             ))}
           </select>

@@ -36,9 +36,7 @@ export const CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set(
 export const EXPLICIT_ENV_KEY_OVERRIDES = new Map([
   ['fetchConcurrency', ['CONCURRENCY']],
   ['categoryAuthorityEnabled', ['HELPER_FILES_ENABLED']],
-  ['helperFilesEnabled', ['HELPER_FILES_ENABLED']],
   ['indexingCategoryAuthorityEnabled', ['INDEXING_HELPER_FILES_ENABLED']],
-  ['indexingHelperFilesEnabled', ['INDEXING_HELPER_FILES_ENABLED']],
   ['categoryAuthorityRoot', ['CATEGORY_AUTHORITY_ROOT', LEGACY_HELPER_ROOT_ENV]],
   ['helperFilesRoot', ['CATEGORY_AUTHORITY_ROOT', LEGACY_HELPER_ROOT_ENV]],
   ['articleExtractorV2Enabled', ['ARTICLE_EXTRACTOR_V2']],

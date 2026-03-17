@@ -1,4 +1,4 @@
-import { toInt } from '../../../../api/helpers/valueNormalizers.js';
+import { toInt } from '../../../../shared/valueNormalizers.js';
 import { buildEvidenceSearchPayload } from '../../../../api/evidenceSearch.js';
 
 export function createEvidenceIndexReader({

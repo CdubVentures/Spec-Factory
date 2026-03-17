@@ -361,7 +361,6 @@ test('process/start forwards representative runtime override families into child
       capturePageScreenshotEnabled: true,
       capturePageScreenshotFormat: 'png',
       capturePageScreenshotSelectors: 'main,.spec-sheet',
-      runtimeCaptureScreenshots: true,
       articleExtractorV2Enabled: true,
       staticDomExtractorEnabled: true,
       staticDomMode: 'cheerio',
@@ -421,7 +420,6 @@ test('process/start forwards representative runtime override families into child
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_ENABLED, 'true');
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_FORMAT, 'png');
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_SELECTORS, 'main,.spec-sheet');
-  assert.equal(capturedEnv?.RUNTIME_CAPTURE_SCREENSHOTS, 'true');
   assert.equal(capturedEnv?.ARTICLE_EXTRACTOR_V2, 'true');
   assert.equal(capturedEnv?.STATIC_DOM_EXTRACTOR_ENABLED, 'true');
   assert.equal(capturedEnv?.STATIC_DOM_MODE, 'cheerio');

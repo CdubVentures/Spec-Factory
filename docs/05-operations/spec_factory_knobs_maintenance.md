@@ -11,13 +11,13 @@ This is a supplemental maintenance log. The canonical current-state settings ref
 | Surface | Count | Evidence |
 |---------|-------|----------|
 | `SETTINGS_DEFAULTS.convergence` | 2 | `src/shared/settingsDefaults.js` |
-| `SETTINGS_DEFAULTS.runtime` | 277 | `src/shared/settingsDefaults.js` |
+| `SETTINGS_DEFAULTS.runtime` | 260 | `src/shared/settingsDefaults.js` |
 | `SETTINGS_DEFAULTS.storage` | 7 | `src/shared/settingsDefaults.js` |
 | `SETTINGS_DEFAULTS.ui` | 6 | `src/shared/settingsDefaults.js` |
 | `SETTINGS_DEFAULTS.autosave` | 2 | `src/shared/settingsDefaults.js` |
-| **Total default keys** | **294** | flattened from `src/shared/settingsDefaults.js` |
+| **Total default keys** | **277** | flattened from `src/shared/settingsDefaults.js` |
 | Config manifest groups | 10 | `src/core/config/manifest/index.js` |
-| Config manifest env keys | 363 | flattened `CONFIG_MANIFEST_KEYS` from `src/core/config/manifest/index.js` |
+| Config manifest env keys | 358 | flattened `CONFIG_MANIFEST_KEYS` from `src/core/config/manifest/index.js` |
 
 ## Current Authority Surfaces
 
@@ -215,27 +215,70 @@ Daemon knob removed (1):
 
 All 7 values hardcoded in `configBuilder.js`. Zero behavior change (feature was already permanently off / value was never read).
 
+### Wave 8: Dead/Legacy Pipeline Settings Knobs
+
+Removed on `2026-03-16`.
+
+A full audit of all RuntimeFlow pipeline settings revealed 14 dead knobs (never consumed by runtime code) and 2 legacy aliases (redundant with their canonical counterparts). All 16 are removed from every settings surface, hardcoded in configBuilder, and scrubbed from the GUI. Zero runtime behavior change.
+
+Dead feature flags removed:
+
+- `enableQueryIndex`
+- `enableUrlIndex`
+
+Dead rate limiter knobs removed (never passed to requestThrottler):
+
+- `searchGlobalRps`
+- `searchGlobalBurst`
+- `searchPerHostRps`
+- `searchPerHostBurst`
+
+Dead GUI-only knobs removed:
+
+- `runtimeScreenshotMode`
+- `chartExtractionEnabled`
+- `runtimeCaptureScreenshots` (dead alias; `capturePageScreenshotEnabled` is the real gate)
+
+Dead helper knobs removed:
+
+- `helperSupportiveEnabled`
+- `helperAutoSeedTargets`
+- `helperActiveSyncLimit`
+- `helperSupportiveMaxSources`
+
+Legacy aliases removed:
+
+- `helperFilesEnabled` (legacy alias for `categoryAuthorityEnabled`)
+- `indexingHelperFilesEnabled` (legacy alias for `indexingCategoryAuthorityEnabled`)
+
+Dead queue engine knob removed:
+
+- `automationQueueStorageEngine` (only SQLite path exists)
+
+Runtime fixups: `config.helperFilesEnabled` → `config.categoryAuthorityEnabled`, `config.indexingHelperFilesEnabled` → `config.indexingCategoryAuthorityEnabled` in orchestration code. `?? helperFilesEnabled` fallback chains removed from `typeHelpers.js`.
+
 ## Surfaces Cleaned By The Retirement Waves
 
-| Surface | Wave 1 | Wave 2 | Wave 3 | Wave 4 | Wave 5 | Wave 6 | Wave 7 |
-|---------|--------|--------|--------|--------|--------|--------|--------|
-| `src/shared/settingsDefaults.js` | convergence + runtime keys removed | 16 keys removed | 6 keys removed | 4 keys removed | 43 keys removed | convergence 15→2 keys | 7 runtime keys removed |
-| `src/config.js` | convergence parsing/validation paths removed | 16 parse/env reads plus related validation/fallback paths removed | 6 parse/env reads removed | 4 parse/env reads removed | 40 parse/env reads removed; JSON map normalizers hardcoded to `{}` | 23 parseEnv calls removed; 8 consensus + 3 retrieval core hardcoded; 15 retrieval/evidence use normalized maps directly | 7 parseEnv calls removed; values hardcoded |
-| `src/core/config/settingsKeyMap.js` | map entries removed | 16 entries removed | 6 entries removed | 4 entries removed | 43 entries removed across int/float/bool/string maps | CONVERGENCE_SETTINGS_KEYS 15→2 | 7 entries removed (3 int, 1 string, 2 bool, 1 int) |
-| `src/features/settings-authority/runtimeSettingsRoutePut.js` | validation/range entries removed | 16 range entries removed | 6 entries removed | 4 entries removed | 43 entries removed across all validation maps | — | 3 entries removed (1 string, 2 bool) |
-| `src/features/settings-authority/convergenceSettingsRouteContract.js` | — | — | — | — | — | 13 keys removed; intKeys 4→2, floatKeys 10→0, boolKeys 1→0 | — |
-| `src/core/config/manifest/miscGroup.js` | obsolete manifest entries removed | 18 manifest entries removed | 6 entries removed | — | 3 entries removed | — | — |
-| `src/core/config/manifest/retrievalGroup.js` | — | — | — | — | 40 entries removed | FILE DELETED (54 entries) | — |
-| `src/core/config/manifest/runtimeGroup.js` | — | — | — | — | — | — | 6 STRUCTURED_METADATA entries removed |
-| `src/core/config/manifest/observabilityGroup.js` | — | — | — | — | — | — | 1 DAEMON_GRACEFUL entry removed |
-| GUI settings state files | deprecated keys removed from state mirrors | 16 keys removed across the affected TS files | 6 keys removed across TS files | 4 keys removed across TS files | 43 keys removed across 7 TS files | convergenceSettingsManifest.ts: 4 of 5 knob groups removed | 7 keys removed across 7 TS state files |
-| GUI settings sections | loop/mode UI removed | aggressive section removed | 6 manufacturer controls removed | 4 toggle controls removed | scoring-evidence section + 2 files deleted | — | Structured Metadata group removed from Parsing section; daemon shutdown control removed from Observability |
-| backend runtime behavior | obsolete mode checks removed | unconditional always-on behavior baked into the remaining code | manufacturer caps use general caps; gates always-on | 3-flag AND gate simplified; registry always loads; core/deep gate always applies | `allowBelowPassTargetFill` bug fixed (`?? true`); 7 passthrough files cleaned | zero behavior change; values hardcoded instead of env-parsed | zero behavior change; dead feature permanently off; dead plumbing removed |
-| tests | stale disabled-mode assertions removed | fixture and contract updates aligned to the new runtime | fixture and gate-test cleanup | disabled-path tests deleted; fixtures cleaned | config/fixture assertions updated; behavioral tests kept | convergence key lists updated; manifest group order updated | clamping + normalization tests removed; fixture keys cleaned |
+| Surface | Wave 1 | Wave 2 | Wave 3 | Wave 4 | Wave 5 | Wave 6 | Wave 7 | Wave 8 |
+|---------|--------|--------|--------|--------|--------|--------|--------|--------|
+| `src/shared/settingsDefaults.js` | convergence + runtime keys removed | 16 keys removed | 6 keys removed | 4 keys removed | 43 keys removed | convergence 15→2 keys | 7 runtime keys removed | 16 runtime keys removed |
+| `src/core/config/configBuilder.js` | — | — | — | — | — | — | — | 16 parseEnv calls → hardcoded values; 2 alias lines deleted |
+| `src/core/config/settingsKeyMap.js` | map entries removed | 16 entries removed | 6 entries removed | 4 entries removed | 43 entries removed across int/float/bool/string maps | CONVERGENCE_SETTINGS_KEYS 15→2 | 7 entries removed (3 int, 1 string, 2 bool, 1 int) | 16 entries removed (8 bool, 6 int, 2 string) |
+| `src/features/settings-authority/runtimeSettingsRoutePut.js` | validation/range entries removed | 16 range entries removed | 6 entries removed | 4 entries removed | 43 entries removed across all validation maps | — | 3 entries removed (1 string, 2 bool) | 10 entries removed (8 bool, 1 string, 1 enum) |
+| `src/features/settings-authority/convergenceSettingsRouteContract.js` | — | — | — | — | — | 13 keys removed; intKeys 4→2, floatKeys 10→0, boolKeys 1→0 | — | — |
+| `src/core/config/manifest/miscGroup.js` | obsolete manifest entries removed | 18 manifest entries removed | 6 entries removed | — | 3 entries removed | — | — | 2 entries removed |
+| `src/core/config/manifest/retrievalGroup.js` | — | — | — | — | 40 entries removed | FILE DELETED (54 entries) | — | — |
+| `src/core/config/manifest/runtimeGroup.js` | — | — | — | — | — | — | 6 STRUCTURED_METADATA entries removed | 9 entries removed |
+| `src/core/config/manifest/pathsGroup.js` | — | — | — | — | — | — | — | 1 entry removed |
+| `src/core/config/manifest/observabilityGroup.js` | — | — | — | — | — | — | 1 DAEMON_GRACEFUL entry removed | — |
+| GUI settings state files | deprecated keys removed from state mirrors | 16 keys removed across the affected TS files | 6 keys removed across TS files | 4 keys removed across TS files | 43 keys removed across 7 TS files | convergenceSettingsManifest.ts: 4 of 5 knob groups removed | 7 keys removed across 7 TS state files | 16 keys removed across 7 TS state files |
+| GUI settings sections | loop/mode UI removed | aggressive section removed | 6 manufacturer controls removed | 4 toggle controls removed | scoring-evidence section + 2 files deleted | — | Structured Metadata group removed from Parsing section; daemon shutdown control removed from Observability | controls removed from RunSetup, FetchNet, Browser, Parsing, Automation sections |
+| backend runtime behavior | obsolete mode checks removed | unconditional always-on behavior baked into the remaining code | manufacturer caps use general caps; gates always-on | 3-flag AND gate simplified; registry always loads; core/deep gate always applies | `allowBelowPassTargetFill` bug fixed (`?? true`); 7 passthrough files cleaned | zero behavior change; values hardcoded instead of env-parsed | zero behavior change; dead feature permanently off; dead plumbing removed | zero behavior change; legacy alias fallbacks removed; `helperFilesEnabled` → `categoryAuthorityEnabled` |
+| tests | stale disabled-mode assertions removed | fixture and contract updates aligned to the new runtime | fixture and gate-test cleanup | disabled-path tests deleted; fixtures cleaned | config/fixture assertions updated; behavioral tests kept | convergence key lists updated; manifest group order updated | clamping + normalization tests removed; fixture keys cleaned | 10 test files updated; retired key assertions removed |
 
 ## Audit Notes
 
-- The corrected `2026-03-16` snapshot after Wave 7 is `runtime=277`, `convergence=2`, `total defaults=294`, `manifest groups=10`, `manifest keys=363`.
+- The corrected `2026-03-16` snapshot after Wave 8 is `runtime=260`, `convergence=2`, `total defaults=277`, `manifest groups=10`, `manifest keys=358`.
 - `autosave` is a distinct top-level section in `SETTINGS_DEFAULTS`; it should not be silently folded into `ui`.
 - Use this file for maintenance history, not for the primary definition of current key semantics.
 

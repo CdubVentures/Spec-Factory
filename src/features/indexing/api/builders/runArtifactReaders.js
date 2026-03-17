@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { toInt, normalizePathToken, normalizeJsonText } from '../../../../api/helpers/valueNormalizers.js';
-import { safeReadJson } from '../../../../api/helpers/fileHelpers.js';
+import { toInt, normalizePathToken, normalizeJsonText } from '../../../../shared/valueNormalizers.js';
+import { safeReadJson } from '../../../../shared/fileHelpers.js';
 import { classifyLlmTracePhase } from '../../../../api/helpers/llmHelpers.js';
 import { normalizeAutomationQuery } from './automationQueueHelpers.js';
 

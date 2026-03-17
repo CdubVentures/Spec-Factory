@@ -30,6 +30,7 @@ import { LlmConfigPageShell } from './LlmConfigPageShell';
 import { LLM_PHASE_IDS } from '../state/llmPhaseRegistry';
 import type { LlmPhaseId } from '../types/llmPhaseTypes';
 import { parseProviderRegistry, serializeProviderRegistry } from '../state/llmProviderRegistryBridge';
+import { mergeDefaultsIntoRegistry } from '../state/llmDefaultProviderRegistry';
 import { parsePhaseOverrides, serializePhaseOverrides } from '../state/llmPhaseOverridesBridge';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
 import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes';
@@ -57,6 +58,13 @@ interface RuntimeSettingsLlmConfigResponse {
     model: string;
     default_output_tokens?: number;
     max_output_tokens?: number;
+  }>;
+  model_pricing?: Array<{
+    model: string;
+    provider?: string;
+    input_per_1m?: number;
+    output_per_1m?: number;
+    cached_input_per_1m?: number;
   }>;
 }
 
@@ -237,10 +245,45 @@ export function LlmConfigPage() {
   }
 
   /* --- Provider Registry bridge --- */
-  const registry: LlmProviderEntry[] = useMemo(
-    () => parseProviderRegistry(runtimeDraft.llmProviderRegistryJson),
-    [runtimeDraft.llmProviderRegistryJson],
+  const defaultRegistry = useMemo(
+    () => parseProviderRegistry(RUNTIME_SETTING_DEFAULTS.llmProviderRegistryJson),
+    [],
   );
+  const ENV_KEY_MAP: Record<string, keyof typeof runtimeDraft> = {
+    'default-gemini': 'geminiApiKey',
+    'default-deepseek': 'deepseekApiKey',
+    'default-anthropic': 'anthropicApiKey',
+    'default-openai': 'openaiApiKey',
+  };
+
+  const registry: LlmProviderEntry[] = useMemo(() => {
+    const merged = mergeDefaultsIntoRegistry(
+      parseProviderRegistry(runtimeDraft.llmProviderRegistryJson),
+      defaultRegistry,
+    );
+    // Seed env-var API keys into default providers when stored key is empty
+    return merged.map((provider) => {
+      const envField = ENV_KEY_MAP[provider.id];
+      if (!envField || provider.apiKey) return provider;
+      const envValue = runtimeDraft[envField];
+      if (!envValue) {
+        // Fallback: Gemini can use llmPlanApiKey
+        if (provider.id === 'default-gemini' && runtimeDraft.llmPlanApiKey) {
+          return { ...provider, apiKey: runtimeDraft.llmPlanApiKey as string };
+        }
+        return provider;
+      }
+      return { ...provider, apiKey: envValue as string };
+    });
+  }, [
+    runtimeDraft.llmProviderRegistryJson,
+    runtimeDraft.geminiApiKey,
+    runtimeDraft.deepseekApiKey,
+    runtimeDraft.anthropicApiKey,
+    runtimeDraft.openaiApiKey,
+    runtimeDraft.llmPlanApiKey,
+    defaultRegistry,
+  ]);
 
   const onRegistryChange = useCallback((nextRegistry: LlmProviderEntry[]) => {
     const serialized = serializeProviderRegistry(nextRegistry);

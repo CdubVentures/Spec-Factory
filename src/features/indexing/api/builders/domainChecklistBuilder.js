@@ -3,7 +3,7 @@ import {
   toInt, toFloat, parseTsMs, normalizeDomainToken, domainFromUrl, urlPathToken,
   addTokensFromText, incrementMapCounter, countMapValuesAbove, percentileFromSorted,
   isKnownValue,
-} from '../../../../api/helpers/valueNormalizers.js';
+} from '../../../../shared/valueNormalizers.js';
 import {
   classifySiteKind, isHelperPseudoDomain, createDomainBucket, createUrlStat,
   ensureUrlStat, bumpUrlStatEvent, choosePreferredSiteKind, cooldownSecondsRemaining,

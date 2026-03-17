@@ -203,5 +203,9 @@ export async function runDiscoverySeedPlan({
     planner.seedCandidates(discoveryResult.candidateUrls || []);
   }
 
+  if (planner.enqueueCounters) {
+    logger?.info?.('discovery_enqueue_summary', planner.enqueueCounters);
+  }
+
   return discoveryResult;
 }

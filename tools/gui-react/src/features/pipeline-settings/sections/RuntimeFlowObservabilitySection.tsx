@@ -32,8 +32,8 @@ export const RuntimeFlowObservabilitySection = memo(function RuntimeFlowObservab
   return (
     <div className="space-y-3">
       <FlowOptionPanel
-        title="Observability and Trace"
-        subtitle="Runtime trace and audit-stream controls for event visibility."
+        title="Observability"
+        subtitle="Runtime trace, event diagnostics, and screencast controls."
       >
         <div id={runtimeSubStepDomId('observability-trace-core')} className="scroll-mt-24" />
         <SettingGroupBlock title="Trace Configuration">
@@ -78,52 +78,6 @@ export const RuntimeFlowObservabilitySection = memo(function RuntimeFlowObservab
           </SettingRow>
         </SettingGroupBlock>
         {traceControlsLocked ? renderDisabledHint('Trace ring and payload controls are disabled because Runtime Trace is OFF.') : null}
-
-        <div id={runtimeSubStepDomId('observability-trace-daemon')} className="scroll-mt-24" />
-        <SettingGroupBlock title="Daemon Operations">
-          <SettingRow label="Daemon Concurrency" tip="Concurrent product runs for daemon mode.">
-            <SettingNumberInput draftKey="daemonConcurrency" value={runtimeDraft.daemonConcurrency} bounds={getNumberBounds('daemonConcurrency')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <AdvancedSettingsBlock title="Resume & Validation" count={5}>
-            <SettingRow label="Indexing Resume Seed Limit" tip="Maximum seed URLs loaded during resume.">
-              <SettingNumberInput draftKey="indexingResumeSeedLimit" value={runtimeDraft.indexingResumeSeedLimit} bounds={getNumberBounds('indexingResumeSeedLimit')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-            </SettingRow>
-            <SettingRow label="Indexing Resume Persist Limit" tip="Maximum persisted items loaded during resume.">
-              <SettingNumberInput draftKey="indexingResumePersistLimit" value={runtimeDraft.indexingResumePersistLimit} bounds={getNumberBounds('indexingResumePersistLimit')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-            </SettingRow>
-            <SettingRow label="Indexing Schema Validation Enabled" tip="Enable schema packet validation for indexing payloads.">
-              <SettingToggle
-                checked={runtimeDraft.indexingSchemaPacketsValidationEnabled}
-                onChange={(next) => updateDraft('indexingSchemaPacketsValidationEnabled', next)}
-                disabled={!runtimeSettingsReady}
-              />
-            </SettingRow>
-            <SettingRow label="Indexing Schema Validation Strict" tip="Fail hard on schema validation errors when enabled.">
-              <SettingToggle
-                checked={runtimeDraft.indexingSchemaPacketsValidationStrict}
-                onChange={(next) => updateDraft('indexingSchemaPacketsValidationStrict', next)}
-                disabled={!runtimeSettingsReady}
-              />
-            </SettingRow>
-            <SettingRow label="Re-Crawl Stale After (days)" tip="Re-crawl source URLs after this staleness window.">
-              <SettingNumberInput draftKey="reCrawlStaleAfterDays" value={runtimeDraft.reCrawlStaleAfterDays} bounds={getNumberBounds('reCrawlStaleAfterDays')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-            </SettingRow>
-          </AdvancedSettingsBlock>
-          <AdvancedSettingsBlock title="Import Watcher" count={2}>
-            <SettingRow label="Imports Root" tip="Root directory monitored by daemon import watcher.">
-              <input
-                type="text"
-                value={runtimeDraft.importsRoot}
-                onChange={(event) => updateDraft('importsRoot', event.target.value)}
-                disabled={!runtimeSettingsReady}
-                className={inputCls}
-              />
-            </SettingRow>
-            <SettingRow label="Imports Poll Seconds" tip="Polling interval for daemon import watcher.">
-              <SettingNumberInput draftKey="importsPollSeconds" value={runtimeDraft.importsPollSeconds} bounds={getNumberBounds('importsPollSeconds')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-            </SettingRow>
-          </AdvancedSettingsBlock>
-        </SettingGroupBlock>
 
         <div id={runtimeSubStepDomId('observability-trace-outputs')} className="scroll-mt-24" />
         <SettingGroupBlock title="Data Streams">
@@ -180,6 +134,7 @@ export const RuntimeFlowObservabilitySection = memo(function RuntimeFlowObservab
           </AdvancedSettingsBlock>
         </SettingGroupBlock>
 
+        <div id={runtimeSubStepDomId('observability-trace-video')} className="scroll-mt-24" />
         <SettingGroupBlock title="Video Capture">
           <MasterSwitchRow label="Runtime Screencast Enabled" tip="Enable live browser screencast frame streaming for Runtime Ops." hint="Controls screencast quality settings below">
             <SettingToggle

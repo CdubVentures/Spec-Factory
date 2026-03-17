@@ -11,7 +11,9 @@ import { resolveProviderForModel } from '../state/llmProviderRegistryBridge';
 import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions';
 import { detectMixIssues, resolveRingColor } from '../state/llmMixDetection';
 import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner';
+import { validatePhaseTokenLimits } from '../state/llmTokenLimitValidation';
 import { HealthDot } from '../../../shared/ui/feedback/HealthDot';
+import { LlmAllModelsSection } from './LlmAllModelsSection';
 
 const LlmProviderRegistrySection = lazy(async () => {
   const module = await import('./LlmProviderRegistrySection');
@@ -42,7 +44,7 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
 
   const baseOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, ['base', 'fast']),
+    () => buildModelDropdownOptions(llmModelOptions, registry, ['primary', 'fast']),
     [llmModelOptions, registry],
   );
   const reasoningOptions = useMemo(
@@ -73,6 +75,11 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
     return color ? { boxShadow: `0 0 0 2px ${color}` } : undefined;
   }, [mixIssues, dismissedAlerts]);
 
+  const tokenWarnings = useMemo(
+    () => validatePhaseTokenLimits(runtimeDraft as unknown as Record<string, unknown>, registry),
+    [runtimeDraft, registry],
+  );
+
   const baseProv = resolveProviderForModel(registry, runtimeDraft.llmModelPlan);
   const reasonProv = resolveProviderForModel(registry, runtimeDraft.llmModelReasoning);
   const baseFbProv = resolveProviderForModel(registry, runtimeDraft.llmPlanFallbackModel);
@@ -81,14 +88,21 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
   return (
     <>
       {/* ── Section 1: Provider Registry ── */}
-      <Suspense fallback={null}>
-        <LlmProviderRegistrySection
-          registry={registry}
-          onRegistryChange={onRegistryChange}
-        />
-      </Suspense>
+      <SettingGroupBlock title="Provider Registry">
+        <Suspense fallback={null}>
+          <LlmProviderRegistrySection
+            registry={registry}
+            onRegistryChange={onRegistryChange}
+          />
+        </Suspense>
+      </SettingGroupBlock>
 
-      {/* ── Section 2: Global Defaults ── */}
+      {/* ── Section 2: All Models ── */}
+      <SettingGroupBlock title="All Models">
+        <LlmAllModelsSection registry={registry} />
+      </SettingGroupBlock>
+
+      {/* ── Section 3: Global Defaults ── */}
       <SettingGroupBlock title="Global Defaults">
         {/* A — Model Selection */}
         <div className="sf-text-label font-medium" style={{ color: 'var(--sf-muted)' }}>
@@ -258,6 +272,20 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
           </div>
         </div>
 
+        {/* Token limit warnings */}
+        {tokenWarnings.length > 0 && (
+          <div className="flex flex-col gap-1.5 mt-3">
+            {tokenWarnings.map((w) => (
+              <AlertBanner
+                key={`token-${w.phase}-${w.model}`}
+                severity="warning"
+                title={`${w.phase}: token cap exceeds model limit`}
+                message={`${w.model} max output is ${w.limit.toLocaleString()}, but ${w.phase} is set to ${w.setting.toLocaleString()}.`}
+              />
+            ))}
+          </div>
+        )}
+
         {/* Divider */}
         <div className="border-t" style={{ borderColor: 'var(--sf-border)', margin: '16px 0' }} />
 
@@ -301,7 +329,7 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
         </div>
       </SettingGroupBlock>
 
-      {/* ── Section 3: Extraction Cache ── */}
+      {/* ── Section 4: Extraction Cache ── */}
       <SettingGroupBlock title="Extraction Cache">
         <MasterSwitchRow
           label="Cache Enabled"

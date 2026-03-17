@@ -52,6 +52,5 @@ export function deriveRuntimeStepEnabledMap({
     'browser-rendering': dynamicCrawleeEnabled,
     'parsing': true,
     ocr: scannedPdfOcrEnabled,
-    'planner-triage': true,
   };
 }

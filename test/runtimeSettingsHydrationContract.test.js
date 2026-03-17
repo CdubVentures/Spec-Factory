@@ -91,22 +91,14 @@ test('runtime hydration bindings apply canonical runtime setting aliases for con
   const snapshot = {
     fetchBudgetMs: 20000,
     serpTriageMaxUrls: 18,
-    enableQueryIndex: false,
-    enableUrlIndex: true,
     manufacturerAutoPromote: false,
-    helperFilesEnabled: false,
     helperFilesRoot: 'helper_files',
-    indexingHelperFilesEnabled: true,
   };
 
   assert.equal(hydrateRuntimeSettingsFromBindings(snapshot, false, bindings), true);
 
   assert.equal(state.setFetchBudgetMs, '20000');
   assert.equal(state.setSerpTriageMaxUrls, '18');
-  assert.equal(state.setEnableQueryIndex, false);
-  assert.equal(state.setEnableUrlIndex, true);
   assert.equal(state.setManufacturerAutoPromote, false);
-  assert.equal(state.setHelperFilesEnabled, false);
   assert.equal(state.setHelperFilesRoot, 'helper_files');
-  assert.equal(state.setIndexingHelperFilesEnabled, true);
 });

@@ -115,8 +115,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
 
     const INT_KEYS = [
       'fetchConcurrency', 'perHostMinDelayMs',
-      'searchGlobalRps', 'searchGlobalBurst',
-      'searchPerHostRps', 'searchPerHostBurst',
       'domainRequestRps', 'domainRequestBurst',
       'globalRequestRps', 'globalRequestBurst',
       'fetchPerHostConcurrencyCap',
@@ -242,8 +240,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const payload = {
       fetchConcurrency: 999,
       perHostMinDelayMs: -5,
-      searchGlobalRps: -1,
-      searchGlobalBurst: 9999,
       fetchPerHostConcurrencyCap: 999,
     };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
@@ -255,8 +251,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const body = await res.json();
     assert.equal(body.applied.fetchConcurrency, 64);
     assert.equal(body.applied.perHostMinDelayMs, 0);
-    assert.equal(body.applied.searchGlobalRps, 0);
-    assert.equal(body.applied.searchGlobalBurst, 1000);
     assert.equal(body.applied.fetchPerHostConcurrencyCap, 64);
   });
 

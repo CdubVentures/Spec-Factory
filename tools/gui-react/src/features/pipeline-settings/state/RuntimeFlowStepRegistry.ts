@@ -25,7 +25,6 @@ export const RUNTIME_STEP_IDS: readonly RuntimeStepId[] = [
   'browser-rendering',
   'parsing',
   'ocr',
-  'planner-triage',
 ] as const;
 
 export const RUNTIME_STEPS: RuntimeStepEntry[] = [
@@ -33,17 +32,16 @@ export const RUNTIME_STEPS: RuntimeStepEntry[] = [
     id: 'run-setup',
     phase: '01',
     label: 'Run Setup',
-    tip: 'Pipeline bootstrap profile, discovery, and resume policy.',
+    tip: 'Pipeline bootstrap profile, discovery, search planning, and resume policy.',
     options: [
-      'Discovery Enabled',
       'Search Route',
       'SearXNG Base URL',
       'Fetch Candidate Sources',
-      'Discovery Max Queries',
-      'Discovery Results / Query',
-      'Discovery Max Discovered',
-      'Discovery Query Concurrency',
       'Search Profile Caps Map (JSON)',
+      'SERP Reranker Weight Map (JSON)',
+      'Manufacturer Auto Promote',
+      'Discovery Max Queries',
+      'Discovery Max Discovered',
       'Max URLs / Product',
       'Max Candidate URLs',
       'Max Pages / Domain',
@@ -54,7 +52,6 @@ export const RUNTIME_STEPS: RuntimeStepEntry[] = [
       'Resume Window (hours)',
       'Re-extract Indexed',
       'Re-extract Age (hours)',
-      'Convergence Identity Fail-Fast Rounds',
     ],
   },
   {
@@ -66,6 +63,7 @@ export const RUNTIME_STEPS: RuntimeStepEntry[] = [
       'Output Mode',
       'Local Mode',
       'Dry Run',
+      'Runtime Control File',
       'Mirror To S3',
       'Mirror To S3 Input',
       'Local Input Root',
@@ -78,51 +76,43 @@ export const RUNTIME_STEPS: RuntimeStepEntry[] = [
       'S3 Output Prefix',
       'ELO Supabase Anon Key',
       'ELO Supabase Endpoint',
-      'Runtime Control File',
     ],
   },
   {
     id: 'automation',
     phase: '02B',
     label: 'Automation',
-    tip: 'Drift detection, self-improvement, and helper runtime.',
+    tip: 'Drift detection, self-improvement, helper runtime, daemon, and imports.',
     options: [
       'Drift Detection Enabled',
       'Drift Poll Seconds',
       'Drift Scan Max Products',
       'Self Improve Enabled',
       'Batch Strategy',
-      'Helper Files Enabled',
-      'Helper Supportive Enabled',
+      'Category Authority Enabled',
+      'Daemon Concurrency',
+      'Imports Root',
+      'Imports Poll Seconds',
     ],
   },
   {
     id: 'observability-trace',
     phase: '02',
-    label: 'Observability and Trace',
-    tip: 'Runtime trace, event stream, and screencast diagnostics.',
+    label: 'Observability',
+    tip: 'Runtime trace, event stream, data diagnostics, and screencast.',
     options: [
       'Runtime Trace Enabled',
       'Fetch Trace Ring Size',
       'LLM Trace Ring Size',
       'Trace LLM Payloads',
       'Events NDJSON Write',
-      'Indexing Resume Seed Limit',
-      'Indexing Resume Persist Limit',
-      'Indexing Schema Validation Enabled',
-      'Indexing Schema Validation Strict',
-      'Re-Crawl Stale After (days)',
-      'Daemon Concurrency',
-      'Daemon Graceful Shutdown Timeout (ms)',
-      'Imports Root',
-      'Imports Poll Seconds',
+      'Authority Snapshot Enabled',
       'Queue JSON Write',
       'Billing JSON Write',
       'Intel JSON Write',
       'Corpus JSON Write',
       'Learning JSON Write',
       'Cache JSON Write',
-      'Authority Snapshot Enabled',
       'Runtime Screencast Enabled',
       'Runtime Screencast FPS',
       'Runtime Screencast Quality',
@@ -138,6 +128,7 @@ export const RUNTIME_STEPS: RuntimeStepEntry[] = [
     options: [
       'Fetch Scheduler Enabled',
       'Fetch Concurrency',
+      'Fetch Budget (ms)',
       'Per Host Min Delay (ms)',
       'Fetch Per-Host Concurrency Cap',
       'Prefer HTTP Fetcher',
@@ -145,14 +136,13 @@ export const RUNTIME_STEPS: RuntimeStepEntry[] = [
       'Frontier Query Cooldown (sec)',
       'Frontier SQLite Enabled',
       'Repair Dedupe Rule',
-      'Automation Queue Storage Engine',
     ],
   },
   {
     id: 'browser-rendering',
     phase: '03B',
     label: 'Browser and Rendering',
-    tip: 'Dynamic browser rendering, scroll/replay, screenshots, and visual asset capture.',
+    tip: 'Dynamic browser rendering, scroll/replay, and screenshot capture.',
     options: [
       'Dynamic Crawlee Enabled',
       'Crawlee Headless',
@@ -163,23 +153,20 @@ export const RUNTIME_STEPS: RuntimeStepEntry[] = [
       'GraphQL Replay Enabled',
       'Robots.txt Compliant',
       'Capture Page Screenshot Enabled',
-      'Runtime Capture Screenshots',
     ],
   },
   {
     id: 'parsing',
     phase: '03C',
     label: 'Parsing',
-    tip: 'PDF processing, article extraction, DOM parsing, and structured metadata.',
+    tip: 'PDF processing, article extraction, DOM parsing, and table extraction.',
     options: [
       'PDF Router Enabled',
       'PDF Preferred Backend',
       'Max PDF Bytes',
       'Article Extractor V2 Enabled',
       'Static DOM Extractor Enabled',
-      'Structured Metadata Extruct Enabled',
       'HTML Table Extractor V2',
-      'Chart Extraction Enabled',
     ],
   },
   {
@@ -198,18 +185,6 @@ export const RUNTIME_STEPS: RuntimeStepEntry[] = [
       'OCR Min Confidence',
     ],
   },
-  {
-    id: 'planner-triage',
-    phase: '05',
-    label: 'Search & Reranker',
-    tip: 'Search planner, LLM discovery queries, and SERP reranker scoring policy.',
-    options: [
-      'Planner Enabled',
-      'LLM Discovery Queries',
-      'Search Profile Caps Map (JSON)',
-      'SERP Reranker Weight Map (JSON)',
-    ],
-  },
 ];
 
 export const RUNTIME_SUB_STEPS: Record<RuntimeStepId, RuntimeSubStepEntry[]> = {
@@ -217,22 +192,12 @@ export const RUNTIME_SUB_STEPS: Record<RuntimeStepId, RuntimeSubStepEntry[]> = {
     {
       id: 'run-setup-discovery',
       label: 'Discovery',
-      tip: 'Search routing and discovery caps.',
+      tip: 'Search routing, discovery caps, manufacturer promote, and planner maps.',
     },
     {
       id: 'run-setup-budgets',
       label: 'URL Budgets',
       tip: 'URL budget caps, runtime timeout, and user agent controls.',
-    },
-    {
-      id: 'run-setup-manufacturer',
-      label: 'Manufacturer Discovery',
-      tip: 'Manufacturer-domain auto-promote classification control.',
-    },
-    {
-      id: 'run-setup-results',
-      label: 'Discovery Results',
-      tip: 'Discovery query counts and result caps.',
     },
     {
       id: 'run-setup-resume',
@@ -263,6 +228,11 @@ export const RUNTIME_SUB_STEPS: Record<RuntimeStepId, RuntimeSubStepEntry[]> = {
       label: 'Helper Runtime',
       tip: 'Helper-file runtime sourcing and supportive-fill policy.',
     },
+    {
+      id: 'automation-operations',
+      label: 'Operations',
+      tip: 'Daemon concurrency, resume limits, schema validation, and import watcher.',
+    },
   ],
   'observability-trace': [
     {
@@ -271,14 +241,14 @@ export const RUNTIME_SUB_STEPS: Record<RuntimeStepId, RuntimeSubStepEntry[]> = {
       tip: 'Runtime trace capture and event ring configuration.',
     },
     {
-      id: 'observability-trace-daemon',
-      label: 'Daemon and Imports',
-      tip: 'Daemon runtime limits and import watcher controls.',
+      id: 'observability-trace-outputs',
+      label: 'Data Streams',
+      tip: 'Dual-write diagnostics and authority snapshot controls.',
     },
     {
-      id: 'observability-trace-outputs',
-      label: 'Diagnostic Outputs',
-      tip: 'Dual-write diagnostics, snapshots, and screencast stream controls.',
+      id: 'observability-trace-video',
+      label: 'Video Capture',
+      tip: 'Live browser screencast frame streaming controls.',
     },
   ],
   'fetch-network': [
@@ -290,7 +260,7 @@ export const RUNTIME_SUB_STEPS: Record<RuntimeStepId, RuntimeSubStepEntry[]> = {
     {
       id: 'fetch-network-frontier',
       label: 'Frontier and Repair',
-      tip: 'Frontier cooldown, dedupe, queue engine, and repair controls.',
+      tip: 'Frontier cooldown, dedupe, and repair controls.',
     },
   ],
   'browser-rendering': [
@@ -326,11 +296,6 @@ export const RUNTIME_SUB_STEPS: Record<RuntimeStepId, RuntimeSubStepEntry[]> = {
       label: 'Static DOM',
       tip: 'Static DOM extraction mode, threshold, and snippet controls.',
     },
-    {
-      id: 'parsing-metadata',
-      label: 'Structured Metadata',
-      tip: 'Extruct URL, timeout, caching, and item limit controls.',
-    },
   ],
   ocr: [
     {
@@ -343,8 +308,5 @@ export const RUNTIME_SUB_STEPS: Record<RuntimeStepId, RuntimeSubStepEntry[]> = {
       label: 'Sampling Thresholds',
       tip: 'OCR page/pair/quality thresholds for evidence promotion.',
     },
-  ],
-  'planner-triage': [
-    { id: 'planner-triage-reranker', label: 'Reranker Policy', tip: 'SERP reranker weight map and deterministic scoring policy controls.' },
   ],
 };

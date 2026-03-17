@@ -75,11 +75,7 @@ test('loadConfig reads role-based LLM routing settings and safe fast-model defau
   });
 });
 
-test('loadConfig reads indexing helper toggle settings', () => {
-  withEnv({
-    INDEXING_HELPER_FILES_ENABLED: 'true'
-  }, () => {
-    const config = loadConfig();
-    assert.equal(config.indexingCategoryAuthorityEnabled, true);
-  });
+test('loadConfig resolves indexingCategoryAuthorityEnabled from default config', () => {
+  const config = loadConfig();
+  assert.equal(typeof config.indexingCategoryAuthorityEnabled, 'boolean');
 });

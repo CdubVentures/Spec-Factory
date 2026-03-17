@@ -7,10 +7,7 @@ import { SETTINGS_OPTION_VALUES } from './settingsDefaults.js';
 export const SETTINGS_CLAMPING_INT_RANGE_MAP = Object.freeze({
   fetchConcurrency: Object.freeze({ cfgKey: 'concurrency', min: 1, max: 64 }),
   perHostMinDelayMs: Object.freeze({ cfgKey: 'perHostMinDelayMs', min: 0, max: 120000 }),
-  searchGlobalRps: Object.freeze({ cfgKey: 'searchGlobalRps', min: 0, max: 100 }),
-  searchGlobalBurst: Object.freeze({ cfgKey: 'searchGlobalBurst', min: 0, max: 1000 }),
-  searchPerHostRps: Object.freeze({ cfgKey: 'searchPerHostRps', min: 0, max: 100 }),
-  searchPerHostBurst: Object.freeze({ cfgKey: 'searchPerHostBurst', min: 0, max: 1000 }),
+  searxngMinQueryIntervalMs: Object.freeze({ cfgKey: 'searxngMinQueryIntervalMs', min: 0, max: 30000 }),
   domainRequestRps: Object.freeze({ cfgKey: 'domainRequestRps', min: 0, max: 100 }),
   domainRequestBurst: Object.freeze({ cfgKey: 'domainRequestBurst', min: 0, max: 1000 }),
   globalRequestRps: Object.freeze({ cfgKey: 'globalRequestRps', min: 0, max: 100 }),
@@ -39,8 +36,6 @@ export const SETTINGS_CLAMPING_INT_RANGE_MAP = Object.freeze({
   llmExtractionCacheTtlMs: Object.freeze({ cfgKey: 'llmExtractionCacheTtlMs', min: 60000, max: 31536000000 }),
   llmMaxCallsPerProductTotal: Object.freeze({ cfgKey: 'llmMaxCallsPerProductTotal', min: 1, max: 100 }),
   llmMaxCallsPerProductFast: Object.freeze({ cfgKey: 'llmMaxCallsPerProductFast', min: 0, max: 100 }),
-  helperSupportiveMaxSources: Object.freeze({ cfgKey: 'helperSupportiveMaxSources', min: 0, max: 100 }),
-  helperActiveSyncLimit: Object.freeze({ cfgKey: 'helperActiveSyncLimit', min: 0, max: 5000 }),
   fieldRewardHalfLifeDays: Object.freeze({ cfgKey: 'fieldRewardHalfLifeDays', min: 1, max: 365 }),
   driftPollSeconds: Object.freeze({ cfgKey: 'driftPollSeconds', min: 60, max: 604800 }),
   driftScanMaxProducts: Object.freeze({ cfgKey: 'driftScanMaxProducts', min: 1, max: 10000 }),
@@ -140,6 +135,5 @@ export const SETTINGS_CLAMPING_STRING_ENUM_MAP = Object.freeze({
   scannedPdfOcrBackend: Object.freeze({ cfgKey: 'scannedPdfOcrBackend', allowed: SETTINGS_OPTION_VALUES.runtime.scannedPdfOcrBackend }),
   searchProvider: Object.freeze({ cfgKey: 'searchProvider', allowed: SETTINGS_OPTION_VALUES.runtime.searchProvider }),
   repairDedupeRule: Object.freeze({ cfgKey: 'repairDedupeRule', allowed: SETTINGS_OPTION_VALUES.runtime.repairDedupeRule }),
-  automationQueueStorageEngine: Object.freeze({ cfgKey: 'automationQueueStorageEngine', allowed: SETTINGS_OPTION_VALUES.runtime.automationQueueStorageEngine }),
   outputMode: Object.freeze({ cfgKey: 'outputMode', allowed: SETTINGS_OPTION_VALUES.runtime.outputMode }),
 });

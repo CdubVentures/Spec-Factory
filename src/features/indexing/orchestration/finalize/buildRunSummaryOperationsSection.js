@@ -48,8 +48,8 @@ export function buildRunSummaryOperationsSection({
   return {
     category_authority: {
       enabled: indexingHelperFlowEnabled,
-      global_category_authority_enabled: Boolean(config.helperFilesEnabled),
-      indexing_category_authority_enabled: Boolean(config.indexingHelperFilesEnabled),
+      global_category_authority_enabled: Boolean(config.categoryAuthorityEnabled),
+      indexing_category_authority_enabled: Boolean(config.indexingCategoryAuthorityEnabled),
       root: helperRoot,
       active_filtering_match: Boolean(helperContext.active_match),
       active_filtering_source: helperContext.active_match?.source || null,

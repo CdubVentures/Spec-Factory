@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { safeReadJson, safeStat } from '../../../../api/helpers/fileHelpers.js';
+import { safeReadJson, safeStat } from '../../../../shared/fileHelpers.js';
 
 // --- Module state ---
 let _outputRoot = '';

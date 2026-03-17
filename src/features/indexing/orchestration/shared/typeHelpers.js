@@ -17,8 +17,8 @@ export function toBool(value, fallback = false) {
 }
 
 export function isIndexingHelperFlowEnabled(config = {}) {
-  const globalEnabled = config?.categoryAuthorityEnabled ?? config?.helperFilesEnabled;
+  const globalEnabled = config?.categoryAuthorityEnabled;
   const indexingEnabled =
-    config?.indexingCategoryAuthorityEnabled ?? config?.indexingHelperFilesEnabled;
+    config?.indexingCategoryAuthorityEnabled;
   return Boolean(globalEnabled && indexingEnabled);
 }

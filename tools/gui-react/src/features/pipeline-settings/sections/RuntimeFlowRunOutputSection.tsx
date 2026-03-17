@@ -89,6 +89,16 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
             disabled={!runtimeSettingsReady}
           />
         </SettingRow>
+        <SettingRow label="Runtime Control File" tip="Runtime overrides control file path.">
+          <input
+            type="text"
+            value={runtimeDraft.runtimeControlFile}
+            onChange={(event) => updateDraft('runtimeControlFile', event.target.value)}
+            disabled={!runtimeSettingsReady}
+            className={inputCls}
+            placeholder="_runtime/control/runtime_overrides.json"
+          />
+        </SettingRow>
         <AdvancedSettingsBlock title="S3 and Cloud Integrations" count={8}>
           <SettingRow label="Mirror To S3" tip="Mirror output artifacts to S3 destination paths.">
             <SettingToggle
@@ -147,16 +157,6 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
             <span className="sf-text-label">{storageS3Bucket || runtimeDraft.s3Bucket || '(not set)'}</span>
           </SettingRow>
         </AdvancedSettingsBlock>
-        <SettingRow label="Runtime Control File" tip="Runtime overrides control file path.">
-          <input
-            type="text"
-            value={runtimeDraft.runtimeControlFile}
-            onChange={(event) => updateDraft('runtimeControlFile', event.target.value)}
-            disabled={!runtimeSettingsReady}
-            className={inputCls}
-            placeholder="_runtime/control/runtime_overrides.json"
-          />
-        </SettingRow>
       </SettingGroupBlock>
     </>
   );

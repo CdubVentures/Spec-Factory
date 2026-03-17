@@ -14,9 +14,9 @@
 8. The legacy section status label `implemented_gui_env` is not proof that every row is GUI-editable; confirm writable keys through `settingsContract.js` / the GUI surfaces.
 9. The Storage page also exposes two persisted credential inputs, `s3SecretAccessKey` and `s3SessionToken`, through the `/storage-settings` route. They are real Storage-tab fields, but they are not backed by `settingsDefaults.js` defaults, so they are called out inline in section 38 and excluded from the shared-default totals in this file.
 
-## Audit Snapshot (2026-03-15)
+## Audit Snapshot (2026-03-16, post-Wave 8)
 
-- Operator-facing direct-edit controls on `Pipeline Settings`: `445`
+- Operator-facing direct-edit controls on `Pipeline Settings`: `429`
 - Operator-facing direct-edit controls on dedicated non-pipeline pages: `41` (`LlmSettings=30`, `Storage=8`, `Studio=3`)
 - Intentionally unsurfaced backend/internal entries in this inventory: `8` (`debounceMs.*`, `statusMs.studioSavedIndicatorReset`, `consensusEligibleFields`)
 - Extra persisted Storage-page credential fields outside the shared-default inventory: `2` (`s3SecretAccessKey`, `s3SessionToken`)
@@ -76,7 +76,7 @@
 | 14 | ~~Parsing: Structured Metadata~~ | ~~6~~ RETIRED 2026-03-16 (Wave 7; dead feature — client never instantiated) |
 | 15 | Parsing: PDF Processing | 7 |
 | 16 | Parsing: OCR | 8 |
-| 17 | Parsing: Chart Extraction | 1 |
+| 17 | ~~Parsing: Chart Extraction~~ | ~~1~~ RETIRED 2026-03-16 (Wave 8) |
 | 18 | ~~Parsing Confidence Calibration~~ | ~~1~~ RETIRED 2026-03-16 |
 | 19 | ~~Evidence Pack~~ | ~~2~~ RETIRED 2026-03-16 |
 | 20 | ~~Tier Retrieval & Evidence Scoring~~ | ~~3~~ RETIRED 2026-03-16 (Wave 6; core controls hardcoded) |
@@ -103,7 +103,7 @@
 | 41 | UI & Autosave | 13 |
 | 42 | Source Strategy | 20 |
 | 43 | LLM Route Matrix | 29 |
-| 44 | Compound Learning Indexes | 2 |
+| 44 | ~~Compound Learning Indexes~~ | ~~2~~ RETIRED 2026-03-16 (Wave 8) |
 | 45 | Community Consensus Dual-Write | 4 |
 | | **Total** | **520** |
 
@@ -314,10 +314,10 @@ All rate limiters default to `0` (disabled/unlimited):
 
 | Knob | Default | Type | Backend | Frontend | Summary |
 |------|---------|------|---------|----------|---------|
-| `searchGlobalRps` | `0` | int | SD, SC | FetchNet | Global search requests per second |
-| `searchGlobalBurst` | `0` | int | SD, SC | FetchNet | Global search burst allowance |
-| `searchPerHostRps` | `0` | int | SD, SC | FetchNet | Per-host search requests per second |
-| `searchPerHostBurst` | `0` | int | SD, SC | FetchNet | Per-host search burst allowance |
+| ~~`searchGlobalRps`~~ | ~~`0`~~ | ~~int~~ | — | — | RETIRED Wave 8 — never passed to requestThrottler |
+| ~~`searchGlobalBurst`~~ | ~~`0`~~ | ~~int~~ | — | — | RETIRED Wave 8 — never passed to requestThrottler |
+| ~~`searchPerHostRps`~~ | ~~`0`~~ | ~~int~~ | — | — | RETIRED Wave 8 — never passed to requestThrottler |
+| ~~`searchPerHostBurst`~~ | ~~`0`~~ | ~~int~~ | — | — | RETIRED Wave 8 — never passed to requestThrottler |
 | `domainRequestRps` | `0` | int | SD, SC | FetchNet | Per-domain request rate |
 | `domainRequestBurst` | `0` | int | SD, SC | FetchNet | Per-domain burst allowance |
 | `globalRequestRps` | `0` | int | SD, SC | FetchNet | Global request rate |
@@ -421,11 +421,11 @@ All knobs: `settingsDefaults.js → runtime.*` · Status: `implemented_gui_env`
 
 ---
 
-## 17. Parsing: Chart Extraction
+## ~~17. Parsing: Chart Extraction~~ RETIRED 2026-03-16 (Wave 8; never consumed by runtime)
 
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `chartExtractionEnabled` | `true` | bool | SD, SC | Parsing | Enable chart/graph extraction from pages |
+| Knob | Status |
+|------|--------|
+| ~~`chartExtractionEnabled`~~ | RETIRED — hardcoded `true` in configBuilder |
 
 ---
 
@@ -694,8 +694,8 @@ All knobs: settingsDefaults.js runtime section. Status: implemented_gui_env
 | `capturePageScreenshotQuality` | `50` | int | SD, SC | Browser | Screenshot quality (1-100) |
 | `capturePageScreenshotMaxBytes` | `5000000` | int | SD, SC | Browser | Max screenshot file size (5 MB) |
 | `capturePageScreenshotSelectors` | `table,[data-spec-table],...` | string | SD, SC | Browser | CSS selectors for spec table screenshots |
-| `runtimeCaptureScreenshots` | `true` | bool | SD, SC | Browser | Enable runtime screenshot capture |
-| `runtimeScreenshotMode` | `last_only` | string | SD, SC | Browser | Screenshot capture mode |
+| ~~`runtimeCaptureScreenshots`~~ | ~~`true`~~ | ~~bool~~ | — | — | RETIRED Wave 8 — dead alias; `capturePageScreenshotEnabled` is the real gate |
+| ~~`runtimeScreenshotMode`~~ | ~~`last_only`~~ | ~~string~~ | — | — | RETIRED Wave 8 — never consumed by runtime |
 
 **Screencast:**
 
@@ -828,17 +828,17 @@ All knobs: settingsDefaults.js runtime section. Status: implemented_gui_env
 
 | Knob | Default | Type | Backend | Frontend | Summary |
 |------|---------|------|---------|----------|---------|
-| `helperFilesEnabled` | `true` | bool | SD, SC | Automation | Master toggle for helper-files runtime substrate |
+| ~~`helperFilesEnabled`~~ | ~~`true`~~ | ~~bool~~ | — | — | RETIRED Wave 8 — legacy alias for `categoryAuthorityEnabled` |
 | `helperFilesRoot` | `category_authority` | string | SD, SC | Automation | Helper files root directory |
-| `helperSupportiveEnabled` | `true` | bool | SD, SC | Automation | Enable supportive helper data |
+| ~~`helperSupportiveEnabled`~~ | ~~`true`~~ | ~~bool~~ | — | — | RETIRED Wave 8 — no runtime consumer |
 | `helperSupportiveFillMissing` | `true` | bool | SD, SC | Automation | Fill missing fields from helpers |
-| `helperSupportiveMaxSources` | `12` | int | SD, SC | Automation | Max helper sources per product |
-| `helperAutoSeedTargets` | `true` | bool | SD, SC | Automation | Auto-seed target fields from helpers |
-| `helperActiveSyncLimit` | `0` | int | SD, SC | Automation | Active sync limit (0 = unlimited) |
+| ~~`helperSupportiveMaxSources`~~ | ~~`12`~~ | ~~int~~ | — | — | RETIRED Wave 8 — no runtime consumer |
+| ~~`helperAutoSeedTargets`~~ | ~~`true`~~ | ~~bool~~ | — | — | RETIRED Wave 8 — no runtime consumer |
+| ~~`helperActiveSyncLimit`~~ | ~~`0`~~ | ~~int~~ | — | — | RETIRED Wave 8 — no runtime consumer |
 | `categoryAuthorityEnabled` | `true` | bool | SD, SC | Automation | Enable category authority system |
 | `categoryAuthorityRoot` | `category_authority` | string | SD, SC | Automation | Category authority root directory |
 | `indexingCategoryAuthorityEnabled` | `false` | bool | SD, SC | Automation | Enable category authority in indexing |
-| `indexingHelperFilesEnabled` | `false` | bool | SD, SC | Automation | Enable helper files in indexing pipeline |
+| ~~`indexingHelperFilesEnabled`~~ | ~~`false`~~ | ~~bool~~ | — | — | RETIRED Wave 8 — legacy alias for `indexingCategoryAuthorityEnabled` |
 
 ---
 
@@ -904,7 +904,7 @@ All knobs: settingsDefaults.js runtime section. Status: implemented_gui_env
 | `s3Bucket` | `my-spec-harvester-data` | string | SD, SC | RunOutput | S3 bucket name (read-only — derived from Storage) |
 | `s3InputPrefix` | `specs/inputs` | string | SD, SC | RunOutput | S3 input prefix |
 | `s3OutputPrefix` | `specs/outputs` | string | SD, SC | RunOutput | S3 output prefix |
-| `automationQueueStorageEngine` | `sqlite` | enum | SD, SC | FetchNet | Queue storage (sqlite, memory) |
+| ~~`automationQueueStorageEngine`~~ | ~~`sqlite`~~ | ~~enum~~ | — | — | RETIRED Wave 8 — only SQLite path exists |
 | `authoritySnapshotEnabled` | `true` | bool | SD, SC | Observability | Enable authority snapshot capture |
 | `eloSupabaseAnonKey` | `''` | string | SD, SC | RunOutput | Supabase anonymous key for Elo ranking integration |
 | `eloSupabaseEndpoint` | `''` | string | SD, SC | RunOutput | Supabase endpoint URL for Elo ranking integration |
@@ -1096,14 +1096,12 @@ Row save/reset normalization clamps `max_tokens` to `256..65536` and `llm_output
 
 ---
 
-## 44. Compound Learning Indexes
+## ~~44. Compound Learning Indexes~~ RETIRED 2026-03-16 (Wave 8; indexes run unconditionally)
 
-Origin: Phase 4A design. Status: `implemented_live` — wired in `settingsDefaults.js → runtime.*` and `config.js`
-
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `enableQueryIndex` | `true` | bool | SD, SC, CFG | RunSetup | Runtime flag for QueryIndex recording and summary routes |
-| `enableUrlIndex` | `true` | bool | SD, SC, CFG | RunSetup | Runtime flag for URLIndex recording and summary routes |
+| Knob | Status |
+|------|--------|
+| ~~`enableQueryIndex`~~ | RETIRED — hardcoded `true` in configBuilder; query index runs unconditionally |
+| ~~`enableUrlIndex`~~ | RETIRED — hardcoded `true` in configBuilder; URL index runs unconditionally |
 
 PromptIndex is part of the same Phase 4A design, but no separate rollout-flag name is fixed in the current design docs.
 

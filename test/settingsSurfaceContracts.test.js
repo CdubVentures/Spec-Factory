@@ -36,8 +36,6 @@ test('settings surface normalizes cached runtime settings through the public GUI
   const cachedRuntimeSettings = {
     searchProvider: 'none',
     helperFilesRoot: 'helper-root-canonical',
-    helperFilesEnabled: false,
-    indexingHelperFilesEnabled: true,
     fetchConcurrency: 9999,
     discardMe: { nested: true },
   };
@@ -52,8 +50,6 @@ test('settings surface normalizes cached runtime settings through the public GUI
   assert.deepEqual(snapshot, {
     searchProvider: 'none',
     helperFilesRoot: 'helper-root-canonical',
-    helperFilesEnabled: false,
-    indexingHelperFilesEnabled: true,
     fetchConcurrency: 9999,
   });
 
@@ -70,10 +66,6 @@ test('settings surface normalizes cached runtime settings through the public GUI
   const normalized = normalizeRuntimeDraft(snapshot, RUNTIME_SETTING_DEFAULTS);
   assert.equal(normalized.helperFilesRoot, 'helper-root-canonical');
   assert.equal(normalized.categoryAuthorityRoot, 'helper-root-canonical');
-  assert.equal(normalized.helperFilesEnabled, false);
-  assert.equal(normalized.categoryAuthorityEnabled, false);
-  assert.equal(normalized.indexingHelperFilesEnabled, true);
-  assert.equal(normalized.indexingCategoryAuthorityEnabled, true);
   assert.equal(normalized.searchProvider, RUNTIME_SETTING_DEFAULTS.searchProvider);
   assert.equal(
     normalized.fetchConcurrency,
@@ -87,7 +79,6 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
     CONVERGENCE_KNOB_GROUPS,
     LLM_ROUTE_PRESET_LIMITS,
     LLM_SETTING_LIMITS,
-    RUNTIME_AUTOMATION_QUEUE_STORAGE_ENGINE_OPTIONS,
     RUNTIME_OCR_BACKEND_OPTIONS,
     RUNTIME_REPAIR_DEDUPE_RULE_OPTIONS,
     RUNTIME_RESUME_MODE_OPTIONS,
@@ -121,11 +112,6 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
     [RUNTIME_RESUME_MODE_OPTIONS, RUNTIME_SETTING_DEFAULTS.resumeMode, 'resumeMode'],
     [RUNTIME_OCR_BACKEND_OPTIONS, RUNTIME_SETTING_DEFAULTS.scannedPdfOcrBackend, 'scannedPdfOcrBackend'],
     [RUNTIME_REPAIR_DEDUPE_RULE_OPTIONS, RUNTIME_SETTING_DEFAULTS.repairDedupeRule, 'repairDedupeRule'],
-    [
-      RUNTIME_AUTOMATION_QUEUE_STORAGE_ENGINE_OPTIONS,
-      RUNTIME_SETTING_DEFAULTS.automationQueueStorageEngine,
-      'automationQueueStorageEngine',
-    ],
   ];
   for (const [options, defaultValue, label] of runtimeDefaultOptionSets) {
     assert.equal(

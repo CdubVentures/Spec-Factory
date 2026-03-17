@@ -148,7 +148,7 @@ async function acquireSearchSlot({
 // Module-level pacing to prevent upstream engine rate-limiting (CAPTCHA/ban).
 // SearXNG fans out across upstream engines, so rapid queries trigger bans.
 let _lastSearxngQueryMs = 0;
-const SEARXNG_MIN_QUERY_INTERVAL_MS = 8_000;
+const SEARXNG_MIN_QUERY_INTERVAL_MS = 2_000;
 
 function resolveSearxngMinQueryIntervalMs(value) {
   const parsed = Number.parseInt(String(value ?? ''), 10);

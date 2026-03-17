@@ -15,7 +15,6 @@ export interface BuildIndexingRunOcrPolicyPayloadInput {
   fetchSchedulerInternalsMapJson: string;
   parsingConfidenceBaseMapJson: string;
   repairDedupeRule: string;
-  automationQueueStorageEngine: string;
 }
 
 export function buildIndexingRunOcrPolicyPayload(
@@ -36,6 +35,5 @@ export function buildIndexingRunOcrPolicyPayload(
     fetchSchedulerInternalsMapJson: String(input.fetchSchedulerInternalsMapJson || '').trim(),
     parsingConfidenceBaseMapJson: String(input.parsingConfidenceBaseMapJson || '').trim(),
     repairDedupeRule: String(input.repairDedupeRule || '').trim(),
-    automationQueueStorageEngine: String(input.automationQueueStorageEngine || '').trim(),
   };
 }

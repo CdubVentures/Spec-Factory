@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { safeReadJson } from '../../../../api/helpers/fileHelpers.js';
+import { safeReadJson } from '../../../../shared/fileHelpers.js';
 
 /**
  * Factory that creates the 4 phase-data reader functions.

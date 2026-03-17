@@ -55,7 +55,7 @@ test('C.1 config defaults: runtime fetch/search defaults use canonical tuned val
   assert.equal(config.concurrency, 4);
   assert.equal(config.pageGotoTimeoutMs, 12_000);
   assert.equal(config.postLoadWaitMs, 200);
-  assert.equal(config.discoveryQueryConcurrency, 1);
+  assert.equal(config.discoveryQueryConcurrency, 2);
   assert.equal(config.discoveryMaxDiscovered, 60);
   assert.equal(config.fetchPerHostConcurrencyCap, 1);
   assert.equal(config.fetchSchedulerEnabled, true);

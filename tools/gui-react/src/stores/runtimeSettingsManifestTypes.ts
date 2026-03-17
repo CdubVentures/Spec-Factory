@@ -45,10 +45,7 @@ export interface RuntimeSettingDefaults {
   scannedPdfOcrBackend: RuntimeOcrBackend;
   fetchConcurrency: number;
   perHostMinDelayMs: number;
-  searchGlobalRps: number;
-  searchGlobalBurst: number;
-  searchPerHostRps: number;
-  searchPerHostBurst: number;
+  searxngMinQueryIntervalMs: number;
   domainRequestRps: number;
   domainRequestBurst: number;
   globalRequestRps: number;
@@ -113,9 +110,6 @@ export interface RuntimeSettingDefaults {
   capturePageScreenshotQuality: number;
   capturePageScreenshotMaxBytes: number;
   capturePageScreenshotSelectors: string;
-  runtimeCaptureScreenshots: boolean;
-  runtimeScreenshotMode: string;
-  chartExtractionEnabled: boolean;
   runtimeControlFile: string;
   articleExtractorV2Enabled: boolean;
   articleExtractorMinChars: number;
@@ -130,18 +124,10 @@ export interface RuntimeSettingDefaults {
   domSnippetMaxChars: number;
   categoryAuthorityEnabled: boolean;
   categoryAuthorityRoot: string;
-  enableQueryIndex: boolean;
-  enableUrlIndex: boolean;
+  helperFilesRoot: string;
   manufacturerAutoPromote: boolean;
   fetchBudgetMs: number;
-  helperFilesEnabled: boolean;
-  helperFilesRoot: string;
-  indexingHelperFilesEnabled: boolean;
-  helperSupportiveEnabled: boolean;
   helperSupportiveFillMissing: boolean;
-  helperSupportiveMaxSources: number;
-  helperAutoSeedTargets: boolean;
-  helperActiveSyncLimit: number;
   fieldRewardHalfLifeDays: number;
   batchStrategy: string;
   driftDetectionEnabled: boolean;
@@ -239,7 +225,6 @@ export interface RuntimeSettingDefaults {
   frontierBlockedDomainThreshold: number;
   frontierRepairSearchEnabled: boolean;
   repairDedupeRule: RuntimeRepairDedupeRule;
-  automationQueueStorageEngine: RuntimeAutomationQueueStorageEngine;
   autoScrollEnabled: boolean;
   autoScrollPasses: number;
   autoScrollDelayMs: number;
@@ -277,5 +262,4 @@ export type RuntimeSelectableSearchProvider = Exclude<RuntimeSearchProvider, 'no
 export type RuntimeResumeMode = 'auto' | 'force_resume' | 'start_over';
 export type RuntimeOcrBackend = 'auto' | 'tesseract' | 'none';
 export type RuntimeRepairDedupeRule = 'domain_once' | 'domain_and_status' | 'none';
-export type RuntimeAutomationQueueStorageEngine = 'sqlite' | 'memory';
 

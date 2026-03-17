@@ -1,7 +1,6 @@
 import { SETTINGS_OPTION_VALUES } from '../../../../src/shared/settingsDefaults.js';
 
 import type {
-  RuntimeAutomationQueueStorageEngine,
   RuntimeOcrBackend,
   RuntimeProfile,
   RuntimeRepairDedupeRule,
@@ -47,6 +46,3 @@ export const RUNTIME_REPAIR_DEDUPE_RULE_OPTIONS = Object.freeze(
   [...SETTINGS_OPTION_VALUES.runtime.repairDedupeRule] as RuntimeRepairDedupeRule[],
 );
 
-export const RUNTIME_AUTOMATION_QUEUE_STORAGE_ENGINE_OPTIONS = Object.freeze(
-  [...SETTINGS_OPTION_VALUES.runtime.automationQueueStorageEngine] as RuntimeAutomationQueueStorageEngine[],
-);

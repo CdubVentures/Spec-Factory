@@ -1,4 +1,5 @@
 import { Suspense, lazy } from 'react';
+import type { ReactNode } from 'react';
 import { useStorageSettingsBootstrap } from '../state/storageSettingsAuthority';
 import type { RuntimeDraft, NumberBound } from '../types/settingPrimitiveTypes';
 import { FlowOptionPanel } from '../components/RuntimeFlowPrimitives';
@@ -10,6 +11,7 @@ interface RuntimeFlowCoreStepsSectionProps {
   runtimeDraft: RuntimeDraft;
   runtimeSettingsReady: boolean;
   reextractWindowLocked: boolean;
+  plannerControlsLocked: boolean;
   inputCls: string;
   runtimeSubStepDomId: (id: string) => string;
   searchProviderOptions: readonly RuntimeDraft['searchProvider'][];
@@ -17,6 +19,7 @@ interface RuntimeFlowCoreStepsSectionProps {
   updateDraft: <K extends keyof RuntimeDraft>(key: K, value: RuntimeDraft[K]) => void;
   onNumberChange: <K extends keyof RuntimeDraft>(key: K, eventValue: string, bounds: NumberBound) => void;
   getNumberBounds: <K extends keyof RuntimeDraft>(key: K) => NumberBound;
+  renderDisabledHint: (message: string) => ReactNode;
 }
 
 const RuntimeFlowRunSetupSection = lazy(async () => {
@@ -38,6 +41,7 @@ export function RuntimeFlowCoreStepsSection({
   runtimeDraft,
   runtimeSettingsReady,
   reextractWindowLocked,
+  plannerControlsLocked,
   inputCls,
   runtimeSubStepDomId,
   searchProviderOptions,
@@ -45,6 +49,7 @@ export function RuntimeFlowCoreStepsSection({
   updateDraft,
   onNumberChange,
   getNumberBounds,
+  renderDisabledHint,
 }: RuntimeFlowCoreStepsSectionProps) {
   const storageBootstrap = useStorageSettingsBootstrap();
   if (!isCoreStep(activeStep)) return null;
@@ -75,6 +80,7 @@ export function RuntimeFlowCoreStepsSection({
               runtimeDraft={runtimeDraft}
               runtimeSettingsReady={runtimeSettingsReady}
               reextractWindowLocked={reextractWindowLocked}
+              plannerControlsLocked={plannerControlsLocked}
               inputCls={inputCls}
               runtimeSubStepDomId={runtimeSubStepDomId}
               searchProviderOptions={searchProviderOptions}
@@ -82,6 +88,7 @@ export function RuntimeFlowCoreStepsSection({
               updateDraft={updateDraft}
               onNumberChange={onNumberChange}
               getNumberBounds={getNumberBounds}
+              renderDisabledHint={renderDisabledHint}
             />
           </Suspense>
         ) : null}

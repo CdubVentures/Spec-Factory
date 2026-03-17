@@ -435,7 +435,12 @@ All schemas audited — **no updates required** for existing files. Three new co
 | **Search Planner Input** | `3/search-planner-input.json` | — | **NEW** — Schema 3 consumption contract with field-level tags |
 | **Search Planner Output** | `3/search-planner-output.json` | — | **NEW** — Schema 4 output contract with field-level tags |
 | **Search Planner LLM Call** | `3/search-planner-llm-call.json` | — | **NEW** — prompt, payload, response schema, post-processing rules |
+| **Query Journey Input** | `4/query-journey-input.json` | — | **NEW** — 5-phase input contract (adapter → guard → exec → classify → rerank) |
+| **Query Journey Output** | `4/query-journey-output.json` | — | **NEW** — per-phase output shapes with cumulative artifact list |
+| **Query Journey LLM Call** | `4/query-journey-llm-call.json` | — | **NEW** — SERP reranker LLM (uber_serp_reranker): prompt, payload, weights, response schema |
+| Execution Dispatch | `4/execution-dispatch-contract.md` | 0 | existing — Schema 4 vs old path gate |
 
-### Flow Diagram
+### Flow Diagrams
 
-`3/02-PROFILE-TO-PLANNER-FLOW.mmd` updated to show both the Schema 4 (NeedSet Planner) path and the old multi-pass path, with the `enableSchema4SearchPlan` gate as the decision point.
+- `3/02-PROFILE-TO-PLANNER-FLOW.mmd` — Schema 4 NeedSet Planner path + old multi-pass path with `enableSchema4SearchPlan` gate
+- `4/02-QUERY-JOURNEY-FLOW.mmd` — 6-phase journey: adapter → guard → execution → classify+admit → rerank/triage → outputs

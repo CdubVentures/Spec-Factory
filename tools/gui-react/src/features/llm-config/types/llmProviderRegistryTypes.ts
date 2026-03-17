@@ -1,5 +1,5 @@
 export type LlmProviderType = 'openai-compatible' | 'anthropic' | 'ollama' | 'cortex';
-export type LlmModelRole = 'base' | 'reasoning' | 'fast' | 'embedding';
+export type LlmModelRole = 'primary' | 'reasoning' | 'fast' | 'embedding';
 
 export interface LlmProviderModel {
   id: string;

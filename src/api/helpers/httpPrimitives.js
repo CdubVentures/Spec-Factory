@@ -1,5 +1,3 @@
-import path from 'node:path';
-
 export function jsonRes(res, status, data) {
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -26,10 +24,6 @@ export async function readJsonBody(req, maxBytes = 2_000_000) {
   return text ? JSON.parse(text) : {};
 }
 
-export function safeJoin(basePath, ...parts) {
-  const resolved = path.resolve(basePath, ...parts);
-  const root = path.resolve(basePath);
-  if (resolved === root) return resolved;
-  if (!resolved.startsWith(`${root}${path.sep}`)) return null;
-  return resolved;
-}
+// WHY: safeJoin canonical home is src/shared/fileHelpers.js.
+// Re-exported here for api-internal consumers.
+export { safeJoin } from '../../shared/fileHelpers.js';

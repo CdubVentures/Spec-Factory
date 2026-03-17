@@ -8,7 +8,6 @@ import { AdvancedSettingsBlock, MasterSwitchRow, SettingGroupBlock, SettingNumbe
 interface RuntimeFlowParsingSectionProps {
   runtimeDraft: RuntimeDraft;
   runtimeSettingsReady: boolean;
-  dynamicFetchControlsLocked: boolean;
   inputCls: string;
   runtimeSubStepDomId: (id: string) => string;
   updateDraft: <K extends keyof RuntimeDraft>(key: K, value: RuntimeDraft[K]) => void;
@@ -29,7 +28,7 @@ export const RuntimeFlowParsingSection = memo(function RuntimeFlowParsingSection
     <>
       <div id={runtimeSubStepDomId('parsing-pdf')} className="scroll-mt-24" />
       <SettingGroupBlock title="PDF Processing">
-        <MasterSwitchRow label="PDF Router Enabled" tip="Enable backend PDF router selection logic.">
+        <MasterSwitchRow label="PDF Router Enabled" tip="Enable backend PDF router selection logic." hint="Controls PDF backend, page limits, and text preview settings below">
           <SettingToggle
             checked={runtimeDraft.pdfBackendRouterEnabled}
             onChange={(next) => updateDraft('pdfBackendRouterEnabled', next)}
@@ -66,7 +65,7 @@ export const RuntimeFlowParsingSection = memo(function RuntimeFlowParsingSection
 
       <div id={runtimeSubStepDomId('parsing-article')} className="scroll-mt-24" />
       <SettingGroupBlock title="Article Extraction">
-        <MasterSwitchRow label="Article Extractor V2 Enabled" tip="Enable article extractor readability-v2 path.">
+        <MasterSwitchRow label="Article Extractor V2 Enabled" tip="Enable article extractor readability-v2 path." hint="Controls article char limits, score threshold, and domain policies below">
           <SettingToggle
             checked={runtimeDraft.articleExtractorV2Enabled}
             onChange={(next) => updateDraft('articleExtractorV2Enabled', next)}
@@ -96,7 +95,7 @@ export const RuntimeFlowParsingSection = memo(function RuntimeFlowParsingSection
 
       <div id={runtimeSubStepDomId('parsing-dom')} className="scroll-mt-24" />
       <SettingGroupBlock title="Static DOM">
-        <MasterSwitchRow label="Static DOM Extractor Enabled" tip="Enable static DOM extraction fallback path.">
+        <MasterSwitchRow label="Static DOM Extractor Enabled" tip="Enable static DOM extraction fallback path." hint="Controls DOM extraction mode, match threshold, and snippet limits below">
           <SettingToggle
             checked={runtimeDraft.staticDomExtractorEnabled}
             onChange={(next) => updateDraft('staticDomExtractorEnabled', next)}
@@ -119,8 +118,8 @@ export const RuntimeFlowParsingSection = memo(function RuntimeFlowParsingSection
           <SettingRow label="Static DOM Max Evidence Snippets" tip="Maximum static-DOM snippets retained per candidate field." disabled={!runtimeDraft.staticDomExtractorEnabled}>
             <SettingNumberInput draftKey="staticDomMaxEvidenceSnippets" value={runtimeDraft.staticDomMaxEvidenceSnippets} bounds={getNumberBounds('staticDomMaxEvidenceSnippets')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.staticDomExtractorEnabled} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
-          <SettingRow label="DOM Snippet Max Chars" tip="Maximum DOM snippet characters retained per source.">
-            <SettingNumberInput draftKey="domSnippetMaxChars" value={runtimeDraft.domSnippetMaxChars} bounds={getNumberBounds('domSnippetMaxChars')} step={50} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
+          <SettingRow label="DOM Snippet Max Chars" tip="Maximum DOM snippet characters retained per source." disabled={!runtimeDraft.staticDomExtractorEnabled}>
+            <SettingNumberInput draftKey="domSnippetMaxChars" value={runtimeDraft.domSnippetMaxChars} bounds={getNumberBounds('domSnippetMaxChars')} step={50} disabled={!runtimeSettingsReady || !runtimeDraft.staticDomExtractorEnabled} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
         </AdvancedSettingsBlock>
       </SettingGroupBlock>
@@ -130,13 +129,6 @@ export const RuntimeFlowParsingSection = memo(function RuntimeFlowParsingSection
           <SettingToggle
             checked={runtimeDraft.htmlTableExtractorV2}
             onChange={(next) => updateDraft('htmlTableExtractorV2', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </SettingRow>
-        <SettingRow label="Chart Extraction Enabled" tip="Enable chart extraction assist path for parse stage.">
-          <SettingToggle
-            checked={runtimeDraft.chartExtractionEnabled}
-            onChange={(next) => updateDraft('chartExtractionEnabled', next)}
             disabled={!runtimeSettingsReady}
           />
         </SettingRow>

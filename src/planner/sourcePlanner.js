@@ -135,6 +135,26 @@ export class SourcePlanner {
       })
     );
 
+    this._rejectCounters = {
+      empty_url: 0,
+      invalid_url: 0,
+      bad_protocol: 0,
+      already_visited: 0,
+      already_queued: 0,
+      denied_host: 0,
+      blocked_host: 0,
+      low_value_host: 0,
+      url_quality_gate: 0,
+      manufacturer_brand_restricted: 0,
+      manufacturer_locale_duplicate: 0,
+      manufacturer_locked_reject: 0,
+      max_urls_reached: 0,
+      domain_cap: 0,
+      candidate_sources_disabled: 0,
+      max_candidate_urls: 0,
+      candidate_domain_cap: 0,
+    };
+    this._acceptCount = 0;
     this._discoveryCounters = {
       robotsSitemapsDiscovered: 0,
       sitemapUrlsDiscovered: 0
@@ -381,6 +401,7 @@ export class SourcePlanner {
     const { forceApproved = false, forceCandidate = false, forceBrandBypass = false } = options;
 
     if (!url) {
+      this._rejectCounters.empty_url += 1;
       return false;
     }
 
@@ -388,44 +409,54 @@ export class SourcePlanner {
     try {
       parsed = new URL(url);
     } catch {
+      this._rejectCounters.invalid_url += 1;
       return false;
     }
 
     if (!['http:', 'https:'].includes(parsed.protocol)) {
+      this._rejectCounters.bad_protocol += 1;
       return false;
     }
 
     const normalizedUrl = canonicalizeQueueUrl(parsed);
     if (this.visitedUrls.has(normalizedUrl)) {
+      this._rejectCounters.already_visited += 1;
       return false;
     }
 
     if (this.queue.find((item) => item.url === normalizedUrl)) {
+      this._rejectCounters.already_queued += 1;
       return false;
     }
 
     if (this.manufacturerQueue.find((item) => item.url === normalizedUrl)) {
+      this._rejectCounters.already_queued += 1;
       return false;
     }
 
     if (this.priorityQueue.find((item) => item.url === normalizedUrl)) {
+      this._rejectCounters.already_queued += 1;
       return false;
     }
 
     if (this.candidateQueue.find((item) => item.url === normalizedUrl)) {
+      this._rejectCounters.already_queued += 1;
       return false;
     }
 
     const host = normalizeHost(parsed.hostname);
     if (!host || isDeniedHost(host, this.categoryConfig)) {
+      this._rejectCounters.denied_host += 1;
       return false;
     }
     if (hostInSet(host, this.blockedHosts)) {
+      this._rejectCounters.blocked_host += 1;
       return false;
     }
     const seededApprovedLowValueBypass =
       forceApproved && (discoveredFrom === 'seed' || discoveredFrom === 'learning_seed');
     if (isLowValueHost(parsed.hostname) && !seededApprovedLowValueBypass) {
+      this._rejectCounters.low_value_host += 1;
       return false;
     }
     // Full URL quality gate check (search page rejection, etc.)
@@ -433,6 +464,7 @@ export class SourcePlanner {
     if (!seededApprovedLowValueBypass) {
       const urlGate = validateFetchUrl(normalizedUrl);
       if (!urlGate.valid) {
+        this._rejectCounters.url_quality_gate += 1;
         return false;
       }
     }
@@ -450,14 +482,17 @@ export class SourcePlanner {
       this.brandManufacturerHostSet.size > 0 &&
       !hostInSet(host, this.brandManufacturerHostSet);
     if (manufacturerBrandRestricted && !forceBrandBypass) {
+      this._rejectCounters.manufacturer_brand_restricted += 1;
       return false;
     }
     const isResumeSeed = this.isResumeSeed(discoveredFrom);
     if (role === 'manufacturer') {
       if (this.shouldRejectLockedManufacturerLocaleDuplicateUrl(parsed, { allowResume: isResumeSeed })) {
+        this._rejectCounters.manufacturer_locale_duplicate += 1;
         return false;
       }
       if (this.shouldRejectLockedManufacturerUrl(parsed)) {
+        this._rejectCounters.manufacturer_locked_reject += 1;
         return false;
       }
     }
@@ -471,6 +506,7 @@ export class SourcePlanner {
 
     if (approvedDomain) {
       if (totalApprovedPlanned >= this.maxUrls) {
+        this._rejectCounters.max_urls_reached += 1;
         return false;
       }
 
@@ -478,15 +514,18 @@ export class SourcePlanner {
         const plannedCount =
           countQueueHost(this.manufacturerQueue, host) + (this.manufacturerHostCounts.get(host) || 0);
         if (plannedCount >= this.maxPagesPerDomain) {
+          this._rejectCounters.domain_cap += 1;
           return false;
         }
         const manufacturerPlanned = this.manufacturerQueue.length + this.manufacturerVisitedCount;
         if (manufacturerPlanned >= this.maxUrls) {
+          this._rejectCounters.max_urls_reached += 1;
           return false;
         }
       } else {
         const plannedCount = countQueueHost(this.queue, host) + (this.hostCounts.get(host) || 0);
         if (plannedCount >= this.maxPagesPerDomain) {
+          this._rejectCounters.domain_cap += 1;
           return false;
         }
       }
@@ -523,19 +562,23 @@ export class SourcePlanner {
         this.queue.push(row);
       }
       this.sortApprovedQueue();
+      this._acceptCount += 1;
       return true;
     }
 
     if (!this.fetchCandidateSources) {
+      this._rejectCounters.candidate_sources_disabled += 1;
       return false;
     }
 
     if (this.candidateQueue.length + this.candidateVisitedCount >= this.maxCandidateUrls) {
+      this._rejectCounters.max_candidate_urls += 1;
       return false;
     }
 
     const domainCount = this.candidateHostCounts.get(host) || 0;
     if (domainCount >= this.maxPagesPerDomain) {
+      this._rejectCounters.candidate_domain_cap += 1;
       return false;
     }
 
@@ -563,7 +606,16 @@ export class SourcePlanner {
     });
 
     this.sortCandidateQueue();
+    this._acceptCount += 1;
     return true;
+  }
+
+  get enqueueCounters() {
+    return {
+      accepted: this._acceptCount,
+      rejected: { ...this._rejectCounters },
+      total_rejected: Object.values(this._rejectCounters).reduce((sum, v) => sum + v, 0),
+    };
   }
 
   hasNext() {

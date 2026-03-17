@@ -28,7 +28,6 @@ function makeRunData(overrides = {}) {
       pdfBackendRouterEnabled: true,
       scannedPdfOcrEnabled: false,
       capturePageScreenshotEnabled: true,
-      runtimeCaptureScreenshots: true,
       runProfile: 'default',
       maxUrlsPerProduct: 40,
       maxRunSeconds: 600

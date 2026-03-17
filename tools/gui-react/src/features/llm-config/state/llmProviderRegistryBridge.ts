@@ -25,6 +25,10 @@ export function parseProviderRegistry(json: string): LlmProviderEntry[] {
         ...entry,
         expanded: entry.expanded ?? true,
         health: entry.health ?? 'gray',
+        // Migrate persisted 'base' role → 'primary'
+        models: (entry.models ?? []).map((m: LlmProviderModel) =>
+          m.role === ('base' as string) ? { ...m, role: 'primary' as LlmModelRole } : m,
+        ),
       }));
   } catch {
     return [];
@@ -33,11 +37,8 @@ export function parseProviderRegistry(json: string): LlmProviderEntry[] {
 
 export function serializeProviderRegistry(registry: LlmProviderEntry[]): string {
   if (registry.length === 0) return '';
-  const stripped = registry.map(({ expanded, health, ...rest }) => ({
-    ...rest,
-    models: rest.models,
-  }));
-  return JSON.stringify(stripped);
+  const serializable = registry.map(({ expanded, health, ...rest }) => rest);
+  return JSON.stringify(serializable);
 }
 
 export interface CollectedModelOption {
@@ -128,7 +129,7 @@ export function createDefaultModel(): LlmProviderModel {
   return {
     id: generateModelId(),
     modelId: '',
-    role: 'base',
+    role: 'primary',
     costInputPer1M: 0,
     costOutputPer1M: 0,
     costCachedPer1M: 0,

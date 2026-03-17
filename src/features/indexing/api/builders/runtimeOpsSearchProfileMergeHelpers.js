@@ -1,4 +1,4 @@
-import { toInt } from '../../../../api/helpers/valueNormalizers.js';
+import { toInt } from '../../../../shared/valueNormalizers.js';
 
 export function normalizeProfileQuery(value) {
   return String(value || '').trim().toLowerCase();

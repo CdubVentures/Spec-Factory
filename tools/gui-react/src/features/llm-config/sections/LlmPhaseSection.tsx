@@ -31,6 +31,8 @@ import type { LlmPhaseId as OverridePhaseId } from '../types/llmPhaseOverrideTyp
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
 import { resolvePhaseModel } from '../state/llmPhaseOverridesBridge';
 import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions';
+import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner';
+import { resolveProviderForModel } from '../state/llmProviderRegistryBridge';
 
 /** Maps hyphenated UI phase IDs to the camelCase keys used in LlmPhaseOverrides. */
 const TAB_TO_OVERRIDE_KEY: Partial<Record<LlmPhaseId, OverridePhaseId>> = {
@@ -75,8 +77,8 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
     ? resolvePhaseModel(phaseOverrides, overrideKey, globalDraft)
     : null;
 
-  const allOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry),
+  const baseOptions = useMemo(
+    () => buildModelDropdownOptions(llmModelOptions, registry, ['primary', 'fast']),
     [llmModelOptions, registry],
   );
   const reasoningOptions = useMemo(
@@ -94,6 +96,22 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
     onPhaseOverrideChange(next);
   }, [overrideKey, phaseOverrides, onPhaseOverrideChange]);
 
+  const phaseTokenWarning = useMemo(() => {
+    if (!overrideKey || !resolved) return null;
+    const tokenCap = phaseOverrides[overrideKey]?.maxOutputTokens;
+    if (tokenCap == null || tokenCap <= 0) return null;
+    const modelId = resolved.baseModel;
+    if (!modelId) return null;
+    const provider = resolveProviderForModel(registry, modelId);
+    if (!provider) return null;
+    const model = provider.models.find((m) => m.modelId === modelId);
+    if (!model || model.maxOutputTokens == null) return null;
+    if (tokenCap > model.maxOutputTokens) {
+      return { model: modelId, setting: tokenCap, limit: model.maxOutputTokens };
+    }
+    return null;
+  }, [overrideKey, resolved, phaseOverrides, registry]);
+
   if (!overrideKey || !resolved) return null;
 
   return (
@@ -107,7 +125,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
             onChange={(e) => updateOverrideField('baseModel', e.target.value)}
           >
             <option value="">↩ {resolved.baseModel}</option>
-            {allOptions.map((o) => (
+            {baseOptions.map((o) => (
               <option key={o.providerId ? `reg-${o.providerId}-${o.value}` : o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
@@ -152,6 +170,13 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           />
         </div>
       </SettingRow>
+      {phaseTokenWarning && (
+        <AlertBanner
+          severity="warning"
+          title="Token cap exceeds model limit"
+          message={`${phaseTokenWarning.model} max output is ${phaseTokenWarning.limit.toLocaleString()}, but this phase is set to ${phaseTokenWarning.setting.toLocaleString()}.`}
+        />
+      )}
     </SettingGroupBlock>
   );
 });

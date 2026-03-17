@@ -51,11 +51,6 @@ function runtimeSubStepDomId(id: string) {
   return `runtime-flow-substep-${id}`;
 }
 
-const RuntimeFlowPlannerTriageSection = lazy(async () => {
-  const module = await import('../sections/RuntimeFlowPlannerTriageSection');
-  return { default: module.RuntimeFlowPlannerTriageSection };
-});
-
 const RuntimeFlowAutomationSection = lazy(async () => {
   const module = await import('../sections/RuntimeFlowAutomationSection');
   return { default: module.RuntimeFlowAutomationSection };
@@ -333,6 +328,7 @@ export function RuntimeSettingsFlowCard({
             runtimeDraft={runtimeDraft}
             runtimeSettingsReady={runtimeSettingsReady}
             reextractWindowLocked={reextractWindowLocked}
+            plannerControlsLocked={plannerControlsLocked}
             inputCls={inputCls}
             runtimeSubStepDomId={runtimeSubStepDomId}
             searchProviderOptions={SEARCH_PROVIDER_OPTIONS}
@@ -340,6 +336,7 @@ export function RuntimeSettingsFlowCard({
             updateDraft={updateDraft}
             onNumberChange={onNumberChange}
             getNumberBounds={getNumberBounds}
+            renderDisabledHint={renderDisabledHint}
           />
 
           {activeStep === 'automation' ? (
@@ -438,7 +435,6 @@ export function RuntimeSettingsFlowCard({
               <RuntimeFlowParsingSection
                 runtimeDraft={runtimeDraft}
                 runtimeSettingsReady={runtimeSettingsReady}
-                dynamicFetchControlsLocked={dynamicFetchControlsLocked}
                 inputCls={inputCls}
                 runtimeSubStepDomId={runtimeSubStepDomId}
                 updateDraft={updateDraft}
@@ -470,25 +466,6 @@ export function RuntimeSettingsFlowCard({
             </Suspense>
           ) : null}
 
-          {activeStep === 'planner-triage' ? (
-            <Suspense
-              fallback={(
-                <div className="rounded sf-surface-elevated px-3 py-2.5 sf-text-label">
-                  Loading search and reranker section...
-                </div>
-              )}
-            >
-              <RuntimeFlowPlannerTriageSection
-                runtimeDraft={runtimeDraft}
-                runtimeSettingsReady={runtimeSettingsReady}
-                plannerControlsLocked={plannerControlsLocked}
-                inputCls={inputCls}
-                runtimeSubStepDomId={runtimeSubStepDomId}
-                updateDraft={updateDraft}
-                renderDisabledHint={renderDisabledHint}
-              />
-            </Suspense>
-          ) : null}
 
         </section>
       </div>

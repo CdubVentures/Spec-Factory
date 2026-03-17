@@ -28,9 +28,6 @@ const VALID_TRANSITIONS = {
 export class AutomationQueue {
   constructor(db, options = {}) {
     this._db = db;
-    this._automationQueueStorageEngine = String(
-      options.automationQueueStorageEngine || 'sqlite'
-    ).trim().toLowerCase() || 'sqlite';
     db.exec(AUTOMATION_SCHEMA);
   }
 

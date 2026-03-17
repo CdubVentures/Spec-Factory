@@ -96,7 +96,6 @@ const MANUAL_ENV_KEY_MAP = Object.freeze({
   dynamicFetchPolicyMapJson: 'DYNAMIC_FETCH_POLICY_MAP_JSON',
   articleExtractorDomainPolicyMapJson: 'ARTICLE_EXTRACTOR_DOMAIN_POLICY_MAP_JSON',
   fetchSchedulerInternalsMapJson: 'FETCH_SCHEDULER_INTERNALS_MAP_JSON',
-  automationQueueStorageEngine: 'AUTOMATION_QUEUE_STORAGE_ENGINE',
   capturePageScreenshotSelectors: 'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
   categoryAuthorityRoot: 'HELPER_FILES_ROOT',
 });

@@ -1,6 +1,6 @@
 import {
   toInt, parseTsMs, normalizeDomainToken, domainFromUrl, urlPathToken,
-} from '../../../../api/helpers/valueNormalizers.js';
+} from '../../../../shared/valueNormalizers.js';
 import {
   clampAutomationPriority, automationPriorityForRequiredLevel, automationPriorityForJobType,
   toStringList, addUniqueStrings, buildAutomationJobId,

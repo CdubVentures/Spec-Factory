@@ -1,1 +1,0 @@
-function t(l,r,e){const n=[],s=new Set;for(const o of r)if(o.enabled)for(const d of o.models)e&&!(Array.isArray(e)?e:[e]).includes(d.role)||(n.push({value:d.modelId,label:o.name?`${o.name} / ${d.modelId}`:d.modelId,providerId:o.id}),s.add(d.modelId));for(const o of l)s.has(o)||n.push({value:o,label:o,providerId:null});return n}export{t as b};

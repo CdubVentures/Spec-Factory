@@ -27,7 +27,6 @@ test('buildEffectiveSettingsSnapshot captures required keys', () => {
     pdfBackendRouterEnabled: true,
     scannedPdfOcrEnabled: false,
     capturePageScreenshotEnabled: true,
-    runtimeCaptureScreenshots: true,
     runProfile: 'default',
     maxUrlsPerProduct: 40,
     maxRunSeconds: 600

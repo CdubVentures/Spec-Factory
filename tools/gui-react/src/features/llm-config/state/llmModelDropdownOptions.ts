@@ -4,6 +4,91 @@ export interface DropdownModelOption {
   value: string;
   label: string;
   providerId: string | null;
+  role?: LlmModelRole;
+  costInputPer1M?: number;
+  maxContextTokens?: number | null;
+}
+
+const ROLE_SORT_PRIORITY: Record<string, number> = {
+  reasoning: 0,
+  primary: 1,
+  fast: 2,
+  embedding: 3,
+};
+const UNKNOWN_ROLE_PRIORITY = 4;
+
+export function compareModelsByRoleTokensCost(
+  a: { role?: string; maxContextTokens?: number | null; costInputPer1M?: number },
+  b: { role?: string; maxContextTokens?: number | null; costInputPer1M?: number },
+): number {
+  // 1. Role priority
+  const aPri = ROLE_SORT_PRIORITY[a.role ?? ''] ?? UNKNOWN_ROLE_PRIORITY;
+  const bPri = ROLE_SORT_PRIORITY[b.role ?? ''] ?? UNKNOWN_ROLE_PRIORITY;
+  if (aPri !== bPri) return aPri - bPri;
+
+  // 2. maxContextTokens descending (nulls last)
+  const aCtx = a.maxContextTokens;
+  const bCtx = b.maxContextTokens;
+  if (aCtx != null && bCtx != null) {
+    if (aCtx !== bCtx) return bCtx - aCtx;
+  } else if (aCtx != null) {
+    return -1;
+  } else if (bCtx != null) {
+    return 1;
+  }
+
+  // 3. costInputPer1M ascending (unknowns/undefined last)
+  const aCost = a.costInputPer1M;
+  const bCost = b.costInputPer1M;
+  if (aCost != null && bCost != null) {
+    if (aCost !== bCost) return aCost - bCost;
+  } else if (aCost != null) {
+    return -1;
+  } else if (bCost != null) {
+    return 1;
+  }
+
+  return 0;
+}
+
+export function formatContextTokens(tokens: number): string {
+  if (tokens >= 1_000_000) {
+    const m = Math.round(tokens / 1_000_000);
+    return `${m}M`;
+  }
+  if (tokens >= 1_000) {
+    const k = Math.round(tokens / 1_000);
+    return `${k}K`;
+  }
+  return String(tokens);
+}
+
+const ROLE_PREFIX: Record<string, string> = {
+  primary: '[Primary]',
+  fast: '[Fast]',
+  reasoning: '[Reasoning]',
+  embedding: '[Embedding]',
+};
+
+function buildEnrichedLabel(
+  providerName: string,
+  modelId: string,
+  costInputPer1M: number,
+  maxContextTokens: number | null,
+  role?: string,
+): string {
+  const base = providerName ? `${providerName} / ${modelId}` : modelId;
+  const parts: string[] = [];
+  if (maxContextTokens != null && maxContextTokens > 0) {
+    parts.push(`${formatContextTokens(maxContextTokens)} ctx`);
+  }
+  if (costInputPer1M > 0) {
+    const formatted = Number.isInteger(costInputPer1M) ? String(costInputPer1M) : costInputPer1M.toFixed(2);
+    parts.push(`$${formatted} in`);
+  }
+  const suffix = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+  const prefix = role && ROLE_PREFIX[role] ? `${ROLE_PREFIX[role]} ` : '';
+  return `${prefix}${base}${suffix}`;
 }
 
 export function buildModelDropdownOptions(
@@ -24,8 +109,11 @@ export function buildModelDropdownOptions(
       }
       result.push({
         value: model.modelId,
-        label: provider.name ? `${provider.name} / ${model.modelId}` : model.modelId,
+        label: buildEnrichedLabel(provider.name, model.modelId, model.costInputPer1M, model.maxContextTokens, model.role),
         providerId: provider.id,
+        role: model.role,
+        costInputPer1M: model.costInputPer1M,
+        maxContextTokens: model.maxContextTokens,
       });
       registryModelIds.add(model.modelId);
     }
@@ -40,6 +128,9 @@ export function buildModelDropdownOptions(
       providerId: null,
     });
   }
+
+  // 3. Sort using 3-tier comparator (stable sort preserves insertion order for equal keys)
+  result.sort(compareModelsByRoleTokensCost);
 
   return result;
 }

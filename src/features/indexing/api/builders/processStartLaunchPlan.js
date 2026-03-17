@@ -143,12 +143,10 @@ export function buildProcessStartLaunchPlan(options = {}) {
     capturePageScreenshotEnabled,
     capturePageScreenshotFormat,
     capturePageScreenshotSelectors,
-    runtimeCaptureScreenshots,
     articleExtractorV2Enabled,
     staticDomExtractorEnabled,
     staticDomMode,
     specDbDir,
-    ['helper' + 'FilesEnabled']: legacyHelperFilesEnabled,
     ['helper' + 'FilesRoot']: legacyHelperFilesRoot,
     outputMode,
     localMode,
@@ -205,7 +203,7 @@ export function buildProcessStartLaunchPlan(options = {}) {
   const categoryAuthorityEnabled = (
     typeof body?.categoryAuthorityEnabled === 'boolean'
       ? body.categoryAuthorityEnabled
-      : legacyHelperFilesEnabled
+      : true
   );
   const categoryAuthorityRoot = String(
     body?.categoryAuthorityRoot
@@ -346,7 +344,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
   assignBoolean(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_ENABLED', capturePageScreenshotEnabled);
   assignString(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_FORMAT', capturePageScreenshotFormat);
   assignString(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_SELECTORS', capturePageScreenshotSelectors);
-  assignBoolean(envOverrides, 'RUNTIME_CAPTURE_SCREENSHOTS', runtimeCaptureScreenshots);
   assignBoolean(envOverrides, 'ARTICLE_EXTRACTOR_V2', articleExtractorV2Enabled);
   assignBoolean(envOverrides, 'STATIC_DOM_EXTRACTOR_ENABLED', staticDomExtractorEnabled);
   assignString(envOverrides, 'STATIC_DOM_MODE', staticDomMode);

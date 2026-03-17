@@ -1,0 +1,167 @@
+{
+  "_doc": "Query Journey input contract. Documents the exact inputs consumed at each sub-phase of Stage 4: Schema 4 handoff → adapter → guard → execution → classification → rerank/triage. Updated 2026-03-16.",
+
+  "phase_1_handoff_adapter": {
+    "_function": "convertHandoffToExecutionPlan(handoff)",
+    "_file": "src/features/indexing/discovery/searchPlanHandoffAdapter.js:10-48",
+
+    "input": {
+      "_source": "Schema 4 search_plan_handoff (from buildSearchPlan → runDiscoverySeedPlan)",
+      "queries": {
+        "_type": "array",
+        "_per_item": {
+          "q":                    { "type": "string", "tag": "enriched", "source": "LLM response" },
+          "query_hash":           { "type": "string", "tag": "recomputed", "source": "stableHash of q" },
+          "family":               { "type": "string", "tag": "enriched", "source": "LLM response" },
+          "group_key":            { "type": "string", "tag": "passthrough", "source": "Schema 3 focus_group key" },
+          "target_fields":        { "type": "string[]", "tag": "enriched", "source": "LLM response" },
+          "preferred_domains":    { "type": "string[]", "tag": "enriched", "source": "LLM response" },
+          "exact_match_required": { "type": "boolean", "tag": "enriched", "source": "LLM response" }
+        }
+      },
+      "query_hashes": "string[] — not consumed by adapter",
+      "total": "number — not consumed by adapter"
+    },
+
+    "output": {
+      "queries":             { "type": "string[]", "tag": "recomputed", "note": "flat array of q strings, deduped by lowercase" },
+      "queryRows":           { "type": "array", "tag": "recomputed", "note": "array of { query, source:'schema4_planner', target_fields, domain_hint (first preferred_domain), doc_hint:'', hint_source:'schema4_search_plan', family, group_key, query_hash }" },
+      "selectedQueryRowMap": { "type": "Map<string, Row>", "tag": "recomputed", "note": "lowercase(query) → row for fast lookup" },
+      "source":              { "type": "string", "value": "schema4", "tag": "recomputed" }
+    },
+
+    "transforms": {
+      "preferred_domains → domain_hint": "first preferred_domain becomes domain_hint; rest dropped",
+      "dedup": "duplicate q values (case-insensitive) are removed; first wins",
+      "falsy_filter": "queries with empty/null q are skipped"
+    }
+  },
+
+  "phase_2_identity_guard": {
+    "_function": "enforceIdentityQueryGuard({ rows, variables, variantGuardTerms })",
+    "_file": "src/features/indexing/discovery/discoveryQueryPlan.js:416-443",
+
+    "input": {
+      "rows":              "array — queryRows from adapter output",
+      "variables":         { "brand": "string", "model": "string", "variant": "string", "category": "string" },
+      "variantGuardTerms": "string[] — additional variant aliases to reject"
+    },
+
+    "output": {
+      "rows":         { "type": "array", "tag": "passthrough (filtered)", "note": "queries that passed brand/model/variant validation" },
+      "rejectLog":    { "type": "array", "tag": "recomputed", "note": "{ query, source, reason, stage:'pre_execution_guard', detail }" },
+      "guardContext": {
+        "brandTokens":         "string[] — compact brand tokens",
+        "modelTokens":         "string[] — compact model tokens (excluding brand tokens + generic)",
+        "requiredDigitGroups": "string[] — digit sequences in model/variant",
+        "allowedModelTokens":  "string[] — normalized model tokens + variants with trim/decomposition"
+      }
+    },
+
+    "validation_rules": [
+      "All brand tokens must appear in query (case-insensitive)",
+      "If model has digit groups (e.g. 'g502'), ALL digit groups must appear",
+      "If no digit groups but model tokens exist (>=4 chars), at least one model token must appear",
+      "Foreign model-like tokens (not in allowedModelTokens) → reason 'foreign_model_token:<token>'",
+      "Queries failing ANY check are rejected; passing queries are returned unchanged"
+    ]
+  },
+
+  "phase_3_execution": {
+    "_function": "executeSearchQueries({ queries, selectedQueryRowMap, ... })",
+    "_file": "src/features/indexing/discovery/discoverySearchExecution.js:29-446",
+
+    "input": {
+      "queries":              "string[] — accepted query strings from guard",
+      "selectedQueryRowMap":  "Map<string, Row> — from adapter output",
+      "profileQueryRowMap":   "Map<string, Row> — profile-level query metadata",
+      "executionQueryLimit":  "number — max queries to execute",
+      "queryConcurrency":     "number — parallel query limit",
+      "resultsPerQuery":      "number — target results per query from provider",
+      "queryLimit":           "number — planner-level cap",
+      "config":               "object — searchProvider, discoveryInternalFirst, discoveryInternalMinResults, etc.",
+      "storage":              "StorageAdapter",
+      "frontierDb":           "FrontierDatabase — cache + cooldown + dedup",
+      "categoryConfig":       "object — sourceHosts, sourceHostMap, approvedRootDomains, etc.",
+      "job":                  "object — productId, category, etc.",
+      "runId":                "string",
+      "providerState":        "{ provider, internet_ready, active_providers, fallback_reason }"
+    },
+
+    "output": {
+      "rawResults":           { "type": "array", "tag": "enriched", "note": "{ url, title, snippet, provider, query, rank, ... } from search providers" },
+      "searchAttempts":       { "type": "array", "tag": "recomputed", "note": "{ query, provider, result_count, reason_code, duration_ms }" },
+      "searchJournal":        { "type": "array", "tag": "recomputed", "note": "{ ts, query, provider, action, reason, result_count, duration_ms }" },
+      "internalSatisfied":    { "type": "boolean", "tag": "recomputed", "note": "true if internal results met required field target" },
+      "externalSearchReason": { "type": "string|null", "tag": "recomputed", "note": "why external search was triggered or skipped" }
+    },
+
+    "execution_flow": [
+      "1. Provider diagnostics — log availability",
+      "2. Internal-first phase (if discoveryInternalFirst) — frontier cache + corpus search",
+      "3. Internet search phase — SearXNG with concurrency, per-query frontier check",
+      "4. Plan-only fallback — if no provider, generate URLs from manufacturer domain",
+      "5. Record to query index (NDJSON) and frontier DB"
+    ]
+  },
+
+  "phase_4_classification": {
+    "_function": "classifyUrlCandidate(result, categoryConfig, options)",
+    "_file": "src/features/indexing/discovery/discoveryUrlClassifier.js:130-174",
+
+    "input": {
+      "result":         { "url": "string", "title": "string", "snippet": "string", "query": "string", "provider": "string", "rank": "number" },
+      "categoryConfig": "object — sourceHosts, sourceHostMap, approvedRootDomains",
+      "options":        { "identityLock": "{ brand, model, variant }", "variantGuardTerms": "string[]" }
+    },
+
+    "output": {
+      "url":                   { "tag": "normalized", "note": "canonical URL" },
+      "host":                  { "tag": "recomputed", "note": "lowercase, www stripped" },
+      "rootDomain":            { "tag": "recomputed", "note": "extracted root domain" },
+      "path":                  { "tag": "recomputed", "note": "pathname lowercased" },
+      "title":                 { "tag": "passthrough" },
+      "snippet":               { "tag": "passthrough" },
+      "query":                 { "tag": "passthrough" },
+      "provider":              { "tag": "passthrough" },
+      "approvedDomain":        { "tag": "recomputed", "note": "isApprovedHost() from sourceHostMap" },
+      "tier":                  { "tag": "recomputed", "note": "1=manufacturer, 2=approved, 3+=community" },
+      "tierName":              { "tag": "recomputed", "note": "manufacturer|approved|community" },
+      "role":                  { "tag": "recomputed", "note": "inferred from categoryConfig sourceHosts" },
+      "doc_kind_guess":        { "tag": "recomputed", "note": "spec|manual_pdf|spec_pdf|teardown_review|lab_review|support|product_page|other" },
+      "identity_match_level":  { "tag": "recomputed", "note": "strong|partial|weak|none — brand+model+variant presence" },
+      "variant_guard_hit":     { "tag": "recomputed", "note": "true if wrong variant detected" },
+      "multi_model_hint":      { "tag": "recomputed", "note": "true if comparison/listing page pattern detected" }
+    }
+  },
+
+  "phase_5_rerank_triage": {
+    "_function": "rerankSerpResults({ config, identity, missingFields, serpResults, ... })",
+    "_file": "src/research/serpReranker.js:187-356",
+    "_has_llm_call": true,
+
+    "input": {
+      "config":              "object — weight map, LLM model settings, timeouts",
+      "identity":            "{ brand, model, variant }",
+      "missingFields":       "string[] — fields still needing data",
+      "serpResults":         "array — classified URL candidates from phase 4",
+      "frontier":            "FrontierDatabase — for rankPenaltyForUrl()",
+      "topK":                "number — default 16, max results to rerank",
+      "domainSafetyResults": "Map<string, { safe: boolean }> — optional domain safety check"
+    },
+
+    "output_per_result": {
+      "url":             { "tag": "passthrough" },
+      "title":           { "tag": "passthrough" },
+      "snippet":         { "tag": "passthrough" },
+      "host":            { "tag": "passthrough" },
+      "rank":            { "tag": "passthrough" },
+      "score_det":       { "tag": "recomputed", "note": "deterministic composite score" },
+      "score_breakdown": { "tag": "recomputed", "note": "14-key breakdown: base, frontier, identity, variant, multi_model, tier, host_health, operator_risk, field_affinity, diversity, needset_coverage, brand_presence, model_presence, spec_manual" },
+      "keep":            { "tag": "enriched (LLM) or recomputed (deterministic)", "note": "boolean — LLM decision or always true" },
+      "decision":        { "tag": "enriched (LLM only)", "note": "'keep'|'drop' from LLM response" },
+      "rerank_score":    { "tag": "enriched (LLM) or recomputed (deterministic)", "note": "LLM score or score_det fallback" },
+      "rerank_reason":   { "tag": "enriched (LLM) or recomputed (deterministic)", "note": "LLM reason or 'deterministic'|'deterministic_fallback'" }
+    }
+  }
+}

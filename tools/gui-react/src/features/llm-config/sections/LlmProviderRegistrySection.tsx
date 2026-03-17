@@ -2,39 +2,88 @@ import { memo, useState, useCallback } from 'react';
 import type {
   LlmProviderEntry,
   LlmProviderModel,
-  LlmProviderType,
   LlmModelRole,
 } from '../types/llmProviderRegistryTypes';
-import { createDefaultProvider, createDefaultModel, DEFAULT_BASE_URLS } from '../state/llmProviderRegistryBridge';
+import { createDefaultProvider, createDefaultModel } from '../state/llmProviderRegistryBridge';
+import { ROLE_BADGE_STYLE, MODEL_ROLE_OPTIONS } from '../state/llmRoleBadgeStyles';
+import { isDefaultProvider } from '../state/llmDefaultProviderRegistry';
+import { ModelRoleBadge } from '../components/ModelRoleBadge';
 
-const PROVIDER_TYPE_OPTIONS: readonly { value: LlmProviderType; label: string }[] = [
-  { value: 'openai-compatible', label: 'OpenAI-Compatible' },
-  { value: 'anthropic', label: 'Anthropic' },
-  { value: 'ollama', label: 'Ollama' },
-  { value: 'cortex', label: 'Cortex' },
-];
+/* ── Provider SVG icons (20x20) ────────────────────────── */
 
-const MODEL_ROLE_OPTIONS: readonly { value: LlmModelRole; label: string }[] = [
-  { value: 'base', label: 'Base' },
-  { value: 'reasoning', label: 'Reasoning' },
-  { value: 'fast', label: 'Fast' },
-  { value: 'embedding', label: 'Embedding' },
-];
-
-const ROLE_BADGE_STYLE: Record<LlmModelRole, { color: string; bg: string }> = {
-  base: { color: '#888780', bg: '#F1EFE8' },
-  reasoning: { color: '#534AB7', bg: '#EEEDFE' },
-  fast: { color: '#185FA5', bg: '#E6F1FB' },
-  embedding: { color: '#0F6E56', bg: '#E1F5EE' },
-};
-
-function getProviderStatus(provider: LlmProviderEntry): { label: string; color: string; bg: string } {
-  if (!provider.enabled) return { label: 'Disabled', color: '#A32D2D', bg: '#FCEBEB' };
-  if (!provider.apiKey && provider.type !== 'ollama' && provider.type !== 'cortex')
-    return { label: 'No key', color: '#5F5E5A', bg: '#F1EFE8' };
-  if (provider.models.length === 0) return { label: 'No models', color: '#854F0B', bg: '#FAEEDA' };
-  return { label: 'Active', color: '#0F6E56', bg: '#E1F5EE' };
+function GeminiIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2C12.5 7 17 11.5 22 12C17 12.5 12.5 17 12 22C11.5 17 7 12.5 2 12C7 11.5 11.5 7 12 2Z" fill="#4285F4" />
+    </svg>
+  );
 }
+
+function DeepSeekIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" fill="#0066FF" />
+      <path d="M7 13C9 9 15 9 17 13" stroke="#fff" strokeWidth="2" strokeLinecap="round" fill="none" />
+      <circle cx="9" cy="10" r="1.5" fill="#fff" />
+      <circle cx="15" cy="10" r="1.5" fill="#fff" />
+    </svg>
+  );
+}
+
+function AnthropicIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <rect x="2" y="2" width="20" height="20" rx="4" fill="#D4A27F" />
+      <path d="M12 6L17 18H14.5L12 12.5L9.5 18H7L12 6Z" fill="#fff" />
+    </svg>
+  );
+}
+
+function OpenAIIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" fill="#10A37F" />
+      <path d="M12 6V12L16 14M12 12L8 14M12 12V18" stroke="#fff" strokeWidth="2" strokeLinecap="round" fill="none" />
+    </svg>
+  );
+}
+
+function OllamaIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" fill="#1A1A1A" />
+      <ellipse cx="12" cy="13" rx="5" ry="4" fill="#fff" />
+      <circle cx="10" cy="12" r="1" fill="#1A1A1A" />
+      <circle cx="14" cy="12" r="1" fill="#1A1A1A" />
+      <ellipse cx="12" cy="8" rx="3" ry="2" fill="#fff" />
+    </svg>
+  );
+}
+
+function CortexIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" fill="#6366F1" />
+      <circle cx="12" cy="10" r="3" stroke="#fff" strokeWidth="1.5" fill="none" />
+      <path d="M9 14L7 18M15 14L17 18M12 13V18" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ProviderIcon({ name }: { name: string }) {
+  const key = name.toLowerCase();
+  switch (key) {
+    case 'gemini': return <GeminiIcon />;
+    case 'deepseek': return <DeepSeekIcon />;
+    case 'anthropic': return <AnthropicIcon />;
+    case 'openai': return <OpenAIIcon />;
+    case 'ollama': return <OllamaIcon />;
+    case 'cortex': return <CortexIcon />;
+    default: return null;
+  }
+}
+
+/* ── Model row ─────────────────────────────────────────── */
 
 interface LlmProviderRegistrySectionProps {
   registry: LlmProviderEntry[];
@@ -45,10 +94,12 @@ function ProviderModelRow({
   model,
   onModelChange,
   onRemove,
+  readOnly,
 }: {
   model: LlmProviderModel;
   onModelChange: (updated: LlmProviderModel) => void;
   onRemove: () => void;
+  readOnly: boolean;
 }) {
   const roleStyle = ROLE_BADGE_STYLE[model.role];
   return (
@@ -58,25 +109,40 @@ function ProviderModelRow({
           className="sf-input sf-input--sm"
           value={model.modelId}
           placeholder="e.g. gpt-4o"
+          disabled={readOnly}
           onChange={(e) => onModelChange({ ...model, modelId: e.target.value })}
         />
       </td>
       <td className="sf-table-cell">
-        <span
-          className="inline-flex items-center rounded px-1.5 py-0.5 sf-text-caption font-medium"
-          style={{ backgroundColor: roleStyle.bg, color: roleStyle.color }}
-        >
-          <select
-            className="appearance-none bg-transparent border-none p-0 font-medium cursor-pointer outline-none sf-text-caption"
-            style={{ color: 'inherit' }}
-            value={model.role}
-            onChange={(e) => onModelChange({ ...model, role: e.target.value as LlmModelRole })}
-          >
-            {MODEL_ROLE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </span>
+        {readOnly ? (
+          <ModelRoleBadge role={model.role} />
+        ) : (
+          <div className="relative inline-flex">
+            <select
+              className="sf-text-caption font-medium cursor-pointer rounded-full pr-5 pl-2 py-0.5"
+              style={{
+                backgroundColor: roleStyle.bg,
+                color: roleStyle.color,
+                border: 'none',
+                outline: 'none',
+                appearance: 'none',
+                WebkitAppearance: 'none',
+              }}
+              value={model.role}
+              onChange={(e) => onModelChange({ ...model, role: e.target.value as LlmModelRole })}
+            >
+              {MODEL_ROLE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <span
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none sf-text-caption"
+              style={{ color: roleStyle.color, fontSize: 8, lineHeight: 1 }}
+            >
+              ▾
+            </span>
+          </div>
+        )}
       </td>
       <td className="sf-table-cell">
         <input
@@ -84,6 +150,7 @@ function ProviderModelRow({
           type="number"
           min={0}
           step={0.01}
+          disabled={readOnly}
           value={model.costInputPer1M}
           onChange={(e) => onModelChange({ ...model, costInputPer1M: Number(e.target.value) || 0 })}
         />
@@ -94,6 +161,7 @@ function ProviderModelRow({
           type="number"
           min={0}
           step={0.01}
+          disabled={readOnly}
           value={model.costOutputPer1M}
           onChange={(e) => onModelChange({ ...model, costOutputPer1M: Number(e.target.value) || 0 })}
         />
@@ -104,6 +172,7 @@ function ProviderModelRow({
           type="number"
           min={0}
           step={0.01}
+          disabled={readOnly}
           value={model.costCachedPer1M}
           onChange={(e) => onModelChange({ ...model, costCachedPer1M: Number(e.target.value) || 0 })}
         />
@@ -114,6 +183,7 @@ function ProviderModelRow({
           type="number"
           min={0}
           step={1}
+          disabled={readOnly}
           value={model.maxContextTokens ?? ''}
           placeholder="—"
           onChange={(e) => {
@@ -128,6 +198,7 @@ function ProviderModelRow({
           type="number"
           min={0}
           step={1}
+          disabled={readOnly}
           value={model.maxOutputTokens ?? ''}
           placeholder="—"
           onChange={(e) => {
@@ -137,20 +208,24 @@ function ProviderModelRow({
         />
       </td>
       <td className="sf-table-cell">
-        <button
-          className="sf-text-caption cursor-pointer"
-          style={{ color: 'var(--sf-muted)' }}
-          onClick={onRemove}
-          title="Remove model"
-        >
-          ✕
-        </button>
+        {!readOnly && (
+          <button
+            className="sf-text-caption cursor-pointer"
+            style={{ color: 'var(--sf-muted)' }}
+            onClick={onRemove}
+            title="Remove model"
+          >
+            ✕
+          </button>
+        )}
       </td>
     </tr>
   );
 }
 
-function ProviderCard({
+/* ── Provider panel (SettingGroupBlock pattern) ─────────── */
+
+function ProviderPanel({
   provider,
   onProviderChange,
   onRemove,
@@ -160,14 +235,14 @@ function ProviderCard({
   onRemove: () => void;
 }) {
   const [showKey, setShowKey] = useState(false);
+  const isDefault = isDefaultProvider(provider.id);
 
   const updateField = useCallback(<K extends keyof LlmProviderEntry>(key: K, value: LlmProviderEntry[K]) => {
     onProviderChange({ ...provider, [key]: value });
   }, [provider, onProviderChange]);
 
   const updateModel = useCallback((modelId: string, updated: LlmProviderModel) => {
-    const nextModels = provider.models.map((m) => (m.id === modelId ? updated : m));
-    onProviderChange({ ...provider, models: nextModels });
+    onProviderChange({ ...provider, models: provider.models.map((m) => (m.id === modelId ? updated : m)) });
   }, [provider, onProviderChange]);
 
   const removeModel = useCallback((modelId: string) => {
@@ -178,73 +253,68 @@ function ProviderCard({
     onProviderChange({ ...provider, models: [...provider.models, createDefaultModel()] });
   }, [provider, onProviderChange]);
 
-  const status = getProviderStatus(provider);
-  const initials = (provider.name || '??').slice(0, 2).toUpperCase();
-  const hideKey = provider.type === 'ollama';
+  const icon = ProviderIcon({ name: provider.name });
+  const expanded = provider.expanded;
 
   return (
-    <div className={`sf-card${provider.enabled ? '' : ' sf-card--disabled'}`}>
-      {/* Header row */}
-      <div className="flex items-center justify-between px-3 py-2.5">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full sf-text-caption font-semibold"
-            style={{
-              backgroundColor: provider.enabled ? '#E6F1FB' : '#F1EFE8',
-              color: provider.enabled ? '#185FA5' : '#888780',
-            }}
-          >
-            {initials}
-          </div>
-          <span className="sf-text-label font-medium" style={{ color: 'var(--sf-text)' }}>
-            {provider.name || 'Untitled'}
-          </span>
+    <section
+      className="space-y-2.5 rounded border px-3 py-2.5"
+      style={{ borderColor: 'var(--sf-border)', backgroundColor: 'var(--sf-surface)' }}
+    >
+      {/* Title row — matches SettingGroupBlock pattern */}
+      <div className="flex items-center gap-2">
+        {icon && <span className="shrink-0">{icon}</span>}
+        <button
+          type="button"
+          className="sf-text-label font-semibold uppercase tracking-wide cursor-pointer"
+          style={{ color: 'var(--sf-muted)', background: 'none', border: 'none', padding: 0 }}
+          onClick={() => updateField('expanded', !expanded)}
+        >
+          {provider.name || 'Untitled Provider'}
+        </button>
+        {isDefault && (
           <span
-            className="sf-text-caption px-2 py-0.5 rounded-md font-medium whitespace-nowrap"
-            style={{ backgroundColor: status.bg, color: status.color }}
+            className="sf-text-caption font-medium rounded-full px-1.5 py-0.5"
+            style={{ color: 'var(--sf-muted)', backgroundColor: 'rgb(var(--sf-color-accent-strong-rgb) / 0.08)' }}
           >
-            {status.label}
+            Built-in
           </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <label className="sf-toggle-label flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="checkbox"
-              className="sf-toggle"
-              checked={provider.enabled}
-              onChange={(e) => updateField('enabled', e.target.checked)}
-            />
-          </label>
+        )}
+        <div className="h-px flex-1" style={{ backgroundColor: 'var(--sf-border)' }} />
+        <span className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>
+          {provider.models.length} {provider.models.length === 1 ? 'model' : 'models'}
+        </span>
+        <button
+          type="button"
+          className="sf-text-caption cursor-pointer select-none"
+          style={{ color: 'var(--sf-muted)', background: 'none', border: 'none', padding: 0 }}
+          onClick={() => updateField('expanded', !expanded)}
+        >
+          {expanded ? '\u25BE' : '\u25B8'}
+        </button>
+        {!isDefault && (
           <button
-            className="sf-text-caption cursor-pointer select-none"
-            style={{ color: 'var(--sf-muted)' }}
-            onClick={() => updateField('expanded', !provider.expanded)}
             type="button"
-          >
-            {provider.expanded ? '\u25BE collapse' : '\u25B8 expand'}
-          </button>
-          <button
-            className="sf-text-label cursor-pointer leading-none"
-            style={{ color: '#A32D2D' }}
+            className="sf-text-caption cursor-pointer"
+            style={{ color: '#A32D2D', background: 'none', border: 'none', padding: 0 }}
             onClick={() => {
               if (window.confirm(`Delete ${provider.name || 'this provider'}? This removes all its models.`))
                 onRemove();
             }}
             title="Delete provider"
-            type="button"
           >
             ✕
           </button>
-        </div>
+        )}
       </div>
 
-      {/* Expanded body */}
-      {provider.expanded && (
-        <div className="px-3 pb-3">
-          {/* Connection fields — 2-col grid */}
-          <div className="grid grid-cols-2 gap-x-3.5 gap-y-2 mb-4">
+      {/* Body — visible when expanded */}
+      {expanded && (
+        <>
+          {/* Connection fields */}
+          <div className="grid grid-cols-2 gap-x-3.5 gap-y-2">
             <div className="flex flex-col gap-1">
-              <label className="sf-text-xs" style={{ color: 'var(--sf-muted)' }}>Provider name</label>
+              <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Provider name</label>
               <input
                 className="sf-input sf-input--sm"
                 value={provider.name}
@@ -253,66 +323,33 @@ function ProviderCard({
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="sf-text-xs" style={{ color: 'var(--sf-muted)' }}>Provider type</label>
-              <select
-                className="sf-select sf-select--sm"
-                value={provider.type}
-                onChange={(e) => {
-                  const nextType = e.target.value as LlmProviderType;
-                  const defaultUrls = Object.values(DEFAULT_BASE_URLS);
-                  const shouldAutoFill = !provider.baseUrl || defaultUrls.includes(provider.baseUrl);
-                  onProviderChange({
-                    ...provider,
-                    type: nextType,
-                    baseUrl: shouldAutoFill ? (DEFAULT_BASE_URLS[nextType] ?? '') : provider.baseUrl,
-                  });
-                }}
-              >
-                {PROVIDER_TYPE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className={`flex flex-col gap-1${hideKey ? ' col-span-2' : ''}`}>
-              <label className="sf-text-xs" style={{ color: 'var(--sf-muted)' }}>Base URL</label>
-              <input
-                className="sf-input sf-input--sm"
-                value={provider.baseUrl}
-                placeholder="https://api.example.com/v1"
-                onChange={(e) => updateField('baseUrl', e.target.value)}
-              />
-            </div>
-            {!hideKey && (
-              <div className="flex flex-col gap-1">
-                <label className="sf-text-xs" style={{ color: 'var(--sf-muted)' }}>API key</label>
-                <div className="relative">
-                  <input
-                    className="sf-input sf-input--sm w-full pr-10"
-                    type={showKey ? 'text' : 'password'}
-                    value={provider.apiKey}
-                    placeholder="sk-..."
-                    onChange={(e) => updateField('apiKey', e.target.value)}
-                  />
-                  <button
-                    className="absolute right-2 top-1/2 -translate-y-1/2 sf-text-caption cursor-pointer select-none"
-                    style={{ color: 'var(--sf-muted)' }}
-                    onClick={() => setShowKey(!showKey)}
-                    type="button"
-                  >
-                    {showKey ? 'hide' : 'show'}
-                  </button>
-                </div>
+              <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>API key</label>
+              <div className="relative">
+                <input
+                  className="sf-input sf-input--sm w-full pr-10"
+                  type={showKey ? 'text' : 'password'}
+                  value={provider.apiKey}
+                  placeholder="sk-..."
+                  onChange={(e) => updateField('apiKey', e.target.value)}
+                />
+                <button
+                  className="absolute right-2 top-1/2 -translate-y-1/2 sf-text-caption cursor-pointer select-none"
+                  style={{ color: 'var(--sf-muted)', background: 'none', border: 'none', padding: 0 }}
+                  onClick={() => setShowKey(!showKey)}
+                  type="button"
+                >
+                  {showKey ? 'hide' : 'show'}
+                </button>
               </div>
-            )}
+            </div>
           </div>
-          {provider.type === 'cortex' && (
-            <p className="sf-text-caption mb-3" style={{ color: 'var(--sf-muted)' }}>
-              Replaces the old Cortex/LLM Lab connection toggle.
-            </p>
-          )}
 
-          {/* Models table */}
-          <div className="sf-text-label font-medium mb-2" style={{ color: 'var(--sf-muted)' }}>Models</div>
+          {/* Divider */}
+          <div className="border-t" style={{ borderColor: 'var(--sf-border)', margin: '4px 0' }} />
+
+          {/* Models sub-section */}
+          <div className="sf-text-label font-medium" style={{ color: 'var(--sf-muted)' }}>Models</div>
+
           {provider.models.length === 0 ? (
             <p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>No models configured.</p>
           ) : (
@@ -325,8 +362,8 @@ function ProviderCard({
                     <th className="sf-table-th">In $/1M</th>
                     <th className="sf-table-th">Out $/1M</th>
                     <th className="sf-table-th">Cache $/1M</th>
-                    <th className="sf-table-th">Ctx ovr.</th>
-                    <th className="sf-table-th">Out ovr.</th>
+                    <th className="sf-table-th">Max Context</th>
+                    <th className="sf-table-th">Max Output</th>
                     <th className="sf-table-th" />
                   </tr>
                 </thead>
@@ -335,6 +372,7 @@ function ProviderCard({
                     <ProviderModelRow
                       key={model.id}
                       model={model}
+                      readOnly={isDefault}
                       onModelChange={(updated) => updateModel(model.id, updated)}
                       onRemove={() => removeModel(model.id)}
                     />
@@ -343,19 +381,24 @@ function ProviderCard({
               </table>
             </div>
           )}
-          <button
-            className="sf-text-caption font-medium cursor-pointer mt-1.5"
-            style={{ color: 'rgb(var(--sf-color-accent-strong-rgb))' }}
-            onClick={addModel}
-            type="button"
-          >
-            + Add model
-          </button>
-        </div>
+
+          {!isDefault && (
+            <button
+              className="sf-text-caption font-medium cursor-pointer"
+              style={{ color: 'rgb(var(--sf-color-accent-strong-rgb))', background: 'none', border: 'none', padding: 0 }}
+              onClick={addModel}
+              type="button"
+            >
+              + Add model
+            </button>
+          )}
+        </>
       )}
-    </div>
+    </section>
   );
 }
+
+/* ── Section ───────────────────────────────────────────── */
 
 export const LlmProviderRegistrySection = memo(function LlmProviderRegistrySection({
   registry,
@@ -375,44 +418,40 @@ export const LlmProviderRegistrySection = memo(function LlmProviderRegistrySecti
   }, [registry, onRegistryChange]);
 
   return (
-    <section className="sf-section">
-      <div className="sf-section-header">
-        <h3 className="sf-section-title">Provider Registry</h3>
-      </div>
-
+    <div className="flex flex-col gap-2.5">
       {registry.length === 0 ? (
-        <div
-          className="sf-card text-center py-8"
-          style={{ color: 'var(--sf-muted)' }}
+        <section
+          className="rounded border px-3 py-8 text-center"
+          style={{ borderColor: 'var(--sf-border)', backgroundColor: 'var(--sf-surface)' }}
         >
-          <p className="sf-text-label mb-2">No providers configured.</p>
-          <p className="sf-text-caption">Add a provider to define custom LLM endpoints and models.</p>
-        </div>
+          <p className="sf-text-label mb-1" style={{ color: 'var(--sf-muted)' }}>No providers configured.</p>
+          <p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>
+            Add a provider to define LLM endpoints and models.
+          </p>
+        </section>
       ) : (
-        <div className="sf-section-list">
-          {registry.map((provider) => (
-            <ProviderCard
-              key={provider.id}
-              provider={provider}
-              onProviderChange={(updated) => updateProvider(provider.id, updated)}
-              onRemove={() => removeProvider(provider.id)}
-            />
-          ))}
-        </div>
+        registry.map((provider) => (
+          <ProviderPanel
+            key={provider.id}
+            provider={provider}
+            onProviderChange={(updated) => updateProvider(provider.id, updated)}
+            onRemove={() => removeProvider(provider.id)}
+          />
+        ))
       )}
 
       <button
-        className="w-full py-3 sf-text-label font-medium cursor-pointer rounded-lg mt-2"
+        type="button"
+        className="w-full rounded border-2 border-dashed py-2.5 sf-text-label font-semibold cursor-pointer transition"
         style={{
-          border: '2px dashed var(--sf-border)',
-          background: 'transparent',
+          borderColor: 'rgb(var(--sf-color-accent-strong-rgb) / 0.35)',
+          backgroundColor: 'rgb(var(--sf-color-accent-strong-rgb) / 0.04)',
           color: 'rgb(var(--sf-color-accent-strong-rgb))',
         }}
         onClick={addProvider}
-        type="button"
       >
-        + Add provider
+        + Add Provider
       </button>
-    </section>
+    </div>
   );
 });

@@ -26,7 +26,7 @@ export const RuntimeFlowAutomationSection = memo(function RuntimeFlowAutomationS
 }: RuntimeFlowAutomationSectionProps) {
   return (
                 <>
-              {/* ── Group 2: Drift Detection ── */}
+              {/* ── Group 1: Drift Detection ── */}
               <div id={runtimeSubStepDomId('automation-drift')} className="scroll-mt-24" />
               <SettingGroupBlock title="Drift Detection">
                 <MasterSwitchRow label="Drift Detection Enabled" tip="Enable drift scanner background pass." hint="Controls drift scanning and auto-republish settings below.">
@@ -56,7 +56,7 @@ export const RuntimeFlowAutomationSection = memo(function RuntimeFlowAutomationS
                 </AdvancedSettingsBlock>
               </SettingGroupBlock>
 
-              {/* ── Group 4: Self-Improvement ── */}
+              {/* ── Group 2: Self-Improvement ── */}
               <div id={runtimeSubStepDomId('automation-learning')} className="scroll-mt-24" />
               <SettingGroupBlock title="Self-Improvement">
                 <MasterSwitchRow label="Self Improve Enabled" tip="Enable post-run hypothesis improvement and follow-up logic." hint="Controls learning confidence, hypothesis, and endpoint signal settings below.">
@@ -100,56 +100,35 @@ export const RuntimeFlowAutomationSection = memo(function RuntimeFlowAutomationS
                 </AdvancedSettingsBlock>
               </SettingGroupBlock>
 
-              {/* ── Group 5: Helper Runtime ── */}
+              {/* ── Group 3: Helper Runtime ── */}
               <div id={runtimeSubStepDomId('automation-helper')} className="scroll-mt-24" />
               <SettingGroupBlock title="Helper Runtime">
-                <MasterSwitchRow label="Helper Files Enabled" tip="Enable helper-files runtime substrate." hint="Controls all helper file runtime settings below.">
+                <MasterSwitchRow label="Category Authority Enabled" tip="Enable category authority runtime substrate." hint="Controls all helper file runtime settings below.">
                   <SettingToggle
                     checked={runtimeDraft.categoryAuthorityEnabled}
                     onChange={(next) => updateDraft('categoryAuthorityEnabled', next)}
                     disabled={!runtimeSettingsReady}
                   />
                 </MasterSwitchRow>
-                <SettingRow label="Helper Files Master Toggle" tip="Master toggle for helper-files runtime substrate.">
-                  <SettingToggle
-                    checked={runtimeDraft.helperFilesEnabled}
-                    onChange={(next) => updateDraft('helperFilesEnabled', next)}
-                    disabled={!runtimeSettingsReady}
-                  />
-                </SettingRow>
-                <SettingRow label="Helper Files Root" tip="Root directory path for helper files." disabled={!runtimeDraft.helperFilesEnabled}>
+                <SettingRow label="Helper Files Root" tip="Root directory path for helper files.">
                   <input
                     type="text"
                     value={runtimeDraft.helperFilesRoot}
                     onChange={(event) => updateDraft('helperFilesRoot', event.target.value)}
-                    disabled={!runtimeSettingsReady || !runtimeDraft.helperFilesEnabled}
+                    disabled={!runtimeSettingsReady}
                     className={inputCls}
                   />
                 </SettingRow>
-                <SettingRow label="Category Authority Root" tip="Root directory for category authority data files." disabled={!runtimeDraft.helperFilesEnabled}>
+                <SettingRow label="Category Authority Root" tip="Root directory for category authority data files.">
                   <input
                     type="text"
                     value={runtimeDraft.categoryAuthorityRoot}
                     onChange={(event) => updateDraft('categoryAuthorityRoot', event.target.value)}
-                    disabled={!runtimeSettingsReady || !runtimeDraft.helperFilesEnabled}
+                    disabled={!runtimeSettingsReady}
                     className={inputCls}
                   />
                 </SettingRow>
-                <SettingRow label="Helper Supportive Enabled" tip="Enable supportive helper evidence mode.">
-                  <SettingToggle
-                    checked={runtimeDraft.helperSupportiveEnabled}
-                    onChange={(next) => updateDraft('helperSupportiveEnabled', next)}
-                    disabled={!runtimeSettingsReady}
-                  />
-                </SettingRow>
-                <AdvancedSettingsBlock title="Advanced Helper Settings" count={6}>
-                  <SettingRow label="Indexing Helper Files" tip="Enable helper-files integration within indexing pipeline runs.">
-                    <SettingToggle
-                      checked={runtimeDraft.indexingHelperFilesEnabled}
-                      onChange={(next) => updateDraft('indexingHelperFilesEnabled', next)}
-                      disabled={!runtimeSettingsReady || !runtimeDraft.helperFilesEnabled}
-                    />
-                  </SettingRow>
+                <AdvancedSettingsBlock title="Advanced Helper Settings" count={1}>
                   <SettingRow label="Helper Supportive Fill Missing" tip="Allow helper supportive mode to fill missing values.">
                     <SettingToggle
                       checked={runtimeDraft.helperSupportiveFillMissing}
@@ -157,25 +136,49 @@ export const RuntimeFlowAutomationSection = memo(function RuntimeFlowAutomationS
                       disabled={!runtimeSettingsReady}
                     />
                   </SettingRow>
-                  <SettingRow label="Helper Supportive Max Sources" tip="Maximum supportive helper sources admitted per field.">
-                    <SettingNumberInput draftKey="helperSupportiveMaxSources" value={runtimeDraft.helperSupportiveMaxSources} bounds={getNumberBounds('helperSupportiveMaxSources')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
+                </AdvancedSettingsBlock>
+              </SettingGroupBlock>
+
+              {/* ── Group 4: Operations (daemon, resume, imports) ── */}
+              <div id={runtimeSubStepDomId('automation-operations')} className="scroll-mt-24" />
+              <SettingGroupBlock title="Operations">
+                <SettingRow label="Daemon Concurrency" tip="Concurrent product runs for daemon mode.">
+                  <SettingNumberInput draftKey="daemonConcurrency" value={runtimeDraft.daemonConcurrency} bounds={getNumberBounds('daemonConcurrency')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
+                </SettingRow>
+                <AdvancedSettingsBlock title="Resume & Validation" count={4}>
+                  <SettingRow label="Indexing Resume Seed Limit" tip="Maximum seed URLs loaded during resume.">
+                    <SettingNumberInput draftKey="indexingResumeSeedLimit" value={runtimeDraft.indexingResumeSeedLimit} bounds={getNumberBounds('indexingResumeSeedLimit')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
                   </SettingRow>
-                  <SettingRow label="Helper Auto Seed Targets" tip="Auto-seed helper targets into runtime queue.">
+                  <SettingRow label="Indexing Resume Persist Limit" tip="Maximum persisted items loaded during resume.">
+                    <SettingNumberInput draftKey="indexingResumePersistLimit" value={runtimeDraft.indexingResumePersistLimit} bounds={getNumberBounds('indexingResumePersistLimit')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
+                  </SettingRow>
+                  <SettingRow label="Indexing Schema Validation Enabled" tip="Enable schema packet validation for indexing payloads.">
                     <SettingToggle
-                      checked={runtimeDraft.helperAutoSeedTargets}
-                      onChange={(next) => updateDraft('helperAutoSeedTargets', next)}
+                      checked={runtimeDraft.indexingSchemaPacketsValidationEnabled}
+                      onChange={(next) => updateDraft('indexingSchemaPacketsValidationEnabled', next)}
                       disabled={!runtimeSettingsReady}
                     />
                   </SettingRow>
-                  <SettingRow label="Helper Active Sync Limit" tip="Active helper synchronization cap per cycle.">
-                    <SettingNumberInput draftKey="helperActiveSyncLimit" value={runtimeDraft.helperActiveSyncLimit} bounds={getNumberBounds('helperActiveSyncLimit')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-                  </SettingRow>
-                  <SettingRow label="Indexing Helper Files Enabled" tip="Enable indexing helper-file assist path.">
+                  <SettingRow label="Indexing Schema Validation Strict" tip="Fail hard on schema validation errors when enabled.">
                     <SettingToggle
-                      checked={runtimeDraft.indexingCategoryAuthorityEnabled}
-                      onChange={(next) => updateDraft('indexingCategoryAuthorityEnabled', next)}
+                      checked={runtimeDraft.indexingSchemaPacketsValidationStrict}
+                      onChange={(next) => updateDraft('indexingSchemaPacketsValidationStrict', next)}
                       disabled={!runtimeSettingsReady}
                     />
+                  </SettingRow>
+                </AdvancedSettingsBlock>
+                <AdvancedSettingsBlock title="Import Watcher" count={2}>
+                  <SettingRow label="Imports Root" tip="Root directory monitored by daemon import watcher.">
+                    <input
+                      type="text"
+                      value={runtimeDraft.importsRoot}
+                      onChange={(event) => updateDraft('importsRoot', event.target.value)}
+                      disabled={!runtimeSettingsReady}
+                      className={inputCls}
+                    />
+                  </SettingRow>
+                  <SettingRow label="Imports Poll Seconds" tip="Polling interval for daemon import watcher.">
+                    <SettingNumberInput draftKey="importsPollSeconds" value={runtimeDraft.importsPollSeconds} bounds={getNumberBounds('importsPollSeconds')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
                   </SettingRow>
                 </AdvancedSettingsBlock>
               </SettingGroupBlock>

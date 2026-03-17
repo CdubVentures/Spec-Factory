@@ -25,9 +25,9 @@ describe('Stage 2 knob retirement — hardcoded values', () => {
     assert.equal(config.discoveryResultsPerQuery, 10);
   });
 
-  it('discoveryQueryConcurrency is hardcoded to 1', () => {
+  it('discoveryQueryConcurrency is hardcoded to 2', () => {
     const config = loadConfig();
-    assert.equal(config.discoveryQueryConcurrency, 1);
+    assert.equal(config.discoveryQueryConcurrency, 2);
   });
 
   it('env var DISCOVERY_RESULTS_PER_QUERY has no effect', () => {
@@ -50,7 +50,7 @@ describe('Stage 2 knob retirement — hardcoded values', () => {
     try {
       process.env.DISCOVERY_QUERY_CONCURRENCY = '16';
       const config = loadConfig();
-      assert.equal(config.discoveryQueryConcurrency, 1);
+      assert.equal(config.discoveryQueryConcurrency, 2);
     } finally {
       if (original !== undefined) {
         process.env.DISCOVERY_QUERY_CONCURRENCY = original;

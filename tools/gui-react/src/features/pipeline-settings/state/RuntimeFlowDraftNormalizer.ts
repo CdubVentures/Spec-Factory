@@ -1,5 +1,4 @@
 import {
-  type RuntimeAutomationQueueStorageEngine,
   type RuntimeRepairDedupeRule,
   type RuntimeSelectableSearchProvider,
   type RuntimeSettingDefaults,
@@ -7,7 +6,6 @@ import {
 import { type RuntimeSettings } from './runtimeSettingsAuthority';
 import { parseRuntimeLlmTokenCap } from './runtimeSettingsDomain';
 import {
-  AUTOMATION_QUEUE_STORAGE_ENGINE_OPTIONS,
   OCR_BACKEND_OPTIONS,
   parseBoundedNumber,
   REPAIR_DEDUPE_RULE_OPTIONS,
@@ -80,6 +78,8 @@ export function normalizeRuntimeDraft(
     llmBaseUrl: parseString(raw.llmBaseUrl, fallback.llmBaseUrl, true),
     openaiApiKey: parseString(raw.openaiApiKey, fallback.openaiApiKey, true),
     anthropicApiKey: parseString(raw.anthropicApiKey, fallback.anthropicApiKey, true),
+    geminiApiKey: parseString(raw.geminiApiKey, fallback.geminiApiKey, true),
+    deepseekApiKey: parseString(raw.deepseekApiKey, fallback.deepseekApiKey, true),
     llmPlanProvider: parseString(raw.llmPlanProvider, fallback.llmPlanProvider, true),
     llmPlanBaseUrl: parseString(raw.llmPlanBaseUrl, fallback.llmPlanBaseUrl, true),
     llmExtractProvider: parseString(raw.llmExtractProvider, fallback.llmExtractProvider, true),
@@ -110,25 +110,10 @@ export function normalizeRuntimeDraft(
       fallback.perHostMinDelayMs,
       RUNTIME_NUMBER_BOUNDS.perHostMinDelayMs,
     ),
-    searchGlobalRps: parseBoundedNumber(
-      raw.searchGlobalRps,
-      fallback.searchGlobalRps,
-      RUNTIME_NUMBER_BOUNDS.searchGlobalRps,
-    ),
-    searchGlobalBurst: parseBoundedNumber(
-      raw.searchGlobalBurst,
-      fallback.searchGlobalBurst,
-      RUNTIME_NUMBER_BOUNDS.searchGlobalBurst,
-    ),
-    searchPerHostRps: parseBoundedNumber(
-      raw.searchPerHostRps,
-      fallback.searchPerHostRps,
-      RUNTIME_NUMBER_BOUNDS.searchPerHostRps,
-    ),
-    searchPerHostBurst: parseBoundedNumber(
-      raw.searchPerHostBurst,
-      fallback.searchPerHostBurst,
-      RUNTIME_NUMBER_BOUNDS.searchPerHostBurst,
+    searxngMinQueryIntervalMs: parseBoundedNumber(
+      raw.searxngMinQueryIntervalMs,
+      fallback.searxngMinQueryIntervalMs,
+      RUNTIME_NUMBER_BOUNDS.searxngMinQueryIntervalMs,
     ),
     domainRequestRps: parseBoundedNumber(
       raw.domainRequestRps,
@@ -603,16 +588,6 @@ export function normalizeRuntimeDraft(
       fallback.importsPollSeconds,
       RUNTIME_NUMBER_BOUNDS.importsPollSeconds,
     ),
-    helperSupportiveMaxSources: parseBoundedNumber(
-      raw.helperSupportiveMaxSources,
-      fallback.helperSupportiveMaxSources,
-      RUNTIME_NUMBER_BOUNDS.helperSupportiveMaxSources,
-    ),
-    helperActiveSyncLimit: parseBoundedNumber(
-      raw.helperActiveSyncLimit,
-      fallback.helperActiveSyncLimit,
-      RUNTIME_NUMBER_BOUNDS.helperActiveSyncLimit,
-    ),
     fieldRewardHalfLifeDays: parseBoundedNumber(
       raw.fieldRewardHalfLifeDays,
       fallback.fieldRewardHalfLifeDays,
@@ -682,7 +657,6 @@ export function normalizeRuntimeDraft(
     pdfPreferredBackend: parseString(raw.pdfPreferredBackend, fallback.pdfPreferredBackend, true),
     capturePageScreenshotFormat: parseString(raw.capturePageScreenshotFormat, fallback.capturePageScreenshotFormat, true),
     capturePageScreenshotSelectors: parseString(raw.capturePageScreenshotSelectors, fallback.capturePageScreenshotSelectors, true),
-    runtimeScreenshotMode: parseString(raw.runtimeScreenshotMode, fallback.runtimeScreenshotMode, true),
     runtimeControlFile: parseString(raw.runtimeControlFile, fallback.runtimeControlFile, true),
     staticDomMode: parseString(raw.staticDomMode, fallback.staticDomMode, true),
     specDbDir: parseString(raw.specDbDir, fallback.specDbDir, true),
@@ -717,11 +691,6 @@ export function normalizeRuntimeDraft(
     fetchSchedulerInternalsMapJson: parseString(raw.fetchSchedulerInternalsMapJson, fallback.fetchSchedulerInternalsMapJson, true),
     parsingConfidenceBaseMapJson: parseString(raw.parsingConfidenceBaseMapJson, fallback.parsingConfidenceBaseMapJson, true),
     repairDedupeRule: parseString(raw.repairDedupeRule, fallback.repairDedupeRule, true) as RuntimeRepairDedupeRule,
-    automationQueueStorageEngine: parseString(
-      raw.automationQueueStorageEngine,
-      fallback.automationQueueStorageEngine,
-      true,
-    ) as RuntimeAutomationQueueStorageEngine,
     scannedPdfOcrEnabled: parseBoolean(raw.scannedPdfOcrEnabled, fallback.scannedPdfOcrEnabled),
     scannedPdfOcrPromoteCandidates: parseBoolean(raw.scannedPdfOcrPromoteCandidates, fallback.scannedPdfOcrPromoteCandidates),
     llmExtractionCacheEnabled: parseBoolean(raw.llmExtractionCacheEnabled, fallback.llmExtractionCacheEnabled),
@@ -739,8 +708,6 @@ export function normalizeRuntimeDraft(
     fetchCandidateSources: parseBoolean(raw.fetchCandidateSources, fallback.fetchCandidateSources),
     pdfBackendRouterEnabled: parseBoolean(raw.pdfBackendRouterEnabled, fallback.pdfBackendRouterEnabled),
     capturePageScreenshotEnabled: parseBoolean(raw.capturePageScreenshotEnabled, fallback.capturePageScreenshotEnabled),
-    runtimeCaptureScreenshots: parseBoolean(raw.runtimeCaptureScreenshots, fallback.runtimeCaptureScreenshots),
-    chartExtractionEnabled: parseBoolean(raw.chartExtractionEnabled, fallback.chartExtractionEnabled),
     articleExtractorV2Enabled: parseBoolean(raw.articleExtractorV2Enabled, fallback.articleExtractorV2Enabled),
     staticDomExtractorEnabled: parseBoolean(raw.staticDomExtractorEnabled, fallback.staticDomExtractorEnabled),
     htmlTableExtractorV2: parseBoolean(raw.htmlTableExtractorV2, fallback.htmlTableExtractorV2),
@@ -748,9 +715,7 @@ export function normalizeRuntimeDraft(
       raw.categoryAuthorityEnabled ?? raw.helperFilesEnabled,
       fallback.categoryAuthorityEnabled,
     ),
-    helperSupportiveEnabled: parseBoolean(raw.helperSupportiveEnabled, fallback.helperSupportiveEnabled),
     helperSupportiveFillMissing: parseBoolean(raw.helperSupportiveFillMissing, fallback.helperSupportiveFillMissing),
-    helperAutoSeedTargets: parseBoolean(raw.helperAutoSeedTargets, fallback.helperAutoSeedTargets),
     driftDetectionEnabled: parseBoolean(raw.driftDetectionEnabled, fallback.driftDetectionEnabled),
     driftAutoRepublish: parseBoolean(raw.driftAutoRepublish, fallback.driftAutoRepublish),
     cortexEnabled: parseBoolean(raw.cortexEnabled, fallback.cortexEnabled),
@@ -763,17 +728,7 @@ export function normalizeRuntimeDraft(
       fallback.indexingCategoryAuthorityEnabled,
     ),
     discoveryEnabled: parseBoolean(raw.discoveryEnabled, fallback.discoveryEnabled),
-    enableQueryIndex: parseBoolean(raw.enableQueryIndex, fallback.enableQueryIndex),
-    enableUrlIndex: parseBoolean(raw.enableUrlIndex, fallback.enableUrlIndex),
     manufacturerAutoPromote: parseBoolean(raw.manufacturerAutoPromote, fallback.manufacturerAutoPromote),
-    helperFilesEnabled: parseBoolean(
-      raw.helperFilesEnabled ?? raw.categoryAuthorityEnabled,
-      fallback.helperFilesEnabled,
-    ),
-    indexingHelperFilesEnabled: parseBoolean(
-      raw.indexingHelperFilesEnabled ?? raw.indexingCategoryAuthorityEnabled,
-      fallback.indexingHelperFilesEnabled,
-    ),
     dynamicCrawleeEnabled: parseBoolean(raw.dynamicCrawleeEnabled, fallback.dynamicCrawleeEnabled),
     crawleeHeadless: parseBoolean(raw.crawleeHeadless, fallback.crawleeHeadless),
     fetchSchedulerEnabled: parseBoolean(raw.fetchSchedulerEnabled, fallback.fetchSchedulerEnabled),

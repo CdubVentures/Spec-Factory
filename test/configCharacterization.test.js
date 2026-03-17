@@ -24,8 +24,6 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   assert.ok(cfg.maxCandidateUrls > 0);
   assert.equal(cfg.runProfile, 'standard');
   assert.equal(cfg.discoveryEnabled, true);
-  assert.equal(cfg.enableQueryIndex, true);
-  assert.equal(cfg.enableUrlIndex, true);
   assert.equal(cfg.fetchCandidateSources, true);
 
   // Hardcoded invariants — must always be true
@@ -37,7 +35,7 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   assert.equal(typeof cfg.concurrency, 'number');
   assert.equal(typeof cfg.perHostMinDelayMs, 'number');
   assert.equal(typeof cfg.fetchPerHostConcurrencyCap, 'number');
-  assert.equal(cfg.discoveryQueryConcurrency, 1);
+  assert.equal(cfg.discoveryQueryConcurrency, 2);
   assert.equal(cfg.discoveryResultsPerQuery, 10);
 
   // Output defaults

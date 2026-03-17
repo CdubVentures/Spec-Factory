@@ -1,4 +1,4 @@
-import { toInt } from '../../../../api/helpers/valueNormalizers.js';
+import { toInt } from '../../../../shared/valueNormalizers.js';
 
 export function clampAutomationPriority(value, fallback = 50) {
   const parsed = Number.parseInt(String(value ?? ''), 10);

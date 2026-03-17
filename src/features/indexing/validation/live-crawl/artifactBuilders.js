@@ -19,7 +19,6 @@ export const REQUIRED_SETTINGS_KEYS = Object.freeze([
   'pdfBackendRouterEnabled',
   'scannedPdfOcrEnabled',
   'capturePageScreenshotEnabled',
-  'runtimeCaptureScreenshots',
   'maxUrlsPerProduct',
   'maxRunSeconds'
 ]);

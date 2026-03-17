@@ -560,6 +560,58 @@ test('discoverCandidateSources reuses cached frontier query results during same-
   }
 });
 
+test('discoverCandidateSources produces non-null effective_host_plan from brand resolution even with empty focusFields', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-empty-focus-'));
+  const config = makeConfig(tempRoot);
+  const storage = createStorage(config);
+  storage.getBrandDomain = (brand, category) => {
+    if (String(brand) === TEST_IDENTITY.brand && String(category) === TEST_CATEGORY) {
+      return {
+        official_domain: TEST_HOSTS.manufacturer,
+        aliases: JSON.stringify([TEST_HOSTS.manufacturerAlias]),
+        support_domain: `support.${TEST_HOSTS.manufacturer}`,
+        confidence: 0.95,
+      };
+    }
+    return null;
+  };
+  const categoryConfig = makeCategoryConfig({ fieldRules: {} });
+  const job = makeJob();
+  const events = [];
+  const logger = makeLogger(events);
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: true,
+    async json() {
+      return { results: [] };
+    },
+  });
+
+  try {
+    const result = await discoverCandidateSources({
+      config,
+      storage,
+      categoryConfig,
+      job,
+      runId: 'run-phase06-empty-focus',
+      logger,
+      planningHints: {},
+      llmContext: {},
+    });
+
+    const plan = result.search_profile?.effective_host_plan;
+    assert.ok(plan, 'expected effective_host_plan even with empty focusFields');
+    assert.ok(!plan.blocked, 'effective_host_plan should not be blocked');
+    assert.ok(
+      plan.manufacturer_hosts.includes(TEST_HOSTS.manufacturer),
+      'expected brand-resolved manufacturer host in effective_host_plan',
+    );
+  } finally {
+    global.fetch = originalFetch;
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('discoverCandidateSources ignores cooldown-only empty cache and still executes internet search', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-empty-query-cache-'));
   const config = makeConfig(tempRoot, {

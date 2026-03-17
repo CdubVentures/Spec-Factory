@@ -1,5 +1,4 @@
 import {
-  type RuntimeAutomationQueueStorageEngine,
   type RuntimeRepairDedupeRule,
 } from '../../../stores/settingsManifest';
 import {
@@ -52,6 +51,8 @@ export function collectRuntimeFlowDraftPayload({
     llmBaseUrl: String(nextRuntimeDraft.llmBaseUrl || '').trim(),
     openaiApiKey: String(nextRuntimeDraft.openaiApiKey || '').trim(),
     anthropicApiKey: String(nextRuntimeDraft.anthropicApiKey || '').trim(),
+    geminiApiKey: String(nextRuntimeDraft.geminiApiKey || '').trim(),
+    deepseekApiKey: String(nextRuntimeDraft.deepseekApiKey || '').trim(),
     llmPlanProvider: String(nextRuntimeDraft.llmPlanProvider || '').trim(),
     llmPlanBaseUrl: String(nextRuntimeDraft.llmPlanBaseUrl || '').trim(),
     llmExtractProvider: String(nextRuntimeDraft.llmExtractProvider || '').trim(),
@@ -82,25 +83,10 @@ export function collectRuntimeFlowDraftPayload({
       runtimeManifestDefaults.perHostMinDelayMs,
       RUNTIME_NUMBER_BOUNDS.perHostMinDelayMs,
     ),
-    searchGlobalRps: parseBoundedNumber(
-      nextRuntimeDraft.searchGlobalRps,
-      runtimeManifestDefaults.searchGlobalRps,
-      RUNTIME_NUMBER_BOUNDS.searchGlobalRps,
-    ),
-    searchGlobalBurst: parseBoundedNumber(
-      nextRuntimeDraft.searchGlobalBurst,
-      runtimeManifestDefaults.searchGlobalBurst,
-      RUNTIME_NUMBER_BOUNDS.searchGlobalBurst,
-    ),
-    searchPerHostRps: parseBoundedNumber(
-      nextRuntimeDraft.searchPerHostRps,
-      runtimeManifestDefaults.searchPerHostRps,
-      RUNTIME_NUMBER_BOUNDS.searchPerHostRps,
-    ),
-    searchPerHostBurst: parseBoundedNumber(
-      nextRuntimeDraft.searchPerHostBurst,
-      runtimeManifestDefaults.searchPerHostBurst,
-      RUNTIME_NUMBER_BOUNDS.searchPerHostBurst,
+    searxngMinQueryIntervalMs: parseBoundedNumber(
+      nextRuntimeDraft.searxngMinQueryIntervalMs,
+      runtimeManifestDefaults.searxngMinQueryIntervalMs,
+      RUNTIME_NUMBER_BOUNDS.searxngMinQueryIntervalMs,
     ),
     domainRequestRps: parseBoundedNumber(
       nextRuntimeDraft.domainRequestRps,
@@ -575,16 +561,6 @@ export function collectRuntimeFlowDraftPayload({
       runtimeManifestDefaults.importsPollSeconds,
       RUNTIME_NUMBER_BOUNDS.importsPollSeconds,
     ),
-    helperSupportiveMaxSources: parseBoundedNumber(
-      nextRuntimeDraft.helperSupportiveMaxSources,
-      runtimeManifestDefaults.helperSupportiveMaxSources,
-      RUNTIME_NUMBER_BOUNDS.helperSupportiveMaxSources,
-    ),
-    helperActiveSyncLimit: parseBoundedNumber(
-      nextRuntimeDraft.helperActiveSyncLimit,
-      runtimeManifestDefaults.helperActiveSyncLimit,
-      RUNTIME_NUMBER_BOUNDS.helperActiveSyncLimit,
-    ),
     fieldRewardHalfLifeDays: parseBoundedNumber(
       nextRuntimeDraft.fieldRewardHalfLifeDays,
       runtimeManifestDefaults.fieldRewardHalfLifeDays,
@@ -654,7 +630,6 @@ export function collectRuntimeFlowDraftPayload({
     pdfPreferredBackend: String(nextRuntimeDraft.pdfPreferredBackend || '').trim(),
     capturePageScreenshotFormat: String(nextRuntimeDraft.capturePageScreenshotFormat || '').trim(),
     capturePageScreenshotSelectors: String(nextRuntimeDraft.capturePageScreenshotSelectors || '').trim(),
-    runtimeScreenshotMode: String(nextRuntimeDraft.runtimeScreenshotMode || '').trim(),
     runtimeControlFile: String(nextRuntimeDraft.runtimeControlFile || '').trim(),
     staticDomMode: String(nextRuntimeDraft.staticDomMode || '').trim(),
     specDbDir: String(nextRuntimeDraft.specDbDir || '').trim(),
@@ -681,9 +656,6 @@ export function collectRuntimeFlowDraftPayload({
     fetchSchedulerInternalsMapJson: String(nextRuntimeDraft.fetchSchedulerInternalsMapJson || '').trim(),
     parsingConfidenceBaseMapJson: String(nextRuntimeDraft.parsingConfidenceBaseMapJson || '').trim(),
     repairDedupeRule: (String(nextRuntimeDraft.repairDedupeRule || '').trim() || runtimeManifestDefaults.repairDedupeRule) as RuntimeRepairDedupeRule,
-    automationQueueStorageEngine: (
-      String(nextRuntimeDraft.automationQueueStorageEngine || '').trim() || runtimeManifestDefaults.automationQueueStorageEngine
-    ) as RuntimeAutomationQueueStorageEngine,
     scannedPdfOcrEnabled: nextRuntimeDraft.scannedPdfOcrEnabled,
     scannedPdfOcrPromoteCandidates: nextRuntimeDraft.scannedPdfOcrPromoteCandidates,
     localMode: nextRuntimeDraft.localMode,
@@ -703,15 +675,11 @@ export function collectRuntimeFlowDraftPayload({
     fetchCandidateSources: nextRuntimeDraft.fetchCandidateSources,
     pdfBackendRouterEnabled: nextRuntimeDraft.pdfBackendRouterEnabled,
     capturePageScreenshotEnabled: nextRuntimeDraft.capturePageScreenshotEnabled,
-    runtimeCaptureScreenshots: nextRuntimeDraft.runtimeCaptureScreenshots,
-    chartExtractionEnabled: nextRuntimeDraft.chartExtractionEnabled,
     articleExtractorV2Enabled: nextRuntimeDraft.articleExtractorV2Enabled,
     staticDomExtractorEnabled: nextRuntimeDraft.staticDomExtractorEnabled,
     htmlTableExtractorV2: nextRuntimeDraft.htmlTableExtractorV2,
     categoryAuthorityEnabled: nextRuntimeDraft.categoryAuthorityEnabled,
-    helperSupportiveEnabled: nextRuntimeDraft.helperSupportiveEnabled,
     helperSupportiveFillMissing: nextRuntimeDraft.helperSupportiveFillMissing,
-    helperAutoSeedTargets: nextRuntimeDraft.helperAutoSeedTargets,
     driftDetectionEnabled: nextRuntimeDraft.driftDetectionEnabled,
     driftAutoRepublish: nextRuntimeDraft.driftAutoRepublish,
     cortexEnabled: nextRuntimeDraft.cortexEnabled,
@@ -721,11 +689,7 @@ export function collectRuntimeFlowDraftPayload({
     cortexEscalateCriticalOnly: nextRuntimeDraft.cortexEscalateCriticalOnly,
     indexingCategoryAuthorityEnabled: nextRuntimeDraft.indexingCategoryAuthorityEnabled,
     discoveryEnabled: nextRuntimeDraft.discoveryEnabled,
-    enableQueryIndex: nextRuntimeDraft.enableQueryIndex,
-    enableUrlIndex: nextRuntimeDraft.enableUrlIndex,
     manufacturerAutoPromote: nextRuntimeDraft.manufacturerAutoPromote,
-    helperFilesEnabled: nextRuntimeDraft.helperFilesEnabled,
-    indexingHelperFilesEnabled: nextRuntimeDraft.indexingHelperFilesEnabled,
     dynamicCrawleeEnabled: nextRuntimeDraft.dynamicCrawleeEnabled,
     crawleeHeadless: nextRuntimeDraft.crawleeHeadless,
     fetchSchedulerEnabled: nextRuntimeDraft.fetchSchedulerEnabled,

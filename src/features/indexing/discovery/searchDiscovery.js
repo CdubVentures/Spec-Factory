@@ -396,13 +396,13 @@ export async function discoverCandidateSources({
       categoryConfig,
       focusFields: missingFields,
     });
-    if (hostPlanHintTokens.length > 0) {
-      effectiveHostPlan = buildEffectiveHostPlan({
-        domainHints: hostPlanHintTokens,
-        registry: categoryConfig.validatedRegistry,
-        providerName: config.searchProvider,
-        brandResolutionHints,
-      });
+    effectiveHostPlan = buildEffectiveHostPlan({
+      domainHints: hostPlanHintTokens,
+      registry: categoryConfig.validatedRegistry,
+      providerName: config.searchProvider,
+      brandResolutionHints,
+    });
+    if (!effectiveHostPlan?.blocked) {
       hostPlanQueryRows = buildScoredQueryRowsFromHostPlan(
         effectiveHostPlan,
         {
