@@ -24,6 +24,7 @@ import {
 import { normalizeRunDataStorageSettings } from '../services/runDataRelocationService.js';
 import { markEnumSuggestionStatus } from '../helpers/fileHelpers.js';
 import { toInt } from '../helpers/valueNormalizers.js';
+import { createConfigMutationGate } from '../../core/config/configMutationGate.js';
 
 export function createBootstrapEnvironment({ projectRoot }) {
   const resolveProjectPath = (value, fallback = '') =>
@@ -129,6 +130,9 @@ export function createBootstrapEnvironment({ projectRoot }) {
       config.llmExtractionCacheDir = storageBackedWorkspaceRoots.llmExtractionCacheDir;
     }
   }
+  // WHY: Gate created after all INIT mutations. Runtime mutations flow through applyPatch().
+  const configGate = createConfigMutationGate(config);
+
   const OUTPUT_ROOT = resolveProjectPath(config.localOutputRoot, defaultLocalOutputRoot());
   const INDEXLAB_ROOT = storageBackedWorkspaceRoots?.indexLabRoot
     ? storageBackedWorkspaceRoots.indexLabRoot
@@ -144,7 +148,7 @@ export function createBootstrapEnvironment({ projectRoot }) {
     markEnumSuggestionStatus(category, field, value, status, HELPER_ROOT);
 
   return {
-    config, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
+    config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
     storage, runDataStorageState, runDataArchiveStorage,
     resolveProjectPath,
     cleanVariant, catalogKey, markEnumSuggestionStatusBound,

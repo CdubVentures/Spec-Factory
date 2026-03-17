@@ -18,7 +18,7 @@ test('buildValidationGatePhaseCallsiteContext maps runProduct validation-gate ca
     allAnchorConflicts: [],
     consensus: { agreementScore: 1 },
     identityGate: { validated: true },
-    config: { qualityGateIdentityThreshold: 0.7 },
+    config: {},
     targets: { targetCompleteness: 0.8, targetConfidence: 0.8 },
     anchorMajorConflictsCount: 0,
     criticalFieldsBelowPassTarget: [],

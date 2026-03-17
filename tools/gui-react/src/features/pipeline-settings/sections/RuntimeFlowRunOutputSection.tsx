@@ -147,83 +147,16 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
             <span className="sf-text-label">{storageS3Bucket || runtimeDraft.s3Bucket || '(not set)'}</span>
           </SettingRow>
         </AdvancedSettingsBlock>
-      </SettingGroupBlock>
-
-      <div id={runtimeSubStepDomId('run-output-providers')} className="scroll-mt-24" />
-      <SettingGroupBlock title="LLM Provider Configuration">
-        <SettingRow label="LLM Provider" tip="Primary provider token for direct LLM runtime calls.">
+        <SettingRow label="Runtime Control File" tip="Runtime overrides control file path.">
           <input
             type="text"
-            value={runtimeDraft.llmProvider}
-            onChange={(event) => updateDraft('llmProvider', event.target.value)}
+            value={runtimeDraft.runtimeControlFile}
+            onChange={(event) => updateDraft('runtimeControlFile', event.target.value)}
             disabled={!runtimeSettingsReady}
             className={inputCls}
+            placeholder="_runtime/control/runtime_overrides.json"
           />
         </SettingRow>
-        <SettingRow label="LLM Base URL" tip="Base URL override for the selected LLM provider.">
-          <input
-            type="text"
-            value={runtimeDraft.llmBaseUrl}
-            onChange={(event) => updateDraft('llmBaseUrl', event.target.value)}
-            disabled={!runtimeSettingsReady}
-            className={inputCls}
-          />
-        </SettingRow>
-        <SettingRow label="LLM Write Summary" tip="Enable LLM-generated write-summary artifact output.">
-          <SettingToggle
-            checked={runtimeDraft.llmWriteSummary}
-            onChange={(next) => updateDraft('llmWriteSummary', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </SettingRow>
-        <AdvancedSettingsBlock title="Provider Keys & Overrides" count={5}>
-          <SettingRow label="OpenAI API Key" tip="Optional OpenAI key override for runtime model calls.">
-            <input
-              type="password"
-              value={runtimeDraft.openaiApiKey}
-              onChange={(event) => updateDraft('openaiApiKey', event.target.value)}
-              disabled={!runtimeSettingsReady}
-              className={inputCls}
-            />
-          </SettingRow>
-          <SettingRow label="Anthropic API Key" tip="Optional Anthropic key override for runtime model calls.">
-            <input
-              type="password"
-              value={runtimeDraft.anthropicApiKey}
-              onChange={(event) => updateDraft('anthropicApiKey', event.target.value)}
-              disabled={!runtimeSettingsReady}
-              className={inputCls}
-            />
-          </SettingRow>
-          <SettingRow label="Runtime Control File" tip="Runtime overrides control file path.">
-            <input
-              type="text"
-              value={runtimeDraft.runtimeControlFile}
-              onChange={(event) => updateDraft('runtimeControlFile', event.target.value)}
-              disabled={!runtimeSettingsReady}
-              className={inputCls}
-              placeholder="_runtime/control/runtime_overrides.json"
-            />
-          </SettingRow>
-          <SettingRow label="LLM Plan Provider" tip="Planner-provider override token (optional).">
-            <input
-              type="text"
-              value={runtimeDraft.llmPlanProvider}
-              onChange={(event) => updateDraft('llmPlanProvider', event.target.value)}
-              disabled={!runtimeSettingsReady}
-              className={inputCls}
-            />
-          </SettingRow>
-          <SettingRow label="LLM Plan Base URL" tip="Planner-provider base URL override (optional).">
-            <input
-              type="text"
-              value={runtimeDraft.llmPlanBaseUrl}
-              onChange={(event) => updateDraft('llmPlanBaseUrl', event.target.value)}
-              disabled={!runtimeSettingsReady}
-              className={inputCls}
-            />
-          </SettingRow>
-        </AdvancedSettingsBlock>
       </SettingGroupBlock>
     </>
   );

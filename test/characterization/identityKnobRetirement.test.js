@@ -48,6 +48,9 @@ test('retired dynamic threshold knobs are absent from SETTINGS_DEFAULTS.runtime'
     'identityGateNumericTokenBoost',
     'identityGateNumericRangeThreshold',
     'identityGateThresholdBoundsMapJson',
+    // Phase 5 retirement: base match + publish thresholds moved to hardcoded defaults
+    'identityGateBaseMatchThreshold',
+    'identityGatePublishThreshold',
   ];
 
   for (const key of retiredKnobs) {
@@ -57,18 +60,6 @@ test('retired dynamic threshold knobs are absent from SETTINGS_DEFAULTS.runtime'
       `retired knob '${key}' should be absent from SETTINGS_DEFAULTS.runtime`,
     );
   }
-
-  // Surviving knobs must still exist
-  assert.equal(
-    Object.prototype.hasOwnProperty.call(runtime, 'identityGateBaseMatchThreshold'),
-    true,
-    'identityGateBaseMatchThreshold must survive',
-  );
-  assert.equal(
-    Object.prototype.hasOwnProperty.call(runtime, 'identityGatePublishThreshold'),
-    true,
-    'identityGatePublishThreshold must survive',
-  );
 });
 
 test('NeedSet cap knobs are fully deleted from SETTINGS_DEFAULTS.convergence', async () => {

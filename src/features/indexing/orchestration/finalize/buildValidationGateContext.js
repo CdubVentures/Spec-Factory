@@ -36,7 +36,6 @@ export function buildValidationGateContext({
   const gate = evaluateValidationGateFn({
     identityGateValidated: identityGate.validated,
     identityConfidence,
-    qualityGateIdentityThreshold: config.qualityGateIdentityThreshold,
     anchorMajorConflictsCount,
     completenessRequired: completenessStats.completenessRequired,
     targetCompleteness: targets.targetCompleteness,

@@ -1,14 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { nowIso } from '../utils/common.js';
-
-function normalizeFieldKey(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-}
+import { normalizeFieldKey } from './engineTextHelpers.js';
 
 function normalizeCategory(value) {
   return String(value || '').trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/_+$/g, '') || 'category';

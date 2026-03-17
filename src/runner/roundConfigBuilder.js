@@ -348,7 +348,6 @@ export function buildRoundConfig(baseConfig, {
     runProfile: 'standard',
     discoveryEnabled: round > 0,
     fetchCandidateSources: round > 0,
-    manufacturerBroadDiscovery: round >= 2 || Boolean(baseConfig.manufacturerBroadDiscovery),
     searchProvider: round === 0 ? 'none' : baseConfig.searchProvider,
     llmMaxCallsPerRound:
       round === 0
@@ -393,9 +392,6 @@ export function buildRoundConfig(baseConfig, {
     next.maxUrlsPerProduct = Math.min(next.maxUrlsPerProduct || 12, 12);
     next.maxCandidateUrls = Math.min(next.maxCandidateUrls || 20, 20);
     next.maxPagesPerDomain = Math.min(next.maxPagesPerDomain || 2, 2);
-    next.maxManufacturerUrlsPerProduct = Math.min(next.maxManufacturerUrlsPerProduct || 10, 10);
-    next.maxManufacturerPagesPerDomain = Math.min(next.maxManufacturerPagesPerDomain || 5, 5);
-    next.manufacturerReserveUrls = Math.min(next.manufacturerReserveUrls || 4, 4);
     next.discoveryMaxQueries = Math.min(next.discoveryMaxQueries || 4, 4);
     next.discoveryResultsPerQuery = Math.min(next.discoveryResultsPerQuery || 6, 6);
     next.discoveryMaxDiscovered = Math.min(next.discoveryMaxDiscovered || 60, 60);
@@ -419,9 +415,6 @@ export function buildRoundConfig(baseConfig, {
     next.maxUrlsPerProduct = Math.max(next.maxUrlsPerProduct || 0, 220);
     next.maxCandidateUrls = Math.max(next.maxCandidateUrls || 0, 280);
     next.maxPagesPerDomain = Math.max(next.maxPagesPerDomain || 0, 8);
-    next.maxManufacturerUrlsPerProduct = Math.max(next.maxManufacturerUrlsPerProduct || 0, 140);
-    next.maxManufacturerPagesPerDomain = Math.max(next.maxManufacturerPagesPerDomain || 0, 50);
-    next.manufacturerReserveUrls = Math.max(next.manufacturerReserveUrls || 0, 100);
     next.maxGraphqlReplays = Math.max(next.maxGraphqlReplays || 0, 20);
     next.maxHypothesisItems = Math.max(next.maxHypothesisItems || 0, 120);
     next.endpointNetworkScanLimit = Math.max(next.endpointNetworkScanLimit || 0, 1800);
@@ -433,19 +426,13 @@ export function buildRoundConfig(baseConfig, {
     next.discoveryResultsPerQuery = Math.max(next.discoveryResultsPerQuery || 0, 20);
     next.discoveryMaxDiscovered = Math.max(next.discoveryMaxDiscovered || 0, 300);
     next.discoveryQueryConcurrency = Math.max(next.discoveryQueryConcurrency || 0, 8);
-    next.manufacturerBroadDiscovery = true;
   }
-
-  // Manufacturer clamp (unconditional, previously in applyRunProfile)
-  next.manufacturerReserveUrls = Math.max(0, Math.min(next.maxUrlsPerProduct, next.manufacturerReserveUrls));
-  next.maxManufacturerUrlsPerProduct = Math.max(1, Math.min(next.maxUrlsPerProduct, next.maxManufacturerUrlsPerProduct));
 
   if (round > 0) {
     next.discoveryMaxQueries = Math.max(next.discoveryMaxQueries || 0, Math.max(12, toInt(baseConfig.discoveryMaxQueries, 8) + 4));
     next.maxUrlsPerProduct = Math.max(next.maxUrlsPerProduct || 0, Math.max(120, 25));
     next.maxCandidateUrls = Math.max(next.maxCandidateUrls || 0, Math.max(180, toInt(baseConfig.maxCandidateUrls, 50) + 40));
     next.maxPagesPerDomain = Math.max(next.maxPagesPerDomain || 0, Math.max(3, 6));
-    next.maxManufacturerUrlsPerProduct = Math.max(next.maxManufacturerUrlsPerProduct || 0, Math.max(24, toInt(baseConfig.maxManufacturerUrlsPerProduct, 20)));
   }
 
   if (expectedCount > 0) {
@@ -524,10 +511,6 @@ export function buildRoundConfig(baseConfig, {
   if (hasExplicitMissingCounts && round > 0 && resolvedMissingRequired === 0 && resolvedMissingExpected === 0 && !keepRoundOpen) {
     next.maxUrlsPerProduct = Math.min(next.maxUrlsPerProduct || 60, 48);
     next.maxCandidateUrls = Math.min(next.maxCandidateUrls || 90, 48);
-    next.maxManufacturerUrlsPerProduct = Math.min(next.maxManufacturerUrlsPerProduct || 24, 24);
-    next.manufacturerBroadDiscovery = false;
-  } else if (next.maxManufacturerUrlsPerProduct === undefined) {
-    next.maxManufacturerUrlsPerProduct = Math.max(12, Math.min(next.maxUrlsPerProduct || 24, 24));
   }
 
   {

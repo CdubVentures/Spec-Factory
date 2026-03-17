@@ -26,12 +26,8 @@ const CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
   'fetchPerHostConcurrencyCap',
   'discoveryEnabled',
   'discoveryMaxDiscovered',
-  'identityGatePublishThreshold',
   'llmExtractMaxSnippetsPerBatch',
   'llmMaxCallsPerProductTotal',
-  'consensusStrictAcceptanceDomainCount',
-  'consensusPassTargetIdentityStrong',
-  'consensusPassTargetNormal',
   'fetchSchedulerEnabled',
   'fetchSchedulerInternalsMapJson',
   'dynamicFetchRetryBudget',
@@ -99,9 +95,6 @@ const MANUAL_ENV_KEY_MAP = Object.freeze({
   dynamicFetchPolicyMap: 'DYNAMIC_FETCH_POLICY_MAP_JSON',
   dynamicFetchPolicyMapJson: 'DYNAMIC_FETCH_POLICY_MAP_JSON',
   articleExtractorDomainPolicyMapJson: 'ARTICLE_EXTRACTOR_DOMAIN_POLICY_MAP_JSON',
-  retrievalInternalsMapJson: 'RETRIEVAL_INTERNALS_MAP_JSON',
-  evidencePackLimitsMapJson: 'EVIDENCE_PACK_LIMITS_MAP_JSON',
-  parsingConfidenceBaseMapJson: 'PARSING_CONFIDENCE_BASE_MAP_JSON',
   fetchSchedulerInternalsMapJson: 'FETCH_SCHEDULER_INTERNALS_MAP_JSON',
   automationQueueStorageEngine: 'AUTOMATION_QUEUE_STORAGE_ENGINE',
   capturePageScreenshotSelectors: 'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
@@ -220,15 +213,11 @@ test('hotfix-sensitive runtime defaults stay aligned across shared defaults and 
     { settingsKey: 'fetchPerHostConcurrencyCap', configKey: 'fetchPerHostConcurrencyCap', envKey: 'FETCH_PER_HOST_CONCURRENCY_CAP' },
     { settingsKey: 'discoveryEnabled', configKey: 'discoveryEnabled', envKey: 'DISCOVERY_ENABLED' },
     { settingsKey: 'discoveryMaxDiscovered', configKey: 'discoveryMaxDiscovered', envKey: 'DISCOVERY_MAX_DISCOVERED' },
-    { settingsKey: 'identityGatePublishThreshold', configKey: 'identityGatePublishThreshold', envKey: 'IDENTITY_GATE_PUBLISH_THRESHOLD' },
     { settingsKey: 'serpTriageMinScore', configKey: 'serpTriageMinScore', envKey: 'SERP_TRIAGE_MIN_SCORE' },
     { settingsKey: 'serpTriageMaxUrls', configKey: 'serpTriageMaxUrls', envKey: 'SERP_TRIAGE_MAX_URLS' },
     { settingsKey: 'serpRerankerWeightMapJson', configKey: 'serpRerankerWeightMapJson', envKey: 'SERP_RERANKER_WEIGHT_MAP_JSON' },
     { settingsKey: 'llmExtractMaxSnippetsPerBatch', configKey: 'llmExtractMaxSnippetsPerBatch', envKey: 'LLM_EXTRACT_MAX_SNIPPETS_PER_BATCH' },
     { settingsKey: 'llmMaxCallsPerProductTotal', configKey: 'llmMaxCallsPerProductTotal', envKey: 'LLM_MAX_CALLS_PER_PRODUCT_TOTAL' },
-    { settingsKey: 'consensusStrictAcceptanceDomainCount', configKey: 'consensusStrictAcceptanceDomainCount', envKey: 'CONSENSUS_STRICT_ACCEPTANCE_DOMAIN_COUNT' },
-    { settingsKey: 'consensusPassTargetIdentityStrong', configKey: 'consensusPassTargetIdentityStrong', envKey: 'CONSENSUS_PASS_TARGET_IDENTITY_STRONG' },
-    { settingsKey: 'consensusPassTargetNormal', configKey: 'consensusPassTargetNormal', envKey: 'CONSENSUS_PASS_TARGET_NORMAL' },
     { settingsKey: 'fetchSchedulerEnabled', configKey: 'fetchSchedulerEnabled', envKey: 'FETCH_SCHEDULER_ENABLED' },
     { settingsKey: 'fetchSchedulerInternalsMapJson', configKey: 'fetchSchedulerInternalsMapJson', envKey: 'FETCH_SCHEDULER_INTERNALS_MAP_JSON' },
     { settingsKey: 'dynamicFetchRetryBudget', configKey: 'dynamicFetchRetryBudget', envKey: 'DYNAMIC_FETCH_RETRY_BUDGET' },
@@ -255,6 +244,63 @@ test('hotfix-sensitive runtime defaults stay aligned across shared defaults and 
       );
     }
   });
+});
+
+test('Phase 5 retired identity/consensus/retrieval/evidence/json-map knobs are absent from settings defaults and config', () => {
+  const config = loadConfig({ runProfile: 'standard' });
+  const runtimeDefaults = SETTINGS_DEFAULTS.runtime || {};
+  const convergenceDefaults = SETTINGS_DEFAULTS.convergence || {};
+
+  const retiredRuntimeKeys = [
+    'identityGatePublishThreshold',
+    'identityGateBaseMatchThreshold',
+    'qualityGateIdentityThreshold',
+    'consensusWeightedMajorityThreshold',
+    'consensusStrictAcceptanceDomainCount',
+    'consensusConfidenceScoringBase',
+    'consensusPassTargetIdentityStrong',
+    'consensusPassTargetNormal',
+    'allowBelowPassTargetFill',
+    'consensusMethodWeightNetworkJson',
+    'consensusMethodWeightAdapterApi',
+    'consensusMethodWeightStructuredMeta',
+    'consensusMethodWeightPdf',
+    'consensusMethodWeightTableKv',
+    'consensusMethodWeightDom',
+    'consensusMethodWeightLlmExtractBase',
+    'consensusPolicyBonus',
+    'consensusRelaxedAcceptanceDomainCount',
+    'consensusInstrumentedFieldThreshold',
+    'retrievalTierWeightTier1',
+    'retrievalTierWeightTier2',
+    'retrievalTierWeightTier3',
+    'retrievalTierWeightTier4',
+    'retrievalTierWeightTier5',
+    'retrievalDocKindWeightManualPdf',
+    'retrievalDocKindWeightSpecPdf',
+    'retrievalDocKindWeightSupport',
+    'retrievalDocKindWeightLabReview',
+    'retrievalDocKindWeightProductPage',
+    'retrievalDocKindWeightOther',
+    'retrievalMethodWeightTable',
+    'retrievalMethodWeightKv',
+    'retrievalMethodWeightJsonLd',
+    'retrievalMethodWeightLlmExtract',
+    'retrievalMethodWeightHelperSupportive',
+    'retrievalAnchorScorePerMatch',
+    'retrievalIdentityScorePerMatch',
+    'retrievalUnitMatchBonus',
+    'retrievalDirectFieldMatchBonus',
+    'evidenceTextMaxChars',
+    'retrievalInternalsMapJson',
+    'evidencePackLimitsMapJson',
+    'parsingConfidenceBaseMapJson',
+  ];
+  for (const key of retiredRuntimeKeys) {
+    assert.equal(Object.hasOwn(runtimeDefaults, key), false, `retired knob '${key}' should be absent from runtime defaults`);
+    assert.equal(Object.hasOwn(config, key), false, `retired knob '${key}' should be absent from config`);
+    assert.equal(Object.hasOwn(convergenceDefaults, key), false, `retired knob '${key}' should be absent from convergence defaults`);
+  }
 });
 
 test('retired bing endpoint stays removed from settings defaults and config', () => {

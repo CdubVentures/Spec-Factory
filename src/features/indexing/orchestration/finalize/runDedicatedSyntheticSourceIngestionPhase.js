@@ -34,9 +34,7 @@ export async function runDedicatedSyntheticSourceIngestionPhase({
         connectionHint: candidateMap.connection,
       },
       job.identityLock || {},
-      {
-        identityGateBaseMatchThreshold: config.identityGateBaseMatchThreshold,
-      },
+      {},
     );
 
     const anchorStatus =

@@ -24,7 +24,6 @@ test('buildEffectiveSettingsSnapshot captures required keys', () => {
     perHostMinDelayMs: 2000,
     pageGotoTimeoutMs: 30000,
     postLoadWaitMs: 1500,
-    structuredMetadataExtructEnabled: true,
     pdfBackendRouterEnabled: true,
     scannedPdfOcrEnabled: false,
     capturePageScreenshotEnabled: true,

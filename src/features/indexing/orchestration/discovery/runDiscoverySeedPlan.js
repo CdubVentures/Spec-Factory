@@ -109,6 +109,12 @@ export async function runDiscoverySeedPlan({
         previousFieldHistories: roundContext?.previousFieldHistories || {},
       });
 
+      // WHY: Pass previous round field states so computeDeltas can compute
+      // "what changed this round" for the GUI needset panel.
+      const previousRoundFields = Array.isArray(roundContext?.previousRoundFields)
+        ? roundContext.previousRoundFields
+        : null;
+
       const schema3 = buildSearchPlanningContextFn({
         needSetOutput: schema2,
         config,
@@ -120,9 +126,11 @@ export async function runDiscoverySeedPlan({
           brand: job?.brand || job?.identityLock?.brand || '',
           model: job?.model || job?.identityLock?.model || '',
           aliases: job?.aliases || [],
+          round: roundContext?.round || 0,
+          round_mode: roundContext?.round_mode || 'seed',
         },
         learning: null,
-        previousRoundFields: null,
+        previousRoundFields,
       });
 
       const schema4 = await buildSearchPlanFn({

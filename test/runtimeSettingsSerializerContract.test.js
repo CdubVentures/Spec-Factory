@@ -75,8 +75,8 @@ function createSerializerInput(overrides = {}) {
     searchProvider: 'searxng',
     searxngBaseUrl: '  https://example.test/search  ',
     llmPlanApiKey: '  key-live  ',
-    phase2LlmModel: 'gpt-plan',
-    phase3LlmModel: 'gpt-triage',
+    llmModelPlan: 'gpt-plan',
+    llmModelTriage: 'gpt-triage',
     llmModelFast: 'gpt-fast',
     llmModelReasoning: 'gpt-reasoning',
     llmModelExtract: 'gpt-extract',
@@ -116,8 +116,8 @@ test('runtime settings serializer applies fallback baselines and shared model-to
   const payload = collectRuntimeSettingsPayload(createSerializerInput({
     fetchConcurrency: 'not-a-number',
     llmMaxOutputTokens: 'bad-token-count',
-    llmTokensPlan: 'bad-plan-tokens',
-    llmTokensPlanFallback: 'bad-fallback-plan-tokens',
+    llmMaxOutputTokensPlan: 'bad-plan-tokens',
+    llmMaxOutputTokensPlanFallback: 'bad-fallback-plan-tokens',
     dynamicFetchPolicyMapJson: '  {"mouse":"full"}  ',
   }));
 
@@ -125,9 +125,7 @@ test('runtime settings serializer applies fallback baselines and shared model-to
   // WHY: needsetEvidenceDecayFloor removed in Phase 12 NeedSet Legacy Removal
   assert.equal(payload.llmMaxOutputTokens, 11);
   assert.equal(payload.llmMaxOutputTokensPlan, 4096);
-  assert.equal(payload.llmTokensPlan, 4096);
   assert.equal(payload.llmMaxOutputTokensPlanFallback, 4096);
-  assert.equal(payload.llmTokensPlanFallback, 4096);
   assert.equal(payload.dynamicFetchPolicyMapJson, '{"mouse":"full"}');
 });
 

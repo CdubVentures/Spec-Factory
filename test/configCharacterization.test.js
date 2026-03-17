@@ -24,10 +24,6 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   assert.ok(cfg.maxCandidateUrls > 0);
   assert.equal(cfg.runProfile, 'standard');
   assert.equal(cfg.discoveryEnabled, true);
-  assert.equal(cfg.enableSourceRegistry, true);
-  assert.equal(cfg.enableDomainHintResolverV2, true);
-  assert.equal(cfg.enableQueryCompiler, true);
-  assert.equal(cfg.enableCoreDeepGates, true);
   assert.equal(cfg.enableQueryIndex, true);
   assert.equal(cfg.enableUrlIndex, true);
   assert.equal(cfg.fetchCandidateSources, true);
@@ -237,32 +233,6 @@ test('CHAR config: scannedPdfOcrMinConfidence is clamped to [0, 1]', () => {
   assert.ok(cfgLow.scannedPdfOcrMinConfidence >= 0);
 });
 
-test('CHAR config: structuredMetadataExtructTimeoutMs is clamped to [250, 15000]', () => {
-  const cfgHigh = loadConfig({ structuredMetadataExtructTimeoutMs: 99999 });
-  assert.ok(cfgHigh.structuredMetadataExtructTimeoutMs <= 15_000);
-
-  const cfgLow = loadConfig({ structuredMetadataExtructTimeoutMs: 10 });
-  assert.ok(cfgLow.structuredMetadataExtructTimeoutMs >= 250);
-});
-
-test('CHAR config: structuredMetadataExtructCacheLimit is clamped to [32, 5000]', () => {
-  const cfgHigh = loadConfig({ structuredMetadataExtructCacheLimit: 99999 });
-  assert.ok(cfgHigh.structuredMetadataExtructCacheLimit <= 5000);
-
-  const cfgLow = loadConfig({ structuredMetadataExtructCacheLimit: 1 });
-  assert.ok(cfgLow.structuredMetadataExtructCacheLimit >= 32);
-});
-
-test('CHAR config: manufacturerReserveUrls is capped at maxUrlsPerProduct', () => {
-  const cfg = loadConfig({ maxUrlsPerProduct: 10, manufacturerReserveUrls: 50 });
-  assert.ok(cfg.manufacturerReserveUrls <= cfg.maxUrlsPerProduct);
-});
-
-test('CHAR config: maxManufacturerUrlsPerProduct is capped at maxUrlsPerProduct', () => {
-  const cfg = loadConfig({ maxUrlsPerProduct: 10, maxManufacturerUrlsPerProduct: 100 });
-  assert.ok(cfg.maxManufacturerUrlsPerProduct <= cfg.maxUrlsPerProduct);
-});
-
 // =========================================================================
 // SECTION 5: normalizer output shapes
 // =========================================================================
@@ -376,7 +346,7 @@ test('CHAR validate: default config is valid', () => {
   assert.equal(result.errors.length, 0);
 });
 
-test('CHAR validate: all 6 validation rules produce correct codes', () => {
+test('CHAR validate: all 5 validation rules produce correct codes', () => {
   // Rule 1: LLM_NO_API_KEY (warning)
   const r1 = validateConfig(loadConfig({ llmApiKey: '' }));
   assert.ok(r1.warnings.some(w => w.code === 'LLM_NO_API_KEY'));
@@ -394,13 +364,9 @@ test('CHAR validate: all 6 validation rules produce correct codes', () => {
   const r4 = validateConfig({ outputMode: 's3', mirrorToS3: false });
   assert.ok(r4.warnings.some(w => w.code === 'S3_MODE_NO_CREDS'));
 
-  // Rule 5: MANUFACTURER_RESERVE_EXCEEDS_MAX (warning)
-  const r5 = validateConfig({ maxUrlsPerProduct: 5, manufacturerReserveUrls: 10 });
-  assert.ok(r5.warnings.some(w => w.code === 'MANUFACTURER_RESERVE_EXCEEDS_MAX'));
-
-  // Rule 6: BUDGET_GUARDS_DISABLED (warning)
-  const r6 = validateConfig(loadConfig({ llmDisableBudgetGuards: true }));
-  assert.ok(r6.warnings.some(w => w.code === 'BUDGET_GUARDS_DISABLED'));
+  // Rule 5: BUDGET_GUARDS_DISABLED (warning)
+  const r5 = validateConfig(loadConfig({ llmDisableBudgetGuards: true }));
+  assert.ok(r5.warnings.some(w => w.code === 'BUDGET_GUARDS_DISABLED'));
 });
 
 test('CHAR validate: return shape is { valid, errors, warnings }', () => {
@@ -420,13 +386,7 @@ test('CHAR validate: return shape is { valid, errors, warnings }', () => {
 test('CHAR config: convergence keys from SETTINGS_DEFAULTS propagate to config', () => {
   const cfg = loadConfig();
   const convergenceKeys = [
-    'consensusLlmWeightTier1', 'consensusLlmWeightTier2',
-    'consensusLlmWeightTier3', 'consensusLlmWeightTier4',
-    'consensusTier1Weight', 'consensusTier2Weight',
-    'consensusTier3Weight', 'consensusTier4Weight',
     'serpTriageMinScore', 'serpTriageMaxUrls',
-    'retrievalMaxHitsPerField', 'retrievalMaxPrimeSources',
-    'retrievalIdentityFilterEnabled'
   ];
   for (const key of convergenceKeys) {
     assert.ok(key in cfg, `${key} must exist in config`);
@@ -517,11 +477,8 @@ test('CHAR config: fetchSchedulerInternalsMapJson is valid JSON matching fetchSc
   assert.deepStrictEqual(parsed, cfg.fetchSchedulerInternalsMap);
 });
 
-test('CHAR config: retrievalInternalsMapJson is valid JSON matching retrievalInternalsMap', () => {
-  const cfg = loadConfig();
-  const parsed = JSON.parse(cfg.retrievalInternalsMapJson);
-  assert.deepStrictEqual(parsed, cfg.retrievalInternalsMap);
-});
+// WHY: retrievalInternalsMapJson was retired — object map retrievalInternalsMap
+// is now the sole representation. Roundtrip test removed.
 
 // =========================================================================
 // SECTION 14: category authority / helper files defaults
@@ -550,15 +507,6 @@ test('CHAR config: loadConfig called twice returns consistent shapes', () => {
   const keys1 = Object.keys(cfg1).sort();
   const keys2 = Object.keys(cfg2).sort();
   assert.deepStrictEqual(keys1, keys2);
-});
-
-// =========================================================================
-// SECTION 16: structuredMetadataExtructUrl trailing slash normalization
-// =========================================================================
-
-test('CHAR config: structuredMetadataExtructUrl has trailing slash stripped', () => {
-  const cfg = loadConfig({ structuredMetadataExtructUrl: 'http://example.com/api/' });
-  assert.ok(!cfg.structuredMetadataExtructUrl.endsWith('/'));
 });
 
 // =========================================================================

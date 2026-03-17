@@ -1,5 +1,9 @@
-import { parseRuntimeFloat, parseRuntimeInt } from '../../pipeline-settings/state/runtimeSettingsDomain';
-import type { RuntimeSettings, RuntimeSettingsNumericBaseline } from '../../pipeline-settings/state/runtimeSettingsAuthority';
+import {
+  parseRuntimeFloat,
+  parseRuntimeInt,
+  type RuntimeSettings,
+  type RuntimeSettingsNumericBaseline,
+} from '../../pipeline-settings';
 
 type DeriveIndexingRunStartParsedValuesInput = {
   runtimeSettingsPayload: RuntimeSettings;
@@ -108,9 +112,6 @@ export function deriveIndexingRunStartParsedValues({
     parsedLlmCostInputPer1M: parseRuntimeFloat(readValue('llmCostInputPer1M'), runtimeSettingsBaseline.llmCostInputPer1M),
     parsedLlmCostOutputPer1M: parseRuntimeFloat(readValue('llmCostOutputPer1M'), runtimeSettingsBaseline.llmCostOutputPer1M),
     parsedLlmCostCachedInputPer1M: parseRuntimeFloat(readValue('llmCostCachedInputPer1M'), runtimeSettingsBaseline.llmCostCachedInputPer1M),
-    parsedMaxManufacturerUrlsPerProduct: parseRuntimeInt(readValue('maxManufacturerUrlsPerProduct'), runtimeSettingsBaseline.maxManufacturerUrlsPerProduct),
-    parsedMaxManufacturerPagesPerDomain: parseRuntimeInt(readValue('maxManufacturerPagesPerDomain'), runtimeSettingsBaseline.maxManufacturerPagesPerDomain),
-    parsedManufacturerReserveUrls: parseRuntimeInt(readValue('manufacturerReserveUrls'), runtimeSettingsBaseline.manufacturerReserveUrls),
     parsedMaxHypothesisItems: parseRuntimeInt(readValue('maxHypothesisItems'), runtimeSettingsBaseline.maxHypothesisItems),
     parsedHypothesisAutoFollowupRounds: parseRuntimeInt(readValue('hypothesisAutoFollowupRounds'), runtimeSettingsBaseline.hypothesisAutoFollowupRounds),
     parsedHypothesisFollowupUrlsPerRound: parseRuntimeInt(readValue('hypothesisFollowupUrlsPerRound'), runtimeSettingsBaseline.hypothesisFollowupUrlsPerRound),
@@ -119,7 +120,6 @@ export function deriveIndexingRunStartParsedValues({
     parsedDaemonConcurrency: parseRuntimeInt(readValue('daemonConcurrency'), runtimeSettingsBaseline.daemonConcurrency),
     parsedDaemonGracefulShutdownTimeoutMs: parseRuntimeInt(readValue('daemonGracefulShutdownTimeoutMs'), runtimeSettingsBaseline.daemonGracefulShutdownTimeoutMs),
     parsedImportsPollSeconds: parseRuntimeInt(readValue('importsPollSeconds'), runtimeSettingsBaseline.importsPollSeconds),
-    parsedIdentityGatePublishThreshold: parseRuntimeFloat(readValue('identityGatePublishThreshold'), runtimeSettingsBaseline.identityGatePublishThreshold),
     parsedIndexingResumeSeedLimit: parseRuntimeInt(readValue('indexingResumeSeedLimit'), runtimeSettingsBaseline.indexingResumeSeedLimit),
     parsedIndexingResumePersistLimit: parseRuntimeInt(readValue('indexingResumePersistLimit'), runtimeSettingsBaseline.indexingResumePersistLimit),
     parsedHelperSupportiveMaxSources: parseRuntimeInt(readValue('helperSupportiveMaxSources'), runtimeSettingsBaseline.helperSupportiveMaxSources),

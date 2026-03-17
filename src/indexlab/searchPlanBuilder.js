@@ -23,7 +23,6 @@ function defaultQueryHash(query) {
 
 const PLANNER_RESPONSE_SCHEMA = {
   type: 'object',
-  additionalProperties: false,
   properties: {
     planner_confidence: { type: 'number' },
     groups: {
@@ -56,7 +55,6 @@ const PLANNER_RESPONSE_SCHEMA = {
     duplicates_suppressed: { type: 'integer' },
     targeted_exceptions: { type: 'integer' },
   },
-  required: ['groups'],
 };
 
 const PLANNER_SYSTEM_PROMPT = [
@@ -91,8 +89,6 @@ function requiredLevelToBucket(level) {
 }
 
 function computeDeltas(ctx) {
-  const prev = ctx.previous_round_fields;
-  if (!Array.isArray(prev) || !prev.length) return [];
   const currentMap = new Map();
   for (const fg of (ctx.focus_groups || [])) {
     for (const fk of (fg.satisfied_field_keys || [])) currentMap.set(fk, 'satisfied');
@@ -101,6 +97,16 @@ function computeDeltas(ctx) {
     for (const fk of (fg.unresolved_field_keys || [])) {
       if (!currentMap.has(fk)) currentMap.set(fk, 'missing');
     }
+  }
+  const prev = ctx.previous_round_fields;
+  // WHY: On round 0 (no previous fields), show all fields as new entries
+  // so "what changed this round" always has content.
+  if (!Array.isArray(prev) || !prev.length) {
+    return [...currentMap.entries()].map(([field, state]) => ({
+      field,
+      from: 'none',
+      to: state,
+    }));
   }
   return prev
     .filter(e => {
@@ -338,7 +344,7 @@ export async function buildSearchPlan({
   };
 
   const payloadJson = JSON.stringify(llmPayload);
-  const resolvedModel = String(config.llmModelPlan || config.phase2LlmModel || '');
+  const resolvedModel = String(config.llmModelPlan || '');
 
   // Call LLM
   let llmResult;
@@ -372,8 +378,16 @@ export async function buildSearchPlan({
     return makeErrorResult(ctx, error);
   }
 
-  // Parse LLM response
-  const groups = Array.isArray(llmResult?.groups) ? llmResult.groups : [];
+  // WHY: Some models (e.g. Gemini) return a single group object { key, queries }
+  // instead of wrapping in { groups: [...] }. Normalize both shapes.
+  let groups;
+  if (Array.isArray(llmResult?.groups)) {
+    groups = llmResult.groups;
+  } else if (llmResult?.key && Array.isArray(llmResult?.queries)) {
+    groups = [llmResult];
+  } else {
+    groups = [];
+  }
   const globalCap = Math.max(1, toInt(config.discoveryMaxQueries, 6));
 
   // Post-LLM anti-garbage: extract + dedup + cap

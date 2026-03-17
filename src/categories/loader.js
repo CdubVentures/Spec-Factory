@@ -672,22 +672,20 @@ export async function loadCategoryConfig(category, options = {}) {
     resolved.sources_override_key = sourcesOverrideKey;
   }
 
-  // Source registry validation (Phase 02)
-  if (runtimeConfig.enableSourceRegistry) {
-    const { registry, validationErrors, sparsityWarnings } = loadSourceRegistry(category, sources);
-    if (validationErrors.length > 0) {
-      console.warn(`[source-registry] ${category}: ${validationErrors.length} validation error(s):`, validationErrors);
-    }
-    if (sparsityWarnings.length > 0) {
-      console.warn(`[source-registry] ${category}: ${sparsityWarnings.length} sparsity warning(s)`);
-    }
-    const gate = checkCategoryPopulationHardGate(registry);
-    if (!gate.passed) {
-      console.warn(`[source-registry] ${category}: population gate BLOCKED —`, gate.reasons.join('; '));
-    }
-    resolved.validatedRegistry = registry;
-    resolved.registryPopulationGate = gate;
+  // Source registry validation (Phase 02) — always runs
+  const { registry, validationErrors, sparsityWarnings } = loadSourceRegistry(category, sources);
+  if (validationErrors.length > 0) {
+    console.warn(`[source-registry] ${category}: ${validationErrors.length} validation error(s):`, validationErrors);
   }
+  if (sparsityWarnings.length > 0) {
+    console.warn(`[source-registry] ${category}: ${sparsityWarnings.length} sparsity warning(s)`);
+  }
+  const gate = checkCategoryPopulationHardGate(registry);
+  if (!gate.passed) {
+    console.warn(`[source-registry] ${category}: population gate BLOCKED —`, gate.reasons.join('; '));
+  }
+  resolved.validatedRegistry = registry;
+  resolved.registryPopulationGate = gate;
 
   return resolved;
 }

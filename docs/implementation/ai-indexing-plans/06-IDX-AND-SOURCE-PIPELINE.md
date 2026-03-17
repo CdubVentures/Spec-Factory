@@ -24,7 +24,7 @@ Date: 2026-03-10
 - Live discovery steering currently runs through `readSourcesFile()` -> `listSourceEntries()` -> `loadEnabledSourceEntries()` -> `resolveEnabledSourceEntries()`.
 - Category authority also feeds `loadCategoryConfig()`, which builds `sourceHosts` and `sourceHostMap` for planner and fetch metadata.
 - IDX field rules are projected into runtime with `projectFieldRulesForConsumer(..., 'indexlab')` before NeedSet, query building, extraction, validation, and Runtime Ops badge generation.
-- `ENABLE_SOURCE_REGISTRY`, `ENABLE_DOMAIN_HINT_RESOLVER_V2`, `ENABLE_QUERY_COMPILER`, and `ENABLE_CORE_DEEP_GATES` default to `true` in code as of 2026-03-09.
+- Source registry, domain hint resolver v2, query compiler, and core/deep gates are always-on (development-era feature flags retired 2026-03-16).
 - SourceRegistry / DomainHintResolver v2 code exists, loads, and is tested, but the main live discovery path still does not reliably emit a non-null `search_profile.effective_host_plan`. In the latest fully enabled live run (`20260310044939-8f6e22`), `effective_host_plan` was still `null`.
 - The latest fully enabled live run emits final output artifacts (`spec.json`, `summary.json`, `traffic_light.json`, `provenance.json`, and evidence). The live gap is not "no artifacts"; it is source volume — identity needs more diverse sources to clear the publish gate.
 - **Stage 1 identity gate refactor is COMPLETE (2026-03-10).** Identity is now advisory (labels + consensus weighting) and only blocks publishing, not extraction. The publish gate correctly blocks 15 identity/critical/required fields when `publishable=false`.

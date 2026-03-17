@@ -366,13 +366,23 @@ export async function runProductFinalizationDerivation({
   // WHY: NeedSet fields carry history from previous rounds (via computeNeedSet +
   // previousFieldHistories) but NOT the current round's queries/provenance.
   // Enrich here so needset_computed event and needset.json have complete history.
+  // Use seed schema4 handoff queries (which have target_fields) over flat discovery
+  // query strings (which don't).
   if (Array.isArray(needSet.fields) && needSet.fields.length > 0) {
-    const discoveryQueries = (Array.isArray(discoveryResult?.queries) ? discoveryResult.queries : [])
-      .filter((q) => q && typeof q === 'object')
-      .map((q) => ({
-        query: String(q.query || '').trim(),
-        target_fields: Array.isArray(q.target_fields) ? q.target_fields : [],
-      }));
+    const handoffQueries = searchPlanOutput?.search_plan_handoff?.queries || [];
+    const discoveryQueries = handoffQueries.length > 0
+      ? handoffQueries
+          .filter((q) => q && typeof q === 'object' && q.q)
+          .map((q) => ({
+            query: String(q.q || '').trim(),
+            target_fields: Array.isArray(q.target_fields) ? q.target_fields : [],
+          }))
+      : (Array.isArray(discoveryResult?.queries) ? discoveryResult.queries : [])
+          .filter((q) => q && typeof q === 'object')
+          .map((q) => ({
+            query: String(q.query || q.q || '').trim(),
+            target_fields: Array.isArray(q.target_fields) ? q.target_fields : [],
+          }));
     needSet.fields = enrichNeedSetFieldHistories({
       fields: needSet.fields,
       provenance,

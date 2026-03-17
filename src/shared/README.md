@@ -5,6 +5,7 @@ This boundary stays intentionally small so shared values remain stable and depen
 ## Public API (The Contract)
 - `src/shared/settingsDefaults.js`: `SETTINGS_DEFAULTS`, `SETTINGS_OPTION_VALUES`.
 - `src/shared/settingsDefaults.d.ts`: TypeScript declarations for the settings defaults contract.
+- `src/shared/settingsClampingRanges.js`: `SETTINGS_CLAMPING_INT_RANGE_MAP`, `SETTINGS_CLAMPING_FLOAT_RANGE_MAP`, `SETTINGS_CLAMPING_STRING_ENUM_MAP` — SSOT clamping ranges consumed by both `core/config/` and `features/settings-authority/`.
 
 ## Dependencies
 - Allowed: dependency-light modules that remain generic across the repo.

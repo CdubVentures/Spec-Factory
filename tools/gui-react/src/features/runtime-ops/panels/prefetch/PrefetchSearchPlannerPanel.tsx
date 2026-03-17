@@ -131,6 +131,262 @@ function normalizeQuery(query: string): string {
 
 const DEFAULT_VISIBLE_QUERIES = 6;
 
+/* ── Theme-aligned helpers (Schema 4 view) ────────────────────────── */
+
+function isSchema4PlannerPath(calls: PrefetchLlmCall[]): boolean {
+  if (calls.length === 0) return false;
+  return calls.some((call) => call.reason === 'needset_search_planner');
+}
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline gap-2 pt-2 pb-1.5 mb-3 border-b-[1.5px] border-[var(--sf-token-text-primary)]">
+      <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary">{children}</span>
+    </div>
+  );
+}
+
+function Chip({ label, className }: { label: string; className?: string }) {
+  return (
+    <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.04em] ${className || 'sf-chip-accent'} border-[1.5px] border-current`}>
+      {label}
+    </span>
+  );
+}
+
+/* ── Schema 4 NeedSet Planner View ────────────────────────────────── */
+
+function Schema4PlannerView({
+  calls,
+  searchPlans,
+  searchResults,
+  liveSettings,
+  idxRuntime,
+}: PrefetchSearchPlannerPanelProps) {
+  const [llmCallsOpen, setLlmCallsOpen] = useState(false);
+  const plans = searchPlans || [];
+
+  const totalQueries = plans.reduce((sum, plan) => sum + plan.queries_generated.length, 0);
+  const focusGroupCount = plans.length;
+  const familyCount = useMemo(() => {
+    const families = new Set<string>();
+    for (const plan of plans) {
+      const name = String(plan.pass_name || '').trim().toLowerCase();
+      if (name) families.add(name);
+    }
+    return families.size;
+  }, [plans]);
+
+  const totalTokens = calls.reduce((sum, c) => sum + (c.tokens?.input ?? 0) + (c.tokens?.output ?? 0), 0);
+  const totalDuration = calls.reduce((sum, c) => sum + (c.duration_ms ?? 0), 0);
+  const hasFailed = calls.some((c) => c.status === 'failed');
+  const overallStatus = hasFailed ? 'failed' : 'finished';
+
+  const executedQueryTokens = useMemo(() => new Set(
+    (searchResults || []).map((r) => normalizeToken(normalizeQuery(r.query))),
+  ), [searchResults]);
+
+  const allQueries = useMemo(() => {
+    const rows: { query: string; family: string; targetFields: string[] }[] = [];
+    for (const plan of plans) {
+      for (const query of plan.queries_generated) {
+        const fields = plan.query_target_map?.[query] || [];
+        rows.push({ query, family: plan.pass_name || 'default', targetFields: fields });
+      }
+    }
+    return rows;
+  }, [plans]);
+
+  const primaryCall = calls[0];
+
+  return (
+    <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+
+      {/* ── Hero Band ── */}
+      <div className="sf-surface-elevated rounded-sm border sf-border-soft px-7 py-6 space-y-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
+          <div className="flex items-baseline gap-3">
+            <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">NeedSet Planner</span>
+            <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Search Plan</span>
+            <Chip label={overallStatus.toUpperCase()} className={overallStatus === 'finished' ? 'sf-chip-success' : 'sf-chip-danger'} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Chip label="Schema 4" className="sf-chip-info" />
+            <Chip label={calls.length > 0 ? 'llm on' : 'llm off'} className={calls.length > 0 ? 'sf-chip-warning' : 'sf-chip-danger'} />
+            <Tip text="The NeedSet Planner generates targeted search queries to close field coverage gaps identified by the NeedSet. Schema 4 uses a single focused LLM call instead of multi-pass discovery." />
+          </div>
+        </div>
+
+        <RuntimeIdxBadgeStrip badges={idxRuntime} />
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-5">
+          <div>
+            <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">{totalQueries}</div>
+            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">queries planned</div>
+          </div>
+          <div>
+            <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">{focusGroupCount}</div>
+            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">focus groups</div>
+          </div>
+          <div>
+            <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">{familyCount}</div>
+            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">families used</div>
+          </div>
+          <div>
+            <div className="text-4xl font-bold sf-text-primary leading-none tracking-tight">{calls.length}</div>
+            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">llm calls</div>
+          </div>
+        </div>
+
+        <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
+          NeedSet planner generated <strong className="sf-text-primary not-italic">{totalQueries}</strong> targeted
+          {' '}queries across <strong className="sf-text-primary not-italic">{focusGroupCount}</strong> focus
+          {' '}group{focusGroupCount !== 1 ? 's' : ''} to close field coverage gaps
+          {totalTokens > 0 && (
+            <> &mdash; used <strong className="sf-text-primary not-italic">{totalTokens.toLocaleString()}</strong> tokens in <strong className="sf-text-primary not-italic">{formatMs(totalDuration)}</strong></>
+          )}
+          .
+        </div>
+      </div>
+
+      {/* ── Query Plan ── */}
+      <div>
+        <SectionHeader>query plan</SectionHeader>
+        {allQueries.length > 0 ? (
+          <div className="overflow-x-auto overflow-y-auto max-h-[56rem] border sf-border-soft rounded-sm">
+            <table className="min-w-full text-xs">
+              <thead className="sf-surface-elevated sticky top-0">
+                <tr>
+                  {['query', 'family', 'target fields'].map((h) => (
+                    <th key={h} className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {allQueries.map((row, i) => {
+                  const sentToSearch = executedQueryTokens.has(normalizeToken(normalizeQuery(row.query)));
+                  return (
+                    <tr key={i} className={`border-b sf-border-soft ${sentToSearch ? 'sf-callout sf-callout-success' : ''}`}>
+                      <td className="py-1.5 px-4 font-mono sf-text-primary max-w-[24rem]">
+                        {row.query}
+                        {sentToSearch && (
+                          <span className="ml-2 px-1.5 py-0.5 rounded sf-text-caption font-medium sf-chip-success">
+                            Sent to search
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-1.5 px-4">
+                        <Chip label={row.family.replace(/_/g, ' ')} className="sf-chip-accent" />
+                      </td>
+                      <td className="py-1.5 px-4">
+                        <div className="flex flex-wrap gap-1">
+                          {row.targetFields.length > 0
+                            ? row.targetFields.map((f) => <Chip key={f} label={f} className="sf-chip-success" />)
+                            : <span className="sf-text-caption sf-text-subtle">&mdash;</span>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-4 text-center text-xs sf-text-muted">
+            No query plan data available yet.
+          </div>
+        )}
+      </div>
+
+      {/* ── Planner Context ── */}
+      {primaryCall && (
+        <div>
+          <SectionHeader>planner context</SectionHeader>
+          <div className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-4">
+            <div className="flex items-center gap-2 flex-wrap mb-3">
+              <Chip label={primaryCall.status} className={llmCallStatusBadgeClass(primaryCall.status)} />
+              {primaryCall.model && <span className="text-[11px] font-mono sf-text-muted">{primaryCall.model}</span>}
+              {primaryCall.provider && <span className="text-[11px] font-mono sf-text-subtle">{primaryCall.provider}</span>}
+            </div>
+            <div className="grid grid-cols-2 gap-1 sf-text-caption">
+              <span className="sf-text-muted">Model</span>
+              <span className="font-mono">{primaryCall.model || '-'}</span>
+              <span className="sf-text-muted">Provider</span>
+              <span className="font-mono">{primaryCall.provider || '-'}</span>
+              {primaryCall.tokens && (
+                <>
+                  <span className="sf-text-muted">Tokens</span>
+                  <span className="font-mono">{primaryCall.tokens.input}+{primaryCall.tokens.output}</span>
+                </>
+              )}
+              {primaryCall.duration_ms !== undefined && (
+                <>
+                  <span className="sf-text-muted">Duration</span>
+                  <span className="font-mono">{formatMs(primaryCall.duration_ms)}</span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── LLM Call Details (collapsible) ── */}
+      {calls.length > 0 && (
+        <div>
+          <div
+            onClick={() => setLlmCallsOpen((prev) => !prev)}
+            className="flex items-baseline gap-2 pt-2 pb-1.5 border-b-[1.5px] border-[var(--sf-token-text-primary)] cursor-pointer select-none"
+          >
+            <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary flex-1">llm call details</span>
+            <span className="text-[11px] font-mono sf-text-subtle">
+              {calls.length} call{calls.length !== 1 ? 's' : ''}
+              {totalTokens > 0 && <> &middot; {totalTokens.toLocaleString()} tok</>}
+              {totalDuration > 0 && <> &middot; {formatMs(totalDuration)}</>}
+              {' '}&middot; {llmCallsOpen ? 'collapse \u25B4' : 'expand \u25BE'}
+            </span>
+          </div>
+
+          {llmCallsOpen && (
+            <div className="mt-3 space-y-2">
+              {calls.map((call, i) => (
+                <div key={i} className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-3.5 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Chip label={call.status} className={llmCallStatusBadgeClass(call.status)} />
+                    {call.model && <span className="text-[11px] font-mono sf-text-muted">{call.model}</span>}
+                    {call.provider && <span className="text-[11px] font-mono sf-text-subtle">{call.provider}</span>}
+                    <span className="ml-auto flex items-baseline gap-3 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted">
+                      {call.tokens && <span>tok <strong className="sf-text-primary">{call.tokens.input}+{call.tokens.output}</strong></span>}
+                      {call.duration_ms !== undefined && <span>dur <strong className="sf-text-primary">{formatMs(call.duration_ms)}</strong></span>}
+                    </span>
+                  </div>
+                  {call.error && (
+                    <div className="px-3 py-2 rounded-sm border border-[var(--sf-state-error-border)] bg-[var(--sf-state-error-bg)] text-xs text-[var(--sf-state-error-fg)]">
+                      {call.error}
+                    </div>
+                  )}
+                  {call.prompt_preview && (
+                    <div>
+                      <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle mb-1">prompt</div>
+                      <pre className="max-h-32 overflow-x-auto overflow-y-auto whitespace-pre-wrap rounded-sm p-3 font-mono text-[11px] sf-pre-block">{call.prompt_preview}</pre>
+                    </div>
+                  )}
+                  {call.response_preview && (
+                    <div>
+                      <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle mb-1">response</div>
+                      <pre className="max-h-32 overflow-x-auto overflow-y-auto whitespace-pre-wrap rounded-sm p-3 font-mono text-[11px] sf-pre-block">{call.response_preview}</pre>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function TagList({
   items,
@@ -290,6 +546,8 @@ export function PrefetchSearchPlannerPanel({
     return out;
   }, [calls]);
 
+  const schema4Active = useMemo(() => isSchema4PlannerPath(calls), [calls]);
+
   const totalTokens = calls.reduce((sum, call) => sum + (call.tokens?.input ?? 0) + (call.tokens?.output ?? 0), 0);
   const totalDuration = calls.reduce((sum, call) => sum + (call.duration_ms ?? 0), 0);
   const hasFailed = calls.some((call) => call.status === 'failed');
@@ -306,6 +564,10 @@ export function PrefetchSearchPlannerPanel({
     existingQueries: hasPlannerRun,
   };
 
+  if (schema4Active) {
+    return <Schema4PlannerView calls={calls} searchPlans={searchPlans} searchResults={searchResults} liveSettings={liveSettings} idxRuntime={idxRuntime} />;
+  }
+
   if (!hasCalls && !hasStructured) {
     return (
       <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
@@ -315,8 +577,7 @@ export function PrefetchSearchPlannerPanel({
           <div className="text-3xl opacity-60">&#128506;</div>
           <div className="text-sm font-medium sf-text-muted">Waiting for search plan</div>
           <p className="max-w-md leading-relaxed sf-text-caption sf-text-subtle">
-            Search plans will appear after the Planner LLM generates targeted queries across multiple passes
-            (Primary, Fast, Reason, Validate) to close missing field coverage gaps identified by the NeedSet.
+            Search plans will appear after the planner generates targeted queries to close field coverage gaps identified by the NeedSet.
           </p>
         </div>
       </div>
@@ -390,12 +651,12 @@ export function PrefetchSearchPlannerPanel({
           tooltipOn={formatTooltip({
             what: `Primary pass ran ${reasonSummary.discovery_planner_primary} time(s).`,
             effect: 'Generates core query ideas from planner inputs.',
-            setBy: 'Planner model (phase2LlmModel/llmModelPlan).',
+            setBy: 'Planner model (llmModelPlan).',
           })}
           tooltipOff={formatTooltip({
             what: 'Primary pass not observed.',
             effect: 'No base planner output in this sample.',
-            setBy: 'Planner model (phase2LlmModel/llmModelPlan).',
+            setBy: 'Planner model (llmModelPlan).',
           })}
         />
         <PlannerPassBadge

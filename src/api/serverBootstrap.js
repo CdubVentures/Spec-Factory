@@ -34,7 +34,7 @@ export function bootstrapServer({ projectRoot }) {
   // ── Phase 1: Environment (config, paths, storage) ──
   const env = createBootstrapEnvironment({ projectRoot });
   const {
-    config, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
+    config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
     storage, runDataStorageState, runDataArchiveStorage,
     resolveProjectPath, cleanVariant, catalogKey, markEnumSuggestionStatusBound,
   } = env;
@@ -92,7 +92,7 @@ export function bootstrapServer({ projectRoot }) {
   });
 
   return {
-    config, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
+    config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
     storage, runDataStorageState,
     sessionCache, resolveCategoryAlias,
     specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady,

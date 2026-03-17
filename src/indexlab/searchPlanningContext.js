@@ -63,11 +63,12 @@ function derivePlannerLimits(config) {
     maxCandidateUrls: toInt(config.maxCandidateUrls, 50),
     maxPagesPerDomain: toInt(config.maxPagesPerDomain, 2),
     maxRunSeconds: toInt(config.maxRunSeconds, 300),
-    llmModelPlan: String(config.llmModelPlan || config.phase2LlmModel || ''),
+    llmModelPlan: Boolean(config._resolvedNeedsetUseReasoning ?? config.llmPlanUseReasoning)
+      ? String(config._resolvedNeedsetReasoningModel || config.llmModelReasoning || config._resolvedNeedsetBaseModel || config.llmModelPlan || '')
+      : String(config._resolvedNeedsetBaseModel || config.llmModelPlan || ''),
     llmPlanProvider: String(config.llmPlanProvider || config.llmProvider || ''),
     llmPlanBaseUrl: String(config.llmPlanBaseUrl || config.llmBaseUrl || ''),
-    llmTokensPlan: toInt(config.llmTokensPlan, 2048),
-    llmMaxOutputTokensPlan: toInt(config.llmMaxOutputTokensPlan, 2048),
+    llmMaxOutputTokensPlan: toInt(config._resolvedNeedsetMaxOutputTokens ?? config.llmMaxOutputTokensPlan, 2048),
     searchProfileCapMap: parseCapMap(config.searchProfileCapMapJson),
     searchProvider: String(config.searchProvider || 'dual'),
   };

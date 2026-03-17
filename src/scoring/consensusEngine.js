@@ -604,7 +604,7 @@ export function runConsensusEngine({
     const instrumentedCount = best?.instrumentedDomainCount || 0;
 
     const strictAccepted = approvedDomainCount >= minimumRequired && weightedMajority;
-    const relaxedCandidate = Boolean(config.allowBelowPassTargetFill) && !INSTRUMENTED_FIELDS.has(field);
+    const relaxedCandidate = (config?.allowBelowPassTargetFill ?? true) && !INSTRUMENTED_FIELDS.has(field);
 
     let relaxedAccepted = false;
     if (relaxedCandidate && approvedDomainCount >= relaxedMinimum && weightedMajority) {

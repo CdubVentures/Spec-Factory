@@ -41,7 +41,7 @@
 | **Automation** | `RuntimeFlowAutomationSection.tsx` | Pipeline Settings → Automation |
 | **Browser** | `RuntimeFlowBrowserRenderingSection.tsx` | Pipeline Settings → Browser & Rendering |
 | **Parsing** | `RuntimeFlowParsingSection.tsx` | Pipeline Settings → Parsing |
-| **Scoring** | `RuntimeFlowScoringEvidenceSection.tsx` | Pipeline Settings → Scoring & Evidence |
+| ~~**Scoring**~~ | ~~`RuntimeFlowScoringEvidenceSection.tsx`~~ | ~~Pipeline Settings → Scoring & Evidence~~ RETIRED 2026-03-16 |
 | **LlmCortex** | `RuntimeFlowLlmCortexSection.tsx` | Pipeline Settings → LLM & CORTEX (role models, token budgets, fallback chain, cache) |
 | **PlanTriage** | `RuntimeFlowPlannerTriageSection.tsx` | Pipeline Settings → Planner & Triage |
 | **RunOutput** | `RuntimeFlowRunOutputSection.tsx` | Pipeline Settings → Run Output |
@@ -73,15 +73,15 @@
 | 11 | Parsing: Static DOM | 5 |
 | 12 | Parsing: Article Extraction | 5 |
 | 13 | Parsing: HTML Tables | 1 |
-| 14 | Parsing: Structured Metadata | 6 |
+| 14 | ~~Parsing: Structured Metadata~~ | ~~6~~ RETIRED 2026-03-16 (Wave 7; dead feature — client never instantiated) |
 | 15 | Parsing: PDF Processing | 7 |
 | 16 | Parsing: OCR | 8 |
 | 17 | Parsing: Chart Extraction | 1 |
-| 18 | Parsing Confidence Calibration | 1 |
-| 19 | Evidence Pack | 2 |
-| 20 | Tier Retrieval & Evidence Scoring | 36 |
-| 21 | Consensus Engine | 24 |
-| 22 | Identity Gate | 3 |
+| 18 | ~~Parsing Confidence Calibration~~ | ~~1~~ RETIRED 2026-03-16 |
+| 19 | ~~Evidence Pack~~ | ~~2~~ RETIRED 2026-03-16 |
+| 20 | ~~Tier Retrieval & Evidence Scoring~~ | ~~3~~ RETIRED 2026-03-16 (Wave 6; core controls hardcoded) |
+| 21 | ~~Consensus Engine~~ | ~~8~~ RETIRED 2026-03-16 (Wave 6; weights hardcoded, thresholds removed) |
+| 22 | ~~Identity Gate~~ | ~~3~~ RETIRED 2026-03-16 |
 | 23 | LLM Core Configuration | 11 |
 | 24 | LLM Model Routing | 15 |
 | 25 | LLM Token Budgets | 22 |
@@ -341,18 +341,8 @@ All knobs: `settingsDefaults.js → runtime.*` · Status: `implemented_gui_env`
 | `maxCandidateUrls` | `80` | int | SD, SC | RunSetup | Max candidate URLs before filtering |
 | `maxPagesPerDomain` | `5` | int | SD, SC | RunSetup | Max pages from a single domain |
 | `maxRunSeconds` | `480` | int | SD, SC | RunSetup | Max run time per product (8 min) |
-| `enableSourceRegistry` | `true` | bool | SD, SC | RunSetup | Enable source registry for domain hints |
-| `enableDomainHintResolverV2` | `true` | bool | SD, SC | RunSetup | Enable V2 domain hint resolver |
-| `enableQueryCompiler` | `true` | bool | SD, SC | RunSetup | Enable query compiler |
-| `enableCoreDeepGates` | `true` | bool | SD, SC | RunSetup | Enable core deep gates |
 | `fetchCandidateSources` | `true` | bool | SD, SC | RunSetup | Fetch candidate source URLs |
-| `manufacturerDeepResearchEnabled` | `true` | bool | SD, SC | RunSetup | Enable deep manufacturer site research |
-| `manufacturerBroadDiscovery` | `true` | bool | SD, SC | RunSetup | Enable broad manufacturer discovery |
-| `manufacturerSeedSearchUrls` | `false` | bool | SD, SC | RunSetup | Seed search with manufacturer URLs |
 | `manufacturerAutoPromote` | `true` | bool | SD, SC | RunSetup | Auto-promote brand-resolved official domains into manufacturer source entries |
-| `maxManufacturerUrlsPerProduct` | `15` | int | SD, SC | RunSetup | Max manufacturer URLs per product |
-| `maxManufacturerPagesPerDomain` | `8` | int | SD, SC | RunSetup | Max pages from manufacturer domain |
-| `manufacturerReserveUrls` | `15` | int | SD, SC | RunSetup | Reserved URL slots for manufacturer sources |
 
 ---
 
@@ -392,18 +382,9 @@ All knobs: `settingsDefaults.js → runtime.*` · Status: `implemented_gui_env`
 
 ---
 
-## 14. Parsing: Structured Metadata
+## ~~14. Parsing: Structured Metadata~~ — RETIRED 2026-03-16 (Wave 7)
 
-All knobs: `settingsDefaults.js → runtime.*` · Status: `implemented_gui_env`
-
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `structuredMetadataExtructEnabled` | `false` | bool | SD, SC | Parsing | Enable extruct-based structured metadata extraction |
-| `structuredMetadataExtructUrl` | `http://127.0.0.1:8011/extract/structured` | string | SD, SC | Parsing | Extruct service URL |
-| `structuredMetadataExtructTimeoutMs` | `2000` | int | SD, SC | Parsing | Request timeout for extruct |
-| `structuredMetadataExtructMaxItemsPerSurface` | `200` | int | SD, SC | Parsing | Max items per surface type |
-| `structuredMetadataExtructCacheEnabled` | `true` | bool | SD, SC | Parsing | Cache extruct results |
-| `structuredMetadataExtructCacheLimit` | `400` | int | SD, SC | Parsing | Max cached extruct results |
+**All 6 knobs removed.** `StructuredMetadataClient` was fully implemented but never instantiated in the pipeline — `pageData.structuredMetadata` was never populated. Values hardcoded in `configBuilder.js`; feature permanently off. `daemonGracefulShutdownTimeoutMs` (section 37 daemon group) also retired in Wave 7 — loaded but never read by any runtime code.
 
 ---
 
@@ -448,79 +429,36 @@ All knobs: `settingsDefaults.js → runtime.*` · Status: `implemented_gui_env`
 
 ---
 
-## 18. Parsing Confidence Calibration
+## ~~18. Parsing Confidence Calibration~~ RETIRED 2026-03-16 (Wave 5)
 
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `parsingConfidenceBaseMapJson` | `{"network_json":1,"embedded_state":0.85,...}` | json | SD, SC | Scoring | Base confidence scores per parsing method |
-
----
-
-## 19. Evidence Pack
-
-All knobs: `settingsDefaults.js → runtime.*` · Status: `implemented_gui_env`
-
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `evidenceTextMaxChars` | `5000` | int | SD, SC | Scoring | Max chars per evidence text snippet |
-| `evidencePackLimitsMapJson` | `{"headingsLimit":120,"chunkMaxLength":3000,"specSectionsLimit":8}` | json | SD, SC | Scoring | Evidence pack size limits |
+| Knob | Status |
+|------|--------|
+| ~~`parsingConfidenceBaseMapJson`~~ | RETIRED — unpacked individual keys remain in config |
 
 ---
 
-## 20. Tier Retrieval & Evidence Scoring
+## ~~19. Evidence Pack~~ RETIRED 2026-03-16 (Wave 5)
 
-All knobs: `settingsDefaults.js → runtime.*` and `convergence.*` · Status: `implemented_gui_env`
+| Knob | Status |
+|------|--------|
+| ~~`evidenceTextMaxChars`~~ | RETIRED |
+| ~~`evidencePackLimitsMapJson`~~ | RETIRED — unpacked individual keys remain in config |
 
-**Core retrieval controls** (convergence section):
+---
 
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `retrievalMaxHitsPerField` | `24` | int | SD, SC | Convergence | Max evidence hits per field |
-| `retrievalMaxPrimeSources` | `10` | int | SD, SC | Convergence | Max prime sources selected |
-| `retrievalIdentityFilterEnabled` | `true` | bool | SD, SC | Convergence | Filter evidence by identity match |
+## 20. ~~Tier Retrieval & Evidence Scoring~~ — Core controls RETIRED 2026-03-16 (Wave 6)
 
-**Tier weights** (runtime section):
+**~~Core retrieval controls~~** RETIRED 2026-03-16 (Wave 6) — `retrievalMaxHitsPerField`, `retrievalMaxPrimeSources`, `retrievalIdentityFilterEnabled` removed from convergence settings surface; values hardcoded in `configBuilder.js`. Zero behavior change.
 
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `retrievalTierWeightTier1` | `3` | float | SD, SC | Scoring | Manufacturer/official weight |
-| `retrievalTierWeightTier2` | `2` | float | SD, SC | Scoring | Authoritative review weight |
-| `retrievalTierWeightTier3` | `1` | float | SD, SC | Scoring | Third-party weight |
-| `retrievalTierWeightTier4` | `0.65` | float | SD, SC | Scoring | Community/forum weight |
-| `retrievalTierWeightTier5` | `0.4` | float | SD, SC | Scoring | Low-quality/unknown weight |
+**~~Tier weights~~** RETIRED 2026-03-16 (Wave 5) — `retrievalTierWeightTier1`–`Tier5` removed from settings surface.
 
-**Doc kind weights:**
+**~~Doc kind weights~~** RETIRED 2026-03-16 (Wave 5) — `retrievalDocKindWeight*` removed from settings surface.
 
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `retrievalDocKindWeightManualPdf` | `1.5` | float | SD, SC | Scoring | Product manual PDF |
-| `retrievalDocKindWeightSpecPdf` | `1.4` | float | SD, SC | Scoring | Spec sheet PDF |
-| `retrievalDocKindWeightSupport` | `1.1` | float | SD, SC | Scoring | Support/KB article |
-| `retrievalDocKindWeightLabReview` | `0.95` | float | SD, SC | Scoring | Lab review |
-| `retrievalDocKindWeightProductPage` | `0.75` | float | SD, SC | Scoring | Product page |
-| `retrievalDocKindWeightOther` | `0.55` | float | SD, SC | Scoring | Other/unknown |
+**~~Method weights~~** RETIRED 2026-03-16 (Wave 5) — `retrievalMethodWeight*` removed from settings surface.
 
-**Method weights:**
+**~~Score formula components~~** RETIRED 2026-03-16 (Wave 5) — `retrievalAnchorScorePerMatch`, `retrievalIdentityScorePerMatch`, `retrievalUnitMatchBonus`, `retrievalDirectFieldMatchBonus`, `retrievalInternalsMapJson` removed from settings surface.
 
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `retrievalMethodWeightTable` | `1.25` | float | SD, SC | Scoring | HTML table extraction |
-| `retrievalMethodWeightKv` | `1.15` | float | SD, SC | Scoring | Key-value extraction |
-| `retrievalMethodWeightJsonLd` | `1.1` | float | SD, SC | Scoring | JSON-LD structured data |
-| `retrievalMethodWeightLlmExtract` | `0.85` | float | SD, SC | Scoring | LLM-based extraction |
-| `retrievalMethodWeightHelperSupportive` | `0.65` | float | SD, SC | Scoring | Helper file supportive data |
-
-**Score formula components:**
-
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `retrievalAnchorScorePerMatch` | `0.42` | float | SD, SC | Scoring | Score per anchor keyword match |
-| `retrievalIdentityScorePerMatch` | `0.28` | float | SD, SC | Scoring | Score per identity token match |
-| `retrievalUnitMatchBonus` | `0.35` | float | SD, SC | Scoring | Bonus for unit string match |
-| `retrievalDirectFieldMatchBonus` | `0.65` | float | SD, SC | Scoring | Bonus for direct field name match |
-| `retrievalInternalsMapJson` | `{"evidenceTierWeightMultiplier":2.6,...}` | json | SD, SC | Scoring | JSON map for retrieval scoring and evidence-pool caps |
-
-**Retrieval internals** (`retrievalInternalsMapJson`):
+**Retrieval internals** (hardcoded defaults, no longer env-configurable):
 
 | Sub-knob | Default | Type | Summary |
 |----------|---------|------|---------|
@@ -539,67 +477,29 @@ All knobs: `settingsDefaults.js → runtime.*` and `convergence.*` · Status: `i
 
 ---
 
-## 21. Consensus Engine
+## 21. ~~Consensus Engine~~ — Weights RETIRED 2026-03-16 (Wave 6)
 
-All knobs: settingsDefaults.js convergence and runtime sections. Status: implemented_gui_env
+**~~LLM confidence weights by tier~~** RETIRED 2026-03-16 (Wave 6) — `consensusLlmWeightTier1`–`Tier4` removed from convergence settings surface; values hardcoded in `configBuilder.js`. Zero behavior change.
 
-**LLM confidence weights by tier** (convergence section):
+**~~Source tier weights~~** RETIRED 2026-03-16 (Wave 6) — `consensusTier1Weight`–`Tier4Weight` removed from convergence settings surface; values hardcoded in `configBuilder.js`. Zero behavior change.
 
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `consensusLlmWeightTier1` | `0.6` | float | SD, SC | Convergence | LLM extraction confidence weight for Tier 1 sources |
-| `consensusLlmWeightTier2` | `0.4` | float | SD, SC | Convergence | LLM extraction confidence weight for Tier 2 sources |
-| `consensusLlmWeightTier3` | `0.2` | float | SD, SC | Convergence | LLM extraction confidence weight for Tier 3 sources |
-| `consensusLlmWeightTier4` | `0.15` | float | SD, SC | Convergence | LLM extraction confidence weight for Tier 4 sources |
+**~~Consensus thresholds~~** RETIRED 2026-03-16 (Wave 6) — `consensusTier4OverrideThreshold`, `consensusMinConfidence` removed from convergence settings surface. Never consumed by runtime code.
 
-**Source tier weights** (convergence section):
+**~~Method weights~~** RETIRED 2026-03-16 (Wave 5) — `consensusMethodWeight*` removed from settings surface.
 
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `consensusTier1Weight` | `1` | float | SD, SC | Convergence | Tier 1 source weight in consensus voting |
-| `consensusTier2Weight` | `0.8` | float | SD, SC | Convergence | Tier 2 source weight |
-| `consensusTier3Weight` | `0.45` | float | SD, SC | Convergence | Tier 3 source weight |
-| `consensusTier4Weight` | `0.25` | float | SD, SC | Convergence | Tier 4 source weight |
-
-**Method weights** (runtime section):
-
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `consensusMethodWeightNetworkJson` | `1` | float | SD, SC | Scoring | Network JSON extraction method weight |
-| `consensusMethodWeightAdapterApi` | `0.95` | float | SD, SC | Scoring | Adapter API method weight |
-| `consensusMethodWeightStructuredMeta` | `0.9` | float | SD, SC | Scoring | Structured metadata method weight |
-| `consensusMethodWeightPdf` | `0.82` | float | SD, SC | Scoring | PDF extraction method weight |
-| `consensusMethodWeightTableKv` | `0.78` | float | SD, SC | Scoring | Table/KV extraction method weight |
-| `consensusMethodWeightDom` | `0.4` | float | SD, SC | Scoring | DOM extraction method weight |
-| `consensusMethodWeightLlmExtractBase` | `0.2` | float | SD, SC | Scoring | LLM extraction base method weight |
-
-**Acceptance thresholds:**
-
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `consensusPolicyBonus` | `0.3` | float | SD, SC | Scoring | Bonus for policy-matched values |
-| `consensusWeightedMajorityThreshold` | `1` | float | SD, SC | Scoring | Weighted majority threshold multiplier |
-| `consensusStrictAcceptanceDomainCount` | `2` | int | SD, SC | Scoring | Domains needed for strict acceptance |
-| `consensusRelaxedAcceptanceDomainCount` | `2` | int | SD, SC | Scoring | Domains needed for relaxed acceptance |
-| `consensusInstrumentedFieldThreshold` | `3` | int | SD, SC | Scoring | Min evidence count for instrumented field |
-| `consensusConfidenceScoringBase` | `0.7` | float | SD, SC | Scoring | Base confidence when domains >= threshold |
-| `consensusPassTargetIdentityStrong` | `4` | int | SD, SC | Scoring | Pass target for identity/strong fields |
-| `consensusPassTargetNormal` | `2` | int | SD, SC | Scoring | Pass target for normal fields |
-| `allowBelowPassTargetFill` | `true` | bool | SD, SC | Scoring | Allow filling fields below pass target |
+**~~Acceptance thresholds~~** RETIRED 2026-03-16 (Wave 5) — `consensusPolicyBonus`, `consensusWeightedMajorityThreshold`, `consensusStrictAcceptanceDomainCount`, `consensusRelaxedAcceptanceDomainCount`, `consensusInstrumentedFieldThreshold`, `consensusConfidenceScoringBase`, `consensusPassTargetIdentityStrong`, `consensusPassTargetNormal`, `allowBelowPassTargetFill` removed from settings surface. Bug fix: `allowBelowPassTargetFill` now defaults to `true` via `?? true` in `consensusEngine.js`.
 
 ---
 
-## 22. Identity Gate
+## ~~22. Identity Gate~~ RETIRED 2026-03-16 (Wave 5)
 
-All knobs: settingsDefaults.js runtime section. Status: implemented_gui_env
+| Knob | Status |
+|------|--------|
+| ~~`identityGatePublishThreshold`~~ | RETIRED |
+| ~~`identityGateBaseMatchThreshold`~~ | RETIRED |
+| ~~`qualityGateIdentityThreshold`~~ | RETIRED |
 
-| Knob | Default | Type | Backend | Frontend | Summary |
-|------|---------|------|---------|----------|---------|
-| `identityGatePublishThreshold` | `0.75` | float | SD, SC | Scoring | Min identity confidence to publish results |
-| `identityGateBaseMatchThreshold` | `0.8` | float | SD, SC | Scoring | Base threshold for identity matching |
-| `qualityGateIdentityThreshold` | `0.7` | float | SD, SC | Scoring | Quality gate identity threshold |
-
-**Stage 1 identity gate refactor is COMPLETE (2026-03-10).** The 12 old dynamic-threshold knobs have been retired. Identity is now advisory for extraction and only blocks publishing.
+All three knobs removed from settings surface. Consumers use hardcoded `??` fallback defaults.
 
 ---
 
@@ -978,7 +878,7 @@ All knobs: settingsDefaults.js runtime section. Status: implemented_gui_env
 | Knob | Default | Type | Backend | Frontend | Summary |
 |------|---------|------|---------|----------|---------|
 | `daemonConcurrency` | `1` | int | SD, SC | Observability | Daemon worker concurrency |
-| `daemonGracefulShutdownTimeoutMs` | `60000` | int | SD, SC | Observability | Graceful shutdown timeout (60s) |
+| ~~`daemonGracefulShutdownTimeoutMs`~~ | ~~`60000`~~ | ~~int~~ | — | — | RETIRED Wave 7 — never read by runtime |
 | `importsRoot` | `imports` | string | SD, SC | Observability | Import watch directory |
 | `importsPollSeconds` | `10` | int | SD, SC | Observability | Import poll interval |
 

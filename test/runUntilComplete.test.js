@@ -327,7 +327,7 @@ test('buildRoundConfig keeps discovery disabled when required fields are already
       postLoadWaitMs: 0,
       autoScrollEnabled: false,
       autoScrollPasses: 0,
-      manufacturerBroadDiscovery: false
+
     },
     {
       round: 1,
@@ -338,10 +338,8 @@ test('buildRoundConfig keeps discovery disabled when required fields are already
   assert.equal(roundConfig.discoveryEnabled, false);
   assert.equal(roundConfig.fetchCandidateSources, false);
   assert.equal(roundConfig.searchProvider, 'none');
-  assert.equal(roundConfig.manufacturerBroadDiscovery, false);
   assert.equal(roundConfig.maxUrlsPerProduct <= 48, true);
   assert.equal(roundConfig.maxCandidateUrls <= 48, true);
-  assert.equal(roundConfig.maxManufacturerUrlsPerProduct <= 24, true);
 });
 
 test('buildRoundConfig keeps aggressive discovery enabled when critical gaps remain and product not validated', () => {
@@ -366,7 +364,7 @@ test('buildRoundConfig keeps aggressive discovery enabled when critical gaps rem
       postLoadWaitMs: 0,
       autoScrollEnabled: false,
       autoScrollPasses: 0,
-      manufacturerBroadDiscovery: false
+
     },
     {
       round: 1,
@@ -405,7 +403,7 @@ test('buildRoundConfig enables discovery + searxng fallback when required fields
       postLoadWaitMs: 0,
       autoScrollEnabled: false,
       autoScrollPasses: 0,
-      manufacturerBroadDiscovery: false
+
     },
     {
       round: 1,
@@ -441,7 +439,7 @@ test('buildRoundConfig defers external discovery on first required-search iterat
       postLoadWaitMs: 0,
       autoScrollEnabled: false,
       autoScrollPasses: 0,
-      manufacturerBroadDiscovery: false
+
     },
     {
       round: 1,
@@ -476,7 +474,7 @@ test('buildRoundConfig enables one expected-field search pass when required fiel
       postLoadWaitMs: 0,
       autoScrollEnabled: false,
       autoScrollPasses: 0,
-      manufacturerBroadDiscovery: false
+
     },
     {
       round: 1,
@@ -627,7 +625,7 @@ test('buildRoundConfig raises deep-search budgets for high contract effort plans
       postLoadWaitMs: 0,
       autoScrollEnabled: false,
       autoScrollPasses: 0,
-      manufacturerBroadDiscovery: false
+
     },
     {
       round: 2,
@@ -661,7 +659,7 @@ test('buildRoundConfig raises deep-search budgets for high contract effort plans
       postLoadWaitMs: 0,
       autoScrollEnabled: false,
       autoScrollPasses: 0,
-      manufacturerBroadDiscovery: false
+
     },
     {
       round: 2,

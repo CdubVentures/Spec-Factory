@@ -41,9 +41,7 @@ test('runDedicatedSyntheticSourceIngestionPhase appends adapter artifacts and en
     adapterArtifacts,
     sourceResults,
     anchors: { shape: 'shape' },
-    config: {
-      identityGateBaseMatchThreshold: 0.7,
-    },
+    config: {},
     buildCandidateFieldMapFn: (rows) => {
       callOrder.push('buildCandidateFieldMap');
       assert.equal(Array.isArray(rows), true);
@@ -61,9 +59,7 @@ test('runDedicatedSyntheticSourceIngestionPhase appends adapter artifacts and en
       callOrder.push('evaluateSourceIdentity');
       assert.equal(sourceLike.connectionHint, 'wired');
       assert.deepEqual(identityLock, { brand: 'Logitech' });
-      assert.deepEqual(options, {
-        identityGateBaseMatchThreshold: 0.7,
-      });
+      assert.deepEqual(options, {});
       return { match: true, score: 0.88 };
     },
   });

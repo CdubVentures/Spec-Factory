@@ -58,7 +58,7 @@ test('buildIndexingRuntimeSettingsProjection normalizes authority settings into 
     }),
   });
 
-  assert.equal(projection.runtimeDraft.phase2LlmModel, 'planner-live');
+  assert.equal(projection.runtimeDraft.llmModelPlan, 'planner-live');
   assert.equal(projection.runtimeDraft.fetchConcurrency, 7);
   assert.equal(projection.runtimeDraft.scannedPdfOcrMaxPairs, 500);
   assert.equal(projection.runtimeSettingsPayload.fetchConcurrency, 7);

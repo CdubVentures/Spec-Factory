@@ -2,17 +2,15 @@ import type {
   RuntimeOcrBackend,
   RuntimeSettingDefaults,
 } from '../../../stores/settingsManifest';
-import { collectRuntimeFlowDraftPayload } from '../../pipeline-settings/state/RuntimeFlowDraftPayload';
 import {
+  collectRuntimeFlowDraftPayload,
   normalizeRuntimeDraft,
-  type RuntimeDraft,
-} from '../../pipeline-settings/state/RuntimeFlowDraftNormalization';
-import type { RuntimeModelTokenDefaultsResolver } from '../../pipeline-settings/state/runtimeSettingsDomain';
-import {
   readRuntimeSettingsNumericBaseline,
+  type RuntimeDraft,
+  type RuntimeModelTokenDefaultsResolver,
   type RuntimeSettings,
   type RuntimeSettingsNumericBaseline,
-} from '../../pipeline-settings/state/runtimeSettingsAuthority';
+} from '../../pipeline-settings';
 
 export interface Phase05RuntimeSettings {
   fetchConcurrency: string;

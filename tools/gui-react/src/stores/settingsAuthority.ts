@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { readConvergenceSettingsSnapshot, useConvergenceSettingsReader } from './convergenceSettingsAuthority';
-import { readRuntimeSettingsSnapshot, useRuntimeSettingsReader } from './runtimeSettingsAuthority';
+import { readRuntimeSettingsSnapshot, useRuntimeSettingsReader } from '../features/pipeline-settings';
 import { readStorageSettingsSnapshot, useStorageSettingsReader } from './storageSettingsAuthority';
-import { readSourceStrategySnapshot, sourceStrategyQueryKey, useSourceStrategyReader } from './sourceStrategyAuthority';
+import { readSourceStrategySnapshot, sourceStrategyQueryKey, useSourceStrategyReader } from '../features/pipeline-settings';
 import { llmSettingsRoutesQueryKey, readLlmSettingsSnapshot, useLlmSettingsReader } from './llmSettingsAuthority';
 import { readUiSettingsSnapshot, useUiSettingsAuthority } from './uiSettingsAuthority';
 import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from './settingsManifest';

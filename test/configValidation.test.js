@@ -180,22 +180,6 @@ test('C.1 overrides: localMode forces outputMode to local', () => {
 // SECTION 6: Edge cases
 // =========================================================================
 
-test('C.1 edge: manufacturerReserveUrls capped to maxUrlsPerProduct', () => {
-  const config = loadConfig({
-    maxUrlsPerProduct: 10,
-    manufacturerReserveUrls: 50
-  });
-  assert.ok(config.manufacturerReserveUrls <= config.maxUrlsPerProduct);
-});
-
-test('C.1 edge: maxManufacturerUrlsPerProduct capped to maxUrlsPerProduct', () => {
-  const config = loadConfig({
-    maxUrlsPerProduct: 10,
-    maxManufacturerUrlsPerProduct: 100
-  });
-  assert.ok(config.maxManufacturerUrlsPerProduct <= config.maxUrlsPerProduct);
-});
-
 test('C.1 edge: negative values handled gracefully', () => {
   const config = loadConfig({
     maxUrlsPerProduct: -5,

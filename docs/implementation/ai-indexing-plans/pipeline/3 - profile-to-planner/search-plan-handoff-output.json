@@ -132,7 +132,8 @@
     "external_search_reason":    "string — reason external search was triggered",
     "search_attempts":           "Array<SearchAttempt> — per-query execution log with result counts",
     "search_journal":            "Array — execution journal entries",
-    "serp_explorer":             "object — same serp_explorer as on searchProfileFinal"
+    "serp_explorer":             "object — same serp_explorer as on searchProfileFinal",
+    "seed_search_plan_output":   "object|null — full Schema 4 output (needset_planner_output.v2) attached by runDiscoverySeedPlan() after discovery. Contains panel, search_plan_handoff, planner, learning_writeback. Used by finalization derivation to enrich needSet without re-calling the LLM. Only present when config.enableSchema4SearchPlan is true and schema4 computation succeeded."
   },
 
   "adapter_conversion": {

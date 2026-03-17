@@ -66,7 +66,6 @@ function makePlannerLimits(overrides = {}) {
     llmModelPlan: 'gemini-2.5-flash-lite',
     llmPlanProvider: 'gemini',
     llmPlanBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    llmTokensPlan: 2048,
     llmMaxOutputTokensPlan: 2048,
     searchProfileCapMap: null,
     searchProvider: 'dual',
@@ -975,13 +974,14 @@ describe('buildSearchPlan', () => {
   // ===== GAP-11: panel deltas =====
 
   describe('panel deltas', () => {
-    it('round 0 (no previous_round_fields) → deltas: []', async () => {
+    it('round 0 (no previous_round_fields) → deltas show all fields as new', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext({ previous_round_fields: null }),
         config: makeConfig(),
       });
-      assert.deepStrictEqual(result.panel.deltas, []);
+      assert.ok(result.panel.deltas.length > 0, 'round 0 should show fields as new');
+      assert.equal(result.panel.deltas[0].from, 'none');
     });
 
     it('changed field detected: prev missing → current satisfied', async () => {

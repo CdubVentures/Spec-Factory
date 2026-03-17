@@ -20,6 +20,7 @@ const CATALOG_TABS: TabDef[] = [
 ];
 
 const OPS_TABS: TabDef[] = [
+  { path: '/llm-config', label: 'LLM', disabledOnAll: true, disabledOnTest: true, dividerAfter: true },
   { path: '/indexing', label: 'Indexing Lab', disabledOnAll: true, disabledOnTest: true },
   { path: '/pipeline-settings', label: 'Pipeline Settings', disabledOnAll: true, disabledOnTest: true },
   { path: '/runtime-ops', label: 'Runtime Ops', disabledOnTest: true },

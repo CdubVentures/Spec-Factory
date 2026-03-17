@@ -16,8 +16,8 @@ export interface RuntimeSettingsLlmConfigResponse {
 
 interface DeriveRuntimeLlmModelOptionsParams {
   indexingLlmConfig: RuntimeSettingsLlmConfigResponse | undefined;
-  phase2LlmModel: string;
-  phase3LlmModel: string;
+  llmModelPlan: string;
+  llmModelTriage: string;
   llmModelFast: string;
   llmModelReasoning: string;
   llmModelExtract: string;
@@ -27,8 +27,8 @@ interface DeriveRuntimeLlmModelOptionsParams {
 
 export function deriveRuntimeLlmModelOptions({
   indexingLlmConfig,
-  phase2LlmModel,
-  phase3LlmModel,
+  llmModelPlan,
+  llmModelTriage,
   llmModelFast,
   llmModelReasoning,
   llmModelExtract,
@@ -40,8 +40,8 @@ export function deriveRuntimeLlmModelOptions({
     : [];
   const seeded = [
     ...options,
-    phase2LlmModel,
-    phase3LlmModel,
+    llmModelPlan,
+    llmModelTriage,
     llmModelFast,
     llmModelReasoning,
     llmModelExtract,
@@ -63,59 +63,63 @@ export function deriveRuntimeLlmModelOptions({
 
 interface DeriveRuntimeLlmTokenPresetOptionsParams {
   indexingLlmConfig: RuntimeSettingsLlmConfigResponse | undefined;
-  llmTokensPlan: number;
-  llmTokensTriage: number;
-  llmTokensFast: number;
-  llmTokensReasoning: number;
-  llmTokensExtract: number;
-  llmTokensValidate: number;
-  llmTokensWrite: number;
-  llmTokensPlanFallback: number;
-  llmTokensExtractFallback: number;
-  llmTokensValidateFallback: number;
-  llmTokensWriteFallback: number;
+  llmMaxOutputTokensPlan: number;
+  llmMaxOutputTokensTriage: number;
+  llmMaxOutputTokensFast: number;
+  llmMaxOutputTokensReasoning: number;
+  llmMaxOutputTokensExtract: number;
+  llmMaxOutputTokensValidate: number;
+  llmMaxOutputTokensWrite: number;
+  llmMaxOutputTokensPlanFallback: number;
+  llmMaxOutputTokensReasoningFallback: number;
+  llmMaxOutputTokensExtractFallback: number;
+  llmMaxOutputTokensValidateFallback: number;
+  llmMaxOutputTokensWriteFallback: number;
   runtimeManifestDefaults: RuntimeDraft;
 }
 
 export function deriveRuntimeLlmTokenPresetOptions({
   indexingLlmConfig,
-  llmTokensPlan,
-  llmTokensTriage,
-  llmTokensFast,
-  llmTokensReasoning,
-  llmTokensExtract,
-  llmTokensValidate,
-  llmTokensWrite,
-  llmTokensPlanFallback,
-  llmTokensExtractFallback,
-  llmTokensValidateFallback,
-  llmTokensWriteFallback,
+  llmMaxOutputTokensPlan,
+  llmMaxOutputTokensTriage,
+  llmMaxOutputTokensFast,
+  llmMaxOutputTokensReasoning,
+  llmMaxOutputTokensExtract,
+  llmMaxOutputTokensValidate,
+  llmMaxOutputTokensWrite,
+  llmMaxOutputTokensPlanFallback,
+  llmMaxOutputTokensReasoningFallback,
+  llmMaxOutputTokensExtractFallback,
+  llmMaxOutputTokensValidateFallback,
+  llmMaxOutputTokensWriteFallback,
   runtimeManifestDefaults,
 }: DeriveRuntimeLlmTokenPresetOptionsParams): number[] {
   const seeded = [
     ...(Array.isArray(indexingLlmConfig?.token_presets) ? indexingLlmConfig.token_presets : []),
-    llmTokensPlan,
-    llmTokensTriage,
-    llmTokensFast,
-    llmTokensReasoning,
-    llmTokensExtract,
-    llmTokensValidate,
-    llmTokensWrite,
-    llmTokensPlanFallback,
-    llmTokensExtractFallback,
-    llmTokensValidateFallback,
-    llmTokensWriteFallback,
-    runtimeManifestDefaults.llmTokensPlan,
-    runtimeManifestDefaults.llmTokensTriage,
-    runtimeManifestDefaults.llmTokensFast,
-    runtimeManifestDefaults.llmTokensReasoning,
-    runtimeManifestDefaults.llmTokensExtract,
-    runtimeManifestDefaults.llmTokensValidate,
-    runtimeManifestDefaults.llmTokensWrite,
-    runtimeManifestDefaults.llmTokensPlanFallback,
-    runtimeManifestDefaults.llmTokensExtractFallback,
-    runtimeManifestDefaults.llmTokensValidateFallback,
-    runtimeManifestDefaults.llmTokensWriteFallback,
+    llmMaxOutputTokensPlan,
+    llmMaxOutputTokensTriage,
+    llmMaxOutputTokensFast,
+    llmMaxOutputTokensReasoning,
+    llmMaxOutputTokensExtract,
+    llmMaxOutputTokensValidate,
+    llmMaxOutputTokensWrite,
+    llmMaxOutputTokensPlanFallback,
+    llmMaxOutputTokensReasoningFallback,
+    llmMaxOutputTokensExtractFallback,
+    llmMaxOutputTokensValidateFallback,
+    llmMaxOutputTokensWriteFallback,
+    runtimeManifestDefaults.llmMaxOutputTokensPlan,
+    runtimeManifestDefaults.llmMaxOutputTokensTriage,
+    runtimeManifestDefaults.llmMaxOutputTokensFast,
+    runtimeManifestDefaults.llmMaxOutputTokensReasoning,
+    runtimeManifestDefaults.llmMaxOutputTokensExtract,
+    runtimeManifestDefaults.llmMaxOutputTokensValidate,
+    runtimeManifestDefaults.llmMaxOutputTokensWrite,
+    runtimeManifestDefaults.llmMaxOutputTokensPlanFallback,
+    runtimeManifestDefaults.llmMaxOutputTokensReasoningFallback,
+    runtimeManifestDefaults.llmMaxOutputTokensExtractFallback,
+    runtimeManifestDefaults.llmMaxOutputTokensValidateFallback,
+    runtimeManifestDefaults.llmMaxOutputTokensWriteFallback,
   ];
   const cleaned = seeded
     .map((row) => parseRuntimeLlmTokenCap(row))

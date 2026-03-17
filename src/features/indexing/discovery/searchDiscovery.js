@@ -283,7 +283,11 @@ export async function discoverCandidateSources({
     logger,
   });
 
-  if (schema4Plan) {
+  // WHY: Schema 4 handoff must meet a minimum query threshold to be useful.
+  // If the LLM only generates a few queries (e.g. single group), the old
+  // 7-layer path produces better coverage with base templates + LLM planners.
+  const SCHEMA4_MIN_QUERIES = 6;
+  if (schema4Plan && schema4Plan.queries.length >= SCHEMA4_MIN_QUERIES) {
     queries = schema4Plan.queries;
     queryLimit = queries.length;
     executionQueryLimit = queries.length;
@@ -356,6 +360,13 @@ export async function discoverCandidateSources({
       })),
     });
   } else {
+  if (schema4Plan && schema4Plan.queries.length < SCHEMA4_MIN_QUERIES) {
+    logger?.info?.('schema4_path_insufficient_queries', {
+      schema4_count: schema4Plan.queries.length,
+      min_required: SCHEMA4_MIN_QUERIES,
+      fallback: 'old_path',
+    });
+  }
   // === OLD PATH: 7-layer append chain ===
   const profileMaxQueries = Math.max(6, Number(config.discoveryMaxQueries || 8) * 2);
   searchProfileBase = buildSearchProfile({
@@ -370,12 +381,7 @@ export async function discoverCandidateSources({
     fieldTargetQueriesCap: searchProfileCaps.llmFieldTargetQueriesCap,
     docHintQueriesCap: searchProfileCaps.llmDocHintQueriesCap,
   });
-  const phase3SearchActive = Boolean(
-    config.enableSourceRegistry
-    && config.enableDomainHintResolverV2
-    && config.enableQueryCompiler
-    && categoryConfig?.validatedRegistry
-  );
+  const phase3SearchActive = Boolean(categoryConfig?.validatedRegistry);
   const brandResolutionHints = [...new Set(
     [
       brandResolution?.officialDomain,

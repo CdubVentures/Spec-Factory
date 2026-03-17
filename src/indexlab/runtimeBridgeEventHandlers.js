@@ -658,6 +658,8 @@ async function handleLlmEvent(state, deps, { eventName, ts, row }) {
     state._observability.llm_missing_telemetry += 1;
   }
   const llmWorkerId = llmTracker.resolveLlmWorkerId({ row, llmEvent, llmReason });
+  const llmCallEntry = llmTracker.getLlmCallMap().get(llmWorkerId);
+  const isFallback = Boolean(llmCallEntry?.is_fallback);
   if ((eventName === 'llm_call_completed' || eventName === 'llm_call_failed') && llmWorkerId.includes('orphan')) {
     state._observability.llm_orphan_finish += 1;
   }
@@ -691,6 +693,7 @@ async function handleLlmEvent(state, deps, { eventName, ts, row }) {
     prompt_preview: String(row.prompt_preview || '').slice(0, 8000),
     response_preview: String(row.response_preview || '').slice(0, 12000),
     message: String(row.message || '').trim(),
+    is_fallback: isFallback,
     worker_id: llmWorkerId
   }, ts);
 }

@@ -5,17 +5,17 @@ import { loadBundledModule } from './helpers/loadBundledModule.js';
 
 function createRuntimeManifestTokenDefaults(overrides = {}) {
   return {
-    llmTokensPlan: 384,
-    llmTokensTriage: 512,
-    llmTokensFast: 512,
-    llmTokensReasoning: 512,
-    llmTokensExtract: 512,
-    llmTokensValidate: 512,
-    llmTokensWrite: 512,
-    llmTokensPlanFallback: 4096,
-    llmTokensExtractFallback: 4096,
-    llmTokensValidateFallback: 4096,
-    llmTokensWriteFallback: 4096,
+    llmMaxOutputTokensPlan: 384,
+    llmMaxOutputTokensTriage: 512,
+    llmMaxOutputTokensFast: 512,
+    llmMaxOutputTokensReasoning: 512,
+    llmMaxOutputTokensExtract: 512,
+    llmMaxOutputTokensValidate: 512,
+    llmMaxOutputTokensWrite: 512,
+    llmMaxOutputTokensPlanFallback: 4096,
+    llmMaxOutputTokensExtractFallback: 4096,
+    llmMaxOutputTokensValidateFallback: 4096,
+    llmMaxOutputTokensWriteFallback: 4096,
     ...overrides,
   };
 }
@@ -30,8 +30,8 @@ test('runtime llm model options keep current selections stable and dedupe normal
     indexingLlmConfig: {
       model_options: ['gpt-4o-mini', 'gpt-4.1', ' GPT-4O-MINI '],
     },
-    phase2LlmModel: 'custom-plan',
-    phase3LlmModel: 'gpt-4.1',
+    llmModelPlan: 'custom-plan',
+    llmModelTriage: 'gpt-4.1',
     llmModelFast: '',
     llmModelReasoning: '',
     llmModelExtract: '',
@@ -66,17 +66,17 @@ test('runtime llm token preset options sanitize, sort, dedupe, and include live 
     indexingLlmConfig: {
       token_presets: [999999, 1024, 128, 1024, 'bad'],
     },
-    llmTokensPlan: 384,
-    llmTokensTriage: 1024,
-    llmTokensFast: 512,
-    llmTokensReasoning: 512,
-    llmTokensExtract: 512,
-    llmTokensValidate: 512,
-    llmTokensWrite: 512,
-    llmTokensPlanFallback: 4096,
-    llmTokensExtractFallback: 4096,
-    llmTokensValidateFallback: 4096,
-    llmTokensWriteFallback: 4096,
+    llmMaxOutputTokensPlan: 384,
+    llmMaxOutputTokensTriage: 1024,
+    llmMaxOutputTokensFast: 512,
+    llmMaxOutputTokensReasoning: 512,
+    llmMaxOutputTokensExtract: 512,
+    llmMaxOutputTokensValidate: 512,
+    llmMaxOutputTokensWrite: 512,
+    llmMaxOutputTokensPlanFallback: 4096,
+    llmMaxOutputTokensExtractFallback: 4096,
+    llmMaxOutputTokensValidateFallback: 4096,
+    llmMaxOutputTokensWriteFallback: 4096,
     runtimeManifestDefaults: createRuntimeManifestTokenDefaults(),
   });
 
@@ -111,7 +111,7 @@ test('runtime llm model token defaults resolve from profiles, config defaults, a
       { model: 'beta', default_output_tokens: 'bad', max_output_tokens: 999999 },
     ],
   };
-  const runtimeManifestDefaults = createRuntimeManifestTokenDefaults({ llmTokensPlan: 768 });
+  const runtimeManifestDefaults = createRuntimeManifestTokenDefaults({ llmMaxOutputTokensPlan: 768 });
   const llmTokenProfileLookup = buildRuntimeLlmTokenProfileLookup({
     indexingLlmConfig: indexedConfig,
   });
@@ -170,7 +170,7 @@ test('runtime hydration bindings accept alias keys and skip local resets when th
     llmPlanFallbackModel: 'alias-plan-fallback',
     llmMaxOutputTokensPlan: 1536,
     llmMaxOutputTokensPlanFallback: 2048,
-    llmTokensWriteFallback: 2304,
+    llmMaxOutputTokensWriteFallback: 2304,
   };
 
   assert.equal(
@@ -185,10 +185,10 @@ test('runtime hydration bindings accept alias keys and skip local resets when th
     true,
     'clean runtime state should hydrate from alias-aware authority bindings',
   );
-  assert.equal(state.setPhase2LlmModel, 'alias-plan-model');
-  assert.equal(state.setPhase3LlmModel, 'alias-triage-model');
+  assert.equal(state.setLlmModelPlan, 'alias-plan-model');
+  assert.equal(state.setLlmModelTriage, 'alias-triage-model');
   assert.equal(state.setLlmPlanFallbackModel, 'alias-plan-fallback');
-  assert.equal(state.setLlmTokensPlan, 1536);
-  assert.equal(state.setLlmTokensPlanFallback, 2048);
-  assert.equal(state.setLlmTokensWriteFallback, 2304);
+  assert.equal(state.setLlmMaxOutputTokensPlan, 1536);
+  assert.equal(state.setLlmMaxOutputTokensPlanFallback, 2048);
+  assert.equal(state.setLlmMaxOutputTokensWriteFallback, 2304);
 });

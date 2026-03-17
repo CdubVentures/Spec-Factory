@@ -84,9 +84,6 @@ export const RuntimeFlowObservabilitySection = memo(function RuntimeFlowObservab
           <SettingRow label="Daemon Concurrency" tip="Concurrent product runs for daemon mode.">
             <SettingNumberInput draftKey="daemonConcurrency" value={runtimeDraft.daemonConcurrency} bounds={getNumberBounds('daemonConcurrency')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
-          <SettingRow label="Daemon Graceful Shutdown Timeout (ms)" tip="Grace period before daemon force-stop.">
-            <SettingNumberInput draftKey="daemonGracefulShutdownTimeoutMs" value={runtimeDraft.daemonGracefulShutdownTimeoutMs} bounds={getNumberBounds('daemonGracefulShutdownTimeoutMs')} step={1000} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
           <AdvancedSettingsBlock title="Resume & Validation" count={5}>
             <SettingRow label="Indexing Resume Seed Limit" tip="Maximum seed URLs loaded during resume.">
               <SettingNumberInput draftKey="indexingResumeSeedLimit" value={runtimeDraft.indexingResumeSeedLimit} bounds={getNumberBounds('indexingResumeSeedLimit')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />

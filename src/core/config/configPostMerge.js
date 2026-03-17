@@ -1,6 +1,6 @@
 // WHY: Post-merge normalization extracted from config.js (Phase 6).
 // Applies canonical defaults, overrides, coercions, clamping, and fallback chains.
-// Clamping ranges derive from RUNTIME_SETTINGS_ROUTE_PUT (SSOT).
+// Clamping ranges derive from shared SSOT (settingsClampingRanges).
 
 import { inferLlmProvider } from './llmModelResolver.js';
 import {
@@ -17,7 +17,10 @@ import {
 } from './configNormalizers.js';
 import { toTokenInt, parseTokenPresetList, parseBoolEnv } from './envParsers.js';
 import { applyCanonicalSettingsDefaults } from './settingsClassification.js';
-import { RUNTIME_SETTINGS_ROUTE_PUT } from '../../features/settings-authority/runtimeSettingsRoutePut.js';
+import {
+  SETTINGS_CLAMPING_INT_RANGE_MAP,
+  SETTINGS_CLAMPING_FLOAT_RANGE_MAP,
+} from '../../shared/settingsClampingRanges.js';
 import {
   buildDefaultModelPricingMap,
   LLM_PRICING_AS_OF,
@@ -30,7 +33,7 @@ import {
 // ---------------------------------------------------------------------------
 
 function clampIntFromRoute(merged, key, routeKey) {
-  const range = RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap[routeKey];
+  const range = SETTINGS_CLAMPING_INT_RANGE_MAP[routeKey];
   if (!range) return;
   const val = Number.parseInt(String(merged[key] ?? ''), 10);
   merged[key] = Number.isFinite(val)
@@ -39,7 +42,7 @@ function clampIntFromRoute(merged, key, routeKey) {
 }
 
 function clampFloatFromRoute(merged, key, routeKey) {
-  const range = RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap[routeKey];
+  const range = SETTINGS_CLAMPING_FLOAT_RANGE_MAP[routeKey];
   if (!range) return;
   const val = Number.parseFloat(String(merged[key] ?? ''));
   merged[key] = Number.isFinite(val)
@@ -98,11 +101,7 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   merged.staticDomMode = normalizeStaticDomMode(merged.staticDomMode, 'cheerio');
   merged.pdfPreferredBackend = normalizePdfBackend(merged.pdfPreferredBackend || 'auto', 'auto');
   merged.scannedPdfOcrBackend = normalizeScannedPdfOcrBackend(merged.scannedPdfOcrBackend || 'auto', 'auto');
-  merged.structuredMetadataExtructUrl = normalizeBaseUrl(
-    merged.structuredMetadataExtructUrl || 'http://127.0.0.1:8011/extract/structured'
-  );
-
-  // --- Route-contract-derived clamping (14 keys) ---
+  // --- Route-contract-derived clamping (11 keys) ---
   clampFloatFromRoute(merged, 'staticDomTargetMatchThreshold', 'staticDomTargetMatchThreshold');
   clampIntFromRoute(merged, 'staticDomMaxEvidenceSnippets', 'staticDomMaxEvidenceSnippets');
   clampIntFromRoute(merged, 'pdfBackendRouterTimeoutMs', 'pdfBackendRouterTimeoutMs');
@@ -114,9 +113,6 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   clampIntFromRoute(merged, 'scannedPdfOcrMinCharsPerPage', 'scannedPdfOcrMinCharsPerPage');
   clampIntFromRoute(merged, 'scannedPdfOcrMinLinesPerPage', 'scannedPdfOcrMinLinesPerPage');
   clampFloatFromRoute(merged, 'scannedPdfOcrMinConfidence', 'scannedPdfOcrMinConfidence');
-  clampIntFromRoute(merged, 'structuredMetadataExtructTimeoutMs', 'structuredMetadataExtructTimeoutMs');
-  clampIntFromRoute(merged, 'structuredMetadataExtructMaxItemsPerSurface', 'structuredMetadataExtructMaxItemsPerSurface');
-  clampIntFromRoute(merged, 'structuredMetadataExtructCacheLimit', 'structuredMetadataExtructCacheLimit');
 
   // --- Role-specific LLM provider/baseUrl/apiKey fallbacks ---
   merged.llmPlanProvider = merged.llmPlanProvider || merged.llmProvider;
@@ -200,8 +196,6 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   merged.openaiTimeoutMs = merged.llmTimeoutMs;
 
   merged.runProfile = 'standard';
-  merged.manufacturerReserveUrls = Math.max(0, Math.min(merged.maxUrlsPerProduct, merged.manufacturerReserveUrls));
-  merged.maxManufacturerUrlsPerProduct = Math.max(1, Math.min(merged.maxUrlsPerProduct, merged.maxManufacturerUrlsPerProduct));
 
   // --- preferHttpFetcher override ---
   const hasExplicitPreferHttpFetcherOverride = Object.prototype.hasOwnProperty.call(filtered, 'preferHttpFetcher');
@@ -213,5 +207,39 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
     merged.preferHttpFetcher = parseBoolEnv('PREFER_HTTP_FETCHER', merged.preferHttpFetcher);
   }
 
+  resolvePhaseOverrides(merged);
+
   return merged;
+}
+
+// ---------------------------------------------------------------------------
+// Phase-level LLM override resolver
+// ---------------------------------------------------------------------------
+
+function resolvePhaseOverrides(merged) {
+  let overrides = {};
+  try {
+    overrides = JSON.parse(merged.llmPhaseOverridesJson || '{}') || {};
+  } catch { /* use empty */ }
+  if (typeof overrides !== 'object' || Array.isArray(overrides)) overrides = {};
+
+  const PHASE_DEFS = [
+    { id: 'needset', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+    { id: 'searchPlanner', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+    { id: 'brandResolver', globalModel: 'llmModelTriage', groupToggle: 'llmTriageUseReasoning', globalTokens: 'llmMaxOutputTokensTriage' },
+    { id: 'serpTriage', globalModel: 'llmModelTriage', groupToggle: 'llmTriageUseReasoning', globalTokens: 'llmMaxOutputTokensTriage' },
+    { id: 'domainClassifier', globalModel: 'llmModelTriage', groupToggle: 'llmTriageUseReasoning', globalTokens: 'llmMaxOutputTokensTriage' },
+  ];
+
+  const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  for (const def of PHASE_DEFS) {
+    const phaseOverride = overrides[def.id] || {};
+    const prefix = `_resolved${capitalize(def.id)}`;
+
+    merged[`${prefix}BaseModel`] = phaseOverride.baseModel || merged[def.globalModel];
+    merged[`${prefix}ReasoningModel`] = phaseOverride.reasoningModel || merged.llmModelReasoning;
+    merged[`${prefix}UseReasoning`] = phaseOverride.useReasoning ?? merged[def.groupToggle] ?? false;
+    merged[`${prefix}MaxOutputTokens`] = phaseOverride.maxOutputTokens ?? merged[def.globalTokens];
+  }
 }

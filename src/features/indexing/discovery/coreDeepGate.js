@@ -90,12 +90,8 @@ export function clusterDeepNumericClaims(claims) {
 /**
  * Integration orchestrator: apply core/deep gates to consensus output.
  * Wraps classifyFieldCoreDeep + applyTierAcceptancePolicy + clusterDeepNumericClaims.
- * No-op when config.enableCoreDeepGates is false.
  */
 export function applyCoreDeepGates({ consensus, fieldRulesEngine, config = {} }) {
-  if (!config.enableCoreDeepGates) {
-    return consensus;
-  }
 
   const fieldRules = fieldRulesEngine?.getCoreDeepFieldRules?.() || { core_fields: [], fields: {} };
 

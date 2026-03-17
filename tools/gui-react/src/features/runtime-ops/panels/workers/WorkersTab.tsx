@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../api/client';
 import { usePersistedToggle } from '../../../../stores/collapseStore';
 import { usePersistedNullableTab, usePersistedTab } from '../../../../stores/tabStore';
-import { useRuntimeSettingsReader } from '../../../pipeline-settings/state/runtimeSettingsAuthority';
+import { useRuntimeSettingsReader } from '../../../pipeline-settings';
 import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse, PrefetchLiveSettings, PrefetchNeedSetData } from '../../types';
 import { getRefetchInterval } from '../../helpers';
 import { WorkerSubTabs } from './WorkerSubTabs';

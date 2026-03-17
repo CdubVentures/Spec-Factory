@@ -4,9 +4,6 @@ export interface BuildIndexingRunDiscoveryPayloadInput {
   fetchCandidateSources: boolean;
   parsedDiscoveryMaxQueries: number;
   parsedDiscoveryMaxDiscovered: number;
-  manufacturerBroadDiscovery: boolean;
-  manufacturerSeedSearchUrls: boolean;
-  manufacturerDeepResearchEnabled: boolean;
   parsedMaxUrlsPerProduct: number;
   parsedMaxCandidateUrls: number;
   parsedMaxPagesPerDomain: number;
@@ -24,9 +21,6 @@ export function buildIndexingRunDiscoveryPayload(
     fetchCandidateSources: input.fetchCandidateSources,
     discoveryMaxQueries: Math.max(1, input.parsedDiscoveryMaxQueries),
     discoveryMaxDiscovered: Math.max(1, input.parsedDiscoveryMaxDiscovered),
-    manufacturerBroadDiscovery: input.manufacturerBroadDiscovery,
-    manufacturerSeedSearchUrls: input.manufacturerSeedSearchUrls,
-    manufacturerDeepResearchEnabled: input.manufacturerDeepResearchEnabled,
     maxUrlsPerProduct: Math.max(1, input.parsedMaxUrlsPerProduct),
     maxCandidateUrls: Math.max(1, input.parsedMaxCandidateUrls),
     maxPagesPerDomain: Math.max(1, input.parsedMaxPagesPerDomain),

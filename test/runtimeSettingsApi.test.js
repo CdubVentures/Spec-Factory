@@ -105,7 +105,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'searchProvider',
       'searxngBaseUrl',
       'frontierDbPath',
-      'phase2LlmModel', 'phase3LlmModel', 'llmModelFast', 'llmModelReasoning',
+      'llmModelPlan', 'llmModelTriage', 'llmModelFast', 'llmModelReasoning',
       'llmModelExtract', 'llmModelValidate', 'llmModelWrite',
       'resumeMode', 'scannedPdfOcrBackend',
     ];
@@ -120,9 +120,9 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'domainRequestRps', 'domainRequestBurst',
       'globalRequestRps', 'globalRequestBurst',
       'fetchPerHostConcurrencyCap',
-      'llmTokensPlan', 'llmTokensTriage', 'llmTokensFast', 'llmTokensReasoning',
-      'llmTokensExtract', 'llmTokensValidate', 'llmTokensWrite',
-      'llmTokensPlanFallback', 'llmTokensExtractFallback', 'llmTokensValidateFallback', 'llmTokensWriteFallback',
+      'llmMaxOutputTokensPlan', 'llmMaxOutputTokensTriage', 'llmMaxOutputTokensFast', 'llmMaxOutputTokensReasoning',
+      'llmMaxOutputTokensExtract', 'llmMaxOutputTokensValidate', 'llmMaxOutputTokensWrite',
+      'llmMaxOutputTokensPlanFallback', 'llmMaxOutputTokensExtractFallback', 'llmMaxOutputTokensValidateFallback', 'llmMaxOutputTokensWriteFallback',
       'resumeWindowHours', 'reextractAfterHours',
       'scannedPdfOcrMaxPages', 'scannedPdfOcrMaxPairs', 'scannedPdfOcrMinCharsPerPage', 'scannedPdfOcrMinLinesPerPage',
       'crawleeRequestHandlerTimeoutSecs', 'dynamicFetchRetryBudget', 'dynamicFetchRetryBackoffMs',
@@ -152,7 +152,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'dynamicCrawleeEnabled', 'crawleeHeadless', 'fetchSchedulerEnabled', 'preferHttpFetcher', 'runtimeScreencastEnabled',
       'frontierEnableSqlite', 'frontierStripTrackingParams', 'frontierRepairSearchEnabled',
       'autoScrollEnabled', 'graphqlReplayEnabled', 'robotsTxtCompliant',
-      'fetchCandidateSources', 'manufacturerBroadDiscovery', 'manufacturerSeedSearchUrls',
+      'fetchCandidateSources',
       'runtimeTraceEnabled', 'runtimeTraceLlmPayloads',
       'eventsJsonWrite', 'authoritySnapshotEnabled',
     ];
@@ -224,7 +224,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   });
 
   await t.test('PUT with invalid values returns rejected for those keys', async () => {
-    const payload = { fetchConcurrency: 'not_a_number', llmTokensPlan: 'abc' };
+    const payload = { fetchConcurrency: 'not_a_number', llmMaxOutputTokensPlan: 'abc' };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -235,7 +235,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(body.ok, true);
     assert.ok(body.rejected);
     assert.equal(body.rejected.fetchConcurrency, 'invalid_integer');
-    assert.equal(body.rejected.llmTokensPlan, 'invalid_integer');
+    assert.equal(body.rejected.llmMaxOutputTokensPlan, 'invalid_integer');
   });
 
   await t.test('PUT clamps out-of-range values', async () => {

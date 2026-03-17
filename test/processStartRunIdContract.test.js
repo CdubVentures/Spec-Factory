@@ -371,7 +371,6 @@ test('process/start forwards representative runtime override families into child
       eventsJsonWrite: true,
       queueJsonWrite: true,
       daemonConcurrency: 3,
-      daemonGracefulShutdownTimeoutMs: 2500,
       importsRoot: './imports',
       importsPollSeconds: 12,
       runtimeScreencastEnabled: true,
@@ -433,7 +432,6 @@ test('process/start forwards representative runtime override families into child
   assert.equal(capturedEnv?.EVENTS_JSON_WRITE, 'true');
   assert.equal(capturedEnv?.QUEUE_JSON_WRITE, 'true');
   assert.equal(capturedEnv?.DAEMON_CONCURRENCY, '3');
-  assert.equal(capturedEnv?.DAEMON_GRACEFUL_SHUTDOWN_TIMEOUT_MS, '2500');
   assert.equal(capturedEnv?.IMPORTS_ROOT, './imports');
   assert.equal(capturedEnv?.IMPORTS_POLL_SECONDS, '12');
 
@@ -458,7 +456,6 @@ test('process/start clamps representative runtime numeric env overrides before s
       runtimeTraceFetchRing: 999999,
       runtimeTraceLlmRing: 999999,
       daemonConcurrency: 999,
-      daemonGracefulShutdownTimeoutMs: 999999999,
       importsPollSeconds: 999999,
       runtimeScreencastFps: 999,
       runtimeScreencastQuality: 999,
@@ -485,7 +482,6 @@ test('process/start clamps representative runtime numeric env overrides before s
   assert.equal(capturedEnv?.RUNTIME_TRACE_FETCH_RING, '2000');
   assert.equal(capturedEnv?.RUNTIME_TRACE_LLM_RING, '2000');
   assert.equal(capturedEnv?.DAEMON_CONCURRENCY, '128');
-  assert.equal(capturedEnv?.DAEMON_GRACEFUL_SHUTDOWN_TIMEOUT_MS, '600000');
   assert.equal(capturedEnv?.IMPORTS_POLL_SECONDS, '3600');
   assert.equal(capturedEnv?.RUNTIME_SCREENCAST_FPS, '60');
   assert.equal(capturedEnv?.RUNTIME_SCREENCAST_QUALITY, '100');

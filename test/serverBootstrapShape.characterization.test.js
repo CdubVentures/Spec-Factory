@@ -5,7 +5,7 @@ import path from 'node:path';
 
 const EXPECTED_KEYS = [
   // Config & paths
-  'config', 'PORT', 'HELPER_ROOT', 'OUTPUT_ROOT', 'INDEXLAB_ROOT', 'LAUNCH_CWD',
+  'config', 'configGate', 'PORT', 'HELPER_ROOT', 'OUTPUT_ROOT', 'INDEXLAB_ROOT', 'LAUNCH_CWD',
   'storage', 'runDataStorageState',
   // Session & SpecDb
   'sessionCache', 'resolveCategoryAlias',
@@ -53,7 +53,7 @@ function extractReturnKeys(src) {
   return { keys: [...new Set(keyMatches)], spreads };
 }
 
-test('characterization: serverBootstrap return object has exactly 63 keys', () => {
+test('characterization: serverBootstrap return object has exactly 64 keys', () => {
   const assemblerSrc = fs.readFileSync(
     path.resolve('src/api/serverBootstrap.js'), 'utf8'
   );
@@ -71,7 +71,7 @@ test('characterization: serverBootstrap return object has exactly 63 keys', () =
   }
 
   const actualKeys = [...new Set([...directKeys, ...spreadKeys])];
-  assert.equal(actualKeys.length, 63, `expected 63 keys, got ${actualKeys.length}: ${actualKeys.join(', ')}`);
+  assert.equal(actualKeys.length, 64, `expected 64 keys, got ${actualKeys.length}: ${actualKeys.join(', ')}`);
   const expectedSet = new Set(EXPECTED_KEYS);
   const actualSet = new Set(actualKeys);
   for (const k of expectedSet) {
@@ -82,7 +82,15 @@ test('characterization: serverBootstrap return object has exactly 63 keys', () =
   }
 });
 
-test('characterization: EXPECTED_KEYS has exactly 63 entries', () => {
-  assert.equal(EXPECTED_KEYS.length, 63);
-  assert.equal(new Set(EXPECTED_KEYS).size, 63, 'duplicate keys in EXPECTED_KEYS');
+test('characterization: EXPECTED_KEYS has exactly 64 entries', () => {
+  assert.equal(EXPECTED_KEYS.length, 64);
+  assert.equal(new Set(EXPECTED_KEYS).size, 64, 'duplicate keys in EXPECTED_KEYS');
+});
+
+test('characterization: createBootstrapEnvironment returns configGate with gate API', () => {
+  const envSrc = fs.readFileSync(
+    path.resolve('src/api/bootstrap/createBootstrapEnvironment.js'), 'utf8'
+  );
+  assert.ok(envSrc.includes('configGate'), 'createBootstrapEnvironment must export configGate');
+  assert.ok(envSrc.includes('createConfigMutationGate'), 'must import createConfigMutationGate');
 });

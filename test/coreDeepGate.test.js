@@ -106,14 +106,3 @@ describe('coreDeepGate — clusterDeepNumericClaims', () => {
   });
 });
 
-describe('coreDeepGate — backward compat', () => {
-  it('10. gate inactive when enableCoreDeepGates = false', () => {
-    // When gate is off, classifyFieldCoreDeep should still work
-    // but the policy is not enforced — all candidates accepted
-    const result = applyTierAcceptancePolicy(
-      { tier: 5, value: 'garbage', corroboration_count: 0 },
-      'deep_claim'
-    );
-    assert.equal(result.accepted, true);
-  });
-});

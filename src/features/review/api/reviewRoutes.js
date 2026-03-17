@@ -5,35 +5,20 @@ import { resolveProductIdentity } from '../../catalog/index.js';
 import { emitDataChange } from '../../../api/events/dataChangeContract.js';
 import { runEnumConsistencyReview as runEnumConsistencyReviewDefault } from '../../indexing/index.js';
 import { isConsumerEnabled } from '../../../field-rules/consumerGate.js';
+import {
+  normalizeEnumToken,
+  hasMeaningfulEnumValue,
+  dedupeEnumValues,
+  readEnumConsistencyFormatHint,
+} from '../services/enumMutationService.js';
 
-function normalizeEnumToken(value) {
-  return String(value ?? '').trim().toLowerCase();
-}
-
-function hasMeaningfulEnumValue(value) {
-  const token = normalizeEnumToken(value);
-  return token !== '' && token !== 'unk' && token !== 'unknown' && token !== 'n/a' && token !== 'null';
-}
-
-function dedupeEnumValues(values = []) {
-  const seen = new Set();
-  const output = [];
-  for (const rawValue of values) {
-    const text = String(rawValue ?? '').trim();
-    if (!hasMeaningfulEnumValue(text)) continue;
-    const token = normalizeEnumToken(text);
-    if (seen.has(token)) continue;
-    seen.add(token);
-    output.push(text);
-  }
-  return output;
-}
-
-function readEnumConsistencyFormatHint(rule = {}) {
-  const enumBlock = rule?.enum && typeof rule.enum === 'object' ? rule.enum : {};
-  const enumMatch = enumBlock?.match && typeof enumBlock.match === 'object' ? enumBlock.match : {};
-  return String(enumMatch?.format_hint || rule?.enum_match_format_hint || '').trim();
-}
+// Re-export for characterization tests and any external consumers
+export {
+  normalizeEnumToken,
+  hasMeaningfulEnumValue,
+  dedupeEnumValues,
+  readEnumConsistencyFormatHint,
+};
 
 function isEnumConsistencyReviewEnabled(rule = {}) {
   return isConsumerEnabled(rule, 'enum.match.strategy', 'review')

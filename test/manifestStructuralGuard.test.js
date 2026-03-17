@@ -20,7 +20,7 @@ describe('manifest structural guard', () => {
   it('group IDs are in exact expected order', () => {
     const expected = [
       'core', 'caching', 'storage', 'security', 'llm',
-      'discovery', 'retrieval', 'runtime', 'observability',
+      'discovery', 'runtime', 'observability',
       'paths', 'misc',
     ];
     assert.deepStrictEqual(CONFIG_MANIFEST.map(g => g.id), expected);

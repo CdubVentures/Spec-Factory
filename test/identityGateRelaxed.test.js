@@ -114,9 +114,9 @@ describe('Step 1: Tiered identity gate threshold', () => {
     assert.equal(gate.validated, false);
   });
 
-  it('config identityGatePublishThreshold defaults to 0.75', () => {
+  it('identityGatePublishThreshold is retired from config (hardcoded to 0.75 in orchestration)', () => {
     const config = loadConfig();
-    assert.equal(config.identityGatePublishThreshold, 0.75);
+    assert.equal(Object.hasOwn(config, 'identityGatePublishThreshold'), false);
   });
 });
 

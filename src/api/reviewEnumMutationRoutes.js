@@ -3,190 +3,33 @@ import {
   firstFiniteNumber,
   prepareMutationContextRequest,
   respondIfError,
-  resolveCandidateConfidence,
   routeMatches,
   runHandledRouteChain,
   sendDataChangeResponse,
 } from './reviewRouteSharedHelpers.js';
 
-function validateEnumCandidate({
-  candidateRow,
-  candidateId,
-  field,
-  resolvedValue,
-  isMeaningfulValue,
-  normalizeLower,
-  valueMismatchMessage,
-  allowValueMismatch = false,
-}) {
-  if (String(candidateRow?.field_key || '').trim() !== String(field || '').trim()) {
-    return {
-      error: 'candidate_context_mismatch',
-      message: `candidate_id '${candidateId}' does not belong to enum field '${field}'.`,
-    };
-  }
-  const candidateValueToken = String(candidateRow?.value ?? '').trim();
-  if (
-    !allowValueMismatch
-    && (
-    isMeaningfulValue(candidateValueToken)
-    && normalizeLower(candidateValueToken) !== normalizeLower(String(resolvedValue ?? '').trim())
-    )
-  ) {
-    return {
-      error: 'candidate_value_mismatch',
-      message: valueMismatchMessage,
-    };
-  }
-  return null;
-}
+import {
+  validateEnumCandidate,
+  applyEnumSharedLaneState,
+  applyEnumSharedLaneWithResolvedConfidence,
+  upsertEnumListValueAndFetch,
+  resolveEnumPreAffectedProductIds,
+  sanitizeExistingAcceptedCandidateId,
+  resolveEnumRequiredCandidate,
+  applyEnumSuggestionStatusByAction,
+} from '../features/review/services/enumMutationService.js';
 
-function applyEnumSharedLaneState({
-  runtimeSpecDb,
-  applySharedLaneState,
-  category,
-  field,
-  normalizedValue,
-  listValueRow,
-  selectedCandidateId,
-  selectedValue,
-  confidenceScore,
-  laneAction,
-  nowIso,
-  confirmStatusOverride,
-}) {
-  return applySharedLaneState({
-    specDb: runtimeSpecDb,
-    category,
-    targetKind: 'enum_key',
-    fieldKey: field,
-    enumValueNorm: normalizedValue,
-    listValueId: listValueRow?.id ?? null,
-    enumListId: listValueRow?.list_id ?? null,
-    selectedCandidateId: selectedCandidateId || null,
-    selectedValue,
-    confidenceScore,
-    laneAction,
-    nowIso,
-    confirmStatusOverride,
-  });
-}
-
-function applyEnumSharedLaneWithResolvedConfidence({
-  runtimeSpecDb,
-  applySharedLaneState,
-  category,
-  field,
-  normalizedValue,
-  listValueRow,
-  selectedCandidateId,
-  selectedValue,
-  laneAction,
-  nowIso,
-  confirmStatusOverride = undefined,
-  fallbackConfidence = 1.0,
-}) {
-  const { confidence: sharedConfidence } = resolveCandidateConfidence({
-    specDb: runtimeSpecDb,
-    candidateId: selectedCandidateId,
-    fallbackConfidence,
-  });
-  return applyEnumSharedLaneState({
-    runtimeSpecDb,
-    applySharedLaneState,
-    category,
-    field,
-    normalizedValue,
-    listValueRow,
-    selectedCandidateId,
-    selectedValue,
-    confidenceScore: sharedConfidence,
-    laneAction,
-    nowIso,
-    confirmStatusOverride,
-  });
-}
-
-function upsertEnumListValueAndFetch({
-  runtimeSpecDb,
-  field,
-  value,
-  normalizedValue,
-  upsertValues,
-}) {
-  runtimeSpecDb.upsertListValue({
-    fieldKey: field,
-    value,
-    normalizedValue,
-    ...(upsertValues || {}),
-  });
-  return runtimeSpecDb.getListValueByFieldAndValue(field, value);
-}
-
-function resolveEnumPreAffectedProductIds(runtimeSpecDb, listValueId) {
-  try {
-    const preRows = runtimeSpecDb.getProductsByListValueId(listValueId) || [];
-    return [...new Set(preRows.map((row) => row?.product_id).filter(Boolean))];
-  } catch {
-    return [];
-  }
-}
-
-function sanitizeExistingAcceptedCandidateId(runtimeSpecDb, existingLv) {
-  const persistedAcceptedCandidateId = String(existingLv?.accepted_candidate_id || '').trim();
-  if (!persistedAcceptedCandidateId) return null;
-  return runtimeSpecDb.getCandidateById(persistedAcceptedCandidateId)
-    ? persistedAcceptedCandidateId
-    : null;
-}
-
-function resolveEnumRequiredCandidate({
-  action,
-  requestedCandidateId,
-  requestedCandidateRow,
-}) {
-  const needsCandidateAction = action === 'accept' || action === 'confirm';
-  if (!needsCandidateAction) return null;
-  if (!requestedCandidateId) {
-    return {
-      status: 400,
-      payload: {
-        error: 'candidate_id_required',
-        message: `candidateId is required for enum ${action}.`,
-      },
-    };
-  }
-  if (!requestedCandidateRow) {
-    return {
-      status: 404,
-      payload: {
-        error: 'candidate_not_found',
-        message: `candidate_id '${requestedCandidateId}' was not found.`,
-      },
-    };
-  }
-  return null;
-}
-
-async function applyEnumSuggestionStatusByAction({
-  action,
-  markEnumSuggestionStatus,
-  category,
-  field,
-  value,
-  priorValue,
-}) {
-  if (action === 'accept' || action === 'add') {
-    try { await markEnumSuggestionStatus(category, field, value, 'accepted'); } catch { /* best-effort */ }
-    if (priorValue) {
-      try { await markEnumSuggestionStatus(category, field, priorValue, 'accepted'); } catch { /* best-effort */ }
-    }
-    return;
-  }
-  if (action === 'remove') {
-    try { await markEnumSuggestionStatus(category, field, value, 'dismissed'); } catch { /* best-effort */ }
-  }
-}
+// Re-export for characterization tests and any external consumers
+export {
+  validateEnumCandidate,
+  applyEnumSharedLaneState,
+  applyEnumSharedLaneWithResolvedConfidence,
+  upsertEnumListValueAndFetch,
+  resolveEnumPreAffectedProductIds,
+  sanitizeExistingAcceptedCandidateId,
+  resolveEnumRequiredCandidate,
+  applyEnumSuggestionStatusByAction,
+};
 
 async function handleEnumOverrideEndpoint({
   parts,

@@ -43,23 +43,24 @@ export function deriveRuntimeLlmTokenContractPresetMax({
 }: DeriveRuntimeLlmTokenContractPresetMaxParams): number {
   const seeded = [
     ...(Array.isArray(indexingLlmConfig?.token_presets) ? indexingLlmConfig.token_presets : []),
-    runtimeManifestDefaults.llmTokensPlan,
-    runtimeManifestDefaults.llmTokensTriage,
-    runtimeManifestDefaults.llmTokensFast,
-    runtimeManifestDefaults.llmTokensReasoning,
-    runtimeManifestDefaults.llmTokensExtract,
-    runtimeManifestDefaults.llmTokensValidate,
-    runtimeManifestDefaults.llmTokensWrite,
-    runtimeManifestDefaults.llmTokensPlanFallback,
-    runtimeManifestDefaults.llmTokensExtractFallback,
-    runtimeManifestDefaults.llmTokensValidateFallback,
-    runtimeManifestDefaults.llmTokensWriteFallback,
+    runtimeManifestDefaults.llmMaxOutputTokensPlan,
+    runtimeManifestDefaults.llmMaxOutputTokensTriage,
+    runtimeManifestDefaults.llmMaxOutputTokensFast,
+    runtimeManifestDefaults.llmMaxOutputTokensReasoning,
+    runtimeManifestDefaults.llmMaxOutputTokensExtract,
+    runtimeManifestDefaults.llmMaxOutputTokensValidate,
+    runtimeManifestDefaults.llmMaxOutputTokensWrite,
+    runtimeManifestDefaults.llmMaxOutputTokensPlanFallback,
+    runtimeManifestDefaults.llmMaxOutputTokensReasoningFallback,
+    runtimeManifestDefaults.llmMaxOutputTokensExtractFallback,
+    runtimeManifestDefaults.llmMaxOutputTokensValidateFallback,
+    runtimeManifestDefaults.llmMaxOutputTokensWriteFallback,
   ];
   const cleaned = seeded
     .map((row) => parseRuntimeLlmTokenCap(row))
     .filter((row): row is number => row !== null)
     .sort((a, b) => a - b);
-  return cleaned[cleaned.length - 1] || runtimeManifestDefaults.llmTokensPlan;
+  return cleaned[cleaned.length - 1] || runtimeManifestDefaults.llmMaxOutputTokensPlan;
 }
 
 interface CreateRuntimeModelTokenDefaultsResolverParams {
@@ -78,7 +79,7 @@ export function createRuntimeModelTokenDefaultsResolver({
   return (model: string) => {
     const profile = llmTokenProfileLookup.get(normalizeToken(model));
     const defaultFromConfig = parseRuntimeLlmTokenCap(indexingLlmConfig?.token_defaults?.plan);
-    const fallbackDefault = runtimeManifestDefaults.llmTokensPlan;
+    const fallbackDefault = runtimeManifestDefaults.llmMaxOutputTokensPlan;
     const globalDefault = defaultFromConfig
       || parseRuntimeLlmTokenCap(fallbackDefault)
       || LLM_SETTING_LIMITS.maxTokens.min;

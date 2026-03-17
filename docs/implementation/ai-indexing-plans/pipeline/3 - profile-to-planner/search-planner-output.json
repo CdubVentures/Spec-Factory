@@ -1,0 +1,142 @@
+{
+  "_doc": "Search Planner (buildSearchPlan) output contract. Documents the exact Schema 4 (NeedSetPlannerOutput) shape returned by searchPlanBuilder.js:219-266 (assembleSchema4). This is what runDiscoverySeedPlan receives. Updated 2026-03-16.",
+
+  "schema_version": "needset_planner_output.v2",
+
+  "_output_modes": {
+    "llm": "Normal path — LLM called, queries generated, full Schema 4 emitted",
+    "disabled": "No API key — zero queries, plannerComplete=true, full panel/bundle metadata still emitted",
+    "error": "LLM call failed — zero queries, plannerComplete=false, error message captured, full panel/bundle metadata still emitted"
+  },
+
+  "run": {
+    "_tag": "passthrough from Schema 3",
+    "run_id": "string",
+    "category": "string",
+    "product_id": "string",
+    "brand": "string",
+    "model": "string",
+    "base_model": "string",
+    "aliases": "string[]",
+    "round": "number",
+    "round_mode": "string — seed | carry_forward | repair"
+  },
+
+  "planner": {
+    "_tag": "recomputed — describes what the planner did",
+    "mode":                  { "type": "string", "values": "llm | disabled | error", "tag": "recomputed", "source": "LLM gate result + call outcome" },
+    "model":                 { "type": "string", "tag": "passthrough", "source": "config.llmModelPlan" },
+    "planner_complete":      { "type": "boolean", "tag": "recomputed", "source": "true on success/disabled, false on error" },
+    "planner_confidence":    { "type": "number", "tag": "enriched", "source": "LLM response — 0 when disabled/error" },
+    "queries_generated":     { "type": "number", "tag": "recomputed", "source": "queries.length after dedup+cap" },
+    "duplicates_suppressed": { "type": "number", "tag": "recomputed", "source": "count of queries dropped by hash dedup + cap overflow" },
+    "targeted_exceptions":   { "type": "number", "tag": "enriched", "source": "LLM response — 0 when disabled/error" },
+    "error":                 { "type": "string|null", "tag": "recomputed", "source": "error.message on failure, null otherwise" }
+  },
+
+  "search_plan_handoff": {
+    "_tag": "the queries that feed into search execution",
+    "_consumed_by": "runDiscoverySeedPlan.js → searchDiscovery.js → convertHandoffToExecutionPlan() → executeSearchQueries()",
+
+    "queries": {
+      "_type": "array",
+      "_per_item": {
+        "q":                    { "type": "string", "tag": "enriched", "source": "LLM response — trimmed" },
+        "query_hash":           { "type": "string", "tag": "recomputed", "source": "stableHash(lowercase/trimmed/space-normalized q)" },
+        "family":               { "type": "string", "tag": "enriched", "source": "LLM response — fallback 'unknown'" },
+        "group_key":            { "type": "string", "tag": "passthrough", "source": "LLM group.key (must match Schema 3 focus_group key)" },
+        "target_fields":        { "type": "string[]", "tag": "enriched", "source": "LLM response — fallback []" },
+        "preferred_domains":    { "type": "string[]", "tag": "enriched", "source": "LLM response — fallback []" },
+        "exact_match_required": { "type": "boolean", "tag": "enriched", "source": "LLM response — fallback false" }
+      }
+    },
+
+    "query_hashes": {
+      "_type": "string[]",
+      "_tag": "recomputed",
+      "_source": "flat array of all queries[].query_hash values"
+    },
+
+    "total": {
+      "_type": "number",
+      "_tag": "recomputed",
+      "_source": "queries.length"
+    }
+  },
+
+  "panel": {
+    "_tag": "GUI display payload — consumed by NeedSetPlanner panel and PrefetchSearchPlannerPanel",
+
+    "round":      { "tag": "passthrough", "source": "Schema 3 run.round" },
+    "round_mode": { "tag": "passthrough", "source": "Schema 3 run.round_mode" },
+    "identity":   { "tag": "passthrough", "source": "Schema 3 identity block" },
+    "summary":    { "tag": "passthrough", "source": "Schema 3 needset.summary" },
+    "blockers":   { "tag": "passthrough", "source": "Schema 3 needset.blockers" },
+
+    "bundles": {
+      "_type": "array — one per Schema 3 focus_group (all groups, including hold)",
+      "_per_bundle": {
+        "key":              { "tag": "passthrough", "source": "focus_group.key" },
+        "label":            { "tag": "passthrough", "source": "focus_group.label" },
+        "desc":             { "tag": "passthrough", "source": "focus_group.desc" },
+        "source_target":    { "tag": "passthrough", "source": "focus_group.source_target" },
+        "content_target":   { "tag": "passthrough", "source": "focus_group.content_target" },
+        "search_intent":    { "tag": "passthrough", "source": "focus_group.search_intent" },
+        "host_class":       { "tag": "passthrough", "source": "focus_group.host_class" },
+        "phase":            { "tag": "passthrough", "source": "focus_group.phase — now|next|hold" },
+        "priority":         { "tag": "passthrough", "source": "focus_group.priority — core|secondary|optional" },
+        "query_family_mix": { "tag": "enriched", "source": "LLM response per-group — null when LLM disabled/error or group not in LLM response" },
+        "reason_active":    { "tag": "enriched", "source": "LLM response per-group — null when LLM disabled/error or group not in LLM response" },
+        "queries":          { "tag": "enriched", "source": "projected from search_plan_handoff queries matching this group — array of { q, family }" },
+        "fields": {
+          "_tag": "recomputed",
+          "_per_item": {
+            "key":    "string — field_key",
+            "state":  "string — satisfied|weak|conflict|missing — derived from focus_group field key sets",
+            "bucket": "string — core|secondary|expected|optional — derived from field_priority_map via requiredLevelToBucket()"
+          }
+        }
+      }
+    },
+
+    "profile_influence": {
+      "_tag": "recomputed — query family distribution stats",
+      "manufacturer_html":    "number — count of queries with this family",
+      "manual_pdf":           "number",
+      "support_docs":         "number",
+      "review_lookup":        "number",
+      "benchmark_lookup":     "number",
+      "fallback_web":         "number",
+      "targeted_single":      "number",
+      "duplicates_suppressed":"number — queries dropped by dedup/cap",
+      "focused_bundles":      "number — bundles with >=1 query",
+      "targeted_exceptions":  "number — from LLM response",
+      "total_queries":        "number — final query count",
+      "trusted_host_share":   "number — manufacturer_html + support_docs",
+      "docs_manual_share":    "number — manual_pdf count"
+    },
+
+    "deltas": {
+      "_tag": "recomputed",
+      "_source": "computeDeltas(ctx) — compares previous_round_fields vs current focus_group field states",
+      "_per_item": {
+        "field": "string — field_key",
+        "from":  "string — previous state (or 'none' on round 0)",
+        "to":    "string — current state (satisfied|weak|conflict|missing)"
+      },
+      "_note": "On round 0 with no previous_round_fields, ALL fields are emitted as { from: 'none', to: <current_state> }"
+    }
+  },
+
+  "learning_writeback": {
+    "_tag": "recomputed — summary for learning store persistence",
+    "_consumed_by": "runDiscoverySeedPlan.js attaches to handoff as _learning; searchDiscovery.js threads into searchProfilePlanned.schema4_learning",
+
+    "query_hashes_generated": { "type": "string[]", "source": "copy of search_plan_handoff.query_hashes" },
+    "queries_generated":      { "type": "string[]", "source": "queries.map(q => q.q)" },
+    "families_used":          { "type": "string[]", "source": "distinct families from queries, sorted" },
+    "domains_targeted":       { "type": "string[]", "source": "distinct preferred_domains from all queries, sorted" },
+    "groups_activated":       { "type": "string[]", "source": "distinct group_keys from queries, sorted" },
+    "duplicates_suppressed":  { "type": "number", "source": "total dedup+cap overflow count" }
+  }
+}

@@ -35,6 +35,16 @@ import {
   shouldStopForBudgetExhaustion
 } from './roundConfigBuilder.js';
 
+// WHY: Extract per-field { field_key, state } snapshots from a round result
+// so the next round's planner can compute deltas ("what changed this round").
+function buildPreviousRoundFields(roundResult) {
+  const fields = roundResult?.needSet?.fields;
+  if (!Array.isArray(fields) || fields.length === 0) return null;
+  return fields
+    .filter((f) => f.field_key)
+    .map((f) => ({ field_key: f.field_key, state: f.state || 'unknown' }));
+}
+
 // Re-exports for backward compatibility
 export { normalizeFieldContractToken, calcProgressDelta, isIdentityOrEditorialField } from './convergenceHelpers.js';
 export {
@@ -97,6 +107,7 @@ export async function runUntilComplete({
 
   let previousSummary = null;
   let previousProgress = null;
+  let previousRoundFields = null;
   let noProgressStreak = 0;
   let completed = false;
   let exhausted = false;
@@ -243,7 +254,8 @@ export async function runUntilComplete({
         contract_effort: contractEffort,
         bundle_hints: [],
         focus_fields: focusFields,
-        escalated_fields: escalatedFields
+        escalated_fields: escalatedFields,
+        previousRoundFields,
       }
     });
     finalResult = roundResult;
@@ -396,6 +408,9 @@ export async function runUntilComplete({
         });
         previousSummary = roundResult.summary;
         previousProgress = progress;
+        // WHY: Capture needset field states so the next round's planner can
+        // compute deltas ("what changed this round") for the GUI.
+        previousRoundFields = buildPreviousRoundFields(roundResult);
         continue;
       }
       exhausted = true;
@@ -405,6 +420,7 @@ export async function runUntilComplete({
 
     previousSummary = roundResult.summary;
     previousProgress = progress;
+    previousRoundFields = buildPreviousRoundFields(roundResult);
   }
 
   if (!completed && !exhausted && rounds.length >= roundsLimit) {

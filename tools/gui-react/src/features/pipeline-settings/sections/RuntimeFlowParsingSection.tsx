@@ -125,44 +125,6 @@ export const RuntimeFlowParsingSection = memo(function RuntimeFlowParsingSection
         </AdvancedSettingsBlock>
       </SettingGroupBlock>
 
-      <div id={runtimeSubStepDomId('parsing-metadata')} className="scroll-mt-24" />
-      <SettingGroupBlock title="Structured Metadata">
-        <MasterSwitchRow label="Structured Metadata Extruct Enabled" tip="Enable structured-metadata extruct service client path.">
-          <SettingToggle
-            checked={runtimeDraft.structuredMetadataExtructEnabled}
-            onChange={(next) => updateDraft('structuredMetadataExtructEnabled', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </MasterSwitchRow>
-        <SettingRow label="Structured Metadata Extruct URL" tip="Base URL for the structured-metadata extruct service." disabled={!runtimeDraft.structuredMetadataExtructEnabled}>
-          <input
-            type="text"
-            value={runtimeDraft.structuredMetadataExtructUrl}
-            onChange={(event) => updateDraft('structuredMetadataExtructUrl', event.target.value)}
-            disabled={!runtimeSettingsReady || !runtimeDraft.structuredMetadataExtructEnabled}
-            className={inputCls}
-          />
-        </SettingRow>
-        <SettingRow label="Structured Metadata Extruct Timeout (ms)" tip="Timeout for extruct service requests." disabled={!runtimeDraft.structuredMetadataExtructEnabled}>
-          <SettingNumberInput draftKey="structuredMetadataExtructTimeoutMs" value={runtimeDraft.structuredMetadataExtructTimeoutMs} bounds={getNumberBounds('structuredMetadataExtructTimeoutMs')} step={50} disabled={!runtimeSettingsReady || !runtimeDraft.structuredMetadataExtructEnabled} className={inputCls} onNumberChange={onNumberChange} />
-        </SettingRow>
-        <AdvancedSettingsBlock title="Extruct Cache & Limits" count={3}>
-          <SettingRow label="Structured Metadata Extruct Max Items / Surface" tip="Maximum extruct metadata items retained per page surface." disabled={!runtimeDraft.structuredMetadataExtructEnabled}>
-            <SettingNumberInput draftKey="structuredMetadataExtructMaxItemsPerSurface" value={runtimeDraft.structuredMetadataExtructMaxItemsPerSurface} bounds={getNumberBounds('structuredMetadataExtructMaxItemsPerSurface')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.structuredMetadataExtructEnabled} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow label="Structured Metadata Extruct Cache Enabled" tip="Cache extruct responses to reduce repeated metadata fetch calls." disabled={!runtimeDraft.structuredMetadataExtructEnabled}>
-            <SettingToggle
-              checked={runtimeDraft.structuredMetadataExtructCacheEnabled}
-              onChange={(next) => updateDraft('structuredMetadataExtructCacheEnabled', next)}
-              disabled={!runtimeSettingsReady || !runtimeDraft.structuredMetadataExtructEnabled}
-            />
-          </SettingRow>
-          <SettingRow label="Structured Metadata Extruct Cache Limit" tip="Maximum number of extruct cache entries retained." disabled={!runtimeDraft.structuredMetadataExtructEnabled || !runtimeDraft.structuredMetadataExtructCacheEnabled}>
-            <SettingNumberInput draftKey="structuredMetadataExtructCacheLimit" value={runtimeDraft.structuredMetadataExtructCacheLimit} bounds={getNumberBounds('structuredMetadataExtructCacheLimit')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.structuredMetadataExtructEnabled || !runtimeDraft.structuredMetadataExtructCacheEnabled} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-        </AdvancedSettingsBlock>
-      </SettingGroupBlock>
-
       <SettingGroupBlock title="Additional Parsers">
         <SettingRow label="HTML Table Extractor V2" tip="Enable table-focused HTML extractor v2 path.">
           <SettingToggle

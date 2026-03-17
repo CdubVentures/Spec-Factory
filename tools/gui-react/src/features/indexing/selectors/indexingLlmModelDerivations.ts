@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { clampTokenForModel as clampRuntimeTokenForModel } from '../../pipeline-settings/state/runtimeSettingsDomain';
+import { clampTokenForModel as clampRuntimeTokenForModel } from '../../pipeline-settings';
 import { LLM_SETTING_LIMITS } from '../../../stores/settingsManifest';
 import {
   deriveLlmModelOptions,
@@ -14,24 +14,24 @@ import type { IndexingLlmConfigResponse } from '../types';
 const LLM_MIN_OUTPUT_TOKENS = LLM_SETTING_LIMITS.maxTokens.min;
 
 interface LlmTokenPresetBootstrapLike {
-  llmTokensPlan: string | number | boolean;
-  llmTokensTriage: string | number | boolean;
-  llmTokensFast: string | number | boolean;
-  llmTokensReasoning: string | number | boolean;
-  llmTokensExtract: string | number | boolean;
-  llmTokensValidate: string | number | boolean;
-  llmTokensWrite: string | number | boolean;
-  llmTokensPlanFallback: string | number | boolean;
-  llmTokensExtractFallback: string | number | boolean;
-  llmTokensValidateFallback: string | number | boolean;
-  llmTokensWriteFallback: string | number | boolean;
+  llmMaxOutputTokensPlan: string | number | boolean;
+  llmMaxOutputTokensTriage: string | number | boolean;
+  llmMaxOutputTokensFast: string | number | boolean;
+  llmMaxOutputTokensReasoning: string | number | boolean;
+  llmMaxOutputTokensExtract: string | number | boolean;
+  llmMaxOutputTokensValidate: string | number | boolean;
+  llmMaxOutputTokensWrite: string | number | boolean;
+  llmMaxOutputTokensPlanFallback: string | number | boolean;
+  llmMaxOutputTokensExtractFallback: string | number | boolean;
+  llmMaxOutputTokensValidateFallback: string | number | boolean;
+  llmMaxOutputTokensWriteFallback: string | number | boolean;
 }
 
 interface UseIndexingLlmModelDerivationsInput {
   indexingLlmConfig: IndexingLlmConfigResponse | undefined;
   runtimeSettingsBootstrap: LlmTokenPresetBootstrapLike;
-  phase2LlmModel: string;
-  phase3LlmModel: string;
+  llmModelPlan: string;
+  llmModelTriage: string;
   llmModelFast: string;
   llmModelReasoning: string;
   llmModelExtract: string;
@@ -43,8 +43,8 @@ export function useIndexingLlmModelDerivations(input: UseIndexingLlmModelDerivat
   const {
     indexingLlmConfig,
     runtimeSettingsBootstrap,
-    phase2LlmModel,
-    phase3LlmModel,
+    llmModelPlan,
+    llmModelTriage,
     llmModelFast,
     llmModelReasoning,
     llmModelExtract,
@@ -57,13 +57,13 @@ export function useIndexingLlmModelDerivations(input: UseIndexingLlmModelDerivat
     [indexingLlmConfig],
   );
 
-  const llmTokensPlanBootstrap = Number(runtimeSettingsBootstrap.llmTokensPlan || 0);
+  const llmTokensPlanBootstrap = Number(runtimeSettingsBootstrap.llmMaxOutputTokensPlan || 0);
 
   const llmModelOptionsWithCurrent = useMemo(
     () => deriveLlmModelOptionsWithCurrent({
       llmModelOptions,
-      phase2LlmModel,
-      phase3LlmModel,
+      llmModelPlan,
+      llmModelTriage,
       llmModelFast,
       llmModelReasoning,
       llmModelExtract,
@@ -72,8 +72,8 @@ export function useIndexingLlmModelDerivations(input: UseIndexingLlmModelDerivat
     }),
     [
       llmModelOptions,
-      phase2LlmModel,
-      phase3LlmModel,
+      llmModelPlan,
+      llmModelTriage,
       llmModelFast,
       llmModelReasoning,
       llmModelExtract,
@@ -84,30 +84,30 @@ export function useIndexingLlmModelDerivations(input: UseIndexingLlmModelDerivat
 
   const llmTokenPresetFallbackOptions = useMemo(
     () => deriveLlmTokenPresetFallbackOptions({
-      llmTokensPlan: Number(runtimeSettingsBootstrap.llmTokensPlan || 0),
-      llmTokensTriage: Number(runtimeSettingsBootstrap.llmTokensTriage || 0),
-      llmTokensFast: Number(runtimeSettingsBootstrap.llmTokensFast || 0),
-      llmTokensReasoning: Number(runtimeSettingsBootstrap.llmTokensReasoning || 0),
-      llmTokensExtract: Number(runtimeSettingsBootstrap.llmTokensExtract || 0),
-      llmTokensValidate: Number(runtimeSettingsBootstrap.llmTokensValidate || 0),
-      llmTokensWrite: Number(runtimeSettingsBootstrap.llmTokensWrite || 0),
-      llmTokensPlanFallback: Number(runtimeSettingsBootstrap.llmTokensPlanFallback || 0),
-      llmTokensExtractFallback: Number(runtimeSettingsBootstrap.llmTokensExtractFallback || 0),
-      llmTokensValidateFallback: Number(runtimeSettingsBootstrap.llmTokensValidateFallback || 0),
-      llmTokensWriteFallback: Number(runtimeSettingsBootstrap.llmTokensWriteFallback || 0),
+      llmMaxOutputTokensPlan: Number(runtimeSettingsBootstrap.llmMaxOutputTokensPlan || 0),
+      llmMaxOutputTokensTriage: Number(runtimeSettingsBootstrap.llmMaxOutputTokensTriage || 0),
+      llmMaxOutputTokensFast: Number(runtimeSettingsBootstrap.llmMaxOutputTokensFast || 0),
+      llmMaxOutputTokensReasoning: Number(runtimeSettingsBootstrap.llmMaxOutputTokensReasoning || 0),
+      llmMaxOutputTokensExtract: Number(runtimeSettingsBootstrap.llmMaxOutputTokensExtract || 0),
+      llmMaxOutputTokensValidate: Number(runtimeSettingsBootstrap.llmMaxOutputTokensValidate || 0),
+      llmMaxOutputTokensWrite: Number(runtimeSettingsBootstrap.llmMaxOutputTokensWrite || 0),
+      llmMaxOutputTokensPlanFallback: Number(runtimeSettingsBootstrap.llmMaxOutputTokensPlanFallback || 0),
+      llmMaxOutputTokensExtractFallback: Number(runtimeSettingsBootstrap.llmMaxOutputTokensExtractFallback || 0),
+      llmMaxOutputTokensValidateFallback: Number(runtimeSettingsBootstrap.llmMaxOutputTokensValidateFallback || 0),
+      llmMaxOutputTokensWriteFallback: Number(runtimeSettingsBootstrap.llmMaxOutputTokensWriteFallback || 0),
     }),
     [
-      runtimeSettingsBootstrap.llmTokensPlan,
-      runtimeSettingsBootstrap.llmTokensTriage,
-      runtimeSettingsBootstrap.llmTokensFast,
-      runtimeSettingsBootstrap.llmTokensReasoning,
-      runtimeSettingsBootstrap.llmTokensExtract,
-      runtimeSettingsBootstrap.llmTokensValidate,
-      runtimeSettingsBootstrap.llmTokensWrite,
-      runtimeSettingsBootstrap.llmTokensPlanFallback,
-      runtimeSettingsBootstrap.llmTokensExtractFallback,
-      runtimeSettingsBootstrap.llmTokensValidateFallback,
-      runtimeSettingsBootstrap.llmTokensWriteFallback,
+      runtimeSettingsBootstrap.llmMaxOutputTokensPlan,
+      runtimeSettingsBootstrap.llmMaxOutputTokensTriage,
+      runtimeSettingsBootstrap.llmMaxOutputTokensFast,
+      runtimeSettingsBootstrap.llmMaxOutputTokensReasoning,
+      runtimeSettingsBootstrap.llmMaxOutputTokensExtract,
+      runtimeSettingsBootstrap.llmMaxOutputTokensValidate,
+      runtimeSettingsBootstrap.llmMaxOutputTokensWrite,
+      runtimeSettingsBootstrap.llmMaxOutputTokensPlanFallback,
+      runtimeSettingsBootstrap.llmMaxOutputTokensExtractFallback,
+      runtimeSettingsBootstrap.llmMaxOutputTokensValidateFallback,
+      runtimeSettingsBootstrap.llmMaxOutputTokensWriteFallback,
     ],
   );
 
@@ -131,7 +131,7 @@ export function useIndexingLlmModelDerivations(input: UseIndexingLlmModelDerivat
       llmTokenProfileLookup,
       indexingLlmConfig,
       llmTokenPresetOptions,
-      llmTokensPlanFallback: llmTokensPlanBootstrap,
+      llmMaxOutputTokensPlanFallback: llmTokensPlanBootstrap,
       llmMinOutputTokens: LLM_MIN_OUTPUT_TOKENS,
     }),
     [

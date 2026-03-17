@@ -46,7 +46,6 @@ export function deriveRuntimeStepEnabledMap({
   return {
     'run-setup': true,
     'run-output': true,
-    'scoring-evidence': true,
     'automation': true,
     'observability-trace': true,
     'fetch-network': true,
@@ -54,6 +53,5 @@ export function deriveRuntimeStepEnabledMap({
     'parsing': true,
     ocr: scannedPdfOcrEnabled,
     'planner-triage': true,
-    'llm-cortex': true,
   };
 }

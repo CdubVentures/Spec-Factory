@@ -56,18 +56,6 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
         <SettingRow label="SearXNG Base URL" tip="Endpoint used by all discovery search routes.">
           <input type="text" value={runtimeDraft.searxngBaseUrl} onChange={(event) => updateDraft('searxngBaseUrl', event.target.value)} disabled={!runtimeSettingsReady} className={inputCls} placeholder="http://localhost:8080" />
         </SettingRow>
-        <SettingRow label="Source Registry" tip="Load and validate per-category source registries at startup. Required for tier expansion and host policies.">
-          <SettingToggle checked={runtimeDraft.enableSourceRegistry} onChange={(next) => updateDraft('enableSourceRegistry', next)} disabled={!runtimeSettingsReady} />
-        </SettingRow>
-        <SettingRow label="Domain Hint Resolver v2" tip="Use registry-backed tier expansion and host policies instead of legacy dot-filter.">
-          <SettingToggle checked={runtimeDraft.enableDomainHintResolverV2} onChange={(next) => updateDraft('enableDomainHintResolverV2', next)} disabled={!runtimeSettingsReady} />
-        </SettingRow>
-        <SettingRow label="Query Compiler" tip="Use provider-aware query compilation with operator support detection.">
-          <SettingToggle checked={runtimeDraft.enableQueryCompiler} onChange={(next) => updateDraft('enableQueryCompiler', next)} disabled={!runtimeSettingsReady} />
-        </SettingRow>
-        <SettingRow label="Core / Deep Gates" tip="Enforce tier-based acceptance policy for core facts vs. deep claims.">
-          <SettingToggle checked={runtimeDraft.enableCoreDeepGates} onChange={(next) => updateDraft('enableCoreDeepGates', next)} disabled={!runtimeSettingsReady} />
-        </SettingRow>
         <SettingRow label="Fetch Candidate Sources" tip="Allow candidate URL harvesting from discovered pages.">
           <SettingToggle checked={runtimeDraft.fetchCandidateSources} onChange={(next) => updateDraft('fetchCandidateSources', next)} disabled={!runtimeSettingsReady} />
         </SettingRow>
@@ -106,24 +94,6 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
       {/* ── Manufacturer Discovery ── */}
       <div id={runtimeSubStepDomId('run-setup-manufacturer')} className="scroll-mt-24" />
       <SettingGroupBlock title="Manufacturer Discovery">
-        <MasterSwitchRow label="Manufacturer Deep Research Enabled" tip="Enable deeper manufacturer-only follow-up discovery strategy." hint="Controls manufacturer URL budgets and seed search below.">
-          <SettingToggle checked={runtimeDraft.manufacturerDeepResearchEnabled} onChange={(next) => updateDraft('manufacturerDeepResearchEnabled', next)} disabled={!runtimeSettingsReady} />
-        </MasterSwitchRow>
-        <SettingRow label="Manufacturer Broad Discovery" tip="Enable expanded manufacturer-domain search strategy.">
-          <SettingToggle checked={runtimeDraft.manufacturerBroadDiscovery} onChange={(next) => updateDraft('manufacturerBroadDiscovery', next)} disabled={!runtimeSettingsReady} />
-        </SettingRow>
-        <SettingRow label="Manufacturer Seed Search URLs" tip="Seed manufacturer-specific discovery URLs in early rounds.">
-          <SettingToggle checked={runtimeDraft.manufacturerSeedSearchUrls} onChange={(next) => updateDraft('manufacturerSeedSearchUrls', next)} disabled={!runtimeSettingsReady} />
-        </SettingRow>
-        <SettingRow label="Max Manufacturer URLs / Product" tip="Manufacturer-specific URL budget per product.">
-          <SettingNumberInput draftKey="maxManufacturerUrlsPerProduct" value={runtimeDraft.maxManufacturerUrlsPerProduct} bounds={getNumberBounds('maxManufacturerUrlsPerProduct')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-        </SettingRow>
-        <SettingRow label="Max Manufacturer Pages / Domain" tip="Manufacturer domain page cap.">
-          <SettingNumberInput draftKey="maxManufacturerPagesPerDomain" value={runtimeDraft.maxManufacturerPagesPerDomain} bounds={getNumberBounds('maxManufacturerPagesPerDomain')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-        </SettingRow>
-        <SettingRow label="Manufacturer Reserve URLs" tip="Reserved URL budget kept for manufacturer domains.">
-          <SettingNumberInput draftKey="manufacturerReserveUrls" value={runtimeDraft.manufacturerReserveUrls} bounds={getNumberBounds('manufacturerReserveUrls')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-        </SettingRow>
         <SettingRow label="Manufacturer Auto Promote" tip="Automatically promote manufacturer-domain sources to tier-1 classification.">
           <SettingToggle
             checked={runtimeDraft.manufacturerAutoPromote}

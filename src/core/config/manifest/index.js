@@ -7,7 +7,6 @@ import { storageGroup } from './storageGroup.js';
 import { securityGroup } from './securityGroup.js';
 import { llmGroup } from './llmGroup.js';
 import { discoveryGroup } from './discoveryGroup.js';
-import { retrievalGroup } from './retrievalGroup.js';
 import { runtimeGroup } from './runtimeGroup.js';
 import { observabilityGroup } from './observabilityGroup.js';
 import { pathsGroup } from './pathsGroup.js';
@@ -22,7 +21,6 @@ export const CONFIG_MANIFEST = Object.freeze([
   securityGroup,
   llmGroup,
   discoveryGroup,
-  retrievalGroup,
   runtimeGroup,
   observabilityGroup,
   pathsGroup,

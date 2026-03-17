@@ -113,6 +113,8 @@ export const llmGroup = Object.freeze({
     { key: "LLM_PROVIDER", defaultValue: "gemini", type: "string", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
     { key: "LLM_REASONING_BUDGET", defaultValue: "32768", type: "integer", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
     { key: "LLM_REASONING_MODE", defaultValue: "true", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
+    { key: "LLM_PLAN_USE_REASONING", defaultValue: "false", type: "boolean", secret: false, userMutable: false, description: "When true, Needset and Search Planner phases use the reasoning model instead of the base model." },
+    { key: "LLM_TRIAGE_USE_REASONING", defaultValue: "false", type: "boolean", secret: false, userMutable: false, description: "When true, Brand Resolver, SERP Triage, and Domain Classifier phases use the reasoning model instead of the base model." },
     { key: "LLM_SERP_RERANK_ENABLED", defaultValue: "true", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
     { key: "LLM_TIMEOUT_MS", defaultValue: "120000", type: "integer", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
     { key: "LLM_VALIDATE_API_KEY", defaultValue: "", type: "string", secret: true, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
@@ -139,6 +141,8 @@ export const llmGroup = Object.freeze({
     { key: "OPENAI_MODEL_EXTRACT", defaultValue: "", type: "string", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
     { key: "OPENAI_MODEL_PLAN", defaultValue: "", type: "string", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
     { key: "OPENAI_MODEL_WRITE", defaultValue: "", type: "string", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
-    { key: "OPENAI_TIMEOUT_MS", defaultValue: "40000", type: "integer", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." }
+    { key: "OPENAI_TIMEOUT_MS", defaultValue: "40000", type: "integer", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
+    { key: "LLM_PROVIDER_REGISTRY_JSON", defaultValue: "", type: "string", secret: false, userMutable: false, description: "JSON array of provider objects with models and costs." },
+    { key: "LLM_PHASE_OVERRIDES_JSON", defaultValue: "{}", type: "string", secret: false, userMutable: false, description: "JSON object with per-phase model/reasoning/token overrides." },
   ]),
 });

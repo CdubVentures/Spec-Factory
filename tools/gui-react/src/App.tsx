@@ -29,6 +29,7 @@ const IndexingPage = lazyNamedPage(() => import('./features/indexing/components/
 const PipelineSettingsPage = lazyNamedPage(() => import('./pages/pipeline-settings/PipelineSettingsPage'), 'PipelineSettingsPage');
 const RuntimeOpsPage = lazyNamedPage(() => import('./pages/runtime-ops/RuntimeOpsPage'), 'RuntimeOpsPage');
 const StoragePage = lazyNamedPage(() => import('./pages/storage/StoragePage'), 'StoragePage');
+const LlmConfigPage = lazyNamedPage(() => import('./pages/llm-config/LlmConfigPage'), 'LlmConfigPage');
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,6 +71,7 @@ export default function App() {
             <Route path="product" element={wrap(ProductPage)} />
             <Route path="llm-settings" element={wrap(LlmSettingsPage)} />
             <Route path="indexing" element={wrap(IndexingPage)} />
+            <Route path="llm-config" element={wrap(LlmConfigPage)} />
             <Route path="pipeline-settings" element={wrap(PipelineSettingsPage)} />
             <Route path="billing" element={wrap(BillingPage)} />
             <Route path="studio" element={wrap(StudioPage)} />

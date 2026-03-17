@@ -1,1 +1,0 @@
-import{j as r}from"./vendor-ui-CYUaAHkw.js";import{t as i}from"./index-DytfUhGA.js";function a({color:t}){return r.jsx("span",{className:`inline-block w-3 h-3 rounded-full ${i(t)}`,title:t})}export{a as T};

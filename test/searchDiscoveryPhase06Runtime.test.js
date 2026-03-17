@@ -43,9 +43,6 @@ function makeConfig(tempRoot, overrides = {}) {
     searchProvider: 'searxng',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
-    enableSourceRegistry: true,
-    enableDomainHintResolverV2: true,
-    enableQueryCompiler: true,
     ...overrides,
   };
 }
@@ -181,48 +178,6 @@ test('discoverCandidateSources attaches effective_host_plan and scored host-plan
   }
 });
 
-test('discoverCandidateSources leaves the legacy planner path unchanged when v2 discovery flags are disabled', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-legacy-'));
-  const config = makeConfig(tempRoot, {
-    enableSourceRegistry: false,
-    enableDomainHintResolverV2: false,
-    enableQueryCompiler: false,
-  });
-  const storage = createStorage(config);
-  const categoryConfig = makeCategoryConfig();
-  const job = makeJob();
-  const originalFetch = global.fetch;
-  global.fetch = async () => ({
-    ok: true,
-    async json() {
-      return { results: [] };
-    },
-  });
-
-  try {
-    const result = await discoverCandidateSources({
-      config,
-      storage,
-      categoryConfig,
-      job,
-      runId: 'run-phase06-v2-off',
-      logger: null,
-      planningHints: {
-        missingRequiredFields: ['sensor', 'weight'],
-      },
-      llmContext: {},
-    });
-
-    assert.equal(result.search_profile?.effective_host_plan ?? null, null);
-    assert.equal(
-      (result.search_profile?.query_rows || []).some((row) => row.hint_source === 'v2.host_plan'),
-      false
-    );
-  } finally {
-    global.fetch = originalFetch;
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
-});
 
 test('discoverCandidateSources rescues zero-result internet queries with deterministic host-plan fallbacks', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-plan-fallback-'));

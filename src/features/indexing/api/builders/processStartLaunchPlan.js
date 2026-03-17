@@ -170,8 +170,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     openaiApiKey,
     anthropicApiKey,
     searchProvider,
-    phase2LlmModel,
-    phase3LlmModel,
     llmModelPlan,
     llmModelFast,
     llmModelTriage,
@@ -179,22 +177,22 @@ export function buildProcessStartLaunchPlan(options = {}) {
     llmModelExtract,
     llmModelValidate,
     llmModelWrite,
-    llmTokensPlan,
-    llmTokensFast,
-    llmTokensTriage,
-    llmTokensReasoning,
-    llmTokensExtract,
-    llmTokensValidate,
-    llmTokensWrite,
+    llmMaxOutputTokensPlan,
+    llmMaxOutputTokensFast,
+    llmMaxOutputTokensTriage,
+    llmMaxOutputTokensReasoning,
+    llmMaxOutputTokensExtract,
+    llmMaxOutputTokensValidate,
+    llmMaxOutputTokensWrite,
     llmFallbackEnabled,
     llmPlanFallbackModel,
     llmExtractFallbackModel,
     llmValidateFallbackModel,
     llmWriteFallbackModel,
-    llmTokensPlanFallback,
-    llmTokensExtractFallback,
-    llmTokensValidateFallback,
-    llmTokensWriteFallback,
+    llmMaxOutputTokensPlanFallback,
+    llmMaxOutputTokensExtractFallback,
+    llmMaxOutputTokensValidateFallback,
+    llmMaxOutputTokensWriteFallback,
     llmExtractionCacheDir,
     seed,
     fields,
@@ -383,16 +381,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     return true;
   };
 
-  assignString(envOverrides, 'LLM_MODEL_PLAN', phase2LlmModel);
-
-  const normalizedPhase3LlmModel = String(phase3LlmModel || '').trim();
-  if (normalizedPhase3LlmModel) {
-    envOverrides.LLM_MODEL_TRIAGE = normalizedPhase3LlmModel;
-    if (!envOverrides.CORTEX_MODEL_RERANK_FAST) {
-      envOverrides.CORTEX_MODEL_RERANK_FAST = normalizedPhase3LlmModel;
-    }
-  }
-
   const hasRoleModelOverride = [
     applyModelOverride('LLM_MODEL_PLAN', llmModelPlan),
     applyModelOverride('LLM_MODEL_FAST', llmModelFast),
@@ -413,13 +401,13 @@ export function buildProcessStartLaunchPlan(options = {}) {
     }
   }
 
-  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_PLAN', llmTokensPlan);
-  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_FAST', llmTokensFast);
-  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_TRIAGE', llmTokensTriage);
-  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_REASONING', llmTokensReasoning);
-  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_EXTRACT', llmTokensExtract);
-  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_VALIDATE', llmTokensValidate);
-  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_WRITE', llmTokensWrite);
+  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_PLAN', llmMaxOutputTokensPlan);
+  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_FAST', llmMaxOutputTokensFast);
+  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_TRIAGE', llmMaxOutputTokensTriage);
+  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_REASONING', llmMaxOutputTokensReasoning);
+  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_EXTRACT', llmMaxOutputTokensExtract);
+  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_VALIDATE', llmMaxOutputTokensValidate);
+  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_WRITE', llmMaxOutputTokensWrite);
 
   if (typeof llmFallbackEnabled === 'boolean' && !llmFallbackEnabled) {
     envOverrides.LLM_PLAN_FALLBACK_MODEL = '';
@@ -435,10 +423,10 @@ export function buildProcessStartLaunchPlan(options = {}) {
     applyModelOverride('LLM_EXTRACT_FALLBACK_MODEL', llmExtractFallbackModel, { allowEmpty: true });
     applyModelOverride('LLM_VALIDATE_FALLBACK_MODEL', llmValidateFallbackModel, { allowEmpty: true });
     applyModelOverride('LLM_WRITE_FALLBACK_MODEL', llmWriteFallbackModel, { allowEmpty: true });
-    applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK', llmTokensPlanFallback);
-    applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_EXTRACT_FALLBACK', llmTokensExtractFallback);
-    applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_VALIDATE_FALLBACK', llmTokensValidateFallback);
-    applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_WRITE_FALLBACK', llmTokensWriteFallback);
+    applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK', llmMaxOutputTokensPlanFallback);
+    applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_EXTRACT_FALLBACK', llmMaxOutputTokensExtractFallback);
+    applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_VALIDATE_FALLBACK', llmMaxOutputTokensValidateFallback);
+    applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_WRITE_FALLBACK', llmMaxOutputTokensWriteFallback);
   }
 
 

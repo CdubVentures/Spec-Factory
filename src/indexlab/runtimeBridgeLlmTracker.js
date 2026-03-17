@@ -7,6 +7,9 @@ export function createLlmCallTracker() {
   let _llmCounter = 0;
   const _llmCallMap = new Map();
   const _llmSeenWorkers = new Set();
+  // WHY: Track recently-failed workers by reason so fallback calls reuse the
+  // same worker ID instead of creating a duplicate row in the Workers tab.
+  const _llmFailedByReason = new Map();
   const _llmAgg = {
     total_calls: 0,
     completed_calls: 0,
@@ -39,13 +42,20 @@ export function createLlmCallTracker() {
     const callKey = buildLlmCallKey(row, llmReason);
 
     if (llmEvent === 'llm_started') {
-      const workerId = batchId
-        ? `llm-${batchId}`
-        : `llm-${++_llmCounter}`;
+      // WHY: When primary fails and fallback fires for the same reason,
+      // reuse the original worker ID so the GUI shows 1 row, not 2.
+      const previousWorkerId = _llmFailedByReason.get(llmReason);
+      const workerId = previousWorkerId
+        ? previousWorkerId
+        : (batchId ? `llm-${batchId}` : `llm-${++_llmCounter}`);
+      if (previousWorkerId) {
+        _llmFailedByReason.delete(llmReason);
+      }
       _llmCallMap.set(workerId, {
         key: callKey,
         reason: llmReason,
-        model
+        model,
+        is_fallback: Boolean(previousWorkerId),
       });
       return workerId;
     }
@@ -66,6 +76,9 @@ export function createLlmCallTracker() {
       workerId = _findLlmWorkerForCompletion(llmReason, model);
     }
     if (llmEvent === 'llm_finished' || llmEvent === 'llm_failed') {
+      if (llmEvent === 'llm_failed' && llmReason) {
+        _llmFailedByReason.set(llmReason, workerId);
+      }
       _llmCallMap.delete(workerId);
     }
     return workerId;
@@ -132,6 +145,7 @@ export function createLlmCallTracker() {
   function reset() {
     _llmCallMap.clear();
     _llmSeenWorkers.clear();
+    _llmFailedByReason.clear();
   }
 
   return { resolveLlmWorkerId, recordLlmAggregate, getLlmAgg, getLlmCallMap, getLlmSeenWorkers, getLlmCounter, reset };

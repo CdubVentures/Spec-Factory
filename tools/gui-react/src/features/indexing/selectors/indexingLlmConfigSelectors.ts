@@ -1,4 +1,4 @@
-import { parseRuntimeLlmTokenCap } from '../../pipeline-settings/state/runtimeSettingsDomain';
+import { parseRuntimeLlmTokenCap } from '../../pipeline-settings';
 import { normalizeToken, providerFromModelToken } from '../helpers';
 import type { IndexingLlmConfigResponse } from '../types';
 
@@ -32,23 +32,23 @@ export interface LlmTokenDefaults {
 }
 
 interface LlmTokenPresetBootstrap {
-  llmTokensPlan: number | string;
-  llmTokensTriage: number | string;
-  llmTokensFast: number | string;
-  llmTokensReasoning: number | string;
-  llmTokensExtract: number | string;
-  llmTokensValidate: number | string;
-  llmTokensWrite: number | string;
-  llmTokensPlanFallback: number | string;
-  llmTokensExtractFallback: number | string;
-  llmTokensValidateFallback: number | string;
-  llmTokensWriteFallback: number | string;
+  llmMaxOutputTokensPlan: number | string;
+  llmMaxOutputTokensTriage: number | string;
+  llmMaxOutputTokensFast: number | string;
+  llmMaxOutputTokensReasoning: number | string;
+  llmMaxOutputTokensExtract: number | string;
+  llmMaxOutputTokensValidate: number | string;
+  llmMaxOutputTokensWrite: number | string;
+  llmMaxOutputTokensPlanFallback: number | string;
+  llmMaxOutputTokensExtractFallback: number | string;
+  llmMaxOutputTokensValidateFallback: number | string;
+  llmMaxOutputTokensWriteFallback: number | string;
 }
 
 interface LlmModelOptionsWithCurrentInput {
   llmModelOptions: string[];
-  phase2LlmModel: string;
-  phase3LlmModel: string;
+  llmModelPlan: string;
+  llmModelTriage: string;
   llmModelFast: string;
   llmModelReasoning: string;
   llmModelExtract: string;
@@ -57,24 +57,24 @@ interface LlmModelOptionsWithCurrentInput {
 }
 
 interface SelectedLlmPricingRowsInput {
-  phase2LlmModel: string;
-  phase3LlmModel: string;
+  llmModelPlan: string;
+  llmModelTriage: string;
   llmModelFast: string;
   llmModelReasoning: string;
   llmModelExtract: string;
   llmModelValidate: string;
   llmModelWrite: string;
-  llmTokensPlan: number;
-  llmTokensTriage: number;
-  llmTokensFast: number;
-  llmTokensReasoning: number;
-  llmTokensExtract: number;
-  llmTokensValidate: number;
-  llmTokensWrite: number;
-  llmTokensPlanFallback: number;
-  llmTokensExtractFallback: number;
-  llmTokensValidateFallback: number;
-  llmTokensWriteFallback: number;
+  llmMaxOutputTokensPlan: number;
+  llmMaxOutputTokensTriage: number;
+  llmMaxOutputTokensFast: number;
+  llmMaxOutputTokensReasoning: number;
+  llmMaxOutputTokensExtract: number;
+  llmMaxOutputTokensValidate: number;
+  llmMaxOutputTokensWrite: number;
+  llmMaxOutputTokensPlanFallback: number;
+  llmMaxOutputTokensExtractFallback: number;
+  llmMaxOutputTokensValidateFallback: number;
+  llmMaxOutputTokensWriteFallback: number;
   modelPricingLookup: ModelPricingLookup;
   indexingLlmConfig: IndexingLlmConfigResponse | undefined;
 }
@@ -92,8 +92,8 @@ export function deriveLlmModelOptions(indexingLlmConfig: IndexingLlmConfigRespon
 export function deriveLlmModelOptionsWithCurrent(input: LlmModelOptionsWithCurrentInput): string[] {
   const seeded = [
     ...input.llmModelOptions,
-    input.phase2LlmModel,
-    input.phase3LlmModel,
+    input.llmModelPlan,
+    input.llmModelTriage,
     input.llmModelFast,
     input.llmModelReasoning,
     input.llmModelExtract,
@@ -115,17 +115,17 @@ export function deriveLlmModelOptionsWithCurrent(input: LlmModelOptionsWithCurre
 
 export function deriveLlmTokenPresetFallbackOptions(runtimeSettingsBootstrap: LlmTokenPresetBootstrap): number[] {
   const seeded = [
-    runtimeSettingsBootstrap.llmTokensPlan,
-    runtimeSettingsBootstrap.llmTokensTriage,
-    runtimeSettingsBootstrap.llmTokensFast,
-    runtimeSettingsBootstrap.llmTokensReasoning,
-    runtimeSettingsBootstrap.llmTokensExtract,
-    runtimeSettingsBootstrap.llmTokensValidate,
-    runtimeSettingsBootstrap.llmTokensWrite,
-    runtimeSettingsBootstrap.llmTokensPlanFallback,
-    runtimeSettingsBootstrap.llmTokensExtractFallback,
-    runtimeSettingsBootstrap.llmTokensValidateFallback,
-    runtimeSettingsBootstrap.llmTokensWriteFallback,
+    runtimeSettingsBootstrap.llmMaxOutputTokensPlan,
+    runtimeSettingsBootstrap.llmMaxOutputTokensTriage,
+    runtimeSettingsBootstrap.llmMaxOutputTokensFast,
+    runtimeSettingsBootstrap.llmMaxOutputTokensReasoning,
+    runtimeSettingsBootstrap.llmMaxOutputTokensExtract,
+    runtimeSettingsBootstrap.llmMaxOutputTokensValidate,
+    runtimeSettingsBootstrap.llmMaxOutputTokensWrite,
+    runtimeSettingsBootstrap.llmMaxOutputTokensPlanFallback,
+    runtimeSettingsBootstrap.llmMaxOutputTokensExtractFallback,
+    runtimeSettingsBootstrap.llmMaxOutputTokensValidateFallback,
+    runtimeSettingsBootstrap.llmMaxOutputTokensWriteFallback,
   ];
   const cleaned = seeded
     .map((value) => parseRuntimeLlmTokenCap(value))
@@ -137,11 +137,11 @@ export function deriveLlmTokenPresetFallbackOptions(runtimeSettingsBootstrap: Ll
 export function deriveLlmTokenPresetOptions(
   indexingLlmConfig: IndexingLlmConfigResponse | undefined,
   llmTokenPresetFallbackOptions: number[],
-  llmTokensPlanFallback: number
+  llmMaxOutputTokensPlanFallback: number
 ): number[] {
   const fallbackPresets = llmTokenPresetFallbackOptions.length > 0
     ? llmTokenPresetFallbackOptions
-    : [llmTokensPlanFallback];
+    : [llmMaxOutputTokensPlanFallback];
   const raw = Array.isArray(indexingLlmConfig?.token_presets)
     ? indexingLlmConfig.token_presets
     : fallbackPresets;
@@ -170,12 +170,12 @@ export function deriveModelTokenDefaults(options: {
   llmTokenProfileLookup: Map<string, LlmTokenDefaults>;
   indexingLlmConfig: IndexingLlmConfigResponse | undefined;
   llmTokenPresetOptions: number[];
-  llmTokensPlanFallback: number;
+  llmMaxOutputTokensPlanFallback: number;
   llmMinOutputTokens: number;
 }): LlmTokenDefaults {
   const profile = options.llmTokenProfileLookup.get(normalizeToken(options.model));
   const defaultFromConfig = parseRuntimeLlmTokenCap(options.indexingLlmConfig?.token_defaults?.plan);
-  const fallbackDefault = options.llmTokenPresetOptions[0] || options.llmTokensPlanFallback;
+  const fallbackDefault = options.llmTokenPresetOptions[0] || options.llmMaxOutputTokensPlanFallback;
   const globalDefault = defaultFromConfig || parseRuntimeLlmTokenCap(fallbackDefault) || options.llmMinOutputTokens;
   const fallbackMaxOutputTokens = options.llmTokenPresetOptions[options.llmTokenPresetOptions.length - 1] || globalDefault;
   const default_output_tokens = parseRuntimeLlmTokenCap(profile?.default_output_tokens) || globalDefault;
@@ -193,13 +193,13 @@ export function deriveModelTokenDefaults(options: {
 
 export function deriveSelectedLlmPricingRows(input: SelectedLlmPricingRowsInput): LlmPricingRow[] {
   const entries = [
-    { knob: 'phase 02 planner', knob_key: 'phase_02_planner', model: input.phase2LlmModel, token_cap: input.llmTokensPlan },
-    { knob: 'phase 03 triage', knob_key: 'phase_03_triage', model: input.phase3LlmModel, token_cap: input.llmTokensTriage },
-    { knob: 'fast pass', knob_key: 'fast_pass', model: input.llmModelFast, token_cap: input.llmTokensFast },
-    { knob: 'reasoning pass', knob_key: 'reasoning_pass', model: input.llmModelReasoning, token_cap: input.llmTokensReasoning },
-    { knob: 'extract role', knob_key: 'extract_role', model: input.llmModelExtract, token_cap: input.llmTokensExtract },
-    { knob: 'validate role', knob_key: 'validate_role', model: input.llmModelValidate, token_cap: input.llmTokensValidate },
-    { knob: 'write role', knob_key: 'write_role', model: input.llmModelWrite, token_cap: input.llmTokensWrite },
+    { knob: 'phase 02 planner', knob_key: 'phase_02_planner', model: input.llmModelPlan, token_cap: input.llmMaxOutputTokensPlan },
+    { knob: 'phase 03 triage', knob_key: 'phase_03_triage', model: input.llmModelTriage, token_cap: input.llmMaxOutputTokensTriage },
+    { knob: 'fast pass', knob_key: 'fast_pass', model: input.llmModelFast, token_cap: input.llmMaxOutputTokensFast },
+    { knob: 'reasoning pass', knob_key: 'reasoning_pass', model: input.llmModelReasoning, token_cap: input.llmMaxOutputTokensReasoning },
+    { knob: 'extract role', knob_key: 'extract_role', model: input.llmModelExtract, token_cap: input.llmMaxOutputTokensExtract },
+    { knob: 'validate role', knob_key: 'validate_role', model: input.llmModelValidate, token_cap: input.llmMaxOutputTokensValidate },
+    { knob: 'write role', knob_key: 'write_role', model: input.llmModelWrite, token_cap: input.llmMaxOutputTokensWrite },
   ];
   const knobDefaults = input.indexingLlmConfig?.knob_defaults || {};
   return entries

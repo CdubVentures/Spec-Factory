@@ -15,7 +15,7 @@ export function buildIdentityNormalizationContext({
   createEmptyProvenanceFn,
   passTargetExemptFields = new Set(),
 } = {}) {
-  const identityPublishThreshold = Number(config.identityGatePublishThreshold) || 0.75;
+  const identityPublishThreshold = 0.75;
   const identityProvisionalFloor = 0.50;
   const identityAbort = identityConfidence < identityProvisionalFloor;
   const identityProvisional = !identityAbort && identityConfidence < identityPublishThreshold;

@@ -706,16 +706,8 @@ async function commandIndexLab(config, storage, args) {
       Number(runConfig.maxUrlsPerProduct || config.maxUrlsPerProduct || 12),
       4
     );
-    runConfig.maxManufacturerUrlsPerProduct = Math.min(
-      Number(runConfig.maxManufacturerUrlsPerProduct || config.maxManufacturerUrlsPerProduct || 6),
-      2
-    );
     runConfig.maxPagesPerDomain = Math.min(
       Number(runConfig.maxPagesPerDomain || config.maxPagesPerDomain || 4),
-      2
-    );
-    runConfig.maxManufacturerPagesPerDomain = Math.min(
-      Number(runConfig.maxManufacturerPagesPerDomain || config.maxManufacturerPagesPerDomain || 4),
       2
     );
   }

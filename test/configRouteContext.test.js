@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createConfigRouteContext } from '../src/features/settings/api/configRouteContext.js';
 
 const EXPECTED_KEYS = [
-  'jsonRes', 'readJsonBody', 'config', 'toInt', 'collectLlmModels', 'llmProviderFromModel',
+  'jsonRes', 'readJsonBody', 'config', 'configGate', 'toInt', 'collectLlmModels', 'llmProviderFromModel',
   'resolvePricingForModel', 'resolveTokenProfileForModel', 'resolveLlmRoleDefaults',
   'resolveLlmKnobDefaults', 'llmRoutingSnapshot', 'buildLlmMetrics',
   'buildIndexingDomainChecklist', 'buildReviewMetrics', 'getSpecDb', 'storage',
@@ -11,7 +11,7 @@ const EXPECTED_KEYS = [
 ];
 
 const CORE_KEYS = [
-  'jsonRes', 'readJsonBody', 'config', 'toInt', 'getSpecDb', 'storage',
+  'jsonRes', 'readJsonBody', 'config', 'configGate', 'toInt', 'getSpecDb', 'storage',
   'OUTPUT_ROOT', 'broadcastWs', 'HELPER_ROOT', 'runDataStorageState',
 ];
 

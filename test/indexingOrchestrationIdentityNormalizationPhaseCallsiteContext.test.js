@@ -8,7 +8,7 @@ test('buildIdentityNormalizationPhaseCallsiteContext maps runProduct identity-no
   const createEmptyProvenanceFn = () => ({});
 
   const context = buildIdentityNormalizationPhaseCallsiteContext({
-    config: { identityGatePublishThreshold: 0.75 },
+    config: {},
     identityConfidence: 0.8,
     allowHelperProvisionalFill: true,
     productId: 'mouse-1',

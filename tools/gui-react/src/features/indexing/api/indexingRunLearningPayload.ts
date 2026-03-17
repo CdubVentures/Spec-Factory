@@ -6,11 +6,7 @@ export interface BuildIndexingRunLearningPayloadInput {
   llmBaseUrl: string;
   openaiApiKey: string;
   anthropicApiKey: string;
-  allowBelowPassTargetFill: boolean;
   indexingCategoryAuthorityEnabled: boolean;
-  parsedMaxManufacturerUrlsPerProduct: number;
-  parsedMaxManufacturerPagesPerDomain: number;
-  parsedManufacturerReserveUrls: number;
   userAgent: string;
   selfImproveEnabled: boolean;
   parsedMaxHypothesisItems: number;
@@ -47,11 +43,7 @@ export function buildIndexingRunLearningPayload(
     llmBaseUrl: String(input.llmBaseUrl || '').trim(),
     openaiApiKey: String(input.openaiApiKey || '').trim(),
     anthropicApiKey: String(input.anthropicApiKey || '').trim(),
-    allowBelowPassTargetFill: input.allowBelowPassTargetFill,
     indexingCategoryAuthorityEnabled: input.indexingCategoryAuthorityEnabled,
-    maxManufacturerUrlsPerProduct: Math.max(1, input.parsedMaxManufacturerUrlsPerProduct),
-    maxManufacturerPagesPerDomain: Math.max(1, input.parsedMaxManufacturerPagesPerDomain),
-    manufacturerReserveUrls: Math.max(0, input.parsedManufacturerReserveUrls),
     userAgent: String(input.userAgent || '').trim(),
     selfImproveEnabled: input.selfImproveEnabled,
     maxHypothesisItems: Math.max(1, input.parsedMaxHypothesisItems),

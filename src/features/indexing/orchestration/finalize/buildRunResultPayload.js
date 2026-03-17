@@ -10,6 +10,7 @@ export function buildRunResultPayload({
   learning,
   learningGateResult,
   categoryBrain,
+  needSet,
 } = {}) {
   return {
     job,
@@ -23,5 +24,6 @@ export function buildRunResultPayload({
     learning,
     learningGateResult,
     categoryBrain,
+    needSet,
   };
 }

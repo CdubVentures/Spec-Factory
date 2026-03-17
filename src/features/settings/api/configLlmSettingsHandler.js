@@ -1,0 +1,51 @@
+import { emitDataChange } from '../../../api/events/dataChangeContract.js';
+
+export function createLlmSettingsHandler({
+  jsonRes,
+  readJsonBody,
+  getSpecDb,
+  broadcastWs,
+}) {
+  return async function handleLlmSettings(parts, params, method, req, res) {
+    if (parts[0] !== 'llm-settings' || !parts[1] || parts[2] !== 'routes') return false;
+
+    if (method === 'GET') {
+      const category = parts[1];
+      const scope = (params.get('scope') || '').trim().toLowerCase();
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 500, { error: 'specdb_unavailable' });
+      const rows = specDb.getLlmRouteMatrix(scope || undefined);
+      return jsonRes(res, 200, { category, scope: scope || null, rows });
+    }
+
+    if (method === 'PUT') {
+      const category = parts[1];
+      const body = await readJsonBody(req);
+      const rows = Array.isArray(body?.rows) ? body.rows : [];
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 500, { error: 'specdb_unavailable' });
+      const saved = specDb.saveLlmRouteMatrix(rows);
+      emitDataChange({
+        broadcastWs,
+        event: 'llm-settings-updated',
+        category,
+      });
+      return jsonRes(res, 200, { ok: true, category, rows: saved });
+    }
+
+    if (parts[3] === 'reset' && method === 'POST') {
+      const category = parts[1];
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 500, { error: 'specdb_unavailable' });
+      const rows = specDb.resetLlmRouteMatrixToDefaults();
+      emitDataChange({
+        broadcastWs,
+        event: 'llm-settings-reset',
+        category,
+      });
+      return jsonRes(res, 200, { ok: true, category, rows });
+    }
+
+    return false;
+  };
+}

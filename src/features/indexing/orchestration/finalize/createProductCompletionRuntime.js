@@ -404,6 +404,7 @@ export function createProductCompletionRuntime({
       learning,
       learningGateResult,
       categoryBrain,
+      needSet,
     }) {
       return buildRunResultPayloadFn({
         ...buildRunResultPayloadContextFn({
@@ -419,6 +420,7 @@ export function createProductCompletionRuntime({
             learning,
             learningGateResult,
             categoryBrain,
+            needSet,
           }),
         }),
       });

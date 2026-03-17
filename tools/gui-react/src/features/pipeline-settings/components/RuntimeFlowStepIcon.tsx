@@ -1,15 +1,13 @@
 export type RuntimeStepId =
   | 'run-setup'
   | 'run-output'
-  | 'scoring-evidence'
   | 'automation'
   | 'observability-trace'
   | 'fetch-network'
   | 'browser-rendering'
   | 'parsing'
   | 'ocr'
-  | 'planner-triage'
-  | 'llm-cortex';
+  | 'planner-triage';
 
 interface RuntimeFlowStepIconProps {
   id: RuntimeStepId;
@@ -51,13 +49,6 @@ export function RuntimeFlowStepIcon({
             <path d="M4 6h16v12H4z" />
             <path d="M4 11h16" />
             <path d="M8 15h8" />
-          </>
-        ) : null}
-        {id === 'scoring-evidence' ? (
-          <>
-            <path d="M12 3v18" />
-            <path d="M5 7l7 5-7 5" />
-            <path d="M19 7l-7 5 7 5" />
           </>
         ) : null}
         {id === 'automation' ? (
@@ -114,13 +105,6 @@ export function RuntimeFlowStepIcon({
             <circle cx="12" cy="18" r="2" />
             <path d="M8 6h8" />
             <path d="M12 8v8" />
-          </>
-        ) : null}
-        {id === 'llm-cortex' ? (
-          <>
-            <rect x="6" y="4" width="12" height="16" rx="2" />
-            <path d="M10 8h4M10 12h4M10 16h4" />
-            <path d="M6 9H3M6 15H3M18 9h3M18 15h3" />
           </>
         ) : null}
       </svg>

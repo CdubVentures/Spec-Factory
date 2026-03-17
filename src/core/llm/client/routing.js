@@ -79,7 +79,7 @@ function routeRoleFromReason(reason = '') {
 
 function normalizeProvider(value) {
   const token = normalized(value).toLowerCase();
-  if (token === 'openai' || token === 'deepseek' || token === 'gemini') {
+  if (token === 'openai' || token === 'deepseek' || token === 'gemini' || token === 'cortex') {
     return token;
   }
   return '';
@@ -143,6 +143,9 @@ function providerDefaults(config = {}, provider = '', role = 'extract') {
   } else if (wanted === 'deepseek') {
     baseCandidates.push('https://api.deepseek.com');
     keyCandidates.push(process.env.DEEPSEEK_API_KEY || '');
+  } else if (wanted === 'cortex') {
+    baseCandidates.push(config.cortexBaseUrl);
+    keyCandidates.push(config.cortexApiKey);
   } else {
     baseCandidates.push('https://api.openai.com');
     keyCandidates.push(process.env.OPENAI_API_KEY || '');
@@ -160,6 +163,13 @@ function providerDefaults(config = {}, provider = '', role = 'extract') {
 function alignRouteToModelProvider(config = {}, route = {}) {
   const next = { ...route };
   const currentProvider = normalizeProvider(next.provider);
+  // WHY: cortex is a proxy layer — model-name inference does not apply
+  if (currentProvider === 'cortex') {
+    const defaults = providerDefaults(config, 'cortex', next.role);
+    if (!next.baseUrl && defaults.baseUrl) next.baseUrl = defaults.baseUrl;
+    if (!next.apiKey && defaults.apiKey) next.apiKey = defaults.apiKey;
+    return next;
+  }
   const inferredProvider = providerFromModel(next.model);
   if (!inferredProvider) {
     return next;

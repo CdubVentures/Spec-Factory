@@ -13,12 +13,12 @@ export function createConfigRouteContext(options = {}) {
   }
 
   const {
-    jsonRes, readJsonBody, config, toInt,
+    jsonRes, readJsonBody, config, configGate, toInt,
     getSpecDb, storage, OUTPUT_ROOT, broadcastWs, HELPER_ROOT, runDataStorageState,
   } = options;
 
   return {
-    jsonRes, readJsonBody, config, toInt, collectLlmModels, llmProviderFromModel,
+    jsonRes, readJsonBody, config, configGate, toInt, collectLlmModels, llmProviderFromModel,
     resolvePricingForModel, resolveTokenProfileForModel, resolveLlmRoleDefaults,
     resolveLlmKnobDefaults, llmRoutingSnapshot, buildLlmMetrics,
     buildIndexingDomainChecklist, buildReviewMetrics, getSpecDb, storage,

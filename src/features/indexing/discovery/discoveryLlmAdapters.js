@@ -63,12 +63,17 @@ function toArray(value) {
 }
 
 export function createBrandResolverCallLlm({ callRoutedLlmFn, config, logger }) {
+  const useReasoning = Boolean(config._resolvedBrandResolverUseReasoning ?? config.llmTriageUseReasoning);
   return async ({ brand, category }) => {
     const result = await callRoutedLlmFn({
       config,
       reason: 'brand_resolution',
       role: 'triage',
-      modelOverride: String(config.llmModelTriage || config.llmModelFast || '').trim(),
+      modelOverride: String(
+        useReasoning
+          ? (config._resolvedBrandResolverReasoningModel || config.llmModelReasoning || config._resolvedBrandResolverBaseModel || config.llmModelTriage || config.llmModelFast || config.llmPlanFallbackModel || '')
+          : (config._resolvedBrandResolverBaseModel || config.llmModelTriage || config.llmModelFast || config.llmPlanFallbackModel || '')
+      ).trim(),
       system: [
         'You resolve official brand website domains for product categories.',
         'Return the official domain (not social media or marketplace).',
@@ -87,12 +92,17 @@ export function createBrandResolverCallLlm({ callRoutedLlmFn, config, logger }) 
 }
 
 export function createDomainSafetyCallLlm({ callRoutedLlmFn, config, logger }) {
+  const useReasoning = Boolean(config._resolvedDomainClassifierUseReasoning ?? config.llmTriageUseReasoning);
   return async ({ domains, category }) => {
     const result = await callRoutedLlmFn({
       config,
       reason: 'domain_safety_classification',
       role: 'triage',
-      modelOverride: String(config.llmModelTriage || config.llmModelFast || '').trim(),
+      modelOverride: String(
+        useReasoning
+          ? (config._resolvedDomainClassifierReasoningModel || config.llmModelReasoning || config._resolvedDomainClassifierBaseModel || config.llmModelTriage || config.llmModelFast || config.llmPlanFallbackModel || '')
+          : (config._resolvedDomainClassifierBaseModel || config.llmModelTriage || config.llmModelFast || config.llmPlanFallbackModel || '')
+      ).trim(),
       system: [
         'You classify website domains for safety in the context of product specification research.',
         'Classifications: manufacturer, lab_review, spec_database, retail, forum, news, adult_content, malware, irrelevant, unknown.',

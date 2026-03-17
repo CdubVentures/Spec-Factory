@@ -76,51 +76,10 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   | 'articleExtractorMaxChars'
   | 'staticDomTargetMatchThreshold'
   | 'staticDomMaxEvidenceSnippets'
-  | 'structuredMetadataExtructTimeoutMs'
-  | 'structuredMetadataExtructMaxItemsPerSurface'
-  | 'structuredMetadataExtructCacheLimit'
   | 'domSnippetMaxChars'
   | 'llmExtractionCacheTtlMs'
   | 'llmMaxCallsPerProductTotal'
   | 'llmMaxCallsPerProductFast'
-  | 'consensusMethodWeightNetworkJson'
-  | 'consensusMethodWeightAdapterApi'
-  | 'consensusMethodWeightStructuredMeta'
-  | 'consensusMethodWeightPdf'
-  | 'consensusMethodWeightTableKv'
-  | 'consensusMethodWeightDom'
-  | 'consensusMethodWeightLlmExtractBase'
-  | 'consensusPolicyBonus'
-  | 'consensusWeightedMajorityThreshold'
-  | 'consensusStrictAcceptanceDomainCount'
-  | 'consensusRelaxedAcceptanceDomainCount'
-  | 'consensusInstrumentedFieldThreshold'
-  | 'consensusConfidenceScoringBase'
-  | 'consensusPassTargetIdentityStrong'
-  | 'consensusPassTargetNormal'
-  | 'retrievalTierWeightTier1'
-  | 'retrievalTierWeightTier2'
-  | 'retrievalTierWeightTier3'
-  | 'retrievalTierWeightTier4'
-  | 'retrievalTierWeightTier5'
-  | 'retrievalDocKindWeightManualPdf'
-  | 'retrievalDocKindWeightSpecPdf'
-  | 'retrievalDocKindWeightSupport'
-  | 'retrievalDocKindWeightLabReview'
-  | 'retrievalDocKindWeightProductPage'
-  | 'retrievalDocKindWeightOther'
-  | 'retrievalMethodWeightTable'
-  | 'retrievalMethodWeightKv'
-  | 'retrievalMethodWeightJsonLd'
-  | 'retrievalMethodWeightLlmExtract'
-  | 'retrievalMethodWeightHelperSupportive'
-  | 'retrievalAnchorScorePerMatch'
-  | 'retrievalIdentityScorePerMatch'
-  | 'retrievalUnitMatchBonus'
-  | 'retrievalDirectFieldMatchBonus'
-  | 'identityGateBaseMatchThreshold'
-  | 'qualityGateIdentityThreshold'
-  | 'evidenceTextMaxChars'
   | 'llmExtractMaxTokens'
   | 'llmExtractMaxSnippetsPerBatch'
   | 'llmExtractMaxSnippetChars'
@@ -138,18 +97,13 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   | 'llmCostInputPer1M'
   | 'llmCostOutputPer1M'
   | 'llmCostCachedInputPer1M'
-  | 'maxManufacturerUrlsPerProduct'
-  | 'maxManufacturerPagesPerDomain'
-  | 'manufacturerReserveUrls'
   | 'maxHypothesisItems'
   | 'hypothesisAutoFollowupRounds'
   | 'hypothesisFollowupUrlsPerRound'
   | 'runtimeTraceFetchRing'
   | 'runtimeTraceLlmRing'
   | 'daemonConcurrency'
-  | 'daemonGracefulShutdownTimeoutMs'
   | 'importsPollSeconds'
-  | 'identityGatePublishThreshold'
   | 'indexingResumeSeedLimit'
   | 'indexingResumePersistLimit'
   | 'helperSupportiveMaxSources'
@@ -172,6 +126,7 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   | 'scannedPdfOcrMinCharsPerPage'
   | 'scannedPdfOcrMinLinesPerPage'
   | 'scannedPdfOcrMinConfidence'
+  | 'llmMaxOutputTokensReasoningFallback'
   | 'resumeWindowHours'
   | 'reextractAfterHours'
   | 'fetchBudgetMs',
@@ -216,7 +171,6 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   runtimeScreencastQuality: { min: 10, max: 100, int: true },
   runtimeScreencastMaxWidth: { min: 320, max: 3840, int: true },
   runtimeScreencastMaxHeight: { min: 240, max: 2160, int: true },
-  identityGatePublishThreshold: { min: 0, max: 1 },
   helperSupportiveMaxSources: { min: 0, max: 100, int: true },
   helperActiveSyncLimit: { min: 0, max: 5000, int: true },
   fieldRewardHalfLifeDays: { min: 1, max: 365, int: true },
@@ -254,51 +208,10 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   articleExtractorMaxChars: { min: 256, max: 500_000, int: true },
   staticDomTargetMatchThreshold: { min: 0, max: 1 },
   staticDomMaxEvidenceSnippets: { min: 10, max: 500, int: true },
-  structuredMetadataExtructTimeoutMs: { min: 250, max: 15_000, int: true },
-  structuredMetadataExtructMaxItemsPerSurface: { min: 1, max: 1000, int: true },
-  structuredMetadataExtructCacheLimit: { min: 32, max: 5000, int: true },
   domSnippetMaxChars: { min: 600, max: 20_000, int: true },
   llmExtractionCacheTtlMs: { min: 60_000, max: 31_536_000_000, int: true },
   llmMaxCallsPerProductTotal: { min: 1, max: 100, int: true },
   llmMaxCallsPerProductFast: { min: 0, max: 100, int: true },
-  consensusMethodWeightNetworkJson: { min: 0, max: 2 },
-  consensusMethodWeightAdapterApi: { min: 0, max: 2 },
-  consensusMethodWeightStructuredMeta: { min: 0, max: 2 },
-  consensusMethodWeightPdf: { min: 0, max: 2 },
-  consensusMethodWeightTableKv: { min: 0, max: 2 },
-  consensusMethodWeightDom: { min: 0, max: 2 },
-  consensusMethodWeightLlmExtractBase: { min: 0, max: 2 },
-  consensusPolicyBonus: { min: -5, max: 5 },
-  consensusWeightedMajorityThreshold: { min: 1, max: 10 },
-  consensusStrictAcceptanceDomainCount: { min: 1, max: 50, int: true },
-  consensusRelaxedAcceptanceDomainCount: { min: 1, max: 50, int: true },
-  consensusInstrumentedFieldThreshold: { min: 1, max: 50, int: true },
-  consensusConfidenceScoringBase: { min: 0, max: 1 },
-  consensusPassTargetIdentityStrong: { min: 1, max: 50, int: true },
-  consensusPassTargetNormal: { min: 1, max: 50, int: true },
-  retrievalTierWeightTier1: { min: 0, max: 10 },
-  retrievalTierWeightTier2: { min: 0, max: 10 },
-  retrievalTierWeightTier3: { min: 0, max: 10 },
-  retrievalTierWeightTier4: { min: 0, max: 10 },
-  retrievalTierWeightTier5: { min: 0, max: 10 },
-  retrievalDocKindWeightManualPdf: { min: 0, max: 10 },
-  retrievalDocKindWeightSpecPdf: { min: 0, max: 10 },
-  retrievalDocKindWeightSupport: { min: 0, max: 10 },
-  retrievalDocKindWeightLabReview: { min: 0, max: 10 },
-  retrievalDocKindWeightProductPage: { min: 0, max: 10 },
-  retrievalDocKindWeightOther: { min: 0, max: 10 },
-  retrievalMethodWeightTable: { min: 0, max: 10 },
-  retrievalMethodWeightKv: { min: 0, max: 10 },
-  retrievalMethodWeightJsonLd: { min: 0, max: 10 },
-  retrievalMethodWeightLlmExtract: { min: 0, max: 10 },
-  retrievalMethodWeightHelperSupportive: { min: 0, max: 10 },
-  retrievalAnchorScorePerMatch: { min: 0, max: 2 },
-  retrievalIdentityScorePerMatch: { min: 0, max: 2 },
-  retrievalUnitMatchBonus: { min: 0, max: 2 },
-  retrievalDirectFieldMatchBonus: { min: 0, max: 2 },
-  identityGateBaseMatchThreshold: { min: 0, max: 1 },
-  qualityGateIdentityThreshold: { min: 0, max: 1 },
-  evidenceTextMaxChars: { min: 200, max: 200_000, int: true },
   llmExtractMaxTokens: { min: 128, max: 262_144, int: true },
   llmExtractMaxSnippetsPerBatch: { min: 1, max: 50, int: true },
   llmExtractMaxSnippetChars: { min: 100, max: 200_000, int: true },
@@ -316,16 +229,12 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   llmCostInputPer1M: { min: 0, max: 1000 },
   llmCostOutputPer1M: { min: 0, max: 1000 },
   llmCostCachedInputPer1M: { min: 0, max: 1000 },
-  maxManufacturerUrlsPerProduct: { min: 1, max: 1000, int: true },
-  maxManufacturerPagesPerDomain: { min: 1, max: 200, int: true },
-  manufacturerReserveUrls: { min: 0, max: 1000, int: true },
   maxHypothesisItems: { min: 1, max: 1000, int: true },
   hypothesisAutoFollowupRounds: { min: 0, max: 10, int: true },
   hypothesisFollowupUrlsPerRound: { min: 1, max: 200, int: true },
   runtimeTraceFetchRing: { min: 10, max: 2000, int: true },
   runtimeTraceLlmRing: { min: 10, max: 2000, int: true },
   daemonConcurrency: { min: 1, max: 128, int: true },
-  daemonGracefulShutdownTimeoutMs: { min: 1000, max: 600_000, int: true },
   importsPollSeconds: { min: 1, max: 3600, int: true },
   indexingResumeSeedLimit: { min: 1, max: 10_000, int: true },
   indexingResumePersistLimit: { min: 1, max: 100_000, int: true },
@@ -337,6 +246,7 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   resumeWindowHours: { min: 0, max: 8_760, int: true },
   reextractAfterHours: { min: 0, max: 8_760, int: true },
   reCrawlStaleAfterDays: { min: 1, max: 3650, int: true },
+  llmMaxOutputTokensReasoningFallback: { min: 128, max: 262_144, int: true },
 };
 
 export function toRuntimeDraft(defaults: RuntimeSettingDefaults): RuntimeDraft {

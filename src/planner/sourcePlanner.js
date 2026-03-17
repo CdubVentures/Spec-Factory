@@ -2,334 +2,49 @@ import { extractRootDomain } from '../utils/common.js';
 import { toRawFieldKey } from '../utils/fieldKeys.js';
 import {
   inferRoleForHost,
-  isApprovedHost,
   isDeniedHost,
   resolveTierForHost,
   resolveTierNameForHost
 } from '../categories/loader.js';
 import { isLowValueHost, validateFetchUrl } from '../pipeline/urlQualityGate.js';
-
-function normalizeHost(host) {
-  return String(host || '').trim().toLowerCase().replace(/^www\./, '');
-}
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function getHost(url) {
-  try {
-    return normalizeHost(new URL(url).hostname);
-  } catch {
-    return '';
-  }
-}
-
-function canonicalizeQueueUrl(parsedUrl) {
-  const normalized = new URL(parsedUrl.toString());
-  // Fragments are client-side only and should not create distinct fetch jobs.
-  normalized.hash = '';
-  return normalized.toString();
-}
-
-function hostInSet(host, hostSet) {
-  if (hostSet.has(host)) {
-    return true;
-  }
-  for (const candidate of hostSet) {
-    if (host.endsWith(`.${candidate}`)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function tokenize(value) {
-  return String(value || '')
-    .toLowerCase()
-    .split(/[^a-z0-9]+/g)
-    .map((token) => token.trim())
-    .filter((token) => token.length >= 3);
-}
-
-const BRAND_HOST_HINTS = {
-  logitech: ['logitech', 'logitechg', 'logi'],
-  razer: ['razer'],
-  steelseries: ['steelseries'],
-  zowie: ['zowie', 'benq'],
-  benq: ['benq', 'zowie'],
-  finalmouse: ['finalmouse'],
-  lamzu: ['lamzu'],
-  pulsar: ['pulsar'],
-  corsair: ['corsair'],
-  glorious: ['glorious'],
-  endgame: ['endgamegear', 'endgame-gear'],
-  cooler: ['coolermaster', 'cooler-master'],
-  asus: ['asus', 'rog'],
-};
-
-const BRAND_DOMAIN_OVERRIDES = {
-  alienware: ['alienware.com', 'dell.com'],
-  logitech: ['logitechg.com', 'logitech.com'],
-  steelseries: ['steelseries.com'],
-  razer: ['razer.com'],
-  cooler: ['coolermaster.com'],
-  asus: ['asus.com', 'rog.asus.com'],
-};
-
-const BRAND_PREFIXED_CATEGORY_HOSTS = new Set(['razer.com']);
-
-function manufacturerHostHintsForBrand(brand) {
-  const rawTokens = tokenize(brand);
-  const hints = new Set(rawTokens);
-  const brandSlug = slug(brand);
-  const matchedRawTokens = new Set();
-  for (const [key, aliases] of Object.entries(BRAND_HOST_HINTS)) {
-    if (brandSlug.includes(key) || hints.has(key)) {
-      for (const alias of aliases) {
-        hints.add(alias);
-      }
-      // Mark raw tokens that were part of this brand match
-      // so we can suppress them as standalone domain guesses.
-      for (const rt of rawTokens) {
-        if (brandSlug.includes(rt)) matchedRawTokens.add(rt);
-      }
-    }
-  }
-  // When brand hints matched, remove raw partial tokens (e.g. "cooler", "master")
-  // that would produce wrong domains like cooler.com, master.com.
-  if (matchedRawTokens.size > 0 && matchedRawTokens.size < hints.size) {
-    for (const rt of matchedRawTokens) {
-      // Only remove if the hint set has proper aliases beyond the raw tokens
-      if (hints.size - matchedRawTokens.size >= 1) {
-        hints.delete(rt);
-      }
-    }
-  }
-  return [...hints];
-}
-
-function manufacturerSeedHostsForBrand(brand = '', hints = []) {
-  const seeds = new Set();
-  const brandSlug = slug(brand);
-  for (const [token, domains] of Object.entries(BRAND_DOMAIN_OVERRIDES)) {
-    if (brandSlug.includes(token)) {
-      for (const domain of domains || []) {
-        const normalized = normalizeHost(domain);
-        if (normalized) {
-          seeds.add(normalized);
-        }
-      }
-    }
-  }
-
-  for (const hint of hints || []) {
-    const token = String(hint || '').trim().toLowerCase();
-    if (!token || token.length < 3 || !/^[a-z0-9-]+$/.test(token)) {
-      continue;
-    }
-    if (['logi', 'mice', 'mouse', 'gaming', 'wireless', 'wired', 'master', 'model', 'pro', 'ace'].includes(token)) {
-      continue;
-    }
-    seeds.add(`${token}.com`);
-  }
-
-  return [...seeds];
-}
-
-function slug(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-function buildAllowedCategoryProductSlugs({ brand = '', modelSlug = '' }) {
-  if (!modelSlug) {
-    return [];
-  }
-  const variants = [modelSlug];
-  const brandSlug = slug(brand);
-  if (brandSlug && !modelSlug.startsWith(`${brandSlug}-`)) {
-    variants.push(`${brandSlug}-${modelSlug}`);
-  }
-  return [...new Set(variants)];
-}
-
-function countQueueHost(queue, host) {
-  let count = 0;
-  for (const row of queue || []) {
-    if (row.host === host) {
-      count += 1;
-    }
-  }
-  return count;
-}
-
-function urlPath(url) {
-  try {
-    return new URL(url).pathname.toLowerCase();
-  } catch {
-    return '';
-  }
-}
-
-function normalizeSourcePath(url) {
-  try {
-    const parsed = new URL(url);
-    return normalizeComparablePath(parsed.pathname || '/');
-  } catch {
-    return '/';
-  }
-}
-
-function normalizeComparablePath(pathname = '/') {
-  const rawPath = String(pathname || '/')
-    .toLowerCase()
-    .replace(/\/+/g, '/');
-  if (!rawPath || rawPath === '/') {
-    return '/';
-  }
-  return rawPath.endsWith('/') ? rawPath.slice(0, -1) : rawPath;
-}
-
-const CATEGORY_PRODUCT_PATH_RE = /\/(?:gaming-)?(?:mice|mouse|keyboards?|headsets?|monitors?)\//;
-
-function extractCategoryProductSlug(pathname = '') {
-  const match = String(pathname || '').toLowerCase().match(
-    /^\/(?:gaming-)?(?:mice|mouse|keyboards?|headsets?|monitors?)\/([^/]+)/
-  );
-  return String(match?.[1] || '').trim();
-}
-
-function extractManufacturerProductishSlug(pathname = '') {
-  const normalizedPath = String(pathname || '').toLowerCase();
-  const matchers = [
-    /^\/(?:gaming-)?(?:mice|mouse|keyboards?|headsets?|monitors?)\/([^/?#]+)/,
-    /^\/product\/([^/?#]+)/,
-    /^\/products\/([^/?#]+)$/,
-    /^\/products\/[^/]+\/([^/?#]+)$/,
-    /\/variant\/products\/([^/?#]+)/,
-    /\/products\/([^/?#]+)$/
-  ];
-  for (const matcher of matchers) {
-    const match = normalizedPath.match(matcher);
-    const token = String(match?.[1] || '').trim();
-    if (token) {
-      return token;
-    }
-  }
-  return '';
-}
-
-function slugIdentityTokens(value = '') {
-  return String(value || '')
-    .toLowerCase()
-    .split(/[^a-z0-9]+/g)
-    .map((token) => token.trim())
-    .filter((token) => token.length >= 2);
-}
-
-const BENIGN_LOCKED_PRODUCT_SUFFIX_TOKENS = new Set(['base']);
-
-function isSitemapLikePath(pathname, search = '') {
-  const token = `${String(pathname || '')} ${String(search || '')}`.toLowerCase();
-  return token.includes('sitemap');
-}
-
-function isNonProductSitemapPointer(parsed) {
-  const haystack = [
-    normalizeHost(parsed?.hostname || ''),
-    String(parsed?.pathname || ''),
-    String(parsed?.search || '')
-  ].join(' ').toLowerCase();
-  if (!haystack.trim()) {
-    return false;
-  }
-  return [
-    'image',
-    'images',
-    'video',
-    'videos',
-    'news',
-    'blog',
-    'blogs',
-    'press',
-    'media'
-  ].some((token) => haystack.includes(token));
-}
-
-function stripLocalePrefix(pathname) {
-  const raw = String(pathname || '').toLowerCase();
-  const match = raw.match(/^\/([a-z]{2}|[a-z]{2,5}-[a-z]{2})\/(.+)$/);
-  if (!match) {
-    return {
-      pathname: raw,
-      hadLocalePrefix: false
-    };
-  }
-  return {
-    pathname: `/${match[2]}`,
-    hadLocalePrefix: true
-  };
-}
-
-function decodeXmlEntities(value) {
-  return String(value || '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-}
-
-function extractFirstHttpUrlToken(value = '') {
-  const decoded = decodeXmlEntities(value);
-  const match = decoded.match(/https?:\/\/[^\s<>"']+/i);
-  return String(match?.[0] || '').trim();
-}
-
-function countTokenHits(text, tokens) {
-  const haystack = String(text || '').toLowerCase();
-  let hits = 0;
-  for (const token of tokens || []) {
-    const norm = String(token || '').toLowerCase().trim();
-    if (!norm) {
-      continue;
-    }
-    if (haystack.includes(norm)) {
-      hits += 1;
-    }
-  }
-  return hits;
-}
-
-function isHighSignalManufacturerSeedUrl(url, brandTokens, modelTokens) {
-  let parsed;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return false;
-  }
-
-  const host = normalizeHost(parsed.hostname);
-  const pathAndQuery = `${parsed.pathname || ''} ${parsed.search || ''}`.toLowerCase();
-  const modelHits = countTokenHits(pathAndQuery, modelTokens);
-  const brandHits = countTokenHits(`${host} ${pathAndQuery}`, brandTokens);
-  const hasManufacturerSignal =
-    /support|manual|spec|product|products|download|datasheet|article|pdf/.test(pathAndQuery);
-
-  if (!hasManufacturerSignal) {
-    return false;
-  }
-
-  if (modelTokens.length > 0) {
-    const minModelHits = modelTokens.length >= 3 ? 2 : 1;
-    return modelHits >= minModelHits;
-  }
-
-  return brandHits >= 1;
-}
+import {
+  normalizeHost,
+  isObject,
+  getHost,
+  canonicalizeQueueUrl,
+  hostInSet,
+  tokenize,
+  slug,
+  slugIdentityTokens,
+  countTokenHits,
+  countQueueHost,
+  urlPath
+} from './sourcePlannerUrlUtils.js';
+import {
+  BRAND_PREFIXED_CATEGORY_HOSTS,
+  manufacturerHostHintsForBrand,
+  manufacturerSeedHostsForBrand,
+  buildAllowedCategoryProductSlugs
+} from './sourcePlannerBrandConfig.js';
+import {
+  computeSourcePriority,
+  computePathHeuristicBoost,
+  computeDomainPriority,
+  resolveIntelBundle,
+  scoreRequiredFieldBoost as _scoreRequiredFieldBoost,
+  readRewardScoreFromMethodMap as _readRewardScoreFromMethodMap,
+  scoreFieldRewardBoost as _scoreFieldRewardBoost
+} from './sourcePlannerScoring.js';
+import {
+  checkShouldUseApprovedQueue,
+  checkIsResumeSeed,
+  checkMatchesAllowedLockedProductSlug,
+  checkShouldRejectLockedManufacturerUrl,
+  checkShouldRejectLockedManufacturerLocaleDuplicateUrl,
+  checkHasQueuedOrVisitedComparableUrl,
+  checkIsRelevantDiscoveredUrl
+} from './sourcePlannerValidation.js';
+import { createSourceDiscovery } from './sourcePlannerDiscovery.js';
 
 export class SourcePlanner {
   constructor(job, config, categoryConfig, options = {}) {
@@ -350,19 +65,6 @@ export class SourcePlanner {
     this.maxUrls = config.maxUrlsPerProduct;
     this.maxCandidateUrls = config.maxCandidateUrls;
     this.maxPagesPerDomain = config.maxPagesPerDomain;
-    this.manufacturerDeepResearchEnabled = config.manufacturerDeepResearchEnabled !== false;
-    this.manufacturerSeedSearchUrls = Boolean(config.manufacturerSeedSearchUrls);
-    this.maxManufacturerUrls = Math.max(
-      1,
-      Math.min(this.maxUrls, Number(config.maxManufacturerUrlsPerProduct || this.maxUrls))
-    );
-    this.maxManufacturerPagesPerDomain = Math.max(
-      this.maxPagesPerDomain,
-      Number(config.maxManufacturerPagesPerDomain || this.maxPagesPerDomain)
-    );
-    this.manufacturerReserveUrls = this.manufacturerDeepResearchEnabled
-      ? Math.max(0, Math.min(this.maxUrls, Number(config.manufacturerReserveUrls || 0)))
-      : 0;
 
     this.manufacturerQueue = [];
     this.priorityQueue = [];
@@ -380,8 +82,6 @@ export class SourcePlanner {
     this.hostCounts = new Map();
     this.manufacturerHostCounts = new Map();
     this.candidateHostCounts = new Map();
-    this.robotsSitemapsDiscovered = 0;
-    this.sitemapUrlsDiscovered = 0;
 
     this.allowlistHosts = new Set();
     this.sourceHostMap =
@@ -434,6 +134,22 @@ export class SourcePlanner {
         modelSlug: this.modelSlug
       })
     );
+
+    this._discoveryCounters = {
+      robotsSitemapsDiscovered: 0,
+      sitemapUrlsDiscovered: 0
+    };
+    this._discovery = createSourceDiscovery({
+      categoryConfig: this.categoryConfig,
+      allowlistHosts: this.allowlistHosts,
+      allowedCategoryProductSlugs: this.allowedCategoryProductSlugs,
+      enqueue: (url, from, opts) => this.enqueue(url, from, opts),
+      isRelevantDiscoveredUrl: (parsed, ctx) =>
+        checkIsRelevantDiscoveredUrl(parsed, ctx, this._validationCtx()),
+      hasQueuedOrVisitedComparableUrl: (parsed, opts) =>
+        checkHasQueuedOrVisitedComparableUrl(parsed, opts, this._queueState()),
+      counters: this._discoveryCounters
+    });
 
     this.seed(job.seedUrls || []);
     this.seedManufacturerDeepUrls();
@@ -515,10 +231,6 @@ export class SourcePlanner {
   }
 
   seedManufacturerDeepUrls() {
-    if (!this.manufacturerDeepResearchEnabled) {
-      return;
-    }
-
     const queryText = [
       this.job.identityLock?.brand || '',
       this.job.identityLock?.model || '',
@@ -536,9 +248,6 @@ export class SourcePlanner {
     const fallbackBrandSeeds = manufacturerSeedHostsForBrand(
       this.job.identityLock?.brand || '',
       this.brandHostHints
-    );
-    const suppressGuessSeeds = (this.job.seedUrls || []).some((seedUrl) =>
-      isHighSignalManufacturerSeedUrl(seedUrl, this.brandTokens, this.modelTokens)
     );
     const manufacturerHosts = new Set(
       this.brandManufacturerHostSet.size
@@ -564,14 +273,6 @@ export class SourcePlanner {
       const seeds = [
         `https://${host}/robots.txt`,
       ];
-      if (this.manufacturerSeedSearchUrls && !suppressGuessSeeds) {
-        seeds.unshift(
-          `https://${host}/support/search?query=${encodedQuery}`,
-          `https://${host}/shop/search?q=${encodedQuery}`,
-          `https://${host}/search?query=${encodedQuery}`,
-          `https://${host}/search?q=${encodedQuery}`
-        );
-      }
 
       for (const url of seeds) {
         this.enqueue(url, 'manufacturer_deep_seed', { forceApproved: true });
@@ -632,90 +333,48 @@ export class SourcePlanner {
     this.enqueue(url, discoveredFrom, { forceCandidate: true });
   }
 
+  _validationCtx() {
+    return {
+      categoryConfig: this.categoryConfig,
+      allowlistHosts: this.allowlistHosts,
+      allowedCategoryProductSlugs: this.allowedCategoryProductSlugs,
+      modelSlugIdentityTokens: this.modelSlugIdentityTokens,
+      modelTokens: this.modelTokens,
+      brandTokens: this.brandTokens,
+      brandKey: this.brandKey,
+      sourceHostMap: this.sourceHostMap,
+      modelSlug: this.modelSlug
+    };
+  }
+
+  _queueState() {
+    return {
+      visitedUrls: this.visitedUrls,
+      priorityQueue: this.priorityQueue,
+      manufacturerQueue: this.manufacturerQueue,
+      queue: this.queue,
+      candidateQueue: this.candidateQueue
+    };
+  }
+
   shouldUseApprovedQueue(host, forceApproved = false, forceCandidate = false) {
-    if (forceCandidate) {
-      return false;
-    }
-    if (forceApproved) {
-      return true;
-    }
-    if (isApprovedHost(host, this.categoryConfig)) {
-      return true;
-    }
-    return hostInSet(host, this.allowlistHosts);
+    return checkShouldUseApprovedQueue(host, forceApproved, forceCandidate, this._validationCtx());
   }
 
   isResumeSeed(discoveredFrom = '') {
-    return String(discoveredFrom || '').startsWith('resume_');
+    return checkIsResumeSeed(discoveredFrom);
   }
 
   matchesAllowedLockedProductSlug(productSlug = '') {
-    const normalizedSlug = String(productSlug || '').toLowerCase().trim();
-    if (!normalizedSlug || this.allowedCategoryProductSlugs.size === 0) {
-      return false;
-    }
-    if (this.allowedCategoryProductSlugs.has(normalizedSlug)) {
-      return true;
-    }
-
-    for (const allowedSlug of this.allowedCategoryProductSlugs) {
-      if (!allowedSlug || !normalizedSlug.startsWith(`${allowedSlug}-`)) {
-        continue;
-      }
-      const suffixTokens = slugIdentityTokens(normalizedSlug.slice(allowedSlug.length + 1));
-      if (suffixTokens.length > 0 && suffixTokens.every((token) => BENIGN_LOCKED_PRODUCT_SUFFIX_TOKENS.has(token))) {
-        return true;
-      }
-    }
-
-    return false;
+    return checkMatchesAllowedLockedProductSlug(productSlug, this._validationCtx());
   }
 
   shouldRejectLockedManufacturerUrl(parsed) {
-    if (this.allowedCategoryProductSlugs.size === 0) {
-      return false;
-    }
-
-    const localizedPath = stripLocalePrefix(parsed.pathname || '');
-    const productSlug = extractManufacturerProductishSlug(localizedPath.pathname);
-    if (!productSlug) {
-      return false;
-    }
-
-    if (this.matchesAllowedLockedProductSlug(productSlug)) {
-      return false;
-    }
-
-    const slugTokens = slugIdentityTokens(productSlug);
-    if (slugTokens.length === 0) {
-      return true;
-    }
-
-    const matchingLockedTokens = this.modelSlugIdentityTokens.filter((token) => slugTokens.includes(token));
-    if (matchingLockedTokens.length === 0) {
-      return true;
-    }
-
-    const minLockedHits = this.modelSlugIdentityTokens.length >= 2 ? 2 : 1;
-    return matchingLockedTokens.length >= minLockedHits;
+    return checkShouldRejectLockedManufacturerUrl(parsed, this._validationCtx());
   }
 
   shouldRejectLockedManufacturerLocaleDuplicateUrl(parsed, { allowResume = false } = {}) {
-    if (allowResume || this.allowedCategoryProductSlugs.size === 0) {
-      return false;
-    }
-
-    const localizedPath = stripLocalePrefix(parsed.pathname || '');
-    if (!localizedPath.hadLocalePrefix) {
-      return false;
-    }
-
-    const categoryProductSlug = extractCategoryProductSlug(localizedPath.pathname || '');
-    if (!categoryProductSlug) {
-      return false;
-    }
-
-    return this.matchesAllowedLockedProductSlug(categoryProductSlug);
+    return checkShouldRejectLockedManufacturerLocaleDuplicateUrl(parsed, { allowResume }, this._validationCtx());
   }
 
   enqueue(url, discoveredFrom = 'unknown', options = {}) {
@@ -818,30 +477,17 @@ export class SourcePlanner {
       if (isManufacturerSource) {
         const plannedCount =
           countQueueHost(this.manufacturerQueue, host) + (this.manufacturerHostCounts.get(host) || 0);
-        if (plannedCount >= this.maxManufacturerPagesPerDomain) {
+        if (plannedCount >= this.maxPagesPerDomain) {
           return false;
         }
         const manufacturerPlanned = this.manufacturerQueue.length + this.manufacturerVisitedCount;
-        if (manufacturerPlanned >= this.maxManufacturerUrls) {
+        if (manufacturerPlanned >= this.maxUrls) {
           return false;
         }
       } else {
         const plannedCount = countQueueHost(this.queue, host) + (this.hostCounts.get(host) || 0);
         if (plannedCount >= this.maxPagesPerDomain) {
           return false;
-        }
-        if (this.manufacturerReserveUrls > 0 && !this.shouldBypassManufacturerReserve(discoveredFrom)) {
-          const reservedRemaining = Math.max(
-            0,
-            this.manufacturerReserveUrls -
-              (this.manufacturerQueue.length + this.manufacturerVisitedCount)
-          );
-          const maxNonManufacturerPlan = this.maxUrls - reservedRemaining;
-          const currentNonManufacturerPlan =
-            this.queue.length + this.nonManufacturerVisitedCount;
-          if (currentNonManufacturerPlan >= maxNonManufacturerPlan) {
-            return false;
-          }
         }
       }
 
@@ -966,257 +612,19 @@ export class SourcePlanner {
   }
 
   discoverFromHtml(baseUrl, html) {
-    if (!html) {
-      return;
-    }
-
-    const baseHost = getHost(baseUrl);
-    const manufacturerContext =
-      baseHost && resolveTierNameForHost(baseHost, this.categoryConfig) === 'manufacturer';
-    let baseParsed = null;
-    let baseNormalizedPath = '';
-    let baseProductSlug = '';
-    try {
-      baseParsed = new URL(baseUrl);
-      baseNormalizedPath = stripLocalePrefix(baseParsed.pathname || '').pathname;
-      baseProductSlug = baseNormalizedPath.split('/').filter(Boolean).at(-1) || '';
-    } catch {
-      baseParsed = null;
-      baseNormalizedPath = '';
-      baseProductSlug = '';
-    }
-    const matches = html.matchAll(/href\s*=\s*["']([^"']+)["']/gi);
-    for (const match of matches) {
-      const href = match[1];
-      try {
-        const parsed = new URL(href, baseUrl);
-        const host = normalizeHost(parsed.hostname);
-        if (!host) {
-          continue;
-        }
-        if (!isApprovedHost(host, this.categoryConfig) && !hostInSet(host, this.allowlistHosts)) {
-          continue;
-        }
-        if (baseHost && host !== baseHost && !host.endsWith(`.${baseHost}`) && !baseHost.endsWith(`.${host}`)) {
-          if (!isApprovedHost(host, this.categoryConfig)) {
-            continue;
-          }
-        }
-        if (manufacturerContext && host === baseHost && baseParsed) {
-          const localized = stripLocalePrefix(parsed.pathname || '');
-          const normalizedPath = localized.pathname;
-          const sameSearch = String(parsed.search || '') === String(baseParsed.search || '');
-          const sameNormalizedPath = Boolean(
-            normalizedPath &&
-            baseNormalizedPath &&
-            normalizedPath === baseNormalizedPath
-          );
-          if (sameNormalizedPath && sameSearch) {
-            continue;
-          }
-          if (isSitemapLikePath(normalizedPath)) {
-            continue;
-          }
-          const baseLooksLikeProductPath = CATEGORY_PRODUCT_PATH_RE.test(baseNormalizedPath);
-          const candidateLooksLikeProductPath = CATEGORY_PRODUCT_PATH_RE.test(normalizedPath);
-          const candidateProductSlug = normalizedPath.split('/').filter(Boolean).at(-1) || '';
-          const sameProductFamilyPath = Boolean(
-            baseLooksLikeProductPath &&
-            candidateLooksLikeProductPath &&
-            baseProductSlug &&
-            candidateProductSlug &&
-            candidateProductSlug !== baseProductSlug &&
-            (
-              normalizedPath.startsWith(`${baseNormalizedPath}-`) ||
-              candidateProductSlug.startsWith(`${baseProductSlug}-`) ||
-              candidateProductSlug.endsWith(`-${baseProductSlug}`) ||
-              candidateProductSlug.includes(`-${baseProductSlug}-`)
-            )
-          );
-          if (sameProductFamilyPath) {
-            continue;
-          }
-        }
-        if (!this.isRelevantDiscoveredUrl(parsed, { manufacturerContext })) {
-          continue;
-        }
-        this.enqueue(parsed.toString(), baseUrl);
-      } catch {
-        // ignore invalid href
-      }
-    }
+    return this._discovery.discoverFromHtml(baseUrl, html);
   }
 
   discoverFromRobots(baseUrl, body) {
-    if (!body) {
-      return 0;
-    }
-
-    const baseHost = getHost(baseUrl);
-    const manufacturerContext =
-      baseHost && resolveTierNameForHost(baseHost, this.categoryConfig) === 'manufacturer';
-    const matches = String(body).matchAll(/^\s*sitemap:\s*(\S+)\s*$/gim);
-    let discovered = 0;
-    for (const match of matches) {
-      const raw = extractFirstHttpUrlToken(match[1] || '');
-      if (!raw) {
-        continue;
-      }
-      try {
-        const parsedSitemap = new URL(raw, baseUrl);
-        if (manufacturerContext && isNonProductSitemapPointer(parsedSitemap)) {
-          continue;
-        }
-        const sitemapUrl = parsedSitemap.toString();
-        const before =
-          this.priorityQueue.length +
-          this.queue.length +
-          this.manufacturerQueue.length +
-          this.candidateQueue.length;
-        this.enqueue(sitemapUrl, `robots:${baseUrl}`, { forceApproved: true });
-        const after =
-          this.priorityQueue.length +
-          this.queue.length +
-          this.manufacturerQueue.length +
-          this.candidateQueue.length;
-        if (after > before) {
-          discovered += 1;
-        }
-      } catch {
-        // ignore invalid sitemap URL
-      }
-    }
-
-    this.robotsSitemapsDiscovered += discovered;
-    return discovered;
+    return this._discovery.discoverFromRobots(baseUrl, body);
   }
 
   discoverFromSitemap(baseUrl, body) {
-    if (!body) {
-      return 0;
-    }
-
-    const baseHost = getHost(baseUrl);
-    const manufacturerContext =
-      baseHost && resolveTierNameForHost(baseHost, this.categoryConfig) === 'manufacturer';
-    if (!manufacturerContext) {
-      return 0;
-    }
-
-    const locRegex = /<loc>\s*([\s\S]*?)\s*<\/loc>/gi;
-    const seen = new Set();
-    let discovered = 0;
-    let scanned = 0;
-    for (const match of String(body).matchAll(locRegex)) {
-      if (scanned >= 3000) {
-        break;
-      }
-      scanned += 1;
-
-      const decoded = decodeXmlEntities(match[1] || '').trim();
-      if (!decoded || seen.has(decoded)) {
-        continue;
-      }
-      seen.add(decoded);
-
-      let parsed;
-      try {
-        parsed = new URL(decoded, baseUrl);
-      } catch {
-        continue;
-      }
-
-      const host = normalizeHost(parsed.hostname);
-      if (!host) {
-        continue;
-      }
-
-      if (baseHost && host !== baseHost && !host.endsWith(`.${baseHost}`) && !baseHost.endsWith(`.${host}`)) {
-        if (!isApprovedHost(host, this.categoryConfig)) {
-          continue;
-        }
-      }
-
-      const localizedPath = stripLocalePrefix(parsed.pathname || '');
-      const localizedComparablePath = normalizeComparablePath(localizedPath.pathname || '/');
-      const categoryProductSlug = extractCategoryProductSlug(localizedComparablePath);
-      const isLockedProductPath =
-        categoryProductSlug &&
-        this.allowedCategoryProductSlugs.size > 0 &&
-        this.allowedCategoryProductSlugs.has(categoryProductSlug);
-      if (isLockedProductPath) {
-        if (localizedPath.hadLocalePrefix) {
-          continue;
-        }
-        if (this.hasQueuedOrVisitedComparableUrl(parsed, { stripLocale: true })) {
-          continue;
-        }
-      }
-
-      if (!isSitemapLikePath(parsed.pathname, parsed.search)) {
-        if (!this.isRelevantDiscoveredUrl(parsed, { manufacturerContext, sitemapContext: true })) {
-          continue;
-        }
-      }
-
-      const before =
-        this.priorityQueue.length +
-        this.queue.length +
-        this.manufacturerQueue.length +
-        this.candidateQueue.length;
-      this.enqueue(parsed.toString(), `sitemap:${baseUrl}`, { forceApproved: true });
-      const after =
-        this.priorityQueue.length +
-        this.queue.length +
-        this.manufacturerQueue.length +
-        this.candidateQueue.length;
-      if (after > before) {
-        discovered += 1;
-      }
-    }
-
-    this.sitemapUrlsDiscovered += discovered;
-    return discovered;
+    return this._discovery.discoverFromSitemap(baseUrl, body);
   }
 
   hasQueuedOrVisitedComparableUrl(parsed, options = {}) {
-    const candidateHost = normalizeHost(parsed?.hostname || '');
-    if (!candidateHost) {
-      return false;
-    }
-    const candidatePath = options.stripLocale
-      ? normalizeComparablePath(stripLocalePrefix(parsed.pathname || '').pathname || '/')
-      : normalizeComparablePath(parsed.pathname || '/');
-    const candidateSearch = String(parsed.search || '');
-    const comparableUrls = [
-      ...this.visitedUrls,
-      ...this.priorityQueue.map((row) => row.url),
-      ...this.manufacturerQueue.map((row) => row.url),
-      ...this.queue.map((row) => row.url),
-      ...this.candidateQueue.map((row) => row.url)
-    ];
-    for (const existingUrl of comparableUrls) {
-      let existingParsed;
-      try {
-        existingParsed = new URL(existingUrl);
-      } catch {
-        continue;
-      }
-      if (normalizeHost(existingParsed.hostname) !== candidateHost) {
-        continue;
-      }
-      const existingPath = options.stripLocale
-        ? normalizeComparablePath(stripLocalePrefix(existingParsed.pathname || '').pathname || '/')
-        : normalizeComparablePath(existingParsed.pathname || '/');
-      if (existingPath !== candidatePath) {
-        continue;
-      }
-      if (String(existingParsed.search || '') !== candidateSearch) {
-        continue;
-      }
-      return true;
-    }
-    return false;
+    return checkHasQueuedOrVisitedComparableUrl(parsed, options, this._queueState());
   }
 
   shouldFrontloadApprovedSource(row) {
@@ -1226,170 +634,8 @@ export class SourcePlanner {
     return row.discoveredFrom === 'seed' || row.discoveredFrom === 'learning_seed';
   }
 
-  shouldBypassManufacturerReserve(discoveredFrom = '') {
-    return discoveredFrom === 'seed' || discoveredFrom === 'learning_seed';
-  }
-
   isRelevantDiscoveredUrl(parsed, context = {}) {
-    const host = normalizeHost(parsed.hostname);
-    const localizedPath = stripLocalePrefix(parsed.pathname || '');
-    const hasLocalePrefix = localizedPath.hadLocalePrefix;
-    const effectivePath = localizedPath.pathname;
-    const pathAndQuery = `${effectivePath || ''} ${parsed.search || ''}`.toLowerCase();
-    const pathname = effectivePath.toLowerCase();
-    const modelTokenHits = countTokenHits(pathAndQuery, this.modelTokens);
-    const minModelHits = this.modelTokens.length >= 3 ? 2 : 1;
-    const hasModelToken = this.modelTokens.length > 0 && modelTokenHits >= minModelHits;
-    const hasBrandToken = this.brandTokens.some((token) => pathAndQuery.includes(token));
-    const role = String(
-      this.sourceHostMap.get(host)?.role || inferRoleForHost(host, this.categoryConfig)
-    ).toLowerCase();
-
-    if (/\.(css|js|svg|png|jpe?g|webp|gif|ico|woff2?|ttf|map|json)$/i.test(pathname)) {
-      return false;
-    }
-
-    if (hasLocalePrefix && !context.manufacturerContext && !context.sitemapContext) {
-      return false;
-    }
-
-    if (!pathAndQuery || pathAndQuery === '/') {
-      return false;
-    }
-
-    const negativeKeywords = [
-      '/cart',
-      '/checkout',
-      '/account',
-      '/community',
-      '/blog',
-      '/newsroom',
-      '/store-locator',
-      '/gift-card',
-      '/forum',
-      '/forums',
-      '/shop/c/',
-      '/category/',
-      '/collections/'
-    ];
-    if (negativeKeywords.some((keyword) => pathAndQuery.includes(keyword)) && !hasModelToken) {
-      return false;
-    }
-
-    if (
-      role !== 'manufacturer' &&
-      ['/blog', '/newsroom', '/forum', '/forums', '/community'].some((keyword) => pathAndQuery.includes(keyword))
-    ) {
-      return false;
-    }
-
-    if (isSitemapLikePath(pathname, parsed.search)) {
-      return true;
-    }
-
-    const categoryProductSlug = extractCategoryProductSlug(pathname);
-    if (
-      context.manufacturerContext &&
-      categoryProductSlug &&
-      this.allowedCategoryProductSlugs.size > 0
-    ) {
-      if (!categoryProductSlug || !this.allowedCategoryProductSlugs.has(categoryProductSlug)) {
-        return false;
-      }
-    }
-
-    const requiresBrandPrefixedFollowups =
-      Boolean(context.manufacturerContext) &&
-      this.brandKey.length >= 4 &&
-      BRAND_PREFIXED_CATEGORY_HOSTS.has(host);
-    const isNonPdfManufacturerFollowupPath =
-      !pathname.endsWith('.pdf') &&
-      (
-        CATEGORY_PRODUCT_PATH_RE.test(pathname) ||
-        /\/(?:support|manual|specs?|product|products)\//.test(pathname)
-      );
-    if (
-      requiresBrandPrefixedFollowups &&
-      hasModelToken &&
-      isNonPdfManufacturerFollowupPath &&
-      !pathname.includes(this.brandKey)
-    ) {
-      return false;
-    }
-
-    if (hasModelToken) {
-      return true;
-    }
-
-    const highSignalKeywords = [
-      'manual',
-      'support',
-      'spec',
-      'product',
-      'products',
-      'datasheet',
-      'technical',
-      'download',
-      'pdf'
-    ];
-    if (highSignalKeywords.some((keyword) => pathAndQuery.includes(keyword))) {
-      if (hasModelToken) {
-        return true;
-      }
-      if (this.config.manufacturerBroadDiscovery && context.manufacturerContext) {
-        if (/\/products?\//.test(pathname) && !/\/shop\/c\//.test(pathname)) {
-          return true;
-        }
-      }
-      if (this.modelTokens.length === 0) {
-        return hasBrandToken;
-      }
-    }
-
-    if (context.manufacturerContext) {
-      const manufacturerSignals = [
-        'support',
-        'manual',
-        'spec',
-        'product',
-        'products',
-        'datasheet',
-        'technical',
-        'download'
-      ];
-      const hasManufacturerSignal = manufacturerSignals.some((token) => pathAndQuery.includes(token));
-      if (!hasManufacturerSignal) {
-        return false;
-      }
-
-      if (hasModelToken) {
-        return true;
-      }
-
-      if (this.modelTokens.length === 0) {
-        if (hasBrandToken) {
-          return true;
-        }
-        if (this.config.manufacturerBroadDiscovery) {
-          return (
-            pathAndQuery.includes('support') ||
-            pathAndQuery.includes('manual') ||
-            pathAndQuery.includes('spec') ||
-            pathAndQuery.includes('download')
-          );
-        }
-      }
-
-      if (this.config.manufacturerBroadDiscovery) {
-        return (
-          /\/products?\//.test(pathname) &&
-          !/\/shop\/c\//.test(pathname)
-        );
-      }
-      return false;
-    }
-
-    return false;
+    return checkIsRelevantDiscoveredUrl(parsed, context, this._validationCtx());
   }
 
   markFieldsFilled(fields) {
@@ -1476,207 +722,41 @@ export class SourcePlanner {
     return removed;
   }
 
-  getIntelBundle(rootDomain) {
-    const intel = this.sourceIntelDomains[rootDomain];
-    if (!intel) {
-      return {
-        domainIntel: null,
-        activeIntel: null
-      };
-    }
-
-    const brandIntel =
-      this.brandKey && intel.per_brand && intel.per_brand[this.brandKey]
-        ? intel.per_brand[this.brandKey]
-        : null;
-
+  _scoringCtx() {
     return {
-      domainIntel: intel,
-      activeIntel: brandIntel || intel
+      sourceIntelDomains: this.sourceIntelDomains,
+      brandKey: this.brandKey,
+      requiredFields: this.requiredFields,
+      filledFields: this.filledFields
     };
   }
 
+  getIntelBundle(rootDomain) {
+    return resolveIntelBundle(rootDomain, this._scoringCtx());
+  }
+
   scoreRequiredFieldBoost(activeIntel, domainIntel, missingRequiredFields) {
-    const helpfulness =
-      activeIntel?.per_field_helpfulness || domainIntel?.per_field_helpfulness || {};
-    const requiredBoost = missingRequiredFields.reduce((acc, field) => {
-      const count = Number.parseFloat(helpfulness[field] || 0);
-      if (!Number.isFinite(count) || count <= 0) {
-        return acc;
-      }
-      return acc + Math.min(0.01, count / 500);
-    }, 0);
-    return Math.min(0.2, requiredBoost);
+    return _scoreRequiredFieldBoost(activeIntel, domainIntel, missingRequiredFields);
   }
 
   readRewardScoreFromMethodMap(map, field) {
-    const prefix = `${field}::`;
-    let best = null;
-    for (const [key, row] of Object.entries(map || {})) {
-      if (!key.startsWith(prefix)) {
-        continue;
-      }
-      const score = Number.parseFloat(String(row?.reward_score ?? row?.score ?? 0));
-      if (!Number.isFinite(score)) {
-        continue;
-      }
-      if (best === null || score > best) {
-        best = score;
-      }
-    }
-    return best;
+    return _readRewardScoreFromMethodMap(map, field);
   }
 
   scoreFieldRewardBoost(row, domainIntel, activeIntel, missingRequiredFields) {
-    if (!missingRequiredFields.length || !domainIntel) {
-      return 0;
-    }
-
-    const pathKey = normalizeSourcePath(row?.url || '');
-    const pathIntel = domainIntel.per_path?.[pathKey] || null;
-    const domainFieldReward = activeIntel?.per_field_reward || domainIntel?.per_field_reward || {};
-    const domainMethodReward = activeIntel?.field_method_reward || domainIntel?.field_method_reward || {};
-    const pathFieldReward = pathIntel?.per_field_reward || {};
-    const pathMethodReward = pathIntel?.field_method_reward || {};
-
-    let total = 0;
-    let fieldCount = 0;
-    for (const field of missingRequiredFields) {
-      const pathFieldScore = Number.parseFloat(String(pathFieldReward?.[field]?.score ?? ''));
-      const domainFieldScore = Number.parseFloat(String(domainFieldReward?.[field]?.score ?? ''));
-      const pathMethodScore = this.readRewardScoreFromMethodMap(pathMethodReward, field);
-      const domainMethodScore = this.readRewardScoreFromMethodMap(domainMethodReward, field);
-
-      const pathBest = [pathFieldScore, pathMethodScore]
-        .filter((value) => Number.isFinite(value))
-        .sort((a, b) => b - a)[0];
-      const domainBest = [domainFieldScore, domainMethodScore]
-        .filter((value) => Number.isFinite(value))
-        .sort((a, b) => b - a)[0];
-
-      if (!Number.isFinite(pathBest) && !Number.isFinite(domainBest)) {
-        continue;
-      }
-
-      const weighted = (
-        (Number.isFinite(pathBest) ? pathBest * 0.7 : 0) +
-        (Number.isFinite(domainBest) ? domainBest * 0.3 : 0)
-      );
-      total += Math.max(-0.25, Math.min(0.35, weighted));
-      fieldCount += 1;
-    }
-
-    if (!fieldCount) {
-      return 0;
-    }
-    const avg = total / fieldCount;
-    return Number.parseFloat((Math.max(-0.2, Math.min(0.2, avg * 0.35))).toFixed(6));
+    return _scoreFieldRewardBoost(row, domainIntel, activeIntel, missingRequiredFields);
   }
 
   sourcePathHeuristicBoost(row) {
-    const rawUrl = String(row?.url || '');
-    if (!rawUrl) {
-      return 0;
-    }
-
-    let parsed;
-    try {
-      parsed = new URL(rawUrl);
-    } catch {
-      return 0;
-    }
-
-    const path = String(parsed.pathname || '/').toLowerCase();
-    const query = String(parsed.search || '').toLowerCase();
-    const role = String(row?.role || '').toLowerCase();
-    let score = 0;
-
-    // De-prioritize generic index/search surfaces that frequently return weak signals.
-    if (
-      path === '/' ||
-      /\/search\/?$/.test(path) ||
-      query.includes('q=') ||
-      query.includes('query=')
-    ) {
-      score -= 0.35;
-    }
-    if (/\/shop\/search/.test(path)) {
-      score -= 0.45;
-    }
-
-    // Crawl robots/sitemaps eventually, but never before likely product/spec pages.
-    if (
-      path.endsWith('/robots.txt') ||
-      isSitemapLikePath(path)
-    ) {
-      score -= 0.4;
-    }
-
-    if (role === 'manufacturer') {
-      const categoryProductPath = CATEGORY_PRODUCT_PATH_RE.test(path);
-      const pathIncludesBrand = this.brandKey.length >= 4 && path.includes(this.brandKey);
-
-      if (categoryProductPath) {
-        score += 0.34;
-      } else if (/\/products?\//.test(path)) {
-        score += 0.12;
-        if (!pathIncludesBrand) {
-          score -= 0.08;
-        }
-      }
-      if (categoryProductPath && pathIncludesBrand) {
-        score += 0.18;
-      }
-      if (/\/support\//.test(path)) {
-        score += 0.08;
-      }
-      if (/\/manual|\/spec|\/download/.test(path)) {
-        score += 0.05;
-      }
-      if (path.endsWith('.pdf')) {
-        score += 0.12;
-      }
-    } else if (role === 'review' || role === 'database') {
-      if (/\/review|\/product|\/products?\//.test(path)) {
-        score += 0.1;
-      }
-      if (path.endsWith('.pdf')) {
-        score += 0.08;
-      }
-    }
-
-    return Number.parseFloat(Math.max(-0.6, Math.min(0.6, score)).toFixed(6));
+    return computePathHeuristicBoost(row, this._scoringCtx());
   }
 
   sourcePriority(row) {
-    const rootDomain = row?.rootDomain;
-    const pathHeuristicBoost = this.sourcePathHeuristicBoost(row);
-    if (!rootDomain) {
-      return pathHeuristicBoost;
-    }
-
-    const { domainIntel, activeIntel } = this.getIntelBundle(rootDomain);
-    if (!domainIntel || !activeIntel) {
-      return pathHeuristicBoost;
-    }
-
-    const baseScore = Number.isFinite(activeIntel.planner_score)
-      ? activeIntel.planner_score
-      : Number.isFinite(domainIntel.planner_score)
-        ? domainIntel.planner_score
-      : 0;
-    const missingRequiredFields = this.requiredFields.filter((field) => !this.filledFields.has(field));
-    const requiredBoost = this.scoreRequiredFieldBoost(activeIntel, domainIntel, missingRequiredFields);
-    const rewardBoost = this.scoreFieldRewardBoost(row, domainIntel, activeIntel, missingRequiredFields);
-
-    return Number.parseFloat((baseScore + requiredBoost + rewardBoost + pathHeuristicBoost).toFixed(6));
+    return computeSourcePriority(row, this._scoringCtx());
   }
 
   domainPriority(rootDomain) {
-    return this.sourcePriority({
-      rootDomain,
-      url: `https://${rootDomain}/`
-    });
+    return computeDomainPriority(rootDomain, this._scoringCtx());
   }
 
   getStats() {
@@ -1691,11 +771,9 @@ export class SourcePlanner {
       blocked_host_count: this.blockedHosts.size,
       blocked_hosts: [...this.blockedHosts].slice(0, 50),
       brand_manufacturer_hosts: [...this.brandManufacturerHostSet].slice(0, 20),
-      robots_sitemaps_discovered: this.robotsSitemapsDiscovered,
-      sitemap_urls_discovered: this.sitemapUrlsDiscovered,
-      max_manufacturer_urls: this.maxManufacturerUrls,
-      max_urls: this.maxUrls,
-      manufacturer_reserve_urls: this.manufacturerReserveUrls
+      robots_sitemaps_discovered: this._discoveryCounters.robotsSitemapsDiscovered,
+      sitemap_urls_discovered: this._discoveryCounters.sitemapUrlsDiscovered,
+      max_urls: this.maxUrls
     };
   }
 }

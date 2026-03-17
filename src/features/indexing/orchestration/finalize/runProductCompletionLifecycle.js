@@ -365,5 +365,6 @@ export async function runProductCompletionLifecycle({
     learning,
     learningGateResult,
     categoryBrain,
+    needSet,
   });
 }

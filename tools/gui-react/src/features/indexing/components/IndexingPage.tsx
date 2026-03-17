@@ -8,7 +8,7 @@ import { useCollapseStore } from '../../../stores/collapseStore';
 import {
   readRuntimeSettingsBootstrap,
   useRuntimeSettingsReader,
-} from '../../pipeline-settings/state/runtimeSettingsAuthority';
+} from '../../pipeline-settings';
 import {
   RUNTIME_SETTING_DEFAULTS,
 } from '../../../stores/settingsManifest';
@@ -34,7 +34,7 @@ import { useIndexingCatalogDerivations } from '../selectors/indexingCatalogDeriv
 import { useIndexingRunMutations } from '../api/indexingRunMutations';
 import { useIndexingLlmModelDerivations } from '../selectors/indexingLlmModelDerivations';
 import { deriveRunControlPayload } from '../selectors/indexingRunControlSelectors';
-import { toRuntimeDraft } from '../../pipeline-settings/state/RuntimeFlowDraftNormalization';
+import { toRuntimeDraft } from '../../pipeline-settings';
 import {
   buildIndexingRuntimeDraft,
   buildIndexingRuntimeSettingsProjection,
@@ -67,8 +67,8 @@ export function IndexingPage() {
     [runtimeBootstrap, runtimeSettingsData],
   );
   const {
-    phase2LlmModel,
-    phase3LlmModel,
+    llmModelPlan,
+    llmModelTriage,
     llmModelFast,
     llmModelReasoning,
     llmModelExtract,
@@ -159,8 +159,8 @@ export function IndexingPage() {
   const { resolveModelTokenDefaults } = useIndexingLlmModelDerivations({
     indexingLlmConfig,
     runtimeSettingsBootstrap: runtimeDraft,
-    phase2LlmModel,
-    phase3LlmModel,
+    llmModelPlan,
+    llmModelTriage,
     llmModelFast,
     llmModelReasoning,
     llmModelExtract,

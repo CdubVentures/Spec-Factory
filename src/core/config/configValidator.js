@@ -37,14 +37,6 @@ export function validateConfig(config) {
     });
   }
 
-  // Rule 5: manufacturerReserveUrls should not exceed maxUrlsPerProduct
-  if (config.maxUrlsPerProduct < config.manufacturerReserveUrls) {
-    warnings.push({
-      code: 'MANUFACTURER_RESERVE_EXCEEDS_MAX',
-      message: `manufacturerReserveUrls (${config.manufacturerReserveUrls}) > maxUrlsPerProduct (${config.maxUrlsPerProduct})`
-    });
-  }
-
   // Rule 8: Budget guards disabled is risky
   if (config.llmDisableBudgetGuards) {
     warnings.push({

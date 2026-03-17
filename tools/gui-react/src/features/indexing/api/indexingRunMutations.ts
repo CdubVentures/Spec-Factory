@@ -1,7 +1,7 @@
 import { useMutation, type QueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client';
 import type { ProcessStatus } from '../../../types/events';
-import type { RuntimeSettings, RuntimeSettingsNumericBaseline } from '../../pipeline-settings/state/runtimeSettingsAuthority';
+import type { RuntimeSettings, RuntimeSettingsNumericBaseline } from '../../pipeline-settings';
 import { deriveIndexingRunStartParsedValues } from './indexingRunStartParsedValues';
 import { buildIndexingRunStartPayload } from './indexingRunStartPayload';
 import {

@@ -244,7 +244,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
           </div>
           <div className="flex items-center gap-2">
             {providerLabel && <Chip label={providerLabel} className="sf-chip-accent" />}
-            {llmPlannerActive && <Chip label="LLM Planner" className="sf-chip-warning" />}
+            {llmPlannerActive && !isSchema4 && <Chip label="LLM Planner" className="sf-chip-warning" />}
             <Tip text="The Search Profile assembles queries, aliases, and variant guards used to discover source URLs. It combines deterministic rules with optional LLM planner queries." />
           </div>
         </div>
@@ -285,7 +285,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
           {isSchema4 && data.schema4_planner ? (
             <>
-              Schema 4 LLM planner generated <strong className="sf-text-primary not-italic">{data.selected_query_count ?? data.query_count}</strong> queries
+              NeedSet planner generated <strong className="sf-text-primary not-italic">{data.selected_query_count ?? data.query_count}</strong> queries
               {data.schema4_planner.planner_confidence > 0 && (
                 <> with <strong className="sf-text-primary not-italic">{Math.round(data.schema4_planner.planner_confidence * 100)}%</strong> confidence</>
               )}
@@ -311,54 +311,115 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════
-          BRAND INTELLIGENCE
+          QUERY TABLE
           ══════════════════════════════════════════════════════════════════ */}
-      {data.brand_resolution && (
+      {data.query_rows.length > 0 && (
         <div>
-          <SectionHeader>brand intelligence</SectionHeader>
-          <div className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-4">
-            <div className="grid gap-4" style={{ gridTemplateColumns: '1fr auto' }}>
-              <div className="min-w-0">
-                <a
-                  href={`https://${data.brand_resolution.officialDomain}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block text-[15px] font-mono font-semibold text-[var(--sf-token-accent)] hover:underline"
-                >
-                  {data.brand_resolution.officialDomain}
-                </a>
-                {data.brand_resolution.supportDomain && (
-                  <div className="mt-0.5 text-[11px] font-mono sf-text-subtle">support: {data.brand_resolution.supportDomain}</div>
-                )}
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {data.brand_resolution.aliases.map((a) => (
-                    <Chip key={a} label={a} className="sf-chip-accent" />
+          <SectionHeader>query plan &middot; {data.query_rows.length} queries &middot; {totalResults} results</SectionHeader>
+          <div className={`overflow-x-auto overflow-y-auto border sf-border-soft rounded-sm ${selectedQuery ? 'max-h-[50vh]' : 'max-h-none'}`}>
+            <table className="min-w-full text-xs">
+              <thead className="sf-surface-elevated sticky top-0">
+                <tr>
+                  {['query', 'strategy', 'target fields', showGateBadges ? 'gate badges' : 'source', 'results', 'providers'].map((h) => (
+                    <th key={h} className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">{h}</th>
                   ))}
-                  {data.base_model && <Chip label={`base: ${data.base_model}`} className="sf-chip-success" />}
-                  {data.aliases && data.aliases.map((a) => (
-                    <Chip key={`pa-${a}`} label={a} className="sf-chip-success" />
-                  ))}
-                </div>
-              </div>
-              <div className="text-center shrink-0">
-                <div className="relative w-16 h-16">
-                  <svg viewBox="0 0 36 36" className="w-16 h-16 transform -rotate-90">
-                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" className="sf-text-subtle" strokeWidth="2.5" />
-                    <circle
-                      cx="18" cy="18" r="15.5" fill="none" stroke="currentColor"
-                      className={data.brand_resolution.confidence >= 0.8 ? 'sf-metric-ring-success' : data.brand_resolution.confidence >= 0.5 ? 'sf-metric-ring-warning' : 'sf-metric-ring-danger'}
-                      strokeWidth="2.5"
-                      strokeDasharray={`${data.brand_resolution.confidence * 97.4} 97.4`}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-bold sf-text-primary">
-                    {Math.round(data.brand_resolution.confidence * 100)}%
-                  </div>
-                </div>
-                <div className="mt-1 text-[9px] font-bold font-mono uppercase tracking-[0.06em] sf-text-subtle">confidence</div>
-              </div>
+                </tr>
+              </thead>
+              <tbody>
+                {data.query_rows.map((r, i) => {
+                  const isLlm = llmPlannedQueries.has(r.query);
+                  const queryTermsGate = effectiveGateCounts.get('search_hints.query_terms');
+                  const domainHintsGate = effectiveGateCounts.get('search_hints.domain_hints');
+                  const contentTypesGate = effectiveGateCounts.get('search_hints.preferred_content_types');
+                  const primaryTargetField = String(r.target_fields?.[0] || '').trim();
+                  const perFieldHintCounts = primaryTargetField ? data.field_rule_hint_counts_by_field?.[primaryTargetField] : undefined;
+                  const resolveCount = (
+                    key: 'query_terms' | 'domain_hints' | 'preferred_content_types',
+                    fallback: { status: string; valueCount: number } | undefined,
+                  ) => resolveFieldRuleHintCountForRowGate({ perFieldHintCounts, gateKey: key, fallbackGate: fallback });
+                  const queryTermsInfo = resolveCount('query_terms', queryTermsGate);
+                  const domainHintsInfo = resolveCount('domain_hints', domainHintsGate);
+                  const contentTypesInfo = resolveCount('preferred_content_types', contentTypesGate);
+                  const toRatioLabel = (info: { status: string; effective: number; total: number }) => info.status === 'off' ? 'OFF' : `${info.effective}/${Math.max(info.total, info.effective)}`;
+                  const source = querySourceLabel(r);
+                  return (
+                    <tr
+                      key={i}
+                      className="border-b sf-border-soft hover:sf-surface-elevated cursor-pointer"
+                      onClick={() => setSelectedQueryText(selectedQueryText === r.query ? null : r.query)}
+                    >
+                      <td className="py-1.5 px-4 font-mono sf-text-primary max-w-[20rem] truncate">{r.query}</td>
+                      <td className="py-1.5 px-4">
+                        <Chip label={isLlm ? 'LLM' : 'Det.'} className={isLlm ? 'sf-chip-warning' : 'sf-chip-neutral'} />
+                      </td>
+                      <td className="py-1.5 px-4 sf-text-muted">{r.target_fields?.join(', ') || '-'}</td>
+                      {showGateBadges ? (
+                        <td className="py-1.5 px-4">
+                          <div className="flex flex-wrap gap-1">
+                            <Chip label={`Terms ${toRatioLabel(queryTermsInfo)}`} className={gateBadgeClass(queryTermsInfo.status === 'active')} />
+                            <Chip label={`Domain ${toRatioLabel(domainHintsInfo)}`} className={gateBadgeClass(domainHintsInfo.status === 'active')} />
+                            <Chip label={`Content ${toRatioLabel(contentTypesInfo)}`} className={gateBadgeClass(contentTypesInfo.status === 'active')} />
+                          </div>
+                        </td>
+                      ) : (
+                        <td className="py-1.5 px-4 sf-text-muted font-mono">{source}</td>
+                      )}
+                      <td className="py-1.5 px-4 text-right font-mono">{r.result_count ?? '-'}</td>
+                      <td className="py-1.5 px-4 sf-text-muted">{formatProviderList(r.providers) || '-'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Guard summary footer */}
+          {(guardTotal !== null || guardAccepted !== null) && (
+            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted pt-2 mt-2">
+              {guardAccepted !== null && <span>accepted <strong className="sf-text-primary">{guardAccepted}</strong></span>}
+              {guardRejected !== null && <span>rejected <strong className="sf-text-primary">{guardRejected}</strong></span>}
+              {guardTotal !== null && <span>guard total <strong className="sf-text-primary">{guardGuarded ?? 0}/{guardTotal}</strong></span>}
             </div>
+          )}
+        </div>
+      )}
+
+      {selectedQuery && (
+        <QueryDetailDrawer
+          row={selectedQuery}
+          onClose={() => setSelectedQueryText(null)}
+          hintSourceCounts={hintSourceCounts}
+          showGateBadges={showGateBadges}
+        />
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          DISCOVERY SCORECARD
+          ══════════════════════════════════════════════════════════════════ */}
+      {data.serp_explorer && (
+        <div>
+          <SectionHeader>discovery scorecard</SectionHeader>
+          <div className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-4">
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+              {[
+                { label: 'checked', value: data.serp_explorer.candidates_checked, color: 'sf-text-primary' },
+                { label: 'deduped', value: data.serp_explorer.dedupe_output, color: 'sf-text-primary' },
+                { label: 'triaged', value: data.serp_explorer.urls_triaged, color: 'text-[var(--sf-token-accent)]' },
+                { label: 'selected', value: data.serp_explorer.urls_selected, color: 'text-[var(--sf-state-success-fg)]' },
+                { label: 'rejected', value: data.serp_explorer.urls_rejected, color: 'text-[var(--sf-state-error-fg)]' },
+                { label: 'dupes removed', value: data.serp_explorer.duplicates_removed, color: 'sf-text-muted' },
+              ].map((s) => (
+                <div key={s.label}>
+                  <div className={`text-2xl font-bold leading-none tracking-tight ${s.color}`}>{s.value}</div>
+                  <div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.05em] sf-text-muted">{s.label}</div>
+                </div>
+              ))}
+            </div>
+            {data.serp_explorer.llm_triage_applied && (
+              <div className="mt-3 pt-3 border-t sf-border-soft">
+                <Chip label="LLM Triage Applied" className="sf-chip-warning" />
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -449,37 +510,6 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
       )}
 
       {/* ══════════════════════════════════════════════════════════════════
-          DISCOVERY SCORECARD
-          ══════════════════════════════════════════════════════════════════ */}
-      {data.serp_explorer && (
-        <div>
-          <SectionHeader>discovery scorecard</SectionHeader>
-          <div className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-4">
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-              {[
-                { label: 'checked', value: data.serp_explorer.candidates_checked, color: 'sf-text-primary' },
-                { label: 'deduped', value: data.serp_explorer.dedupe_output, color: 'sf-text-primary' },
-                { label: 'triaged', value: data.serp_explorer.urls_triaged, color: 'text-[var(--sf-token-accent)]' },
-                { label: 'selected', value: data.serp_explorer.urls_selected, color: 'text-[var(--sf-state-success-fg)]' },
-                { label: 'rejected', value: data.serp_explorer.urls_rejected, color: 'text-[var(--sf-state-error-fg)]' },
-                { label: 'dupes removed', value: data.serp_explorer.duplicates_removed, color: 'sf-text-muted' },
-              ].map((s) => (
-                <div key={s.label}>
-                  <div className={`text-2xl font-bold leading-none tracking-tight ${s.color}`}>{s.value}</div>
-                  <div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.05em] sf-text-muted">{s.label}</div>
-                </div>
-              ))}
-            </div>
-            {data.serp_explorer.llm_triage_applied && (
-              <div className="mt-3 pt-3 border-t sf-border-soft">
-                <Chip label="LLM Triage Applied" className="sf-chip-warning" />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════════
           GATE BADGES
           ══════════════════════════════════════════════════════════════════ */}
       {showGateBadges && (
@@ -539,89 +569,6 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
           <span className="text-xs font-bold text-[var(--sf-state-warning-fg)]">Uncovered fields: </span>
           {uncoveredFields.map((f) => <Chip key={f} label={f} className="sf-chip-warning" />)}
         </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════════
-          QUERY TABLE
-          ══════════════════════════════════════════════════════════════════ */}
-      {data.query_rows.length > 0 && (
-        <div>
-          <SectionHeader>query plan &middot; {data.query_rows.length} queries &middot; {totalResults} results</SectionHeader>
-          <div className={`overflow-x-auto overflow-y-auto border sf-border-soft rounded-sm ${selectedQuery ? 'max-h-[50vh]' : 'max-h-none'}`}>
-            <table className="min-w-full text-xs">
-              <thead className="sf-surface-elevated sticky top-0">
-                <tr>
-                  {['query', 'strategy', 'target fields', showGateBadges ? 'gate badges' : 'source', 'results', 'providers'].map((h) => (
-                    <th key={h} className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.query_rows.map((r, i) => {
-                  const isLlm = llmPlannedQueries.has(r.query);
-                  const queryTermsGate = effectiveGateCounts.get('search_hints.query_terms');
-                  const domainHintsGate = effectiveGateCounts.get('search_hints.domain_hints');
-                  const contentTypesGate = effectiveGateCounts.get('search_hints.preferred_content_types');
-                  const primaryTargetField = String(r.target_fields?.[0] || '').trim();
-                  const perFieldHintCounts = primaryTargetField ? data.field_rule_hint_counts_by_field?.[primaryTargetField] : undefined;
-                  const resolveCount = (
-                    key: 'query_terms' | 'domain_hints' | 'preferred_content_types',
-                    fallback: { status: string; valueCount: number } | undefined,
-                  ) => resolveFieldRuleHintCountForRowGate({ perFieldHintCounts, gateKey: key, fallbackGate: fallback });
-                  const queryTermsInfo = resolveCount('query_terms', queryTermsGate);
-                  const domainHintsInfo = resolveCount('domain_hints', domainHintsGate);
-                  const contentTypesInfo = resolveCount('preferred_content_types', contentTypesGate);
-                  const toRatioLabel = (info: { status: string; effective: number; total: number }) => info.status === 'off' ? 'OFF' : `${info.effective}/${Math.max(info.total, info.effective)}`;
-                  const source = querySourceLabel(r);
-                  return (
-                    <tr
-                      key={i}
-                      className="border-b sf-border-soft hover:sf-surface-elevated cursor-pointer"
-                      onClick={() => setSelectedQueryText(selectedQueryText === r.query ? null : r.query)}
-                    >
-                      <td className="py-1.5 px-4 font-mono sf-text-primary max-w-[20rem] truncate">{r.query}</td>
-                      <td className="py-1.5 px-4">
-                        <Chip label={isLlm ? 'LLM' : 'Det.'} className={isLlm ? 'sf-chip-warning' : 'sf-chip-neutral'} />
-                      </td>
-                      <td className="py-1.5 px-4 sf-text-muted">{r.target_fields?.join(', ') || '-'}</td>
-                      {showGateBadges ? (
-                        <td className="py-1.5 px-4">
-                          <div className="flex flex-wrap gap-1">
-                            <Chip label={`Terms ${toRatioLabel(queryTermsInfo)}`} className={gateBadgeClass(queryTermsInfo.status === 'active')} />
-                            <Chip label={`Domain ${toRatioLabel(domainHintsInfo)}`} className={gateBadgeClass(domainHintsInfo.status === 'active')} />
-                            <Chip label={`Content ${toRatioLabel(contentTypesInfo)}`} className={gateBadgeClass(contentTypesInfo.status === 'active')} />
-                          </div>
-                        </td>
-                      ) : (
-                        <td className="py-1.5 px-4 sf-text-muted font-mono">{source}</td>
-                      )}
-                      <td className="py-1.5 px-4 text-right font-mono">{r.result_count ?? '-'}</td>
-                      <td className="py-1.5 px-4 sf-text-muted">{formatProviderList(r.providers) || '-'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Guard summary footer */}
-          {(guardTotal !== null || guardAccepted !== null) && (
-            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted pt-2 mt-2">
-              {guardAccepted !== null && <span>accepted <strong className="sf-text-primary">{guardAccepted}</strong></span>}
-              {guardRejected !== null && <span>rejected <strong className="sf-text-primary">{guardRejected}</strong></span>}
-              {guardTotal !== null && <span>guard total <strong className="sf-text-primary">{guardGuarded ?? 0}/{guardTotal}</strong></span>}
-            </div>
-          )}
-        </div>
-      )}
-
-      {selectedQuery && (
-        <QueryDetailDrawer
-          row={selectedQuery}
-          onClose={() => setSelectedQueryText(null)}
-          hintSourceCounts={hintSourceCounts}
-          showGateBadges={showGateBadges}
-        />
       )}
 
       {/* ══════════════════════════════════════════════════════════════════

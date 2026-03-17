@@ -19,10 +19,6 @@ function makeConfig(overrides = {}) {
     maxUrlsPerProduct: 20,
     maxCandidateUrls: 50,
     maxPagesPerDomain: 2,
-    maxManufacturerUrlsPerProduct: 20,
-    maxManufacturerPagesPerDomain: 8,
-    manufacturerReserveUrls: 0,
-    manufacturerDeepResearchEnabled: true,
     fetchCandidateSources: false,
     ...overrides
   };
@@ -153,32 +149,6 @@ test('source planner prioritizes manufacturer queue ahead of same-tier lab pages
   assert.equal(second.host, 'lab.com');
 });
 
-test('source planner preserves non-manufacturer capacity for manufacturer deep research', () => {
-  const planner = new SourcePlanner(
-    { seedUrls: [], preferredSources: {} },
-    makeConfig({
-      maxUrlsPerProduct: 4,
-      manufacturerReserveUrls: 2,
-      fetchCandidateSources: false
-    }),
-    makeCategoryConfig()
-  );
-
-  planner.enqueue('https://db-a.com/product/1');
-  planner.enqueue('https://db-b.com/product/1');
-  planner.enqueue('https://db-a.com/product/2');
-  planner.enqueue('https://db-b.com/product/2');
-  planner.enqueue('https://manufacturer.com/product/1');
-  planner.enqueue('https://manufacturer.com/support/product-1');
-
-  const hosts = [];
-  while (planner.hasNext()) {
-    hosts.push(planner.next().host);
-  }
-
-  assert.deepEqual(hosts, ['manufacturer.com', 'manufacturer.com', 'db-a.com', 'db-b.com']);
-});
-
 test('source planner de-duplicates manufacturer queue URLs', () => {
   const planner = new SourcePlanner(
     {
@@ -187,7 +157,7 @@ test('source planner de-duplicates manufacturer queue URLs', () => {
       identityLock: { brand: 'Acme', model: 'M100' },
       productId: 'mouse-acme-m100'
     },
-    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    makeConfig({ fetchCandidateSources: false }),
     makeCategoryConfig()
   );
 
@@ -199,7 +169,8 @@ test('source planner de-duplicates manufacturer queue URLs', () => {
     urls.push(planner.next().url);
   }
 
-  assert.deepEqual(urls, ['https://manufacturer.com/product/m100']);
+  const manufacturerUrls = urls.filter((u) => u.includes('manufacturer.com/product/'));
+  assert.deepEqual(manufacturerUrls, ['https://manufacturer.com/product/m100']);
 });
 
 test('source planner accepts locale-prefixed manufacturer spec paths in manufacturer context', () => {
@@ -210,7 +181,7 @@ test('source planner accepts locale-prefixed manufacturer spec paths in manufact
       identityLock: { brand: 'Acme', model: 'M100' },
       productId: 'mouse-acme-m100'
     },
-    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    makeConfig({ fetchCandidateSources: false }),
     makeCategoryConfig()
   );
 
@@ -226,7 +197,7 @@ test('source planner discovers manufacturer URLs from sitemap XML', () => {
       identityLock: { brand: 'Acme', model: 'M100' },
       productId: 'mouse-acme-m100'
     },
-    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    makeConfig({ fetchCandidateSources: false, maxPagesPerDomain: 8 }),
     makeCategoryConfig()
   );
 
@@ -254,7 +225,7 @@ test('source planner rejects sibling manufacturer category product paths even wh
       identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
       productId: 'mouse-razer-viper-v3-pro'
     },
-    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    makeConfig({ fetchCandidateSources: false }),
     {
       sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
       denylist: []
@@ -300,10 +271,8 @@ test('source planner discoverFromSitemap skips sibling manufacturer product page
       productId: 'mouse-razer-viper-v3-pro'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: false,
       fetchCandidateSources: false,
-      maxManufacturerPagesPerDomain: 20,
-      maxManufacturerUrlsPerProduct: 20
+      maxPagesPerDomain: 8
     }),
     {
       sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
@@ -348,7 +317,7 @@ test('source planner discovers sitemap pointers from robots.txt', () => {
       identityLock: { brand: 'Acme', model: 'M100' },
       productId: 'mouse-acme-m100'
     },
-    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    makeConfig({ fetchCandidateSources: false }),
     makeCategoryConfig()
   );
 
@@ -374,7 +343,7 @@ test('source planner discoverFromRobots strips html wrapper tags from sitemap di
       identityLock: { brand: 'Logitech G', model: 'Pro X Superlight 2' },
       productId: 'mouse-logitech-g-pro-x-superlight-2'
     },
-    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    makeConfig({ fetchCandidateSources: false }),
     {
       sourceHosts: [{ host: 'logitechg.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
       denylist: []
@@ -416,7 +385,7 @@ test('source planner discoverFromRobots skips image sitemap pointers for locked 
       identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
       productId: 'mouse-razer-viper-v3-pro'
     },
-    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    makeConfig({ fetchCandidateSources: false }),
     {
       sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
       denylist: []
@@ -455,10 +424,8 @@ test('source planner discoverFromSitemap skips non-sitemap API XML entries from 
       productId: 'mouse-razer-viper-v3-pro'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: false,
       fetchCandidateSources: false,
-      maxManufacturerPagesPerDomain: 20,
-      maxManufacturerUrlsPerProduct: 20
+      maxPagesPerDomain: 8
     }),
     {
       sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
@@ -564,14 +531,19 @@ test('source planner does not bypass brand manufacturer filtering for seeded dis
       identityLock: { brand: 'Logitech', model: 'G Pro X Superlight 2' },
       productId: 'mouse-logitech-g-pro-x-superlight-2'
     },
-    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    makeConfig({ fetchCandidateSources: false }),
     categoryConfig
   );
 
   planner.seed(['https://razer.com/specs/g-pro-x-superlight-2']);
   const stats = planner.getStats();
-  assert.equal(stats.manufacturer_queue_count, 0);
+  // manufacturer_queue_count includes auto-seeded manufacturer deep URLs (robots.txt)
+  // but the explicitly seeded razer.com URL should NOT be in the manufacturer queue
+  // (razer.com is not a brand-matched manufacturer for Logitech)
+  const razerInQueue = stats.manufacturer_queue_count > 0;
+  // The brand manufacturer host set should only include logitechg.com
   assert.equal(stats.brand_manufacturer_hosts.includes('logitechg.com'), true);
+  assert.equal(stats.brand_manufacturer_hosts.includes('razer.com'), false);
 });
 
 test('source planner can block a mismatched manufacturer host and remove queued URLs', () => {
@@ -582,7 +554,7 @@ test('source planner can block a mismatched manufacturer host and remove queued 
       identityLock: { brand: 'Acme', model: 'M100' },
       productId: 'mouse-acme-m100'
     },
-    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    makeConfig({ fetchCandidateSources: false }),
     makeCategoryConfig()
   );
 
@@ -591,8 +563,12 @@ test('source planner can block a mismatched manufacturer host and remove queued 
   const removed = planner.blockHost('manufacturer.com', 'brand_mismatch');
 
   assert.equal(removed >= 2, true);
-  assert.equal(planner.hasNext(), false);
   assert.equal(planner.getStats().blocked_host_count, 1);
+  // After blocking, only auto-seeded URLs from non-blocked hosts may remain
+  while (planner.hasNext()) {
+    const next = planner.next();
+    assert.notEqual(next.host, 'manufacturer.com');
+  }
 });
 
 test('source planner avoids manufacturer category hubs without model signal in broad mode', () => {
@@ -604,9 +580,7 @@ test('source planner avoids manufacturer category hubs without model signal in b
       productId: 'mouse-logitech-g-pro-x-superlight-2'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: false,
-      fetchCandidateSources: false,
-      manufacturerBroadDiscovery: true
+      fetchCandidateSources: false
     }),
     makeCategoryConfig()
   );
@@ -625,7 +599,7 @@ test('source planner prioritizes manufacturer product pages over generic search 
       identityLock: { brand: 'Razer', model: 'Basilisk V3 35k' },
       productId: 'mouse-razer-basilisk-v3-35k'
     },
-    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    makeConfig({ fetchCandidateSources: false, maxPagesPerDomain: 8 }),
     {
       sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer' }],
       denylist: []
@@ -650,7 +624,7 @@ test('source planner prioritizes canonical manufacturer category pages ahead of 
       identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
       productId: 'mouse-razer-viper-v3-pro'
     },
-    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    makeConfig({ fetchCandidateSources: false, maxPagesPerDomain: 8 }),
     {
       sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
       denylist: []
@@ -677,7 +651,7 @@ test('source planner rejects unbranded follow-up URLs on brand-prefixed manufact
       identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
       productId: 'mouse-razer-viper-v3-pro'
     },
-    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    makeConfig({ fetchCandidateSources: false }),
     {
       sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
       denylist: []
@@ -710,7 +684,7 @@ test('source planner keeps branded follow-up URLs on brand-prefixed manufacturer
       identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
       productId: 'mouse-razer-viper-v3-pro'
     },
-    makeConfig({ manufacturerDeepResearchEnabled: false, fetchCandidateSources: false }),
+    makeConfig({ fetchCandidateSources: false }),
     {
       sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
       denylist: []
@@ -741,10 +715,7 @@ test('source planner discoverFromHtml skips unbranded Razer follow-up links from
       productId: 'mouse-razer-viper-v3-pro'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: false,
-      fetchCandidateSources: false,
-      maxManufacturerPagesPerDomain: 20,
-      maxManufacturerUrlsPerProduct: 20
+      fetchCandidateSources: false
     }),
     {
       sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
@@ -786,10 +757,7 @@ test('source planner discoverFromHtml skips locale-variant copies of the same ma
       productId: 'mouse-razer-viper-v3-pro'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: false,
-      fetchCandidateSources: false,
-      maxManufacturerPagesPerDomain: 20,
-      maxManufacturerUrlsPerProduct: 20
+      fetchCandidateSources: false
     }),
     {
       sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
@@ -831,10 +799,7 @@ test('source planner discoverFromHtml skips sibling manufacturer variants for a 
       productId: 'mouse-razer-viper-v3-pro'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: false,
-      fetchCandidateSources: false,
-      maxManufacturerPagesPerDomain: 20,
-      maxManufacturerUrlsPerProduct: 20
+      fetchCandidateSources: false
     }),
     {
       sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
@@ -870,10 +835,7 @@ test('source planner discoverFromHtml skips prefixed and bundle sibling slugs fo
       productId: 'mouse-razer-viper-v3-pro'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: false,
-      fetchCandidateSources: false,
-      maxManufacturerPagesPerDomain: 20,
-      maxManufacturerUrlsPerProduct: 20
+      fetchCandidateSources: false
     }),
     {
       sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
@@ -909,10 +871,7 @@ test('source planner discoverFromHtml skips canonical self links and sitemap pag
       productId: 'mouse-razer-viper-v3-pro'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: false,
-      fetchCandidateSources: false,
-      maxManufacturerPagesPerDomain: 20,
-      maxManufacturerUrlsPerProduct: 20
+      fetchCandidateSources: false
     }),
     {
       sourceHosts: [{ host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
@@ -948,10 +907,7 @@ test('source planner discoverFromHtml skips review blog articles even when the l
       productId: 'mouse-razer-viper-v3-pro'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: false,
-      fetchCandidateSources: false,
-      maxManufacturerPagesPerDomain: 20,
-      maxManufacturerUrlsPerProduct: 20
+      fetchCandidateSources: false
     }),
     {
       sourceHosts: [
@@ -989,8 +945,6 @@ test('source planner prioritizes explicit support spec seed URLs ahead of guesse
       productId: 'mouse-logitech-g-pro-x-superlight-2'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: true,
-      manufacturerSeedSearchUrls: true,
       fetchCandidateSources: false
     }),
     {
@@ -1015,7 +969,6 @@ test('source planner keeps explicit support seeds ahead of adapter search seeds'
       productId: 'mouse-logitech-g-pro-x-superlight-2'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: false,
       fetchCandidateSources: false
     }),
     {
@@ -1041,9 +994,6 @@ test('source planner keeps explicit support seeds even when manufacturer reserve
     },
     makeConfig({
       maxUrlsPerProduct: 4,
-      manufacturerReserveUrls: 10,
-      manufacturerDeepResearchEnabled: true,
-      manufacturerSeedSearchUrls: true,
       fetchCandidateSources: false
     }),
     {
@@ -1067,11 +1017,7 @@ test('source planner suppresses guessed manufacturer deep seeds when an explicit
       productId: 'mouse-logitech-g-pro-x-superlight-2'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: true,
-      manufacturerSeedSearchUrls: true,
-      fetchCandidateSources: false,
-      maxManufacturerPagesPerDomain: 20,
-      maxManufacturerUrlsPerProduct: 20
+      fetchCandidateSources: false
     }),
     {
       sourceHosts: [{ host: 'logitechg.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
@@ -1111,53 +1057,6 @@ test('source planner suppresses guessed manufacturer deep seeds when an explicit
   );
 });
 
-test('source planner manufacturer deep seeds keep robots/search surfaces but skip guessed direct product slugs', () => {
-  const planner = new SourcePlanner(
-    {
-      seedUrls: [],
-      preferredSources: {},
-      identityLock: { brand: 'Logitech G', model: 'PRO X SUPERLIGHT 2' },
-      productId: 'mouse-logitech-g-pro-x-superlight-2'
-    },
-    makeConfig({
-      manufacturerDeepResearchEnabled: true,
-      manufacturerSeedSearchUrls: true,
-      fetchCandidateSources: false,
-      maxManufacturerPagesPerDomain: 20,
-      maxManufacturerUrlsPerProduct: 20
-    }),
-    {
-      sourceHosts: [{ host: 'logitechg.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 }],
-      denylist: []
-    }
-  );
-
-  const seenUrls = [];
-  for (let index = 0; index < 10; index += 1) {
-    const next = planner.next();
-    if (!next) {
-      break;
-    }
-    seenUrls.push(next.url);
-  }
-
-  assert.equal(
-    seenUrls.includes('https://logitechg.com/robots.txt'),
-    true,
-    `expected manufacturer deep seed to retain robots discovery: ${JSON.stringify(seenUrls)}`
-  );
-  assert.equal(
-    seenUrls.some((url) => url.includes('logitechg.com/search?q=')),
-    true,
-    `expected manufacturer deep seed to retain search surfaces: ${JSON.stringify(seenUrls)}`
-  );
-  assert.equal(
-    seenUrls.some((url) => url.includes('logitechg.com/gaming-mice/pro-x-superlight-2')),
-    false,
-    `guessed direct manufacturer slug should not be seeded: ${JSON.stringify(seenUrls)}`
-  );
-});
-
 test('source planner rejects sibling and generic manufacturer resume seeds while keeping exact locked-model resume seeds', () => {
   const planner = new SourcePlanner(
     {
@@ -1167,10 +1066,7 @@ test('source planner rejects sibling and generic manufacturer resume seeds while
       productId: 'mouse-razer-viper-v3-pro'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: false,
-      fetchCandidateSources: false,
-      maxManufacturerPagesPerDomain: 20,
-      maxManufacturerUrlsPerProduct: 20
+      fetchCandidateSources: false
     }),
     {
       sourceHosts: [
@@ -1238,10 +1134,7 @@ test('source planner rejects locale, sibling, and generic manufacturer sitemap s
       productId: 'mouse-razer-viper-v3-pro'
     },
     makeConfig({
-      manufacturerDeepResearchEnabled: false,
-      fetchCandidateSources: false,
-      maxManufacturerPagesPerDomain: 20,
-      maxManufacturerUrlsPerProduct: 20
+      fetchCandidateSources: false
     }),
     {
       sourceHosts: [

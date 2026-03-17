@@ -892,34 +892,6 @@ describe('Phase02 — Population Hard Gate', () => {
 describe('Phase02 — Default-Sync (safety-audited)', () => {
   const defaultConfig = loadConfig({});
 
-  it('ENABLE_SOURCE_REGISTRY defaults to true (registry loading is safe; population gate guards downstream)', () => {
-    assert.ok(
-      defaultConfig.enableSourceRegistry,
-      'ENABLE_SOURCE_REGISTRY should default to true — loading/validation is side-effect-free'
-    );
-  });
-
-  it('ENABLE_DOMAIN_HINT_RESOLVER_V2 defaults to true in config', () => {
-    assert.ok(
-      defaultConfig.enableDomainHintResolverV2,
-      'ENABLE_DOMAIN_HINT_RESOLVER_V2 should default to true'
-    );
-  });
-
-  it('ENABLE_QUERY_COMPILER defaults to true in config', () => {
-    assert.ok(
-      defaultConfig.enableQueryCompiler,
-      'ENABLE_QUERY_COMPILER should default to true'
-    );
-  });
-
-  it('ENABLE_CORE_DEEP_GATES defaults to true in config', () => {
-    assert.ok(
-      defaultConfig.enableCoreDeepGates,
-      'ENABLE_CORE_DEEP_GATES should default to true'
-    );
-  });
-
   it('searchProvider defaults to "dual" in the shared runtime config', () => {
     assert.ok(
       defaultConfig.searchProvider === 'dual',
@@ -934,14 +906,13 @@ describe('Phase02 — Default-Sync (safety-audited)', () => {
 // ========================================================================
 
 describe('Phase02 — Real Startup Smoke', () => {
-  // This proves that calling loadCategoryConfig with enableSourceRegistry=true
-  // produces a populated registry without errors for each production category.
+  // Registry always loads — no feature flag gating.
 
   for (const category of ['mouse', 'keyboard', 'monitor']) {
-    it(`${category}: loadCategoryConfig with enableSourceRegistry=true produces valid registry`, async () => {
+    it(`${category}: loadCategoryConfig produces valid registry`, async () => {
       const { loadCategoryConfig } = await import('../src/categories/loader.js');
       const config = await loadCategoryConfig(category, {
-        config: { enableSourceRegistry: true },
+        config: {},
       });
       assert.ok(config.validatedRegistry, `${category} must have validatedRegistry`);
       assert.ok(config.validatedRegistry.entries.length > 0, `${category} must have entries`);
@@ -951,15 +922,6 @@ describe('Phase02 — Real Startup Smoke', () => {
         config.registryPopulationGate.passed, true,
         `${category} gate must pass: ${JSON.stringify(config.registryPopulationGate?.reasons)}`
       );
-    });
-
-    it(`${category}: loadCategoryConfig with enableSourceRegistry=false has no registry`, async () => {
-      const { loadCategoryConfig } = await import('../src/categories/loader.js');
-      const config = await loadCategoryConfig(category, {
-        config: { enableSourceRegistry: false },
-      });
-      assert.equal(config.validatedRegistry, undefined, 'registry must not be attached when flag is off');
-      assert.equal(config.registryPopulationGate, undefined, 'gate must not be attached when flag is off');
     });
   }
 });

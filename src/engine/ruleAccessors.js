@@ -1,12 +1,5 @@
 import { canonicalUnitToken } from './normalizationFunctions.js';
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function normalizeToken(value) {
-  return String(value ?? '').trim().toLowerCase();
-}
+import { isObject, normalizeToken } from './engineTextHelpers.js';
 
 // --- Priority accessors ---
 

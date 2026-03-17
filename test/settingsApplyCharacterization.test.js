@@ -100,10 +100,10 @@ test('CHAR apply: applyConvergenceSettingsToConfig only updates keys that exist 
 test('CHAR apply: applyConvergenceSettingsToConfig applies convergence keys', () => {
   const config = loadConfig();
   applyConvergenceSettingsToConfig(config, {
-    consensusLlmWeightTier1: 0.99,
+    serpTriageMinScore: 5,
     serpTriageMaxUrls: 15
   });
-  assert.equal(config.consensusLlmWeightTier1, 0.99);
+  assert.equal(config.serpTriageMinScore, 5);
   assert.equal(config.serpTriageMaxUrls, 15);
 });
 
@@ -119,10 +119,10 @@ test('CHAR apply: applyRuntimeSettingsToConfig handles string numbers', () => {
   assert.equal(config.maxUrlsPerProduct, 42);
 });
 
-test('CHAR apply: applyConvergenceSettingsToConfig handles float values', () => {
+test('CHAR apply: applyConvergenceSettingsToConfig handles int values', () => {
   const config = loadConfig();
-  applyConvergenceSettingsToConfig(config, { consensusLlmWeightTier1: 0.75 });
-  assert.equal(config.consensusLlmWeightTier1, 0.75);
+  applyConvergenceSettingsToConfig(config, { serpTriageMinScore: 7 });
+  assert.equal(config.serpTriageMinScore, 7);
 });
 
 // =========================================================================

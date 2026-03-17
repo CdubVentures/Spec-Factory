@@ -14,7 +14,6 @@ export interface BuildIndexingRunRuntimePayloadInput {
   parsedDaemonGracefulShutdownTimeoutMs: number;
   importsRoot: string;
   parsedImportsPollSeconds: number;
-  parsedIdentityGatePublishThreshold: number;
   parsedIndexingResumeSeedLimit: number;
   parsedIndexingResumePersistLimit: number;
   eventsJsonWrite: boolean;
@@ -46,7 +45,6 @@ export function buildIndexingRunRuntimePayload(
     daemonGracefulShutdownTimeoutMs: Math.max(1000, input.parsedDaemonGracefulShutdownTimeoutMs),
     importsRoot: String(input.importsRoot || '').trim(),
     importsPollSeconds: Math.max(1, input.parsedImportsPollSeconds),
-    identityGatePublishThreshold: Math.max(0, Math.min(1, input.parsedIdentityGatePublishThreshold)),
     indexingResumeSeedLimit: Math.max(1, input.parsedIndexingResumeSeedLimit),
     indexingResumePersistLimit: Math.max(1, input.parsedIndexingResumePersistLimit),
     eventsJsonWrite: input.eventsJsonWrite,

@@ -114,17 +114,6 @@ Optional local helper AI is still a future design concept only. It is not a live
 - Tier 2: `searchProvider=bing` -> SearXNG constrained to the Bing engine when Google underperforms
 - Tier 3: `searchProvider=dual` or `searchProvider=searxng` -> combined/default SearXNG routing for resilience and recovery
 
-## Live Feature Flags
-
-| Flag | Default | Controls |
-|---|---|---|
-| `ENABLE_SOURCE_REGISTRY` | `true` | Registry loading and validation are on by default |
-| `ENABLE_DOMAIN_HINT_RESOLVER_V2` | `true` | V2 host-plan plumbing defaults on |
-| `ENABLE_QUERY_COMPILER` | `true` | Query-compiler path defaults on |
-| `ENABLE_CORE_DEEP_GATES` | `true` | Core/deep gate path defaults on |
-
-All live flags have instant stateless rollback.
-
 ## Planned Future Controls (Not Live Runtime Knobs)
 
 - Query-index consumption for compound learning is still a rollout concept. The current app does not expose a live runtime flag for it.

@@ -163,7 +163,11 @@ export async function planDiscoveryQueriesLLM({
   const passSpecs = [
     {
       reason: 'discovery_planner_primary',
-      modelOverride: String(config.llmModelPlan || '').trim(),
+      modelOverride: String(
+        Boolean(config._resolvedSearchPlannerUseReasoning ?? config.llmPlanUseReasoning)
+          ? (config._resolvedSearchPlannerReasoningModel || config.llmModelReasoning || config._resolvedSearchPlannerBaseModel || config.llmModelPlan || '')
+          : (config._resolvedSearchPlannerBaseModel || config.llmModelPlan || '')
+      ).trim(),
       role: 'plan',
       reasoningMode: false,
       systemSuffix: 'Keep queries compact and practical.'

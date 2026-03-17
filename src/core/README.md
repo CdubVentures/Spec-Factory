@@ -17,7 +17,7 @@ This boundary is the canonical home for low-level configuration and model-routin
 - `src/core/llm/cortex/*.js`: `CortexClient`, `CortexCircuitBreaker`, `CortexLifecycle`, and Cortex routing helpers.
 
 ## Dependencies
-- Allowed: Node built-ins, internal `src/core/**`, `src/billing/**`, and existing low-level helpers in `src/utils/**`.
+- Allowed: Node built-ins, internal `src/core/**`, `src/billing/**`, `src/shared/**`, and existing low-level helpers in `src/utils/**`.
 - Forbidden: feature internals, review/catalog/indexing domain logic, or UI-specific state.
 
 ## Domain Invariants

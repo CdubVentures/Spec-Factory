@@ -44,7 +44,7 @@ import { createGuiStaticFileServer } from '../app/api/staticFileServer.js';
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 const {
-  config, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
+  config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
   storage, runDataStorageState,
   sessionCache, resolveCategoryAlias,
   specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady,
@@ -103,7 +103,7 @@ const routeCtx = {
     resolveCategoryAlias, broadcastWs, getSpecDb, loadProductCatalog,
   }),
   configRouteContext: createConfigRouteContext({
-    jsonRes, readJsonBody, config, toInt,
+    jsonRes, readJsonBody, config, configGate, toInt,
     getSpecDb, storage, OUTPUT_ROOT, broadcastWs, HELPER_ROOT, runDataStorageState,
   }),
   studioRouteContext: createStudioRouteContext({

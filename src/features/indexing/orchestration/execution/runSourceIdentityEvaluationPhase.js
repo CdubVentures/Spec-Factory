@@ -30,9 +30,7 @@ export function runSourceIdentityEvaluationPhase({
       connectionHint: candidateFieldMap.connection
     },
     jobIdentityLock || {},
-    {
-      identityGateBaseMatchThreshold: config.identityGateBaseMatchThreshold,
-    }
+    {}
   );
 
   const identityGatedCandidates = applyIdentityGateToCandidatesFn(

@@ -6,8 +6,14 @@ This boundary coordinates review payload assembly and mutations while leaning on
 - `src/features/review/index.js`: `registerReviewRoutes`, `createReviewRouteContext`.
 - Consumers must import from `index.js`, not from internal `api/` paths.
 
+### Services (domain logic, stateless exports)
+- `services/itemMutationService.js` — 12 functions: lane state resolution, candidate selection, override/confirm/accept logic for item-scoped review.
+- `services/componentMutationService.js` — 10 functions: component property validation, identity rename/merge transactions, cascade helpers.
+- `services/enumMutationService.js` — 12 functions: enum candidate validation, shared lane state, list value upsert, suggestion status, consistency helpers (`normalizeEnumToken`, `hasMeaningfulEnumValue`, `dedupeEnumValues`, `readEnumConsistencyFormatHint`).
+- Route handlers in `src/api/review*Routes.js` import from these services and re-export for backward compatibility.
+
 ## Dependencies
-- Allowed: `src/features/catalog/index.js`, `src/features/indexing/index.js`, legacy route helpers under `src/api/**`, and `src/field-rules/**`.
+- Allowed: `src/features/catalog/index.js`, `src/features/indexing/index.js`, legacy route helpers under `src/api/**`, `src/field-rules/**`, and `src/api/reviewRouteSharedHelpers.js`.
 - Forbidden: deep imports into other feature internals beyond those explicit contracts.
 
 ## Domain Invariants

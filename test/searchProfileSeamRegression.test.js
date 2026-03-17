@@ -34,9 +34,6 @@ function makeConfig(tempRoot, overrides = {}) {
     searchProvider: 'searxng',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
-    enableSourceRegistry: true,
-    enableDomainHintResolverV2: true,
-    enableQueryCompiler: true,
     ...overrides,
   };
 }

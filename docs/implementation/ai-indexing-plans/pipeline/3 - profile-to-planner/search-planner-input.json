@@ -1,0 +1,138 @@
+{
+  "_doc": "Search Planner (buildSearchPlan) input contract. Documents the exact inputs consumed by searchPlanBuilder.js:269-276. This is the Schema 4 path — the NeedSet-driven single-call planner. Updated 2026-03-16.",
+
+  "call_boundary": {
+    "function": "buildSearchPlan({ searchPlanningContext, config, logger, llmContext, queryHashFn })",
+    "file": "src/indexlab/searchPlanBuilder.js:269-276",
+    "caller": "runDiscoverySeedPlan.js (orchestration layer)"
+  },
+
+  "searchPlanningContext": {
+    "_doc": "Schema 3 (SearchPlanningContext). Produced by buildSearchPlanningContext(). This is the primary input — everything the planner needs comes through here.",
+    "_schema_version": "search_planning_context.v2",
+
+    "run": {
+      "_tag": "passthrough",
+      "run_id":     "string — used for LLM usageContext",
+      "category":   "string — sent to LLM payload as identity.category",
+      "product_id": "string — used for LLM usageContext",
+      "brand":      "string — sent to LLM payload as identity.manufacturer fallback",
+      "model":      "string — sent to LLM payload as identity.model fallback",
+      "base_model": "string — not directly consumed by planner (passthrough to Schema 4)",
+      "aliases":    "string[] — not directly consumed by planner (passthrough to Schema 4)",
+      "round":      "number — sent to LLM payload; used for LLM usageContext",
+      "round_mode": "string — passthrough to Schema 4 panel"
+    },
+
+    "identity": {
+      "_tag": "passthrough",
+      "_note": "Passthrough from Schema 2. Used as LLM identity.manufacturer/model fallback and emitted in Schema 4 panel.",
+      "state":              "PanelIdentityState",
+      "source_label_state": "string",
+      "manufacturer":       "string|null — sent to LLM payload as identity.manufacturer",
+      "model":              "string|null — sent to LLM payload as identity.model",
+      "confidence":         "number",
+      "official_domain":    "string|null",
+      "support_domain":     "string|null"
+    },
+
+    "needset": {
+      "_tag": "passthrough (slim projection of Schema 2)",
+      "summary":                 "object — passthrough to Schema 4 panel",
+      "blockers":                "object — passthrough to Schema 4 panel",
+      "missing_critical_fields": "string[] — CONSUMED: sent to LLM payload (searchPlanBuilder.js:312)",
+      "unresolved_fields":       "string[] — NOT consumed by planner (per-group keys used instead)",
+      "existing_queries":        "string[] — CONSUMED: sent to LLM payload (line 343) AND used for post-LLM dedup (lines 395-397)"
+    },
+
+    "planner_limits": {
+      "_tag": "consumed internally (not emitted in Schema 4)",
+      "phase2LlmEnabled":    "boolean — gates LLM call via hasLlmRouteApiKey (line 283)",
+      "discoveryMaxQueries": "number — sent to LLM payload limits AND used for global cap (line 391)",
+      "maxUrlsPerProduct":   "number — sent to LLM payload limits (line 315)",
+      "llmModelPlan":        "string — resolved model for LLM call",
+      "searchProfileCapMap": "object — not consumed by buildSearchPlan",
+      "searchProvider":      "string — not consumed by buildSearchPlan"
+    },
+
+    "group_catalog": {
+      "_tag": "dropped (metadata already inlined into focus_groups at Schema 3 boundary)",
+      "_note": "buildSearchPlan does not read group_catalog — all catalog metadata (label, desc, source_target, content_target, search_intent, host_class) is already on each focus_group entry."
+    },
+
+    "focus_groups": {
+      "_tag": "core input — the planner's primary working data",
+      "_consumed_fields": {
+        "key":                          "string — sent to LLM payload; used for grouping queries in Schema 4 bundles",
+        "phase":                        "string — 'now'|'next'|'hold'. GATE: only now/next groups are active (line 292)",
+        "priority":                     "string — sent to LLM payload (line 322)",
+        "label":                        "string — passthrough to Schema 4 bundle",
+        "desc":                         "string — passthrough to Schema 4 bundle",
+        "source_target":                "string — sent to LLM payload (line 338); passthrough to bundle",
+        "content_target":               "string — passthrough to Schema 4 bundle",
+        "search_intent":                "string — sent to LLM payload (line 339); passthrough to bundle",
+        "host_class":                   "string — sent to LLM payload (line 337); passthrough to bundle",
+        "field_keys":                   "string[] — used for bundle fields[] derivation (line 200)",
+        "satisfied_field_keys":         "string[] — used for bundle fields[].state derivation + delta computation",
+        "unresolved_field_keys":        "string[] — sent to LLM payload (line 323)",
+        "weak_field_keys":              "string[] — sent to LLM payload (line 324)",
+        "conflict_field_keys":          "string[] — sent to LLM payload (line 325)",
+        "search_exhausted_field_keys":  "string[] — not sent to LLM (phase=hold already filters these groups)",
+        "core_unresolved_count":        "number — sent to LLM payload (line 326)",
+        "secondary_unresolved_count":   "number — sent to LLM payload (line 327)",
+        "query_terms_union":            "string[] — sent to LLM payload CAPPED TO 5 (line 328)",
+        "domain_hints_union":           "string[] — FILTERED (dead domains removed, line 295) then sent to LLM CAPPED TO 5 (line 329)",
+        "preferred_content_types_union":"string[] — sent to LLM payload CAPPED TO 5 (line 332)",
+        "existing_queries_union":       "string[] — FILTERED (dead hashes removed, lines 296-299) then sent to LLM CAPPED TO 5 (line 330)",
+        "domains_tried_union":          "string[] — sent to LLM payload CAPPED TO 5 (line 333)",
+        "host_classes_tried_union":     "string[] — sent to LLM payload UNCAPPED (line 334)",
+        "evidence_classes_tried_union": "string[] — sent to LLM payload UNCAPPED (line 335)",
+        "aliases_union":                "string[] — sent to LLM payload CAPPED TO 5 (line 331)",
+        "no_value_attempts":            "number — sent to LLM payload (line 336)",
+        "urls_examined_count":          "number — sent to LLM payload (line 340)",
+        "query_count":                  "number — sent to LLM payload (line 341)"
+      }
+    },
+
+    "field_priority_map": {
+      "_tag": "consumed internally",
+      "_note": "Map of field_key → required_level. Used in assembleSchema4 (line 189) to derive bundle fields[].bucket via requiredLevelToBucket()."
+    },
+
+    "learning": {
+      "_tag": "consumed internally (pre-LLM anti-garbage filter)",
+      "dead_query_hashes": "string[] — hashes removed from existing_queries_union before LLM call (line 289-299)",
+      "dead_domains":      "string[] — domains removed from domain_hints_union before LLM call (line 288-295)"
+    },
+
+    "previous_round_fields": {
+      "_tag": "consumed internally",
+      "_note": "Array<{ field_key, state }>. Used in computeDeltas() (line 91-121) to compute panel.deltas."
+    }
+  },
+
+  "config": {
+    "_tag": "runtime config object",
+    "_consumed_keys": {
+      "llmModelPlan":         "string — resolved model for the LLM call (line 347)",
+      "discoveryMaxQueries":  "number — global query cap fallback (line 391)",
+      "llmTimeoutMs":         "number — LLM call timeout, default 40000ms (line 373)",
+      "llmEnabled":           "boolean — implicit via hasLlmRouteApiKey() gate"
+    },
+    "_note": "Full config object is forwarded to callLlmWithRouting(). Only the above keys are explicitly consumed by buildSearchPlan logic."
+  },
+
+  "llmContext": {
+    "_tag": "LLM instrumentation context",
+    "runId":       "string — for LLM usage tracking",
+    "traceWriter": "object|null — for trace capture",
+    "costRates":   "object — LLM cost rate overrides",
+    "recordUsage": "function — async callback for usage row recording"
+  },
+
+  "queryHashFn": {
+    "_tag": "injectable dependency",
+    "_default": "defaultQueryHash() — stableHash of lowercased, trimmed, space-normalized query text",
+    "_note": "Used for dedup across existing queries and LLM-generated queries. Same algorithm as frontierDb.js (inlined to avoid coupling)."
+  }
+}

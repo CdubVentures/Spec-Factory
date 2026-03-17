@@ -63,7 +63,7 @@ describe('WP4 — Tier acceptance policy', () => {
       { tier: 1, tierName: 'manufacturer', method: 'html_table', url: 'https://razer.com', approvedDomain: true, rootDomain: 'razer.com' },
     ];
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.notEqual(result.fields.sensor, 'unk', 'tier 1 core_fact should be accepted');
     assert.equal(result.provenance.sensor.acceptance_gate_result.accepted, true);
   });
@@ -74,7 +74,7 @@ describe('WP4 — Tier acceptance policy', () => {
       { tier: 2, tierName: 'lab', method: 'pdf_table', url: 'https://rtings.com', approvedDomain: true, rootDomain: 'rtings.com' },
     ];
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.notEqual(result.fields.weight, 'unk');
     assert.equal(result.provenance.weight.acceptance_gate_result.accepted, true);
   });
@@ -86,7 +86,7 @@ describe('WP4 — Tier acceptance policy', () => {
       { tier: 3, tierName: 'database', method: 'dom', url: 'https://somedb.com', approvedDomain: true, rootDomain: 'somedb.com' },
     ];
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.equal(result.fields.sensor, 'unk', 'tier 3 without corroboration should be rejected');
     assert.equal(result.provenance.sensor.gate_rejected, true);
     assert.equal(result.provenance.sensor.acceptance_gate_result.accepted, false);
@@ -100,7 +100,7 @@ describe('WP4 — Tier acceptance policy', () => {
       { tier: 3, tierName: 'database', method: 'dom', url: 'https://b.com', approvedDomain: true, rootDomain: 'b.com' },
     ];
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.notEqual(result.fields.sensor, 'unk');
     assert.equal(result.provenance.sensor.acceptance_gate_result.accepted, true);
   });
@@ -114,7 +114,7 @@ describe('WP4 — Tier acceptance policy', () => {
       { tier: 3, tierName: 'database', method: 'dom', url: 'https://c.com', approvedDomain: true, rootDomain: 'c.com' },
     ];
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.notEqual(result.fields.dpi, 'unk');
     assert.equal(result.provenance.dpi.acceptance_gate_result.accepted, true);
   });
@@ -126,7 +126,7 @@ describe('WP4 — Tier acceptance policy', () => {
       { tier: 4, tierName: 'community', method: 'dom', url: 'https://reddit.com', approvedDomain: true, rootDomain: 'reddit.com' },
     ];
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.equal(result.fields.sensor, 'unk');
     assert.equal(result.provenance.sensor.gate_rejected, true);
   });
@@ -138,7 +138,7 @@ describe('WP4 — Tier acceptance policy', () => {
       tier: 4, tierName: 'community', method: 'dom', url: `https://forum${i}.com`, approvedDomain: true, rootDomain: `forum${i}.com`,
     }));
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.equal(result.fields.sensor, 'unk');
     assert.equal(result.provenance.sensor.gate_rejected, true);
   });
@@ -151,7 +151,7 @@ describe('WP4 — Tier acceptance policy', () => {
       { tier: 1, tierName: 'manufacturer', method: 'html_table', url: 'https://razer.com', approvedDomain: true, rootDomain: 'razer.com' },
     ];
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.notEqual(result.fields.sensor, 'unk');
     assert.equal(result.provenance.sensor.acceptance_gate_result.accepted, true);
   });
@@ -162,7 +162,7 @@ describe('WP4 — Tier acceptance policy', () => {
     consensus.provenance.sensor.evidence = [];
     consensus.provenance.sensor.value = 'unk';
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.equal(result.fields.sensor, 'unk');
   });
 });
@@ -179,7 +179,7 @@ describe('WP4 — Community override prevention', () => {
       { tier: 4, tierName: 'community', method: 'dom', url: 'https://reddit.com', approvedDomain: true, rootDomain: 'reddit.com' },
     ];
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.equal(result.fields.sensor, 'unk');
     assert.equal(result.provenance.sensor.gate_rejected, true);
   });
@@ -196,7 +196,7 @@ describe('WP4 — Community override prevention', () => {
       { tier: 4, tierName: 'community', method: 'dom', url: 'https://another.com', approvedDomain: true, rootDomain: 'another.com' },
     ];
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     // All evidence is tier 4 with no tier <=2 corroboration, so gate rejects
     assert.equal(result.fields.sensor, 'unk');
     assert.equal(result.provenance.sensor.gate_rejected, true);
@@ -209,7 +209,7 @@ describe('WP4 — Community override prevention', () => {
       tier: 4, tierName: 'community', method: 'dom', url: `https://site${i}.com`, approvedDomain: true, rootDomain: `site${i}.com`,
     }));
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.equal(result.fields.weight, 'unk');
   });
 
@@ -220,7 +220,7 @@ describe('WP4 — Community override prevention', () => {
       tier: 4, tierName: 'community', method: 'dom', url: `https://site${i}.com`, approvedDomain: true, rootDomain: `site${i}.com`,
     }));
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.equal(result.fields.dpi, 'unk');
   });
 });
@@ -244,7 +244,7 @@ describe('WP4 — Deep claims', () => {
       ],
     };
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.equal(result.provenance.click_latency.field_classification, 'deep_claim');
     assert.equal(result.provenance.click_latency.acceptance_gate_result.accepted, true);
   });
@@ -264,7 +264,7 @@ describe('WP4 — Deep claims', () => {
       ],
     };
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.equal(result.provenance.click_latency.field_classification, 'deep_claim');
     assert.equal(result.provenance.click_latency.acceptance_gate_result.accepted, true);
   });
@@ -284,7 +284,7 @@ describe('WP4 — Deep claims', () => {
       ],
     };
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.equal(result.provenance.click_latency.field_classification, 'deep_claim');
     assert.equal(result.provenance.click_latency.acceptance_gate_result.accepted, true);
   });
@@ -305,7 +305,7 @@ describe('WP4 — Deep claims', () => {
       ],
     };
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.equal(result.provenance.click_latency.field_classification, 'deep_claim');
     assert.equal(result.provenance.click_latency.acceptance_gate_result.accepted, true);
   });
@@ -353,19 +353,7 @@ describe('WP4 — Claim clustering (via clusterDeepNumericClaims)', () => {
 // ---------------------------------------------------------------------------
 // Regression (REG-01..03)
 // ---------------------------------------------------------------------------
-describe('WP4 — Regression / feature flag', () => {
-  it('REG-01: enableCoreDeepGates=false → identical output (no new provenance keys)', () => {
-    const consensus = makeConsensus({ fieldValues: { sensor: 'PAW3950', click_latency: '0.3' } });
-    const before = JSON.parse(JSON.stringify(consensus));
-    const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: false } });
-    // When flag is off, provenance should NOT have field_classification or acceptance_gate_result
-    assert.equal(result.provenance.sensor.field_classification, undefined);
-    assert.equal(result.provenance.sensor.acceptance_gate_result, undefined);
-    assert.equal(result.provenance.sensor.gate_rejected, undefined);
-    assert.deepEqual(result.fields, before.fields);
-  });
-
+describe('WP4 — Regression', () => {
   it('REG-02: rejected sources logged with reason', () => {
     const consensus = makeConsensus({ fieldValues: { sensor: 'PAW3950' } });
     consensus.provenance.sensor.approved_confirmations = 1;
@@ -373,7 +361,7 @@ describe('WP4 — Regression / feature flag', () => {
       { tier: 4, tierName: 'community', method: 'dom', url: 'https://reddit.com', approvedDomain: true, rootDomain: 'reddit.com' },
     ];
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     assert.equal(result.provenance.sensor.gate_rejected, true);
     assert.ok(result.provenance.sensor.acceptance_gate_result.reason, 'rejection must have a reason');
     assert.ok(result.provenance.sensor.acceptance_gate_result.reason.length > 0);
@@ -391,7 +379,7 @@ describe('WP4 — Regression / feature flag', () => {
       ];
     }
     const engine = makeMockEngine();
-    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: { enableCoreDeepGates: true } });
+    const result = applyCoreDeepGates({ consensus, fieldRulesEngine: engine, config: {} });
     for (const field of ['sensor', 'weight', 'dpi']) {
       assert.equal(result.fields[field], 'unk', `${field} should be rejected`);
       assert.equal(result.provenance[field].gate_rejected, true, `${field} must have gate_rejected=true`);

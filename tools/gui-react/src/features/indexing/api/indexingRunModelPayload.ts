@@ -2,25 +2,25 @@ type IndexingRunModelPayloadPrimitive = string | number | boolean;
 
 export interface BuildIndexingRunModelPayloadInput {
   searchProvider: string;
-  phase2LlmModel: string;
-  phase3LlmModel: string;
-  llmTokensPlan: number;
+  llmModelPlan: string;
+  llmModelTriage: string;
+  llmMaxOutputTokensPlan: number;
   llmModelFast: string;
-  llmTokensFast: number;
-  llmTokensTriage: number;
+  llmMaxOutputTokensFast: number;
+  llmMaxOutputTokensTriage: number;
   llmModelReasoning: string;
-  llmTokensReasoning: number;
+  llmMaxOutputTokensReasoning: number;
   llmModelExtract: string;
-  llmTokensExtract: number;
+  llmMaxOutputTokensExtract: number;
   llmModelValidate: string;
-  llmTokensValidate: number;
+  llmMaxOutputTokensValidate: number;
   llmModelWrite: string;
-  llmTokensWrite: number;
+  llmMaxOutputTokensWrite: number;
   llmPlanFallbackModel: string;
-  llmTokensPlanFallback: number;
-  llmTokensExtractFallback: number;
-  llmTokensValidateFallback: number;
-  llmTokensWriteFallback: number;
+  llmMaxOutputTokensPlanFallback: number;
+  llmMaxOutputTokensExtractFallback: number;
+  llmMaxOutputTokensValidateFallback: number;
+  llmMaxOutputTokensWriteFallback: number;
 }
 
 export function buildIndexingRunModelPayload(
@@ -28,38 +28,25 @@ export function buildIndexingRunModelPayload(
 ): Record<string, IndexingRunModelPayloadPrimitive> {
   return {
     searchProvider: input.searchProvider,
-    phase2LlmModel: input.phase2LlmModel,
-    phase3LlmModel: input.phase3LlmModel,
+    llmModelPlan: input.llmModelPlan,
+    llmModelTriage: input.llmModelTriage,
     runProfile: 'standard',
-    llmModelPlan: input.phase2LlmModel,
-    llmMaxOutputTokensPlan: input.llmTokensPlan,
-    llmTokensPlan: input.llmTokensPlan,
+    llmMaxOutputTokensPlan: input.llmMaxOutputTokensPlan,
     llmModelFast: input.llmModelFast,
-    llmMaxOutputTokensFast: input.llmTokensFast,
-    llmTokensFast: input.llmTokensFast,
-    llmModelTriage: input.phase3LlmModel,
-    llmMaxOutputTokensTriage: input.llmTokensTriage,
-    llmTokensTriage: input.llmTokensTriage,
+    llmMaxOutputTokensFast: input.llmMaxOutputTokensFast,
+    llmMaxOutputTokensTriage: input.llmMaxOutputTokensTriage,
     llmModelReasoning: input.llmModelReasoning,
-    llmMaxOutputTokensReasoning: input.llmTokensReasoning,
-    llmTokensReasoning: input.llmTokensReasoning,
+    llmMaxOutputTokensReasoning: input.llmMaxOutputTokensReasoning,
     llmModelExtract: input.llmModelExtract,
-    llmMaxOutputTokensExtract: input.llmTokensExtract,
-    llmTokensExtract: input.llmTokensExtract,
+    llmMaxOutputTokensExtract: input.llmMaxOutputTokensExtract,
     llmModelValidate: input.llmModelValidate,
-    llmMaxOutputTokensValidate: input.llmTokensValidate,
-    llmTokensValidate: input.llmTokensValidate,
+    llmMaxOutputTokensValidate: input.llmMaxOutputTokensValidate,
     llmModelWrite: input.llmModelWrite,
-    llmMaxOutputTokensWrite: input.llmTokensWrite,
-    llmTokensWrite: input.llmTokensWrite,
+    llmMaxOutputTokensWrite: input.llmMaxOutputTokensWrite,
     llmPlanFallbackModel: input.llmPlanFallbackModel,
-    llmMaxOutputTokensPlanFallback: input.llmTokensPlanFallback,
-    llmTokensPlanFallback: input.llmTokensPlanFallback,
-    llmMaxOutputTokensExtractFallback: input.llmTokensExtractFallback,
-    llmTokensExtractFallback: input.llmTokensExtractFallback,
-    llmMaxOutputTokensValidateFallback: input.llmTokensValidateFallback,
-    llmTokensValidateFallback: input.llmTokensValidateFallback,
-    llmMaxOutputTokensWriteFallback: input.llmTokensWriteFallback,
-    llmTokensWriteFallback: input.llmTokensWriteFallback,
+    llmMaxOutputTokensPlanFallback: input.llmMaxOutputTokensPlanFallback,
+    llmMaxOutputTokensExtractFallback: input.llmMaxOutputTokensExtractFallback,
+    llmMaxOutputTokensValidateFallback: input.llmMaxOutputTokensValidateFallback,
+    llmMaxOutputTokensWriteFallback: input.llmMaxOutputTokensWriteFallback,
   };
 }

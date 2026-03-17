@@ -23,7 +23,7 @@ test('buildIdentityNormalizationContext preserves consensus when confidence is b
   let buildValidatedCalls = 0;
 
   const result = buildIdentityNormalizationContext({
-    config: { identityGatePublishThreshold: 0.85 },
+    config: {},
     identityConfidence: 0.42,
     allowHelperProvisionalFill: true,
     productId: 'mouse-1',
@@ -55,7 +55,7 @@ test('buildIdentityNormalizationContext preserves consensus when confidence is b
   });
 
   assert.equal(buildValidatedCalls, 1, 'always uses validated path now');
-  assert.equal(result.identityPublishThreshold, 0.85);
+  assert.equal(result.identityPublishThreshold, 0.75);
   assert.equal(result.identityProvisionalFloor, 0.5);
   assert.equal(result.identityAbort, true, 'flag still computed');
   assert.equal(result.identityProvisional, false);

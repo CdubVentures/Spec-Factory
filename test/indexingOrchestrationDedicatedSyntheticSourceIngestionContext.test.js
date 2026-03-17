@@ -10,7 +10,7 @@ test('buildDedicatedSyntheticSourceIngestionContext maps dedicated ingestion inp
   const adapterArtifacts = [{ key: 'artifact-1' }];
   const sourceResults = [{ url: 'https://existing.example/spec' }];
   const anchors = { brand: 'brand' };
-  const config = { identityGateBaseMatchThreshold: 0.7 };
+  const config = {};
   const buildCandidateFieldMap = () => ({ connection: 'wired' });
   const evaluateAnchorConflicts = () => ({ conflicts: [], majorConflicts: [] });
   const evaluateSourceIdentity = () => ({ match: true, score: 0.9 });

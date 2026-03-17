@@ -13,8 +13,6 @@ export interface BuildIndexingRunOcrPolicyPayloadInput {
   searchProfileCapMapJson: string;
   serpRerankerWeightMapJson: string;
   fetchSchedulerInternalsMapJson: string;
-  retrievalInternalsMapJson: string;
-  evidencePackLimitsMapJson: string;
   parsingConfidenceBaseMapJson: string;
   repairDedupeRule: string;
   automationQueueStorageEngine: string;
@@ -36,8 +34,6 @@ export function buildIndexingRunOcrPolicyPayload(
     searchProfileCapMapJson: String(input.searchProfileCapMapJson || '').trim(),
     serpRerankerWeightMapJson: String(input.serpRerankerWeightMapJson || '').trim(),
     fetchSchedulerInternalsMapJson: String(input.fetchSchedulerInternalsMapJson || '').trim(),
-    retrievalInternalsMapJson: String(input.retrievalInternalsMapJson || '').trim(),
-    evidencePackLimitsMapJson: String(input.evidencePackLimitsMapJson || '').trim(),
     parsingConfidenceBaseMapJson: String(input.parsingConfidenceBaseMapJson || '').trim(),
     repairDedupeRule: String(input.repairDedupeRule || '').trim(),
     automationQueueStorageEngine: String(input.automationQueueStorageEngine || '').trim(),

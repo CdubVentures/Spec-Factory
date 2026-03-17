@@ -45,9 +45,7 @@ test('buildValidationGateContext computes gate/publishability context and stamps
     allAnchorConflicts: [{ severity: 'MINOR' }, { severity: 'MAJOR' }],
     consensus,
     identityGate,
-    config: {
-      qualityGateIdentityThreshold: 0.7,
-    },
+    config: {},
     targets,
     anchorMajorConflictsCount: 1,
     criticalFieldsBelowPassTarget: ['battery_life_h'],
@@ -81,7 +79,6 @@ test('buildValidationGateContext computes gate/publishability context and stamps
       assert.deepEqual(payload, {
         identityGateValidated: true,
         identityConfidence: 0.88,
-        qualityGateIdentityThreshold: 0.7,
         anchorMajorConflictsCount: 1,
         completenessRequired: 0.75,
         targetCompleteness: 0.85,
@@ -132,9 +129,7 @@ test('buildValidationGateContext sets fallback publish blocker when gate has no 
       needsReview: true,
       reasonCodes: [],
     },
-    config: {
-      qualityGateIdentityThreshold: 0.7,
-    },
+    config: {},
     targets: {
       targetCompleteness: 0.8,
       targetConfidence: 0.8,
@@ -170,9 +165,7 @@ test('buildValidationGateContext defaults the publish threshold to 0.75 when the
       needsReview: false,
       reasonCodes: [],
     },
-    config: {
-      qualityGateIdentityThreshold: 0.7,
-    },
+    config: {},
     targets: {
       targetCompleteness: 0.8,
       targetConfidence: 0.8,
