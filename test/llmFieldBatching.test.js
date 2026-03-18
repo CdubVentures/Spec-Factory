@@ -40,8 +40,8 @@ test('resolveBatchModel routes hard/instrumented batches to reasoning model', ()
       difficulty: { hard: 0, instrumented: 0 }
     },
     config: {
-      llmModelFast: 'gemini-2.0-flash',
-      llmModelExtract: 'deepseek-reasoner'
+      llmModelPlan: 'gemini-2.0-flash',
+      llmModelReasoning: 'deepseek-reasoner'
     }
   });
   assert.equal(easy.model, 'gemini-2.0-flash');
@@ -54,8 +54,8 @@ test('resolveBatchModel routes hard/instrumented batches to reasoning model', ()
       difficulty: { hard: 0, instrumented: 1 }
     },
     config: {
-      llmModelFast: 'gemini-2.0-flash',
-      llmModelExtract: 'deepseek-reasoner'
+      llmModelPlan: 'gemini-2.0-flash',
+      llmModelReasoning: 'deepseek-reasoner'
     }
   });
   assert.equal(hard.model, 'deepseek-reasoner');
@@ -70,7 +70,7 @@ test('resolveBatchModel supports runtime forced-high field escalation', () => {
       difficulty: { hard: 0, instrumented: 0 }
     },
     config: {
-      llmModelFast: 'gpt-5-low',
+      llmModelPlan: 'gpt-5-low',
       llmModelReasoning: 'gpt-5-high'
     },
     forcedHighFields: ['weight']

@@ -6,6 +6,11 @@ import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint';
 import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from '../../../stores/settingsManifest';
 import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract';
 import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract';
+import {
+  registerUnloadGuard,
+  markDomainFlushedByUnmount,
+  isDomainFlushedByUnload,
+} from '../../../stores/settingsUnloadGuard';
 
 interface LlmSettingsSavePayload {
   rows: LlmRouteRow[];
@@ -127,6 +132,18 @@ export function useLlmSettingsAuthority({
   const lastAutoSaveAttemptFingerprintRef = useRef('');
   const pendingAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rowsFingerprint = autoSaveFingerprint(rows);
+  const rowsRef = useRef(rows);
+  const rowsFingerprintRef = useRef(rowsFingerprint);
+  const enabledRef = useRef(enabled);
+  const dirtyRef = useRef(dirty);
+  const autoSaveEnabledRef = useRef(autoSaveEnabled);
+  const editVersionRef = useRef(editVersion);
+  rowsRef.current = rows;
+  rowsFingerprintRef.current = rowsFingerprint;
+  enabledRef.current = enabled;
+  dirtyRef.current = dirty;
+  autoSaveEnabledRef.current = autoSaveEnabled;
+  editVersionRef.current = editVersion;
 
   const { data, isLoading, refetch } = useQuery({
     queryKey,
@@ -166,7 +183,7 @@ export function useLlmSettingsAuthority({
           : {};
         return {
           persisted: {
-            ok: response?.ok !== false && Object.keys(rejected).length === 0,
+            ok: response?.ok !== false,
             rows: Array.isArray(appliedData.rows) ? appliedData.rows : [],
             rejected,
           },
@@ -214,7 +231,27 @@ export function useLlmSettingsAuthority({
     };
   }, [enabled, autoSaveEnabled, dirty, rowsFingerprint, rows, editVersion, saveMutate, resetMutation.isPending, saveMutation.isPending]);
 
+  useEffect(() => {
+    return registerUnloadGuard({
+      domain: 'llm',
+      isDirty: () => {
+        if (!enabledRef.current || !autoSaveEnabledRef.current || !dirtyRef.current) return false;
+        const fp = rowsFingerprintRef.current;
+        return Boolean(fp) && fp !== lastAutoSavedFingerprintRef.current;
+      },
+      getPayload: () => ({
+        url: `/api/v1/llm-settings/${category}/routes`,
+        method: 'PUT',
+        body: { rows: rowsRef.current },
+      }),
+      markFlushed: () => {
+        lastAutoSaveAttemptFingerprintRef.current = rowsFingerprintRef.current;
+      },
+    });
+  }, [category]);
+
   useEffect(() => () => {
+    if (isDomainFlushedByUnload('llm')) return;
     if (pendingAutoSaveTimerRef.current) {
       clearTimeout(pendingAutoSaveTimerRef.current);
       pendingAutoSaveTimerRef.current = null;
@@ -224,6 +261,7 @@ export function useLlmSettingsAuthority({
     if (rowsFingerprint === lastAutoSavedFingerprintRef.current) return;
     lastAutoSaveAttemptFingerprintRef.current = rowsFingerprint;
     saveMutate({ rows, version: editVersion });
+    markDomainFlushedByUnmount('llm');
   }, [
     enabled,
     autoSaveEnabled,

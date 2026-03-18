@@ -1,5 +1,5 @@
 import { buildAccuracyReport } from '../testing/goldenFiles.js';
-import { buildReviewMetrics } from '../review/overrideWorkflow.js';
+import { buildReviewMetrics } from '../review/index.js';
 import {
   nowIso,
   toPosix,

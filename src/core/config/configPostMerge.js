@@ -2,7 +2,6 @@
 // Applies canonical defaults, overrides, coercions, clamping, and fallback chains.
 // Clamping ranges derive from shared SSOT (settingsClampingRanges).
 
-import { inferLlmProvider } from './llmModelResolver.js';
 import { buildRegistryLookup } from '../llm/routeResolver.js';
 import {
   normalizeModelPricingMap,
@@ -83,29 +82,20 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   merged.userAgent = normalizeUserAgent(merged.userAgent, DEFAULT_USER_AGENT);
 
   // --- LLM provider inference + model fallback chains ---
-  merged.llmProvider = merged.llmProvider || inferLlmProvider(
-    merged.llmBaseUrl || merged.openaiBaseUrl,
-    merged.llmModelExtract || merged.openaiModelExtract,
-    Boolean(process.env.DEEPSEEK_API_KEY)
-  );
+  // WHY: llmProvider is set by configBuilder from the registry SSOT.
+  // Fallback infers provider from the model name for backward compat.
+  if (!merged.llmProvider) {
+    const m = String(merged.llmModelPlan || merged.llmModelExtract || '').toLowerCase();
+    merged.llmProvider = m.startsWith('gemini') ? 'gemini'
+      : m.startsWith('deepseek') ? 'deepseek' : 'openai';
+  }
   merged.llmApiKey = merged.llmApiKey || merged.openaiApiKey;
   merged.llmBaseUrl = merged.llmBaseUrl || merged.openaiBaseUrl;
   merged.llmModelExtract = merged.llmModelExtract || merged.openaiModelExtract;
   merged.llmModelPlan = merged.llmModelPlan || merged.openaiModelPlan;
   // WHY: Model stack simplified — one base model, one reasoning model.
-  // Per-role keys are aliases for backward compat. Phase overrides
-  // still allow per-phase model selection via llmPhaseOverridesJson.
+  // Phase overrides still allow per-phase model selection via llmPhaseOverridesJson.
   merged.llmModelReasoning = merged.llmModelReasoning || merged.llmModelPlan;
-  merged.llmModelTriage = merged.llmModelPlan;
-  merged.llmModelFast = merged.llmModelPlan;
-  merged.llmModelExtract = merged.llmModelPlan;
-  merged.llmModelValidate = merged.llmModelPlan;
-  merged.llmModelWrite = merged.llmModelPlan;
-
-  // Fallback aliases — one base fallback, one reasoning fallback
-  merged.llmExtractFallbackModel = merged.llmPlanFallbackModel;
-  merged.llmValidateFallbackModel = merged.llmPlanFallbackModel;
-  merged.llmWriteFallbackModel = merged.llmPlanFallbackModel;
 
   // --- Normalizer calls ---
   merged.staticDomMode = normalizeStaticDomMode(merged.staticDomMode, 'cheerio');
@@ -124,19 +114,10 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   clampIntFromRoute(merged, 'scannedPdfOcrMinLinesPerPage', 'scannedPdfOcrMinLinesPerPage');
   clampFloatFromRoute(merged, 'scannedPdfOcrMinConfidence', 'scannedPdfOcrMinConfidence');
 
-  // --- Role-specific LLM provider/baseUrl/apiKey fallbacks ---
+  // --- LLM provider/baseUrl/apiKey fallbacks ---
   merged.llmPlanProvider = merged.llmPlanProvider || merged.llmProvider;
   merged.llmPlanBaseUrl = merged.llmPlanBaseUrl || merged.llmBaseUrl;
   merged.llmPlanApiKey = merged.llmPlanApiKey || merged.llmApiKey;
-  merged.llmExtractProvider = merged.llmExtractProvider || merged.llmProvider;
-  merged.llmExtractBaseUrl = merged.llmExtractBaseUrl || merged.llmBaseUrl;
-  merged.llmExtractApiKey = merged.llmExtractApiKey || merged.llmApiKey;
-  merged.llmValidateProvider = merged.llmValidateProvider || merged.llmProvider;
-  merged.llmValidateBaseUrl = merged.llmValidateBaseUrl || merged.llmBaseUrl;
-  merged.llmValidateApiKey = merged.llmValidateApiKey || merged.llmApiKey;
-  merged.llmWriteProvider = merged.llmWriteProvider || merged.llmProvider;
-  merged.llmWriteBaseUrl = merged.llmWriteBaseUrl || merged.llmBaseUrl;
-  merged.llmWriteApiKey = merged.llmWriteApiKey || merged.llmApiKey;
   // --- Pricing map + token normalization ---
   merged.llmModelPricingMap = normalizeModelPricingMap(
     mergeModelPricingMaps(buildDefaultModelPricingMap(), merged.llmModelPricingMap || {})
@@ -151,26 +132,8 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
 
   // --- llmMaxOutputTokens chain ---
   merged.llmMaxOutputTokensPlan = toTokenInt(merged.llmMaxOutputTokensPlan, toTokenInt(merged.llmMaxOutputTokens, 1200));
-  merged.llmMaxOutputTokensFast = toTokenInt(merged.llmMaxOutputTokensFast, merged.llmMaxOutputTokensPlan);
-  merged.llmMaxOutputTokensTriage = toTokenInt(merged.llmMaxOutputTokensTriage, merged.llmMaxOutputTokensFast);
   merged.llmMaxOutputTokensReasoning = toTokenInt(merged.llmMaxOutputTokensReasoning, toTokenInt(merged.llmReasoningBudget, merged.llmMaxOutputTokens));
-  merged.llmMaxOutputTokensExtract = toTokenInt(merged.llmMaxOutputTokensExtract, merged.llmMaxOutputTokensPlan);
-  merged.llmMaxOutputTokensValidate = toTokenInt(merged.llmMaxOutputTokensValidate, merged.llmMaxOutputTokensPlan);
-  merged.llmMaxOutputTokensWrite = toTokenInt(merged.llmMaxOutputTokensWrite, merged.llmMaxOutputTokensPlan);
   merged.llmMaxOutputTokensPlanFallback = toTokenInt(merged.llmMaxOutputTokensPlanFallback, merged.llmMaxOutputTokensPlan);
-  merged.llmMaxOutputTokensExtractFallback = toTokenInt(merged.llmMaxOutputTokensExtractFallback, merged.llmMaxOutputTokensExtract);
-  merged.llmMaxOutputTokensValidateFallback = toTokenInt(merged.llmMaxOutputTokensValidateFallback, merged.llmMaxOutputTokensValidate);
-  merged.llmMaxOutputTokensWriteFallback = toTokenInt(merged.llmMaxOutputTokensWriteFallback, merged.llmMaxOutputTokensWrite);
-
-  // Token cap aliases — all roles use plan caps
-  merged.llmMaxOutputTokensTriage = merged.llmMaxOutputTokensPlan;
-  merged.llmMaxOutputTokensFast = merged.llmMaxOutputTokensPlan;
-  merged.llmMaxOutputTokensExtract = merged.llmMaxOutputTokensPlan;
-  merged.llmMaxOutputTokensValidate = merged.llmMaxOutputTokensPlan;
-  merged.llmMaxOutputTokensWrite = merged.llmMaxOutputTokensPlan;
-  merged.llmMaxOutputTokensExtractFallback = merged.llmMaxOutputTokensPlanFallback;
-  merged.llmMaxOutputTokensValidateFallback = merged.llmMaxOutputTokensPlanFallback;
-  merged.llmMaxOutputTokensWriteFallback = merged.llmMaxOutputTokensPlanFallback;
 
   // --- Token profile upserts ---
   const upsertTokenProfile = (modelName, defaults = {}) => {
@@ -210,7 +173,7 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   merged.openaiBaseUrl = merged.llmBaseUrl;
   merged.openaiModelExtract = merged.llmModelExtract;
   merged.openaiModelPlan = merged.llmModelPlan;
-  merged.openaiModelWrite = merged.llmModelWrite;
+  merged.openaiModelWrite = merged.llmModelPlan;
   merged.openaiTimeoutMs = merged.llmTimeoutMs;
 
   merged.runProfile = 'standard';

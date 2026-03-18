@@ -1,0 +1,25 @@
+{
+  "_doc": "Data-change payload contract associated with stage 13 completion, promotion, and broadcast events. Validated against createDataChangePayload(), emitDataChange(), and runFinalizationTelemetryPhase() on 2026-03-17.",
+  "schema_version": "stage13.data_change_events.v1",
+  "producer": "runFinalizationTelemetryPhase() and emitDataChange() call sites",
+  "source_files": [
+    "src/features/indexing/orchestration/finalize/runFinalizationTelemetryPhase.js",
+    "src/api/events/dataChangeContract.js"
+  ],
+  "payload_shape": {
+    "type": "Always data-change.",
+    "event": "Normalized event token.",
+    "category": "Resolved category token or all.",
+    "categories": "Normalized category array.",
+    "domains": "Domain group derived from event or explicit callsite domains.",
+    "version": "map_hash, compiled_hash, specdb_sync_version, updated_at.",
+    "entities": "productIds[] and fieldKeys[] extracted from payload and meta.",
+    "meta": "Callsite-specific extra context with undefined values removed.",
+    "ts": "Normalized ISO timestamp."
+  },
+  "stage13_event_sources": [
+    "runFinalizationTelemetryPhase emits finalization event payloads for needSet, prime sources, phase08 extraction, and indexing schema packets.",
+    "Promotion and publishing flows emit data-change notifications through broadcastWs-aware call sites.",
+    "Entity extraction is additive: meta.productId, meta.fields, and explicit entities are merged."
+  ]
+}

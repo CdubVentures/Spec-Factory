@@ -231,24 +231,8 @@ function rowDefaultsComparable(row: LlmRouteRow) {
   };
 }
 
-function applyRoutePreset(row: LlmRouteRow, preset: 'fast' | 'balanced' | 'deep') {
+function applyRoutePreset(row: LlmRouteRow, preset: 'balanced' | 'deep') {
   const presetConfig: LlmRoutePresetConfig = LLM_ROUTE_PRESET_LIMITS[preset];
-  if (preset === 'fast') {
-    return {
-      ...row,
-      single_source_data: presetConfig.singleSourceData,
-      all_source_data: presetConfig.allSourceData,
-      enable_websearch: presetConfig.enableWebsearch,
-      all_sources_confidence_repatch: presetConfig.allSourcesConfidenceRepatch,
-      model_ladder_today: presetConfig.modelLadderToday,
-      max_tokens: clampToRange(row.max_tokens, presetConfig.maxTokensMin, presetConfig.maxTokensMax),
-      llm_output_min_evidence_refs_required: clampToRange(
-        presetConfig.minEvidenceRefsRequired ?? MIN_EVIDENCE_BOUNDS.min,
-        MIN_EVIDENCE_BOUNDS.min,
-        MIN_EVIDENCE_BOUNDS.max,
-      ),
-    };
-  }
   if (preset === 'balanced') {
     return {
       ...row,
@@ -322,8 +306,8 @@ function tagCls(kind: 'required' | 'difficulty' | 'availability' | 'effort', val
 
 export function LlmSettingsPage() {
   const category = useUiStore((s) => s.category);
-  const autoSaveEnabled = useUiStore((s) => s.llmSettingsAutoSaveEnabled);
-  const setAutoSaveEnabled = useUiStore((s) => s.setLlmSettingsAutoSaveEnabled);
+  const autoSaveEnabled = useUiStore((s) => s.runtimeAutoSaveEnabled);
+  const setAutoSaveEnabled = useUiStore((s) => s.setRuntimeAutoSaveEnabled);
   const isAll = category === 'all';
   const llmSettingsReady = useSettingsAuthorityStore((s) => s.snapshot.llmSettingsReady);
   const llmSettingsBootstrapRows = useLlmSettingsBootstrapRows(category);
@@ -915,7 +899,6 @@ export function LlmSettingsPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="text-sm font-semibold">Model Deck</div>
                     <div className="flex items-center gap-2">
-                      <button className="rounded sf-icon-button px-2 py-1 sf-text-label" onClick={() => updateSelected(applyRoutePreset(selectedRow, 'fast'))}>Fast</button>
                       <button className="rounded sf-icon-button px-2 py-1 sf-text-label" onClick={() => updateSelected(applyRoutePreset(selectedRow, 'balanced'))}>Balanced</button>
                       <button className="rounded sf-icon-button px-2 py-1 sf-text-label" onClick={() => updateSelected(applyRoutePreset(selectedRow, 'deep'))}>Deep</button>
                     </div>

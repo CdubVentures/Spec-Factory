@@ -245,27 +245,17 @@ export async function executeSearchQueries({
           logger
         });
         let reasonCode = 'internet_search';
+        // WHY: Search-first — zero results from provider → try learned URLs
+        // from frontier, else accept 0. No synthetic URL fallback.
         if (providerResults.length === 0) {
-          const queryRow = resolveSelectedQueryRow(query) || resolveProfileQueryRow(query);
-          const fallbackRows = buildQueryPlanFallbackResults({
-            categoryConfig,
-            query,
-            queryRow,
-            variables,
-            maxResults: resultsPerQuery,
-            deterministicAliasCap: searchProfileCaps.deterministicAliasCap,
-          });
-          if (fallbackRows.length > 0) {
-            providerResults = fallbackRows;
-            reasonCode = 'internet_search_zero_plan_fallback';
-            logger?.info?.('discovery_query_plan_fallback', {
+          const cached = getCachedFrontierQueryResults(query);
+          if (cached.results.length > 0) {
+            providerResults = cached.results;
+            reasonCode = 'internet_search_zero_frontier_reuse';
+            logger?.info?.('discovery_query_frontier_reuse', {
               query,
-              fallback_count: fallbackRows.length,
-              hinted_host: String(
-                queryRow?.source_host ||
-                queryRow?.domain_hint ||
-                extractSiteHostFromQuery(query)
-              ).trim(),
+              reuse_count: cached.results.length,
+              provider: cached.provider,
             });
           }
         }

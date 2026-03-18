@@ -294,7 +294,6 @@ function sanitizeUiSettings(raw, fallback = UI_SETTINGS_DEFAULTS) {
     studioAutoSaveMapEnabled,
     runtimeAutoSaveEnabled: resolveBooleanSetting(source, 'runtimeAutoSaveEnabled', fallback.runtimeAutoSaveEnabled),
     storageAutoSaveEnabled: resolveBooleanSetting(source, 'storageAutoSaveEnabled', fallback.storageAutoSaveEnabled),
-    llmSettingsAutoSaveEnabled: resolveBooleanSetting(source, 'llmSettingsAutoSaveEnabled', fallback.llmSettingsAutoSaveEnabled),
   };
 }
 
@@ -602,11 +601,12 @@ export function applyRuntimeSettingsToConfig(config, runtimeSettings = {}) {
   if (!config || typeof config !== 'object') return;
   const source = sanitizeRuntimeSettings(runtimeSettings);
   for (const [key, value] of Object.entries(source)) {
-    if (Object.hasOwn(config, key)) {
-      config[key] = value;
-      const partner = DUAL_KEY_PARTNER.get(key);
-      if (partner && Object.hasOwn(config, partner)) config[partner] = value;
-    }
+    // WHY: Always apply persisted values to config. Keys may not exist on the
+    // initial config object (e.g. newer knobs not yet in configBuilder) but
+    // must still be applied so GET returns the persisted value.
+    config[key] = value;
+    const partner = DUAL_KEY_PARTNER.get(key);
+    if (partner) config[partner] = value;
   }
 }
 
@@ -614,11 +614,9 @@ export function applyConvergenceSettingsToConfig(config, convergenceSettings = {
   if (!config || typeof config !== 'object') return;
   const source = sanitizeConvergenceSettings(convergenceSettings);
   for (const [key, value] of Object.entries(source)) {
-    if (Object.hasOwn(config, key)) {
-      config[key] = value;
-      const partner = DUAL_KEY_PARTNER.get(key);
-      if (partner && Object.hasOwn(config, partner)) config[partner] = value;
-    }
+    config[key] = value;
+    const partner = DUAL_KEY_PARTNER.get(key);
+    if (partner) config[partner] = value;
   }
 }
 

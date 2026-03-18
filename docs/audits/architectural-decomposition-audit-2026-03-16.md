@@ -6,6 +6,12 @@
 
 ---
 
+> **Purpose:** Preserve the historical full-codebase decomposition audit that identified structural refactor candidates and documentation gaps.
+> **Prerequisites:** [../README.md](../README.md), [../01-project-overview/folder-map.md](../01-project-overview/folder-map.md), [./documentation-audit-ledger.md](./documentation-audit-ledger.md)
+> **Last validated:** 2026-03-17
+
+Historical note: this is a historical refactor audit, not the current-state architecture contract for the repo.
+
 ## 1. Executive Summary
 
 Spec Factory is a **70K-LOC backend + 45K-LOC frontend** system with strong architectural foundations in its feature boundaries, composition-root DI, and settings SSOT — but suffering from **organic sprawl** that undermines the declared feature-first architecture. The codebase has grown to **50+ top-level `src/` directories** while the CLAUDE.md architecture prescribes `core/`, `shared/`, `features/`, and bounded domain modules.
@@ -767,3 +773,19 @@ IndexLab runtime bridge: translates pipeline events into structured observation 
 ---
 
 *End of audit. This document is a refactoring execution plan. Each finding includes its documentation impact. The implementation order enforces documentation gates between phases. The end state is a codebase where every domain boundary has a README contract, every module's allowed imports are declared, and an LLM agent can begin productive work by reading the local README.*
+
+## Validated Against
+
+| Source | Path | What was verified |
+|--------|------|-------------------|
+| source | `AGENTS.md` | repo-level architecture, testing, and decomposition rules cited by the audit |
+| source | `src/core/config/configPostMerge.js` | core-to-feature dependency inversion finding cited by the audit |
+| source | `src/cli/spec.js` | CLI god-object finding cited in the audit |
+| source | `src/features/indexing/orchestration/finalize/runProductFinalizationDerivation.js` | orchestration DI hotspot cited in the audit |
+| source | `src/review/componentReviewData.js` | large review-module hotspot cited in the audit |
+
+## Related Documents
+
+- [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md) - current-state backend map for the areas this historical audit critiques.
+- [../01-project-overview/folder-map.md](../01-project-overview/folder-map.md) - current maintained tree map, distinct from this historical refactor plan.
+- [./documentation-audit-ledger.md](./documentation-audit-ledger.md) - records how this historical audit doc is classified in the maintained docs set.

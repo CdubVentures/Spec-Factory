@@ -3,9 +3,6 @@ import { usePersistedExpandMap } from '../../../../stores/tabStore';
 import { usePersistedToggle } from '../../../../stores/collapseStore';
 import type { PrefetchLlmCall, SearchPlanPass, PrefetchLiveSettings, PrefetchSearchResult } from '../../types';
 import { llmCallStatusBadgeClass, formatMs } from '../../helpers';
-import { VerticalStepper, Step } from '../../components/VerticalStepper';
-import { formatTooltip, UiTooltip, TooltipBadge } from '../../components/PrefetchTooltip';
-import { StatCard } from '../../components/StatCard';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
 import { Tip } from '../../../../shared/ui/feedback/Tip';
 import type { RuntimeIdxBadge } from '../../types';
@@ -103,36 +100,13 @@ function parsePlannerPayload(promptPreview: string | null): PlannerPromptInput |
 
 function reasonBadgeClass(reason: string): string {
   const normalized = String(reason || '').trim().toLowerCase();
-  if (normalized === 'discovery_planner_primary') return 'sf-chip-info';
-  if (normalized === 'discovery_planner_fast') return 'sf-chip-accent';
-  if (normalized === 'discovery_planner_reason') return 'sf-chip-accent';
-  if (normalized === 'discovery_planner_validate') return 'sf-chip-success';
+  if (normalized.startsWith('discovery_planner')) return 'sf-chip-info';
   return 'sf-chip-neutral';
-}
-
-function reasonLabel(reason: string): string {
-  const normalized = String(reason || '').trim().toLowerCase();
-  if (normalized === 'discovery_planner_primary') return 'Primary';
-  if (normalized === 'discovery_planner_fast') return 'Fast';
-  if (normalized === 'discovery_planner_reason') return 'Reason';
-  if (normalized === 'discovery_planner_validate') return 'Validate';
-  return normalized ? normalized.replace(/_/g, ' ') : 'unknown';
-}
-
-function plannerReasonBadgeKey(reason: string): string {
-  const normalized = String(reason || '').trim().toLowerCase();
-  if (normalized === 'discovery_planner_primary') return normalized;
-  if (normalized === 'discovery_planner_fast') return normalized;
-  if (normalized === 'discovery_planner_reason') return normalized;
-  if (normalized === 'discovery_planner_validate') return normalized;
-  return 'other';
 }
 
 function normalizeQuery(query: string): string {
   return String(query || '').trim();
 }
-
-const DEFAULT_VISIBLE_QUERIES = 6;
 
 /* ── Theme-aligned helpers (Schema 4 view) ────────────────────────── */
 
@@ -392,96 +366,6 @@ function Schema4PlannerView({
 }
 
 
-function TagList({
-  items,
-  prefix,
-  className = 'sf-chip-neutral',
-  itemTooltip,
-}: {
-  items: string[];
-  prefix: string;
-  className?: string;
-  itemTooltip?: string | ((item: string) => string);
-}) {
-  if (!items.length) {
-    return <div className="sf-text-caption sf-text-subtle">none</div>;
-  }
-  return (
-    <div className="flex flex-wrap gap-1">
-      {items.slice(0, 18).map((item) => {
-        const tipText = typeof itemTooltip === 'function'
-          ? itemTooltip(item)
-          : itemTooltip
-            ? `${item}. ${itemTooltip}`
-            : formatTooltip({
-              what: `Planner input value: ${item}.`,
-              effect: 'This value was included in planner context for this run.',
-              setBy: 'Derived from planner payload; not set directly here.',
-            });
-        return (
-          <UiTooltip key={`${prefix}:${item}`} text={tipText}>
-            <span className={`px-1.5 py-0.5 rounded sf-text-caption font-medium ${className}`}>
-              {item}
-            </span>
-          </UiTooltip>
-        );
-      })}
-      {items.length > 18 && <span className="sf-text-caption sf-text-muted">+{items.length - 18} more</span>}
-    </div>
-  );
-}
-
-function signalBadgeClass(active: boolean): string {
-  return active
-    ? 'sf-chip-success'
-    : 'sf-chip-neutral';
-}
-
-function SignalBadge({
-  active,
-  label,
-  tooltipOn,
-  tooltipOff,
-}: {
-  active: boolean;
-  label: string;
-  tooltipOn: string;
-  tooltipOff: string;
-}) {
-  return (
-    <TooltipBadge
-      className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${signalBadgeClass(active)}`}
-      tooltip={active ? tooltipOn : tooltipOff}
-    >
-      {label}
-    </TooltipBadge>
-  );
-}
-
-function PlannerPassBadge({
-  passKey,
-  count,
-  tooltipOn,
-  tooltipOff,
-}: {
-  passKey: 'discovery_planner_primary' | 'discovery_planner_fast' | 'discovery_planner_reason' | 'discovery_planner_validate';
-  count: number;
-  tooltipOn: string;
-  tooltipOff: string;
-}) {
-  const active = count > 0;
-  const activeClass = reasonBadgeClass(passKey);
-  const offClass = 'sf-chip-neutral';
-  return (
-    <TooltipBadge
-      className={`px-2 py-0.5 rounded-full sf-text-label font-medium ${active ? activeClass : offClass}`}
-      tooltip={active ? tooltipOn : tooltipOff}
-    >
-      {reasonLabel(passKey)}: {count}
-    </TooltipBadge>
-  );
-}
-
 export function PrefetchSearchPlannerPanel({
   calls,
   searchPlans,
@@ -531,26 +415,6 @@ export function PrefetchSearchPlannerPanel({
     return out;
   }, [callPayloads]);
 
-  const hasPlannerRun = calls.length > 0;
-  const reasonSummary = useMemo(() => {
-    const out = {
-      discovery_planner_primary: 0,
-      discovery_planner_fast: 0,
-      discovery_planner_reason: 0,
-      discovery_planner_validate: 0,
-      other: 0,
-    };
-    for (const call of calls) {
-      const key = plannerReasonBadgeKey(call.reason);
-      if (key === 'discovery_planner_primary') out.discovery_planner_primary += 1;
-      else if (key === 'discovery_planner_fast') out.discovery_planner_fast += 1;
-      else if (key === 'discovery_planner_reason') out.discovery_planner_reason += 1;
-      else if (key === 'discovery_planner_validate') out.discovery_planner_validate += 1;
-      else out.other += 1;
-    }
-    return out;
-  }, [calls]);
-
   const schema4Active = useMemo(() => isSchema4PlannerPath(calls), [calls]);
 
   const totalTokens = calls.reduce((sum, call) => sum + (call.tokens?.input ?? 0) + (call.tokens?.output ?? 0), 0);
@@ -558,24 +422,29 @@ export function PrefetchSearchPlannerPanel({
   const hasFailed = calls.some((call) => call.status === 'failed');
   const hasCalls = calls.length > 0;
   const hasStructured = plans.length > 0;
-  const hasParsed = plannerInputSummary.callCountWithPayload > 0;
-  const uniquePassNames = uniqueSorted(plans.map((plan) => String(plan.pass_name || '').trim()));
   const totalQueries = plans.reduce((sum, plan) => sum + (plan.queries_generated?.length || 0), 0);
-  const missingCriticalCount = plannerInputSummary.missingCriticalFields.length;
-  const plannerSignalState = {
-    product: hasPlannerRun,
-    criticalFields: hasPlannerRun,
-    missingCriticalFields: hasPlannerRun,
-    existingQueries: hasPlannerRun,
-  };
+  const overallStatus = hasFailed ? 'failed' : 'finished';
+
+  const sentToSearchTotal = useMemo(() => {
+    let count = 0;
+    for (const plan of plans) {
+      for (const query of plan.queries_generated) {
+        if (executedQueryTokens.has(normalizeToken(normalizeQuery(query)))) count += 1;
+      }
+    }
+    return count;
+  }, [plans, executedQueryTokens]);
+
+  const [llmCallsOpen, toggleLlmCallsOpen] = usePersistedToggle(`runtimeOps:searchPlanner:llmCallsLegacy:${persistScope}`, false);
+  const [contextOpen, toggleContextOpen] = usePersistedToggle(`runtimeOps:searchPlanner:contextLegacy:${persistScope}`, true);
 
   if (schema4Active) {
-    return <Schema4PlannerView calls={calls} searchPlans={searchPlans} searchResults={searchResults} liveSettings={liveSettings} idxRuntime={idxRuntime} />;
+    return <Schema4PlannerView calls={calls} searchPlans={searchPlans} searchResults={searchResults} liveSettings={liveSettings} idxRuntime={idxRuntime} persistScope={persistScope} />;
   }
 
   if (!hasCalls && !hasStructured) {
     return (
-      <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
+      <div className="flex flex-col gap-5 p-5 overflow-y-auto flex-1">
         <h3 className="text-sm font-semibold sf-text-primary">Search Planner</h3>
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
         <div className="flex flex-col items-center gap-3 py-12 text-center">
@@ -590,512 +459,319 @@ export function PrefetchSearchPlannerPanel({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
-      <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold sf-text-primary">
-          Search Planner
-          <Tip text="The Search Planner LLM generates targeted queries in multiple passes (Primary, Fast, Reason, Validate) to close missing field coverage gaps identified by the NeedSet." />
-        </h3>
-        {hasCalls && (
-          <TooltipBadge
-            className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${
-              hasFailed ? 'sf-chip-danger' : 'sf-chip-success'
-            }`}
-            tooltip={hasFailed
-              ? formatTooltip({
-                what: 'Total planner calls for this run.',
-                effect: 'At least one planner call failed.',
-                setBy: 'Run outcome only; no direct knob.',
-              })
-              : formatTooltip({
-                what: 'Total planner calls for this run.',
-                effect: 'All planner calls completed successfully.',
-                setBy: 'Run outcome only; no direct knob.',
-              })}
-          >
-            {calls.length} call{calls.length > 1 ? 's' : ''}
-          </TooltipBadge>
-        )}
-      </div>
+    <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
-      <RuntimeIdxBadgeStrip badges={idxRuntime} />
-
-      <div className="flex items-center gap-2 flex-wrap">
-        <TooltipBadge
-          className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${hasParsed ? 'sf-chip-success' : 'sf-chip-neutral'}`}
-          tooltip={hasParsed
-            ? formatTooltip({
-              what: 'Calls with parseable planner prompt payload.',
-              effect: 'This panel can show which inputs reached the planner.',
-              setBy: 'Trace payload capture settings; not a planner knob.',
-            })
-            : formatTooltip({
-              what: 'No parseable prompt payload was captured.',
-              effect: 'Planner input details are not inspectable in this view.',
-              setBy: 'Trace payload capture settings; not a planner knob.',
-            })}
-        >
-          Parsed prompts: {plannerInputSummary.callCountWithPayload}/{calls.length}
-        </TooltipBadge>
-        <TooltipBadge
-          className="px-2 py-0.5 rounded-full sf-text-caption font-medium sf-chip-info"
-          tooltip={formatTooltip({
-            what: 'Number of emitted planner pass events.',
-            effect: 'Shows how many planning passes produced output.',
-            setBy: 'Run behavior; not a direct knob.',
-          })}
-        >
-          Passes: {plans.length}
-        </TooltipBadge>
-      </div>
-
-      <div className="flex items-center gap-2 flex-wrap">
-        <PlannerPassBadge
-          passKey="discovery_planner_primary"
-          count={reasonSummary.discovery_planner_primary}
-          tooltipOn={formatTooltip({
-            what: `Primary pass ran ${reasonSummary.discovery_planner_primary} time(s).`,
-            effect: 'Generates core query ideas from planner inputs.',
-            setBy: 'Planner model (llmModelPlan).',
-          })}
-          tooltipOff={formatTooltip({
-            what: 'Primary pass not observed.',
-            effect: 'No base planner output in this sample.',
-            setBy: 'Planner model (llmModelPlan).',
-          })}
-        />
-        <PlannerPassBadge
-          passKey="discovery_planner_fast"
-          count={reasonSummary.discovery_planner_fast}
-          tooltipOn={formatTooltip({
-            what: `Fast pass ran ${reasonSummary.discovery_planner_fast} time(s).`,
-            effect: 'Adds quick extra query ideas.',
-            setBy: 'Aggressive mode + pass cap + llmModelFast.',
-          })}
-          tooltipOff={formatTooltip({
-            what: 'Fast pass not observed.',
-            effect: 'No fast extra-query pass output in this sample.',
-            setBy: 'Aggressive mode, pass cap, and llmModelFast.',
-          })}
-        />
-        <PlannerPassBadge
-          passKey="discovery_planner_reason"
-          count={reasonSummary.discovery_planner_reason}
-          tooltipOn={formatTooltip({
-            what: `Reason pass ran ${reasonSummary.discovery_planner_reason} time(s).`,
-            effect: 'Adds deeper strategy-focused query ideas.',
-            setBy: 'Aggressive mode + pass cap + llmModelReasoning.',
-          })}
-          tooltipOff={formatTooltip({
-            what: 'Reason pass not observed.',
-            effect: 'No deep-reasoning pass output in this sample.',
-            setBy: 'Aggressive mode, pass cap, and llmModelReasoning.',
-          })}
-        />
-        <PlannerPassBadge
-          passKey="discovery_planner_validate"
-          count={reasonSummary.discovery_planner_validate}
-          tooltipOn={formatTooltip({
-            what: `Validate pass ran ${reasonSummary.discovery_planner_validate} time(s).`,
-            effect: 'Targets missing critical fields.',
-            setBy: 'Aggressive mode + pass cap + llmModelValidate, and it requires missing critical fields.',
-          })}
-          tooltipOff={missingCriticalCount === 0
-            ? formatTooltip({
-              what: 'Validate pass did not run.',
-              effect: 'No validate targeting was needed because there are no missing critical fields.',
-              setBy: 'Computed needset gaps.',
-            })
-            : formatTooltip({
-              what: 'Validate pass not observed.',
-              effect: 'No validate pass output in this sample.',
-              setBy: 'Aggressive mode, pass cap, and llmModelValidate.',
-            })}
-        />
-        {reasonSummary.other > 0 && (
-          <TooltipBadge
-            className={`px-2 py-0.5 rounded-full sf-text-label font-medium ${reasonBadgeClass('other')}`}
-            tooltip={formatTooltip({
-              what: 'Planner calls with non-standard reason labels.',
-              effect: 'Diagnostic signal only.',
-              setBy: 'Run output; not a direct knob.',
-            })}
-          >
-            Other: {reasonSummary.other}
-          </TooltipBadge>
-        )}
-      </div>
-
-      <div className="flex items-center gap-3 flex-wrap">
-        <StatCard label="Tokens" value={totalTokens.toLocaleString()} tip="Input + output tokens across calls." />
-        <StatCard label="Duration" value={formatMs(totalDuration)} tip="Wall-clock total across calls." />
-        <StatCard label="Queries generated" value={totalQueries} tip="From plan events for this run." />
-        <StatCard label="Input pass names" value={uniquePassNames.length ? uniquePassNames.join(', ') : 'n/a'} tip="Planner output pass labels." />
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2 sf-text-caption sf-text-muted">
-        <span>Signals fed to planner prompt:</span>
-        <SignalBadge
-          active={plannerSignalState.product}
-          label="product"
-          tooltipOn={formatTooltip({
-            what: `Product identity is sent (${plannerInputSummary.products.join(', ') || 'present'}).`,
-            effect: 'Keeps query ideas tied to the correct product.',
-            setBy: 'Identity lock and upstream identity data; no direct planner knob.',
-          })}
-          tooltipOff={formatTooltip({
-            what: 'Product identity was not seen in captured prompt payload.',
-            effect: 'Cannot verify product signal in this trace.',
-            setBy: 'Trace capture and upstream identity data.',
-          })}
-        />
-        <SignalBadge
-          active={plannerSignalState.criticalFields}
-          label="criticalFields"
-          tooltipOn={formatTooltip({
-            what: `Critical field list is sent (${plannerInputSummary.criticalFields.join(', ') || 'present'}).`,
-            effect: 'Planner prioritizes high-importance fields.',
-            setBy: 'Field rules critical priority; not a runtime planner toggle.',
-          })}
-          tooltipOff={formatTooltip({
-            what: 'criticalFields was not seen in captured prompt payload.',
-            effect: 'Cannot verify critical targeting in this trace.',
-            setBy: 'Trace capture and field-rule output.',
-          })}
-        />
-        <SignalBadge
-          active={plannerSignalState.missingCriticalFields}
-          label="missingCriticalFields"
-          tooltipOn={formatTooltip({
-            what: `Missing critical fields are sent${plannerInputSummary.missingCriticalFields.length ? `: ${plannerInputSummary.missingCriticalFields.join(', ')}` : '.'}`,
-            effect: 'Planner focuses on unresolved critical gaps.',
-            setBy: 'Computed needset/evidence gaps; no direct knob.',
-          })}
-          tooltipOff={formatTooltip({
-            what: 'missingCriticalFields was not seen in captured prompt payload.',
-            effect: 'Cannot verify gap-targeting input in this trace.',
-            setBy: 'Trace capture and computed needset gaps.',
-          })}
-        />
-        <SignalBadge
-          active={plannerSignalState.existingQueries}
-          label="existingQueries"
-          tooltipOn={formatTooltip({
-            what: `Existing queries are sent (${plannerInputSummary.existingQueries.length} captured).`,
-            effect: 'Planner avoids duplicates and adds new angles.',
-            setBy: 'Search profile/query generation knobs; no single planner toggle.',
-          })}
-          tooltipOff={formatTooltip({
-            what: 'existingQueries was not seen in captured prompt payload.',
-            effect: 'Cannot verify de-dup context in this trace.',
-            setBy: 'Trace capture and search-profile generation.',
-          })}
-        />
-      </div>
-
-      {plannerInputSummary.products.length > 0 && (
-        <details className="sf-text-caption">
-          <summary className="sf-summary-toggle font-medium">Product identities passed</summary>
-          <div className="mt-2">
-            <TagList
-              items={plannerInputSummary.products}
-              prefix="planner-product"
-              itemTooltip={formatTooltip({
-                what: 'Sent to planner as product identity.',
-                effect: 'Narrows query ideas to this exact product.',
-                setBy: 'Upstream product identity resolution.',
-              })}
-            />
+      {/* ── Hero Band ── */}
+      <div className="sf-surface-elevated rounded-sm border sf-border-soft px-7 py-6 space-y-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
+          <div className="flex items-baseline gap-3">
+            <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Search Planner</span>
+            <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Query Generation</span>
+            <Chip label={overallStatus.toUpperCase()} className={overallStatus === 'finished' ? 'sf-chip-success' : 'sf-chip-danger'} />
           </div>
-        </details>
+          <div className="flex items-center gap-2">
+            <Chip label={calls.length > 0 ? 'llm on' : 'llm off'} className={calls.length > 0 ? 'sf-chip-warning' : 'sf-chip-danger'} />
+            <Tip text="The Search Planner LLM generates targeted queries in multiple passes (Primary, Fast, Reason, Validate) to close missing field coverage gaps identified by the NeedSet." />
+          </div>
+        </div>
+
+        <RuntimeIdxBadgeStrip badges={idxRuntime} />
+
+        {/* Big stat numbers */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-5">
+          <div>
+            <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">{totalQueries}</div>
+            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">queries generated</div>
+          </div>
+          <div>
+            <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">{plans.length}</div>
+            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">passes</div>
+          </div>
+          <div>
+            <div className={`text-4xl font-bold leading-none tracking-tight ${sentToSearchTotal > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'}`}>{sentToSearchTotal}</div>
+            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">sent to search</div>
+          </div>
+          <div>
+            <div className="text-4xl font-bold sf-text-primary leading-none tracking-tight">{calls.length}</div>
+            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">llm calls</div>
+          </div>
+        </div>
+
+        {/* Narrative */}
+        <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
+          Planner generated <strong className="sf-text-primary not-italic">{totalQueries}</strong> targeted
+          {' '}queries across <strong className="sf-text-primary not-italic">{plans.length}</strong> pass{plans.length !== 1 ? 'es' : ''}
+          {sentToSearchTotal > 0 && (
+            <> &mdash; <strong className="sf-text-primary not-italic">{sentToSearchTotal}</strong> sent to search</>
+          )}
+          {plannerInputSummary.missingCriticalFields.length > 0 && (
+            <>, targeting <strong className="sf-text-primary not-italic">{plannerInputSummary.missingCriticalFields.length}</strong> missing critical field{plannerInputSummary.missingCriticalFields.length !== 1 ? 's' : ''}</>
+          )}
+          {totalTokens > 0 && (
+            <>. Used <strong className="sf-text-primary not-italic">{totalTokens.toLocaleString()}</strong> tokens in <strong className="sf-text-primary not-italic">{formatMs(totalDuration)}</strong></>
+          )}
+          .
+        </div>
+      </div>
+
+      {/* ── Planner Context (collapsible) ── */}
+      {plannerInputSummary.callCountWithPayload > 0 && (
+        <div>
+          <div
+            onClick={toggleContextOpen}
+            className="flex items-baseline gap-2 pt-2 pb-1.5 border-b-[1.5px] border-[var(--sf-token-text-primary)] cursor-pointer select-none"
+          >
+            <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary flex-1">planner context</span>
+            <span className="text-[11px] font-mono sf-text-subtle">
+              {plannerInputSummary.missingCriticalFields.length} missing &middot; {plannerInputSummary.existingQueries.length} existing &middot; {plannerInputSummary.criticalFields.length} critical
+              {' '}&middot; {contextOpen ? 'collapse \u25B4' : 'expand \u25BE'}
+            </span>
+          </div>
+
+          {contextOpen && (
+            <div className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-4 mt-3 space-y-4">
+              {plannerInputSummary.products.length > 0 && (
+                <div>
+                  <div className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle">product identity</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {plannerInputSummary.products.map((p) => (
+                      <Chip key={p} label={p} className="sf-chip-accent" />
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <div className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle">
+                  missing critical fields ({plannerInputSummary.missingCriticalFields.length})
+                </div>
+                {plannerInputSummary.missingCriticalFields.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {plannerInputSummary.missingCriticalFields.map((f) => (
+                      <Chip key={f} label={f} className="sf-chip-danger" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="sf-text-caption sf-text-subtle">none</div>
+                )}
+              </div>
+              <div>
+                <div className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle">
+                  critical fields ({plannerInputSummary.criticalFields.length})
+                </div>
+                {plannerInputSummary.criticalFields.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {plannerInputSummary.criticalFields.map((f) => (
+                      <Chip key={f} label={f} className="sf-chip-warning" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="sf-text-caption sf-text-subtle">none</div>
+                )}
+              </div>
+              <div>
+                <div className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle">
+                  existing queries ({plannerInputSummary.existingQueries.length})
+                </div>
+                {plannerInputSummary.existingQueries.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {plannerInputSummary.existingQueries.slice(0, 18).map((q) => (
+                      <Chip key={q} label={q} className="sf-chip-neutral" />
+                    ))}
+                    {plannerInputSummary.existingQueries.length > 18 && (
+                      <span className="sf-text-caption sf-text-muted">+{plannerInputSummary.existingQueries.length - 18} more</span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="sf-text-caption sf-text-subtle">none</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
-      <details className="sf-text-caption">
-        <summary className="sf-summary-toggle font-medium">
-          Missing critical fields ({plannerInputSummary.missingCriticalFields.length})
-        </summary>
-        <div className="mt-2">
-          <TagList
-            items={plannerInputSummary.missingCriticalFields}
-            prefix="planner-missing"
-            itemTooltip={formatTooltip({
-              what: 'Sent to planner as a missing critical field.',
-              effect: 'Planner prioritizes queries to close this gap.',
-              setBy: 'Computed needset/evidence gaps.',
-            })}
-          />
-        </div>
-      </details>
-
-      <details className="sf-text-caption">
-        <summary className="sf-summary-toggle font-medium">
-          Existing queries ({plannerInputSummary.existingQueries.length})
-        </summary>
-        <div className="mt-2">
-          <TagList
-            items={plannerInputSummary.existingQueries}
-            prefix="planner-existing"
-            itemTooltip={formatTooltip({
-              what: 'Sent to planner as an existing query.',
-              effect: 'Avoids duplicates and pushes new query angles.',
-              setBy: 'Search profile/query generation.',
-            })}
-          />
-        </div>
-      </details>
-
-      <details className="sf-text-caption">
-        <summary className="sf-summary-toggle font-medium">
-          Critical fields ({plannerInputSummary.criticalFields.length})
-        </summary>
-        <div className="mt-2">
-          <TagList
-            items={plannerInputSummary.criticalFields}
-            prefix="planner-critical"
-            itemTooltip={formatTooltip({
-              what: 'Sent to planner as a critical field.',
-              effect: 'Planner prioritizes queries for this field.',
-              setBy: 'Field rules critical priority.',
-            })}
-          />
-        </div>
-      </details>
-
+      {/* ── Pass Results ── */}
       {hasStructured && (
-        <div className="rounded border sf-border-default p-2">
-          <VerticalStepper>
+        <div>
+          <SectionHeader>pass results &middot; {plans.length} pass{plans.length !== 1 ? 'es' : ''} &middot; {totalQueries} queries</SectionHeader>
+          <div className="space-y-2">
             {plans.map((plan, i) => {
               const missingFields = plan.missing_critical_fields || [];
-              const profileCoverage = plan.queries_generated.length;
               const passRowKey = `${plan.pass_index ?? i}-${plan.pass_name || 'pass'}`;
-              const hasMoreQueries = plan.queries_generated.length > DEFAULT_VISIBLE_QUERIES;
               const queriesExpanded = Boolean(expandedPassQueries[passRowKey]);
-              const shownQueries = queriesExpanded
-                ? plan.queries_generated
-                : plan.queries_generated.slice(0, DEFAULT_VISIBLE_QUERIES);
               const sentToSearchCount = plan.queries_generated.reduce((sum, query) => (
                 executedQueryTokens.has(normalizeToken(normalizeQuery(query))) ? sum + 1 : sum
               ), 0);
+              const isAggressive = String(plan.mode || 'standard').toLowerCase() === 'aggressive';
               return (
-                <Step
-                  key={passRowKey}
-                  index={plan.pass_index}
-                  title={plan.pass_name || `Pass ${plan.pass_index + 1}`}
-                  subtitle={plan.stop_condition}
-                  isLast={i === plans.length - 1}
-                >
-                  <div className="mb-2 sf-text-caption sf-text-muted">
-                    Inputs for this pass are from planner prompt payload plus pass output artifacts below.
-                  </div>
-                  <div className="sf-text-caption mb-2">
-                    <TooltipBadge
-                      className="px-2 py-0.5 rounded-full sf-chip-neutral"
-                      tooltip={
-                        String(plan.mode || 'standard').toLowerCase() === 'aggressive'
-                          ? formatTooltip({
-                            what: 'Aggressive planner mode is active for this pass.',
-                            effect: 'Allows optional Fast, Reason, and Validate passes.',
-                            setBy: 'Mode policy + AGGRESSIVE_LLM_DISCOVERY_PASSES + per-pass models.',
-                          })
-                          : formatTooltip({
-                            what: 'Standard planner mode is active for this pass.',
-                            effect: 'Typically runs the base Primary pass only.',
-                            setBy: 'Upstream mode policy.',
-                          })
-                      }
-                    >
-                      Mode: {plan.mode || 'standard'}
-                    </TooltipBadge>
-                    <TooltipBadge
-                      className="ml-2 px-2 py-0.5 rounded-full sf-chip-neutral"
-                      tooltip={formatTooltip({
-                        what: 'Number of queries generated in this pass.',
-                        effect: 'Shows output size for this pass.',
-                        setBy: 'Run result; not a knob.',
-                      })}
-                    >
-                      Queries: {plan.queries_generated.length}
-                    </TooltipBadge>
-                    <TooltipBadge
-                      className={`ml-2 px-2 py-0.5 rounded-full sf-text-caption font-medium ${reasonBadgeClass(planReason(plan.pass_name, i))}`}
-                      tooltip={formatTooltip({
-                        what: 'Planner pass reason label for this pass.',
-                        effect: 'Shows which planner path produced this output.',
-                        setBy: 'Run result.',
-                      })}
-                    >
-                      Pass reason: {plan.pass_name || `pass-${i + 1}`}
-                    </TooltipBadge>
-                    <TooltipBadge
-                      className={`ml-2 px-2 py-0.5 rounded-full sf-text-caption font-medium ${
-                        sentToSearchCount > 0
-                          ? 'sf-chip-success'
-                          : 'sf-chip-neutral'
-                      }`}
-                      tooltip={sentToSearchCount > 0
-                        ? formatTooltip({
-                          what: `${sentToSearchCount} query ideas from this pass were sent to search.`,
-                          effect: 'These rows are highlighted below.',
-                          setBy: 'Matched planner outputs against executed search queries.',
-                        })
-                        : formatTooltip({
-                          what: 'No query ideas from this pass have been observed in search execution yet.',
-                          effect: 'This can happen when search has not started or this pass produced no executed query.',
-                          setBy: 'Matched planner outputs against executed search queries.',
-                        })}
-                    >
-                      Sent: {sentToSearchCount}/{plan.queries_generated.length}
-                    </TooltipBadge>
-                  </div>
-                  <div className="sf-text-caption sf-text-muted">
-                    Profile coverage map entries: {profileCoverage}
-                  </div>
-                  {missingFields.length > 0 && (
-                    <div className="mt-1">
-                      <div className="mb-1 sf-text-caption sf-text-muted">Missing critical fields in pass:</div>
-                      <TagList
-                        items={missingFields}
-                        prefix={`plan-missing-${i}`}
-                        itemTooltip={formatTooltip({
-                          what: 'Field still missing after this pass.',
-                          effect: 'Can trigger additional aggressive/validate planning when allowed.',
-                          setBy: 'Pass outcome.',
-                        })}
-                      />
+                <div key={passRowKey} className="sf-surface-elevated rounded-sm border sf-border-soft overflow-hidden">
+                  {/* Pass header — clickable */}
+                  <div
+                    onClick={() => toggleExpandedPassQuery(passRowKey)}
+                    className="grid gap-4 px-5 py-3.5 cursor-pointer select-none"
+                    style={{ gridTemplateColumns: 'auto 1fr auto' }}
+                  >
+                    {/* Left: pass name pill */}
+                    <div className="pt-0.5">
+                      <Chip label={plan.pass_name || `pass ${plan.pass_index + 1}`} className={reasonBadgeClass(planReason(plan.pass_name, i))} />
                     </div>
-                  )}
-                  <div className="mt-2 sf-text-caption sf-text-muted">
-                    Rationale: {plan.plan_rationale || 'n/a'}
-                  </div>
-                  {plan.queries_generated.length > 0 && (
-                    <div className="mt-2">
-                      {shownQueries.map((query, qi) => {
-                        const queryToken = normalizeToken(normalizeQuery(query));
-                        const sentToSearch = executedQueryTokens.has(queryToken);
-                        return (
-                          <div
-                            key={`${normalizeQuery(query)}-${qi}`}
-                            className={`sf-text-label font-mono rounded px-1.5 py-1 mb-1 ${
-                              sentToSearch
-                                ? 'sf-callout sf-callout-success'
-                                : 'sf-text-primary'
-                            }`}
-                          >
-                            <span className="mr-1">{qi + 1}.</span>
-                            <span>{query}</span>
-                            {sentToSearch && (
-                              <span className="ml-2 px-1.5 py-0.5 rounded sf-text-caption font-medium sf-chip-success">
-                                Sent to search
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {hasMoreQueries && (
-                        <button
-                          type="button"
-                          onClick={() => toggleExpandedPassQuery(passRowKey)}
-                          className="mt-1 inline-flex items-center gap-1 sf-text-label font-semibold sf-link-accent hover:underline"
-                        >
-                          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full sf-icon-badge text-[12px] leading-none">
-                            {queriesExpanded ? '\u2212' : '+'}
+                    {/* Center: metadata */}
+                    <div className="min-w-0">
+                      <div className="text-[15px] font-bold sf-text-primary leading-tight">
+                        {plan.pass_name?.replace(/_/g, ' ') || `Pass ${plan.pass_index + 1}`}
+                      </div>
+                      {plan.stop_condition && (
+                        <div className="mt-0.5 text-xs sf-text-muted truncate">{plan.stop_condition}</div>
+                      )}
+                      <div className="flex items-center gap-3 mt-2 pt-2 border-t sf-border-soft">
+                        <Chip label={isAggressive ? 'aggressive' : 'standard'} className={isAggressive ? 'sf-chip-warning' : 'sf-chip-neutral'} />
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted">
+                          queries <strong className="sf-text-primary">{plan.queries_generated.length}</strong>
+                        </span>
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted">
+                          sent <strong className={sentToSearchCount > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-primary'}>{sentToSearchCount}/{plan.queries_generated.length}</strong>
+                        </span>
+                        {missingFields.length > 0 && (
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted">
+                            missing <strong className="text-[var(--sf-state-error-fg)]">{missingFields.length}</strong>
                           </span>
-                          {queriesExpanded
-                            ? 'Show fewer queries'
-                            : `${plan.queries_generated.length - DEFAULT_VISIBLE_QUERIES} more queries in pass`}
-                        </button>
+                        )}
+                      </div>
+                    </div>
+                    {/* Right: expand indicator */}
+                    <div className="text-right shrink-0 pt-1">
+                      <span className="text-[11px] font-mono sf-text-subtle">
+                        {queriesExpanded ? '\u25B4' : '\u25BE'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Expanded: rationale + missing fields + query list */}
+                  {queriesExpanded && (
+                    <div className="border-t sf-border-soft px-5 py-3.5 space-y-3">
+                      {plan.plan_rationale && (
+                        <div className="text-xs sf-text-muted italic">{plan.plan_rationale}</div>
+                      )}
+                      {missingFields.length > 0 && (
+                        <div>
+                          <div className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle">missing critical fields in pass</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {missingFields.map((f) => (
+                              <Chip key={f} label={f} className="sf-chip-danger" />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {plan.queries_generated.length > 0 && (
+                        <div className="overflow-x-auto border sf-border-soft rounded-sm">
+                          <table className="min-w-full text-xs">
+                            <thead className="sf-surface-elevated sticky top-0">
+                              <tr>
+                                {['#', 'query', 'status'].map((h) => (
+                                  <th key={h} className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {plan.queries_generated.map((query, qi) => {
+                                const sentToSearch = executedQueryTokens.has(normalizeToken(normalizeQuery(query)));
+                                return (
+                                  <tr key={qi} className={`border-b sf-border-soft ${sentToSearch ? 'sf-callout sf-callout-success' : ''}`}>
+                                    <td className="py-1.5 px-4 font-mono sf-text-subtle w-8">{qi + 1}</td>
+                                    <td className="py-1.5 px-4 font-mono sf-text-primary">{query}</td>
+                                    <td className="py-1.5 px-4">
+                                      {sentToSearch ? (
+                                        <Chip label="sent to search" className="sf-chip-success" />
+                                      ) : (
+                                        <span className="sf-text-subtle">&mdash;</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       )}
                     </div>
-                  )}
-                </Step>
-              );
-            })}
-          </VerticalStepper>
-        </div>
-      )}
-
-      {hasCalls && (
-        <details className="sf-text-caption">
-          <summary className="sf-summary-toggle">
-            LLM calls (prompt/response)
-          </summary>
-          <div className="mt-2 space-y-2">
-            {calls.map((call, i) => {
-              const parsed = callPayloads[i];
-              return (
-                <div key={i} className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <TooltipBadge
-                      className={`px-1.5 py-0.5 rounded sf-text-caption ${llmCallStatusBadgeClass(call.status)}`}
-                      tooltip={formatTooltip({
-                        what: 'Status of this planner LLM call.',
-                        effect: 'Failed calls do not contribute usable planner output.',
-                        setBy: 'Run result.',
-                      })}
-                    >
-                      {call.status}
-                    </TooltipBadge>
-                    <TooltipBadge
-                      className={`px-1.5 py-0.5 rounded sf-text-caption ${reasonBadgeClass(plannerReasonBadgeKey(call.reason))}`}
-                      tooltip={formatTooltip({
-                        what: 'Pass type for this LLM call (Primary/Fast/Reason/Validate).',
-                        effect: 'Changes the style of query ideas produced.',
-                        setBy: 'Planner mode and pass settings.',
-                      })}
-                    >
-                      {reasonLabel(call.reason)}
-                    </TooltipBadge>
-                    <span className="sf-text-caption sf-text-muted">{call.model || '-'}</span>
-                    <span className="sf-text-caption sf-text-muted">{call.provider || '-'}</span>
-                    <span className="ml-auto sf-text-caption sf-text-muted">
-                      {call.tokens ? `${call.tokens.input}+${call.tokens.output} tok` : '-'}
-                    </span>
-                    <span className="sf-text-caption sf-text-muted">
-                      {call.duration_ms ? `${formatMs(call.duration_ms)}` : '-'}
-                    </span>
-                  </div>
-                  {parsed && (
-                    <div className="pl-1 sf-text-caption sf-text-muted">
-                      <div>Product fields: {parsed.product ? 'present' : 'missing'}</div>
-                      <div>Missing critical fields: {parsed.missingCriticalFields?.length || 0}</div>
-                      <div>Existing queries: {parsed.existingQueries?.length || 0}</div>
-                    </div>
-                  )}
-                  {call.prompt_preview && (
-                    <pre className="max-h-32 overflow-x-auto overflow-y-auto whitespace-pre-wrap rounded p-2 font-mono sf-text-caption sf-pre-block">
-                      {call.prompt_preview}
-                    </pre>
-                  )}
-                  {call.response_preview && (
-                    <pre className="max-h-32 overflow-x-auto overflow-y-auto whitespace-pre-wrap rounded p-2 font-mono sf-text-caption sf-pre-block">
-                      {call.response_preview}
-                    </pre>
                   )}
                 </div>
               );
             })}
           </div>
-        </details>
+        </div>
       )}
 
-      <details className="sf-text-caption">
-        <summary className="sf-summary-toggle">
-          What is NOT in the planner prompt
-        </summary>
-        <div className="mt-2 sf-text-label sf-text-muted">
-          This panel excludes these because they are applied earlier in search profile generation or execution:
-          query_terms, domain_hints, content types, contract-derived hints, source_host, source tiers, and past search history.
+      {/* ── LLM Call Details (collapsible) ── */}
+      {calls.length > 0 && (
+        <div>
+          <div
+            onClick={toggleLlmCallsOpen}
+            className="flex items-baseline gap-2 pt-2 pb-1.5 border-b-[1.5px] border-[var(--sf-token-text-primary)] cursor-pointer select-none"
+          >
+            <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary flex-1">llm call details</span>
+            <span className="text-[11px] font-mono sf-text-subtle">
+              {calls.length} call{calls.length !== 1 ? 's' : ''}
+              {totalTokens > 0 && <> &middot; {totalTokens.toLocaleString()} tok</>}
+              {totalDuration > 0 && <> &middot; {formatMs(totalDuration)}</>}
+              {' '}&middot; {llmCallsOpen ? 'collapse \u25B4' : 'expand \u25BE'}
+            </span>
+          </div>
+
+          {llmCallsOpen && (
+            <div className="mt-3 space-y-2">
+              {calls.map((call, i) => (
+                <div key={i} className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-3.5 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Chip label={call.status} className={llmCallStatusBadgeClass(call.status)} />
+                    {call.model && <span className="text-[11px] font-mono sf-text-muted">{call.model}</span>}
+                    {call.provider && <span className="text-[11px] font-mono sf-text-subtle">{call.provider}</span>}
+                    <span className="ml-auto flex items-baseline gap-3 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted">
+                      {call.tokens && <span>tok <strong className="sf-text-primary">{call.tokens.input}+{call.tokens.output}</strong></span>}
+                      {call.duration_ms !== undefined && <span>dur <strong className="sf-text-primary">{formatMs(call.duration_ms)}</strong></span>}
+                    </span>
+                  </div>
+                  {call.error && (
+                    <div className="px-3 py-2 rounded-sm border border-[var(--sf-state-error-border)] bg-[var(--sf-state-error-bg)] text-xs text-[var(--sf-state-error-fg)]">
+                      {call.error}
+                    </div>
+                  )}
+                  {call.prompt_preview && (
+                    <div>
+                      <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle mb-1">prompt</div>
+                      <pre className="max-h-32 overflow-x-auto overflow-y-auto whitespace-pre-wrap rounded-sm p-3 font-mono text-[11px] sf-pre-block">{call.prompt_preview}</pre>
+                    </div>
+                  )}
+                  {call.response_preview && (
+                    <div>
+                      <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle mb-1">response</div>
+                      <pre className="max-h-32 overflow-x-auto overflow-y-auto whitespace-pre-wrap rounded-sm p-3 font-mono text-[11px] sf-pre-block">{call.response_preview}</pre>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </details>
+      )}
+
+      {/* ── Debug ── */}
+      {hasStructured && (
+        <details className="text-xs">
+          <summary className="cursor-pointer sf-summary-toggle flex items-baseline gap-2 pb-1.5 border-b border-dashed sf-border-soft select-none">
+            <span className="text-[10px] font-semibold font-mono sf-text-subtle tracking-[0.04em] uppercase">debug &middot; raw search planner json</span>
+          </summary>
+          <pre className="mt-3 sf-pre-block text-xs font-mono rounded-sm p-4 overflow-x-auto overflow-y-auto max-h-[25rem] whitespace-pre-wrap break-all">
+            {JSON.stringify({ calls: calls.length, plans, plannerInputSummary }, null, 2)}
+          </pre>
+        </details>
+      )}
     </div>
   );
 }
 
 function planReason(passName: string, index: number): string {
   const normalized = String(passName || '').trim().toLowerCase();
-  if (normalized === 'primary' || normalized === 'pass_primary') return 'discovery_planner_primary';
-  if (normalized.includes('fast')) return 'discovery_planner_fast';
-  if (normalized.includes('reason')) return 'discovery_planner_reason';
-  if (normalized.includes('validate')) return 'discovery_planner_validate';
+  if (normalized.startsWith('discovery_planner') || normalized === 'primary' || normalized === 'pass_primary') return 'discovery_planner_primary';
   return `pass_${String(index + 1)}`;
 }

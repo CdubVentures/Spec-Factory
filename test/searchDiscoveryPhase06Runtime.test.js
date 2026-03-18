@@ -184,8 +184,8 @@ test('discoverCandidateSources attaches effective_host_plan and scored host-plan
 });
 
 
-test('discoverCandidateSources rescues zero-result internet queries with deterministic host-plan fallbacks', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-plan-fallback-'));
+test('discoverCandidateSources accepts zero results when internet search returns empty and no frontier cache exists', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-zero-results-'));
   const config = makeConfig(tempRoot);
   const storage = createStorage(config);
   storage.getBrandDomain = (brand, category) => {
@@ -217,7 +217,7 @@ test('discoverCandidateSources rescues zero-result internet queries with determi
       storage,
       categoryConfig,
       job,
-      runId: 'run-phase06-plan-fallback',
+      runId: 'run-phase06-zero-results',
       logger,
       planningHints: {
         missingRequiredFields: ['sensor', 'weight'],
@@ -225,42 +225,16 @@ test('discoverCandidateSources rescues zero-result internet queries with determi
       llmContext: {},
     });
 
-    assert.equal(
-      (result.search_attempts || []).some(
-        (row) => row.reason_code === 'internet_search_zero_plan_fallback' && row.result_count > 0
-      ),
-      true,
+    // WHY: search-first mode — no synthetic URL fallback. Zero internet results
+    // with no frontier cache means zero results. The old plan_fallback path is removed.
+    const internetAttempts = (result.search_attempts || []).filter(
+      (row) => row.reason_code === 'internet_search'
     );
+    assert.ok(internetAttempts.length > 0, 'expected internet_search attempts');
     assert.equal(
-      (result.search_profile?.query_rows || []).some((row) => Number(row?.result_count || 0) > 0),
+      internetAttempts.every((row) => row.result_count === 0),
       true,
-    );
-    assert.equal(
-      (result.search_profile?.query_rows || []).some(
-        (row) => row.hint_source === 'v2.host_plan' && Number(row?.result_count || 0) > 0
-      ),
-      true,
-    );
-    assert.equal(
-      (result.approvedUrls || []).some(
-        (url) => String(url).startsWith(`https://${TEST_HOSTS.manufacturer}/`) || String(url).startsWith(TEST_URLS.product)
-      ),
-      true,
-    );
-    const domainEvent = events.find((event) => event.name === 'domains_classified');
-    assert.ok(domainEvent, 'expected domains_classified event');
-    const classifications = Array.isArray(domainEvent?.payload?.classifications)
-      ? domainEvent.payload.classifications
-      : [];
-    assert.equal(
-      classifications.some((row) => String(row?.domain || '').trim() === TEST_HOSTS.manufacturer),
-      true,
-      'expected deterministic classification for rescued manufacturer domain',
-    );
-    assert.equal(
-      classifications.every((row) => String(row?.notes || '').trim() === 'deterministic_heuristic'),
-      true,
-      'expected deterministic heuristic notes for rescued domains',
+      'all internet search attempts should have 0 results when provider returns empty',
     );
   } finally {
     global.fetch = originalFetch;

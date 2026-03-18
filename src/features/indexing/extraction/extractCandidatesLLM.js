@@ -331,7 +331,7 @@ export async function extractCandidatesLLM({
       });
       const routeModels = Array.isArray(batchRoutePolicy?.route_models) ? batchRoutePolicy.route_models : [];
       const routePrimaryModel = String(routeModels[0] || '').trim();
-      const model = routePrimaryModel || modelRoute.model || config._resolvedExtractionBaseModel || config.llmModelExtract;
+      const model = routePrimaryModel || modelRoute.model || config._resolvedExtractionBaseModel || config.llmModelPlan;
       const routeMaxTokens = Math.max(0, Number.parseInt(String(batchRoutePolicy?.max_tokens || 0), 10) || 0);
       const effectiveMaxTokens = routeMaxTokens > 0
         ? (modelRoute.maxTokens > 0 ? Math.min(routeMaxTokens, Number(modelRoute.maxTokens || 0)) : routeMaxTokens)
@@ -531,7 +531,7 @@ export async function extractCandidatesLLM({
 
       // Stamp model attribution on each candidate
       for (const cand of sanitized.fieldCandidates || []) {
-        cand.llm_extract_model = model || config.llmModelExtract || '';
+        cand.llm_extract_model = model || config.llmModelPlan || '';
         cand.llm_extract_provider = config.llmProvider || '';
       }
 
@@ -587,7 +587,7 @@ export async function extractCandidatesLLM({
     }
 
     logger?.info?.('llm_extract_completed', {
-      model: config.llmModelExtract,
+      model: config.llmModelPlan,
       candidate_count: primary.fieldCandidates.length,
       conflict_count: primary.conflicts.length,
       batch_count: usableBatches.length,

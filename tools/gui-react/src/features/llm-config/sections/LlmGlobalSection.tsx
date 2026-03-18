@@ -7,7 +7,7 @@ import {
   type RuntimeDraft,
 } from '../../pipeline-settings';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
-import { resolveProviderForModel, bridgeRegistryToFlatKeys } from '../state/llmProviderRegistryBridge';
+import { resolveProviderForModel, syncCostsFromRegistry } from '../state/llmProviderRegistryBridge';
 import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions';
 import { detectMixIssues, detectStaleModelIssues, resolveRingColor } from '../state/llmMixDetection';
 import { detectEmptyModelFields } from '../state/llmModelValidation';
@@ -49,7 +49,7 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
   const [dismissedAlerts, , replaceDismissedAlerts] = usePersistedExpandMap('llmConfig:global:dismissedAlerts');
 
   const baseOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, ['primary', 'fast'], apiKeyFilter),
+    () => buildModelDropdownOptions(llmModelOptions, registry, 'primary', apiKeyFilter),
     [llmModelOptions, registry, apiKeyFilter],
   );
   const reasoningOptions = useMemo(
@@ -97,11 +97,11 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
 
   const handleBaseModelChange = useCallback((newModelId: string) => {
     updateDraft('llmModelPlan', newModelId);
-    const bridged = bridgeRegistryToFlatKeys(registry, newModelId);
-    if (bridged) {
-      updateDraft('llmCostInputPer1M', bridged.llmCostInputPer1M);
-      updateDraft('llmCostOutputPer1M', bridged.llmCostOutputPer1M);
-      updateDraft('llmCostCachedInputPer1M', bridged.llmCostCachedInputPer1M);
+    const costs = syncCostsFromRegistry(registry, newModelId);
+    if (costs) {
+      updateDraft('llmCostInputPer1M', costs.llmCostInputPer1M);
+      updateDraft('llmCostOutputPer1M', costs.llmCostOutputPer1M);
+      updateDraft('llmCostCachedInputPer1M', costs.llmCostCachedInputPer1M);
     }
   }, [updateDraft, registry]);
 
@@ -289,15 +289,6 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Max fast calls / product</label>
-            <input
-              className={inputCls}
-              type="number"
-              value={runtimeDraft.llmMaxCallsPerProductFast}
-              onChange={(e) => onNumberChange('llmMaxCallsPerProductFast', e.target.value, getNumberBounds('llmMaxCallsPerProductFast'))}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
             <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Reasoning budget</label>
             <input
               className={inputCls}
@@ -313,10 +304,14 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
           <div className="flex flex-col gap-1.5 mt-3">
             {tokenWarnings.map((w) => (
               <AlertBanner
-                key={`token-${w.phase}-${w.model}`}
+                key={`token-${w.field}-${w.phase}-${w.model}`}
                 severity="warning"
-                title={`${w.phase}: token cap exceeds model limit`}
-                message={`${w.model} max output is ${w.limit.toLocaleString()}, but ${w.phase} is set to ${w.setting.toLocaleString()}.`}
+                title={w.field === 'contextOverflow'
+                  ? `${w.phase}: output allocation exceeds 50% of context window`
+                  : `${w.phase}: token cap exceeds model limit`}
+                message={w.field === 'contextOverflow'
+                  ? `${w.model} context window is ${w.limit.toLocaleString()}, but ${w.phase} output is set to ${w.setting.toLocaleString()} (>${Math.floor(w.limit * 0.5).toLocaleString()}).`
+                  : `${w.model} max output is ${w.limit.toLocaleString()}, but ${w.phase} is set to ${w.setting.toLocaleString()}.`}
               />
             ))}
           </div>

@@ -1,47 +1,13 @@
 import { callOpenAI } from './openaiClient.js';
 import { resolveModelFromRegistry } from '../routeResolver.js';
 
+// WHY: All roles alias to plan model via configPostMerge. ROLE_KEYS only needs
+// model + fallbackModel. Provider/baseUrl/apiKey resolved via registry or bootstrap.
 const ROLE_KEYS = {
-  plan: {
-    model: 'llmModelPlan',
-    provider: 'llmPlanProvider',
-    baseUrl: 'llmPlanBaseUrl',
-    apiKey: 'llmPlanApiKey',
-    fallbackModel: 'llmPlanFallbackModel',
-    fallbackProvider: 'llmPlanFallbackProvider',
-    fallbackBaseUrl: 'llmPlanFallbackBaseUrl',
-    fallbackApiKey: 'llmPlanFallbackApiKey'
-  },
-  extract: {
-    model: 'llmModelExtract',
-    provider: 'llmExtractProvider',
-    baseUrl: 'llmExtractBaseUrl',
-    apiKey: 'llmExtractApiKey',
-    fallbackModel: 'llmExtractFallbackModel',
-    fallbackProvider: 'llmExtractFallbackProvider',
-    fallbackBaseUrl: 'llmExtractFallbackBaseUrl',
-    fallbackApiKey: 'llmExtractFallbackApiKey'
-  },
-  validate: {
-    model: 'llmModelValidate',
-    provider: 'llmValidateProvider',
-    baseUrl: 'llmValidateBaseUrl',
-    apiKey: 'llmValidateApiKey',
-    fallbackModel: 'llmValidateFallbackModel',
-    fallbackProvider: 'llmValidateFallbackProvider',
-    fallbackBaseUrl: 'llmValidateFallbackBaseUrl',
-    fallbackApiKey: 'llmValidateFallbackApiKey'
-  },
-  write: {
-    model: 'llmModelWrite',
-    provider: 'llmWriteProvider',
-    baseUrl: 'llmWriteBaseUrl',
-    apiKey: 'llmWriteApiKey',
-    fallbackModel: 'llmWriteFallbackModel',
-    fallbackProvider: 'llmWriteFallbackProvider',
-    fallbackBaseUrl: 'llmWriteFallbackBaseUrl',
-    fallbackApiKey: 'llmWriteFallbackApiKey'
-  }
+  plan: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
+  extract: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
+  validate: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
+  write: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
 };
 
 function normalized(value) {
@@ -101,91 +67,19 @@ function providerFromModel(value) {
   return 'openai';
 }
 
-function firstNonEmpty(values = []) {
-  for (const value of values) {
-    const token = normalized(value);
-    if (token) {
-      return token;
-    }
-  }
-  return '';
+// WHY: No process.env reads at runtime — config object already has keys from configBuilder.
+function bootstrapApiKey(config = {}, provider = '') {
+  if (provider === 'gemini') return normalized(config.geminiApiKey || '');
+  if (provider === 'deepseek') return normalized(config.deepseekApiKey || '');
+  if (provider === 'anthropic') return normalized(config.anthropicApiKey || '');
+  return normalized(config.openaiApiKey || config.llmApiKey || '');
 }
 
-function providerDefaults(config = {}, provider = '', role = 'extract') {
-  const wanted = normalizeProvider(provider);
-  const baseCandidates = [];
-  const keyCandidates = [];
-  if (!wanted) {
-    return { baseUrl: '', apiKey: '' };
-  }
-
-  const roleKeys = roleKeySet(role);
-  const primaryRoleProvider = normalizeProvider(config[roleKeys.provider] || config.llmProvider || '');
-  if (primaryRoleProvider === wanted) {
-    baseCandidates.push(config[roleKeys.baseUrl]);
-    keyCandidates.push(config[roleKeys.apiKey]);
-  }
-
-  for (const keySet of Object.values(ROLE_KEYS)) {
-    const providerToken = normalizeProvider(config[keySet.provider] || '');
-    if (providerToken === wanted) {
-      baseCandidates.push(config[keySet.baseUrl]);
-      keyCandidates.push(config[keySet.apiKey]);
-    }
-    const fallbackProviderToken = normalizeProvider(config[keySet.fallbackProvider] || '');
-    if (fallbackProviderToken === wanted) {
-      baseCandidates.push(config[keySet.fallbackBaseUrl]);
-      keyCandidates.push(config[keySet.fallbackApiKey]);
-    }
-  }
-
-  if (wanted === 'gemini') {
-    baseCandidates.push('https://generativelanguage.googleapis.com/v1beta/openai');
-    keyCandidates.push(process.env.GEMINI_API_KEY || '');
-  } else if (wanted === 'deepseek') {
-    baseCandidates.push('https://api.deepseek.com');
-    keyCandidates.push(process.env.DEEPSEEK_API_KEY || '');
-  } else {
-    baseCandidates.push('https://api.openai.com');
-    keyCandidates.push(process.env.OPENAI_API_KEY || '');
-  }
-
-  baseCandidates.push(config.llmBaseUrl, config.openaiBaseUrl);
-  keyCandidates.push(config.llmApiKey, config.openaiApiKey);
-
-  return {
-    baseUrl: firstNonEmpty(baseCandidates),
-    apiKey: firstNonEmpty(keyCandidates)
-  };
-}
-
-function alignRouteToModelProvider(config = {}, route = {}) {
-  const next = { ...route };
-  const currentProvider = normalizeProvider(next.provider);
-  const inferredProvider = providerFromModel(next.model);
-  if (!inferredProvider) {
-    return next;
-  }
-  if (inferredProvider !== currentProvider) {
-    const defaults = providerDefaults(config, inferredProvider, next.role);
-    next.provider = inferredProvider;
-    if (defaults.baseUrl) {
-      next.baseUrl = defaults.baseUrl;
-    }
-    if (defaults.apiKey) {
-      next.apiKey = defaults.apiKey;
-    }
-    return next;
-  }
-
-  const defaults = providerDefaults(config, inferredProvider, next.role);
-  if (!next.baseUrl && defaults.baseUrl) {
-    next.baseUrl = defaults.baseUrl;
-  }
-  if (!next.apiKey && defaults.apiKey) {
-    next.apiKey = defaults.apiKey;
-  }
-  return next;
+function defaultBaseUrl(provider = '') {
+  if (provider === 'gemini') return 'https://generativelanguage.googleapis.com/v1beta/openai';
+  if (provider === 'deepseek') return 'https://api.deepseek.com';
+  if (provider === 'anthropic') return 'https://api.anthropic.com';
+  return 'https://api.openai.com';
 }
 
 function roleKeySet(role) {
@@ -194,9 +88,9 @@ function roleKeySet(role) {
 
 function baseRouteForRole(config = {}, role = 'extract') {
   const keys = roleKeySet(role);
-  const modelKey = normalized(config[keys.model] || config.llmModelExtract || '');
+  const modelKey = normalized(config[keys.model] || '');
 
-  // Registry-first: composite or bare key
+  // Registry is sole authority for provider/baseUrl/apiKey
   const resolved = resolveModelFromRegistry(config._registryLookup, modelKey);
   if (resolved) {
     return {
@@ -204,18 +98,19 @@ function baseRouteForRole(config = {}, role = 'extract') {
       provider: resolved.providerType,
       model: resolved.modelId,
       baseUrl: resolved.baseUrl,
-      apiKey: resolved.apiKey || normalized(config[keys.apiKey] || config.llmApiKey || config.openaiApiKey || ''),
+      apiKey: resolved.apiKey || bootstrapApiKey(config, resolved.providerType),
       _registryEntry: resolved,
     };
   }
 
-  // Flat-key fallback
+  // Last resort: infer provider from model name, use bootstrap keys
+  const inferred = providerFromModel(modelKey);
   return {
     role,
-    provider: normalizeProvider(config[keys.provider] || config.llmProvider || ''),
+    provider: inferred,
     model: modelKey,
-    baseUrl: normalized(config[keys.baseUrl] || config.llmBaseUrl || config.openaiBaseUrl || ''),
-    apiKey: normalized(config[keys.apiKey] || config.llmApiKey || config.openaiApiKey || '')
+    baseUrl: defaultBaseUrl(inferred),
+    apiKey: bootstrapApiKey(config, inferred),
   };
 }
 
@@ -226,7 +121,7 @@ function fallbackRouteForRole(config = {}, role = 'extract') {
     return null;
   }
 
-  // Registry-first for fallback model too
+  // Registry is sole authority for fallback model too
   const resolved = resolveModelFromRegistry(config._registryLookup, model);
   if (resolved) {
     return {
@@ -234,17 +129,19 @@ function fallbackRouteForRole(config = {}, role = 'extract') {
       provider: resolved.providerType,
       model: resolved.modelId,
       baseUrl: resolved.baseUrl,
-      apiKey: resolved.apiKey || normalized(config[keys.fallbackApiKey] || config[keys.apiKey] || config.llmApiKey || config.openaiApiKey || ''),
+      apiKey: resolved.apiKey || bootstrapApiKey(config, resolved.providerType),
       _registryEntry: resolved,
     };
   }
 
+  // Last resort: infer provider from model name, use bootstrap keys
+  const inferred = providerFromModel(model);
   return {
     role,
-    provider: normalizeProvider(config[keys.fallbackProvider] || config[keys.provider] || config.llmProvider || ''),
+    provider: inferred,
     model,
-    baseUrl: normalized(config[keys.fallbackBaseUrl] || config[keys.baseUrl] || config.llmBaseUrl || config.openaiBaseUrl || ''),
-    apiKey: normalized(config[keys.fallbackApiKey] || config[keys.apiKey] || config.llmApiKey || config.openaiApiKey || '')
+    baseUrl: defaultBaseUrl(inferred),
+    apiKey: bootstrapApiKey(config, inferred),
   };
 }
 
@@ -277,11 +174,6 @@ function reasonTokenGroup(reason = '') {
   if (!token) return 'default';
   if (token.includes('serp') || token.includes('triage') || token.includes('rerank')) return 'triage';
   if (
-    token.includes('planner_fast')
-    || token.includes('verify_extract_fast')
-    || token.endsWith('_fast')
-  ) return 'fast';
-  if (
     token.includes('planner_reason')
     || token.includes('reasoning')
     || token.includes('verify_extract_reason')
@@ -290,51 +182,42 @@ function reasonTokenGroup(reason = '') {
   return 'default';
 }
 
-function roleTokenCap(config = {}, role = 'extract', reason = '', isFallback = false) {
+// WHY: extract/validate/write all alias to the plan model (configPostMerge).
+// Dead per-role token keys (llmMaxOutputTokensExtract etc.) were removed — they
+// were always undefined and fell through to llmMaxOutputTokens.
+// registryEntry is optional; when present its maxOutputTokens acts as a hard ceiling.
+export function roleTokenCap(config = {}, role = 'extract', reason = '', isFallback = false, registryEntry) {
   const group = reasonTokenGroup(reason);
-  if (role === 'plan') {
-    if (group === 'triage') {
-      return toIntToken(
-        isFallback ? config.llmMaxOutputTokensPlanFallback : config.llmMaxOutputTokensTriage,
-        toIntToken(config.llmMaxOutputTokensPlan, toIntToken(config.llmMaxOutputTokens, 1200))
-      );
-    }
-    if (group === 'fast') {
-      return toIntToken(
-        isFallback ? config.llmMaxOutputTokensPlanFallback : config.llmMaxOutputTokensFast,
-        toIntToken(config.llmMaxOutputTokensPlan, toIntToken(config.llmMaxOutputTokens, 1200))
-      );
-    }
-    if (group === 'reasoning') {
-      return toIntToken(
-        isFallback ? config.llmMaxOutputTokensPlanFallback : config.llmMaxOutputTokensReasoning,
-        toIntToken(config.llmMaxOutputTokensPlan, toIntToken(config.llmMaxOutputTokens, 1200))
-      );
-    }
-    return toIntToken(
+  let cap;
+  if (role === 'plan' && group === 'triage') {
+    cap = toIntToken(
+      isFallback ? config.llmMaxOutputTokensPlanFallback : config.llmMaxOutputTokensTriage,
+      toIntToken(config.llmMaxOutputTokensPlan, toIntToken(config.llmMaxOutputTokens, 1200))
+    );
+  } else if (role === 'plan' && group === 'reasoning') {
+    cap = toIntToken(
+      isFallback ? config.llmMaxOutputTokensPlanFallback : config.llmMaxOutputTokensReasoning,
+      toIntToken(config.llmMaxOutputTokensPlan, toIntToken(config.llmMaxOutputTokens, 1200))
+    );
+  } else if (role === 'plan') {
+    cap = toIntToken(
+      isFallback ? config.llmMaxOutputTokensPlanFallback : config.llmMaxOutputTokensPlan,
+      toIntToken(config.llmMaxOutputTokens, 1200)
+    );
+  } else {
+    // extract, validate, write, and any unknown role — all use plan default path
+    cap = toIntToken(
       isFallback ? config.llmMaxOutputTokensPlanFallback : config.llmMaxOutputTokensPlan,
       toIntToken(config.llmMaxOutputTokens, 1200)
     );
   }
-  if (role === 'extract') {
-    return toIntToken(
-      isFallback ? config.llmMaxOutputTokensExtractFallback : config.llmMaxOutputTokensExtract,
-      toIntToken(config.llmMaxOutputTokens, 1200)
-    );
+
+  // Registry ceiling: never exceed the model's declared maxOutputTokens
+  const registryMax = registryEntry?.tokenProfile?.maxOutputTokens;
+  if (registryMax != null && registryMax > 0) {
+    return Math.min(cap, registryMax);
   }
-  if (role === 'validate') {
-    return toIntToken(
-      isFallback ? config.llmMaxOutputTokensValidateFallback : config.llmMaxOutputTokensValidate,
-      toIntToken(config.llmMaxOutputTokens, 1200)
-    );
-  }
-  if (role === 'write') {
-    return toIntToken(
-      isFallback ? config.llmMaxOutputTokensWriteFallback : config.llmMaxOutputTokensWrite,
-      toIntToken(config.llmMaxOutputTokens, 1200)
-    );
-  }
-  return toIntToken(config.llmMaxOutputTokens, 1200);
+  return cap;
 }
 
 function roleReasoningCap(config = {}, role = 'extract', reason = '', isFallback = false) {
@@ -355,9 +238,7 @@ export function resolveLlmRoute(config = {}, { reason = '', role = '', modelOver
       const roleProvider = normalizeProvider(route.provider || providerFromModel(route.model));
       const overrideProvider = providerFromModel(overrideModel);
       if (roleProvider && overrideProvider && roleProvider !== overrideProvider) {
-        // WHY: registry routes already have correct provider/baseUrl/apiKey
-        if (route._registryEntry) return route;
-        return alignRouteToModelProvider(config, route);
+        return route;
       }
     }
     // Re-resolve override model through registry if available
@@ -372,13 +253,15 @@ export function resolveLlmRoute(config = {}, { reason = '', role = '', modelOver
         return route;
       }
     }
-    // Override model not in registry — clear stale registry entry
+    // Override model not in registry — infer provider from model name
     delete route._registryEntry;
     route.model = overrideModel;
+    const inferred = providerFromModel(overrideModel);
+    route.provider = inferred;
+    route.baseUrl = defaultBaseUrl(inferred);
+    route.apiKey = bootstrapApiKey(config, inferred);
   }
-  // WHY: registry routes already have correct provider/baseUrl/apiKey — alignment would overwrite them
-  if (route._registryEntry) return route;
-  return alignRouteToModelProvider(config, route);
+  return route;
 }
 
 export function resolveLlmFallbackRoute(config = {}, { reason = '', role = '', modelOverride = '' } = {}) {
@@ -387,10 +270,7 @@ export function resolveLlmFallbackRoute(config = {}, { reason = '', role = '', m
   if (!fallback) {
     return null;
   }
-  // WHY: registry routes already have correct provider/baseUrl/apiKey — alignment would overwrite them
-  const alignedFallback = fallback._registryEntry
-    ? fallback
-    : alignRouteToModelProvider(config, fallback);
+  const alignedFallback = fallback;
   if (modelOverride && normalized(modelOverride) === normalized(fallback.model)) {
     return null;
   }
@@ -494,12 +374,12 @@ export async function callLlmWithRouting({
     base_url: primary.baseUrl || null,
     fallback_base_url: fallback?.baseUrl || null,
     fallback_configured: Boolean(fallback),
-    output_token_cap: roleTokenCap(config, resolvedRole, reason, false),
-    output_token_cap_fallback: roleTokenCap(config, resolvedRole, reason, true)
+    output_token_cap: roleTokenCap(config, resolvedRole, reason, false, primary._registryEntry),
+    output_token_cap_fallback: roleTokenCap(config, resolvedRole, reason, true, fallback?._registryEntry)
   });
 
-  const primaryTokenCap = roleTokenCap(config, resolvedRole, reason, false);
-  const fallbackTokenCap = roleTokenCap(config, resolvedRole, reason, true);
+  const primaryTokenCap = roleTokenCap(config, resolvedRole, reason, false, primary._registryEntry);
+  const fallbackTokenCap = roleTokenCap(config, resolvedRole, reason, true, fallback?._registryEntry);
   const primaryReasoningBudget = roleReasoningCap(config, resolvedRole, reason, false);
   const fallbackReasoningBudget = roleReasoningCap(config, resolvedRole, reason, true);
   const resolvedMaxTokens = Math.max(

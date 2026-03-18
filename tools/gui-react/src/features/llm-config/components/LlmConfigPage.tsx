@@ -26,12 +26,11 @@ import {
 } from '../../../stores/settingsManifest';
 import { RuntimeFlowHeaderControls } from '../../pipeline-settings/components/RuntimeFlowHeaderControls';
 import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore';
-import { useUiStore } from '../../../stores/uiStore';
 import { usePersistedTab } from '../../../stores/tabStore';
 import { LlmConfigPageShell } from './LlmConfigPageShell';
 import { LLM_PHASE_IDS } from '../state/llmPhaseRegistry';
 import type { LlmPhaseId } from '../types/llmPhaseTypes';
-import { parseProviderRegistry, serializeProviderRegistry } from '../state/llmProviderRegistryBridge';
+import { parseProviderRegistry, serializeProviderRegistry, syncCostsFromRegistry } from '../state/llmProviderRegistryBridge';
 import { mergeDefaultsIntoRegistry } from '../state/llmDefaultProviderRegistry';
 import { parsePhaseOverrides, serializePhaseOverrides } from '../state/llmPhaseOverridesBridge';
 import { providerHasApiKey, PROVIDER_API_KEY_MAP, type RuntimeApiKeySlice } from '../state/llmProviderApiKeyGate';
@@ -74,8 +73,6 @@ interface RuntimeSettingsLlmConfigResponse {
 
 export function LlmConfigPage() {
   const queryClient = useQueryClient();
-  const runtimeAutoSaveEnabled = useUiStore((state) => state.runtimeAutoSaveEnabled);
-  const setRuntimeAutoSaveEnabled = useUiStore((state) => state.setRuntimeAutoSaveEnabled);
   const runtimeReadyFlag = useSettingsAuthorityStore((state) => state.snapshot.runtimeReady);
 
   const runtimeBootstrap = useMemo(
@@ -121,12 +118,13 @@ export function LlmConfigPage() {
     resolveModelTokenDefaults,
   }), [resolveModelTokenDefaults, runtimeManifestDefaults]);
 
+  // WHY: LLM config is always autosaved — no user toggle.
   const runtimeEditor = useRuntimeSettingsEditorAdapter<RuntimeDraft>({
     bootstrapValues: runtimeBootstrapDraft,
     payloadFromValues: payloadFromRuntimeDraft,
     normalizeSnapshot: (snapshot) => normalizeRuntimeDraft(snapshot, runtimeBootstrap),
     valuesEqual: runtimeDraftEqual,
-    autoSaveEnabled: runtimeAutoSaveEnabled,
+    autoSaveEnabled: true,
   });
 
   const runtimeDraft = runtimeEditor.values;
@@ -275,7 +273,18 @@ export function LlmConfigPage() {
 
   const onRegistryChange = useCallback((nextRegistry: LlmProviderEntry[]) => {
     const serialized = serializeProviderRegistry(nextRegistry);
-    setRuntimeDraft((previous) => ({ ...previous, llmProviderRegistryJson: serialized }));
+    setRuntimeDraft((previous) => {
+      const next = { ...previous, llmProviderRegistryJson: serialized };
+      // WHY: Re-bridge costs so flat fields stay in sync when model costs
+      // are edited in the Provider Registry panel.
+      const costs = syncCostsFromRegistry(nextRegistry, previous.llmModelPlan as string);
+      if (costs) {
+        next.llmCostInputPer1M = costs.llmCostInputPer1M;
+        next.llmCostOutputPer1M = costs.llmCostOutputPer1M;
+        next.llmCostCachedInputPer1M = costs.llmCostCachedInputPer1M;
+      }
+      return next;
+    });
     setRuntimeDirty(true);
   }, [setRuntimeDraft, setRuntimeDirty]);
 
@@ -375,10 +384,8 @@ export function LlmConfigPage() {
     <RuntimeFlowHeaderControls
       runtimeSettingsReady={runtimeSettingsReady}
       runtimeSettingsSaving={runtimeSettingsSaving}
-      runtimeAutoSaveEnabled={runtimeAutoSaveEnabled}
       runtimeAutoSaveDelaySeconds={runtimeAutoSaveDelaySeconds}
       onSaveNow={saveNow}
-      onToggleRuntimeAutoSaveEnabled={() => setRuntimeAutoSaveEnabled(!runtimeAutoSaveEnabled)}
       onResetToDefaults={resetToDefaults}
     />
   );

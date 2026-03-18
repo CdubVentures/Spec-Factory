@@ -1,444 +1,282 @@
-# Data Flow Lineage Audit — Stages 1-3
+# Data Flow Lineage Audit - Stages 01-13
 
-Scope: Runtime start → NeedSet → Planning Context → Brand Resolution → Search Plan (Schema 4 handoff).
-Audit date: 2026-03-16. Covers every field at each stage boundary.
+Scope: runtime start -> NeedSet -> planning -> search execution -> triage -> fetch -> parsing -> identity gating -> consensus -> validation -> export.
+Audit date: 2026-03-17.
+Authority split:
+
+- `planning/` remains the contract source for stages 01-05.
+- `parsing/` is the consolidated contract source for stages 09-13.
+- This audit ties the full pipeline together without modifying `planning/`.
 
 ## Transformation Tags
 
 | Tag | Meaning |
 |-----|---------|
-| **passthrough** | Field passes unchanged from input to output |
-| **normalized** | Formatting/cleaning (lowercase, trim, dedup) — same semantic value |
-| **recomputed** | Value recalculated or derived from other input fields |
-| **enriched** | New information added (LLM, catalog metadata, cross-reference) |
-| **dropped** | Present in input, absent in output (by design) |
+| **passthrough** | Field or payload block survives unchanged across the boundary |
+| **normalized** | Formatting or canonicalization changes only |
+| **recomputed** | Derived again from upstream data or runtime config |
+| **enriched** | New information added by scoring, LLMs, adapters, or aggregation |
+| **persisted** | Serialized to durable storage with no semantic change |
+| **dropped** | Consumed at the boundary and not emitted downstream |
 
 ---
 
-## Boundary 1 — Runtime → Schema 2 (NeedSetOutput)
+## Boundary 1 - Runtime -> NeedSetOutput
 
 Producer: `needsetEngine.computeNeedSet()`
-Source files: `needsetEngine.js:342-604`, `buildFieldHistories.js`
+Contracts: `planning/01-needset-input.json`, `planning/01-needset-output.json`
 
-### Run Context
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `round` | **passthrough** | caller param | set by the active caller (`seedRound0NeedSet()`, bootstrap/discovery seed, or defaults in finalization snapshot) |
-| `round_mode` | **passthrough** | caller param `roundMode` | seed / carry_forward / repair |
-
-### Identity Block
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `identity.state` | **recomputed** | `mapIdentityState(identityContext)` | maps lock status → PanelIdentityState enum |
-| `identity.source_label_state` | **recomputed** | `deriveSourceLabelState(identityContext)` | matched/possible/different/unknown from confidence+contradictions |
-| `identity.confidence` | **normalized** | `identityContext.confidence` | clamped via `toNumber(..., 0)` |
-| `identity.manufacturer` | **normalized** | `brand \|\| identityContext.manufacturer` | string coercion + trim |
-| `identity.model` | **passthrough** | caller param `model` | |
-| `identity.official_domain` | **passthrough** | `identityContext.official_domain` | null when absent |
-| `identity.support_domain` | **passthrough** | `identityContext.support_domain` | null when absent |
-| `identity.publishable` | **dropped** | — | not relevant for indexing phase |
-| `identity.review_required` | **dropped** | — | review phase handles this |
-
-### Settings Block
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| entire `settings` block | **dropped** | — | config flows directly to Schema 3 via `derivePlannerLimits()` — never transits Schema 2 |
-
-### Per-Field Array (`fields[]`)
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `field_key` | **recomputed** | `collectFieldKeys()` | union of fieldOrder + provenance + fieldRules keys |
-| `label` | **passthrough** | `rule.display_name \|\| rule.ui?.label` | from field_rules JSON |
-| `group_key` | **passthrough** | `rule.group` | from field_rules JSON |
-| `idx.required_level` | **normalized** | `normalizeRequiredLevel(rule)` | maps to RequiredLevel enum |
-| `idx.min_evidence_refs` | **normalized** | `rule.min_evidence_refs` | `toNumber(..., 0)` |
-| `idx.query_terms` | **normalized** | `rule.search_hints.query_terms` | lowercase, trim, dedup via `normalizeStringArray()` |
-| `idx.domain_hints` | **normalized** | `rule.search_hints.domain_hints` | canonical host form via `normalizeDomainHints()` |
-| `idx.preferred_content_types` | **normalized** | `rule.search_hints.preferred_content_types` | lowercase, trim, dedup |
-| `idx.tooltip_md` | **passthrough** | `rule.ui?.tooltip_md` | null when absent |
-| `idx.aliases` | **passthrough** | `rule.aliases` | empty array when absent |
-| `pass_target` | **normalized** | `prov.pass_target` | `clamp01(toNumber(..., 0.8))` |
-| `exact_match_required` | **passthrough** | `rule.contract?.exact_match` | boolean coercion |
-| `current.status` | **recomputed** | `mapInternalToSchemaState()` | covered→accepted, missing→unknown |
-| `current.value` | **passthrough** | `prov.value` | null when absent |
-| `current.confidence` | **normalized** | provenance confidence | `toNumber(..., 0)` |
-| `current.effective_confidence` | **normalized** | provenance confidence | `clamp01(toNumber(..., 0))` |
-| `current.refs_found` | **recomputed** | `evidence.length \|\| prov.confirmations` | count of evidence entries |
-| `current.best_tier_seen` | **recomputed** | `Math.min(evidence[].tier)` | lowest (best) tier across evidence |
-| `current.meets_pass_target` | **recomputed** | confidence vs passTarget | boolean gate |
-| `current.reasons` | **recomputed** | `deriveFieldReasons()` | array of reason codes from field state |
-| `need_score` | **recomputed** | scoring engine | composite priority score |
-| `history.existing_queries` | **enriched** | `buildFieldHistories` | union of prev + new queries targeting this field |
-| `history.domains_tried` | **enriched** | `buildFieldHistories` | union of prev + evidence rootDomains |
-| `history.host_classes_tried` | **enriched** | `classifyHostClass()` | union of prev + classified current evidence |
-| `history.evidence_classes_tried` | **enriched** | `classifyEvidenceClass()` | union of prev + classified current evidence |
-| `history.query_count` | **enriched** | `buildFieldHistories` | accumulated across rounds |
-| `history.urls_examined_count` | **enriched** | `buildFieldHistories` | accumulated across rounds |
-| `history.no_value_attempts` | **enriched** | `buildFieldHistories` | incremented when targeted but still unknown |
-| `history.duplicate_attempts_suppressed` | **enriched** | `buildFieldHistories` | distributed from round-level count |
-
-### Summary & Blockers
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `summary.*` (total, resolved, core_*, secondary_*, optional_*, conflicts) | **recomputed** | aggregation over `fields[]` | 9 counters derived from field states |
-| `blockers.*` (missing, weak, conflict, needs_exact_match, search_exhausted) | **recomputed** | aggregation over `fields[]` | search_exhausted uses history feedback |
-
-### Planner Seed
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `planner_seed.missing_critical_fields` | **recomputed** | filter fields where status=unknown AND required_level=critical | |
-| `planner_seed.unresolved_fields` | **recomputed** | filter fields where status!=accepted | |
-| `planner_seed.existing_queries` | **recomputed** | union of all `fields[].history.existing_queries` | |
-| `planner_seed.current_product_identity` | **passthrough** | { category, brand, model } from caller params | |
-
-### Backward-Compat Keys (still emitted, not in Schema 2 spec)
-
-| Field | Tag | Notes |
-|-------|-----|-------|
-| `run_id`, `category`, `product_id` | **passthrough** | consumed by runtimeBridge |
-| `generated_at`, `total_fields` | **recomputed** | consumed by runtimeBridge, buildRunSummary |
-| `focus_fields`, `bundles`, `profile_mix` | **recomputed** | consumed by needsetStoryProjection and runtime-bridge payload normalization |
-| `rows` | **recomputed** | consumed by needsetStoryProjection and runtime-bridge payload normalization |
+| Field Group | Tag | Source | Notes |
+|-------------|-----|--------|-------|
+| `run.*` | **passthrough** | runtime job context | product, category, round, and round mode |
+| `identity.*` | **recomputed** | identity lock + identity context | lock state, label state, confidence, domains |
+| `fields[].idx.*` | **normalized** | field rules | required level, query hints, domain hints, aliases |
+| `fields[].current.*` | **recomputed** | current provenance | value state, confidence, refs found, reasons |
+| `fields[].history.*` | **enriched** | `buildFieldHistories()` | queries tried, domains tried, evidence classes, attempts |
+| `summary.*` | **recomputed** | fields aggregation | totals, unresolved counts, conflicts |
+| `blockers.*` | **recomputed** | fields aggregation | missing, weak, conflict, exact-match, exhausted |
+| `planner_seed.*` | **recomputed** | unresolved fields | planner seed for downstream planning |
 
 ---
 
-## Boundary 2 — Schema 2 → Schema 3 (SearchPlanningContext)
+## Boundary 2 - NeedSetOutput -> SearchPlanningContext
 
 Producer: `searchPlanningContext.buildSearchPlanningContext()`
-Source files: `searchPlanningContext.js:57-377`
+Contracts: `planning/01-needset-planner-context.json`, `planning/02-brand-resolver-*.json`
 
-### Run Block
+| Field Group | Tag | Source | Notes |
+|-------------|-----|--------|-------|
+| `run.*` | **passthrough** | NeedSet output | core run context survives |
+| `identity.*` | **passthrough** | NeedSet output | no semantic change |
+| `needset.summary` / `needset.blockers` | **passthrough** | NeedSet output | projected into planner context |
+| `planner_limits.*` | **recomputed** | runtime config | LLM gate, provider, query caps |
+| `group_catalog.*` | **enriched** | static group metadata | category-aware group defaults |
+| `focus_groups[]` | **recomputed** | NeedSet fields | grouped unresolved fields, unions, counters, phase |
+| `learning.*` | **passthrough** | learning stores | dead queries and dead domains |
+| `previous_round_fields` | **passthrough** | prior round state | used later for delta computation |
 
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `run.run_id` | **passthrough** | rc.run_id | from run context |
-| `run.category` | **passthrough** | rc.category | |
-| `run.product_id` | **passthrough** | rc.product_id | |
-| `run.brand` | **passthrough** | rc.brand | |
-| `run.model` | **passthrough** | rc.model | |
-| `run.base_model` | **passthrough** | rc.base_model | |
-| `run.aliases` | **passthrough** | rc.aliases | |
-| `run.round` | **passthrough** | rc.round | |
-| `run.round_mode` | **passthrough** | rc.round_mode | |
-
-### Identity Block
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| entire `identity` block | **passthrough** | Schema 2 `identity` | no transformation |
-
-### NeedSet Projection
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `needset.summary` | **passthrough** | Schema 2 `summary` | |
-| `needset.blockers` | **passthrough** | Schema 2 `blockers` | |
-| `needset.missing_critical_fields` | **passthrough** | Schema 2 `planner_seed.missing_critical_fields` | consumed by LLM payload |
-| `needset.unresolved_fields` | **passthrough** | Schema 2 `planner_seed.unresolved_fields` | not consumed by planner directly |
-| `needset.existing_queries` | **passthrough** | Schema 2 `planner_seed.existing_queries` | consumed by LLM + dedup |
-
-### Planner Limits
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `planner_limits.phase2LlmEnabled` | **recomputed** | runtime config | `derivePlannerLimits()` reads from config directly, NOT Schema 2 |
-| `planner_limits.discoveryMaxQueries` | **recomputed** | runtime config | |
-| `planner_limits.maxUrlsPerProduct` | **recomputed** | runtime config | |
-| `planner_limits.llmModelPlan` | **recomputed** | runtime config | |
-| `planner_limits.searchProfileCapMap` | **recomputed** | runtime config | parsed via `parseCapMap()` |
-| `planner_limits.searchProvider` | **recomputed** | runtime config | |
-
-### Group Catalog
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `group_catalog[key].*` | **enriched** | `GROUP_DEFAULTS` + `fieldGroupsData` | static metadata per group (label, desc, source_target, content_target, search_intent, host_class). Category-aware overrides via `resolveGroupMeta()`. |
-
-### Focus Groups (the core transformation)
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `focus_groups[].key` | **passthrough** | Schema 2 `fields[].group_key` | renamed from group_key |
-| `focus_groups[].label` | **enriched** | group_catalog | inlined from catalog |
-| `focus_groups[].desc` | **enriched** | group_catalog | inlined from catalog |
-| `focus_groups[].source_target` | **enriched** | group_catalog | inlined from catalog |
-| `focus_groups[].content_target` | **enriched** | group_catalog | inlined from catalog |
-| `focus_groups[].search_intent` | **enriched** | group_catalog | inlined from catalog |
-| `focus_groups[].host_class` | **enriched** | group_catalog | inlined from catalog |
-| `focus_groups[].field_keys` | **recomputed** | Schema 2 `fields[]` | grouped by group_key |
-| `focus_groups[].satisfied_field_keys` | **recomputed** | Schema 2 `fields[]` | filter: status=accepted |
-| `focus_groups[].unresolved_field_keys` | **recomputed** | Schema 2 `fields[]` | filter: status!=accepted, not exhausted |
-| `focus_groups[].weak_field_keys` | **recomputed** | Schema 2 `fields[]` | filter: status=weak |
-| `focus_groups[].conflict_field_keys` | **recomputed** | Schema 2 `fields[]` | filter: status=conflict |
-| `focus_groups[].search_exhausted_field_keys` | **recomputed** | Schema 2 `fields[].history` | no_value_attempts>=3 AND evidence_classes>=3 |
-| `focus_groups[].search_exhausted_count` | **recomputed** | count of above | |
-| `focus_groups[].core_unresolved_count` | **recomputed** | filter by required_level | |
-| `focus_groups[].secondary_unresolved_count` | **recomputed** | filter by required_level | |
-| `focus_groups[].optional_unresolved_count` | **recomputed** | filter by required_level | |
-| `focus_groups[].exact_match_count` | **recomputed** | filter exact_match_required | |
-| `focus_groups[].no_value_attempts` | **recomputed** | max across group fields | aggregated from per-field history |
-| `focus_groups[].duplicate_attempts_suppressed` | **recomputed** | sum across group fields | |
-| `focus_groups[].urls_examined_count` | **recomputed** | sum across group fields | |
-| `focus_groups[].query_count` | **recomputed** | sum across group fields | |
-| `focus_groups[].query_terms_union` | **recomputed** | `unionSorted()` from non-accepted fields | per-field idx.query_terms merged |
-| `focus_groups[].domain_hints_union` | **recomputed** | `unionSorted()` from non-accepted fields | per-field idx.domain_hints merged |
-| `focus_groups[].preferred_content_types_union` | **recomputed** | `unionSorted()` from non-accepted fields | per-field idx.preferred_content_types merged |
-| `focus_groups[].existing_queries_union` | **recomputed** | `unionSorted()` from non-accepted fields | per-field history.existing_queries merged |
-| `focus_groups[].domains_tried_union` | **recomputed** | `unionSorted()` from non-accepted fields | per-field history.domains_tried merged |
-| `focus_groups[].host_classes_tried_union` | **recomputed** | `unionSorted()` from non-accepted fields | per-field history.host_classes_tried merged |
-| `focus_groups[].evidence_classes_tried_union` | **recomputed** | `unionSorted()` from non-accepted fields | per-field history.evidence_classes_tried merged |
-| `focus_groups[].aliases_union` | **recomputed** | `unionSorted()` from non-accepted fields | per-field idx.aliases merged |
-| `focus_groups[].priority` | **recomputed** | unresolved required_levels | core if any critical/required, secondary if any expected, else optional |
-| `focus_groups[].phase` | **recomputed** | hasUnresolved + priority + exhaustion | now/next/hold classification |
-
-### Schema 2 Fields Dropped at This Boundary
-
-| Field | Tag | Notes |
-|-------|-----|-------|
-| `fields[].current.value` | **dropped** | not needed for planning — only field state matters |
-| `fields[].current.confidence` | **dropped** | subsumed by state classification (satisfied/weak/conflict/unknown) |
-| `fields[].current.effective_confidence` | **dropped** | subsumed by state classification |
-| `fields[].current.refs_found` | **dropped** | subsumed by state classification |
-| `fields[].current.best_tier_seen` | **dropped** | not sent to planner |
-| `fields[].current.meets_pass_target` | **dropped** | subsumed by state classification |
-| `fields[].need_score` | **dropped** | replaced by focus_groups priority/phase |
-| `fields[].pass_target` | **dropped** | not needed for planning |
-| `fields[].idx.tooltip_md` | **dropped** | UI-only, not planning data |
-| `planner_seed` block | **dropped** | replaced by `needset` projection with same data |
-
-### Other
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `field_priority_map` | **recomputed** | Schema 2 `fields[]` | Map of field_key → required_level for Schema 4 bundle derivation |
-| `learning` | **passthrough** | external learning stores | dead_query_hashes, dead_domains for anti-garbage |
-| `previous_round_fields` | **passthrough** | previous round state | for delta computation in Schema 4 |
-
----
-
-## Boundary 2b — Brand Resolution (parallel sidecar)
+### Boundary 2b - Brand Resolution Sidecar
 
 Producer: `brandResolver.resolveBrandDomain()`
-Source files: `brandResolver.js:1-64`, `discoveryLlmAdapters.js:65-86`
-Call site: `searchDiscovery.js:169-187`
-
-### Input
 
 | Field | Tag | Source | Notes |
 |-------|-----|--------|-------|
-| `brand` | **passthrough** | identity lock via searchDiscovery | trimmed into brandKey |
-| `category` | **passthrough** | job.category | trimmed into categoryKey |
-
-### Output
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `officialDomain` | **enriched** | cache OR LLM (role=triage) | normalized: lowercased, trimmed |
-| `supportDomain` | **enriched** | cache OR LLM | normalized: lowercased, trimmed |
-| `aliases` | **enriched** | cache OR LLM | normalized: lowercased, trimmed, filtered empty |
-| `confidence` | **enriched** | cache (stored) OR hardcoded 0.8 (LLM hit) | not in original correction-note spec — extra |
-| `reasoning` | **enriched** | LLM response OR [] (cache hit) | not in original correction-note spec — extra |
-
-### Gating
-
-| Gate | Condition | Effect |
-|------|-----------|--------|
-| missing brand | `brand` is empty | skip, status=skipped, skip_reason='no_brand_in_identity_lock' |
-| no triage API key | `!hasLlmRouteApiKey(config, 'triage')` | callLlmFn=null → cache-only resolution |
-| cache hit | `storage.getBrandDomain()` returns row | return cached values immediately, skip LLM |
-| LLM disabled | callLlmFn=null AND no cache | return empty output |
-| LLM error | exception during LLM call | return empty output |
-
-### Downstream Consumers of Brand Resolution
-
-| Consumer | Fields Used | Transform |
-|----------|-------------|-----------|
-| search_profile_hints | officialDomain, aliases | **passthrough** → used as `brandResolutionHints` in query building |
-| manufacturer_auto_promote | officialDomain, supportDomain | **recomputed** → promote matching hosts to tier 1 in source registry |
-| telemetry | all fields | **passthrough** → logged to run events |
+| `officialDomain` | **enriched** | cache or triage LLM | normalized domain |
+| `supportDomain` | **enriched** | cache or triage LLM | normalized domain |
+| `aliases` | **enriched** | cache or triage LLM | normalized alias list |
+| `confidence` | **enriched** | cache or default LLM hit | planning hint only |
+| `reasoning` | **enriched** | LLM response | optional trace payload |
 
 ---
 
-## Boundary 3 — Schema 3 + Brand → Schema 4 (NeedSetPlannerOutput)
+## Boundary 3 - SearchPlanningContext -> NeedSetPlannerOutput
 
-Producer: `searchPlanBuilder.buildSearchPlan()`
-Source files: `searchPlanBuilder.js:130-261`
+Producer: `buildSearchPlan()`
+Contracts: `planning/03-search-planner-*.json`
 
-### Run Block
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `run.*` | **passthrough** | Schema 3 `run` | all 9 fields pass unchanged |
-
-### Planner Block
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `planner.mode` | **recomputed** | LLM gate result | llm/disabled/error based on planner_limits + call outcome |
-| `planner.model` | **passthrough** | Schema 3 `planner_limits.llmModelPlan` | |
-| `planner.planner_complete` | **recomputed** | LLM call outcome | boolean |
-| `planner.planner_confidence` | **enriched** | LLM response | 0-1 confidence from LLM JSON |
-| `planner.queries_generated` | **recomputed** | post-LLM dedup count | |
-| `planner.duplicates_suppressed` | **recomputed** | dedup counter | queries dropped during hash dedup |
-| `planner.targeted_exceptions` | **enriched** | LLM response | exceptional queries added outside normal rules |
-| `planner.error` | **recomputed** | catch block | null on success, error message on failure |
-
-### Search Plan Handoff
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `search_plan_handoff.queries[].q` | **enriched** | LLM response | raw query text from LLM |
-| `search_plan_handoff.queries[].query_hash` | **recomputed** | deterministic hash of q | for cross-round dedup |
-| `search_plan_handoff.queries[].family` | **enriched** | LLM response | manufacturer_html/manual_pdf/review_lookup/etc. |
-| `search_plan_handoff.queries[].group_key` | **passthrough** | Schema 3 focus_group key | which group this query targets |
-| `search_plan_handoff.queries[].target_fields` | **recomputed** | Schema 3 focus_group unresolved_field_keys | fields this query should resolve |
-| `search_plan_handoff.queries[].preferred_domains` | **recomputed** | Schema 3 focus_group domain_hints_union | capped to top entries |
-| `search_plan_handoff.queries[].exact_match_required` | **recomputed** | Schema 3 focus_group exact_match_count > 0 | |
-| `search_plan_handoff.query_hashes` | **recomputed** | flat array of all query_hash values | |
-| `search_plan_handoff.total` | **recomputed** | queries.length | |
-
-### Panel Block (for GUI)
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `panel.round` | **passthrough** | Schema 3 `run.round` | |
-| `panel.round_mode` | **passthrough** | Schema 3 `run.round_mode` | |
-| `panel.identity` | **passthrough** | Schema 3 `identity` | |
-| `panel.summary` | **passthrough** | Schema 3 `needset.summary` | |
-| `panel.blockers` | **passthrough** | Schema 3 `needset.blockers` | |
-| `panel.bundles[].key` | **passthrough** | Schema 3 focus_group key | |
-| `panel.bundles[].label` | **passthrough** | Schema 3 focus_group label | |
-| `panel.bundles[].desc` | **passthrough** | Schema 3 focus_group desc | |
-| `panel.bundles[].priority` | **passthrough** | Schema 3 focus_group priority | |
-| `panel.bundles[].phase` | **passthrough** | Schema 3 focus_group phase | |
-| `panel.bundles[].source_target` | **passthrough** | Schema 3 focus_group source_target | |
-| `panel.bundles[].content_target` | **passthrough** | Schema 3 focus_group content_target | |
-| `panel.bundles[].search_intent` | **passthrough** | Schema 3 focus_group search_intent | |
-| `panel.bundles[].host_class` | **passthrough** | Schema 3 focus_group host_class | |
-| `panel.bundles[].query_family_mix` | **enriched** | LLM response | human-readable strategy per group |
-| `panel.bundles[].reason_active` | **enriched** | LLM response | why this group is being searched |
-| `panel.bundles[].queries` | **enriched** | LLM response | projected `{ q, family }` per bundle |
-| `panel.bundles[].fields` | **recomputed** | Schema 3 focus_group field breakdowns + field_priority_map | `{ key, state, bucket }` per field |
-| `panel.profile_influence.*` (14 keys) | **recomputed** | post-LLM aggregation | 7 family counts + duplicates_suppressed + focused_bundles + targeted_exceptions + total_queries + trusted_host_share + docs_manual_share |
-| `panel.deltas` | **recomputed** | `computeDeltas(previous_round_fields, current)` | `{ field, from, to }` for state changes. On round 0, all current fields are emitted as `{ from: 'none', to: <state> }`. |
-
-### Learning Writeback
-
-| Field | Tag | Source | Notes |
-|-------|-----|--------|-------|
-| `learning_writeback.query_hashes_generated` | **recomputed** | all query hashes | |
-| `learning_writeback.queries_generated` | **recomputed** | all query texts | |
-| `learning_writeback.families_used` | **recomputed** | distinct families from queries | sorted set |
-| `learning_writeback.domains_targeted` | **recomputed** | distinct preferred_domains | sorted set |
-| `learning_writeback.groups_activated` | **recomputed** | distinct group_keys with queries | sorted set |
-| `learning_writeback.duplicates_suppressed` | **recomputed** | dedup counter | |
-
-### Schema 3 Fields Dropped at This Boundary
-
-| Field | Tag | Notes |
-|-------|-----|-------|
-| `planner_limits` | **dropped** | consumed internally by `buildSearchPlan()` gating — not emitted |
-| `group_catalog` | **dropped** | metadata already inlined into focus_groups at Schema 3 |
-| `focus_groups[].field_keys` | **dropped** | replaced by per-bundle `fields[]` with state+bucket |
-| `focus_groups[].satisfied_field_keys` | **dropped** | subsumed by fields[].state |
-| `focus_groups[].search_exhausted_*` | **dropped** | phase=hold already communicates this |
-| `focus_groups[].all 8 union arrays` | **dropped** | consumed by LLM payload construction, not emitted in output |
-| `focus_groups[].no_value_attempts` | **dropped** | consumed by LLM payload, not emitted |
-| `focus_groups[].duplicate_attempts_suppressed` | **dropped** | consumed by LLM payload, not emitted |
-| `focus_groups[].urls_examined_count` | **dropped** | consumed by LLM payload, not emitted |
-| `focus_groups[].query_count` | **dropped** | consumed by LLM payload, not emitted |
-| `field_priority_map` | **dropped** | consumed internally for bundle fields[] bucket derivation |
-| `learning` | **dropped** | consumed internally for anti-garbage filter (dead_query_hashes, dead_domains) |
-| `previous_round_fields` | **dropped** | consumed internally for delta computation |
+| Field Group | Tag | Source | Notes |
+|-------------|-----|--------|-------|
+| `planner.*` | **recomputed** / **enriched** | planner LLM + post-processing | mode, confidence, dedupe, error |
+| `search_plan_handoff.queries[]` | **enriched** / **recomputed** | planner response + group context | query text, hash, family, fields, domain hints |
+| `panel.identity` | **passthrough** | planning context | GUI continuity |
+| `panel.summary` / `panel.blockers` | **passthrough** | NeedSet projection | GUI continuity |
+| `panel.bundles[]` | **recomputed** / **enriched** | focus groups + planner output | labels, strategy, queries, field states |
+| `learning_writeback.*` | **recomputed** | generated queries | distinct hashes, families, domains, groups |
 
 ---
 
-## Stage Matrix Summary
+## Boundary 4 - NeedSetPlannerOutput -> Query Journey
 
-### Field Lifecycle: Runtime → Schema 2 → Schema 3 → Schema 4
+Producer: `convertHandoffToExecutionPlan()` and related query journey helpers
+Contracts: `planning/04-query-journey-*.json`
 
-| Field Family | Runtime→S2 | S2→S3 | S3→S4 | End State |
-|-------------|-----------|-------|-------|-----------|
-| **run context** (run_id, category, product_id, brand, model, round, round_mode) | passthrough | passthrough | passthrough | survives all stages |
-| **base_model, aliases** | passthrough | passthrough | passthrough (in run block) | survives all stages |
-| **identity** (state, manufacturer, confidence, official_domain, support_domain) | recomputed | passthrough | passthrough (in panel) | S2 computes, then passes unchanged |
-| **per-field value/confidence/refs** | recomputed from provenance | **dropped** | — | consumed only within NeedSet scoring |
-| **per-field state** (accepted/conflict/unknown/weak) | recomputed | recomputed (classified per group) | recomputed (into bundle fields[].state) | re-derived at each boundary |
-| **per-field idx hints** (query_terms, domain_hints, content_types) | normalized | recomputed (into group union arrays) | **dropped** (consumed by LLM payload) | normalized in S2, aggregated in S3, consumed in S4 |
-| **per-field history** (domains_tried, host_classes_tried, etc.) | enriched from buildFieldHistories | recomputed (into group union arrays) | **dropped** (consumed by LLM payload) | enriched in S2, aggregated in S3, consumed in S4 |
-| **summary/blockers** | recomputed | passthrough | passthrough (in panel) | S2 computes, then passes unchanged |
-| **planner_seed** | recomputed | passthrough (as `needset` projection) | **dropped** (consumed internally) | repackaged in S3, consumed in S4 |
-| **group_catalog metadata** | — | enriched (from GROUP_DEFAULTS) | **dropped** (already inlined into focus_groups) | created in S3, consumed in S3 |
-| **focus_groups** | — | recomputed (groupBy + aggregate) | recomputed (into bundles + LLM payload) | created in S3, transformed in S4 |
-| **LLM-generated queries** | — | — | enriched (from LLM) | created in S4 |
-| **profile_influence** | — | — | recomputed (from query analysis) | created in S4 |
-| **learning_writeback** | — | — | recomputed (from query analysis) | created in S4 |
-| **deltas** | — | — | recomputed (from previous_round_fields) | created in S4 |
-
-### Brand Resolution Sidecar
-
-| Field | Origin | Consumed By | Transform |
-|-------|--------|-------------|-----------|
-| `officialDomain` | cache OR LLM | search_profile_hints, manufacturer_auto_promote | passthrough → hints; recomputed → tier promotion |
-| `supportDomain` | cache OR LLM | manufacturer_auto_promote | recomputed → tier promotion |
-| `aliases` | cache OR LLM | search_profile_hints | passthrough → used as brand-domain variants |
-| `confidence` | cache OR 0.8 | telemetry, panel display | passthrough |
-| `reasoning` | LLM OR [] | panel display | passthrough |
+| Field Group | Tag | Source | Notes |
+|-------------|-----|--------|-------|
+| `queryRows[]` | **recomputed** | handoff queries | flat execution rows with metadata |
+| `selectedQueryRowMap` | **recomputed** | handoff queries | lowercase query lookup |
+| `guardContext` | **recomputed** | product identity | brand/model tokens and digit groups |
+| `rejectLog` | **recomputed** | identity guard | rejected query reasons |
+| `execution plan` | **recomputed** | guarded query rows | provider-ready plan for stage 05 |
 
 ---
 
-## Anti-Garbage Intelligence Flow
+## Boundary 5 - Query Journey -> Search Execution
 
-The pipeline's feedback loop ensures the LLM doesn't repeat failed strategies:
+Producer: `executeSearchQueries()`
+Contracts: `planning/05-searxng-execution-input.json`
 
-```
-buildFieldHistories (round N-1 evidence)
-  → Schema 2 fields[].history (per-field memory)
-    → Schema 3 focus_groups[].*_union (aggregated per group)
-      → Schema 4 LLM payload (sent as anti-garbage context)
-        → LLM avoids dead domains, dead queries, exhausted patterns
-```
-
-| Signal | Created | Aggregated | Consumed |
-|--------|---------|------------|----------|
-| `domains_tried` | S2 (buildFieldHistories) | S3 (domains_tried_union) | S4 (LLM payload, capped to 5) |
-| `host_classes_tried` | S2 (classifyHostClass) | S3 (host_classes_tried_union) | S4 (LLM payload) |
-| `evidence_classes_tried` | S2 (classifyEvidenceClass) | S3 (evidence_classes_tried_union) | S4 (LLM payload) |
-| `no_value_attempts` | S2 (buildFieldHistories) | S3 (max across group fields) | S4 (LLM payload) |
-| `existing_queries` | S2 (buildFieldHistories) | S3 (existing_queries_union) | S4 (LLM payload + hash dedup) |
-| `dead_query_hashes` | external learning store | S3 (learning passthrough) | S4 (pre-LLM anti-garbage filter) |
-| `dead_domains` | external learning store | S3 (learning passthrough) | S4 (pre-LLM anti-garbage filter) |
+| Field Group | Tag | Source | Notes |
+|-------------|-----|--------|-------|
+| `rawResults[]` | **enriched** | search providers | url, title, snippet, provider, rank |
+| `searchAttempts[]` | **recomputed** | execution loop | provider/result-count records |
+| `searchJournal[]` | **recomputed** | execution loop | timeline log |
+| `internalSatisfied` | **recomputed** | internal corpus result | whether internal search was enough |
+| `externalSearchReason` | **recomputed** | execution policy | why web search still ran |
 
 ---
 
-## Schema Update Status
+## Boundary 6 - Search Execution -> SERP Triage
 
-All schemas audited — **no updates required** for existing files. Three new contract files added for the Schema 4 search planner:
+Producer: `processDiscoveryResults()`
 
-| Schema | File | Gaps | Status |
-|--------|------|------|--------|
-| Schema 1 (NeedSetStartInput) | `planning/01-needset-input.json` | 10 original → 0 remaining | all resolved or dropped by design |
-| Schema 2 (NeedSetOutput) | `planning/01-needset-output.json` | 6 original → 0 material | ghost consumers documented; live output corrected |
-| Schema 3 (SearchPlanningContext) | `planning/01-needset-planner-context.json` | 12 original → 0 remaining | all closed |
-| Schema 4 (NeedSetPlannerOutput) | `planning/01-needset-planner-output.json` | 16 original → 0 remaining | all closed |
-| Brand Resolver Input | `planning/02-brand-resolver-input.json` | 3 original → 0 material | all closed or informational |
-| Brand Resolver Output | `planning/02-brand-resolver-output.json` | 4 original → 0 material | 2 extra (confidence, reasoning) |
-| Handoff Input | `planning/03-search-plan-handoff-input.json` | 0 | complete |
-| Handoff Output | `planning/03-search-plan-handoff-output.json` | 0 | complete |
-| **Search Planner Input** | `planning/03-search-planner-input.json` | — | **NEW** — Schema 3 consumption contract with field-level tags |
-| **Search Planner Output** | `planning/03-search-planner-output.json` | — | **NEW** — Schema 4 output contract with field-level tags |
-| **Search Planner LLM Call** | `planning/03-search-planner-llm-call.json` | — | **NEW** — prompt, payload, response schema, post-processing rules |
-| **Query Journey Input** | `planning/04-query-journey-input.json` | — | **NEW** — 5-phase input contract (adapter → guard → exec → classify → rerank) |
-| **Query Journey Output** | `planning/04-query-journey-output.json` | — | **NEW** — per-phase output shapes with cumulative artifact list |
-| **Query Journey LLM Call** | `planning/04-query-journey-llm-call.json` | — | **NEW** — SERP reranker LLM (`uber_serp_reranker`) prompt, weights, and response schema |
-| SearXNG Execution Input | `planning/05-searxng-execution-input.json` | 0 | complete |
+| Field Group | Tag | Source | Notes |
+|-------------|-----|--------|-------|
+| `candidates[]` | **enriched** | classified search results | tier, role, domain safety, identity signals |
+| `approvedUrls[]` | **recomputed** | triage gate | ready for main queue |
+| `candidateUrls[]` | **recomputed** | triage gate | ready for candidate queue |
+| `serp_explorer` | **recomputed** | query and candidate traces | query-level and candidate-level audit artifact |
+| `searchProfileFinal` | **recomputed** | triage summary | executed status, stats, counts |
 
-### Flow Diagrams
+---
 
-- No dedicated prefetch Mermaid sources currently exist under `pipeline/`; the current prefetch authority in this folder is `planning/PREFETCH-PIPELINE-OVERVIEW.md` plus `planning/QUERY-JOURNEY-RANKING.md`.
+## Boundary 7 - SERP Triage -> Planner Queues
+
+Producer: `runDiscoverySeedPlan()`
+
+| Field Group | Tag | Source | Notes |
+|-------------|-----|--------|-------|
+| `planner.enqueue(...)` | **recomputed** | approved URLs | queue routing by authority/host |
+| `planner.seedCandidates(...)` | **recomputed** | candidate URLs | candidate queue seeding |
+| `manufacturerQueue / queue / candidateQueue` | **recomputed** | planner routing rules | queue partitioning |
+| `queue_snapshot` | **persisted** | queue snapshot phase | trace artifact |
+
+---
+
+## Boundary 8 - Planner Queues -> Fetch Payloads
+
+Producer: fetch scheduler + fetch artifact phases
+
+| Field Group | Tag | Source | Notes |
+|-------------|-----|--------|-------|
+| `source` | **passthrough** | planner dequeue | next URL and source metadata |
+| `pageData.*` | **enriched** | fetcher output | HTML, final URL, status, title, screenshots, payloads |
+| `artifact refs` | **persisted** | source artifacts phase | raw page, DOM snippet, screenshot, network payloads |
+| `hostBudgetRow` | **recomputed** | host budget tracker | backoff and retry state |
+
+---
+
+## Boundary 9 - Fetch Payloads -> Extraction
+
+Producer: `runSourceExtractionPhase()`
+Contracts: `parsing/09-fetch-to-extraction-*.json`
+
+| Field Group | Tag | Source | Notes |
+|-------------|-----|--------|-------|
+| flattened structured buckets | **recomputed** | JSON-LD, embedded state, network JSON | field path/value pairs for deterministic parse |
+| DOM/article/manual surfaces | **enriched** | HTML, PDF, screenshot | tables, regex fallback, article extraction, PDF pairs |
+| `llmEvidencePack` | **enriched** | evidence pack V2 | hashed snippets, field hints, source metadata |
+| field candidates | **enriched** | deterministic parser, component resolver, optional LLM | method-scored candidate rows |
+| identity candidates | **enriched** | extraction + adapters + optional LLM | brand/model/variant/hard-id rows |
+| `phase08FieldContexts` / `phase08PrimeRows` | **recomputed** | source ingestion seam | late-stage extraction summaries |
+| `llmSourcesUsed` / `llmCandidatesAccepted` | **recomputed** | stage 09 LLM gate | summary counters |
+
+---
+
+## Boundary 10 - Extraction -> Identity Gating
+
+Producer: `runSourceIdentityEvaluationPhase()`
+Contracts: `parsing/10-extraction-to-identity-gating-*.json`
+
+| Field Group | Tag | Source | Notes |
+|-------------|-----|--------|-------|
+| `anchorCheck` | **recomputed** | extracted anchor fields | major/minor conflicts |
+| `identity` | **recomputed** | source candidate map + identity lock | per-source score, confidence, reason codes |
+| `identityGatedCandidates` | **enriched** | field candidates + identity result | adds `identity_label` and `identity_confidence` |
+| `anchorStatus` | **recomputed** | anchor conflict summary | `pass`, `minor_conflicts`, or `failed_major_conflict` |
+| `manufacturerBrandMismatch` | **recomputed** | identity result + source role | escalation sentinel |
+| `parserHealth` | **recomputed** | candidates + anchors + endpoint signals | late-stage quality metric |
+
+---
+
+## Boundary 11 - Identity Gating -> Consensus
+
+Producer: `runConsensusEngine()` via `executeConsensusPhase()`
+Contracts: `parsing/11-identity-gating-to-consensus-*.json`
+
+| Field Group | Tag | Source | Notes |
+|-------------|-----|--------|-------|
+| usable sources | **dropped** / **recomputed** | stage 10 output | only matched/possible + no major anchors survive |
+| `fields` | **recomputed** | clustered candidates + identity lock seeds | canonical scalar output |
+| `provenance` | **enriched** | winning cluster evidence | confirmations, approved domains, citations |
+| `candidates` | **persisted** | clustered rows | kept for reducers/review |
+| `fieldsBelowPassTarget` | **recomputed** | pass-target gate | unresolved or weak confirmation |
+| `criticalFieldsBelowPassTarget` | **recomputed** | pass-target gate | critical subset |
+| `newValuesProposed` | **recomputed** | list-value scan | values missing from known sets |
+| `agreementScore` | **recomputed** | best vs second cluster dominance | cross-field agreement metric |
+
+---
+
+## Boundary 12 - Consensus -> Validation
+
+Producer: `runProductFinalizationDerivation()`
+Contracts: `parsing/12-consensus-to-validation-*.json`
+
+| Field Group | Tag | Source | Notes |
+|-------------|-----|--------|-------|
+| component prior fills | **enriched** | component matches | fills known component-backed fields |
+| `criticDecisions` | **recomputed** | deterministic critic | normalize/reject/unknown outcomes |
+| `llmValidatorDecisions` | **enriched** | optional validator LLM | only when expensive finalization is allowed |
+| `normalized` | **normalized** / **recomputed** | consensus + critic + runtime gate | final field values before export |
+| `provenance` | **enriched** | consensus provenance + later passes | full field evidence chain |
+| `completenessStats` / `coverageStats` / `confidence` | **recomputed** | final metrics | validation inputs |
+| `gate` | **recomputed** | `evaluateValidationGate()` | validated flag, reasons, checks |
+| `publishable` / `publishBlockers` | **recomputed** | gate + identity publish threshold | final publish decision |
+| `fieldReasoning` | **recomputed** | provenance + constraints + availability | per-field reasons and unknown reasons |
+| `trafficLight` | **recomputed** | provenance tiers and critic output | green/yellow/red counts |
+| `needSet` | **enriched** | finalization reasoning + enriched histories | repair and GUI continuity payload |
+| `phase07PrimeSources` | **recomputed** | final provenance | prime source summary |
+| `phase08Extraction` | **recomputed** | legacy extraction contexts + validator decisions | batch/schema/ref summary |
+| `parserHealthRows` / `parserHealthAverage` | **recomputed** | per-source parser health | late-stage parsing metric |
+
+---
+
+## Boundary 13 - Validation -> Output
+
+Producer: `runProductCompletionLifecycle()`
+Contracts: `parsing/13-*.json`
+
+| Field Group | Tag | Source | Notes |
+|-------------|-----|--------|-------|
+| `run_completed` payload | **recomputed** | summary + extraction + resume stats | compact completion telemetry |
+| summary artifacts | **persisted** | final summary + markdown + TSV | run summary materialization |
+| `learningGateResult` | **recomputed** | final fields + provenance | accepted updates and gate results |
+| learning stores | **persisted** | accepted updates | url memory, domain yield, anchors, component lexicon |
+| `exportInfo` | **persisted** | exporter | `runBase` and `latestBase` |
+| `finalExport` | **persisted** / **recomputed** | final exporter | promotion result, history keys, runtime gate counts |
+| SpecDb dual-write | **persisted** | exporter | product run, field state, candidates, queue product |
+| `run result` payload | **passthrough** / **enriched** | completion lifecycle | returned to caller with exports and learning |
+| data-change events | **persisted** / **enriched** | finalization telemetry | broadcast payloads with entities and versions |
+
+---
+
+## End-To-End Lifecycle Summary
+
+### Primary Payload Families
+
+| Payload Family | Created | Aggregated | Final Consumer | End State |
+|----------------|---------|------------|----------------|-----------|
+| Need-driven field state | Stage 01 | Stage 12 enriches histories | stage 12 reasoning + GUI | survives as `needSet` |
+| Query planning context | Stages 02-04 | stage 04 adapter + stage 06 triage | search execution + GUI | consumed before fetch |
+| Search results and triage candidates | Stages 05-06 | stage 07 queue seeding | planner/fetch loop | consumed before fetch |
+| Per-source fetch artifacts | Stage 08 | stage 09 extraction | per-source result append | stored in `runs/` raw artifact tree |
+| Per-source field and identity candidates | Stage 09 | stage 10 gating | stage 11 consensus | survives as review/debug context in `sourceResults` |
+| Consensus field output | Stage 11 | stage 12 refinement | finalization + export | survives as `normalized` + `provenance` |
+| Validation and publishability signals | Stage 12 | stage 13 completion | exporters, learning, UI | survives in `summary`, `run_completed`, `finalExport` |
+| Durable exports and events | Stage 13 | final exporter + telemetry | filesystem, SpecDb, websocket consumers | terminal state |
+
+### Legacy Runtime Naming Map
+
+| Runtime Name | Documentation Home | Meaning |
+|--------------|--------------------|---------|
+| `phase08FieldContexts` | `parsing/09-*` and `parsing/12-*` | stage 09 extraction field context aggregate |
+| `phase08PrimeRows` | `parsing/09-*` and `parsing/12-*` | stage 09 prime-source aggregate |
+| `phase08Extraction` | `parsing/12-*` and `parsing/13-*` | late-stage summary derived from stage 09 context |
+| `phase07PrimeSources` | `parsing/12-*` and `parsing/13-*` | prime-source summary derived after validation |
+
+### Mermaid And Contract Sources
+
+- Planning stage overview: `planning/PREFETCH-PIPELINE-OVERVIEW.md`
+- Parsing stage overview: `parsing/PARSING-PIPELINE-OVERVIEW.md`
+- Full pipeline diagram: `FULL-PIPELINE-START-TO-FINISH.mmd`
+- Planning contracts: `planning/00-super-schema-process.json`
+- Parsing contracts: `parsing/00-super-schema-process.json`

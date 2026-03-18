@@ -104,8 +104,6 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       llmModelPlan: '  gpt-plan  ',
       llmModelTriage: '  gpt-triage  ',
       llmMaxOutputTokensPlan: '128',
-      llmModelFast: '  gpt-fast  ',
-      llmMaxOutputTokensFast: '129',
       llmMaxOutputTokensTriage: '130',
       llmModelReasoning: '  gpt-reasoning  ',
       llmMaxOutputTokensReasoning: '131',

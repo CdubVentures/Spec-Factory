@@ -29,16 +29,6 @@ export const LLM_SETTING_LIMITS = {
 };
 
 export const LLM_ROUTE_PRESET_LIMITS = {
-  fast: {
-    maxTokensMin: 2048,
-    maxTokensMax: 6144,
-    modelLadderToday: 'gpt-5-low -> gpt-5-medium',
-    singleSourceData: true,
-    allSourceData: false,
-    enableWebsearch: false,
-    allSourcesConfidenceRepatch: true,
-    minEvidenceRefsRequired: 1,
-  },
   balanced: {
     maxTokensMin: 4096,
     maxTokensMax: 8192,
@@ -58,4 +48,4 @@ export const LLM_ROUTE_PRESET_LIMITS = {
     allSourcesConfidenceRepatch: true,
     minEvidenceRefsRequired: 2,
   },
-} as const satisfies Record<'fast' | 'balanced' | 'deep', LlmRoutePresetConfig>;
+} as const satisfies Record<'balanced' | 'deep', LlmRoutePresetConfig>;

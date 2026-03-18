@@ -2,7 +2,7 @@
 
 > **Purpose:** Preserve the historical test-retirement audit record from the 2026-03-16 suite-reduction pass.
 > **Prerequisites:** [../README.md](../README.md), [../05-operations/known-issues.md](../05-operations/known-issues.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-17
 
 Historical note: this file captures one specific test-surface reduction pass. Its suite counts and timings are not the current global baseline for the repo after subsequent work.
 
@@ -68,7 +68,7 @@ Historical note: this file captures one specific test-surface reduction pass. It
 ## Current Relevance
 
 - Keep using this file for historical retirement rationale and preserved-coverage lineage.
-- Do not use its suite totals as the present-day repo baseline; the current docs audit observed `npm test` passing `5552/5552`.
+- Do not use its suite totals as the present-day repo baseline; the current baseline lives in [documentation-audit-ledger.md](./documentation-audit-ledger.md) and [../05-operations/known-issues.md](../05-operations/known-issues.md).
 
 ## Validated Against
 
@@ -84,4 +84,4 @@ Historical note: this file captures one specific test-surface reduction pass. It
 
 - [../05-operations/known-issues.md](../05-operations/known-issues.md) - current known issues and present-day suite caveats.
 - [../07-patterns/anti-patterns.md](../07-patterns/anti-patterns.md) - current guidance against implementation-coupled tests.
-- [./documentation-audit-ledger.md](./documentation-audit-ledger.md) - records how this historical audit doc was classified in the 2026-03-16 docs pass.
+- [./documentation-audit-ledger.md](./documentation-audit-ledger.md) - current documentation audit ledger for this maintained docs tree.

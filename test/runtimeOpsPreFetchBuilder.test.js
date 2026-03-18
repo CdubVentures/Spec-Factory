@@ -182,13 +182,10 @@ test('buildPreFetchPhases: groups discovery_planner LLM calls under search_plann
   const events = [
     makeEvent('llm_started', { reason: 'discovery_planner_primary', batch_id: 'sp-1' }),
     makeEvent('llm_finished', { reason: 'discovery_planner_primary', batch_id: 'sp-1', tokens: { input: 200, output: 100 } }),
-    makeEvent('llm_started', { reason: 'discovery_planner_fast', batch_id: 'sp-2' }),
-    makeEvent('llm_finished', { reason: 'discovery_planner_fast', batch_id: 'sp-2', tokens: { input: 150, output: 80 } }),
   ];
   const result = buildPreFetchPhases(events, makeMeta(), {});
-  assert.equal(result.llm_calls.search_planner.length, 2);
+  assert.equal(result.llm_calls.search_planner.length, 1);
   assert.equal(result.llm_calls.search_planner[0].reason, 'discovery_planner_primary');
-  assert.equal(result.llm_calls.search_planner[1].reason, 'discovery_planner_fast');
 });
 
 test('buildPreFetchPhases: groups triage/rerank/serp LLM calls under serp_triage', () => {

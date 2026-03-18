@@ -37,12 +37,7 @@ function makeInput(
     searxngBaseUrl: '',
     llmPlanApiKey: '',
     llmModelPlan: 'gpt-4o',
-    llmModelTriage: 'gpt-4o',
-    llmModelFast: 'gpt-4o-mini',
     llmModelReasoning: 'claude-sonnet',
-    llmModelExtract: 'gpt-4o',
-    llmModelValidate: 'gpt-4o',
-    llmModelWrite: 'gpt-4o',
     llmExtractMaxTokens: 8000,
     llmExtractMaxSnippetsPerBatch: 5,
     llmExtractMaxSnippetChars: 3000,
@@ -62,9 +57,6 @@ function makeInput(
     llmCostCachedInputPer1M: 1.25,
     llmPlanFallbackModel: 'gpt-4o-mini',
     llmReasoningFallbackModel: 'claude-haiku',
-    llmExtractFallbackModel: 'gpt-4o-mini',
-    llmValidateFallbackModel: 'gpt-4o-mini',
-    llmWriteFallbackModel: 'gpt-4o-mini',
     outputMode: 'local',
     localInputRoot: '',
     localOutputRoot: '',
@@ -81,15 +73,6 @@ function makeInput(
     deepseekApiKey: '',
     llmPlanProvider: '',
     llmPlanBaseUrl: '',
-    llmExtractProvider: '',
-    llmExtractBaseUrl: '',
-    llmExtractApiKey: '',
-    llmValidateProvider: '',
-    llmValidateBaseUrl: '',
-    llmValidateApiKey: '',
-    llmWriteProvider: '',
-    llmWriteBaseUrl: '',
-    llmWriteApiKey: '',
     importsRoot: '',
     resumeMode: 'off',
     scannedPdfOcrBackend: 'tesseract',
@@ -102,20 +85,11 @@ function makeInput(
     globalRequestBurst: 20,
     fetchPerHostConcurrencyCap: 2,
     llmMaxOutputTokensPlan: 4096,
-    llmMaxOutputTokensTriage: 2048,
-    llmMaxOutputTokensFast: 2048,
     llmMaxOutputTokensReasoning: 4096,
-    llmMaxOutputTokensExtract: 4096,
-    llmMaxOutputTokensValidate: 4096,
-    llmMaxOutputTokensWrite: 4096,
     llmMaxOutputTokensPlanFallback: 4096,
     llmMaxOutputTokensReasoningFallback: 4096,
-    llmMaxOutputTokensExtractFallback: 4096,
-    llmMaxOutputTokensValidateFallback: 4096,
-    llmMaxOutputTokensWriteFallback: 4096,
     llmExtractionCacheTtlMs: 0,
     llmMaxCallsPerProductTotal: 100,
-    llmMaxCallsPerProductFast: 50,
     resumeWindowHours: 24,
     reextractAfterHours: 0,
     scannedPdfOcrMaxPages: 10,
@@ -223,7 +197,6 @@ function makeInput(
     llmExtractSkipLowSignal: false,
     llmReasoningMode: false,
     llmPlanUseReasoning: false,
-    llmTriageUseReasoning: false,
     llmDisableBudgetGuards: false,
     llmVerifyMode: false,
     localMode: true,
@@ -286,33 +259,6 @@ describe('collectRuntimeSettingsPayload — fallback token clamping', () => {
     strictEqual(result.llmMaxOutputTokensReasoningFallback, 4096);
   });
 
-  it('clamps extract fallback tokens against fallback model, not primary', () => {
-    const result = collectRuntimeSettingsPayload(makeInput({
-      llmModelExtract: 'gpt-4o',
-      llmExtractFallbackModel: 'gpt-4o-mini',
-      llmMaxOutputTokensExtractFallback: 12000,
-    }));
-    strictEqual(result.llmMaxOutputTokensExtractFallback, 8192);
-  });
-
-  it('clamps validate fallback tokens against fallback model, not primary', () => {
-    const result = collectRuntimeSettingsPayload(makeInput({
-      llmModelValidate: 'gpt-4o',
-      llmValidateFallbackModel: 'gpt-4o-mini',
-      llmMaxOutputTokensValidateFallback: 12000,
-    }));
-    strictEqual(result.llmMaxOutputTokensValidateFallback, 8192);
-  });
-
-  it('clamps write fallback tokens against fallback model, not primary', () => {
-    const result = collectRuntimeSettingsPayload(makeInput({
-      llmModelWrite: 'gpt-4o',
-      llmWriteFallbackModel: 'gpt-4o-mini',
-      llmMaxOutputTokensWriteFallback: 12000,
-    }));
-    strictEqual(result.llmMaxOutputTokensWriteFallback, 8192);
-  });
-
   it('falls back to primary model when no fallback model is configured', () => {
     // If no fallback model set, clamping should use primary model limits
     const result = collectRuntimeSettingsPayload(makeInput({
@@ -325,48 +271,3 @@ describe('collectRuntimeSettingsPayload — fallback token clamping', () => {
   });
 });
 
-/* ------------------------------------------------------------------ */
-/*  SSOT: Empty extract/validate/write inherit from global base         */
-/* ------------------------------------------------------------------ */
-
-describe('collectRuntimeSettingsPayload — extraction model SSOT inheritance', () => {
-  it('empty llmModelExtract resolves to llmModelPlan', () => {
-    const result = collectRuntimeSettingsPayload(makeInput({
-      llmModelPlan: 'gpt-4o',
-      llmModelExtract: '',
-    }));
-    strictEqual(result.llmModelExtract, 'gpt-4o');
-  });
-
-  it('empty llmModelValidate resolves to llmModelPlan', () => {
-    const result = collectRuntimeSettingsPayload(makeInput({
-      llmModelPlan: 'gpt-4o',
-      llmModelValidate: '',
-    }));
-    strictEqual(result.llmModelValidate, 'gpt-4o');
-  });
-
-  it('empty llmModelWrite resolves to llmModelPlan', () => {
-    const result = collectRuntimeSettingsPayload(makeInput({
-      llmModelPlan: 'gpt-4o',
-      llmModelWrite: '',
-    }));
-    strictEqual(result.llmModelWrite, 'gpt-4o');
-  });
-
-  it('explicit override is preserved', () => {
-    const result = collectRuntimeSettingsPayload(makeInput({
-      llmModelPlan: 'gpt-4o',
-      llmModelExtract: 'claude-sonnet',
-    }));
-    strictEqual(result.llmModelExtract, 'claude-sonnet');
-  });
-
-  it('whitespace-only llmModelExtract resolves to llmModelPlan', () => {
-    const result = collectRuntimeSettingsPayload(makeInput({
-      llmModelPlan: 'gpt-4o',
-      llmModelExtract: '   ',
-    }));
-    strictEqual(result.llmModelExtract, 'gpt-4o');
-  });
-});

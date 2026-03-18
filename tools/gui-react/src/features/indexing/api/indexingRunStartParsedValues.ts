@@ -90,7 +90,7 @@ export function deriveIndexingRunStartParsedValues({
     parsedDomSnippetMaxChars: parseRuntimeInt(readValue('domSnippetMaxChars'), runtimeSettingsBaseline.domSnippetMaxChars),
     parsedLlmExtractionCacheTtlMs: parseRuntimeInt(readValue('llmExtractionCacheTtlMs'), runtimeSettingsBaseline.llmExtractionCacheTtlMs),
     parsedLlmMaxCallsPerProductTotal: parseRuntimeInt(readValue('llmMaxCallsPerProductTotal'), runtimeSettingsBaseline.llmMaxCallsPerProductTotal),
-    parsedLlmMaxCallsPerProductFast: parseRuntimeInt(readValue('llmMaxCallsPerProductFast'), runtimeSettingsBaseline.llmMaxCallsPerProductFast),
+
     parsedLlmExtractMaxTokens: parseRuntimeInt(readValue('llmExtractMaxTokens'), runtimeSettingsBaseline.llmExtractMaxTokens),
     parsedLlmExtractMaxSnippetsPerBatch: parseRuntimeInt(readValue('llmExtractMaxSnippetsPerBatch'), runtimeSettingsBaseline.llmExtractMaxSnippetsPerBatch),
     parsedLlmExtractMaxSnippetChars: parseRuntimeInt(readValue('llmExtractMaxSnippetChars'), runtimeSettingsBaseline.llmExtractMaxSnippetChars),

@@ -1,0 +1,86 @@
+{
+  "_doc": "Stage 09 input contract for fetch to extraction. Validated against runSourceExtractionPhase(), fieldExtractor.js, evidencePackV2.js, and orchestration DOMAIN.md on 2026-03-17.",
+  "schema_version": "stage09.fetch_to_extraction_input.v1",
+  "producer": "runSourceProcessingPhase() -> runSourceExtractionPhase()",
+  "source_files": [
+    "src/features/indexing/orchestration/execution/runSourceExtractionPhase.js",
+    "src/features/indexing/extraction/parsers/fieldExtractor.js",
+    "src/features/indexing/extraction/evidencePack.js",
+    "src/evidence/evidencePackV2.js",
+    "src/features/indexing/orchestration/DOMAIN.md"
+  ],
+  "legacy_runtime_names": {
+    "note": "The late-stage parsing flow still uses legacy phase08 variable names in runtime code.",
+    "state_keys": [
+      "phase08FieldContexts",
+      "phase08PrimeRows",
+      "phase08BatchRows"
+    ]
+  },
+  "input_groups": {
+    "source_descriptor": [
+      "source",
+      "hostBudgetRow",
+      "sourceStatusCode",
+      "fetchDurationMs",
+      "fetchContentType",
+      "sourceFetchOutcome"
+    ],
+    "fetched_page_data": [
+      "pageData.html",
+      "pageData.finalUrl",
+      "pageData.title",
+      "pageData.status",
+      "pageData.ldjsonBlocks",
+      "pageData.embeddedState",
+      "pageData.networkResponses",
+      "pageData.fetchTelemetry"
+    ],
+    "persisted_artifact_refs": [
+      "artifactHostKey",
+      "pageHtmlUri",
+      "ldjsonUri",
+      "embeddedStateUri",
+      "networkResponsesUri",
+      "domSnippetArtifact",
+      "domSnippetUri",
+      "screenshotArtifact",
+      "screenshotUri",
+      "screenshotFileUri",
+      "pageArtifactsPersisted"
+    ],
+    "phase_state": [
+      "parseStartedAtMs",
+      "phase08FieldContexts",
+      "phase08PrimeRows",
+      "llmSourcesUsed",
+      "llmCandidatesAccepted"
+    ],
+    "runtime_dependencies": [
+      "categoryConfig",
+      "config",
+      "runtimeFieldRulesEngine",
+      "deterministicParser",
+      "componentResolver",
+      "llmContext",
+      "adapterManager",
+      "goldenExamples",
+      "anchors",
+      "sourceResults"
+    ]
+  },
+  "transform_sequence": [
+    "Classify fetched content and normalize per-host artifact metadata.",
+    "Flatten JSON-LD, embedded state, and network JSON buckets into field path/value pairs.",
+    "Extract DOM tables, DOM fallback rows, article text, manual/PDF content, and structured metadata sidecars.",
+    "Build evidence pack V2 with deterministic snippet hashing and field hints.",
+    "Run deterministic parser, component resolver, and conditional LLM extraction on unresolved fields.",
+    "Merge extraction, adapter, and LLM candidates into per-source records for downstream identity evaluation."
+  ],
+  "gates": [
+    "Manufacturer adapter work only runs for manufacturer-role sources.",
+    "Structured metadata sidecar remains bounded by cache, timeout, and per-surface limits.",
+    "LLM extraction only runs when enabled, there are unresolved fields, and budget/guard checks pass.",
+    "Repair-query emission and blocked-domain cooldowns are handled around the same boundary but do not mutate the extraction contract itself."
+  ]
+}

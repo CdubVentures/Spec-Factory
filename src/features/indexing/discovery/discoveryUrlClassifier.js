@@ -197,6 +197,10 @@ export function isLowSignalDiscoveryPath(parsed) {
   if (/\/search(\/|\?|$)/.test(pathAndQuery)) {
     return true;
   }
+  // WHY: Catch query-param-based search pages that don't use /search in the path
+  if (/[?&](q|query|s|keyword|search|term|searchterm)=/i.test(search)) {
+    return true;
+  }
   if (host.endsWith('amazon.com')) {
     if ((pathname === '/s' || pathname.startsWith('/s/')) && /(?:^|[?&])k=/.test(search)) {
       return true;
@@ -401,9 +405,7 @@ export function isRelevantSearchResult({
   classified = {},
   variables = {}
 }) {
-  if (String(raw.provider || raw.source || '').toLowerCase() === 'plan') {
-    return true;
-  }
+  // WHY: plan-provider bypass removed — all URLs pass same relevance checks.
   if (String(classified.role || '').toLowerCase() === 'manufacturer') {
     return true;
   }

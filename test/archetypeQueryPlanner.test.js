@@ -430,7 +430,7 @@ describe('emitArchetypeQueries', () => {
     assert.ok(domainHints.has('techpowerup.com'), 'techpowerup.com domain_hint');
   });
 
-  it('manufacturer emits site: + generic queries', () => {
+  it('manufacturer emits host-biased + generic queries', () => {
     const slot = {
       archetype: 'manufacturer',
       hosts: ['razer.com'],
@@ -443,9 +443,10 @@ describe('emitArchetypeQueries', () => {
     const rows = emitArchetypeQueries(slot, identity, product, ['weight', 'sensor']);
 
     assert.ok(rows.length > 0, 'emits rows');
-    const siteRows = rows.filter((r) => r.query.includes('site:'));
-    assert.ok(siteRows.length > 0, 'has site: query');
-    assert.ok(siteRows.some((r) => r.query.includes('site:razer.com')), 'site:razer.com query');
+    // WHY: site: removed — manufacturer queries now use soft host bias (plain-text host name)
+    const hostRows = rows.filter((r) => r.query.includes('razer.com'));
+    assert.ok(hostRows.length > 0, 'has host-biased query');
+    assert.ok(hostRows.some((r) => !r.query.includes('site:')), 'host appears as plain text, not site: operator');
   });
 
   it('target_fields from coverage intersection (advisory)', () => {
@@ -461,7 +462,7 @@ describe('emitArchetypeQueries', () => {
     assert.ok(hasTargetFields, 'rows carry target_fields');
   });
 
-  it('one site: per host (Set enforcement)', () => {
+  it('one host-biased query per host (Set enforcement)', () => {
     const slot = {
       archetype: 'lab_review',
       hosts: ['rtings.com', 'techpowerup.com'],
@@ -470,14 +471,13 @@ describe('emitArchetypeQueries', () => {
     };
     const rows = emitArchetypeQueries(slot, makeIdentity(), 'Razer Viper V3 Pro', ['click_latency', 'sensor']);
 
-    const siteQueries = rows.filter((r) => r.query.includes('site:'));
-    const siteHosts = siteQueries.map((r) => {
-      const match = r.query.match(/site:(\S+)/);
-      return match ? match[1] : '';
-    });
-    const uniqueHosts = new Set(siteHosts);
-    assert.equal(siteHosts.length, uniqueHosts.size,
-      `no duplicate site: for same host: ${siteHosts}`);
+    // WHY: site: operators removed — host appears as plain-text soft bias.
+    // Verify Set enforcement still limits to one host-biased query per host per archetype.
+    const hostBiasedRows = rows.filter((r) => r.domain_hint);
+    const hostQueryPairs = hostBiasedRows.map((r) => `${r.domain_hint}::${r.query}`);
+    const uniquePairs = new Set(hostQueryPairs);
+    assert.equal(hostQueryPairs.length, uniquePairs.size,
+      `no exact duplicate host-biased query: ${hostQueryPairs}`);
   });
 
   it('every row has _meta with archetype, gap_reason, intent_fingerprint, query_family', () => {

@@ -1,0 +1,40 @@
+{
+  "_doc": "Stage 13 output contract for validation to output. Validated against exportRunArtifacts(), finalExporter.js, and runProductCompletionLifecycle() on 2026-03-17.",
+  "schema_version": "stage13.validation_to_output_output.v1",
+  "producer": "runTerminalLearningExportLifecycle() plus buildRunResultPayload()",
+  "source_files": [
+    "src/exporter/exporter.js",
+    "src/exporter/finalExporter.js",
+    "src/features/indexing/orchestration/finalize/runProductCompletionLifecycle.js",
+    "src/features/indexing/orchestration/finalize/buildRunResultPayload.js"
+  ],
+  "artifact_outputs": {
+    "exportInfo": {
+      "runBase": "runs/{runId}/ root with raw pages, adapters, normalized output, provenance, candidates, events, and full summary.",
+      "latestBase": "latest/ snapshot with normalized.json, provenance.json, summary.json, candidates.json, TSV, and optional summary.md."
+    },
+    "finalExport": {
+      "final_base": "final/{category}/{brand}/{model}[/{variant}] directory for promoted artifacts.",
+      "promoted": "Whether shouldPromoteFinal() accepted the new run as the final snapshot.",
+      "debug_base": "Debug artifact base written alongside final promotion.",
+      "history_key": "history/runs.jsonl append target.",
+      "sources_history_key": "evidence/sources.jsonl append target.",
+      "runtime_gate": "Counts of applied runtime gate changes, warnings, and failures."
+    },
+    "learning": {
+      "gateResults": "Per-field learning acceptance decisions.",
+      "acceptedUpdates": "Per-field accepted learning rows written to stores and profiles."
+    }
+  },
+  "storage_side_effects": [
+    "Dual-write normalized output into SpecDb tables.",
+    "Append run snapshot and source history JSONL files under final/.",
+    "Write evidence_pack.json, meta.json, summary.json, spec.json, provenance.json, traffic_light.json, and versioned publication artifacts when enabled."
+  ],
+  "promotion_rules": [
+    "Candidate must be publishable before promotion can occur.",
+    "If no final summary exists, promote immediately.",
+    "If existing final summary is not publishable, a publishable candidate wins.",
+    "Otherwise compare completeness, then confidence, then contradiction count, then generated_at."
+  ]
+}

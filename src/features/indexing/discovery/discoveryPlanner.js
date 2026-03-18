@@ -149,121 +149,86 @@ export async function planDiscoveryQueriesLLM({
   const archetypeHint = (payload.archetypes_emitted || []).length > 0
     ? `Archetype queries already target: ${payload.archetypes_emitted.join(', ')}. Focus on GAPS not covered by these source types.`
     : '';
-  const baseSystem = [
+  const criticalHint = (missingCriticalFields || []).length > 0
+    ? `Critical unresolved fields: ${missingCriticalFields.slice(0, 15).join(', ')}. Prioritize high-yield queries for these.`
+    : '';
+  const system = [
     'You generate focused web research queries for hardware specification collection.',
-    'Output 5-12 short search queries.',
-    'Prioritize manufacturer docs, manuals, instrumented labs, and trusted databases.',
+    'Output 8-16 short, diverse search queries. Each query should target a DIFFERENT angle.',
+    'Prioritize manufacturer docs, manuals, instrumented labs, and trusted spec databases.',
+    'Also include official support pages and product comparison sites.',
     'Do not include junk domains, login workflows, or irrelevant topics.',
     'The existingQueries show searches already tried. Generate DIFFERENT query patterns covering new angles.',
     'Vary strategies: official product pages, spec databases, review sites, teardowns, comparison pages.',
-    archetypeHint
-  ].filter(Boolean);
+    'Avoid repeating weak query patterns. Keep queries compact and practical.',
+    archetypeHint,
+    criticalHint
+  ].filter(Boolean).join('\n');
 
-  const passCap = 3;
-  const passSpecs = [
-    {
-      reason: 'discovery_planner_primary',
-      modelOverride: String(
-        Boolean(config._resolvedSearchPlannerUseReasoning ?? config.llmPlanUseReasoning)
-          ? (config._resolvedSearchPlannerReasoningModel || config.llmModelReasoning || config._resolvedSearchPlannerBaseModel || config.llmModelPlan || '')
-          : (config._resolvedSearchPlannerBaseModel || config.llmModelPlan || '')
-      ).trim(),
-      role: 'plan',
-      reasoningMode: false,
-      systemSuffix: 'Keep queries compact and practical.'
-    },
-    {
-      reason: 'discovery_planner_fast',
-      modelOverride: String(config.llmModelFast || config.llmModelPlan || '').trim(),
-      role: 'plan',
-      reasoningMode: false,
-      systemSuffix: 'Bias toward official manufacturer and support documents first.'
-    },
-    {
-      reason: 'discovery_planner_reason',
-      modelOverride: String(config.llmModelReasoning || config.llmModelExtract || '').trim(),
-      role: 'plan',
-      reasoningMode: true,
-      systemSuffix: 'Prioritize unresolved critical fields and avoid repeating weak query patterns.'
-    }
-  ];
-  if ((missingCriticalFields || []).length > 0) {
-    passSpecs.push({
-      reason: 'discovery_planner_validate',
-      modelOverride: String(config.llmModelValidate || config.llmModelReasoning || '').trim(),
-      role: 'plan',
-      reasoningMode: true,
-      systemSuffix: 'Return only high-yield queries for critical field closure.'
-    });
-  }
-
-  const cappedPasses = passSpecs
-    .filter((row) => row.modelOverride)
-    .slice(0, passCap);
-  if (!cappedPasses.length) {
+  const modelOverride = String(
+    Boolean(config._resolvedSearchPlannerUseReasoning ?? config.llmPlanUseReasoning)
+      ? (config._resolvedSearchPlannerReasoningModel || config.llmModelReasoning || config._resolvedSearchPlannerBaseModel || config.llmModelPlan || '')
+      : (config._resolvedSearchPlannerBaseModel || config.llmModelPlan || '')
+  ).trim();
+  if (!modelOverride) {
     return [];
   }
 
-  const allQueries = [];
-  for (const pass of cappedPasses) {
-    const budgetDecision = budgetGuard?.canCall({
-      reason: pass.reason,
-      essential: false
-    }) || { allowed: true };
-    if (!budgetDecision.allowed) {
-      budgetGuard?.block?.(budgetDecision.reason);
-      logger?.warn?.('llm_discovery_planner_skipped_budget', {
-        reason: budgetDecision.reason,
-        productId: job.productId,
-        pass: pass.reason
-      });
-      break;
-    }
+  const budgetDecision = budgetGuard?.canCall({
+    reason: 'discovery_planner_primary',
+    essential: false
+  }) || { allowed: true };
+  if (!budgetDecision.allowed) {
+    budgetGuard?.block?.(budgetDecision.reason);
+    logger?.warn?.('llm_discovery_planner_skipped_budget', {
+      reason: budgetDecision.reason,
+      productId: job.productId,
+    });
+    return [];
+  }
 
-    try {
-      const result = await callLlmWithRouting({
-        config,
-        reason: pass.reason,
-        role: pass.role,
-        modelOverride: pass.modelOverride,
-        system: [...baseSystem, pass.systemSuffix].join('\n'),
-        user: JSON.stringify(payload),
-        jsonSchema: querySchema(),
-        usageContext: {
-          category: job.category || categoryConfig.category || '',
-          productId: job.productId || '',
-          runId: llmContext.runId || '',
-          round: llmContext.round || 0,
-          reason: pass.reason,
-          host: '',
-          url_count: 0,
-          evidence_chars: payloadSize,
-          traceWriter: llmContext.traceWriter || null,
-          trace_context: {
-            purpose: 'discovery_query_plan',
-            target_fields: missingCriticalFields || []
-          }
-        },
-        costRates: llmContext.costRates || config,
-        onUsage: async (usageRow) => {
-          budgetGuard?.recordCall({ costUsd: usageRow.cost_usd });
-          if (typeof llmContext.recordUsage === 'function') {
-            await llmContext.recordUsage(usageRow);
-          }
-        },
-        reasoningMode: Boolean(pass.reasoningMode || config.llmReasoningMode),
-        reasoningBudget: Number(config.llmReasoningBudget || 0),
-        timeoutMs: config.llmTimeoutMs || config.openaiTimeoutMs,
-        logger
-      });
-      const normalized = normalizeQueryRows(result?.queries || []);
-      allQueries.push(...normalized);
-    } catch (error) {
-      logger?.warn?.('llm_discovery_planner_failed', {
-        message: error.message,
-        pass: pass.reason
-      });
-    }
+  let allQueries = [];
+  try {
+    const result = await callLlmWithRouting({
+      config,
+      reason: 'discovery_planner_primary',
+      role: 'plan',
+      modelOverride,
+      system,
+      user: JSON.stringify(payload),
+      jsonSchema: querySchema(),
+      usageContext: {
+        category: job.category || categoryConfig.category || '',
+        productId: job.productId || '',
+        runId: llmContext.runId || '',
+        round: llmContext.round || 0,
+        reason: 'discovery_planner_primary',
+        host: '',
+        url_count: 0,
+        evidence_chars: payloadSize,
+        traceWriter: llmContext.traceWriter || null,
+        trace_context: {
+          purpose: 'discovery_query_plan',
+          target_fields: missingCriticalFields || []
+        }
+      },
+      costRates: llmContext.costRates || config,
+      onUsage: async (usageRow) => {
+        budgetGuard?.recordCall({ costUsd: usageRow.cost_usd });
+        if (typeof llmContext.recordUsage === 'function') {
+          await llmContext.recordUsage(usageRow);
+        }
+      },
+      reasoningMode: Boolean(config._resolvedSearchPlannerUseReasoning ?? config.llmPlanUseReasoning ?? config.llmReasoningMode),
+      reasoningBudget: Number(config.llmReasoningBudget || 0),
+      timeoutMs: config.llmTimeoutMs || config.openaiTimeoutMs,
+      logger
+    });
+    allQueries = normalizeQueryRows(result?.queries || []);
+  } catch (error) {
+    logger?.warn?.('llm_discovery_planner_failed', {
+      message: error.message,
+    });
   }
 
   const maxQueryCap = 24;

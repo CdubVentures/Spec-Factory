@@ -49,15 +49,15 @@ import {
   buildProductReviewPayload,
   writeCategoryReviewArtifacts,
   writeProductReviewArtifacts
-} from '../review/reviewGridData.js';
+} from '../review/index.js';
 import {
   approveGreenOverrides,
   buildReviewMetrics,
   finalizeOverrides,
   setManualOverride,
   setOverrideFromCandidate
-} from '../review/overrideWorkflow.js';
-import { appendReviewSuggestion } from '../review/suggestions.js';
+} from '../review/index.js';
+import { appendReviewSuggestion } from '../review/index.js';
 import { buildBillingReport } from '../billing/costLedger.js';
 import { buildLearningReport } from '../features/indexing/learning/index.js';
 import { runLlmHealthCheck } from '../core/llm/client/healthCheck.js';
@@ -82,7 +82,7 @@ import {
   reconcileDriftedProduct,
   scanAndEnqueueDriftedProducts
 } from '../publish/driftScheduler.js';
-import { startReviewQueueWebSocket } from '../review/queueWebSocket.js';
+import { startReviewQueueWebSocket } from '../review/index.js';
 import { verifyGeneratedFieldRules } from '../ingest/fieldRulesVerify.js';
 import {
   compileRules,
@@ -103,7 +103,7 @@ import {
   validateGoldenFixtures
 } from '../testing/goldenFiles.js';
 import { generateTypesForCategory } from '../build/generate-types.js';
-import { runQaJudge } from '../review/qaJudge.js';
+import { runQaJudge } from '../review/index.js';
 import { computeCalibrationReport } from '../calibration/confidenceCalibrator.js';
 import { reconcileOrphans } from '../features/catalog/products/reconciler.js';
 import { IndexLabRuntimeBridge } from '../indexlab/runtimeBridge.js';

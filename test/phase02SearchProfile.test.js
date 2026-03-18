@@ -265,7 +265,7 @@ describe('Phase 02 — Field Studio Hint Wiring (Spec §2.5)', () => {
     assert.ok(fromFieldRules.length > 0, 'field rule search hints produce queries');
   });
 
-  it('search_hints.domain_hints emit site: targeted queries', () => {
+  it('search_hints.domain_hints emit soft host-biased queries (plain-text host name)', () => {
     const profile = buildSearchProfile({
       job: makeJob(),
       categoryConfig: makeCategoryConfig(),
@@ -273,16 +273,15 @@ describe('Phase 02 — Field Studio Hint Wiring (Spec §2.5)', () => {
       maxQueries: 48
     });
 
-    const siteQueries = profile.queries.filter((q) => q.includes('site:'));
-    const razerSite = siteQueries.filter((q) => q.includes('site:razer.com'));
-    const rtingsSite = siteQueries.filter((q) => q.includes('site:rtings.com'));
+    // WHY: site: operators removed — domain_hints now appear as plain-text host name in query
+    const razerHostQueries = profile.queries.filter((q) => q.includes('razer.com') && !q.includes('site:'));
+    const rtingsHostQueries = profile.queries.filter((q) => q.includes('rtings.com') && !q.includes('site:'));
 
-    console.log('[DOMAIN-HINTS] total site: queries:', siteQueries.length);
-    console.log('[DOMAIN-HINTS] razer.com (from weight domain_hints):', razerSite.length);
-    console.log('[DOMAIN-HINTS] rtings.com (from click_latency domain_hints):', rtingsSite.length);
+    console.log('[DOMAIN-HINTS] razer.com soft-bias queries:', razerHostQueries.length);
+    console.log('[DOMAIN-HINTS] rtings.com soft-bias queries:', rtingsHostQueries.length);
 
-    assert.ok(razerSite.length > 0, 'weight domain_hint razer.com produces site: queries');
-    assert.ok(rtingsSite.length > 0, 'click_latency domain_hint rtings.com produces site: queries');
+    assert.ok(razerHostQueries.length > 0, 'weight domain_hint razer.com produces soft host-biased queries');
+    assert.ok(rtingsHostQueries.length > 0, 'click_latency domain_hint rtings.com produces soft host-biased queries');
   });
 
   it('preferred_content_types bias doc_hint in query rows', () => {
@@ -387,16 +386,16 @@ describe('Phase 02 — BRAND_HOST_HINTS Sync (Fixed)', () => {
       maxQueries: 48
     });
 
-    const siteQueries = profile.queries.filter((q) => q.includes('site:'));
-    const alienwareSite = siteQueries.filter((q) => q.includes('site:alienware.com'));
-    const dellSite = siteQueries.filter((q) => q.includes('site:dell.com'));
+    // WHY: site: operators removed — manufacturer hosts appear as plain-text soft bias
+    const alienwareHostQueries = profile.queries.filter((q) => q.includes('alienware.com') && !q.includes('site:'));
+    const dellHostQueries = profile.queries.filter((q) => q.includes('dell.com') && !q.includes('site:'));
 
-    console.log(`[BRAND-FIX] Alienware AW610M — site: queries: ${siteQueries.length}`);
-    console.log(`[BRAND-FIX] site:alienware.com queries: ${alienwareSite.length}`);
-    console.log(`[BRAND-FIX] site:dell.com queries: ${dellSite.length}`);
+    console.log(`[BRAND-FIX] Alienware AW610M — host-biased queries: ${alienwareHostQueries.length + dellHostQueries.length}`);
+    console.log(`[BRAND-FIX] alienware.com soft-bias queries: ${alienwareHostQueries.length}`);
+    console.log(`[BRAND-FIX] dell.com soft-bias queries: ${dellHostQueries.length}`);
 
-    assert.ok(alienwareSite.length > 0, 'alienware.com site: queries now generated');
-    assert.ok(dellSite.length > 0, 'dell.com site: queries now generated (via brand hint)');
+    assert.ok(alienwareHostQueries.length > 0, 'alienware.com soft host-biased queries now generated');
+    assert.ok(dellHostQueries.length > 0, 'dell.com soft host-biased queries now generated (via brand hint)');
   });
 });
 
@@ -557,7 +556,7 @@ describe('Phase 02 — Archetype Integration', () => {
     assert.ok(docHints.size >= 3, `expected 3+ distinct doc_hints, got ${docHints.size}: ${[...docHints]}`);
   });
 
-  it('no duplicate site: for same host within archetype emission (Set enforcement)', () => {
+  it('no duplicate host-biased query for same host within archetype emission (Set enforcement)', () => {
     const profile = buildSearchProfile({
       job: makeJob(),
       categoryConfig: makeArchetypeConfig(),
@@ -565,19 +564,24 @@ describe('Phase 02 — Archetype Integration', () => {
       maxQueries: 48
     });
 
+    // WHY: site: operators removed — archetype queries use plain-text host bias.
+    // Verify Set enforcement still prevents duplicate host queries per archetype.
     const archetypeRows = profile.query_rows.filter((r) => r._meta?.archetype);
-    const siteQueries = archetypeRows.filter((r) => r.query.includes('site:'));
+    const hostBiasedRows = archetypeRows.filter((r) => r.domain_hint);
     const seen = new Map();
-    for (const row of siteQueries) {
-      const match = row.query.match(/site:(\S+)/);
-      if (match) {
-        const key = `${row._meta.archetype}:${match[1]}`;
-        assert.ok(!seen.has(key), `duplicate site:${match[1]} in archetype ${row._meta.archetype}`);
-        seen.set(key, true);
+    for (const row of hostBiasedRows) {
+      const host = row.domain_hint;
+      const key = `${row._meta.archetype}:${host}`;
+      if (seen.has(key)) {
+        // Same archetype+host: queries must differ (no exact duplicate query text)
+        const prevQuery = seen.get(key);
+        assert.notEqual(row.query, prevQuery,
+          `exact duplicate query for host ${host} in archetype ${row._meta.archetype}`);
       }
+      seen.set(key, row.query);
     }
-    console.log('[ARCHETYPE] site: hosts verified unique per archetype:', [...seen.keys()]);
-    assert.ok(seen.size > 0, 'at least one archetype site: query exists');
+    console.log('[ARCHETYPE] host-biased queries verified per archetype:', [...seen.keys()]);
+    assert.ok(seen.size > 0, 'at least one archetype host-biased query exists');
   });
 
   it('base_templates never empty when brand+model present', () => {

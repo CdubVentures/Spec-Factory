@@ -32,8 +32,9 @@ test('buildTargetedQueries uses normalized missing fields and helper tooltip hin
 
   assert.equal(queries.some((row) => row.includes('report rate specification')), true);
   assert.equal(queries.some((row) => row.includes('polling interval manual pdf')), true);
-  assert.equal(queries.some((row) => row.includes('site:logitechg.com')), true);
-  assert.equal(queries.some((row) => row.includes('site:razer.com')), false);
+  // WHY: site: removed — domain_hint queries now embed host as plain text soft bias
+  assert.equal(queries.some((row) => row.includes('logitechg.com') && !row.includes('site:')), true);
+  assert.equal(queries.some((row) => row.includes('site:')), false);
 });
 
 test('buildSearchProfile uses field rules search hints and emits provenance', () => {
@@ -75,7 +76,8 @@ test('buildSearchProfile uses field rules search hints and emits provenance', ()
   assert.equal(Array.isArray(profile.identity_aliases), true);
   assert.equal(profile.identity_aliases.some((row) => row.alias === 'aw610m'), true);
   assert.equal(profile.query_rows.some((row) => row.hint_source === 'field_rules.search_hints'), true);
-  assert.equal(profile.queries.some((query) => query.includes('site:support.dell.com')), true);
+  // WHY: site: removed — domain_hint queries now embed host as plain text soft bias
+  assert.equal(profile.queries.some((query) => query.includes('support.dell.com') && !query.includes('site:')), true);
   assert.equal(profile.queries.some((query) => query.includes('polling_rate')), false);
 });
 
@@ -269,7 +271,8 @@ test('buildSearchProfile keeps token-only domain_hints as 0/N effective counts',
     effective_value_count: 0,
     status: 'zero'
   });
-  assert.equal(profile.queries.some((query) => query.includes('site:razer.com')), true);
+  // WHY: site: removed — manufacturer host queries now use soft host bias, no site: operator
+  assert.equal(profile.queries.some((query) => query.includes('site:')), false);
 });
 
 test('buildSearchProfile ignores tooltip-derived IDX terms when ui.tooltip_md is disabled for indexlab', () => {

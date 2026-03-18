@@ -100,11 +100,8 @@ export function buildManufacturerPlanUrls({ host, variables, queries, maxQueries
     }
   }
 
-  for (const query of queries.slice(0, Math.max(1, maxQueries))) {
-    add(`/search?q=${encodeURIComponent(query)}`, query);
-    add(`/search?query=${encodeURIComponent(query)}`, query);
-    add(`/support/search?query=${encodeURIComponent(query)}`, query);
-  }
+  // WHY: Internal search URLs removed — search-first mode. Guessed product
+  // paths above are the only plan-only fallback for manufacturer hosts.
 
   const result = urls.slice(0, 40);
   logger?.info?.('manufacturer_plan_urls_generated', {
@@ -138,22 +135,9 @@ export function buildPlanOnlyResults({ categoryConfig, queries, variables, maxQu
       continue;
     }
 
-    for (const query of queries.slice(0, Math.max(1, maxQueries))) {
-      planned.push({
-        url: `https://${host}/search?q=${encodeURIComponent(query)}`,
-        title: `${host} search`,
-        snippet: 'planned source search URL',
-        provider: 'plan',
-        query
-      });
-      planned.push({
-        url: `https://${host}/search/?q=${encodeURIComponent(query)}`,
-        title: `${host} search`,
-        snippet: 'planned source search URL',
-        provider: 'plan',
-        query
-      });
-    }
+    // WHY: Non-manufacturer hosts produce zero plan-only results.
+    // Search-first mode — real URLs come from search providers, not guessed paths.
+    continue;
   }
   return planned;
 }
@@ -294,38 +278,124 @@ export function dedupeQueryRows(rows = [], limit = 24) {
   };
 }
 
-export function prioritizeQueryRows(rows = [], variables = {}, missingFields = []) {
+export function prioritizeQueryRows(rows = [], variables = {}, missingFields = [], {
+  fieldPriority = null,
+  hostFieldFit = null,
+} = {}) {
   const brand = String(variables.brand || '').trim().toLowerCase();
   const model = String(variables.model || '').trim().toLowerCase();
   const brandToken = brand.replace(/\s+/g, '');
-  const missingFieldSet = new Set(toArray(missingFields).map((field) => String(field || '').trim()).filter(Boolean));
+  const missingFieldSet = new Set(
+    toArray(missingFields).map((field) => String(field || '').trim()).filter(Boolean)
+  );
+
   const ranked = [...(rows || [])].map((row) => {
     const query = String(row?.query || '').trim();
-    const text = String(query || '').toLowerCase();
+    const text = query.toLowerCase();
     const targetFields = toArray(row?.target_fields)
       .map((field) => String(field || '').trim())
       .filter(Boolean);
-    const targetedMissingCount = targetFields.filter((field) => missingFieldSet.has(field)).length;
-    let score = 0;
-    if (text.includes('site:')) score += 1;
-    const sources = toArray(row?.sources);
-    if (sources.includes('llm') || sources.includes('uber')) score += 8;
-    if (/manual|datasheet|support|spec|technical|pdf/.test(text)) score += 5;
-    if (brandToken && text.includes(brandToken)) score += 3;
-    if (brand && text.includes(brand)) score += 2;
-    if (model && text.includes(model)) score += 2;
-    if (/rtings|techpowerup/.test(text)) score += 1;
-    if (targetedMissingCount > 0) score += Math.min(6, targetedMissingCount * 3);
-    if (String(row?.domain_hint || '').includes('.')) score += 2;
-    if (String(row?.doc_hint || '').trim()) score += 1;
+
+    // Signal 1 — Field value (0 to 10)
+    let field_value = 0;
+    for (const field of targetFields) {
+      if (!missingFieldSet.has(field)) continue;
+      if (fieldPriority) {
+        const priority = fieldPriority.get(field);
+        field_value += priority === 'critical' ? 3 : priority === 'required' ? 2 : 1;
+      } else {
+        field_value += 2;
+      }
+    }
+    field_value = Math.min(10, field_value);
+
+    // Signal 2 — Source fit (0 to 5)
+    const host = normalizeHost(row?.domain_hint || '');
+    const hostData = host ? hostFieldFit?.get(host) : null;
+    let source_fit = 0;
+    if (hostData) {
+      if (hostData.heuristic !== undefined) {
+        source_fit = Number((hostData.heuristic * 5).toFixed(2));
+      } else {
+        const queryFields = targetFields.filter((f) => missingFieldSet.has(f));
+        const fieldsToScore = queryFields.length > 0 ? queryFields : [...missingFieldSet];
+        let points = 0;
+        for (const field of fieldsToScore) {
+          if (hostData.high?.has(field)) points += 1.0;
+          else if (hostData.medium?.has(field)) points += 0.5;
+        }
+        source_fit = Number(((points / Math.max(1, fieldsToScore.length)) * 5).toFixed(2));
+      }
+    }
+
+    // Signal 3 — Identity match (0 to 2)
+    let identity_match = 0;
+    if ((brandToken && text.includes(brandToken)) || (brand && text.includes(brand))) {
+      identity_match += 1;
+    }
+    if (model && text.includes(model)) {
+      identity_match += 1;
+    }
+
+    // Signal 5 — Overconstraint (-2 to 0)
+    let overconstraint = 0;
+    if (hostFieldFit) {
+      const siteHost = extractSiteHostFromQuery(text);
+      if (siteHost) {
+        const siteHostData = hostFieldFit.get(siteHost);
+        if (!siteHostData) {
+          overconstraint = -2;
+        } else {
+          let effectiveFit = 0;
+          if (siteHostData.heuristic !== undefined) {
+            effectiveFit = siteHostData.heuristic;
+          } else {
+            const qf = targetFields.filter((f) => missingFieldSet.has(f));
+            const fs = qf.length > 0 ? qf : [...missingFieldSet];
+            let pts = 0;
+            for (const field of fs) {
+              if (siteHostData.high?.has(field)) pts += 1.0;
+              else if (siteHostData.medium?.has(field)) pts += 0.5;
+            }
+            effectiveFit = pts / Math.max(1, fs.length);
+          }
+          if (effectiveFit < 0.2) {
+            overconstraint = -1;
+          }
+        }
+      }
+    }
+
+    const score = field_value + source_fit + identity_match + overconstraint;
     return {
       ...row,
       query,
-      score
+      score,
+      score_breakdown: { field_value, source_fit, identity_match, redundancy: 0, overconstraint },
     };
   });
-  return ranked
-    .sort((a, b) => b.score - a.score || a.query.localeCompare(b.query));
+
+  // Initial sort by score descending, then alphabetical
+  ranked.sort((a, b) => b.score - a.score || a.query.localeCompare(b.query));
+
+  // Signal 4 — Redundancy (-3 to 0): post-sort pass, host-only
+  const hostCount = new Map();
+  for (const row of ranked) {
+    const rHost = normalizeHost(row?.domain_hint || '');
+    if (!rHost) continue;
+    const count = (hostCount.get(rHost) || 0) + 1;
+    hostCount.set(rHost, count);
+    if (count >= 2) {
+      const penalty = -Math.min(3, count - 1);
+      row.score += penalty;
+      row.score_breakdown.redundancy = penalty;
+    }
+  }
+
+  // Re-sort after redundancy penalties
+  ranked.sort((a, b) => b.score - a.score || a.query.localeCompare(b.query));
+
+  return ranked;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
-import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
-import { resolveProviderForModel } from './llmProviderRegistryBridge';
-import { LLM_MODEL_FIELD_LABELS } from './llmModelRoleRegistry';
+import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
+import { resolveProviderForModel } from './llmProviderRegistryBridge.ts';
+import { LLM_MODEL_FIELD_LABELS } from './llmModelRoleRegistry.ts';
 
 export interface MixIssue {
   key: string;

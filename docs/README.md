@@ -2,7 +2,7 @@
 
 > **Purpose:** Master entrypoint for the LLM-oriented current-state documentation set for this repository.
 > **Prerequisites:** None.
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-17
 
 Spec Factory is a local-first product-spec indexing and review workbench. The live runtime is a Node.js HTTP/WebSocket server in `src/api/guiServer.js` that serves a Vite-built React GUI from `tools/gui-react/`, persists canonical operational data in SQLite through `src/db/specDb.js`, stores authored category and settings content under `category_authority/`, and orchestrates discovery, extraction, review, billing, learning, and runtime-operations workflows for categories such as `mouse`, `keyboard`, and `monitor`.
 
@@ -86,11 +86,14 @@ Spec Factory is a local-first product-spec indexing and review workbench. The li
 - [Canonical Examples](./07-patterns/canonical-examples.md)
 - [Anti-Patterns](./07-patterns/anti-patterns.md)
 
-### Supplemental
+### Supplemental And Audits
 
 - [Documentation Audit Ledger](./audits/documentation-audit-ledger.md)
 - [Spec Factory Knobs Maintenance Log](./05-operations/spec_factory_knobs_maintenance.md)
 - [Archetype Query Planner Validation - Pass 1 Live 3 Mice](./audits/archetype-query-planner-validation-pass1-live-3mice.md)
+- [Architectural Decomposition Audit - 2026-03-16](./audits/architectural-decomposition-audit-2026-03-16.md)
+- [LLM Architecture Audit - 2026-03-17](./audits/llm-architecture-audit-2026-03-17.md)
+- [LLM Integration Audit - 2026-03-17](./audits/llm-integration-audit-2026-03-17.md)
 - [Test Surface Reduction Audit - 2026-03-16](./audits/test-surface-reduction-2026-03-16.md)
 
 ## Excluded Subtree
@@ -106,7 +109,7 @@ Spec Factory is a local-first product-spec indexing and review workbench. The li
 | source | `src/db/specDbSchema.js` | Canonical SQLite table inventory for the data-model docs |
 | config | `package.json` | Root scripts, Node engine, and backend dependency declarations |
 | config | `tools/gui-react/package.json` | GUI package scripts and frontend dependency declarations |
-| runtime | `http://127.0.0.1:8788/api/v1/health` | Live server responded with `ok: true` during the 2026-03-16 audit |
+| runtime | `http://127.0.0.1:8788/api/v1/health` | Live server responded with `ok: true` during the 2026-03-17 audit |
 
 ## Related Documents
 

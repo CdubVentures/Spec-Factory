@@ -528,29 +528,26 @@ test('integration — config with registry + modelOverride re-resolves override 
   assert.equal(route._registryEntry.providerId, 'default-deepseek');
 });
 
-test('integration — config with empty registry falls back to flat keys + alignment', () => {
+test('integration — config with empty registry infers provider from model name + bootstrap keys', () => {
   const config = {
     _registryLookup: buildRegistryLookup([]),
-    llmProvider: 'openai',
     llmApiKey: 'flat-key',
-    llmBaseUrl: 'https://api.openai.com',
-    llmModelExtract: 'gpt-4.1-mini',
-    llmExtractProvider: 'openai',
-    llmExtractApiKey: 'flat-key',
-    llmExtractBaseUrl: 'https://api.openai.com',
+    llmModelPlan: 'gpt-4.1-mini',
   };
   const route = resolveLlmRoute(config, { role: 'extract' });
   assert.equal(route.provider, 'openai');
   assert.equal(route.model, 'gpt-4.1-mini');
-  assert.ok(!route._registryEntry, 'flat-key route should not have registry entry');
+  assert.equal(route.apiKey, 'flat-key');
+  assert.equal(route.baseUrl, 'https://api.openai.com');
+  assert.ok(!route._registryEntry, 'non-registry route should not have registry entry');
 });
 
 test('integration — resolveLlmFallbackRoute with registry returns registry-resolved fallback', () => {
   const config = registryIntegrationConfig(
     [geminiProvider(), deepseekProvider()],
     {
-      llmModelExtract: 'gemini-2.5-flash',
-      llmExtractFallbackModel: 'deepseek-chat',
+      llmModelPlan: 'gemini-2.5-flash',
+      llmPlanFallbackModel: 'deepseek-chat',
     },
   );
   const fallback = resolveLlmFallbackRoute(config, { role: 'extract' });

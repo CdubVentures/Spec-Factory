@@ -12,8 +12,7 @@ export interface DropdownModelOption {
 const ROLE_SORT_PRIORITY: Record<string, number> = {
   reasoning: 0,
   primary: 1,
-  fast: 2,
-  embedding: 3,
+  embedding: 2,
 };
 const UNKNOWN_ROLE_PRIORITY = 4;
 

@@ -1,6 +1,10 @@
 # LLM Integration Audit — 2026-03-17
 
-> Full-stack audit of all LLM usage, wiring, providers, and dependency chains across Spec Factory.
+> **Purpose:** Preserve the focused full-stack audit of LLM usage, provider wiring, runtime flow, and subsystem dependency chains across Spec Factory.
+> **Prerequisites:** [../README.md](../README.md), [../03-architecture/system-map.md](../03-architecture/system-map.md), [../04-features/indexing-lab.md](../04-features/indexing-lab.md)
+> **Last validated:** 2026-03-17
+
+Historical note: this is a subsystem deep dive and diagram pack, not the master current-state architecture contract for the full app.
 
 ## 4K Rendered Diagrams
 
@@ -830,3 +834,19 @@ graph TB
 ---
 
 *Generated 2026-03-17 — Spec Factory LLM Integration Audit*
+
+## Validated Against
+
+| Source | Path | What was verified |
+|--------|------|-------------------|
+| source | `src/core/llm/client/routing.js` | central LLM routing and provider dispatch path described by the audit |
+| source | `src/core/config/manifest/llmGroup.js` | LLM config surface and phase settings inventory |
+| source | `src/features/indexing/extraction/extractCandidatesLLM.js` | extraction-phase LLM consumer referenced by the audit |
+| source | `src/features/indexing/validation/validateCandidatesLLM.js` | validation-phase LLM consumer referenced by the audit |
+| source | `tools/gui-react/src/pages/llm-config/LlmConfigPage.tsx` | frontend LLM settings surface described by the audit |
+
+## Related Documents
+
+- [../03-architecture/system-map.md](../03-architecture/system-map.md) - current app-wide topology for the runtime hosting this subsystem.
+- [../04-features/indexing-lab.md](../04-features/indexing-lab.md) - current end-to-end feature flow that consumes the LLM subsystem.
+- [./llm-architecture-audit-2026-03-17.md](./llm-architecture-audit-2026-03-17.md) - structural findings focused on the LLM subsystem architecture.

@@ -283,7 +283,7 @@ export function RuntimeSettingsFlowCard({
         llmProvider={runtimeDraft.llmProvider}
         llmBaseUrl={runtimeDraft.llmBaseUrl}
         openaiApiKey={runtimeDraft.openaiApiKey}
-        llmModelExtract={runtimeDraft.llmModelExtract}
+        llmModelPlan={runtimeDraft.llmModelPlan}
       />
       <RuntimeFlowCardHeader
         runtimeStatusClass={runtimeStatusClass}

@@ -21,7 +21,6 @@ const NON_CANONICAL_RUNTIME_KEYS = new Set([
   // WHY: Model stack simplified — these keys default to '' in settingsDefaults
   // but post-merge aliases them to llmModelPlan/llmPlanFallbackModel values.
   'llmModelTriage',
-  'llmModelFast',
   'llmModelExtract',
   'llmModelValidate',
   'llmModelWrite',
@@ -29,7 +28,6 @@ const NON_CANONICAL_RUNTIME_KEYS = new Set([
   'llmValidateFallbackModel',
   'llmWriteFallbackModel',
   'llmMaxOutputTokensTriage',
-  'llmMaxOutputTokensFast',
   'llmMaxOutputTokensExtract',
   'llmMaxOutputTokensValidate',
   'llmMaxOutputTokensWrite',
@@ -107,7 +105,6 @@ function isSecretEnvKey(key) {
 
 const MANUAL_ENV_KEY_MAP = Object.freeze({
   llmModelTriage: 'LLM_MODEL_TRIAGE',
-  llmModelFast: 'LLM_MODEL_FAST',
   llmModelReasoning: 'LLM_MODEL_REASONING',
   llmModelValidate: 'LLM_MODEL_VALIDATE',
   llmModelWrite: 'LLM_MODEL_WRITE',

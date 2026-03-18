@@ -427,7 +427,6 @@ test('discoverCandidateSources honors explicit all-drop LLM SERP triage without 
     llmProvider: 'openai',
     llmApiKey: 'test-key',
     llmBaseUrl: 'http://localhost:4141',
-    llmModelFast: 'test-triage-model',
     llmSerpRerankEnabled: true
   });
   const storage = createStorage(config);
@@ -537,7 +536,6 @@ test('discoverCandidateSources keeps only explicit LLM keep URLs when triage omi
     llmProvider: 'openai',
     llmApiKey: 'test-key',
     llmBaseUrl: 'http://localhost:4141',
-    llmModelFast: 'test-triage-model',
     llmSerpRerankEnabled: true,
     serpTriageEnabled: true,
     serpTriageMinScore: 0,

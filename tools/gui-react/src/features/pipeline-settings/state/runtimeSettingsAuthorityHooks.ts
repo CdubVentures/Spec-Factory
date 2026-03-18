@@ -7,6 +7,11 @@ import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from '../../../stores/settingsManifest'
 import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract';
 import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract';
 import {
+  registerUnloadGuard,
+  markDomainFlushedByUnmount,
+  isDomainFlushedByUnload,
+} from '../../../stores/settingsUnloadGuard';
+import {
   readRuntimeSettingsBootstrap,
   RUNTIME_SETTINGS_QUERY_KEY,
   type RuntimeSettings,
@@ -97,15 +102,18 @@ function normalizeRuntimeSaveResult(
   previousPayload: RuntimeSettings,
 ) {
   const responseObj = isObject(response) ? response as Record<string, unknown> : {};
-  const responseApplied = isObject(responseObj.applied) ? responseObj.applied : fallbackPayload;
   const rejected = normalizeRejected(responseObj.rejected);
-  const hasRejected = Object.keys(rejected).length > 0;
-  const applied = {
-    ...previousPayload,
-    ...(responseApplied as Record<string, unknown>),
-  } as RuntimeSettings;
+  // Prefer full post-persist snapshot when server provides it (backward-compatible).
+  const applied = isObject(responseObj.snapshot)
+    ? responseObj.snapshot as RuntimeSettings
+    : {
+      ...previousPayload,
+      ...(isObject(responseObj.applied) ? responseObj.applied as Record<string, unknown> : fallbackPayload),
+    } as RuntimeSettings;
+  // WHY: Trust server ok flag. rejected contains informational unknown_key entries
+  // that don't prevent the save from completing.
   return {
-    ok: responseObj.ok !== false && !hasRejected,
+    ok: responseObj.ok !== false,
     applied,
     rejected,
   } as RuntimeSettingsPersistResult;
@@ -226,7 +234,27 @@ export function useRuntimeSettingsAuthority({
   }, [autoSaveEnabled, dirty, payloadFingerprint, saveMutate]);
 
   useEffect(() => {
+    return registerUnloadGuard({
+      domain: 'runtime',
+      isDirty: () => {
+        if (!dirtyRef.current || !autoSaveEnabledRef.current) return false;
+        const fp = payloadFingerprintRef.current;
+        return Boolean(fp) && fp !== lastAutoSavedFingerprintRef.current;
+      },
+      getPayload: () => ({
+        url: '/api/v1/runtime-settings',
+        method: 'PUT',
+        body: payloadRef.current,
+      }),
+      markFlushed: () => {
+        lastAutoSaveAttemptFingerprintRef.current = payloadFingerprintRef.current;
+      },
+    });
+  }, []);
+
+  useEffect(() => {
     return () => {
+      if (isDomainFlushedByUnload('runtime')) return;
       const hadPendingAutoSaveTimer = Boolean(pendingAutoSaveTimerRef.current);
       if (pendingAutoSaveTimerRef.current) {
         clearTimeout(pendingAutoSaveTimerRef.current);
@@ -238,7 +266,15 @@ export function useRuntimeSettingsAuthority({
       if (nextFingerprint === lastAutoSavedFingerprintRef.current) return;
       if (!hadPendingAutoSaveTimer && nextFingerprint === lastAutoSaveAttemptFingerprintRef.current) return;
       lastAutoSaveAttemptFingerprintRef.current = nextFingerprint;
-      void persistRuntimeSettings(payloadRef.current, false);
+      // WHY: sendBeacon survives hard reload; void persistRuntimeSettings is fire-and-forget
+      // async that gets killed during page teardown.
+      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        const blob = new Blob([JSON.stringify(payloadRef.current)], { type: 'application/json' });
+        navigator.sendBeacon('/api/v1/runtime-settings', blob);
+      } else {
+        void persistRuntimeSettings(payloadRef.current, false);
+      }
+      markDomainFlushedByUnmount('runtime');
     };
   }, []);
 

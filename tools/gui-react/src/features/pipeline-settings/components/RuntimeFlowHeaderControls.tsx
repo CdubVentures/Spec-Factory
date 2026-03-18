@@ -1,10 +1,10 @@
 interface RuntimeFlowHeaderControlsProps {
   runtimeSettingsReady: boolean;
   runtimeSettingsSaving: boolean;
-  runtimeAutoSaveEnabled: boolean;
+  runtimeAutoSaveEnabled?: boolean;
   runtimeAutoSaveDelaySeconds: string;
   onSaveNow: () => void;
-  onToggleRuntimeAutoSaveEnabled: () => void;
+  onToggleRuntimeAutoSaveEnabled?: () => void;
   onResetToDefaults: () => void;
 }
 
@@ -17,31 +17,38 @@ export function RuntimeFlowHeaderControls({
   onToggleRuntimeAutoSaveEnabled,
   onResetToDefaults,
 }: RuntimeFlowHeaderControlsProps) {
+  // WHY: When onToggleRuntimeAutoSaveEnabled is absent the caller has hard-wired
+  // autosave (e.g. LlmConfigPage). Treat autosave as always-on for Save button state.
+  const showToggle = typeof onToggleRuntimeAutoSaveEnabled === 'function';
+  const effectiveAutoSave = showToggle ? Boolean(runtimeAutoSaveEnabled) : true;
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <button
         onClick={onSaveNow}
-        disabled={!runtimeSettingsReady || runtimeSettingsSaving || runtimeAutoSaveEnabled}
+        disabled={!runtimeSettingsReady || runtimeSettingsSaving || effectiveAutoSave}
         className={`rounded px-3 py-1.5 sf-text-label disabled:opacity-50 ${
-          runtimeAutoSaveEnabled
+          effectiveAutoSave
             ? 'sf-icon-button'
             : 'sf-primary-button'
         }`}
       >
         {runtimeSettingsSaving ? 'Saving...' : 'Save'}
       </button>
-      <button
-        onClick={onToggleRuntimeAutoSaveEnabled}
-        disabled={!runtimeSettingsReady}
-        className={`rounded px-3 py-1.5 sf-text-label ${
-          runtimeAutoSaveEnabled
-            ? 'sf-primary-button'
-            : 'sf-action-button'
-        }`}
-        title={`When enabled, runtime settings are Auto-Saved ${runtimeAutoSaveDelaySeconds} seconds after each edit.`}
-      >
-        {runtimeAutoSaveEnabled ? 'Auto-Save On' : 'Auto-Save Off'}
-      </button>
+      {showToggle && (
+        <button
+          onClick={onToggleRuntimeAutoSaveEnabled}
+          disabled={!runtimeSettingsReady}
+          className={`rounded px-3 py-1.5 sf-text-label ${
+            effectiveAutoSave
+              ? 'sf-primary-button'
+              : 'sf-action-button'
+          }`}
+          title={`When enabled, runtime settings are Auto-Saved ${runtimeAutoSaveDelaySeconds} seconds after each edit.`}
+        >
+          {effectiveAutoSave ? 'Auto-Save On' : 'Auto-Save Off'}
+        </button>
+      )}
       <button
         onClick={onResetToDefaults}
         disabled={!runtimeSettingsReady || runtimeSettingsSaving}

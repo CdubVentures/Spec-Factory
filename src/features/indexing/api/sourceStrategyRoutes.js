@@ -7,6 +7,7 @@ import {
   addSourceEntry,
   updateSourceEntry,
   removeSourceEntry,
+  validateSourceEntryPatch,
 } from '../sources/sourceFileService.js';
 
 export function registerSourceStrategyRoutes(ctx) {
@@ -78,10 +79,11 @@ export function registerSourceStrategyRoutes(ctx) {
       const category = resolveScopedCategory(params);
       if (!category) return jsonRes(res, 400, { error: 'category_required' });
       const body = await readJsonBody(req).catch(() => ({}));
+      const { accepted, rejected } = validateSourceEntryPatch(body);
       const root = getRoot();
       const data = await readSourcesFile(root, category);
       if (!data.sources[sourceId]) return jsonRes(res, 404, { error: 'not_found' });
-      const updated = updateSourceEntry(data, sourceId, body);
+      const updated = updateSourceEntry(data, sourceId, accepted);
       await writeSourcesFile(root, category, updated);
       const entries = listSourceEntries(updated);
       const updatedEntry = entries.find((e) => e.sourceId === sourceId) || null;
@@ -92,7 +94,7 @@ export function registerSourceStrategyRoutes(ctx) {
         domains: ['source-strategy'],
         meta: { sourceId },
       });
-      return jsonRes(res, 200, updatedEntry);
+      return jsonRes(res, 200, { ok: true, applied: accepted, snapshot: updatedEntry, rejected });
     }
 
     // DELETE /api/v1/source-strategy/:sourceId

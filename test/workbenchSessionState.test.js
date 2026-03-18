@@ -120,13 +120,26 @@ test('parseWorkbenchSessionState sanitizes malformed structures', async () => {
   });
 });
 
-test('read/write workbench session state round-trips through sessionStorage', async () => {
-  const storage = createSessionStorage();
-  const mod = await withWindowSessionStorage(storage, () => loadWorkbenchSessionStateModule());
+test('read/write workbench session state round-trips through localStorage', async () => {
+  // Module migrated from sessionStorage → localStorage; mock must provide localStorage.
+  const localStorage = createSessionStorage();
+  const sessionStorage = createSessionStorage();
+  const withWindow = (run) => {
+    const prev = globalThis.window;
+    globalThis.window = { localStorage, sessionStorage };
+    try {
+      const result = run();
+      if (result && typeof result.then === 'function') return result.finally(() => { globalThis.window = prev; });
+      globalThis.window = prev;
+      return result;
+    } catch (err) { globalThis.window = prev; throw err; }
+  };
+
+  const mod = await withWindow(() => loadWorkbenchSessionStateModule());
   const { buildWorkbenchSessionStorageKey, readWorkbenchSessionState, writeWorkbenchSessionState } = mod;
   const key = buildWorkbenchSessionStorageKey('mouse');
 
-  withWindowSessionStorage(storage, () => {
+  withWindow(() => {
     writeWorkbenchSessionState('mouse', {
       columnVisibility: { displayName: false, effort: true },
       sorting: [{ id: 'group', desc: false }],
@@ -136,10 +149,10 @@ test('read/write workbench session state round-trips through sessionStorage', as
     });
   });
 
-  const raw = storage.getItem(key);
-  assert.ok(typeof raw === 'string' && raw.length > 0, 'sessionStorage should contain persisted workbench state');
+  const raw = localStorage.getItem(key);
+  assert.ok(typeof raw === 'string' && raw.length > 0, 'localStorage should contain persisted workbench state');
 
-  const loaded = withWindowSessionStorage(storage, () => readWorkbenchSessionState('mouse'));
+  const loaded = withWindow(() => readWorkbenchSessionState('mouse'));
   assert.deepEqual(loaded, {
     columnVisibility: { displayName: false, effort: true },
     sorting: [{ id: 'group', desc: false }],

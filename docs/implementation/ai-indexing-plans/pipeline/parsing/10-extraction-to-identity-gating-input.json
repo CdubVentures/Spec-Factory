@@ -1,0 +1,62 @@
+{
+  "_doc": "Stage 10 input contract for extraction to identity gating. Validated against runSourceIdentityEvaluationPhase() and supporting validation modules on 2026-03-17.",
+  "schema_version": "stage10.extraction_to_identity_gating_input.v1",
+  "producer": "Stage 09 source append payloads feeding runSourceIdentityEvaluationPhase()",
+  "source_files": [
+    "src/features/indexing/orchestration/execution/runSourceIdentityEvaluationPhase.js",
+    "src/features/indexing/validation/identityGate.js",
+    "src/features/indexing/validation/anchors.js",
+    "src/pipeline/identityGateExtraction.js"
+  ],
+  "input_groups": {
+    "source_and_page": [
+      "source",
+      "pageData"
+    ],
+    "candidate_inputs": [
+      "mergedIdentityCandidates",
+      "mergedFieldCandidatesWithEvidence",
+      "anchors"
+    ],
+    "identity_context": [
+      "jobIdentityLock",
+      "categoryConfig.criticalFieldSet",
+      "config"
+    ],
+    "sidecar_inputs": [
+      "endpointIntel",
+      "buildCandidateFieldMapFn",
+      "computeParserHealthFn"
+    ]
+  },
+  "identity_scope": {
+    "gated_fields": [
+      "brand",
+      "model",
+      "variant",
+      "sku",
+      "base_model",
+      "mpn",
+      "gtin",
+      "upc",
+      "ean",
+      "asin"
+    ],
+    "anchor_scope": [
+      "dimensions",
+      "weight",
+      "polling_rate",
+      "dpi",
+      "sensor",
+      "switch",
+      "connection-related categorical conflicts"
+    ]
+  },
+  "decision_bands": [
+    "Brand contributes 0.35 of score.",
+    "Model contributes 0.35 of score.",
+    "Variant contributes 0.15 of score.",
+    "Hard ids contribute 0.15 and can hard-confirm or hard-reject.",
+    "Negative tokens and critical suffix conflicts force rejection."
+  ]
+}

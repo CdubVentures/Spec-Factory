@@ -22,14 +22,14 @@ export function createUiSettingsHandler({
         'studioAutoSaveMapEnabled',
         'runtimeAutoSaveEnabled',
         'storageAutoSaveEnabled',
-        'llmSettingsAutoSaveEnabled',
       ]);
       const nextUiSettings = {
         ...snapshotUiSettings(persistenceCtx.getUiSettingsState()),
       };
       const appliedKeys = [];
+      const rejected = {};
       for (const [key, value] of Object.entries(body || {})) {
-        if (!KEY_SET.has(key)) continue;
+        if (!KEY_SET.has(key)) { rejected[key] = 'unknown_key'; continue; }
         const enabled = value === true || value === 'true' || value === 1;
         nextUiSettings[key] = enabled;
         appliedKeys.push(key);
@@ -78,7 +78,7 @@ export function createUiSettingsHandler({
           applied: appliedSnapshot,
         },
       });
-      return jsonRes(res, 200, { ok: true, ...persistedUiSnapshot, applied: appliedSnapshot });
+      return jsonRes(res, 200, { ok: true, applied: appliedSnapshot, snapshot: persistedUiSnapshot, rejected });
     }
 
     return false;

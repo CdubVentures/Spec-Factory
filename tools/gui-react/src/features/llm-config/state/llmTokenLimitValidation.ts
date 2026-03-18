@@ -1,13 +1,13 @@
-import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
+import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
 import { resolveProviderForModel } from './llmProviderRegistryBridge.ts';
-import { LLM_TOKEN_VALIDATION_ENTRIES } from './llmModelRoleRegistry';
+import { LLM_TOKEN_VALIDATION_ENTRIES } from './llmModelRoleRegistry.ts';
 
 export interface TokenLimitWarning {
   phase: string;
   model: string;
   setting: number;
   limit: number;
-  field: 'maxOutput';
+  field: 'maxOutput' | 'contextOverflow';
 }
 
 export function validatePhaseTokenLimits(
@@ -35,6 +35,16 @@ export function validatePhaseTokenLimits(
         setting: tokenSetting,
         limit: model.maxOutputTokens,
         field: 'maxOutput',
+      });
+    }
+
+    if (model.maxContextTokens != null && tokenSetting > model.maxContextTokens * 0.5) {
+      warnings.push({
+        phase: entry.phase,
+        model: modelId,
+        setting: tokenSetting,
+        limit: model.maxContextTokens,
+        field: 'contextOverflow',
       });
     }
   }

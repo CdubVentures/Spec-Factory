@@ -212,7 +212,7 @@ describe('serpReranker enhancements', () => {
           llmProvider: 'openai',
           llmApiKey: 'test-key',
           llmBaseUrl: 'http://localhost:4141',
-          llmModelFast: 'test-triage-model'
+
         },
         identity,
         serpResults: [
@@ -290,7 +290,7 @@ describe('serpReranker enhancements', () => {
           llmProvider: 'openai',
           llmApiKey: 'test-key',
           llmBaseUrl: 'http://localhost:4141',
-          llmModelFast: 'test-triage-model'
+
         },
         identity: { brand: 'Logitech G', model: 'Pro X Superlight 2', variant: '' },
         serpResults: [
@@ -460,7 +460,7 @@ describe('serpReranker enhancements', () => {
           llmProvider: 'openai',
           llmApiKey: 'test-key',
           llmBaseUrl: 'http://localhost:4141',
-          llmModelFast: 'test-triage-model'
+
         },
         identity,
         serpResults: [

@@ -209,11 +209,11 @@ export function emitArchetypeQueries(slot, identity, product, focusFields) {
   if (archetype === 'manufacturer') {
     for (const host of (hosts || [])) {
       if (rows.length >= slots) break;
-      // One site: query per host
+      // One host-biased query per host
       if (!usedSiteHosts.has(host)) {
         usedSiteHosts.add(host);
         rows.push(makeRow({
-          query: `${productStr} specifications site:${host}`,
+          query: `${productStr} official specifications ${host}`,
           hintSource: 'archetype_planner',
           targetFields,
           docHint: 'spec',
@@ -242,11 +242,11 @@ export function emitArchetypeQueries(slot, identity, product, focusFields) {
   } else if (archetype === 'lab_review') {
     for (const host of (hosts || [])) {
       if (rows.length >= slots) break;
-      // Site-targeted review query
+      // One host-biased query per host
       if (!usedSiteHosts.has(host)) {
         usedSiteHosts.add(host);
         rows.push(makeRow({
-          query: `${productStr} review site:${host}`,
+          query: `${productStr} review ${host}`,
           hintSource: 'archetype_planner',
           targetFields,
           docHint: 'review',
@@ -278,7 +278,7 @@ export function emitArchetypeQueries(slot, identity, product, focusFields) {
       if (!usedSiteHosts.has(host)) {
         usedSiteHosts.add(host);
         rows.push(makeRow({
-          query: `${productStr} specs site:${host}`,
+          query: `${productStr} specs ${host}`,
           hintSource: 'archetype_planner',
           targetFields,
           docHint: 'spec_database',
@@ -291,12 +291,13 @@ export function emitArchetypeQueries(slot, identity, product, focusFields) {
       }
     }
   } else if (archetype === 'retailer') {
+    // WHY: Retailer hosts have low source-field fit — no host bias, plain product query
     for (const host of (hosts || [])) {
       if (rows.length >= slots) break;
       if (!usedSiteHosts.has(host)) {
         usedSiteHosts.add(host);
         rows.push(makeRow({
-          query: `${productStr} site:${host}`,
+          query: `${productStr} specifications`,
           hintSource: 'archetype_planner',
           targetFields,
           docHint: 'product_page',
@@ -309,13 +310,13 @@ export function emitArchetypeQueries(slot, identity, product, focusFields) {
       }
     }
   } else {
-    // Generic emit for aggregator/unknown
+    // WHY: Generic/aggregator hosts — no host bias, plain product query
     for (const host of (hosts || [])) {
       if (rows.length >= slots) break;
       if (!usedSiteHosts.has(host)) {
         usedSiteHosts.add(host);
         rows.push(makeRow({
-          query: `${productStr} site:${host}`,
+          query: `${productStr} specifications`,
           hintSource: 'archetype_planner',
           targetFields,
           docHint: '',

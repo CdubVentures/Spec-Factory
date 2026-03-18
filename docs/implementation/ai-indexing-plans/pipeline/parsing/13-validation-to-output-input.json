@@ -1,0 +1,70 @@
+{
+  "_doc": "Stage 13 input contract for validation to output. Validated against runProductCompletionLifecycle() on 2026-03-17.",
+  "schema_version": "stage13.validation_to_output_input.v1",
+  "producer": "runProductFinalizationDerivation() feeding runProductCompletionLifecycle()",
+  "source_files": [
+    "src/features/indexing/orchestration/finalize/runProductCompletionLifecycle.js",
+    "src/features/indexing/orchestration/finalize/createProductCompletionRuntime.js",
+    "src/exporter/exporter.js",
+    "src/exporter/finalExporter.js"
+  ],
+  "input_groups": {
+    "run_context": [
+      "storage",
+      "runArtifactsBase",
+      "category",
+      "productId",
+      "runId",
+      "runtimeMode",
+      "startMs",
+      "config",
+      "logger"
+    ],
+    "finalization_outputs": [
+      "summary",
+      "sourceResults",
+      "normalized",
+      "provenance",
+      "needSet",
+      "phase08Extraction",
+      "phase07PrimeSources",
+      "confidence",
+      "contribution",
+      "trafficLight",
+      "criticDecisions",
+      "llmValidatorDecisions",
+      "componentPriorFilledFields",
+      "aggressiveExtraction"
+    ],
+    "resume_and_followup_state": [
+      "resumeMode",
+      "resumeMaxAgeHours",
+      "resumeReextractEnabled",
+      "resumeReextractAfterHours",
+      "resumeSeededPendingCount",
+      "resumePersistedPendingCount",
+      "hypothesisFollowupRoundsExecuted",
+      "hypothesisFollowupSeededUrls"
+    ],
+    "learning_and_export_dependencies": [
+      "evaluateFieldLearningGatesFn",
+      "populateLearningStoresFn",
+      "exportRunArtifactsFn",
+      "writeFinalOutputsFn",
+      "runTerminalLearningExportLifecycleFn",
+      "finalizeRunLifecycleFn",
+      "emitFieldDecisionEventsFn"
+    ]
+  },
+  "lifecycle_order": [
+    "apply research/indexing schema artifacts",
+    "emit finalization telemetry",
+    "build run_completed payload and event",
+    "build summary artifacts",
+    "persist identity report and source intel",
+    "run post-learning updates",
+    "run learning gate and persist stores",
+    "export run artifacts and final outputs",
+    "build run result payload"
+  ]
+}

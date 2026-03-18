@@ -4,7 +4,6 @@ export interface SharedUiDefaults {
   studioAutoSaveMapEnabled: boolean;
   runtimeAutoSaveEnabled: boolean;
   storageAutoSaveEnabled: boolean;
-  llmSettingsAutoSaveEnabled: boolean;
 }
 
 export interface SharedStorageDefaults {

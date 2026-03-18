@@ -58,6 +58,11 @@ import {
   isStudioContractFieldDeferredLocked,
 } from "../state/studioBehaviorContracts";
 import {
+  registerUnloadGuard,
+  markDomainFlushedByUnmount,
+  isDomainFlushedByUnload,
+} from "../../../stores/settingsUnloadGuard";
+import {
   DEFAULT_PRIORITY_PROFILE,
   deriveComponentSourcePriority,
   deriveListPriority,
@@ -385,8 +390,35 @@ export function MappingStudioTab({
     onSaveMap,
   ]);
 
+  useEffect(() => {
+    const category = useUiStore.getState().category;
+    return registerUnloadGuard({
+      domain: 'studioMap',
+      isDirty: () => {
+        if (!autoSaveMapEnabled || !mapHydrated.current) return false;
+        const nextMap = assembleMap();
+        const fp = autoSaveFingerprint(nextMap);
+        return Boolean(fp) && fp !== lastMapAutoSaveFingerprintRef.current;
+      },
+      getPayload: () => {
+        const cat = useUiStore.getState().category;
+        const nextMap = assembleMap();
+        return {
+          url: `/api/v1/studio/${cat}/field-studio-map`,
+          method: 'PUT' as const,
+          body: nextMap,
+        };
+      },
+      markFlushed: () => {
+        const nextMap = assembleMap();
+        lastMapAutoSaveFingerprintRef.current = autoSaveFingerprint(nextMap);
+      },
+    });
+  }, [autoSaveMapEnabled, assembleMap]);
+
   useEffect(
     () => () => {
+      if (isDomainFlushedByUnload('studioMap')) return;
       const nextMap = assembleMap();
       const nextFingerprint = autoSaveFingerprint(nextMap);
       if (
@@ -400,6 +432,7 @@ export function MappingStudioTab({
       ) return;
       onSaveMap(nextMap);
       lastMapAutoSaveFingerprintRef.current = nextFingerprint;
+      markDomainFlushedByUnmount('studioMap');
     },
     [
       autoSaveMapEnabled,

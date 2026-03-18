@@ -63,7 +63,7 @@ function toArray(value) {
 }
 
 export function createBrandResolverCallLlm({ callRoutedLlmFn, config, logger }) {
-  const useReasoning = Boolean(config._resolvedBrandResolverUseReasoning ?? config.llmTriageUseReasoning);
+  const useReasoning = Boolean(config._resolvedBrandResolverUseReasoning ?? config.llmPlanUseReasoning);
   return async ({ brand, category }) => {
     const result = await callRoutedLlmFn({
       config,
@@ -71,8 +71,8 @@ export function createBrandResolverCallLlm({ callRoutedLlmFn, config, logger }) 
       role: 'triage',
       modelOverride: String(
         useReasoning
-          ? (config._resolvedBrandResolverReasoningModel || config.llmModelReasoning || config._resolvedBrandResolverBaseModel || config.llmModelTriage || config.llmModelFast || config.llmPlanFallbackModel || '')
-          : (config._resolvedBrandResolverBaseModel || config.llmModelTriage || config.llmModelFast || config.llmPlanFallbackModel || '')
+          ? (config._resolvedBrandResolverReasoningModel || config.llmModelReasoning || config._resolvedBrandResolverBaseModel || config.llmModelPlan || config.llmPlanFallbackModel || '')
+          : (config._resolvedBrandResolverBaseModel || config.llmModelPlan || config.llmPlanFallbackModel || '')
       ).trim(),
       system: [
         'You resolve official brand website domains for product categories.',
@@ -92,7 +92,7 @@ export function createBrandResolverCallLlm({ callRoutedLlmFn, config, logger }) 
 }
 
 export function createDomainSafetyCallLlm({ callRoutedLlmFn, config, logger }) {
-  const useReasoning = Boolean(config._resolvedDomainClassifierUseReasoning ?? config.llmTriageUseReasoning);
+  const useReasoning = Boolean(config._resolvedDomainClassifierUseReasoning ?? config.llmPlanUseReasoning);
   return async ({ domains, category }) => {
     const result = await callRoutedLlmFn({
       config,
@@ -100,8 +100,8 @@ export function createDomainSafetyCallLlm({ callRoutedLlmFn, config, logger }) {
       role: 'triage',
       modelOverride: String(
         useReasoning
-          ? (config._resolvedDomainClassifierReasoningModel || config.llmModelReasoning || config._resolvedDomainClassifierBaseModel || config.llmModelTriage || config.llmModelFast || config.llmPlanFallbackModel || '')
-          : (config._resolvedDomainClassifierBaseModel || config.llmModelTriage || config.llmModelFast || config.llmPlanFallbackModel || '')
+          ? (config._resolvedDomainClassifierReasoningModel || config.llmModelReasoning || config._resolvedDomainClassifierBaseModel || config.llmModelPlan || config.llmPlanFallbackModel || '')
+          : (config._resolvedDomainClassifierBaseModel || config.llmModelPlan || config.llmPlanFallbackModel || '')
       ).trim(),
       system: [
         'You classify website domains for safety in the context of product specification research.',

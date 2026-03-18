@@ -11,6 +11,11 @@ import { useUiStore } from './uiStore';
 import { autoSaveFingerprint } from './autoSaveFingerprint';
 import { useSettingsAuthorityStore } from './settingsAuthorityStore';
 import { subscribeSettingsPropagation, type SettingsPropagationEvent } from './settingsPropagationContract';
+import {
+  registerUnloadGuard,
+  markDomainFlushedByUnmount,
+  isDomainFlushedByUnload,
+} from './settingsUnloadGuard';
 
 export interface SettingsAuthoritySnapshot {
   category: string;
@@ -25,7 +30,6 @@ export interface SettingsAuthoritySnapshot {
   autoSaveAllEnabled: boolean;
   storageAutoSaveEnabled: boolean;
   runtimeAutoSaveEnabled: boolean;
-  llmSettingsAutoSaveEnabled: boolean;
 }
 
 export function isSettingsAuthoritySnapshotReady(
@@ -98,13 +102,11 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const autoSaveMapEnabled = useUiStore((s) => s.autoSaveMapEnabled);
   const storageAutoSaveEnabled = useUiStore((s) => s.storageAutoSaveEnabled);
   const runtimeAutoSaveEnabled = useUiStore((s) => s.runtimeAutoSaveEnabled);
-  const llmSettingsAutoSaveEnabled = useUiStore((s) => s.llmSettingsAutoSaveEnabled);
   const setAutoSaveAllEnabled = useUiStore((s) => s.setAutoSaveAllEnabled);
   const setAutoSaveEnabled = useUiStore((s) => s.setAutoSaveEnabled);
   const setAutoSaveMapEnabled = useUiStore((s) => s.setAutoSaveMapEnabled);
   const setRuntimeAutoSaveEnabled = useUiStore((s) => s.setRuntimeAutoSaveEnabled);
   const setStorageAutoSaveEnabled = useUiStore((s) => s.setStorageAutoSaveEnabled);
-  const setLlmSettingsAutoSaveEnabled = useUiStore((s) => s.setLlmSettingsAutoSaveEnabled);
   const [uiSettingsPersistState, setUiSettingsPersistState] = useState<'idle' | 'saving' | 'error'>('idle');
   const [uiSettingsPersistMessage, setUiSettingsPersistMessage] = useState('');
 
@@ -176,8 +178,9 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     studioAutoSaveMapEnabled: autoSaveMapEnabled,
     runtimeAutoSaveEnabled,
     storageAutoSaveEnabled,
-    llmSettingsAutoSaveEnabled,
   };
+  const uiAutoSavePayloadRef = useRef(uiAutoSavePayload);
+  uiAutoSavePayloadRef.current = uiAutoSavePayload;
 
   const hasRuntimeSnapshot = readRuntimeSettingsSnapshot(queryClient) !== undefined;
   const hasConvergenceSnapshot = readConvergenceSettingsSnapshot(queryClient) !== undefined;
@@ -203,7 +206,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     autoSaveAllEnabled,
     storageAutoSaveEnabled,
     runtimeAutoSaveEnabled,
-    llmSettingsAutoSaveEnabled,
   }), [
     category,
     hasRuntimeSnapshot,
@@ -217,7 +219,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     autoSaveAllEnabled,
     storageAutoSaveEnabled,
     runtimeAutoSaveEnabled,
-    llmSettingsAutoSaveEnabled,
   ]);
 
   useEffect(() => {
@@ -296,7 +297,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     }
     setRuntimeAutoSaveEnabled(serverSettings.runtimeAutoSaveEnabled);
     setStorageAutoSaveEnabled(serverSettings.storageAutoSaveEnabled);
-    setLlmSettingsAutoSaveEnabled(serverSettings.llmSettingsAutoSaveEnabled);
     setAutoSaveAllEnabled(serverSettings.studioAutoSaveAllEnabled);
     uiSettingsHydratedRef.current = true;
     lastAppliedServerUiFingerprintRef.current = serverFingerprint;
@@ -309,7 +309,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     setAutoSaveMapEnabled,
     setRuntimeAutoSaveEnabled,
     setStorageAutoSaveEnabled,
-    setLlmSettingsAutoSaveEnabled,
     setAutoSaveAllEnabled,
   ]);
 
@@ -386,6 +385,25 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     uiAutoSavePayload,
     saveUiSettings,
   ]);
+
+  useEffect(() => {
+    return registerUnloadGuard({
+      domain: 'uiSettings',
+      isDirty: () => {
+        if (!uiSettingsHydratedRef.current) return false;
+        const fp = autoSaveFingerprint(uiAutoSavePayloadRef.current);
+        return Boolean(fp) && fp !== lastAppliedServerUiFingerprintRef.current;
+      },
+      getPayload: () => ({
+        url: '/api/v1/ui-settings',
+        method: 'PUT',
+        body: uiAutoSavePayloadRef.current,
+      }),
+      markFlushed: () => {
+        lastUiAutosaveFingerprintRef.current = autoSaveFingerprint(uiAutoSavePayloadRef.current);
+      },
+    });
+  }, []);
 
   useEffect(() => {
     hydrateAuthoritySnapshot(authoritySnapshot);

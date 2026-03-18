@@ -1,5 +1,5 @@
-import type { MixIssue } from './llmMixDetection';
-import { LLM_MODEL_FIELD_LABELS } from './llmModelRoleRegistry';
+import type { MixIssue } from './llmMixDetection.ts';
+import { LLM_MODEL_FIELD_LABELS } from './llmModelRoleRegistry.ts';
 
 export function detectEmptyModelFields(
   modelFields: Record<string, string>,

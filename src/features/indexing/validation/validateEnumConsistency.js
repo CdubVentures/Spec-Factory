@@ -293,7 +293,7 @@ export async function runEnumConsistencyReview({
 
     return {
       enabled: true,
-      model: String(config?.llmModelValidate || config?.llmModelExtract || '').trim() || null,
+      model: String(config?.llmModelPlan || '').trim() || null,
       provider: String(config?.llmValidateProvider || config?.llmProvider || '').trim() || null,
       format_guidance: effectiveFormatGuidance,
       decisions: sanitizeEnumConsistencyDecisions(raw || {}, {

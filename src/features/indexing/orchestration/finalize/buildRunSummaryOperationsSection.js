@@ -103,9 +103,9 @@ export function buildRunSummaryOperationsSection({
     llm: {
       enabled: Boolean(config.llmApiKey),
       provider: config.llmProvider || 'openai',
-      model_extract: config.llmModelExtract || null,
+      model_extract: config.llmModelPlan || null,
       model_plan: config.llmModelPlan || null,
-      model_validate: config.llmModelValidate || null,
+      model_validate: config.llmModelPlan || null,
       target_field_count: llmTargetFields.length,
       target_fields: llmTargetFields.slice(0, 80),
       golden_examples_count: goldenExamples.length,

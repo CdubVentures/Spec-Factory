@@ -22,7 +22,7 @@ export function createIndexingMetricsHandler({
       const models = collectLlmModels(config);
       const modelPricing = models.map((modelName) => ({
         model: modelName,
-        provider: llmProviderFromModel(modelName),
+        provider: llmProviderFromModel(modelName, config._registryLookup),
         ...resolvePricingForModel(config, modelName)
       }));
       const modelTokenProfiles = models.map((modelName) => ({
@@ -33,7 +33,6 @@ export function createIndexingMetricsHandler({
       const knobDefaults = resolveLlmKnobDefaults(config);
       const roleTokenDefaults = {
         plan: toInt(knobDefaults.phase_02_planner?.token_cap, 1200),
-        fast: toInt(knobDefaults.fast_pass?.token_cap, 1200),
         triage: toInt(knobDefaults.phase_03_triage?.token_cap, 1200),
         reasoning: toInt(knobDefaults.reasoning_pass?.token_cap, 4096),
         extract: toInt(knobDefaults.extract_role?.token_cap, 1200),
@@ -41,20 +40,11 @@ export function createIndexingMetricsHandler({
         write: toInt(knobDefaults.write_role?.token_cap, 1200)
       };
       const fallbackDefaults = {
-        enabled: Boolean(
-          String(config.llmPlanFallbackModel || '').trim()
-          || String(config.llmExtractFallbackModel || '').trim()
-          || String(config.llmValidateFallbackModel || '').trim()
-          || String(config.llmWriteFallbackModel || '').trim()
-        ),
+        enabled: Boolean(String(config.llmPlanFallbackModel || '').trim()),
         plan: String(config.llmPlanFallbackModel || '').trim(),
-        extract: String(config.llmExtractFallbackModel || '').trim(),
-        validate: String(config.llmValidateFallbackModel || '').trim(),
-        write: String(config.llmWriteFallbackModel || '').trim(),
+        reasoning: String(config.llmReasoningFallbackModel || '').trim(),
         plan_tokens: toInt(config.llmMaxOutputTokensPlanFallback, roleTokenDefaults.plan),
-        extract_tokens: toInt(config.llmMaxOutputTokensExtractFallback, roleTokenDefaults.extract),
-        validate_tokens: toInt(config.llmMaxOutputTokensValidateFallback, roleTokenDefaults.validate),
-        write_tokens: toInt(config.llmMaxOutputTokensWriteFallback, roleTokenDefaults.write)
+        reasoning_tokens: toInt(config.llmMaxOutputTokensReasoningFallback, roleTokenDefaults.reasoning)
       };
       return jsonRes(res, 200, {
         generated_at: new Date().toISOString(),

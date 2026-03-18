@@ -34,7 +34,7 @@ import {
 import {
   writeCategoryReviewArtifacts,
   writeProductReviewArtifacts
-} from '../review/reviewGridData.js';
+} from '../review/index.js';
 import { evaluateConstraintGraph } from '../scoring/constraintSolver.js';
 import { buildHypothesisQueue } from '../features/indexing/learning/index.js';
 import { buildMarkdownSummary } from '../exporter/summaryWriter.js';

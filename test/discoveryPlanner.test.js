@@ -19,25 +19,20 @@ function makeChatCompletionResponse(payload) {
   };
 }
 
-test('planDiscoveryQueriesLLM runs multi-pass planning and dedupes output', async () => {
+test('planDiscoveryQueriesLLM makes single LLM call and dedupes output', async () => {
   const originalFetch = global.fetch;
   const calls = [];
   global.fetch = async (_url, init) => {
     const body = JSON.parse(String(init?.body || '{}'));
     const model = String(body?.model || '');
     calls.push(model);
-    if (model === 'gpt-5-low') {
-      return makeChatCompletionResponse({
-        queries: ['logitech g pro x superlight 2 specs', 'logitech g pro x superlight 2 support']
-      });
-    }
-    if (model === 'gpt-5.1-high') {
-      return makeChatCompletionResponse({
-        queries: ['logitech g pro x superlight 2 latency test', 'logitech g pro x superlight 2 support']
-      });
-    }
     return makeChatCompletionResponse({
-      queries: ['site:logitechg.com g pro x superlight 2 manual pdf']
+      queries: [
+        'logitech g pro x superlight 2 specs',
+        'logitech g pro x superlight 2 support',
+        'logitech g pro x superlight 2 latency test',
+        'logitech g pro x superlight 2 support'
+      ]
     });
   };
 
@@ -59,9 +54,7 @@ test('planDiscoveryQueriesLLM runs multi-pass planning and dedupes output', asyn
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
         llmModelPlan: 'gpt-5-low',
-        llmModelFast: 'gpt-5-low',
         llmModelReasoning: 'gpt-5.1-high',
-        llmModelValidate: 'gpt-5.2-high',
         llmTimeoutMs: 5_000
       },
       llmContext: {
@@ -72,10 +65,12 @@ test('planDiscoveryQueriesLLM runs multi-pass planning and dedupes output', asyn
       }
     });
 
-    assert.equal(calls.length, 3);
+    // WHY: Single-pass planner — one LLM call with merged prompt
+    assert.equal(calls.length, 1);
     const queryStrings = queries.map((r) => typeof r === 'object' ? r.query : r);
     assert.equal(queryStrings.includes('logitech g pro x superlight 2 support'), true);
     assert.equal(queryStrings.includes('logitech g pro x superlight 2 latency test'), true);
+    // Dedup: duplicate "support" query collapsed to 1
     assert.equal(
       queryStrings.filter((query) => query === 'logitech g pro x superlight 2 support').length,
       1

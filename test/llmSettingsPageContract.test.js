@@ -47,9 +47,9 @@ function createHarness(overrides = {}) {
     llmSettingsReady: true,
     uiState: {
       category: 'mouse',
-      llmSettingsAutoSaveEnabled: false,
-      setLlmSettingsAutoSaveEnabled(value) {
-        globalThis.__llmSettingsPageHarness.uiState.llmSettingsAutoSaveEnabled = Boolean(value);
+      runtimeAutoSaveEnabled: false,
+      setRuntimeAutoSaveEnabled(value) {
+        globalThis.__llmSettingsPageHarness.uiState.runtimeAutoSaveEnabled = Boolean(value);
         globalThis.__llmSettingsPageHarness.needsRerender = true;
       },
     },
@@ -264,16 +264,6 @@ async function loadPageModule() {
           minEvidenceRefs: { min: 1, max: 5 },
         };
         export const LLM_ROUTE_PRESET_LIMITS = {
-          fast: {
-            maxTokensMin: 2048,
-            maxTokensMax: 6144,
-            modelLadderToday: 'gpt-5-low -> gpt-5-medium',
-            singleSourceData: true,
-            allSourceData: false,
-            enableWebsearch: false,
-            allSourcesConfidenceRepatch: true,
-            minEvidenceRefsRequired: 1,
-          },
           balanced: {
             maxTokensMin: 4096,
             maxTokensMax: 8192,
@@ -398,13 +388,55 @@ test('llm settings route presets apply bounded min-evidence defaults through sha
   assert.equal(textContent(tree).includes('Min Evidence Refs: 2'), true);
   assert.equal(textContent(tree).includes('Max Tokens: 12288'), true);
 
-  const fastButton = findNode(tree, (node) => node.type === 'button' && textContent(node).trim() === 'Fast');
-  assert.ok(fastButton, 'fast preset button should render for selected route');
-  fastButton.props.onClick();
-
-  tree = renderPage(LlmSettingsPage, harness);
-  assert.equal(textContent(tree).includes('Min Evidence Refs: 1'), true);
-  assert.equal(textContent(tree).includes('Max Tokens: 6144'), true);
-
   delete globalThis.__llmSettingsPageHarness;
+});
+
+/* ------------------------------------------------------------------ *
+ * Phase 4 — LlmConfigPage always-on autosave enforcement             *
+ * ------------------------------------------------------------------ */
+
+async function loadHeaderControlsModule() {
+  return loadBundledModule(
+    'tools/gui-react/src/features/pipeline-settings/components/RuntimeFlowHeaderControls.tsx',
+    {
+      prefix: 'llm-header-controls-',
+      stubs: {
+        'react/jsx-runtime': `
+          export function jsx(type, props) {
+            return { type, props: props || {} };
+          }
+          export const jsxs = jsx;
+          export const Fragment = Symbol.for('fragment');
+        `,
+      },
+    },
+  );
+}
+
+test('LlmConfigPage does not render auto-save toggle', async () => {
+  // WHY: LlmConfigPage hard-wires autoSaveEnabled: true and never passes
+  // onToggleRuntimeAutoSaveEnabled / runtimeAutoSaveEnabled to the header.
+  // When those props are absent, the auto-save toggle button must not render.
+  const { RuntimeFlowHeaderControls } = await loadHeaderControlsModule();
+
+  const tree = renderElement(RuntimeFlowHeaderControls({
+    runtimeSettingsReady: true,
+    runtimeSettingsSaving: false,
+    runtimeAutoSaveDelaySeconds: '2.0',
+    onSaveNow: () => {},
+    onResetToDefaults: () => {},
+    // onToggleRuntimeAutoSaveEnabled intentionally omitted (LlmConfigPage contract)
+    // runtimeAutoSaveEnabled intentionally omitted
+  }));
+
+  const buttons = collectNodes(tree, (node) => node.type === 'button');
+  const toggleButton = buttons.find(
+    (btn) => textContent(btn).includes('Auto-Save'),
+  );
+
+  assert.equal(
+    toggleButton,
+    undefined,
+    'Auto-save toggle button must not render when onToggleRuntimeAutoSaveEnabled is absent',
+  );
 });

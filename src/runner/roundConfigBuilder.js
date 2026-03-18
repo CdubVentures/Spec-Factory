@@ -351,7 +351,7 @@ export function buildRoundConfig(baseConfig, {
     searchProvider: round === 0 ? 'none' : baseConfig.searchProvider,
     llmMaxCallsPerRound:
       round === 0
-        ? Math.max(1, Math.min(baseConfig.llmMaxCallsPerProductFast || 2, baseConfig.llmMaxCallsPerRound || 4))
+        ? Math.max(1, baseConfig.llmMaxCallsPerRound || 4)
         : Math.max(1, baseConfig.llmMaxCallsPerRound || 4),
     maxUrlsPerProduct:
       round === 0

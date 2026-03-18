@@ -47,7 +47,7 @@ export class AggressiveDomExtractor {
   constructor({
     config = {}
   } = {}) {
-    this.modelFast = String(config.llmModelFast || 'gpt-5-low');
+    this.modelFast = String(config.llmModelPlan || 'gpt-5-low');
     this.modelDeep = String(config.llmModelReasoning || 'gpt-5-high');
   }
 

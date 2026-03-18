@@ -1,5 +1,11 @@
 # LLM Architecture Audit — 2026-03-17
 
+> **Purpose:** Preserve the focused historical architecture audit of the LLM subsystem across backend and frontend boundaries.
+> **Prerequisites:** [../README.md](../README.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../04-features/pipeline-and-runtime-settings.md](../04-features/pipeline-and-runtime-settings.md)
+> **Last validated:** 2026-03-17
+
+Historical note: this is a subsystem audit and refactor-analysis document, not the master current-state architecture contract for the entire app.
+
 ## 1. Executive Summary
 
 The LLM subsystem spans **~35 backend files and ~30 frontend files** across 5 feature boundaries. It works — runs are executing, models are routing, billing is tracking — but it is **structurally fragile at scale**. The audit identified **5 Critical**, **8 High**, and **9 Medium** findings.
@@ -302,3 +308,18 @@ export const LLM_MODEL_FIELD_LABELS: Record<string, string> = {
 | Cortex routing | `src/core/llm/cortex/cortexRouter.js` | 100+ | Cortex dispatch | Separate model namespace; not in registry |
 
 **Why this is still High**: The routing layer is the production execution path for every LLM call. Provider inference by model-name string matching is the weakest link — it works for current naming conventions but will break the first time a model name doesn't follow the `{provider}-*` pattern. The fallback chain in `configPostMerge.js` is implicit (`a || b || c`) with no cycle detection. Adding a 5th provider requires changes in routing.js + providers/index.js + configPostMerge.js. The cortex routing system operates in parallel with its own model namespace. These should converge into a single registry-driven dispatch.
+## Validated Against
+
+| Source | Path | What was verified |
+|--------|------|-------------------|
+| source | `src/shared/settingsDefaults.js` | default model identities and runtime draft surface referenced by the audit |
+| source | `src/core/config/manifest/llmGroup.js` | env-backed LLM settings inventory referenced by the audit |
+| source | `src/core/llm/client/routing.js` | backend routing and provider inference behavior cited by the audit |
+| source | `tools/gui-react/src/features/llm-config/state/llmModelRoleRegistry.ts` | frontend LLM role registry and label contracts cited by the audit |
+| source | `tools/gui-react/src/features/pipeline-settings/state/RuntimeFlowDraftContracts.ts` | RuntimeDraft coupling cited by the audit |
+
+## Related Documents
+
+- [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md) - current LLM/config authority surfaces referenced by this audit.
+- [../04-features/pipeline-and-runtime-settings.md](../04-features/pipeline-and-runtime-settings.md) - current user-facing settings flow touched by the LLM subsystem.
+- [./llm-integration-audit-2026-03-17.md](./llm-integration-audit-2026-03-17.md) - broader integration audit covering runtime flow, providers, and diagrams.

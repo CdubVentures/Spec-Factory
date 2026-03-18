@@ -356,11 +356,11 @@ function buildQueryRows({
       }
     }
 
-    // Emit domain_hint site: queries
+    // Emit domain_hint soft-bias queries
     for (const host of ruleDomainHints.slice(0, 4)) {
       const primaryTerm = searchHintTerms[0] || field.replace(/_/g, ' ');
       addRow({
-        query: `site:${host} ${brand} ${model} ${primaryTerm}`,
+        query: `${brand} ${model} ${primaryTerm} ${host}`,
         hintSource: 'field_rules.search_hints',
         targetFields: [field],
         domainHint: host

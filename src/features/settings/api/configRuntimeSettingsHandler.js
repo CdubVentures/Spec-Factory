@@ -5,6 +5,36 @@ import {
   snapshotRuntimeSettings,
 } from '../../settings-authority/index.js';
 
+function buildRuntimeSettingsGetSnapshot(cfg, toInt) {
+  const STRING_MAP = RUNTIME_SETTINGS_ROUTE_GET.stringMap;
+  const INT_MAP = RUNTIME_SETTINGS_ROUTE_GET.intMap;
+  const FLOAT_MAP = RUNTIME_SETTINGS_ROUTE_GET.floatMap;
+  const BOOL_MAP = RUNTIME_SETTINGS_ROUTE_GET.boolMap;
+  const DYNAMIC_FETCH_POLICY_MAP_JSON_KEY = RUNTIME_SETTINGS_ROUTE_GET.dynamicFetchPolicyMapJsonKey;
+  const settings = {};
+  for (const [feKey, cfgKey] of Object.entries(STRING_MAP)) {
+    settings[feKey] = String(cfg[cfgKey] ?? '');
+  }
+  for (const [feKey, cfgKey] of Object.entries(INT_MAP)) {
+    settings[feKey] = toInt(cfg[cfgKey], 0);
+  }
+  for (const [feKey, cfgKey] of Object.entries(FLOAT_MAP)) {
+    const v = Number.parseFloat(String(cfg[cfgKey] ?? 0));
+    settings[feKey] = Number.isFinite(v) ? v : 0;
+  }
+  if (typeof cfg.dynamicFetchPolicyMapJson === 'string') {
+    settings[DYNAMIC_FETCH_POLICY_MAP_JSON_KEY] = cfg.dynamicFetchPolicyMapJson;
+  } else if (cfg.dynamicFetchPolicyMap && typeof cfg.dynamicFetchPolicyMap === 'object') {
+    settings[DYNAMIC_FETCH_POLICY_MAP_JSON_KEY] = JSON.stringify(cfg.dynamicFetchPolicyMap);
+  } else {
+    settings[DYNAMIC_FETCH_POLICY_MAP_JSON_KEY] = '';
+  }
+  for (const [feKey, cfgKey] of Object.entries(BOOL_MAP)) {
+    settings[feKey] = Boolean(cfg[cfgKey]);
+  }
+  return settings;
+}
+
 export function createRuntimeSettingsHandler({
   jsonRes,
   readJsonBody,
@@ -18,37 +48,12 @@ export function createRuntimeSettingsHandler({
 
     // GET /api/v1/runtime-settings
     if (method === 'GET') {
-      const STRING_MAP = RUNTIME_SETTINGS_ROUTE_GET.stringMap;
-      const INT_MAP = RUNTIME_SETTINGS_ROUTE_GET.intMap;
-      const FLOAT_MAP = RUNTIME_SETTINGS_ROUTE_GET.floatMap;
-      const BOOL_MAP = RUNTIME_SETTINGS_ROUTE_GET.boolMap;
-      const DYNAMIC_FETCH_POLICY_MAP_JSON_KEY = RUNTIME_SETTINGS_ROUTE_GET.dynamicFetchPolicyMapJsonKey;
-      const settings = {};
-      for (const [feKey, cfgKey] of Object.entries(STRING_MAP)) {
-        settings[feKey] = String(config[cfgKey] ?? '');
-      }
-      for (const [feKey, cfgKey] of Object.entries(INT_MAP)) {
-        settings[feKey] = toInt(config[cfgKey], 0);
-      }
-      for (const [feKey, cfgKey] of Object.entries(FLOAT_MAP)) {
-        const v = Number.parseFloat(String(config[cfgKey] ?? 0));
-        settings[feKey] = Number.isFinite(v) ? v : 0;
-      }
-      if (typeof config.dynamicFetchPolicyMapJson === 'string') {
-        settings[DYNAMIC_FETCH_POLICY_MAP_JSON_KEY] = config.dynamicFetchPolicyMapJson;
-      } else if (config.dynamicFetchPolicyMap && typeof config.dynamicFetchPolicyMap === 'object') {
-        settings[DYNAMIC_FETCH_POLICY_MAP_JSON_KEY] = JSON.stringify(config.dynamicFetchPolicyMap);
-      } else {
-        settings[DYNAMIC_FETCH_POLICY_MAP_JSON_KEY] = '';
-      }
-      for (const [feKey, cfgKey] of Object.entries(BOOL_MAP)) {
-        settings[feKey] = Boolean(config[cfgKey]);
-      }
-      return jsonRes(res, 200, settings);
+      return jsonRes(res, 200, buildRuntimeSettingsGetSnapshot(config, toInt));
     }
 
-    // PUT /api/v1/runtime-settings
-    if (method === 'PUT') {
+    // PUT or POST /api/v1/runtime-settings
+    // WHY: POST accepted because navigator.sendBeacon (autosave on hard reload) always sends POST.
+    if (method === 'PUT' || method === 'POST') {
       const body = await readJsonBody(req).catch(() => ({}));
       const STRING_ENUM_MAP = RUNTIME_SETTINGS_ROUTE_PUT.stringEnumMap;
       const STRING_FREE_MAP = RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap;
@@ -64,7 +69,21 @@ export function createRuntimeSettingsHandler({
       const rejected = {};
       const runtimePatch = {};
 
+      // WHY: Build set of all known keys so unknown keys can be rejected.
+      const ALL_KNOWN_KEYS = new Set([
+        ...Object.keys(STRING_ENUM_MAP),
+        DYNAMIC_FETCH_POLICY_MAP_JSON_KEY,
+        ...Object.keys(STRING_FREE_MAP),
+        ...Object.keys(INT_RANGE_MAP),
+        ...Object.keys(FLOAT_RANGE_MAP),
+        ...Object.keys(BOOL_MAP),
+      ]);
+
       for (const [key, value] of Object.entries(body || {})) {
+        if (!ALL_KNOWN_KEYS.has(key)) {
+          rejected[key] = 'unknown_key';
+          continue;
+        }
         if (key in STRING_ENUM_MAP) {
           const { cfgKey, allowed } = STRING_ENUM_MAP[key];
           const str = String(value ?? '').trim().toLowerCase();
@@ -162,7 +181,8 @@ export function createRuntimeSettingsHandler({
           applied,
         },
       });
-      return jsonRes(res, 200, { ok: true, applied, ...(Object.keys(rejected).length > 0 ? { rejected } : {}) });
+      const snapshot = buildRuntimeSettingsGetSnapshot(config, toInt);
+      return jsonRes(res, 200, { ok: true, applied, snapshot, rejected });
     }
 
     return false;

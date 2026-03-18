@@ -18,7 +18,6 @@ export interface UiSettingDefaults {
   studioAutoSaveMapEnabled: boolean;
   runtimeAutoSaveEnabled: boolean;
   storageAutoSaveEnabled: boolean;
-  llmSettingsAutoSaveEnabled: boolean;
 }
 
 export const STORAGE_SETTING_DEFAULTS: StorageSettingDefaults = {

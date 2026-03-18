@@ -55,6 +55,22 @@ export function createStorageSettingsHandler({
 
     if (method === 'PUT') {
       const body = await readJsonBody(req).catch(() => ({}));
+      const storageMutableKeys = [
+        'enabled',
+        'destinationType',
+        'localDirectory',
+        'awsRegion',
+        's3Bucket',
+        's3Prefix',
+        's3AccessKeyId',
+        's3SecretAccessKey',
+        's3SessionToken',
+      ];
+      const STORAGE_ALLOWED = new Set(storageMutableKeys);
+      const rejected = {};
+      for (const key of Object.keys(body || {})) {
+        if (!STORAGE_ALLOWED.has(key)) rejected[key] = 'unknown_key';
+      }
       const currentStorageSnapshot = snapshotStorageSettings(runDataStorageState);
       const normalized = normalizeRunDataStorageSettings(body, currentStorageSnapshot);
       const validationError = validateRunDataStorageSettings(normalized);
@@ -83,23 +99,14 @@ export function createStorageSettingsHandler({
         ? userSettingsState.storage
         : {};
       const storagePatch = {};
-      const storageMutableKeys = [
-        'enabled',
-        'destinationType',
-        'localDirectory',
-        'awsRegion',
-        's3Bucket',
-        's3Prefix',
-        's3AccessKeyId',
-        's3SecretAccessKey',
-        's3SessionToken',
-      ];
+      const applied = {};
       for (const key of storageMutableKeys) {
         if (!Object.prototype.hasOwnProperty.call(body || {}, key)) continue;
         storagePatch[key] = normalizedStorageSnapshot[key];
+        applied[key] = normalizedStorageSnapshot[key];
       }
       storagePatch.updatedAt = normalizedStorageSnapshot.updatedAt;
-      const storageSnapshot = {
+      const persistSnapshot = {
         ...currentUserStorage,
         ...storagePatch,
       };
@@ -107,7 +114,7 @@ export function createStorageSettingsHandler({
       let persistedArtifacts = null;
       try {
         persistedArtifacts = await persistenceCtx.persistCanonicalSections({
-          storage: storageSnapshot,
+          storage: persistSnapshot,
         });
         await persistenceCtx.persistLegacySettingsFile(
           'storage-settings.json',
@@ -145,10 +152,8 @@ export function createStorageSettingsHandler({
           destinationType: runDataStorageState.destinationType,
         },
       });
-      return jsonRes(res, 200, {
-        ok: true,
-        ...sanitizeRunDataStorageSettingsForResponse(runDataStorageState),
-      });
+      const snapshot = sanitizeRunDataStorageSettingsForResponse(runDataStorageState);
+      return jsonRes(res, 200, { ok: true, applied, snapshot, rejected });
     }
 
     return false;

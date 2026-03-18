@@ -54,7 +54,6 @@ test('sanitizeUserSettingsSettings keeps mapping and key/workbench autosave inde
       studioAutoSaveMapEnabled: true,
       runtimeAutoSaveEnabled: true,
       storageAutoSaveEnabled: false,
-      llmSettingsAutoSaveEnabled: true,
     },
   });
   assert.equal(normalized.ui.studioAutoSaveMapEnabled, true);

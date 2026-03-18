@@ -20,7 +20,7 @@ export interface BuildIndexingRunLearningPayloadInput {
   llmExtractionCacheDir: string;
   parsedLlmExtractionCacheTtlMs: number;
   parsedLlmMaxCallsPerProductTotal: number;
-  parsedLlmMaxCallsPerProductFast: number;
+
   parsedLlmExtractMaxTokens: number;
   llmExtractMinTokens: number;
   parsedLlmExtractMaxSnippetsPerBatch: number;
@@ -57,7 +57,7 @@ export function buildIndexingRunLearningPayload(
     llmExtractionCacheDir: String(input.llmExtractionCacheDir || '').trim(),
     llmExtractionCacheTtlMs: Math.max(60000, input.parsedLlmExtractionCacheTtlMs),
     llmMaxCallsPerProductTotal: Math.max(1, input.parsedLlmMaxCallsPerProductTotal),
-    llmMaxCallsPerProductFast: Math.max(0, input.parsedLlmMaxCallsPerProductFast),
+
     llmExtractMaxTokens: Math.max(input.llmExtractMinTokens, input.parsedLlmExtractMaxTokens),
     llmExtractMaxSnippetsPerBatch: Math.max(1, input.parsedLlmExtractMaxSnippetsPerBatch),
     llmExtractMaxSnippetChars: Math.max(input.llmExtractMinSnippetChars, input.parsedLlmExtractMaxSnippetChars),

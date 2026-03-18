@@ -334,13 +334,14 @@ test('resolveDiscoveryAdmissionExclusionReason: multi_model_hint allowed for man
 // isRelevantSearchResult
 // ---------------------------------------------------------------------------
 
-test('isRelevantSearchResult: plan provider always relevant', () => {
+test('isRelevantSearchResult: plan provider goes through normal relevance checks (no bypass)', () => {
+  // WHY: plan-provider bypass removed — root path is low signal, so this returns false
   assert.equal(isRelevantSearchResult({
     parsed: new URL('https://example.com/'),
     raw: { provider: 'plan' },
     classified: {},
     variables: { brand: 'Razer', model: 'Viper V3' }
-  }), true);
+  }), false);
 });
 
 test('isRelevantSearchResult: manufacturer role always relevant', () => {

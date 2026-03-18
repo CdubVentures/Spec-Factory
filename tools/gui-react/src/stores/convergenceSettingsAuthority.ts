@@ -184,7 +184,7 @@ export function useConvergenceSettingsAuthority({
           ? response.rejected as Record<string, string>
           : {};
         return {
-          ok: response?.ok !== false && Object.keys(rejected).length === 0,
+          ok: response?.ok !== false,
           applied,
           rejected,
         };

@@ -3,29 +3,13 @@ type IndexingRunModelPayloadPrimitive = string | number | boolean;
 export interface BuildIndexingRunModelPayloadInput {
   searchProvider: string;
   llmModelPlan: string;
-  llmModelTriage: string;
   llmMaxOutputTokensPlan: number;
-  llmModelFast: string;
-  llmMaxOutputTokensFast: number;
-  llmMaxOutputTokensTriage: number;
   llmModelReasoning: string;
   llmMaxOutputTokensReasoning: number;
-  llmModelExtract: string;
-  llmMaxOutputTokensExtract: number;
-  llmModelValidate: string;
-  llmMaxOutputTokensValidate: number;
-  llmModelWrite: string;
-  llmMaxOutputTokensWrite: number;
   llmPlanFallbackModel: string;
   llmReasoningFallbackModel: string;
-  llmExtractFallbackModel: string;
-  llmValidateFallbackModel: string;
-  llmWriteFallbackModel: string;
   llmMaxOutputTokensPlanFallback: number;
   llmMaxOutputTokensReasoningFallback: number;
-  llmMaxOutputTokensExtractFallback: number;
-  llmMaxOutputTokensValidateFallback: number;
-  llmMaxOutputTokensWriteFallback: number;
 }
 
 export function buildIndexingRunModelPayload(
@@ -34,29 +18,13 @@ export function buildIndexingRunModelPayload(
   return {
     searchProvider: input.searchProvider,
     llmModelPlan: input.llmModelPlan,
-    llmModelTriage: input.llmModelTriage,
     runProfile: 'standard',
     llmMaxOutputTokensPlan: input.llmMaxOutputTokensPlan,
-    llmModelFast: input.llmModelFast,
-    llmMaxOutputTokensFast: input.llmMaxOutputTokensFast,
-    llmMaxOutputTokensTriage: input.llmMaxOutputTokensTriage,
     llmModelReasoning: input.llmModelReasoning,
     llmMaxOutputTokensReasoning: input.llmMaxOutputTokensReasoning,
-    llmModelExtract: input.llmModelExtract,
-    llmMaxOutputTokensExtract: input.llmMaxOutputTokensExtract,
-    llmModelValidate: input.llmModelValidate,
-    llmMaxOutputTokensValidate: input.llmMaxOutputTokensValidate,
-    llmModelWrite: input.llmModelWrite,
-    llmMaxOutputTokensWrite: input.llmMaxOutputTokensWrite,
     llmPlanFallbackModel: input.llmPlanFallbackModel,
     llmReasoningFallbackModel: input.llmReasoningFallbackModel,
-    llmExtractFallbackModel: input.llmExtractFallbackModel,
-    llmValidateFallbackModel: input.llmValidateFallbackModel,
-    llmWriteFallbackModel: input.llmWriteFallbackModel,
     llmMaxOutputTokensPlanFallback: input.llmMaxOutputTokensPlanFallback,
     llmMaxOutputTokensReasoningFallback: input.llmMaxOutputTokensReasoningFallback,
-    llmMaxOutputTokensExtractFallback: input.llmMaxOutputTokensExtractFallback,
-    llmMaxOutputTokensValidateFallback: input.llmMaxOutputTokensValidateFallback,
-    llmMaxOutputTokensWriteFallback: input.llmMaxOutputTokensWriteFallback,
   };
 }

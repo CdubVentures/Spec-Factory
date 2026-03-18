@@ -8,9 +8,9 @@ const { RUNTIME_SETTINGS_ROUTE_PUT } = await import(
   '../src/features/settings-authority/runtimeSettingsRoutePut.js'
 );
 
-// WHY: Per-role extract/validate/write provider overrides were retired in model
-// stack simplification. All roles alias to llmModelPlan — per-role provider
-// routing is no longer exposed. Plan provider keys remain (global provider route).
+// WHY: Per-role extract/validate/write provider overrides fully retired.
+// All roles alias to llmModelPlan — per-role provider routing removed from
+// GET/defaults/clamping surfaces.
 const RETIRED_PROVIDER_OVERRIDE_KEYS = [
   'llmExtractProvider',
   'llmExtractBaseUrl',
@@ -23,25 +23,22 @@ const RETIRED_PROVIDER_OVERRIDE_KEYS = [
   'llmWriteApiKey',
 ];
 
-test('retired per-role provider override keys still have defaults (backward compat hydration)', () => {
+test('retired per-role provider override keys are removed from defaults', () => {
   for (const key of RETIRED_PROVIDER_OVERRIDE_KEYS) {
-    assert.ok(
-      Object.hasOwn(SETTINGS_DEFAULTS.runtime, key),
-      `Default should still exist for backward compat: ${key}`,
-    );
     assert.equal(
-      SETTINGS_DEFAULTS.runtime[key],
-      '',
-      `Default for ${key} should be empty string`,
+      Object.hasOwn(SETTINGS_DEFAULTS.runtime, key),
+      false,
+      `Default should no longer exist: ${key}`,
     );
   }
 });
 
-test('retired per-role provider override keys are still in GET stringMap (backward compat read)', () => {
+test('retired per-role provider override keys are removed from GET stringMap', () => {
   for (const key of RETIRED_PROVIDER_OVERRIDE_KEYS) {
-    assert.ok(
+    assert.equal(
       Object.hasOwn(RUNTIME_SETTINGS_ROUTE_GET.stringMap, key),
-      `GET stringMap should still include ${key} for backward compat`,
+      false,
+      `GET stringMap should no longer include ${key}`,
     );
   }
 });
@@ -72,7 +69,6 @@ test('PUT contract includes fallback model keys and parsingConfidenceBaseMapJson
 test('PUT contract does not include retired per-role model keys', () => {
   const retiredModelKeys = [
     'llmModelTriage',
-    'llmModelFast',
     'llmModelExtract',
     'llmModelValidate',
     'llmModelWrite',

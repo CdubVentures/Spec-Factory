@@ -5,6 +5,11 @@ import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint';
 import { SETTINGS_AUTOSAVE_DEBOUNCE_MS, STORAGE_SETTING_DEFAULTS } from '../../../stores/settingsManifest';
 import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract';
 import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract';
+import {
+  registerUnloadGuard,
+  markDomainFlushedByUnmount,
+  isDomainFlushedByUnload,
+} from '../../../stores/settingsUnloadGuard';
 
 export type StorageDestination = 'local' | 's3';
 
@@ -265,7 +270,14 @@ export function useStorageSettingsAuthority({
       queryKey: STORAGE_SETTINGS_QUERY_KEY,
       mutationFn: (nextPayload) => api.put<Record<string, unknown>>('/storage-settings', nextPayload),
       toOptimisticData: (nextPayload, previousData) => applyStoragePayloadOptimistically(nextPayload, previousData),
-      toAppliedData: (response) => sanitizeStorageSettingsResponse(response),
+      toAppliedData: (response) => {
+        // WHY: Prefer snapshot from standardized envelope; fall back to top-level for compat.
+        const source = response && typeof response === 'object' && 'snapshot' in response
+          && response.snapshot && typeof response.snapshot === 'object'
+          ? response.snapshot as Record<string, unknown>
+          : response;
+        return sanitizeStorageSettingsResponse(source);
+      },
       toPersistedResult: (_response, _nextPayload, _previousData, appliedData) => appliedData,
       onPersisted: (nextSettings, nextPayload) => {
         onPersisted?.(nextSettings);
@@ -299,7 +311,27 @@ export function useStorageSettingsAuthority({
   }, [autoSaveEnabled, dirty, payloadFingerprint, saveMutate]);
 
   useEffect(() => {
+    return registerUnloadGuard({
+      domain: 'storage',
+      isDirty: () => {
+        if (!dirtyRef.current || !autoSaveEnabledRef.current) return false;
+        const fp = payloadFingerprintRef.current;
+        return Boolean(fp) && fp !== lastAutoSavedFingerprintRef.current;
+      },
+      getPayload: () => ({
+        url: '/api/v1/storage-settings',
+        method: 'PUT',
+        body: payloadRef.current,
+      }),
+      markFlushed: () => {
+        lastAutoSaveAttemptFingerprintRef.current = payloadFingerprintRef.current;
+      },
+    });
+  }, []);
+
+  useEffect(() => {
     return () => {
+      if (isDomainFlushedByUnload('storage')) return;
       const hadPendingAutoSaveTimer = Boolean(pendingAutoSaveTimerRef.current);
       if (pendingAutoSaveTimerRef.current) {
         clearTimeout(pendingAutoSaveTimerRef.current);
@@ -312,6 +344,7 @@ export function useStorageSettingsAuthority({
       if (!hadPendingAutoSaveTimer && nextFingerprint === lastAutoSaveAttemptFingerprintRef.current) return;
       lastAutoSaveAttemptFingerprintRef.current = nextFingerprint;
       void persistStorageSettings(payloadRef.current, false);
+      markDomainFlushedByUnmount('storage');
     };
   }, []);
 

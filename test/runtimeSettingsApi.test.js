@@ -105,8 +105,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'searchProvider',
       'searxngBaseUrl',
       'frontierDbPath',
-      'llmModelPlan', 'llmModelTriage', 'llmModelFast', 'llmModelReasoning',
-      'llmModelExtract', 'llmModelValidate', 'llmModelWrite',
+      'llmModelPlan', 'llmModelReasoning',
       'resumeMode', 'scannedPdfOcrBackend',
     ];
     for (const key of STRING_KEYS) {
@@ -118,9 +117,8 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'domainRequestRps', 'domainRequestBurst',
       'globalRequestRps', 'globalRequestBurst',
       'fetchPerHostConcurrencyCap',
-      'llmMaxOutputTokensPlan', 'llmMaxOutputTokensTriage', 'llmMaxOutputTokensFast', 'llmMaxOutputTokensReasoning',
-      'llmMaxOutputTokensExtract', 'llmMaxOutputTokensValidate', 'llmMaxOutputTokensWrite',
-      'llmMaxOutputTokensPlanFallback', 'llmMaxOutputTokensExtractFallback', 'llmMaxOutputTokensValidateFallback', 'llmMaxOutputTokensWriteFallback',
+      'llmMaxOutputTokensPlan', 'llmMaxOutputTokensReasoning',
+      'llmMaxOutputTokensPlanFallback',
       'resumeWindowHours', 'reextractAfterHours',
       'scannedPdfOcrMaxPages', 'scannedPdfOcrMaxPairs', 'scannedPdfOcrMinCharsPerPage', 'scannedPdfOcrMinLinesPerPage',
       'crawleeRequestHandlerTimeoutSecs', 'dynamicFetchRetryBudget', 'dynamicFetchRetryBackoffMs',

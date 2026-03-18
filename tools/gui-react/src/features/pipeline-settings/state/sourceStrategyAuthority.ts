@@ -38,6 +38,21 @@ export interface SourceEntry {
   discovery: DiscoveryConfig;
 }
 
+interface SourceEntryEnvelope {
+  ok: boolean;
+  applied: Partial<SourceEntry>;
+  snapshot: SourceEntry | null;
+  rejected: Record<string, string>;
+}
+
+// WHY: Extract the source entry from the standardized response envelope.
+function extractSourceEntryFromEnvelope(response: SourceEntryEnvelope): SourceEntry {
+  if (response.snapshot && typeof response.snapshot === 'object' && 'sourceId' in response.snapshot) {
+    return response.snapshot;
+  }
+  return response as unknown as SourceEntry;
+}
+
 interface SourceStrategyAuthorityOptions {
   category: string;
   enabled?: boolean;
@@ -151,11 +166,11 @@ export function useSourceStrategyAuthority({
   });
 
   const toggleMutation = useMutation(
-    createSettingsOptimisticMutationContract<SourceEntry, SourceEntry, SourceEntry[], SourceEntry>({
+    createSettingsOptimisticMutationContract<SourceEntry, SourceEntryEnvelope, SourceEntry[], SourceEntry>({
       queryClient,
       queryKey,
       mutationFn: (entry) =>
-        api.put<SourceEntry>(
+        api.put<SourceEntryEnvelope>(
           `/source-strategy/${entry.sourceId}${categoryQuery}`,
           { discovery: { enabled: !entry.discovery.enabled } },
         ),
@@ -167,11 +182,12 @@ export function useSourceStrategyAuthority({
             : item
         ));
       },
-      toAppliedData: (nextEntry, _entry, previousEntries) => {
+      toAppliedData: (response, entry, previousEntries) => {
+        const nextEntry = extractSourceEntryFromEnvelope(response);
         const baseline = Array.isArray(previousEntries) ? previousEntries : [];
         return baseline.map((item) => (item.sourceId === nextEntry.sourceId ? nextEntry : item));
       },
-      toPersistedResult: (nextEntry) => nextEntry,
+      toPersistedResult: (response) => extractSourceEntryFromEnvelope(response),
       onPersisted: (nextEntry) => {
         publishSettingsPropagation({ domain: 'source-strategy', category });
         onToggled?.(nextEntry);
@@ -198,8 +214,9 @@ export function useSourceStrategyAuthority({
 
   const updateMutation = useMutation({
     mutationFn: ({ sourceId, payload }: { sourceId: string; payload: Partial<SourceEntry> }) =>
-      api.put<SourceEntry>(`/source-strategy/${sourceId}${categoryQuery}`, payload),
-    onSuccess: (updatedEntry) => {
+      api.put<SourceEntryEnvelope>(`/source-strategy/${sourceId}${categoryQuery}`, payload),
+    onSuccess: (response) => {
+      const updatedEntry = extractSourceEntryFromEnvelope(response);
       const baseline = queryClient.getQueryData<SourceEntry[]>(queryKey) || [];
       queryClient.setQueryData(
         queryKey,

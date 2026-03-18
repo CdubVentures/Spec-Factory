@@ -68,12 +68,7 @@ export function IndexingPage() {
   );
   const {
     llmModelPlan,
-    llmModelTriage,
-    llmModelFast,
     llmModelReasoning,
-    llmModelExtract,
-    llmModelValidate,
-    llmModelWrite,
     resumeMode,
     reextractIndexed,
   } = runtimeDraft;
@@ -161,12 +156,7 @@ export function IndexingPage() {
     indexingLlmConfig,
     runtimeSettingsBootstrap: runtimeDraft,
     llmModelPlan,
-    llmModelTriage,
-    llmModelFast,
     llmModelReasoning,
-    llmModelExtract,
-    llmModelValidate,
-    llmModelWrite,
   });
 
   const {

@@ -159,8 +159,8 @@ export function resolveBatchModel({
   forcedHighFields = [],
   fieldRules = {}
 }) {
-  const fastModel = String(config.llmModelFast || config.llmModelPlan || config.llmModelExtract || '').trim();
-  const reasoningModel = String(config.llmModelReasoning || config.llmModelExtract || fastModel).trim();
+  const fastModel = String(config.llmModelPlan || '').trim();
+  const reasoningModel = String(config.llmModelReasoning || fastModel).trim();
   const difficulty = batch?.difficulty || {};
   const fields = Array.isArray(batch?.fields) ? batch.fields.map((field) => normalizeField(field)) : [];
   const forcedSet = new Set((forcedHighFields || []).map((field) => normalizeField(field)).filter(Boolean));

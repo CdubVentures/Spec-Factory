@@ -1,0 +1,59 @@
+{
+  "_doc": "Stage 09 LLM extraction contract. Derived from extractCandidatesLLM(), invokeExtractionModel(), and the stage-09 parsing contracts on 2026-03-17.",
+  "schema_version": "stage09.fetch_to_extraction_llm_call.v1",
+  "producer": "runSourceExtractionPhase() -> extractCandidatesLLM()",
+  "source_files": [
+    "src/features/indexing/extraction/extractCandidatesLLM.js",
+    "src/features/indexing/orchestration/execution/runSourceExtractionPhase.js",
+    "src/features/indexing/extraction/invokeExtractionModel.js",
+    "docs/implementation/ai-indexing-plans/pipeline/parsing/PARSING-PIPELINE-OVERVIEW.md"
+  ],
+  "entry_conditions": [
+    "At least one routed LLM key is available for the run.",
+    "The source is extractable: not discovery-only, HTTP status < 400, and runtimeOverrides.disable_llm is false.",
+    "The source still has target fields not already satisfied by deterministic extraction or lock rules.",
+    "The budget guard does not block the call, and at least one scoped evidence snippet survives selection. Images are optional multimodal attachments."
+  ],
+  "request_shape": {
+    "identity_context": [
+      "brand",
+      "model",
+      "variant",
+      "hard ids when present"
+    ],
+    "field_contracts": [
+      "field batches scoped by rules difficulty",
+      "field-level extraction guidance",
+      "required evidence reference rules"
+    ],
+    "evidence_context": [
+      "up to 6 snippets per batch",
+      "up to 6 images per batch",
+      "up to 900 chars per snippet",
+      "evidence weights favor hint hits, lexical hits, and dimensional signals"
+    ],
+    "response_mode": [
+      "JSON schema output only",
+      "per-candidate evidence refs required",
+      "field name whitelist enforced after response"
+    ]
+  },
+  "batching_limits": {
+    "max_batches_per_product": "config.llmMaxBatchesPerProduct (canonical runtime default 4; code fallback 7 when unset)",
+    "max_snippets_per_batch": "config.llmExtractMaxSnippetsPerBatch (canonical runtime default 4; evidence selector fallback 6 when unset)",
+    "max_images_per_batch": "config.llmExtractMaxImagesPerBatch (invokeExtractionModel() fallback 6 when unset)",
+    "max_tokens": "config.llmExtractMaxTokens or config.llmMaxTokens",
+    "reasoning_budget_tokens": "config.llmExtractReasoningBudget or config.llmReasoningBudget"
+  },
+  "post_processing_rules": [
+    "Drop candidates for unknown fields.",
+    "Drop candidates with missing or invalid evidence refs.",
+    "Normalize accepted rows as method=llm_extract with bound evidence refs.",
+    "Track llmSourcesUsed and llmCandidatesAccepted separately from deterministic rows."
+  ],
+  "failure_modes": [
+    "Schema violation or malformed JSON increments retry/error telemetry.",
+    "Budget block skips the call and preserves unresolved fields for later phases.",
+    "Dangling snippet references are counted in phase08Extraction summary stats."
+  ]
+}

@@ -13,6 +13,43 @@ export const DISCOVERY_DEFAULTS = Object.freeze({
   notes: '',
 });
 
+// WHY: Whitelist for PATCH/PUT — prevents blind shallow merge of unknown keys.
+export const SOURCE_ENTRY_MUTABLE_KEYS = Object.freeze(new Set([
+  'display_name', 'tier', 'authority', 'base_url', 'content_types', 'doc_kinds',
+  'crawl_config', 'field_coverage', 'discovery', 'enabled', 'notes', 'label',
+  'url', 'approved', 'source_type',
+]));
+
+// WHY: Keys that must be plain objects when present (not arrays, not primitives).
+const OBJECT_TYPED_KEYS = new Set(['discovery', 'crawl_config', 'field_coverage']);
+
+/**
+ * Validate a source entry patch against the whitelist.
+ * Returns { accepted, rejected } where rejected maps key → reason string.
+ *
+ * @param {object|null|undefined} patch
+ * @returns {{ accepted: Record<string, unknown>, rejected: Record<string, string> }}
+ */
+export function validateSourceEntryPatch(patch) {
+  const accepted = {};
+  const rejected = {};
+  if (!patch || typeof patch !== 'object') return { accepted, rejected };
+  for (const [key, value] of Object.entries(patch)) {
+    if (!SOURCE_ENTRY_MUTABLE_KEYS.has(key)) {
+      rejected[key] = 'unknown_key';
+      continue;
+    }
+    if (OBJECT_TYPED_KEYS.has(key) && value !== undefined) {
+      if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+        rejected[key] = 'invalid_type_expected_object';
+        continue;
+      }
+    }
+    accepted[key] = value;
+  }
+  return { accepted, rejected };
+}
+
 const TIER_TO_APPROVED_ROLE = {
   tier1_manufacturer: 'manufacturer',
   tier2_lab: 'lab',

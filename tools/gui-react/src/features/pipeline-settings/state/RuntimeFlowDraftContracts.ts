@@ -74,7 +74,6 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   | 'domSnippetMaxChars'
   | 'llmExtractionCacheTtlMs'
   | 'llmMaxCallsPerProductTotal'
-  | 'llmMaxCallsPerProductFast'
   | 'llmExtractMaxTokens'
   | 'llmExtractMaxSnippetsPerBatch'
   | 'llmExtractMaxSnippetChars'
@@ -181,7 +180,6 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   domSnippetMaxChars: { min: 600, max: 20_000, int: true },
   llmExtractionCacheTtlMs: { min: 60_000, max: 31_536_000_000, int: true },
   llmMaxCallsPerProductTotal: { min: 1, max: 100, int: true },
-  llmMaxCallsPerProductFast: { min: 0, max: 100, int: true },
   llmExtractMaxTokens: { min: 128, max: 262_144, int: true },
   llmExtractMaxSnippetsPerBatch: { min: 1, max: 50, int: true },
   llmExtractMaxSnippetChars: { min: 100, max: 200_000, int: true },

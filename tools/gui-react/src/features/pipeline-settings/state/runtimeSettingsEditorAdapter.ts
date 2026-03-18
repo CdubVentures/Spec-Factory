@@ -81,14 +81,6 @@ export function useRuntimeSettingsEditorAdapter<TValues extends object>({
         setSaveStatus({ kind: 'ok', message: 'Runtime settings saved.' });
         return;
       }
-      const rejected = Object.keys(result.rejected);
-      if (rejected.length > 0) {
-        setSaveStatus({
-          kind: 'partial',
-          message: `Runtime settings partially saved. Rejected ${rejected.length} key(s).`,
-        });
-        return;
-      }
       setSaveStatus({ kind: 'error', message: 'Runtime settings save failed.' });
     },
     onError: (error) => {

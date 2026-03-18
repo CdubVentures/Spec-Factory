@@ -10,151 +10,14 @@ import {
 } from '../src/core/llm/client/routing.js';
 import { buildRegistryLookup } from '../src/core/llm/routeResolver.js';
 
-test('resolveLlmRoute selects per-role provider/base/model with reason mapping', () => {
-  const config = {
-    llmProvider: 'openai',
-    llmApiKey: 'global-key',
-    llmBaseUrl: 'https://api.openai.com',
-    llmModelExtract: 'gpt-4.1-mini',
-    llmModelPlan: 'gpt-4.1-mini',
-    llmModelValidate: 'gpt-4.1-mini',
-    llmPlanProvider: 'gemini',
-    llmPlanApiKey: 'gem-key',
-    llmPlanBaseUrl: 'https://generativelanguage.googleapis.com',
-    llmModelPlan: 'gemini-2.5-flash',
-    llmExtractProvider: 'deepseek',
-    llmExtractApiKey: 'ds-key',
-    llmExtractBaseUrl: 'https://api.deepseek.com',
-    llmModelExtract: 'deepseek-reasoner'
-  };
-
-  const planRoute = resolveLlmRoute(config, { reason: 'plan' });
-  assert.equal(planRoute.provider, 'gemini');
-  assert.equal(planRoute.apiKey, 'gem-key');
-  assert.equal(planRoute.model, 'gemini-2.5-flash');
-
-  const verifyFastRoute = resolveLlmRoute(config, { reason: 'verify_extract_fast' });
-  assert.equal(verifyFastRoute.provider, 'gemini');
-  assert.equal(verifyFastRoute.model, 'gemini-2.5-flash');
-
-  const extractRoute = resolveLlmRoute(config, { reason: 'extract' });
-  assert.equal(extractRoute.provider, 'deepseek');
-  assert.equal(extractRoute.apiKey, 'ds-key');
-  assert.equal(extractRoute.model, 'deepseek-reasoner');
-});
-
-test('resolveLlmFallbackRoute returns null when fallback matches primary fingerprint', () => {
-  const config = {
-    llmProvider: 'deepseek',
-    llmApiKey: 'ds-key',
-    llmBaseUrl: 'https://api.deepseek.com',
-    llmModelExtract: 'deepseek-chat',
-    llmExtractFallbackProvider: 'deepseek',
-    llmExtractFallbackApiKey: 'ds-key',
-    llmExtractFallbackBaseUrl: 'https://api.deepseek.com',
-    llmExtractFallbackModel: 'deepseek-chat'
-  };
-
-  const fallback = resolveLlmFallbackRoute(config, { reason: 'extract' });
-  assert.equal(fallback, null);
-});
-
-test('route key helpers detect role-only keys and snapshot masks secrets', () => {
-  const config = {
-    llmProvider: 'openai',
-    llmApiKey: '',
-    llmBaseUrl: 'https://api.openai.com',
-    llmModelExtract: 'gpt-4.1-mini',
-    llmModelPlan: 'gpt-4.1-mini',
-    llmModelValidate: 'gpt-4.1-mini',
-    llmModelWrite: 'gpt-4.1-mini',
-    llmPlanProvider: 'gemini',
-    llmPlanApiKey: 'gem-key',
-    llmPlanBaseUrl: 'https://generativelanguage.googleapis.com',
-    llmModelPlan: 'gemini-2.5-flash'
-  };
-
-  assert.equal(hasLlmRouteApiKey(config, { reason: 'plan' }), true);
-  assert.equal(hasLlmRouteApiKey(config, { reason: 'extract' }), false);
-  assert.equal(hasAnyLlmApiKey(config), true);
-
-  const snapshot = llmRoutingSnapshot(config);
-  assert.equal(snapshot.plan.primary.api_key_present, true);
-  assert.equal(snapshot.extract.primary.api_key_present, false);
-  assert.equal(Object.hasOwn(snapshot.plan.primary, 'apiKey'), false);
-});
-
-test('model override switches route provider and credentials by model family', () => {
-  const config = {
-    llmProvider: 'openai',
-    llmApiKey: 'openai-key',
-    llmBaseUrl: 'http://localhost:5001',
-    llmModelPlan: 'gpt-5.1-low',
-    llmPlanProvider: 'openai',
-    llmPlanApiKey: 'openai-key',
-    llmPlanBaseUrl: 'http://localhost:5001',
-    llmWriteProvider: 'gemini',
-    llmWriteApiKey: 'gem-key',
-    llmWriteBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    llmPlanFallbackProvider: 'deepseek',
-    llmPlanFallbackApiKey: 'ds-key',
-    llmPlanFallbackBaseUrl: 'https://api.deepseek.com',
-    llmPlanFallbackModel: 'deepseek-chat'
-  };
-
-  const geminiRoute = resolveLlmRoute(config, {
-    role: 'plan',
-    modelOverride: 'gemini-2.5-flash-lite'
-  });
-  assert.equal(geminiRoute.provider, 'gemini');
-  assert.equal(geminiRoute.baseUrl, 'https://generativelanguage.googleapis.com/v1beta/openai');
-  assert.equal(geminiRoute.apiKey, 'gem-key');
-  assert.equal(geminiRoute.model, 'gemini-2.5-flash-lite');
-
-  const deepseekRoute = resolveLlmRoute(config, {
-    role: 'plan',
-    modelOverride: 'deepseek-chat'
-  });
-  assert.equal(deepseekRoute.provider, 'deepseek');
-  assert.equal(deepseekRoute.baseUrl, 'https://api.deepseek.com');
-  assert.equal(deepseekRoute.apiKey, 'ds-key');
-  assert.equal(deepseekRoute.model, 'deepseek-chat');
-});
-
-test('model override does not switch provider when role model family pin is enabled', () => {
-  const config = {
-    llmProvider: 'gemini',
-    llmApiKey: 'gem-key',
-    llmBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    llmForceRoleModelProvider: true,
-    llmModelExtract: 'gemini-2.5-flash-lite',
-    llmExtractProvider: 'gemini',
-    llmExtractApiKey: 'gem-key',
-    llmExtractBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai'
-  };
-
-  const route = resolveLlmRoute(config, {
-    role: 'extract',
-    modelOverride: 'gpt-5.1-medium'
-  });
-
-  assert.equal(route.provider, 'gemini');
-  assert.equal(route.baseUrl, 'https://generativelanguage.googleapis.com/v1beta/openai');
-  assert.equal(route.apiKey, 'gem-key');
-  assert.equal(route.model, 'gemini-2.5-flash-lite');
-});
-
 // ---------------------------------------------------------------------------
-// Fix 1: Registry routes must NOT be overwritten by alignRouteToModelProvider
+// Helpers — must be above all tests that reference them
 // ---------------------------------------------------------------------------
 
 function registryConfig(registryProviders, overrides = {}) {
   return {
     _registryLookup: buildRegistryLookup(registryProviders),
-    llmModelExtract: 'gemini-2.5-flash',
     llmModelPlan: 'gemini-2.5-flash',
-    llmModelValidate: 'gemini-2.5-flash',
-    llmModelWrite: 'gemini-2.5-flash',
     ...overrides,
   };
 }
@@ -204,6 +67,135 @@ function anthropicRegistryProvider() {
     ],
   };
 }
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+test('resolveLlmRoute selects per-role provider/base/model with reason mapping via registry', () => {
+  // WHY: All roles now alias to llmModelPlan. Provider/baseUrl/apiKey come from registry or inference.
+  const config = registryConfig([proxyProvider()], {
+    llmModelPlan: 'gemini-2.5-flash',
+    geminiApiKey: 'gem-key',
+  });
+
+  const planRoute = resolveLlmRoute(config, { reason: 'plan' });
+  assert.equal(planRoute.provider, 'openai-compatible');
+  assert.equal(planRoute.apiKey, 'proxy-secret');
+  assert.equal(planRoute.model, 'gemini-2.5-flash');
+
+  // verify_extract_fast maps to plan role
+  const verifyFastRoute = resolveLlmRoute(config, { reason: 'verify_extract_fast' });
+  assert.equal(verifyFastRoute.provider, 'openai-compatible');
+  assert.equal(verifyFastRoute.model, 'gemini-2.5-flash');
+
+  // extract also aliases to llmModelPlan — same model, same registry entry
+  const extractRoute = resolveLlmRoute(config, { reason: 'extract' });
+  assert.equal(extractRoute.provider, 'openai-compatible');
+  assert.equal(extractRoute.apiKey, 'proxy-secret');
+  assert.equal(extractRoute.model, 'gemini-2.5-flash');
+});
+
+test('resolveLlmFallbackRoute returns null when fallback matches primary fingerprint', () => {
+  // WHY: All roles alias to llmModelPlan. Fallback uses llmPlanFallbackModel.
+  // When both resolve to the same fingerprint, fallback is null.
+  const deepseekProv = {
+    id: 'default-deepseek',
+    name: 'DeepSeek',
+    type: 'openai-compatible',
+    baseUrl: 'https://api.deepseek.com',
+    apiKey: 'ds-key',
+    enabled: true,
+    models: [
+      { id: 'ds-chat', modelId: 'deepseek-chat', role: 'primary',
+        costInputPer1M: 0.27, costOutputPer1M: 1.10, costCachedPer1M: 0.07,
+        maxContextTokens: 65536, maxOutputTokens: 8192 },
+    ],
+  };
+  const config = registryConfig([deepseekProv], {
+    llmModelPlan: 'deepseek-chat',
+    llmPlanFallbackModel: 'deepseek-chat',
+  });
+
+  const fallback = resolveLlmFallbackRoute(config, { reason: 'extract' });
+  assert.equal(fallback, null);
+});
+
+test('route key helpers detect role-only keys and snapshot masks secrets', () => {
+  // WHY: Without registry, routes infer provider from model name + bootstrap apiKey.
+  // gemini-2.5-flash infers 'gemini' provider, bootstrap reads geminiApiKey.
+  // gpt-4.1-mini infers 'openai' provider, bootstrap reads llmApiKey/openaiApiKey.
+  const config = {
+    llmModelPlan: 'gemini-2.5-flash',
+    geminiApiKey: 'gem-key',
+    llmApiKey: '',
+    openaiApiKey: '',
+  };
+
+  // plan role reads llmModelPlan → gemini-2.5-flash → infers gemini → geminiApiKey
+  assert.equal(hasLlmRouteApiKey(config, { reason: 'plan' }), true);
+  // extract also aliases to llmModelPlan → same model → same key
+  assert.equal(hasLlmRouteApiKey(config, { reason: 'extract' }), true);
+  assert.equal(hasAnyLlmApiKey(config), true);
+
+  const snapshot = llmRoutingSnapshot(config);
+  assert.equal(snapshot.plan.primary.api_key_present, true);
+  assert.equal(snapshot.extract.primary.api_key_present, true);
+  assert.equal(Object.hasOwn(snapshot.plan.primary, 'apiKey'), false);
+});
+
+test('model override switches route provider and credentials by model family via inference', () => {
+  // WHY: Model override with no registry infers provider from model name + bootstrap keys.
+  const config = {
+    llmModelPlan: 'gpt-5.1-low',
+    llmApiKey: 'openai-key',
+    openaiApiKey: 'openai-key',
+    geminiApiKey: 'gem-key',
+    deepseekApiKey: 'ds-key',
+  };
+
+  const geminiRoute = resolveLlmRoute(config, {
+    role: 'plan',
+    modelOverride: 'gemini-2.5-flash-lite'
+  });
+  assert.equal(geminiRoute.provider, 'gemini');
+  assert.equal(geminiRoute.baseUrl, 'https://generativelanguage.googleapis.com/v1beta/openai');
+  assert.equal(geminiRoute.apiKey, 'gem-key');
+  assert.equal(geminiRoute.model, 'gemini-2.5-flash-lite');
+
+  const deepseekRoute = resolveLlmRoute(config, {
+    role: 'plan',
+    modelOverride: 'deepseek-chat'
+  });
+  assert.equal(deepseekRoute.provider, 'deepseek');
+  assert.equal(deepseekRoute.baseUrl, 'https://api.deepseek.com');
+  assert.equal(deepseekRoute.apiKey, 'ds-key');
+  assert.equal(deepseekRoute.model, 'deepseek-chat');
+});
+
+test('model override does not switch provider when role model family pin is enabled', () => {
+  // WHY: llmForceRoleModelProvider returns the base route when providers differ.
+  // Base route for extract reads llmModelPlan → infers gemini → bootstrap geminiApiKey.
+  const config = {
+    llmForceRoleModelProvider: true,
+    llmModelPlan: 'gemini-2.5-flash-lite',
+    geminiApiKey: 'gem-key',
+  };
+
+  const route = resolveLlmRoute(config, {
+    role: 'extract',
+    modelOverride: 'gpt-5.1-medium'
+  });
+
+  assert.equal(route.provider, 'gemini');
+  assert.equal(route.baseUrl, 'https://generativelanguage.googleapis.com/v1beta/openai');
+  assert.equal(route.apiKey, 'gem-key');
+  assert.equal(route.model, 'gemini-2.5-flash-lite');
+});
+
+// ---------------------------------------------------------------------------
+// Registry route resolution tests
+// ---------------------------------------------------------------------------
 
 test('registry-resolved route is NOT overwritten by alignRouteToModelProvider', () => {
   const config = registryConfig([proxyProvider()]);
@@ -269,26 +261,26 @@ test('modelOverride for non-registry model falls through to alignRouteToModelPro
   assert.ok(!route._registryEntry, 'non-registry model should not have registry entry');
 });
 
-test('flat-key route (no registry) still goes through alignRouteToModelProvider', () => {
+test('flat-key route (no registry) infers provider from model name + bootstrap keys', () => {
+  // WHY: Without registry, baseRouteForRole infers provider from model name.
   const config = {
-    llmProvider: 'openai',
+    llmModelPlan: 'gpt-4.1-mini',
     llmApiKey: 'openai-key',
-    llmBaseUrl: 'https://api.openai.com',
-    llmModelExtract: 'gpt-4.1-mini',
-    llmExtractProvider: 'openai',
-    llmExtractApiKey: 'openai-key',
-    llmExtractBaseUrl: 'https://api.openai.com',
+    openaiApiKey: 'openai-key',
   };
   const route = resolveLlmRoute(config, { role: 'extract' });
   assert.equal(route.provider, 'openai');
   assert.equal(route.model, 'gpt-4.1-mini');
+  assert.equal(route.apiKey, 'openai-key');
+  assert.equal(route.baseUrl, 'https://api.openai.com');
   assert.ok(!route._registryEntry, 'flat-key route should not have registry entry');
 });
 
-test('registry fallback route is NOT overwritten by alignRouteToModelProvider', () => {
+test('registry fallback route resolves from registry without provider overwrite', () => {
+  // WHY: Fallback uses llmPlanFallbackModel (not per-role fallback keys).
   const config = registryConfig([proxyProvider()], {
-    llmExtractFallbackModel: 'gemini-2.5-flash',
-    llmModelExtract: 'unknown-model',
+    llmPlanFallbackModel: 'gemini-2.5-flash',
+    llmModelPlan: 'unknown-model',
   });
   const fallback = resolveLlmFallbackRoute(config, { role: 'extract' });
   assert.ok(fallback, 'fallback should exist');
@@ -348,7 +340,7 @@ test('cortex provider type is blocked with clear error in resolveLlmRoute flow',
         maxContextTokens: 8192, maxOutputTokens: 4096 },
     ],
   };
-  const config = registryConfig([cortexProv], { llmModelExtract: 'cortex-model' });
+  const config = registryConfig([cortexProv], { llmModelPlan: 'cortex-model' });
   const route = resolveLlmRoute(config, { role: 'extract' });
   // Route resolves from registry with cortex type preserved
   assert.equal(route.provider, 'cortex');

@@ -476,12 +476,15 @@ test('discoverCandidateSources emits plan-only search result events when interne
       llmContext: {}
     });
 
+    // WHY: plan_only_no_provider attempt is still recorded even with zero planned URLs
     assert.equal(
       result.search_attempts.some((attempt) => attempt.reason_code === 'plan_only_no_provider'),
       true
     );
-    assert.equal(events.some((event) => event.name === 'discovery_query_completed'), true);
-    assert.equal(events.some((event) => event.name === 'search_results_collected'), true);
+    // WHY: Non-manufacturer hosts produce zero plan-only results in search-first mode.
+    // With zero planned URLs, no per-query lifecycle events are emitted.
+    const planAttempt = result.search_attempts.find((a) => a.reason_code === 'plan_only_no_provider');
+    assert.equal(planAttempt.result_count, 0, 'non-manufacturer plan-only produces 0 results');
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

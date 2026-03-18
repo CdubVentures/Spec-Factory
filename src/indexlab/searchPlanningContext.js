@@ -66,8 +66,7 @@ function derivePlannerLimits(config) {
     llmModelPlan: Boolean(config._resolvedNeedsetUseReasoning ?? config.llmPlanUseReasoning)
       ? String(config._resolvedNeedsetReasoningModel || config.llmModelReasoning || config._resolvedNeedsetBaseModel || config.llmModelPlan || '')
       : String(config._resolvedNeedsetBaseModel || config.llmModelPlan || ''),
-    llmPlanProvider: String(config.llmPlanProvider || config.llmProvider || ''),
-    llmPlanBaseUrl: String(config.llmPlanBaseUrl || config.llmBaseUrl || ''),
+    llmProvider: String(config.llmProvider || ''),
     llmMaxOutputTokensPlan: toInt(config._resolvedNeedsetMaxOutputTokens ?? config.llmMaxOutputTokensPlan, 2048),
     searchProfileCapMap: parseCapMap(config.searchProfileCapMapJson),
     searchProvider: String(config.searchProvider || 'dual'),

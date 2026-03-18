@@ -13,7 +13,6 @@ export interface SettingsAuthorityStoreSnapshot {
   autoSaveAllEnabled: boolean;
   storageAutoSaveEnabled: boolean;
   runtimeAutoSaveEnabled: boolean;
-  llmSettingsAutoSaveEnabled: boolean;
 }
 
 interface SettingsAuthorityStoreState {
@@ -37,7 +36,6 @@ const DEFAULT_SNAPSHOT: SettingsAuthorityStoreSnapshot = {
   autoSaveAllEnabled: false,
   storageAutoSaveEnabled: false,
   runtimeAutoSaveEnabled: false,
-  llmSettingsAutoSaveEnabled: false,
 };
 
 function mergeSnapshot(

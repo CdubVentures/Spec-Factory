@@ -1,18 +1,6 @@
-// WHY: LLM provider/model resolution logic extracted from config.js (Phase 5).
-// Handles DeepSeek detection, provider inference, S3 credential checking,
-// and ChatMock directory defaults.
+// WHY: S3 credential checking and ChatMock directory defaults.
 
 import path from 'node:path';
-import { normalizeBaseUrl } from './configNormalizers.js';
-
-export function inferLlmProvider(baseUrl, model, hasDeepSeekKey) {
-  const baseToken = normalizeBaseUrl(baseUrl).toLowerCase();
-  const modelToken = String(model || '').toLowerCase();
-  if (baseToken.includes('deepseek.com') || modelToken.startsWith('deepseek') || hasDeepSeekKey) {
-    return 'deepseek';
-  }
-  return 'openai';
-}
 
 export function hasS3EnvCreds() {
   return Boolean(

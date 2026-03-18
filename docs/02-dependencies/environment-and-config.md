@@ -2,7 +2,7 @@
 
 > **Purpose:** Map the live configuration surfaces, environment manifests, and user-editable settings contracts so an arriving LLM can locate the single source of truth for each knob.
 > **Prerequisites:** [stack-and-toolchain.md](./stack-and-toolchain.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-17
 
 ## Config Surfaces
 
@@ -25,7 +25,8 @@
 - It contains a partial set of secrets and integration keys only.
 - The file itself instructs operators to tune many defaults in `src/shared/settingsDefaults.js`.
 - Do not infer missing config keys from `.env.example`; use `src/core/config/manifest/*.js` and `src/config.js`.
-- `npm run env:check` still fails on 2026-03-16 because manifest coverage is incomplete; the current missing-key set is tracked in [../05-operations/known-issues.md](../05-operations/known-issues.md).
+- `npm run env:check` passed on 2026-03-17 with `[env-check] OK (3 referenced keys covered)`.
+- That pass result is narrow coverage, not full manifest proof: `tools/check-env-example-sync.mjs` only scans the fixed `FILES_TO_SCAN` list declared in that script, and two of those declared paths (`src/api/routes/configRoutes.js`, `src/catalog/activeFilteringLoader.js`) do not currently exist.
 
 ## Manifest Group Inventory
 
@@ -71,6 +72,9 @@
 | source | `src/shared/settingsDefaults.js` | canonical runtime/convergence/UI defaults |
 | source | `src/features/settings/api/configRoutes.js` | live settings route surfaces |
 | source | `src/features/settings-authority/settingsContract.js` | settings authority key exports and schema ownership |
+| config | `.env.example` | partial secrets-only env template |
+| source | `tools/check-env-example-sync.mjs` | fixed-scope env reference checker behavior |
+| command | `npm run env:check` | current env-check output is `OK (3 referenced keys covered)` |
 
 ## Related Documents
 

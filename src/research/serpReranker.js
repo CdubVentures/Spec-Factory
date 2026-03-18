@@ -250,9 +250,9 @@ export async function rerankSerpResults({
       reason: 'uber_serp_reranker',
       role: 'plan',
       modelOverride: String(
-        Boolean(config._resolvedSerpTriageUseReasoning ?? config.llmTriageUseReasoning)
-          ? (config._resolvedSerpTriageReasoningModel || config.llmModelReasoning || config._resolvedSerpTriageBaseModel || config.llmModelTriage || config.llmModelFast || config.llmPlanFallbackModel || '')
-          : (config._resolvedSerpTriageBaseModel || config.llmModelTriage || config.llmModelFast || config.llmPlanFallbackModel || '')
+        Boolean(config._resolvedSerpTriageUseReasoning ?? config.llmPlanUseReasoning)
+          ? (config._resolvedSerpTriageReasoningModel || config.llmModelReasoning || config._resolvedSerpTriageBaseModel || config.llmModelPlan || config.llmPlanFallbackModel || '')
+          : (config._resolvedSerpTriageBaseModel || config.llmModelPlan || config.llmPlanFallbackModel || '')
       ).trim(),
       system: [
         'You rerank search results for evidence-first hardware spec extraction.',

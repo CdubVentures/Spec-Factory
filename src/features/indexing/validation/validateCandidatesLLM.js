@@ -328,7 +328,7 @@ export async function validateCandidatesLLM({
 
     return {
       enabled: true,
-      llm_validate_model: config.llmModelValidate || config.llmModelExtract || '',
+      llm_validate_model: config.llmModelPlan || '',
       llm_validate_provider: config.llmProvider || '',
       phase08: {
         context_field_count: normalizedUncertain.length,

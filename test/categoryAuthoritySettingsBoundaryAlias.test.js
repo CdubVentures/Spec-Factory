@@ -60,7 +60,6 @@ test('loadUserSettingsSync reads settings from categoryAuthorityRoot alias', asy
         studioAutoSaveMapEnabled: false,
         runtimeAutoSaveEnabled: false,
         storageAutoSaveEnabled: true,
-        llmSettingsAutoSaveEnabled: false,
       },
     });
 
@@ -123,7 +122,6 @@ test('loadUserSettingsSync defaults to canonical category_authority root when no
         studioAutoSaveMapEnabled: true,
         runtimeAutoSaveEnabled: false,
         storageAutoSaveEnabled: false,
-        llmSettingsAutoSaveEnabled: true,
       },
     });
 
@@ -150,7 +148,6 @@ test('loadUserSettingsSync defaults to canonical category_authority root when no
         studioAutoSaveMapEnabled: false,
         runtimeAutoSaveEnabled: true,
         storageAutoSaveEnabled: true,
-        llmSettingsAutoSaveEnabled: false,
       },
     });
 

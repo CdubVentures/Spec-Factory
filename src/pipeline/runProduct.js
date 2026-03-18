@@ -318,7 +318,7 @@ import { createFieldRulesEngine } from '../engine/fieldRulesEngine.js';
 import {
   writeCategoryReviewArtifacts,
   writeProductReviewArtifacts
-} from '../review/reviewGridData.js';
+} from '../review/index.js';
 import { createFrontier } from '../research/frontierDb.js';
 import { RuntimeTraceWriter } from '../runtime/runtimeTraceWriter.js';
 import { computeNeedSet } from '../indexlab/needsetEngine.js';

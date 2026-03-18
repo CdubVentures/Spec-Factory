@@ -56,7 +56,6 @@ async function loadRuntimeSettingsDomain() {
 // after the LLM model stack simplification. Exclude from the coverage check.
 const SERIALIZER_EXCLUDED_PUT_KEYS = new Set([
   'llmMaxOutputTokensTriage',
-  'llmMaxOutputTokensFast',
   'llmMaxOutputTokensExtract',
   'llmMaxOutputTokensValidate',
   'llmMaxOutputTokensWrite',
@@ -114,7 +113,9 @@ test('runtime settings serializer emits every runtime PUT frontend key without s
     [],
     `runtime settings serializer must emit every runtime PUT frontend key (missing: ${missing.join(', ')})`,
   );
-  assert.equal(payload.profile, 'standard');
+  assert.equal(Object.hasOwn(payload, 'profile'), false, 'profile is not a runtime PUT key — must not be in payload');
+  assert.equal(Object.hasOwn(payload, 'runProfile'), false, 'runProfile is not a runtime PUT key — must not be in payload');
+  assert.equal(Object.hasOwn(payload, 'discoveryEnabled'), false, 'discoveryEnabled is a hardcoded invariant — must not be in payload');
   assert.equal(payload.searchProvider, 'searxng');
   assert.equal(payload.searxngBaseUrl, 'https://example.test/search');
   assert.equal(payload.llmPlanApiKey, 'key-live');

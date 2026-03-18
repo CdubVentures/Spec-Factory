@@ -1,11 +1,11 @@
-import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
-import type { MixIssue } from './llmMixDetection';
-import type { RuntimeApiKeySlice } from './llmProviderApiKeyGate';
-import { LLM_MODEL_ROLES } from './llmModelRoleRegistry';
-import { detectEmptyModelFields } from './llmModelValidation';
-import { providerHasApiKey } from './llmProviderApiKeyGate';
-import { validatePhaseTokenLimits } from './llmTokenLimitValidation';
-import { resolveProviderForModel } from './llmProviderRegistryBridge';
+import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
+import type { MixIssue } from './llmMixDetection.ts';
+import type { RuntimeApiKeySlice } from './llmProviderApiKeyGate.ts';
+import { LLM_MODEL_ROLES } from './llmModelRoleRegistry.ts';
+import { detectEmptyModelFields } from './llmModelValidation.ts';
+import { providerHasApiKey } from './llmProviderApiKeyGate.ts';
+import { validatePhaseTokenLimits } from './llmTokenLimitValidation.ts';
+import { resolveProviderForModel } from './llmProviderRegistryBridge.ts';
 
 export interface PreflightResult {
   valid: boolean;
@@ -55,10 +55,14 @@ export function validateLlmConfigForRun(
   const tokenWarnings = validatePhaseTokenLimits(draft, registry);
   for (const tw of tokenWarnings) {
     issues.push({
-      key: `token-limit-${tw.phase}`,
+      key: `token-limit-${tw.field}-${tw.phase}`,
       severity: 'warning',
-      title: `${tw.phase} token cap exceeds model limit`,
-      message: `${tw.model} max output is ${tw.limit.toLocaleString()}, but ${tw.phase} is set to ${tw.setting.toLocaleString()}.`,
+      title: tw.field === 'contextOverflow'
+        ? `${tw.phase}: output allocation exceeds 50% of context window`
+        : `${tw.phase} token cap exceeds model limit`,
+      message: tw.field === 'contextOverflow'
+        ? `${tw.model} context window is ${tw.limit.toLocaleString()}, but ${tw.phase} output is set to ${tw.setting.toLocaleString()} (>${Math.floor(tw.limit * 0.5).toLocaleString()}).`
+        : `${tw.model} max output is ${tw.limit.toLocaleString()}, but ${tw.phase} is set to ${tw.setting.toLocaleString()}.`,
       ringFields: [],
     });
   }

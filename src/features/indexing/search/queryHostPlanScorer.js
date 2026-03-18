@@ -61,7 +61,8 @@ export function buildLogicalPlansFromHostPlan(effectiveHostPlan, identity, focus
     plans.push({
       product,
       terms: cleanTerms,
-      site_target: (supportsSite && isManufacturer) ? group.host : null,
+      // WHY: search-first mode — soft host bias via doc_hint, no hard site: operator
+      site_target: null,
       filetype: isManufacturer ? filetype : null,
       doc_hint: isManufacturer ? docHint : group.host,
       exact_phrases: [],

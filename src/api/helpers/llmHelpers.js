@@ -1,7 +1,13 @@
 import { normalizeModelToken, toInt, toFloat, hasKnownValue, parseCsvTokens } from './valueNormalizers.js';
+import { resolveModelFromRegistry, resolveModelCosts, resolveModelTokenProfile } from '../../core/llm/routeResolver.js';
 
-// TODO: consolidate with routeResolver.js — registry should be sole provider authority
-export function llmProviderFromModel(model) {
+export function llmProviderFromModel(model, registryLookup) {
+  // Registry-first: if registry knows this model, use its providerType
+  if (registryLookup) {
+    const resolved = resolveModelFromRegistry(registryLookup, normalizeModelToken(model));
+    if (resolved?.providerType) return resolved.providerType;
+  }
+  // Prefix fallback
   const token = normalizeModelToken(model);
   if (!token) return 'openai';
   if (token.startsWith('gemini')) return 'gemini';
@@ -39,23 +45,23 @@ export function classifyLlmTracePhase(purpose = '', routeRole = '') {
 }
 
 export function resolveLlmRoleDefaults(cfg = {}) {
+  const plan = String(cfg.llmModelPlan || '').trim();
   return {
-    plan: String(cfg.llmModelPlan || '').trim(),
-    fast: String(cfg.llmModelFast || '').trim(),
-    triage: String(cfg.llmModelTriage || cfg.llmModelFast || '').trim(),
+    plan,
+    triage: plan,
     reasoning: String(cfg.llmModelReasoning || '').trim(),
-    extract: String(cfg.llmModelExtract || '').trim(),
-    validate: String(cfg.llmModelValidate || '').trim(),
-    write: String(cfg.llmModelWrite || '').trim()
+    extract: plan,
+    validate: plan,
+    write: plan
   };
 }
 
 export function resolveLlmKnobDefaults(cfg = {}) {
   const modelDefaults = resolveLlmRoleDefaults(cfg);
+  const planTokenDefault = toInt(cfg.llmMaxOutputTokensPlan, toInt(cfg.llmMaxOutputTokens, 1200));
   const tokenDefaults = {
-    plan: toInt(cfg.llmMaxOutputTokensPlan, toInt(cfg.llmMaxOutputTokens, 1200)),
-    fast: toInt(cfg.llmMaxOutputTokensFast, toInt(cfg.llmMaxOutputTokensPlan, 1200)),
-    triage: toInt(cfg.llmMaxOutputTokensTriage, toInt(cfg.llmMaxOutputTokensFast, 1200)),
+    plan: planTokenDefault,
+    triage: toInt(cfg.llmMaxOutputTokensTriage, planTokenDefault),
     reasoning: toInt(cfg.llmMaxOutputTokensReasoning, toInt(cfg.llmReasoningBudget, 4096)),
     extract: toInt(cfg.llmMaxOutputTokensExtract, toInt(cfg.llmExtractMaxTokens, 1200)),
     validate: toInt(cfg.llmMaxOutputTokensValidate, toInt(cfg.llmMaxOutputTokens, 1200)),
@@ -63,48 +69,32 @@ export function resolveLlmKnobDefaults(cfg = {}) {
   };
   return {
     phase_02_planner: {
-      model: String(cfg.llmModelPlan || '').trim(),
+      model: modelDefaults.plan,
       token_cap: tokenDefaults.plan
     },
     phase_03_triage: {
-      model: String(cfg.llmModelTriage || '').trim(),
+      model: modelDefaults.plan,
       token_cap: tokenDefaults.triage
-    },
-    fast_pass: {
-      model: modelDefaults.fast,
-      token_cap: tokenDefaults.fast
     },
     reasoning_pass: {
       model: modelDefaults.reasoning,
       token_cap: tokenDefaults.reasoning
     },
     extract_role: {
-      model: modelDefaults.extract,
+      model: modelDefaults.plan,
       token_cap: tokenDefaults.extract
     },
     validate_role: {
-      model: modelDefaults.validate,
+      model: modelDefaults.plan,
       token_cap: tokenDefaults.validate
     },
     write_role: {
-      model: modelDefaults.write,
+      model: modelDefaults.plan,
       token_cap: tokenDefaults.write
     },
     fallback_plan: {
       model: String(cfg.llmPlanFallbackModel || '').trim(),
       token_cap: toInt(cfg.llmMaxOutputTokensPlanFallback, tokenDefaults.plan)
-    },
-    fallback_extract: {
-      model: String(cfg.llmExtractFallbackModel || '').trim(),
-      token_cap: toInt(cfg.llmMaxOutputTokensExtractFallback, tokenDefaults.extract)
-    },
-    fallback_validate: {
-      model: String(cfg.llmValidateFallbackModel || '').trim(),
-      token_cap: toInt(cfg.llmMaxOutputTokensValidateFallback, tokenDefaults.validate)
-    },
-    fallback_write: {
-      model: String(cfg.llmWriteFallbackModel || '').trim(),
-      token_cap: toInt(cfg.llmMaxOutputTokensWriteFallback, tokenDefaults.write)
     }
   };
 }
@@ -118,6 +108,17 @@ export function resolvePricingForModel(cfg, model) {
   };
   if (!modelToken) {
     return defaultRates;
+  }
+  // Registry-first: try registry costs before pricingMap/flat keys
+  if (cfg?._registryLookup) {
+    const registryCosts = resolveModelCosts(cfg._registryLookup, modelToken);
+    if (registryCosts && (registryCosts.inputPer1M > 0 || registryCosts.outputPer1M > 0)) {
+      return {
+        input_per_1m: registryCosts.inputPer1M,
+        output_per_1m: registryCosts.outputPer1M,
+        cached_input_per_1m: registryCosts.cachedInputPer1M || 0,
+      };
+    }
   }
   const pricingMap = (cfg?.llmModelPricingMap && typeof cfg.llmModelPricingMap === 'object')
     ? cfg.llmModelPricingMap
@@ -170,6 +171,18 @@ export function resolveTokenProfileForModel(cfg, model) {
   if (!modelToken) {
     return defaultFallback;
   }
+  // Registry-first: try registry token profile before outputTokenMap/flat keys
+  if (cfg?._registryLookup) {
+    const registryProfile = resolveModelTokenProfile(cfg._registryLookup, modelToken);
+    if (registryProfile && registryProfile.maxOutputTokens > 0) {
+      return {
+        default_output_tokens: registryProfile.maxContextTokens > 0
+          ? Math.min(defaultFallback.default_output_tokens, registryProfile.maxOutputTokens)
+          : defaultFallback.default_output_tokens,
+        max_output_tokens: registryProfile.maxOutputTokens,
+      };
+    }
+  }
   const map = (cfg?.llmModelOutputTokenMap && typeof cfg.llmModelOutputTokenMap === 'object')
     ? cfg.llmModelOutputTokenMap
     : {};
@@ -202,16 +215,8 @@ export function resolveTokenProfileForModel(cfg, model) {
 export function collectLlmModels(cfg = {}) {
   const candidates = [
     cfg.llmModelPlan,
-    cfg.llmModelFast,
-    cfg.llmModelTriage,
-    cfg.llmModelExtract,
     cfg.llmModelReasoning,
-    cfg.llmModelValidate,
-    cfg.llmModelWrite,
     cfg.llmPlanFallbackModel,
-    cfg.llmExtractFallbackModel,
-    cfg.llmValidateFallbackModel,
-    cfg.llmWriteFallbackModel,
     ...parseCsvTokens(cfg.llmModelCatalog || '')
   ];
   if (cfg.llmModelPricingMap && typeof cfg.llmModelPricingMap === 'object') {

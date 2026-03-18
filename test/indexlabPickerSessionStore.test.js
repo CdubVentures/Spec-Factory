@@ -74,9 +74,22 @@ async function loadIndexlabStoreModule() {
   return mod;
 }
 
-test('indexlab picker brand/model/variant/run state persists in session storage', async () => {
-  const storage = createSessionStorage();
-  const firstModule = await withWindowSessionStorage(storage, () => loadIndexlabStoreModule());
+test('indexlab picker brand/model/variant/run state persists in localStorage', async () => {
+  // Module migrated from sessionStorage → localStorage; mock must provide localStorage.
+  const localStorage = createSessionStorage();
+  const sessionStorage = createSessionStorage();
+  const withWindow = (run) => {
+    const prev = globalThis.window;
+    globalThis.window = { localStorage, sessionStorage };
+    try {
+      const result = run();
+      if (result && typeof result.then === 'function') return result.finally(() => { globalThis.window = prev; });
+      globalThis.window = prev;
+      return result;
+    } catch (err) { globalThis.window = prev; throw err; }
+  };
+
+  const firstModule = await withWindow(() => loadIndexlabStoreModule());
   const firstStore = firstModule.useIndexLabStore;
 
   firstStore.getState().setPickerBrand('Razer');
@@ -84,7 +97,7 @@ test('indexlab picker brand/model/variant/run state persists in session storage'
   firstStore.getState().setPickerProductId('razer-viper-v3-pro');
   firstStore.getState().setPickerRunId('run-123');
 
-  const raw = storage.getItem(INDEXLAB_STORAGE_KEY);
+  const raw = localStorage.getItem(INDEXLAB_STORAGE_KEY);
   assert.ok(typeof raw === 'string' && raw.length > 0, 'indexlab store should write persisted picker state');
   const persisted = JSON.parse(raw);
   assert.equal(persisted?.state?.pickerBrand, 'Razer');
@@ -92,7 +105,7 @@ test('indexlab picker brand/model/variant/run state persists in session storage'
   assert.equal(persisted?.state?.pickerProductId, 'razer-viper-v3-pro');
   assert.equal(persisted?.state?.pickerRunId, 'run-123');
 
-  const secondModule = await withWindowSessionStorage(storage, () => loadIndexlabStoreModule());
+  const secondModule = await withWindow(() => loadIndexlabStoreModule());
   const secondState = secondModule.useIndexLabStore.getState();
   assert.equal(secondState.pickerBrand, 'Razer');
   assert.equal(secondState.pickerModel, 'Viper V3 Pro');
@@ -101,8 +114,20 @@ test('indexlab picker brand/model/variant/run state persists in session storage'
 });
 
 test('indexlab picker brand change resets model and variant selection', async () => {
-  const storage = createSessionStorage();
-  const mod = await withWindowSessionStorage(storage, () => loadIndexlabStoreModule());
+  const localStorage = createSessionStorage();
+  const sessionStorage = createSessionStorage();
+  const withWindow = (run) => {
+    const prev = globalThis.window;
+    globalThis.window = { localStorage, sessionStorage };
+    try {
+      const result = run();
+      if (result && typeof result.then === 'function') return result.finally(() => { globalThis.window = prev; });
+      globalThis.window = prev;
+      return result;
+    } catch (err) { globalThis.window = prev; throw err; }
+  };
+
+  const mod = await withWindow(() => loadIndexlabStoreModule());
   const store = mod.useIndexLabStore;
 
   store.getState().setPickerBrand('Logitech');

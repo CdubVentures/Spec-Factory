@@ -14,10 +14,7 @@ function parseTsMs(value) {
 function plannerPassDisplay(passName) {
   const token = normalizeToken(passName);
   if (!token) return 'Planner';
-  if (token === 'primary' || token === 'pass_primary' || token === 'discovery_planner_primary') return 'Primary';
-  if (token.includes('fast')) return 'Fast';
-  if (token.includes('reason')) return 'Reason';
-  if (token.includes('validate')) return 'Validate';
+  if (token.startsWith('discovery_planner') || token === 'primary' || token === 'pass_primary') return 'Planner';
   return token.replace(/_/g, ' ');
 }
 

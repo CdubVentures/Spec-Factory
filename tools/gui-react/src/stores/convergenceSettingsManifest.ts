@@ -34,8 +34,8 @@ export const CONVERGENCE_KNOB_GROUPS = [
   {
     label: 'SERP Triage',
     knobs: [
-      { key: 'serpTriageMinScore', label: 'Min Score Threshold', tip: 'Minimum LLM triage score (1-10) for a SERP result to pass. Higher values filter more aggressively.', type: 'int', min: 1, max: 10 },
-      { key: 'serpTriageMaxUrls', label: 'Max URLs After Triage', tip: 'Maximum number of URLs kept after triage scoring. Lower values reduce fetch volume; higher values increase coverage.', type: 'int', min: 5, max: 30 },
+      { key: 'serpTriageMinScore', label: 'Min Score Threshold', tip: 'Phase coverage: 07 SERP Triage.\nLives in: processDiscoveryResults() after raw search results are normalized and reranked.\nWhat this controls: the minimum combined triage score a candidate URL must reach to survive into approved or candidate routing. Higher values make admission stricter and reduce fetch volume.', type: 'int', min: 1, max: 10 },
+      { key: 'serpTriageMaxUrls', label: 'Max URLs After Triage', tip: 'Phase coverage: 07 SERP Triage into 08 Fetch and Parse Entry.\nLives in: the final truncation step after URL safety, reranking, and triage decisions are complete.\nWhat this controls: the maximum number of URLs the planner is allowed to hand forward after triage. Lower values cut cost; higher values increase coverage and downstream fetch pressure.', type: 'int', min: 5, max: 30 },
     ],
   },
 ] as ConvergenceKnobGroup[];

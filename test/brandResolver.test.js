@@ -122,8 +122,8 @@ describe('brandResolver', () => {
         supportDomain: 'support.cougargaming.com'
       }
     });
-    const siteQueries = profile.queries.filter(q => q.includes('site:'));
-    const hasCougarGaming = siteQueries.some(q => q.includes('cougargaming.com'));
-    assert.ok(hasCougarGaming, `Expected site:cougargaming.com in queries: ${JSON.stringify(siteQueries)}`);
+    // WHY: site: operators removed — host appears as plain-text soft bias
+    const hostBiasedQueries = profile.queries.filter(q => q.includes('cougargaming.com'));
+    assert.ok(hostBiasedQueries.length > 0, `Expected cougargaming.com in queries (soft host bias): ${JSON.stringify(profile.queries)}`);
   });
 });

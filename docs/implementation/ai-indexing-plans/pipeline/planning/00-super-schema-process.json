@@ -1,6 +1,6 @@
 {
   "_doc": "Unified schema-process artifact combining all 15 planning JSON contracts and LLM-call specs for the prefetch pipeline.",
-  "generated_at": "2026-03-17T21:29:40.810Z",
+  "generated_at": "2026-03-18T02:01:17.424Z",
   "source_folder": "docs/implementation/ai-indexing-plans/pipeline/planning",
   "source_files_count": 15,
   "source_files": [
@@ -728,7 +728,7 @@
     "01-needset-planner-context": {
       "file": "01-needset-planner-context.json",
       "stage": "01",
-      "kind": "context_contract",
+      "kind": "output_contract",
       "content": {
         "_doc": "Schema 3 (SearchPlanningContext) gap analysis. Compares spec against actual buildSearchPlanningContext() output (searchPlanningContext.js:288-377) and downstream consumer buildSearchPlan() (searchPlanBuilder.js:263-417). Updated 2026-03-16 — all body text aligned with code after gap fixes.",
         "_plan_alignment": {
@@ -861,28 +861,56 @@
         },
         "planner_limits": {
           "_note": "Derived from runtime config in searchPlanningContext.js:57-76 (derivePlannerLimits function).",
-          "phase2LlmEnabled": {
-            "actual": "line 62",
-            "status": "MATCH — guards LLM call in searchPlanBuilder.js:277"
+          "discoveryEnabled": {
+            "actual": "searchPlanningContext.js:60 - hardcoded true",
+            "status": "MATCH - discovery seed planning is treated as a runtime invariant"
           },
           "discoveryMaxQueries": {
-            "actual": "line 56",
-            "status": "MATCH — sent to LLM at searchPlanBuilder.js:308"
+            "actual": "searchPlanningContext.js:61",
+            "status": "MATCH - sent to the Schema 4 LLM payload and used for planner capping"
+          },
+          "discoveryMaxDiscovered": {
+            "actual": "searchPlanningContext.js:62",
+            "status": "MATCH - downstream discovery cap context"
           },
           "maxUrlsPerProduct": {
-            "actual": "line 58",
-            "status": "MATCH — sent to LLM at searchPlanBuilder.js:309"
+            "actual": "searchPlanningContext.js:63",
+            "status": "MATCH - sent to the Schema 4 LLM payload"
+          },
+          "maxCandidateUrls": {
+            "actual": "searchPlanningContext.js:64",
+            "status": "MATCH - downstream queue-seeding cap context"
+          },
+          "maxPagesPerDomain": {
+            "actual": "searchPlanningContext.js:65",
+            "status": "MATCH - downstream fetch/planner cap context"
+          },
+          "maxRunSeconds": {
+            "actual": "searchPlanningContext.js:66",
+            "status": "MATCH - downstream orchestration guard context"
           },
           "llmModelPlan": {
-            "actual": "line 63",
-            "status": "MATCH"
+            "actual": "searchPlanningContext.js:67-69",
+            "status": "MATCH - resolved needset planner model snapshot"
+          },
+          "llmPlanProvider": {
+            "actual": "searchPlanningContext.js:70",
+            "status": "MATCH - routed provider snapshot"
+          },
+          "llmPlanBaseUrl": {
+            "actual": "searchPlanningContext.js:71",
+            "status": "MATCH - routed base URL snapshot"
+          },
+          "llmMaxOutputTokensPlan": {
+            "actual": "searchPlanningContext.js:72",
+            "status": "MATCH - plan output cap snapshot"
           },
           "searchProfileCapMap": {
-            "actual": "line 69 — parseCapMap()",
+            "actual": "searchPlanningContext.js:73 - parseCapMap()",
             "status": "MATCH"
           },
           "searchProvider": {
-            "actual": "line 70",
+            "actual": "searchPlanningContext.js:74",
             "status": "MATCH"
           }
         },
@@ -1395,12 +1423,12 @@
           "brand": "SOURCE: searchDiscovery.js:181-187 passes variables.brand, which comes from the phase identity lock. searchDiscovery.js:169-171 skips the resolver when brand is empty.",
           "category": "SOURCE: searchDiscovery.js:181-187 passes variables.category, derived from job.category || categoryConfig.category.",
           "config": "SOURCE: searchDiscovery.js:181-187 passes config through unchanged. resolveBrandDomain() itself only forwards config into callLlmFn; the main LLM gating happens before the call.",
-          "callLlmFn": "SOURCE: searchDiscovery.js:173-178 constructs createBrandResolverCallLlm(...) only when config.llmEnabled && hasLlmRouteApiKey(config, { role: 'triage' }). Otherwise null is passed.",
+          "callLlmFn": "SOURCE: searchDiscovery.js:144-149 constructs createBrandResolverCallLlm(...) only when hasLlmRouteApiKey(config, { role: 'triage' }) returns true. Otherwise null is passed and resolveBrandDomain() stays cache/empty only.",
           "storage": "SOURCE: searchDiscovery.js:181-187 passes storage through unchanged for cache read/write via getBrandDomain() and upsertBrandDomain()."
         },
         "runtime_gates": {
           "missing_brand": "SOURCE: searchDiscovery.js:169-171 sets skip_reason = 'no_brand_in_identity_lock' and does not call resolveBrandDomain() when variables.brand is empty.",
-          "triage_api_key": "SOURCE: searchDiscovery.js:173-178 requires hasLlmRouteApiKey(config, { role: 'triage' }) before constructing callLlmFn.",
+          "triage_api_key": "SOURCE: searchDiscovery.js:144-149 requires hasLlmRouteApiKey(config, { role: 'triage' }) before constructing callLlmFn. The adapter still routes over the plan-model stack via modelOverride.",
           "cache_short_circuit": "SOURCE: brandResolver.js:14-25 returns cached official_domain/support_domain/aliases immediately when storage.getBrandDomain(brandKey, categoryKey) yields a row.",
           "llm_fallback": "SOURCE: brandResolver.js:27 returns the empty output object when callLlmFn is null.",
           "error_fallback": "SOURCE: brandResolver.js:51-54 returns the empty output object on any resolver exception."
@@ -1411,8 +1439,8 @@
           "upsertBrandDomain": "SOURCE: brandResolver.js:40-49 writes brand, category, official_domain, aliases as a JSON string, support_domain, and confidence = 0.8 after an LLM resolution."
         },
         "llm_adapter_contract": {
-          "role": "SOURCE: createBrandResolverCallLlm() in discoveryLlmAdapters.js:65-86 uses role = 'triage' and reason = 'brand_resolution'.",
-          "model": "SOURCE: discoveryLlmAdapters.js:70 uses config.llmModelTriage || config.llmModelFast.",
+          "role": "SOURCE: createBrandResolverCallLlm() in discoveryLlmAdapters.js:46-64 uses role = 'triage' and reason = 'brand_resolution'. 'triage' is a compatibility label; routing still resolves through the plan-model contract.",
+          "model": "SOURCE: discoveryLlmAdapters.js:49-53 chooses _resolvedBrandResolverReasoningModel or _resolvedBrandResolverBaseModel, falling back to llmModelReasoning / llmModelPlan / llmPlanFallbackModel. The retired llmModelTriage / llmModelFast keys are no longer authoritative.",
           "timeout_ms": "SOURCE: discoveryLlmAdapters.js:83 uses config.llmTimeoutMs || 15000.",
           "system_prompt": "SOURCE: discoveryLlmAdapters.js:72-77 asks for the official domain, aliases, support subdomain, and a short reasoning array.",
           "json_schema": "SOURCE: brandResolverSchema() in discoveryLlmAdapters.js:1-13 requires official_domain and allows aliases, support_domain, and reasoning."
@@ -1608,12 +1636,19 @@
           },
           "planner_limits": {
             "_tag": "consumed internally (not emitted in Schema 4)",
-            "phase2LlmEnabled": "boolean — gates LLM call via hasLlmRouteApiKey (line 283)",
-            "discoveryMaxQueries": "number — sent to LLM payload limits AND used for global cap (line 391)",
-            "maxUrlsPerProduct": "number — sent to LLM payload limits (line 315)",
-            "llmModelPlan": "string — resolved model for LLM call",
-            "searchProfileCapMap": "object — not consumed by buildSearchPlan",
-            "searchProvider": "string — not consumed by buildSearchPlan"
+            "discoveryEnabled": "boolean - runtime invariant snapshot; not read by buildSearchPlan directly",
+            "discoveryMaxQueries": "number - sent to LLM payload limits AND used for the global post-LLM cap",
+            "discoveryMaxDiscovered": "number - planner context only; consumed downstream by discovery result capping",
+            "maxUrlsPerProduct": "number - sent to LLM payload limits",
+            "maxCandidateUrls": "number - planner context only; consumed downstream by candidate queue seeding",
+            "maxPagesPerDomain": "number - planner context only; consumed downstream by fetch/planner caps",
+            "maxRunSeconds": "number - planner context only; consumed downstream by orchestration guards",
+            "llmModelPlan": "string - resolved planner-model snapshot for Schema 3/GUI visibility",
+            "llmPlanProvider": "string - routed provider snapshot",
+            "llmPlanBaseUrl": "string - routed base URL snapshot",
+            "llmMaxOutputTokensPlan": "number - plan output-cap snapshot",
+            "searchProfileCapMap": "object - not consumed by buildSearchPlan",
+            "searchProvider": "string - not consumed by buildSearchPlan"
           },
           "group_catalog": {
             "_tag": "dropped (metadata already inlined into focus_groups at Schema 3 boundary)",
@@ -1669,10 +1704,10 @@
         "config": {
           "_tag": "runtime config object",
           "_consumed_keys": {
-            "llmModelPlan": "string — resolved model for the LLM call (line 347)",
-            "discoveryMaxQueries": "number — global query cap fallback (line 391)",
-            "llmTimeoutMs": "number — LLM call timeout, default 40000ms (line 373)",
-            "llmEnabled": "boolean — implicit via hasLlmRouteApiKey() gate"
+            "llmModelPlan": "string - resolved model for the LLM call (line 347)",
+            "discoveryMaxQueries": "number - global query cap fallback (line 391)",
+            "llmTimeoutMs": "number - LLM call timeout, default 40000ms (line 373)",
+            "routed_llm_availability": "availability gate is hasLlmRouteApiKey(config, { role: 'plan' }) - buildSearchPlan does not read a standalone llmEnabled flag"
           },
           "_note": "Full config object is forwarded to callLlmWithRouting(). Only the above keys are explicitly consumed by buildSearchPlan logic."
         },
@@ -2735,18 +2770,18 @@
           "_call_site": "inner LLM call within rerank phase",
           "gate": {
             "conditions": [
-              "serpTriageEnabled is true",
-              "quality threshold check (deterministic scores indicate LLM value)",
-              "uberMode OR (llmEnabled AND llmSerpRerankEnabled)",
-              "hasLlmRouteApiKey(config, { role: 'plan' })"
+              "serpTriageEnabled !== false",
+              "quality threshold check (highQualityCount < ceil(triageMaxUrls * 0.6)) indicates LLM value",
+              "uberMode OR config.llmSerpRerankEnabled",
+              "rerankSerpResults() itself falls back to deterministic output when hasLlmRouteApiKey(config, { role: 'plan' }) is false"
             ],
             "fallback": "deterministic scoring only — all results get keep=true, rerank_reason='deterministic'"
           },
           "call_parameters": {
             "reason": "uber_serp_reranker",
             "role": "plan",
-            "model": "config.llmModelTriage (or config.llmModelReasoning if llmTriageUseReasoning=true)",
-            "timeoutMs": "config.llmTimeoutMs || config.openaiTimeoutMs || 30000"
+            "model": "_resolvedSerpTriageBaseModel / _resolvedSerpTriageReasoningModel when present, otherwise llmModelPlan or llmModelReasoning depending on llmPlanUseReasoning",
+            "timeoutMs": "config.llmTimeoutMs || config.openaiTimeoutMs || callLlmWithRouting default"
           },
           "system_prompt": {
             "_source": "serpReranker.js (inline constant)",
@@ -2766,7 +2801,7 @@
             },
             "missing_fields": "string[] — missingFields sliced to 40",
             "results": {
-              "_type": "array — top K results (default 16)",
+              "_type": "array - top K results from the caller (function default is 16)",
               "_per_item": {
                 "rank": "number — original SERP rank",
                 "url": "string — full URL",
@@ -2883,27 +2918,27 @@
                 "note": "tier 2 approved source"
               },
               "hostHealthDownrankPenalty": {
-                "default": "varies",
+                "default": -0.4,
                 "note": "from host health policy"
               },
               "hostHealthExcludePenalty": {
-                "default": "varies",
+                "default": -2,
                 "note": "from host health policy"
               },
               "operatorRiskPenalty": {
-                "default": "varies",
+                "default": -0.5,
                 "note": "site: operator risk"
               },
               "fieldAffinityBonus": {
-                "default": "varies",
+                "default": 0.5,
                 "note": "query targets missing fields"
               },
               "needsetCoverageBonus": {
-                "default": "varies",
+                "default": 0.2,
                 "note": "covers unresolved needset fields"
               },
               "diversityPenaltyPerDupe": {
-                "default": "varies",
+                "default": -0.3,
                 "note": "per-domain duplicate penalty"
               }
             },
@@ -3520,18 +3555,18 @@
           "_call_site": "inner LLM call within rerank phase",
           "gate": {
             "conditions": [
-              "serpTriageEnabled is true",
-              "quality threshold check (deterministic scores indicate LLM value)",
-              "uberMode OR (llmEnabled AND llmSerpRerankEnabled)",
-              "hasLlmRouteApiKey(config, { role: 'plan' })"
+              "serpTriageEnabled !== false",
+              "quality threshold check (highQualityCount < ceil(triageMaxUrls * 0.6)) indicates LLM value",
+              "uberMode OR config.llmSerpRerankEnabled",
+              "rerankSerpResults() itself falls back to deterministic output when hasLlmRouteApiKey(config, { role: 'plan' }) is false"
             ],
             "fallback": "deterministic scoring only — all results get keep=true, rerank_reason='deterministic'"
           },
           "call_parameters": {
             "reason": "uber_serp_reranker",
             "role": "plan",
-            "model": "config.llmModelTriage (or config.llmModelReasoning if llmTriageUseReasoning=true)",
-            "timeoutMs": "config.llmTimeoutMs || config.openaiTimeoutMs || 30000"
+            "model": "_resolvedSerpTriageBaseModel / _resolvedSerpTriageReasoningModel when present, otherwise llmModelPlan or llmModelReasoning depending on llmPlanUseReasoning",
+            "timeoutMs": "config.llmTimeoutMs || config.openaiTimeoutMs || callLlmWithRouting default"
           },
           "system_prompt": {
             "_source": "serpReranker.js (inline constant)",
@@ -3551,7 +3586,7 @@
             },
             "missing_fields": "string[] — missingFields sliced to 40",
             "results": {
-              "_type": "array — top K results (default 16)",
+              "_type": "array - top K results from the caller (function default is 16)",
               "_per_item": {
                 "rank": "number — original SERP rank",
                 "url": "string — full URL",
@@ -3668,27 +3703,27 @@
                 "note": "tier 2 approved source"
               },
               "hostHealthDownrankPenalty": {
-                "default": "varies",
+                "default": -0.4,
                 "note": "from host health policy"
               },
               "hostHealthExcludePenalty": {
-                "default": "varies",
+                "default": -2,
                 "note": "from host health policy"
               },
               "operatorRiskPenalty": {
-                "default": "varies",
+                "default": -0.5,
                 "note": "site: operator risk"
               },
               "fieldAffinityBonus": {
-                "default": "varies",
+                "default": 0.5,
                 "note": "query targets missing fields"
               },
               "needsetCoverageBonus": {
-                "default": "varies",
+                "default": 0.2,
                 "note": "covers unresolved needset fields"
               },
               "diversityPenaltyPerDupe": {
-                "default": "varies",
+                "default": -0.3,
                 "note": "per-domain duplicate penalty"
               }
             },

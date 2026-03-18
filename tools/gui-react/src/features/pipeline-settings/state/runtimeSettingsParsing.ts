@@ -1,5 +1,5 @@
-import { LLM_SETTING_LIMITS } from '../../../stores/settingsManifest';
-import type { RuntimeModelTokenDefaultsResolver } from './runtimeSettingsDomainTypes';
+import { LLM_SETTING_LIMITS } from '../../../stores/settingsManifest.ts';
+import type { RuntimeModelTokenDefaultsResolver } from './runtimeSettingsDomainTypes.ts';
 
 const LLM_MIN_OUTPUT_TOKENS = LLM_SETTING_LIMITS.maxTokens.min;
 const LLM_MAX_OUTPUT_TOKENS = LLM_SETTING_LIMITS.maxTokens.max;

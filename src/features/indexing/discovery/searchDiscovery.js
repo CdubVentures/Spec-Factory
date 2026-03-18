@@ -526,7 +526,38 @@ export async function discoverCandidateSources({
   ];
   const mergedQueryCap = Math.max(queryLimit, 6);
   const mergedQueries = dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap);
-  const rankedQueries = prioritizeQueryRows(mergedQueries.rows, variables, missingFields);
+  // WHY: Build scoring context maps from data already in scope.
+  // Field priority drives Signal 1 (field value); host field fit drives
+  // Signal 2 (source fit) and Signal 5 (overconstraint).
+  const fieldPriority = new Map();
+  for (const f of toArray(planningHints.missingCriticalFields)) {
+    const key = String(f || '').trim();
+    if (key) fieldPriority.set(key, 'critical');
+  }
+  for (const f of toArray(planningHints.missingRequiredFields)) {
+    const key = String(f || '').trim();
+    if (key && !fieldPriority.has(key)) fieldPriority.set(key, 'required');
+  }
+  const hostFieldFit = new Map();
+  for (const [host, entry] of categoryConfig.sourceHostMap || new Map()) {
+    const policy = effectiveHostPlan?.policy_map?.[host];
+    const coverage = policy?.field_coverage || entry?.fieldCoverage;
+    if (!coverage) {
+      const tierName = entry?.tierName || '';
+      hostFieldFit.set(host, {
+        heuristic: tierName === 'manufacturer' ? 0.4 : tierName === 'lab' ? 0.3 : 0.1,
+      });
+      continue;
+    }
+    hostFieldFit.set(host, {
+      high: new Set(toArray(coverage.high)),
+      medium: new Set(toArray(coverage.medium)),
+    });
+  }
+  const rankedQueries = prioritizeQueryRows(mergedQueries.rows, variables, missingFields, {
+    fieldPriority,
+    hostFieldFit,
+  });
   const rankedCappedQueries = rankedQueries.slice(0, mergedQueryCap);
   const rankedCapRejectLog = rankedQueries.slice(mergedQueryCap).map((row) => ({
     query: String(row?.query || '').trim(),

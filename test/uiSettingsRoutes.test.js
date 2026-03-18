@@ -65,7 +65,6 @@ test('ui-settings GET returns durable autosave defaults', async (t) => {
   assert.equal(result.body.studioAutoSaveMapEnabled, true);
   assert.equal(result.body.runtimeAutoSaveEnabled, true);
   assert.equal(result.body.storageAutoSaveEnabled, false);
-  assert.equal(result.body.llmSettingsAutoSaveEnabled, true);
 });
 
 test('ui-settings PUT persists autosave toggles and emits settings data-change', async (t) => {
@@ -83,7 +82,6 @@ test('ui-settings PUT persists autosave toggles and emits settings data-change',
       studioAutoSaveMapEnabled: false,
       runtimeAutoSaveEnabled: false,
       storageAutoSaveEnabled: true,
-      llmSettingsAutoSaveEnabled: false,
       unknownKeyShouldBeIgnored: true,
     }),
     broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
@@ -92,22 +90,20 @@ test('ui-settings PUT persists autosave toggles and emits settings data-change',
   const putResult = await handler(['ui-settings'], new URLSearchParams(), 'PUT', {}, {});
   assert.equal(putResult.status, 200);
   assert.equal(putResult.body.ok, true);
-  assert.equal(putResult.body.studioAutoSaveAllEnabled, true);
-  assert.equal(putResult.body.studioAutoSaveEnabled, true);
-  assert.equal(putResult.body.studioAutoSaveMapEnabled, true);
-  assert.equal(putResult.body.runtimeAutoSaveEnabled, false);
-  assert.equal(putResult.body.storageAutoSaveEnabled, true);
-  assert.equal(putResult.body.llmSettingsAutoSaveEnabled, false);
+  assert.equal(putResult.body.snapshot.studioAutoSaveAllEnabled, true);
+  assert.equal(putResult.body.snapshot.studioAutoSaveEnabled, true);
+  assert.equal(putResult.body.snapshot.studioAutoSaveMapEnabled, true);
+  assert.equal(putResult.body.snapshot.runtimeAutoSaveEnabled, false);
+  assert.equal(putResult.body.snapshot.storageAutoSaveEnabled, true);
   assert.equal(putResult.body.applied.studioAutoSaveEnabled, true);
   assert.equal(putResult.body.applied.studioAutoSaveMapEnabled, true);
-  assert.equal(Object.hasOwn(putResult.body, 'unknownKeyShouldBeIgnored'), false);
+  assert.equal(putResult.body.rejected.unknownKeyShouldBeIgnored, 'unknown_key');
 
   const getResult = await handler(['ui-settings'], new URLSearchParams(), 'GET', {}, {});
   assert.equal(getResult.status, 200);
   assert.equal(getResult.body.studioAutoSaveAllEnabled, true);
   assert.equal(getResult.body.storageAutoSaveEnabled, true);
   assert.equal(getResult.body.runtimeAutoSaveEnabled, false);
-  assert.equal(getResult.body.llmSettingsAutoSaveEnabled, false);
 
   assert.equal(emitted.length, 1);
   assert.equal(emitted[0].channel, 'data-change');
@@ -122,7 +118,6 @@ test('ui-settings PUT persists autosave toggles and emits settings data-change',
   assert.equal(saved.ui.studioAutoSaveMapEnabled, true);
   assert.equal(saved.ui.storageAutoSaveEnabled, true);
   assert.equal(saved.ui.runtimeAutoSaveEnabled, false);
-  assert.equal(saved.ui.llmSettingsAutoSaveEnabled, false);
 });
 
 test('ui-settings PUT keeps field-studio-map autosave independent from key navigator autosave when auto-save-all is off', async (t) => {
@@ -139,15 +134,14 @@ test('ui-settings PUT keeps field-studio-map autosave independent from key navig
       studioAutoSaveMapEnabled: true,
       runtimeAutoSaveEnabled: true,
       storageAutoSaveEnabled: false,
-      llmSettingsAutoSaveEnabled: true,
     }),
   }));
 
   const putResult = await handler(['ui-settings'], new URLSearchParams(), 'PUT', {}, {});
   assert.equal(putResult.status, 200);
-  assert.equal(putResult.body.studioAutoSaveAllEnabled, false);
-  assert.equal(putResult.body.studioAutoSaveMapEnabled, true);
-  assert.equal(putResult.body.studioAutoSaveEnabled, false);
+  assert.equal(putResult.body.snapshot.studioAutoSaveAllEnabled, false);
+  assert.equal(putResult.body.snapshot.studioAutoSaveMapEnabled, true);
+  assert.equal(putResult.body.snapshot.studioAutoSaveEnabled, false);
   assert.equal(putResult.body.applied.studioAutoSaveMapEnabled, true);
   assert.equal(putResult.body.applied.studioAutoSaveEnabled, false);
 

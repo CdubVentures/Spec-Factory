@@ -17,6 +17,11 @@ import { invalidateFieldRulesQueries } from './invalidateFieldRulesQueries';
 import {
   shouldFlushStudioDocsOnUnmount,
 } from './studioBehaviorContracts';
+import {
+  registerUnloadGuard,
+  markDomainFlushedByUnmount,
+  isDomainFlushedByUnload,
+} from '../../../stores/settingsUnloadGuard';
 import { deriveStudioPageViewState } from './studioPageDerivedState';
 import {
   buildStudioPersistMap as buildStudioPersistMapPayload,
@@ -294,8 +299,35 @@ export function useStudioPageDocsController({
     saveFromStore,
   ]);
 
+  useEffect(() => {
+    return registerUnloadGuard({
+      domain: 'studioDocs',
+      isDirty: () => {
+        if (!effectiveAutoSaveEnabled || !fieldRulesState.initialized || !hydrated.current) return false;
+        const snap = getStudioFieldRulesSnapshot();
+        const fp = autoSaveFingerprint(buildStudioPersistMap(snap));
+        return Boolean(fp) && fp !== lastStudioAutoSaveFingerprintRef.current;
+      },
+      getPayload: () => {
+        const snap = getStudioFieldRulesSnapshot();
+        const payload = buildStudioPersistMap(snap);
+        return {
+          url: `/api/v1/studio/${category}/field-studio-map`,
+          method: 'PUT',
+          body: payload,
+        };
+      },
+      markFlushed: () => {
+        const snap = getStudioFieldRulesSnapshot();
+        const fp = autoSaveFingerprint(buildStudioPersistMap(snap));
+        lastStudioAutoSaveAttemptFingerprintRef.current = fp;
+      },
+    });
+  }, [buildStudioPersistMap, category, effectiveAutoSaveEnabled, fieldRulesState.initialized]);
+
   useEffect(
     () => () => {
+      if (isDomainFlushedByUnload('studioDocs')) return;
       const snap = getStudioFieldRulesSnapshot();
       const nextFingerprint = autoSaveFingerprint(buildStudioPersistMap(snap));
       if (
@@ -312,6 +344,7 @@ export function useStudioPageDocsController({
         return;
       }
       saveFromStore({ force: true });
+      markDomainFlushedByUnmount('studioDocs');
     },
     [
       authorityConflictVersion,

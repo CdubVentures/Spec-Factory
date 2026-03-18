@@ -11,22 +11,8 @@ export const SETTINGS_DEFAULTS = Object.freeze({
     searchProvider: 'dual',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     llmPlanApiKey: '',
-    llmExtractProvider: '',
-    llmExtractBaseUrl: '',
-    llmExtractApiKey: '',
-    llmValidateProvider: '',
-    llmValidateBaseUrl: '',
-    llmValidateApiKey: '',
-    llmWriteProvider: '',
-    llmWriteBaseUrl: '',
-    llmWriteApiKey: '',
     llmModelPlan: 'gemini-2.5-flash',
-    llmModelTriage: '',      // retired — aliases to llmModelPlan
-    llmModelFast: '',        // retired — aliases to llmModelPlan
     llmModelReasoning: 'deepseek-reasoner',
-    llmModelExtract: '',     // retired — aliases to llmModelPlan
-    llmModelValidate: '',    // retired — aliases to llmModelPlan
-    llmModelWrite: '',       // retired — aliases to llmModelPlan
     llmExtractMaxTokens: 1200,
     llmExtractMaxSnippetsPerBatch: 4,
     llmExtractMaxSnippetChars: 700,
@@ -50,11 +36,7 @@ export const SETTINGS_DEFAULTS = Object.freeze({
     llmVerifyMode: true,
     llmPlanFallbackModel: 'deepseek-chat',
     llmReasoningFallbackModel: 'gemini-2.5-pro',
-    llmExtractFallbackModel: '',   // retired — aliases to llmPlanFallbackModel
-    llmValidateFallbackModel: '',  // retired — aliases to llmPlanFallbackModel
-    llmWriteFallbackModel: '',     // retired — aliases to llmPlanFallbackModel
     llmPlanUseReasoning: false,
-    llmTriageUseReasoning: false,  // retired — use llmPlanUseReasoning
     resumeMode: 'auto',
     indexingResumeSeedLimit: 24,
     indexingResumePersistLimit: 160,
@@ -70,22 +52,14 @@ export const SETTINGS_DEFAULTS = Object.freeze({
     globalRequestBurst: 0,
     fetchPerHostConcurrencyCap: 1,
     llmMaxOutputTokensPlan: 4096,
-    llmMaxOutputTokensTriage: 2048,
-    llmMaxOutputTokensFast: 1536,
     llmMaxOutputTokensReasoning: 4096,
-    llmMaxOutputTokensExtract: 900,
-    llmMaxOutputTokensValidate: 900,
-    llmMaxOutputTokensWrite: 800,
     llmMaxOutputTokensPlanFallback: 2048,
     llmMaxOutputTokensReasoningFallback: 2048,
-    llmMaxOutputTokensExtractFallback: 4096,
-    llmMaxOutputTokensValidateFallback: 4096,
-    llmMaxOutputTokensWriteFallback: 2048,
     llmExtractionCacheEnabled: true,
     llmExtractionCacheDir: '.specfactory_tmp/llm_cache',
     llmExtractionCacheTtlMs: 604800000,
     llmMaxCallsPerProductTotal: 14,
-    llmMaxCallsPerProductFast: 6,
+
     resumeWindowHours: 48,
     reextractAfterHours: 24,
     scannedPdfOcrMaxPages: 4,
@@ -121,7 +95,7 @@ export const SETTINGS_DEFAULTS = Object.freeze({
           {
             id: 'default-gemini-flash-lite',
             modelId: 'gemini-2.5-flash-lite',
-            role: 'fast',
+            role: 'primary',
             costInputPer1M: 0.1,
             costOutputPer1M: 0.4,
             costCachedPer1M: 0.01,
@@ -211,7 +185,7 @@ export const SETTINGS_DEFAULTS = Object.freeze({
           {
             id: 'default-openai-gpt-4-1-mini',
             modelId: 'gpt-4.1-mini',
-            role: 'fast',
+            role: 'primary',
             costInputPer1M: 0.4,
             costOutputPer1M: 1.6,
             costCachedPer1M: 0.1,
@@ -221,7 +195,7 @@ export const SETTINGS_DEFAULTS = Object.freeze({
           {
             id: 'default-openai-gpt-4-1-nano',
             modelId: 'gpt-4.1-nano',
-            role: 'fast',
+            role: 'primary',
             costInputPer1M: 0.1,
             costOutputPer1M: 0.4,
             costCachedPer1M: 0.025,
@@ -241,7 +215,7 @@ export const SETTINGS_DEFAULTS = Object.freeze({
           {
             id: 'default-openai-gpt-4o-mini',
             modelId: 'gpt-4o-mini',
-            role: 'fast',
+            role: 'primary',
             costInputPer1M: 0.15,
             costOutputPer1M: 0.6,
             costCachedPer1M: 0.075,
@@ -261,7 +235,7 @@ export const SETTINGS_DEFAULTS = Object.freeze({
           {
             id: 'default-openai-gpt-5-mini',
             modelId: 'gpt-5-mini',
-            role: 'fast',
+            role: 'primary',
             costInputPer1M: 0.25,
             costOutputPer1M: 2,
             costCachedPer1M: 0.025,
@@ -469,7 +443,6 @@ export const SETTINGS_DEFAULTS = Object.freeze({
     studioAutoSaveMapEnabled: true,
     runtimeAutoSaveEnabled: true,
     storageAutoSaveEnabled: false,
-    llmSettingsAutoSaveEnabled: true
   }),
   autosave: Object.freeze({
     debounceMs: Object.freeze({

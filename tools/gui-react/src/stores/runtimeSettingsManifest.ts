@@ -1,3 +1,3 @@
-export * from './runtimeSettingsManifestTypes';
-export * from './runtimeSettingsManifestOptions';
-export * from './runtimeSettingsManifestDefaults';
+export * from './runtimeSettingsManifestTypes.ts';
+export * from './runtimeSettingsManifestOptions.ts';
+export * from './runtimeSettingsManifestDefaults.ts';

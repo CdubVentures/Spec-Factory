@@ -64,8 +64,6 @@ function makePlannerLimits(overrides = {}) {
     maxPagesPerDomain: 2,
     maxRunSeconds: 300,
     llmModelPlan: 'gemini-2.5-flash-lite',
-    llmPlanProvider: 'gemini',
-    llmPlanBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
     llmMaxOutputTokensPlan: 2048,
     searchProfileCapMap: null,
     searchProvider: 'dual',
@@ -131,11 +129,7 @@ function makeSearchPlanningContext(overrides = {}) {
 function makeConfig(overrides = {}) {
   return {
     llmModelPlan: 'gemini-2.5-flash-lite',
-    llmPlanProvider: 'gemini',
-    llmPlanBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    llmPlanApiKey: 'test-api-key-123',
-    llmProvider: 'gemini',
-    llmBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    geminiApiKey: 'test-api-key-123',
     llmTimeoutMs: 30000,
     discoveryMaxQueries: 6,
     ...overrides
@@ -253,7 +247,7 @@ describe('buildSearchPlan', () => {
     it('no API key → mode=disabled, empty queries', async () => {
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext(),
-        config: makeConfig({ llmPlanApiKey: '' }),
+        config: makeConfig({ geminiApiKey: '' }),
       });
 
       assert.equal(result.planner.mode, 'disabled');
@@ -575,7 +569,7 @@ describe('buildSearchPlan', () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext(),
-        config: makeConfig({ llmModelPlan: 'gpt-4o' }),
+        config: makeConfig({ llmModelPlan: 'gpt-4o', openaiApiKey: 'test-api-key-123' }),
       });
 
       assert.equal(result.planner.mode, 'llm');
@@ -594,7 +588,7 @@ describe('buildSearchPlan', () => {
     it('planner.planner_confidence === 0 when disabled', async () => {
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext(),
-        config: makeConfig({ llmPlanApiKey: '' }),
+        config: makeConfig({ geminiApiKey: '' }),
       });
       assert.equal(result.planner.planner_confidence, 0);
     });
@@ -959,7 +953,7 @@ describe('buildSearchPlan', () => {
     it('disabled mode → all values 0', async () => {
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext(),
-        config: makeConfig({ llmPlanApiKey: '' }),
+        config: makeConfig({ geminiApiKey: '' }),
       });
       const pi = result.panel.profile_influence;
       assert.equal(pi.total_queries, 0);

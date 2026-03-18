@@ -46,7 +46,6 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
     llmExtractionCacheDir: path.resolve('ignored-cache-root'),
     fetchCandidateSources: false,
     runtimeTraceFetchRing: 9_999,
-    llmModelTriage: 'triage-model',
     llmFallbackEnabled: false,
   }, {
     runDataStorageState: {
@@ -99,16 +98,12 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
   assert.equal(result.envOverrides.HELPER_FILES_ROOT, overrideRoot);
   assert.equal(result.envOverrides.CATEGORY_AUTHORITY_ROOT, overrideRoot);
   assert.equal(result.envOverrides.RUNTIME_TRACE_FETCH_RING, '2000');
-  assert.equal(result.envOverrides.LLM_MODEL_TRIAGE, 'triage-model');
   assert.equal(
     Object.hasOwn(result.envOverrides, 'LLM_ENABLED'),
     false,
     'LLM_ENABLED env var retired — LLM is core, not a knob',
   );
   assert.equal(result.envOverrides.LLM_PLAN_FALLBACK_MODEL, '');
-  assert.equal(result.envOverrides.LLM_EXTRACT_FALLBACK_MODEL, '');
-  assert.equal(result.envOverrides.LLM_VALIDATE_FALLBACK_MODEL, '');
-  assert.equal(result.envOverrides.LLM_WRITE_FALLBACK_MODEL, '');
 });
 
 test('buildProcessStartLaunchPlan rejects unsupported process mode', () => {

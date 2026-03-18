@@ -318,7 +318,7 @@ test('buildRoundConfig keeps discovery disabled when required fields are already
       maxCandidateUrls: 120,
       maxPagesPerDomain: 3,
       llmMaxCallsPerRound: 4,
-      llmMaxCallsPerProductFast: 2,
+
       endpointSignalLimit: 30,
       endpointSuggestionLimit: 12,
       endpointNetworkScanLimit: 600,
@@ -354,7 +354,7 @@ test('buildRoundConfig keeps aggressive discovery enabled when critical gaps rem
       maxCandidateUrls: 120,
       maxPagesPerDomain: 3,
       llmMaxCallsPerRound: 4,
-      llmMaxCallsPerProductFast: 2,
+
       llmMaxCallsPerProductTotal: 12,
       endpointSignalLimit: 30,
       endpointSuggestionLimit: 12,
@@ -394,7 +394,7 @@ test('buildRoundConfig enables discovery + searxng fallback when required fields
       maxCandidateUrls: 120,
       maxPagesPerDomain: 3,
       llmMaxCallsPerRound: 4,
-      llmMaxCallsPerProductFast: 2,
+
       endpointSignalLimit: 30,
       endpointSuggestionLimit: 12,
       endpointNetworkScanLimit: 600,
@@ -430,7 +430,7 @@ test('buildRoundConfig defers external discovery on first required-search iterat
       maxCandidateUrls: 120,
       maxPagesPerDomain: 3,
       llmMaxCallsPerRound: 4,
-      llmMaxCallsPerProductFast: 2,
+
       endpointSignalLimit: 30,
       endpointSuggestionLimit: 12,
       endpointNetworkScanLimit: 600,
@@ -465,7 +465,7 @@ test('buildRoundConfig enables one expected-field search pass when required fiel
       maxCandidateUrls: 120,
       maxPagesPerDomain: 3,
       llmMaxCallsPerRound: 4,
-      llmMaxCallsPerProductFast: 2,
+
       endpointSignalLimit: 30,
       endpointSuggestionLimit: 12,
       endpointNetworkScanLimit: 600,
@@ -489,12 +489,11 @@ test('buildRoundConfig enables one expected-field search pass when required fiel
   assert.equal(roundConfig.searchProvider, 'searxng');
 });
 
-test('buildRoundConfig applies fast round 0 with tiny call cap', () => {
+test('buildRoundConfig applies fast round 0 using llmMaxCallsPerRound directly', () => {
   const roundConfig = buildRoundConfig(
     {
       runProfile: 'standard',
       llmMaxCallsPerRound: 4,
-      llmMaxCallsPerProductFast: 2,
       discoveryEnabled: false,
       fetchCandidateSources: false,
       searchProvider: 'none',
@@ -508,7 +507,7 @@ test('buildRoundConfig applies fast round 0 with tiny call cap', () => {
   );
 
   assert.equal(roundConfig.runProfile, 'standard');
-  assert.equal(roundConfig.llmMaxCallsPerRound <= 2, true);
+  assert.equal(roundConfig.llmMaxCallsPerRound, 4);
 });
 
 test('buildRoundConfig keeps aggressive round 1 in standard profile by default', () => {
@@ -519,7 +518,7 @@ test('buildRoundConfig keeps aggressive round 1 in standard profile by default',
       maxUrlsPerProduct: 140,
       maxCandidateUrls: 180,
       llmMaxCallsPerRound: 5,
-      llmMaxCallsPerProductFast: 2,
+
       discoveryEnabled: true,
       fetchCandidateSources: true,
       searchProvider: 'searxng',
@@ -544,7 +543,7 @@ test('buildRoundConfig allows aggressive thorough profile from configured round'
       maxUrlsPerProduct: 90,
       maxCandidateUrls: 120,
       llmMaxCallsPerRound: 5,
-      llmMaxCallsPerProductFast: 2,
+
       discoveryEnabled: true,
       fetchCandidateSources: true,
       searchProvider: 'searxng',
@@ -569,8 +568,7 @@ test('buildRoundConfig applies production-mode budgets with boosted limits', () 
       fetchCandidateSources: true,
       searchProvider: 'searxng',
       searxngBaseUrl: 'http://127.0.0.1:8080',
-      llmMaxCallsPerRound: 5,
-      llmMaxCallsPerProductFast: 2
+      llmMaxCallsPerRound: 5
     },
     {
       round: 1,
@@ -616,7 +614,7 @@ test('buildRoundConfig raises deep-search budgets for high contract effort plans
       maxCandidateUrls: 120,
       maxPagesPerDomain: 3,
       llmMaxCallsPerRound: 4,
-      llmMaxCallsPerProductFast: 2,
+
       endpointSignalLimit: 30,
       endpointSuggestionLimit: 12,
       endpointNetworkScanLimit: 600,
@@ -650,7 +648,7 @@ test('buildRoundConfig raises deep-search budgets for high contract effort plans
       maxCandidateUrls: 120,
       maxPagesPerDomain: 3,
       llmMaxCallsPerRound: 4,
-      llmMaxCallsPerProductFast: 2,
+
       endpointSignalLimit: 30,
       endpointSuggestionLimit: 12,
       endpointNetworkScanLimit: 600,

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import { deepStrictEqual, strictEqual } from 'node:assert';
 import { buildModelDropdownOptions, ensureValueInOptions } from '../llmModelDropdownOptions.ts';
-import type { LlmProviderEntry } from '../../types/llmProviderRegistryTypes.ts';
+import type { LlmProviderEntry, LlmModelRole } from '../../types/llmProviderRegistryTypes.ts';
 import type { DropdownModelOption } from '../llmModelDropdownOptions.ts';
 
 function makeProvider(overrides: Partial<LlmProviderEntry> & { id: string; name: string }): LlmProviderEntry {
@@ -16,7 +16,7 @@ function makeProvider(overrides: Partial<LlmProviderEntry> & { id: string; name:
   };
 }
 
-function makeModel(modelId: string, role: 'primary' | 'reasoning' | 'fast' | 'embedding' = 'primary') {
+function makeModel(modelId: string, role: LlmModelRole = 'primary') {
   return {
     id: `m-${modelId}`,
     modelId,
@@ -67,14 +67,14 @@ describe('buildModelDropdownOptions', () => {
         name: 'Anthropic',
         models: [
           makeModel('claude-sonnet', 'primary'),
-          makeModel('claude-haiku', 'fast'),
+          makeModel('embed-v1', 'embedding'),
           makeModel('o3', 'reasoning'),
         ],
       }),
     ];
-    const result = buildModelDropdownOptions([], registry, 'fast');
+    const result = buildModelDropdownOptions([], registry, 'embedding');
     deepStrictEqual(result, [
-      { value: 'claude-haiku', label: 'Anthropic / claude-haiku', providerId: 'p1', role: 'fast', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'embed-v1', label: 'Anthropic / embed-v1', providerId: 'p1', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
     ]);
   });
 
@@ -85,9 +85,8 @@ describe('buildModelDropdownOptions', () => {
         name: 'Mixed',
         models: [
           makeModel('model-base', 'primary'),
-          makeModel('model-fast', 'fast'),
-          makeModel('model-reasoning', 'reasoning'),
           makeModel('model-embed', 'embedding'),
+          makeModel('model-reasoning', 'reasoning'),
         ],
       }),
     ];
@@ -172,7 +171,7 @@ describe('buildModelDropdownOptions', () => {
       makeProvider({
         id: 'p1',
         name: 'OpenAI',
-        models: [makeModel('gpt-4o', 'primary'), makeModel('gpt-4o-mini', 'fast')],
+        models: [makeModel('gpt-4o', 'primary'), makeModel('gpt-4o-mini', 'embedding')],
       }),
     ];
     const result = buildModelDropdownOptions(
@@ -181,7 +180,7 @@ describe('buildModelDropdownOptions', () => {
     );
     deepStrictEqual(result, [
       { value: 'gpt-4o', label: 'OpenAI / gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
-      { value: 'gpt-4o-mini', label: 'OpenAI / gpt-4o-mini', providerId: 'p1', role: 'fast', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'gpt-4o-mini', label: 'OpenAI / gpt-4o-mini', providerId: 'p1', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
       { value: 'standalone', label: 'standalone', providerId: null },
     ]);
   });
@@ -191,13 +190,13 @@ describe('buildModelDropdownOptions', () => {
       makeProvider({
         id: 'p1',
         name: 'Provider',
-        models: [makeModel('base-model', 'primary'), makeModel('fast-model', 'fast')],
+        models: [makeModel('base-model', 'primary'), makeModel('embed-model', 'embedding')],
       }),
     ];
-    const result = buildModelDropdownOptions(['flat-only'], registry, 'fast');
+    const result = buildModelDropdownOptions(['flat-only'], registry, 'embedding');
     // flat-only has unknown role — must NOT leak into a role-filtered dropdown
     deepStrictEqual(result, [
-      { value: 'fast-model', label: 'Provider / fast-model', providerId: 'p1', role: 'fast', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'embed-model', label: 'Provider / embed-model', providerId: 'p1', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
     ]);
   });
 
@@ -206,13 +205,13 @@ describe('buildModelDropdownOptions', () => {
       makeProvider({
         id: 'p1',
         name: 'Provider',
-        models: [makeModel('shared', 'primary'), makeModel('shared-fast', 'fast')],
+        models: [makeModel('shared', 'primary'), makeModel('shared-embed', 'embedding')],
       }),
     ];
-    // Filter for 'fast' only; 'shared' is primary role — must NOT appear even as flat option
-    const result = buildModelDropdownOptions(['shared', 'shared-fast'], registry, 'fast');
+    // Filter for 'embedding' only; 'shared' is primary role — must NOT appear even as flat option
+    const result = buildModelDropdownOptions(['shared', 'shared-embed'], registry, 'embedding');
     deepStrictEqual(result, [
-      { value: 'shared-fast', label: 'Provider / shared-fast', providerId: 'p1', role: 'fast', costInputPer1M: 0, maxContextTokens: null },
+      { value: 'shared-embed', label: 'Provider / shared-embed', providerId: 'p1', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
     ]);
   });
 
@@ -233,20 +232,20 @@ describe('buildModelDropdownOptions', () => {
 
   // ── Sort + enrichment tests ──
 
-  it('sorts by role priority: reasoning before primary before fast', () => {
+  it('sorts by role priority: reasoning before primary before embedding', () => {
     const registry = [
       makeProvider({
         id: 'p1',
         name: 'P',
         models: [
-          makeModel('fast-m', 'fast'),
+          makeModel('embed-m', 'embedding'),
           makeModel('base-m', 'primary'),
           makeModel('reason-m', 'reasoning'),
         ],
       }),
     ];
     const result = buildModelDropdownOptions([], registry);
-    deepStrictEqual(result.map((o) => o.value), ['reason-m', 'base-m', 'fast-m']);
+    deepStrictEqual(result.map((o) => o.value), ['reason-m', 'base-m', 'embed-m']);
   });
 
   it('sorts within same role by maxContextTokens descending, nulls last', () => {
@@ -401,18 +400,18 @@ describe('buildModelDropdownOptions', () => {
       makeProvider({
         id: 'keyed',
         name: 'Keyed',
-        models: [makeModel('m-primary', 'primary'), makeModel('m-fast', 'fast')],
+        models: [makeModel('m-primary', 'primary'), makeModel('m-embed', 'embedding')],
       }),
       makeProvider({
         id: 'keyless',
         name: 'Keyless',
-        models: [makeModel('m-fast-2', 'fast')],
+        models: [makeModel('m-embed-2', 'embedding')],
       }),
     ];
     const filter = (p: LlmProviderEntry) => p.id === 'keyed';
-    const result = buildModelDropdownOptions([], registry, 'fast', filter);
+    const result = buildModelDropdownOptions([], registry, 'embedding', filter);
     deepStrictEqual(result.length, 1);
-    deepStrictEqual(result[0].value, 'm-fast');
+    deepStrictEqual(result[0].value, 'm-embed');
   });
 
   it('apiKeyFilter=undefined preserves existing behavior (no filtering)', () => {

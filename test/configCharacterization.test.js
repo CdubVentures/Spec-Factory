@@ -51,14 +51,9 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   assert.ok(!cfg.s3InputPrefix.endsWith('/'));
   assert.ok(!cfg.s3OutputPrefix.endsWith('/'));
 
-  // LLM model keys exist
-  assert.equal(typeof cfg.llmModelExtract, 'string');
+  // LLM model keys exist (per-role aliases retired — only plan + reasoning)
   assert.equal(typeof cfg.llmModelPlan, 'string');
-  assert.equal(typeof cfg.llmModelFast, 'string');
-  assert.equal(typeof cfg.llmModelTriage, 'string');
   assert.equal(typeof cfg.llmModelReasoning, 'string');
-  assert.equal(typeof cfg.llmModelValidate, 'string');
-  assert.equal(typeof cfg.llmModelWrite, 'string');
   assert.equal(typeof cfg.llmProvider, 'string');
 
   // LLM budget defaults
@@ -66,12 +61,9 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   assert.equal(typeof cfg.llmPerProductBudgetUsd, 'number');
   assert.equal(cfg.llmDisableBudgetGuards, false);
 
-  // Token map defaults
+  // Token map defaults (per-role token caps retired — only plan + reasoning)
   assert.equal(typeof cfg.llmMaxOutputTokens, 'number');
   assert.equal(typeof cfg.llmMaxOutputTokensPlan, 'number');
-  assert.equal(typeof cfg.llmMaxOutputTokensExtract, 'number');
-  assert.equal(typeof cfg.llmMaxOutputTokensValidate, 'number');
-  assert.equal(typeof cfg.llmMaxOutputTokensWrite, 'number');
 
   // Token presets
   assert.ok(Array.isArray(cfg.llmOutputTokenPresets));
@@ -136,42 +128,20 @@ test('CHAR config: localMode=false uses default outputMode', () => {
 // SECTION 3: LLM fallback chain behavior
 // =========================================================================
 
-test('CHAR config: LLM model roles all resolve to a string', () => {
+test('CHAR config: LLM model plan and reasoning resolve to a string', () => {
   const cfg = loadConfig();
-  const roles = [
-    'llmModelExtract', 'llmModelPlan', 'llmModelFast',
-    'llmModelTriage', 'llmModelReasoning',
-    'llmModelValidate', 'llmModelWrite'
-  ];
+  const roles = ['llmModelPlan', 'llmModelReasoning'];
   for (const role of roles) {
     assert.equal(typeof cfg[role], 'string', `${role} must be a string`);
     assert.ok(cfg[role].length > 0, `${role} must not be empty`);
   }
 });
 
-test('CHAR config: LLM role-specific providers fall back to llmProvider', () => {
+test('CHAR config: llmPlanApiKey falls back to llmApiKey', () => {
   const cfg = loadConfig();
-  // Post-merge: role providers should be set (fall back to llmProvider)
-  assert.equal(cfg.llmPlanProvider, cfg.llmProvider);
-  assert.equal(cfg.llmExtractProvider, cfg.llmProvider);
-  assert.equal(cfg.llmValidateProvider, cfg.llmProvider);
-  assert.equal(cfg.llmWriteProvider, cfg.llmProvider);
-});
-
-test('CHAR config: LLM role-specific base URLs fall back to llmBaseUrl', () => {
-  const cfg = loadConfig();
-  assert.equal(cfg.llmPlanBaseUrl, cfg.llmBaseUrl);
-  assert.equal(cfg.llmExtractBaseUrl, cfg.llmBaseUrl);
-  assert.equal(cfg.llmValidateBaseUrl, cfg.llmBaseUrl);
-  assert.equal(cfg.llmWriteBaseUrl, cfg.llmBaseUrl);
-});
-
-test('CHAR config: LLM role-specific API keys fall back to llmApiKey', () => {
-  const cfg = loadConfig();
+  // WHY: llmPlanProvider/BaseUrl removed from configBuilder — routing uses
+  // registry SSOT (composite keys). Only llmPlanApiKey survives as override seam.
   assert.equal(cfg.llmPlanApiKey, cfg.llmApiKey);
-  assert.equal(cfg.llmExtractApiKey, cfg.llmApiKey);
-  assert.equal(cfg.llmValidateApiKey, cfg.llmApiKey);
-  assert.equal(cfg.llmWriteApiKey, cfg.llmApiKey);
 });
 
 // =========================================================================
@@ -259,9 +229,7 @@ test('CHAR config: openai* keys are synced with llm* keys post-merge', () => {
   const cfg = loadConfig();
   assert.equal(cfg.openaiApiKey, cfg.llmApiKey);
   assert.equal(cfg.openaiBaseUrl, cfg.llmBaseUrl);
-  assert.equal(cfg.openaiModelExtract, cfg.llmModelExtract);
   assert.equal(cfg.openaiModelPlan, cfg.llmModelPlan);
-  assert.equal(cfg.openaiModelWrite, cfg.llmModelWrite);
   assert.equal(cfg.openaiTimeoutMs, cfg.llmTimeoutMs);
 });
 
@@ -291,15 +259,11 @@ test('CHAR config: known model token profiles are populated in llmModelOutputTok
 // SECTION 8: llmMaxOutputTokens* post-merge chain
 // =========================================================================
 
-test('CHAR config: llmMaxOutputTokens role chain produces valid numbers', () => {
+test('CHAR config: llmMaxOutputTokens chain produces valid numbers', () => {
   const cfg = loadConfig();
   const tokenKeys = [
-    'llmMaxOutputTokensPlan', 'llmMaxOutputTokensFast',
-    'llmMaxOutputTokensTriage', 'llmMaxOutputTokensReasoning',
-    'llmMaxOutputTokensExtract', 'llmMaxOutputTokensValidate',
-    'llmMaxOutputTokensWrite',
-    'llmMaxOutputTokensPlanFallback', 'llmMaxOutputTokensExtractFallback',
-    'llmMaxOutputTokensValidateFallback', 'llmMaxOutputTokensWriteFallback'
+    'llmMaxOutputTokensPlan', 'llmMaxOutputTokensReasoning',
+    'llmMaxOutputTokensPlanFallback',
   ];
   for (const key of tokenKeys) {
     assert.equal(typeof cfg[key], 'number', `${key} must be a number`);
@@ -540,13 +504,17 @@ test('CHAR config: extraction/validate/write phases inherit useReasoning from ll
 // SECTION 18: Model stack simplification — aliasing
 // =========================================================================
 
-test('model aliasing: all role models resolve to llmModelPlan after post-merge', () => {
+test('model aliasing: per-role model keys stripped from config surface', () => {
   const cfg = loadConfig();
-  const roles = ['llmModelTriage', 'llmModelFast', 'llmModelExtract', 'llmModelValidate', 'llmModelWrite'];
-  for (const role of roles) {
-    assert.equal(cfg[role], cfg.llmModelPlan,
-      `${role} must alias to llmModelPlan (${cfg.llmModelPlan}), got ${cfg[role]}`);
+  // WHY: configPostMerge aliases them internally, but settingsKeyMap
+  // removes triage/validate/write from the GET route. Extract survives
+  // because it seeds openaiModelExtract sync.
+  const removedRoles = ['llmModelTriage', 'llmModelValidate', 'llmModelWrite'];
+  for (const role of removedRoles) {
+    assert.equal(cfg[role], undefined,
+      `${role} should be stripped from config surface`);
   }
+  assert.equal(typeof cfg.llmModelExtract, 'string');
 });
 
 test('model aliasing: llmModelReasoning preserves its own value (not aliased to plan)', () => {
@@ -555,54 +523,49 @@ test('model aliasing: llmModelReasoning preserves its own value (not aliased to 
   assert.ok(cfg.llmModelReasoning.length > 0);
 });
 
-test('model aliasing: explicit llmModelPlan override propagates to all roles', () => {
+test('model aliasing: explicit llmModelPlan override sets plan model', () => {
   const cfg = loadConfig({ llmModelPlan: 'test-model-xyz' });
-  assert.equal(cfg.llmModelTriage, 'test-model-xyz');
-  assert.equal(cfg.llmModelFast, 'test-model-xyz');
-  assert.equal(cfg.llmModelExtract, 'test-model-xyz');
-  assert.equal(cfg.llmModelValidate, 'test-model-xyz');
-  assert.equal(cfg.llmModelWrite, 'test-model-xyz');
+  assert.equal(cfg.llmModelPlan, 'test-model-xyz');
 });
 
 // =========================================================================
 // SECTION 19: Fallback model aliasing
 // =========================================================================
 
-test('fallback aliasing: extract/validate/write fallbacks resolve to llmPlanFallbackModel', () => {
+test('fallback aliasing: per-role fallback model keys are removed from config', () => {
   const cfg = loadConfig();
-  assert.equal(cfg.llmExtractFallbackModel, cfg.llmPlanFallbackModel,
-    'llmExtractFallbackModel must alias to llmPlanFallbackModel');
-  assert.equal(cfg.llmValidateFallbackModel, cfg.llmPlanFallbackModel,
-    'llmValidateFallbackModel must alias to llmPlanFallbackModel');
-  assert.equal(cfg.llmWriteFallbackModel, cfg.llmPlanFallbackModel,
-    'llmWriteFallbackModel must alias to llmPlanFallbackModel');
+  assert.equal(cfg.llmExtractFallbackModel, undefined,
+    'llmExtractFallbackModel should no longer exist');
+  assert.equal(cfg.llmValidateFallbackModel, undefined,
+    'llmValidateFallbackModel should no longer exist');
+  assert.equal(cfg.llmWriteFallbackModel, undefined,
+    'llmWriteFallbackModel should no longer exist');
 });
 
 // =========================================================================
 // SECTION 20: Token cap aliasing
 // =========================================================================
 
-test('token cap aliasing: all role token caps resolve to llmMaxOutputTokensPlan', () => {
+test('token cap aliasing: per-role token cap keys are removed from config', () => {
   const cfg = loadConfig();
-  const tokenRoles = [
-    'llmMaxOutputTokensTriage', 'llmMaxOutputTokensFast',
+  const deadTokenKeys = [
+    'llmMaxOutputTokensTriage',
     'llmMaxOutputTokensExtract', 'llmMaxOutputTokensValidate',
     'llmMaxOutputTokensWrite',
   ];
-  for (const key of tokenRoles) {
-    assert.equal(cfg[key], cfg.llmMaxOutputTokensPlan,
-      `${key} must alias to llmMaxOutputTokensPlan (${cfg.llmMaxOutputTokensPlan}), got ${cfg[key]}`);
+  for (const key of deadTokenKeys) {
+    assert.equal(cfg[key], undefined, `${key} should no longer exist in config`);
   }
 });
 
-test('token cap aliasing: extract/validate/write fallback tokens resolve to plan fallback', () => {
+test('token cap aliasing: per-role fallback token cap keys are removed from config', () => {
   const cfg = loadConfig();
-  assert.equal(cfg.llmMaxOutputTokensExtractFallback, cfg.llmMaxOutputTokensPlanFallback,
-    'llmMaxOutputTokensExtractFallback must alias to llmMaxOutputTokensPlanFallback');
-  assert.equal(cfg.llmMaxOutputTokensValidateFallback, cfg.llmMaxOutputTokensPlanFallback,
-    'llmMaxOutputTokensValidateFallback must alias to llmMaxOutputTokensPlanFallback');
-  assert.equal(cfg.llmMaxOutputTokensWriteFallback, cfg.llmMaxOutputTokensPlanFallback,
-    'llmMaxOutputTokensWriteFallback must alias to llmMaxOutputTokensPlanFallback');
+  assert.equal(cfg.llmMaxOutputTokensExtractFallback, undefined,
+    'llmMaxOutputTokensExtractFallback should no longer exist');
+  assert.equal(cfg.llmMaxOutputTokensValidateFallback, undefined,
+    'llmMaxOutputTokensValidateFallback should no longer exist');
+  assert.equal(cfg.llmMaxOutputTokensWriteFallback, undefined,
+    'llmMaxOutputTokensWriteFallback should no longer exist');
 });
 
 // =========================================================================

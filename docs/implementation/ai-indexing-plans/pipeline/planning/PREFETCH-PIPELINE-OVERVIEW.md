@@ -1,390 +1,398 @@
-# Prefetch Pipeline Overview (Stages 01-08)
+# Prefetch Pipeline Overview (NeedSet -> Domain Classifier)
 
 Validated: 2026-03-17. Source of truth: live source code + runtime trace artifacts.
 
-The prefetch pipeline transforms a product identity into a set of fetched, classified, triaged URLs ready for extraction. Each stage adds data keys to a cumulative payload that grows as it propagates downstream.
+This file sits inside the preserved `docs/implementation/` subtree. Treat live source as authoritative if this document and current runtime behavior ever disagree.
+
+This overview is organized around the eight logical discovery phases requested here:
+
+1. NeedSet
+2. Brand Resolver
+3. Search Profile
+4. Search Planner
+5. Query Journey
+6. Search Results
+7. SERP Triage
+8. Domain Classifier
+
+Important runtime ordering note: the Schema 4 Search Planner is computed early inside `runDiscoverySeedPlan()` before `searchDiscovery()` enters Brand Resolver and the legacy Search Profile branch. It is documented here as Phase 04 because Query Journey consumes it as the preferred plan input.
 
 ---
 
 ## Pipeline Topology
 
-```
+```text
 Runtime Start
   |
   v
-[01] NeedSet Engine -----> Schema 2 (NeedSetOutput)
-  |                           |
-  |  +-- fields[].history     |
-  |  +-- summary/blockers     |
-  |  +-- planner_seed         |
-  |                           v
-[02] Brand Resolver -----> Brand Resolution (sidecar, parallel)
-  |                           |
-  |  +-- officialDomain       |
-  |  +-- supportDomain        |
-  |  +-- aliases              |
-  |  +-- confidence           |
-  |                           v
-[03] Search Planning Context -> Schema 3 (SearchPlanningContext)
-  |   + Search Plan Builder      |
-  |                              |
-  |  +-- focus_groups[]          |
-  |  +-- group_catalog           |
-  |  +-- planner_limits          |
-  |  +-- learning (anti-garbage) |
-  |                              v
-  +-------- Search Plan Builder -> Schema 4 (NeedSetPlannerOutput)
-                                 |
-                                 v
-[04] Query Journey ---------> search_plan_handoff + panel + learning_writeback
-  |   (consumes Schema 4)        |
-  |                              |
-  |  +-- handoff adapter         |
-  |  +-- identity guard          |
-  |  +-- execution routing       |
-  |  +-- classification/triage   |
-  |                              v
-[05] Query Execution -------> rawResults[] + searchAttempts[] + searchJournal[]
-  |                              |
-  |  +-- provider routing        |
-  |  +-- frontier cache          |
-  |  +-- internal corpus         |
-  |                              v
-[06] SERP Triage -----------> candidates[] + approvedUrls[] + candidateUrls[]
-  |                              |
-  |  +-- URL classification      |
-  |  +-- domain safety           |
-  |  +-- deterministic rerank    |
-  |  +-- conditional LLM rerank  |
-  |  +-- serp_explorer artifact  |
-  |  +-- searchProfileFinal      |
-  |                              v
-[07] Domain Classifier -----> Seeded planner queues
-  |                              |
-  |  +-- planner.enqueue()       |
-  |  +-- planner.seedCandidates()|
-  |  +-- queue routing           |
-  |                              v
-[08] Fetch + Parse ---------> sourceFetch payloads --> Stage 09 (Extraction)
-     |
-     +-- preflight gates
-     +-- mode-aware fetcher
-     +-- host concurrency
-     +-- retry/repair
+[01] NeedSet
+  |
+  v
+[02] Brand Resolver
+  |
+  v
+[03] Search Profile
+  |
+  v
+[04] Search Planner
+  |
+  v
+[05] Query Journey
+  |
+  v
+[06] Search Results
+  |
+  v
+[07] SERP Triage
+  |
+  v
+[08] Domain Classifier
+  |
+  v
+Fetch + Parse handoff
+```
+
+Branching reality inside the runtime:
+
+```text
+NeedSet
+  -> Search Planner (Schema 3 -> Schema 4 precompute)
+  -> searchDiscovery()
+       -> Brand Resolver
+       -> Search Profile
+       -> Query Journey chooses:
+            preferred: Schema 4 handoff
+            fallback: legacy search-profile planner chain
 ```
 
 ---
 
-## Stage-by-Stage Contract
+## Detailed Logic Box
 
-### 01 — Start to NeedSet
+```text
+runDiscoverySeedPlan()
+  discoveryEnabled := true
+  searchProvider := config.searchProvider unless it is "none", then "dual"
 
-**Producer:** `needsetEngine.computeNeedSet()`
-**Input:** Runtime product context (run_id, category, product_id, brand, model, fieldRules, provenance, round, roundMode)
-**Output:** Schema 2 (NeedSetOutput)
-**Schemas:** `01-needset-input.json`, `01-needset-output.json`, `01-needset-planner-context.json`, `01-needset-planner-output.json`
+  if enableSchema4SearchPlan:
+    schema2 := computeNeedSet(...)
+    schema3 := buildSearchPlanningContext(schema2, config, fieldGroups, previousRoundFields)
+    schema4 := buildSearchPlan(schema3, config, llmContext)
+    searchPlanHandoff := schema4.search_plan_handoff
+  else:
+    searchPlanHandoff := null
 
-| Key Group | Keys Added | Transform |
-|-----------|-----------|-----------|
-| **run** | run_id, category, product_id, brand, model, base_model, aliases, round, round_mode | passthrough |
-| **identity** | state, source_label_state, confidence, manufacturer, model, official_domain, support_domain | recomputed from identityContext |
-| **fields[]** | field_key, label, group_key, idx.{required_level, min_evidence_refs, query_terms, domain_hints, preferred_content_types, tooltip_md, aliases}, pass_target, exact_match_required | normalized from fieldRules |
-| **fields[].current** | status, value, confidence, effective_confidence, refs_found, best_tier_seen, meets_pass_target, reasons | recomputed from provenance |
-| **fields[].history** | existing_queries, domains_tried, host_classes_tried, evidence_classes_tried, query_count, urls_examined_count, no_value_attempts, duplicate_attempts_suppressed | enriched by buildFieldHistories |
-| **summary** | total, resolved, core_total, core_unresolved, secondary_total, secondary_unresolved, optional_total, optional_unresolved, conflicts | recomputed aggregation |
-| **blockers** | missing, weak, conflict, needs_exact_match, search_exhausted | recomputed aggregation |
-| **planner_seed** | missing_critical_fields[], unresolved_fields[], existing_queries[], current_product_identity | recomputed from fields[] |
+searchDiscovery()
+  brandResolution := resolveBrandDomain()
+    rules:
+      no brand -> skip
+      cache hit -> return cached domains and aliases immediately
+      no routed API key -> cache-only, otherwise empty result
+      LLM result -> normalize lowercase domains and aliases, store cache row
 
----
+  if manufacturerAutoPromote and officialDomain exists:
+    promote official/support domains into sourceHostMap as manufacturer hosts
 
-### 02 — NeedSet + Brand to Profile
+  schema4Plan := resolveSchema4ExecutionPlan(searchPlanHandoff)
+    adapter := convertHandoffToExecutionPlan()
+    guard := enforceIdentityQueryGuard()
 
-**Producer:** `brandResolver.resolveBrandDomain()`
-**Input:** brand (from identity lock), category, config, callLlmFn (role=triage), storage
-**Output:** Brand Resolution (sidecar payload)
-**Schemas:** `02-brand-resolver-input.json`, `02-brand-resolver-output.json`
+  if schema4Plan exists and guarded query count >= 6:
+    use Schema 4 path
+    searchProfilePlanned := minimal planned profile backed by schema4 metadata
+  else:
+    use legacy path
+    searchProfileBase := buildSearchProfile(...)
+    llmQueries := planDiscoveryQueriesLLM(...)
+    uberSearchPlan := planUberQueries(...)
+    mergedQueries := dedupeQueryRows(base + targeted + llm + uber)
+    rankedQueries := prioritizeQueryRows(mergedQueries)
+    guardedQueries := enforceIdentityQueryGuard(rankedQueries)
+    apply deterministic budget = 3 non-LLM rows
+    if all guarded rows rejected but ranked rows exist:
+      retain top ranked row as fallback
 
-| Key | Transform | Notes |
-|-----|-----------|-------|
-| officialDomain | enriched (cache OR LLM) | normalized: lowercase, trimmed |
-| supportDomain | enriched (cache OR LLM) | normalized: lowercase, trimmed |
-| aliases | enriched (cache OR LLM) | normalized: lowercase, trimmed, filtered empty |
-| confidence | enriched | 0.8 hardcoded for LLM, cached value for cache |
-| reasoning | enriched | from LLM OR empty array on cache hit |
+  searchResults := executeSearchQueries(...)
+    if discoveryInternalFirst:
+      search internal corpus first
+      if required coverage satisfied and internal URL count >= discoveryInternalMinResults:
+        skip external search
+    for remaining queries:
+      frontier query cache can short-circuit cooled-down queries
+      else run search provider(s)
+      if internet returns zero results:
+        reuse frontier cached results if available
+    if no internet provider and no raw results:
+      generate plan-only manufacturer URLs
 
-**Gating:** No brand -> skip. No triage API key -> cache-only. Cache hit -> return immediately.
+  discoveryResult := processDiscoveryResults(...)
+    dedupe by canonical URL
+    reject non-https, denied hosts, URL cooldown hits, brand-mismatched manufacturer hosts, low relevance
+    classify domain safety deterministically
+    apply admission gate
+    deterministic rerank always runs
+    optional LLM rerank only runs when deterministic quality is insufficient
+    select top discovered URLs
+    split into approvedUrls vs candidateUrls
+    persist searchProfileFinal + serp_explorer + discovery payloads
 
-**Downstream effect:** officialDomain + supportDomain promoted to tier 1 in sourceHostMap (manufacturer_auto_promote). aliases + officialDomain used as search_profile_hints.
+  for approvedUrls:
+    planner.enqueue(url, "discovery_approved", forceApproved=true)
 
----
+  if fetchCandidateSources and maxCandidateUrls > 0:
+    planner.seedCandidates(candidateUrls)
 
-### 03 — Profile to Planner
-
-**Producer:** `buildSearchPlanningContext()` -> `buildSearchPlan()`
-**Input:** Schema 2 NeedSetOutput + Brand Resolution + runtime config
-**Output:** Schema 3 (SearchPlanningContext) -> Schema 4 (NeedSetPlannerOutput)
-**Schemas:** `03-search-planner-input.json`, `03-search-planner-llm-call.json`, `03-search-planner-output.json`, `03-search-plan-handoff-input.json`, `03-search-plan-handoff-output.json`
-
-#### Schema 3 adds these keys (derived from Schema 2):
-
-| Key Group | Keys Added | Transform |
-|-----------|-----------|-----------|
-| **focus_groups[]** | key, label, desc, source_target, content_target, search_intent, host_class | enriched from GROUP_DEFAULTS catalog |
-| **focus_groups[]** | field_keys, satisfied_field_keys, unresolved_field_keys, weak_field_keys, conflict_field_keys, search_exhausted_field_keys | recomputed (groupBy + filter) |
-| **focus_groups[]** | core_unresolved_count, secondary_unresolved_count, optional_unresolved_count, exact_match_count | recomputed counts |
-| **focus_groups[]** | query_terms_union, domain_hints_union, preferred_content_types_union, existing_queries_union, domains_tried_union, host_classes_tried_union, evidence_classes_tried_union, aliases_union | recomputed (SET union across non-accepted fields) |
-| **focus_groups[]** | no_value_attempts, urls_examined_count, query_count, duplicate_attempts_suppressed | recomputed aggregation |
-| **focus_groups[]** | priority (core/secondary/optional), phase (now/next/hold) | recomputed classification |
-| **planner_limits** | phase2LlmEnabled, discoveryMaxQueries, maxUrlsPerProduct, llmModelPlan, searchProfileCapMap, searchProvider | recomputed from runtime config |
-| **learning** | dead_query_hashes, dead_domains | passthrough from external learning stores |
-| **field_priority_map** | field_key -> required_level | recomputed for bundle derivation |
-
-#### Schema 4 adds these keys (from LLM + post-processing):
-
-| Key Group | Keys Added | Transform |
-|-----------|-----------|-----------|
-| **planner** | mode, model, planner_complete, planner_confidence, queries_generated, duplicates_suppressed, targeted_exceptions, error | recomputed + enriched (LLM) |
-| **search_plan_handoff.queries[]** | q, query_hash, family, group_key, target_fields, preferred_domains, exact_match_required | enriched (LLM) + recomputed (dedup, caps) |
-| **panel** | round, round_mode, identity, summary, blockers, bundles[], profile_influence (14 keys), deltas[] | passthrough + recomputed |
-| **learning_writeback** | query_hashes_generated, queries_generated, families_used, domains_targeted, groups_activated, duplicates_suppressed | recomputed from query analysis |
-
----
-
-### 04 — Search Planner to Query Journey
-
-**Producer:** `convertHandoffToExecutionPlan()` -> 6-phase journey
-**Input:** Schema 4 search_plan_handoff
-**Output:** Execution plan + identity-guarded queries + classified results
-**Schemas:** `04-query-journey-input.json`, `04-query-journey-llm-call.json`, `04-query-journey-output.json`
-
-#### Phase 1 — Handoff Adapter
-
-| Key | Transform | Notes |
-|-----|-----------|-------|
-| queries[] | recomputed | deduped query strings from handoff |
-| selectedQueryRowMap | recomputed | Map<lowercase(q) -> row> with source, target_fields, domain_hint, doc_hint, hint_source, family, group_key, query_hash |
-| queryRows[] | recomputed | flat array of query metadata rows |
-| source | recomputed | 'schema4' |
-
-#### Phase 2 — Identity Guard
-
-| Key | Transform | Notes |
-|-----|-----------|-------|
-| filtered rows[] | recomputed | brand+model token validation |
-| rejectLog | recomputed | { query, reasons[] } for rejected queries |
-| guardContext | recomputed | { brandTokens, modelTokens, requiredDigitGroups } |
-
-#### Phase 3 — Query Execution (see Stage 05)
-
-#### Phase 4 — Classification + Admission
-
-| Key | Transform | Notes |
-|-----|-----------|-------|
-| per-result classification | enriched | host, rootDomain, path, tier, tierName, role, doc_kind_guess, identity_match_level, variant_guard_hit, multi_model_hint |
-| hard rejects | recomputed | non-https, denied_host, url_cooldown, brand_mismatch, low_relevance |
-| soft exclusions | recomputed | forum_subdomain, sibling_model_page, non_manufacturer_multi_model |
-
-#### Phase 5 — Rerank + Triage (see Stage 06)
-
-#### Phase 6 — Outputs
-
-| Key | Transform | Notes |
-|-----|-----------|-------|
-| searchProfileFinal | recomputed | status='executed', query_stats, serp_explorer |
-| approvedUrls[] | recomputed | approved domain URLs -> planner.enqueue() |
-| candidateUrls[] | recomputed | candidate domain URLs -> planner.seedCandidates() |
-| serp_explorer | recomputed | full query-level + candidate-level trace artifact |
-
-**Execution dispatch:** `executeSearchQueries()` receives an identical interface regardless of whether queries come from Schema 4 handoff (new path) or the old 7-layer profile chain (fallback). Both paths produce identical `rawResults` from SearXNG.
+SourcePlanner.enqueue()
+  revalidate protocol, dedupe, denylist, low-value hosts, URL quality gate, manufacturer brand locks, caps
+  route approved URLs to priority/manufacturer/main queues
+  route non-approved URLs to candidateQueue
+```
 
 ---
 
-### 05 — Query to Results
+## Cross-Phase Rules And Decisions
 
-**Producer:** `executeSearchQueries()`
-**Input:** queries[] (from handoff adapter), config, categoryConfig, job, providerState
-**Output:** rawResults[], searchAttempts[], searchJournal[], internalSatisfied, externalSearchReason
-**Schemas:** `05-searxng-execution-input.json`
-
-| Key Group | Keys Added | Transform |
-|-----------|-----------|-----------|
-| **rawResults[]** | url, title, snippet, provider, query, rank, seen_in_queries, seen_by_providers | enriched from search providers |
-| **searchAttempts[]** | query, provider, result_count, reason_code, duration_ms | recomputed per query |
-| **searchJournal[]** | ts, query, provider, action, reason, result_count, duration_ms | recomputed timeline |
-| **internalSatisfied** | boolean | recomputed: internal corpus met minimum |
-| **externalSearchReason** | string or null | recomputed: why internet search was needed |
-
-**Execution flow:** Internal corpus (if discoveryInternalFirst) -> Internet search (SearXNG, google/bing/dual) -> Plan-only fallback (manufacturer URLs). Frontier cache check per query. Concurrency-controlled.
+| Rule | Where enforced | Effect |
+|------|----------------|--------|
+| Discovery is effectively always on during seed planning | `runDiscoverySeedPlan()` | The seed phase forces `discoveryEnabled=true`; `searchProvider='none'` is normalized to `dual` for discovery. |
+| Brand resolution is cache-first | `resolveBrandDomain()` | Cached brand-domain rows bypass the LLM completely. |
+| Schema 4 is preferred, not unconditional | `resolveSchema4ExecutionPlan()` + `SCHEMA4_MIN_QUERIES` | The Schema 4 handoff only stays active when at least 6 identity-guarded queries survive. |
+| Identity guard is mandatory for both planner paths | `enforceIdentityQueryGuard()` | Queries missing brand/model identity or carrying foreign model tokens are rejected before execution. |
+| Search Profile is both an artifact and a fallback planning branch | `searchDiscovery.js` + `queryBuilder.js` | Schema 4 path writes a thinner planned profile; legacy path builds a richer deterministic profile first. |
+| Search-first still reuses cached frontier knowledge | `executeSearchQueries()` | Query cooldown hits reuse cached SERPs; zero-result internet searches can also reuse frontier results. |
+| SERP domain safety is deterministic | `processDiscoveryResults()` | No LLM domain classifier exists here; host allow/deny/tier heuristics decide safety. |
+| LLM SERP triage is conditional | `processDiscoveryResults()` | The reranker is skipped when deterministic quality already clears the configured bar. |
+| Planner seeding revalidates selected URLs | `SourcePlanner.enqueue()` | URLs that passed SERP triage can still be rejected for protocol, brand restriction, low-value host, or queue-cap reasons. |
 
 ---
 
-### 06 — Search Results to SERP Triage
+## Phase Map
 
-**Producer:** `processDiscoveryResults()`
-**Input:** rawResults[] + searchAttempts[] + config + categoryConfig + identityLock + brandResolution + missingFields + learning
-**Output:** candidates[], approvedUrls[], candidateUrls[], search_profile, serp_explorer
-
-| Step | Keys Added/Transformed | Notes |
-|------|----------------------|-------|
-| **Dedup** | cross-provider dedup by canonical URL | removes provider duplicates |
-| **URL Classification** | host, rootDomain, tier, tierName, role, approvedDomain, doc_kind_guess, identity_match_level, variant_guard_hit, multi_model_hint, cross_provider_count, seen_by_providers, seen_in_queries | enriched per-result |
-| **Domain Safety** | domain, safety_class (blocked/safe/caution), budget_score, notes | recomputed per domain |
-| **Admission Gate** | exclusionReason per candidate | recomputed filter |
-| **Deterministic Rerank** | score, score_breakdown (14 components: base, frontier, identity, variant, multi_model, tier, host_health, operator_risk, field_affinity, diversity, needset_coverage, brand_presence, model_presence, spec_manual) | recomputed scoring |
-| **LLM Rerank** (conditional) | rerank_score, rerank_reason, keep | enriched from uber_serp_reranker LLM |
-| **serp_explorer** | generated_at, provider, llm_triage_enabled/applied/model, query_count, candidates_checked, urls_triaged/selected/rejected, dedupe stats, queries[].candidates[] | recomputed trace artifact |
-| **searchProfileFinal** | status='executed', query_rows, query_stats, discovered_count, approved_count, candidate_count, llm flags | recomputed final profile |
+| Phase | Primary code path | Main outputs | Primary decisions |
+|------|-------------------|--------------|-------------------|
+| 01 NeedSet | `computeNeedSet()`, `buildFieldHistories()` | `fields[]`, `summary`, `blockers`, `planner_seed`, `identity` | What is still missing, weak, conflicting, exact-match-sensitive, or search-exhausted |
+| 02 Brand Resolver | `resolveBrandDomain()` | `officialDomain`, `supportDomain`, `aliases`, `confidence` | Cache hit vs LLM lookup vs empty resolution |
+| 03 Search Profile | `buildSearchProfile()` and planned profile assembly in `searchDiscovery.js` | `base_templates`, `query_rows`, `variant_guard_terms`, planned `search_profile` | Which deterministic query inventory and profile hints exist before execution |
+| 04 Search Planner | `buildSearchPlanningContext()`, `buildSearchPlan()` | Schema 3 context, Schema 4 handoff, planner panel, learning writeback | Which focus groups are active and which LLM queries survive anti-garbage filtering |
+| 05 Query Journey | `resolveSchema4ExecutionPlan()`, legacy planner chain in `searchDiscovery.js` | final `queries[]`, `selectedQueryRowMap`, `query_guard`, `query_reject_log` | Schema 4 vs legacy branch, dedupe/ranking, identity guard, deterministic budget |
+| 06 Search Results | `executeSearchQueries()` | `rawResults[]`, `searchAttempts[]`, `searchJournal[]` | Internal-first skip, frontier cache reuse, internet provider execution, plan-only fallback |
+| 07 SERP Triage | `processDiscoveryResults()` | `candidates[]`, `approvedUrls[]`, `candidateUrls[]`, `searchProfileFinal`, `serp_explorer` | URL rejection, domain safety, admission, deterministic rerank, optional LLM rerank |
+| 08 Domain Classifier | `runDiscoverySeedPlan()`, `SourcePlanner.enqueue()`, `SourcePlanner.seedCandidates()` | planner queues and enqueue counters | Approved vs candidate routing, queue selection, queue caps, final host/URL revalidation |
 
 ---
 
-### 07 — SERP Triage to Domain Classifier
+## Phase-By-Phase Summary
 
-**Producer:** `runDiscoverySeedPlan()`
-**Input:** discoveryResult (candidates[], approvedUrls[], candidateUrls[])
-**Output:** Seeded planner queues (manufacturerQueue, queue, candidateQueue)
+### 01 - NeedSet
 
-| Step | Keys Added/Transformed | Notes |
-|------|----------------------|-------|
-| **Approved URL seeding** | planner.enqueue(url, discovery_approved, forceApproved=true) | approved URLs go to manufacturer or main queue |
-| **Candidate URL seeding** | planner.seedCandidates() | if enabled + maxCandidateUrls > 0 |
-| **Queue routing** | manufacturerQueue, queue, candidateQueue | based on host tier + manufacturer match |
-| **Planner revalidation** | URL parse, protocol check, dedup, denylist, low-value filter, brand restrictions, caps | per-URL gates before enqueue |
-| **Queue snapshot** | queue_snapshot trace artifact | written by runPlannerQueueSnapshotPhase() |
+| Aspect | Summary |
+|--------|---------|
+| Producer | `src/indexlab/needsetEngine.js`, `src/indexlab/buildFieldHistories.js` |
+| Purpose | Normalize run identity, field rules, provenance, and previous-round memory into Schema 2. |
+| Inputs | `runId`, category/product identity, `fieldOrder`, `fieldRules`, `provenance`, `fieldReasoning`, `constraintAnalysis`, `identityContext`, `previousFieldHistories`, round metadata |
+| Outputs | `identity`, `fields[]`, `summary`, `blockers`, `planner_seed`, plus backward-compatible `rows`, `bundles`, `profile_mix`, `focus_fields` |
+| Core logic | Each field is classified into accepted, weak, conflict, or missing; unresolved fields get `need_score`, reasons, and search hints. |
+| Key rules | `search_exhausted` only increments when an unresolved field has `no_value_attempts >= 3` and at least 3 evidence classes. Exact-match contracts increment `needs_exact_match`. Historical queries/domains/evidence classes are unioned forward so later rounds have anti-garbage memory. |
 
----
+### 02 - Brand Resolver
 
-### 08 — Domain Classifier to Fetch + Parse
+| Aspect | Summary |
+|--------|---------|
+| Producer | `src/features/indexing/discovery/brandResolver.js` |
+| Purpose | Resolve brand-level official/support domains and aliases that can bias search and host approval. |
+| Inputs | `brand`, `category`, `config`, routed LLM call adapter, storage cache |
+| Outputs | `officialDomain`, `supportDomain`, `aliases`, `confidence`, `reasoning` |
+| Core logic | Cache lookup runs first; if there is no cache hit and a routed LLM is available, the LLM produces normalized domains/aliases and the cache is updated. |
+| Key rules | No brand means full skip. No routed API key means cache-only behavior. Returned domains and aliases are trimmed and lowercased. `manufacturerAutoPromote` can push the resolved domains into `sourceHostMap` as tier-1 manufacturer sources. |
 
-**Producer:** `runFetcherStartPhase()` -> `runProcessPlannerQueuePhase()`
-**Input:** Seeded planner queues
-**Output:** sourceFetch payloads -> Stage 09 (Extraction)
+### 03 - Search Profile
 
-| Step | Keys Added/Transformed | Notes |
-|------|----------------------|-------|
-| **Preflight** | source, sourceHost, hostBudgetRow | per-URL preflight checks |
-| **Skip gates** | runtime blocked domain, frontier cooldown, host budget blocked/backoff | recomputed per source |
-| **Mode resolution** | fetcherModeUsed (override -> discovery/http -> static/http -> requires_js/playwright -> base) | recomputed per source |
-| **Fetch dispatch** | workerId, host concurrency gate, retry wrapper | infrastructure |
-| **Fetch outcome** | ok, pageData, fetchDurationMs, fetcherModeUsed | enriched from fetcher |
-| **pageData** | robots, pacing, throttling, navigation, capture | enriched from inner fetcher |
-| **Failure classification** | host_budget, backoff, frontier record, repair handoff | recomputed on failure |
+| Aspect | Summary |
+|--------|---------|
+| Producer | `src/features/indexing/search/queryBuilder.js` and planned profile assembly in `src/features/indexing/discovery/searchDiscovery.js` |
+| Purpose | Build the deterministic query/profile envelope that discovery persists and the legacy planner branch can refine. |
+| Inputs | job identity, category search templates, missing fields, lexicon, learned queries, brand resolution, per-profile caps |
+| Outputs | `variant_guard_terms`, `identity_aliases`, `base_templates`, `query_rows`, `queries`, `targeted_queries`, `field_target_queries`, `doc_hint_queries`, `archetype_summary`, `coverage_analysis`, planned `search_profile` artifact |
+| Core logic | The profile builder creates deterministic aliases, variant guard terms, base templates, and targeted query rows, then bounds the result to a configured cap and writes reject reasons for duplicate/empty/capped rows. |
+| Key rules | If base templates are empty but brand and model exist, fallback specification and datasheet templates are synthesized. On the Schema 4 path, the persisted planned profile is thinner but still carries `query_guard`, `brand_resolution`, and Schema 4 planner metadata. |
+
+### 04 - Search Planner
+
+| Aspect | Summary |
+|--------|---------|
+| Producer | `src/indexlab/searchPlanningContext.js`, `src/indexlab/searchPlanBuilder.js` |
+| Purpose | Convert Schema 2 NeedSet into grouped planning context and, when enabled, a Schema 4 LLM handoff. |
+| Inputs | Schema 2 output, runtime config, field groups, prior round field state, learning dead-domain/dead-query hints |
+| Outputs | Schema 3 `focus_groups`, `group_catalog`, `planner_limits`, `field_priority_map`; Schema 4 `search_plan_handoff`, `panel`, `learning_writeback`, planner metadata |
+| Core logic | Groups are classified into `now`, `next`, or `hold` based on unresolved priority and search exhaustion. Only `now` and `next` groups are sent to the planner LLM. |
+| Key rules | Dead domains and dead query hashes are filtered before the LLM call. Per-group output is capped at 3 queries and global output is capped by `discoveryMaxQueries`. If no routed `plan` model key exists, the planner returns a disabled result instead of throwing. Post-LLM dedupe suppresses any query whose hash already exists in `needset.existing_queries`. |
+
+### 05 - Query Journey
+
+| Aspect | Summary |
+|--------|---------|
+| Producer | `src/features/indexing/discovery/searchPlanHandoffAdapter.js`, `src/features/indexing/discovery/searchDiscovery.js`, `src/features/indexing/discovery/discoveryQueryPlan.js`, `src/features/indexing/discovery/discoveryPlanner.js`, `src/research/queryPlanner.js` |
+| Purpose | Choose the actual execution queries from the preferred Schema 4 path or the legacy fallback chain. |
+| Inputs | Schema 4 handoff, legacy Search Profile artifact, brand/model identity, host plan hints, query caps |
+| Outputs | `queries[]`, `selectedQueryRowMap`, `query_rows`, `query_guard`, `query_reject_log`, `searchProfilePlanned` |
+| Core logic | Schema 4 queries are adapted and identity-guarded first. If at least 6 survive, that plan wins. Otherwise the runtime falls back to base templates + targeted profile rows + legacy LLM planner + uber planner, then dedupes, ranks, and guards the merged set. |
+| Key rules | The identity guard rejects queries missing brand tokens, missing required digit groups, missing model tokens, or carrying foreign model-like tokens. The legacy branch enforces a deterministic non-LLM row budget of 3. If the guard rejects everything but ranked rows exist, the top ranked row is retained as a fallback to avoid an empty execution set. |
+
+### 06 - Search Results
+
+| Aspect | Summary |
+|--------|---------|
+| Producer | `src/features/indexing/discovery/discoverySearchExecution.js` |
+| Purpose | Run the selected query set across internal corpus, frontier cache, internet providers, or plan-only manufacturer paths. |
+| Inputs | query list, provider state, category config, search caps, frontier DB, internal corpus, runtime trace writer |
+| Outputs | `rawResults[]`, `searchAttempts[]`, `searchJournal[]`, `internalSatisfied`, `externalSearchReason` |
+| Core logic | The executor can run internal corpus lookup first, reuse cooled-down frontier query results, call internet search providers concurrently, and fall back to plan-only manufacturer URLs when there is no provider. |
+| Key rules | `discoveryInternalFirst` gates the internal-first branch. External search is skipped only when required coverage is satisfied and internal results meet `discoveryInternalMinResults`. Internet zero-result queries can reuse frontier cache rows. If there is no internet provider and no raw results, `buildPlanOnlyResults()` generates manufacturer-only path guesses. |
+
+### 07 - SERP Triage
+
+| Aspect | Summary |
+|--------|---------|
+| Producer | `src/features/indexing/discovery/discoveryResultProcessor.js`, `src/features/indexing/search/resultReranker.js`, `src/research/serpReranker.js` |
+| Purpose | Convert raw search results into selected discovery URLs and the final executed search profile. |
+| Inputs | `rawResults`, query metadata, identity lock, brand resolution, missing fields, learning yield, provider state |
+| Outputs | `candidates[]`, `approvedUrls[]`, `candidateUrls[]`, `searchProfileFinal`, `serp_explorer`, `_discovery` payload, candidate payload |
+| Core logic | Results are deduped by canonical URL, classified, filtered through admission gates, reranked deterministically, optionally reranked by the SERP LLM, and then truncated to the discovery cap. |
+| Key rules | Hard rejects include non-HTTPS URLs, denied hosts, URL cooldown hits, manufacturer brand mismatches, and low relevance. Domain safety is deterministic only: blocked/safe/caution is derived from allow/deny/tier heuristics. The LLM reranker only activates when `serpTriageEnabled` is on and deterministic high-quality rows are below `ceil(serpTriageMaxUrls * 0.6)`. |
+
+### 08 - Domain Classifier
+
+| Aspect | Summary |
+|--------|---------|
+| Producer | `src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js`, `src/planner/sourcePlanner.js`, `src/planner/sourcePlannerValidation.js` |
+| Purpose | Take triaged discovery URLs and route them into the planner queues that drive fetch/parsing. |
+| Inputs | `approvedUrls`, `candidateUrls`, planner settings, source registry, identity lock, queue counters |
+| Outputs | `priorityQueue`, `manufacturerQueue`, `queue`, `candidateQueue`, enqueue counters |
+| Core logic | Approved URLs are force-enqueued into approved queues; candidate URLs are only seeded when candidate fetching is enabled. Every URL is revalidated by `SourcePlanner.enqueue()` before it is accepted. |
+| Key rules | Enqueue rejects empty/invalid URLs, bad protocols, duplicates, denied or blocked hosts, low-value hosts, URL quality-gate failures, manufacturer brand mismatches, locked manufacturer slugs, locale duplicates, and domain/global caps. Approved manufacturer URLs can frontload into `priorityQueue` or `manufacturerQueue`; other approved URLs go to `queue`; non-approved URLs go to `candidateQueue`. |
 
 ---
 
 ## Cumulative Data Growth
 
-Each stage **adds** data to the payload — nothing is lost that downstream consumers need.
+This eight-phase view splits old Stage 03 and Stage 04 into more operator-friendly buckets, so the counts overlap more than the older stage-based arithmetic. The important invariant is that downstream phases add artifacts and decisions without dropping the upstream context they still need.
 
+```text
+Phase 01 NeedSet:        ~65 keys   (identity, fields, summaries, blockers, planner seed)
+Phase 02 Brand Resolver:  +5 keys   (official/support domains, aliases, confidence, reasoning)
+Phase 03 Search Profile: +15 keys   (aliases, templates, query rows, guard hints, coverage views)
+Phase 04 Search Planner: +25 keys   (focus groups, planner limits, schema4 handoff, panel)
+Phase 05 Query Journey:  +10 keys   (selected queries, guard context, reject log, planned profile)
+Phase 06 Search Results:  +5 keys   (rawResults, attempts, journal, internal/external reason)
+Phase 07 SERP Triage:    +20 keys   (classification, safety, rerank output, explorer, final profile)
+Phase 08 Domain Classifier:
+                           +4 keys   (approved/candidate routing, planner queues, enqueue counters)
+                          ------
+Logical total:          140+ keys/artifacts before fetch begins
 ```
-Stage 01: ~65 keys  (run context + identity + 30+ field keys + summary + blockers + planner_seed)
-Stage 02:  +5 keys  (officialDomain, supportDomain, aliases, confidence, reasoning)
-Stage 03: +40 keys  (focus_groups with 8 union arrays, group_catalog, planner_limits, learning)
-Stage 04: +25 keys  (planner metadata, search_plan_handoff queries, panel, learning_writeback)
-Stage 05:  +5 keys  (rawResults[], searchAttempts[], searchJournal[], internalSatisfied, externalSearchReason)
-Stage 06: +20 keys  (URL classification, domain safety, rerank scores, serp_explorer, searchProfileFinal)
-Stage 07:  +3 keys  (seeded queues: manufacturerQueue, queue, candidateQueue)
-Stage 08:  +6 keys  (sourceFetch: ok, pageData, fetchDurationMs, fetcherModeUsed, workerId, preflight)
-                    -------
-Total:    ~170+ keys at fetch handoff, all traceable to their origin stage
-```
+
+The fetch handoff still lands in the same overall runtime neighborhood as the older stage view: roughly `170+` cumulative keys/artifacts once the queue and fetch context are included.
 
 ---
 
 ## Anti-Garbage Intelligence Loop
 
-The feedback loop ensures the LLM planner does not repeat failed strategies across rounds:
+The anti-garbage loop is still one of the most important cross-phase behaviors in prefetch.
 
-```
-buildFieldHistories (round N-1 evidence)
-  -> Schema 2 fields[].history (per-field memory)
-    -> Schema 3 focus_groups[].*_union (aggregated per group)
-      -> Schema 4 LLM payload (sent as anti-garbage context)
-        -> LLM avoids dead domains, dead queries, exhausted patterns
+```text
+buildFieldHistories (prior rounds and current evidence)
+  -> NeedSet field history
+    -> Search Planner focus-group unions
+      -> Schema 4 LLM payload and legacy planner context
+        -> duplicate/dead query suppression
+          -> next round avoids stale domains, stale query families, and exhausted fields
 ```
 
-| Signal | Created At | Aggregated At | Consumed At |
-|--------|-----------|--------------|-------------|
-| domains_tried | S2 (buildFieldHistories) | S3 (domains_tried_union) | S4 (LLM payload, capped to 5) |
-| host_classes_tried | S2 (classifyHostClass) | S3 (host_classes_tried_union) | S4 (LLM payload) |
-| evidence_classes_tried | S2 (classifyEvidenceClass) | S3 (evidence_classes_tried_union) | S4 (LLM payload) |
-| no_value_attempts | S2 (buildFieldHistories) | S3 (max across group fields) | S4 (LLM payload) |
-| existing_queries | S2 (buildFieldHistories) | S3 (existing_queries_union) | S4 (LLM payload + hash dedup) |
-| dead_query_hashes | external learning store | S3 (learning passthrough) | S4 (pre-LLM anti-garbage filter) |
-| dead_domains | external learning store | S3 (learning passthrough) | S4 (pre-LLM anti-garbage filter) |
+| Signal | Created at | Aggregated at | Consumed at |
+|--------|------------|---------------|-------------|
+| `existing_queries` | NeedSet history | Search Planner focus groups | Schema 4 dedupe and legacy planner merge |
+| `domains_tried` | NeedSet history | Search Planner focus groups | Schema 4 domain anti-garbage filter |
+| `host_classes_tried` | NeedSet history | Search Planner focus groups | Schema 4 diversification prompt |
+| `evidence_classes_tried` | NeedSet history | Search Planner focus groups | Schema 4 content-type diversification prompt |
+| `no_value_attempts` | NeedSet history | Search Planner focus groups | Schema 4 strategy-shift trigger |
+| `dead_query_hashes` | external learning store | Search Planner `learning` block | pre-LLM query suppression |
+| `dead_domains` | external learning store | Search Planner `learning` block | pre-LLM domain suppression |
 
 ---
 
-## LLM Calls (Prefetch-Once Guarantee)
+## LLM Calls (Current Discovery Surfaces)
 
-Each prefetch LLM type fires **exactly once** at run start, never during finalization:
+Prefetch LLM work is front-loaded, but it is not a strict one-call-only system anymore. The Schema 4 planner is single-call; the legacy fallback planner can issue multiple passes when Schema 4 is disabled or underfilled.
 
-| LLM Call | Role | Stage | Gate |
+| LLM Call | Role | Phase | Gate |
 |----------|------|-------|------|
-| Brand Resolver | triage | 02 | brand present + hasLlmRouteApiKey('triage') + no cache hit |
-| Query Planner | plan | 03 | enableSchema4SearchPlan + phase2LlmEnabled + hasLlmRouteApiKey('plan') |
-| SERP Reranker | plan | 06 | serpTriageEnabled + quality threshold + hasLlmRouteApiKey('plan') |
+| Brand Resolver | compatibility label `triage` routed over the plan stack | 02 | brand present + routed triage key + no cache hit |
+| NeedSet Search Planner | `plan` | 04 | `enableSchema4SearchPlan` + routed `plan` key |
+| Legacy Discovery Planner | `plan` | 05 fallback path | Schema 4 disabled or guarded query count < 6 |
+| Uber Query Planner | `plan` | 05 fallback path | `uberMode` path in legacy branch |
+| SERP Reranker | `plan` | 07 | `serpTriageEnabled` + deterministic quality gap + (`uberMode` or `llmSerpRerankEnabled`) + routed `plan` key |
 
 ---
 
 ## Persisted Artifacts
 
-| Artifact | Written At | Storage Key Pattern | Consumer |
-|----------|-----------|-------------------|----------|
-| needset | 01 | `_discovery/needset` | planning context, GUI panel |
-| brand_resolution | 02 | runtime log event | search_profile_hints, manufacturer_auto_promote |
-| search_profile | 03-06 | `_discovery/search-profile/*` | GUI panel, finalization summary |
-| serp_explorer | 06 | embedded in searchProfileFinal | GUI RuntimeOps panel |
-| discovery payload | 06 | `_sources/discovery` | planner queue seeding |
-| candidates payload | 06 | `_sources/candidates` | planner queue seeding |
-| queue_snapshot | 07 | runtime trace | GUI RuntimeOps panel |
-| source_fetches | 08 | per-source traces | extraction pipeline |
+| Artifact | Written at | Storage key pattern | Consumer |
+|----------|------------|--------------------|----------|
+| needset | 01 | `_discovery/needset` | planner context, GUI panel |
+| brand resolution telemetry | 02 | runtime log event | search profile hints, manufacturer auto-promotion |
+| planned `search_profile` | 03/05 | `_discovery/search-profile/*` | GUI panel, runtime review, final search profile merge |
+| executed `search_profile` | 07 | `_discovery/search-profile/*` | GUI panel, finalization summary |
+| `serp_explorer` | 07 | embedded in `searchProfileFinal` | GUI RuntimeOps panel |
+| discovery payload | 07 | `_sources/discovery` | planner seeding, finalization summary |
+| candidate payload | 07 | `_sources/candidates` | planner candidate seeding |
+| enqueue summary | 08 | runtime log event | queue diagnostics |
 
 ---
 
 ## Source Code Map
 
-| Stage | Primary Source File(s) |
-|-------|----------------------|
-| 01 | `src/indexlab/needsetEngine.js`, `src/indexlab/buildFieldHistories.js` |
-| 02 | `src/features/indexing/discovery/brandResolver.js` |
-| 03 | `src/indexlab/searchPlanningContext.js`, `src/indexlab/searchPlanBuilder.js` |
-| 04 | `src/features/indexing/discovery/searchPlanHandoffAdapter.js`, `src/features/indexing/discovery/searchDiscovery.js`, `src/features/indexing/discovery/discoveryQueryPlan.js` |
-| 05 | `src/features/indexing/discovery/discoverySearchExecution.js` |
-| 06 | `src/features/indexing/discovery/discoveryResultProcessor.js`, `src/research/serpReranker.js` |
-| 07 | `src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js` |
-| 08 | `src/features/indexing/orchestration/index.js` (fetch phases) |
+| Phase | Primary source file(s) |
+|------|-------------------------|
+| 01 NeedSet | `src/indexlab/needsetEngine.js`, `src/indexlab/buildFieldHistories.js` |
+| 02 Brand Resolver | `src/features/indexing/discovery/brandResolver.js`, `src/features/indexing/discovery/searchDiscovery.js` |
+| 03 Search Profile | `src/features/indexing/search/queryBuilder.js`, `src/features/indexing/discovery/searchDiscovery.js` |
+| 04 Search Planner | `src/indexlab/searchPlanningContext.js`, `src/indexlab/searchPlanBuilder.js`, `src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js` |
+| 05 Query Journey | `src/features/indexing/discovery/searchPlanHandoffAdapter.js`, `src/features/indexing/discovery/discoveryQueryPlan.js`, `src/features/indexing/discovery/searchDiscovery.js`, `src/features/indexing/discovery/discoveryPlanner.js`, `src/research/queryPlanner.js` |
+| 06 Search Results | `src/features/indexing/discovery/discoverySearchExecution.js` |
+| 07 SERP Triage | `src/features/indexing/discovery/discoveryResultProcessor.js`, `src/features/indexing/search/resultReranker.js`, `src/research/serpReranker.js` |
+| 08 Domain Classifier | `src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js`, `src/planner/sourcePlanner.js`, `src/planner/sourcePlannerValidation.js` |
 
 ---
 
 ## Schema File Index
 
-All schema contracts are in this folder, prefixed by stage number:
+This folder's JSON schema packets currently cover the NeedSet, Brand Resolver, Search Planner, Query Journey, and Search Results boundaries. SERP Triage and Domain Classifier are represented by runtime artifacts and planner queue state rather than dedicated JSON packet files in this directory.
 
-| File | Stage | Content |
-|------|-------|---------|
-| `01-needset-input.json` | 01 | Schema 1 (NeedSetStartInput) — field-by-field data source mapping |
-| `01-needset-output.json` | 01 | Schema 2 (NeedSetOutput) — gap analysis vs actual computeNeedSet() output |
-| `01-needset-planner-context.json` | 01 | Schema 3 (SearchPlanningContext) — gap analysis vs buildSearchPlanningContext() |
-| `01-needset-planner-output.json` | 01 | Schema 4 (NeedSetPlannerOutput) — gap analysis vs assembleSchema4() |
-| `02-brand-resolver-input.json` | 02 | Brand resolver input contract — call boundary + gates + storage |
-| `02-brand-resolver-output.json` | 02 | Brand resolver output contract — officialDomain/aliases/supportDomain |
-| `03-search-planner-input.json` | 03 | Search planner input — Schema 3 consumption contract with per-field tags |
-| `03-search-planner-llm-call.json` | 03 | Search planner LLM — prompt, payload, response schema, post-processing |
-| `03-search-planner-output.json` | 03 | Search planner output — Schema 4 output contract with per-field tags |
-| `03-search-plan-handoff-input.json` | 03 | Handoff shape — Schema 4 queries -> execution adapter |
-| `03-search-plan-handoff-output.json` | 03 | Cumulative output — searchProfileFinal + serp_explorer + return contract |
-| `04-query-journey-input.json` | 04 | Query journey 6-phase input contract (adapter -> guard -> exec -> classify -> rerank) |
-| `04-query-journey-llm-call.json` | 04 | SERP reranker LLM contract — uber_serp_reranker prompt/weights/response |
-| `04-query-journey-output.json` | 04 | Query journey per-phase output shapes with cumulative artifacts |
-| `05-searxng-execution-input.json` | 05 | Final query payload hitting SearXNG — identical shape regardless of path |
+| File | Logical phase | Content |
+|------|---------------|---------|
+| `01-needset-input.json` | 01 | NeedSet start input mapping |
+| `01-needset-output.json` | 01 | Schema 2 NeedSet output |
+| `01-needset-planner-context.json` | 04 | Schema 3 Search Planning Context |
+| `01-needset-planner-output.json` | 04 | Schema 4 planner output |
+| `02-brand-resolver-input.json` | 02 | Brand resolver input contract |
+| `02-brand-resolver-output.json` | 02 | Brand resolver output contract |
+| `03-search-planner-input.json` | 04 | Search planner input contract |
+| `03-search-planner-llm-call.json` | 04 | Search planner prompt/payload/response contract |
+| `03-search-planner-output.json` | 04 | Search planner output contract |
+| `03-search-plan-handoff-input.json` | 05 | Schema 4 handoff into Query Journey |
+| `03-search-plan-handoff-output.json` | 07 | cumulative post-search output contract |
+| `04-query-journey-input.json` | 05 | adapter/guard/execution/rerank input contract |
+| `04-query-journey-llm-call.json` | 07 | SERP reranker LLM contract |
+| `04-query-journey-output.json` | 07 | Query Journey and SERP Triage output shapes |
+| `05-searxng-execution-input.json` | 06 | Final query payload reaching search providers |
 
 ---
 
 ## Naming Conventions
 
-| Asset Type | Convention | Example |
-|-----------|-----------|---------|
-| Schema file | `{stage}-{descriptor}.json` | `01-needset-input.json` |
+| Asset type | Convention | Example |
+|------------|------------|---------|
+| Schema file | `{stage}-{descriptor}.json` | `01-needset-output.json` |
 | Overview doc | `SCREAMING-KEBAB.md` | `PREFETCH-PIPELINE-OVERVIEW.md` |
 
 ---
@@ -392,11 +400,13 @@ All schema contracts are in this folder, prefixed by stage number:
 ## Validation Status
 
 | Check | Result |
-|-------|--------|
-| Data propagates from NeedSet -> Brand Resolver -> Search Profile | CONFIRMED |
-| Each stage adds keys to cumulative payload | CONFIRMED (65 -> 70 -> 110 -> 135 -> 140 -> 160 -> 163 -> 170+) |
-| No data loss between boundaries (forward-investment preserved) | CONFIRMED |
-| Anti-garbage intelligence loop functional across rounds | CONFIRMED |
-| LLM calls fire exactly once per run (prefetch-once guarantee) | CONFIRMED |
-| All schema JSON files match live source code contracts | CONFIRMED |
-| All 15 schema files validated against source (0 open material gaps) | CONFIRMED |
+|------|--------|
+| NeedSet fields, blockers, planner seed, and search-exhaustion rules match live code | CONFIRMED |
+| Brand Resolver cache-first and routed-key gating match live code | CONFIRMED |
+| Search Profile dual role (artifact + fallback planner branch) matches live code | CONFIRMED |
+| Schema 4 planning path and `SCHEMA4_MIN_QUERIES = 6` threshold match live code | CONFIRMED |
+| Query Journey identity guard rules match live code | CONFIRMED |
+| Search Results internal-first, frontier-cache reuse, and plan-only fallback match live code | CONFIRMED |
+| SERP Triage deterministic safety + conditional LLM rerank match live code | CONFIRMED |
+| Domain Classifier queue revalidation and approved/candidate routing match live code | CONFIRMED |
+| All schema JSON files in this folder still align with the covered code boundaries | CONFIRMED |

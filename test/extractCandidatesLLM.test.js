@@ -256,7 +256,6 @@ test('extractCandidatesLLM uses route matrix model ladder + token cap override',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
         llmModelExtract: 'fallback-model',
-        llmModelFast: 'fast-model',
         llmModelPlan: 'plan-model',
         llmMaxOutputTokensPlan: 8192,
         llmMaxOutputTokens: 8192,
@@ -355,7 +354,6 @@ test('extractCandidatesLLM sends promoted visual assets as multimodal images whe
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
         llmModelExtract: 'test-model',
-        llmModelFast: 'test-model',
         llmModelPlan: 'test-model',
         llmTimeoutMs: 5_000
       },
@@ -447,7 +445,6 @@ test('extractCandidatesLLM applies route evidence source policy (single source +
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
         llmModelExtract: 'test-model',
-        llmModelFast: 'test-model',
         llmModelPlan: 'test-model',
         llmTimeoutMs: 5_000
       }
@@ -546,7 +543,6 @@ test('extractCandidatesLLM applies studio prompt flags from route policy', async
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
         llmModelExtract: 'test-model',
-        llmModelFast: 'test-model',
         llmModelPlan: 'test-model',
         llmTimeoutMs: 5_000
       }
@@ -622,7 +618,6 @@ test('extractCandidatesLLM supports insufficient_evidence_action=escalate', asyn
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
         llmModelExtract: 'test-model',
-        llmModelFast: 'test-model',
         llmModelPlan: 'test-model',
         llmTimeoutMs: 5_000
       }

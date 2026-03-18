@@ -241,7 +241,7 @@ test('resolveBatchModel: force_deep triggers reasoning', () => {
   };
   const result = resolveBatchModel({
     batch,
-    config: { llmModelFast: 'fast-model', llmModelReasoning: 'deep-model' },
+    config: { llmModelReasoning: 'deep-model' },
     fieldRules
   });
   assert.equal(result.reasoningMode, true);
@@ -261,7 +261,7 @@ test('resolveBatchModel: all force_fast forces fast model', () => {
   };
   const result = resolveBatchModel({
     batch,
-    config: { llmModelFast: 'fast-model', llmModelReasoning: 'deep-model' },
+    config: { llmModelReasoning: 'deep-model' },
     fieldRules
   });
   assert.equal(result.reasoningMode, false);
@@ -280,7 +280,7 @@ test('resolveBatchModel: mixed strategies — force_deep wins over auto', () => 
   };
   const result = resolveBatchModel({
     batch,
-    config: { llmModelFast: 'fast-model', llmModelReasoning: 'deep-model' },
+    config: { llmModelReasoning: 'deep-model' },
     fieldRules
   });
   assert.equal(result.reasoningMode, true);
@@ -294,7 +294,7 @@ test('resolveBatchModel: no fieldRules falls back to existing behavior', () => {
   };
   const result = resolveBatchModel({
     batch,
-    config: { llmModelFast: 'fast-model', llmModelReasoning: 'deep-model' }
+    config: { llmModelReasoning: 'deep-model' }
   });
   assert.equal(result.reasoningMode, false);
   assert.equal(result.reason, 'extract_fast_batch');
@@ -533,7 +533,7 @@ test('resolveBatchModel: returns maxTokens from per-field config', () => {
   };
   const result = resolveBatchModel({
     batch,
-    config: { llmModelFast: 'fast-model', llmModelReasoning: 'deep-model' },
+    config: { llmModelReasoning: 'deep-model' },
     fieldRules
   });
   // weight=identity→judge→16384, height=expected+easy→advisory→4096, MAX=16384
@@ -551,7 +551,7 @@ test('resolveBatchModel: explicit max_tokens override', () => {
   };
   const result = resolveBatchModel({
     batch,
-    config: { llmModelFast: 'fast-model', llmModelReasoning: 'deep-model' },
+    config: { llmModelReasoning: 'deep-model' },
     fieldRules
   });
   assert.equal(result.maxTokens, 2048);
@@ -570,7 +570,7 @@ test('resolveBatchModel: escalated fields trigger reasoning via forcedHighFields
   // weight is easy, normally fast. But it failed last round → escalated
   const result = resolveBatchModel({
     batch,
-    config: { llmModelFast: 'fast-model', llmModelReasoning: 'deep-model' },
+    config: { llmModelReasoning: 'deep-model' },
     forcedHighFields: ['weight']
   });
   assert.equal(result.reasoningMode, true, 'escalated field should trigger reasoning');

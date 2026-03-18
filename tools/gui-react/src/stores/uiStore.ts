@@ -19,7 +19,7 @@ const THEME_COLOR_KEY = 'ui:themeColorProfile';
 const THEME_RADIUS_KEY = 'ui:themeRadiusProfile';
 const THEME_DENSITY_KEY = 'ui:themeDensityProfile';
 const RUNTIME_AUTOSAVE_KEY = 'indexlab-runtime-autosave';
-const LLM_SETTINGS_AUTOSAVE_KEY = 'llmSettings:autoSaveEnabled';
+
 const STUDIO_AUTOSAVE_ALL_KEY = 'studio:autoSaveAllEnabled';
 const STUDIO_AUTOSAVE_KEY = 'autoSaveEnabled';
 const STUDIO_MAP_AUTOSAVE_KEY = 'autoSaveMapEnabled';
@@ -198,7 +198,6 @@ interface UiState {
   autoSaveMapEnabled: boolean;
   runtimeAutoSaveEnabled: boolean;
   storageAutoSaveEnabled: boolean;
-  llmSettingsAutoSaveEnabled: boolean;
   setCategory: (cat: string) => void;
   setCategories: (cats: string[]) => void;
   setThemeProfile: (themeProfile: SfThemeProfile) => void;
@@ -211,7 +210,6 @@ interface UiState {
   setAutoSaveMapEnabled: (v: boolean) => void;
   setRuntimeAutoSaveEnabled: (v: boolean) => void;
   setStorageAutoSaveEnabled: (v: boolean) => void;
-  setLlmSettingsAutoSaveEnabled: (v: boolean) => void;
 }
 
 const initialCategory = readPersistedValue(UI_CATEGORY_KEY) || DEFAULT_CATEGORY;
@@ -232,7 +230,6 @@ export const useUiStore = create<UiState>((set) => ({
   autoSaveMapEnabled: initialStudioAutoSaveState.autoSaveMapEnabled,
   runtimeAutoSaveEnabled: readPersistedBool(RUNTIME_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.runtimeAutoSaveEnabled),
   storageAutoSaveEnabled: readPersistedBool(STORAGE_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.storageAutoSaveEnabled),
-  llmSettingsAutoSaveEnabled: readPersistedBool(LLM_SETTINGS_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.llmSettingsAutoSaveEnabled),
   setCategory: (category) => {
     writePersistedValue(UI_CATEGORY_KEY, category);
     set({ category });
@@ -332,9 +329,5 @@ export const useUiStore = create<UiState>((set) => ({
   setStorageAutoSaveEnabled: (v) => {
     writePersistedValue(STORAGE_AUTOSAVE_KEY, String(v));
     set({ storageAutoSaveEnabled: v });
-  },
-  setLlmSettingsAutoSaveEnabled: (v) => {
-    writePersistedValue(LLM_SETTINGS_AUTOSAVE_KEY, String(v));
-    set({ llmSettingsAutoSaveEnabled: v });
   },
 }));

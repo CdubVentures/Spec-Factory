@@ -105,6 +105,30 @@ export function bridgeRegistryToFlatKeys(
   };
 }
 
+export interface CostBridgeResult {
+  llmCostInputPer1M: number;
+  llmCostOutputPer1M: number;
+  llmCostCachedInputPer1M: number;
+}
+
+/**
+ * Cost-only subset of bridgeRegistryToFlatKeys.
+ * WHY: onRegistryChange needs to re-sync flat cost fields when model costs
+ * are edited in the Provider Registry panel, without touching provider/URL.
+ */
+export function syncCostsFromRegistry(
+  registry: LlmProviderEntry[],
+  selectedBaseModel: string,
+): CostBridgeResult | null {
+  const bridged = bridgeRegistryToFlatKeys(registry, selectedBaseModel);
+  if (!bridged) return null;
+  return {
+    llmCostInputPer1M: bridged.llmCostInputPer1M,
+    llmCostOutputPer1M: bridged.llmCostOutputPer1M,
+    llmCostCachedInputPer1M: bridged.llmCostCachedInputPer1M,
+  };
+}
+
 export const DEFAULT_BASE_URLS: Record<LlmProviderType, string> = {
   'openai-compatible': 'https://api.openai.com/v1',
   anthropic: 'https://api.anthropic.com',

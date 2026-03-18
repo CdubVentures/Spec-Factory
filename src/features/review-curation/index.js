@@ -3,9 +3,7 @@ export {
   buildComponentReviewLayout,
   buildComponentReviewPayloads,
   buildEnumReviewPayloads,
-} from '../../review/componentReviewData.js';
-export { applySharedLaneState } from '../../review/keyReviewState.js';
-export {
+  applySharedLaneState,
   buildFieldLabelsMap,
   buildReviewLayout,
   readLatestArtifacts,
@@ -14,13 +12,9 @@ export {
   writeProductReviewArtifacts,
   buildReviewQueue,
   writeCategoryReviewArtifacts,
-} from '../../review/reviewGridData.js';
-export {
   findProductsReferencingComponent,
   cascadeComponentChange,
   cascadeEnumChange,
-} from '../../review/componentImpact.js';
-export {
   resolveOverrideFilePath,
   readReviewArtifacts,
   setOverrideFromCandidate,
@@ -28,9 +22,11 @@ export {
   approveGreenOverrides,
   buildReviewMetrics,
   finalizeOverrides,
-} from '../../review/overrideWorkflow.js';
-export { confidenceColor } from '../../review/confidenceColor.js';
-export { runQaJudge } from '../../review/qaJudge.js';
-export { startReviewQueueWebSocket } from '../../review/queueWebSocket.js';
-export { suggestionFilePath, appendReviewSuggestion } from '../../review/suggestions.js';
-export { evaluateVariance, evaluateVarianceBatch } from '../../review/varianceEvaluator.js';
+  confidenceColor,
+  runQaJudge,
+  startReviewQueueWebSocket,
+  suggestionFilePath,
+  appendReviewSuggestion,
+  evaluateVariance,
+  evaluateVarianceBatch,
+} from '../../review/index.js';

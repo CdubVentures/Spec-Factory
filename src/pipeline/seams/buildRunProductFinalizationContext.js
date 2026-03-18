@@ -45,7 +45,7 @@ import {
   emitLearningGateEvents,
   populateLearningStores,
 } from '../learningGatePhase.js';
-import { writeCategoryReviewArtifacts, writeProductReviewArtifacts } from '../../review/reviewGridData.js';
+import { writeCategoryReviewArtifacts, writeProductReviewArtifacts } from '../../review/index.js';
 import { runLearningExportPhase } from '../learningExportPhase.js';
 import { normalizeAmbiguityLevel } from '../../utils/identityNormalize.js';
 import { buildSourceSummary } from '../../planner/sourcePlanner.js';

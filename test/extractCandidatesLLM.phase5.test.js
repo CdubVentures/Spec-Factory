@@ -95,13 +95,12 @@ test('extractCandidatesLLM batches extraction into <=7 calls and reuses cache on
       },
       evidencePack,
       config: {
-
         llmApiKey: 'sk-test',
+        openaiApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
-        llmModelExtract: 'deepseek-reasoner',
-        llmModelPlan: 'gemini-2.0-flash',
-        llmModelFast: 'gemini-2.0-flash',
+        llmModelPlan: 'gpt-4.1-mini',
+        llmModelReasoning: 'gpt-4.1',
         llmTimeoutMs: 5_000,
         llmMaxBatchesPerProduct: 7,
         llmExtractionCacheEnabled: true,
@@ -171,7 +170,6 @@ test('extractCandidatesLLM drops non-auditable candidates when evidence verifier
         llmProvider: 'openai',
         llmModelExtract: 'test-model',
         llmModelPlan: 'test-model-fast',
-        llmModelFast: 'test-model-fast',
         llmTimeoutMs: 5_000
       }
     });
@@ -260,7 +258,6 @@ test('extractCandidatesLLM skips repatch when budget guard disallows extra call'
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
         llmModelExtract: 'fallback-model',
-        llmModelFast: 'fast-model',
         llmModelPlan: 'plan-model',
         llmTimeoutMs: 5_000
       }
@@ -319,12 +316,10 @@ test('extractCandidatesLLM skips repatch when role model provider pin is enabled
         }
       },
       config: {
-
         llmApiKey: 'sk-test',
+        geminiApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
-        llmModelExtract: 'gemini-2.5-flash-lite',
-        llmModelFast: 'gemini-2.5-flash-lite',
         llmModelPlan: 'gemini-2.5-flash-lite',
         llmForceRoleModelProvider: true,
         llmTimeoutMs: 5_000

@@ -54,7 +54,7 @@ test('buildManufacturerPlanUrls: no duplicates', () => {
 // buildPlanOnlyResults
 // ---------------------------------------------------------------------------
 
-test('buildPlanOnlyResults: generates planned URLs for source hosts', () => {
+test('buildPlanOnlyResults: generates planned URLs for manufacturer hosts only', () => {
   const results = buildPlanOnlyResults({
     categoryConfig: {
       sourceHosts: [
@@ -69,8 +69,9 @@ test('buildPlanOnlyResults: generates planned URLs for source hosts', () => {
   assert.ok(results.length > 0);
   const razerUrls = results.filter((r) => r.url.includes('razer.com'));
   const rtingsUrls = results.filter((r) => r.url.includes('rtings.com'));
-  assert.ok(razerUrls.length > 0);
-  assert.ok(rtingsUrls.length > 0);
+  assert.ok(razerUrls.length > 0, 'manufacturer host produces planned URLs');
+  // WHY: Non-manufacturer hosts now produce zero plan-only results — search-first mode
+  assert.equal(rtingsUrls.length, 0, 'non-manufacturer host produces zero planned URLs');
 });
 
 // ---------------------------------------------------------------------------
@@ -157,42 +158,223 @@ test('dedupeQueryRows: skips truly empty string rows', () => {
 // prioritizeQueryRows
 // ---------------------------------------------------------------------------
 
-test('prioritizeQueryRows: site: queries score higher', () => {
-  const ranked = prioritizeQueryRows([
-    { query: 'razer viper v3' },
-    { query: 'site:razer.com viper v3' }
-  ], { brand: 'Razer', model: 'Viper V3' });
-  assert.equal(ranked[0].query, 'site:razer.com viper v3');
+test('prioritizeQueryRows: site: operator never increases score', () => {
+  const rows = [
+    { query: 'razer viper v3 specs', target_fields: ['sensor'] },
+    { query: 'site:example.com razer viper v3 specs', target_fields: ['sensor'] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' }, ['sensor'], {
+    hostFieldFit: new Map(),
+  });
+  const plain = ranked.find((r) => !r.query.includes('site:'));
+  const siteRow = ranked.find((r) => r.query.includes('site:'));
+  assert.ok(plain.score >= siteRow.score,
+    `plain score ${plain.score} should be >= site: score ${siteRow.score}`);
+});
+
+test('prioritizeQueryRows: critical fields outrank required fields', () => {
+  const fieldPriority = new Map([
+    ['sensor', 'critical'],
+    ['weight', 'required'],
+  ]);
+  const rows = [
+    { query: 'razer viper v3 weight info', target_fields: ['weight'] },
+    { query: 'razer viper v3 sensor info', target_fields: ['sensor'] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' }, ['sensor', 'weight'], {
+    fieldPriority,
+  });
+  assert.equal(ranked[0].query, 'razer viper v3 sensor info');
   assert.ok(ranked[0].score > ranked[1].score);
 });
 
-test('prioritizeQueryRows: manual/datasheet queries score higher', () => {
-  const ranked = prioritizeQueryRows([
-    { query: 'razer viper' },
-    { query: 'razer viper v3 manual pdf' }
-  ], { brand: 'Razer', model: 'Viper V3' });
-  assert.ok(ranked[0].query.includes('manual'));
+test('prioritizeQueryRows: field value respects priority tiers', () => {
+  const fieldPriority = new Map([
+    ['sensor', 'critical'],
+    ['weight', 'required'],
+    ['color', 'optional'],
+  ]);
+  const rows = [
+    { query: 'razer viper v3 critical', target_fields: ['sensor'] },
+    { query: 'razer viper v3 required', target_fields: ['weight'] },
+    { query: 'razer viper v3 optional', target_fields: ['color'] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' },
+    ['sensor', 'weight', 'color'], { fieldPriority });
+  const critical = ranked.find((r) => r.query.includes('critical'));
+  const required = ranked.find((r) => r.query.includes('required'));
+  const optional = ranked.find((r) => r.query.includes('optional'));
+  assert.equal(critical.score_breakdown.field_value, 3);
+  assert.equal(required.score_breakdown.field_value, 2);
+  assert.equal(optional.score_breakdown.field_value, 1);
 });
 
-test('prioritizeQueryRows: LLM planner queries outrank deterministic site: queries', () => {
-  const ranked = prioritizeQueryRows([
-    { query: 'razer viper v3 pro site:razer.com', sources: ['base_template'] },
-    { query: 'razer viper v3 pro sensor weight manual', sources: ['llm'] },
-  ], { brand: 'Razer', model: 'Viper V3' });
-  const llmRow = ranked.find((r) => toArray(r.sources).includes('llm'));
-  const siteRow = ranked.find((r) => r.query.includes('site:'));
-  assert.ok(llmRow.score > siteRow.score, `LLM score ${llmRow.score} should beat site: score ${siteRow.score}`);
-  assert.equal(ranked[0].query, llmRow.query, 'LLM query should rank first');
+test('prioritizeQueryRows: field value flat fallback when no fieldPriority', () => {
+  const rows = [
+    { query: 'razer viper v3', target_fields: ['sensor', 'weight'] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' }, ['sensor', 'weight']);
+  assert.equal(ranked[0].score_breakdown.field_value, 4);
 });
 
-test('prioritizeQueryRows: uber source queries receive source bonus', () => {
-  const ranked = prioritizeQueryRows([
-    { query: 'razer viper v3 review', sources: ['base_template'] },
-    { query: 'razer viper v3 review', sources: ['uber'] },
-  ], { brand: 'Razer', model: 'Viper V3' });
-  const uberRow = ranked.find((r) => toArray(r.sources).includes('uber'));
-  const baseRow = ranked.find((r) => toArray(r.sources).includes('base_template'));
-  assert.ok(uberRow.score > baseRow.score, `uber score ${uberRow.score} should beat base score ${baseRow.score}`);
+test('prioritizeQueryRows: field value caps at 10', () => {
+  const fieldPriority = new Map([
+    ['f1', 'critical'], ['f2', 'critical'], ['f3', 'critical'],
+    ['f4', 'critical'], ['f5', 'critical'], ['f6', 'critical'],
+  ]);
+  const rows = [
+    { query: 'razer viper v3 specs', target_fields: ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' },
+    ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'], { fieldPriority });
+  assert.equal(ranked[0].score_breakdown.field_value, 10);
+});
+
+test('prioritizeQueryRows: high query-relative source fit outranks low', () => {
+  const hostFieldFit = new Map([
+    ['goodhost.com', { high: new Set(['sensor', 'weight']), medium: new Set() }],
+    ['poorhost.com', { high: new Set(), medium: new Set(['something_else']) }],
+  ]);
+  const rows = [
+    { query: 'razer viper v3 poorhost', domain_hint: 'poorhost.com', target_fields: ['sensor'] },
+    { query: 'razer viper v3 goodhost', domain_hint: 'goodhost.com', target_fields: ['sensor'] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' },
+    ['sensor', 'weight'], { hostFieldFit });
+  const good = ranked.find((r) => r.query.includes('goodhost'));
+  const poor = ranked.find((r) => r.query.includes('poorhost'));
+  assert.ok(good.score_breakdown.source_fit > poor.score_breakdown.source_fit);
+});
+
+test('prioritizeQueryRows: no domain_hint yields 0 source fit', () => {
+  const hostFieldFit = new Map([
+    ['somehost.com', { high: new Set(['sensor']), medium: new Set() }],
+  ]);
+  const rows = [
+    { query: 'razer viper v3 specs', target_fields: ['sensor'] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' }, ['sensor'], {
+    hostFieldFit,
+  });
+  assert.equal(ranked[0].score_breakdown.source_fit, 0);
+});
+
+test('prioritizeQueryRows: identity match: brand +1 model +1 (tiebreaker)', () => {
+  const rows = [
+    { query: 'razer viper v3 specs', target_fields: [] },
+    { query: 'razer specs', target_fields: [] },
+    { query: 'specs review', target_fields: [] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' }, []);
+  const both = ranked.find((r) => r.query === 'razer viper v3 specs');
+  const brandOnly = ranked.find((r) => r.query === 'razer specs');
+  const neither = ranked.find((r) => r.query === 'specs review');
+  assert.equal(both.score_breakdown.identity_match, 2);
+  assert.equal(brandOnly.score_breakdown.identity_match, 1);
+  assert.equal(neither.score_breakdown.identity_match, 0);
+});
+
+test('prioritizeQueryRows: same-host redundancy penalized', () => {
+  const rows = [
+    { query: 'razer viper v3 specs', domain_hint: 'rtings.com', target_fields: ['sensor', 'weight'] },
+    { query: 'razer viper v3 review', domain_hint: 'rtings.com', target_fields: ['sensor'] },
+    { query: 'razer viper v3 latency', domain_hint: 'rtings.com', target_fields: [] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' }, ['sensor', 'weight']);
+  const breakdowns = ranked.map((r) => r.score_breakdown.redundancy);
+  assert.equal(breakdowns[0], 0);
+  assert.equal(breakdowns[1], -1);
+  assert.equal(breakdowns[2], -2);
+});
+
+test('prioritizeQueryRows: site: with no fit entry penalized -2', () => {
+  const rows = [
+    { query: 'site:unknown.com razer viper v3', target_fields: [] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' }, ['sensor'], {
+    hostFieldFit: new Map(),
+  });
+  assert.equal(ranked[0].score_breakdown.overconstraint, -2);
+});
+
+test('prioritizeQueryRows: site: with low fit penalized -1', () => {
+  const hostFieldFit = new Map([
+    ['lowfit.com', { heuristic: 0.1 }],
+  ]);
+  const rows = [
+    { query: 'site:lowfit.com razer viper v3', target_fields: [] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' }, ['sensor'], {
+    hostFieldFit,
+  });
+  assert.equal(ranked[0].score_breakdown.overconstraint, -1);
+});
+
+test('prioritizeQueryRows: site: with adequate fit no penalty', () => {
+  const hostFieldFit = new Map([
+    ['goodfit.com', { heuristic: 0.5 }],
+  ]);
+  const rows = [
+    { query: 'site:goodfit.com razer viper v3', target_fields: [] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' }, ['sensor'], {
+    hostFieldFit,
+  });
+  assert.equal(ranked[0].score_breakdown.overconstraint, 0);
+});
+
+test('prioritizeQueryRows: output includes score_breakdown', () => {
+  const rows = [{ query: 'razer viper v3', target_fields: ['sensor'] }];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' }, ['sensor']);
+  const bd = ranked[0].score_breakdown;
+  assert.ok(bd !== null && typeof bd === 'object');
+  assert.ok('field_value' in bd);
+  assert.ok('source_fit' in bd);
+  assert.ok('identity_match' in bd);
+  assert.ok('redundancy' in bd);
+  assert.ok('overconstraint' in bd);
+});
+
+test('prioritizeQueryRows: backward compat: no options arg', () => {
+  const rows = [
+    { query: 'razer viper v3 specs', target_fields: ['sensor'] },
+    { query: 'razer viper v3 review', target_fields: [] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' }, ['sensor']);
+  assert.ok(ranked[0].score >= ranked[1].score);
+  assert.ok(ranked[0].score_breakdown);
+  assert.equal(ranked[0].score_breakdown.source_fit, 0);
+  assert.equal(ranked[0].score_breakdown.overconstraint, 0);
+});
+
+test('prioritizeQueryRows: degraded mode: no hostFieldFit ranks by field value', () => {
+  const fieldPriority = new Map([
+    ['sensor', 'critical'],
+    ['weight', 'required'],
+  ]);
+  const rows = [
+    { query: 'razer viper v3 review', target_fields: [] },
+    { query: 'razer viper v3 sensor weight', target_fields: ['sensor', 'weight'] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' },
+    ['sensor', 'weight'], { fieldPriority });
+  assert.equal(ranked[0].query, 'razer viper v3 sensor weight');
+  assert.ok(ranked[0].score > ranked[1].score);
+});
+
+test('prioritizeQueryRows: queries with critical target_fields outrank generic queries', () => {
+  const fieldPriority = new Map([
+    ['sensor', 'critical'],
+    ['weight', 'critical'],
+  ]);
+  const rows = [
+    { query: 'razer viper v3', target_fields: [] },
+    { query: 'razer viper v3 sensor weight manual', target_fields: ['sensor', 'weight'] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' },
+    ['sensor', 'weight'], { fieldPriority });
+  assert.equal(ranked[0].query, 'razer viper v3 sensor weight manual');
+  assert.ok(ranked[0].score > ranked[1].score);
 });
 
 test('prioritizeQueryRows: targeted missing fields boost score', () => {
@@ -201,6 +383,24 @@ test('prioritizeQueryRows: targeted missing fields boost score', () => {
     { query: 'razer viper v3', target_fields: [] }
   ], { brand: 'Razer', model: 'Viper V3' }, ['sensor']);
   assert.ok(ranked[0].score >= ranked[1].score);
+});
+
+test('prioritizeQueryRows: critical-field planner beats weak-fit site:', () => {
+  const fieldPriority = new Map([
+    ['sensor', 'critical'],
+    ['weight', 'critical'],
+  ]);
+  const hostFieldFit = new Map([
+    ['weak.com', { heuristic: 0.1 }],
+  ]);
+  const rows = [
+    { query: 'razer viper v3 sensor weight specs', target_fields: ['sensor', 'weight'], sources: ['llm'] },
+    { query: 'site:weak.com razer viper v3', target_fields: [], sources: ['base_template'] },
+  ];
+  const ranked = prioritizeQueryRows(rows, { brand: 'Razer', model: 'Viper V3' },
+    ['sensor', 'weight'], { fieldPriority, hostFieldFit });
+  assert.equal(ranked[0].query, 'razer viper v3 sensor weight specs');
+  assert.ok(ranked[0].score > ranked[1].score);
 });
 
 // ---------------------------------------------------------------------------

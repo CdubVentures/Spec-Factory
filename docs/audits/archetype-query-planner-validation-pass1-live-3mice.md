@@ -2,7 +2,7 @@
 
 > **Purpose:** Preserve the historical live-validation record for the initial archetype-query-planner three-model mouse pass.
 > **Prerequisites:** [../README.md](../README.md), [../04-features/indexing-lab.md](../04-features/indexing-lab.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-17
 
 Historical note: this file records one targeted validation pass. Its full-suite counts do not represent the current global baseline of the repo after later work.
 
@@ -102,7 +102,7 @@ Proceed to the next hardening phase (`v3.1` in the historical plan), because the
 ## Current Relevance
 
 - Use this file for historical planner-validation context and artifact references.
-- Do not use its full-suite counts as the current repo baseline; the current docs audit observed `npm test` passing `5552/5552`.
+- Do not use its full-suite counts as the current repo baseline; the current baseline lives in [documentation-audit-ledger.md](./documentation-audit-ledger.md) and [../05-operations/known-issues.md](../05-operations/known-issues.md).
 
 ## Validated Against
 
@@ -118,4 +118,4 @@ Proceed to the next hardening phase (`v3.1` in the historical plan), because the
 
 - [../04-features/indexing-lab.md](../04-features/indexing-lab.md) - current-state IndexLab flow that this historical validation exercised.
 - [../05-operations/known-issues.md](../05-operations/known-issues.md) - current known issues, including present-day runtime/config drift outside this historical pass.
-- [./documentation-audit-ledger.md](./documentation-audit-ledger.md) - records how this historical audit doc was classified in the 2026-03-16 docs pass.
+- [./documentation-audit-ledger.md](./documentation-audit-ledger.md) - current documentation audit ledger for this maintained docs tree.

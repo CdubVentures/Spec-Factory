@@ -174,7 +174,6 @@ test('validateUserSettingsSnapshot enforces canonical envelope and rejects unkno
       studioAutoSaveMapEnabled: true,
       runtimeAutoSaveEnabled: true,
       storageAutoSaveEnabled: false,
-      llmSettingsAutoSaveEnabled: true,
     },
   };
   const valid = validateUserSettingsSnapshot(validPayload);

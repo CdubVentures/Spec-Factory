@@ -6,7 +6,7 @@ import type {
   RuntimeRepairDedupeRule,
   RuntimeResumeMode,
   RuntimeSelectableSearchProvider,
-} from './runtimeSettingsManifestTypes';
+} from './runtimeSettingsManifestTypes.ts';
 
 export const RUNTIME_PROFILE_OPTIONS = Object.freeze(['standard'] as RuntimeProfile[]);
 
@@ -17,7 +17,7 @@ export const RUNTIME_SEARCH_PROVIDER_OPTIONS = Object.freeze(
 );
 
 export const RUNTIME_SEARCH_ROUTE_HELP_TEXT =
-  'All routes go through SearXNG. Google, Bing, and Dual choose engine lanes, not direct provider APIs.';
+  'Phase coverage: 03 Search Profile, 04 Search Planner, 05 Query Journey, and 06 Search Results.\nLives in: discovery search execution before SERP triage.\nWhat this controls: all routes still go through SearXNG; Google, Bing, and Dual choose the engine lane used for query execution, not direct provider APIs.';
 
 export const RUNTIME_SEARCH_PROVIDER_LABELS = Object.freeze({
   searxng: 'SearXNG Meta Search',
@@ -45,4 +45,3 @@ export const RUNTIME_OCR_BACKEND_OPTIONS = Object.freeze(
 export const RUNTIME_REPAIR_DEDUPE_RULE_OPTIONS = Object.freeze(
   [...SETTINGS_OPTION_VALUES.runtime.repairDedupeRule] as RuntimeRepairDedupeRule[],
 );
-

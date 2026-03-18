@@ -46,6 +46,38 @@ import {
 import { defaultLocalOutputRoot } from './runtimeArtifactRoots.js';
 import { SETTINGS_DEFAULTS } from '../../shared/settingsDefaults.js';
 
+// WHY: Registry is SSOT for model→provider routing. Derive default model
+// from the first enabled primary-role entry, not from which API keys
+// happen to be present in the environment.
+function resolveRegistryDefaults() {
+  let entries = [];
+  try {
+    const json = runtimeSettingDefault('llmProviderRegistryJson', '[]');
+    entries = JSON.parse(typeof json === 'string' ? json : JSON.stringify(json));
+  } catch { /* empty */ }
+  if (!Array.isArray(entries)) entries = [];
+
+  for (const entry of entries) {
+    if (!entry?.enabled) continue;
+    const models = Array.isArray(entry.models) ? entry.models : [];
+    const primary = models.find(m => m?.role === 'primary' && m?.modelId);
+    if (primary) {
+      const model = String(primary.modelId).trim();
+      const provider = model.startsWith('gemini') ? 'gemini'
+        : model.startsWith('deepseek') ? 'deepseek' : 'openai';
+      return { provider, model, baseUrl: String(entry.baseUrl || '').trim() };
+    }
+  }
+  return { provider: 'gemini', model: 'gemini-2.5-flash', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai' };
+}
+
+function resolveBootstrapApiKey(registryProvider) {
+  if (process.env.LLM_API_KEY) return process.env.LLM_API_KEY;
+  if (registryProvider === 'gemini' && process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
+  if (registryProvider === 'deepseek' && process.env.DEEPSEEK_API_KEY) return process.env.DEEPSEEK_API_KEY;
+  return process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.DEEPSEEK_API_KEY || '';
+}
+
 export function createManifestApplicator(manifestDefaults) {
   let manifestDefaultsApplied = false;
   const manifestDefaultedEnvKeys = new Set();
@@ -98,12 +130,7 @@ export function buildRawConfig({ manifestApplicator }) {
   const explicitOpenAiModelExtract = explicitEnvValue('OPENAI_MODEL_EXTRACT', explicitEnvKeys);
   const explicitLlmModelPlan = explicitEnvValue('LLM_MODEL_PLAN', explicitEnvKeys);
   const explicitOpenAiModelPlan = explicitEnvValue('OPENAI_MODEL_PLAN', explicitEnvKeys);
-  const explicitLlmModelFast = explicitEnvValue('LLM_MODEL_FAST', explicitEnvKeys);
-  const explicitLlmModelTriage = explicitEnvValue('LLM_MODEL_TRIAGE', explicitEnvKeys);
   const explicitLlmModelReasoning = explicitEnvValue('LLM_MODEL_REASONING', explicitEnvKeys);
-  const explicitLlmModelValidate = explicitEnvValue('LLM_MODEL_VALIDATE', explicitEnvKeys);
-  const explicitLlmModelWrite = explicitEnvValue('LLM_MODEL_WRITE', explicitEnvKeys);
-  const explicitOpenAiModelWrite = explicitEnvValue('OPENAI_MODEL_WRITE', explicitEnvKeys);
   const explicitLlmPlanProvider = explicitEnvValue('LLM_PLAN_PROVIDER', explicitEnvKeys).trim().toLowerCase();
   const explicitLlmPlanBaseUrl = explicitEnvValue('LLM_PLAN_BASE_URL', explicitEnvKeys);
 
@@ -112,11 +139,10 @@ export function buildRawConfig({ manifestApplicator }) {
     process.env.MAX_CANDIDATE_URLS;
 
   const parsedCandidateUrls = Number.parseInt(String(maxCandidateUrlsFromEnv || ''), 10);
-  const hasDeepSeekKey = Boolean(process.env.DEEPSEEK_API_KEY);
-  const resolvedApiKey = process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY || '';
-  const resolvedBaseUrl = explicitLlmBaseUrl || explicitOpenAiBaseUrl ||
-    (hasDeepSeekKey ? 'https://api.deepseek.com' : 'https://api.openai.com');
-  const defaultModel = explicitLlmModelExtract || explicitOpenAiModelExtract || (hasDeepSeekKey ? 'deepseek-reasoner' : 'gpt-4.1-mini');
+  const registryDefaults = resolveRegistryDefaults();
+  const defaultModel = explicitLlmModelExtract || explicitOpenAiModelExtract || registryDefaults.model;
+  const resolvedApiKey = resolveBootstrapApiKey(registryDefaults.provider);
+  const resolvedBaseUrl = explicitLlmBaseUrl || explicitOpenAiBaseUrl || registryDefaults.baseUrl;
   const timeoutMs = parseIntEnv('LLM_TIMEOUT_MS', parseIntEnv('OPENAI_TIMEOUT_MS', runtimeSettingDefault('llmTimeoutMs', 40_000)));
   const envOutputMode = normalizeOutputMode(process.env.OUTPUT_MODE || 'dual', 'dual');
   const hasS3Creds = hasS3EnvCreds();
@@ -222,7 +248,7 @@ export function buildRawConfig({ manifestApplicator }) {
     llmWriteSummary: parseBoolEnv('LLM_WRITE_SUMMARY', runtimeSettingDefault('llmWriteSummary', false)),
     enableSchema4SearchPlan: true, // Hardcoded — Schema 4 panel data required for live GUI
     llmForceRoleModelProvider: parseBoolEnv('LLM_FORCE_ROLE_MODEL_PROVIDER', false),
-    llmProvider: explicitLlmProvider,
+    llmProvider: explicitLlmProvider || registryDefaults.provider,
     llmApiKey: resolvedApiKey,
     llmBaseUrl: resolvedBaseUrl,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -230,67 +256,15 @@ export function buildRawConfig({ manifestApplicator }) {
     deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
     llmModelExtract: explicitLlmModelExtract || explicitOpenAiModelExtract || defaultModel,
     llmModelPlan: explicitLlmModelPlan || explicitLlmModelExtract || explicitOpenAiModelPlan || explicitOpenAiModelExtract || defaultModel,
-    llmModelFast:
-      explicitLlmModelFast ||
-      explicitLlmModelExtract ||
-      explicitOpenAiModelExtract ||
-      defaultModel,
-    llmModelTriage:
-      explicitLlmModelTriage ||
-      explicitLlmModelFast ||
-      explicitLlmModelPlan ||
-      explicitLlmModelExtract ||
-      explicitOpenAiModelExtract ||
-      defaultModel,
     llmModelReasoning:
       explicitLlmModelReasoning ||
       explicitLlmModelExtract ||
-      explicitOpenAiModelExtract ||
-      defaultModel,
-    llmModelValidate:
-      explicitLlmModelValidate ||
-      explicitLlmModelPlan ||
-      explicitLlmModelExtract ||
-      explicitOpenAiModelPlan ||
-      explicitOpenAiModelExtract ||
-      defaultModel,
-    llmModelWrite:
-      explicitLlmModelWrite ||
-      explicitLlmModelValidate ||
-      explicitLlmModelPlan ||
-      explicitLlmModelExtract ||
-      explicitOpenAiModelWrite ||
-      explicitOpenAiModelPlan ||
       explicitOpenAiModelExtract ||
       defaultModel,
     llmPlanProvider: explicitLlmPlanProvider,
     llmPlanBaseUrl: explicitLlmPlanBaseUrl,
     llmPlanApiKey: process.env.LLM_PLAN_API_KEY || '',
     llmPlanFallbackModel: process.env.LLM_PLAN_FALLBACK_MODEL || '',
-    llmPlanFallbackProvider: (process.env.LLM_PLAN_FALLBACK_PROVIDER || '').trim().toLowerCase(),
-    llmPlanFallbackBaseUrl: process.env.LLM_PLAN_FALLBACK_BASE_URL || '',
-    llmPlanFallbackApiKey: process.env.LLM_PLAN_FALLBACK_API_KEY || '',
-    llmExtractProvider: (process.env.LLM_EXTRACT_PROVIDER || '').trim().toLowerCase(),
-    llmExtractBaseUrl: process.env.LLM_EXTRACT_BASE_URL || '',
-    llmExtractApiKey: process.env.LLM_EXTRACT_API_KEY || '',
-    llmExtractFallbackModel: process.env.LLM_EXTRACT_FALLBACK_MODEL || '',
-    llmExtractFallbackProvider: (process.env.LLM_EXTRACT_FALLBACK_PROVIDER || '').trim().toLowerCase(),
-    llmExtractFallbackBaseUrl: process.env.LLM_EXTRACT_FALLBACK_BASE_URL || '',
-    llmExtractFallbackApiKey: process.env.LLM_EXTRACT_FALLBACK_API_KEY || '',
-    llmValidateProvider: (process.env.LLM_VALIDATE_PROVIDER || '').trim().toLowerCase(),
-    llmValidateBaseUrl: process.env.LLM_VALIDATE_BASE_URL || '',
-    llmValidateApiKey: process.env.LLM_VALIDATE_API_KEY || '',
-    llmValidateFallbackModel: process.env.LLM_VALIDATE_FALLBACK_MODEL || '',
-    llmValidateFallbackProvider: (process.env.LLM_VALIDATE_FALLBACK_PROVIDER || '').trim().toLowerCase(),
-    llmValidateFallbackBaseUrl: process.env.LLM_VALIDATE_FALLBACK_BASE_URL || '',
-    llmValidateFallbackApiKey: process.env.LLM_VALIDATE_FALLBACK_API_KEY || '',
-    llmWriteProvider: (process.env.LLM_WRITE_PROVIDER || '').trim().toLowerCase(),
-    llmWriteBaseUrl: process.env.LLM_WRITE_BASE_URL || '',
-    llmWriteApiKey: process.env.LLM_WRITE_API_KEY || '',
-    llmWriteFallbackModel: process.env.LLM_WRITE_FALLBACK_MODEL || '',
-    llmWriteFallbackProvider: (process.env.LLM_WRITE_FALLBACK_PROVIDER || '').trim().toLowerCase(),
-    llmWriteFallbackBaseUrl: process.env.LLM_WRITE_FALLBACK_BASE_URL || '',
-    llmWriteFallbackApiKey: process.env.LLM_WRITE_FALLBACK_API_KEY || '',
     llmSerpRerankEnabled: true,
     llmModelCatalog: process.env.LLM_MODEL_CATALOG || '',
     llmModelPricingMap: mergeModelPricingMaps(
@@ -383,8 +357,6 @@ export function buildRawConfig({ manifestApplicator }) {
       explicitLlmModelExtract ||
       defaultModel,
     openaiModelWrite:
-      explicitOpenAiModelWrite ||
-      explicitLlmModelValidate ||
       explicitLlmModelPlan ||
       explicitLlmModelExtract ||
       explicitOpenAiModelExtract ||
@@ -394,7 +366,7 @@ export function buildRawConfig({ manifestApplicator }) {
       parseIntEnv('LLM_MAX_EVIDENCE_CHARS', 50_000)
     ),
     openaiTimeoutMs: timeoutMs,
-    llmReasoningMode: parseBoolEnv('LLM_REASONING_MODE', runtimeSettingDefault('llmReasoningMode', hasDeepSeekKey)),
+    llmReasoningMode: parseBoolEnv('LLM_REASONING_MODE', runtimeSettingDefault('llmReasoningMode', true)),
     llmReasoningBudget: parseIntEnv('LLM_REASONING_BUDGET', runtimeSettingDefault('llmReasoningBudget', 32768)),
     llmMaxTokens: parseIntEnv('LLM_MAX_TOKENS', runtimeSettingDefault('llmMaxTokens', 16384)),
     llmExtractReasoningBudget: parseIntEnv('LLM_EXTRACT_REASONING_BUDGET', runtimeSettingDefault('llmExtractReasoningBudget', 4096)),
@@ -408,16 +380,8 @@ export function buildRawConfig({ manifestApplicator }) {
     llmVerifyAggressiveBatchCount: parseIntEnv('LLM_VERIFY_AGGRESSIVE_BATCH_COUNT', 3),
     llmMaxOutputTokens: parseIntEnv('LLM_MAX_OUTPUT_TOKENS', runtimeSettingDefault('llmMaxOutputTokens', 1200)),
     llmMaxOutputTokensPlan: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_PLAN', runtimeSettingDefault('llmMaxOutputTokensPlan', 4096)),
-    llmMaxOutputTokensFast: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_FAST', runtimeSettingDefault('llmMaxOutputTokensFast', 1200)),
-    llmMaxOutputTokensTriage: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_TRIAGE', runtimeSettingDefault('llmMaxOutputTokensTriage', 1200)),
     llmMaxOutputTokensReasoning: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_REASONING', runtimeSettingDefault('llmMaxOutputTokensReasoning', 32768)),
-    llmMaxOutputTokensExtract: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_EXTRACT', runtimeSettingDefault('llmMaxOutputTokensExtract', 1200)),
-    llmMaxOutputTokensValidate: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_VALIDATE', runtimeSettingDefault('llmMaxOutputTokensValidate', 1200)),
-    llmMaxOutputTokensWrite: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_WRITE', runtimeSettingDefault('llmMaxOutputTokensWrite', 1200)),
     llmMaxOutputTokensPlanFallback: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK', runtimeSettingDefault('llmMaxOutputTokensPlanFallback', 1200)),
-    llmMaxOutputTokensExtractFallback: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_EXTRACT_FALLBACK', runtimeSettingDefault('llmMaxOutputTokensExtractFallback', 1200)),
-    llmMaxOutputTokensValidateFallback: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_VALIDATE_FALLBACK', runtimeSettingDefault('llmMaxOutputTokensValidateFallback', 1200)),
-    llmMaxOutputTokensWriteFallback: parseIntEnv('LLM_MAX_OUTPUT_TOKENS_WRITE_FALLBACK', runtimeSettingDefault('llmMaxOutputTokensWriteFallback', 1200)),
     llmOutputTokenPresets: parseTokenPresetList(
       process.env.LLM_OUTPUT_TOKEN_PRESETS,
       [256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096, 8192]
@@ -439,7 +403,7 @@ export function buildRawConfig({ manifestApplicator }) {
     llmExtractionCacheDir: process.env.LLM_EXTRACTION_CACHE_DIR || runtimeSettingDefault('llmExtractionCacheDir', '.specfactory_tmp/llm_cache'),
     llmExtractionCacheTtlMs: parseIntEnv('LLM_EXTRACTION_CACHE_TTL_MS', runtimeSettingDefault('llmExtractionCacheTtlMs', 7 * 24 * 60 * 60 * 1000)),
     llmMaxCallsPerProductTotal: parseIntEnv('LLM_MAX_CALLS_PER_PRODUCT_TOTAL', runtimeSettingDefault('llmMaxCallsPerProductTotal', 14)),
-    llmMaxCallsPerProductFast: parseIntEnv('LLM_MAX_CALLS_PER_PRODUCT_FAST', runtimeSettingDefault('llmMaxCallsPerProductFast', 2)),
+
     llmMaxCallsPerRound: parseIntEnv('LLM_MAX_CALLS_PER_ROUND', runtimeSettingDefault('llmMaxCallsPerRound', 4)),
     llmMaxEvidenceChars: parseIntEnv('LLM_MAX_EVIDENCE_CHARS', runtimeSettingDefault('llmMaxEvidenceChars', 60_000)),
     deepseekModelVersion: process.env.DEEPSEEK_MODEL_VERSION || '',

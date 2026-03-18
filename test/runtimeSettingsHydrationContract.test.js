@@ -39,8 +39,23 @@ function collectPutRouteFrontendKeys() {
   return keys;
 }
 
+// WHY: Backend still returns these for backward compat but they are aliased to plan/reasoning models.
+// Normalizer handles them passively — no active hydration bindings needed.
+const RETIRED_KEYS = new Set([
+  'llmModelTriage', 'llmModelExtract', 'llmModelValidate', 'llmModelWrite',
+  'llmMaxOutputTokensTriage', 'llmMaxOutputTokensExtract',
+  'llmMaxOutputTokensValidate', 'llmMaxOutputTokensWrite',
+  'llmMaxOutputTokensExtractFallback', 'llmMaxOutputTokensValidateFallback',
+  'llmMaxOutputTokensWriteFallback',
+  'llmExtractFallbackModel', 'llmValidateFallbackModel', 'llmWriteFallbackModel',
+  'llmExtractProvider', 'llmExtractBaseUrl', 'llmExtractApiKey',
+  'llmValidateProvider', 'llmValidateBaseUrl', 'llmValidateApiKey',
+  'llmWriteProvider', 'llmWriteBaseUrl', 'llmWriteApiKey',
+  'llmTriageUseReasoning',
+]);
+
 function diffMissing(routeKeys, hydrationKeys) {
-  return [...routeKeys].filter((key) => !hydrationKeys.has(key)).sort();
+  return [...routeKeys].filter((key) => !hydrationKeys.has(key) && !RETIRED_KEYS.has(key)).sort();
 }
 
 test('runtime hydration bindings cover runtime settings route frontend keys', async () => {

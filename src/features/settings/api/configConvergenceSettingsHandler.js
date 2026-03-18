@@ -32,7 +32,7 @@ export function createConvergenceSettingsHandler({
       const applied = {};
       const rejected = {};
       for (const [key, value] of Object.entries(body || {})) {
-        if (!ALL_KEYS.has(key)) continue;
+        if (!ALL_KEYS.has(key)) { rejected[key] = 'unknown_key'; continue; }
         if (INT_KEYS.has(key)) {
           const n = Number.parseInt(String(value ?? ''), 10);
           if (!Number.isFinite(n)) { rejected[key] = 'invalid_integer'; continue; }
@@ -92,7 +92,8 @@ export function createConvergenceSettingsHandler({
           applied,
         },
       });
-      return jsonRes(res, 200, { ok: true, applied, ...(Object.keys(rejected).length > 0 ? { rejected } : {}) });
+      const snapshot = snapshotConvergenceSettings(config);
+      return jsonRes(res, 200, { ok: true, applied, snapshot, rejected });
     }
 
     return false;

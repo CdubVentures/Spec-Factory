@@ -11,7 +11,6 @@ export interface UiSettingsPayload {
   studioAutoSaveMapEnabled: boolean;
   runtimeAutoSaveEnabled: boolean;
   storageAutoSaveEnabled: boolean;
-  llmSettingsAutoSaveEnabled: boolean;
 }
 
 interface UiSettingsAuthorityOptions {
@@ -59,7 +58,6 @@ function sanitizeUiSettings(raw: Record<string, unknown> | null | undefined): Ui
     studioAutoSaveMapEnabled,
     runtimeAutoSaveEnabled: readUiBool(source, 'runtimeAutoSaveEnabled', UI_SETTING_DEFAULTS.runtimeAutoSaveEnabled),
     storageAutoSaveEnabled: readUiBool(source, 'storageAutoSaveEnabled', UI_SETTING_DEFAULTS.storageAutoSaveEnabled),
-    llmSettingsAutoSaveEnabled: readUiBool(source, 'llmSettingsAutoSaveEnabled', UI_SETTING_DEFAULTS.llmSettingsAutoSaveEnabled),
   };
 }
 
@@ -70,7 +68,6 @@ function normalizeUiSettingsPayload(payload: UiSettingsPayload): UiSettingsPaylo
     studioAutoSaveMapEnabled: payload.studioAutoSaveMapEnabled,
     runtimeAutoSaveEnabled: payload.runtimeAutoSaveEnabled,
     storageAutoSaveEnabled: payload.storageAutoSaveEnabled,
-    llmSettingsAutoSaveEnabled: payload.llmSettingsAutoSaveEnabled,
   });
 }
 
@@ -107,7 +104,14 @@ export function useUiSettingsAuthority({
       queryKey: UI_SETTINGS_QUERY_KEY,
       mutationFn: (payload) => api.put<Record<string, unknown>>('/ui-settings', payload),
       toOptimisticData: (payload) => normalizeUiSettingsPayload(payload),
-      toAppliedData: (response) => sanitizeUiSettings(response),
+      toAppliedData: (response) => {
+        // WHY: Prefer snapshot from standardized envelope; fall back to top-level for compat.
+        const source = response && typeof response === 'object' && 'snapshot' in response
+          && response.snapshot && typeof response.snapshot === 'object'
+          ? response.snapshot as Record<string, unknown>
+          : response;
+        return sanitizeUiSettings(source);
+      },
       toPersistedResult: (_response, _payload, _previousData, appliedData) => appliedData,
       onPersisted: (settings) => {
         onPersisted?.(settings);

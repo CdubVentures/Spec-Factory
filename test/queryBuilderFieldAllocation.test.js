@@ -138,7 +138,7 @@ describe('Field Allocation — Round-Robin Fairness', () => {
 });
 
 describe('Brand Domain Injection — Official Domain Fallback', () => {
-  it('uses brand resolver officialDomain for site: queries when no approved host matches', () => {
+  it('uses brand resolver officialDomain for soft host-biased queries when no approved host matches', () => {
     const profile = buildSearchProfile({
       job: makeJob({ identityLock: { brand: 'Endgame Gear', model: 'OP1 8K', variant: '' } }),
       categoryConfig: makeCategoryConfig(),
@@ -150,15 +150,15 @@ describe('Brand Domain Injection — Official Domain Fallback', () => {
       }
     });
 
-    const siteQueries = profile.queries.filter((q) => q.includes('site:'));
-    const officialSite = siteQueries.filter((q) => q.includes('site:endgamegear.com'));
-    const competitorSite = siteQueries.filter((q) =>
-      q.includes('site:razer.com') || q.includes('site:logitechg.com') || q.includes('site:steelseries.com'));
+    // WHY: site: operators removed — domain hints appear as plain-text host name
+    const officialHostQueries = profile.queries.filter((q) => q.includes('endgamegear.com'));
+    const competitorHostQueries = profile.queries.filter((q) =>
+      q.includes('razer.com') || q.includes('logitechg.com') || q.includes('steelseries.com'));
 
-    assert.ok(officialSite.length >= 1,
-      `expected site:endgamegear.com queries, got ${officialSite.length}. All site queries: ${JSON.stringify(siteQueries)}`);
-    assert.equal(competitorSite.length, 0,
-      `expected no competitor site: queries, got: ${JSON.stringify(competitorSite)}`);
+    assert.ok(officialHostQueries.length >= 1,
+      `expected endgamegear.com host-biased queries, got ${officialHostQueries.length}. All queries: ${JSON.stringify(profile.queries)}`);
+    assert.equal(competitorHostQueries.length, 0,
+      `expected no competitor host-biased queries, got: ${JSON.stringify(competitorHostQueries)}`);
   });
 
   it('still uses approved hosts when brand IS in the approved list', () => {
@@ -173,10 +173,10 @@ describe('Brand Domain Injection — Official Domain Fallback', () => {
       }
     });
 
-    const siteQueries = profile.queries.filter((q) => q.includes('site:'));
-    const razerSite = siteQueries.filter((q) => q.includes('site:razer.com'));
+    // WHY: site: operators removed — host appears as plain-text soft bias
+    const razerHostQueries = profile.queries.filter((q) => q.includes('razer.com') && !q.includes('site:'));
 
-    assert.ok(razerSite.length >= 1, 'razer.com site: queries generated from approved list');
+    assert.ok(razerHostQueries.length >= 1, 'razer.com soft host-biased queries generated from approved list');
   });
 });
 

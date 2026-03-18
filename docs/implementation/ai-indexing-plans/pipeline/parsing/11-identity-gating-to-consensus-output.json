@@ -1,0 +1,30 @@
+{
+  "_doc": "Stage 11 output contract for identity gating to consensus. Validated against runConsensusEngine() on 2026-03-17.",
+  "schema_version": "stage11.identity_gating_to_consensus_output.v1",
+  "producer": "runConsensusEngine() via executeConsensusPhase()",
+  "source_files": [
+    "src/scoring/consensusEngine.js",
+    "src/pipeline/consensusPhase.js"
+  ],
+  "output_contract": {
+    "fields": "Final accepted scalar field map for the current run before post-consensus refinement.",
+    "provenance": "Per-field evidence chain including confirmations, approved domains, pass target, weighted majority, confidence, and citations.",
+    "candidates": "Per-field candidate clusters preserved for reducers and review tooling.",
+    "fieldsBelowPassTarget": "Fields lacking enough approved-domain confirmations.",
+    "criticalFieldsBelowPassTarget": "Critical subset of fieldsBelowPassTarget.",
+    "newValuesProposed": "List-derived values not yet present in curated known-value sets.",
+    "agreementScore": "Average best-vs-second cluster dominance across resolved fields."
+  },
+  "acceptance_rules": {
+    "strict": "Approved domains >= configured minimum and weighted majority satisfied.",
+    "relaxed": "Manufacturer plus another credible domain can pass for non-instrumented fields.",
+    "instrumented": "Strict acceptance plus instrumented-domain threshold.",
+    "pass_targets": "Normal fields default to 2, commonly-wrong or identity-strong fields default to 4, exempt seed fields use 0."
+  },
+  "post_consensus_adjustments": [
+    "Selection-policy reducers can rewrite scalar outputs from candidate sets.",
+    "List union reducers merge multi-value fields when enabled by field rules.",
+    "Core/deep gates can reject low-tier evidence for core facts.",
+    "Wired products force battery_hours to n/a when no battery value survives."
+  ]
+}

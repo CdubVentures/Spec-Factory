@@ -1,0 +1,88 @@
+{
+  "_doc": "Unified schema-process artifact for parsing stages 09-13. Mirrors the planning bundle shape without modifying planning/.",
+  "generated_at": "2026-03-17",
+  "source_folder": "docs/implementation/ai-indexing-plans/pipeline/parsing",
+  "source_files_count": 15,
+  "source_files": [
+    "09-fetch-to-extraction-input.json",
+    "09-fetch-to-extraction-llm-call.json",
+    "09-fetch-to-extraction-output.json",
+    "10-extraction-to-identity-gating-input.json",
+    "10-extraction-to-identity-gating-output.json",
+    "11-identity-gating-to-consensus-input.json",
+    "11-identity-gating-to-consensus-output.json",
+    "12-consensus-to-validation-input.json",
+    "12-consensus-to-validation-llm-call.json",
+    "12-consensus-to-validation-output.json",
+    "13-validation-to-output-input.json",
+    "13-validation-to-output-output.json",
+    "13-run-completed-payload.json",
+    "13-run-result-payload.json",
+    "13-data-change-events.json"
+  ],
+  "process_sequence": [
+    {
+      "stage": "09",
+      "stage_name": "Fetch To Extraction",
+      "purpose": "Convert fetched page, PDF, screenshot, structured metadata, and endpoint payloads into evidence-backed field and identity candidates.",
+      "artifacts": [
+        "09-fetch-to-extraction-input.json",
+        "09-fetch-to-extraction-llm-call.json",
+        "09-fetch-to-extraction-output.json"
+      ],
+      "llm_calls": [
+        "09-fetch-to-extraction-llm-call.json"
+      ]
+    },
+    {
+      "stage": "10",
+      "stage_name": "Extraction To Identity Gating",
+      "purpose": "Score each fetched source against the product identity lock, attach anchor conflicts, and filter candidate rows for downstream consensus.",
+      "artifacts": [
+        "10-extraction-to-identity-gating-input.json",
+        "10-extraction-to-identity-gating-output.json"
+      ],
+      "llm_calls": []
+    },
+    {
+      "stage": "11",
+      "stage_name": "Identity Gating To Consensus",
+      "purpose": "Collapse accepted per-source candidates into a single normalized field set with provenance, pass targets, and agreement metrics.",
+      "artifacts": [
+        "11-identity-gating-to-consensus-input.json",
+        "11-identity-gating-to-consensus-output.json"
+      ],
+      "llm_calls": []
+    },
+    {
+      "stage": "12",
+      "stage_name": "Consensus To Validation",
+      "purpose": "Apply component prior, deterministic critic, optional LLM validation, inference, runtime gate, and need-driven finalization metrics.",
+      "artifacts": [
+        "12-consensus-to-validation-input.json",
+        "12-consensus-to-validation-llm-call.json",
+        "12-consensus-to-validation-output.json"
+      ],
+      "llm_calls": [
+        "12-consensus-to-validation-llm-call.json"
+      ]
+    },
+    {
+      "stage": "13",
+      "stage_name": "Validation To Output",
+      "purpose": "Emit completion telemetry, learning gate results, exported run artifacts, final promoted artifacts, and the return payload used by callers.",
+      "artifacts": [
+        "13-validation-to-output-input.json",
+        "13-validation-to-output-output.json",
+        "13-run-completed-payload.json",
+        "13-run-result-payload.json",
+        "13-data-change-events.json"
+      ],
+      "llm_calls": []
+    }
+  ],
+  "llm_call_files": [
+    "09-fetch-to-extraction-llm-call.json",
+    "12-consensus-to-validation-llm-call.json"
+  ]
+}

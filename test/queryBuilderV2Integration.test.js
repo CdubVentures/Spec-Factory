@@ -191,14 +191,16 @@ describe('queryBuilder v2 integration — buildLogicalPlansFromHostPlan', () => 
     assert.ok(withDocHint.length > 0, 'at least one plan should have doc_hint from intent');
   });
 
-  it('10. manufacturer hosts retain site_target and filetype', () => {
+  it('10. manufacturer hosts retain host_pref and filetype', () => {
     const plan = makePlan({
       domainHints: [],
       brandResolutionHints: ['razer.com'],
     });
     const logicalPlans = buildLogicalPlansFromHostPlan(plan, IDENTITY, FOCUS_FIELDS);
-    const razerPlan = logicalPlans.find(p => p.site_target === 'razer.com');
-    assert.ok(razerPlan, 'razer.com from manufacturer_hosts should have site_target');
+    const razerPlan = logicalPlans.find(p => p.host_pref === 'razer.com');
+    assert.ok(razerPlan, 'razer.com from manufacturer_hosts should have host_pref');
+    // WHY: site_target is always null now — search-first mode uses soft host bias
+    assert.equal(razerPlan.site_target, null, 'site_target is null in search-first mode');
     assert.equal(razerPlan.host_pref, 'razer.com');
   });
 
@@ -214,7 +216,7 @@ describe('queryBuilder v2 integration — buildLogicalPlansFromHostPlan', () => 
     }
   });
 
-  it('15. manufacturer hosts get site: + filetype, non-manufacturer get doc_hint only', () => {
+  it('15. all hosts use soft doc_hint, no site: operator', () => {
     const plan = makePlan({
       domainHints: ['rtings.com'],
       brandResolutionHints: ['razer.com'],
@@ -224,8 +226,8 @@ describe('queryBuilder v2 integration — buildLogicalPlansFromHostPlan', () => 
     const rtingsPlan = logicalPlans.find(p => p.host_pref === 'rtings.com');
     assert.ok(razerPlan, 'manufacturer host present');
     assert.ok(rtingsPlan, 'non-manufacturer host present');
-    // Manufacturer: hard site: + filetype
-    assert.equal(razerPlan.site_target, 'razer.com');
+    // WHY: search-first mode — site_target is always null, both use soft doc_hint
+    assert.equal(razerPlan.site_target, null, 'manufacturer also gets null site_target in search-first mode');
     // Non-manufacturer: soft doc_hint, no site:, no filetype
     assert.equal(rtingsPlan.site_target, null);
     assert.equal(rtingsPlan.filetype, null);
@@ -299,8 +301,10 @@ describe('queryBuilder v2 integration — buildLogicalPlansFromHostPlan', () => 
     });
     plan.content_intents = ['datasheet'];
     const logicalPlans = buildLogicalPlansFromHostPlan(plan, IDENTITY, FOCUS_FIELDS);
-    const mfgPlan = logicalPlans.find(p => p.site_target === 'razer.com');
+    // WHY: site_target is null in search-first mode — find by host_pref instead
+    const mfgPlan = logicalPlans.find(p => p.host_pref === 'razer.com');
     assert.ok(mfgPlan, 'manufacturer plan should exist');
+    assert.equal(mfgPlan.site_target, null, 'site_target is null in search-first mode');
     assert.equal(mfgPlan.filetype, 'pdf', 'datasheet intent should produce filetype:pdf');
   });
 

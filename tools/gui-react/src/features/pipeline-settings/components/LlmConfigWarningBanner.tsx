@@ -2,7 +2,7 @@ interface LlmConfigWarningBannerProps {
   llmProvider: string;
   llmBaseUrl: string;
   openaiApiKey: string;
-  llmModelExtract: string;
+  llmModelPlan: string;
 }
 
 function collectMissingFields(props: LlmConfigWarningBannerProps): string[] {
@@ -10,7 +10,7 @@ function collectMissingFields(props: LlmConfigWarningBannerProps): string[] {
   if (!props.openaiApiKey) missing.push('API Key');
   if (!props.llmProvider) missing.push('LLM Provider');
   if (!props.llmBaseUrl) missing.push('LLM Base URL');
-  if (!props.llmModelExtract) missing.push('LLM Model');
+  if (!props.llmModelPlan) missing.push('LLM Model');
   return missing;
 }
 

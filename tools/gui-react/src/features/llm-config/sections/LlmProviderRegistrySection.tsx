@@ -83,50 +83,60 @@ function ProviderModelRow({
   model,
   onModelChange,
   onRemove,
+  identityLocked,
 }: {
   model: LlmProviderModel;
   onModelChange: (updated: LlmProviderModel) => void;
   onRemove: () => void;
+  identityLocked: boolean;
 }) {
   const roleStyle = ROLE_BADGE_STYLE[model.role];
   return (
     <tr className="sf-table-row">
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}>
-        <input
-          className="sf-input sf-text-caption"
-          value={model.modelId}
-          placeholder="e.g. gpt-4o"
-          onChange={(e) => onModelChange({ ...model, modelId: e.target.value })}
-        />
+        {identityLocked ? (
+          <span className="sf-text-caption" style={{ color: 'var(--sf-text)' }}>{model.modelId}</span>
+        ) : (
+          <input
+            className="sf-input sf-text-caption"
+            value={model.modelId}
+            placeholder="e.g. gpt-4o"
+            onChange={(e) => onModelChange({ ...model, modelId: e.target.value })}
+          />
+        )}
       </td>
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}>
-        <div className="relative inline-flex">
-          <select
-            className="sf-text-caption font-medium cursor-pointer"
-            style={{
-              backgroundColor: roleStyle.bg,
-              color: roleStyle.fg,
-              border: 'none',
-              outline: 'none',
-              appearance: 'none',
-              WebkitAppearance: 'none',
-              borderRadius: 'var(--sf-radius-chip)',
-              padding: 'var(--sf-space-0-5) var(--sf-space-3) var(--sf-space-0-5) var(--sf-space-1-5)',
-            }}
-            value={model.role}
-            onChange={(e) => onModelChange({ ...model, role: e.target.value as LlmModelRole })}
-          >
-            {MODEL_ROLE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          <span
-            className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ color: roleStyle.fg, fontSize: 'var(--sf-token-font-size-micro)', lineHeight: 1 }}
-          >
-            ▾
-          </span>
-        </div>
+        {identityLocked ? (
+          <ModelRoleBadge role={model.role} />
+        ) : (
+          <div className="relative inline-flex">
+            <select
+              className="sf-text-caption font-medium cursor-pointer"
+              style={{
+                backgroundColor: roleStyle.bg,
+                color: roleStyle.fg,
+                border: 'none',
+                outline: 'none',
+                appearance: 'none',
+                WebkitAppearance: 'none',
+                borderRadius: 'var(--sf-radius-chip)',
+                padding: 'var(--sf-space-0-5) var(--sf-space-3) var(--sf-space-0-5) var(--sf-space-1-5)',
+              }}
+              value={model.role}
+              onChange={(e) => onModelChange({ ...model, role: e.target.value as LlmModelRole })}
+            >
+              {MODEL_ROLE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <span
+              className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ color: roleStyle.fg, fontSize: 'var(--sf-token-font-size-micro)', lineHeight: 1 }}
+            >
+              ▾
+            </span>
+          </div>
+        )}
       </td>
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}>
         <input
@@ -187,14 +197,16 @@ function ProviderModelRow({
         />
       </td>
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)', textAlign: 'center' }}>
-        <button
-          className="sf-icon-button sf-text-caption"
-          style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}
-          onClick={onRemove}
-          title="Remove model"
-        >
-          ✕
-        </button>
+        {!identityLocked && (
+          <button
+            className="sf-icon-button sf-text-caption"
+            style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}
+            onClick={onRemove}
+            title="Remove model"
+          >
+            ✕
+          </button>
+        )}
       </td>
     </tr>
   );
@@ -394,6 +406,7 @@ function ProviderPanel({
                         <ProviderModelRow
                           key={model.id}
                           model={model}
+                          identityLocked={isDefault}
                           onModelChange={(updated) => updateModel(model.id, updated)}
                           onRemove={() => removeModel(model.id)}
                         />

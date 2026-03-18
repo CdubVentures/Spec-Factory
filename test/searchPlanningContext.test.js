@@ -167,8 +167,7 @@ describe('buildSearchPlanningContext', () => {
       assert.equal(result.planner_limits.maxPagesPerDomain, 2);
       assert.equal(result.planner_limits.maxRunSeconds, 300);
       assert.equal(result.planner_limits.llmModelPlan, '');
-      assert.equal(result.planner_limits.llmPlanProvider, '');
-      assert.equal(result.planner_limits.llmPlanBaseUrl, '');
+      assert.equal(result.planner_limits.llmProvider, '');
       assert.equal(result.planner_limits.llmMaxOutputTokensPlan, 2048);
       assert.equal(result.planner_limits.searchProfileCapMap, null);
       assert.equal(result.planner_limits.searchProvider, 'dual');
@@ -530,8 +529,7 @@ describe('buildSearchPlanningContext', () => {
         maxPagesPerDomain: 3,
         maxRunSeconds: 600,
         llmModelPlan: 'gpt-4o',
-        llmPlanProvider: 'openai',
-        llmPlanBaseUrl: 'https://api.openai.com/v1',
+        llmProvider: 'openai',
         llmMaxOutputTokensPlan: 4096,
         searchProfileCapMapJson: '{"deterministicAliasCap":6}',
         searchProvider: 'google'
@@ -550,18 +548,16 @@ describe('buildSearchPlanningContext', () => {
       assert.equal(result.planner_limits.maxPagesPerDomain, 3);
       assert.equal(result.planner_limits.maxRunSeconds, 600);
       assert.equal(result.planner_limits.llmModelPlan, 'gpt-4o');
-      assert.equal(result.planner_limits.llmPlanProvider, 'openai');
-      assert.equal(result.planner_limits.llmPlanBaseUrl, 'https://api.openai.com/v1');
+      assert.equal(result.planner_limits.llmProvider, 'openai');
       assert.equal(result.planner_limits.llmMaxOutputTokensPlan, 4096);
       assert.deepStrictEqual(result.planner_limits.searchProfileCapMap, { deterministicAliasCap: 6 });
       assert.equal(result.planner_limits.searchProvider, 'google');
     });
 
-    it('fallback keys used when primary missing', () => {
+    it('llmProvider passed through to planner_limits', () => {
       const config = {
         llmModelPlan: 'gemini-2.5-flash-lite',
         llmProvider: 'gemini',
-        llmBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
       };
       const result = buildSearchPlanningContext({
         needSetOutput: makeNeedSetOutput(),
@@ -570,8 +566,7 @@ describe('buildSearchPlanningContext', () => {
       });
 
       assert.equal(result.planner_limits.llmModelPlan, 'gemini-2.5-flash-lite');
-      assert.equal(result.planner_limits.llmPlanProvider, 'gemini');
-      assert.equal(result.planner_limits.llmPlanBaseUrl, 'https://generativelanguage.googleapis.com/v1beta/openai');
+      assert.equal(result.planner_limits.llmProvider, 'gemini');
     });
 
 

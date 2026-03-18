@@ -1,11 +1,11 @@
-import type { RuntimeSettings } from './runtimeSettingsAuthority';
-import type { RuntimeSettingsPayloadSerializerInput } from './runtimeSettingsDomainTypes';
+import type { RuntimeSettings } from './runtimeSettingsAuthority.ts';
+import type { RuntimeSettingsPayloadSerializerInput } from './runtimeSettingsDomainTypes.ts';
 import {
   clampTokenForModel,
   parseRuntimeFloat,
   parseRuntimeInt,
   parseRuntimeString,
-} from './runtimeSettingsParsing';
+} from './runtimeSettingsParsing.ts';
 
 export function collectRuntimeSettingsPayload(
   input: RuntimeSettingsPayloadSerializerInput,
@@ -15,8 +15,6 @@ export function collectRuntimeSettingsPayload(
     runtimeSettingsFallbackBaseline,
   } = input;
   return {
-    runProfile: 'standard',
-    profile: 'standard',
     searchProvider: input.searchProvider,
     searxngBaseUrl: String(input.searxngBaseUrl || '').trim(),
     llmPlanApiKey: String(input.llmPlanApiKey || '').trim(),
@@ -174,10 +172,6 @@ export function collectRuntimeSettingsPayload(
     llmMaxCallsPerProductTotal: parseRuntimeInt(
       input.llmMaxCallsPerProductTotal,
       runtimeSettingsFallbackBaseline.llmMaxCallsPerProductTotal,
-    ),
-    llmMaxCallsPerProductFast: parseRuntimeInt(
-      input.llmMaxCallsPerProductFast,
-      runtimeSettingsFallbackBaseline.llmMaxCallsPerProductFast,
     ),
     resumeWindowHours: parseRuntimeInt(
       input.resumeWindowHours,
@@ -483,7 +477,6 @@ export function collectRuntimeSettingsPayload(
     fetchSchedulerInternalsMapJson: parseRuntimeString(input.fetchSchedulerInternalsMapJson),
     parsingConfidenceBaseMapJson: parseRuntimeString(input.parsingConfidenceBaseMapJson),
     repairDedupeRule: String(input.repairDedupeRule || '').trim(),
-    discoveryEnabled: input.discoveryEnabled,
     llmExtractionCacheEnabled: input.llmExtractionCacheEnabled,
     llmExtractSkipLowSignal: input.llmExtractSkipLowSignal,
     llmReasoningMode: input.llmReasoningMode,

@@ -35,7 +35,7 @@ test('runExtractionVerification prioritizes judge batches, invokes both models, 
       visual_assets: []
     },
     config: {
-      llmModelFast: 'fast-model',
+
       llmModelPlan: 'plan-model',
       llmModelExtract: 'reason-model'
     },
@@ -161,7 +161,7 @@ test('runExtractionVerification swallows verification failures and warns', async
       visual_assets: []
     },
     config: {
-      llmModelFast: 'fast-model',
+
       llmModelExtract: 'reason-model'
     },
     llmContext: {

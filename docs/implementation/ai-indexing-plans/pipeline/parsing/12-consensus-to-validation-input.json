@@ -1,0 +1,62 @@
+{
+  "_doc": "Stage 12 input contract for consensus to validation. Validated against runProductFinalizationDerivation() and createProductFinalizationDerivationRuntime() on 2026-03-17.",
+  "schema_version": "stage12.consensus_to_validation_input.v1",
+  "producer": "runProductFinalizationDerivation() after identity consensus and normalization bootstrap",
+  "source_files": [
+    "src/features/indexing/orchestration/finalize/runProductFinalizationDerivation.js",
+    "src/features/indexing/orchestration/finalize/createProductFinalizationDerivationRuntime.js",
+    "src/features/indexing/orchestration/shared/reasoningHelpers.js"
+  ],
+  "input_groups": {
+    "identity_and_consensus": [
+      "sourceResults",
+      "identityGate",
+      "identityReport",
+      "identity",
+      "consensus",
+      "allAnchorConflicts",
+      "anchorMajorConflictsCount"
+    ],
+    "normalized_state": [
+      "normalized",
+      "provenance",
+      "candidates",
+      "fieldsBelowPassTarget",
+      "criticalFieldsBelowPassTarget",
+      "newValuesProposed"
+    ],
+    "late_stage_context": [
+      "discoveryResult",
+      "requiredFields",
+      "targets",
+      "sourceIntel",
+      "learnedFieldAvailability",
+      "learnedFieldYield",
+      "llmBudgetGuard",
+      "phase08FieldContexts",
+      "phase08PrimeRows",
+      "phase08BatchRows"
+    ],
+    "runtime_dependencies": [
+      "config",
+      "categoryConfig",
+      "runtimeFieldRulesEngine",
+      "computeCompletenessRequiredFn",
+      "computeCoverageOverallFn",
+      "computeConfidenceFn",
+      "evaluateValidationGateFn"
+    ]
+  },
+  "transform_sequence": [
+    "Apply component prior fills and track componentPriorFilledFields.",
+    "Run deterministic critic normalization and rejection rules.",
+    "Run optional LLM validator for uncertain fields unless expensive finalization is skipped.",
+    "Apply inference policy, aggressive extraction, and runtime gate/curation.",
+    "Compute completeness, coverage, confidence, and validation gate outputs.",
+    "Build field reasoning, traffic light, needSet, phase07PrimeSources, phase08Extraction, and finalization metrics."
+  ],
+  "skip_behavior": [
+    "If terminalReason is max_run_seconds_reached, expensive finalization disables summary writing and optional validator/aggressive passes.",
+    "NeedSet history enrichment happens here using search-plan handoff queries because the live NeedSet emitted earlier does not know the current round results."
+  ]
+}

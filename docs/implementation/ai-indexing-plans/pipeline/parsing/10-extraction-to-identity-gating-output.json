@@ -1,0 +1,29 @@
+{
+  "_doc": "Stage 10 output contract for extraction to identity gating. Validated against runSourceIdentityEvaluationPhase() and evaluateSourceIdentity()/applyIdentityGateToCandidates() on 2026-03-17.",
+  "schema_version": "stage10.extraction_to_identity_gating_output.v1",
+  "producer": "runSourceIdentityEvaluationPhase()",
+  "source_files": [
+    "src/features/indexing/orchestration/execution/runSourceIdentityEvaluationPhase.js",
+    "src/features/indexing/validation/identityGate.js",
+    "src/pipeline/identityGateExtraction.js"
+  ],
+  "output_contract": {
+    "anchorCheck": "Merged anchor conflict object with major/minor conflict arrays.",
+    "identity": "Per-source identity score, confidence, decision, reasons, and critical conflicts.",
+    "identityGatedCandidates": "Field candidates annotated with identity_label and identity_confidence.",
+    "anchorStatus": "Derived summary string used in telemetry and downstream filtering.",
+    "manufacturerBrandMismatch": "Boolean sentinel for manufacturer pages that still conflict on brand identity.",
+    "parserHealth": "Source extraction health object computed from candidates, anchors, and endpoint signals."
+  },
+  "label_rules": {
+    "matched": "identity.match is true",
+    "possible": "identity score >= 0.4 without critical conflicts",
+    "different": "critical conflicts or low score",
+    "unknown": "missing/null identity evaluation"
+  },
+  "downstream_usage": [
+    "Stage 11 filters usable sources to identity_label in {matched, possible}.",
+    "Major anchor conflicts exclude the source from consensus even when identity looks good.",
+    "Parser health rows are aggregated into stage 12 metrics."
+  ]
+}

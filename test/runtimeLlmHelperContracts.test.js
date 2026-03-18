@@ -7,7 +7,6 @@ function createRuntimeManifestTokenDefaults(overrides = {}) {
   return {
     llmMaxOutputTokensPlan: 384,
     llmMaxOutputTokensTriage: 512,
-    llmMaxOutputTokensFast: 512,
     llmMaxOutputTokensReasoning: 512,
     llmMaxOutputTokensExtract: 512,
     llmMaxOutputTokensValidate: 512,
@@ -32,7 +31,6 @@ test('runtime llm model options keep current selections stable and dedupe normal
     },
     llmModelPlan: 'custom-plan',
     llmModelTriage: 'gpt-4.1',
-    llmModelFast: '',
     llmModelReasoning: '',
     llmModelExtract: '',
     llmModelValidate: '',
@@ -68,7 +66,6 @@ test('runtime llm token preset options sanitize, sort, dedupe, and include live 
     },
     llmMaxOutputTokensPlan: 384,
     llmMaxOutputTokensTriage: 1024,
-    llmMaxOutputTokensFast: 512,
     llmMaxOutputTokensReasoning: 512,
     llmMaxOutputTokensExtract: 512,
     llmMaxOutputTokensValidate: 512,
@@ -148,6 +145,127 @@ test('runtime llm model token defaults resolve from profiles, config defaults, a
   });
 });
 
+test('bridgeRegistryToFlatKeys returns updated costs when model cost changes in registry', async () => {
+  const { bridgeRegistryToFlatKeys } = await loadBundledModule(
+    'tools/gui-react/src/features/llm-config/state/llmProviderRegistryBridge.ts',
+    { prefix: 'registry-bridge-costs-' },
+  );
+
+  const registry = [{
+    id: 'p1',
+    name: 'OpenAI',
+    type: 'openai-compatible',
+    baseUrl: 'https://api.openai.com/v1',
+    apiKey: 'sk-test',
+    enabled: true,
+    models: [{
+      id: 'm1',
+      modelId: 'gpt-4o',
+      role: 'primary',
+      costInputPer1M: 7.5,
+      costOutputPer1M: 30.0,
+      costCachedPer1M: 3.75,
+      maxContextTokens: 128000,
+      maxOutputTokens: 16384,
+    }],
+  }];
+
+  const result = bridgeRegistryToFlatKeys(registry, 'gpt-4o');
+  assert.notEqual(result, null);
+  assert.equal(result.llmCostInputPer1M, 7.5);
+  assert.equal(result.llmCostOutputPer1M, 30.0);
+  assert.equal(result.llmCostCachedInputPer1M, 3.75);
+});
+
+test('bridgeRegistryToFlatKeys returns null when selected model not in registry', async () => {
+  const { bridgeRegistryToFlatKeys } = await loadBundledModule(
+    'tools/gui-react/src/features/llm-config/state/llmProviderRegistryBridge.ts',
+    { prefix: 'registry-bridge-null-' },
+  );
+
+  const registry = [{
+    id: 'p1',
+    name: 'OpenAI',
+    type: 'openai-compatible',
+    baseUrl: 'https://api.openai.com/v1',
+    apiKey: 'sk-test',
+    enabled: true,
+    models: [{
+      id: 'm1',
+      modelId: 'gpt-4o',
+      role: 'primary',
+      costInputPer1M: 2.5,
+      costOutputPer1M: 10.0,
+      costCachedPer1M: 1.25,
+      maxContextTokens: 128000,
+      maxOutputTokens: 16384,
+    }],
+  }];
+
+  assert.equal(bridgeRegistryToFlatKeys(registry, 'unknown-model'), null);
+});
+
+test('syncCostsFromRegistry returns cost-only fields when model exists', async () => {
+  const { syncCostsFromRegistry } = await loadBundledModule(
+    'tools/gui-react/src/features/llm-config/state/llmProviderRegistryBridge.ts',
+    { prefix: 'registry-sync-costs-' },
+  );
+
+  const registry = [{
+    id: 'p1',
+    name: 'OpenAI',
+    type: 'openai-compatible',
+    baseUrl: 'https://api.openai.com/v1',
+    apiKey: 'sk-test',
+    enabled: true,
+    models: [{
+      id: 'm1',
+      modelId: 'gpt-4o',
+      role: 'primary',
+      costInputPer1M: 5.0,
+      costOutputPer1M: 20.0,
+      costCachedPer1M: 2.5,
+      maxContextTokens: 128000,
+      maxOutputTokens: 16384,
+    }],
+  }];
+
+  const result = syncCostsFromRegistry(registry, 'gpt-4o');
+  assert.deepEqual(result, {
+    llmCostInputPer1M: 5.0,
+    llmCostOutputPer1M: 20.0,
+    llmCostCachedInputPer1M: 2.5,
+  });
+});
+
+test('syncCostsFromRegistry returns null when model not found', async () => {
+  const { syncCostsFromRegistry } = await loadBundledModule(
+    'tools/gui-react/src/features/llm-config/state/llmProviderRegistryBridge.ts',
+    { prefix: 'registry-sync-costs-null-' },
+  );
+
+  const registry = [{
+    id: 'p1',
+    name: 'OpenAI',
+    type: 'openai-compatible',
+    baseUrl: 'https://api.openai.com/v1',
+    apiKey: 'sk-test',
+    enabled: true,
+    models: [{
+      id: 'm1',
+      modelId: 'gpt-4o',
+      role: 'primary',
+      costInputPer1M: 2.5,
+      costOutputPer1M: 10.0,
+      costCachedPer1M: 1.25,
+      maxContextTokens: 128000,
+      maxOutputTokens: 16384,
+    }],
+  }];
+
+  assert.equal(syncCostsFromRegistry(registry, 'missing-model'), null);
+});
+
 test('runtime hydration bindings accept alias keys and skip local resets when the snapshot is dirty', async () => {
   const { createRuntimeHydrationBindings, hydrateRuntimeSettingsFromBindings } = await loadBundledModule(
     'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsDomain.ts',
@@ -166,11 +284,11 @@ test('runtime hydration bindings accept alias keys and skip local resets when th
   const bindings = createRuntimeHydrationBindings(setters);
   const snapshot = {
     llmModelPlan: 'alias-plan-model',
-    llmModelTriage: 'alias-triage-model',
+    llmModelReasoning: 'alias-reasoning-model',
     llmPlanFallbackModel: 'alias-plan-fallback',
     llmMaxOutputTokensPlan: 1536,
     llmMaxOutputTokensPlanFallback: 2048,
-    llmMaxOutputTokensWriteFallback: 2304,
+    llmMaxOutputTokensReasoningFallback: 2304,
   };
 
   assert.equal(
@@ -186,9 +304,9 @@ test('runtime hydration bindings accept alias keys and skip local resets when th
     'clean runtime state should hydrate from alias-aware authority bindings',
   );
   assert.equal(state.setLlmModelPlan, 'alias-plan-model');
-  assert.equal(state.setLlmModelTriage, 'alias-triage-model');
+  assert.equal(state.setLlmModelReasoning, 'alias-reasoning-model');
   assert.equal(state.setLlmPlanFallbackModel, 'alias-plan-fallback');
   assert.equal(state.setLlmMaxOutputTokensPlan, 1536);
   assert.equal(state.setLlmMaxOutputTokensPlanFallback, 2048);
-  assert.equal(state.setLlmMaxOutputTokensWriteFallback, 2304);
+  assert.equal(state.setLlmMaxOutputTokensReasoningFallback, 2304);
 });

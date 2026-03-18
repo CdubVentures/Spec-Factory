@@ -33,48 +33,24 @@ export interface LlmTokenDefaults {
 
 interface LlmTokenPresetBootstrap {
   llmMaxOutputTokensPlan: number | string;
-  llmMaxOutputTokensTriage: number | string;
-  llmMaxOutputTokensFast: number | string;
   llmMaxOutputTokensReasoning: number | string;
-  llmMaxOutputTokensExtract: number | string;
-  llmMaxOutputTokensValidate: number | string;
-  llmMaxOutputTokensWrite: number | string;
   llmMaxOutputTokensPlanFallback: number | string;
-  llmMaxOutputTokensExtractFallback: number | string;
-  llmMaxOutputTokensValidateFallback: number | string;
-  llmMaxOutputTokensWriteFallback: number | string;
+  llmMaxOutputTokensReasoningFallback: number | string;
 }
 
 interface LlmModelOptionsWithCurrentInput {
   llmModelOptions: string[];
   llmModelPlan: string;
-  llmModelTriage: string;
-  llmModelFast: string;
   llmModelReasoning: string;
-  llmModelExtract: string;
-  llmModelValidate: string;
-  llmModelWrite: string;
 }
 
 interface SelectedLlmPricingRowsInput {
   llmModelPlan: string;
-  llmModelTriage: string;
-  llmModelFast: string;
   llmModelReasoning: string;
-  llmModelExtract: string;
-  llmModelValidate: string;
-  llmModelWrite: string;
   llmMaxOutputTokensPlan: number;
-  llmMaxOutputTokensTriage: number;
-  llmMaxOutputTokensFast: number;
   llmMaxOutputTokensReasoning: number;
-  llmMaxOutputTokensExtract: number;
-  llmMaxOutputTokensValidate: number;
-  llmMaxOutputTokensWrite: number;
   llmMaxOutputTokensPlanFallback: number;
-  llmMaxOutputTokensExtractFallback: number;
-  llmMaxOutputTokensValidateFallback: number;
-  llmMaxOutputTokensWriteFallback: number;
+  llmMaxOutputTokensReasoningFallback: number;
   modelPricingLookup: ModelPricingLookup;
   indexingLlmConfig: IndexingLlmConfigResponse | undefined;
 }
@@ -93,12 +69,7 @@ export function deriveLlmModelOptionsWithCurrent(input: LlmModelOptionsWithCurre
   const seeded = [
     ...input.llmModelOptions,
     input.llmModelPlan,
-    input.llmModelTriage,
-    input.llmModelFast,
     input.llmModelReasoning,
-    input.llmModelExtract,
-    input.llmModelValidate,
-    input.llmModelWrite,
   ];
   const deduped: string[] = [];
   const seen = new Set<string>();
@@ -116,16 +87,9 @@ export function deriveLlmModelOptionsWithCurrent(input: LlmModelOptionsWithCurre
 export function deriveLlmTokenPresetFallbackOptions(runtimeSettingsBootstrap: LlmTokenPresetBootstrap): number[] {
   const seeded = [
     runtimeSettingsBootstrap.llmMaxOutputTokensPlan,
-    runtimeSettingsBootstrap.llmMaxOutputTokensTriage,
-    runtimeSettingsBootstrap.llmMaxOutputTokensFast,
     runtimeSettingsBootstrap.llmMaxOutputTokensReasoning,
-    runtimeSettingsBootstrap.llmMaxOutputTokensExtract,
-    runtimeSettingsBootstrap.llmMaxOutputTokensValidate,
-    runtimeSettingsBootstrap.llmMaxOutputTokensWrite,
     runtimeSettingsBootstrap.llmMaxOutputTokensPlanFallback,
-    runtimeSettingsBootstrap.llmMaxOutputTokensExtractFallback,
-    runtimeSettingsBootstrap.llmMaxOutputTokensValidateFallback,
-    runtimeSettingsBootstrap.llmMaxOutputTokensWriteFallback,
+    runtimeSettingsBootstrap.llmMaxOutputTokensReasoningFallback,
   ];
   const cleaned = seeded
     .map((value) => parseRuntimeLlmTokenCap(value))
@@ -194,12 +158,7 @@ export function deriveModelTokenDefaults(options: {
 export function deriveSelectedLlmPricingRows(input: SelectedLlmPricingRowsInput): LlmPricingRow[] {
   const entries = [
     { knob: 'phase 02 planner', knob_key: 'phase_02_planner', model: input.llmModelPlan, token_cap: input.llmMaxOutputTokensPlan },
-    { knob: 'phase 03 triage', knob_key: 'phase_03_triage', model: input.llmModelTriage, token_cap: input.llmMaxOutputTokensTriage },
-    { knob: 'fast pass', knob_key: 'fast_pass', model: input.llmModelFast, token_cap: input.llmMaxOutputTokensFast },
     { knob: 'reasoning pass', knob_key: 'reasoning_pass', model: input.llmModelReasoning, token_cap: input.llmMaxOutputTokensReasoning },
-    { knob: 'extract role', knob_key: 'extract_role', model: input.llmModelExtract, token_cap: input.llmMaxOutputTokensExtract },
-    { knob: 'validate role', knob_key: 'validate_role', model: input.llmModelValidate, token_cap: input.llmMaxOutputTokensValidate },
-    { knob: 'write role', knob_key: 'write_role', model: input.llmModelWrite, token_cap: input.llmMaxOutputTokensWrite },
   ];
   const knobDefaults = input.indexingLlmConfig?.knob_defaults || {};
   return entries

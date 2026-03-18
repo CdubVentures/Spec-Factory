@@ -4,7 +4,6 @@ export const UI_SETTINGS_VALUE_TYPES = Object.freeze({
   studioAutoSaveMapEnabled: 'boolean',
   runtimeAutoSaveEnabled: 'boolean',
   storageAutoSaveEnabled: 'boolean',
-  llmSettingsAutoSaveEnabled: 'boolean',
 });
 
 export const STORAGE_SETTINGS_VALUE_TYPES = Object.freeze({

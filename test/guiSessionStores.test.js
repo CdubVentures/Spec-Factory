@@ -77,7 +77,9 @@ function nextTick() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-test('collapse store hydrates and persists via sessionStorage only', async () => {
+test('collapse store hydrates from sessionStorage (migration) and persists to localStorage', async () => {
+  // Module migrated from sessionStorage → localStorage with automatic migration.
+  // Seed sessionStorage so readStorageItem migrates it to localStorage on load.
   const sessionStorage = createStorage({
     'collapse-store': JSON.stringify({
       state: { values: { sidebar: true } },
@@ -95,15 +97,15 @@ test('collapse store hydrates and persists via sessionStorage only', async () =>
     await nextTick();
   });
 
-  const persisted = JSON.parse(sessionStorage.peek('collapse-store'));
+  const persisted = JSON.parse(localStorage.peek('collapse-store'));
   assert.deepEqual(persisted.state.values, {
     sidebar: true,
     inspector: false,
   });
-  assert.equal(localStorage.calls.some((call) => call.op === 'setItem' || call.op === 'removeItem'), false);
 });
 
-test('tab store hydrates, persists updates, and clears via sessionStorage only', async () => {
+test('tab store hydrates from sessionStorage (migration) and persists to localStorage', async () => {
+  // Module migrated from sessionStorage → localStorage with automatic migration.
   const sessionStorage = createStorage({
     'tab-store': JSON.stringify({
       state: { values: { main: 'overview', secondary: 'details' } },
@@ -125,10 +127,9 @@ test('tab store hydrates, persists updates, and clears via sessionStorage only',
     await nextTick();
   });
 
-  const persisted = JSON.parse(sessionStorage.peek('tab-store'));
+  const persisted = JSON.parse(localStorage.peek('tab-store'));
   assert.deepEqual(persisted.state.values, {
     secondary: 'details',
     panel: 'search',
   });
-  assert.equal(localStorage.calls.some((call) => call.op === 'setItem' || call.op === 'removeItem'), false);
 });

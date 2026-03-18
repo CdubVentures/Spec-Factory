@@ -40,7 +40,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
     : null;
 
   const baseOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, ['primary', 'fast'], apiKeyFilter),
+    () => buildModelDropdownOptions(llmModelOptions, registry, 'primary', apiKeyFilter),
     [llmModelOptions, registry, apiKeyFilter],
   );
   const reasoningOptions = useMemo(
@@ -58,20 +58,24 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
     onPhaseOverrideChange(next);
   }, [overrideKey, phaseOverrides, onPhaseOverrideChange]);
 
-  const phaseTokenWarning = useMemo(() => {
-    if (!overrideKey || !resolved) return null;
+  const phaseTokenWarnings = useMemo(() => {
+    if (!overrideKey || !resolved) return [];
     const tokenCap = phaseOverrides[overrideKey]?.maxOutputTokens;
-    if (tokenCap == null || tokenCap <= 0) return null;
+    if (tokenCap == null || tokenCap <= 0) return [];
     const modelId = resolved.baseModel;
-    if (!modelId) return null;
+    if (!modelId) return [];
     const provider = resolveProviderForModel(registry, modelId);
-    if (!provider) return null;
+    if (!provider) return [];
     const model = provider.models.find((m) => m.modelId === modelId);
-    if (!model || model.maxOutputTokens == null) return null;
-    if (tokenCap > model.maxOutputTokens) {
-      return { model: modelId, setting: tokenCap, limit: model.maxOutputTokens };
+    if (!model) return [];
+    const warnings: { field: 'maxOutput' | 'contextOverflow'; model: string; setting: number; limit: number }[] = [];
+    if (model.maxOutputTokens != null && tokenCap > model.maxOutputTokens) {
+      warnings.push({ field: 'maxOutput', model: modelId, setting: tokenCap, limit: model.maxOutputTokens });
     }
-    return null;
+    if (model.maxContextTokens != null && tokenCap > model.maxContextTokens * 0.5) {
+      warnings.push({ field: 'contextOverflow', model: modelId, setting: tokenCap, limit: model.maxContextTokens });
+    }
+    return warnings;
   }, [overrideKey, resolved, phaseOverrides, registry]);
 
   if (!overrideKey || !resolved) return null;
@@ -130,13 +134,18 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           />
         </div>
       </SettingRow>
-      {phaseTokenWarning && (
+      {phaseTokenWarnings.map((w) => (
         <AlertBanner
+          key={`phase-token-${w.field}`}
           severity="warning"
-          title="Token cap exceeds model limit"
-          message={`${phaseTokenWarning.model} max output is ${phaseTokenWarning.limit.toLocaleString()}, but this phase is set to ${phaseTokenWarning.setting.toLocaleString()}.`}
+          title={w.field === 'contextOverflow'
+            ? 'Output allocation exceeds 50% of context window'
+            : 'Token cap exceeds model limit'}
+          message={w.field === 'contextOverflow'
+            ? `${w.model} context window is ${w.limit.toLocaleString()}, but this phase output is set to ${w.setting.toLocaleString()} (>${Math.floor(w.limit * 0.5).toLocaleString()}).`
+            : `${w.model} max output is ${w.limit.toLocaleString()}, but this phase is set to ${w.setting.toLocaleString()}.`}
         />
-      )}
+      ))}
     </SettingGroupBlock>
   );
 });

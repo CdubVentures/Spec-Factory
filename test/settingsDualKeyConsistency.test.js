@@ -8,13 +8,13 @@ import {
 } from '../src/features/settings-authority/userSettingsService.js';
 
 // ---------------------------------------------------------------------------
-// Dual-key consistency — only 5 self-referencing fallback-model pairs remain.
-// All 13 GUI aliases have been retired → canonical names only.
+// Dual-key consistency — only plan + reasoning fallback pairs remain.
+// Per-role fallback aliases retired with model stack simplification.
 // ---------------------------------------------------------------------------
 
 test('dualKey: DUAL_KEY_PAIRS is a frozen non-empty array', () => {
   assert.ok(Array.isArray(DUAL_KEY_PAIRS));
-  assert.equal(DUAL_KEY_PAIRS.length, 5, 'only 5 self-referencing fallback-model pairs remain');
+  assert.equal(DUAL_KEY_PAIRS.length, 2, 'only plan + reasoning fallback pairs remain');
   assert.ok(Object.isFrozen(DUAL_KEY_PAIRS));
 });
 
