@@ -69,7 +69,7 @@ function derivePlannerLimits(config) {
     llmProvider: String(config.llmProvider || ''),
     llmMaxOutputTokensPlan: toInt(config._resolvedNeedsetMaxOutputTokens ?? config.llmMaxOutputTokensPlan, 2048),
     searchProfileCapMap: parseCapMap(config.searchProfileCapMapJson),
-    searchProvider: String(config.searchProvider || 'dual'),
+    searchEngines: String(config.searchEngines || 'bing,google'),
   };
 }
 

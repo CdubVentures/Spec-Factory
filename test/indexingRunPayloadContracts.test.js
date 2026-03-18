@@ -87,7 +87,7 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
     category: 'mouse',
     productId: 'mouse-v3-pro',
     runtimeSettingsPayload: createPayload({
-      searchProvider: ' searxng ',
+      searchEngines: ' bing,startpage,duckduckgo ',
       dynamicCrawleeEnabled: true,
       runtimeScreencastEnabled: true,
       importsRoot: '  ./imports  ',
@@ -200,12 +200,10 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
   assert.equal(payload.llmProvider, 'openai');
   assert.equal(payload.llmPlanProvider, 'openai');
   assert.equal(payload.llmPlanApiKey, 'plan-key');
-  // WHY: needsetEvidenceDecayFloor removed in Phase 12 NeedSet Legacy Removal
-  assert.equal(payload.llmExtractMaxTokens, 128);
   assert.equal(payload.llmMaxOutputTokens, 256);
   assert.equal(payload.endpointNetworkScanLimit, 50);
 
-  assert.equal(payload.searchProvider, 'searxng');
+  assert.equal(payload.searchEngines, 'bing,startpage,duckduckgo');
   assert.equal(payload.llmModelPlan, 'gpt-plan');
   assert.equal(payload.llmMaxOutputTokensPlan, 128);
   assert.equal(payload.llmPlanFallbackModel, 'gpt-plan-fallback');

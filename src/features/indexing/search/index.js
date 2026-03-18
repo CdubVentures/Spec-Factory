@@ -1,7 +1,9 @@
 export {
   searchSearxng,
   runSearchProviders,
+  searchEngineAvailability,
   searchProviderAvailability,
+  normalizeSearchEngines,
 } from './searchProviders.js';
 export {
   buildDeterministicAliases,
@@ -9,5 +11,4 @@ export {
   buildTargetedQueries
 } from './queryBuilder.js';
 export { dedupeSerpResults } from './serpDedupe.js';
-export { rerankSearchResults } from './resultReranker.js';
 export { evaluateSearchLoopStop } from './searchLoop.js';

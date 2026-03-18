@@ -100,7 +100,7 @@ test('every runtime payload key is accepted by the backend PUT handler', async (
 
   // Build a dummy payload with all required fields
   const dummyInput = {
-    searchProvider: 'dual',
+    searchEngines: 'bing,google',
     searxngBaseUrl: '',
     llmPlanApiKey: '',
     llmModelPlan: 'test-model',

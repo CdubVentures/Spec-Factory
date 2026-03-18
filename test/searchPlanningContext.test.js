@@ -170,7 +170,7 @@ describe('buildSearchPlanningContext', () => {
       assert.equal(result.planner_limits.llmProvider, '');
       assert.equal(result.planner_limits.llmMaxOutputTokensPlan, 2048);
       assert.equal(result.planner_limits.searchProfileCapMap, null);
-      assert.equal(result.planner_limits.searchProvider, 'dual');
+      assert.equal(result.planner_limits.searchEngines, 'bing,google');
     });
   });
 
@@ -532,7 +532,7 @@ describe('buildSearchPlanningContext', () => {
         llmProvider: 'openai',
         llmMaxOutputTokensPlan: 4096,
         searchProfileCapMapJson: '{"deterministicAliasCap":6}',
-        searchProvider: 'google'
+        searchEngines: 'google'
       };
       const result = buildSearchPlanningContext({
         needSetOutput: makeNeedSetOutput(),
@@ -551,7 +551,7 @@ describe('buildSearchPlanningContext', () => {
       assert.equal(result.planner_limits.llmProvider, 'openai');
       assert.equal(result.planner_limits.llmMaxOutputTokensPlan, 4096);
       assert.deepStrictEqual(result.planner_limits.searchProfileCapMap, { deterministicAliasCap: 6 });
-      assert.equal(result.planner_limits.searchProvider, 'google');
+      assert.equal(result.planner_limits.searchEngines, 'google');
     });
 
     it('llmProvider passed through to planner_limits', () => {

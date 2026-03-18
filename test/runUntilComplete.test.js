@@ -208,36 +208,36 @@ test('shouldStopForBudgetExhaustion stops for hard budget reasons after round 0'
   assert.equal(round1Stop, true);
 });
 
-test('selectRoundSearchProvider uses searxng for required-field gaps in keyless mode', () => {
+test('selectRoundSearchProvider returns empty when no engines configured despite searxng ready', () => {
   const provider = selectRoundSearchProvider({
     baseConfig: {
-      searchProvider: 'none',
+      searchEngines: '',
       searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     discoveryEnabled: true,
     missingRequiredCount: 2,
     requiredSearchIteration: 2
   });
-  assert.equal(provider, 'searxng');
+  assert.equal(provider, '');
 });
 
-test('selectRoundSearchProvider keeps searxng preference when searxng is available', () => {
+test('selectRoundSearchProvider uses configured engines when searxng is ready', () => {
   const provider = selectRoundSearchProvider({
     baseConfig: {
-      searchProvider: 'none',
+      searchEngines: 'bing,startpage',
       searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     discoveryEnabled: true,
     missingRequiredCount: 2,
     requiredSearchIteration: 1
   });
-  assert.equal(provider, 'searxng');
+  assert.equal(provider, 'bing,startpage');
 });
 
 test('selectRoundSearchProvider honors configured google provider in keyless mode', () => {
   const provider = selectRoundSearchProvider({
     baseConfig: {
-      searchProvider: 'google',
+      searchEngines: 'google',
       searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     discoveryEnabled: true,
@@ -247,34 +247,34 @@ test('selectRoundSearchProvider honors configured google provider in keyless mod
   assert.equal(provider, 'google');
 });
 
-test('selectRoundSearchProvider falls back to searxng when configured providers are unavailable', () => {
+test('selectRoundSearchProvider returns empty when no engines configured', () => {
   const provider = selectRoundSearchProvider({
     baseConfig: {
-      searchProvider: 'none',
+      searchEngines: '',
       searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     discoveryEnabled: true,
     missingRequiredCount: 1
   });
-  assert.equal(provider, 'searxng');
+  assert.equal(provider, '');
 });
 
-test('selectRoundSearchProvider returns none when discovery is disabled', () => {
+test('selectRoundSearchProvider returns empty when discovery is disabled', () => {
   const provider = selectRoundSearchProvider({
     baseConfig: {
-      searchProvider: 'dual',
+      searchEngines: 'bing,google',
       searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     discoveryEnabled: false,
     missingRequiredCount: 3
   });
-  assert.equal(provider, 'none');
+  assert.equal(provider, '');
 });
 
-test('explainSearchProviderSelection reports keyless provider diagnostics for required-field gaps', () => {
+test('explainSearchProviderSelection reports no engines configured when searchEngines is empty', () => {
   const selection = explainSearchProviderSelection({
     baseConfig: {
-      searchProvider: 'none',
+      searchEngines: '',
       searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     discoveryEnabled: true,
@@ -282,19 +282,15 @@ test('explainSearchProviderSelection reports keyless provider diagnostics for re
     requiredSearchIteration: 2
   });
 
-  assert.equal(selection.provider, 'searxng');
-  assert.equal(selection.reason_code, 'auto_free_searxng_for_missing_required');
+  assert.equal(selection.provider, '');
+  assert.equal(selection.reason_code, 'no_engines_configured');
   assert.equal(selection.free_provider_ready, true);
-  assert.equal(Object.hasOwn(selection, 'use_paid_rescue'), false);
-  assert.equal(Object.hasOwn(selection, 'paid_provider_ready'), false);
-  assert.equal(Object.hasOwn(selection, 'cse_rescue_only_mode'), false);
-  assert.equal(Object.hasOwn(selection, 'google_cse_disabled'), false);
 });
 
-test('explainSearchProviderSelection reports free-provider mode when only searxng is available', () => {
+test('explainSearchProviderSelection reports engines ready when configured', () => {
   const selection = explainSearchProviderSelection({
     baseConfig: {
-      searchProvider: 'none',
+      searchEngines: 'bing,startpage',
       searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     discoveryEnabled: true,
@@ -302,8 +298,8 @@ test('explainSearchProviderSelection reports free-provider mode when only searxn
     requiredSearchIteration: 1
   });
 
-  assert.equal(selection.provider, 'searxng');
-  assert.equal(selection.reason_code, 'auto_free_searxng_for_missing_required');
+  assert.equal(selection.provider, 'bing,startpage');
+  assert.equal(selection.reason_code, 'engines_ready');
 });
 
 test('buildRoundConfig keeps discovery disabled when required fields are already complete', () => {
@@ -312,7 +308,7 @@ test('buildRoundConfig keeps discovery disabled when required fields are already
       runProfile: 'standard',
       discoveryEnabled: true,
       fetchCandidateSources: true,
-      searchProvider: 'searxng',
+      searchEngines: 'bing,startpage,duckduckgo',
       searxngBaseUrl: 'http://127.0.0.1:8080',
       maxUrlsPerProduct: 80,
       maxCandidateUrls: 120,
@@ -337,7 +333,7 @@ test('buildRoundConfig keeps discovery disabled when required fields are already
 
   assert.equal(roundConfig.discoveryEnabled, false);
   assert.equal(roundConfig.fetchCandidateSources, false);
-  assert.equal(roundConfig.searchProvider, 'none');
+  assert.equal(roundConfig.searchEngines, '');
   assert.equal(roundConfig.maxUrlsPerProduct <= 48, true);
   assert.equal(roundConfig.maxCandidateUrls <= 48, true);
 });
@@ -348,7 +344,7 @@ test('buildRoundConfig keeps aggressive discovery enabled when critical gaps rem
       runProfile: 'standard',
       discoveryEnabled: true,
       fetchCandidateSources: true,
-      searchProvider: 'searxng',
+      searchEngines: 'bing,startpage,duckduckgo',
       searxngBaseUrl: 'http://127.0.0.1:8080',
       maxUrlsPerProduct: 80,
       maxCandidateUrls: 120,
@@ -377,18 +373,18 @@ test('buildRoundConfig keeps aggressive discovery enabled when critical gaps rem
 
   assert.equal(roundConfig.discoveryEnabled, true);
   assert.equal(roundConfig.fetchCandidateSources, true);
-  assert.equal(roundConfig.searchProvider, 'searxng');
+  assert.equal(roundConfig.searchEngines, 'bing,startpage,duckduckgo');
   assert.equal(roundConfig.llmMaxCallsPerRound >= 4, true);
   assert.equal(roundConfig.llmMaxCallsPerProductTotal >= 12, true);
 });
 
-test('buildRoundConfig enables discovery + searxng fallback when required fields are missing', () => {
+test('buildRoundConfig uses configured engines when required fields are missing', () => {
   const roundConfig = buildRoundConfig(
     {
       runProfile: 'standard',
       discoveryEnabled: true,
       fetchCandidateSources: true,
-      searchProvider: 'none',
+      searchEngines: 'bing,startpage,duckduckgo',
       searxngBaseUrl: 'http://127.0.0.1:8080',
       maxUrlsPerProduct: 80,
       maxCandidateUrls: 120,
@@ -414,7 +410,7 @@ test('buildRoundConfig enables discovery + searxng fallback when required fields
 
   assert.equal(roundConfig.discoveryEnabled, true);
   assert.equal(roundConfig.fetchCandidateSources, true);
-  assert.equal(roundConfig.searchProvider, 'searxng');
+  assert.equal(roundConfig.searchEngines, 'bing,startpage,duckduckgo');
 });
 
 test('buildRoundConfig defers external discovery on first required-search iteration when internal-first is enabled', () => {
@@ -424,7 +420,7 @@ test('buildRoundConfig defers external discovery on first required-search iterat
       discoveryEnabled: true,
       fetchCandidateSources: true,
       discoveryInternalFirst: true,
-      searchProvider: 'searxng',
+      searchEngines: 'bing,startpage,duckduckgo',
       searxngBaseUrl: 'http://127.0.0.1:8080',
       maxUrlsPerProduct: 80,
       maxCandidateUrls: 120,
@@ -450,7 +446,7 @@ test('buildRoundConfig defers external discovery on first required-search iterat
 
   assert.equal(roundConfig.discoveryEnabled, false);
   assert.equal(roundConfig.fetchCandidateSources, false);
-  assert.equal(roundConfig.searchProvider, 'none');
+  assert.equal(roundConfig.searchEngines, '');
 });
 
 test('buildRoundConfig enables one expected-field search pass when required fields are complete', () => {
@@ -459,7 +455,7 @@ test('buildRoundConfig enables one expected-field search pass when required fiel
       runProfile: 'standard',
       discoveryEnabled: true,
       fetchCandidateSources: true,
-      searchProvider: 'searxng',
+      searchEngines: 'bing,startpage,duckduckgo',
       searxngBaseUrl: 'http://127.0.0.1:8080',
       maxUrlsPerProduct: 80,
       maxCandidateUrls: 120,
@@ -486,7 +482,7 @@ test('buildRoundConfig enables one expected-field search pass when required fiel
 
   assert.equal(roundConfig.discoveryEnabled, true);
   assert.equal(roundConfig.fetchCandidateSources, true);
-  assert.equal(roundConfig.searchProvider, 'searxng');
+  assert.equal(roundConfig.searchEngines, 'bing,startpage,duckduckgo');
 });
 
 test('buildRoundConfig applies fast round 0 using llmMaxCallsPerRound directly', () => {
@@ -496,7 +492,7 @@ test('buildRoundConfig applies fast round 0 using llmMaxCallsPerRound directly',
       llmMaxCallsPerRound: 4,
       discoveryEnabled: false,
       fetchCandidateSources: false,
-      searchProvider: 'none',
+      searchEngines: '',
       maxUrlsPerProduct: 30,
       maxCandidateUrls: 40
     },
@@ -521,7 +517,7 @@ test('buildRoundConfig keeps aggressive round 1 in standard profile by default',
 
       discoveryEnabled: true,
       fetchCandidateSources: true,
-      searchProvider: 'searxng',
+      searchEngines: 'bing,startpage,duckduckgo',
       searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     {
@@ -546,7 +542,7 @@ test('buildRoundConfig allows aggressive thorough profile from configured round'
 
       discoveryEnabled: true,
       fetchCandidateSources: true,
-      searchProvider: 'searxng',
+      searchEngines: 'bing,startpage,duckduckgo',
       searxngBaseUrl: 'http://127.0.0.1:8080'
     },
     {
@@ -566,7 +562,7 @@ test('buildRoundConfig applies production-mode budgets with boosted limits', () 
       maxCandidateUrls: 120,
       discoveryEnabled: true,
       fetchCandidateSources: true,
-      searchProvider: 'searxng',
+      searchEngines: 'bing,startpage,duckduckgo',
       searxngBaseUrl: 'http://127.0.0.1:8080',
       llmMaxCallsPerRound: 5
     },
@@ -608,7 +604,7 @@ test('buildRoundConfig raises deep-search budgets for high contract effort plans
       runProfile: 'standard',
       discoveryEnabled: true,
       fetchCandidateSources: true,
-      searchProvider: 'searxng',
+      searchEngines: 'bing,startpage,duckduckgo',
       searxngBaseUrl: 'http://127.0.0.1:8080',
       maxUrlsPerProduct: 80,
       maxCandidateUrls: 120,
@@ -642,7 +638,7 @@ test('buildRoundConfig raises deep-search budgets for high contract effort plans
       runProfile: 'standard',
       discoveryEnabled: true,
       fetchCandidateSources: true,
-      searchProvider: 'searxng',
+      searchEngines: 'bing,startpage,duckduckgo',
       searxngBaseUrl: 'http://127.0.0.1:8080',
       maxUrlsPerProduct: 80,
       maxCandidateUrls: 120,

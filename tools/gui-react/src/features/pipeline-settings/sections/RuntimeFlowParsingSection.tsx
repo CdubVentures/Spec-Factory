@@ -5,6 +5,9 @@ import type {
 } from '../types/settingPrimitiveTypes';
 import { AdvancedSettingsBlock, MasterSwitchRow, SettingGroupBlock, SettingNumberInput, SettingRow, SettingToggle } from '../components/RuntimeFlowPrimitives';
 
+const PARSING_PHASE_TIP =
+  'Phase coverage: 09 Fetch To Extraction.';
+
 interface RuntimeFlowParsingSectionProps {
   runtimeDraft: RuntimeDraft;
   runtimeSettingsReady: boolean;
@@ -28,17 +31,17 @@ export const RuntimeFlowParsingSection = memo(function RuntimeFlowParsingSection
     <>
       <div id={runtimeSubStepDomId('parsing-pdf')} className="scroll-mt-24" />
       <SettingGroupBlock title="PDF Processing">
-        <MasterSwitchRow label="PDF Router Enabled" tip="Enable backend PDF router selection logic." hint="Controls PDF backend, page limits, and text preview settings below">
+        <MasterSwitchRow label="PDF Router Enabled" tip={`${PARSING_PHASE_TIP}\nLives in: PDF intake before deterministic parsing and extraction candidates are built.\nWhat this controls: whether the runtime chooses among PDF backends instead of relying on a fixed parser path.`} hint="Controls PDF backend, page limits, and text preview settings below">
           <SettingToggle
             checked={runtimeDraft.pdfBackendRouterEnabled}
             onChange={(next) => updateDraft('pdfBackendRouterEnabled', next)}
             disabled={!runtimeSettingsReady}
           />
         </MasterSwitchRow>
-        <SettingRow label="Max PDF Bytes" tip="Maximum PDF payload bytes allowed for parsing.">
+        <SettingRow label="Max PDF Bytes" tip={`${PARSING_PHASE_TIP}\nLives in: PDF payload safety checks before parsing begins.\nWhat this controls: the maximum PDF size the runtime will accept for downstream extraction work.`}>
           <SettingNumberInput draftKey="maxPdfBytes" value={runtimeDraft.maxPdfBytes} bounds={getNumberBounds('maxPdfBytes')} step={1024} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
-        <SettingRow label="PDF Preferred Backend" tip="Preferred PDF backend (auto/pdfplumber/pymupdf/camelot/tabula/legacy)." disabled={!runtimeDraft.pdfBackendRouterEnabled}>
+        <SettingRow label="PDF Preferred Backend" tip={`${PARSING_PHASE_TIP}\nLives in: PDF backend routing preferences.\nWhat this controls: the preferred parser backend when the PDF router is enabled and more than one backend is available.`} disabled={!runtimeDraft.pdfBackendRouterEnabled}>
           <input
             type="text"
             value={runtimeDraft.pdfPreferredBackend}
@@ -48,16 +51,16 @@ export const RuntimeFlowParsingSection = memo(function RuntimeFlowParsingSection
           />
         </SettingRow>
         <AdvancedSettingsBlock title="PDF Router Limits" count={4}>
-          <SettingRow label="PDF Router Timeout (ms)" tip="Maximum wait time for PDF router backend evaluation." disabled={!runtimeDraft.pdfBackendRouterEnabled}>
+          <SettingRow label="PDF Router Timeout (ms)" tip={`${PARSING_PHASE_TIP}\nLives in: PDF router backend selection.\nWhat this controls: how long the router may spend evaluating backend options for a PDF before timing out.`} disabled={!runtimeDraft.pdfBackendRouterEnabled}>
             <SettingNumberInput draftKey="pdfBackendRouterTimeoutMs" value={runtimeDraft.pdfBackendRouterTimeoutMs} bounds={getNumberBounds('pdfBackendRouterTimeoutMs')} step={1000} disabled={!runtimeSettingsReady || !runtimeDraft.pdfBackendRouterEnabled} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
-          <SettingRow label="PDF Router Max Pages" tip="Maximum pages scanned by the PDF router." disabled={!runtimeDraft.pdfBackendRouterEnabled}>
+          <SettingRow label="PDF Router Max Pages" tip={`${PARSING_PHASE_TIP}\nLives in: PDF router sampling.\nWhat this controls: the maximum number of pages scanned while deciding which PDF backend to use.`} disabled={!runtimeDraft.pdfBackendRouterEnabled}>
             <SettingNumberInput draftKey="pdfBackendRouterMaxPages" value={runtimeDraft.pdfBackendRouterMaxPages} bounds={getNumberBounds('pdfBackendRouterMaxPages')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.pdfBackendRouterEnabled} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
-          <SettingRow label="PDF Router Max Pairs" tip="Maximum candidate key-value pairs evaluated by the PDF router." disabled={!runtimeDraft.pdfBackendRouterEnabled}>
+          <SettingRow label="PDF Router Max Pairs" tip={`${PARSING_PHASE_TIP}\nLives in: PDF router evidence sampling.\nWhat this controls: the maximum number of candidate key-value pairs the router evaluates while comparing backends.`} disabled={!runtimeDraft.pdfBackendRouterEnabled}>
             <SettingNumberInput draftKey="pdfBackendRouterMaxPairs" value={runtimeDraft.pdfBackendRouterMaxPairs} bounds={getNumberBounds('pdfBackendRouterMaxPairs')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.pdfBackendRouterEnabled} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
-          <SettingRow label="PDF Router Max Text Preview Chars" tip="Max text preview characters sampled for PDF backend routing." disabled={!runtimeDraft.pdfBackendRouterEnabled}>
+          <SettingRow label="PDF Router Max Text Preview Chars" tip={`${PARSING_PHASE_TIP}\nLives in: PDF text preview generation for backend selection.\nWhat this controls: how many preview characters are sampled before the router chooses a backend.`} disabled={!runtimeDraft.pdfBackendRouterEnabled}>
             <SettingNumberInput draftKey="pdfBackendRouterMaxTextPreviewChars" value={runtimeDraft.pdfBackendRouterMaxTextPreviewChars} bounds={getNumberBounds('pdfBackendRouterMaxTextPreviewChars')} step={256} disabled={!runtimeSettingsReady || !runtimeDraft.pdfBackendRouterEnabled} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
         </AdvancedSettingsBlock>
@@ -65,24 +68,24 @@ export const RuntimeFlowParsingSection = memo(function RuntimeFlowParsingSection
 
       <div id={runtimeSubStepDomId('parsing-article')} className="scroll-mt-24" />
       <SettingGroupBlock title="Article Extraction">
-        <MasterSwitchRow label="Article Extractor V2 Enabled" tip="Enable article extractor readability-v2 path." hint="Controls article char limits, score threshold, and domain policies below">
+        <MasterSwitchRow label="Article Extractor V2 Enabled" tip={`${PARSING_PHASE_TIP}\nLives in: article/readability parsing before evidence packing.\nWhat this controls: whether long-form pages may flow through the readability-v2 article extraction path.`} hint="Controls article char limits, score threshold, and domain policies below">
           <SettingToggle
             checked={runtimeDraft.articleExtractorV2Enabled}
             onChange={(next) => updateDraft('articleExtractorV2Enabled', next)}
             disabled={!runtimeSettingsReady}
           />
         </MasterSwitchRow>
-        <SettingRow label="Article Extractor Min Chars" tip="Minimum body character count for article extractor acceptance." disabled={!runtimeDraft.articleExtractorV2Enabled}>
+        <SettingRow label="Article Extractor Min Chars" tip={`${PARSING_PHASE_TIP}\nLives in: article acceptance gating.\nWhat this controls: the minimum extracted body length required before article output is treated as usable evidence.`} disabled={!runtimeDraft.articleExtractorV2Enabled}>
           <SettingNumberInput draftKey="articleExtractorMinChars" value={runtimeDraft.articleExtractorMinChars} bounds={getNumberBounds('articleExtractorMinChars')} step={10} disabled={!runtimeSettingsReady || !runtimeDraft.articleExtractorV2Enabled} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
-        <SettingRow label="Article Extractor Min Score" tip="Minimum extractor score threshold for acceptance." disabled={!runtimeDraft.articleExtractorV2Enabled}>
+        <SettingRow label="Article Extractor Min Score" tip={`${PARSING_PHASE_TIP}\nLives in: article quality gating.\nWhat this controls: the minimum extractor score required before article output survives into extraction context.`} disabled={!runtimeDraft.articleExtractorV2Enabled}>
           <SettingNumberInput draftKey="articleExtractorMinScore" value={runtimeDraft.articleExtractorMinScore} bounds={getNumberBounds('articleExtractorMinScore')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.articleExtractorV2Enabled} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
         <AdvancedSettingsBlock title="Article Limits & Policies" count={2}>
-          <SettingRow label="Article Extractor Max Chars" tip="Maximum extractor body characters retained." disabled={!runtimeDraft.articleExtractorV2Enabled}>
+          <SettingRow label="Article Extractor Max Chars" tip={`${PARSING_PHASE_TIP}\nLives in: article evidence truncation.\nWhat this controls: the maximum amount of extracted article body text retained for downstream use.`} disabled={!runtimeDraft.articleExtractorV2Enabled}>
             <SettingNumberInput draftKey="articleExtractorMaxChars" value={runtimeDraft.articleExtractorMaxChars} bounds={getNumberBounds('articleExtractorMaxChars')} step={100} disabled={!runtimeSettingsReady || !runtimeDraft.articleExtractorV2Enabled} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
-          <SettingRow label="Article Extractor Domain Policy Map (JSON)" tip="Host policy map JSON override for article-extractor mode selection.">
+          <SettingRow label="Article Extractor Domain Policy Map (JSON)" tip={`${PARSING_PHASE_TIP}\nLives in: host-specific article parsing policy.\nWhat this controls: an optional JSON override map for per-domain article-extractor mode decisions.`}>
             <textarea
               value={runtimeDraft.articleExtractorDomainPolicyMapJson}
               onChange={(event) => updateDraft('articleExtractorDomainPolicyMapJson', event.target.value)}
@@ -95,14 +98,14 @@ export const RuntimeFlowParsingSection = memo(function RuntimeFlowParsingSection
 
       <div id={runtimeSubStepDomId('parsing-dom')} className="scroll-mt-24" />
       <SettingGroupBlock title="Static DOM">
-        <MasterSwitchRow label="Static DOM Extractor Enabled" tip="Enable static DOM extraction fallback path." hint="Controls DOM extraction mode, match threshold, and snippet limits below">
+        <MasterSwitchRow label="Static DOM Extractor Enabled" tip={`${PARSING_PHASE_TIP}\nLives in: deterministic DOM parsing before optional LLM extraction.\nWhat this controls: whether the runtime may use the static DOM extractor as a fallback or companion parser path.`} hint="Controls DOM extraction mode, match threshold, and snippet limits below">
           <SettingToggle
             checked={runtimeDraft.staticDomExtractorEnabled}
             onChange={(next) => updateDraft('staticDomExtractorEnabled', next)}
             disabled={!runtimeSettingsReady}
           />
         </MasterSwitchRow>
-        <SettingRow label="Static DOM Mode" tip="Static DOM extraction mode (cheerio/regex_fallback)." disabled={!runtimeDraft.staticDomExtractorEnabled}>
+        <SettingRow label="Static DOM Mode" tip={`${PARSING_PHASE_TIP}\nLives in: static DOM parser selection.\nWhat this controls: which deterministic DOM extraction mode is used when the static extractor is enabled.`} disabled={!runtimeDraft.staticDomExtractorEnabled}>
           <input
             type="text"
             value={runtimeDraft.staticDomMode}
@@ -111,28 +114,28 @@ export const RuntimeFlowParsingSection = memo(function RuntimeFlowParsingSection
             className={inputCls}
           />
         </SettingRow>
-        <SettingRow label="Static DOM Target Match Threshold" tip="Minimum target-match confidence for static DOM extraction candidates." disabled={!runtimeDraft.staticDomExtractorEnabled}>
+        <SettingRow label="Static DOM Target Match Threshold" tip={`${PARSING_PHASE_TIP}\nLives in: static DOM candidate admission.\nWhat this controls: the minimum target-match confidence a DOM-derived candidate must reach before it is accepted.`} disabled={!runtimeDraft.staticDomExtractorEnabled}>
           <SettingNumberInput draftKey="staticDomTargetMatchThreshold" value={runtimeDraft.staticDomTargetMatchThreshold} bounds={getNumberBounds('staticDomTargetMatchThreshold')} step={0.01} disabled={!runtimeSettingsReady || !runtimeDraft.staticDomExtractorEnabled} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
         <AdvancedSettingsBlock title="DOM Snippet Limits" count={2}>
-          <SettingRow label="Static DOM Max Evidence Snippets" tip="Maximum static-DOM snippets retained per candidate field." disabled={!runtimeDraft.staticDomExtractorEnabled}>
+          <SettingRow label="Static DOM Max Evidence Snippets" tip={`${PARSING_PHASE_TIP}\nLives in: DOM evidence retention.\nWhat this controls: how many DOM snippets may be stored per candidate field.`} disabled={!runtimeDraft.staticDomExtractorEnabled}>
             <SettingNumberInput draftKey="staticDomMaxEvidenceSnippets" value={runtimeDraft.staticDomMaxEvidenceSnippets} bounds={getNumberBounds('staticDomMaxEvidenceSnippets')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.staticDomExtractorEnabled} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
-          <SettingRow label="DOM Snippet Max Chars" tip="Maximum DOM snippet characters retained per source." disabled={!runtimeDraft.staticDomExtractorEnabled}>
+          <SettingRow label="DOM Snippet Max Chars" tip={`${PARSING_PHASE_TIP}\nLives in: DOM snippet truncation.\nWhat this controls: the maximum number of DOM characters retained from a single source snippet.`} disabled={!runtimeDraft.staticDomExtractorEnabled}>
             <SettingNumberInput draftKey="domSnippetMaxChars" value={runtimeDraft.domSnippetMaxChars} bounds={getNumberBounds('domSnippetMaxChars')} step={50} disabled={!runtimeSettingsReady || !runtimeDraft.staticDomExtractorEnabled} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
         </AdvancedSettingsBlock>
       </SettingGroupBlock>
 
       <SettingGroupBlock title="Additional Parsers">
-        <SettingRow label="HTML Table Extractor V2" tip="Enable table-focused HTML extractor v2 path.">
+        <SettingRow label="HTML Table Extractor V2" tip={`${PARSING_PHASE_TIP}\nLives in: HTML table parsing before candidate emission.\nWhat this controls: whether the runtime enables the table-focused HTML extractor v2 path.`}>
           <SettingToggle
             checked={runtimeDraft.htmlTableExtractorV2}
             onChange={(next) => updateDraft('htmlTableExtractorV2', next)}
             disabled={!runtimeSettingsReady}
           />
         </SettingRow>
-        <SettingRow label="Spec DB Dir" tip="Root directory for per-category spec SQLite databases.">
+        <SettingRow label="Spec DB Dir" tip={`Phase coverage: 13 Validation To Output and durable storage.\nLives in: final artifact persistence rather than the extraction stage itself.\nWhat this controls: the root directory used for per-category spec SQLite databases.`}>
           <input
             type="text"
             value={runtimeDraft.specDbDir}

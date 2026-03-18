@@ -26,14 +26,14 @@ export function RuntimeFlowHeaderControls({
     <div className="flex flex-wrap items-center gap-2">
       <button
         onClick={onSaveNow}
-        disabled={!runtimeSettingsReady || runtimeSettingsSaving || effectiveAutoSave}
+        disabled={!runtimeSettingsReady || runtimeSettingsSaving}
         className={`rounded px-3 py-1.5 sf-text-label disabled:opacity-50 ${
           effectiveAutoSave
             ? 'sf-icon-button'
             : 'sf-primary-button'
         }`}
       >
-        {runtimeSettingsSaving ? 'Saving...' : 'Save'}
+        {runtimeSettingsSaving ? 'Saving...' : effectiveAutoSave ? 'Save Now' : 'Save'}
       </button>
       {showToggle && (
         <button

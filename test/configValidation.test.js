@@ -70,20 +70,16 @@ test('C.1 config defaults: retired bingSearchEndpoint knob is absent', () => {
 });
 
 
-test('C.1 config invariants: SERP triage reranking flags stay enabled even when env disables them', () => {
+test('C.1 config invariants: SERP triage flag stays enabled even when env disables it', () => {
   const previousSerpTriageEnabled = process.env.SERP_TRIAGE_ENABLED;
-  const previousLlmSerpRerankEnabled = process.env.LLM_SERP_RERANK_ENABLED;
   process.env.SERP_TRIAGE_ENABLED = 'false';
-  process.env.LLM_SERP_RERANK_ENABLED = 'false';
   try {
     const config = loadConfig({ runProfile: 'standard' });
     assert.equal(config.serpTriageEnabled, true);
-    assert.equal(config.llmSerpRerankEnabled, true);
+    // WHY: llmSerpRerankEnabled removed — LLM escalation gated by serpTriageEnabled + uberMode only
   } finally {
     if (previousSerpTriageEnabled === undefined) delete process.env.SERP_TRIAGE_ENABLED;
     else process.env.SERP_TRIAGE_ENABLED = previousSerpTriageEnabled;
-    if (previousLlmSerpRerankEnabled === undefined) delete process.env.LLM_SERP_RERANK_ENABLED;
-    else process.env.LLM_SERP_RERANK_ENABLED = previousLlmSerpRerankEnabled;
   }
 });
 
@@ -105,7 +101,7 @@ test('C.1 validate: LLM always-on without API key is warning (not error)', () =>
 });
 
 test('C.1 validate: no search provider emits warning', () => {
-  const config = loadConfig({ searchProvider: 'none' });
+  const config = loadConfig({ searchEngines: '' });
   const result = validateConfig(config);
   assert.ok(result.warnings.some((w) => w.code === 'DISCOVERY_NO_SEARCH_PROVIDER'));
 });
@@ -137,7 +133,7 @@ test('C.1 validate: LLM enabled with API key is valid', () => {
 
 test('C.1 validate: search provider configured does not emit discovery warning', () => {
   const config = loadConfig({
-    searchProvider: 'searxng'
+    searchEngines: 'bing,startpage,duckduckgo'
   });
   const result = validateConfig(config);
   assert.ok(!result.warnings.some((w) => w.code === 'DISCOVERY_NO_SEARCH_PROVIDER'));

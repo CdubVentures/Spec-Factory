@@ -53,7 +53,7 @@ export function createIndexingMetricsHandler({
           model_default: roleDefaults.plan
         },
         phase3: {
-          enabled_default: Boolean(config.llmSerpRerankEnabled),
+          enabled_default: true,
           model_default: roleDefaults.triage
         },
         model_defaults: roleDefaults,

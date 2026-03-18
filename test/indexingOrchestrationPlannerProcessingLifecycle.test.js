@@ -55,7 +55,7 @@ test('runPlannerProcessingLifecycle processes planner queue, repair search, and 
       ],
     },
     config: {
-      searchProvider: 'serpapi',
+      searchEngines: 'serpapi',
       maxRunSeconds: 999,
     },
     planner: { id: 'planner' },
@@ -159,7 +159,7 @@ test('runPlannerProcessingLifecycle stops on run budget exhaustion before repair
       ],
     },
     config: {
-      searchProvider: 'serpapi',
+      searchEngines: 'serpapi',
       maxRunSeconds: 1,
     },
     startMs: 0,

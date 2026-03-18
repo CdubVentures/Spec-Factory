@@ -1,186 +1,70 @@
 {
-  "_doc": "Query Journey output contract. Documents the cumulative output of Stage 4 at each sub-phase boundary, ending with the discovered URL candidates that feed into Stage 5 (fetch/parse). Updated 2026-03-16.",
-
+  "_doc": "Stage 04 cumulative discovery output contract. After the rework this document spans Query Journey, Search Results, and SERP Triage because those contracts are now carried through one searchDiscovery() flow. Updated 2026-03-18.",
   "phase_1_adapter_output": {
-    "_function": "convertHandoffToExecutionPlan()",
-    "_consumed_by": "enforceIdentityQueryGuard() → executeSearchQueries()",
-
-    "queries":             { "type": "string[]", "tag": "recomputed", "note": "deduped flat array of query strings" },
-    "queryRows": {
-      "_type": "array",
-      "_tag": "recomputed",
-      "_per_item": {
-        "query":         { "tag": "passthrough", "source": "handoff q" },
-        "source":        { "tag": "recomputed", "value": "schema4_planner" },
-        "target_fields": { "tag": "passthrough", "source": "handoff target_fields" },
-        "domain_hint":   { "tag": "recomputed", "source": "first preferred_domain or ''" },
-        "doc_hint":      { "tag": "recomputed", "value": "'' (always empty at this stage)" },
-        "hint_source":   { "tag": "recomputed", "value": "schema4_search_plan" },
-        "family":        { "tag": "passthrough", "source": "handoff family" },
-        "group_key":     { "tag": "passthrough", "source": "handoff group_key" },
-        "query_hash":    { "tag": "passthrough", "source": "handoff query_hash" }
-      }
-    },
-    "selectedQueryRowMap": { "type": "Map<string, Row>", "tag": "recomputed", "note": "lowercase(query) → row" },
-    "source":              { "type": "string", "value": "schema4" }
+    "queries": "string[] - flat deduped query strings",
+    "queryRows": "Array<RowObject> with query, source, target_fields, domain_hint, doc_hint, hint_source, family, group_key, and query_hash",
+    "selectedQueryRowMap": "Map<lowercase_query, RowObject>",
+    "source": "'schema4'"
   },
-
   "phase_2_guard_output": {
-    "_function": "enforceIdentityQueryGuard()",
-    "_consumed_by": "executeSearchQueries() (accepted rows only)",
-
-    "rows": {
-      "_type": "array — subset of input rows that passed validation",
-      "_tag": "passthrough (filtered)",
-      "_note": "rows are unchanged — only the set is reduced"
-    },
-    "rejectLog": {
-      "_type": "array",
-      "_tag": "recomputed",
-      "_per_item": {
-        "query":  "string — the rejected query text",
-        "source": "string[] — source labels",
-        "reason": "string — e.g. 'missing_brand_token', 'missing_model_token', 'foreign_model_token:abc'",
-        "stage":  "'pre_execution_guard'",
-        "detail": "string — pipe-joined reasons list"
-      },
-      "_note": "written to searchProfilePlanned.query_reject_log"
-    },
-    "guardContext": {
-      "_tag": "recomputed — saved to searchProfilePlanned.query_guard",
-      "brandTokens":         { "type": "string[]", "note": "compact brand identity tokens" },
-      "modelTokens":         { "type": "string[]", "note": "compact model tokens (excluding brand + generic)" },
-      "requiredDigitGroups": { "type": "string[]", "note": "digit sequences from model/variant" },
-      "allowedModelTokens":  { "type": "string[]", "note": "full normalized model token set" }
-    }
+    "rows": "query rows that passed identity guard",
+    "rejectLog": "Array<{ query, source, reason, stage:'pre_execution_guard', detail }>",
+    "guardContext": "brandTokens, modelTokens, requiredDigitGroups, allowedModelTokens"
   },
-
   "phase_3_execution_output": {
-    "_function": "executeSearchQueries()",
-    "_consumed_by": "dedupeSerpResults() → classifyUrlCandidate() → admission filter → rerankSerpResults()",
-
-    "rawResults": {
-      "_type": "array",
-      "_tag": "enriched — new data from search providers",
-      "_per_item": {
-        "url":      { "tag": "enriched", "source": "search provider (SearXNG/internal/frontier)" },
-        "title":    { "tag": "enriched", "source": "search provider" },
-        "snippet":  { "tag": "enriched", "source": "search provider" },
-        "provider": { "tag": "enriched", "source": "'internal'|'google'|'bing'|'plan'|'frontier'|'plan_fallback'" },
-        "query":    { "tag": "passthrough", "source": "the query that produced this result" },
-        "rank":     { "tag": "enriched", "source": "SERP position or 0" }
-      }
-    },
-    "searchAttempts": {
-      "_type": "array",
-      "_tag": "recomputed — execution log",
-      "_per_item": {
-        "query":       "string",
-        "provider":    "string",
-        "result_count":"number",
-        "reason_code": "string — 'internet_search'|'internal_corpus_lookup'|'frontier_query_cache'|'plan_only_no_provider'",
-        "duration_ms": "number"
-      }
-    },
-    "searchJournal": {
-      "_type": "array",
-      "_tag": "recomputed — detailed execution journal",
-      "_per_item": {
-        "ts":           "string — ISO timestamp",
-        "query":        "string",
-        "provider":     "string",
-        "action":       "string — 'reuse' for cache hits",
-        "reason":       "string",
-        "result_count": "number",
-        "duration_ms":  "number"
-      }
-    },
-    "internalSatisfied":    { "type": "boolean", "tag": "recomputed" },
-    "externalSearchReason": { "type": "string|null", "tag": "recomputed" }
+    "rawResults": "provider rows from internal corpus, frontier cache reuse, internet providers, or plan-only fallback",
+    "searchAttempts": "Array<{ query, provider, result_count, reason_code, duration_ms? }>",
+    "searchJournal": "Array<{ ts, query, provider, action?, reason?, result_count, duration_ms? }>",
+    "internalSatisfied": "boolean",
+    "externalSearchReason": "string|null"
   },
-
-  "phase_4_classification_output": {
-    "_function": "classifyUrlCandidate() — applied to each result after dedup",
-    "_consumed_by": "admission filter → rerankSerpResults()",
-
-    "_per_candidate": {
-      "url":                   { "tag": "normalized", "note": "canonical URL" },
-      "host":                  { "tag": "recomputed", "note": "lowercase, www stripped" },
-      "rootDomain":            { "tag": "recomputed", "note": "extracted root domain" },
-      "path":                  { "tag": "recomputed", "note": "pathname lowercased" },
-      "title":                 { "tag": "passthrough" },
-      "snippet":               { "tag": "passthrough" },
-      "query":                 { "tag": "passthrough" },
-      "provider":              { "tag": "passthrough" },
-      "approvedDomain":        { "tag": "recomputed", "note": "from sourceHostMap lookup" },
-      "tier":                  { "tag": "recomputed", "note": "1=manufacturer, 2=approved, 3+=community" },
-      "tierName":              { "tag": "recomputed", "note": "manufacturer|approved|community" },
-      "role":                  { "tag": "recomputed", "note": "from categoryConfig sourceHosts" },
-      "doc_kind_guess":        { "tag": "recomputed", "note": "spec|manual_pdf|spec_pdf|teardown_review|lab_review|support|product_page|other" },
-      "identity_match_level":  { "tag": "recomputed", "note": "strong|partial|weak|none" },
-      "variant_guard_hit":     { "tag": "recomputed", "note": "boolean — wrong variant detected" },
-      "multi_model_hint":      { "tag": "recomputed", "note": "boolean — comparison/listing page" }
+  "phase_4_result_processing_output": {
+    "candidate_shape": {
+      "url": "canonical URL",
+      "original_url": "provider URL before canonicalization",
+      "host": "normalized hostname",
+      "rootDomain": "normalized root domain",
+      "tier": "resolved tier",
+      "tierName": "resolved tier label",
+      "role": "resolved source role",
+      "doc_kind_guess": "deterministic document-kind guess",
+      "identity_match_level": "strong|partial|weak|none",
+      "variant_guard_hit": "boolean",
+      "multi_model_hint": "boolean",
+      "primary_lane": "selected triage lane",
+      "triage_disposition": "fetch_high|fetch_normal|fetch_low|candidate_only style disposition",
+      "selection_priority": "high|medium|low",
+      "score": "lane-aware deterministic score",
+      "llm_rerank_score": "optional rerank score when the LLM runs",
+      "soft_reason_codes": "soft labels and audit reasons"
     },
-
-    "admission_hard_rejects": {
-      "_note": "These filters run BEFORE reranking. Hard-rejected URLs never reach the reranker.",
-      "non_https":                    "protocol is not https",
-      "denied_host":                  "host is on denylist",
-      "url_cooldown":                 "URL is in frontier cooldown window",
-      "manufacturer_brand_mismatch":  "tier 1 source but brand does not match identity lock",
-      "low_relevance":                "none identity match AND no field affinity"
-    },
-
-    "admission_soft_exclusions": {
-      "_note": "These filters run after classification but before final discovery list.",
-      "forum_subdomain":              "forum.* or community.* subdomain",
-      "forum_classification":         "doc_kind_guess indicates forum content",
-      "sibling_model_page":           "multi_model_hint AND not manufacturer tier",
-      "non_manufacturer_multi_model": "comparison page from non-official source"
-    }
-  },
-
-  "phase_5_rerank_output": {
-    "_function": "rerankSerpResults() — deterministic + optional LLM",
-    "_consumed_by": "final discovery list → discoverCandidateSources() return",
-
-    "_per_candidate": {
-      "url":             { "tag": "passthrough" },
-      "title":           { "tag": "passthrough" },
-      "snippet":         { "tag": "passthrough" },
-      "host":            { "tag": "passthrough" },
-      "rank":            { "tag": "passthrough" },
-      "score_det":       { "tag": "recomputed", "note": "deterministic composite score (always computed)" },
-      "score_breakdown": { "tag": "recomputed", "note": "14-key breakdown object" },
-      "keep":            { "tag": "enriched (LLM) or recomputed (det)", "note": "LLM keep/drop decision or always true" },
-      "decision":        { "tag": "enriched (LLM only)", "note": "'keep'|'drop'" },
-      "rerank_score":    { "tag": "enriched (LLM) or recomputed (det)", "note": "LLM score or score_det" },
-      "rerank_reason":   { "tag": "enriched (LLM) or recomputed (det)", "note": "LLM reason or 'deterministic'" }
-    },
-
-    "_final_discovery_list": {
-      "_note": "After reranking, results are filtered by keep=true, capped by serpTriageMaxUrls, and split into approved/candidate URLs.",
-      "approvedUrls":  "string[] — URLs on approved domains → fed to planner.enqueue()",
-      "candidateUrls": "string[] — URLs on non-approved domains → fed to planner.seedCandidates()",
-      "candidates":    "Array<DiscoveredURL> — all discovered URLs (approved + candidate)"
-    }
-  },
-
-  "cumulative_artifacts_written": {
     "searchProfileFinal": {
-      "_note": "The searchProfilePlanned object is enriched with execution results and written to storage.",
-      "status":               "overridden from 'planned' to 'executed'",
-      "generated_at":         "overridden to execution completion timestamp",
-      "query_rows":           "overridden with enriched rows including result_count, attempts, providers",
-      "query_stats":          "per-query execution stats array",
-      "discovered_count":     "total URLs that passed all filters",
-      "approved_count":       "URLs on approved domains",
-      "candidate_count":      "URLs on non-approved domains",
-      "llm_query_planning":   "boolean — whether LLM planning was enabled",
-      "llm_serp_triage":      "boolean — whether LLM triage was applied",
-      "serp_explorer":        "full SERP explorer payload (see stage 3 handoff-output.json)"
+      "status": "'executed'",
+      "query_rows": "planned rows enriched with attempts/providers/result_count/frontier_cache",
+      "query_stats": "per-query execution summary",
+      "discovered_count": "number",
+      "approved_count": "number",
+      "candidate_count": "number",
+      "serp_explorer": "lane-aware triage explorer with audit trail"
     },
-    "discovery_payload": "written to S3 with candidate URLs and approved URL lists",
-    "query_index": "NDJSON per-query execution log for observability"
+    "discovery_payload": "written to _discovery/{category}/{runId}.json",
+    "candidate_payload": "written to _sources/candidates/{category}/{runId}.json"
+  },
+  "discoverCandidateSources_return": {
+    "enabled": "boolean",
+    "discoveryKey": "string",
+    "candidatesKey": "string",
+    "candidates": "selected discovery rows after triage",
+    "approvedUrls": "planner-approved URLs",
+    "candidateUrls": "planner-candidate URLs",
+    "queries": "executed query strings",
+    "search_profile": "the executed searchProfileFinal artifact",
+    "provider_state": "resolved provider availability snapshot",
+    "uber_search_plan": "fallback query planner output when generated",
+    "internal_satisfied": "boolean",
+    "external_search_reason": "string|null",
+    "search_attempts": "per-query execution rows",
+    "search_journal": "execution journal rows",
+    "serp_explorer": "same object embedded on search_profile"
   }
 }

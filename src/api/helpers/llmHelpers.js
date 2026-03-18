@@ -63,7 +63,7 @@ export function resolveLlmKnobDefaults(cfg = {}) {
     plan: planTokenDefault,
     triage: toInt(cfg.llmMaxOutputTokensTriage, planTokenDefault),
     reasoning: toInt(cfg.llmMaxOutputTokensReasoning, toInt(cfg.llmReasoningBudget, 4096)),
-    extract: toInt(cfg.llmMaxOutputTokensExtract, toInt(cfg.llmExtractMaxTokens, 1200)),
+    extract: toInt(cfg.llmMaxOutputTokensExtract, toInt(cfg.llmMaxOutputTokensPlan, toInt(cfg.llmMaxOutputTokens, 1200))),
     validate: toInt(cfg.llmMaxOutputTokensValidate, toInt(cfg.llmMaxOutputTokens, 1200)),
     write: toInt(cfg.llmMaxOutputTokensWrite, toInt(cfg.llmMaxOutputTokens, 1200))
   };

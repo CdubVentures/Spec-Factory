@@ -57,7 +57,7 @@ export function buildEvidenceReport(runData) {
     brand_model: rd.brand_model || null,
     start_end: startEnd,
     exit_code: meta.exit_code ?? null,
-    searchProvider: snap.searchProvider || null,
+    searchEngines: snap.searchEngines || snap.searchProvider || null,
     discoveryEnabled: snap.discoveryEnabled ?? null,
     preferHttpFetcher: snap.preferHttpFetcher ?? null,
     dynamicCrawleeEnabled: snap.dynamicCrawleeEnabled ?? null,

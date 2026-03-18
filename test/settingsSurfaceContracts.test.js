@@ -34,7 +34,7 @@ test('settings surface normalizes cached runtime settings through the public GUI
   ] = await loadSettingsSurfaceModules();
 
   const cachedRuntimeSettings = {
-    searchProvider: 'none',
+    searchEngines: '',
     helperFilesRoot: 'helper-root-canonical',
     fetchConcurrency: 9999,
     discardMe: { nested: true },
@@ -48,7 +48,7 @@ test('settings surface normalizes cached runtime settings through the public GUI
 
   const snapshot = readRuntimeSettingsSnapshot(queryClient);
   assert.deepEqual(snapshot, {
-    searchProvider: 'none',
+    searchEngines: '',
     helperFilesRoot: 'helper-root-canonical',
     fetchConcurrency: 9999,
   });
@@ -66,7 +66,7 @@ test('settings surface normalizes cached runtime settings through the public GUI
   const normalized = normalizeRuntimeDraft(snapshot, RUNTIME_SETTING_DEFAULTS);
   assert.equal(normalized.helperFilesRoot, 'helper-root-canonical');
   assert.equal(normalized.categoryAuthorityRoot, 'helper-root-canonical');
-  assert.equal(normalized.searchProvider, RUNTIME_SETTING_DEFAULTS.searchProvider);
+  assert.equal(normalized.searchEngines, RUNTIME_SETTING_DEFAULTS.searchEngines);
   assert.equal(
     normalized.fetchConcurrency,
     RUNTIME_NUMBER_BOUNDS.fetchConcurrency.max,
@@ -82,33 +82,38 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
     RUNTIME_OCR_BACKEND_OPTIONS,
     RUNTIME_REPAIR_DEDUPE_RULE_OPTIONS,
     RUNTIME_RESUME_MODE_OPTIONS,
-    RUNTIME_SEARCH_PROVIDER_OPTIONS,
     RUNTIME_SETTING_DEFAULTS,
+    SEARXNG_ENGINE_OPTIONS,
+    SEARXNG_ENGINE_LABELS,
     SETTINGS_AUTOSAVE_DEBOUNCE_MS,
     SETTINGS_AUTOSAVE_STATUS_MS,
     STORAGE_DESTINATION_OPTIONS,
     STORAGE_SETTING_DEFAULTS,
-    formatRuntimeSearchProviderLabel,
   } = settingsManifest;
 
   assert.deepEqual(
-    [...RUNTIME_SEARCH_PROVIDER_OPTIONS].sort(),
-    ['bing', 'dual', 'google', 'searxng'],
+    [...SEARXNG_ENGINE_OPTIONS].sort(),
+    ['brave', 'bing', 'duckduckgo', 'google', 'startpage'].sort(),
   );
 
-  const providerLabelCases = [
-    ['searxng', 'SearXNG Meta Search'],
-    ['bing', 'Bing Lane via SearXNG'],
-    ['google', 'Google Lane via SearXNG'],
-    ['dual', 'Dual Lanes via SearXNG'],
-    ['none', ''],
+  const engineLabelCases = [
+    ['google', 'Google'],
+    ['bing', 'Bing'],
+    ['startpage', 'Startpage (Google proxy)'],
+    ['duckduckgo', 'DuckDuckGo'],
+    ['brave', 'Brave'],
   ];
-  for (const [provider, expectedLabel] of providerLabelCases) {
-    assert.equal(formatRuntimeSearchProviderLabel(provider), expectedLabel);
+  for (const [engine, expectedLabel] of engineLabelCases) {
+    assert.equal(SEARXNG_ENGINE_LABELS[engine], expectedLabel);
+  }
+
+  // searchEngines default is CSV — verify each token is a valid engine
+  const defaultEngines = RUNTIME_SETTING_DEFAULTS.searchEngines.split(',');
+  for (const eng of defaultEngines) {
+    assert.ok(SEARXNG_ENGINE_OPTIONS.includes(eng), `default engine '${eng}' is in SEARXNG_ENGINE_OPTIONS`);
   }
 
   const runtimeDefaultOptionSets = [
-    [RUNTIME_SEARCH_PROVIDER_OPTIONS, RUNTIME_SETTING_DEFAULTS.searchProvider, 'searchProvider'],
     [RUNTIME_RESUME_MODE_OPTIONS, RUNTIME_SETTING_DEFAULTS.resumeMode, 'resumeMode'],
     [RUNTIME_OCR_BACKEND_OPTIONS, RUNTIME_SETTING_DEFAULTS.scannedPdfOcrBackend, 'scannedPdfOcrBackend'],
     [RUNTIME_REPAIR_DEDUPE_RULE_OPTIONS, RUNTIME_SETTING_DEFAULTS.repairDedupeRule, 'repairDedupeRule'],
@@ -121,11 +126,6 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
     );
   }
 
-  assert.equal(
-    CONVERGENCE_KNOB_GROUPS.some((group) =>
-      group.knobs.some((knob) => knob.key === 'serpTriageMaxUrls')),
-    true,
-  );
   assert.equal(LLM_SETTING_LIMITS.maxTokens.max > LLM_SETTING_LIMITS.maxTokens.min, true);
   assert.equal(LLM_ROUTE_PRESET_LIMITS.deep.enableWebsearch, true);
   assert.equal(

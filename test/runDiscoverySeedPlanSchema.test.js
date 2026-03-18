@@ -12,7 +12,7 @@ import { runDiscoverySeedPlan } from '../src/features/indexing/orchestration/dis
 function makeConfig(overrides = {}) {
   return {
     discoveryEnabled: true,
-    searchProvider: 'dual',
+    searchEngines: 'bing,google',
     maxCandidateUrls: 10,
     fetchCandidateSources: true,
     enableSchema4SearchPlan: true,

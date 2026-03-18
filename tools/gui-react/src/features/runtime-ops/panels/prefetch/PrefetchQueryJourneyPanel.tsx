@@ -207,7 +207,10 @@ export function PrefetchQueryJourneyPanel({
               <Chip label="IN PROGRESS" className="sf-chip-warning" />
             )}
           </div>
-          <Tip text="Story view for what was planned first, what got sent, and why each query was selected. Click any row to see the full journey detail." />
+          <div className="flex items-center gap-2">
+            <Chip label="Deterministic" className="sf-chip-neutral" />
+            <Tip text="Story view for what was planned first, what got sent, and why each query was selected. Click any row to see the full journey detail." />
+          </div>
         </div>
 
         <RuntimeIdxBadgeStrip badges={idxRuntime} />

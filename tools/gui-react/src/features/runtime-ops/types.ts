@@ -738,6 +738,13 @@ export interface TriageCandidate {
   decision: string;
   rationale: string;
   score_components: TriageScoreComponents;
+  role: string;
+  identity_prelim: string;
+  host_trust_class: string;
+  primary_lane: number | null;
+  triage_disposition: string;
+  doc_kind_guess: string;
+  approval_bucket: string;
 }
 
 export interface SerpTriageResult {
@@ -807,15 +814,13 @@ export interface LlmCallsDashboardResponse {
 
 export interface PrefetchLiveSettings {
   profile?: string;
-  phase3LlmTriageEnabled?: boolean;
-  searchProvider?: string;
+  searchEngines?: string;
   discoveryEnabled?: boolean;
   dynamicCrawleeEnabled?: boolean;
   scannedPdfOcrEnabled?: boolean;
   maxPagesPerDomain?: number;
   discoveryResultsPerQuery?: number;
   discoveryMaxDiscovered?: number;
-  serpTriageMaxUrls?: number;
 }
 
 // ── Pre-Fetch Phases Response ──

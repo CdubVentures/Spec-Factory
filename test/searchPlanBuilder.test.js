@@ -66,7 +66,7 @@ function makePlannerLimits(overrides = {}) {
     llmModelPlan: 'gemini-2.5-flash-lite',
     llmMaxOutputTokensPlan: 2048,
     searchProfileCapMap: null,
-    searchProvider: 'dual',
+    searchEngines: 'bing,google',
     ...overrides
   };
 }

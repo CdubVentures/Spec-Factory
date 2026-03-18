@@ -282,6 +282,13 @@ export function buildPreFetchPhases(events, meta, artifacts) {
                 penalties: toFloat(c.score_components.penalties, 0),
               }
             : { base_relevance: 0, tier_boost: 0, identity_match: 0, penalties: 0 },
+          role: String(c?.role || '').trim(),
+          identity_prelim: String(c?.identity_prelim || '').trim(),
+          host_trust_class: String(c?.host_trust_class || '').trim(),
+          primary_lane: c?.primary_lane ?? null,
+          triage_disposition: String(c?.triage_disposition || '').trim(),
+          doc_kind_guess: String(c?.doc_kind_guess || '').trim(),
+          approval_bucket: String(c?.approval_bucket || '').trim(),
         })) : [],
       });
     }

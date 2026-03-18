@@ -221,20 +221,9 @@ export async function invokeExtractionModel({
   callLlmFn = callLlmWithRouting,
   sanitizeExtractionResultFn = sanitizeExtractionResult
 } = {}) {
-  const defaultExtractMaxTokens = Math.max(
-    256,
-    Number.parseInt(
-      String(config.llmExtractMaxTokens || config.llmMaxTokens || 1200),
-      10
-    ) || 1200
-  );
-  const defaultReasoningBudget = Math.max(
-    256,
-    Number.parseInt(
-      String(config.llmExtractReasoningBudget || config.llmReasoningBudget || 4096),
-      10
-    ) || 4096
-  );
+  // WHY: Token cap and reasoning budget are now controlled by the phase override
+  // system (Token Cap on the Extraction phase tab) and the global reasoning budget.
+  // No extraction-specific overrides needed.
   const multimodalUserInput = buildMultimodalUserInput({
     userPayload,
     promptEvidence,
@@ -307,8 +296,8 @@ export async function invokeExtractionModel({
       }
     },
     reasoningMode: Boolean(reasoningMode),
-    reasoningBudget: Number(defaultReasoningBudget),
-    maxTokens: Number(maxTokens || defaultExtractMaxTokens),
+    reasoningBudget: Number(config.llmReasoningBudget || 4096),
+    maxTokens: Number(maxTokens || 0),
     timeoutMs: config.llmTimeoutMs || config.openaiTimeoutMs,
     logger
   });

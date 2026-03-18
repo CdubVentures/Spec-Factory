@@ -1,8 +1,8 @@
 // Post-execution result processing extracted from searchDiscovery.js.
 // Takes raw search results and produces the final discovery output:
-// SERP dedup, URL candidate building, domain classification + admission,
-// deterministic reranking, conditional LLM SERP triage, trace enrichment,
-// searchProfileFinal assembly, artifact writing, and return value.
+// SERP dedup → hard-drop filter → soft labels → lane assignment →
+// surface-aware scoring → lane-quota selection → conditional LLM rerank →
+// reject audit → trace enrichment → artifact writing → return value.
 
 import { toPosixKey } from '../../../s3/storage.js';
 import {
@@ -11,7 +11,6 @@ import {
   isDeniedHost,
   resolveTierForHost,
 } from '../../../categories/loader.js';
-import { rerankSearchResults } from '../search/resultReranker.js';
 import { rerankSerpResults } from '../../../research/serpReranker.js';
 import { dedupeSerpResults } from '../search/serpDedupe.js';
 import {
@@ -26,8 +25,6 @@ import {
 import {
   classifyUrlCandidate,
   docHintMatchesDocKind,
-  resolveDiscoveryAdmissionExclusionReason,
-  isRelevantSearchResult,
   collectDomainClassificationSeeds,
 } from './discoveryUrlClassifier.js';
 import {
@@ -35,6 +32,11 @@ import {
   writeSearchProfileArtifacts,
   normalizeTriageScore,
 } from './discoveryHelpers.js';
+import { applyHardDropFilter } from './triageHardDropFilter.js';
+import { assignSoftLabels } from './triageSoftLabeler.js';
+import { assignLanes, computeLaneQuotas, selectByLaneQuota } from './triageLaneRouter.js';
+import { scoreCandidates } from './triageSurfaceScorer.js';
+import { sampleRejectAudit, buildAuditTrail } from './triageRejectAuditor.js';
 
 export async function processDiscoveryResults({
   // From executeSearchQueries return
@@ -49,6 +51,8 @@ export async function processDiscoveryResults({
   queries, searchProfilePlanned, searchProfileKeys, providerState, queryConcurrency, discoveryCap,
   // Host plan
   effectiveHostPlan,
+  // NeedSet pressure signals for lane-quota selection
+  focusGroups = [],
 }) {
   const { deduped: dedupedResults, stats: dedupeStats } = dedupeSerpResults(rawResults);
   logger?.info?.('discovery_serp_deduped', {
@@ -112,8 +116,26 @@ export async function processDiscoveryResults({
     if (seed.approved_domain) row.approved_domain = true;
     return row;
   };
-  const manufacturerHostHints = manufacturerHostHintsForBrand(identityLock.brand || '');
-  for (const raw of dedupedResults) {
+
+  // ── Phase 2: Hard-drop filter (replaces inline non-HTTPS/denied/cooldown checks) ──
+  const { survivors: hardDropSurvivors, hardDrops } = applyHardDropFilter({
+    dedupedResults,
+    categoryConfig,
+    frontierDb,
+    identityLock,
+  });
+
+  // Populate traces for hard-dropped URLs
+  for (const drop of hardDrops) {
+    ensureTrace(drop.url || drop.original_url, {
+      host: drop.host || '',
+      decision: 'rejected',
+      reason_codes: [drop.hard_drop_reason],
+    });
+  }
+
+  // Build candidate rows from survivors (classify + trace, no semantic kills)
+  for (const raw of hardDropSurvivors) {
     try {
       const parsed = new URL(raw.url);
       const canonicalFromFrontier = frontierDb?.canonicalize?.(parsed.toString())?.canonical_url || parsed.toString();
@@ -152,62 +174,12 @@ export async function processDiscoveryResults({
         target_fields: targetFieldList,
         domain_hints: domainHintList
       });
-      if (parsed.protocol !== 'https:') {
-        if (trace) {
-          trace.decision = 'rejected';
-          trace.reason_codes = uniqueTokens([...(trace.reason_codes || []), 'non_https'], 16);
-        }
-        continue;
-      }
-      const host = normalizeHost(parsed.hostname);
-      if (!host || isDeniedHost(host, categoryConfig)) {
-        if (trace) {
-          trace.decision = 'rejected';
-          trace.reason_codes = uniqueTokens([...(trace.reason_codes || []), 'denied_host'], 16);
-        }
-        continue;
-      }
-      const skipByCooldown = frontierDb?.shouldSkipUrl?.(parsed.toString()) || { skip: false };
-      if (skipByCooldown.skip) {
-        if (trace) {
-          trace.decision = 'rejected';
-          trace.reason_codes = uniqueTokens([...(trace.reason_codes || []), 'url_cooldown'], 16);
-        }
-        logger?.info?.('url_cooldown_applied', {
-          url: parsed.toString(),
-          status: null,
-          cooldown_seconds: null,
-          reason: skipByCooldown.reason || 'frontier_cooldown'
-        });
-        continue;
-      }
       const classified = classifyUrlCandidate(raw, categoryConfig, {
         identityLock,
         variantGuardTerms: toArray(searchProfileBase?.variant_guard_terms)
       });
-      if (
-        classified.role === 'manufacturer' &&
-        manufacturerHostHints.length > 0 &&
-        !manufacturerHostMatchesBrand(classified.host, manufacturerHostHints)
-      ) {
-        if (trace) {
-          trace.decision = 'rejected';
-          trace.reason_codes = uniqueTokens([...(trace.reason_codes || []), 'manufacturer_brand_mismatch'], 16);
-        }
-        continue;
-      }
-      if (!isRelevantSearchResult({
-        parsed,
-        raw,
-        classified,
-        variables
-      })) {
-        if (trace) {
-          trace.decision = 'rejected';
-          trace.reason_codes = uniqueTokens([...(trace.reason_codes || []), 'low_relevance'], 16);
-        }
-        continue;
-      }
+      // WHY: No semantic kills here. Manufacturer brand mismatch, low relevance,
+      // forum subdomain, sibling model — all become soft labels via assignSoftLabels.
       const canonical = canonicalFromFrontier;
       if (trace) {
         trace.host = classified.host;
@@ -247,7 +219,6 @@ export async function processDiscoveryResults({
   });
   const domainClassificationRows = [];
   // Domain safety: deterministic heuristics only (LLM call eliminated — zero correctness risk).
-  // isDeniedHost, isApprovedHost, resolveTierForHost, inferRoleForHost cover all safety decisions.
   if (domainClassificationSeeds.length > 0) {
     for (const domain of domainClassificationSeeds) {
       const blocked = isDeniedHost(domain, categoryConfig);
@@ -276,7 +247,6 @@ export async function processDiscoveryResults({
       });
     }
   }
-  // Build domainSafetyResults Map from deterministic rows so admission exclusion can use it
   const domainSafetyResults = new Map();
   for (const row of domainClassificationRows) {
     domainSafetyResults.set(row.domain, {
@@ -291,166 +261,139 @@ export async function processDiscoveryResults({
     });
   }
 
-  const excludedByAdmission = [];
-  const admittedCandidateRows = candidateRows.filter((row) => {
-    const exclusionReason = resolveDiscoveryAdmissionExclusionReason({
-      row,
-      domainSafetyResults,
-      variables
-    });
-    if (!exclusionReason) {
-      return true;
-    }
-    excludedByAdmission.push({
-      url: row.url,
-      host: row.host,
-      reason: exclusionReason
-    });
-    const trace = candidateTraceByUrl.get(String(row.url || '').trim());
-    if (trace) {
-      trace.decision = 'rejected';
-      trace.triage_reason = exclusionReason;
-      trace.reason_codes = uniqueTokens([...(trace.reason_codes || []), exclusionReason], 16);
-    }
-    return false;
+  // ── Phase 3: Soft labels (replaces resolveDiscoveryAdmissionExclusionReason) ──
+  // WHY: No admission exclusion kill gate. Forum subdomain, sibling model page,
+  // multi_model_hint, manufacturer brand mismatch all become soft labels.
+  assignSoftLabels({
+    candidates: candidateRows,
+    categoryConfig,
+    identityLock,
+    variables,
+    brandResolution,
+    effectiveHostPlan,
+    searchProfileBase,
   });
-  if (excludedByAdmission.length > 0) {
-    logger?.info?.('discovery_admission_filtered', {
-      excluded_count: excludedByAdmission.length,
-      rows: excludedByAdmission.slice(0, 50)
-    });
-  }
 
-  const deterministicReranked = rerankSearchResults({
-    results: admittedCandidateRows,
+  // ── Phase 4: Lane assignment + surface-aware scoring ──
+  assignLanes({ labeledCandidates: candidateRows });
+
+  const fieldYieldMap = learning?.fieldYield || {};
+  scoreCandidates({
+    lanedCandidates: candidateRows,
     categoryConfig,
     missingFields,
-    fieldYieldMap: learning.fieldYield
+    fieldYieldMap,
+    identityLock,
+    effectiveHostPlan,
+    focusGroups,
   });
-  let reranked = deterministicReranked;
 
+  // Derive selection_priority from triage_disposition
+  for (const candidate of candidateRows) {
+    if (!candidate.selection_priority) {
+      candidate.selection_priority =
+        candidate.triage_disposition === 'fetch_high' ? 'high'
+        : candidate.triage_disposition === 'fetch_normal' ? 'medium'
+        : candidate.triage_disposition === 'fetch_low' ? 'low'
+        : 'low';
+    }
+    candidate.triage_enriched = true;
+    candidate.triage_schema_version = 1;
+  }
+
+  // ── Phase 5: Lane-quota selection (replaces score-ordered slice) ──
+  const { quotas: laneQuotas, boost_reasons: laneBoostReasons } = computeLaneQuotas({
+    missingFields,
+    focusGroups,
+    totalBudget: discoveryCap,
+    fieldYieldMap,
+  });
+
+  const { selected, notSelected, laneStats } = selectByLaneQuota({
+    lanedCandidates: candidateRows.sort((a, b) => (b.score || 0) - (a.score || 0)),
+    laneQuotas,
+  });
+
+  // ── Phase 6: Conditional LLM rerank (last-mile resolver on selected set) ──
   const triageEnabledSetting = config.serpTriageEnabled !== false;
   const triageMinScore = Math.max(0, Number.parseFloat(String(config.serpTriageMinScore ?? 0)) || 0);
-  const triageMaxUrls = Math.max(1, Number.parseInt(String(config.serpTriageMaxUrls ?? discoveryCap), 10) || discoveryCap);
-  const llmTriageConfigEnabled = Boolean(
-    triageEnabledSetting
-    && (uberMode || config.llmSerpRerankEnabled),
-  );
-  // Conditional LLM triage: skip LLM when deterministic reranking already produces
-  // enough high-quality results (>= 60% of triageMaxUrls above triageMinScore).
-  const highQualityCount = deterministicReranked
+  // WHY: LLM escalation is gated by serpTriageEnabled + uberMode only.
+  // The old llmSerpRerankEnabled hardcoded knob was removed — always on when triage is enabled.
+  const llmTriageConfigEnabled = Boolean(triageEnabledSetting && uberMode);
+  const highQualityCount = selected
     .filter((r) => (Number(r.score) || 0) >= triageMinScore).length;
-  const needsLlmTriage = highQualityCount < Math.ceil(triageMaxUrls * 0.6);
+  const needsLlmTriage = highQualityCount < Math.ceil(selected.length * 0.6);
   const llmTriageEnabled = llmTriageConfigEnabled && needsLlmTriage;
   if (llmTriageConfigEnabled && !needsLlmTriage) {
     logger?.info?.('llm_triage_skipped', {
       reason: 'sufficient_deterministic_quality',
       high_quality_count: highQualityCount,
-      threshold: Math.ceil(triageMaxUrls * 0.6),
+      threshold: Math.ceil(selected.length * 0.6),
     });
   }
   let llmTriageApplied = false;
-  let deterministicTriageApplied = false;
   if (llmTriageEnabled) {
-    const llmReranked = await rerankSerpResults({
-      config,
-      logger,
-      llmContext,
-      identity: identityLock,
-      missingFields,
-      serpResults: admittedCandidateRows,
-      frontier: frontierDb,
-      topK: Math.max(discoveryCap, triageMaxUrls, Number(config.discoveryResultsPerQuery || 10) * 2),
-      domainSafetyResults
-    });
-    const llmExplicitAllDrop = Boolean(llmReranked?.explicitAllDrop);
-    if (llmReranked.length > 0 || llmExplicitAllDrop) {
-      const llmRows = llmExplicitAllDrop
-        ? toArray(llmReranked?.explicitAllDropRows)
-        : llmReranked;
-      const triageFiltered = llmReranked.filter((row) => normalizeTriageScore(row) >= triageMinScore);
-      const triageSelected = (triageFiltered.length > 0 ? triageFiltered : llmReranked)
-        .slice(0, triageMaxUrls);
-      reranked = triageSelected;
-      llmTriageApplied = true;
-      const kept = triageSelected.filter((r) => r?.decision !== 'drop');
-      const dropped = llmExplicitAllDrop
-        ? llmRows
-        : llmRows.filter((r) => !triageSelected.includes(r) || r?.decision === 'drop');
-      logger?.info?.('serp_triage_completed', {
-        query: '',
-        kept_count: kept.length,
-        dropped_count: dropped.length,
-        triage_min_score: triageMinScore,
-        triage_max_urls: triageMaxUrls,
-        candidates: llmRows.slice(0, 40).map((r) => ({
-          url: String(r?.url || '').trim(),
-          title: String(r?.title || '').trim(),
-          domain: String(r?.host || '').trim(),
-          snippet: String(r?.snippet || '').trim().slice(0, 300),
-          score: normalizeTriageScore(r),
-          decision: String(r?.decision || 'keep').trim(),
-          rationale: String(r?.rerank_reason || r?.reason_code || '').trim(),
-          score_components: r?.score_components && typeof r.score_components === 'object'
-            ? r.score_components
-            : { base_relevance: 0, tier_boost: 0, identity_match: 0, penalties: 0 }
-        }))
+    try {
+      const llmReranked = await rerankSerpResults({
+        config,
+        logger,
+        llmContext,
+        identity: identityLock,
+        missingFields,
+        serpResults: selected,
+        frontier: frontierDb,
+        topK: selected.length,
+        domainSafetyResults
       });
-    } else {
-      logger?.info?.('serp_triage_completed', {
-        query: '',
-        kept_count: 0,
-        dropped_count: 0,
-        triage_min_score: triageMinScore,
-        triage_max_urls: triageMaxUrls,
-        candidates: []
+      if (llmReranked.length > 0 && !llmReranked.explicitAllDrop) {
+        // WHY: LLM can re-order within selected set but not add/remove URLs.
+        // Merge LLM scores into selected rows for observability.
+        const llmByUrl = new Map(llmReranked.map((r) => [String(r.url || '').trim(), r]));
+        for (const row of selected) {
+          const llmRow = llmByUrl.get(String(row.url || '').trim());
+          if (llmRow) {
+            row.llm_rerank_score = normalizeTriageScore(llmRow);
+            row.llm_rerank_reason = String(llmRow.rerank_reason || llmRow.reason_code || '').trim();
+          }
+        }
+        llmTriageApplied = true;
+        logger?.info?.('serp_triage_completed', {
+          query: '',
+          kept_count: selected.length,
+          dropped_count: 0,
+          triage_min_score: triageMinScore,
+          candidates: selected.slice(0, 40).map((r) => ({
+            url: String(r?.url || '').trim(),
+            title: String(r?.title || '').trim(),
+            domain: String(r?.host || '').trim(),
+            score: Number(r?.score || 0),
+            llm_score: r.llm_rerank_score || null,
+            decision: 'keep',
+            rationale: r.llm_rerank_reason || 'lane_selected',
+            role: String(r?.role || '').trim(),
+            identity_prelim: String(r?.identity_prelim || '').trim(),
+            host_trust_class: String(r?.host_trust_class || '').trim(),
+            primary_lane: r?.primary_lane ?? null,
+            triage_disposition: String(r?.triage_disposition || '').trim(),
+            doc_kind_guess: String(r?.doc_kind_guess || '').trim(),
+            approval_bucket: String(r?.approval_bucket || '').trim(),
+          }))
+        });
+      }
+    } catch (err) {
+      logger?.warn?.('serp_triage_llm_error', {
+        error: String(err?.message || 'unknown'),
       });
     }
   }
-  if (triageEnabledSetting && !llmTriageApplied && deterministicReranked.length > 0) {
-    const thresholdFiltered = deterministicReranked.filter(
-      (row) => Number.parseFloat(String(row?.score ?? 0)) >= triageMinScore
-    );
-    const triageSelected = (thresholdFiltered.length > 0 ? thresholdFiltered : deterministicReranked)
-      .slice(0, triageMaxUrls);
-    const selectedUrlSet = new Set(triageSelected.map((row) => String(row?.url || '').trim()).filter(Boolean));
-    reranked = triageSelected;
-    deterministicTriageApplied = true;
-    logger?.info?.('serp_triage_completed', {
-      query: '',
-      kept_count: triageSelected.length,
-      dropped_count: Math.max(0, deterministicReranked.length - triageSelected.length),
-      triage_min_score: triageMinScore,
-      triage_max_urls: triageMaxUrls,
-      candidates: deterministicReranked.slice(0, 40).map((row) => {
-        const url = String(row?.url || '').trim();
-        const score = Number.parseFloat(String(row?.score ?? 0)) || 0;
-        return {
-          url,
-          title: String(row?.title || '').trim(),
-          domain: String(row?.host || '').trim(),
-          snippet: String(row?.snippet || '').trim().slice(0, 300),
-          score,
-          decision: selectedUrlSet.has(url) ? 'keep' : 'drop',
-          rationale: 'deterministic_rerank',
-          score_components: {
-            base_relevance: score,
-            tier_boost: 0,
-            identity_match: 0,
-            penalties: 0
-          }
-        };
-      })
-    });
-  }
-  const triageApplied = llmTriageApplied || deterministicTriageApplied;
-  const discoveredCap = triageApplied
-    ? Math.max(1, Math.min(discoveryCap, triageMaxUrls))
-    : discoveryCap;
-  const discovered = reranked.slice(0, discoveredCap);
-  const discoveredUrlSet = new Set(discovered.map((item) => item.url));
-  // Tier coverage override removed: deterministic reranker already gives lab/database
-  // a tier boost (+1.5/+0.5). Pure score order is respected.
+
+  const discovered = selected;
+
+  // ── Phase 7: Reject audit ──
+  const auditSamples = sampleRejectAudit({ hardDrops, notSelected });
+  const auditTrail = buildAuditTrail({ auditSamples, hardDrops, notSelected, selected });
+
+  // ── Trace writing + logging ──
   if (runtimeTraceWriter) {
     const trace = await runtimeTraceWriter.writeJson({
       section: 'search',
@@ -461,7 +404,8 @@ export async function processDiscoveryResults({
           url: row.url,
           host: row.host,
           tier: row.tierName || row.tier_name || '',
-          reason: row.rerank_reason || row.reason_code || ''
+          primary_lane: row.primary_lane || null,
+          reason: row.triage_disposition || ''
         }))
       },
       ringSize: 60
@@ -492,16 +436,17 @@ export async function processDiscoveryResults({
     };
   });
 
-  const rerankedByUrl = new Map(
-    reranked.map((row) => [String(row.url || '').trim(), row])
+  // ── Trace finalization ──
+  const candidateByUrl = new Map(
+    candidateRows.map((row) => [String(row.url || '').trim(), row])
   );
   const selectedUrlSet = new Set(
     discovered.map((row) => String(row.url || '').trim()).filter(Boolean)
   );
   const { brandTokens, modelTokens } = normalizeIdentityTokens(variables);
   for (const trace of candidateTraceByUrl.values()) {
-    const rerankedRow = rerankedByUrl.get(String(trace.url || '').trim());
-    if (!rerankedRow) {
+    const candidateRow = candidateByUrl.get(String(trace.url || '').trim());
+    if (!candidateRow) {
       if (trace.decision !== 'rejected') {
         trace.decision = 'rejected';
         trace.reason_codes = uniqueTokens([...(trace.reason_codes || []), 'triage_excluded'], 16);
@@ -511,16 +456,14 @@ export async function processDiscoveryResults({
 
     const isSelected = selectedUrlSet.has(String(trace.url || '').trim());
     trace.decision = isSelected ? 'selected' : 'not_selected';
-    trace.tier_guess = Number.isFinite(Number(rerankedRow.tier))
-      ? Number(rerankedRow.tier)
+    trace.tier_guess = Number.isFinite(Number(candidateRow.tier))
+      ? Number(candidateRow.tier)
       : (Number.isFinite(Number(trace.tier_guess)) ? Number(trace.tier_guess) : null);
-    trace.tier_name_guess = String(rerankedRow.tier_name || rerankedRow.tierName || trace.tier_name_guess || '').trim();
-    trace.approved_domain = Boolean(rerankedRow.approved_domain || rerankedRow.approvedDomain || trace.approved_domain);
-    trace.doc_kind_guess = String(rerankedRow.doc_kind_guess || trace.doc_kind_guess || '').trim();
-    trace.triage_score = Number.isFinite(Number(rerankedRow.rerank_score))
-      ? Number(rerankedRow.rerank_score)
-      : Number(rerankedRow.score || 0);
-    trace.triage_reason = String(rerankedRow.rerank_reason || rerankedRow.reason_code || '').trim();
+    trace.tier_name_guess = String(candidateRow.tier_name || candidateRow.tierName || trace.tier_name_guess || '').trim();
+    trace.approved_domain = Boolean(candidateRow.approved_domain || candidateRow.approvedDomain || trace.approved_domain);
+    trace.doc_kind_guess = String(candidateRow.doc_kind_guess || trace.doc_kind_guess || '').trim();
+    trace.triage_score = Number(candidateRow.score || 0);
+    trace.triage_reason = String(candidateRow.triage_disposition || '').trim();
 
     const haystack = `${trace.title || ''} ${trace.snippet || ''} ${trace.url || ''}`.toLowerCase();
     const reasonCodes = [...(trace.reason_codes || [])];
@@ -528,7 +471,7 @@ export async function processDiscoveryResults({
     if (trace.tier_guess === 1) reasonCodes.push('tier_1');
     if (trace.tier_guess === 2) reasonCodes.push('tier_2');
     if (String(trace.doc_kind_guess || '').includes('pdf')) reasonCodes.push('doc_pdf');
-    if ((rerankedRow.cross_provider_count || 0) > 1) reasonCodes.push('cross_provider_multi');
+    if ((candidateRow.cross_provider_count || 0) > 1) reasonCodes.push('cross_provider_multi');
     if (countTokenHits(haystack, brandTokens) > 0) reasonCodes.push('brand_match');
     if (countTokenHits(haystack, modelTokens) > 0) reasonCodes.push('model_match');
     for (const query of trace.queries || []) {
@@ -594,7 +537,13 @@ export async function processDiscoveryResults({
         triage_reason: trace.triage_reason || '',
         decision: trace.decision || 'pending',
         reason_codes: uniqueTokens(trace.reason_codes || [], 8),
-        providers: uniqueTokens(trace.providers || [], 6)
+        providers: uniqueTokens(trace.providers || [], 6),
+        // Additive Stage 06 fields
+        primary_lane: candidateByUrl.get(trace.url)?.primary_lane || null,
+        triage_disposition: candidateByUrl.get(trace.url)?.triage_disposition || null,
+        identity_prelim: candidateByUrl.get(trace.url)?.identity_prelim || null,
+        host_trust_class: candidateByUrl.get(trace.url)?.host_trust_class || null,
+        score_breakdown: candidateByUrl.get(trace.url)?.score_breakdown || null,
       }));
     const selectedCount = traces.filter((item) => item.decision === 'selected').length;
     return {
@@ -614,7 +563,7 @@ export async function processDiscoveryResults({
   const candidateTraceRows = [...candidateTraceByUrl.values()];
   const serpExplorer = {
     generated_at: new Date().toISOString(),
-    provider: config.searchProvider,
+    provider: config.searchEngines,
     llm_triage_enabled: llmTriageEnabled,
     llm_triage_applied: llmTriageApplied,
     llm_triage_model: llmTriageEnabled
@@ -622,12 +571,19 @@ export async function processDiscoveryResults({
       : '',
     query_count: serpQueryRows.length,
     candidates_checked: candidateTraceRows.length,
-    urls_triaged: reranked.length,
+    urls_triaged: candidateRows.length,
     urls_selected: selectedUrlSet.size,
     urls_rejected: candidateTraceRows.filter((row) => row.decision === 'rejected').length,
     dedupe_input: dedupeStats.total_input,
     dedupe_output: dedupeStats.total_output,
     duplicates_removed: dedupeStats.duplicates_removed,
+    // Additive Stage 06 fields
+    hard_drop_count: hardDrops.length,
+    soft_exclude_count: notSelected.length,
+    lane_stats: laneStats,
+    lane_quotas: laneQuotas,
+    lane_boost_reasons: laneBoostReasons,
+    audit_trail: auditTrail,
     queries: serpQueryRows
   };
 
@@ -671,7 +627,7 @@ export async function processDiscoveryResults({
     productId: job.productId,
     runId,
     generated_at: new Date().toISOString(),
-    provider: config.searchProvider,
+    provider: config.searchEngines,
     provider_state: providerState,
     query_concurrency: queryConcurrency,
     llm_query_planning: true,

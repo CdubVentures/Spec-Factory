@@ -273,7 +273,7 @@ describe('Phase 02 — Field Studio Hint Wiring (Spec §2.5)', () => {
       maxQueries: 48
     });
 
-    // WHY: site: operators removed — domain_hints now appear as plain-text host name in query
+    // WHY: soft domain bias — hosts appear as plain text in query, not site: operator
     const razerHostQueries = profile.queries.filter((q) => q.includes('razer.com') && !q.includes('site:'));
     const rtingsHostQueries = profile.queries.filter((q) => q.includes('rtings.com') && !q.includes('site:'));
 
@@ -386,11 +386,10 @@ describe('Phase 02 — BRAND_HOST_HINTS Sync (Fixed)', () => {
       maxQueries: 48
     });
 
-    // WHY: site: operators removed — manufacturer hosts appear as plain-text soft bias
+    // WHY: soft domain bias — manufacturer hosts appear as plain-text in queries
     const alienwareHostQueries = profile.queries.filter((q) => q.includes('alienware.com') && !q.includes('site:'));
     const dellHostQueries = profile.queries.filter((q) => q.includes('dell.com') && !q.includes('site:'));
 
-    console.log(`[BRAND-FIX] Alienware AW610M — host-biased queries: ${alienwareHostQueries.length + dellHostQueries.length}`);
     console.log(`[BRAND-FIX] alienware.com soft-bias queries: ${alienwareHostQueries.length}`);
     console.log(`[BRAND-FIX] dell.com soft-bias queries: ${dellHostQueries.length}`);
 

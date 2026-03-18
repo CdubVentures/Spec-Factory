@@ -23,7 +23,8 @@ export function collectRuntimeFlowDraftPayload({
   resolveModelTokenDefaults,
 }: CollectRuntimeFlowDraftPayloadParams) {
   return collectRuntimeSettingsPayload({
-    searchProvider: nextRuntimeDraft.searchProvider,
+    searchEngines: nextRuntimeDraft.searchEngines,
+    searchEnginesFallback: nextRuntimeDraft.searchEnginesFallback,
     searxngBaseUrl: String(nextRuntimeDraft.searxngBaseUrl || '').trim(),
     llmPlanApiKey: String(nextRuntimeDraft.llmPlanApiKey || '').trim(),
     llmModelPlan: nextRuntimeDraft.llmModelPlan,
@@ -295,11 +296,6 @@ export function collectRuntimeFlowDraftPayload({
       runtimeManifestDefaults.maxCandidateUrls,
       RUNTIME_NUMBER_BOUNDS.maxCandidateUrls,
     ),
-    serpTriageMaxUrls: parseBoundedNumber(
-      nextRuntimeDraft.serpTriageMaxUrls,
-      runtimeManifestDefaults.serpTriageMaxUrls,
-      RUNTIME_NUMBER_BOUNDS.serpTriageMaxUrls,
-    ),
     maxPagesPerDomain: parseBoundedNumber(
       nextRuntimeDraft.maxPagesPerDomain,
       runtimeManifestDefaults.maxPagesPerDomain,
@@ -390,11 +386,6 @@ export function collectRuntimeFlowDraftPayload({
       runtimeManifestDefaults.llmMaxCallsPerProductTotal,
       RUNTIME_NUMBER_BOUNDS.llmMaxCallsPerProductTotal,
     ),
-    llmExtractMaxTokens: parseBoundedNumber(
-      nextRuntimeDraft.llmExtractMaxTokens,
-      runtimeManifestDefaults.llmExtractMaxTokens,
-      RUNTIME_NUMBER_BOUNDS.llmExtractMaxTokens,
-    ),
     llmExtractMaxSnippetsPerBatch: parseBoundedNumber(
       nextRuntimeDraft.llmExtractMaxSnippetsPerBatch,
       runtimeManifestDefaults.llmExtractMaxSnippetsPerBatch,
@@ -404,11 +395,6 @@ export function collectRuntimeFlowDraftPayload({
       nextRuntimeDraft.llmExtractMaxSnippetChars,
       runtimeManifestDefaults.llmExtractMaxSnippetChars,
       RUNTIME_NUMBER_BOUNDS.llmExtractMaxSnippetChars,
-    ),
-    llmExtractReasoningBudget: parseBoundedNumber(
-      nextRuntimeDraft.llmExtractReasoningBudget,
-      runtimeManifestDefaults.llmExtractReasoningBudget,
-      RUNTIME_NUMBER_BOUNDS.llmExtractReasoningBudget,
     ),
     llmReasoningBudget: parseBoundedNumber(
       nextRuntimeDraft.llmReasoningBudget,

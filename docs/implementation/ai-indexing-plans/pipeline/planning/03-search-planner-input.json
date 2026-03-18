@@ -53,7 +53,7 @@
       "llmPlanBaseUrl": "string - routed base URL snapshot",
       "llmMaxOutputTokensPlan": "number - plan output-cap snapshot",
       "searchProfileCapMap": "object - not consumed by buildSearchPlan",
-      "searchProvider": "string - not consumed by buildSearchPlan"
+      "searchEngines": "string - not consumed by buildSearchPlan"
     },
     "group_catalog": {
       "_tag": "dropped (metadata already inlined into focus_groups at Schema 3 boundary)",
@@ -129,3 +129,4 @@
     "_note": "Used for dedup across existing queries and LLM-generated queries. Same algorithm as frontierDb.js (inlined to avoid coupling)."
   }
 }
+

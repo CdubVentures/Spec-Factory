@@ -10,6 +10,39 @@ const ROLE_KEYS = {
   write: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
 };
 
+// WHY: Phase-aware model resolution. configPostMerge writes _resolved<Phase>BaseModel,
+// _resolved<Phase>ReasoningModel, _resolved<Phase>UseReasoning per phase. This function
+// is the single resolver so callers don't duplicate the fallback chain.
+function capitalize(s) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+}
+
+export function resolvePhaseModel(config = {}, phase = '') {
+  const cap = capitalize(String(phase || '').trim());
+  if (!cap) return String(config.llmModelPlan || '').trim();
+
+  const useReasoning = Boolean(
+    config[`_resolved${cap}UseReasoning`] ?? config.llmPlanUseReasoning ?? false
+  );
+
+  if (useReasoning) {
+    const reasoning = String(
+      config[`_resolved${cap}ReasoningModel`]
+      || config.llmModelReasoning
+      || config[`_resolved${cap}BaseModel`]
+      || config.llmModelPlan
+      || ''
+    ).trim();
+    return reasoning;
+  }
+
+  return String(
+    config[`_resolved${cap}BaseModel`]
+    || config.llmModelPlan
+    || ''
+  ).trim();
+}
+
 function normalized(value) {
   return String(value || '').trim();
 }
@@ -228,10 +261,12 @@ function roleReasoningCap(config = {}, role = 'extract', reason = '', isFallback
   return Math.min(configured, fallbackCap);
 }
 
-export function resolveLlmRoute(config = {}, { reason = '', role = '', modelOverride = '' } = {}) {
+export function resolveLlmRoute(config = {}, { reason = '', role = '', modelOverride = '', phase = '' } = {}) {
   const resolvedRole = role || routeRoleFromReason(reason);
   const route = baseRouteForRole(config, resolvedRole);
-  const overrideModel = normalized(modelOverride);
+  // WHY: phase-aware auto-resolution — if no explicit modelOverride, derive from phase config
+  const effectiveOverride = normalized(modelOverride) || (phase ? resolvePhaseModel(config, phase) : '');
+  const overrideModel = normalized(effectiveOverride);
   if (overrideModel) {
     const enforceRoleProvider = Boolean(config.llmForceRoleModelProvider);
     if (enforceRoleProvider) {
@@ -264,20 +299,21 @@ export function resolveLlmRoute(config = {}, { reason = '', role = '', modelOver
   return route;
 }
 
-export function resolveLlmFallbackRoute(config = {}, { reason = '', role = '', modelOverride = '' } = {}) {
+export function resolveLlmFallbackRoute(config = {}, { reason = '', role = '', modelOverride = '', phase = '' } = {}) {
   const resolvedRole = role || routeRoleFromReason(reason);
   const fallback = fallbackRouteForRole(config, resolvedRole);
   if (!fallback) {
     return null;
   }
   const alignedFallback = fallback;
-  if (modelOverride && normalized(modelOverride) === normalized(fallback.model)) {
+  const effectiveOverride = normalized(modelOverride) || (phase ? resolvePhaseModel(config, phase) : '');
+  if (effectiveOverride && normalized(effectiveOverride) === normalized(fallback.model)) {
     return null;
   }
   const primary = resolveLlmRoute(config, {
     reason,
     role: resolvedRole,
-    modelOverride
+    modelOverride: effectiveOverride,
   });
   if (routeFingerprint(primary) === routeFingerprint(alignedFallback)) {
     return null;
@@ -333,6 +369,7 @@ export async function callLlmWithRouting({
   config,
   reason = '',
   role = '',
+  phase = '',
   modelOverride = '',
   requestOptions = null,
   system,
@@ -351,12 +388,14 @@ export async function callLlmWithRouting({
   const primary = resolveLlmRoute(config, {
     reason,
     role: resolvedRole,
-    modelOverride
+    modelOverride,
+    phase,
   });
   const fallback = resolveLlmFallbackRoute(config, {
     reason,
     role: resolvedRole,
-    modelOverride
+    modelOverride,
+    phase,
   });
   const effectiveRequestOptions = (
     requestOptions && typeof requestOptions === 'object'

@@ -70,7 +70,7 @@ describe('repairSearchWorkerLifecycle', () => {
       logger,
       repairEvents,
       planner,
-      config: { searchProvider: 'searxng', maxRunSeconds: 300 },
+      config: { searchEngines: 'bing,startpage,duckduckgo', maxRunSeconds: 300 },
       processPlannerQueueFn: async () => { plannerQueueCalled = true; },
       runSearchFn: async ({ query }) => {
         assert.equal(query, repairEvents[0].query);
@@ -114,7 +114,7 @@ describe('repairSearchWorkerLifecycle', () => {
       logger,
       repairEvents,
       planner: createMockPlanner(),
-      config: { searchProvider: 'searxng', maxRunSeconds: 300 },
+      config: { searchEngines: 'bing,startpage,duckduckgo', maxRunSeconds: 300 },
       processPlannerQueueFn: async () => {},
       runSearchFn: async () => { throw new Error('search timeout'); },
       startMs: Date.now(),
@@ -145,7 +145,7 @@ describe('repairSearchWorkerLifecycle', () => {
       logger,
       repairEvents,
       planner: createMockPlanner(),
-      config: { searchProvider: 'searxng', maxRunSeconds: 60 },
+      config: { searchEngines: 'bing,startpage,duckduckgo', maxRunSeconds: 60 },
       processPlannerQueueFn: async () => {},
       runSearchFn: async () => [{ url: 'https://example.com/new', title: 'New' }],
       startMs: Date.now() - 120_000, // started 120s ago, budget is 60s
@@ -184,7 +184,7 @@ describe('repairSearchWorkerLifecycle', () => {
       logger,
       repairEvents,
       planner: createMockPlanner(),
-      config: { searchProvider: 'searxng', maxRunSeconds: 300 },
+      config: { searchEngines: 'bing,startpage,duckduckgo', maxRunSeconds: 300 },
       processPlannerQueueFn: async () => {},
       runSearchFn: async () => {
         searchCallCount += 1;
@@ -225,7 +225,7 @@ describe('repairSearchWorkerLifecycle', () => {
       logger,
       repairEvents,
       planner: createMockPlanner(),
-      config: { searchProvider: 'searxng', maxRunSeconds: 300 },
+      config: { searchEngines: 'bing,startpage,duckduckgo', maxRunSeconds: 300 },
       processPlannerQueueFn: async () => {},
       runSearchFn: async () => {
         searchCallCount += 1;
@@ -254,7 +254,7 @@ describe('repairSearchWorkerLifecycle', () => {
       logger,
       repairEvents,
       planner: createMockPlanner(),
-      config: { searchProvider: 'none', maxRunSeconds: 300 },
+      config: { searchEngines: '', maxRunSeconds: 300 },
       processPlannerQueueFn: async () => {},
       runSearchFn: async () => [],
       startMs: Date.now(),
@@ -282,7 +282,7 @@ describe('repairSearchWorkerLifecycle', () => {
       logger,
       repairEvents,
       planner: createMockPlanner(),
-      config: { searchProvider: 'searxng', maxRunSeconds: 300 },
+      config: { searchEngines: 'bing,startpage,duckduckgo', maxRunSeconds: 300 },
       processPlannerQueueFn: async () => { plannerQueueCalled = true; },
       runSearchFn: async () => [], // no results
       startMs: Date.now(),

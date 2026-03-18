@@ -280,7 +280,7 @@ export async function validateCandidatesLLM({
       config,
       reason: 'validate',
       role: 'validate',
-      modelOverride: config._resolvedValidateBaseModel || '',
+      phase: 'validate',
       system: [
         'You validate uncertain hardware fields against evidence and constraints.',
         'Return JSON only.',
@@ -311,7 +311,7 @@ export async function validateCandidatesLLM({
           await llmContext.recordUsage(usageRow);
         }
       },
-      reasoningMode: Boolean(config.llmReasoningMode),
+      reasoningMode: Boolean(config._resolvedValidateUseReasoning ?? config.llmPlanUseReasoning ?? config.llmReasoningMode),
       reasoningBudget: Number(config.llmReasoningBudget || 0),
       timeoutMs: config.llmTimeoutMs || config.openaiTimeoutMs,
       logger

@@ -1,6 +1,6 @@
 import { type RuntimeSettingDefaults } from '../../../stores/settingsManifest';
 
-export const SEARCH_PROVIDER_OPTIONS = ['searxng', 'bing', 'google', 'dual'] as const;
+export const SEARXNG_ENGINE_OPTIONS = ['google', 'bing', 'startpage', 'duckduckgo', 'brave'] as const;
 export const OCR_BACKEND_OPTIONS = ['auto', 'tesseract', 'none'] as const;
 export const RESUME_MODE_OPTIONS = ['auto', 'force_resume', 'start_over'] as const;
 export const REPAIR_DEDUPE_RULE_OPTIONS = ['domain_once', 'domain_and_status', 'none'] as const;
@@ -55,7 +55,6 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   | 'discoveryMaxDiscovered'
   | 'maxUrlsPerProduct'
   | 'maxCandidateUrls'
-  | 'serpTriageMaxUrls'
   | 'maxPagesPerDomain'
   | 'maxRunSeconds'
   | 'maxJsonBytes'
@@ -74,10 +73,8 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   | 'domSnippetMaxChars'
   | 'llmExtractionCacheTtlMs'
   | 'llmMaxCallsPerProductTotal'
-  | 'llmExtractMaxTokens'
   | 'llmExtractMaxSnippetsPerBatch'
   | 'llmExtractMaxSnippetChars'
-  | 'llmExtractReasoningBudget'
   | 'llmReasoningBudget'
   | 'llmMonthlyBudgetUsd'
   | 'llmPerProductBudgetUsd'
@@ -161,7 +158,6 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   discoveryMaxDiscovered: { min: 1, max: 2000, int: true },
   maxUrlsPerProduct: { min: 1, max: 1000, int: true },
   maxCandidateUrls: { min: 1, max: 5000, int: true },
-  serpTriageMaxUrls: { min: 5, max: 30, int: true },
   maxPagesPerDomain: { min: 1, max: 100, int: true },
   maxRunSeconds: { min: 30, max: 86_400, int: true },
   maxJsonBytes: { min: 1024, max: 100_000_000, int: true },
@@ -180,10 +176,8 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   domSnippetMaxChars: { min: 600, max: 20_000, int: true },
   llmExtractionCacheTtlMs: { min: 60_000, max: 31_536_000_000, int: true },
   llmMaxCallsPerProductTotal: { min: 1, max: 100, int: true },
-  llmExtractMaxTokens: { min: 128, max: 262_144, int: true },
   llmExtractMaxSnippetsPerBatch: { min: 1, max: 50, int: true },
   llmExtractMaxSnippetChars: { min: 100, max: 200_000, int: true },
-  llmExtractReasoningBudget: { min: 128, max: 262_144, int: true },
   llmReasoningBudget: { min: 128, max: 262_144, int: true },
   llmMonthlyBudgetUsd: { min: 0, max: 100_000 },
   llmPerProductBudgetUsd: { min: 0, max: 1000 },

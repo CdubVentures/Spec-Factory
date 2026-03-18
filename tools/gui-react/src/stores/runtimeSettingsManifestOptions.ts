@@ -5,34 +5,34 @@ import type {
   RuntimeProfile,
   RuntimeRepairDedupeRule,
   RuntimeResumeMode,
-  RuntimeSelectableSearchProvider,
+  SearxngEngine,
 } from './runtimeSettingsManifestTypes.ts';
 
 export const RUNTIME_PROFILE_OPTIONS = Object.freeze(['standard'] as RuntimeProfile[]);
 
-export const RUNTIME_SEARCH_PROVIDER_OPTIONS = Object.freeze(
-  SETTINGS_OPTION_VALUES.runtime.searchProvider.filter(
-    (option): option is RuntimeSelectableSearchProvider => option !== 'none',
-  ),
-);
+export const SEARXNG_ENGINE_OPTIONS: readonly SearxngEngine[] = Object.freeze([
+  'google', 'bing', 'startpage', 'duckduckgo', 'brave',
+] as const);
 
-export const RUNTIME_SEARCH_ROUTE_HELP_TEXT =
-  'Phase coverage: 03 Search Profile, 04 Search Planner, 05 Query Journey, and 06 Search Results.\nLives in: discovery search execution before SERP triage.\nWhat this controls: all routes still go through SearXNG; Google, Bing, and Dual choose the engine lane used for query execution, not direct provider APIs.';
+export const SEARXNG_ENGINE_LABELS: Record<SearxngEngine, string> = {
+  google: 'Google',
+  bing: 'Bing',
+  startpage: 'Startpage (Google proxy)',
+  duckduckgo: 'DuckDuckGo',
+  brave: 'Brave',
+};
 
-export const RUNTIME_SEARCH_PROVIDER_LABELS = Object.freeze({
-  searxng: 'SearXNG Meta Search',
-  bing: 'Bing Lane via SearXNG',
-  google: 'Google Lane via SearXNG',
-  dual: 'Dual Lanes via SearXNG',
-} satisfies Record<RuntimeSelectableSearchProvider, string>);
+export const RUNTIME_SEARCH_PRIMARY_HELP =
+  'The main engine queried for every discovery search. Always fires.';
 
-export function formatRuntimeSearchProviderLabel(provider: string | null | undefined): string {
-  const token = String(provider || '').trim().toLowerCase();
-  if (!token || token === 'none') {
-    return '';
-  }
-  return RUNTIME_SEARCH_PROVIDER_LABELS[token as RuntimeSelectableSearchProvider] ?? String(provider || '').trim();
-}
+export const RUNTIME_SEARCH_DUAL_HELP =
+  'Optional second engine. Queried alongside primary in the same SearXNG request. Set to "None" to use only the primary engine.';
+
+export const RUNTIME_SEARCH_TRIPLE_HELP =
+  'Optional third engine. Queried alongside primary and dual in the same SearXNG request. Set to "None" to skip.';
+
+export const RUNTIME_SEARCH_FALLBACK_HELP =
+  'Backup engine. Tried only if primary + dual + triple return zero usable results or all results are garbage-filtered.';
 
 export const RUNTIME_RESUME_MODE_OPTIONS = Object.freeze(
   [...SETTINGS_OPTION_VALUES.runtime.resumeMode] as RuntimeResumeMode[],

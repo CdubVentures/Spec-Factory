@@ -4,6 +4,9 @@ use_default_settings:
     keep_only:
       - google
       - bing
+      - startpage
+      - duckduckgo
+      - brave
 
 engines:
   - name: google
@@ -14,10 +17,29 @@ engines:
     engine: bing
     shortcut: bi
     disabled: false
+  - name: startpage
+    engine: startpage
+    shortcut: sp
+    disabled: false
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    disabled: false
+  - name: brave
+    engine: brave
+    shortcut: br
+    disabled: false
+
+outgoing:
+  request_timeout: 10.0
+  enable_http2: false
+  proxies:
+    "all://":
+      - http://zruyrjpq-rotate:dfm4udpzx5p0@p.webshare.io:80
 
 general:
   instance_name: "Spec Harvester Local Search"
-  debug: false
+  debug: true
   enable_metrics: true
   open_metrics: ""   # set a password to enable /metrics with basic auth
 

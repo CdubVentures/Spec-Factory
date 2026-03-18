@@ -105,7 +105,6 @@ export interface DomainCapSummary {
   profile: string;
   queryCap: number;
   discoveredCap: number;
-  triageCap: number;
   uberDomainFloor: number;
 }
 

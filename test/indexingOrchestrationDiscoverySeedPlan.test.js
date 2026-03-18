@@ -21,7 +21,7 @@ test('runDiscoverySeedPlan builds discovery hints, applies runtime search-disabl
 
   const result = await runDiscoverySeedPlan({
     config: {
-      searchProvider: 'serper',
+      searchEngines: 'serper',
       maxCandidateUrls: 10,
       fetchCandidateSources: true,
       marker: 'cfg',
@@ -55,8 +55,8 @@ test('runDiscoverySeedPlan builds discovery hints, applies runtime search-disabl
         plannerApprovedDiscoveryCalls.push({ url, discoveredFrom, options });
         return true;
       },
-      seedCandidates(urls) {
-        plannerCandidateSeedCalls.push({ urls });
+      seedCandidates(urls, options) {
+        plannerCandidateSeedCalls.push({ urls, options });
       },
     },
     normalizeFieldListFn: (fields, options) => {
@@ -84,7 +84,7 @@ test('runDiscoverySeedPlan builds discovery hints, applies runtime search-disabl
   // WHY: discoveryEnabled is now a pipeline invariant — always forced true.
   // The disable_search runtime override is no longer honored.
   assert.equal(discoverCalls[0].config.discoveryEnabled, true);
-  assert.equal(discoverCalls[0].config.searchProvider, 'serper');
+  assert.equal(discoverCalls[0].config.searchEngines, 'serper');
   assert.equal(discoverCalls[0].sourceEntries, sourceEntries);
   assert.deepEqual(discoverCalls[0].planningHints, {
     missingRequiredFields: ['weight_g'],
@@ -95,12 +95,13 @@ test('runDiscoverySeedPlan builds discovery hints, applies runtime search-disabl
     {
       url: 'https://approved.example/spec',
       discoveredFrom: 'discovery_approved',
-      options: { forceApproved: true, forceBrandBypass: false },
+      options: { forceApproved: true, forceBrandBypass: false, triageMeta: null },
     },
   ]);
   assert.deepEqual(plannerCandidateSeedCalls, [
     {
       urls: ['https://candidate.example/spec'],
+      options: { triageMetaMap: plannerCandidateSeedCalls[0]?.options?.triageMetaMap },
     },
   ]);
 });
@@ -110,7 +111,7 @@ test('runDiscoverySeedPlan skips candidate seeding when fetchCandidateSources is
 
   await runDiscoverySeedPlan({
     config: {
-      searchProvider: 'serper',
+      searchEngines: 'serper',
       maxCandidateUrls: 10,
       fetchCandidateSources: false,
     },
@@ -159,7 +160,7 @@ test('runDiscoverySeedPlan recovers searchProvider when roundConfigBuilder sets 
 
   await runDiscoverySeedPlan({
     config: {
-      searchProvider: 'none',
+      searchEngines: '',
       discoveryEnabled: false,
       maxCandidateUrls: 10,
       fetchCandidateSources: true,
@@ -193,5 +194,5 @@ test('runDiscoverySeedPlan recovers searchProvider when roundConfigBuilder sets 
   // WHY: discoveryEnabled is a pipeline invariant — always forced true.
   assert.equal(discoverCalls[0].config.discoveryEnabled, true);
   // WHY: searchProvider 'none' from round 0 config must be recovered to 'dual'.
-  assert.equal(discoverCalls[0].config.searchProvider, 'dual');
+  assert.equal(discoverCalls[0].config.searchEngines, 'bing,google');
 });

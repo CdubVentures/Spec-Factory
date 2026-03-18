@@ -105,8 +105,7 @@ test('invokeExtractionModel forwards multimodal payload, tracks usage, and sanit
       prime_sources_visual_send: false
     },
     config: {
-      llmExtractMaxTokens: 4096,
-      llmExtractReasoningBudget: 1024,
+      llmReasoningBudget: 1024,
       llmTimeoutMs: 5000
     },
     logger: {

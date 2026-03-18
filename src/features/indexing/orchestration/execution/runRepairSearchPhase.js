@@ -15,8 +15,8 @@ export async function runRepairSearchPhase({
     totalUrlsSeeded: 0,
   };
 
-  const provider = String(config.searchProvider || '').trim().toLowerCase();
-  if (provider === 'none' || !provider) {
+  const engines = String(config.searchEngines || '').trim().toLowerCase();
+  if (!engines) {
     logger?.info?.('repair_search_skipped', {
       reason: 'search_provider_disabled',
       queued_repairs: repairEvents.length,

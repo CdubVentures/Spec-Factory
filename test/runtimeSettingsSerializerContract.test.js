@@ -85,7 +85,7 @@ function createNumericBaseline(fallback = 11) {
 
 function createSerializerInput(overrides = {}) {
   return {
-    searchProvider: 'searxng',
+    searchEngines: 'bing,startpage,duckduckgo',
     searxngBaseUrl: '  https://example.test/search  ',
     llmPlanApiKey: '  key-live  ',
     llmModelPlan: 'gpt-plan',
@@ -116,7 +116,7 @@ test('runtime settings serializer emits every runtime PUT frontend key without s
   assert.equal(Object.hasOwn(payload, 'profile'), false, 'profile is not a runtime PUT key — must not be in payload');
   assert.equal(Object.hasOwn(payload, 'runProfile'), false, 'runProfile is not a runtime PUT key — must not be in payload');
   assert.equal(Object.hasOwn(payload, 'discoveryEnabled'), false, 'discoveryEnabled is a hardcoded invariant — must not be in payload');
-  assert.equal(payload.searchProvider, 'searxng');
+  assert.equal(payload.searchEngines, 'bing,startpage,duckduckgo');
   assert.equal(payload.searxngBaseUrl, 'https://example.test/search');
   assert.equal(payload.llmPlanApiKey, 'key-live');
   assert.equal(payload.llmPlanFallbackModel, 'gpt-plan-fallback');
@@ -144,11 +144,9 @@ test('runtime settings serializer preserves budget and reasoning knobs as parsed
   const { collectRuntimeSettingsPayload } = await loadRuntimeSettingsDomain();
   // WHY: needsetEvidenceDecayDays removed in Phase 12 NeedSet Legacy Removal
   const payload = collectRuntimeSettingsPayload(createSerializerInput({
-    llmExtractMaxTokens: '2048',
     llmExtractMaxSnippetsPerBatch: '12',
     llmExtractMaxSnippetChars: '999',
     llmExtractSkipLowSignal: true,
-    llmExtractReasoningBudget: '4096',
     llmReasoningMode: true,
     llmReasoningBudget: '3072',
     llmMonthlyBudgetUsd: '7.5',
@@ -167,11 +165,9 @@ test('runtime settings serializer preserves budget and reasoning knobs as parsed
     llmVerifyMode: true,
   }));
 
-  assert.equal(payload.llmExtractMaxTokens, 2048);
   assert.equal(payload.llmExtractMaxSnippetsPerBatch, 12);
   assert.equal(payload.llmExtractMaxSnippetChars, 999);
   assert.equal(payload.llmExtractSkipLowSignal, true);
-  assert.equal(payload.llmExtractReasoningBudget, 4096);
   assert.equal(payload.llmReasoningMode, true);
   assert.equal(payload.llmReasoningBudget, 3072);
   assert.equal(payload.llmMonthlyBudgetUsd, 7.5);

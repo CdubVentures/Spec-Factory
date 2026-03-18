@@ -89,13 +89,13 @@ test('local searxng settings pin the supported engines and override autocomplete
 
   assert.deepEqual(
     summary.keepOnlyEngines,
-    ['google', 'bing'],
+    ['google', 'bing', 'startpage', 'duckduckgo', 'brave'],
     'local searxng settings should keep only the supported upstream engines',
   );
 
   assert.deepEqual(
     summary.configuredEngines,
-    ['google', 'bing'],
+    ['google', 'bing', 'startpage', 'duckduckgo', 'brave'],
     'local searxng settings should explicitly configure only the supported engines',
   );
 

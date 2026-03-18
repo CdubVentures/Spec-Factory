@@ -167,7 +167,7 @@ export function buildProcessStartLaunchPlan(options = {}) {
     llmBaseUrl,
     openaiApiKey,
     anthropicApiKey,
-    searchProvider,
+    searchEngines,
     llmModelPlan,
     llmModelReasoning,
     llmMaxOutputTokensPlan,
@@ -244,16 +244,9 @@ export function buildProcessStartLaunchPlan(options = {}) {
   const normalizedProviders = normalizeJoinedList(providers);
   if (normalizedProviders) cliArgs.push('--providers', normalizedProviders);
 
-  const normalizedSearchProvider = String(searchProvider || '').trim().toLowerCase();
-  if (normalizedSearchProvider) {
-    const allowedSearchProviders = new Set(['none', 'google', 'bing', 'searxng', 'dual']);
-    if (!allowedSearchProviders.has(normalizedSearchProvider)) {
-      return buildError(400, {
-        error: 'invalid_search_provider',
-        message: `Unsupported searchProvider '${normalizedSearchProvider}'.`,
-      });
-    }
-    cliArgs.push('--search-provider', normalizedSearchProvider);
+  const normalizedSearchEngines = String(searchEngines || '').trim().toLowerCase();
+  if (normalizedSearchEngines) {
+    cliArgs.push('--search-engines', normalizedSearchEngines);
   }
 
   if (effectiveIndexLabOut) {

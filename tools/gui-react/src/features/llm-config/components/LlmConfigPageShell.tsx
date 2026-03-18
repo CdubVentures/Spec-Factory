@@ -55,14 +55,6 @@ function PhaseNavIcon({ phaseId, active }: { phaseId: LlmPhaseId; active: boolea
             <path d="M19 10l2 2-2 2" />
           </>
         )}
-        {phaseId === 'domain-classifier' && (
-          <>
-            <rect x="3" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="3" width="7" height="7" rx="1" />
-            <rect x="3" y="14" width="7" height="7" rx="1" />
-            <rect x="14" y="14" width="7" height="7" rx="1" />
-          </>
-        )}
         {phaseId === 'extraction' && (
           <>
             <path d="M4 7h6l2 2h8" />

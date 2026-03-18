@@ -1,4 +1,4 @@
-import { callLlmWithRouting, hasLlmRouteApiKey } from '../core/llm/client/routing.js';
+import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../core/llm/client/routing.js';
 
 function toArray(value) {
   return Array.isArray(value) ? value : [];
@@ -81,9 +81,10 @@ export async function planUberQueries({
   llmContext = {},
   identity = {},
   missingFields = [],
+  missingCriticalFields = [],
   baseQueries = [],
   frontierSummary = {},
-  cap = 16
+  cap = 24
 } = {}) {
   const fallbackQueries = dedupeQueries(baseQueries, Math.max(1, cap));
   if (!hasLlmRouteApiKey(config, { role: 'plan' })) {
@@ -111,23 +112,53 @@ export async function planUberQueries({
       product_id: String(identity.productId || '')
     },
     missing_fields: grouped,
+    missing_critical_fields: toArray(missingCriticalFields).slice(0, 15),
     base_queries: fallbackQueries.slice(0, 24),
     frontier_summary: frontierSummary,
-    archetypes_emitted: archetypeContext.archetypes_emitted || []
+    archetypes_emitted: archetypeContext.archetypes_emitted || [],
+    hosts_targeted: archetypeContext.hosts_targeted || [],
+    uncovered_search_worthy: archetypeContext.uncovered_search_worthy || []
   };
+
+  const archetypeHint = (payload.archetypes_emitted || []).length > 0
+    ? `Archetype queries already target: ${payload.archetypes_emitted.join(', ')}. Focus on GAPS not covered by these source types.`
+    : '';
+  const criticalHint = (payload.missing_critical_fields || []).length > 0
+    ? `Critical unresolved fields: ${payload.missing_critical_fields.join(', ')}. Prioritize high-yield queries for these.`
+    : '';
+
+  const resolvedModel = resolvePhaseModel(config, 'searchPlanner');
+  if (!resolvedModel) {
+    return {
+      source: 'deterministic',
+      queries: fallbackQueries,
+      preferred_domains: [],
+      negative_filters: [],
+      max_queries: Math.max(1, cap),
+      max_new_domains: Math.max(1, Math.ceil(cap / 2)),
+      sitemap_mode_recommended: false
+    };
+  }
 
   try {
     const result = await callLlmWithRouting({
       config,
-      reason: 'uber_query_planner',
+      reason: 'search_planner',
       role: 'plan',
-      modelOverride: String(config.llmModelPlan || '').trim(),
+      phase: 'searchPlanner',
       system: [
-        'You are a search planner for evidence-first hardware specification extraction.',
-        'Return strict JSON only.',
-        'Prioritize high-yield official/vendor/lab sources first.',
-        'Avoid known dead or low-yield patterns and duplicate intents.'
-      ].join('\n'),
+        'You generate focused web research queries for hardware specification collection.',
+        'Output 12-24 short, diverse search queries in strict JSON. Each query targets a DIFFERENT angle.',
+        'Prioritize manufacturer docs, manuals, instrumented labs, and trusted spec databases.',
+        'Also include official support pages and product comparison sites.',
+        'Do not include junk domains, login workflows, or irrelevant topics.',
+        'The base_queries show searches already tried. Generate DIFFERENT query patterns covering new angles.',
+        'Vary strategies: official product pages, spec databases, review sites, teardowns, comparison pages.',
+        'NEVER put domain names (.com, .org, etc.) in query text. Domain preference is handled separately.',
+        'Avoid repeating weak query patterns. Keep queries compact and practical.',
+        archetypeHint,
+        criticalHint
+      ].filter(Boolean).join('\n'),
       user: JSON.stringify(payload),
       jsonSchema: plannerSchema(),
       usageContext: {
@@ -135,10 +166,11 @@ export async function planUberQueries({
         productId: llmContext.productId || '',
         runId: llmContext.runId || '',
         round: llmContext.round || 0,
-        reason: 'uber_query_planner',
+        reason: 'search_planner',
         host: '',
         url_count: 0,
         evidence_chars: JSON.stringify(payload).length,
+        traceWriter: llmContext.traceWriter || null,
         trace_context: {
           purpose: 'search_planner',
           target_fields: toArray(missingFields).slice(0, 40)
@@ -146,11 +178,14 @@ export async function planUberQueries({
       },
       costRates: llmContext.costRates || config,
       onUsage: async (usageRow) => {
+        const budgetGuard = llmContext?.budgetGuard;
+        budgetGuard?.recordCall?.({ costUsd: usageRow.cost_usd });
         if (typeof llmContext.recordUsage === 'function') {
           await llmContext.recordUsage(usageRow);
         }
       },
-      reasoningMode: false,
+      reasoningMode: Boolean(config._resolvedSearchPlannerUseReasoning ?? config.llmPlanUseReasoning ?? config.llmReasoningMode),
+      reasoningBudget: Number(config.llmReasoningBudget || 0),
       timeoutMs: config.llmTimeoutMs || config.openaiTimeoutMs,
       logger
     });

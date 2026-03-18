@@ -79,6 +79,57 @@ const PROVIDERS = Object.freeze({
     preference_rank: 2, // Measured: some results, low relevance
     rate_limits: { requests_per_second: 3, burst: 10, cooldown_ms: 500 },
   }),
+  // Startpage: privacy-focused Google proxy via SearXNG.
+  startpage: Object.freeze({
+    name: 'startpage',
+    supports_site: true,
+    supports_filetype: false,
+    supports_since: false,
+    supports_intitle: true,
+    supports_inurl: true,
+    supports_exact_phrase: true,
+    supports_boolean_or: true,
+    supports_boolean_not: true,
+    max_query_length: 2048,
+    max_results_per_request: 10,
+    auth_required: false,
+    preference_rank: 2,
+    rate_limits: { requests_per_second: 1, burst: 3, cooldown_ms: 1000 },
+  }),
+  // DuckDuckGo: privacy-focused meta-search via SearXNG.
+  duckduckgo: Object.freeze({
+    name: 'duckduckgo',
+    supports_site: true,
+    supports_filetype: false,
+    supports_since: false,
+    supports_intitle: false,
+    supports_inurl: false,
+    supports_exact_phrase: true,
+    supports_boolean_or: true,
+    supports_boolean_not: true,
+    max_query_length: 2048,
+    max_results_per_request: 10,
+    auth_required: false,
+    preference_rank: 3,
+    rate_limits: { requests_per_second: 1, burst: 3, cooldown_ms: 1000 },
+  }),
+  // Brave: independent search index via SearXNG.
+  brave: Object.freeze({
+    name: 'brave',
+    supports_site: true,
+    supports_filetype: false,
+    supports_since: false,
+    supports_intitle: false,
+    supports_inurl: false,
+    supports_exact_phrase: true,
+    supports_boolean_or: true,
+    supports_boolean_not: true,
+    max_query_length: 2048,
+    max_results_per_request: 10,
+    auth_required: false,
+    preference_rank: 3,
+    rate_limits: { requests_per_second: 1, burst: 3, cooldown_ms: 1000 },
+  }),
   // Dual runs the same query against Google and Bing engine lanes.
   // Expose only the shared safe operator subset to avoid engine-specific syntax drift.
   dual: Object.freeze({
@@ -127,13 +178,63 @@ const OPERATOR_KEYS = {
 };
 
 /**
- * Get frozen capability object for a provider.
- * @throws on unknown provider.
+ * Merge capabilities from multiple engine capability objects.
+ * Boolean supports: AND (all must support for merged to support).
+ * Numerics: minimum of max_query_length, sum of max_results_per_request.
+ * Rate limits: minimum requests_per_second, minimum burst, maximum cooldown_ms.
+ * WHY: CSV searchEngines like 'bing,startpage,duckduckgo' must yield a safe
+ * merged capability set reflecting the least capable engine in the set.
+ */
+function mergeCapabilities(capsList) {
+  if (capsList.length === 1) return capsList[0];
+  const names = capsList.map(c => c.name).join(',');
+  return {
+    name: names,
+    supports_site: capsList.every(c => c.supports_site),
+    supports_filetype: capsList.every(c => c.supports_filetype),
+    supports_since: capsList.every(c => c.supports_since),
+    supports_intitle: capsList.every(c => c.supports_intitle),
+    supports_inurl: capsList.every(c => c.supports_inurl),
+    supports_exact_phrase: capsList.every(c => c.supports_exact_phrase),
+    supports_boolean_or: capsList.every(c => c.supports_boolean_or),
+    supports_boolean_not: capsList.every(c => c.supports_boolean_not),
+    max_query_length: Math.min(...capsList.map(c => c.max_query_length)),
+    max_results_per_request: capsList.reduce((sum, c) => sum + c.max_results_per_request, 0),
+    auth_required: capsList.some(c => c.auth_required),
+    preference_rank: Math.min(...capsList.map(c => c.preference_rank)),
+    rate_limits: {
+      requests_per_second: Math.min(...capsList.map(c => c.rate_limits.requests_per_second)),
+      burst: Math.min(...capsList.map(c => c.rate_limits.burst)),
+      cooldown_ms: Math.max(...capsList.map(c => c.rate_limits.cooldown_ms)),
+    },
+  };
+}
+
+/**
+ * Get frozen capability object for a provider or CSV engine list.
+ * Accepts single provider names (e.g. 'bing') or CSV strings (e.g. 'bing,startpage,duckduckgo').
+ * @throws on unknown provider names.
  */
 export function getProviderCapabilities(providerName) {
-  const caps = PROVIDERS[providerName];
-  if (!caps) throw new Error(`Unknown provider: ${providerName}`);
-  return caps;
+  const raw = String(providerName ?? '').trim().toLowerCase();
+  if (!raw) throw new Error(`Unknown provider: ${providerName}`);
+  if (raw === 'none') return PROVIDERS.none;
+
+  // Single provider lookup
+  if (!raw.includes(',')) {
+    const caps = PROVIDERS[raw];
+    if (!caps) throw new Error(`Unknown provider: ${providerName}`);
+    return caps;
+  }
+
+  // CSV engine list — merge capabilities from individual engines
+  const engines = raw.split(',').map(e => e.trim()).filter(Boolean);
+  const capsList = engines.map(engine => {
+    const caps = PROVIDERS[engine];
+    if (!caps) throw new Error(`Unknown provider: ${engine}`);
+    return caps;
+  });
+  return mergeCapabilities(capsList);
 }
 
 /**

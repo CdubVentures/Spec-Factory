@@ -152,7 +152,8 @@ function buildQueryRows({
   identityAliases = [],
   maxRows = 72,
   rejectLog = [],
-  brandResolutionHints = []
+  brandResolutionHints = [],
+  fieldYieldByDomain = null
 }) {
   const brand = clean(job?.identityLock?.brand || '');
   const model = clean(job?.identityLock?.model || '');
@@ -207,6 +208,10 @@ function buildQueryRows({
       ])];
       existing.hint_source = existing.hint_source || hintSource;
       if (!existing.doc_hint && docHint) existing.doc_hint = docHint;
+      if (!existing.domain_hint && domainHint) {
+        existing.domain_hint = clean(domainHint);
+        existing.source_host = clean(domainHint);
+      }
       addReject({
         query: normalizedQuery,
         source,
@@ -272,7 +277,7 @@ function buildQueryRows({
   // Emit archetype queries
   for (const slot of allocatedSlots) {
     if (slot.slots <= 0) continue;
-    const archetypeRows = emitArchetypeQueries(slot, { brand, model, variant }, product, focusFields);
+    const archetypeRows = emitArchetypeQueries(slot, { brand, model, variant }, product, focusFields, { fieldYieldByDomain });
     for (const row of archetypeRows) {
       addRow({
         query: row.query,
@@ -480,6 +485,7 @@ export function buildSearchProfile({
   aliasValidationCap = 12,
   fieldTargetQueriesCap = 3,
   docHintQueriesCap = 3,
+  fieldYieldByDomain = null,
 }) {
   const resolvedIdentity = resolveJobIdentity(job);
   const brand = resolvedIdentity.brand;
@@ -517,7 +523,8 @@ export function buildSearchProfile({
     identityAliases,
     maxRows: Math.max(24, Number(maxQueries || 24) * 3),
     rejectLog: queryRejectLog,
-    brandResolutionHints
+    brandResolutionHints,
+    fieldYieldByDomain
   });
 
   const querySet = new Set();

@@ -239,7 +239,8 @@ export function buildRawConfig({ manifestApplicator }) {
     discoveryResultsPerQuery: 10, // Hardcoded — fixed value, not tunable
     discoveryMaxDiscovered: parseIntEnv('DISCOVERY_MAX_DISCOVERED', runtimeSettingDefault('discoveryMaxDiscovered', 80)),
     discoveryQueryConcurrency: 2, // Hardcoded — tuned for 2s inter-query delay
-    searchProvider: process.env.SEARCH_PROVIDER || runtimeSettingDefault('searchProvider', 'dual'),
+    searchEngines: process.env.SEARCH_ENGINES || process.env.SEARCH_PROVIDER || runtimeSettingDefault('searchEngines', 'google'),
+    searchEnginesFallback: process.env.SEARCH_ENGINES_FALLBACK || runtimeSettingDefault('searchEnginesFallback', 'bing'),
     searxngBaseUrl: process.env.SEARXNG_BASE_URL || process.env.SEARXNG_URL || runtimeSettingDefault('searxngBaseUrl', 'http://127.0.0.1:8080'),
     searxngDefaultBaseUrl: process.env.SEARXNG_DEFAULT_BASE_URL || runtimeSettingDefault('searxngBaseUrl', 'http://127.0.0.1:8080'),
     searxngMinQueryIntervalMs: parseIntEnv('SEARXNG_MIN_QUERY_INTERVAL_MS', runtimeSettingDefault('searxngMinQueryIntervalMs', 2000)),
@@ -265,7 +266,6 @@ export function buildRawConfig({ manifestApplicator }) {
     llmPlanBaseUrl: explicitLlmPlanBaseUrl,
     llmPlanApiKey: process.env.LLM_PLAN_API_KEY || '',
     llmPlanFallbackModel: process.env.LLM_PLAN_FALLBACK_MODEL || '',
-    llmSerpRerankEnabled: true,
     llmModelCatalog: process.env.LLM_MODEL_CATALOG || '',
     llmModelPricingMap: mergeModelPricingMaps(
       buildDefaultModelPricingMap(),
@@ -285,7 +285,6 @@ export function buildRawConfig({ manifestApplicator }) {
     consensusTier3Weight: 0.45,
     consensusTier4Weight: 0.25,
     serpTriageMinScore: parseIntEnv('SERP_TRIAGE_MIN_SCORE', convergenceSettingDefault('serpTriageMinScore', 3)),
-    serpTriageMaxUrls: parseIntEnv('SERP_TRIAGE_MAX_URLS', convergenceSettingDefault('serpTriageMaxUrls', 20)),
     serpTriageEnabled: true,
     retrievalMaxHitsPerField: 24,
     retrievalMaxPrimeSources: 10,
@@ -369,8 +368,6 @@ export function buildRawConfig({ manifestApplicator }) {
     llmReasoningMode: parseBoolEnv('LLM_REASONING_MODE', runtimeSettingDefault('llmReasoningMode', true)),
     llmReasoningBudget: parseIntEnv('LLM_REASONING_BUDGET', runtimeSettingDefault('llmReasoningBudget', 32768)),
     llmMaxTokens: parseIntEnv('LLM_MAX_TOKENS', runtimeSettingDefault('llmMaxTokens', 16384)),
-    llmExtractReasoningBudget: parseIntEnv('LLM_EXTRACT_REASONING_BUDGET', runtimeSettingDefault('llmExtractReasoningBudget', 4096)),
-    llmExtractMaxTokens: parseIntEnv('LLM_EXTRACT_MAX_TOKENS', runtimeSettingDefault('llmExtractMaxTokens', 1200)),
     llmExtractMaxSnippetsPerBatch: parseIntEnv('LLM_EXTRACT_MAX_SNIPPETS_PER_BATCH', runtimeSettingDefault('llmExtractMaxSnippetsPerBatch', 4)),
     llmExtractMaxSnippetChars: parseIntEnv('LLM_EXTRACT_MAX_SNIPPET_CHARS', runtimeSettingDefault('llmExtractMaxSnippetChars', 900)),
     llmExtractSkipLowSignal: parseBoolEnv('LLM_EXTRACT_SKIP_LOW_SIGNAL', runtimeSettingDefault('llmExtractSkipLowSignal', true)),

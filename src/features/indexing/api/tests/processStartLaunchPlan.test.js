@@ -37,7 +37,7 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
     fields: ['dpi', 'weight', ''],
     providers: ['manufacturer', ' search '],
     discoveryEnabled: true,
-    searchProvider: 'SEARXNG',
+    searchEngines: 'bing,startpage,duckduckgo',
     profile: 'thorough',
     dryRun: true,
     localOutputRoot: path.resolve('ignored-local-output-root'),
@@ -79,8 +79,8 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
     'dpi,weight',
     '--providers',
     'manufacturer,search',
-    '--search-provider',
-    'searxng',
+    '--search-engines',
+    'bing,startpage,duckduckgo',
     '--out',
     path.join(localStorageRoot, 'indexlab'),
     '--profile',
@@ -118,16 +118,11 @@ test('buildProcessStartLaunchPlan rejects unsupported process mode', () => {
   });
 });
 
-test('buildProcessStartLaunchPlan rejects unsupported search provider', () => {
-  const result = buildPlan({ searchProvider: 'duckduckgo' });
-  assert.deepEqual(result, {
-    ok: false,
-    status: 400,
-    body: {
-      error: 'invalid_search_provider',
-      message: "Unsupported searchProvider 'duckduckgo'.",
-    },
-  });
+test('buildProcessStartLaunchPlan passes searchEngines through to CLI args', () => {
+  const result = buildPlan({ searchEngines: 'bing,startpage' });
+  assert.equal(result.ok, true);
+  assert.ok(result.cliArgs.includes('--search-engines'), 'includes --search-engines flag');
+  assert.ok(result.cliArgs.includes('bing,startpage'), 'includes engine CSV value');
 });
 
 test('buildProcessStartLaunchPlan validates object-shaped JSON map overrides', () => {

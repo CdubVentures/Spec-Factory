@@ -331,11 +331,20 @@ export async function extractCandidatesLLM({
       });
       const routeModels = Array.isArray(batchRoutePolicy?.route_models) ? batchRoutePolicy.route_models : [];
       const routePrimaryModel = String(routeModels[0] || '').trim();
-      const model = routePrimaryModel || modelRoute.model || config._resolvedExtractionBaseModel || config.llmModelPlan;
+      // WHY: Phase-level extraction override — if reasoning is forced at phase level, override batch-level decision
+      const phaseReasoningForced = Boolean(config._resolvedExtractionUseReasoning);
+      const effectiveReasoningMode = phaseReasoningForced || modelRoute.reasoningMode;
+      const model = routePrimaryModel || (
+        effectiveReasoningMode
+          ? (config._resolvedExtractionReasoningModel || config.llmModelReasoning || config._resolvedExtractionBaseModel || config.llmModelPlan || modelRoute.model)
+          : (config._resolvedExtractionBaseModel || modelRoute.model || config.llmModelPlan)
+      );
+      // WHY: Phase override token cap takes precedence, then route policy, then batch model route
+      const phaseMaxTokens = Math.max(0, Number(config._resolvedExtractionMaxOutputTokens || 0));
       const routeMaxTokens = Math.max(0, Number.parseInt(String(batchRoutePolicy?.max_tokens || 0), 10) || 0);
-      const effectiveMaxTokens = routeMaxTokens > 0
-        ? (modelRoute.maxTokens > 0 ? Math.min(routeMaxTokens, Number(modelRoute.maxTokens || 0)) : routeMaxTokens)
-        : Number(modelRoute.maxTokens || 0);
+      const batchModelMaxTokens = Number(modelRoute.maxTokens || 0);
+      const tokenCandidates = [phaseMaxTokens, routeMaxTokens, batchModelMaxTokens].filter((t) => t > 0);
+      const effectiveMaxTokens = tokenCandidates.length > 0 ? Math.min(...tokenCandidates) : 0;
       if (!Array.isArray(scoped.snippets) || scoped.snippets.length === 0) {
         logger?.info?.('llm_extract_batch_skipped_no_signal', {
           productId: job.productId,
@@ -425,13 +434,13 @@ export async function extractCandidatesLLM({
       const repatchEnabled = Boolean(batchRoutePolicy?.all_sources_confidence_repatch);
       const repatchModel = String(
         routeModels[1]
-          || (modelRoute.reasoningMode ? '' : (config.llmModelReasoning || ''))
+          || (effectiveReasoningMode ? '' : (config._resolvedExtractionReasoningModel || config.llmModelReasoning || ''))
       ).trim();
       const repatchReason = `${modelRoute.reason}_repatch`;
       const primaryRequest = {
         model,
         routeRole: modelRoute.routeRole || 'extract',
-        reasoningMode: Boolean(modelRoute.reasoningMode),
+        reasoningMode: Boolean(effectiveReasoningMode),
         reason: modelRoute.reason,
         maxTokens: effectiveMaxTokens,
         usageTracker: null,

@@ -190,7 +190,7 @@ function Schema4PlannerView({
           </div>
           <div className="flex items-center gap-2">
             <Chip label="Schema 4" className="sf-chip-info" />
-            <Chip label={calls.length > 0 ? 'llm on' : 'llm off'} className={calls.length > 0 ? 'sf-chip-warning' : 'sf-chip-danger'} />
+            <Chip label="LLM" className="sf-chip-warning" />
             <Tip text="The NeedSet Planner generates targeted search queries to close field coverage gaps identified by the NeedSet. Schema 4 uses a single focused LLM call instead of multi-pass discovery." />
           </div>
         </div>
@@ -470,7 +470,7 @@ export function PrefetchSearchPlannerPanel({
             <Chip label={overallStatus.toUpperCase()} className={overallStatus === 'finished' ? 'sf-chip-success' : 'sf-chip-danger'} />
           </div>
           <div className="flex items-center gap-2">
-            <Chip label={calls.length > 0 ? 'llm on' : 'llm off'} className={calls.length > 0 ? 'sf-chip-warning' : 'sf-chip-danger'} />
+            <Chip label="LLM" className="sf-chip-warning" />
             <Tip text="The Search Planner LLM generates targeted queries in multiple passes (Primary, Fast, Reason, Validate) to close missing field coverage gaps identified by the NeedSet." />
           </div>
         </div>

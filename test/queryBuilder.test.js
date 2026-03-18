@@ -32,8 +32,8 @@ test('buildTargetedQueries uses normalized missing fields and helper tooltip hin
 
   assert.equal(queries.some((row) => row.includes('report rate specification')), true);
   assert.equal(queries.some((row) => row.includes('polling interval manual pdf')), true);
-  // WHY: site: removed — domain_hint queries now embed host as plain text soft bias
-  assert.equal(queries.some((row) => row.includes('logitechg.com') && !row.includes('site:')), true);
+  // WHY: soft domain bias — host appears as plain text, not site: operator
+  assert.equal(queries.some((row) => row.includes('logitechg.com') && !row.includes('site:')), true, 'soft domain bias present');
   assert.equal(queries.some((row) => row.includes('site:')), false);
 });
 
@@ -76,8 +76,8 @@ test('buildSearchProfile uses field rules search hints and emits provenance', ()
   assert.equal(Array.isArray(profile.identity_aliases), true);
   assert.equal(profile.identity_aliases.some((row) => row.alias === 'aw610m'), true);
   assert.equal(profile.query_rows.some((row) => row.hint_source === 'field_rules.search_hints'), true);
-  // WHY: site: removed — domain_hint queries now embed host as plain text soft bias
-  assert.equal(profile.queries.some((query) => query.includes('support.dell.com') && !query.includes('site:')), true);
+  // WHY: soft domain bias — host appears as plain text, not site: operator
+  assert.equal(profile.queries.some((query) => query.includes('support.dell.com') && !query.includes('site:')), true, 'soft domain bias present');
   assert.equal(profile.queries.some((query) => query.includes('polling_rate')), false);
 });
 

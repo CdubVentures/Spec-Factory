@@ -6,7 +6,7 @@ import {
   resolveTierForHost,
   resolveTierNameForHost
 } from '../categories/loader.js';
-import { isLowValueHost, validateFetchUrl } from '../pipeline/urlQualityGate.js';
+import { isLowValueHost } from '../pipeline/urlQualityGate.js';
 import {
   normalizeHost,
   isObject,
@@ -20,6 +20,9 @@ import {
   countQueueHost,
   urlPath
 } from './sourcePlannerUrlUtils.js';
+import { revalidateUrl } from './sourcePlannerRevalidation.js';
+import { resolveHostYieldState } from './sourcePlannerYieldPolicy.js';
+import { compareDiscoveryPriority } from './sourcePlannerComparator.js';
 import {
   BRAND_PREFIXED_CATEGORY_HOSTS,
   manufacturerHostHintsForBrand,
@@ -155,6 +158,14 @@ export class SourcePlanner {
       candidate_domain_cap: 0,
     };
     this._acceptCount = 0;
+    this._enqueueMetaCounters = {
+      downgraded: 0,
+      evictions: 0,
+      duplicate_upgrades: 0,
+      locale_replacements: 0,
+      triage_routed: 0,
+      triage_missing: 0,
+    };
     this._discoveryCounters = {
       robotsSitemapsDiscovered: 0,
       sitemapUrlsDiscovered: 0
@@ -340,13 +351,32 @@ export class SourcePlanner {
     }
   }
 
-  seedCandidates(urls) {
+  seedCandidates(urls, { triageMetaMap = null } = {}) {
     if (!this.fetchCandidateSources) {
       return;
     }
     for (const url of urls || []) {
-      this.enqueueCandidate(url, 'discovery');
+      const meta = triageMetaMap ? this._lookupTriageMeta(url, triageMetaMap) : null;
+      this.enqueue(url, 'discovery', { forceCandidate: true, triageMeta: meta });
     }
+  }
+
+  _lookupTriageMeta(url, triageMetaMap) {
+    if (!triageMetaMap || triageMetaMap.size === 0) return null;
+    // Canonical lookup first
+    try {
+      const parsed = new URL(url);
+      const canonical = canonicalizeQueueUrl(parsed);
+      if (triageMetaMap.has(canonical)) return triageMetaMap.get(canonical);
+      // Normalized URL fallback
+      const normalized = parsed.toString();
+      if (triageMetaMap.has(normalized)) return triageMetaMap.get(normalized);
+    } catch {
+      // Fall through to raw lookup
+    }
+    // Raw URL fallback
+    if (triageMetaMap.has(url)) return triageMetaMap.get(url);
+    return null;
   }
 
   enqueueCandidate(url, discoveredFrom = 'candidate') {
@@ -377,6 +407,128 @@ export class SourcePlanner {
     };
   }
 
+  _revalidationCtx() {
+    return {
+      categoryConfig: this.categoryConfig,
+      blockedHosts: this.blockedHosts,
+    };
+  }
+
+  _findQueuedRow(normalizedUrl) {
+    for (const q of [this.priorityQueue, this.manufacturerQueue, this.queue, this.candidateQueue]) {
+      const found = q.find((item) => item.url === normalizedUrl);
+      if (found) return { row: found, queue: q };
+    }
+    return null;
+  }
+
+  _findWeakestSameDomainRow(host, excludeUrl) {
+    let weakest = null;
+    let weakestQueue = null;
+    // WHY: Eviction priority order — prefer removing from candidateQueue first,
+    // then general queue low-priority rows. Never evict stronger approved/high-priority.
+    const searchOrder = [
+      { queue: this.candidateQueue, name: 'candidate' },
+      { queue: this.queue, name: 'general' },
+    ];
+    for (const { queue, name } of searchOrder) {
+      for (const row of queue) {
+        if (row.host !== host || row.url === excludeUrl) continue;
+        if (!weakest || compareDiscoveryPriority(row, weakest) > 0) {
+          weakest = row;
+          weakestQueue = { queue, name };
+        }
+      }
+    }
+    return weakest ? { row: weakest, ...weakestQueue } : null;
+  }
+
+  _evictRow(row, queue) {
+    const idx = queue.indexOf(row);
+    if (idx >= 0) queue.splice(idx, 1);
+  }
+
+  _resolveQueueRoute({ host, role, triageMeta, forceApproved, forceCandidate, discoveredFrom, yieldState }) {
+    const reason_codes = [];
+    const tm = triageMeta || null;
+    const approvalBucket = tm?.approval_bucket || (forceApproved ? 'approved' : 'candidate');
+    const selectionPriority = tm?.selection_priority || 'low';
+    const primaryLane = tm?.primary_lane || 6;
+
+    // 1. Seeds/learning seeds → priorityQueue
+    if (discoveredFrom === 'seed' || discoveredFrom === 'learning_seed') {
+      reason_codes.push('seed_frontload');
+      return { queue: 'priority', reason_codes };
+    }
+
+    // If no triageMeta, fall back to existing shouldUseApprovedQueue logic
+    if (!tm) {
+      this._enqueueMetaCounters.triage_missing += 1;
+      if (forceCandidate) {
+        reason_codes.push('force_candidate');
+        return { queue: 'candidate', reason_codes };
+      }
+      const approved = this.shouldUseApprovedQueue(host, forceApproved, forceCandidate);
+      if (approved) {
+        if (role === 'manufacturer') {
+          reason_codes.push('fallback_manufacturer');
+          return { queue: 'manufacturer', reason_codes };
+        }
+        reason_codes.push('fallback_approved');
+        return { queue: 'general', reason_codes };
+      }
+      reason_codes.push('fallback_candidate');
+      return { queue: 'candidate', reason_codes };
+    }
+
+    this._enqueueMetaCounters.triage_routed += 1;
+
+    // 2. approved + high → priorityQueue
+    if (approvalBucket === 'approved' && selectionPriority === 'high') {
+      reason_codes.push('approved_high');
+      return { queue: 'priority', reason_codes };
+    }
+
+    // 3. lane 2 (manual/specsheet) → priorityQueue with conditions
+    if (primaryLane === 2) {
+      const qualifies =
+        selectionPriority === 'high' ||
+        selectionPriority === 'medium' ||
+        approvalBucket === 'approved' ||
+        yieldState === 'promoted';
+      if (qualifies) {
+        reason_codes.push('lane2_qualified');
+        return { queue: 'priority', reason_codes };
+      }
+      reason_codes.push('lane2_unqualified');
+      return { queue: approvalBucket === 'approved' ? 'general' : 'candidate', reason_codes };
+    }
+
+    // 4. lane 1 (official/support) → manufacturerQueue or priorityQueue
+    if (primaryLane === 1) {
+      if (role === 'manufacturer') {
+        reason_codes.push('lane1_manufacturer');
+        return { queue: 'manufacturer', reason_codes };
+      }
+      reason_codes.push('lane1_official_non_manufacturer');
+      return { queue: 'priority', reason_codes };
+    }
+
+    // 5. lanes 3-4 (trusted review/specdb) → general queue
+    if (primaryLane === 3 || primaryLane === 4) {
+      reason_codes.push(`lane${primaryLane}_trusted`);
+      return { queue: 'general', reason_codes };
+    }
+
+    // 6. Retailer / long_tail / community → queue or candidateQueue based on bucket
+    if (approvalBucket === 'approved') {
+      reason_codes.push('approved_lower_lane');
+      return { queue: 'general', reason_codes };
+    }
+    reason_codes.push('candidate_lower_lane');
+    return { queue: 'candidate', reason_codes };
+  }
+
   shouldUseApprovedQueue(host, forceApproved = false, forceCandidate = false) {
     return checkShouldUseApprovedQueue(host, forceApproved, forceCandidate, this._validationCtx());
   }
@@ -398,78 +550,57 @@ export class SourcePlanner {
   }
 
   enqueue(url, discoveredFrom = 'unknown', options = {}) {
-    const { forceApproved = false, forceCandidate = false, forceBrandBypass = false } = options;
+    const { forceApproved = false, forceCandidate = false, forceBrandBypass = false, triageMeta = null } = options;
 
-    if (!url) {
-      this._rejectCounters.empty_url += 1;
+    // ── Stage A: Revalidation (transport + safety) ──
+    const reval = revalidateUrl({ url, revalidationCtx: this._revalidationCtx() });
+    if (reval.rejected) {
+      this._rejectCounters[reval.reason] = (this._rejectCounters[reval.reason] || 0) + 1;
       return false;
     }
+    const { parsed, normalizedUrl, host } = reval;
 
-    let parsed;
-    try {
-      parsed = new URL(url);
-    } catch {
-      this._rejectCounters.invalid_url += 1;
-      return false;
-    }
-
-    if (!['http:', 'https:'].includes(parsed.protocol)) {
-      this._rejectCounters.bad_protocol += 1;
-      return false;
-    }
-
-    const normalizedUrl = canonicalizeQueueUrl(parsed);
+    // ── Stage B: Dedup with upgrade/merge ──
     if (this.visitedUrls.has(normalizedUrl)) {
       this._rejectCounters.already_visited += 1;
       return false;
     }
 
-    if (this.queue.find((item) => item.url === normalizedUrl)) {
-      this._rejectCounters.already_queued += 1;
-      return false;
-    }
-
-    if (this.manufacturerQueue.find((item) => item.url === normalizedUrl)) {
-      this._rejectCounters.already_queued += 1;
-      return false;
-    }
-
-    if (this.priorityQueue.find((item) => item.url === normalizedUrl)) {
-      this._rejectCounters.already_queued += 1;
-      return false;
-    }
-
-    if (this.candidateQueue.find((item) => item.url === normalizedUrl)) {
-      this._rejectCounters.already_queued += 1;
-      return false;
-    }
-
-    const host = normalizeHost(parsed.hostname);
-    if (!host || isDeniedHost(host, this.categoryConfig)) {
-      this._rejectCounters.denied_host += 1;
-      return false;
-    }
-    if (hostInSet(host, this.blockedHosts)) {
-      this._rejectCounters.blocked_host += 1;
-      return false;
-    }
-    const seededApprovedLowValueBypass =
-      forceApproved && (discoveredFrom === 'seed' || discoveredFrom === 'learning_seed');
-    if (isLowValueHost(parsed.hostname) && !seededApprovedLowValueBypass) {
-      this._rejectCounters.low_value_host += 1;
-      return false;
-    }
-    // Full URL quality gate check (search page rejection, etc.)
-    // Seed URLs bypass the gate — they were explicitly provided.
-    if (!seededApprovedLowValueBypass) {
-      const urlGate = validateFetchUrl(normalizedUrl);
-      if (!urlGate.valid) {
-        this._rejectCounters.url_quality_gate += 1;
-        return false;
+    const existing = this._findQueuedRow(normalizedUrl);
+    if (existing) {
+      // WHY: Upgrade if incoming has better triage metadata than existing.
+      if (triageMeta && existing.row.triage_passthrough) {
+        const incomingPrio = {
+          approval_bucket: triageMeta.approval_bucket || 'candidate',
+          selection_priority: triageMeta.selection_priority || 'low',
+          primary_lane: triageMeta.primary_lane || 6,
+          triage_score: triageMeta.triage_score || 0,
+          host_yield_state: 'normal',
+          discovered_from: discoveredFrom,
+          canonical_url: normalizedUrl,
+        };
+        const existingPrio = {
+          approval_bucket: existing.row.triage_passthrough?.approval_bucket || 'candidate',
+          selection_priority: existing.row.triage_passthrough?.selection_priority || 'low',
+          primary_lane: existing.row.triage_passthrough?.primary_lane || 6,
+          triage_score: existing.row.triage_passthrough?.triage_score || 0,
+          host_yield_state: existing.row.host_yield_state || 'normal',
+          discovered_from: existing.row.discoveredFrom || 'unknown',
+          canonical_url: existing.row.url,
+        };
+        if (compareDiscoveryPriority(incomingPrio, existingPrio) < 0) {
+          existing.row.triage_passthrough = triageMeta;
+          existing.row.enqueue_decision = 'upgraded';
+          existing.row.enqueue_reason_codes = [...(existing.row.enqueue_reason_codes || []), 'duplicate_upgraded'];
+          this._enqueueMetaCounters.duplicate_upgrades += 1;
+          return true;
+        }
       }
+      this._rejectCounters.already_queued += 1;
+      return false;
     }
 
-    const approvedDomain = this.shouldUseApprovedQueue(host, forceApproved, forceCandidate);
+    // ── Resolve host metadata ──
     const rootDomain = extractRootDomain(host);
     const hostMeta = this.sourceHostMap.get(host) || null;
     const tier = Number.isFinite(Number(hostMeta?.tier))
@@ -477,137 +608,227 @@ export class SourcePlanner {
       : resolveTierForHost(host, this.categoryConfig);
     const tierName = String(hostMeta?.tierName || resolveTierNameForHost(host, this.categoryConfig));
     const role = String(hostMeta?.role || inferRoleForHost(host, this.categoryConfig));
+
+    // ── Manufacturer checks (narrowed) ──
     const manufacturerBrandRestricted =
       role === 'manufacturer' &&
       this.brandManufacturerHostSet.size > 0 &&
       !hostInSet(host, this.brandManufacturerHostSet);
-    if (manufacturerBrandRestricted && !forceBrandBypass) {
-      this._rejectCounters.manufacturer_brand_restricted += 1;
-      return false;
-    }
+    // WHY: manufacturer_brand_restricted becomes routing demotion, not hard reject.
+    // Only forceBrandBypass skips the demotion entirely.
+    const brandRestrictionDemotion = manufacturerBrandRestricted && !forceBrandBypass;
+
     const isResumeSeed = this.isResumeSeed(discoveredFrom);
     if (role === 'manufacturer') {
       if (this.shouldRejectLockedManufacturerLocaleDuplicateUrl(parsed, { allowResume: isResumeSeed })) {
         this._rejectCounters.manufacturer_locale_duplicate += 1;
         return false;
       }
-      if (this.shouldRejectLockedManufacturerUrl(parsed)) {
+      // WHY: Narrowed manufacturer_locked_reject — support/manual/spec/pdf paths always survive.
+      if (this._shouldHardRejectLockedManufacturer(parsed)) {
         this._rejectCounters.manufacturer_locked_reject += 1;
         return false;
       }
     }
-    const totalApprovedPlanned =
-      this.priorityQueue.length +
-      this.manufacturerQueue.length +
-      this.queue.length +
-      this.manufacturerVisitedCount +
-      this.nonManufacturerVisitedCount;
-    const isManufacturerSource = role === 'manufacturer';
 
-    if (approvedDomain) {
+    // ── Yield state resolution ──
+    const allHostCounts = new Map([...this.hostCounts, ...this.manufacturerHostCounts, ...this.candidateHostCounts]);
+    const yieldState = resolveHostYieldState({
+      host,
+      rootDomain,
+      fieldYieldMap: this._fieldYieldMap || {},
+      blockedHosts: this.blockedHosts,
+      hostCounts: allHostCounts,
+      maxPagesPerDomain: this.maxPagesPerDomain,
+    }).state;
+
+    // ── Stage C: Queue route resolution ──
+    const route = this._resolveQueueRoute({
+      host, role, triageMeta, forceApproved, forceCandidate, discoveredFrom, yieldState,
+    });
+    const enqueueReasonCodes = [...route.reason_codes];
+    let targetQueue = route.queue;
+    let enqueueDecision = 'accepted';
+
+    // isLowValueHost demotion — only when no stronger triage routing
+    const seededApprovedBypass = forceApproved && (discoveredFrom === 'seed' || discoveredFrom === 'learning_seed');
+    if (
+      !seededApprovedBypass &&
+      isLowValueHost(parsed.hostname) &&
+      !triageMeta?.primary_lane &&
+      targetQueue !== 'candidate'
+    ) {
+      targetQueue = 'candidate';
+      enqueueDecision = 'downgraded';
+      enqueueReasonCodes.push('low_value_demoted');
+      this._enqueueMetaCounters.downgraded += 1;
+    }
+    // isLowValueHost demotion does NOT override triage lane 1-4 routing
+    if (
+      !seededApprovedBypass &&
+      isLowValueHost(parsed.hostname) &&
+      triageMeta?.primary_lane &&
+      triageMeta.primary_lane <= 4
+    ) {
+      // Triage lane 1-4 overrides low-value heuristic — do not demote
+      enqueueReasonCodes.push('low_value_triage_override');
+    }
+
+    // manufacturer_brand_restricted demotion
+    if (brandRestrictionDemotion && targetQueue !== 'candidate') {
+      if (targetQueue === 'priority' || targetQueue === 'manufacturer') {
+        targetQueue = 'general';
+      }
+      enqueueDecision = 'downgraded';
+      enqueueReasonCodes.push('brand_restricted_demoted');
+      this._enqueueMetaCounters.downgraded += 1;
+    }
+
+    // ── Stage D: Cap enforcement with domain-level eviction ──
+    const isApprovedTarget = targetQueue === 'priority' || targetQueue === 'manufacturer' || targetQueue === 'general';
+    const isCandidateTarget = targetQueue === 'candidate';
+
+    if (isApprovedTarget) {
+      const totalApprovedPlanned =
+        this.priorityQueue.length +
+        this.manufacturerQueue.length +
+        this.queue.length +
+        this.manufacturerVisitedCount +
+        this.nonManufacturerVisitedCount;
+
       if (totalApprovedPlanned >= this.maxUrls) {
         this._rejectCounters.max_urls_reached += 1;
         return false;
       }
 
-      if (isManufacturerSource) {
-        const plannedCount =
-          countQueueHost(this.manufacturerQueue, host) + (this.manufacturerHostCounts.get(host) || 0);
-        if (plannedCount >= this.maxPagesPerDomain) {
-          this._rejectCounters.domain_cap += 1;
-          return false;
-        }
-        const manufacturerPlanned = this.manufacturerQueue.length + this.manufacturerVisitedCount;
-        if (manufacturerPlanned >= this.maxUrls) {
-          this._rejectCounters.max_urls_reached += 1;
-          return false;
-        }
-      } else {
-        const plannedCount = countQueueHost(this.queue, host) + (this.hostCounts.get(host) || 0);
-        if (plannedCount >= this.maxPagesPerDomain) {
+      // Domain-level cap with eviction
+      const relevantQueue = targetQueue === 'manufacturer' ? this.manufacturerQueue : this.queue;
+      const relevantHostCounts = targetQueue === 'manufacturer' ? this.manufacturerHostCounts : this.hostCounts;
+      const plannedCount = countQueueHost(relevantQueue, host) + (relevantHostCounts.get(host) || 0);
+      if (plannedCount >= this.maxPagesPerDomain) {
+        // WHY: Try eviction before hard-rejecting — incoming may be stronger
+        const incomingPrio = {
+          approval_bucket: triageMeta?.approval_bucket || (forceApproved ? 'approved' : 'candidate'),
+          selection_priority: triageMeta?.selection_priority || 'low',
+          primary_lane: triageMeta?.primary_lane || 6,
+          triage_score: triageMeta?.triage_score || 0,
+          host_yield_state: yieldState,
+          discovered_from: discoveredFrom,
+          canonical_url: normalizedUrl,
+        };
+        const weakest = this._findWeakestSameDomainRow(host, normalizedUrl);
+        if (weakest) {
+          const weakestPrio = {
+            approval_bucket: weakest.row.triage_passthrough?.approval_bucket || (weakest.row.approvedDomain ? 'approved' : 'candidate'),
+            selection_priority: weakest.row.triage_passthrough?.selection_priority || 'low',
+            primary_lane: weakest.row.triage_passthrough?.primary_lane || 6,
+            triage_score: weakest.row.triage_passthrough?.triage_score || 0,
+            host_yield_state: weakest.row.host_yield_state || 'normal',
+            discovered_from: weakest.row.discoveredFrom || 'unknown',
+            canonical_url: weakest.row.url,
+          };
+          if (compareDiscoveryPriority(incomingPrio, weakestPrio) < 0) {
+            this._evictRow(weakest.row, weakest.queue);
+            this._enqueueMetaCounters.evictions += 1;
+            enqueueReasonCodes.push('cap_eviction');
+            // Fall through to placement
+          } else {
+            this._rejectCounters.domain_cap += 1;
+            return false;
+          }
+        } else {
           this._rejectCounters.domain_cap += 1;
           return false;
         }
       }
+    }
 
-      const row = {
-        url: normalizedUrl,
-        host,
-        rootDomain,
-        tier,
-        tierName,
-        role,
-        priorityScore: 0,
-        approvedDomain: true,
-        discoveredFrom,
-        candidateSource: false,
-        sourceId: String(hostMeta?.sourceId || ''),
-        displayName: String(hostMeta?.displayName || ''),
-        crawlConfig: isObject(hostMeta?.crawlConfig) ? hostMeta.crawlConfig : null,
-        fieldCoverage: isObject(hostMeta?.fieldCoverage) ? hostMeta.fieldCoverage : null,
-        robotsTxtCompliant: hostMeta?.robotsTxtCompliant === null || hostMeta?.robotsTxtCompliant === undefined
-          ? null
-          : Boolean(hostMeta.robotsTxtCompliant),
-        requires_js: Boolean(hostMeta?.requires_js)
-      };
-      row.priorityScore = this.sourcePriority(row);
-
-      if (this.shouldFrontloadApprovedSource(row)) {
-        this.priorityQueue.push(row);
-        this.sortPriorityQueue();
-      } else if (isManufacturerSource) {
-        this.manufacturerQueue.push(row);
-        this.sortManufacturerQueue();
-      } else {
-        this.queue.push(row);
+    if (isCandidateTarget) {
+      if (!this.fetchCandidateSources) {
+        this._rejectCounters.candidate_sources_disabled += 1;
+        return false;
       }
-      this.sortApprovedQueue();
-      this._acceptCount += 1;
-      return true;
+      if (this.candidateQueue.length + this.candidateVisitedCount >= this.maxCandidateUrls) {
+        this._rejectCounters.max_candidate_urls += 1;
+        return false;
+      }
+      const domainCount = this.candidateHostCounts.get(host) || 0;
+      if (domainCount >= this.maxPagesPerDomain) {
+        this._rejectCounters.candidate_domain_cap += 1;
+        return false;
+      }
     }
 
-    if (!this.fetchCandidateSources) {
-      this._rejectCounters.candidate_sources_disabled += 1;
-      return false;
-    }
-
-    if (this.candidateQueue.length + this.candidateVisitedCount >= this.maxCandidateUrls) {
-      this._rejectCounters.max_candidate_urls += 1;
-      return false;
-    }
-
-    const domainCount = this.candidateHostCounts.get(host) || 0;
-    if (domainCount >= this.maxPagesPerDomain) {
-      this._rejectCounters.candidate_domain_cap += 1;
-      return false;
-    }
-
-    this.candidateQueue.push({
+    // ── Queue placement ──
+    const row = {
       url: normalizedUrl,
       host,
       rootDomain,
-      tier: 4,
-      tierName: 'candidate',
-      role: 'other',
-      priorityScore: this.sourcePriority({
-        url: normalizedUrl,
-        host,
-        rootDomain,
-        tier: 4,
-        tierName: 'candidate',
-        role: 'other',
-        approvedDomain: false,
-        discoveredFrom,
-        candidateSource: true
-      }),
-      approvedDomain: false,
+      tier: isCandidateTarget ? 4 : tier,
+      tierName: isCandidateTarget ? 'candidate' : tierName,
+      role: isCandidateTarget ? 'other' : role,
+      priorityScore: 0,
+      approvedDomain: isApprovedTarget,
       discoveredFrom,
-      candidateSource: true
-    });
+      candidateSource: isCandidateTarget,
+      sourceId: String(hostMeta?.sourceId || ''),
+      displayName: String(hostMeta?.displayName || ''),
+      crawlConfig: isObject(hostMeta?.crawlConfig) ? hostMeta.crawlConfig : null,
+      fieldCoverage: isObject(hostMeta?.fieldCoverage) ? hostMeta.fieldCoverage : null,
+      robotsTxtCompliant: hostMeta?.robotsTxtCompliant === null || hostMeta?.robotsTxtCompliant === undefined
+        ? null
+        : Boolean(hostMeta.robotsTxtCompliant),
+      requires_js: Boolean(hostMeta?.requires_js),
+      // Enqueue metadata (Phase 5)
+      enqueue_decision: enqueueDecision,
+      enqueue_reason_codes: enqueueReasonCodes,
+      queue_selected: targetQueue,
+      host_yield_state: yieldState,
+      seed_source: discoveredFrom,
+      triage_passthrough: triageMeta || null,
+      revalidation_level: null,
+      cap_state: null,
+      duplicate_of: null,
+    };
+    row.priorityScore = this.sourcePriority(row);
 
-    this.sortCandidateQueue();
+    if (targetQueue === 'priority') {
+      this.priorityQueue.push(row);
+      this.sortPriorityQueue();
+    } else if (targetQueue === 'manufacturer') {
+      this.manufacturerQueue.push(row);
+      this.sortManufacturerQueue();
+    } else if (targetQueue === 'candidate') {
+      this.candidateQueue.push(row);
+      this.sortCandidateQueue();
+    } else {
+      this.queue.push(row);
+    }
+    if (isApprovedTarget) {
+      this.sortApprovedQueue();
+    }
     this._acceptCount += 1;
     return true;
+  }
+
+  _shouldHardRejectLockedManufacturer(parsed) {
+    // WHY: Narrowed — support/manual/spec/pdf paths always survive.
+    // Only reject when URL contains a product slug with ZERO identity overlap
+    // AND is NOT a support/manual/spec/download/pdf page.
+    if (this.allowedCategoryProductSlugs.size === 0) {
+      return false;
+    }
+    const pathname = (parsed.pathname || '').toLowerCase();
+    // Support/manual/spec/pdf paths always survive
+    const supportPatterns = ['/support', '/manual', '/spec', '/download', '/pdf', '/drivers'];
+    if (supportPatterns.some((p) => pathname.includes(p))) {
+      return false;
+    }
+    if (pathname.endsWith('.pdf')) {
+      return false;
+    }
+    // Delegate to existing validation for the narrowed check
+    return checkShouldRejectLockedManufacturerUrl(parsed, this._validationCtx());
   }
 
   get enqueueCounters() {
@@ -615,6 +836,12 @@ export class SourcePlanner {
       accepted: this._acceptCount,
       rejected: { ...this._rejectCounters },
       total_rejected: Object.values(this._rejectCounters).reduce((sum, v) => sum + v, 0),
+      downgraded: this._enqueueMetaCounters.downgraded,
+      evictions: this._enqueueMetaCounters.evictions,
+      duplicate_upgrades: this._enqueueMetaCounters.duplicate_upgrades,
+      locale_replacements: this._enqueueMetaCounters.locale_replacements,
+      triage_routed: this._enqueueMetaCounters.triage_routed,
+      triage_missing: this._enqueueMetaCounters.triage_missing,
     };
   }
 

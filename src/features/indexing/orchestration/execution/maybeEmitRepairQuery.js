@@ -61,7 +61,7 @@ export function maybeEmitRepairQuery({
     reason: String(reason || '').trim() || null,
     source_url: String(sourceUrl || source?.url || '').trim() || null,
     cooldown_until: String(cooldownUntil || '').trim() || null,
-    provider: String(config.searchProvider || '').trim() || 'none',
+    provider: String(config.searchEngines || '').trim() || 'none',
     doc_hint: 'manual_or_spec',
     field_targets: requiredFields.slice(0, 10)
   });

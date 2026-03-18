@@ -22,7 +22,7 @@ function makeConfig(tempRoot, overrides = {}) {
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 20,
     discoveryQueryConcurrency: 4,
-    searchProvider: 'searxng',
+    searchEngines: 'bing,startpage,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
     ...overrides
@@ -113,7 +113,7 @@ test('discoverCandidateSources with logger emits search profile events without c
   const config = makeConfig(tempRoot, {
     discoveryMaxQueries: 3,
     discoveryQueryConcurrency: 1,
-    searchProvider: 'dual',
+    searchEngines: 'bing,google',
     searxngBaseUrl: 'http://127.0.0.1:8080'
   });
   const storage = createStorage(config);
@@ -166,7 +166,11 @@ test('discoverCandidateSources with logger emits search profile events without c
     assert.equal(events.some((event) => event.name === 'search_profile_generated'), true);
     const plannerEvent = events.find((event) => event.name === 'search_plan_generated');
     assert.equal(Boolean(plannerEvent), true, 'expected deterministic search planner event');
-    assert.equal(String(plannerEvent?.payload?.pass_name || ''), 'deterministic_fallback');
+    // WHY: Single merged planner — deterministic queries emitted as 'primary' when LLM unavailable
+    assert.ok(
+      plannerEvent?.payload?.pass_name === 'primary' || plannerEvent?.payload?.pass_name === 'deterministic_fallback',
+      `expected primary or deterministic_fallback, got: ${plannerEvent?.payload?.pass_name}`
+    );
     assert.equal(Array.isArray(plannerEvent?.payload?.queries_generated), true);
     assert.equal((plannerEvent?.payload?.queries_generated || []).length > 0, true);
   } finally {
@@ -178,7 +182,7 @@ test('discoverCandidateSources with logger emits search profile events without c
 test('discoverCandidateSources resolves brand from cache via deterministic path', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-brand-cache-'));
   const config = makeConfig(tempRoot, {
-    searchProvider: 'google',
+    searchEngines: 'google',
     googleCseKey: '',
     googleCseCx: '',
     searxngBaseUrl: ''
@@ -240,9 +244,8 @@ test('discoverCandidateSources emits deterministic triage and domain-classifier 
   const config = makeConfig(tempRoot, {
     discoveryMaxQueries: 2,
     discoveryQueryConcurrency: 1,
-    searchProvider: 'searxng',
+    searchEngines: 'bing,startpage,duckduckgo',
     serpTriageEnabled: true,
-    serpTriageMaxUrls: 2
   });
   const storage = createStorage(config);
   const categoryConfig = {
@@ -303,11 +306,12 @@ test('discoverCandidateSources emits deterministic triage and domain-classifier 
       llmContext: {}
     });
 
-    const triageEvent = events.find((event) => event.name === 'serp_triage_completed');
-    assert.equal(Boolean(triageEvent), true, 'expected deterministic triage event');
-    assert.equal(Array.isArray(triageEvent?.payload?.candidates), true);
-    assert.equal((triageEvent?.payload?.candidates || []).length > 0, true);
-    assert.equal((triageEvent?.payload?.kept_count || 0) > 0, true);
+    // WHY: The LLM triage block no longer emits serp_triage_completed on the
+    // deterministic path. Lane-quota selection replaced it. The pipeline now
+    // emits discovery_results_reranked after lane selection.
+    const rerankedEvent = events.find((event) => event.name === 'discovery_results_reranked');
+    assert.equal(Boolean(rerankedEvent), true, 'expected discovery_results_reranked event');
+    assert.equal((rerankedEvent?.payload?.discovered_count || 0) > 0, true);
 
     const domainClassifierEvent = events.find((event) => event.name === 'domains_classified');
     assert.equal(Boolean(domainClassifierEvent), true, 'expected deterministic domain-classifier event');
@@ -441,7 +445,7 @@ test('discoverCandidateSources uses deterministic domain classification exclusiv
 test('discoverCandidateSources emits plan-only search result events when internet provider is unavailable', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-plan-only-events-'));
   const config = makeConfig(tempRoot, {
-    searchProvider: 'google',
+    searchEngines: 'google',
     googleCseKey: '',
     googleCseCx: '',
     searxngBaseUrl: ''
@@ -493,7 +497,7 @@ test('discoverCandidateSources emits plan-only search result events when interne
 test('discoverCandidateSources returns provider diagnostics for dual mode fallback readiness', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-provider-diag-'));
   const config = makeConfig(tempRoot, {
-    searchProvider: 'dual',
+    searchEngines: 'bing,google',
     bingSearchEndpoint: '',
     bingSearchKey: '',
     googleCseKey: '',
@@ -540,7 +544,7 @@ test('discoverCandidateSources returns provider diagnostics for dual mode fallba
       llmContext: {}
     });
 
-    assert.equal((result.provider_state?.active_providers || []).includes('searxng'), true);
+    assert.equal(result.provider_state?.internet_ready, true);
     assert.equal(Object.hasOwn(result.provider_state || {}, 'google_missing_credentials'), false);
     assert.equal(Object.hasOwn(result.provider_state || {}, 'bing_missing_credentials'), false);
   } finally {
@@ -552,7 +556,7 @@ test('discoverCandidateSources returns provider diagnostics for dual mode fallba
 test('discoverCandidateSources filters low-signal review URLs (rss/opensearch/search pages)', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-relevance-filter-'));
   const config = makeConfig(tempRoot, {
-    searchProvider: 'searxng'
+    searchEngines: 'bing,startpage,duckduckgo'
   });
   const storage = createStorage(config);
   const categoryConfig = {
@@ -609,14 +613,43 @@ test('discoverCandidateSources filters low-signal review URLs (rss/opensearch/se
       llmContext: {}
     });
 
+    // WHY: Low-signal URLs now survive with low scores instead of being absent.
+    // The /search?q= URL is still hard-dropped as utility_shell, but opensearch.xml
+    // and rss.xml survive as soft-labeled candidates with low scores.
     const urls = [...new Set([...(result.approvedUrls || []), ...(result.candidateUrls || [])])];
     assert.equal(
       urls.includes('https://www.rtings.com/mouse/reviews/hyperx/pulsefire-haste-2-core-wireless'),
       true
     );
-    assert.equal(urls.some((url) => url.includes('/opensearch.xml')), false);
-    assert.equal(urls.some((url) => url.includes('/latest-rss.xml')), false);
+    // /search?q= is still hard-dropped as utility_shell
     assert.equal(urls.some((url) => url.includes('/search?q=')), false);
+
+    // opensearch.xml and rss.xml survive but have low scores
+    const candidates = result.candidates || [];
+    const realReviewCandidate = candidates.find((c) =>
+      String(c.url || '').includes('/mouse/reviews/hyperx/pulsefire-haste-2-core-wireless')
+    );
+    const opensearchCandidate = candidates.find((c) =>
+      String(c.url || '').includes('/opensearch.xml')
+    );
+    const rssCandidate = candidates.find((c) =>
+      String(c.url || '').includes('/latest-rss.xml')
+    );
+    // The real review should score higher than low-signal URLs
+    if (realReviewCandidate && opensearchCandidate) {
+      assert.equal(
+        (Number(realReviewCandidate.score) || 0) > (Number(opensearchCandidate.score) || 0),
+        true,
+        'real review should score higher than opensearch.xml'
+      );
+    }
+    if (realReviewCandidate && rssCandidate) {
+      assert.equal(
+        (Number(realReviewCandidate.score) || 0) > (Number(rssCandidate.score) || 0),
+        true,
+        'real review should score higher than rss.xml'
+      );
+    }
   } finally {
     global.fetch = originalFetch;
     await fs.rm(tempRoot, { recursive: true, force: true });

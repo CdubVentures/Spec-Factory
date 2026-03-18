@@ -4,7 +4,6 @@ export type LlmPhaseId =
   | 'brand-resolver'
   | 'search-planner'
   | 'serp-triage'
-  | 'domain-classifier'
   | 'extraction'
   | 'validate'
   | 'write';

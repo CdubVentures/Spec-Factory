@@ -14,7 +14,7 @@ export {
   RESUME_MODE_OPTIONS,
   RUNTIME_NUMBER_BOUNDS,
   runtimeDraftEqual,
-  SEARCH_PROVIDER_OPTIONS,
+  SEARXNG_ENGINE_OPTIONS,
   toRuntimeDraft,
   type NumberBound,
   type RuntimeDraft,

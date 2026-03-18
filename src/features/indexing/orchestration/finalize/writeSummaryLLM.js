@@ -82,7 +82,7 @@ export async function writeSummaryMarkdownLLM({
       config,
       reason: 'write',
       role: 'write',
-      modelOverride: config._resolvedWriteBaseModel || '',
+      phase: 'write',
       system,
       user: JSON.stringify(payload),
       jsonSchema: summarySchema(),
@@ -108,7 +108,7 @@ export async function writeSummaryMarkdownLLM({
           await llmContext.recordUsage(usageRow);
         }
       },
-      reasoningMode: Boolean(config.llmReasoningMode),
+      reasoningMode: Boolean(config._resolvedWriteUseReasoning ?? config.llmPlanUseReasoning ?? config.llmReasoningMode),
       reasoningBudget: Number(config.llmReasoningBudget || 0),
       timeoutMs: config.llmTimeoutMs || config.openaiTimeoutMs,
       logger

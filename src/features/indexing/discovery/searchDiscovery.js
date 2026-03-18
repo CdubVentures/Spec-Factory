@@ -1,6 +1,6 @@
 import { extractRootDomain } from '../../../utils/common.js';
-import { planDiscoveryQueriesLLM } from './discoveryPlanner.js';
-import { searchProviderAvailability } from '../search/searchProviders.js';
+// WHY: planDiscoveryQueriesLLM removed — merged into single planUberQueries call
+import { searchEngineAvailability } from '../search/searchProviders.js';
 import {
   buildSearchProfile,
   buildScoredQueryRowsFromHostPlan,
@@ -103,6 +103,7 @@ export async function discoverCandidateSources({
   learningStoreHints = null,
   sourceEntries = null,
   searchPlanHandoff = null,
+  focusGroups = [],
 }) {
   if (!config.discoveryEnabled) {
     // WHY: Defensive emit so prefetch GUI always gets brand_resolved feedback
@@ -271,11 +272,11 @@ export async function discoverCandidateSources({
   let selectedQueryRowMap;
   let profileQueryRowsByQuery;
   let searchProfilePlanned;
-  let llmQueries = [];
+  // WHY: llmQueries removed — merged into single uberSearchPlan
   let uberSearchPlan = null;
   let effectiveHostPlan = null;
   let searchProfileBase = null;
-  const uberMode = true;
+  // WHY: uberMode removed — single planner call always active
 
   // === Schema 4 handoff path ===
   const schema4Plan = resolveSchema4ExecutionPlan({
@@ -302,7 +303,7 @@ export async function discoverCandidateSources({
       aliases: job.aliases || [],
       generated_at: new Date().toISOString(),
       status: 'planned',
-      provider: config.searchProvider,
+      provider: config.searchEngines,
       source: 'schema4_planner',
       selected_queries: queries,
       selected_query_count: queries.length,
@@ -381,6 +382,7 @@ export async function discoverCandidateSources({
     aliasValidationCap: searchProfileCaps.llmAliasValidationCap,
     fieldTargetQueriesCap: searchProfileCaps.llmFieldTargetQueriesCap,
     docHintQueriesCap: searchProfileCaps.llmDocHintQueriesCap,
+    fieldYieldByDomain: learning.fieldYield?.by_domain || null,
   });
   const phase3SearchActive = Boolean(categoryConfig?.validatedRegistry);
   const brandResolutionHints = [...new Set(
@@ -400,7 +402,7 @@ export async function discoverCandidateSources({
     effectiveHostPlan = buildEffectiveHostPlan({
       domainHints: hostPlanHintTokens,
       registry: categoryConfig.validatedRegistry,
-      providerName: config.searchProvider,
+      providerName: config.searchEngines,
       brandResolutionHints,
     });
     if (!effectiveHostPlan?.blocked) {
@@ -446,49 +448,32 @@ export async function discoverCandidateSources({
   };
   const enrichedLlmContext = { ...llmContext, archetypeContext };
 
-  llmQueries = await planDiscoveryQueriesLLM({
-    job,
-    categoryConfig,
-    baseQueries: [...baseQueries, ...targetedQueries],
-    missingCriticalFields: planningHints.missingCriticalFields || [],
+  // WHY: Single LLM planner call — replaces two separate discovery+uber calls
+  const frontierSummary = frontierDb?.snapshotForProduct?.(job.productId || '') || {};
+  uberSearchPlan = await planUberQueries({
     config,
     logger,
-    llmContext: enrichedLlmContext
+    llmContext: enrichedLlmContext,
+    identity: identityLock,
+    missingFields,
+    missingCriticalFields: planningHints.missingCriticalFields || [],
+    baseQueries: [...baseQueries, ...targetedQueries],
+    frontierSummary,
+    cap: Math.max(12, Number(config.discoveryMaxQueries || 12) * 2)
   });
 
-  if (toArray(llmQueries).length > 0) {
+  if (toArray(uberSearchPlan?.queries).length > 0) {
     logger?.info?.('search_plan_generated', {
       pass_index: 0,
       pass_name: 'primary',
-      queries_generated: toArray(llmQueries).map((q) =>
-        typeof q === 'object' ? String(q?.query || '').trim() : String(q || '').trim()
-      ).filter(Boolean),
+      queries_generated: toArray(uberSearchPlan.queries),
       stop_condition: 'planner_complete',
-      plan_rationale: `LLM planner generated ${toArray(llmQueries).length} queries for ${toArray(planningHints.missingCriticalFields).length} missing critical fields`,
-      query_target_map: toArray(llmQueries).reduce((acc, q) => {
-        if (q && typeof q === 'object' && q.query && Array.isArray(q.target_fields) && q.target_fields.length > 0) {
-          acc[String(q.query).trim()] = q.target_fields;
-        }
-        return acc;
-      }, {}),
+      plan_rationale: `LLM planner generated ${toArray(uberSearchPlan.queries).length} queries for ${toArray(planningHints.missingCriticalFields).length} missing critical fields`,
+      query_target_map: {},
       missing_critical_fields: toArray(planningHints.missingCriticalFields).slice(0, 30),
       mode: String(llmContext?.mode || 'standard'),
     });
   }
-
-  const frontierSummary = frontierDb?.snapshotForProduct?.(job.productId || '') || {};
-  uberSearchPlan = uberMode
-    ? await planUberQueries({
-      config,
-      logger,
-      llmContext: enrichedLlmContext,
-      identity: identityLock,
-      missingFields,
-      baseQueries: [...baseQueries, ...targetedQueries, ...llmQueries],
-      frontierSummary,
-      cap: Math.max(8, Number(config.discoveryMaxQueries || 8) * 2)
-    })
-    : null;
 
   queryLimit = Math.max(
     1,
@@ -498,16 +483,6 @@ export async function discoverCandidateSources({
       8
     )
   );
-  const llmQueryRows = toArray(llmQueries).map((row) => {
-    if (row && typeof row === 'object' && !Array.isArray(row)) {
-      return {
-        query: String(row.query || '').trim(),
-        source: 'llm',
-        target_fields: toArray(row.target_fields)
-      };
-    }
-    return { query: String(row || '').trim(), source: 'llm', target_fields: [] };
-  });
   const queryCandidates = [
     ...baseQueries.map((query) => ({ query, source: 'base_template', target_fields: [] })),
     ...targetedQueries.map((query) => {
@@ -521,7 +496,6 @@ export async function discoverCandidateSources({
         hint_source: String(profileRow?.hint_source || '').trim()
       };
     }),
-    ...llmQueryRows,
     ...toArray(uberSearchPlan?.queries).map((query) => ({ query, source: 'uber', target_fields: [] }))
   ];
   const mergedQueryCap = Math.max(queryLimit, 6);
@@ -662,8 +636,8 @@ export async function discoverCandidateSources({
     aliases: job.aliases || [],
     generated_at: new Date().toISOString(),
     status: 'planned',
-    provider: config.searchProvider,
-    llm_queries: llmQueries,
+    provider: config.searchEngines,
+    llm_queries: toArray(uberSearchPlan?.queries),
     query_reject_log: queryRejectLogCombined,
     query_guard: {
       brand_tokens: toArray(guardedQueries.guardContext?.brandTokens),
@@ -695,7 +669,7 @@ export async function discoverCandidateSources({
     payload: searchProfilePlanned,
     keys: searchProfileKeys
   });
-  if (toArray(llmQueries).length === 0 && queries.length > 0) {
+  if (toArray(uberSearchPlan?.queries).length === 0 && queries.length > 0) {
     logger?.info?.('search_plan_generated', {
       pass_index: 0,
       pass_name: 'deterministic_fallback',
@@ -750,7 +724,7 @@ export async function discoverCandidateSources({
   const discoveryCap = Math.max(1, Number(config.discoveryMaxDiscovered || 120));
   const queryConcurrency = Math.max(1, Number(config.discoveryQueryConcurrency || 1));
 
-  const providerState = searchProviderAvailability(config);
+  const providerState = searchEngineAvailability(config);
   const requiredOnlySearch = Boolean(planningHints.requiredOnlySearch);
   const missingRequiredFields = normalizeFieldList(
     toArray(planningHints.missingRequiredFields),
@@ -774,8 +748,8 @@ export async function discoverCandidateSources({
     rawResults, searchAttempts, searchJournal, internalSatisfied, externalSearchReason,
     config, storage, categoryConfig, job, runId, logger, runtimeTraceWriter, frontierDb,
     variables, identityLock, brandResolution, missingFields, learning,
-    llmContext, searchProfileBase, llmQueries, uberSearchPlan, uberMode,
+    llmContext, searchProfileBase, llmQueries: [], uberSearchPlan, uberMode: true,
     queries, searchProfilePlanned, searchProfileKeys, providerState, queryConcurrency, discoveryCap,
-    effectiveHostPlan,
+    effectiveHostPlan, focusGroups,
   });
 }

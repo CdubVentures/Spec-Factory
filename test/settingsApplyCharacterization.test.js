@@ -101,10 +101,8 @@ test('CHAR apply: applyConvergenceSettingsToConfig applies convergence keys', ()
   const config = loadConfig();
   applyConvergenceSettingsToConfig(config, {
     serpTriageMinScore: 5,
-    serpTriageMaxUrls: 15
   });
   assert.equal(config.serpTriageMinScore, 5);
-  assert.equal(config.serpTriageMaxUrls, 15);
 });
 
 // =========================================================================

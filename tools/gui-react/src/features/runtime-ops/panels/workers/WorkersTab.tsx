@@ -86,15 +86,13 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
     if (!runtimeSettingsSnapshot) return undefined;
     return {
       profile: toOptionalString(runtimeSettingsSnapshot.profile),
-      phase3LlmTriageEnabled: toOptionalBoolean(runtimeSettingsSnapshot.phase3LlmTriageEnabled),
-      searchProvider: toOptionalString(runtimeSettingsSnapshot.searchProvider),
+      searchEngines: toOptionalString(runtimeSettingsSnapshot.searchEngines ?? runtimeSettingsSnapshot.searchProvider),
       discoveryEnabled: toOptionalBoolean(runtimeSettingsSnapshot.discoveryEnabled),
       dynamicCrawleeEnabled: toOptionalBoolean(runtimeSettingsSnapshot.dynamicCrawleeEnabled),
       scannedPdfOcrEnabled: toOptionalBoolean(runtimeSettingsSnapshot.scannedPdfOcrEnabled),
       maxPagesPerDomain: toOptionalPositiveInt(runtimeSettingsSnapshot.maxPagesPerDomain),
       discoveryResultsPerQuery: toOptionalPositiveInt(runtimeSettingsSnapshot.discoveryResultsPerQuery),
       discoveryMaxDiscovered: toOptionalPositiveInt(runtimeSettingsSnapshot.discoveryMaxDiscovered),
-      serpTriageMaxUrls: toOptionalPositiveInt(runtimeSettingsSnapshot.serpTriageMaxUrls),
     };
   }, [runtimeSettingsSnapshot]);
 

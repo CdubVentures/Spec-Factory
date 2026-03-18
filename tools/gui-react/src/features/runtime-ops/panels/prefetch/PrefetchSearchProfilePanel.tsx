@@ -165,7 +165,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
     [data],
   );
   const llmPlannerActive = llmPlannerFromArtifact;
-  const liveProvider = liveSettings?.searchProvider || '';
+  const liveProvider = liveSettings?.searchEngines || '';
   const llmPlannedQueries = useMemo(() => {
     const planned = new Set<string>();
     for (const plan of searchPlans || []) {
@@ -244,8 +244,8 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
           </div>
           <div className="flex items-center gap-2">
             {providerLabel && <Chip label={providerLabel} className="sf-chip-accent" />}
-            {llmPlannerActive && !isSchema4 && <Chip label="LLM Planner" className="sf-chip-warning" />}
-            <Tip text="The Search Profile assembles queries, aliases, and variant guards used to discover source URLs. It combines deterministic rules with optional LLM planner queries." />
+            <Chip label="Deterministic" className="sf-chip-neutral" />
+            <Tip text="The Search Profile assembles queries, aliases, and variant guards used to discover source URLs. It combines deterministic rules with LLM planner query output." />
           </div>
         </div>
 

@@ -132,7 +132,7 @@ test('discoverCandidateSources uses internal source corpus when external provide
     discoveryMaxQueries: 3,
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 20,
-    searchProvider: 'none',
+    searchEngines: '',
   };
   const storage = createStorage(config);
   const categoryConfig = baseCategoryConfig();
@@ -193,7 +193,7 @@ test('discoverCandidateSources skips external search when internal recall alread
     discoveryMaxQueries: 2,
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 20,
-    searchProvider: 'searxng',
+    searchEngines: 'bing,startpage,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
     searchCacheTtlSeconds: 0
@@ -262,7 +262,7 @@ test('discoverCandidateSources annotates dual-mode internet search reason when p
     discoveryMaxQueries: 1,
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 20,
-    searchProvider: 'dual',
+    searchEngines: 'bing,google',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
     searchCacheTtlSeconds: 0
@@ -306,11 +306,11 @@ test('discoverCandidateSources annotates dual-mode internet search reason when p
     assert.equal(discovery.external_search_reason, 'required_fields_missing_internal_under_target');
     assert.equal(
       (discovery.search_attempts || []).some(
-        (row) => row.provider === 'dual' && row.reason_code === 'internet_search'
+        (row) => row.provider === 'bing,google' && row.reason_code === 'internet_search'
       ),
       true
     );
-    assert.equal(discovery.provider_state?.fallback_reason, 'dual_fallback_searxng_only');
+    assert.equal(discovery.provider_state?.fallback_reason, null);
   } finally {
     global.fetch = originalFetch;
     await fs.rm(tempRoot, { recursive: true, force: true });

@@ -293,7 +293,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
             ranked URLs that are then deduped and triaged.
           </p>
           <div className="sf-text-caption sf-text-subtle mt-3">
-            Provider: <span className="font-mono">{providerDisplayLabel(liveSettings?.searchProvider) || (liveSettings ? 'Not set' : 'runtime settings hydrating')}</span>
+            Engines: <span className="font-mono">{providerDisplayLabel(liveSettings?.searchEngines) || (liveSettings ? 'Not set' : 'runtime settings hydrating')}</span>
           </div>
         </div>
       </div>
@@ -320,9 +320,10 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
               [...engineCounts.entries()].map(([eng, cnt]) => (
                 <Chip key={eng} label={`${providerDisplayLabel(eng)} (${cnt})`} className="sf-chip-accent" />
               ))
-            ) : liveSettings?.searchProvider ? (
-              <Chip label={providerDisplayLabel(liveSettings.searchProvider)} className="sf-chip-accent" />
+            ) : liveSettings?.searchEngines ? (
+              <Chip label={providerDisplayLabel(liveSettings.searchEngines)} className="sf-chip-accent" />
             ) : null}
+            <Chip label="Deterministic" className="sf-chip-neutral" />
             <Tip text="Search Results shows what came back from configured providers (Google, Bing, SearXNG, or Dual). Raw results are deduped and triaged into Keep/Maybe/Drop decisions based on relevance scoring." />
           </div>
         </div>

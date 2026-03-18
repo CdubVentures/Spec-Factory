@@ -1,7 +1,8 @@
 type IndexingRunModelPayloadPrimitive = string | number | boolean;
 
 export interface BuildIndexingRunModelPayloadInput {
-  searchProvider: string;
+  searchEngines: string;
+  searchEnginesFallback: string;
   llmModelPlan: string;
   llmMaxOutputTokensPlan: number;
   llmModelReasoning: string;
@@ -16,7 +17,8 @@ export function buildIndexingRunModelPayload(
   input: BuildIndexingRunModelPayloadInput,
 ): Record<string, IndexingRunModelPayloadPrimitive> {
   return {
-    searchProvider: input.searchProvider,
+    searchEngines: input.searchEngines,
+    searchEnginesFallback: input.searchEnginesFallback,
     llmModelPlan: input.llmModelPlan,
     runProfile: 'standard',
     llmMaxOutputTokensPlan: input.llmMaxOutputTokensPlan,

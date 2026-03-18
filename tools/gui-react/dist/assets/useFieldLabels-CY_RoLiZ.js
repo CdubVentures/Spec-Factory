@@ -1,1 +1,0 @@
-import{u as i}from"./vendor-query-B32LnyU-.js";import{b as u}from"./index-B_zPLNOC.js";import{a as b}from"./fieldNormalize-gPMNHgg-.js";function o(e){const{data:l}=i({queryKey:["fieldLabels",e],queryFn:()=>u.get(`/field-labels/${e}`),staleTime:3e5,enabled:!!e&&e!=="all"}),s=(l==null?void 0:l.labels)??{};return{labels:s,getLabel:a=>s[a]||b(a)}}export{o as u};

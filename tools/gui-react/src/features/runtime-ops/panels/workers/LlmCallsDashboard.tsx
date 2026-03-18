@@ -24,7 +24,6 @@ const CALL_TYPE_META: Record<string, CallTypeDef> = {
   brand_resolver:    { symbol: '\u25C8', label: 'Brand Resolver',   prefetchTab: 'brand_resolver',    tabCode: '02', chipClass: 'sf-chip-info',        barClass: 'sf-bar-ct-brand-resolver' },
   search_planner:    { symbol: '\u25CE', label: 'Search Planner',   prefetchTab: 'search_planner',    tabCode: '04', chipClass: 'sf-chip-purple',      barClass: 'sf-bar-ct-search-planner' },
   serp_triage:       { symbol: '\u229E', label: 'SERP Triage',      prefetchTab: 'serp_triage',       tabCode: '07', chipClass: 'sf-chip-warning',     barClass: 'sf-bar-ct-serp-triage' },
-  domain_classifier: { symbol: '\u2B21', label: 'Domain Classifier', prefetchTab: 'domain_classifier', tabCode: '08', chipClass: 'sf-chip-sky-strong',  barClass: 'sf-bar-ct-domain-classifier' },
   extraction:        { symbol: '\u25C9', label: 'Extraction',       prefetchTab: null, tabCode: null,  chipClass: 'sf-chip-accent',      barClass: 'sf-bar-ct-extraction' },
   validation:        { symbol: '\u2713', label: 'Candidate Valid.',  prefetchTab: null, tabCode: null,  chipClass: 'sf-chip-success',     barClass: 'sf-bar-ct-candidate-valid' },
   verification:      { symbol: '\u2713', label: 'Candidate Valid.',  prefetchTab: null, tabCode: null,  chipClass: 'sf-chip-success',     barClass: 'sf-bar-ct-candidate-valid' },
@@ -36,7 +35,7 @@ const CALL_TYPE_META: Record<string, CallTypeDef> = {
 
 const CALL_TYPE_ORDER = [
   'needset_planner', 'brand_resolver', 'search_planner', 'serp_triage',
-  'domain_classifier', 'extraction', 'validation',
+  'extraction', 'validation',
   'field_judge', 'summary_writer', 'escalation_planner',
 ];
 

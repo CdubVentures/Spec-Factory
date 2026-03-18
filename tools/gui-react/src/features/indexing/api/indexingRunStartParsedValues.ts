@@ -91,10 +91,8 @@ export function deriveIndexingRunStartParsedValues({
     parsedLlmExtractionCacheTtlMs: parseRuntimeInt(readValue('llmExtractionCacheTtlMs'), runtimeSettingsBaseline.llmExtractionCacheTtlMs),
     parsedLlmMaxCallsPerProductTotal: parseRuntimeInt(readValue('llmMaxCallsPerProductTotal'), runtimeSettingsBaseline.llmMaxCallsPerProductTotal),
 
-    parsedLlmExtractMaxTokens: parseRuntimeInt(readValue('llmExtractMaxTokens'), runtimeSettingsBaseline.llmExtractMaxTokens),
     parsedLlmExtractMaxSnippetsPerBatch: parseRuntimeInt(readValue('llmExtractMaxSnippetsPerBatch'), runtimeSettingsBaseline.llmExtractMaxSnippetsPerBatch),
     parsedLlmExtractMaxSnippetChars: parseRuntimeInt(readValue('llmExtractMaxSnippetChars'), runtimeSettingsBaseline.llmExtractMaxSnippetChars),
-    parsedLlmExtractReasoningBudget: parseRuntimeInt(readValue('llmExtractReasoningBudget'), runtimeSettingsBaseline.llmExtractReasoningBudget),
     parsedLlmReasoningBudget: parseRuntimeInt(readValue('llmReasoningBudget'), runtimeSettingsBaseline.llmReasoningBudget),
     parsedLlmMonthlyBudgetUsd: parseRuntimeFloat(readValue('llmMonthlyBudgetUsd'), runtimeSettingsBaseline.llmMonthlyBudgetUsd),
     parsedLlmPerProductBudgetUsd: parseRuntimeFloat(readValue('llmPerProductBudgetUsd'), runtimeSettingsBaseline.llmPerProductBudgetUsd),

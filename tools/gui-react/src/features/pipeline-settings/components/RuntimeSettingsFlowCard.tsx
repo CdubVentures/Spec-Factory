@@ -15,7 +15,6 @@ import { collectRuntimeFlowDraftPayload } from '../state/RuntimeFlowDraftPayload
 import {
   RUNTIME_NUMBER_BOUNDS,
   RESUME_MODE_OPTIONS,
-  SEARCH_PROVIDER_OPTIONS,
   normalizeRuntimeDraft,
   parseBoundedNumber,
   runtimeDraftEqual,
@@ -284,6 +283,7 @@ export function RuntimeSettingsFlowCard({
         llmBaseUrl={runtimeDraft.llmBaseUrl}
         openaiApiKey={runtimeDraft.openaiApiKey}
         llmModelPlan={runtimeDraft.llmModelPlan}
+        llmProviderRegistryJson={runtimeDraft.llmProviderRegistryJson}
       />
       <RuntimeFlowCardHeader
         runtimeStatusClass={runtimeStatusClass}
@@ -331,7 +331,6 @@ export function RuntimeSettingsFlowCard({
             plannerControlsLocked={plannerControlsLocked}
             inputCls={inputCls}
             runtimeSubStepDomId={runtimeSubStepDomId}
-            searchProviderOptions={SEARCH_PROVIDER_OPTIONS}
             resumeModeOptions={RESUME_MODE_OPTIONS}
             updateDraft={updateDraft}
             onNumberChange={onNumberChange}

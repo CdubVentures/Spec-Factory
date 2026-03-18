@@ -2,7 +2,6 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createBrandResolverCallLlm,
-  createDomainSafetyCallLlm,
   createEscalationPlannerCallLlm
 } from '../src/features/indexing/discovery/discoveryLlmAdapters.js';
 
@@ -51,51 +50,7 @@ describe('discoveryLlmAdapters', () => {
     });
   });
 
-  describe('createDomainSafetyCallLlm', () => {
-    it('formats prompt with domains and category and returns classifications', async () => {
-      const routed = makeCallRoutedLlm([
-        { domain: 'cougar.com', classification: 'adult_content', reason: 'Adult site' },
-        { domain: 'rtings.com', classification: 'lab_review', reason: 'Review site' }
-      ]);
-      const callLlm = createDomainSafetyCallLlm({
-        callRoutedLlmFn: routed.fn,
-        config: { llmModelTriage: 'test-model' }
-      });
-      const result = await callLlm({ domains: ['cougar.com', 'rtings.com'], category: 'mouse', config: {} });
-      assert.ok(Array.isArray(result));
-      assert.equal(result.length, 2);
-      assert.equal(result[0].domain, 'cougar.com');
-      assert.equal(result[0].classification, 'adult_content');
-      assert.ok(routed.calls[0].user.includes('cougar.com'));
-      assert.ok(routed.calls[0].user.includes('rtings.com'));
-    });
-
-    it('includes JSON schema for domain classifications', async () => {
-      const routed = makeCallRoutedLlm([]);
-      const callLlm = createDomainSafetyCallLlm({
-        callRoutedLlmFn: routed.fn,
-        config: { llmModelTriage: 'test-model' }
-      });
-      await callLlm({ domains: ['test.com'], category: 'mouse', config: {} });
-      const schema = routed.calls[0].jsonSchema;
-      assert.ok(schema);
-      assert.ok(schema.properties.classifications);
-    });
-
-    it('passes the shared logger through to routed llm calls', async () => {
-      const routed = makeCallRoutedLlm([]);
-      const logger = { info() {} };
-      const callLlm = createDomainSafetyCallLlm({
-        callRoutedLlmFn: routed.fn,
-        config: { llmModelTriage: 'test-model' },
-        logger
-      });
-
-      await callLlm({ domains: ['test.com'], category: 'mouse', config: {} });
-
-      assert.equal(routed.calls[0].logger, logger);
-    });
-  });
+  // WHY: createDomainSafetyCallLlm removed — domain classifier is now deterministic.
 
   describe('createEscalationPlannerCallLlm', () => {
     it('formats prompt with missing fields and product and returns queries', async () => {

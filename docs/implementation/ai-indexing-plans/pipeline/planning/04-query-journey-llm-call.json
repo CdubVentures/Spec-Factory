@@ -1,204 +1,49 @@
 {
-  "_doc": "Query Journey LLM call contract. Stage 4 has exactly ONE optional LLM call: the SERP reranker/triage in rerankSerpResults(). All other phases are deterministic. Updated 2026-03-16.",
-  "_llm_calls_in_stage_4": {
-    "convertHandoffToExecutionPlan": "NO LLM",
-    "enforceIdentityQueryGuard": "NO LLM",
-    "executeSearchQueries": "NO LLM (pure search orchestration)",
-    "classifyUrlCandidate": "NO LLM (pure classification)",
-    "rerankSerpResults": "OPTIONAL LLM — uber_serp_reranker"
+  "_doc": "LLM surfaces used by the live Stage 04/06 discovery path. After the rework there are two optional routed LLM calls in this area: the fallback query planner and the SERP reranker. Updated 2026-03-18.",
+  "query_journey_fallback_planner": {
+    "function": "planUberQueries()",
+    "source_file": "src/research/queryPlanner.js",
+    "reason": "search_planner",
+    "role": "plan",
+    "gate": "Used only when Schema 4 is disabled or fewer than 6 guarded Schema 4 queries survive. No routed plan key returns deterministic fallback queries.",
+    "payload": {
+      "identity_lock": "brand, model, variant, product_id",
+      "missing_fields": "grouped field inventory with uncovered_search_worthy hints",
+      "missing_critical_fields": "top critical unresolved fields",
+      "base_queries": "deterministic fallback query set",
+      "frontier_summary": "frontier cache snapshot",
+      "archetypes_emitted": "existing archetype coverage hints"
+    },
+    "response": {
+      "queries": "string[]",
+      "preferred_domains": "string[]",
+      "negative_filters": "string[]",
+      "max_queries": "integer",
+      "max_new_domains": "integer",
+      "sitemap_mode_recommended": "boolean"
+    },
+    "failure_mode": "Any gate failure, missing route, empty LLM response, or exception falls back to deterministic queries."
   },
-  "serp_reranker_llm_call": {
-    "_function": "rerankSerpResults()",
-    "_file": "src/research/serpReranker.js:187-356",
-    "_call_site": "inner LLM call within rerank phase",
-    "gate": {
-      "conditions": [
-        "serpTriageEnabled !== false",
-        "quality threshold check (highQualityCount < ceil(triageMaxUrls * 0.6)) indicates LLM value",
-        "uberMode OR config.llmSerpRerankEnabled",
-        "rerankSerpResults() itself falls back to deterministic output when hasLlmRouteApiKey(config, { role: 'plan' }) is false"
-      ],
-      "fallback": "deterministic scoring only — all results get keep=true, rerank_reason='deterministic'"
+  "serp_reranker": {
+    "function": "rerankSerpResults()",
+    "source_file": "src/research/serpReranker.js",
+    "reason": "uber_serp_reranker",
+    "role": "plan",
+    "gate": "Runs only when SERP triage is enabled, deterministic quality is insufficient, and routed plan access exists.",
+    "payload": {
+      "identity_lock": "brand, model, variant",
+      "missing_fields": "top unresolved fields",
+      "results": "top deterministic rows with rank, url, host, title, snippet, and score_det"
     },
-    "call_parameters": {
-      "reason": "uber_serp_reranker",
-      "role": "plan",
-      "model": "_resolvedSerpTriageBaseModel / _resolvedSerpTriageReasoningModel when present, otherwise llmModelPlan or llmModelReasoning depending on llmPlanUseReasoning",
-      "timeoutMs": "config.llmTimeoutMs || config.openaiTimeoutMs || callLlmWithRouting default"
+    "response": {
+      "selected_urls": "Array<{ url, keep, reason?, score? }>"
     },
-    "system_prompt": {
-      "_source": "serpReranker.js (inline constant)",
-      "text": [
-        "You rerank search results for evidence-first hardware spec extraction.",
-        "Return strict JSON only.",
-        "Keep URLs with strong identity match and likely field relevance.",
-        "Drop low-value, duplicate, or dead-pattern URLs."
-      ]
-    },
-    "user_payload": {
-      "_encoding": "JSON.stringify — sent as user message",
-      "identity_lock": {
-        "brand": "string — from identity.brand",
-        "model": "string — from identity.model",
-        "variant": "string — from identity.variant"
-      },
-      "missing_fields": "string[] — missingFields sliced to 40",
-      "results": {
-        "_type": "array - top K results from the caller (function default is 16)",
-        "_per_item": {
-          "rank": "number — original SERP rank",
-          "url": "string — full URL",
-          "host": "string — normalized hostname",
-          "title": "string — truncated to 240 chars",
-          "snippet": "string — truncated to 320 chars",
-          "score_det": "number — deterministic score rounded to 4 decimal places"
-        }
-      }
-    },
-    "response_schema": {
-      "_encoding": "JSON Schema passed via callLlmWithRouting({ jsonSchema })",
-      "selected_urls": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "url": {
-              "type": "string",
-              "_note": "must match a URL from the payload"
-            },
-            "keep": {
-              "type": "boolean",
-              "_note": "true to keep, false to drop"
-            },
-            "reason": {
-              "type": "string",
-              "_note": "optional human-readable reason"
-            },
-            "score": {
-              "type": "number",
-              "_note": "optional LLM-assigned relevance score"
-            }
-          }
-        }
-      }
-    },
-    "response_processing": {
-      "url_matching": "LLM selected_urls matched by url string to input results",
-      "unmatched_urls": "URLs not in LLM response get keep=true (default keep) or keep=false if LLM explicitly dropped all",
-      "score_fallback": "If LLM provides no score, falls back to score_det",
-      "reason_fallback": {
-        "in_llm_response": "reason from LLM response",
-        "omitted_from_response": "'llm_omitted_drop' (dropped) or 'llm_default_keep' (kept by default)",
-        "empty_llm_response": "'llm_empty_fallback'"
-      }
-    },
-    "error_handling": {
-      "llm_call_failure": "Falls back to deterministic scores, rerank_reason='deterministic_fallback'",
-      "empty_selections": "If LLM returns 0 selected_urls → deterministic fallback",
-      "explicit_all_drop": "If LLM explicitly drops ALL URLs → returns { explicitAllDrop: true, fallbackReason: 'llm_explicit_all_drop' }"
-    },
-    "deterministic_scoring": {
-      "_note": "Always computed regardless of LLM path. Used as baseline or fallback.",
-      "weight_map": {
-        "identityStrongBonus": {
-          "default": 2,
-          "note": "strong identity match (brand+model+variant)"
-        },
-        "identityPartialBonus": {
-          "default": 0.8,
-          "note": "partial match (brand+model)"
-        },
-        "identityWeakBonus": {
-          "default": 0,
-          "note": "weak match (brand only)"
-        },
-        "identityNoneBonus": {
-          "default": -1.5,
-          "note": "no identity match"
-        },
-        "brandPresenceBonus": {
-          "default": 2.5,
-          "note": "brand found in title+snippet+url"
-        },
-        "modelPresenceBonus": {
-          "default": 2.5,
-          "note": "model found in title+snippet+url"
-        },
-        "specManualKeywordBonus": {
-          "default": 1.3,
-          "note": "spec/manual/datasheet keywords"
-        },
-        "reviewBenchmarkBonus": {
-          "default": 0.9,
-          "note": "review/benchmark keywords"
-        },
-        "forumRedditPenalty": {
-          "default": -0.9,
-          "note": "forum/reddit content"
-        },
-        "brandInHostnameBonus": {
-          "default": 1.2,
-          "note": "brand appears in hostname"
-        },
-        "wikipediaPenalty": {
-          "default": -1,
-          "note": "wikipedia pages"
-        },
-        "variantGuardPenalty": {
-          "default": -3,
-          "note": "wrong variant detected"
-        },
-        "multiModelHintPenalty": {
-          "default": -1.5,
-          "note": "comparison/listing page"
-        },
-        "tier1Bonus": {
-          "default": 1.5,
-          "note": "tier 1 manufacturer source"
-        },
-        "tier2Bonus": {
-          "default": 0.5,
-          "note": "tier 2 approved source"
-        },
-        "hostHealthDownrankPenalty": {
-          "default": -0.4,
-          "note": "from host health policy"
-        },
-        "hostHealthExcludePenalty": {
-          "default": -2,
-          "note": "from host health policy"
-        },
-        "operatorRiskPenalty": {
-          "default": -0.5,
-          "note": "site: operator risk"
-        },
-        "fieldAffinityBonus": {
-          "default": 0.5,
-          "note": "query targets missing fields"
-        },
-        "needsetCoverageBonus": {
-          "default": 0.2,
-          "note": "covers unresolved needset fields"
-        },
-        "diversityPenaltyPerDupe": {
-          "default": -0.3,
-          "note": "per-domain duplicate penalty"
-        }
-      },
-      "score_breakdown_keys": [
-        "base_score",
-        "frontier_penalty",
-        "identity_bonus",
-        "variant_guard_penalty",
-        "multi_model_penalty",
-        "tier_bonus",
-        "host_health_penalty",
-        "operator_risk_penalty",
-        "field_affinity_bonus",
-        "diversity_penalty",
-        "needset_coverage_bonus",
-        "tier_source"
-      ]
-    }
+    "failure_mode": "Route absence, LLM failure, or empty selections fall back to deterministic ordering. An explicit all-drop response is preserved as an explicit all-drop outcome."
+  },
+  "non_llm_steps": {
+    "convertHandoffToExecutionPlan": "deterministic",
+    "enforceIdentityQueryGuard": "deterministic",
+    "executeSearchQueries": "deterministic orchestration",
+    "processDiscoveryResults hard drops, classification, lane routing, and scoring": "deterministic before any optional rerank"
   }
 }

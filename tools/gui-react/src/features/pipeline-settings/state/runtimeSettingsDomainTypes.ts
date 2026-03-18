@@ -3,7 +3,6 @@ import type {
   RuntimeProfile,
   RuntimeRepairDedupeRule,
   RuntimeResumeMode,
-  RuntimeSearchProvider,
 } from '../../../stores/settingsManifest';
 import type { RuntimeSettingsNumericBaseline } from './runtimeSettingsAuthority';
 
@@ -31,7 +30,8 @@ export interface RuntimeHydrationBindings {
 
 export interface RuntimeHydrationBindingSetters {
   setProfile: (value: RuntimeProfile) => void;
-  setSearchProvider: (value: RuntimeSearchProvider) => void;
+  setSearchEngines: (value: string) => void;
+  setSearchEnginesFallback: (value: string) => void;
   setSearxngBaseUrl: (value: string) => void;
   setLlmPlanApiKey: (value: string) => void;
   setLlmModelPlan: (value: string) => void;
@@ -246,15 +246,14 @@ export type RuntimeModelTokenDefaultsResolver = (
 ) => RuntimeModelTokenDefaults;
 
 export interface RuntimeSettingsPayloadSerializerInput {
-  searchProvider: RuntimeSearchProvider | string;
+  searchEngines: string;
+  searchEnginesFallback: string;
   searxngBaseUrl: string;
   llmPlanApiKey: string;
   llmModelPlan: string;
   llmModelReasoning: string;
-  llmExtractMaxTokens: number | string;
   llmExtractMaxSnippetsPerBatch: number | string;
   llmExtractMaxSnippetChars: number | string;
-  llmExtractReasoningBudget: number | string;
   llmReasoningBudget: number | string;
   llmMonthlyBudgetUsd: number | string;
   llmPerProductBudgetUsd: number | string;
@@ -344,7 +343,6 @@ export interface RuntimeSettingsPayloadSerializerInput {
   discoveryMaxDiscovered: number | string;
   maxUrlsPerProduct: number | string;
   maxCandidateUrls: number | string;
-  serpTriageMaxUrls: number | string;
   maxPagesPerDomain: number | string;
   maxRunSeconds: number | string;
   maxJsonBytes: number | string;

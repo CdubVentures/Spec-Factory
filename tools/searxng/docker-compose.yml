@@ -14,3 +14,4 @@ services:
       - UWSGI_THREADS=2
     volumes:
       - ./searxng:/etc/searxng:rw
+      - ./google.py:/usr/local/searxng/searx/engines/google.py:ro

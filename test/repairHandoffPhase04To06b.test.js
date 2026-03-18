@@ -74,7 +74,7 @@ test('Phase 04 repair emission flows through Phase 06B automation queue as repai
     reason: 'status_404',
     cooldownUntil: '2026-03-09T12:00:00.000Z',
     repairQueryByDomain: dedupe,
-    config: { searchProvider: 'searxng' },
+    config: { searchEngines: 'bing,startpage,duckduckgo' },
     requiredFields: ['polling_rate', 'sensor', 'weight_g'],
     jobIdentityLock: { brand: 'Corsair', model: 'M55 Wireless', variant: '' },
     logger: {
@@ -210,7 +210,7 @@ test('Phase 04 repair emission flows through Phase 06B automation queue as repai
   const job = repairJobs[0];
   assert.equal(job.domain, 'corsair.com', 'job domain matches Phase 04 emission');
   assert.equal(job.query, 'Corsair M55 Wireless spec site:corsair.com', 'job query matches Phase 04 emission');
-  assert.equal(job.provider, 'searxng', 'job provider matches Phase 04 emission');
+  assert.equal(job.provider, 'bing,startpage,duckduckgo', 'job provider matches Phase 04 emission');
   assert.equal(job.source_signal, 'url_health', 'job source_signal is url_health');
   assert.equal(job.status, 'queued', 'job status is queued');
 

@@ -2,7 +2,7 @@
 // core/config (post-merge normalization) and features/settings-authority
 // (route validation). Lives in shared/ so core/ never imports features/.
 
-import { SETTINGS_OPTION_VALUES } from './settingsDefaults.js';
+import { SETTINGS_OPTION_VALUES, SEARXNG_AVAILABLE_ENGINES } from './settingsDefaults.js';
 
 export const SETTINGS_CLAMPING_INT_RANGE_MAP = Object.freeze({
   fetchConcurrency: Object.freeze({ cfgKey: 'concurrency', min: 1, max: 64 }),
@@ -17,7 +17,6 @@ export const SETTINGS_CLAMPING_INT_RANGE_MAP = Object.freeze({
   discoveryMaxDiscovered: Object.freeze({ cfgKey: 'discoveryMaxDiscovered', min: 1, max: 2000 }),
   maxUrlsPerProduct: Object.freeze({ cfgKey: 'maxUrlsPerProduct', min: 1, max: 1000 }),
   maxCandidateUrls: Object.freeze({ cfgKey: 'maxCandidateUrls', min: 1, max: 5000 }),
-  serpTriageMaxUrls: Object.freeze({ cfgKey: 'serpTriageMaxUrls', min: 5, max: 30 }),
   maxPagesPerDomain: Object.freeze({ cfgKey: 'maxPagesPerDomain', min: 1, max: 100 }),
   maxRunSeconds: Object.freeze({ cfgKey: 'maxRunSeconds', min: 30, max: 86400 }),
   maxJsonBytes: Object.freeze({ cfgKey: 'maxJsonBytes', min: 1024, max: 100000000 }),
@@ -46,10 +45,8 @@ export const SETTINGS_CLAMPING_INT_RANGE_MAP = Object.freeze({
   llmMaxOutputTokensReasoning: Object.freeze({ cfgKey: 'llmMaxOutputTokensReasoning', min: 128, max: 262144 }),
   llmMaxOutputTokensPlanFallback: Object.freeze({ cfgKey: 'llmMaxOutputTokensPlanFallback', min: 128, max: 262144 }),
   llmMaxOutputTokensReasoningFallback: Object.freeze({ cfgKey: 'llmMaxOutputTokensReasoningFallback', min: 128, max: 262144 }),
-  llmExtractMaxTokens: Object.freeze({ cfgKey: 'llmExtractMaxTokens', min: 128, max: 262144 }),
   llmExtractMaxSnippetsPerBatch: Object.freeze({ cfgKey: 'llmExtractMaxSnippetsPerBatch', min: 1, max: 50 }),
   llmExtractMaxSnippetChars: Object.freeze({ cfgKey: 'llmExtractMaxSnippetChars', min: 100, max: 200000 }),
-  llmExtractReasoningBudget: Object.freeze({ cfgKey: 'llmExtractReasoningBudget', min: 128, max: 262144 }),
   llmReasoningBudget: Object.freeze({ cfgKey: 'llmReasoningBudget', min: 128, max: 262144 }),
   llmMaxCallsPerRound: Object.freeze({ cfgKey: 'llmMaxCallsPerRound', min: 1, max: 200 }),
   llmMaxOutputTokens: Object.freeze({ cfgKey: 'llmMaxOutputTokens', min: 128, max: 262144 }),
@@ -117,7 +114,8 @@ export const SETTINGS_CLAMPING_FLOAT_RANGE_MAP = Object.freeze({
 export const SETTINGS_CLAMPING_STRING_ENUM_MAP = Object.freeze({
   resumeMode: Object.freeze({ cfgKey: 'indexingResumeMode', allowed: SETTINGS_OPTION_VALUES.runtime.resumeMode }),
   scannedPdfOcrBackend: Object.freeze({ cfgKey: 'scannedPdfOcrBackend', allowed: SETTINGS_OPTION_VALUES.runtime.scannedPdfOcrBackend }),
-  searchProvider: Object.freeze({ cfgKey: 'searchProvider', allowed: SETTINGS_OPTION_VALUES.runtime.searchProvider }),
+  searchEngines: Object.freeze({ cfgKey: 'searchEngines', allowed: SEARXNG_AVAILABLE_ENGINES, csv: true }),
+  searchEnginesFallback: Object.freeze({ cfgKey: 'searchEnginesFallback', allowed: SEARXNG_AVAILABLE_ENGINES, csv: true }),
   repairDedupeRule: Object.freeze({ cfgKey: 'repairDedupeRule', allowed: SETTINGS_OPTION_VALUES.runtime.repairDedupeRule }),
   outputMode: Object.freeze({ cfgKey: 'outputMode', allowed: SETTINGS_OPTION_VALUES.runtime.outputMode }),
 });

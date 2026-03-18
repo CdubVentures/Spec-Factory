@@ -9,7 +9,6 @@ import { deriveIndexingRunStartParsedValues } from './indexingRunStartParsedValu
 import type { RuntimeSettings } from '../../pipeline-settings';
 
 const LLM_MIN_OUTPUT_TOKENS = LLM_SETTING_LIMITS.maxTokens.min;
-const LLM_EXTRACT_MIN_TOKENS = 128;
 const LLM_EXTRACT_MIN_SNIPPET_CHARS = 128;
 
 type StartIndexingRunPayloadValue = string | number | boolean;
@@ -225,13 +224,10 @@ export function buildIndexingRunStartPayload(
       llmExtractionCacheDir: readString(s.llmExtractionCacheDir),
       parsedLlmExtractionCacheTtlMs: p.parsedLlmExtractionCacheTtlMs,
       parsedLlmMaxCallsPerProductTotal: p.parsedLlmMaxCallsPerProductTotal,
-      parsedLlmExtractMaxTokens: p.parsedLlmExtractMaxTokens,
-      llmExtractMinTokens: LLM_EXTRACT_MIN_TOKENS,
       parsedLlmExtractMaxSnippetsPerBatch: p.parsedLlmExtractMaxSnippetsPerBatch,
       parsedLlmExtractMaxSnippetChars: p.parsedLlmExtractMaxSnippetChars,
       llmExtractMinSnippetChars: LLM_EXTRACT_MIN_SNIPPET_CHARS,
       llmExtractSkipLowSignal: readBool(s.llmExtractSkipLowSignal),
-      parsedLlmExtractReasoningBudget: p.parsedLlmExtractReasoningBudget,
       llmReasoningMode: readString(s.llmReasoningMode),
       parsedLlmReasoningBudget: p.parsedLlmReasoningBudget,
       parsedLlmMonthlyBudgetUsd: p.parsedLlmMonthlyBudgetUsd,
@@ -256,7 +252,8 @@ export function buildIndexingRunStartPayload(
       parsedEndpointNetworkScanLimit: p.parsedEndpointNetworkScanLimit,
     }),
     ...buildIndexingRunModelPayload({
-      searchProvider: readString(s.searchProvider),
+      searchEngines: readString(s.searchEngines ?? s.searchProvider),
+      searchEnginesFallback: readString(s.searchEnginesFallback),
       llmModelPlan: readString(s.llmModelPlan),
       llmMaxOutputTokensPlan: Number(s.llmMaxOutputTokensPlan || 0),
       llmModelReasoning: readString(s.llmModelReasoning),

@@ -192,7 +192,7 @@ export const RUNTIME_SUB_STEPS: Record<RuntimeStepId, RuntimeSubStepEntry[]> = {
     {
       id: 'run-setup-discovery',
       label: 'Discovery',
-      tip: 'Phases 01-07. Tunes NeedSet-driven discovery, Brand Resolver, Search Profile, Search Planner, Query Journey, Search Results, and SERP Triage before any URL is fetched.',
+      tip: 'Phases 01-07. Search Planner is precomputed from NeedSet, Search Profile is the deterministic/fallback branch, and Query Journey chooses between them before search executes.',
     },
     {
       id: 'run-setup-budgets',

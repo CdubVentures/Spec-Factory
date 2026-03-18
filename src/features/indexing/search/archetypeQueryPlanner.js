@@ -190,8 +190,9 @@ export function allocateArchetypeBudget(archetypes, budget, context) {
 
 // ── emitArchetypeQueries ──
 
-export function emitArchetypeQueries(slot, identity, product, focusFields) {
+export function emitArchetypeQueries(slot, identity, product, focusFields, options = {}) {
   const { archetype, hosts, slots, coveredFields } = slot;
+  const { fieldYieldByDomain = null } = options;
   const brand = identity?.brand || '';
   const model = identity?.model || '';
   const productStr = product || `${brand} ${model}`.trim();
@@ -207,88 +208,84 @@ export function emitArchetypeQueries(slot, identity, product, focusFields) {
   const familyForArchetype = archetypeFamily(archetype);
 
   if (archetype === 'manufacturer') {
-    for (const host of (hosts || [])) {
-      if (rows.length >= slots) break;
-      // One host-biased query per host
-      if (!usedSiteHosts.has(host)) {
-        usedSiteHosts.add(host);
-        rows.push(makeRow({
-          query: `${productStr} official specifications ${host}`,
-          hintSource: 'archetype_planner',
-          targetFields,
-          docHint: 'spec',
-          domainHint: host,
-          archetype,
-          gapReason: 'manufacturer_spec',
-          queryFamily: 'spec',
-          targetFieldsForFingerprint: targetFields
-        }));
-      }
-      // Generic manufacturer query
-      if (rows.length < slots) {
-        rows.push(makeRow({
-          query: `${productStr} official specifications`,
-          hintSource: 'archetype_planner',
-          targetFields,
-          docHint: 'spec',
-          domainHint: host,
-          archetype,
-          gapReason: 'manufacturer_generic',
-          queryFamily: 'generic',
-          targetFieldsForFingerprint: targetFields
-        }));
-      }
+    // WHY: Diverse intents per archetype. Host as soft bias unless zero-yield.
+    // Zero-yield hosts (>= 3 attempts, 0 fields) lose bias — dedup collapses
+    // the naked intent query, freeing a slot for the search engine to find better sources.
+    const hostList = hosts || [];
+    const intents = [
+      { suffix: 'official specifications', family: 'spec', reason: 'manufacturer_spec', docHint: 'spec' },
+      { suffix: 'user manual pdf', family: 'manual', reason: 'manufacturer_manual', docHint: 'manual_pdf' },
+      { suffix: 'support', family: 'support', reason: 'manufacturer_support', docHint: 'support' }
+    ];
+    for (let i = 0; i < intents.length && rows.length < slots; i++) {
+      const intent = intents[i];
+      const host = hostList[Math.min(i, hostList.length - 1)] || '';
+      const skipBias = isZeroYieldHost(host, fieldYieldByDomain);
+      const query = (host && !skipBias)
+        ? `${productStr} ${intent.suffix} ${host}`
+        : `${productStr} ${intent.suffix}`;
+      rows.push(makeRow({
+        query,
+        hintSource: 'archetype_planner',
+        targetFields,
+        docHint: intent.docHint,
+        domainHint: skipBias ? '' : host,
+        archetype,
+        gapReason: intent.reason,
+        queryFamily: intent.family,
+        targetFieldsForFingerprint: targetFields
+      }));
     }
   } else if (archetype === 'lab_review') {
-    for (const host of (hosts || [])) {
-      if (rows.length >= slots) break;
-      // One host-biased query per host
-      if (!usedSiteHosts.has(host)) {
-        usedSiteHosts.add(host);
-        rows.push(makeRow({
-          query: `${productStr} review ${host}`,
-          hintSource: 'archetype_planner',
-          targetFields,
-          docHint: 'review',
-          domainHint: host,
-          archetype,
-          gapReason: 'lab_measurements',
-          queryFamily: 'review',
-          targetFieldsForFingerprint: targetFields
-        }));
-      }
-      // Generic lab query for this host
-      if (rows.length < slots) {
-        rows.push(makeRow({
-          query: `${productStr} ${host} review`,
-          hintSource: 'archetype_planner',
-          targetFields,
-          docHint: 'review',
-          domainHint: host,
-          archetype,
-          gapReason: 'lab_measurements',
-          queryFamily: familyForArchetype,
-          targetFieldsForFingerprint: targetFields
-        }));
-      }
+    const hostList = hosts || [];
+    const intents = [
+      { suffix: 'review', family: 'review', reason: 'lab_measurements' },
+      { suffix: 'review measurements', family: 'review', reason: 'lab_measurements' },
+      { suffix: 'review teardown', family: 'review', reason: 'lab_teardown' }
+    ];
+    for (let i = 0; i < intents.length && rows.length < slots; i++) {
+      const intent = intents[i];
+      const host = hostList[Math.min(i, hostList.length - 1)] || '';
+      const skipBias = isZeroYieldHost(host, fieldYieldByDomain);
+      const query = (host && !skipBias)
+        ? `${productStr} ${intent.suffix} ${host}`
+        : `${productStr} ${intent.suffix}`;
+      rows.push(makeRow({
+        query,
+        hintSource: 'archetype_planner',
+        targetFields,
+        docHint: 'review',
+        domainHint: skipBias ? '' : host,
+        archetype,
+        gapReason: intent.reason,
+        queryFamily: intent.family,
+        targetFieldsForFingerprint: targetFields
+      }));
     }
   } else if (archetype === 'spec_database') {
-    for (const host of (hosts || [])) {
-      if (rows.length >= slots) break;
-      if (!usedSiteHosts.has(host)) {
-        usedSiteHosts.add(host);
-        rows.push(makeRow({
-          query: `${productStr} specs ${host}`,
-          hintSource: 'archetype_planner',
-          targetFields,
-          docHint: 'spec_database',
-          domainHint: host,
-          archetype,
-          gapReason: 'spec_database_lookup',
-          queryFamily: 'spec',
-          targetFieldsForFingerprint: targetFields
-        }));
-      }
+    const hostList = hosts || [];
+    const intents = [
+      { suffix: 'specifications', family: 'spec', reason: 'spec_database_lookup' },
+      { suffix: 'dimensions weight', family: 'spec', reason: 'spec_database_dimensions' }
+    ];
+    for (let i = 0; i < intents.length && rows.length < slots; i++) {
+      const intent = intents[i];
+      const host = hostList[Math.min(i, hostList.length - 1)] || '';
+      const skipBias = isZeroYieldHost(host, fieldYieldByDomain);
+      const query = (host && !skipBias)
+        ? `${productStr} ${intent.suffix} ${host}`
+        : `${productStr} ${intent.suffix}`;
+      rows.push(makeRow({
+        query,
+        hintSource: 'archetype_planner',
+        targetFields,
+        docHint: 'spec_database',
+        domainHint: skipBias ? '' : host,
+        archetype,
+        gapReason: intent.reason,
+        queryFamily: intent.family,
+        targetFieldsForFingerprint: targetFields
+      }));
     }
   } else if (archetype === 'retailer') {
     // WHY: Retailer hosts have low source-field fit — no host bias, plain product query
@@ -476,6 +473,18 @@ function extractHostFromUrl(url) {
   } catch {
     return '';
   }
+}
+
+// WHY: Skip domain bias for hosts that were tried >= 3 times in prior runs and yielded
+// zero fields. New hosts (not in map) or hosts with < 3 attempts keep their bias —
+// a single transient failure (timeout, CAPTCHA) shouldn't permanently banish a host.
+export function isZeroYieldHost(host, fieldYieldByDomain) {
+  if (!host || !fieldYieldByDomain) return false;
+  const entry = fieldYieldByDomain[host];
+  if (!entry) return false;
+  const hasZeroFields = Object.keys(entry.fields || {}).length === 0;
+  const hasSufficientAttempts = (entry.attempts || 0) >= 3;
+  return hasZeroFields && hasSufficientAttempts;
 }
 
 function archetypeFamily(archetype) {

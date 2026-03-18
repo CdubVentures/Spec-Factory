@@ -85,12 +85,22 @@ export function createRuntimeSettingsHandler({
           continue;
         }
         if (key in STRING_ENUM_MAP) {
-          const { cfgKey, allowed } = STRING_ENUM_MAP[key];
+          const { cfgKey, allowed, csv } = STRING_ENUM_MAP[key];
           const str = String(value ?? '').trim().toLowerCase();
-          if (!allowed.includes(str)) { rejected[key] = 'invalid_enum'; continue; }
-          nextRuntimeSnapshot[cfgKey] = str;
-          applied[key] = str;
-          runtimePatch[cfgKey] = str;
+          if (csv) {
+            // CSV field: validate each comma-separated token against allowed list
+            const tokens = str ? str.split(',').map(t => t.trim()).filter(Boolean) : [];
+            const valid = tokens.filter(t => allowed.includes(t));
+            const normalized = [...new Set(valid)].join(',');
+            nextRuntimeSnapshot[cfgKey] = normalized;
+            applied[key] = normalized;
+            runtimePatch[cfgKey] = normalized;
+          } else {
+            if (!allowed.includes(str)) { rejected[key] = 'invalid_enum'; continue; }
+            nextRuntimeSnapshot[cfgKey] = str;
+            applied[key] = str;
+            runtimePatch[cfgKey] = str;
+          }
         } else if (key === DYNAMIC_FETCH_POLICY_MAP_JSON_KEY) {
           const normalized = String(value ?? '').trim();
           if (!normalized) {

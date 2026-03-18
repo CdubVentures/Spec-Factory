@@ -550,14 +550,14 @@ test('process/start ignores retired and not-implemented runtime env knobs', asyn
   }
 });
 
-test('process/start rejects unsupported search providers before spawn', async () => {
+test('process/start accepts searchEngines CSV and spawns process', async () => {
   let started = false;
   const handler = registerInfraRoutes(makeCtx({
     readJsonBody: async () => ({
       category: 'mouse',
       mode: 'indexlab',
       productId: 'mouse-acme-orbit-x1',
-      searchProvider: 'duckduckgo',
+      searchEngines: 'duckduckgo',
     }),
     fs: {
       access: async () => {},
@@ -570,9 +570,8 @@ test('process/start rejects unsupported search providers before spawn', async ()
   }));
 
   const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 400);
-  assert.equal(result.body?.error, 'invalid_search_provider');
-  assert.equal(started, false, 'process should not start when search provider is invalid');
+  assert.equal(result.status, 200);
+  assert.equal(started, true, 'process should start with searchEngines CSV value');
 });
 
 test('process/start rejects invalid dynamic fetch policy JSON before spawn', async () => {

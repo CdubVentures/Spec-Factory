@@ -9,7 +9,6 @@ import {
   createRuntimeModelTokenDefaultsResolver,
   deriveRuntimeLlmModelOptions,
   deriveRuntimeLlmTokenContractPresetMax,
-  deriveRuntimeLlmTokenPresetOptions,
   normalizeRuntimeDraft,
   parseBoundedNumber,
   readRuntimeSettingsBootstrap,
@@ -26,6 +25,7 @@ import {
 } from '../../../stores/settingsManifest';
 import { RuntimeFlowHeaderControls } from '../../pipeline-settings/components/RuntimeFlowHeaderControls';
 import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore';
+import { useUiStore } from '../../../stores/uiStore';
 import { usePersistedTab } from '../../../stores/tabStore';
 import { LlmConfigPageShell } from './LlmConfigPageShell';
 import { LLM_PHASE_IDS } from '../state/llmPhaseRegistry';
@@ -73,6 +73,8 @@ interface RuntimeSettingsLlmConfigResponse {
 
 export function LlmConfigPage() {
   const queryClient = useQueryClient();
+  const runtimeAutoSaveEnabled = useUiStore((state) => state.runtimeAutoSaveEnabled);
+  const setRuntimeAutoSaveEnabled = useUiStore((state) => state.setRuntimeAutoSaveEnabled);
   const runtimeReadyFlag = useSettingsAuthorityStore((state) => state.snapshot.runtimeReady);
 
   const runtimeBootstrap = useMemo(
@@ -139,9 +141,6 @@ export function LlmConfigPage() {
     llmModelPlan,
     llmModelReasoning,
     llmMaxOutputTokensPlan,
-    llmMaxOutputTokensReasoning,
-    llmMaxOutputTokensPlanFallback,
-    llmMaxOutputTokensReasoningFallback,
   } = runtimeDraft;
 
   const llmModelOptions = useMemo(() => deriveRuntimeLlmModelOptions({
@@ -152,22 +151,6 @@ export function LlmConfigPage() {
     indexingLlmConfig,
     llmModelPlan,
     llmModelReasoning,
-  ]);
-
-  const llmTokenPresetOptions = useMemo(() => deriveRuntimeLlmTokenPresetOptions({
-    indexingLlmConfig,
-    llmMaxOutputTokensPlan,
-    llmMaxOutputTokensReasoning,
-    llmMaxOutputTokensPlanFallback,
-    llmMaxOutputTokensReasoningFallback,
-    runtimeManifestDefaults,
-  }), [
-    indexingLlmConfig,
-    llmMaxOutputTokensPlan,
-    llmMaxOutputTokensReasoning,
-    llmMaxOutputTokensPlanFallback,
-    llmMaxOutputTokensReasoningFallback,
-    runtimeManifestDefaults,
   ]);
 
   const runtimeSettingsReady = runtimeReadyFlag && !runtimeSettingsLoading;
@@ -194,19 +177,6 @@ export function LlmConfigPage() {
   const getNumberBounds = useCallback(<K extends keyof RuntimeDraft>(key: K): NumberBound => {
     return RUNTIME_NUMBER_BOUNDS[key as keyof typeof RUNTIME_NUMBER_BOUNDS];
   }, []);
-
-  function renderTokenOptions(model: string, prefix: string) {
-    const cap = resolveModelTokenDefaults(model).max_output_tokens;
-    return llmTokenPresetOptions.map((token) => {
-      const disabled = token > cap;
-      return (
-        <option key={`${prefix}:${token}`} value={token} disabled={disabled}>
-          {token}
-          {disabled ? ' (model max)' : ''}
-        </option>
-      );
-    });
-  }
 
   /* --- Provider Registry bridge --- */
   const defaultRegistry = useMemo(
@@ -384,8 +354,10 @@ export function LlmConfigPage() {
     <RuntimeFlowHeaderControls
       runtimeSettingsReady={runtimeSettingsReady}
       runtimeSettingsSaving={runtimeSettingsSaving}
+      runtimeAutoSaveEnabled={runtimeAutoSaveEnabled}
       runtimeAutoSaveDelaySeconds={runtimeAutoSaveDelaySeconds}
       onSaveNow={saveNow}
+      onToggleRuntimeAutoSaveEnabled={() => setRuntimeAutoSaveEnabled(!runtimeAutoSaveEnabled)}
       onResetToDefaults={resetToDefaults}
     />
   );
@@ -412,7 +384,6 @@ export function LlmConfigPage() {
     activePhase === 'brand-resolver' ||
     activePhase === 'search-planner' ||
     activePhase === 'serp-triage' ||
-    activePhase === 'domain-classifier' ||
     activePhase === 'validate' ||
     activePhase === 'write'
   ) {
@@ -433,14 +404,25 @@ export function LlmConfigPage() {
   } else if (activePhase === 'extraction') {
     activePanel = (
       <Suspense fallback={null}>
-        <LlmExtractionSection
-          runtimeDraft={runtimeDraft}
-          inputCls={inputCls}
-          updateDraft={updateDraft}
-          onNumberChange={onNumberChange}
-          getNumberBounds={getNumberBounds}
-          renderTokenOptions={renderTokenOptions}
-        />
+        <>
+          <LlmPhaseSection
+            phaseId="extraction"
+            inputCls={inputCls}
+            llmModelOptions={llmModelOptions}
+            phaseOverrides={phaseOverrides}
+            onPhaseOverrideChange={onPhaseOverrideChange}
+            registry={registry}
+            globalDraft={globalDraft}
+            apiKeyFilter={apiKeyFilter}
+          />
+          <LlmExtractionSection
+            runtimeDraft={runtimeDraft}
+            inputCls={inputCls}
+            updateDraft={updateDraft}
+            onNumberChange={onNumberChange}
+            getNumberBounds={getNumberBounds}
+          />
+        </>
       </Suspense>
     );
   }

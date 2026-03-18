@@ -1,163 +1,67 @@
 {
-  "_doc": "Cumulative pipeline output at the end of Stage 3: search plan → search execution → post-execution processing. Documents the full searchProfileFinal shape (the persisted search_profile artifact) and the discoverCandidateSources() return value. Updated 2026-03-16.",
-
+  "_doc": "Cumulative discovery artifact contract after search plan selection and downstream discovery processing. Updated 2026-03-18 against searchDiscovery.js, discoverySearchExecution.js, and discoveryResultProcessor.js.",
   "_pipeline_data_accumulated": {
-    "schema_1": "NeedSetStartInput — per-field provenance, identity context, field rules, round context",
-    "schema_2": "NeedSetOutput — field states, summary, blockers, planner_seed, history feedback",
-    "schema_3": "SearchPlanningContext — focus_groups with inlined catalog metadata, anti-garbage unions, search exhaustion, aliases, learning, previous_round_fields",
-    "schema_4": "NeedSetPlannerOutput — LLM-generated queries, planner confidence, panel bundles with fields[]/deltas, learning writeback",
-    "brand_resolver": "officialDomain, supportDomain, aliases, confidence, reasoning",
-    "search_execution": "raw SERP results, search attempts, search journal",
-    "post_execution": "SERP dedup, domain classification, admission filtering, deterministic + LLM triage reranking, serp_explorer, discovered URLs"
+    "schema_1": "NeedSet start input from bootstrap/discovery/finalization call sites.",
+    "schema_2": "NeedSet output with field states, blockers, planner_seed, and history feedback.",
+    "schema_3": "SearchPlanningContext with focus_groups, planner limits, anti-garbage unions, learning, and previous_round_fields.",
+    "schema_4": "NeedSet planner output with search_plan_handoff, planner panel, and learning writeback.",
+    "brand_resolver": "officialDomain, supportDomain, aliases, confidence, reasoning.",
+    "search_execution": "raw SERP results, search attempts, search journal, internal/external search reasons.",
+    "post_execution": "SERP dedupe, hard drops, classification, soft labels, lane-based selection, optional LLM rerank, serp_explorer, and discovered URLs."
   },
-
   "searchProfileFinal": {
-    "_doc": "The persisted search_profile artifact. Built as { ...searchProfilePlanned, ...execution_additions }. Written to storage via writeSearchProfileArtifacts(). Available on discoverCandidateSources() return as result.search_profile.",
-
-    "_from_searchProfilePlanned_schema4_path": {
-      "category":             "string — categoryConfig.category",
-      "product_id":           "string — job.productId",
-      "run_id":               "string — runId",
-      "base_model":           "string — job.baseModel || '' — variant base model for shared-spec queries",
-      "aliases":              "string[] — job.aliases || [] — known product name variants for diverse queries",
-      "generated_at":         "string — ISO timestamp (overridden by final)",
-      "status":               "string — 'planned' (overridden to 'executed' by final)",
-      "provider":             "string — config.searchProvider",
-      "source":               "string — 'schema4_planner' (Schema 4 path only)",
-      "selected_queries":     "string[] — query strings that passed identity guard",
-      "selected_query_count": "number — selected_queries.length",
-      "query_rows":           "Array<QueryRow> — per-query metadata (overridden by enriched rows in final)",
-      "query_reject_log":     "Array<RejectEntry> — queries rejected by guard/dedup/cap (max 300)",
-      "query_guard":          "{ brand_tokens, model_tokens, required_digit_groups, accepted_query_count, rejected_query_count }",
-      "effective_host_plan":  "object|null — v2 host plan (null for Schema 4 path, populated for old path)",
-      "brand_resolution":     "{ officialDomain, supportDomain, aliases, confidence, reasoning }|null — from brand resolver",
-      "schema4_planner":      "{ mode, planner_confidence, duplicates_suppressed, targeted_exceptions }|null — Schema 4 planner metadata",
-      "schema4_learning":     "{ query_hashes_generated, queries_generated, families_used, domains_targeted, groups_activated, duplicates_suppressed }|null — Schema 4 learning writeback",
-      "schema4_panel":        "{ round, round_mode, identity, summary, blockers, bundles, profile_influence, deltas }|null — Schema 4 full panel payload",
-      "key":                  "string — S3 input key for search profile artifact",
-      "run_key":              "string — S3 run-scoped key",
-      "latest_key":           "string — S3 latest key (overwritten each run)"
+    "_doc": "The persisted search_profile artifact written by writeSearchProfileArtifacts().",
+    "schema4_path_fields": {
+      "provider": "string - config.searchEngines",
+      "source": "string - 'schema4_planner'",
+      "selected_queries": "string[] - guarded Schema 4 query strings",
+      "query_rows": "Array<QueryRow> - per-query metadata from the handoff adapter",
+      "schema4_planner": "planner metadata from buildSearchPlan()",
+      "schema4_learning": "learning writeback from buildSearchPlan()",
+      "schema4_panel": "panel payload from buildSearchPlan()",
+      "effective_host_plan": "null on the Schema 4 branch"
     },
-
-    "_from_searchProfilePlanned_old_path": {
-      "_note": "Old path spreads searchProfileBase (from buildSearchProfile) then overrides. Has all the same keys as Schema 4 path plus:",
-      "llm_queries":          "Array — raw LLM-generated query objects (old path only, forward investment for review GUI)",
-      "source":               "NOT SET — old path doesn't set a 'source' field",
-      "schema4_planner":      "null — always null on old path",
-      "schema4_learning":     "null — always null on old path",
-      "schema4_panel":        "null — always null on old path"
+    "fallback_path_fields": {
+      "provider": "string - config.searchEngines",
+      "llm_queries": "string[] - fallback planner query strings from planUberQueries()",
+      "effective_host_plan": "object|null - populated when host-plan search is active",
+      "schema4_planner": "null",
+      "schema4_learning": "null",
+      "schema4_panel": "null"
     },
-
-    "_from_execution_additions": {
-      "generated_at":          "string — overridden: ISO timestamp of execution completion",
-      "status":                "string — overridden: 'executed'",
-      "query_rows":            "Array<EnrichedQueryRow> — overridden: original rows enriched with { result_count, attempts, providers, frontier_cache }",
-      "query_stats":           "Array<QueryAttemptStat> — per-query execution stats: { query, result_count, attempts, providers, frontier_cache }",
-      "discovered_count":      "number — total URLs that passed all filters",
-      "approved_count":        "number — URLs on approved domains",
-      "candidate_count":       "number — URLs on non-approved domains (candidates for fetch)",
-      "llm_query_planning":    "boolean — whether LLM query planning was enabled",
-      "llm_query_model":       "string — LLM model used for query planning",
-      "llm_serp_triage":       "boolean — whether LLM SERP triage was enabled and applied",
-      "llm_serp_triage_model": "string — LLM model used for SERP triage",
-      "serp_explorer":         "object — full SERP explorer payload (see below)"
+    "execution_additions": {
+      "status": "'executed'",
+      "query_rows": "rows enriched with result_count, attempts, providers, and frontier_cache",
+      "query_stats": "per-query execution summary",
+      "discovered_count": "total selected URLs",
+      "approved_count": "selected approved-domain URLs",
+      "candidate_count": "selected non-approved URLs",
+      "serp_explorer": "lane-aware triage breakdown and audit trail"
     }
   },
-
-  "serp_explorer": {
-    "_doc": "SERP explorer — per-query breakdown of all candidate URLs with triage decisions.",
-    "generated_at":       "string — ISO timestamp",
-    "provider":           "string — search provider name",
-    "llm_triage_enabled": "boolean — was LLM triage enabled",
-    "llm_triage_applied": "boolean — was LLM triage actually applied (skipped when deterministic quality sufficient)",
-    "llm_triage_model":   "string — LLM model used for triage",
-    "query_count":        "number — total queries in breakdown",
-    "candidates_checked": "number — total unique URLs seen across all queries",
-    "urls_triaged":       "number — URLs that entered triage (deterministic or LLM)",
-    "urls_selected":      "number — URLs that made the final discovered list",
-    "urls_rejected":      "number — URLs rejected by protocol/denylist/cooldown/relevance/admission/triage",
-    "dedupe_input":       "number — raw SERP results before dedup",
-    "dedupe_output":      "number — SERP results after cross-provider dedup",
-    "duplicates_removed": "number — cross-provider duplicates removed",
-    "queries": [
-      {
-        "query":           "string — query text",
-        "hint_source":     "string — where this query originated (v2.host_plan, schema4_search_plan, etc.)",
-        "target_fields":   ["string — field keys this query targets"],
-        "doc_hint":        "string — expected document type",
-        "domain_hint":     "string — preferred domain",
-        "result_count":    "number — raw results returned by search provider",
-        "attempts":        "number — execution attempts (includes retries)",
-        "providers":       ["string — search providers that executed this query"],
-        "candidate_count": "number — URLs from this query that entered triage",
-        "selected_count":  "number — URLs from this query in final discovered list",
-        "candidates": [
-          {
-            "url":           "string",
-            "title":         "string (truncated to 220 chars)",
-            "snippet":       "string (truncated to 260 chars)",
-            "host":          "string — normalized hostname",
-            "tier":          "number|null — tier guess (1=manufacturer, 2=lab, 3=retailer, 4=aggregator, 5=unknown)",
-            "tier_name":     "string — human-readable tier name",
-            "doc_kind":      "string — guessed document type (spec_sheet, product_page, review, pdf, etc.)",
-            "triage_score":  "number — composite score from deterministic reranker or LLM triage",
-            "triage_reason": "string — reason for score/decision",
-            "decision":      "string — selected|not_selected|rejected|eligible|pending",
-            "reason_codes":  ["string — up to 8 reason codes (approved_domain, tier_1, brand_match, model_match, domain_hint_match, etc.)"],
-            "providers":     ["string — search providers that returned this URL"]
-          }
-        ]
-      }
-    ]
-  },
-
   "discoverCandidateSources_return": {
-    "_doc": "The full return value from discoverCandidateSources(). This is what runDiscoverySeedPlan receives back.",
-    "enabled":                   "boolean — true when discovery ran",
-    "discoveryKey":              "string — S3 key for discovery artifact",
-    "candidatesKey":             "string — S3 key for candidates artifact",
-    "candidates":                "Array<DiscoveredURL> — all discovered URLs (approved + candidate)",
-    "approvedUrls":              "string[] — URLs on approved domains (fed to planner.enqueue)",
-    "candidateUrls":             "string[] — URLs on non-approved domains (fed to planner.seedCandidates)",
-    "queries":                   "string[] — executed query strings",
-    "llm_queries":               "Array — raw LLM-generated query objects (forward investment)",
-    "search_profile":            "searchProfileFinal — the full cumulative profile (see above)",
-    "search_profile_key":        "string — S3 input key",
-    "search_profile_run_key":    "string — S3 run-scoped key",
-    "search_profile_latest_key": "string — S3 latest key",
-    "provider_state":            "object — search provider availability state",
-    "query_concurrency":         "number — concurrent query execution limit used",
-    "uber_search_plan":          "object|null — uber-aggressive plan (when mode=uber)",
-    "internal_satisfied":        "boolean — whether internal sources satisfied the search need",
-    "external_search_reason":    "string — reason external search was triggered",
-    "search_attempts":           "Array<SearchAttempt> — per-query execution log with result counts",
-    "search_journal":            "Array — execution journal entries",
-    "serp_explorer":             "object — same serp_explorer as on searchProfileFinal",
-    "seed_search_plan_output":   "object|null — full Schema 4 output (needset_planner_output.v2) attached by runDiscoverySeedPlan() after discovery. Contains panel, search_plan_handoff, planner, learning_writeback. Used by finalization derivation to enrich needSet without re-calling the LLM. Only present when config.enableSchema4SearchPlan is true and schema4 computation succeeded."
+    "enabled": "boolean",
+    "discoveryKey": "storage key for the discovery payload",
+    "candidatesKey": "storage key for the candidate payload",
+    "candidates": "Array<DiscoveredURL> - selected discovery rows after lane selection",
+    "approvedUrls": "string[] - fed to planner.enqueue(... forceApproved=true)",
+    "candidateUrls": "string[] - fed to planner.seedCandidates(...) when enabled",
+    "queries": "string[] - executed query strings",
+    "search_profile": "the executed searchProfileFinal artifact",
+    "provider_state": "resolved provider availability snapshot",
+    "uber_search_plan": "object|null - fallback query planner output from planUberQueries() when generated",
+    "internal_satisfied": "boolean",
+    "external_search_reason": "string|null",
+    "search_attempts": "Array<SearchAttempt>",
+    "search_journal": "Array<SearchJournalRow>",
+    "serp_explorer": "same object embedded on search_profile",
+    "seed_search_plan_output": "object|null - Schema 4 output attached by runDiscoverySeedPlan() so finalization can reuse it without another planner call"
   },
-
   "adapter_conversion": {
-    "_doc": "convertHandoffToExecutionPlan() in searchPlanHandoffAdapter.js. Converts Schema 4 handoff queries into the shape executeSearchQueries() expects. This is an internal intermediate — NOT the cumulative output.",
-    "queries":             ["string — flat array of query strings extracted from handoff"],
-    "selectedQueryRowMap": "Map<lowercase_query, RowObject> — lookup by lowercase query",
-    "queryRows": [
-      {
-        "query":         "string — original query text",
-        "source":        "schema4_planner",
-        "target_fields": ["string — field keys from handoff"],
-        "domain_hint":   "string — first preferred_domain or empty string",
-        "doc_hint":      "",
-        "hint_source":   "schema4_search_plan",
-        "family":        "string — query family from handoff",
-        "group_key":     "string — field group from handoff",
-        "query_hash":    "string — hash from handoff"
-      }
-    ],
-    "source": "schema4",
-    "_notes": {
-      "deduplication":    "Duplicate q values are removed (first wins). Falsy q values are skipped.",
-      "identity_guard":   "After conversion, enforceIdentityQueryGuard() filters out off-brand/off-model queries before execution.",
-      "interface_parity": "executeSearchQueries() receives queries and selectedQueryRowMap in exactly the same shape as the old 7-layer path."
-    }
+    "_doc": "convertHandoffToExecutionPlan() turns the Schema 4 handoff into the same row-map shape used by the fallback query-planner branch.",
+    "queries": "string[] - flat deduped query strings",
+    "selectedQueryRowMap": "Map<lowercase_query, RowObject>",
+    "queryRows": "Array<RowObject> with query, source, target_fields, domain_hint, doc_hint, hint_source, family, group_key, and query_hash",
+    "source": "'schema4'"
   }
 }

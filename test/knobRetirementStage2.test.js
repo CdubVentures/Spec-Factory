@@ -15,9 +15,10 @@ describe('Stage 2 knob retirement — hardcoded values', () => {
     assert.equal(config.serpTriageEnabled, true);
   });
 
-  it('llmSerpRerankEnabled is hardcoded true', () => {
+  it('llmSerpRerankEnabled is fully retired (no longer in config)', () => {
     const config = loadConfig();
-    assert.equal(config.llmSerpRerankEnabled, true);
+    // WHY: llmSerpRerankEnabled removed entirely — LLM escalation gated by serpTriageEnabled + uberMode
+    assert.equal(config.llmSerpRerankEnabled, undefined);
   });
 
   it('discoveryResultsPerQuery is hardcoded to 10', () => {

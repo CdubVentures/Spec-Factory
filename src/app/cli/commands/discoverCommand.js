@@ -1,3 +1,5 @@
+import { filterKeysByBrand } from '../cliHelpers.js';
+
 export function createDiscoverCommand({
   loadCategoryConfig,
   discoverCandidateSources,
@@ -55,24 +57,4 @@ export function createDiscoverCommand({
       runs,
     };
   };
-}
-
-async function filterKeysByBrand(storage, keys, brand) {
-  if (!brand) {
-    return keys;
-  }
-
-  const expected = String(brand).trim().toLowerCase();
-  const selected = [];
-  for (const key of keys) {
-    const job = await storage.readJsonOrNull(key);
-    if (!job) {
-      continue;
-    }
-    const currentBrand = String(job.identityLock?.brand || '').trim().toLowerCase();
-    if (currentBrand === expected) {
-      selected.push(key);
-    }
-  }
-  return selected;
 }

@@ -1,0 +1,552 @@
+/**
+ * Characterization tests for processDiscoveryResults.
+ *
+ * Locks the current output contract SHAPE before the Stage 06 SERP Triage rebuild.
+ * These tests verify keys, types, and nesting — not specific values, because
+ * the rebuild intentionally changes which URLs are selected.
+ */
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { processDiscoveryResults } from '../discoveryResultProcessor.js';
+
+// ---------------------------------------------------------------------------
+// Fixture factories
+// ---------------------------------------------------------------------------
+
+function makeCategoryConfig() {
+  return {
+    category: 'mouse',
+    fieldOrder: ['weight', 'sensor', 'dpi', 'polling_rate'],
+    sourceHosts: [
+      { host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer', tier: 1 },
+      { host: 'rtings.com', tierName: 'lab', role: 'review', tier: 2 },
+      { host: 'techpowerup.com', tierName: 'lab', role: 'review', tier: 2 },
+      { host: 'amazon.com', tierName: 'retailer', role: 'retailer', tier: 3 },
+      { host: 'spam-site.biz', tierName: 'denied', role: 'denied', tier: 4 },
+    ],
+    denylist: ['spam-site.biz'],
+  };
+}
+
+function makeIdentityLock() {
+  return { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' };
+}
+
+function makeConfig(overrides = {}) {
+  return {
+    serpTriageEnabled: true,
+    serpTriageMinScore: 0,
+    llmSerpRerankEnabled: false,
+    searchProvider: 'dual',
+    llmModelPlan: 'test-model',
+    s3InputPrefix: '_test',
+    discoveryResultsPerQuery: 10,
+    ...overrides,
+  };
+}
+
+function makeRawResults() {
+  return [
+    {
+      url: 'https://razer.com/gaming-mice/razer-viper-v3-pro',
+      title: 'Razer Viper V3 Pro',
+      snippet: 'Official product page for the Razer Viper V3 Pro gaming mouse',
+      provider: 'google',
+      query: 'razer viper v3 pro specs',
+    },
+    {
+      url: 'https://rtings.com/mouse/reviews/razer/viper-v3-pro',
+      title: 'Razer Viper V3 Pro Review - RTINGS',
+      snippet: 'Full lab review with measurements and latency testing',
+      provider: 'google',
+      query: 'razer viper v3 pro review',
+    },
+    {
+      url: 'https://amazon.com/dp/B0EXAMPLE',
+      title: 'Razer Viper V3 Pro Gaming Mouse',
+      snippet: 'Buy the Razer Viper V3 Pro',
+      provider: 'bing',
+      query: 'razer viper v3 pro specs',
+    },
+  ];
+}
+
+function makeSearchProfilePlanned() {
+  return {
+    category: 'mouse',
+    focus_fields: ['weight', 'sensor', 'dpi'],
+    variant_guard_terms: ['hyperspeed'],
+    identity_aliases: [],
+    query_rows: [
+      {
+        query: 'razer viper v3 pro specs',
+        hint_source: 'archetype_planner',
+        target_fields: ['weight', 'sensor', 'dpi'],
+        doc_hint: 'spec',
+        domain_hint: 'razer.com',
+      },
+      {
+        query: 'razer viper v3 pro review',
+        hint_source: 'archetype_planner',
+        target_fields: ['sensor', 'polling_rate'],
+        doc_hint: 'review',
+        domain_hint: '',
+      },
+    ],
+    queries: ['razer viper v3 pro specs', 'razer viper v3 pro review'],
+  };
+}
+
+function makeStubStorage() {
+  const written = [];
+  return {
+    written,
+    writeObject: async (key, buffer, opts) => {
+      written.push({ key, size: buffer.length, contentType: opts?.contentType });
+    },
+  };
+}
+
+function makeStubFrontierDb() {
+  return {
+    canonicalize: (url) => ({ canonical_url: url }),
+    shouldSkipUrl: () => ({ skip: false }),
+  };
+}
+
+function makeStubLogger() {
+  const events = [];
+  return {
+    events,
+    info: (event, payload) => events.push({ event, payload }),
+    warn: (event, payload) => events.push({ event, payload }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe('Characterization — processDiscoveryResults output contract shape', () => {
+  it('returns all required top-level keys with correct types', async () => {
+    const storage = makeStubStorage();
+    const logger = makeStubLogger();
+    const result = await processDiscoveryResults({
+      rawResults: makeRawResults(),
+      searchAttempts: [{ query: 'razer viper v3 pro specs', attempts: 1, result_count: 2, providers: ['google'] }],
+      searchJournal: [],
+      internalSatisfied: false,
+      externalSearchReason: 'missing_fields',
+      config: makeConfig(),
+      storage,
+      categoryConfig: makeCategoryConfig(),
+      job: { productId: 'test-product' },
+      runId: 'run-001',
+      logger,
+      runtimeTraceWriter: null,
+      frontierDb: makeStubFrontierDb(),
+      variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
+      identityLock: makeIdentityLock(),
+      brandResolution: { officialDomain: 'razer.com' },
+      missingFields: ['weight', 'sensor', 'dpi'],
+      learning: { fieldYield: {} },
+      llmContext: {},
+      searchProfileBase: { variant_guard_terms: ['hyperspeed'] },
+      llmQueries: [],
+      uberSearchPlan: null,
+      uberMode: false,
+      queries: ['razer viper v3 pro specs', 'razer viper v3 pro review'],
+      searchProfilePlanned: makeSearchProfilePlanned(),
+      searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
+      providerState: {},
+      queryConcurrency: 2,
+      discoveryCap: 20,
+      effectiveHostPlan: null,
+    });
+
+    // Top-level keys
+    assert.equal(result.enabled, true);
+    assert.equal(typeof result.discoveryKey, 'string');
+    assert.equal(typeof result.candidatesKey, 'string');
+    assert.ok(Array.isArray(result.candidates), 'candidates is array');
+    assert.ok(Array.isArray(result.approvedUrls), 'approvedUrls is array');
+    assert.ok(Array.isArray(result.candidateUrls), 'candidateUrls is array');
+    assert.ok(Array.isArray(result.queries), 'queries is array');
+    assert.ok(Array.isArray(result.llm_queries), 'llm_queries is array');
+    assert.ok(typeof result.search_profile === 'object' && result.search_profile !== null, 'search_profile is object');
+    assert.equal(typeof result.search_profile_key, 'string');
+    assert.equal(typeof result.search_profile_run_key, 'string');
+    assert.equal(typeof result.search_profile_latest_key, 'string');
+    assert.ok(typeof result.provider_state === 'object', 'provider_state is object');
+    assert.equal(typeof result.query_concurrency, 'number');
+    assert.equal(typeof result.internal_satisfied, 'boolean');
+    assert.equal(typeof result.external_search_reason, 'string');
+    assert.ok(Array.isArray(result.search_attempts), 'search_attempts is array');
+    assert.ok(Array.isArray(result.search_journal), 'search_journal is array');
+    assert.ok(typeof result.serp_explorer === 'object' && result.serp_explorer !== null, 'serp_explorer is object');
+  });
+
+  it('approvedUrls and candidateUrls are string arrays', async () => {
+    const result = await processDiscoveryResults({
+      rawResults: makeRawResults(),
+      searchAttempts: [],
+      searchJournal: [],
+      internalSatisfied: false,
+      externalSearchReason: '',
+      config: makeConfig(),
+      storage: makeStubStorage(),
+      categoryConfig: makeCategoryConfig(),
+      job: { productId: 'p1' },
+      runId: 'r1',
+      logger: makeStubLogger(),
+      runtimeTraceWriter: null,
+      frontierDb: makeStubFrontierDb(),
+      variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
+      identityLock: makeIdentityLock(),
+      brandResolution: { officialDomain: 'razer.com' },
+      missingFields: ['weight'],
+      learning: { fieldYield: {} },
+      llmContext: {},
+      searchProfileBase: { variant_guard_terms: [] },
+      llmQueries: [],
+      uberSearchPlan: null,
+      uberMode: false,
+      queries: ['razer viper v3 pro specs'],
+      searchProfilePlanned: makeSearchProfilePlanned(),
+      searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
+      providerState: {},
+      queryConcurrency: 1,
+      discoveryCap: 20,
+      effectiveHostPlan: null,
+    });
+
+    for (const url of result.approvedUrls) {
+      assert.equal(typeof url, 'string', 'each approvedUrl is a string');
+      assert.ok(url.startsWith('https://'), 'approvedUrl starts with https://');
+    }
+    for (const url of result.candidateUrls) {
+      assert.equal(typeof url, 'string', 'each candidateUrl is a string');
+      assert.ok(url.startsWith('https://'), 'candidateUrl starts with https://');
+    }
+    // Union of approved + candidate = all candidates
+    const allUrls = new Set([...result.approvedUrls, ...result.candidateUrls]);
+    const candidateUrls = new Set(result.candidates.map((c) => c.url));
+    assert.deepEqual(allUrls, candidateUrls, 'approved + candidate = all candidate URLs');
+  });
+
+  it('serp_explorer has expected top-level shape', async () => {
+    const result = await processDiscoveryResults({
+      rawResults: makeRawResults(),
+      searchAttempts: [],
+      searchJournal: [],
+      internalSatisfied: false,
+      externalSearchReason: '',
+      config: makeConfig(),
+      storage: makeStubStorage(),
+      categoryConfig: makeCategoryConfig(),
+      job: { productId: 'p1' },
+      runId: 'r1',
+      logger: makeStubLogger(),
+      runtimeTraceWriter: null,
+      frontierDb: makeStubFrontierDb(),
+      variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
+      identityLock: makeIdentityLock(),
+      brandResolution: { officialDomain: 'razer.com' },
+      missingFields: ['weight'],
+      learning: { fieldYield: {} },
+      llmContext: {},
+      searchProfileBase: { variant_guard_terms: [] },
+      llmQueries: [],
+      uberSearchPlan: null,
+      uberMode: false,
+      queries: ['razer viper v3 pro specs'],
+      searchProfilePlanned: makeSearchProfilePlanned(),
+      searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
+      providerState: {},
+      queryConcurrency: 1,
+      discoveryCap: 20,
+      effectiveHostPlan: null,
+    });
+
+    const se = result.serp_explorer;
+    assert.ok(se !== null && typeof se === 'object', 'serp_explorer exists');
+
+    // Capture actual keys for shape contract
+    const requiredKeys = [
+      'generated_at', 'llm_triage_enabled', 'llm_triage_applied',
+      'query_count', 'candidates_checked', 'urls_triaged',
+      'urls_selected', 'urls_rejected',
+      'dedupe_input', 'dedupe_output', 'duplicates_removed', 'queries',
+    ];
+    for (const key of requiredKeys) {
+      assert.ok(key in se, `serp_explorer has key '${key}', got keys: ${Object.keys(se).join(', ')}`);
+    }
+    assert.ok(Array.isArray(se.queries), 'serp_explorer.queries is array');
+    assert.equal(typeof se.generated_at, 'string');
+    assert.equal(typeof se.llm_triage_enabled, 'boolean');
+    assert.equal(typeof se.llm_triage_applied, 'boolean');
+    assert.equal(typeof se.query_count, 'number');
+    assert.equal(typeof se.candidates_checked, 'number');
+    assert.equal(typeof se.urls_triaged, 'number');
+    assert.equal(typeof se.urls_selected, 'number');
+    assert.equal(typeof se.urls_rejected, 'number');
+    assert.equal(typeof se.dedupe_input, 'number');
+    assert.equal(typeof se.dedupe_output, 'number');
+    assert.equal(typeof se.duplicates_removed, 'number');
+  });
+
+  it('serp_explorer query rows have expected candidate shape', async () => {
+    const result = await processDiscoveryResults({
+      rawResults: makeRawResults(),
+      searchAttempts: [],
+      searchJournal: [],
+      internalSatisfied: false,
+      externalSearchReason: '',
+      config: makeConfig(),
+      storage: makeStubStorage(),
+      categoryConfig: makeCategoryConfig(),
+      job: { productId: 'p1' },
+      runId: 'r1',
+      logger: makeStubLogger(),
+      runtimeTraceWriter: null,
+      frontierDb: makeStubFrontierDb(),
+      variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
+      identityLock: makeIdentityLock(),
+      brandResolution: { officialDomain: 'razer.com' },
+      missingFields: ['weight'],
+      learning: { fieldYield: {} },
+      llmContext: {},
+      searchProfileBase: { variant_guard_terms: [] },
+      llmQueries: [],
+      uberSearchPlan: null,
+      uberMode: false,
+      queries: ['razer viper v3 pro specs', 'razer viper v3 pro review'],
+      searchProfilePlanned: makeSearchProfilePlanned(),
+      searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
+      providerState: {},
+      queryConcurrency: 1,
+      discoveryCap: 20,
+      effectiveHostPlan: null,
+    });
+
+    const queryRow = result.serp_explorer.queries.find((q) => q.candidates.length > 0);
+    assert.ok(queryRow, 'at least one query row has candidates');
+
+    // Query row shape
+    assert.equal(typeof queryRow.query, 'string');
+    assert.equal(typeof queryRow.hint_source, 'string');
+    assert.ok(Array.isArray(queryRow.target_fields), 'target_fields is array');
+    assert.equal(typeof queryRow.doc_hint, 'string');
+    assert.equal(typeof queryRow.domain_hint, 'string');
+    assert.equal(typeof queryRow.result_count, 'number');
+    assert.equal(typeof queryRow.attempts, 'number');
+    assert.ok(Array.isArray(queryRow.providers), 'providers is array');
+    assert.equal(typeof queryRow.candidate_count, 'number');
+    assert.equal(typeof queryRow.selected_count, 'number');
+
+    // Candidate shape
+    const candidate = queryRow.candidates[0];
+    assert.equal(typeof candidate.url, 'string');
+    assert.equal(typeof candidate.title, 'string');
+    assert.equal(typeof candidate.snippet, 'string');
+    assert.equal(typeof candidate.host, 'string');
+    assert.equal(typeof candidate.doc_kind, 'string');
+    assert.equal(typeof candidate.triage_score, 'number');
+    assert.equal(typeof candidate.triage_reason, 'string');
+    assert.equal(typeof candidate.decision, 'string');
+    assert.ok(Array.isArray(candidate.reason_codes), 'reason_codes is array');
+    assert.ok(Array.isArray(candidate.providers), 'providers is array');
+  });
+
+  it('search_profile (searchProfileFinal) has expected shape', async () => {
+    const result = await processDiscoveryResults({
+      rawResults: makeRawResults(),
+      searchAttempts: [],
+      searchJournal: [],
+      internalSatisfied: false,
+      externalSearchReason: '',
+      config: makeConfig(),
+      storage: makeStubStorage(),
+      categoryConfig: makeCategoryConfig(),
+      job: { productId: 'p1' },
+      runId: 'r1',
+      logger: makeStubLogger(),
+      runtimeTraceWriter: null,
+      frontierDb: makeStubFrontierDb(),
+      variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
+      identityLock: makeIdentityLock(),
+      brandResolution: { officialDomain: 'razer.com' },
+      missingFields: ['weight'],
+      learning: { fieldYield: {} },
+      llmContext: {},
+      searchProfileBase: { variant_guard_terms: [] },
+      llmQueries: [],
+      uberSearchPlan: null,
+      uberMode: false,
+      queries: ['razer viper v3 pro specs'],
+      searchProfilePlanned: makeSearchProfilePlanned(),
+      searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
+      providerState: {},
+      queryConcurrency: 1,
+      discoveryCap: 20,
+      effectiveHostPlan: null,
+    });
+
+    const sp = result.search_profile;
+    assert.equal(typeof sp.generated_at, 'string');
+    assert.equal(sp.status, 'executed');
+    assert.ok(Array.isArray(sp.query_rows), 'query_rows is array');
+    assert.ok(Array.isArray(sp.query_stats), 'query_stats is array');
+    assert.equal(typeof sp.discovered_count, 'number');
+    assert.equal(typeof sp.approved_count, 'number');
+    assert.equal(typeof sp.candidate_count, 'number');
+    assert.equal(typeof sp.llm_query_planning, 'boolean');
+    assert.equal(typeof sp.llm_query_model, 'string');
+    assert.equal(typeof sp.llm_serp_triage, 'boolean');
+    assert.equal(typeof sp.llm_serp_triage_model, 'string');
+    assert.ok(typeof sp.serp_explorer === 'object', 'serp_explorer embedded in search_profile');
+  });
+
+  it('storage receives exactly 2 writes (discovery + candidates)', async () => {
+    const storage = makeStubStorage();
+    await processDiscoveryResults({
+      rawResults: makeRawResults(),
+      searchAttempts: [],
+      searchJournal: [],
+      internalSatisfied: false,
+      externalSearchReason: '',
+      config: makeConfig(),
+      storage,
+      categoryConfig: makeCategoryConfig(),
+      job: { productId: 'p1' },
+      runId: 'r1',
+      logger: makeStubLogger(),
+      runtimeTraceWriter: null,
+      frontierDb: makeStubFrontierDb(),
+      variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
+      identityLock: makeIdentityLock(),
+      brandResolution: { officialDomain: 'razer.com' },
+      missingFields: ['weight'],
+      learning: { fieldYield: {} },
+      llmContext: {},
+      searchProfileBase: { variant_guard_terms: [] },
+      llmQueries: [],
+      uberSearchPlan: null,
+      uberMode: false,
+      queries: ['razer viper v3 pro specs'],
+      searchProfilePlanned: makeSearchProfilePlanned(),
+      searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
+      providerState: {},
+      queryConcurrency: 1,
+      discoveryCap: 20,
+      effectiveHostPlan: null,
+    });
+
+    // 2 storage writes: discoveryPayload + candidatePayload
+    // Plus writeSearchProfileArtifacts writes (variable count)
+    assert.ok(storage.written.length >= 2, `expected >= 2 storage writes, got ${storage.written.length}`);
+    assert.ok(
+      storage.written.every((w) => w.contentType === 'application/json'),
+      'all writes are application/json'
+    );
+  });
+
+  it('logger emits expected event names', async () => {
+    const logger = makeStubLogger();
+    await processDiscoveryResults({
+      rawResults: makeRawResults(),
+      searchAttempts: [],
+      searchJournal: [],
+      internalSatisfied: false,
+      externalSearchReason: '',
+      config: makeConfig(),
+      storage: makeStubStorage(),
+      categoryConfig: makeCategoryConfig(),
+      job: { productId: 'p1' },
+      runId: 'r1',
+      logger,
+      runtimeTraceWriter: null,
+      frontierDb: makeStubFrontierDb(),
+      variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
+      identityLock: makeIdentityLock(),
+      brandResolution: { officialDomain: 'razer.com' },
+      missingFields: ['weight'],
+      learning: { fieldYield: {} },
+      llmContext: {},
+      searchProfileBase: { variant_guard_terms: [] },
+      llmQueries: [],
+      uberSearchPlan: null,
+      uberMode: false,
+      queries: ['razer viper v3 pro specs'],
+      searchProfilePlanned: makeSearchProfilePlanned(),
+      searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
+      providerState: {},
+      queryConcurrency: 1,
+      discoveryCap: 20,
+      effectiveHostPlan: null,
+    });
+
+    const eventNames = logger.events.map((e) => e.event);
+    assert.ok(eventNames.includes('discovery_serp_deduped'), 'emits discovery_serp_deduped');
+    assert.ok(eventNames.includes('domains_classified'), 'emits domains_classified');
+    assert.ok(eventNames.includes('discovery_results_reranked'), 'emits discovery_results_reranked');
+  });
+
+  it('hard-drops denied hosts and non-https, keeps valid candidates', async () => {
+    const rawResults = [
+      ...makeRawResults(),
+      {
+        url: 'https://spam-site.biz/razer-viper',
+        title: 'Spam', snippet: 'Spam', provider: 'google',
+        query: 'razer viper v3 pro specs',
+      },
+      {
+        url: 'http://razer.com/gaming-mice/razer-viper-v3-pro',
+        title: 'HTTP Razer', snippet: 'HTTP', provider: 'bing',
+        query: 'razer viper v3 pro specs',
+      },
+    ];
+
+    const result = await processDiscoveryResults({
+      rawResults,
+      searchAttempts: [],
+      searchJournal: [],
+      internalSatisfied: false,
+      externalSearchReason: '',
+      config: makeConfig(),
+      storage: makeStubStorage(),
+      categoryConfig: makeCategoryConfig(),
+      job: { productId: 'p1' },
+      runId: 'r1',
+      logger: makeStubLogger(),
+      runtimeTraceWriter: null,
+      frontierDb: makeStubFrontierDb(),
+      variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
+      identityLock: makeIdentityLock(),
+      brandResolution: { officialDomain: 'razer.com' },
+      missingFields: ['weight'],
+      learning: { fieldYield: {} },
+      llmContext: {},
+      searchProfileBase: { variant_guard_terms: [] },
+      llmQueries: [],
+      uberSearchPlan: null,
+      uberMode: false,
+      queries: ['razer viper v3 pro specs'],
+      searchProfilePlanned: makeSearchProfilePlanned(),
+      searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
+      providerState: {},
+      queryConcurrency: 1,
+      discoveryCap: 20,
+      effectiveHostPlan: null,
+    });
+
+    // Denied host must not appear in candidates
+    const candidateUrls = result.candidates.map((c) => c.url);
+    assert.ok(
+      !candidateUrls.some((u) => u.includes('spam-site.biz')),
+      'denied host excluded from candidates'
+    );
+    // Valid HTTPS candidates should be present
+    assert.ok(candidateUrls.length >= 1, 'at least one valid candidate survives');
+  });
+});

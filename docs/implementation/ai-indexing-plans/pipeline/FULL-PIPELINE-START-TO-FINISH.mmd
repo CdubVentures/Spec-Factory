@@ -1,61 +1,52 @@
 %%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Segoe UI', 'fontSize': '24px', 'primaryColor': '#0f4c81', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0a3558', 'secondaryColor': '#d9eefc', 'tertiaryColor': '#f4f8fb', 'lineColor': '#264653' }, 'flowchart': { 'curve': 'basis', 'nodeSpacing': 64, 'rankSpacing': 84 } }}%%
 
 flowchart LR
-    subgraph PLAN["Planning And Discovery (01-05)"]
+    subgraph BOOT["Bootstrap"]
         direction TB
-        S01["01 NeedSet<br/>need-driven field state<br/>field histories + planner_seed<br/>summary + blockers"]
-        S02["02 Brand Resolver<br/>official/support domain<br/>aliases + confidence<br/>host promotion hints"]
-        S03["03 Search Planner<br/>focus_groups + planner output<br/>search_plan_handoff<br/>learning writeback seeds"]
-        S04["04 Query Journey<br/>identity guard + query rows<br/>execution plan + reject log<br/>selection trace"]
-        S05["05 Search Execution<br/>rawResults + searchAttempts<br/>searchJournal + provider routing<br/>external search reason"]
-        S01 --> S02 --> S03 --> S04 --> S05
+        B0["runProduct()<br/>run id + logger + trace writer<br/>identity lock + runtime overrides<br/>planner, frontier, learning, resume"]
     end
 
-    subgraph DISCOVER["Triage And Fetch (06-08)"]
+    subgraph DISCOVERY["Discovery Seed (01-07)"]
         direction TB
-        S06["06 SERP Triage<br/>candidates + approvedUrls<br/>candidateUrls + searchProfileFinal<br/>domain safety + rerank"]
-        S07["07 Planner Queue Seeding<br/>approved queue + candidate queue<br/>manufacturer routing + snapshots<br/>planner caps and filters"]
-        S08["08 Fetch And Parse Entry<br/>mode-aware fetch + artifact persistence<br/>page HTML + screenshot + PDFs<br/>network payloads + host budgets"]
-        S06 --> S07 --> S08
+        S01["01 NeedSet<br/>field state + history<br/>summary + blockers<br/>planner_seed"]
+        S02["02 Brand Resolver<br/>official/support domain<br/>aliases + confidence<br/>auto-promotion hints"]
+        S03["03 Search Planner<br/>Schema 3 context<br/>optional Schema 4 handoff<br/>panel + learning writeback"]
+        S04["04 Query Journey<br/>Schema 4 adapter or fallback planner<br/>identity guard + reject log<br/>selected query rows"]
+        S05["05 Search Results<br/>internal-first search<br/>frontier reuse + provider execution<br/>plan-only fallback"]
+        S06["06 SERP Triage<br/>hard drops + soft labels<br/>lane quotas + optional rerank<br/>searchProfileFinal + serp_explorer"]
+        S07["07 Queue Seeding<br/>approvedUrls -> enqueue<br/>candidateUrls -> seedCandidates<br/>SourcePlanner revalidation"]
+        S01 --> S02 --> S03 --> S04 --> S05 --> S06 --> S07
     end
 
-    subgraph PARSE["Parsing And Source Evaluation (09-10)"]
+    subgraph EXEC["Planner Processing And Source Execution (08-10)"]
         direction TB
-        S09["09 Fetch To Extraction<br/>bucket flattening + DOM/manual parse<br/>evidence pack + component resolver<br/>adapter + optional LLM extraction"]
-        S10["10 Extraction To Identity Gating<br/>anchor checks + source identity<br/>identityGatedCandidates + parserHealth<br/>manufacturer mismatch sentinel"]
-        S09 --> S10
+        S08["08 Fetch Entry<br/>planner dequeue + fetch scheduling<br/>artifact persistence + host budgets<br/>raw page payloads"]
+        S09["09 Extraction<br/>deterministic extractors + adapters<br/>Evidence Pack V2 + optional LLM<br/>phase08FieldContexts + prime rows"]
+        S10["10 Source Identity<br/>anchor checks + source identity<br/>identity-gated candidates<br/>parserHealth"]
+        S08 --> S09 --> S10
     end
 
-    subgraph RESOLVE["Consensus, Validation, And Output (11-13)"]
+    subgraph FINALIZE["Finalization And Completion (11-13)"]
         direction TB
-        S11["11 Identity Gating To Consensus<br/>clustered field selection + pass targets<br/>provenance + candidates<br/>agreementScore + weak-field lists"]
-        S12["12 Consensus To Validation<br/>critic + validator + runtime gate<br/>needSet + traffic light + publishable<br/>phase08 extraction + prime sources"]
-        S13["13 Validation To Output<br/>learning gate + exports + promotion<br/>run_completed + run_result<br/>SpecDb + data-change events"]
+        S11["11 Consensus<br/>clustered field selection<br/>provenance + candidates<br/>agreementScore + pass-target lists"]
+        S12["12 Finalization Derivation<br/>synthetic source ingestion<br/>critic + validator + inference + runtime gate<br/>needSet + traffic light + publishability"]
+        S13["13 Completion Lifecycle<br/>schema packets + AJV validation<br/>run_completed + run_result<br/>learning + exports + final promotion"]
         S11 --> S12 --> S13
     end
 
-    BRAND["Brand Sidecar<br/>parallel to NeedSet and planning<br/>feeds domain hints + aliases<br/>supports host promotion"]
-    EVENTS["Data Change And Runtime Ops<br/>finalization telemetry packets<br/>broadcast + review surfaces<br/>observability counters"]
-    LEARN["Learning Stores<br/>urlMemory + domainFieldYield<br/>fieldAnchors + componentLexicon<br/>acceptedUpdates only"]
-    FINAL["Durable Outputs<br/>runs/ + latest/ + final/<br/>history JSONL + evidence packs<br/>SpecDb dual-write"]
+    ART["Durable Outputs<br/>runs/ + latest/ + final/<br/>history/runs.jsonl + evidence/sources.jsonl<br/>logs/events.jsonl.gz + logs/summary.json"]
+    SCHEMA["Indexing Schema Packets<br/>sourceCollection + itemPacket + runMetaPacket<br/>validation summary emitted during finalization"]
 
-    PLAN --> DISCOVER --> PARSE --> RESOLVE
-    S05 --> S06
-    S08 --> S09
-    S10 --> S11
-    S01 -.-> BRAND
-    BRAND -.-> S03
-    S12 -.->|"repair signals + needSet"| S01
-    S13 --> FINAL
-    S13 --> LEARN
-    S13 --> EVENTS
+    B0 --> DISCOVERY
+    S07 --> EXEC
+    S10 --> FINALIZE
+    S03 -.->|seed_search_plan_output| S12
+    S12 -.->|"updated NeedSet<br/>+ repair reasoning"| S01
+    S13 --> ART
+    S13 --> SCHEMA
 
     classDef phase fill:#d9eefc,stroke:#0f4c81,stroke-width:3px,color:#0b1f33
-    classDef sidecar fill:#fef3d6,stroke:#b7791f,stroke-width:2px,color:#4a3410
     classDef durable fill:#dff3e4,stroke:#2f855a,stroke-width:3px,color:#123524
-    classDef ops fill:#fce7ef,stroke:#b83280,stroke-width:2px,color:#4a1230
 
-    class S01,S02,S03,S04,S05,S06,S07,S08,S09,S10,S11,S12,S13 phase
-    class BRAND sidecar
-    class FINAL,LEARN durable
-    class EVENTS ops
+    class B0,S01,S02,S03,S04,S05,S06,S07,S08,S09,S10,S11,S12,S13 phase
+    class ART,SCHEMA durable

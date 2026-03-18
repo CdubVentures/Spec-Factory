@@ -1,35 +1,34 @@
 {
-  "_doc": "Final query payload that hits SearXNG via runSearchProviders(). Identical regardless of Schema 4 or old path origin.",
-
-  "queries": ["string — the actual search strings sent to SearXNG"],
-
+  "_doc": "Provider-facing query payload for executeSearchQueries() and runSearchProviders(). Identical regardless of Schema 4 or fallback planner origin. Updated 2026-03-18.",
+  "queries": [
+    "string - the query text sent to the internal corpus, frontier cache checks, and internet providers"
+  ],
   "per_query_metadata": {
     "resolved_from": "selectedQueryRowMap.get(query.toLowerCase()) or profileQueryRowMap.get(query.toLowerCase())",
-    "target_fields": ["string — fields this query aims to resolve (used for post-triage field attribution)"],
-    "domain_hint": "string — preferred domain (used for site: prefix by some providers)",
-    "doc_hint": "string — expected document type (spec_sheet, review, manual)",
-    "hint_source": "string — origin of the hint: schema4_search_plan | targeted | host_plan | base_template",
-    "family": "string — query family (manufacturer_html, manual_pdf, etc.)"
+    "target_fields": "field keys this query aims to resolve",
+    "domain_hint": "preferred domain hint",
+    "doc_hint": "expected document type hint",
+    "hint_source": "schema4_search_plan | targeted | host_plan | base_template | fallback planner metadata",
+    "family": "query family when present"
   },
-
   "execution_config": {
-    "executionQueryLimit": "number — max queries to attempt",
-    "queryConcurrency": "number — parallel query slots (default 1)",
-    "resultsPerQuery": "number — max results per query (default 10)",
-    "searchProvider": "string — dual | searxng | bing | google | duckduckgo"
+    "executionQueryLimit": "number - max queries to attempt",
+    "queryConcurrency": "number - parallel query slots",
+    "resultsPerQuery": "number - target results per query",
+    "searchEngines": "string - configured internet providers from config.searchEngines",
+    "providerState": "resolved runtime provider availability snapshot"
   },
-
   "execution_phases": [
-    "1. Internal corpus search (if discoveryInternalFirst=true) via _searchSourceCorpusFn",
-    "2. Internet search via _runSearchProvidersFn (concurrent per queryConcurrency)",
-    "3. Plan-only fallback (if no provider available) via buildPlanOnlyResults()"
+    "1. Internal corpus search when discoveryInternalFirst=true.",
+    "2. Frontier query cooldown reuse before live provider execution.",
+    "3. Internet provider execution through runSearchProviders().",
+    "4. Plan-only manufacturer URL fallback when no provider path is available and no results were collected."
   ],
-
   "output": {
-    "rawResults": ["{ url, title, snippet, provider, query, ... }"],
-    "searchAttempts": ["{ query, provider, result_count, reason_code, duration_ms }"],
-    "searchJournal": ["{ ts, query, provider, result_count, reason_code }"],
-    "internalSatisfied": "boolean — internal corpus met required field targets",
-    "externalSearchReason": "string | null — why external search was run/skipped"
+    "rawResults": "provider rows with url, title, snippet, provider, query, rank, and related fields",
+    "searchAttempts": "per-query execution records",
+    "searchJournal": "execution journal rows",
+    "internalSatisfied": "boolean",
+    "externalSearchReason": "string|null"
   }
 }

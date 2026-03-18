@@ -184,6 +184,7 @@ export async function validateComponentMatches({
         config,
         reason: 'validate_component_matches',
         role: 'validate',
+        phase: 'validate',
         system: buildSystemPrompt(reasoningNote),
         user: buildUserPayload(typeItems),
         jsonSchema: responseSchema(),

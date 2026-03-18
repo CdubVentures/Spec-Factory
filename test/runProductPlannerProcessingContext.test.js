@@ -67,7 +67,7 @@ test('buildRunProductPlannerProcessingContext preserves runProduct planner lifec
 
   const context = buildRunProductPlannerProcessingContext({
     bootstrapState,
-    config: { searchProvider: 'serpapi', maxRunSeconds: 999 },
+    config: { searchEngines: 'serpapi', maxRunSeconds: 999 },
     getRuntimeOverridesFn: () => ({ blocked_domains: ['runtime.example.com'] }),
     syncRuntimeOverridesFn: async () => ({ blocked_domains: ['runtime.example.com'] }),
     modeAwareFetcherRegistry: {

@@ -6,6 +6,9 @@ import type {
 } from '../types/settingPrimitiveTypes';
 import { AdvancedSettingsBlock, FlowOptionPanel, MasterSwitchRow, SettingGroupBlock, SettingNumberInput, SettingRow, SettingToggle } from '../components/RuntimeFlowPrimitives';
 
+const OBSERVABILITY_PHASE_TIP =
+  'Phase coverage: cross-cutting across stages 01-13.';
+
 interface RuntimeFlowObservabilitySectionProps {
   runtimeDraft: RuntimeDraft;
   runtimeSettingsReady: boolean;
@@ -37,7 +40,7 @@ export const RuntimeFlowObservabilitySection = memo(function RuntimeFlowObservab
       >
         <div id={runtimeSubStepDomId('observability-trace-core')} className="scroll-mt-24" />
         <SettingGroupBlock title="Trace Configuration">
-          <MasterSwitchRow label="Runtime Trace Enabled" tip="Master toggle for runtime trace capture and trace stream emission." hint="Controls trace ring, LLM payload, and screencast settings below">
+          <MasterSwitchRow label="Runtime Trace Enabled" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: runtime event and trace emission used by Runtime Ops.\nWhat this controls: whether the runtime records trace packets and emits the trace stream at all.`} hint="Controls trace ring, LLM payload, and screencast settings below">
             <SettingToggle
               checked={runtimeDraft.runtimeTraceEnabled}
               onChange={(next) => updateDraft('runtimeTraceEnabled', next)}
@@ -46,21 +49,21 @@ export const RuntimeFlowObservabilitySection = memo(function RuntimeFlowObservab
           </MasterSwitchRow>
           <SettingRow
             label="Fetch Trace Ring Size"
-            tip="In-memory ring size for fetch events."
+            tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: in-memory trace buffering for fetch work.\nWhat this controls: how many fetch events are retained in memory before older ones roll off.`}
             disabled={traceControlsLocked}
           >
             <SettingNumberInput draftKey="runtimeTraceFetchRing" value={runtimeDraft.runtimeTraceFetchRing} bounds={getNumberBounds('runtimeTraceFetchRing')} step={1} disabled={!runtimeSettingsReady || traceControlsLocked} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
           <SettingRow
             label="LLM Trace Ring Size"
-            tip="In-memory ring size for LLM trace events."
+            tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: in-memory trace buffering for LLM work.\nWhat this controls: how many LLM events are retained in memory before older ones roll off.`}
             disabled={traceControlsLocked}
           >
             <SettingNumberInput draftKey="runtimeTraceLlmRing" value={runtimeDraft.runtimeTraceLlmRing} bounds={getNumberBounds('runtimeTraceLlmRing')} step={1} disabled={!runtimeSettingsReady || traceControlsLocked} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
           <SettingRow
             label="Trace LLM Payloads"
-            tip="Capture LLM prompt/response payload previews in runtime trace events."
+            tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: LLM trace payload capture.\nWhat this controls: whether prompt and response previews are attached to runtime trace events for LLM calls.`}
             disabled={traceControlsLocked}
           >
             <SettingToggle
@@ -69,7 +72,7 @@ export const RuntimeFlowObservabilitySection = memo(function RuntimeFlowObservab
               disabled={!runtimeSettingsReady || traceControlsLocked}
             />
           </SettingRow>
-          <SettingRow label="Events NDJSON Write" tip="Write runtime events to NDJSON stream output.">
+          <SettingRow label="Events NDJSON Write" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: event-stream persistence.\nWhat this controls: whether runtime events are written to an NDJSON artifact on disk.`}>
             <SettingToggle
               checked={runtimeDraft.eventsJsonWrite}
               onChange={(next) => updateDraft('eventsJsonWrite', next)}
@@ -81,7 +84,7 @@ export const RuntimeFlowObservabilitySection = memo(function RuntimeFlowObservab
 
         <div id={runtimeSubStepDomId('observability-trace-outputs')} className="scroll-mt-24" />
         <SettingGroupBlock title="Data Streams">
-          <SettingRow label="Authority Snapshot Enabled" tip="Emit authority snapshot payloads for cross-surface settings propagation diagnostics.">
+          <SettingRow label="Authority Snapshot Enabled" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: settings and authority propagation diagnostics.\nWhat this controls: whether authority snapshot payloads are emitted for cross-surface debugging.`}>
             <SettingToggle
               checked={runtimeDraft.authoritySnapshotEnabled}
               onChange={(next) => updateDraft('authoritySnapshotEnabled', next)}
@@ -89,42 +92,42 @@ export const RuntimeFlowObservabilitySection = memo(function RuntimeFlowObservab
             />
           </SettingRow>
           <AdvancedSettingsBlock title="Dual-Write Toggles" count={6}>
-            <SettingRow label="Queue JSON Write" tip="Dual-write queue data to JSON for migration safety.">
+            <SettingRow label="Queue JSON Write" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: queue persistence diagnostics.\nWhat this controls: whether queue data is dual-written to JSON for migration safety.`}>
               <SettingToggle
                 checked={runtimeDraft.queueJsonWrite}
                 onChange={(next) => updateDraft('queueJsonWrite', next)}
                 disabled={!runtimeSettingsReady}
               />
             </SettingRow>
-            <SettingRow label="Billing JSON Write" tip="Dual-write billing data to JSON for migration safety.">
+            <SettingRow label="Billing JSON Write" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: billing persistence diagnostics.\nWhat this controls: whether billing data is dual-written to JSON for migration safety.`}>
               <SettingToggle
                 checked={runtimeDraft.billingJsonWrite}
                 onChange={(next) => updateDraft('billingJsonWrite', next)}
                 disabled={!runtimeSettingsReady}
               />
             </SettingRow>
-            <SettingRow label="Intel JSON Write" tip="Dual-write discovery intel data to JSON for migration safety.">
+            <SettingRow label="Intel JSON Write" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: discovery-intel persistence diagnostics.\nWhat this controls: whether discovery intel data is dual-written to JSON for migration safety.`}>
               <SettingToggle
                 checked={runtimeDraft.intelJsonWrite}
                 onChange={(next) => updateDraft('intelJsonWrite', next)}
                 disabled={!runtimeSettingsReady}
               />
             </SettingRow>
-            <SettingRow label="Corpus JSON Write" tip="Dual-write corpus/evidence data to JSON for migration safety.">
+            <SettingRow label="Corpus JSON Write" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: corpus and evidence persistence diagnostics.\nWhat this controls: whether corpus and evidence data are dual-written to JSON for migration safety.`}>
               <SettingToggle
                 checked={runtimeDraft.corpusJsonWrite}
                 onChange={(next) => updateDraft('corpusJsonWrite', next)}
                 disabled={!runtimeSettingsReady}
               />
             </SettingRow>
-            <SettingRow label="Learning JSON Write" tip="Dual-write learning store data to JSON for migration safety.">
+            <SettingRow label="Learning JSON Write" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: learning-store persistence diagnostics.\nWhat this controls: whether learning-store data is dual-written to JSON for migration safety.`}>
               <SettingToggle
                 checked={runtimeDraft.learningJsonWrite}
                 onChange={(next) => updateDraft('learningJsonWrite', next)}
                 disabled={!runtimeSettingsReady}
               />
             </SettingRow>
-            <SettingRow label="Cache JSON Write" tip="Dual-write cache data to JSON for migration safety.">
+            <SettingRow label="Cache JSON Write" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: cache persistence diagnostics.\nWhat this controls: whether cache data is dual-written to JSON for migration safety.`}>
               <SettingToggle
                 checked={runtimeDraft.cacheJsonWrite}
                 onChange={(next) => updateDraft('cacheJsonWrite', next)}
@@ -136,7 +139,7 @@ export const RuntimeFlowObservabilitySection = memo(function RuntimeFlowObservab
 
         <div id={runtimeSubStepDomId('observability-trace-video')} className="scroll-mt-24" />
         <SettingGroupBlock title="Video Capture">
-          <MasterSwitchRow label="Runtime Screencast Enabled" tip="Enable live browser screencast frame streaming for Runtime Ops." hint="Controls screencast quality settings below">
+          <MasterSwitchRow label="Runtime Screencast Enabled" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: Runtime Ops live browser instrumentation.\nWhat this controls: whether browser-backed fetch work can publish screencast frames for operators.`} hint="Controls screencast quality settings below">
             <SettingToggle
               checked={runtimeDraft.runtimeScreencastEnabled}
               onChange={(next) => updateDraft('runtimeScreencastEnabled', next)}
@@ -144,16 +147,16 @@ export const RuntimeFlowObservabilitySection = memo(function RuntimeFlowObservab
             />
           </MasterSwitchRow>
           <AdvancedSettingsBlock title="Screencast Quality" count={4}>
-            <SettingRow label="Runtime Screencast FPS" tip="Target screencast frame rate (frames per second)." disabled={!runtimeDraft.runtimeScreencastEnabled}>
+            <SettingRow label="Runtime Screencast FPS" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: screencast encoder timing.\nWhat this controls: the target frame rate for emitted screencast frames.`} disabled={!runtimeDraft.runtimeScreencastEnabled}>
               <SettingNumberInput draftKey="runtimeScreencastFps" value={runtimeDraft.runtimeScreencastFps} bounds={getNumberBounds('runtimeScreencastFps')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.runtimeScreencastEnabled} className={inputCls} onNumberChange={onNumberChange} />
             </SettingRow>
-            <SettingRow label="Runtime Screencast Quality" tip="JPEG quality for screencast frames." disabled={!runtimeDraft.runtimeScreencastEnabled}>
+            <SettingRow label="Runtime Screencast Quality" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: screencast encoding.\nWhat this controls: the JPEG quality used for screencast frames.`} disabled={!runtimeDraft.runtimeScreencastEnabled}>
               <SettingNumberInput draftKey="runtimeScreencastQuality" value={runtimeDraft.runtimeScreencastQuality} bounds={getNumberBounds('runtimeScreencastQuality')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.runtimeScreencastEnabled} className={inputCls} onNumberChange={onNumberChange} />
             </SettingRow>
-            <SettingRow label="Runtime Screencast Max Width" tip="Maximum screencast frame width in pixels." disabled={!runtimeDraft.runtimeScreencastEnabled}>
+            <SettingRow label="Runtime Screencast Max Width" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: screencast frame sizing.\nWhat this controls: the maximum width allowed for screencast frames.`} disabled={!runtimeDraft.runtimeScreencastEnabled}>
               <SettingNumberInput draftKey="runtimeScreencastMaxWidth" value={runtimeDraft.runtimeScreencastMaxWidth} bounds={getNumberBounds('runtimeScreencastMaxWidth')} step={10} disabled={!runtimeSettingsReady || !runtimeDraft.runtimeScreencastEnabled} className={inputCls} onNumberChange={onNumberChange} />
             </SettingRow>
-            <SettingRow label="Runtime Screencast Max Height" tip="Maximum screencast frame height in pixels." disabled={!runtimeDraft.runtimeScreencastEnabled}>
+            <SettingRow label="Runtime Screencast Max Height" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: screencast frame sizing.\nWhat this controls: the maximum height allowed for screencast frames.`} disabled={!runtimeDraft.runtimeScreencastEnabled}>
               <SettingNumberInput draftKey="runtimeScreencastMaxHeight" value={runtimeDraft.runtimeScreencastMaxHeight} bounds={getNumberBounds('runtimeScreencastMaxHeight')} step={10} disabled={!runtimeSettingsReady || !runtimeDraft.runtimeScreencastEnabled} className={inputCls} onNumberChange={onNumberChange} />
             </SettingRow>
           </AdvancedSettingsBlock>

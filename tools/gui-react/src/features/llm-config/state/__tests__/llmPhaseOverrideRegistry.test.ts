@@ -8,8 +8,8 @@ import {
 import { resolvePhaseModel } from '../llmPhaseOverridesBridge.ts';
 
 describe('PHASE_OVERRIDE_REGISTRY', () => {
-  it('has exactly 8 entries', () => {
-    strictEqual(PHASE_OVERRIDE_REGISTRY.length, 8);
+  it('has exactly 7 entries', () => {
+    strictEqual(PHASE_OVERRIDE_REGISTRY.length, 7);
   });
 
   it('every entry has uiPhaseId, overrideKey, and globalModel', () => {
@@ -26,7 +26,6 @@ describe('PHASE_OVERRIDE_REGISTRY', () => {
     const ids = PHASE_OVERRIDE_REGISTRY.map((e) => e.uiPhaseId).sort();
     deepStrictEqual(ids, [
       'brand-resolver',
-      'domain-classifier',
       'extraction',
       'needset',
       'search-planner',
@@ -52,10 +51,6 @@ describe('uiPhaseIdToOverrideKey', () => {
 
   it('returns override key for serp-triage', () => {
     strictEqual(uiPhaseIdToOverrideKey('serp-triage'), 'serpTriage');
-  });
-
-  it('returns override key for domain-classifier', () => {
-    strictEqual(uiPhaseIdToOverrideKey('domain-classifier'), 'domainClassifier');
   });
 
   it('returns undefined for global', () => {

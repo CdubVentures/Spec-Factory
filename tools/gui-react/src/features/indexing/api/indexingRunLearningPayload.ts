@@ -21,13 +21,10 @@ export interface BuildIndexingRunLearningPayloadInput {
   parsedLlmExtractionCacheTtlMs: number;
   parsedLlmMaxCallsPerProductTotal: number;
 
-  parsedLlmExtractMaxTokens: number;
-  llmExtractMinTokens: number;
   parsedLlmExtractMaxSnippetsPerBatch: number;
   parsedLlmExtractMaxSnippetChars: number;
   llmExtractMinSnippetChars: number;
   llmExtractSkipLowSignal: boolean;
-  parsedLlmExtractReasoningBudget: number;
   llmReasoningMode: boolean | string;
   parsedLlmReasoningBudget: number;
   parsedLlmMonthlyBudgetUsd: number;
@@ -58,11 +55,9 @@ export function buildIndexingRunLearningPayload(
     llmExtractionCacheTtlMs: Math.max(60000, input.parsedLlmExtractionCacheTtlMs),
     llmMaxCallsPerProductTotal: Math.max(1, input.parsedLlmMaxCallsPerProductTotal),
 
-    llmExtractMaxTokens: Math.max(input.llmExtractMinTokens, input.parsedLlmExtractMaxTokens),
     llmExtractMaxSnippetsPerBatch: Math.max(1, input.parsedLlmExtractMaxSnippetsPerBatch),
     llmExtractMaxSnippetChars: Math.max(input.llmExtractMinSnippetChars, input.parsedLlmExtractMaxSnippetChars),
     llmExtractSkipLowSignal: input.llmExtractSkipLowSignal,
-    llmExtractReasoningBudget: Math.max(256, input.parsedLlmExtractReasoningBudget),
     llmReasoningMode: input.llmReasoningMode,
     llmReasoningBudget: Math.max(256, input.parsedLlmReasoningBudget),
     llmMonthlyBudgetUsd: Math.max(0, input.parsedLlmMonthlyBudgetUsd),

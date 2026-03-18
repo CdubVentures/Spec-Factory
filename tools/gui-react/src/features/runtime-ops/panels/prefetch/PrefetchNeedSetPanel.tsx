@@ -491,7 +491,10 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
               </span>
             )}
           </div>
-          <Tip text="Search gap planner — groups unresolved fields into search bundles by priority, content type, and source affinity." />
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] sf-chip-warning border-[1.5px] border-current">LLM</span>
+            <Tip text="Search gap planner — groups unresolved fields into search bundles by priority, content type, and source affinity." />
+          </div>
         </div>
 
         <RuntimeIdxBadgeStrip badges={idxRuntime} />

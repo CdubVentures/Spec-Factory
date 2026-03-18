@@ -1,0 +1,252 @@
+import { parseCsvList } from '../cliHelpers.js';
+
+export function createPublishingCommands({
+  asBool,
+  publishProducts,
+  readPublishedProvenance,
+  readPublishedChangelog,
+  buildSourceHealth,
+  buildLlmMetrics,
+  parseExpansionCategories,
+  bootstrapExpansionCategories,
+  runQueueLoadHarness,
+  runFailureInjectionHarness,
+  runFuzzSourceHealthHarness,
+  runProductionHardeningReport,
+  scanAndEnqueueDriftedProducts,
+  reconcileDriftedProduct,
+  reconcileOrphans,
+}) {
+  async function commandPublish(config, storage, args) {
+    const category = String(args.category || '').trim();
+    if (!category) {
+      throw new Error('publish requires --category <category>');
+    }
+    const productIds = [];
+    const singleProductId = String(args['product-id'] || '').trim();
+    if (singleProductId) {
+      productIds.push(singleProductId);
+    }
+    for (const productId of parseCsvList(args['product-ids'])) {
+      productIds.push(productId);
+    }
+    const result = await publishProducts({
+      storage,
+      config,
+      category,
+      productIds,
+      allApproved: asBool(args['all-approved'], false),
+      format: String(args.format || 'all').trim().toLowerCase()
+    });
+    return {
+      command: 'publish',
+      ...result
+    };
+  }
+
+  async function commandProvenance(_config, storage, args) {
+    const category = String(args.category || '').trim();
+    const productId = String(args['product-id'] || '').trim();
+    if (!category || !productId) {
+      throw new Error('provenance requires --category <category> and --product-id <id>');
+    }
+    const field = String(args.field || '').trim();
+    const full = asBool(args.full, false);
+    const result = await readPublishedProvenance({
+      storage,
+      category,
+      productId,
+      field,
+      full
+    });
+    return {
+      command: 'provenance',
+      ...result
+    };
+  }
+
+  async function commandChangelog(_config, storage, args) {
+    const category = String(args.category || '').trim();
+    const productId = String(args['product-id'] || '').trim();
+    if (!category || !productId) {
+      throw new Error('changelog requires --category <category> and --product-id <id>');
+    }
+    const result = await readPublishedChangelog({
+      storage,
+      category,
+      productId
+    });
+    return {
+      command: 'changelog',
+      ...result
+    };
+  }
+
+  async function commandSourceHealth(_config, storage, args) {
+    const category = String(args.category || '').trim();
+    if (!category) {
+      throw new Error('source-health requires --category <category>');
+    }
+    const result = await buildSourceHealth({
+      storage,
+      category,
+      source: String(args.source || '').trim(),
+      periodDays: String(args.period || '30d').trim()
+    });
+    return {
+      command: 'source-health',
+      ...result
+    };
+  }
+
+  async function commandLlmMetrics(config, storage, args) {
+    const result = await buildLlmMetrics({
+      storage,
+      config,
+      period: String(args.period || 'week').trim(),
+      model: String(args.model || '').trim()
+    });
+    return {
+      command: 'llm-metrics',
+      ...result
+    };
+  }
+
+  async function commandExpansionBootstrap(config, _storage, args, commandName = 'expansion-bootstrap') {
+    const categories = parseExpansionCategories(args.categories, ['monitor', 'keyboard']);
+    const template = String(args.template || 'electronics').trim() || 'electronics';
+    const helperRoot = String(
+      args['helper-root'] || config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority'
+    ).trim();
+    const categoriesRoot = String(args['categories-root'] || 'categories').trim();
+    const goldenRoot = String(args['golden-root'] || 'fixtures/golden').trim();
+    const result = await bootstrapExpansionCategories({
+      config: {
+        ...config,
+        categoryAuthorityRoot: helperRoot,
+        ['helper' + 'FilesRoot']: helperRoot,
+        categoriesRoot
+      },
+      categories,
+      template,
+      goldenRoot
+    });
+    return {
+      command: commandName,
+      ...result
+    };
+  }
+
+  async function commandHardeningHarness(config, storage, args) {
+    const category = String(args.category || 'mouse').trim() || 'mouse';
+    const products = Math.max(1, Number.parseInt(String(args.products || '200'), 10) || 200);
+    const cycles = Math.max(1, Number.parseInt(String(args.cycles || '100'), 10) || 100);
+    const fuzzIterations = Math.max(1, Number.parseInt(String(args['fuzz-iterations'] || '200'), 10) || 200);
+    const seed = Math.max(1, Number.parseInt(String(args.seed || '1337'), 10) || 1337);
+    const failureAttempts = Math.max(1, Number.parseInt(String(args['failure-attempts'] || '3'), 10) || 3);
+
+    const queueLoad = await runQueueLoadHarness({
+      storage,
+      category,
+      productCount: products,
+      selectCycles: cycles
+    });
+    const failureInjection = await runFailureInjectionHarness({
+      storage,
+      category,
+      maxAttempts: failureAttempts
+    });
+    const fuzzSourceHealth = await runFuzzSourceHealthHarness({
+      storage,
+      category,
+      iterations: fuzzIterations,
+      seed
+    });
+    return {
+      command: 'hardening-harness',
+      category,
+      queue_load: queueLoad,
+      failure_injection: failureInjection,
+      fuzz_source_health: fuzzSourceHealth,
+      passed: Boolean(queueLoad.select_cycles_completed > 0 && failureInjection.passed && fuzzSourceHealth.passed)
+    };
+  }
+
+  async function commandHardeningReport(_config, _storage, args) {
+    const rootDir = String(args['root-dir'] || process.cwd()).trim() || process.cwd();
+    const report = await runProductionHardeningReport({
+      rootDir
+    });
+    return {
+      command: 'hardening-report',
+      ...report
+    };
+  }
+
+  async function commandDriftScan(config, storage, args) {
+    const category = String(args.category || '').trim();
+    if (!category) {
+      throw new Error('drift-scan requires --category <category>');
+    }
+    const maxProducts = Math.max(1, Number.parseInt(String(args['max-products'] || '250'), 10) || 250);
+    const result = await scanAndEnqueueDriftedProducts({
+      storage,
+      config,
+      category,
+      maxProducts,
+      queueOnChange: asBool(args.enqueue, true)
+    });
+    return {
+      command: 'drift-scan',
+      ...result
+    };
+  }
+
+  async function commandDriftReconcile(config, storage, args) {
+    const category = String(args.category || '').trim();
+    const productId = String(args['product-id'] || '').trim();
+    if (!category || !productId) {
+      throw new Error('drift-reconcile requires --category <category> and --product-id <id>');
+    }
+    const result = await reconcileDriftedProduct({
+      storage,
+      config,
+      category,
+      productId,
+      autoRepublish: asBool(args['auto-republish'], true)
+    });
+    return {
+      command: 'drift-reconcile',
+      ...result
+    };
+  }
+
+  async function commandProductReconcile(config, storage, args) {
+    const category = String(args.category || '').trim();
+    if (!category) {
+      throw new Error('product-reconcile requires --category <category>');
+    }
+    const dryRun = asBool(args['dry-run'], true);
+    const result = await reconcileOrphans({
+      storage,
+      category,
+      config,
+      dryRun
+    });
+    return result;
+  }
+
+  return {
+    commandPublish,
+    commandProvenance,
+    commandChangelog,
+    commandSourceHealth,
+    commandLlmMetrics,
+    commandExpansionBootstrap,
+    commandHardeningHarness,
+    commandHardeningReport,
+    commandDriftScan,
+    commandDriftReconcile,
+    commandProductReconcile,
+  };
+}

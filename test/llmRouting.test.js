@@ -5,6 +5,7 @@ import {
   hasAnyLlmApiKey,
   hasLlmRouteApiKey,
   llmRoutingSnapshot,
+  resolvePhaseModel,
   resolveLlmFallbackRoute,
   resolveLlmRoute
 } from '../src/core/llm/client/routing.js';
@@ -345,4 +346,137 @@ test('cortex provider type is blocked with clear error in resolveLlmRoute flow',
   // Route resolves from registry with cortex type preserved
   assert.equal(route.provider, 'cortex');
   assert.equal(route._registryEntry.providerType, 'cortex');
+});
+
+// ---------------------------------------------------------------------------
+// resolvePhaseModel — phase-aware model resolution
+// ---------------------------------------------------------------------------
+
+function phaseConfig(overrides = {}) {
+  return {
+    llmModelPlan: 'global-base',
+    llmModelReasoning: 'global-reasoning',
+    llmPlanUseReasoning: false,
+    ...overrides,
+  };
+}
+
+test('resolvePhaseModel returns phase base model when phase override is set', () => {
+  const config = phaseConfig({
+    _resolvedNeedsetBaseModel: 'needset-custom',
+    _resolvedNeedsetReasoningModel: 'global-reasoning',
+    _resolvedNeedsetUseReasoning: false,
+  });
+  const result = resolvePhaseModel(config, 'needset');
+  assert.equal(result, 'needset-custom');
+});
+
+test('resolvePhaseModel returns phase reasoning model when useReasoning is true', () => {
+  const config = phaseConfig({
+    _resolvedExtractionBaseModel: 'extract-base',
+    _resolvedExtractionReasoningModel: 'extract-reasoning',
+    _resolvedExtractionUseReasoning: true,
+  });
+  const result = resolvePhaseModel(config, 'extraction');
+  assert.equal(result, 'extract-reasoning');
+});
+
+test('resolvePhaseModel falls back to global llmModelPlan when no phase override exists', () => {
+  const config = phaseConfig();
+  const result = resolvePhaseModel(config, 'needset');
+  assert.equal(result, 'global-base');
+});
+
+test('resolvePhaseModel falls back to global reasoning model when phase reasoning model is empty', () => {
+  const config = phaseConfig({
+    _resolvedValidateBaseModel: 'validate-base',
+    _resolvedValidateReasoningModel: '',
+    _resolvedValidateUseReasoning: true,
+  });
+  const result = resolvePhaseModel(config, 'validate');
+  assert.equal(result, 'global-reasoning');
+});
+
+test('resolvePhaseModel returns empty string for unknown phase (no crash)', () => {
+  const config = phaseConfig();
+  const result = resolvePhaseModel(config, 'nonexistent');
+  assert.equal(result, 'global-base');
+});
+
+test('resolvePhaseModel returns empty string when config is empty and phase is unknown', () => {
+  const result = resolvePhaseModel({}, 'nonexistent');
+  assert.equal(result, '');
+});
+
+test('resolvePhaseModel works for all 8 known phases', () => {
+  const phases = ['needset', 'searchPlanner', 'brandResolver', 'serpTriage', 'domainClassifier', 'extraction', 'validate', 'write'];
+  for (const phase of phases) {
+    const cap = phase.charAt(0).toUpperCase() + phase.slice(1);
+    const config = phaseConfig({
+      [`_resolved${cap}BaseModel`]: `${phase}-model`,
+      [`_resolved${cap}UseReasoning`]: false,
+    });
+    const result = resolvePhaseModel(config, phase);
+    assert.equal(result, `${phase}-model`, `phase ${phase} should resolve to ${phase}-model`);
+  }
+});
+
+test('resolvePhaseModel useReasoning falls through global toggle when phase toggle is undefined', () => {
+  // WHY: configPostMerge resolves phase toggles, but if a caller constructs
+  // config without running postMerge, the phase toggle may be missing.
+  // In that case the global toggle should be used.
+  const config = phaseConfig({
+    llmPlanUseReasoning: true,
+    _resolvedWriteBaseModel: 'write-base',
+    _resolvedWriteReasoningModel: 'write-reasoning',
+    // _resolvedWriteUseReasoning is intentionally missing
+  });
+  const result = resolvePhaseModel(config, 'write');
+  assert.equal(result, 'write-reasoning');
+});
+
+// ---------------------------------------------------------------------------
+// resolveLlmRoute with phase param — auto-resolves model override
+// ---------------------------------------------------------------------------
+
+test('resolveLlmRoute uses phase override model when phase param is passed', () => {
+  const config = phaseConfig({
+    _resolvedNeedsetBaseModel: 'needset-custom',
+    _resolvedNeedsetUseReasoning: false,
+  });
+  const route = resolveLlmRoute(config, { role: 'plan', phase: 'needset' });
+  assert.equal(route.model, 'needset-custom');
+});
+
+test('resolveLlmRoute prefers explicit modelOverride over phase', () => {
+  const config = phaseConfig({
+    _resolvedNeedsetBaseModel: 'needset-custom',
+    _resolvedNeedsetUseReasoning: false,
+  });
+  const route = resolveLlmRoute(config, {
+    role: 'plan',
+    phase: 'needset',
+    modelOverride: 'explicit-override',
+  });
+  assert.equal(route.model, 'explicit-override');
+});
+
+test('resolveLlmRoute ignores phase when phase is empty string', () => {
+  const config = phaseConfig({
+    _resolvedNeedsetBaseModel: 'needset-custom',
+    _resolvedNeedsetUseReasoning: false,
+  });
+  const route = resolveLlmRoute(config, { role: 'plan', phase: '' });
+  assert.equal(route.model, 'global-base');
+});
+
+test('resolveLlmRoute phase resolution picks reasoning model when phase enables reasoning', () => {
+  const config = phaseConfig({
+    _resolvedExtractionBaseModel: 'extract-base',
+    _resolvedExtractionReasoningModel: 'deepseek-reasoner',
+    _resolvedExtractionUseReasoning: true,
+    deepseekApiKey: 'ds-key',
+  });
+  const route = resolveLlmRoute(config, { role: 'extract', phase: 'extraction' });
+  assert.equal(route.model, 'deepseek-reasoner');
 });

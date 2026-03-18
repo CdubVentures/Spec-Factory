@@ -47,7 +47,7 @@ test('migration normalizes legacy top-level runtime/convergence/ui keys into sec
 test('migration keeps only canonical runtime/convergence/ui keys', () => {
   const migrated = migrateUserSettingsDocument({
     runtime: {
-      searchProvider: 'searxng',
+      searchEngines: 'bing,startpage,duckduckgo',
       unknownRuntimeKey: 'drop-me',
     },
     convergence: {
@@ -59,7 +59,7 @@ test('migration keeps only canonical runtime/convergence/ui keys', () => {
       unknownUiKey: false,
     },
   });
-  assert.equal(Object.hasOwn(migrated.runtime, 'searchProvider'), true);
+  assert.equal(Object.hasOwn(migrated.runtime, 'searchEngines'), true);
   assert.equal(Object.hasOwn(migrated.runtime, 'unknownRuntimeKey'), false);
   assert.equal(Object.hasOwn(migrated.runtime, 'runProfile'), false);
   assert.equal(Object.hasOwn(migrated.convergence, 'serpTriageMinScore'), true);
@@ -105,19 +105,6 @@ test('runtime GET route maps include all runtime PUT frontend keys', () => {
   assert.deepEqual(missing, []);
 });
 
-test('runtime route contract keeps serpTriageMaxUrls writable through PUT mapping', () => {
-  assert.equal(
-    Object.hasOwn(RUNTIME_SETTINGS_ROUTE_GET.intMap, 'serpTriageMaxUrls'),
-    true,
-    'runtime GET contract should expose serpTriageMaxUrls',
-  );
-  assert.equal(
-    Object.hasOwn(RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap, 'serpTriageMaxUrls'),
-    true,
-    'runtime PUT contract should accept serpTriageMaxUrls updates',
-  );
-});
-
 test('convergence route contract keys resolve to canonical convergence settings keys', () => {
   const convergenceSet = new Set(CONVERGENCE_SETTINGS_KEYS);
   const routeKeys = new Set([
@@ -143,7 +130,7 @@ test('readUserSettingsDocumentMeta flags stale payload versions only when payloa
   assert.equal(missing.hasPayload, false);
   assert.equal(missing.stale, false);
 
-  const stale = readUserSettingsDocumentMeta({ schemaVersion: 1, runtime: { searchProvider: 'searxng' } });
+  const stale = readUserSettingsDocumentMeta({ schemaVersion: 1, runtime: { searchEngines: 'bing,startpage,duckduckgo' } });
   assert.equal(stale.hasPayload, true);
   assert.equal(stale.stale, true);
   assert.equal(stale.schemaVersion, 1);
@@ -153,7 +140,7 @@ test('readUserSettingsDocumentMeta flags stale payload versions only when payloa
 test('validateUserSettingsSnapshot enforces canonical envelope and rejects unknown keys', () => {
   const validPayload = {
     schemaVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
-    runtime: { searchProvider: 'searxng' },
+    runtime: { searchEngines: 'bing,startpage,duckduckgo' },
     convergence: { serpTriageMinScore: 3 },
     storage: {
       enabled: false,

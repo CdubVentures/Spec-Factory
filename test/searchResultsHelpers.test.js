@@ -737,15 +737,12 @@ describe('resolveDomainCapSummary', () => {
       maxPagesPerDomain: 5,
       discoveryResultsPerQuery: 14,
       discoveryMaxDiscovered: 140,
-      serpTriageMaxUrls: 18,
     });
     assert.equal(summary.value, '5');
     assert.equal(summary.queryCap, 14);
     assert.equal(summary.discoveredCap, 140);
-    assert.equal(summary.triageCap, 18);
     assert.equal(summary.uberDomainFloor, 6);
     assert.match(summary.tooltip, /Current domain cap display: 5/);
-    assert.match(summary.tooltip, /SERP triage cap keeps up to 18 URLs after triage/);
   });
 });
 
@@ -767,12 +764,10 @@ describe('resolveRuntimeDomainCapSummary', () => {
       maxPagesPerDomain: 5,
       discoveryResultsPerQuery: 14,
       discoveryMaxDiscovered: 140,
-      serpTriageMaxUrls: 18,
     });
     assert.equal(summary.value, '5');
     assert.equal(summary.queryCap, 14);
     assert.equal(summary.discoveredCap, 140);
-    assert.equal(summary.triageCap, 18);
     assert.equal(summary.uberDomainFloor, 6);
   });
 });

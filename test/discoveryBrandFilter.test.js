@@ -20,7 +20,7 @@ test('discoverCandidateSources filters unrelated manufacturer domains for locked
     discoveryMaxQueries: 3,
     discoveryResultsPerQuery: 4,
     discoveryMaxDiscovered: 20,
-    searchProvider: 'none'
+    searchEngines: ''
   };
   const storage = createStorage(config);
   const categoryConfig = {
@@ -55,13 +55,20 @@ test('discoverCandidateSources filters unrelated manufacturer domains for locked
       llmContext: {}
     });
 
-    const urls = result.approvedUrls || [];
-    assert.equal(urls.some((url) => url.includes('razer.com')), false);
+    // WHY: Brand-mismatched manufacturer URLs survive as soft-labeled candidates
+    // instead of being hard-dropped. They carry non-exact identity labels
+    // (off_target, variant, family, uncertain) depending on URL/title content.
+    const urls = [...new Set([...(result.approvedUrls || []), ...(result.candidateUrls || [])])];
     assert.equal(urls.some((url) => url.includes('logitechg.com')), true);
-    assert.equal(
-      urls.every((url) => url.includes('logitechg.com') || url.includes('rtings.com')),
-      true
+
+    // razer.com URLs survive but carry non-exact soft labels
+    const razerCandidates = (result.candidates || []).filter(
+      (c) => String(c.url || '').includes('razer.com')
     );
+    for (const c of razerCandidates) {
+      assert.notEqual(c.identity_prelim, 'exact',
+        `expected razer.com candidate to NOT have identity_prelim 'exact', got '${c.identity_prelim}'`);
+    }
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

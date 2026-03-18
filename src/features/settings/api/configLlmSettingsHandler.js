@@ -13,7 +13,9 @@ export function createLlmSettingsHandler({
       const category = parts[1];
       const scope = (params.get('scope') || '').trim().toLowerCase();
       const specDb = getSpecDb(category);
-      if (!specDb) return jsonRes(res, 500, { error: 'specdb_unavailable' });
+      // WHY: Missing specDb means no saved overrides yet — return empty rows, not 500.
+      // A 500 here blocks settings hydration and keeps the "still hydrating" banner forever.
+      if (!specDb) return jsonRes(res, 200, { category, scope: scope || null, rows: [] });
       const rows = specDb.getLlmRouteMatrix(scope || undefined);
       return jsonRes(res, 200, { category, scope: scope || null, rows });
     }

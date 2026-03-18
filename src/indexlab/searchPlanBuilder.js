@@ -2,7 +2,7 @@
 // Calls the planner LLM to generate targeted search queries from focus_groups,
 // applies anti-garbage filtering, and assembles Schema 4.
 
-import { callLlmWithRouting, hasLlmRouteApiKey } from '../core/llm/client/routing.js';
+import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../core/llm/client/routing.js';
 
 // --- Query hashing (same algorithm as frontierDb.js, inlined to avoid coupling) ---
 
@@ -344,7 +344,6 @@ export async function buildSearchPlan({
   };
 
   const payloadJson = JSON.stringify(llmPayload);
-  const resolvedModel = String(config.llmModelPlan || '');
 
   // Call LLM
   let llmResult;
@@ -353,6 +352,7 @@ export async function buildSearchPlan({
       config,
       reason: 'needset_search_planner',
       role: 'plan',
+      phase: 'needset',
       system: PLANNER_SYSTEM_PROMPT,
       user: payloadJson,
       jsonSchema: PLANNER_RESPONSE_SCHEMA,
@@ -433,5 +433,5 @@ export async function buildSearchPlan({
     if (allQueries.length >= globalCap) break;
   }
 
-  return assembleSchema4(ctx, allQueries, { mode: 'llm', plannerComplete: true, model: resolvedModel, llmResult, dupesDropped });
+  return assembleSchema4(ctx, allQueries, { mode: 'llm', plannerComplete: true, model: resolvePhaseModel(config, 'needset'), llmResult, dupesDropped });
 }

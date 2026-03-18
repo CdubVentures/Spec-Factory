@@ -258,7 +258,7 @@ export function buildRunProductPlannerProcessingContext({
         runtimeDeps.mkdirSyncFn(repairQueryDir, { recursive: true });
         runtimeDeps.recordQueryResultFn({
           query: q,
-          provider: config.searchProvider || '',
+          provider: config.searchEngines || '',
           result_count: results.length,
           run_id: bootstrapState.runId,
           category: bootstrapState.category,

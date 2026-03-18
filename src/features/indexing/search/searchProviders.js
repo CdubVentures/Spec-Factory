@@ -1,52 +1,69 @@
-function normalizeProvider(value) {
-  const token = String(value || '').trim().toLowerCase();
-  if (
-    token === 'google' ||
-    token === 'bing' ||
-    token === 'dual' ||
-    token === 'searxng' ||
-    token === 'none'
-  ) {
-    return token;
+import { SEARXNG_AVAILABLE_ENGINES } from '../../../shared/settingsDefaults.js';
+
+// WHY: Legacy migration map for old searchProvider enum values → new searchEngines CSV.
+const LEGACY_MIGRATION_MAP = {
+  dual: 'bing,google',
+  google: 'google',
+  bing: 'bing',
+  searxng: 'bing,startpage,duckduckgo',
+  none: '',
+};
+
+export function normalizeSearchEngines(value) {
+  const raw = String(value ?? '').trim().toLowerCase();
+  if (raw === '') return '';
+  // Legacy enum migration
+  if (Object.hasOwn(LEGACY_MIGRATION_MAP, raw)) {
+    return LEGACY_MIGRATION_MAP[raw];
   }
-  return 'none';
+  // CSV: split, validate each token against SSOT, dedup, rejoin
+  const tokens = raw.split(',').map(t => t.trim()).filter(Boolean);
+  const seen = new Set();
+  const valid = [];
+  for (const token of tokens) {
+    if (SEARXNG_AVAILABLE_ENGINES.includes(token) && !seen.has(token)) {
+      seen.add(token);
+      valid.push(token);
+    }
+  }
+  return valid.join(',');
 }
 
-function uniqueTokens(values = []) {
-  return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
-}
+// WHY: Bing (and occasionally other engines) serve anti-bot/CAPTCHA pages
+// when they detect automated scraping. SearXNG parses whatever links are on
+// that page (sidebar ads, footer links, random content) and returns them as
+// "results." These garbage results share no query terms in title/url/snippet.
+// We detect per-engine: if >50% of an engine's results have zero query-word
+// overlap, that engine's batch is poisoned and all its results are dropped.
+function filterGarbageEngineResults(rows, query) {
+  if (!rows.length || !query) return rows;
+  const queryWords = String(query).toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  if (!queryWords.length) return rows;
 
-function activeProvidersForConfig(provider, {
-  bingReady,
-  googleReady,
-  searxngReady
-}) {
-  if (provider === 'none') {
-    return [];
-  }
-
-  const active = new Set();
-  if (searxngReady) {
-    active.add('searxng');
-  }
-  if (googleReady) {
-    active.add('google');
-  }
-  if (bingReady) {
-    active.add('bing');
+  // Group results by engine
+  const byEngine = new Map();
+  for (const row of rows) {
+    const eng = row.provider || 'unknown';
+    if (!byEngine.has(eng)) byEngine.set(eng, []);
+    byEngine.get(eng).push(row);
   }
 
-  if (provider === 'searxng') {
-    return searxngReady ? ['searxng'] : [];
-  }
-  if (provider === 'google') {
-    return googleReady ? uniqueTokens(['google', ...(searxngReady ? ['searxng'] : [])]) : [];
-  }
-  if (provider === 'bing') {
-    return bingReady ? uniqueTokens(['bing', ...(searxngReady ? ['searxng'] : [])]) : [];
+  const poisonedEngines = new Set();
+  for (const [eng, engineRows] of byEngine) {
+    if (engineRows.length < 2) continue;
+    let misses = 0;
+    for (const row of engineRows) {
+      const haystack = `${row.title} ${row.url} ${row.snippet}`.toLowerCase();
+      const hit = queryWords.some(w => haystack.includes(w));
+      if (!hit) misses++;
+    }
+    if (misses / engineRows.length > 0.5) {
+      poisonedEngines.add(eng);
+    }
   }
 
-  return [...active];
+  if (!poisonedEngines.size) return rows;
+  return rows.filter(row => !poisonedEngines.has(row.provider || 'unknown'));
 }
 
 function dedupeResults(rows = []) {
@@ -63,49 +80,11 @@ function dedupeResults(rows = []) {
   return out;
 }
 
-function buildSearchAttemptPlan(provider) {
-  if (provider === 'searxng') {
-    return [{ providerName: 'searxng', engines: '' }];
-  }
-  if (provider === 'google') {
-    return [
-      { providerName: 'google', engines: 'google' },
-      { providerName: 'bing_fallback', engines: 'bing' },
-      { providerName: 'google_fallback', engines: '' }
-    ];
-  }
-  if (provider === 'bing') {
-    return [
-      { providerName: 'bing', engines: 'bing' },
-      { providerName: 'google_fallback', engines: 'google' },
-      { providerName: 'bing_fallback', engines: '' }
-    ];
-  }
-  if (provider === 'dual') {
-    return [
-      { providerName: 'google', engines: 'google' },
-      { providerName: 'bing', engines: 'bing' },
-      { providerName: 'searxng', engines: '' }
-    ];
-  }
-  return [];
-}
-
 function hostKeyFromUrl(value, fallback = '') {
   try {
     return new URL(String(value || '')).hostname;
   } catch {
     return String(fallback || '').trim();
-  }
-}
-
-function searxngFallbackBaseUrl(config = {}) {
-  const token = String(config.searxngDefaultBaseUrl || '').trim() || 'http://127.0.0.1:8080';
-  try {
-    const parsed = new URL(token);
-    return parsed.toString().replace(/\/+$/, '');
-  } catch {
-    return 'http://127.0.0.1:8080';
   }
 }
 
@@ -180,12 +159,16 @@ export async function searchSearxng({
     baseUrl,
     fallbackKey: '127.0.0.1'
   });
-  // Enforce minimum inter-query delay to avoid upstream engine rate-limiting
+  // WHY: Fixed-interval queries are trivially detected as bot traffic by upstream
+  // engines (Bing, Startpage). Adding random jitter (0–50% of base interval)
+  // makes the timing pattern look more human and reduces CAPTCHA triggers.
   const minIntervalMs = resolveSearxngMinQueryIntervalMs(minQueryIntervalMs);
+  const jitterMs = Math.floor(Math.random() * minIntervalMs * 0.5);
+  const targetIntervalMs = minIntervalMs + jitterMs;
   const now = Date.now();
   const elapsed = now - _lastSearxngQueryMs;
-  if (elapsed < minIntervalMs) {
-    await new Promise((r) => setTimeout(r, minIntervalMs - elapsed));
+  if (elapsed < targetIntervalMs) {
+    await new Promise((r) => setTimeout(r, targetIntervalMs - elapsed));
   }
   _lastSearxngQueryMs = Date.now();
   const url = new URL('/search', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`);
@@ -213,11 +196,46 @@ export async function searchSearxng({
       url: item.url,
       title: item.title || '',
       snippet: item.content || item.snippet || '',
-      provider: String(provider || 'searxng').trim() || 'searxng',
+      provider: item.engine || (Array.isArray(item.engines) && item.engines[0]) || String(provider || 'searxng').trim() || 'searxng',
+      engines: Array.isArray(item.engines) ? item.engines : [],
       query
     }));
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+async function attemptSearch({ searxBase, engines, query, limit, config, logger, requestThrottler }) {
+  try {
+    const rows = await searchSearxng({
+      baseUrl: searxBase,
+      query,
+      limit,
+      timeoutMs: config.searxngTimeoutMs,
+      minQueryIntervalMs: config.searxngMinQueryIntervalMs,
+      engines,
+      provider: engines,
+      logger,
+      requestThrottler
+    });
+    const cleaned = filterGarbageEngineResults(rows, query);
+    if (cleaned.length < rows.length) {
+      logger?.warn?.('search_engine_garbage_filtered', {
+        query,
+        engines,
+        original_count: rows.length,
+        filtered_count: cleaned.length,
+        dropped: rows.length - cleaned.length,
+      });
+    }
+    return dedupeResults(cleaned);
+  } catch (error) {
+    logger?.warn?.('search_provider_failed', {
+      provider: engines,
+      query,
+      message: error.message
+    });
+    return [];
   }
 }
 
@@ -228,84 +246,52 @@ export async function runSearchProviders({
   logger,
   requestThrottler
 }) {
-  const provider = normalizeProvider(config.searchProvider);
-  if (provider === 'none') {
-    return [];
-  }
+  const engines = normalizeSearchEngines(config.searchEngines ?? config.searchProvider);
+  if (!engines) return [];
 
   const searxBase = searxngBaseUrl(config);
+  if (!searxBase) return [];
 
-  async function runSearxngSearch({
-    baseUrl = searxBase,
-    providerName = 'searxng',
-    engines = '',
-    timeoutMs = config.searxngTimeoutMs
-  } = {}) {
-    return searchSearxng({
-      baseUrl,
-      query,
-      limit,
-      timeoutMs,
-      minQueryIntervalMs: config.searxngMinQueryIntervalMs,
-      engines,
-      provider: providerName,
-      logger,
-      requestThrottler
-    });
-  }
+  // Primary attempt
+  const primaryResults = await attemptSearch({ searxBase, engines, query, limit, config, logger, requestThrottler });
+  if (primaryResults.length > 0) return primaryResults;
 
-  if (!searxBase) {
-    return [];
-  }
+  // Fallback attempt — only if primary returned nothing usable
+  const fallbackEngines = normalizeSearchEngines(config.searchEnginesFallback);
+  if (!fallbackEngines) return [];
 
-  const attemptPlan = buildSearchAttemptPlan(provider);
-  for (const attempt of attemptPlan) {
-    try {
-      const rows = await runSearxngSearch({
-        providerName: attempt.providerName,
-        engines: attempt.engines
-      });
-      if (rows.length > 0) {
-        return dedupeResults(rows);
-      }
-    } catch (error) {
-      logger?.warn?.('search_provider_failed', {
-        provider: attempt.providerName,
-        query,
-        message: error.message
-      });
-    }
-  }
+  logger?.info?.('search_fallback_triggered', {
+    query,
+    primary_engines: engines,
+    fallback_engines: fallbackEngines,
+  });
 
-  return [];
+  return attemptSearch({ searxBase, engines: fallbackEngines, query, limit, config, logger, requestThrottler });
 }
 
-export function searchProviderAvailability(config) {
-  const provider = normalizeProvider(config.searchProvider);
+export function searchEngineAvailability(config) {
+  // Support both new searchEngines and legacy searchProvider
+  const engines = normalizeSearchEngines(config.searchEngines ?? config.searchProvider);
+  const engineList = engines ? engines.split(',') : [];
+  const fallbackEngines = normalizeSearchEngines(config.searchEnginesFallback);
+  const fallbackEngineList = fallbackEngines ? fallbackEngines.split(',') : [];
   const searxngReady = Boolean(searxngBaseUrl(config));
-  const googleReady = Boolean(searxngReady);
-  const bingReady = Boolean(searxngReady);
-  const activeProviders = activeProvidersForConfig(provider, {
-    bingReady,
-    googleReady,
-    searxngReady
-  });
-  let fallbackReason = null;
-  if (provider === 'dual') {
-    fallbackReason = searxngReady ? 'dual_fallback_searxng_only' : 'no_provider_ready';
-  }
+
   return {
-    provider,
-    bing_ready: bingReady,
-    google_ready: googleReady,
-    google_search_ready: googleReady,
+    // WHY: Keep legacy field names for downstream log compat
+    provider: engines || 'none',
+    engines: engineList,
+    bing_ready: searxngReady && engineList.includes('bing'),
+    google_ready: searxngReady && engineList.includes('google'),
+    google_search_ready: searxngReady && engineList.includes('google'),
     searxng_ready: searxngReady,
-    active_providers: activeProviders,
-    fallback_reason: fallbackReason,
-    internet_ready:
-      (provider === 'bing' && bingReady) ||
-      (provider === 'google' && googleReady) ||
-      (provider === 'searxng' && searxngReady) ||
-      (provider === 'dual' && (bingReady || googleReady || searxngReady))
+    active_providers: searxngReady ? engineList : [],
+    fallback_engines: fallbackEngineList,
+    fallback_ready: searxngReady && fallbackEngineList.length > 0,
+    fallback_reason: null,
+    internet_ready: searxngReady && engineList.length > 0
   };
 }
+
+// WHY: Backward compat alias — downstream imports may still use old name
+export const searchProviderAvailability = searchEngineAvailability;

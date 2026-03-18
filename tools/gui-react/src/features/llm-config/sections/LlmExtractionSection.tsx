@@ -1,5 +1,4 @@
 import { memo } from 'react';
-import type { ReactNode } from 'react';
 import {
   SettingGroupBlock,
   SettingNumberInput,
@@ -15,7 +14,6 @@ interface LlmExtractionSectionProps {
   updateDraft: <K extends keyof RuntimeDraft>(key: K, value: RuntimeDraft[K]) => void;
   onNumberChange: <K extends keyof RuntimeDraft>(key: K, eventValue: string, bounds: NumberBound) => void;
   getNumberBounds: <K extends keyof RuntimeDraft>(key: K) => NumberBound;
-  renderTokenOptions: (model: string, prefix: string) => ReactNode;
 }
 
 export const LlmExtractionSection = memo(function LlmExtractionSection({
@@ -29,16 +27,6 @@ export const LlmExtractionSection = memo(function LlmExtractionSection({
     <>
       {/* -- Extraction Settings -- */}
       <SettingGroupBlock title="Extraction Settings">
-        <SettingRow label="Extract Max Tokens" tip="Max input tokens for extraction prompts.">
-          <SettingNumberInput
-            draftKey="llmExtractMaxTokens"
-            value={runtimeDraft.llmExtractMaxTokens}
-            bounds={getNumberBounds('llmExtractMaxTokens')}
-            step={1}
-            className={inputCls}
-            onNumberChange={onNumberChange}
-          />
-        </SettingRow>
         <SettingRow label="Max Snippets Per Batch" tip="Maximum evidence snippets per extraction batch.">
           <SettingNumberInput
             draftKey="llmExtractMaxSnippetsPerBatch"
@@ -63,16 +51,6 @@ export const LlmExtractionSection = memo(function LlmExtractionSection({
           <SettingToggle
             checked={runtimeDraft.llmExtractSkipLowSignal}
             onChange={(v) => updateDraft('llmExtractSkipLowSignal', v)}
-          />
-        </SettingRow>
-        <SettingRow label="Extract Reasoning Budget" tip="Token budget for extraction reasoning chains.">
-          <SettingNumberInput
-            draftKey="llmExtractReasoningBudget"
-            value={runtimeDraft.llmExtractReasoningBudget}
-            bounds={getNumberBounds('llmExtractReasoningBudget')}
-            step={1}
-            className={inputCls}
-            onNumberChange={onNumberChange}
           />
         </SettingRow>
         <SettingRow label="Max Batches Per Product" tip="Maximum extraction batches per product.">

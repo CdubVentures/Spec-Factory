@@ -1,7 +1,6 @@
 export const CONVERGENCE_SETTINGS_ROUTE_PUT = Object.freeze({
   intKeys: Object.freeze([
     'serpTriageMinScore',
-    'serpTriageMaxUrls',
   ]),
   floatKeys: Object.freeze([]),
   boolKeys: Object.freeze([]),

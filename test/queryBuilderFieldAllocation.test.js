@@ -150,7 +150,7 @@ describe('Brand Domain Injection — Official Domain Fallback', () => {
       }
     });
 
-    // WHY: site: operators removed — domain hints appear as plain-text host name
+    // WHY: soft domain bias — official domain in query text, not competitors
     const officialHostQueries = profile.queries.filter((q) => q.includes('endgamegear.com'));
     const competitorHostQueries = profile.queries.filter((q) =>
       q.includes('razer.com') || q.includes('logitechg.com') || q.includes('steelseries.com'));
@@ -173,7 +173,7 @@ describe('Brand Domain Injection — Official Domain Fallback', () => {
       }
     });
 
-    // WHY: site: operators removed — host appears as plain-text soft bias
+    // WHY: soft domain bias — host appears as plain text, not site: operator
     const razerHostQueries = profile.queries.filter((q) => q.includes('razer.com') && !q.includes('site:'));
 
     assert.ok(razerHostQueries.length >= 1, 'razer.com soft host-biased queries generated from approved list');

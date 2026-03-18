@@ -13,6 +13,7 @@ import {
   normalizeFieldContractToken,
   isIdentityOrEditorialField
 } from './convergenceHelpers.js';
+import { normalizeSearchEngines } from '../features/indexing/search/searchProviders.js';
 
 export function buildContractEffortPlan({
   missingRequiredFields = [],
@@ -124,112 +125,50 @@ function resolveSearchProviderDecision({
   const normalizedMissingRequired = Math.max(0, toInt(missingRequiredCount, 0));
   const normalizedRequiredIteration = Math.max(0, toInt(requiredSearchIteration, 0));
 
+  const configured = normalizeSearchEngines(baseConfig.searchEngines ?? baseConfig.searchProvider);
+  const searxngReady = Boolean(baseConfig.searxngBaseUrl);
+  const engineList = configured ? configured.split(',') : [];
+  const baseDecision = {
+    configured,
+    discoveryEnabled,
+    missingRequiredCount: normalizedMissingRequired,
+    requiredSearchIteration: normalizedRequiredIteration,
+    bingReady: searxngReady && engineList.includes('bing'),
+    googleReady: searxngReady && engineList.includes('google'),
+    searxngReady,
+    hasFreeProvider: searxngReady
+  };
+
   if (!discoveryEnabled) {
     return {
-      provider: 'none',
+      ...baseDecision,
+      provider: '',
       reasonCode: 'discovery_disabled',
-      configured: String(baseConfig.searchProvider || 'none').trim().toLowerCase(),
       discoveryEnabled: false,
-      missingRequiredCount: normalizedMissingRequired,
-      requiredSearchIteration: normalizedRequiredIteration,
       bingReady: false,
       googleReady: false,
-      searxngReady: false,
       hasFreeProvider: false
     };
   }
 
-  const configured = String(baseConfig.searchProvider || 'none').trim().toLowerCase();
-  const searxngReady = Boolean(baseConfig.searxngBaseUrl);
-  const hasFreeProvider = searxngReady;
-  const bingReady = hasFreeProvider;
-  const googleReady = hasFreeProvider;
-  const baseDecision = {
-    configured,
-    discoveryEnabled: true,
-    missingRequiredCount: normalizedMissingRequired,
-    requiredSearchIteration: normalizedRequiredIteration,
-    bingReady,
-    googleReady,
-    searxngReady,
-    hasFreeProvider
-  };
-
-  if (configured === 'bing') {
-    if (searxngReady) {
-      return {
-        ...baseDecision,
-        provider: 'bing',
-        reasonCode: 'configured_bing_ready'
-      };
-    }
+  if (!configured) {
     return {
       ...baseDecision,
-      provider: 'none',
-      reasonCode: 'configured_bing_no_provider_ready'
+      provider: '',
+      reasonCode: 'no_engines_configured'
     };
   }
-  if (configured === 'google') {
-    if (searxngReady) {
-      return {
-        ...baseDecision,
-        provider: 'google',
-        reasonCode: 'configured_google_ready'
-      };
-    }
+  if (searxngReady) {
     return {
       ...baseDecision,
-      provider: 'none',
-      reasonCode: 'configured_google_no_provider_ready'
-    };
-  }
-  if (configured === 'dual') {
-    if (hasFreeProvider) {
-      return {
-        ...baseDecision,
-        provider: 'dual',
-        reasonCode: 'configured_dual_public_engines'
-      };
-    }
-    return {
-      ...baseDecision,
-      provider: 'none',
-      reasonCode: 'configured_dual_no_provider_ready'
-    };
-  }
-  if (configured === 'searxng') {
-    if (searxngReady) {
-      return {
-        ...baseDecision,
-        provider: 'searxng',
-        reasonCode: 'configured_searxng_ready'
-      };
-    }
-    return {
-      ...baseDecision,
-      provider: 'none',
-      reasonCode: 'configured_searxng_no_provider_ready'
-    };
-  }
-  if (normalizedMissingRequired > 0) {
-    if (searxngReady) {
-      return {
-        ...baseDecision,
-        provider: 'searxng',
-        reasonCode: 'auto_free_searxng_for_missing_required'
-      };
-    }
-  } else if (searxngReady) {
-    return {
-      ...baseDecision,
-      provider: 'searxng',
-      reasonCode: 'auto_free_searxng_no_required_gap'
+      provider: configured,
+      reasonCode: 'engines_ready'
     };
   }
   return {
     ...baseDecision,
-    provider: 'none',
-    reasonCode: 'no_provider_ready'
+    provider: '',
+    reasonCode: 'engines_no_searxng_ready'
   };
 }
 
@@ -348,7 +287,7 @@ export function buildRoundConfig(baseConfig, {
     runProfile: 'standard',
     discoveryEnabled: round > 0,
     fetchCandidateSources: round > 0,
-    searchProvider: round === 0 ? 'none' : baseConfig.searchProvider,
+    searchEngines: round === 0 ? '' : baseConfig.searchEngines,
     llmMaxCallsPerRound:
       round === 0
         ? Math.max(1, baseConfig.llmMaxCallsPerRound || 4)
@@ -493,13 +432,13 @@ export function buildRoundConfig(baseConfig, {
       missingRequiredCount: resolvedMissingRequired,
       requiredSearchIteration: requiredIteration
     });
-    next.searchProvider = searchProviderSelection.provider;
+    next.searchEngines = searchProviderSelection.provider;
     next.searchProviderSelection = searchProviderSelection;
     if (!discoveryEnabled) {
-      next.searchProvider = 'none';
+      next.searchEngines = '';
       next.searchProviderSelection = {
         ...searchProviderSelection,
-        provider: 'none',
+        provider: '',
         reason_code: 'discovery_disabled'
       };
     }

@@ -29,7 +29,7 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
 
   // Hardcoded invariants — must always be true
   assert.equal(cfg.serpTriageEnabled, true);
-  assert.equal(cfg.llmSerpRerankEnabled, true);
+  // WHY: llmSerpRerankEnabled removed — LLM escalation gated by serpTriageEnabled + uberMode only
   assert.equal(cfg.enableSchema4SearchPlan, true);
 
   // Concurrency / fetch defaults
@@ -306,7 +306,7 @@ test('CHAR validate: all 4 validation rules produce correct codes', () => {
   assert.ok(r1.warnings.some(w => w.code === 'LLM_NO_API_KEY'));
 
   // Rule 2: DISCOVERY_NO_SEARCH_PROVIDER (warning)
-  const r2 = validateConfig(loadConfig({ searchProvider: 'none' }));
+  const r2 = validateConfig(loadConfig({ searchEngines: '' }));
   assert.ok(r2.warnings.some(w => w.code === 'DISCOVERY_NO_SEARCH_PROVIDER'));
 
   // Rule 3: S3_MODE_NO_CREDS (warning)
@@ -335,7 +335,7 @@ test('CHAR validate: return shape is { valid, errors, warnings }', () => {
 test('CHAR config: convergence keys from SETTINGS_DEFAULTS propagate to config', () => {
   const cfg = loadConfig();
   const convergenceKeys = [
-    'serpTriageMinScore', 'serpTriageMaxUrls',
+    'serpTriageMinScore',
   ];
   for (const key of convergenceKeys) {
     assert.ok(key in cfg, `${key} must exist in config`);
@@ -572,7 +572,7 @@ test('token cap aliasing: per-role fallback token cap keys are removed from conf
 // SECTION 21: PHASE_DEFS — all phases use llmPlanUseReasoning
 // =========================================================================
 
-test('PHASE_DEFS: triage phases (brandResolver, serpTriage, domainClassifier) use llmPlanUseReasoning', () => {
+test('PHASE_DEFS: triage phases (brandResolver, serpTriage) use llmPlanUseReasoning', () => {
   const resolved = applyPostMergeNormalization(
     { ...SETTINGS_DEFAULTS },
     { llmPlanUseReasoning: true },
@@ -582,8 +582,7 @@ test('PHASE_DEFS: triage phases (brandResolver, serpTriage, domainClassifier) us
     'brandResolver must inherit from llmPlanUseReasoning');
   assert.equal(resolved._resolvedSerpTriageUseReasoning, true,
     'serpTriage must inherit from llmPlanUseReasoning');
-  assert.equal(resolved._resolvedDomainClassifierUseReasoning, true,
-    'domainClassifier must inherit from llmPlanUseReasoning');
+  // WHY: domainClassifier removed from PHASE_DEFS — now deterministic, no LLM
 });
 
 test('PHASE_DEFS: all phases resolve baseModel to llmModelPlan', () => {
@@ -594,7 +593,7 @@ test('PHASE_DEFS: all phases resolve baseModel to llmModelPlan', () => {
   );
   const phases = [
     'Needset', 'SearchPlanner', 'BrandResolver', 'SerpTriage',
-    'DomainClassifier', 'Extraction', 'Validate', 'Write',
+    'Extraction', 'Validate', 'Write',
   ];
   for (const phase of phases) {
     assert.equal(resolved[`_resolved${phase}BaseModel`], 'unified-model',

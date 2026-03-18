@@ -2,6 +2,9 @@ import { memo } from 'react';
 import type { RuntimeDraft, NumberBound } from '../types/settingPrimitiveTypes';
 import { AdvancedSettingsBlock, MasterSwitchRow, SettingGroupBlock, SettingRow, SettingToggle } from '../components/RuntimeFlowPrimitives';
 
+const OUTPUT_PHASE_TIP =
+  'Phase coverage: Stage 13 Validation To Output plus durable artifact persistence across the full run.';
+
 interface RuntimeFlowRunOutputSectionProps {
   runtimeDraft: RuntimeDraft;
   runtimeSettingsReady: boolean;
@@ -29,7 +32,7 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
     <>
       <div id={runtimeSubStepDomId('run-output-destinations')} className="scroll-mt-24" />
       <SettingGroupBlock title="Output Destinations">
-        <SettingRow label="Output Mode" tip="Output destination mode: local, dual, or s3.">
+        <SettingRow label="Output Mode" tip={`${OUTPUT_PHASE_TIP}\nLives in: final export routing.\nWhat this controls: whether run artifacts are written locally, mirrored to both destinations, or sent only to S3 paths.`}>
           <select
             value={runtimeDraft.outputMode}
             onChange={(event) => updateDraft('outputMode', event.target.value)}
@@ -41,21 +44,21 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
             <option value="s3">s3</option>
           </select>
         </SettingRow>
-        <SettingRow label="Local Mode" tip="Run output pipeline in local-mode behavior path.">
+        <SettingRow label="Local Mode" tip={`${OUTPUT_PHASE_TIP}\nLives in: runtime export behavior switches.\nWhat this controls: whether the run uses the local-mode output behavior path instead of cloud-oriented assumptions.`}>
           <SettingToggle
             checked={runtimeDraft.localMode}
             onChange={(next) => updateDraft('localMode', next)}
             disabled={!runtimeSettingsReady}
           />
         </SettingRow>
-        <SettingRow label="Dry Run" tip="Execute pipeline without persisting final publish artifacts.">
+        <SettingRow label="Dry Run" tip={`${OUTPUT_PHASE_TIP}\nLives in: final artifact persistence gates.\nWhat this controls: whether the runtime executes the pipeline but skips persisting publish-grade final outputs.`}>
           <SettingToggle
             checked={runtimeDraft.dryRun}
             onChange={(next) => updateDraft('dryRun', next)}
             disabled={!runtimeSettingsReady}
           />
         </SettingRow>
-        <SettingRow label="Local Input Root" tip="Root path used for local input fixture ingestion.">
+        <SettingRow label="Local Input Root" tip={`${OUTPUT_PHASE_TIP}\nLives in: local fixture and input resolution.\nWhat this controls: the root path used when the runtime reads local input fixtures or mirrored assets.`}>
           <input
             type="text"
             value={runtimeDraft.localInputRoot}
@@ -64,7 +67,7 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
             className={inputCls}
           />
         </SettingRow>
-        <SettingRow label="Local Output Root" tip="Root path where local output artifacts are written.">
+        <SettingRow label="Local Output Root" tip={`${OUTPUT_PHASE_TIP}\nLives in: local export destination resolution.\nWhat this controls: the root directory where local run outputs, analysis artifacts, and latest snapshots are written.`}>
           <input
             type="text"
             value={runtimeDraft.localOutputRoot}
@@ -73,7 +76,7 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
             className={inputCls}
           />
         </SettingRow>
-        <SettingRow label="Runtime Events Key" tip="Output key/path for runtime events stream artifact.">
+        <SettingRow label="Runtime Events Key" tip={`${OUTPUT_PHASE_TIP}\nLives in: runtime event-stream export.\nWhat this controls: the output key or path used for the runtime events artifact.`}>
           <input
             type="text"
             value={runtimeDraft.runtimeEventsKey}
@@ -82,14 +85,14 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
             className={inputCls}
           />
         </SettingRow>
-        <SettingRow label="Write Markdown Summary" tip="Emit Markdown summary artifact after run completion.">
+        <SettingRow label="Write Markdown Summary" tip={`${OUTPUT_PHASE_TIP}\nLives in: summary artifact generation after completion.\nWhat this controls: whether a Markdown summary is emitted when the run finishes.`}>
           <SettingToggle
             checked={runtimeDraft.writeMarkdownSummary}
             onChange={(next) => updateDraft('writeMarkdownSummary', next)}
             disabled={!runtimeSettingsReady}
           />
         </SettingRow>
-        <SettingRow label="Runtime Control File" tip="Runtime overrides control file path.">
+        <SettingRow label="Runtime Control File" tip={`${OUTPUT_PHASE_TIP}\nLives in: runtime override loading before and during execution.\nWhat this controls: the control file path used for runtime override inputs.`}>
           <input
             type="text"
             value={runtimeDraft.runtimeControlFile}
@@ -100,21 +103,21 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
           />
         </SettingRow>
         <AdvancedSettingsBlock title="S3 and Cloud Integrations" count={8}>
-          <SettingRow label="Mirror To S3" tip="Mirror output artifacts to S3 destination paths.">
+          <SettingRow label="Mirror To S3" tip={`${OUTPUT_PHASE_TIP}\nLives in: post-run artifact mirroring.\nWhat this controls: whether output artifacts are copied to the configured S3 destination paths.`}>
             <SettingToggle
               checked={runtimeDraft.mirrorToS3}
               onChange={(next) => updateDraft('mirrorToS3', next)}
               disabled={!runtimeSettingsReady}
             />
           </SettingRow>
-          <SettingRow label="Mirror To S3 Input" tip="Mirror local input fixtures to configured S3 input prefix.">
+          <SettingRow label="Mirror To S3 Input" tip={`${OUTPUT_PHASE_TIP}\nLives in: input fixture mirroring.\nWhat this controls: whether locally sourced input fixtures are mirrored to the configured S3 input prefix.`}>
             <SettingToggle
               checked={runtimeDraft.mirrorToS3Input}
               onChange={(next) => updateDraft('mirrorToS3Input', next)}
               disabled={!runtimeSettingsReady}
             />
           </SettingRow>
-          <SettingRow label="S3 Input Prefix" tip="S3 prefix for mirrored input assets.">
+          <SettingRow label="S3 Input Prefix" tip={`${OUTPUT_PHASE_TIP}\nLives in: S3 input destination resolution.\nWhat this controls: the prefix used when mirrored input assets are written to S3.`}>
             <input
               type="text"
               value={runtimeDraft.s3InputPrefix}
@@ -123,7 +126,7 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
               className={inputCls}
             />
           </SettingRow>
-          <SettingRow label="S3 Output Prefix" tip="S3 prefix for mirrored output artifacts.">
+          <SettingRow label="S3 Output Prefix" tip={`${OUTPUT_PHASE_TIP}\nLives in: S3 output destination resolution.\nWhat this controls: the prefix used when output artifacts are mirrored to S3.`}>
             <input
               type="text"
               value={runtimeDraft.s3OutputPrefix}
@@ -132,7 +135,7 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
               className={inputCls}
             />
           </SettingRow>
-          <SettingRow label="ELO Supabase Anon Key" tip="Anonymous key for optional ELO Supabase integrations.">
+          <SettingRow label="ELO Supabase Anon Key" tip={`${OUTPUT_PHASE_TIP}\nLives in: optional cloud integration wiring.\nWhat this controls: the anonymous key used by optional ELO Supabase integrations.`}>
             <input
               type="text"
               value={runtimeDraft.eloSupabaseAnonKey}
@@ -141,7 +144,7 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
               className={inputCls}
             />
           </SettingRow>
-          <SettingRow label="ELO Supabase Endpoint" tip="Base endpoint for optional ELO Supabase integrations.">
+          <SettingRow label="ELO Supabase Endpoint" tip={`${OUTPUT_PHASE_TIP}\nLives in: optional cloud integration wiring.\nWhat this controls: the base endpoint used by optional ELO Supabase integrations.`}>
             <input
               type="text"
               value={runtimeDraft.eloSupabaseEndpoint}
@@ -150,10 +153,10 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
               className={inputCls}
             />
           </SettingRow>
-          <SettingRow label="AWS Region" tip="AWS region token for S3 and related integrations." description="Configured on Storage tab.">
+          <SettingRow label="AWS Region" tip={`${OUTPUT_PHASE_TIP}\nLives in: shared storage configuration.\nWhat this controls: the AWS region token used for S3 and related integrations.`} description="Configured on Storage tab.">
             <span className="sf-text-label">{storageAwsRegion || runtimeDraft.awsRegion || 'us-east-2'}</span>
           </SettingRow>
-          <SettingRow label="S3 Bucket" tip="S3 bucket name used for output/input mirroring." description="Configured on Storage tab.">
+          <SettingRow label="S3 Bucket" tip={`${OUTPUT_PHASE_TIP}\nLives in: shared storage configuration.\nWhat this controls: the bucket name used for input and output mirroring.`} description="Configured on Storage tab.">
             <span className="sf-text-label">{storageS3Bucket || runtimeDraft.s3Bucket || '(not set)'}</span>
           </SettingRow>
         </AdvancedSettingsBlock>

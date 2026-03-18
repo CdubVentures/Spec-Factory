@@ -237,7 +237,6 @@ test('hotfix-sensitive runtime defaults stay aligned across shared defaults and 
     { settingsKey: 'discoveryEnabled', configKey: 'discoveryEnabled', envKey: 'DISCOVERY_ENABLED' },
     { settingsKey: 'discoveryMaxDiscovered', configKey: 'discoveryMaxDiscovered', envKey: 'DISCOVERY_MAX_DISCOVERED' },
     { settingsKey: 'serpTriageMinScore', configKey: 'serpTriageMinScore', envKey: 'SERP_TRIAGE_MIN_SCORE' },
-    { settingsKey: 'serpTriageMaxUrls', configKey: 'serpTriageMaxUrls', envKey: 'SERP_TRIAGE_MAX_URLS' },
     { settingsKey: 'serpRerankerWeightMapJson', configKey: 'serpRerankerWeightMapJson', envKey: 'SERP_RERANKER_WEIGHT_MAP_JSON' },
     { settingsKey: 'llmExtractMaxSnippetsPerBatch', configKey: 'llmExtractMaxSnippetsPerBatch', envKey: 'LLM_EXTRACT_MAX_SNIPPETS_PER_BATCH' },
     { settingsKey: 'llmMaxCallsPerProductTotal', configKey: 'llmMaxCallsPerProductTotal', envKey: 'LLM_MAX_CALLS_PER_PRODUCT_TOTAL' },

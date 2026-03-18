@@ -15,15 +15,12 @@ export function collectRuntimeSettingsPayload(
     runtimeSettingsFallbackBaseline,
   } = input;
   return {
-    searchProvider: input.searchProvider,
+    searchEngines: input.searchEngines,
+    searchEnginesFallback: input.searchEnginesFallback,
     searxngBaseUrl: String(input.searxngBaseUrl || '').trim(),
     llmPlanApiKey: String(input.llmPlanApiKey || '').trim(),
     llmModelPlan: String(input.llmModelPlan || '').trim(),
     llmModelReasoning: String(input.llmModelReasoning || '').trim(),
-    llmExtractMaxTokens: parseRuntimeInt(
-      input.llmExtractMaxTokens,
-      runtimeSettingsFallbackBaseline.llmExtractMaxTokens,
-    ),
     llmExtractMaxSnippetsPerBatch: parseRuntimeInt(
       input.llmExtractMaxSnippetsPerBatch,
       runtimeSettingsFallbackBaseline.llmExtractMaxSnippetsPerBatch,
@@ -31,10 +28,6 @@ export function collectRuntimeSettingsPayload(
     llmExtractMaxSnippetChars: parseRuntimeInt(
       input.llmExtractMaxSnippetChars,
       runtimeSettingsFallbackBaseline.llmExtractMaxSnippetChars,
-    ),
-    llmExtractReasoningBudget: parseRuntimeInt(
-      input.llmExtractReasoningBudget,
-      runtimeSettingsFallbackBaseline.llmExtractReasoningBudget,
     ),
     llmReasoningBudget: parseRuntimeInt(
       input.llmReasoningBudget,
@@ -328,10 +321,6 @@ export function collectRuntimeSettingsPayload(
     maxCandidateUrls: parseRuntimeInt(
       input.maxCandidateUrls,
       runtimeSettingsFallbackBaseline.maxCandidateUrls,
-    ),
-    serpTriageMaxUrls: parseRuntimeInt(
-      input.serpTriageMaxUrls,
-      runtimeSettingsFallbackBaseline.serpTriageMaxUrls,
     ),
     maxPagesPerDomain: parseRuntimeInt(
       input.maxPagesPerDomain,

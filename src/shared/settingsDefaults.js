@@ -1,23 +1,23 @@
 // Canonical shared settings defaults.
 // Tune runtime/convergence/UI defaults here.
 
+export const SEARXNG_AVAILABLE_ENGINES = Object.freeze(['google', 'bing', 'startpage', 'duckduckgo', 'brave']);
+
 export const SETTINGS_DEFAULTS = Object.freeze({
   convergence: Object.freeze({
     serpTriageMinScore: 3,
-    serpTriageMaxUrls: 20,
   }),
   // Canonical runtime settings. GUI aliases retired — use canonical names only.
   runtime: Object.freeze({
-    searchProvider: 'dual',
+    searchEngines: 'startpage',
+    searchEnginesFallback: 'bing',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     llmPlanApiKey: '',
     llmModelPlan: 'gemini-2.5-flash',
     llmModelReasoning: 'deepseek-reasoner',
-    llmExtractMaxTokens: 1200,
     llmExtractMaxSnippetsPerBatch: 4,
     llmExtractMaxSnippetChars: 700,
     llmExtractSkipLowSignal: true,
-    llmExtractReasoningBudget: 2048,
     llmReasoningMode: true,
     llmReasoningBudget: 32768,
     llmMonthlyBudgetUsd: 300,
@@ -45,7 +45,7 @@ export const SETTINGS_DEFAULTS = Object.freeze({
     scannedPdfOcrBackend: 'auto',
     fetchConcurrency: 4,
     perHostMinDelayMs: 1500,
-    searxngMinQueryIntervalMs: 2000,
+    searxngMinQueryIntervalMs: 3000,
     domainRequestRps: 0,
     domainRequestBurst: 0,
     globalRequestRps: 0,
@@ -426,7 +426,6 @@ export const SETTINGS_DEFAULTS = Object.freeze({
     indexingReextractAfterHours: 24,
     indexingReextractEnabled: true,
     dynamicFetchPolicyMap: Object.freeze({}),
-    serpTriageMaxUrls: 20
   }),
   storage: Object.freeze({
     enabled: false,
@@ -461,7 +460,8 @@ export const SETTINGS_DEFAULTS = Object.freeze({
 
 export const SETTINGS_OPTION_VALUES = Object.freeze({
   runtime: Object.freeze({
-    searchProvider: Object.freeze(['none', 'google', 'bing', 'searxng', 'dual']),
+    searchEngines: SEARXNG_AVAILABLE_ENGINES,
+    searchEnginesFallback: SEARXNG_AVAILABLE_ENGINES,
     resumeMode: Object.freeze(['auto', 'force_resume', 'start_over']),
     scannedPdfOcrBackend: Object.freeze(['auto', 'tesseract', 'none']),
     repairDedupeRule: Object.freeze(['domain_once', 'domain_and_status', 'none']),

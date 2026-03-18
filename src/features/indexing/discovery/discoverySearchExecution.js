@@ -236,7 +236,7 @@ export async function executeSearchQueries({
         const startedAt = Date.now();
         logger?.info?.('discovery_query_started', {
           query,
-          provider: config.searchProvider
+          provider: config.searchEngines
         });
         let providerResults = await runSearchProvidersFn({
           config,
@@ -265,7 +265,7 @@ export async function executeSearchQueries({
           _p4aFs.mkdirSync(_dqDir, { recursive: true });
           _p4aRecordQueryResult({
             query,
-            provider: config.searchProvider || '',
+            provider: config.searchEngines || '',
             result_count: providerResults.length,
             run_id: runId,
             category: job.category || categoryConfig.category || '',
@@ -275,7 +275,7 @@ export async function executeSearchQueries({
         const queryRecord = frontierDb?.recordQuery?.({
           productId: job.productId,
           query,
-          provider: config.searchProvider,
+          provider: config.searchEngines,
           fields: missingFields,
           results: providerResults
         });
@@ -285,7 +285,7 @@ export async function executeSearchQueries({
             prefix: `query_${queryRecord?.query_hash || 'hash'}`,
             payload: {
               query,
-              provider: config.searchProvider,
+              provider: config.searchEngines,
               result_count: providerResults.length,
               results: providerResults.slice(0, 20)
             },
@@ -300,13 +300,13 @@ export async function executeSearchQueries({
         const durationMs = Math.max(0, Date.now() - startedAt);
         logger?.info?.('discovery_query_completed', {
           query,
-          provider: config.searchProvider,
+          provider: config.searchEngines,
           result_count: providerResults.length,
           duration_ms: durationMs
         });
         if (providerResults.length > 0) {
           const engines = [...new Set(providerResults.map((r) => r?.provider).filter(Boolean))];
-          const resolvedProvider = engines.length === 1 ? engines[0] : engines.length > 1 ? engines.join('+') : config.searchProvider;
+          const resolvedProvider = engines.length === 1 ? engines[0] : engines.length > 1 ? engines.join('+') : config.searchEngines;
           logger?.info?.('search_results_collected', {
             query,
             provider: resolvedProvider,
@@ -333,7 +333,7 @@ export async function executeSearchQueries({
           providerResults,
           attempt: {
             query,
-            provider: config.searchProvider,
+            provider: config.searchEngines,
             result_count: providerResults.length,
             reason_code: reasonCode,
             duration_ms: durationMs
@@ -341,7 +341,7 @@ export async function executeSearchQueries({
           journal: {
             ts: new Date().toISOString(),
             query,
-            provider: config.searchProvider,
+            provider: config.searchEngines,
             result_count: providerResults.length,
             reason_code: reasonCode,
             duration_ms: durationMs

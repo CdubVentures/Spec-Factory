@@ -185,6 +185,9 @@ async function loadSerpTriageModule() {
         export function usePersistedNullableTab(_key, initialValue) {
           return [initialValue ?? null, () => {}];
         }
+        export function usePersistedExpandMap(_key, defaultValue) {
+          return [defaultValue || {}, () => {}, () => {}];
+        }
       `,
       '../../components/KanbanLane': `
         export function KanbanLane(props) {
@@ -377,14 +380,13 @@ test('prefetch planner and triage panels hide live-setting badges until booleans
     'planner empty state should no longer show an LLM Planner badge (knob retired)',
   );
   assert.equal(
-    triageDeterministicText.includes('Runtime Mode:')
-      && triageDeterministicText.includes('Deterministic'),
+    triageDeterministicText.includes('LLM'),
     true,
-    'triage empty state should surface deterministic mode once the explicit live setting is available',
+    'triage should show LLM badge (deterministic/llm toggle retired)',
   );
 });
 
-test('search profile planner badge falls back to artifact state until live settings arrive', async () => {
+test('search profile shows deterministic badge regardless of live settings state', async () => {
   const { PrefetchSearchProfilePanel } = await loadSearchProfileModule();
   const populatedProfileData = createSearchProfileData({
     artifactPlannerActive: true,
@@ -399,36 +401,33 @@ test('search profile planner badge falls back to artifact state until live setti
     liveSettings: undefined,
     idxRuntime: [],
   }));
-  // phase2LlmEnabled retired — planner badge now derives solely from artifact state
   const withLiveSettings = renderElement(PrefetchSearchProfilePanel({
     data: populatedProfileData,
     searchPlans: [],
     persistScope: 'runtime-ops-search-profile-contract',
-    liveSettings: { searchProvider: '' },
+    liveSettings: { searchEngines: '' },
     idxRuntime: [],
   }));
 
-  const artifactOnlyBadge = collectNodes(
+  const artifactDeterministic = collectNodes(
     artifactOnlyTree,
     (node) => node.type === 'span'
-      && textContent(node).includes('LLM Planner')
+      && textContent(node).includes('Deterministic')
       && String(node.props?.className || '').includes('sf-chip'),
   )[0];
-  const withLiveBadge = collectNodes(
+  const liveDeterministic = collectNodes(
     withLiveSettings,
     (node) => node.type === 'span'
-      && textContent(node).includes('LLM Planner')
+      && textContent(node).includes('Deterministic')
       && String(node.props?.className || '').includes('sf-chip'),
   )[0];
 
-  assert.equal(
-    String(artifactOnlyBadge?.props?.className || '').includes('sf-chip-warning'),
-    true,
-    'search profile should treat artifact planner state as active until live settings hydrate',
+  assert.ok(
+    artifactDeterministic,
+    'search profile shows Deterministic badge without live settings',
   );
-  assert.equal(
-    String(withLiveBadge?.props?.className || '').includes('sf-chip-warning'),
-    true,
-    'planner badge always shows when artifact reports planner active (knob retired)',
+  assert.ok(
+    liveDeterministic,
+    'search profile shows Deterministic badge with live settings',
   );
 });

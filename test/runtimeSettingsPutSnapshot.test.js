@@ -19,7 +19,7 @@ test('PUT runtime-settings response includes full snapshot after persist', async
   const config = {
     fetchConcurrency: 4,
     dynamicCrawleeEnabled: true,
-    searchProvider: 'dual',
+    searchEngines: 'bing,google',
     dynamicFetchPolicyMapJson: '',
   };
 

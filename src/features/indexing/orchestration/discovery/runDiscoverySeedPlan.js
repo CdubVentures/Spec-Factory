@@ -4,6 +4,7 @@ import { normalizeFieldList } from '../../../../utils/fieldKeys.js';
 import { computeNeedSet } from '../../../../indexlab/needsetEngine.js';
 import { buildSearchPlanningContext } from '../../../../indexlab/searchPlanningContext.js';
 import { buildSearchPlan } from '../../../../indexlab/searchPlanBuilder.js';
+import { canonicalizeQueueUrl } from '../../../../planner/sourcePlannerUrlUtils.js';
 
 function validateFunctionArg(name, value) {
   if (typeof value !== 'function') {
@@ -66,14 +67,12 @@ export async function runDiscoverySeedPlan({
 
   // WHY: discoveryEnabled is a pipeline invariant — always on.
   // No external surface (GUI, API, CLI, persisted settings) should disable it.
-  // roundConfigBuilder sets searchProvider='none' for round 0 — recover the real provider.
-  const resolvedSearchProvider = (config.searchProvider && config.searchProvider !== 'none')
-    ? config.searchProvider
-    : 'dual';
+  // roundConfigBuilder sets searchEngines='' for round 0 — recover the real engines.
+  const resolvedSearchEngines = config.searchEngines || 'bing,google';
   const discoveryConfig = {
     ...config,
     discoveryEnabled: true,
-    searchProvider: resolvedSearchProvider,
+    searchEngines: resolvedSearchEngines,
   };
   const sourceEntries = await loadEnabledSourceEntriesFn({ config, category });
   const planningHints = normalizePlanningHints({
@@ -87,6 +86,7 @@ export async function runDiscoverySeedPlan({
   // is available as input to discoverCandidateSources (Schema 4 path).
   let searchPlanHandoff = null;
   let seedSchema4 = null;
+  let schema3 = null;
   if (config.enableSchema4SearchPlan) {
     try {
       const schema2 = computeNeedSetFn({
@@ -115,7 +115,7 @@ export async function runDiscoverySeedPlan({
         ? roundContext.previousRoundFields
         : null;
 
-      const schema3 = buildSearchPlanningContextFn({
+      schema3 = buildSearchPlanningContextFn({
         needSetOutput: schema2,
         config,
         fieldGroupsData: categoryConfig?.fieldGroups || {},
@@ -174,6 +174,11 @@ export async function runDiscoverySeedPlan({
     }
   }
 
+  // WHY: focusGroups from Schema 3 carry NeedSet pressure signals
+  // (core_unresolved_count per field group) needed by lane-quota selection
+  // and surface-aware scoring in the triage pipeline.
+  const focusGroups = schema3?.focus_groups || [];
+
   const discoveryResult = await discoverCandidateSourcesFn({
     config: discoveryConfig,
     storage,
@@ -188,6 +193,7 @@ export async function runDiscoverySeedPlan({
     learningStoreHints,
     sourceEntries,
     searchPlanHandoff,
+    focusGroups,
   });
 
   // WHY: Attach the seed-phase schema4 so finalization can reuse it
@@ -196,16 +202,76 @@ export async function runDiscoverySeedPlan({
     discoveryResult.seed_search_plan_output = seedSchema4;
   }
 
+  // WHY: Build triage metadata map keyed by canonical URL so planner.enqueue()
+  // can look up triage labels. Canonical key matches planner dedup normalization.
+  const triageMetaMap = new Map();
+  for (const candidate of discoveryResult.candidates || []) {
+    let canonical;
+    try {
+      canonical = canonicalizeQueueUrl(new URL(candidate.url));
+    } catch {
+      continue;
+    }
+    triageMetaMap.set(canonical, {
+      raw_url: candidate.original_url || candidate.url,
+      normalized_url: candidate.url,
+      canonical_url: canonical,
+      identity_prelim: candidate.identity_prelim || null,
+      host_trust_class: candidate.host_trust_class || null,
+      doc_kind_guess: candidate.doc_kind_guess || null,
+      extraction_surface_prior: candidate.extraction_surface_prior || null,
+      primary_lane: candidate.primary_lane || null,
+      triage_disposition: candidate.triage_disposition || null,
+      approval_bucket: candidate.approval_bucket || null,
+      // WHY: prefer explicit Stage 06 selection_priority if present;
+      // derive from triage_disposition only as fallback.
+      selection_priority: candidate.selection_priority
+        || (candidate.triage_disposition === 'fetch_high' ? 'high'
+          : candidate.triage_disposition === 'fetch_normal' ? 'medium'
+          : candidate.triage_disposition === 'fetch_low' ? 'low'
+          : 'low'),
+      soft_reason_codes: candidate.soft_reason_codes || null,
+      triage_score: candidate.score ?? candidate.triage_score ?? 0,
+      query_family: candidate.query_family || null,
+      target_fields: candidate.target_fields || null,
+      hint_source: candidate.hint_source || null,
+      doc_hint: candidate.doc_hint || null,
+      domain_hint: candidate.domain_hint || null,
+      providers: candidate.providers || null,
+    });
+  }
+
   for (const url of discoveryResult.approvedUrls || []) {
-    planner.enqueue(url, 'discovery_approved', { forceApproved: true, forceBrandBypass: false });
+    const meta = triageMetaMap.size > 0 ? _lookupTriageMeta(url, triageMetaMap) : null;
+    planner.enqueue(url, 'discovery_approved', { forceApproved: true, forceBrandBypass: false, triageMeta: meta });
   }
   if (discoveryResult.enabled && config.maxCandidateUrls > 0 && config.fetchCandidateSources) {
-    planner.seedCandidates(discoveryResult.candidateUrls || []);
+    planner.seedCandidates(discoveryResult.candidateUrls || [], { triageMetaMap });
   }
 
   if (planner.enqueueCounters) {
-    logger?.info?.('discovery_enqueue_summary', planner.enqueueCounters);
+    const counters = planner.enqueueCounters;
+    logger?.info?.('discovery_enqueue_summary', {
+      ...counters,
+      input_approved_count: (discoveryResult.approvedUrls || []).length,
+      input_candidate_count: (discoveryResult.candidateUrls || []).length,
+    });
   }
 
   return discoveryResult;
+}
+
+function _lookupTriageMeta(url, triageMetaMap) {
+  if (!triageMetaMap || triageMetaMap.size === 0) return null;
+  try {
+    const parsed = new URL(url);
+    const canonical = canonicalizeQueueUrl(parsed);
+    if (triageMetaMap.has(canonical)) return triageMetaMap.get(canonical);
+    const normalized = parsed.toString();
+    if (triageMetaMap.has(normalized)) return triageMetaMap.get(normalized);
+  } catch {
+    // Fall through
+  }
+  if (triageMetaMap.has(url)) return triageMetaMap.get(url);
+  return null;
 }

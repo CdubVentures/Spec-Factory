@@ -9,7 +9,8 @@ export const INDEXING_CATEGORY_AUTHORITY_ENABLED_KEY = 'indexingCategoryAuthorit
 export const RUNTIME_SETTINGS_ROUTE_GET = Object.freeze({
   dynamicFetchPolicyMapJsonKey: 'dynamicFetchPolicyMapJson',
   stringMap: Object.freeze({
-    searchProvider: 'searchProvider',
+    searchEngines: 'searchEngines',
+    searchEnginesFallback: 'searchEnginesFallback',
     searxngBaseUrl: 'searxngBaseUrl',
     llmPlanApiKey: 'llmPlanApiKey',
     llmModelPlan: 'llmModelPlan',
@@ -97,15 +98,12 @@ export const RUNTIME_SETTINGS_ROUTE_GET = Object.freeze({
     maxHypothesisItems: 'maxHypothesisItems',
     hypothesisAutoFollowupRounds: 'hypothesisAutoFollowupRounds',
     hypothesisFollowupUrlsPerRound: 'hypothesisFollowupUrlsPerRound',
-    serpTriageMaxUrls: 'serpTriageMaxUrls',
     llmMaxOutputTokensPlan: 'llmMaxOutputTokensPlan',
     llmMaxOutputTokensReasoning: 'llmMaxOutputTokensReasoning',
     llmMaxOutputTokensPlanFallback: 'llmMaxOutputTokensPlanFallback',
     llmMaxOutputTokensReasoningFallback: 'llmMaxOutputTokensReasoningFallback',
-    llmExtractMaxTokens: 'llmExtractMaxTokens',
     llmExtractMaxSnippetsPerBatch: 'llmExtractMaxSnippetsPerBatch',
     llmExtractMaxSnippetChars: 'llmExtractMaxSnippetChars',
-    llmExtractReasoningBudget: 'llmExtractReasoningBudget',
     llmReasoningBudget: 'llmReasoningBudget',
     llmMaxCallsPerRound: 'llmMaxCallsPerRound',
     llmMaxOutputTokens: 'llmMaxOutputTokens',
@@ -225,7 +223,6 @@ export const RUNTIME_SETTINGS_ROUTE_GET = Object.freeze({
 
 export const CONVERGENCE_SETTINGS_KEYS = Object.freeze([
   'serpTriageMinScore',
-  'serpTriageMaxUrls',
 ]);
 
 // WHY: Dual-key pairs must have identical values. Self-referencing pairs

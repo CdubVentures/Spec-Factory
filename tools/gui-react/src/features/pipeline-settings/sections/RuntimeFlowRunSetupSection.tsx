@@ -1,18 +1,40 @@
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import {
-  formatRuntimeSearchProviderLabel,
-  RUNTIME_SEARCH_ROUTE_HELP_TEXT,
+  RUNTIME_SEARCH_PRIMARY_HELP,
+  RUNTIME_SEARCH_DUAL_HELP,
+  RUNTIME_SEARCH_TRIPLE_HELP,
+  RUNTIME_SEARCH_FALLBACK_HELP,
+  SEARXNG_ENGINE_OPTIONS,
+  SEARXNG_ENGINE_LABELS,
 } from '../../../stores/settingsManifest';
+import type { SearxngEngine } from '../../../stores/settingsManifest';
 import type { RuntimeDraft, NumberBound } from '../types/settingPrimitiveTypes';
 import { AdvancedSettingsBlock, SettingGroupBlock, SettingNumberInput, SettingRow, SettingToggle } from '../components/RuntimeFlowPrimitives';
 
 const DISCOVERY_PHASE_TIP =
   'Phase coverage: 01 NeedSet, 02 Brand Resolver, 03 Search Profile, 04 Search Planner, 05 Query Journey, 06 Search Results, and 07 SERP Triage.';
+const PROFILE_PLANNER_JOURNEY_NOTE =
+  'Ordering note: Search Planner is precomputed early from NeedSet, Search Profile is the deterministic and fallback profile branch inside searchDiscovery(), and Query Journey chooses the Schema 4 handoff or the legacy profile chain before search executes.';
 const BUDGET_PHASE_TIP =
   'Phase coverage: 05 Query Journey, 06 Search Results, 07 SERP Triage, and 08 Fetch and Parse Entry.';
 const RESUME_PHASE_TIP =
   'Phase coverage: runtime bootstrap plus late refresh before Stage 09 Fetch To Extraction.';
+
+type EngineSlot = SearxngEngine | 'none';
+
+function parseEngineSlots(csv: string): { primary: EngineSlot; dual: EngineSlot; triple: EngineSlot } {
+  const tokens = csv.split(',').map(t => t.trim()).filter(Boolean) as SearxngEngine[];
+  return {
+    primary: tokens[0] || 'none',
+    dual: tokens[1] || 'none',
+    triple: tokens[2] || 'none',
+  };
+}
+
+function composeEnginesCsv(primary: EngineSlot, dual: EngineSlot, triple: EngineSlot): string {
+  return [primary, dual, triple].filter(v => v !== 'none').join(',');
+}
 
 interface RuntimeFlowRunSetupSectionProps {
   runtimeDraft: RuntimeDraft;
@@ -21,7 +43,6 @@ interface RuntimeFlowRunSetupSectionProps {
   plannerControlsLocked: boolean;
   inputCls: string;
   runtimeSubStepDomId: (id: string) => string;
-  searchProviderOptions: readonly RuntimeDraft['searchProvider'][];
   resumeModeOptions: readonly RuntimeDraft['resumeMode'][];
   updateDraft: <K extends keyof RuntimeDraft>(key: K, value: RuntimeDraft[K]) => void;
   onNumberChange: <K extends keyof RuntimeDraft>(key: K, eventValue: string, bounds: NumberBound) => void;
@@ -36,38 +57,129 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
   plannerControlsLocked,
   inputCls,
   runtimeSubStepDomId,
-  searchProviderOptions,
   resumeModeOptions,
   updateDraft,
   onNumberChange,
   getNumberBounds,
   renderDisabledHint,
 }: RuntimeFlowRunSetupSectionProps) {
+  const slots = parseEngineSlots(runtimeDraft.searchEngines);
+  const fallbackRaw = (runtimeDraft.searchEnginesFallback ?? '').split(',')[0]?.trim() || '';
+  const fallbackEngine: EngineSlot = (SEARXNG_ENGINE_OPTIONS as readonly string[]).includes(fallbackRaw) ? fallbackRaw as SearxngEngine : 'none';
+
+  // Collect all currently used engines to filter out duplicates from each dropdown
+  const usedBy: Record<string, string> = {};
+  if (slots.primary !== 'none') usedBy[slots.primary] = 'primary';
+  if (slots.dual !== 'none') usedBy[slots.dual] = 'dual';
+  if (slots.triple !== 'none') usedBy[slots.triple] = 'triple';
+  if (fallbackEngine !== 'none') usedBy[fallbackEngine] = 'fallback';
+
+  const handleSlotChange = useCallback((slot: 'primary' | 'dual' | 'triple' | 'fallback', value: string) => {
+    let nextPrimary: EngineSlot = slots.primary;
+    let nextDual: EngineSlot = slots.dual;
+    let nextTriple: EngineSlot = slots.triple;
+    let nextFallback: EngineSlot = fallbackEngine;
+
+    if (slot === 'primary') nextPrimary = value as EngineSlot;
+    if (slot === 'dual') nextDual = value as EngineSlot;
+    if (slot === 'triple') nextTriple = value as EngineSlot;
+    if (slot === 'fallback') nextFallback = value as EngineSlot;
+
+    // Auto-clear duplicates: if the new value collides with another slot, clear the other
+    if (value !== 'none') {
+      if (slot !== 'primary' && nextPrimary === value) nextPrimary = 'none';
+      if (slot !== 'dual' && nextDual === value) nextDual = 'none';
+      if (slot !== 'triple' && nextTriple === value) nextTriple = 'none';
+      if (slot !== 'fallback' && nextFallback === value) nextFallback = 'none';
+    }
+
+    updateDraft('searchEngines', composeEnginesCsv(nextPrimary, nextDual, nextTriple) as RuntimeDraft['searchEngines']);
+    updateDraft('searchEnginesFallback', (nextFallback === 'none' ? '' : nextFallback) as RuntimeDraft['searchEnginesFallback']);
+  }, [slots.primary, slots.dual, slots.triple, fallbackEngine, updateDraft]);
+
+  function availableOptions(currentSlot: string, includeNone: boolean): { value: string; label: string; disabled: boolean }[] {
+    const options: { value: string; label: string; disabled: boolean }[] = [];
+    if (includeNone) {
+      options.push({ value: 'none', label: 'None', disabled: false });
+    }
+    for (const engine of SEARXNG_ENGINE_OPTIONS) {
+      const owner = usedBy[engine];
+      const taken = owner !== undefined && owner !== currentSlot;
+      options.push({ value: engine, label: SEARXNG_ENGINE_LABELS[engine], disabled: taken });
+    }
+    return options;
+  }
+
   return (
     <>
       {/* ── Discovery ── */}
       <div id={runtimeSubStepDomId('run-setup-discovery')} className="scroll-mt-24" />
       <SettingGroupBlock title="Discovery">
-        <SettingRow
-          label="Search Route"
-          tip={RUNTIME_SEARCH_ROUTE_HELP_TEXT}
-                 >
+        <SettingRow label="Primary Engine" tip={RUNTIME_SEARCH_PRIMARY_HELP}>
           <select
-            value={runtimeDraft.searchProvider}
-            onChange={(event) => updateDraft('searchProvider', event.target.value as RuntimeDraft['searchProvider'])}
+            value={slots.primary}
+            onChange={(e) => handleSlotChange('primary', e.target.value)}
             disabled={!runtimeSettingsReady}
             className={inputCls}
           >
-            {searchProviderOptions.map((option) => (
-              <option key={`provider:${option}`} value={option}>
-                {formatRuntimeSearchProviderLabel(option)}
+            {availableOptions('primary', true).map((opt) => (
+              <option key={`primary-${opt.value}`} value={opt.value} disabled={opt.disabled}>
+                {opt.label}{opt.disabled ? ' (in use)' : ''}
+              </option>
+            ))}
+          </select>
+          {slots.primary === 'none' ? (
+            <span className="sf-text-muted text-xs mt-1">No primary engine — discovery search will be skipped.</span>
+          ) : null}
+        </SettingRow>
+        <SettingRow label="Dual Engine" tip={RUNTIME_SEARCH_DUAL_HELP}>
+          <select
+            value={slots.dual}
+            onChange={(e) => handleSlotChange('dual', e.target.value)}
+            disabled={!runtimeSettingsReady}
+            className={inputCls}
+          >
+            {availableOptions('dual', true).map((opt) => (
+              <option key={`dual-${opt.value}`} value={opt.value} disabled={opt.disabled}>
+                {opt.label}{opt.disabled ? ' (in use)' : ''}
               </option>
             ))}
           </select>
         </SettingRow>
+        <SettingRow label="Triple Engine" tip={RUNTIME_SEARCH_TRIPLE_HELP}>
+          <select
+            value={slots.triple}
+            onChange={(e) => handleSlotChange('triple', e.target.value)}
+            disabled={!runtimeSettingsReady}
+            className={inputCls}
+          >
+            {availableOptions('triple', true).map((opt) => (
+              <option key={`triple-${opt.value}`} value={opt.value} disabled={opt.disabled}>
+                {opt.label}{opt.disabled ? ' (in use)' : ''}
+              </option>
+            ))}
+          </select>
+        </SettingRow>
+        <SettingRow label="Fallback Engine" tip={RUNTIME_SEARCH_FALLBACK_HELP}>
+          <select
+            value={fallbackEngine}
+            onChange={(e) => handleSlotChange('fallback', e.target.value)}
+            disabled={!runtimeSettingsReady}
+            className={inputCls}
+          >
+            {availableOptions('fallback', true).map((opt) => (
+              <option key={`fallback-${opt.value}`} value={opt.value} disabled={opt.disabled}>
+                {opt.label}{opt.disabled ? ' (in use)' : ''}
+              </option>
+            ))}
+          </select>
+          {fallbackEngine === 'none' ? (
+            <span className="sf-text-muted text-xs mt-1">No fallback — if primary engines fail, search returns empty.</span>
+          ) : null}
+        </SettingRow>
         <SettingRow
           label="SearXNG Base URL"
-          tip={`${DISCOVERY_PHASE_TIP}\nLives in: discovery query execution before results enter SERP triage.\nWhat this controls: the SearXNG endpoint used by every routed discovery query.`}
+          tip={`${DISCOVERY_PHASE_TIP}\n${PROFILE_PLANNER_JOURNEY_NOTE}\nLives in: discovery query execution after Query Journey picks the final rows.\nWhat this controls: the SearXNG endpoint used when those chosen discovery queries are actually executed.`}
         >
           <input type="text" value={runtimeDraft.searxngBaseUrl} onChange={(event) => updateDraft('searxngBaseUrl', event.target.value)} disabled={!runtimeSettingsReady} className={inputCls} placeholder="http://localhost:8080" />
         </SettingRow>
@@ -79,7 +191,7 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
         </SettingRow>
         <SettingRow
           label="Discovery Max Queries"
-          tip={`${DISCOVERY_PHASE_TIP}\nLives in: Search Planner and Query Journey query-budget enforcement.\nWhat this controls: the maximum number of discovery queries the planner can emit for a single product before execution starts.`}
+          tip={`Phase coverage: 04 Search Planner and 05 Query Journey.\n${PROFILE_PLANNER_JOURNEY_NOTE}\nLives in: Schema 4 planner output capping before Query Journey applies identity guard and final selection.\nWhat this controls: the global query cap for planner-produced discovery output. It shapes the Schema 4 handoff first and only then constrains what Query Journey can forward to execution.`}
         >
           <SettingNumberInput draftKey="discoveryMaxQueries" value={runtimeDraft.discoveryMaxQueries} bounds={getNumberBounds('discoveryMaxQueries')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
@@ -102,7 +214,7 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
           </SettingRow>
           <SettingRow
             label="Search Profile Caps Map (JSON)"
-            tip={`Phase coverage: 03 Search Profile and 05 Query Journey.\nLives in: deterministic query/profile assembly before identity guard and execution.\nWhat this controls: the JSON cap map that limits aliases, hint queries, field-target queries, and duplicate rows while the search profile is being built.`}
+            tip={`Phase coverage: 03 Search Profile with downstream effect on 05 Query Journey.\n${PROFILE_PLANNER_JOURNEY_NOTE}\nLives in: buildSearchProfile() and planned profile assembly inside searchDiscovery().\nWhat this controls: the JSON cap map for aliases, hint rows, field-target queries, and duplicate suppression in the deterministic/fallback profile branch. It does not directly cap Schema 4 planner output.`}
             disabled={plannerControlsLocked}
           >
             <textarea value={runtimeDraft.searchProfileCapMapJson} onChange={(event) => updateDraft('searchProfileCapMapJson', event.target.value)} disabled={!runtimeSettingsReady || plannerControlsLocked} className={`${inputCls} min-h-[88px] font-mono sf-text-label`} spellCheck={false} />

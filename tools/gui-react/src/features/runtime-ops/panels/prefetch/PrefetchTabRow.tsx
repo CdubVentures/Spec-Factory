@@ -64,18 +64,18 @@ const TABS: { key: PrefetchTabKey; label: string; markerClass: string; idleClass
   {
     key: 'serp_triage',
     label: 'SERP Triage',
-    markerClass: 'sf-prefetch-dot-warning',
-    idleClass: 'sf-prefetch-tab-idle-warning',
-    outlineClass: 'sf-prefetch-tab-outline-warning',
-    tip: 'Scores and filters every search result before fetching.\nKeeps high-value pages (manufacturer specs, lab reviews) and drops low-value ones (forums, unrelated products).',
+    markerClass: 'sf-prefetch-dot-info',
+    idleClass: 'sf-prefetch-tab-idle-info',
+    outlineClass: 'sf-prefetch-tab-outline-info',
+    tip: 'Scores and filters every search result before fetching.\nStarts with deterministic heuristics — escalates to LLM if quality gate is not met.',
   },
   {
     key: 'domain_classifier',
     label: 'Domain Classifier',
-    markerClass: 'sf-prefetch-dot-warning',
-    idleClass: 'sf-prefetch-tab-idle-warning',
-    outlineClass: 'sf-prefetch-tab-outline-warning',
-    tip: 'Checks whether each website is safe and useful to fetch.\nClassifies domains by role (manufacturer, review site, retailer) and blocks known-bad hosts.',
+    markerClass: 'sf-prefetch-dot-info',
+    idleClass: 'sf-prefetch-tab-idle-info',
+    outlineClass: 'sf-prefetch-tab-outline-info',
+    tip: 'Checks whether each website is safe and useful to fetch.\nClassifies domains by role (manufacturer, review site, retailer) and routes them to queues.\nUses deterministic heuristics — no LLM call.',
   },
 ];
 

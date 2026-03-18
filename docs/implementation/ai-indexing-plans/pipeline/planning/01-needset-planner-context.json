@@ -178,7 +178,7 @@
       "actual": "searchPlanningContext.js:73 - parseCapMap()",
       "status": "MATCH"
     },
-    "searchProvider": {
+    "searchEngines": {
       "actual": "searchPlanningContext.js:74",
       "status": "MATCH"
     }
@@ -383,3 +383,4 @@
     "_history": "All 12 gaps (PROFILE-GAP-1 through PROFILE-GAP-12) resolved. Catalog metadata inlined into focus_groups. Anti-garbage signals sent to LLM. aliases_union aggregated. Search exhaustion drives phase=hold. base_model/aliases in run block. Union sets filtered to non-accepted fields. resolveGroupMeta checks fieldGroupsData. urls_examined_count/query_count aggregated. previous_round_fields consumed by computeDeltas. key standardized. llmPlanApiKey removed from spec. weak/conflict/missing_critical sent to LLM."
   }
 }
+

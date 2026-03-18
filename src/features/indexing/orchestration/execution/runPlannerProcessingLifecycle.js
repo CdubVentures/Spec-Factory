@@ -8,7 +8,7 @@ function collectRepairEventsFromLogger({
       domain: String(eventRow.domain || eventRow.host || '').trim(),
       query: String(eventRow.query || '').trim(),
       field_targets: eventRow.field_targets || [],
-      provider: String(eventRow.provider || config.searchProvider || '').trim(),
+      provider: String(eventRow.provider || config.searchEngines || '').trim(),
       reason: String(eventRow.reason || '').trim(),
       source_url: String(eventRow.source_url || '').trim(),
     }));

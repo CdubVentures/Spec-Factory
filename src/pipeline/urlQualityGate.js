@@ -93,9 +93,8 @@ export function validateFetchUrl(url, {
     return { valid: false, reason: 'dead_url', priority: 'skip' };
   }
 
-  if (isLowValueHost(parsed.hostname)) {
-    return { valid: false, reason: 'low_value_host', priority: 'skip' };
-  }
+  // WHY: isLowValueHost moved to routing layer (sourcePlanner._resolveQueueRoute).
+  // Low-value hosts are now demoted to candidateQueue instead of hard-rejected.
 
   // Reject third-party on-site search pages (they return search results, not product specs)
   if (isThirdPartySearchPage(parsed)) {

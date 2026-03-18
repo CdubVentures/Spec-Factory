@@ -1,7 +1,7 @@
 import {
   type RuntimeRepairDedupeRule,
-  type RuntimeSelectableSearchProvider,
   type RuntimeSettingDefaults,
+  type SearxngEngine,
 } from '../../../stores/settingsManifest';
 import { type RuntimeSettings } from './runtimeSettingsAuthority';
 import { parseRuntimeLlmTokenCap } from './runtimeSettingsDomain';
@@ -11,7 +11,7 @@ import {
   REPAIR_DEDUPE_RULE_OPTIONS,
   RESUME_MODE_OPTIONS,
   RUNTIME_NUMBER_BOUNDS,
-  SEARCH_PROVIDER_OPTIONS,
+  SEARXNG_ENGINE_OPTIONS,
   type RuntimeDraft,
 } from './RuntimeFlowDraftContracts';
 
@@ -44,15 +44,38 @@ function parseEnum<T extends readonly string[]>(
   return options.includes(token as T[number]) ? (token as T[number]) : fallback;
 }
 
+const LEGACY_MIGRATION_MAP: Record<string, string> = {
+  dual: 'bing,google',
+  google: 'google',
+  bing: 'bing',
+  searxng: 'bing,startpage,duckduckgo',
+  none: '',
+};
+
+function parseSearchEngines(value: unknown, fallback: string): string {
+  const raw = String(value ?? '').trim().toLowerCase();
+  if (!raw) return fallback;
+  if (raw in LEGACY_MIGRATION_MAP) return LEGACY_MIGRATION_MAP[raw];
+  const tokens = raw.split(',').map(t => t.trim()).filter(Boolean);
+  const seen = new Set<string>();
+  const valid: string[] = [];
+  for (const token of tokens) {
+    if ((SEARXNG_ENGINE_OPTIONS as readonly string[]).includes(token) && !seen.has(token)) {
+      seen.add(token);
+      valid.push(token);
+    }
+  }
+  return valid.length > 0 ? valid.join(',') : fallback;
+}
+
 export function normalizeRuntimeDraft(
   source: RuntimeSettings | undefined,
   fallback: RuntimeSettingDefaults,
 ): RuntimeDraft {
   const raw = source || {};
-  const fallbackSearchProvider: RuntimeSelectableSearchProvider =
-    fallback.searchProvider === 'none' ? 'dual' : fallback.searchProvider;
   return {
-    searchProvider: parseEnum(raw.searchProvider, SEARCH_PROVIDER_OPTIONS, fallbackSearchProvider),
+    searchEngines: parseSearchEngines(raw.searchEngines ?? raw.searchProvider, fallback.searchEngines),
+    searchEnginesFallback: parseSearchEngines(raw.searchEnginesFallback, fallback.searchEnginesFallback),
     searxngBaseUrl: parseString(raw.searxngBaseUrl, fallback.searxngBaseUrl, true),
     llmPlanApiKey: parseString(raw.llmPlanApiKey, fallback.llmPlanApiKey, true),
     llmModelPlan: parseString(raw.llmModelPlan ?? raw.phase2LlmModel, fallback.llmModelPlan),
@@ -327,11 +350,6 @@ export function normalizeRuntimeDraft(
       fallback.maxCandidateUrls,
       RUNTIME_NUMBER_BOUNDS.maxCandidateUrls,
     ),
-    serpTriageMaxUrls: parseBoundedNumber(
-      raw.serpTriageMaxUrls,
-      fallback.serpTriageMaxUrls,
-      RUNTIME_NUMBER_BOUNDS.serpTriageMaxUrls,
-    ),
     maxPagesPerDomain: parseBoundedNumber(
       raw.maxPagesPerDomain,
       fallback.maxPagesPerDomain,
@@ -428,11 +446,6 @@ export function normalizeRuntimeDraft(
       fallback.llmMaxCallsPerProductTotal,
       RUNTIME_NUMBER_BOUNDS.llmMaxCallsPerProductTotal,
     ),
-    llmExtractMaxTokens: parseBoundedNumber(
-      raw.llmExtractMaxTokens,
-      fallback.llmExtractMaxTokens,
-      RUNTIME_NUMBER_BOUNDS.llmExtractMaxTokens,
-    ),
     llmExtractMaxSnippetsPerBatch: parseBoundedNumber(
       raw.llmExtractMaxSnippetsPerBatch,
       fallback.llmExtractMaxSnippetsPerBatch,
@@ -442,11 +455,6 @@ export function normalizeRuntimeDraft(
       raw.llmExtractMaxSnippetChars,
       fallback.llmExtractMaxSnippetChars,
       RUNTIME_NUMBER_BOUNDS.llmExtractMaxSnippetChars,
-    ),
-    llmExtractReasoningBudget: parseBoundedNumber(
-      raw.llmExtractReasoningBudget,
-      fallback.llmExtractReasoningBudget,
-      RUNTIME_NUMBER_BOUNDS.llmExtractReasoningBudget,
     ),
     llmReasoningBudget: parseBoundedNumber(
       raw.llmReasoningBudget,

@@ -1,14 +1,13 @@
 export interface RuntimeSettingDefaults {
-  searchProvider: RuntimeSearchProvider;
+  searchEngines: string;
+  searchEnginesFallback: string;
   searxngBaseUrl: string;
   llmPlanApiKey: string;
   llmModelPlan: string;
   llmModelReasoning: string;
-  llmExtractMaxTokens: number;
   llmExtractMaxSnippetsPerBatch: number;
   llmExtractMaxSnippetChars: number;
   llmExtractSkipLowSignal: boolean;
-  llmExtractReasoningBudget: number;
   llmReasoningMode: boolean;
   llmReasoningBudget: number;
   llmMonthlyBudgetUsd: number;
@@ -75,7 +74,6 @@ export interface RuntimeSettingDefaults {
   discoveryMaxDiscovered: number;
   maxUrlsPerProduct: number;
   maxCandidateUrls: number;
-  serpTriageMaxUrls: number;
   maxPagesPerDomain: number;
   maxRunSeconds: number;
   maxJsonBytes: number;
@@ -214,8 +212,7 @@ export interface RuntimeSettingDefaults {
 }
 
 export type RuntimeProfile = 'standard';
-export type RuntimeSearchProvider = 'none' | 'google' | 'bing' | 'searxng' | 'dual';
-export type RuntimeSelectableSearchProvider = Exclude<RuntimeSearchProvider, 'none'>;
+export type SearxngEngine = 'google' | 'bing' | 'startpage' | 'duckduckgo' | 'brave';
 export type RuntimeResumeMode = 'auto' | 'force_resume' | 'start_over';
 export type RuntimeOcrBackend = 'auto' | 'tesseract' | 'none';
 export type RuntimeRepairDedupeRule = 'domain_once' | 'domain_and_status' | 'none';

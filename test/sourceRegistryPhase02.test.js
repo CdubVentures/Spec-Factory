@@ -892,10 +892,11 @@ describe('Phase02 — Population Hard Gate', () => {
 describe('Phase02 — Default-Sync (safety-audited)', () => {
   const defaultConfig = loadConfig({});
 
-  it('searchProvider defaults to "dual" in the shared runtime config', () => {
+  it('searchEngines has a valid engine in the shared runtime config', () => {
+    const engines = String(defaultConfig.searchEngines || '').split(',').map(e => e.trim()).filter(Boolean);
     assert.ok(
-      defaultConfig.searchProvider === 'dual',
-      'searchProvider should default to dual in the shared runtime config'
+      engines.length > 0,
+      'searchEngines should have at least one engine configured'
     );
   });
 

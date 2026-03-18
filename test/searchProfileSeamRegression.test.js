@@ -31,7 +31,7 @@ function makeConfig(tempRoot, overrides = {}) {
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 20,
     discoveryQueryConcurrency: 1,
-    searchProvider: 'searxng',
+    searchEngines: 'bing,startpage,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
     ...overrides,
@@ -373,7 +373,7 @@ describe('searchProfileFinal shape regression', () => {
     const result = await runDiscoverySeedPlan({
       config: {
         discoveryEnabled: true,
-        searchProvider: 'dual',
+        searchEngines: 'bing,google',
         maxCandidateUrls: 10,
         fetchCandidateSources: true,
         enableSchema4SearchPlan: true,

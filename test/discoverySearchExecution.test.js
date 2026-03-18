@@ -24,7 +24,7 @@ function makeConfig(overrides = {}) {
   return {
     discoveryInternalFirst: false,
     discoveryInternalMinResults: 1,
-    searchProvider: 'none',
+    searchEngines: '',
     ...overrides,
   };
 }
@@ -99,7 +99,7 @@ test('executeSearchQueries: returns correct result shape', async () => {
 test('executeSearchQueries: plan-only produces planned URLs from source hosts', async () => {
   const logger = makeLogger();
   const result = await executeSearchQueries({
-    config: makeConfig({ searchProvider: 'none' }),
+    config: makeConfig({ searchEngines: '' }),
     storage: null,
     logger,
     runtimeTraceWriter: null,
@@ -135,7 +135,7 @@ test('executeSearchQueries: plan-only produces planned URLs from source hosts', 
 test('executeSearchQueries: plan-only emits discovery_query lifecycle events', async () => {
   const logger = makeLogger();
   await executeSearchQueries({
-    config: makeConfig({ searchProvider: 'none' }),
+    config: makeConfig({ searchEngines: '' }),
     storage: null,
     logger,
     runtimeTraceWriter: null,
@@ -173,7 +173,7 @@ test('executeSearchQueries: internal-first accumulates corpus results', async ()
     { url: 'https://rtings.com/mice/razer-viper', title: 'RTINGS Viper', provider: 'internal' },
   ];
   const result = await executeSearchQueries({
-    config: makeConfig({ discoveryInternalFirst: true, searchProvider: 'none' }),
+    config: makeConfig({ discoveryInternalFirst: true, searchEngines: '' }),
     storage: { readJsonOrNull: async () => null },
     logger: makeLogger(),
     runtimeTraceWriter: null,
@@ -209,7 +209,7 @@ test('executeSearchQueries: internal-first accumulates corpus results', async ()
 
 test('executeSearchQueries: internalSatisfied when corpus exceeds threshold', async () => {
   const result = await executeSearchQueries({
-    config: makeConfig({ discoveryInternalFirst: true, discoveryInternalMinResults: 1, searchProvider: 'none' }),
+    config: makeConfig({ discoveryInternalFirst: true, discoveryInternalMinResults: 1, searchEngines: '' }),
     storage: { readJsonOrNull: async () => null },
     logger: makeLogger(),
     runtimeTraceWriter: null,
@@ -245,7 +245,7 @@ test('executeSearchQueries: internalSatisfied when corpus exceeds threshold', as
 
 test('executeSearchQueries: internet search runs provider and accumulates results', async () => {
   const result = await executeSearchQueries({
-    config: makeConfig({ searchProvider: 'google' }),
+    config: makeConfig({ searchEngines: 'google' }),
     storage: null,
     logger: makeLogger(),
     runtimeTraceWriter: null,
@@ -284,7 +284,7 @@ test('executeSearchQueries: internet search runs provider and accumulates result
 
 test('executeSearchQueries: internet search applies zero-result fallback', async () => {
   const result = await executeSearchQueries({
-    config: makeConfig({ searchProvider: 'google' }),
+    config: makeConfig({ searchEngines: 'google' }),
     storage: null,
     logger: makeLogger(),
     runtimeTraceWriter: null,
@@ -335,7 +335,7 @@ test('executeSearchQueries: uses frontier cache during internet search', async (
   };
 
   const result = await executeSearchQueries({
-    config: makeConfig({ searchProvider: 'google' }),
+    config: makeConfig({ searchEngines: 'google' }),
     storage: null,
     logger,
     runtimeTraceWriter: null,
@@ -372,7 +372,7 @@ test('executeSearchQueries: uses frontier cache during internet search', async (
 test('executeSearchQueries: skips internet search when internal satisfied', async () => {
   let providerCalled = false;
   const result = await executeSearchQueries({
-    config: makeConfig({ discoveryInternalFirst: true, discoveryInternalMinResults: 1, searchProvider: 'google' }),
+    config: makeConfig({ discoveryInternalFirst: true, discoveryInternalMinResults: 1, searchEngines: 'google' }),
     storage: { readJsonOrNull: async () => null },
     logger: makeLogger(),
     runtimeTraceWriter: null,
@@ -444,7 +444,7 @@ test('executeSearchQueries: logs search_provider_diagnostics', async () => {
 
 test('executeSearchQueries: internet search populates searchJournal', async () => {
   const result = await executeSearchQueries({
-    config: makeConfig({ searchProvider: 'google' }),
+    config: makeConfig({ searchEngines: 'google' }),
     storage: null,
     logger: makeLogger(),
     runtimeTraceWriter: null,
@@ -490,7 +490,7 @@ test('executeSearchQueries: internal-first uses frontier cache', async () => {
   };
 
   const result = await executeSearchQueries({
-    config: makeConfig({ discoveryInternalFirst: true, searchProvider: 'none' }),
+    config: makeConfig({ discoveryInternalFirst: true, searchEngines: '' }),
     storage: { readJsonOrNull: async () => null },
     logger: makeLogger(),
     runtimeTraceWriter: null,
@@ -523,7 +523,7 @@ test('executeSearchQueries: internal-first uses frontier cache', async () => {
 
 test('executeSearchQueries: empty queries with available provider produces empty results', async () => {
   const result = await executeSearchQueries({
-    config: makeConfig({ searchProvider: 'google' }),
+    config: makeConfig({ searchEngines: 'google' }),
     storage: null,
     logger: makeLogger(),
     runtimeTraceWriter: null,
@@ -566,7 +566,7 @@ test('executeSearchQueries: writes runtime traces when writer provided', async (
   };
 
   await executeSearchQueries({
-    config: makeConfig({ searchProvider: 'google' }),
+    config: makeConfig({ searchEngines: 'google' }),
     storage: null,
     logger: makeLogger(),
     runtimeTraceWriter,
@@ -602,7 +602,7 @@ test('executeSearchQueries: writes runtime traces when writer provided', async (
 
 test('executeSearchQueries: externalSearchReason when internal under target', async () => {
   const result = await executeSearchQueries({
-    config: makeConfig({ discoveryInternalFirst: true, discoveryInternalMinResults: 5, searchProvider: 'none' }),
+    config: makeConfig({ discoveryInternalFirst: true, discoveryInternalMinResults: 5, searchEngines: '' }),
     storage: { readJsonOrNull: async () => null },
     logger: makeLogger(),
     runtimeTraceWriter: null,

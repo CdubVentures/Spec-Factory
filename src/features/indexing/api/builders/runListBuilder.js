@@ -97,61 +97,76 @@ export function createRunListBuilder({
     }
     let dirs = [...runLocations.keys()];
     if (dirs.length === 0) return [];
-    dirs.sort((a, b) => String(b).localeCompare(String(a)));
+    // WHY: Sort by mtime of run.json (newest first) so recent live runs
+    // aren't cut off by scanLimit when the archived index is large.
+    const mtimeCache = new Map();
+    await Promise.all(dirs.map(async (dir) => {
+      const loc = runLocations.get(dir);
+      const runDir = typeof loc === 'string' ? loc : '';
+      if (!runDir) { mtimeCache.set(dir, 0); return; }
+      const st = await safeStat(path.join(runDir, 'run.json'));
+      mtimeCache.set(dir, st?.mtimeMs ?? 0);
+    }));
+    dirs.sort((a, b) => (mtimeCache.get(b) ?? 0) - (mtimeCache.get(a) ?? 0));
     const scanLimit = Math.max(Math.max(1, toInt(limit, 50)) * 2, 120);
     dirs = dirs.slice(0, scanLimit);
 
     const rows = [];
     for (const dir of dirs) {
-      const runLocation = runLocations.get(dir);
-      const runDir = typeof runLocation === 'string'
-        ? String(runLocation || '').trim()
-        : await materializeArchivedRunLocation(runLocation, dir);
-      if (!runDir) continue;
-      const runMetaPath = path.join(runDir, 'run.json');
-      const runEventsPath = path.join(runDir, 'run_events.ndjson');
-      const runNeedSetPath = path.join(runDir, 'needset.json');
-      const runSearchProfilePath = path.join(runDir, 'search_profile.json');
-      const meta = await safeReadJson(runMetaPath);
-      const stat = await safeStat(runMetaPath) || await safeStat(runEventsPath);
-      const needSetStat = await safeStat(runNeedSetPath);
-      const searchProfileStat = await safeStat(runSearchProfilePath);
-      const eventRows = await readEvents(dir, 6000);
-      const eventSummary = summarizeEvents(eventRows);
-      const rawStatus = String(meta?.status || 'unknown').trim();
-      const resolvedStatus = (
-        rawStatus.toLowerCase() === 'running' && !isRunStillActive(String(meta?.run_id || dir).trim())
-      ) ? 'completed' : rawStatus;
-      const useEventDerivedCounters = rawStatus.toLowerCase() === 'running' && resolvedStatus !== rawStatus;
-      const hasMetaCounters = meta?.counters && typeof meta.counters === 'object';
-      const hasNeedSet = Boolean(
-        meta?.artifacts?.has_needset
-        || meta?.needset
-        || needSetStat
-      );
-      const hasSearchProfile = Boolean(
-        meta?.artifacts?.has_search_profile
-        || meta?.search_profile
-        || searchProfileStat
-      );
-      rows.push({
-        run_id: String(meta?.run_id || dir).trim(),
-        category: String(meta?.category || '').trim(),
-        product_id: String(meta?.product_id || eventSummary.productId || '').trim(),
-        status: String(resolvedStatus || 'unknown').trim(),
-        started_at: String(meta?.started_at || eventSummary.startedAt || stat?.mtime?.toISOString?.() || '').trim(),
-        ended_at: String(meta?.ended_at || (resolvedStatus !== 'running' ? eventSummary.endedAt : '') || '').trim(),
-        identity_fingerprint: String(meta?.identity_fingerprint || '').trim(),
-        identity_lock_status: String(meta?.identity_lock_status || '').trim(),
-        dedupe_mode: String(meta?.dedupe_mode || '').trim(),
-        phase_cursor: String(meta?.phase_cursor || '').trim(),
-        startup_ms: normalizeStartupMs(meta?.startup_ms),
-        events_path: runEventsPath,
-        run_dir: runDir,
-        has_needset: hasNeedSet,
-        has_search_profile: hasSearchProfile,
-        counters: (!useEventDerivedCounters && hasMetaCounters) ? meta.counters : eventSummary.counters
-      });
+      try {
+        const runLocation = runLocations.get(dir);
+        const runDir = typeof runLocation === 'string'
+          ? String(runLocation || '').trim()
+          : await materializeArchivedRunLocation(runLocation, dir);
+        if (!runDir) continue;
+        const runMetaPath = path.join(runDir, 'run.json');
+        const runEventsPath = path.join(runDir, 'run_events.ndjson');
+        const runNeedSetPath = path.join(runDir, 'needset.json');
+        const runSearchProfilePath = path.join(runDir, 'search_profile.json');
+        const meta = await safeReadJson(runMetaPath);
+        const stat = await safeStat(runMetaPath) || await safeStat(runEventsPath);
+        const needSetStat = await safeStat(runNeedSetPath);
+        const searchProfileStat = await safeStat(runSearchProfilePath);
+        const eventRows = await readEvents(dir, 6000);
+        const eventSummary = summarizeEvents(eventRows);
+        const rawStatus = String(meta?.status || 'unknown').trim();
+        const resolvedStatus = (
+          rawStatus.toLowerCase() === 'running' && !isRunStillActive(String(meta?.run_id || dir).trim())
+        ) ? 'completed' : rawStatus;
+        const useEventDerivedCounters = rawStatus.toLowerCase() === 'running' && resolvedStatus !== rawStatus;
+        const hasMetaCounters = meta?.counters && typeof meta.counters === 'object';
+        const hasNeedSet = Boolean(
+          meta?.artifacts?.has_needset
+          || meta?.needset
+          || needSetStat
+        );
+        const hasSearchProfile = Boolean(
+          meta?.artifacts?.has_search_profile
+          || meta?.search_profile
+          || searchProfileStat
+        );
+        rows.push({
+          run_id: String(meta?.run_id || dir).trim(),
+          category: String(meta?.category || '').trim(),
+          product_id: String(meta?.product_id || eventSummary.productId || '').trim(),
+          status: String(resolvedStatus || 'unknown').trim(),
+          started_at: String(meta?.started_at || eventSummary.startedAt || stat?.mtime?.toISOString?.() || '').trim(),
+          ended_at: String(meta?.ended_at || (resolvedStatus !== 'running' ? eventSummary.endedAt : '') || '').trim(),
+          identity_fingerprint: String(meta?.identity_fingerprint || '').trim(),
+          identity_lock_status: String(meta?.identity_lock_status || '').trim(),
+          dedupe_mode: String(meta?.dedupe_mode || '').trim(),
+          phase_cursor: String(meta?.phase_cursor || '').trim(),
+          startup_ms: normalizeStartupMs(meta?.startup_ms),
+          events_path: runEventsPath,
+          run_dir: runDir,
+          has_needset: hasNeedSet,
+          has_search_profile: hasSearchProfile,
+          counters: (!useEventDerivedCounters && hasMetaCounters) ? meta.counters : eventSummary.counters
+        });
+      } catch {
+        // WHY: One unreadable run must not crash the entire listing
+        continue;
+      }
     }
 
     rows.sort((a, b) => {

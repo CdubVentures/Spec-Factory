@@ -104,7 +104,7 @@ export async function runExtractionVerification({
   const usageFast = { prompt_tokens: 0, completion_tokens: 0, cost_usd: 0 };
   const usageReason = { prompt_tokens: 0, completion_tokens: 0, cost_usd: 0 };
   const fastModel = String(config.llmModelPlan || '').trim();
-  const reasonModel = String(config.llmModelPlan || '').trim();
+  const reasonModel = String(config.llmModelExtract || '').trim();
   const requiredSet = new Set(normalizeFieldList(categoryConfig.requiredFields || [], {
     fieldOrder: categoryConfig.fieldOrder || []
   }));

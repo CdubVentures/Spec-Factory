@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planDiscoveryQueriesLLM, normalizeQueryRows } from '../src/features/indexing/discovery/discoveryPlanner.js';
+import { normalizeQueryRows } from '../src/features/indexing/discovery/discoveryPlanner.js';
+import { planUberQueries } from '../src/research/queryPlanner.js';
 
 function makeChatCompletionResponse(payload) {
   return {
@@ -19,7 +20,7 @@ function makeChatCompletionResponse(payload) {
   };
 }
 
-test('planDiscoveryQueriesLLM makes single LLM call and dedupes output', async () => {
+test('planUberQueries makes single LLM call and dedupes output', async () => {
   const originalFetch = global.fetch;
   const calls = [];
   global.fetch = async (_url, init) => {
@@ -37,26 +38,18 @@ test('planDiscoveryQueriesLLM makes single LLM call and dedupes output', async (
   };
 
   try {
-    const queries = await planDiscoveryQueriesLLM({
-      job: {
-        productId: 'mouse-logitech-g-pro-x-superlight-2',
-        category: 'mouse',
-        identityLock: { brand: 'Logitech', model: 'G Pro X Superlight 2', variant: '' }
-      },
-      categoryConfig: {
-        category: 'mouse',
-        schema: { critical_fields: ['click_latency', 'sensor_latency'] }
-      },
-      baseQueries: ['logitech g pro x superlight 2 specs'],
-      missingCriticalFields: ['click_latency'],
+    const result = await planUberQueries({
       config: {
         llmApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
         llmModelPlan: 'gpt-5-low',
-        llmModelReasoning: 'gpt-5.1-high',
         llmTimeoutMs: 5_000
       },
+      identity: { brand: 'Logitech', model: 'G Pro X Superlight 2', variant: '' },
+      missingFields: ['click_latency', 'sensor'],
+      missingCriticalFields: ['click_latency'],
+      baseQueries: ['logitech g pro x superlight 2 specs'],
       llmContext: {
         budgetGuard: {
           canCall: () => ({ allowed: true }),
@@ -65,16 +58,80 @@ test('planDiscoveryQueriesLLM makes single LLM call and dedupes output', async (
       }
     });
 
-    // WHY: Single-pass planner — one LLM call with merged prompt
+    // WHY: Single planner call — one LLM call
     assert.equal(calls.length, 1);
-    const queryStrings = queries.map((r) => typeof r === 'object' ? r.query : r);
-    assert.equal(queryStrings.includes('logitech g pro x superlight 2 support'), true);
-    assert.equal(queryStrings.includes('logitech g pro x superlight 2 latency test'), true);
+    assert.ok(result.queries.includes('logitech g pro x superlight 2 support'));
+    assert.ok(result.queries.includes('logitech g pro x superlight 2 latency test'));
     // Dedup: duplicate "support" query collapsed to 1
     assert.equal(
-      queryStrings.filter((query) => query === 'logitech g pro x superlight 2 support').length,
+      result.queries.filter((q) => q === 'logitech g pro x superlight 2 support').length,
       1
     );
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('planUberQueries includes missingCriticalFields in prompt payload', async () => {
+  const originalFetch = global.fetch;
+  let capturedPayload = null;
+  global.fetch = async (_url, init) => {
+    const body = JSON.parse(String(init?.body || '{}'));
+    const messages = body?.messages || [];
+    const userMsg = messages.find((m) => m.role === 'user');
+    if (userMsg) capturedPayload = JSON.parse(userMsg.content);
+    return makeChatCompletionResponse({ queries: ['test query'] });
+  };
+
+  try {
+    await planUberQueries({
+      config: {
+        llmApiKey: 'sk-test',
+        llmBaseUrl: 'https://api.openai.com',
+        llmProvider: 'openai',
+        llmModelPlan: 'gpt-5-low',
+        llmTimeoutMs: 5_000
+      },
+      identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' },
+      missingFields: ['click_latency', 'sensor', 'weight'],
+      missingCriticalFields: ['click_latency', 'sensor'],
+      baseQueries: [],
+      llmContext: {}
+    });
+
+    assert.ok(capturedPayload, 'payload captured');
+    assert.deepEqual(capturedPayload.missing_critical_fields, ['click_latency', 'sensor']);
+    assert.ok(capturedPayload.identity_lock.brand === 'Razer');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('planUberQueries uses reason search_planner', async () => {
+  const originalFetch = global.fetch;
+  let capturedBody = null;
+  global.fetch = async (_url, init) => {
+    capturedBody = JSON.parse(String(init?.body || '{}'));
+    return makeChatCompletionResponse({ queries: ['test'] });
+  };
+
+  try {
+    await planUberQueries({
+      config: {
+        llmApiKey: 'sk-test',
+        llmBaseUrl: 'https://api.openai.com',
+        llmProvider: 'openai',
+        llmModelPlan: 'gpt-5-low',
+        llmTimeoutMs: 5_000
+      },
+      identity: { brand: 'Razer', model: 'Viper V3 Pro' },
+      missingFields: ['weight'],
+      baseQueries: [],
+      llmContext: {}
+    });
+
+    const systemMsg = capturedBody?.messages?.find((m) => m.role === 'system');
+    assert.ok(systemMsg?.content?.includes('NEVER put domain names'), 'system prompt includes domain name ban');
   } finally {
     global.fetch = originalFetch;
   }
@@ -109,46 +166,4 @@ test('normalizeQueryRows handles mixed array of strings and objects', () => {
   assert.deepEqual(result[0].target_fields, []);
   assert.equal(result[1].query, 'structured query');
   assert.deepEqual(result[1].target_fields, ['weight']);
-});
-
-test('planDiscoveryQueriesLLM returns structured rows with query and target_fields', async () => {
-  const originalFetch = global.fetch;
-  global.fetch = async () => makeChatCompletionResponse({
-    queries: [
-      { query: 'razer viper v3 pro weight specs', target_fields: ['weight'] },
-      'razer viper v3 pro manual'
-    ]
-  });
-
-  try {
-    const queries = await planDiscoveryQueriesLLM({
-      job: {
-        productId: 'mouse-razer-viper-v3-pro',
-        category: 'mouse',
-        identityLock: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' }
-      },
-      categoryConfig: { category: 'mouse', schema: { critical_fields: ['weight'] } },
-      baseQueries: [],
-      missingCriticalFields: ['weight'],
-      config: {
-        llmApiKey: 'sk-test',
-        llmBaseUrl: 'https://api.openai.com',
-        llmProvider: 'openai',
-        llmModelPlan: 'gpt-5-low',
-        llmTimeoutMs: 5_000
-      },
-      llmContext: {
-        budgetGuard: { canCall: () => ({ allowed: true }), recordCall: () => {} }
-      }
-    });
-
-    assert.ok(queries.length >= 2);
-    assert.ok(queries.every((r) => typeof r === 'object' && typeof r.query === 'string'));
-    const structured = queries.find((r) => r.query.includes('weight'));
-    assert.ok(structured);
-    assert.ok(Array.isArray(structured.target_fields));
-    assert.ok(structured.target_fields.includes('weight'));
-  } finally {
-    global.fetch = originalFetch;
-  }
 });

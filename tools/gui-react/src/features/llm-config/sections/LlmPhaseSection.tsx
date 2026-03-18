@@ -90,6 +90,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
             className={inputCls}
             value={phaseOverrides[overrideKey]?.baseModel ?? ''}
             onChange={(v) => updateOverrideField('baseModel', v)}
+            disabled={resolved.useReasoning}
             allowNone
             noneLabel={`↩ ${resolved.baseModel}`}
             noneModelId={resolved.baseModel}

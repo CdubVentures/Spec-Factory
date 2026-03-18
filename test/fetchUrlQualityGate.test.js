@@ -83,27 +83,14 @@ describe('UV-02: Previously dead URLs rejected', () => {
 // ---------------------------------------------------------------------------
 // UV-03: Low-value hosts are rejected
 // ---------------------------------------------------------------------------
-describe('UV-03: Low-value host rejection', () => {
-  it('rejects reddit.com URLs', () => {
+describe('UV-03: Low-value host detection (isLowValueHost)', () => {
+  // WHY: validateFetchUrl no longer calls isLowValueHost directly.
+  // Low-value host demotion moved to the routing layer (sourcePlanner).
+  // These tests verify isLowValueHost still works as a standalone function.
+
+  it('validateFetchUrl passes low-value hosts through (moved to routing)', () => {
     const result = validateFetchUrl('https://www.reddit.com/r/razer/comments/viper-v3-pro');
-    assert.equal(result.valid, false);
-    assert.equal(result.reason, 'low_value_host');
-  });
-
-  it('rejects old.reddit.com subdomain', () => {
-    const result = validateFetchUrl('https://old.reddit.com/r/mousereview');
-    assert.equal(result.valid, false);
-    assert.equal(result.reason, 'low_value_host');
-  });
-
-  it('rejects youtube.com', () => {
-    const result = validateFetchUrl('https://www.youtube.com/watch?v=abc123');
-    assert.equal(result.valid, false);
-  });
-
-  it('rejects facebook.com', () => {
-    const result = validateFetchUrl('https://www.facebook.com/razer');
-    assert.equal(result.valid, false);
+    assert.equal(result.valid, true, 'low-value hosts are routed, not rejected at gate');
   });
 
   it('accepts rtings.com (spec review site)', () => {
@@ -128,22 +115,11 @@ describe('UV-03: Low-value host rejection', () => {
     assert.equal(isLowValueHost('razer.com'), false);
   });
 
-  it('rejects mysupport.razer.com (support subdomain)', () => {
-    const result = validateFetchUrl('https://mysupport.razer.com/app/answers/detail/a_id/14044');
-    assert.equal(result.valid, false);
-    assert.equal(result.reason, 'low_value_host');
-  });
-
-  it('rejects support.logitech.com (support subdomain)', () => {
+  it('isLowValueHost detects support/community/forum subdomains', () => {
     assert.equal(isLowValueHost('support.logitech.com'), true);
-  });
-
-  it('rejects community.corsair.com (community subdomain)', () => {
     assert.equal(isLowValueHost('community.corsair.com'), true);
-  });
-
-  it('rejects forum.razer.com (forum subdomain)', () => {
     assert.equal(isLowValueHost('forum.razer.com'), true);
+    assert.equal(isLowValueHost('mysupport.razer.com'), true);
   });
 
   it('allows www.razer.com (www is not low-value subdomain)', () => {
@@ -154,21 +130,10 @@ describe('UV-03: Low-value host rejection', () => {
     assert.equal(isLowValueHost('api-p1.phoenix.razer.com'), false);
   });
 
-  it('rejects .local TLD (test URL leak)', () => {
-    const result = validateFetchUrl('https://aggressive.local/');
-    assert.equal(result.valid, false);
-    assert.equal(result.reason, 'low_value_host');
-  });
-
-  it('rejects .test TLD', () => {
-    const result = validateFetchUrl('https://example.test/page');
-    assert.equal(result.valid, false);
-    assert.equal(result.reason, 'low_value_host');
-  });
-
-  it('isLowValueHost catches .local domains', () => {
+  it('isLowValueHost catches .local and .test domains', () => {
     assert.equal(isLowValueHost('aggressive.local'), true);
     assert.equal(isLowValueHost('test.localhost'), true);
+    assert.equal(isLowValueHost('example.test'), true);
   });
 });
 

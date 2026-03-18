@@ -15,7 +15,7 @@ import {
 
 test('buildEffectiveSettingsSnapshot captures required keys', () => {
   const config = {
-    searchProvider: 'searxng',
+    searchEngines: 'bing,startpage,duckduckgo',
     discoveryEnabled: true,
     preferHttpFetcher: true,
     dynamicCrawleeEnabled: true,
@@ -33,7 +33,7 @@ test('buildEffectiveSettingsSnapshot captures required keys', () => {
   };
   const snap = buildEffectiveSettingsSnapshot(config);
   assert.ok(snap.ts);
-  assert.equal(snap.searchProvider, 'searxng');
+  assert.equal(snap.searchEngines, 'bing,startpage,duckduckgo');
   assert.equal(snap.maxRunSeconds, 600);
   // All required keys present
   for (const key of REQUIRED_SETTINGS_KEYS) {
@@ -46,7 +46,7 @@ test('buildEffectiveSettingsSnapshot defaults missing keys to null', () => {
   for (const key of REQUIRED_SETTINGS_KEYS) {
     assert.ok(key in snap, `missing key: ${key}`);
   }
-  assert.equal(snap.searchProvider, null);
+  assert.equal(snap.searchEngines, null);
 });
 
 // ── Fetch Decision Ledger ───────────────────────────────────

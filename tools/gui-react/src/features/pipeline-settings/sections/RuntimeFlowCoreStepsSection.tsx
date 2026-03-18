@@ -14,7 +14,6 @@ interface RuntimeFlowCoreStepsSectionProps {
   plannerControlsLocked: boolean;
   inputCls: string;
   runtimeSubStepDomId: (id: string) => string;
-  searchProviderOptions: readonly RuntimeDraft['searchProvider'][];
   resumeModeOptions: readonly RuntimeDraft['resumeMode'][];
   updateDraft: <K extends keyof RuntimeDraft>(key: K, value: RuntimeDraft[K]) => void;
   onNumberChange: <K extends keyof RuntimeDraft>(key: K, eventValue: string, bounds: NumberBound) => void;
@@ -44,7 +43,6 @@ export function RuntimeFlowCoreStepsSection({
   plannerControlsLocked,
   inputCls,
   runtimeSubStepDomId,
-  searchProviderOptions,
   resumeModeOptions,
   updateDraft,
   onNumberChange,
@@ -83,7 +81,6 @@ export function RuntimeFlowCoreStepsSection({
               plannerControlsLocked={plannerControlsLocked}
               inputCls={inputCls}
               runtimeSubStepDomId={runtimeSubStepDomId}
-              searchProviderOptions={searchProviderOptions}
               resumeModeOptions={resumeModeOptions}
               updateDraft={updateDraft}
               onNumberChange={onNumberChange}

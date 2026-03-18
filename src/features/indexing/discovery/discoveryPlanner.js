@@ -1,4 +1,4 @@
-import { callLlmWithRouting, hasLlmRouteApiKey } from '../../../core/llm/client/routing.js';
+import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../../../core/llm/client/routing.js';
 
 function querySchema() {
   return {
@@ -165,12 +165,8 @@ export async function planDiscoveryQueriesLLM({
     criticalHint
   ].filter(Boolean).join('\n');
 
-  const modelOverride = String(
-    Boolean(config._resolvedSearchPlannerUseReasoning ?? config.llmPlanUseReasoning)
-      ? (config._resolvedSearchPlannerReasoningModel || config.llmModelReasoning || config._resolvedSearchPlannerBaseModel || config.llmModelPlan || '')
-      : (config._resolvedSearchPlannerBaseModel || config.llmModelPlan || '')
-  ).trim();
-  if (!modelOverride) {
+  const resolvedModel = resolvePhaseModel(config, 'searchPlanner');
+  if (!resolvedModel) {
     return [];
   }
 
@@ -193,7 +189,7 @@ export async function planDiscoveryQueriesLLM({
       config,
       reason: 'discovery_planner_primary',
       role: 'plan',
-      modelOverride,
+      phase: 'searchPlanner',
       system,
       user: JSON.stringify(payload),
       jsonSchema: querySchema(),

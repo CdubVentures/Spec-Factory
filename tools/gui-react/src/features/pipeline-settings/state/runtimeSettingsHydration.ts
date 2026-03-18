@@ -2,7 +2,6 @@ import type {
   RuntimeOcrBackend,
   RuntimeRepairDedupeRule,
   RuntimeResumeMode,
-  RuntimeSearchProvider,
 } from '../../../stores/settingsManifest';
 import type { RuntimeSettings } from './runtimeSettingsAuthority';
 import type {
@@ -22,9 +21,19 @@ export function createRuntimeHydrationBindings(
   return {
     stringBindings: [
       {
+        key: 'searchEngines',
+        allowEmpty: true,
+        apply: setters.setSearchEngines,
+      },
+      {
         key: 'searchProvider',
         allowEmpty: true,
-        apply: (value) => setters.setSearchProvider(value as RuntimeSearchProvider),
+        apply: setters.setSearchEngines,
+      },
+      {
+        key: 'searchEnginesFallback',
+        allowEmpty: true,
+        apply: setters.setSearchEnginesFallback,
       },
       {
         key: 'searxngBaseUrl',
@@ -268,10 +277,8 @@ export function createRuntimeHydrationBindings(
       { key: 'llmTokensPlanFallback', apply: setters.setLlmMaxOutputTokensPlanFallback },
       { key: 'llmMaxOutputTokensReasoningFallback', apply: setters.setLlmMaxOutputTokensReasoningFallback },
       { key: 'llmTokensReasoningFallback', apply: setters.setLlmMaxOutputTokensReasoningFallback },
-      { key: 'llmExtractMaxTokens', apply: (value) => setters.setLlmExtractMaxTokens(String(value)) },
       { key: 'llmExtractMaxSnippetsPerBatch', apply: (value) => setters.setLlmExtractMaxSnippetsPerBatch(String(value)) },
       { key: 'llmExtractMaxSnippetChars', apply: (value) => setters.setLlmExtractMaxSnippetChars(String(value)) },
-      { key: 'llmExtractReasoningBudget', apply: (value) => setters.setLlmExtractReasoningBudget(String(value)) },
       { key: 'llmReasoningBudget', apply: (value) => setters.setLlmReasoningBudget(String(value)) },
       { key: 'llmMonthlyBudgetUsd', apply: (value) => setters.setLlmMonthlyBudgetUsd(String(value)) },
       { key: 'llmPerProductBudgetUsd', apply: (value) => setters.setLlmPerProductBudgetUsd(String(value)) },
@@ -324,7 +331,6 @@ export function createRuntimeHydrationBindings(
       { key: 'discoveryMaxDiscovered', apply: (value) => setters.setDiscoveryMaxDiscovered(String(value)) },
       { key: 'maxUrlsPerProduct', apply: (value) => setters.setMaxUrlsPerProduct(String(value)) },
       { key: 'maxCandidateUrls', apply: (value) => setters.setMaxCandidateUrls(String(value)) },
-      { key: 'serpTriageMaxUrls', apply: (value) => setters.setSerpTriageMaxUrls?.(String(value)) },
       { key: 'maxPagesPerDomain', apply: (value) => setters.setMaxPagesPerDomain(String(value)) },
       { key: 'maxRunSeconds', apply: (value) => setters.setMaxRunSeconds(String(value)) },
       { key: 'maxJsonBytes', apply: (value) => setters.setMaxJsonBytes(String(value)) },

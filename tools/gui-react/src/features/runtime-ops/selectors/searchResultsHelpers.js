@@ -306,7 +306,6 @@ export function resolveDomainCapSummary(liveSettings = {}) {
   const maxPagesPerDomain = toPositiveInt(liveSettings?.maxPagesPerDomain, 0);
   const discoveryResultsPerQuery = toPositiveInt(liveSettings?.discoveryResultsPerQuery, defaults.queryCap);
   const discoveryMaxDiscovered = toPositiveInt(liveSettings?.discoveryMaxDiscovered, defaults.discoveredCap);
-  const serpTriageMaxUrls = toPositiveInt(liveSettings?.serpTriageMaxUrls, 12);
   const value = maxPagesPerDomain > 0 ? String(maxPagesPerDomain) : defaults.domainCapValue;
   const source = maxPagesPerDomain > 0 ? 'runtime maxPagesPerDomain knob' : defaults.domainCapSource;
   const profileLabel = profile.charAt(0).toUpperCase() + profile.slice(1);
@@ -321,7 +320,6 @@ export function resolveDomainCapSummary(liveSettings = {}) {
     '- Standard profile: uses configured env/runtime knobs (DISCOVERY_RESULTS_PER_QUERY, MAX_PAGES_PER_DOMAIN).',
     '- Thorough profile: raises floors to at least 20 results/query and at least 8 pages/domain.',
     `- Discovery total cap keeps up to ${discoveryMaxDiscovered} URLs overall (DISCOVERY_MAX_DISCOVERED).`,
-    `- SERP triage cap keeps up to ${serpTriageMaxUrls} URLs after triage (SERP_TRIAGE_MAX_URLS).`,
     '',
     `Current results/query cap for this profile is ${discoveryResultsPerQuery} before dedupe and triage.`,
   ].join('\n');
@@ -331,7 +329,6 @@ export function resolveDomainCapSummary(liveSettings = {}) {
     profile,
     queryCap: discoveryResultsPerQuery,
     discoveredCap: discoveryMaxDiscovered,
-    triageCap: serpTriageMaxUrls,
     uberDomainFloor: 6,
   };
 }
@@ -347,8 +344,7 @@ export function resolveRuntimeDomainCapSummary(liveSettings) {
     liveSettings.profile !== undefined
     || liveSettings.maxPagesPerDomain !== undefined
     || liveSettings.discoveryResultsPerQuery !== undefined
-    || liveSettings.discoveryMaxDiscovered !== undefined
-    || liveSettings.serpTriageMaxUrls !== undefined,
+    || liveSettings.discoveryMaxDiscovered !== undefined,
   );
   if (!hasRuntimeSnapshot) {
     return {

@@ -268,6 +268,7 @@ export async function runEnumConsistencyReview({
       config,
       reason: 'validate_enum_consistency',
       role: 'validate',
+      phase: 'validate',
       system: buildSystemPrompt(effectiveFormatGuidance),
       user: buildUserPayload({
         fieldKey,

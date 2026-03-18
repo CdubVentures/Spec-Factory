@@ -102,7 +102,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const body = await res.json();
 
     const STRING_KEYS = [
-      'searchProvider',
+      'searchEngines',
       'searxngBaseUrl',
       'frontierDbPath',
       'llmModelPlan', 'llmModelReasoning',
@@ -201,7 +201,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
 
   await t.test('PUT with valid partial payload applies changes and returns applied', async () => {
     // discoveryEnabled removed from PUT boolMap — it's a hardcoded invariant.
-    const payload = { fetchConcurrency: 8, searchProvider: 'google' };
+    const payload = { fetchConcurrency: 8, searchEngines: 'google' };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -211,12 +211,12 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const body = await res.json();
     assert.equal(body.ok, true);
     assert.equal(body.applied.fetchConcurrency, 8);
-    assert.equal(body.applied.searchProvider, 'google');
+    assert.equal(body.applied.searchEngines, 'google');
 
     const getRes = await fetch(`${_baseUrl}/runtime-settings`);
     const getBody = await getRes.json();
     assert.equal(getBody.fetchConcurrency, 8);
-    assert.equal(getBody.searchProvider, 'google');
+    assert.equal(getBody.searchEngines, 'google');
   });
 
   await t.test('PUT with invalid values returns rejected for those keys', async () => {
@@ -253,7 +253,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   });
 
   await t.test('PUT validates active string enums', async () => {
-    const payload = { searchProvider: 'invalid_provider', resumeMode: 'bogus' };
+    const payload = { searchEngines: 'invalid_provider', resumeMode: 'bogus' };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -262,7 +262,8 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.ok(body.rejected);
-    assert.equal(body.rejected.searchProvider, 'invalid_enum');
+    // searchEngines is CSV — invalid tokens are stripped, leaving empty string (accepted)
+    assert.equal(body.applied.searchEngines, '');
     assert.equal(body.rejected.resumeMode, 'invalid_enum');
   });
 

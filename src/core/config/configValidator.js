@@ -14,10 +14,10 @@ export function validateConfig(config) {
   }
 
   // Rule 2: Discovery requires a search provider
-  if (config.searchProvider === 'none') {
+  if (!config.searchEngines) {
     warnings.push({
       code: 'DISCOVERY_NO_SEARCH_PROVIDER',
-      message: 'SEARCH_PROVIDER is "none" — discovery search will be skipped'
+      message: 'SEARCH_ENGINES is empty — discovery search will be skipped'
     });
   }
 

@@ -64,6 +64,14 @@ function sourceLabel(calls: PrefetchLlmCall[], hasResolution: boolean): { text: 
   return { text: 'LLM', badgeClass: 'sf-chip-warning' };
 }
 
+function Chip({ label, className }: { label: string; className?: string }) {
+  return (
+    <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.04em] ${className || 'sf-chip-accent'} border-[1.5px] border-current`}>
+      {label}
+    </span>
+  );
+}
+
 /* ── Section header (matches NeedSet) ─────────────────────────────── */
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
@@ -128,7 +136,6 @@ function CandidateDrawer({ candidate, call, onClose }: { candidate: BrandCandida
 
 export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScope, liveSettings, idxRuntime }: PrefetchBrandResolverPanelProps) {
   const br = brandResolution;
-  const llmBadgeEnabled: boolean | undefined = true;
   const [llmCallsOpen, toggleLlmCallsOpen] = usePersistedToggle(`runtimeOps:brandResolver:llmCalls:${persistScope}`, false);
   const candidateValues = useMemo(
     () => (br?.candidates ?? []).map((candidate) => candidate.name),
@@ -149,8 +156,6 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
   const isSkipped = status === 'skipped';
   const isFailed = status === 'failed';
   const isResolvedEmpty = status === 'resolved_empty';
-  const forcedLlmOffFromSkip = isSkipped && br?.skip_reason === 'no_api_key_for_triage_role';
-  const effectiveLlmBadgeEnabled = forcedLlmOffFromSkip ? false : llmBadgeEnabled;
   const isLowConfidence = isResolved && br!.confidence < 0.7;
   const hasOfficialDomain = hasStructured && Boolean(br.official_domain);
 
@@ -171,11 +176,6 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
             Brand resolution will appear after the LLM identifies the official manufacturer domain and aliases.
             This allows search queries to use targeted site: filters for higher-quality Tier 1 sources.
           </p>
-          {llmBadgeEnabled !== undefined && (
-            <span className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${llmBadgeEnabled ? 'sf-chip-neutral' : 'sf-chip-danger'}`}>
-              LLM Runtime: {llmBadgeEnabled ? 'Enabled' : 'Disabled'}
-            </span>
-          )}
         </div>
       </div>
     );
@@ -203,15 +203,9 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
             )}
           </div>
           <div className="flex items-center gap-2">
-            {effectiveLlmBadgeEnabled !== undefined && (
-              <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] ${effectiveLlmBadgeEnabled ? 'sf-chip-warning' : 'sf-chip-danger'} border-[1.5px] border-current`}>
-                llm {effectiveLlmBadgeEnabled ? 'on' : 'off'}
-              </span>
-            )}
+            <Chip label="LLM" className="sf-chip-warning" />
             {source.text && (
-              <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] ${source.badgeClass} border-[1.5px] border-current`}>
-                source: {source.text.toLowerCase()}
-              </span>
+              <Chip label={`source: ${source.text.toLowerCase()}`} className={source.badgeClass} />
             )}
             <Tip text="The Brand Resolver identifies the official manufacturer domain and aliases so search queries can use targeted site: filters for higher-quality sources." />
           </div>
