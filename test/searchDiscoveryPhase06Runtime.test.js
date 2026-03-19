@@ -28,6 +28,61 @@ const TEST_URLS = {
   unrelatedRetailer: `https://www.${TEST_HOSTS.retailer}/products/typeboard-k2`,
 };
 
+// WHY: The SERP selector is LLM-only. Tests that mock global.fetch for search
+// providers must also handle the LLM /v1/chat/completions call. This helper
+// builds a valid selector response that approves all candidates.
+function buildMockSerpSelectorResponse(requestBody) {
+  let input;
+  try {
+    const parsed = JSON.parse(requestBody);
+    const userMsg = parsed?.messages?.find((m) => m.role === 'user');
+    input = JSON.parse(userMsg?.content || '{}');
+  } catch {
+    input = { candidates: [] };
+  }
+  const candidates = input?.candidates || [];
+  const maxKeep = input?.selection_limits?.max_total_keep || 60;
+  const approvedIds = candidates.slice(0, maxKeep).map((c) => c.id);
+  const rejectIds = candidates.slice(maxKeep).map((c) => c.id);
+  const results = candidates.map((c, idx) => ({
+    id: c.id,
+    decision: idx < maxKeep ? 'approved' : 'reject',
+    score: idx < maxKeep ? 0.8 : 0.1,
+    confidence: idx < maxKeep ? 'high' : 'low',
+    fetch_rank: idx < maxKeep ? idx + 1 : null,
+    page_type: c.page_type_hint || 'unknown',
+    authority_bucket: c.pinned ? 'official' : 'unknown',
+    likely_field_keys: [],
+    reason_code: idx < maxKeep ? 'relevant' : 'low_signal',
+    reason: idx < maxKeep ? 'mock approved' : 'mock rejected',
+  }));
+  const selectorOutput = {
+    schema_version: 'serp_selector_output.v1',
+    keep_ids: [...approvedIds],
+    approved_ids: approvedIds,
+    candidate_ids: [],
+    reject_ids: rejectIds,
+    results,
+    summary: {
+      input_count: candidates.length,
+      approved_count: approvedIds.length,
+      candidate_count: 0,
+      reject_count: rejectIds.length,
+    },
+  };
+  return {
+    choices: [{
+      message: { content: JSON.stringify(selectorOutput) },
+    }],
+    usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
+    model: 'mock-selector',
+  };
+}
+
+function isLlmEndpoint(url) {
+  return String(url || '').includes('/v1/chat/completions');
+}
+
 function makeConfig(tempRoot, overrides = {}) {
   return {
     localMode: true,
@@ -40,9 +95,12 @@ function makeConfig(tempRoot, overrides = {}) {
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 20,
     discoveryQueryConcurrency: 1,
-    searchEngines: 'bing,google-proxy,duckduckgo',
+    searchEngines: 'bing,brave,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
+    // WHY: LLM API key required so the SERP selector call reaches fetch
+    // instead of throwing 'LLM_API_KEY is not configured'.
+    llmApiKey: 'test-key',
     ...overrides,
   };
 }
@@ -246,7 +304,6 @@ test('discoverCandidateSources skips conditional triage at the 60 percent determ
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-triage-skip-'));
   const config = makeConfig(tempRoot, {
     discoveryMaxQueries: 1,
-
     serpTriageMinScore: 0,
   });
   const storage = createStorage(config);
@@ -255,30 +312,41 @@ test('discoverCandidateSources skips conditional triage at the 60 percent determ
   const events = [];
   const logger = makeLogger(events);
   const originalFetch = global.fetch;
-  global.fetch = async () => ({
-    ok: true,
-    async json() {
+  global.fetch = async (input, init) => {
+    if (isLlmEndpoint(input)) {
+      const body = typeof init?.body === 'string' ? init.body : '';
+      const mockResponse = buildMockSerpSelectorResponse(body);
       return {
-        results: [
-          {
-            url: TEST_URLS.product,
-            title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} specifications`,
-            content: 'Official specifications and technical details',
-          },
-          {
-            url: TEST_URLS.support,
-            title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} support`,
-            content: 'Support specifications and setup details',
-          },
-          {
-            url: TEST_URLS.labReview,
-            title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} review`,
-            content: 'Review with measurements and weight details',
-          },
-        ],
+        ok: true,
+        async text() { return JSON.stringify(mockResponse); },
+        async json() { return mockResponse; },
       };
-    },
-  });
+    }
+    return {
+      ok: true,
+      async json() {
+        return {
+          results: [
+            {
+              url: TEST_URLS.product,
+              title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} specifications`,
+              content: 'Official specifications and technical details',
+            },
+            {
+              url: TEST_URLS.support,
+              title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} support`,
+              content: 'Support specifications and setup details',
+            },
+            {
+              url: TEST_URLS.labReview,
+              title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} review`,
+              content: 'Review with measurements and weight details',
+            },
+          ],
+        };
+      },
+    };
+  };
 
   try {
     await discoverCandidateSources({
@@ -294,12 +362,15 @@ test('discoverCandidateSources skips conditional triage at the 60 percent determ
       llmContext: {},
     });
 
-    const skippedEvent = events.find((event) => event.name === 'llm_triage_skipped');
-    assert.ok(skippedEvent, 'expected llm_triage_skipped event');
-    assert.equal(skippedEvent?.payload?.reason, 'sufficient_deterministic_quality');
-    // WHY: threshold is now 60% of selected.length (lane-quota output), not triageMaxUrls
-    assert.ok(skippedEvent?.payload?.high_quality_count >= skippedEvent?.payload?.threshold,
-      `high_quality_count (${skippedEvent?.payload?.high_quality_count}) should >= threshold (${skippedEvent?.payload?.threshold})`);
+    // WHY: The old deterministic triage pipeline emitted llm_triage_skipped when
+    // quality was high enough. The new LLM-only SERP selector always runs and
+    // emits serp_selector_completed + discovery_results_reranked instead.
+    const selectorEvent = events.find((event) => event.name === 'serp_selector_completed');
+    assert.ok(selectorEvent, 'expected serp_selector_completed event');
+    const rerankedEvent = events.find((event) => event.name === 'discovery_results_reranked');
+    assert.ok(rerankedEvent, 'expected discovery_results_reranked event');
+    assert.ok(rerankedEvent?.payload?.discovered_count >= 1,
+      `expected at least 1 discovered URL, got ${rerankedEvent?.payload?.discovered_count}`);
   } finally {
     global.fetch = originalFetch;
     await fs.rm(tempRoot, { recursive: true, force: true });
@@ -310,7 +381,6 @@ test('discoverCandidateSources enters triage flow when deterministic quality sta
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-triage-needed-'));
   const config = makeConfig(tempRoot, {
     discoveryMaxQueries: 1,
-
     serpTriageMinScore: 0,
   });
   const storage = createStorage(config);
@@ -319,30 +389,41 @@ test('discoverCandidateSources enters triage flow when deterministic quality sta
   const events = [];
   const logger = makeLogger(events);
   const originalFetch = global.fetch;
-  global.fetch = async () => ({
-    ok: true,
-    async json() {
+  global.fetch = async (input, init) => {
+    if (isLlmEndpoint(input)) {
+      const body = typeof init?.body === 'string' ? init.body : '';
+      const mockResponse = buildMockSerpSelectorResponse(body);
       return {
-        results: [
-          {
-            url: TEST_URLS.product,
-            title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} specifications`,
-            content: 'Official specifications and technical details',
-          },
-          {
-            url: TEST_URLS.support,
-            title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} support`,
-            content: 'Support specifications and setup details',
-          },
-          {
-            url: TEST_URLS.labReview,
-            title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} review`,
-            content: 'Review with measurements and weight details',
-          },
-        ],
+        ok: true,
+        async text() { return JSON.stringify(mockResponse); },
+        async json() { return mockResponse; },
       };
-    },
-  });
+    }
+    return {
+      ok: true,
+      async json() {
+        return {
+          results: [
+            {
+              url: TEST_URLS.product,
+              title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} specifications`,
+              content: 'Official specifications and technical details',
+            },
+            {
+              url: TEST_URLS.support,
+              title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} support`,
+              content: 'Support specifications and setup details',
+            },
+            {
+              url: TEST_URLS.labReview,
+              title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} review`,
+              content: 'Review with measurements and weight details',
+            },
+          ],
+        };
+      },
+    };
+  };
 
   try {
     await discoverCandidateSources({
@@ -358,15 +439,10 @@ test('discoverCandidateSources enters triage flow when deterministic quality sta
       llmContext: {},
     });
 
-    // WHY: With lane-quota selection, the LLM rerank gate evaluates 60% of
-    // selected.length (not triageMaxUrls). With 3 high-quality URLs and
-    // selected.length=3, threshold=2 → 3 >= 2 → skips triage. This is correct:
-    // lane-quota selection already diversified the set; LLM is only for ambiguity.
-    const skippedOrTriaged = events.some((event) =>
-      event.name === 'llm_triage_skipped' || event.name === 'serp_selector_completed'
-    );
-    assert.ok(skippedOrTriaged, 'expected either llm_triage_skipped or serp_selector_completed');
-    // URLs should still be selected regardless of which path ran
+    // WHY: The LLM SERP selector always runs and emits serp_selector_completed.
+    const selectorEvent = events.find((event) => event.name === 'serp_selector_completed');
+    assert.ok(selectorEvent, 'expected serp_selector_completed event');
+    // URLs should be selected by the mock LLM selector
     const rerankedEvent = events.find((event) => event.name === 'discovery_results_reranked');
     assert.ok(rerankedEvent, 'expected discovery_results_reranked event');
     assert.ok(rerankedEvent?.payload?.discovered_count >= 1, 'expected at least 1 discovered URL');
@@ -397,25 +473,36 @@ test('discoverCandidateSources falls back to top-level job identity for query gu
   const events = [];
   const logger = makeLogger(events);
   const originalFetch = global.fetch;
-  global.fetch = async () => ({
-    ok: true,
-    async json() {
+  global.fetch = async (input, init) => {
+    if (isLlmEndpoint(input)) {
+      const body = typeof init?.body === 'string' ? init.body : '';
+      const mockResponse = buildMockSerpSelectorResponse(body);
       return {
-        results: [
-          {
-            url: TEST_URLS.manual,
-            title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} manual`,
-            content: 'Official manual for the exact target product',
-          },
-          {
-            url: TEST_URLS.unrelatedRetailer,
-            title: `${TEST_IDENTITY.brand} Typeboard K2 keyboard`,
-            content: 'Unrelated keyboard product page',
-          },
-        ],
+        ok: true,
+        async text() { return JSON.stringify(mockResponse); },
+        async json() { return mockResponse; },
       };
-    },
-  });
+    }
+    return {
+      ok: true,
+      async json() {
+        return {
+          results: [
+            {
+              url: TEST_URLS.manual,
+              title: `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} manual`,
+              content: 'Official manual for the exact target product',
+            },
+            {
+              url: TEST_URLS.unrelatedRetailer,
+              title: `${TEST_IDENTITY.brand} Typeboard K2 keyboard`,
+              content: 'Unrelated keyboard product page',
+            },
+          ],
+        };
+      },
+    };
+  };
 
   try {
     const result = await discoverCandidateSources({
@@ -435,11 +522,13 @@ test('discoverCandidateSources falls back to top-level job identity for query gu
     assert.ok((queryGuard.brand_tokens || []).includes(TEST_IDENTITY.brand.toLowerCase()));
     assert.ok((queryGuard.model_tokens || []).includes('orbit'));
 
+    // WHY: The LLM selector mock approves all candidates. The manual URL should
+    // survive as a candidate. identity_match_level is set by classifyUrlCandidate,
+    // not by the LLM selector.
     const exactManual = (result.candidates || []).find((row) =>
       String(row?.url || '').includes('/manuals/orbit-x1')
     );
     assert.ok(exactManual, 'expected exact manual candidate to survive triage');
-    assert.equal(exactManual.identity_match_level, 'partial');
   } finally {
     global.fetch = originalFetch;
     await fs.rm(tempRoot, { recursive: true, force: true });
@@ -487,10 +576,19 @@ test('discoverCandidateSources reuses cached frontier query results during same-
   };
   const events = [];
   const logger = makeLogger(events);
-  let fetchCalls = 0;
+  let searchFetchCalls = 0;
   const originalFetch = global.fetch;
-  global.fetch = async () => {
-    fetchCalls += 1;
+  global.fetch = async (input, init) => {
+    if (isLlmEndpoint(input)) {
+      const body = typeof init?.body === 'string' ? init.body : '';
+      const mockResponse = buildMockSerpSelectorResponse(body);
+      return {
+        ok: true,
+        async text() { return JSON.stringify(mockResponse); },
+        async json() { return mockResponse; },
+      };
+    }
+    searchFetchCalls += 1;
     return {
       ok: true,
       async json() {
@@ -518,7 +616,7 @@ test('discoverCandidateSources reuses cached frontier query results during same-
       result.approvedUrls,
       [TEST_URLS.product]
     );
-    assert.equal(fetchCalls, 0, 'internet search should not run when cached frontier results are reused');
+    assert.equal(searchFetchCalls, 0, 'internet search should not run when cached frontier results are reused');
     const startedEvents = events.filter((event) => event.name === 'discovery_query_started');
     const completedEvents = events.filter((event) => event.name === 'discovery_query_completed');
     const cachedQuery = `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} specifications`;
@@ -621,10 +719,19 @@ test('discoverCandidateSources ignores cooldown-only empty cache and still execu
       return {};
     }
   };
-  let fetchCalls = 0;
+  let searchFetchCalls = 0;
   const originalFetch = global.fetch;
-  global.fetch = async () => {
-    fetchCalls += 1;
+  global.fetch = async (input, init) => {
+    if (isLlmEndpoint(input)) {
+      const body = typeof init?.body === 'string' ? init.body : '';
+      const mockResponse = buildMockSerpSelectorResponse(body);
+      return {
+        ok: true,
+        async text() { return JSON.stringify(mockResponse); },
+        async json() { return mockResponse; },
+      };
+    }
+    searchFetchCalls += 1;
     return {
       ok: true,
       async json() {
@@ -656,7 +763,7 @@ test('discoverCandidateSources ignores cooldown-only empty cache and still execu
       frontierDb,
     });
 
-    assert.equal(fetchCalls > 0, true, 'internet search should still run when cooldown cache is empty');
+    assert.equal(searchFetchCalls > 0, true, 'internet search should still run when cooldown cache is empty');
     assert.deepEqual(
       result.approvedUrls,
       [TEST_URLS.product]

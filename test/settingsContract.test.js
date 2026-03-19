@@ -47,7 +47,7 @@ test('migration normalizes legacy top-level runtime/convergence/ui keys into sec
 test('migration keeps only canonical runtime/convergence/ui keys', () => {
   const migrated = migrateUserSettingsDocument({
     runtime: {
-      searchEngines: 'bing,google-proxy,duckduckgo',
+      searchEngines: 'bing,brave,duckduckgo',
       unknownRuntimeKey: 'drop-me',
     },
     convergence: {
@@ -130,7 +130,7 @@ test('readUserSettingsDocumentMeta flags stale payload versions only when payloa
   assert.equal(missing.hasPayload, false);
   assert.equal(missing.stale, false);
 
-  const stale = readUserSettingsDocumentMeta({ schemaVersion: 1, runtime: { searchEngines: 'bing,google-proxy,duckduckgo' } });
+  const stale = readUserSettingsDocumentMeta({ schemaVersion: 1, runtime: { searchEngines: 'bing,brave,duckduckgo' } });
   assert.equal(stale.hasPayload, true);
   assert.equal(stale.stale, true);
   assert.equal(stale.schemaVersion, 1);
@@ -140,7 +140,7 @@ test('readUserSettingsDocumentMeta flags stale payload versions only when payloa
 test('validateUserSettingsSnapshot enforces canonical envelope and rejects unknown keys', () => {
   const validPayload = {
     schemaVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
-    runtime: { searchEngines: 'bing,google-proxy,duckduckgo' },
+    runtime: { searchEngines: 'bing,brave,duckduckgo' },
     convergence: { serpTriageMinScore: 3 },
     storage: {
       enabled: false,

@@ -50,7 +50,7 @@ function createNumericBaseline(fallback = 11) {
 
 function createSerializerInput(overrides = {}) {
   return {
-    searchEngines: 'bing,google-proxy,duckduckgo',
+    searchEngines: 'bing,brave,duckduckgo',
     searxngBaseUrl: '  https://example.test/search  ',
     llmPlanApiKey: '  key-live  ',
     llmModelPlan: 'gpt-plan',
@@ -81,7 +81,7 @@ test('runtime settings serializer emits every runtime PUT frontend key without s
   assert.equal(Object.hasOwn(payload, 'profile'), false, 'profile is not a runtime PUT key — must not be in payload');
   assert.equal(Object.hasOwn(payload, 'runProfile'), false, 'runProfile is not a runtime PUT key — must not be in payload');
   assert.equal(Object.hasOwn(payload, 'discoveryEnabled'), false, 'discoveryEnabled is a hardcoded invariant — must not be in payload');
-  assert.equal(payload.searchEngines, 'bing,google-proxy,duckduckgo');
+  assert.equal(payload.searchEngines, 'bing,brave,duckduckgo');
   assert.equal(payload.searxngBaseUrl, 'https://example.test/search');
   assert.equal(payload.llmPlanApiKey, 'key-live');
   assert.equal(payload.llmPlanFallbackModel, 'gpt-plan-fallback');

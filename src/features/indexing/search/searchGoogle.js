@@ -4,6 +4,7 @@
 // screenshotsEnabled controls whether a SERP screenshot is captured.
 
 import { createHash } from 'node:crypto';
+import { PRESETS } from 'fingerprint-generator';
 import { parseGoogleResults, isCaptchaPage, isConsentPage } from './googleResultParser.js';
 
 // ---------------------------------------------------------------------------
@@ -32,21 +33,14 @@ export function resetGoogleSearchPacingForTests() {
   _lastGoogleQueryMs = 0;
 }
 
-function buildMobileHeaders() {
-  const chromeVer = 130 + Math.floor(Math.random() * 7);
-  return {
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Sec-Ch-Ua': `"Chromium";v="${chromeVer}", "Not_A_Brand";v="24", "Google Chrome";v="${chromeVer}"`,
-    'Sec-Ch-Ua-Mobile': '?1',
-    'Sec-Ch-Ua-Platform': '"Android"',
-    'Sec-Fetch-Dest': 'document',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'none',
-    'Sec-Fetch-User': '?1',
-    'Upgrade-Insecure-Requests': '1',
-  };
-}
+// WHY: Data-saving headers tell Google to serve lighter JS bundles.
+// The fingerprint suite handles UA, Sec-Ch-Ua, and other stealth headers.
+const DATA_SAVING_HEADERS = {
+  'Save-Data': 'on',
+  'ECT': 'slow-2g',
+  'Downlink': '0.4',
+  'RTT': '1800',
+};
 
 // ---------------------------------------------------------------------------
 // Main export
@@ -125,14 +119,12 @@ export async function searchGoogle({
     let screenshotBuffer = null;
     let proxyBytesTotal = 0;
 
-    const vw = 375 + Math.floor(Math.random() * 40);
-    const vh = 812 + Math.floor(Math.random() * 100);
-
     const crawlerOptions = {
       maxRequestsPerCrawl: 1,
       requestHandlerTimeoutSecs: Math.ceil(timeoutMs / 1000) + 10,
       ...(proxyConfiguration ? { proxyConfiguration } : {}),
       useSessionPool: Boolean(proxyConfiguration),
+      persistCookiesPerSession: true,
       maxRequestRetries: proxyConfiguration ? maxRetries : 0,
       launchContext: {
         launchOptions: {
@@ -144,11 +136,19 @@ export async function searchGoogle({
             '--no-default-browser-check',
             '--enforce-webrtc-ip-permission-check',
             '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
-            `--window-size=${vw},${vh}`,
           ],
         },
       },
       browserPoolOptions: {
+        // WHY: Crawlee's built-in fingerprint generator creates realistic
+        // browser fingerprints (UA, viewport, canvas, WebGL, navigator)
+        // using Bayesian networks. Replaces our manual stealth script.
+        useFingerprints: true,
+        fingerprintOptions: {
+          fingerprintGeneratorOptions: {
+            ...PRESETS.MODERN_ANDROID,
+          },
+        },
         maxOpenPagesPerBrowser: 1,
         retireBrowserAfterPageCount: 1,
       },
@@ -157,13 +157,26 @@ export async function searchGoogle({
           gotoOptions.waitUntil = 'domcontentloaded';
           gotoOptions.timeout = Math.max(5000, Number(timeoutMs) || 30_000);
 
-          // WHY: Only allow document + stylesheet + scripts through proxy.
-          // Block images, fonts, media, XHR, fetch to minimize bandwidth.
-          // Scripts are needed because Google requires JS to render results.
+          // WHY: Allow document + stylesheet + essential scripts only.
+          // Block images, fonts, XHR, fetch, and non-essential scripts.
+          // XHR/fetch are post-load analytics/suggestions — not needed for results.
           await page.route('**', (route, request) => {
             const type = request.resourceType();
-            if (type === 'document' || type === 'stylesheet' || type === 'script') {
+            if (type === 'document' || type === 'stylesheet') {
               return route.continue();
+            }
+            if (type === 'script') {
+              const u = request.url();
+              if (u.includes('analytics') || u.includes('adservice') ||
+                  u.includes('doubleclick') || u.includes('googlesyndication') ||
+                  u.includes('googletagmanager') || u.includes('recaptcha') ||
+                  u.includes('accounts.google') || u.includes('play.google')) {
+                return route.abort();
+              }
+              if (u.includes('google.com') || u.includes('gstatic.com')) {
+                return route.continue();
+              }
+              return route.abort();
             }
             return route.abort();
           });
@@ -176,7 +189,9 @@ export async function searchGoogle({
             } catch { /* aborted responses */ }
           });
 
-          await page.setExtraHTTPHeaders(buildMobileHeaders());
+          // WHY: Only add data-saving hints — fingerprint suite handles
+          // UA, Sec-Ch-Ua, and all other stealth headers automatically.
+          await page.setExtraHTTPHeaders(DATA_SAVING_HEADERS);
         },
       ],
       requestHandler: async ({ page, session }) => {
@@ -218,6 +233,15 @@ export async function searchGoogle({
 
         pageUrl = page.url();
         pageHtml = await page.content();
+
+        // Debug: save HTML for parser development
+        try {
+          const { writeFile: _wf, mkdir: _md } = await import('node:fs/promises');
+          const { join: _join } = await import('node:path');
+          const debugDir = _join(process.cwd(), '.specfactory_tmp', 'crawlee_debug');
+          await _md(debugDir, { recursive: true });
+          await _wf(_join(debugDir, `serp-${Date.now()}.html`), pageHtml);
+        } catch { /* debug only */ }
 
         // Screenshot capture
         if (screenshotsEnabled) {
@@ -298,8 +322,6 @@ export async function searchGoogle({
     if (screenshotsEnabled && screenshotBuffer) {
       output.screenshot = {
         buffer: screenshotBuffer,
-        width: vw,
-        height: vh,
         bytes: screenshotBuffer.length,
         ts: new Date().toISOString(),
         queryHash: queryHash(q),

@@ -37,7 +37,7 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
     fields: ['dpi', 'weight', ''],
     providers: ['manufacturer', ' search '],
     discoveryEnabled: true,
-    searchEngines: 'bing,google-proxy,duckduckgo',
+    searchEngines: 'bing,brave,duckduckgo',
     profile: 'thorough',
     dryRun: true,
     localOutputRoot: path.resolve('ignored-local-output-root'),
@@ -80,7 +80,7 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
     '--providers',
     'manufacturer,search',
     '--search-engines',
-    'bing,google-proxy,duckduckgo',
+    'bing,brave,duckduckgo',
     '--out',
     path.join(localStorageRoot, 'indexlab'),
     '--profile',
@@ -119,10 +119,10 @@ test('buildProcessStartLaunchPlan rejects unsupported process mode', () => {
 });
 
 test('buildProcessStartLaunchPlan passes searchEngines through to CLI args', () => {
-  const result = buildPlan({ searchEngines: 'bing,google-proxy' });
+  const result = buildPlan({ searchEngines: 'bing,brave' });
   assert.equal(result.ok, true);
   assert.ok(result.cliArgs.includes('--search-engines'), 'includes --search-engines flag');
-  assert.ok(result.cliArgs.includes('bing,google-proxy'), 'includes engine CSV value');
+  assert.ok(result.cliArgs.includes('bing,brave'), 'includes engine CSV value');
 });
 
 test('buildProcessStartLaunchPlan validates object-shaped JSON map overrides', () => {

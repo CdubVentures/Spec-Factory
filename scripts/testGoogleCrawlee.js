@@ -20,7 +20,9 @@ const count = Number(
 ) || 30;
 
 const screenshots = args.includes('--screenshots');
-const modes = screenshots ? ['browser'] : args.includes('--both') ? ['fetch', 'browser'] : ['fetch'];
+// WHY: "no-screenshot" = browser without screenshots (lower bandwidth).
+// "screenshot" = browser with screenshots. --both runs both for comparison.
+const modes = screenshots ? ['screenshot'] : args.includes('--both') ? ['no-screenshot', 'screenshot'] : ['no-screenshot'];
 
 const PORT = 9000;
 const OUT_ROOT = join(process.cwd(), '.specfactory_tmp', 'crawlee_test');
@@ -61,7 +63,7 @@ const QUERIES = [
 const proxyUrls = ['http://zruyrjpq-rotate:dfm4udpzx5p0@p.webshare.io:80'];
 
 async function runQuery(query, idx, mode, outDir) {
-  const isBrowser = mode === 'browser';
+  const withScreenshots = mode === 'screenshot';
   const pad = String(idx + 1).padStart(2, '0');
   const slug = query.replace(/[^a-zA-Z0-9]+/g, '-').slice(0, 60).toLowerCase();
   const t0 = Date.now();
@@ -73,7 +75,7 @@ async function runQuery(query, idx, mode, outDir) {
     proxyUrls,
     minQueryIntervalMs: 1_000,
     maxRetries: 3,
-    screenshotsEnabled: isBrowser,
+    screenshotsEnabled: withScreenshots,
     logger: {
       info: () => {},
       warn: (evt, data) => console.log(`    [warn] ${evt} ${JSON.stringify(data)}`),
@@ -145,7 +147,7 @@ await writeFile(join(OUT_ROOT, 'report.json'), JSON.stringify(report, null, 2));
 
 // Gallery server
 const server = createServer(async (req, res) => {
-  const imgMatch = req.url?.match(/^\/(fetch|browser)\/(.+\.jpg)$/);
+  const imgMatch = req.url?.match(/^\/(no-screenshot|screenshot)\/(.+\.jpg)$/);
   if (imgMatch) {
     try {
       const buf = await readFile(join(OUT_ROOT, imgMatch[1], imgMatch[2]));

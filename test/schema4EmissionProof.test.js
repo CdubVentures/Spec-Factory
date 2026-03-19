@@ -358,7 +358,7 @@ test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundle
   await runDiscoverySeedPlan({
     config: {
 
-      searchEngines: 'bing,google-proxy,duckduckgo',
+      searchEngines: 'bing,brave,duckduckgo',
       discoveryEnabled: true,
       maxCandidateUrls: 10,
       fetchCandidateSources: false,
@@ -512,7 +512,7 @@ test('runDiscoverySeedPlan handles schema4 computation failure gracefully', asyn
   await runDiscoverySeedPlan({
     config: {
 
-      searchEngines: 'bing,google-proxy,duckduckgo',
+      searchEngines: 'bing,brave,duckduckgo',
       discoveryEnabled: true,
       maxCandidateUrls: 0,
       fetchCandidateSources: false,
@@ -557,7 +557,7 @@ test('runDiscoverySeedPlan does NOT emit needset_computed when schema4 has no pa
   await runDiscoverySeedPlan({
     config: {
 
-      searchEngines: 'bing,google-proxy,duckduckgo',
+      searchEngines: 'bing,brave,duckduckgo',
       discoveryEnabled: true,
       maxCandidateUrls: 0,
       fetchCandidateSources: false,

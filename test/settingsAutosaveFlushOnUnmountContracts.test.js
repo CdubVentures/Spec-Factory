@@ -110,6 +110,12 @@ function buildCommonStubs({ manifestStub }) {
       export function useRef(value) {
         return { current: value };
       }
+      export function useCallback(fn) { return fn; }
+      export function useSyncExternalStore(subscribe, getSnapshot) { return getSnapshot(); }
+      export function useDebugValue() {}
+      export function createElement() { return null; }
+      const React = { useEffect, useMemo, useRef, useCallback, useSyncExternalStore, useDebugValue, createElement };
+      export default React;
     `,
     '@tanstack/react-query': `
       export function useMutation() {

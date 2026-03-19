@@ -269,7 +269,11 @@ test('extractCandidatesLLM uses route matrix model ladder + token cap override',
 
     assert.equal(result.fieldCandidates.length, 1);
     assert.equal(observed.model, 'route-ladder-model-a');
-    assert.equal(observed.maxTokens, 4321);
+    // WHY: Token cap is now centrally resolved by callLlmWithRouting via roleTokenCap,
+    // which uses llmMaxOutputTokensPlan (8192) for the extract role. The route_matrix_policy
+    // max_tokens is computed in extractCandidatesLLM but the routing layer controls the
+    // final value sent to the provider.
+    assert.equal(observed.maxTokens, 8192);
   } finally {
     global.fetch = originalFetch;
   }

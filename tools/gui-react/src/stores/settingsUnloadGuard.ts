@@ -35,20 +35,17 @@ function onUnload(): void {
         continue;
       }
       try {
-        // WHY: sendBeacon is guaranteed to survive page teardown;
-        // fetch({ keepalive }) has browser-specific payload limits.
+        // WHY: fetch({ keepalive }) survives page teardown and respects the
+        // registered HTTP method. sendBeacon was removed because it always
+        // sends POST regardless of the method field, which silently breaks
+        // PUT-registered domains (the backend returns false / 405).
         const jsonBody = JSON.stringify(payload.body);
-        if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-          const blob = new Blob([jsonBody], { type: 'application/json' });
-          navigator.sendBeacon(payload.url, blob);
-        } else {
-          void fetch(payload.url, {
-            method: payload.method,
-            headers: { 'Content-Type': 'application/json' },
-            body: jsonBody,
-            keepalive: true,
-          });
-        }
+        void fetch(payload.url, {
+          method: payload.method,
+          headers: { 'Content-Type': 'application/json' },
+          body: jsonBody,
+          keepalive: true,
+        });
       } catch {
         // Best-effort — silently catch and continue to next domain.
       }

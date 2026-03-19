@@ -113,7 +113,7 @@ test('C.1 validate: LLM enabled with API key is valid', () => {
 
 test('C.1 validate: search provider configured does not emit discovery warning', () => {
   const config = loadConfig({
-    searchEngines: 'bing,google-proxy,duckduckgo'
+    searchEngines: 'bing,brave,duckduckgo'
   });
   const result = validateConfig(config);
   assert.ok(!result.warnings.some((w) => w.code === 'DISCOVERY_NO_SEARCH_PROVIDER'));

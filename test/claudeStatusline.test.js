@@ -26,6 +26,11 @@ function runStatusline({ scriptPath, input, env = {} }) {
     env: {
       ...process.env,
       NO_COLOR: '1',
+      // Isolate from real account data so tests are hermetic.
+      CLAUDE_STATUSLINE_CREDENTIALS_PATH: path.join(os.tmpdir(), 'nonexistent-statusline-creds.json'),
+      CLAUDE_STATUSLINE_TELEMETRY_DIR: path.join(os.tmpdir(), 'nonexistent-statusline-telemetry'),
+      CLAUDE_STATUSLINE_USAGE_CACHE_PATH: path.join(os.tmpdir(), 'nonexistent-statusline-usage-cache.json'),
+      CLAUDE_STATUSLINE_USER_CONFIG_PATH: path.join(os.tmpdir(), 'nonexistent-statusline-user-config.json'),
       ...env
     },
     input: `${JSON.stringify(input)}\n`
@@ -121,7 +126,7 @@ test('global statusline prefers context remaining_percentage over token math', a
       input
     });
 
-    assert.equal(output, 'Opus 4.6 | 62% [####----] | High');
+    assert.equal(output, 'Opus 4.6 | 62% [####----] | High | W--%');
   } finally {
     await removeFixture(fixture.rootDir);
   }
@@ -145,7 +150,7 @@ test('global statusline derives remaining percentage from used_percentage when n
       input
     });
 
-    assert.equal(output, 'Opus 4.6 | 83% [######--] | High');
+    assert.equal(output, 'Opus 4.6 | 83% [######--] | High | W--%');
   } finally {
     await removeFixture(fixture.rootDir);
   }
@@ -176,7 +181,7 @@ test('global statusline derives accurate context from current_usage when percent
       input
     });
 
-    assert.equal(output, 'Opus 4.6 | 75% [######--] | High');
+    assert.equal(output, 'Opus 4.6 | 75% [######--] | High | W--%');
   } finally {
     await removeFixture(fixture.rootDir);
   }
@@ -204,7 +209,7 @@ test('global statusline shows unknown context before Claude exposes live context
       input
     });
 
-    assert.equal(output, 'Opus 4.6 | -- [--------] | High');
+    assert.equal(output, 'Opus 4.6 | -- [--------] | High | W--%');
   } finally {
     await removeFixture(fixture.rootDir);
   }
@@ -236,7 +241,7 @@ test('global statusline uses current project settings instead of stale sibling-s
       input
     });
 
-    assert.equal(output, 'Opus 4.6 | 100% [########] | High');
+    assert.equal(output, 'Opus 4.6 | 100% [########] | High | W--%');
   } finally {
     await removeFixture(fixture.rootDir);
   }
@@ -266,7 +271,7 @@ test('global statusline prefers the latest transcript effort and model label ove
       input
     });
 
-    assert.equal(output, 'Opus 4.6 (1M context) | 100% [########] | Low');
+    assert.equal(output, 'Opus 4.6 (1M context) | 100% [########] | Low | W--%');
   } finally {
     await removeFixture(fixture.rootDir);
   }
@@ -294,7 +299,7 @@ test('global statusline handles escaped ANSI model transcripts and surfaces max 
       input
     });
 
-    assert.equal(output, 'Opus 4.6 (1M context) | 100% [########] | Max');
+    assert.equal(output, 'Opus 4.6 (1M context) | 100% [########] | Max | W--%');
   } finally {
     await removeFixture(fixture.rootDir);
   }
@@ -323,7 +328,7 @@ test('spec factory local statusline entrypoint matches the global behavior contr
       input
     });
 
-    assert.equal(output, 'Opus 4.6 (1M context) | 100% [########] | Max');
+    assert.equal(output, 'Opus 4.6 (1M context) | 100% [########] | Max | W--%');
   } finally {
     await removeFixture(fixture.rootDir);
   }
@@ -375,7 +380,7 @@ test('global statusline reuses cached transcript state so repeated updates stay 
     });
     const durationMs = Number(process.hrtime.bigint() - startTime) / 1e6;
 
-    assert.equal(output, 'Opus 4.6 (1M context) | 100% [########] | Max');
+    assert.equal(output, 'Opus 4.6 (1M context) | 100% [########] | Max | W--%');
     assert.ok(durationMs < 750, `expected cached statusline run to stay under 750ms, got ${durationMs.toFixed(2)}ms`);
   } finally {
     await removeFixture(fixture.rootDir);
@@ -407,7 +412,7 @@ test('global statusline reuses cached transcript state when the transcript file 
       }
     });
 
-    assert.equal(warmOutput, 'Opus 4.6 (1M context) | 100% [########] | Max');
+    assert.equal(warmOutput, 'Opus 4.6 (1M context) | 100% [########] | Max | W--%');
 
     await fs.rm(fixture.transcriptPath, { force: true });
 
@@ -419,7 +424,7 @@ test('global statusline reuses cached transcript state when the transcript file 
       }
     });
 
-    assert.equal(cachedOutput, 'Opus 4.6 (1M context) | 100% [########] | Max');
+    assert.equal(cachedOutput, 'Opus 4.6 (1M context) | 100% [########] | Max | W--%');
   } finally {
     await removeFixture(fixture.rootDir);
   }

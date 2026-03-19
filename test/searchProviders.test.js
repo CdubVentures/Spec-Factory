@@ -47,11 +47,11 @@ test('normalizeSearchEngines migrates legacy none → empty string', () => {
 });
 
 test('normalizeSearchEngines passes through valid CSV', () => {
-  assert.equal(normalizeSearchEngines('bing,google-proxy,duckduckgo'), 'bing,google-proxy,duckduckgo');
+  assert.equal(normalizeSearchEngines('bing,startpage,duckduckgo'), 'bing,startpage,duckduckgo');
 });
 
 test('normalizeSearchEngines strips invalid tokens from CSV', () => {
-  assert.equal(normalizeSearchEngines('bing,yahoo,google-proxy'), 'bing,google-proxy');
+  assert.equal(normalizeSearchEngines('bing,yahoo,startpage'), 'bing,startpage');
 });
 
 test('normalizeSearchEngines deduplicates engines', () => {
@@ -90,8 +90,8 @@ test('runSearchProviders with searchEngines sends one fetch with engines param',
           url: 'https://example.com/spec2',
           title: 'Spec Page 2',
           content: 'DPI 26000',
-          engine: 'startpage',
-          engines: ['startpage']
+          engine: 'duckduckgo',
+          engines: ['duckduckgo']
         }
       ]
     });
@@ -100,19 +100,19 @@ test('runSearchProviders with searchEngines sends one fetch with engines param',
   try {
     const rows = await runSearchProviders({
       config: makeSearchConfig({
-        searchEngines: 'bing,google-proxy',
+        searchEngines: 'bing,duckduckgo',
       }),
       query: 'razer viper v3 pro',
       limit: 5
     });
 
     assert.equal(calls, 1, 'exactly one fetch call');
-    assert.ok(capturedUrl.includes('engines=bing%2Cstartpage'), `engines param translates google-proxy to startpage for SearXNG: ${capturedUrl}`);
+    assert.ok(capturedUrl.includes('engines=bing%2Cduckduckgo'), `engines param sent to SearXNG: ${capturedUrl}`);
     assert.equal(rows.length, 2);
     assert.equal(rows[0].provider, 'bing', 'per-result engine attribution from SearXNG');
-    assert.equal(rows[1].provider, 'google-proxy', 'per-result engine attribution from SearXNG');
+    assert.equal(rows[1].provider, 'duckduckgo', 'per-result engine attribution from SearXNG');
     assert.deepEqual(rows[0].engines, ['bing']);
-    assert.deepEqual(rows[1].engines, ['google-proxy']);
+    assert.deepEqual(rows[1].engines, ['duckduckgo']);
   } finally {
     global.fetch = originalFetch;
   }
@@ -427,15 +427,15 @@ test('runSearchProviders drops results from engines that returned anti-bot garba
 
 test('searchEngineAvailability reports engine list and readiness', () => {
   const available = searchEngineAvailability({
-    searchEngines: 'bing,google-proxy,duckduckgo',
+    searchEngines: 'bing,startpage,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080'
   });
   assert.equal(available.searxng_ready, true);
   assert.equal(available.internet_ready, true);
-  assert.deepEqual(available.engines, ['bing', 'google-proxy', 'duckduckgo']);
+  assert.deepEqual(available.engines, ['bing', 'startpage', 'duckduckgo']);
   assert.equal(available.bing_ready, true);
   assert.equal(available.google_ready, false);
-  assert.deepEqual(available.active_providers, ['bing', 'google-proxy', 'duckduckgo']);
+  assert.deepEqual(available.active_providers, ['bing', 'startpage', 'duckduckgo']);
 });
 
 test('searchEngineAvailability with empty engines reports not ready', () => {

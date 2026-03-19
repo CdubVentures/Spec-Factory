@@ -16,7 +16,7 @@ function makeRunData(overrides = {}) {
   return {
     settings_snapshot: {
       ts: '2026-03-09T12:00:00.000Z',
-      searchEngines: 'bing,google-proxy,duckduckgo',
+      searchEngines: 'bing,brave,duckduckgo',
       discoveryEnabled: true,
       preferHttpFetcher: true,
       dynamicCrawleeEnabled: true,

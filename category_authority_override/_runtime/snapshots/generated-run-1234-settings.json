@@ -1,12 +1,12 @@
 {
   "snapshotId": "generated-run-1234",
   "schemaVersion": "1.0",
-  "createdAt": 1773905135432,
+  "createdAt": 1773910095278,
   "source": "gui",
   "settings": {
     "categoryAuthorityRoot": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority_override",
     "discoveryEnabled": true,
-    "searchEngines": "bing,google-proxy,duckduckgo",
+    "searchEngines": "bing,brave,duckduckgo",
     "dryRun": true,
     "localOutputRoot": "C:\\Users\\Chris\\Desktop\\Spec Factory\\ignored-local-output-root",
     "specDbDir": "C:\\Users\\Chris\\Desktop\\Spec Factory\\ignored-spec-db-root",

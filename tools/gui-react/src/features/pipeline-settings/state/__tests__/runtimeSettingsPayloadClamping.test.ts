@@ -33,7 +33,7 @@ function makeInput(
   overrides: Partial<RuntimeSettingsPayloadSerializerInput> = {},
 ): RuntimeSettingsPayloadSerializerInput {
   return {
-    searchEngines: 'bing,google-proxy,duckduckgo',
+    searchEngines: 'bing,brave,duckduckgo',
     searxngBaseUrl: '',
     llmPlanApiKey: '',
     llmModelPlan: 'gpt-4o',

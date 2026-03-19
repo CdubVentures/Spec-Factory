@@ -110,6 +110,46 @@ function extractTier1(doc, limit) {
 
     results.push({ url: rawUrl, title, snippet });
   }
+  if (results.length > 0) return results;
+
+  // Strategy C: Android mobile SERP — h3 is NOT inside an anchor tag.
+  // Results are in [data-hveid] containers where the h3 and link are siblings.
+  const hveidContainers = doc.querySelectorAll('#rso [data-hveid]');
+  for (const container of hveidContainers) {
+    if (results.length >= limit) break;
+    const h3 = container.querySelector('h3');
+    if (!h3) continue;
+
+    // Find external link in the same container (sibling, not wrapping h3)
+    const anchors = container.querySelectorAll('a[href]');
+    let bestAnchor = null;
+    for (const a of anchors) {
+      const href = cleanGoogleUrl(a.getAttribute('href'));
+      if (href && href.startsWith('http') && !href.includes('google.com')) {
+        bestAnchor = a;
+        break;
+      }
+    }
+    if (!bestAnchor) continue;
+
+    const rawUrl = cleanGoogleUrl(bestAnchor.getAttribute('href'));
+    if (!rawUrl || seen.has(rawUrl)) continue;
+    seen.add(rawUrl);
+
+    const title = (h3.textContent || '').trim();
+    if (!title) continue;
+
+    let snippet = '';
+    for (const el of container.querySelectorAll('span, div')) {
+      const text = (el.textContent || '').trim();
+      if (text.length > 40 && !text.includes(title) && el.querySelector('h3') === null) {
+        snippet = text;
+        break;
+      }
+    }
+
+    results.push({ url: rawUrl, title, snippet });
+  }
   return results;
 }
 

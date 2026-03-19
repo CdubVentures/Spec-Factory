@@ -31,7 +31,7 @@ function makeConfig(tempRoot, overrides = {}) {
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 20,
     discoveryQueryConcurrency: 1,
-    searchEngines: 'bing,google-proxy,duckduckgo',
+    searchEngines: 'bing,brave,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
     ...overrides,

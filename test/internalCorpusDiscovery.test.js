@@ -165,12 +165,19 @@ test('discoverCandidateSources uses internal source corpus when external provide
       llmContext: {}
     });
 
-    assert.equal(discovery.approvedUrls.some((url) => url.includes('razer.com/gaming-mice/viper-v3-pro')), true);
+    // WHY: approvedUrls is populated by the SERP selector LLM, which is not available
+    // in this test (no LLM key). The selector now rejects all candidates on failure
+    // (no deterministic fallback). The internal corpus lookup is verified by search_attempts.
+    assert.ok(Array.isArray(discovery.approvedUrls), 'approvedUrls is an array');
     assert.equal((discovery.search_attempts || []).some((row) => row.provider === 'internal'), true);
     assert.equal(
       (discovery.search_attempts || []).some((row) => row.provider === 'internal' && row.reason_code === 'internal_corpus_lookup'),
       true
     );
+    // WHY: Internal corpus results are found (verified by search_attempts above having result_count > 0)
+    const internalAttempts = (discovery.search_attempts || []).filter((row) => row.provider === 'internal');
+    assert.ok(internalAttempts.length > 0, 'at least one internal corpus search attempt');
+    assert.ok(internalAttempts.some((row) => row.result_count > 0), 'internal corpus returned results');
     assert.equal((discovery.search_attempts || []).some((row) => row.provider === 'plan'), false);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
@@ -193,7 +200,7 @@ test('discoverCandidateSources skips external search when internal recall alread
     discoveryMaxQueries: 2,
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 20,
-    searchEngines: 'bing,google-proxy,duckduckgo',
+    searchEngines: 'bing,brave,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
     searchCacheTtlSeconds: 0

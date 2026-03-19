@@ -87,7 +87,7 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
     category: 'mouse',
     productId: 'mouse-v3-pro',
     runtimeSettingsPayload: createPayload({
-      searchEngines: ' bing,google-proxy,duckduckgo ',
+      searchEngines: ' bing,brave,duckduckgo ',
       dynamicCrawleeEnabled: true,
       runtimeScreencastEnabled: true,
       importsRoot: '  ./imports  ',
@@ -203,7 +203,7 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
   assert.equal(payload.llmMaxOutputTokens, 256);
   assert.equal(payload.endpointNetworkScanLimit, 50);
 
-  assert.equal(payload.searchEngines, 'bing,google-proxy,duckduckgo');
+  assert.equal(payload.searchEngines, 'bing,brave,duckduckgo');
   assert.equal(payload.llmModelPlan, 'gpt-plan');
   assert.equal(payload.llmMaxOutputTokensPlan, 128);
   assert.equal(payload.llmPlanFallbackModel, 'gpt-plan-fallback');
