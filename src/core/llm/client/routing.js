@@ -17,13 +17,22 @@ function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 }
 
+// WHY: Single resolver for phase-aware reasoning. Callers never duplicate this chain.
+// SSOT: _resolved${Phase}UseReasoning (from panel phase overrides) → llmPlanUseReasoning (panel global) → false.
+// llmReasoningMode is a legacy key and is NOT part of this chain.
+export function resolvePhaseReasoning(config = {}, phase = '') {
+  const cap = capitalize(String(phase || '').trim());
+  if (!cap) return Boolean(config.llmPlanUseReasoning ?? false);
+  return Boolean(
+    config[`_resolved${cap}UseReasoning`] ?? config.llmPlanUseReasoning ?? false
+  );
+}
+
 export function resolvePhaseModel(config = {}, phase = '') {
   const cap = capitalize(String(phase || '').trim());
   if (!cap) return String(config.llmModelPlan || '').trim();
 
-  const useReasoning = Boolean(
-    config[`_resolved${cap}UseReasoning`] ?? config.llmPlanUseReasoning ?? false
-  );
+  const useReasoning = resolvePhaseReasoning(config, phase);
 
   if (useReasoning) {
     const reasoning = String(
@@ -253,6 +262,14 @@ export function roleTokenCap(config = {}, role = 'extract', reason = '', isFallb
   return cap;
 }
 
+// WHY: Phase-level token cap from LLM panel. configPostMerge writes _resolved${Phase}MaxOutputTokens.
+// Returns 0 when no phase cap is configured, letting roleTokenCap handle it.
+function resolvePhaseTokenCap(config = {}, phase = '') {
+  const cap = capitalize(String(phase || '').trim());
+  if (!cap) return 0;
+  return Math.max(0, Number(config[`_resolved${cap}MaxOutputTokens`] || 0));
+}
+
 function roleReasoningCap(config = {}, role = 'extract', reason = '', isFallback = false) {
   const fallbackCap = roleTokenCap(config, role, reason, isFallback);
   const configured = toIntToken(config.llmReasoningBudget, 0);
@@ -378,9 +395,6 @@ export async function callLlmWithRouting({
   usageContext = {},
   costRates,
   onUsage,
-  reasoningMode = false,
-  reasoningBudget = 0,
-  maxTokens = 0,
   timeoutMs = 40_000,
   logger
 }) {
@@ -405,6 +419,21 @@ export async function callLlmWithRouting({
           : null)
   );
 
+  // WHY: Reasoning + tokens auto-resolved from config via phase. Callers never set these.
+  // The LLM Settings panel is the SSOT — configPostMerge writes _resolved${Phase}* keys.
+  const reasoningMode = resolvePhaseReasoning(config, phase);
+
+  const primaryTokenCap = roleTokenCap(config, resolvedRole, reason, false, primary._registryEntry);
+  const fallbackTokenCap = roleTokenCap(config, resolvedRole, reason, true, fallback?._registryEntry);
+  const primaryReasoningBudget = roleReasoningCap(config, resolvedRole, reason, false);
+  const fallbackReasoningBudget = roleReasoningCap(config, resolvedRole, reason, true);
+  // WHY: Phase-level token cap from panel takes precedence over role-level cap.
+  const phaseTokenCap = resolvePhaseTokenCap(config, phase);
+  const resolvedMaxTokens = phaseTokenCap > 0
+    ? Math.min(phaseTokenCap, primaryTokenCap || phaseTokenCap)
+    : primaryTokenCap;
+  const resolvedReasoningBudget = primaryReasoningBudget;
+
   logger?.info?.('llm_route_selected', {
     reason,
     role: resolvedRole,
@@ -413,26 +442,11 @@ export async function callLlmWithRouting({
     base_url: primary.baseUrl || null,
     fallback_base_url: fallback?.baseUrl || null,
     fallback_configured: Boolean(fallback),
-    output_token_cap: roleTokenCap(config, resolvedRole, reason, false, primary._registryEntry),
-    output_token_cap_fallback: roleTokenCap(config, resolvedRole, reason, true, fallback?._registryEntry)
+    output_token_cap: primaryTokenCap,
+    output_token_cap_fallback: fallbackTokenCap,
+    reasoning_mode: reasoningMode,
+    phase_token_cap: phaseTokenCap,
   });
-
-  const primaryTokenCap = roleTokenCap(config, resolvedRole, reason, false, primary._registryEntry);
-  const fallbackTokenCap = roleTokenCap(config, resolvedRole, reason, true, fallback?._registryEntry);
-  const primaryReasoningBudget = roleReasoningCap(config, resolvedRole, reason, false);
-  const fallbackReasoningBudget = roleReasoningCap(config, resolvedRole, reason, true);
-  const resolvedMaxTokens = Math.max(
-    0,
-    Number(maxTokens || 0) > 0
-      ? Math.min(Number(maxTokens || 0), primaryTokenCap || Number(maxTokens || 0))
-      : primaryTokenCap
-  );
-  const resolvedReasoningBudget = Math.max(
-    0,
-    Number(reasoningBudget || 0) > 0
-      ? Math.min(Number(reasoningBudget || 0), primaryReasoningBudget || Number(reasoningBudget || 0))
-      : primaryReasoningBudget
-  );
 
   const sharedParams = {
     system,
@@ -496,6 +510,9 @@ export async function callLlmWithRouting({
       message: error.message
     });
     const effectiveFallbackCostRates = buildEffectiveCostRates(fallback._registryEntry, costRates);
+    const fallbackMaxTokens = phaseTokenCap > 0
+      ? Math.min(phaseTokenCap, fallbackTokenCap || phaseTokenCap)
+      : fallbackTokenCap;
     return callOpenAI({
       ...sharedParams,
       costRates: effectiveFallbackCostRates,
@@ -503,16 +520,8 @@ export async function callLlmWithRouting({
       apiKey: fallback.apiKey,
       baseUrl: fallback.baseUrl,
       provider: fallback.provider,
-      reasoningBudget: Number(
-        Number(reasoningBudget || 0) > 0
-          ? Math.min(Number(reasoningBudget || 0), fallbackReasoningBudget || Number(reasoningBudget || 0))
-          : fallbackReasoningBudget
-      ),
-      maxTokens: Number(
-        Number(maxTokens || 0) > 0
-          ? Math.min(Number(maxTokens || 0), fallbackTokenCap || Number(maxTokens || 0))
-          : fallbackTokenCap
-      ),
+      reasoningBudget: Number(fallbackReasoningBudget || 0),
+      maxTokens: Number(fallbackMaxTokens || 0),
       usageContext: {
         ...sharedParams.usageContext,
         default_output_token_cap: fallbackTokenCap,

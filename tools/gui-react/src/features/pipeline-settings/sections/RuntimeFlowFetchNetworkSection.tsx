@@ -6,7 +6,7 @@ import type {
   RuntimeDraft,
   NumberBound,
 } from '../types/settingPrimitiveTypes';
-import { AdvancedSettingsBlock, MasterSwitchRow, SettingGroupBlock, SettingNumberInput, SettingRow, SettingToggle } from '../components/RuntimeFlowPrimitives';
+import { AdvancedSettingsBlock, SettingGroupBlock, SettingNumberInput, SettingRow, SettingToggle } from '../components/RuntimeFlowPrimitives';
 
 const REPAIR_DEDUPE_RULE_OPTIONS = ['domain_once', 'domain_and_status', 'none'] as const;
 const FETCH_ENTRY_PHASE_TIP =
@@ -38,13 +38,6 @@ export const RuntimeFlowFetchNetworkSection = memo(function RuntimeFlowFetchNetw
     <>
       <div id={runtimeSubStepDomId('fetch-network-throughput')} className="scroll-mt-24" />
       <SettingGroupBlock title="Core Throughput">
-        <MasterSwitchRow label="Fetch Scheduler Enabled" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: the planner-to-fetch dispatcher before browser or HTTP workers start.\nWhat this controls: whether fetch work is sequenced through the scheduler layer that enforces concurrency, pacing, and retry policy before fallback lanes are used.`} hint="Controls concurrency, rate limits, and scheduler internals below">
-          <SettingToggle
-            checked={runtimeDraft.fetchSchedulerEnabled}
-            onChange={(next) => updateDraft('fetchSchedulerEnabled', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </MasterSwitchRow>
         <SettingRow label="Fetch Concurrency" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: scheduler worker dispatch.\nWhat this controls: the maximum number of fetch jobs allowed to run at the same time across hosts.`}>
           <SettingNumberInput draftKey="fetchConcurrency" value={runtimeDraft.fetchConcurrency} bounds={getNumberBounds('fetchConcurrency')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
@@ -109,13 +102,6 @@ export const RuntimeFlowFetchNetworkSection = memo(function RuntimeFlowFetchNetw
 
       <div id={runtimeSubStepDomId('fetch-network-frontier')} className="scroll-mt-24" />
       <SettingGroupBlock title="Frontier and Repair">
-        <MasterSwitchRow label="Frontier Repair Search Enabled" tip={`${FRONTIER_PHASE_TIP}\nLives in: repair search emission after failed or exhausted URL attempts.\nWhat this controls: whether the runtime is allowed to generate follow-up repair queries when primary URL fetch attempts fail.`} hint="Controls frontier cooldowns, dedupe rules, and repair settings below">
-          <SettingToggle
-            checked={runtimeDraft.frontierRepairSearchEnabled}
-            onChange={(next) => updateDraft('frontierRepairSearchEnabled', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </MasterSwitchRow>
         <SettingRow label="Frontier DB Path" tip={`${FRONTIER_PHASE_TIP}\nLives in: frontier persistence and cache reuse.\nWhat this controls: where the frontier tracker stores durable query, URL, and cooldown state.`}>
           <input
             type="text"
@@ -124,13 +110,6 @@ export const RuntimeFlowFetchNetworkSection = memo(function RuntimeFlowFetchNetw
             disabled={!runtimeSettingsReady}
             className={inputCls}
             placeholder="_intel/frontier/frontier.json"
-          />
-        </SettingRow>
-        <SettingRow label="Frontier SQLite Enabled" tip={`${FRONTIER_PHASE_TIP}\nLives in: frontier storage backend selection.\nWhat this controls: whether frontier state is persisted in SQLite instead of the lighter file-backed path.`}>
-          <SettingToggle
-            checked={runtimeDraft.frontierEnableSqlite}
-            onChange={(next) => updateDraft('frontierEnableSqlite', next)}
-            disabled={!runtimeSettingsReady}
           />
         </SettingRow>
         <SettingRow label="Frontier Query Cooldown (sec)" tip={`${FRONTIER_PHASE_TIP}\nLives in: repair-query reuse and repeated search suppression.\nWhat this controls: how long the runtime waits before it is allowed to emit another similar query against the same domain context.`}>

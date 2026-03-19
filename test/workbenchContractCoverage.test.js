@@ -1,40 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
-import { fileURLToPath } from 'node:url';
+import { loadBundledModule } from './helpers/loadBundledModule.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-async function loadWorkbenchHelpers() {
-  const esbuild = await import('esbuild');
-  const srcPath = path.resolve(
-    __dirname,
-    '..',
-    'tools',
-    'gui-react',
-    'src',
-    'pages',
-    'studio',
-    'workbench',
-    'workbenchHelpers.ts',
-  );
-  const result = await esbuild.build({
-    entryPoints: [srcPath],
-    bundle: true,
-    write: false,
-    format: 'esm',
-    platform: 'node',
-    loader: { '.ts': 'ts' },
+function loadWorkbenchHelpers() {
+  return loadBundledModule('tools/gui-react/src/pages/studio/workbench/workbenchHelpers.ts', {
+    prefix: 'workbench-helpers-',
   });
-  const code = result.outputFiles[0].text;
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'workbench-helpers-'));
-  const tmpFile = path.join(tmpDir, 'workbenchHelpers.mjs');
-  fs.writeFileSync(tmpFile, code, 'utf8');
-  const mod = await import(`file://${tmpFile.replace(/\\/g, '/')}`);
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-  return mod;
 }
 
 test('buildWorkbenchRows exposes constraint count and variables for table audit', async () => {

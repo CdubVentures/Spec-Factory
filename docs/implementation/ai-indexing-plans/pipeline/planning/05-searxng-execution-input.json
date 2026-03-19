@@ -1,33 +1,72 @@
 {
-  "_doc": "Provider-facing query payload for executeSearchQueries() and runSearchProviders(). Identical regardless of Schema 4 or fallback planner origin. Updated 2026-03-18.",
-  "queries": [
-    "string - the query text sent to the internal corpus, frontier cache checks, and internet providers"
-  ],
-  "per_query_metadata": {
-    "resolved_from": "selectedQueryRowMap.get(query.toLowerCase()) or profileQueryRowMap.get(query.toLowerCase())",
-    "target_fields": "field keys this query aims to resolve",
-    "domain_hint": "preferred domain hint",
-    "doc_hint": "expected document type hint",
-    "hint_source": "schema4_search_plan | targeted | host_plan | base_template | fallback planner metadata",
-    "family": "query family when present"
+  "_doc": "SearXNG and mixed-provider execution contract used by executeSearchQueries().",
+  "validated_against": "2026-03-18",
+  "query_inputs": {
+    "queries": "string[]",
+    "selectedQueryRowMap": "Map of planned query metadata",
+    "executionQueryLimit": "number",
+    "queryConcurrency": "number",
+    "resultsPerQuery": "number"
   },
-  "execution_config": {
-    "executionQueryLimit": "number - max queries to attempt",
-    "queryConcurrency": "number - parallel query slots",
-    "resultsPerQuery": "number - target results per query",
-    "searchEngines": "string - configured internet providers from config.searchEngines",
-    "providerState": "resolved runtime provider availability snapshot"
+  "provider_state": {
+    "owner": "src/features/indexing/search/searchProviders.js :: searchEngineAvailability()",
+    "keys": [
+      "provider",
+      "engines",
+      "bing_ready",
+      "google_ready",
+      "google_search_ready",
+      "searxng_ready",
+      "active_providers",
+      "fallback_engines",
+      "fallback_ready",
+      "fallback_reason",
+      "internet_ready"
+    ]
   },
-  "execution_phases": [
-    "1. Internal corpus search when discoveryInternalFirst=true.",
-    "2. Frontier query cooldown reuse before live provider execution.",
-    "3. Internet provider execution through runSearchProviders().",
-    "4. Plan-only manufacturer URL fallback when no provider path is available and no results were collected."
+  "transport_split": {
+    "google_path": "attemptGoogleCrawlee() -> searchGoogle()",
+    "searxng_path": "attemptSearch() -> searchSearxng()",
+    "fallback_path": "searchEnginesFallback only when the primary provider attempt returns zero rows"
+  },
+  "executeSearchQueries_flow": [
+    "emit search_provider_diagnostics",
+    "optional internal-first corpus search",
+    "optional frontier cache reuse before live provider calls",
+    "run live provider calls under runWithConcurrency()",
+    "query-level frontier reuse when live provider results are empty",
+    "plan-only manufacturer fallback only when no provider path exists and rawResults is still empty"
   ],
-  "output": {
-    "rawResults": "provider rows with url, title, snippet, provider, query, rank, and related fields",
-    "searchAttempts": "per-query execution records",
-    "searchJournal": "execution journal rows",
+  "searchSearxng_contract": {
+    "input": {
+      "baseUrl": "string",
+      "query": "string",
+      "limit": "number",
+      "timeoutMs": "number",
+      "minQueryIntervalMs": "number",
+      "engines": "CSV string",
+      "provider": "string",
+      "logger": "logger|null",
+      "requestThrottler": "object|null"
+    },
+    "behavior": [
+      "serialized pacing chain to avoid upstream engine bursts",
+      "garbage-engine filtering by query-word overlap",
+      "URL dedupe"
+    ],
+    "output_row": {
+      "url": "string",
+      "title": "string",
+      "snippet": "string",
+      "provider": "engine name",
+      "engines": "string[]",
+      "query": "string"
+    }
+  },
+  "executeSearchQueries_return": {
+    "rawResults": "array of provider rows",
+    "searchAttempts": "array of attempt summary rows",
+    "searchJournal": "array of timestamped journal rows",
     "internalSatisfied": "boolean",
     "externalSearchReason": "string|null"
   }

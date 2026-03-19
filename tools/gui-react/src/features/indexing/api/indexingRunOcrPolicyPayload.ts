@@ -2,7 +2,6 @@ type IndexingRunOcrPolicyPayloadPrimitive = string | number | boolean;
 
 export interface BuildIndexingRunOcrPolicyPayloadInput {
   scannedPdfOcrEnabled: boolean;
-  scannedPdfOcrPromoteCandidates: boolean;
   scannedPdfOcrBackend: boolean | string;
   parsedScannedPdfOcrMaxPages: number;
   parsedScannedPdfOcrMaxPairs: number;
@@ -22,7 +21,6 @@ export function buildIndexingRunOcrPolicyPayload(
 ): Record<string, IndexingRunOcrPolicyPayloadPrimitive> {
   return {
     scannedPdfOcrEnabled: input.scannedPdfOcrEnabled,
-    scannedPdfOcrPromoteCandidates: input.scannedPdfOcrPromoteCandidates,
     scannedPdfOcrBackend: input.scannedPdfOcrBackend,
     scannedPdfOcrMaxPages: Math.max(1, input.parsedScannedPdfOcrMaxPages),
     scannedPdfOcrMaxPairs: Math.max(50, input.parsedScannedPdfOcrMaxPairs),

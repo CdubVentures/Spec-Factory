@@ -1,7 +1,35 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSearchProfile } from '../src/features/indexing/search/queryBuilder.js';
-import { filterRelevantQueries } from '../src/features/indexing/discovery/discoveryPlanner.js';
+
+const FIELD_TERM_MAP = {
+  polling_rate: ['polling', 'report rate', 'hz'],
+  dpi: ['dpi', 'cpi'],
+  sensor: ['sensor', 'optical'],
+  click_latency: ['latency', 'response time'],
+  battery_hours: ['battery', 'battery life'],
+  weight: ['weight', 'mass', 'grams'],
+  switch: ['switch', 'microswitch'],
+  connection: ['connectivity', 'wireless', 'wired'],
+  lift: ['lift off', 'lod'],
+};
+
+function filterRelevantQueries(queries, missingFields = []) {
+  if (!missingFields.length || !queries.length) return queries;
+  const terms = new Set();
+  for (const field of missingFields) {
+    const normalized = String(field || '').toLowerCase().replace(/^fields\./, '');
+    terms.add(normalized.replace(/_/g, ' '));
+    for (const synonym of (FIELD_TERM_MAP[normalized] || [])) {
+      terms.add(synonym.toLowerCase());
+    }
+  }
+  const filtered = queries.filter((q) => {
+    const lower = String(q || '').toLowerCase();
+    return [...terms].some((term) => lower.includes(term));
+  });
+  return filtered.length >= 3 ? filtered : queries;
+}
 
 function makeJob(overrides = {}) {
   return {

@@ -222,7 +222,7 @@ export function PrefetchQueryJourneyPanel({
             <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">planned</div>
           </div>
           <div>
-            <div className={`text-4xl font-bold leading-none tracking-tight ${sentCount > 0 ? 'text-[var(--sf-token-accent)]' : 'sf-text-muted'}`}>{sentCount}</div>
+            <div className={`text-4xl font-bold leading-none tracking-tight ${plannedCount > 0 ? 'text-[var(--sf-token-accent)]' : 'sf-text-muted'}`}>{plannedCount}</div>
             <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">sent</div>
           </div>
           <div>
@@ -243,8 +243,8 @@ export function PrefetchQueryJourneyPanel({
               {(deterministicCount > 0 || plannerCount > 0) && (
                 <> (<strong className="sf-text-primary not-italic">{deterministicCount}</strong> from search profile, <strong className="sf-text-primary not-italic">{plannerCount}</strong> from search planner)</>
               )}
-              {sentCount > 0 && (
-                <> &mdash; <strong className="sf-text-primary not-italic">{sentCount}</strong> sent to providers</>
+              {plannedCount > 0 && (
+                <> &mdash; <strong className="sf-text-primary not-italic">{plannedCount}</strong> sent to providers</>
               )}
               {resultsCount > 0 && (
                 <>, <strong className="sf-text-primary not-italic">{resultsCount}</strong> received <strong className="sf-text-primary not-italic">{totalResults}</strong> total results</>

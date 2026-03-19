@@ -1,218 +1,98 @@
 {
-  "_doc": "Schema 2 (NeedSetOutput) gap analysis. Compares spec (Data - Flow - Schemas.md) against actual computeNeedSet() output (needsetEngine.js). Updated 2026-03-17.",
-
-  "_spec_vs_actual_summary": {
-    "schema_2_spec_keys": ["schema_version", "round", "round_mode", "identity", "summary", "blockers", "fields", "planner_seed", "debug"],
-    "actual_output_keys": ["schema_version", "round", "round_mode", "identity", "fields", "planner_seed", "run_id", "category", "product_id", "generated_at", "total_fields", "summary", "blockers", "focus_fields", "bundles", "profile_mix", "rows", "debug"],
-    "extra_backward_compat_keys": ["run_id", "category", "product_id", "generated_at", "total_fields", "focus_fields", "bundles", "profile_mix", "rows"],
-    "consumers_of_backward_compat": {
-      "rows": ["projectNeedSetStory (needsetStoryProjection.js:13)", "toNeedSetSnapshot()/runtime bridge normalization (runtimeBridgePayloads.js)"],
-      "bundles": ["projectNeedSetStory (needsetStoryProjection.js:21)", "needset_computed runtime bridge handling (runtimeBridgeEventHandlers.js)"],
-      "focus_fields": ["toNeedSetSnapshot()/runtime bridge normalization (runtimeBridgePayloads.js)"],
-      "profile_mix": ["projectNeedSetStory (needsetStoryProjection.js:39)", "toNeedSetSnapshot()/runtime bridge normalization (runtimeBridgePayloads.js)"],
-      "run_id_category_product_id": ["toNeedSetSnapshot()/baseline payloads (runtimeBridgePayloads.js)"],
-      "total_fields_generated_at": ["toNeedSetSnapshot()/baseline payloads (runtimeBridgePayloads.js)", "buildRunSummaryAnalysisSection.js"]
-    }
+  "_doc": "Actual output shape returned by computeNeedSet().",
+  "validated_against": "2026-03-18",
+  "schema_version": "needset_output.v2",
+  "top_level_keys": [
+    "schema_version",
+    "round",
+    "round_mode",
+    "identity",
+    "fields",
+    "planner_seed",
+    "run_id",
+    "category",
+    "product_id",
+    "generated_at",
+    "total_fields",
+    "summary",
+    "blockers",
+    "focus_fields",
+    "bundles",
+    "profile_mix",
+    "rows",
+    "debug"
+  ],
+  "identity_block": {
+    "state": "locked|provisional|conflict|unknown",
+    "source_label_state": "matched|possible|different|unknown",
+    "manufacturer": "string|null",
+    "model": "string|null",
+    "confidence": "number",
+    "official_domain": "string|null",
+    "support_domain": "string|null"
   },
-
-  "schema_version": {
-    "spec": "needset_output.v2",
-    "actual": "needset_output.v2 — needsetEngine.js:576",
-    "status": "MATCH"
-  },
-
-  "round": {
-    "spec": "number",
-    "actual": "needsetEngine.js:577 — passed through from input",
-    "status": "MATCH"
-  },
-
-  "round_mode": {
-    "spec": "seed | carry_forward | repair",
-    "actual": "needsetEngine.js:578 — passed through from input (roundMode param)",
-    "status": "MATCH"
-  },
-
-  "identity": {
-    "state":              { "spec": "PanelIdentityState", "actual": "needsetEngine.js:526 — mapIdentityState(identityContext)", "status": "MATCH" },
-    "source_label_state": { "spec": "matched|possible|different|unknown", "actual": "needsetEngine.js:527 — deriveSourceLabelState(identityContext)", "status": "MATCH" },
-    "manufacturer":       { "spec": "string|null", "actual": "needsetEngine.js:528 — brand || identityContext.manufacturer", "status": "MATCH" },
-    "model":              { "spec": "string|null", "actual": "needsetEngine.js:529 — model param", "status": "MATCH" },
-    "confidence":         { "spec": "number", "actual": "needsetEngine.js:530 — identityContext.confidence", "status": "MATCH" },
-    "official_domain":    { "spec": "string|null", "actual": "needsetEngine.js:531", "status": "MATCH" },
-    "support_domain":     { "spec": "string|null", "actual": "needsetEngine.js:532", "status": "MATCH" }
-  },
-
-  "summary": {
-    "total":                { "spec": "number", "actual": "needsetEngine.js:500 — fieldKeys.length", "status": "MATCH" },
-    "resolved":             { "spec": "number", "actual": "needsetEngine.js:501 — resolvedCount", "status": "MATCH" },
-    "core_total":           { "spec": "number", "actual": "needsetEngine.js:502", "status": "MATCH" },
-    "core_unresolved":      { "spec": "number", "actual": "needsetEngine.js:503", "status": "MATCH" },
-    "secondary_total":      { "spec": "number", "actual": "needsetEngine.js:504", "status": "MATCH" },
-    "secondary_unresolved": { "spec": "number", "actual": "needsetEngine.js:505", "status": "MATCH" },
-    "optional_total":       { "spec": "number", "actual": "needsetEngine.js:506", "status": "MATCH" },
-    "optional_unresolved":  { "spec": "number", "actual": "needsetEngine.js:507", "status": "MATCH" },
-    "conflicts":            { "spec": "number", "actual": "needsetEngine.js:508", "status": "MATCH" },
-    "bundles_planned":      { "spec": "NOT IN SPEC", "actual": "needsetEngine.js:510 — backward compat extra", "status": "EXTRA — consumers: needsetStoryProjection.js:11" }
-  },
-
-  "blockers": {
-    "missing":            { "spec": "number", "actual": "needsetEngine.js:591 — missingCount", "status": "MATCH" },
-    "weak":               { "spec": "number", "actual": "needsetEngine.js:592 — weakCount", "status": "MATCH" },
-    "conflict":           { "spec": "number", "actual": "needsetEngine.js:593 — conflictCount", "status": "MATCH" },
-    "needs_exact_match":  { "spec": "number", "actual": "needsetEngine.js:594 — needsExactMatchCount", "status": "MATCH" },
-    "search_exhausted":   { "spec": "number", "actual": "needsetEngine.js — derived from field history: no_value_attempts >= 3 AND evidence_classes_tried >= 3", "status": "MATCH — now computed from buildFieldHistories feedback data" }
-  },
-
-  "fields": {
-    "_shape_note": "Array of per-field objects. Individual field shape analysis below.",
-
-    "field_key":            { "spec": "string", "actual": "needsetEngine.js:425", "status": "MATCH" },
-    "label":                { "spec": "string", "actual": "needsetEngine.js:426", "status": "MATCH" },
-    "group_key":            { "spec": "string|null", "actual": "needsetEngine.js:427", "status": "MATCH" },
-    "required_level":       { "spec": "RequiredLevel", "actual": "needsetEngine.js:428", "status": "MATCH" },
-
+  "field_entry": {
+    "field_key": "string",
+    "label": "string",
+    "group_key": "string|null",
+    "required_level": "identity|critical|required|expected|optional",
     "idx": {
-      "min_evidence_refs":       { "spec": "number", "actual": "needsetEngine.js:430", "status": "MATCH" },
-      "query_terms":             { "spec": "string[]", "actual": "needsetEngine.js:431 via normalizeStringArray()", "status": "MATCH — lowercased, trimmed, deduped" },
-      "domain_hints":            { "spec": "string[]", "actual": "needsetEngine.js:432 via normalizeDomainHints()", "status": "MATCH — canonical host form, lowercased, deduped" },
-      "preferred_content_types": { "spec": "string[]", "actual": "needsetEngine.js:433 via normalizeStringArray()", "status": "MATCH — lowercased, trimmed, deduped" },
-      "tooltip_md":              { "spec": "string|null", "actual": "needsetEngine.js:434", "status": "MATCH" },
-      "aliases":                 { "spec": "string[]", "actual": "needsetEngine.js:435", "status": "MATCH" }
+      "min_evidence_refs": "number",
+      "query_terms": "string[]",
+      "domain_hints": "string[]",
+      "preferred_content_types": "string[]",
+      "tooltip_md": "string|null",
+      "aliases": "string[]"
     },
-
-    "state":                { "spec": "FieldStatus (accepted|conflict|unknown|weak)", "actual": "needsetEngine.js:437 — mapInternalToSchemaState()", "status": "MATCH" },
-    "value":                { "spec": "unknown|null", "actual": "needsetEngine.js:438", "status": "MATCH" },
-    "confidence":           { "spec": "number", "actual": "needsetEngine.js:439", "status": "MATCH" },
-    "effective_confidence": { "spec": "number", "actual": "needsetEngine.js:440", "status": "MATCH" },
-    "refs_found":           { "spec": "number", "actual": "needsetEngine.js:441", "status": "MATCH" },
-    "min_refs":             { "spec": "number", "actual": "needsetEngine.js:442", "status": "MATCH" },
-    "best_tier_seen":       { "spec": "0|1|2|3|4|5|null", "actual": "needsetEngine.js:443", "status": "MATCH" },
-    "pass_target":          { "spec": "number", "actual": "needsetEngine.js:444", "status": "MATCH" },
-    "meets_pass_target":    { "spec": "boolean", "actual": "needsetEngine.js:445", "status": "MATCH" },
-    "exact_match_required": { "spec": "boolean", "actual": "needsetEngine.js:446", "status": "MATCH" },
-    "need_score":           { "spec": "number", "actual": "needsetEngine.js:447", "status": "MATCH" },
-    "reasons":              { "spec": "Array of reason codes", "actual": "needsetEngine.js:448 — deriveFieldReasons()", "status": "MATCH — note: tier_pref_unmet reserved for future (line 257)" },
-
+    "state": "accepted|unknown|weak|conflict",
+    "value": "any current field value",
+    "confidence": "number",
+    "effective_confidence": "number",
+    "refs_found": "number",
+    "min_refs": "number",
+    "best_tier_seen": "number|null",
+    "pass_target": "number",
+    "meets_pass_target": "boolean",
+    "exact_match_required": "boolean",
+    "need_score": "number",
+    "reasons": [
+      "missing",
+      "conflict",
+      "low_conf",
+      "min_refs_fail",
+      "publish_gate_block"
+    ],
     "history": {
-      "existing_queries":              { "spec": "string[]", "actual": "needsetEngine.js:449 via deriveFieldHistory()", "status": "MATCH — now fed by buildFieldHistories" },
-      "domains_tried":                 { "spec": "string[]", "actual": "needsetEngine.js via deriveFieldHistory():287-291", "status": "MATCH" },
-      "host_classes_tried":            { "spec": "HostClass[]", "actual": "needsetEngine.js via deriveFieldHistory():296", "status": "MATCH — now fed by buildFieldHistories.classifyHostClass()" },
-      "evidence_classes_tried":        { "spec": "EvidenceClass[]", "actual": "needsetEngine.js via deriveFieldHistory():297", "status": "MATCH — now fed by buildFieldHistories.classifyEvidenceClass()" },
-      "query_count":                   { "spec": "number", "actual": "needsetEngine.js via deriveFieldHistory():298", "status": "MATCH — now fed by buildFieldHistories" },
-      "urls_examined_count":           { "spec": "number", "actual": "needsetEngine.js via deriveFieldHistory():299", "status": "MATCH — now fed by buildFieldHistories" },
-      "no_value_attempts":             { "spec": "number", "actual": "needsetEngine.js via deriveFieldHistory():301", "status": "MATCH — now fed by buildFieldHistories" },
-      "duplicate_attempts_suppressed": { "spec": "number", "actual": "needsetEngine.js via deriveFieldHistory():302", "status": "MATCH — now fed by buildFieldHistories" }
+      "existing_queries": "string[]",
+      "domains_tried": "string[]",
+      "host_classes_tried": "string[]",
+      "evidence_classes_tried": "string[]",
+      "query_count": "number",
+      "urls_examined_count": "number",
+      "refs_found": "number",
+      "no_value_attempts": "number",
+      "duplicate_attempts_suppressed": "number"
     }
   },
-
   "planner_seed": {
-    "missing_critical_fields":   { "spec": "string[]", "actual": "needsetEngine.js:536-538", "status": "MATCH" },
-    "unresolved_fields":         { "spec": "string[]", "actual": "needsetEngine.js:540-542", "status": "MATCH" },
-    "existing_queries":          { "spec": "string[]", "actual": "needsetEngine.js:544-549 — union of all field histories", "status": "MATCH" },
-    "current_product_identity":  { "spec": "{ category, brand, model }", "actual": "needsetEngine.js:555-559", "status": "MATCH" }
-  },
-
-  "debug": {
-    "idx_runtime_present": {
-      "spec": "string[] — array of badge strings like 'idx.priority.required_level'",
-      "actual": "needsetEngine.js:563-572 — DIFFERENT SHAPE: { suppressed_duplicate_rows, state_inputs, bundle_assignment_notes, identity_context }",
-      "status": "MISMATCH — actual debug block is backward-compat shape, not the spec badge array. Low priority since debug is optional."
+    "missing_critical_fields": "string[]",
+    "unresolved_fields": "string[]",
+    "existing_queries": "string[]",
+    "current_product_identity": {
+      "category": "string",
+      "brand": "string",
+      "model": "string"
     }
   },
-
-  "_logic_box_1_compliance": {
-    "step_1_normalize_field_rows": {
-      "lowercase_trim_query_terms": "RESOLVED — normalizeStringArray() in needsetEngine.js lowercases, trims, and deduplicates.",
-      "normalize_domain_hints_canonical_host": "RESOLVED — normalizeDomainHints() in needsetEngine.js strips protocol/path, lowercases, deduplicates.",
-      "deduplicate_preferred_content_types": "RESOLVED — normalizeStringArray() in needsetEngine.js deduplicates via Set.",
-      "deduplicate_existing_queries": "RESOLVED — buildFieldHistories uses Set union (deduped). needsetEngine.js:294 carries forward from previousFieldHistories which is already deduped."
-    },
-    "step_2_no_top_level_hints": "MATCH — hints stay per-field in idx block.",
-    "step_3_score_each_field": "MATCH — need_score, summary, blockers, unresolved/critical lists all computed.",
-    "step_4_preserve_field_history": "MATCH — deriveFieldHistory() carries forward, now fed by buildFieldHistories.",
-    "step_5_emit_field_first_artifact": "MATCH — fields array is primary output."
-  },
-
-  "_ghost_consumers": {
-    "_investigation_result": "CONFIRMED DEAD CODE. All 7 ghost properties are never set anywhere in the codebase. Consumers use defensive fallbacks (|| [], || null, toArray()) that silently produce empty values. Test mocks create these properties manually, hiding the mismatch.",
-    "needs": {
-      "consumers": ["primeSourcesBuilder.js:151", "indexingSchemaPackets.js:277", "buildFinalizationEventPayloads.js:29", "buildRunSummaryAnalysisSection.js:56"],
-      "accessed_shape": "Array of { field_key, need_score, required_level, min_refs }",
-      "status": "DEAD CODE — never set, always resolves to []. Equivalent data lives in computeNeedSet().fields[] (Schema 2).",
-      "cleanup": "Remove reads from 4 consumers. If needed, migrate to use Schema 2 fields[] array which has need_score, required_level, min_refs."
-    },
-    "needset_size": {
-      "consumers": ["buildFinalizationEventPayloads.js:20", "buildRunSummaryAnalysisSection.js:48"],
-      "status": "DEAD CODE — always undefined. Equivalent: summary.total - summary.resolved.",
-      "cleanup": "Replace with rows.length or summary derivation."
-    },
-    "identity_lock_state": {
-      "consumers": ["buildFinalizationEventPayloads.js:22", "buildRunSummaryAnalysisSection.js:52"],
-      "status": "DEAD CODE — always null. Equivalent data: identity.state from Schema 2 output.",
-      "cleanup": "Replace with identity.state or remove."
-    },
-    "identity_audit_rows": {
-      "consumers": ["buildFinalizationEventPayloads.js:23", "buildRunSummaryAnalysisSection.js:53-54"],
-      "status": "DEAD CODE — always undefined/falsy. No equivalent in computeNeedSet output.",
-      "cleanup": "Remove reads or source from identityContext if needed."
-    },
-    "reason_counts": {
-      "consumers": ["buildFinalizationEventPayloads.js:26", "buildRunSummaryAnalysisSection.js:50"],
-      "status": "DEAD CODE — always undefined. Derivable from fields[].reasons aggregation if needed.",
-      "cleanup": "Remove reads or derive from Schema 2 fields[]."
-    },
-    "required_level_counts": {
-      "consumers": ["buildFinalizationEventPayloads.js:27", "buildRunSummaryAnalysisSection.js:51"],
-      "status": "DEAD CODE — always undefined. Derivable from fields[].required_level aggregation.",
-      "cleanup": "Remove reads or derive from Schema 2 fields[]."
-    },
-    "snapshots": {
-      "consumers": ["buildFinalizationEventPayloads.js:28"],
-      "status": "DEAD CODE — always resolves to []. No equivalent.",
-      "cleanup": "Remove read."
-    }
-  },
-
-  "_gap_summary": {
-    "total_gaps_original": 6,
-    "resolved": 2,
-    "investigated_dead_code": 2,
-    "remaining_low_priority": 2,
-    "gaps": [
-      {
-        "id": "OUTPUT-GAP-1",
-        "field": "Logic Box 1 normalization",
-        "status": "RESOLVED — normalizeStringArray() and normalizeDomainHints() added to extractSearchHints() in needsetEngine.js. 7 new tests pass."
-      },
-      {
-        "id": "OUTPUT-GAP-2",
-        "field": "blockers.search_exhausted",
-        "status": "RESOLVED — now derived from field history: no_value_attempts >= 3 AND evidence_classes_tried.length >= 3. 3 new tests pass."
-      },
-      {
-        "id": "OUTPUT-GAP-3",
-        "field": "debug.idx_runtime_present shape",
-        "severity": "LOW",
-        "status": "OPEN — cosmetic. Optional field. Can fix when convenient."
-      },
-      {
-        "id": "OUTPUT-GAP-4",
-        "field": "Ghost property: needs",
-        "status": "INVESTIGATED — CONFIRMED DEAD CODE. Property never set anywhere. 4 consumers read undefined → fallback to []. Tests mock it manually. Safe to remove reads or migrate to Schema 2 fields[]."
-      },
-      {
-        "id": "OUTPUT-GAP-5",
-        "field": "Ghost properties: needset_size, identity_lock_state, identity_audit_rows, reason_counts, required_level_counts, snapshots",
-        "status": "INVESTIGATED — CONFIRMED DEAD CODE. All 6 properties never set anywhere. Consumers use defensive fallbacks. Safe to remove or migrate."
-      },
-      {
-        "id": "OUTPUT-GAP-6",
-        "field": "Backward-compat keys still emitted",
-        "severity": "LOW",
-        "description": "run_id, category, product_id, generated_at, total_fields, focus_fields, bundles, profile_mix, and rows are not in the formal Schema 2 spec but are still emitted and consumed by needsetStoryProjection and the runtime bridge. These are legacy bridge keys.",
-        "fix": "NOT URGENT. These can coexist with Schema 2 keys. Migration path: consumers should migrate to using Schema 2 fields (for example, 'fields' instead of 'rows', 'summary' instead of 'total_fields'). Remove backward-compat keys once all consumers are migrated."
-      }
-    ]
-  }
+  "backward_compat_sections": [
+    "focus_fields",
+    "bundles",
+    "profile_mix",
+    "rows",
+    "debug"
+  ],
+  "not_emitted": [
+    "tier_pref_unmet is not a live emitted reason",
+    "NeedSet does not write a standalone artifact file in the seed-planning path"
+  ]
 }

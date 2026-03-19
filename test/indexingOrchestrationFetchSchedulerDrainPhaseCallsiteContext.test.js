@@ -4,7 +4,7 @@ import { buildFetchSchedulerDrainPhaseCallsiteContext } from '../src/features/in
 
 test('buildFetchSchedulerDrainPhaseCallsiteContext maps runProduct fetch-scheduler callsite inputs to context keys', () => {
   const planner = { hasNext: () => false };
-  const config = { fetchSchedulerEnabled: true };
+  const config = {};
   const prepareNextPlannerSource = async () => ({ mode: 'stop' });
   const fetchFn = async () => ({ ok: true });
   const fetchWithModeFn = async () => ({ ok: true });

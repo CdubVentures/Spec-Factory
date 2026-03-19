@@ -248,3 +248,43 @@ export function resolveComponentIdentityMutationPlan({
     requiresNameRemap: false,
   };
 }
+
+// --- Extracted SQL wrappers (previously inline in route handler) ---
+
+export function clearComponentValueAcceptedCandidate({ runtimeSpecDb, componentValueId }) {
+  runtimeSpecDb.db.prepare(
+    'UPDATE component_values SET accepted_candidate_id = NULL, updated_at = datetime(\'now\') WHERE category = ? AND id = ?'
+  ).run(runtimeSpecDb.category, componentValueId);
+}
+
+export function replaceComponentUserAliases({ runtimeSpecDb, componentIdentityId, aliases, componentType, name, componentMaker }) {
+  runtimeSpecDb.db.prepare('DELETE FROM component_aliases WHERE component_id = ? AND source = ?').run(componentIdentityId, 'user');
+  for (const alias of aliases) {
+    runtimeSpecDb.insertAlias(componentIdentityId, alias, 'user');
+  }
+  runtimeSpecDb.updateAliasesOverridden(componentType, name, componentMaker, aliases.length > 0);
+}
+
+export function updateComponentLinks({ runtimeSpecDb, componentIdentityId, links }) {
+  runtimeSpecDb.db.prepare(`
+    UPDATE component_identity
+    SET links = ?, source = 'user', updated_at = datetime('now')
+    WHERE category = ? AND id = ?
+  `).run(JSON.stringify(links), runtimeSpecDb.category, componentIdentityId);
+}
+
+export function updateComponentReviewStatus({ runtimeSpecDb, componentIdentityId, reviewStatus }) {
+  runtimeSpecDb.db.prepare(`
+    UPDATE component_identity
+    SET review_status = ?, updated_at = datetime('now')
+    WHERE category = ? AND id = ?
+  `).run(reviewStatus, runtimeSpecDb.category, componentIdentityId);
+}
+
+export function updateComponentValueNeedsReview({ runtimeSpecDb, componentSlotId, needsReview }) {
+  runtimeSpecDb.db.prepare(`
+    UPDATE component_values
+    SET needs_review = ?, updated_at = datetime('now')
+    WHERE category = ? AND id = ?
+  `).run(needsReview ? 1 : 0, runtimeSpecDb.category, componentSlotId);
+}

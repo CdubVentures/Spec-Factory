@@ -78,6 +78,8 @@ function stateBadgeContent(state: string): { label: string; chipClass: string; p
       return { label: 'Running', chipClass: 'sf-chip-success', pulse: true };
     case 'stuck':
       return { label: '\u26A0 Stalled', chipClass: 'sf-chip-warning', pulse: false };
+    case 'queued':
+      return { label: 'Queued', chipClass: 'sf-chip-neutral opacity-50', pulse: false };
     case 'idle':
       return { label: '\u25CB Idle', chipClass: 'sf-chip-neutral', pulse: false };
     default:
@@ -632,6 +634,7 @@ export function SearchWorkerPanel({
 
   const isWorkerRunning = worker.state === 'running';
   const isWorkerStuck = worker.state === 'stuck';
+  const isWorkerQueued = worker.state === 'queued';
   const badge = stateBadgeContent(worker.state);
 
   const toggleDebug = (attemptNo: number) => {
@@ -788,6 +791,11 @@ export function SearchWorkerPanel({
               </span>
             )}
           </div>
+          {isWorkerQueued && (
+            <div className="mt-1.5 text-xs font-medium sf-text-muted">
+              Waiting &mdash; query will execute after prior workers complete
+            </div>
+          )}
           {isWorkerStuck && (
             <div className="mt-1.5 text-xs font-medium" style={{ color: 'rgb(146 64 14)' }}>
               {'\u26A0'} No response from {providerLabel} &mdash; worker may be stalled

@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { SerpScreenshotOverlay } from './SerpScreenshotOverlay';
 import { usePersistedToggle } from '../../../../stores/collapseStore';
 import { usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore';
 import type { PrefetchSearchResult, SearchResultDetail, SerpResultRow, SearchPlanPass, PrefetchLiveSettings } from '../../types';
@@ -35,6 +36,7 @@ interface PrefetchSearchResultsPanelProps {
   persistScope: string;
   liveSettings?: PrefetchLiveSettings;
   idxRuntime?: RuntimeIdxBadge[];
+  runId?: string;
 }
 
 /* ── Theme-aligned helpers ── */
@@ -167,9 +169,10 @@ function UrlUniqueDot({ url, counts }: { url: string; counts: Record<string, num
 
 /* ── Main Panel ── */
 
-export function PrefetchSearchResultsPanel({ results, searchResultDetails, searchPlans, crossQueryUrlCounts, persistScope, liveSettings, idxRuntime }: PrefetchSearchResultsPanelProps) {
+export function PrefetchSearchResultsPanel({ results, searchResultDetails, searchPlans, crossQueryUrlCounts, persistScope, liveSettings, idxRuntime, runId }: PrefetchSearchResultsPanelProps) {
   const [showSnippets, toggleSnippets, setShowSnippets] = usePersistedToggle('runtimeOps:searchResults:snippets', false);
   const [kanbanView, toggleKanbanView, setKanbanView] = usePersistedToggle('runtimeOps:searchResults:kanbanView', false);
+  const [serpScreenshot, setSerpScreenshot] = useState<string | null>(null);
 
   const rawDetails = searchResultDetails || [];
   const details = useMemo(() => enrichResultDomains(rawDetails), [rawDetails]);
@@ -577,6 +580,18 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                   >
                     <span className="sf-text-caption sf-text-subtle">{isExpanded ? '\u25BC' : '\u25B6'}</span>
                     <span className="text-xs font-mono sf-text-primary flex-1 truncate">{detail.query}</span>
+                    {detail.screenshot_filename && (
+                      <button
+                        type="button"
+                        className="shrink-0 p-0.5 rounded hover:opacity-70 cursor-pointer sf-text-info"
+                        onClick={(e) => { e.stopPropagation(); setSerpScreenshot(detail.screenshot_filename || null); }}
+                        title="View Google SERP screenshot"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                          <path fillRule="evenodd" d="M1 8a2 2 0 0 1 2-2h.93a2 2 0 0 0 1.664-.89l.812-1.22A2 2 0 0 1 8.07 3h3.86a2 2 0 0 1 1.664.89l.812 1.22A2 2 0 0 0 16.07 6H17a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8Zm13 3a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm-2 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    )}
                     {passName && <Chip label={passName} className="sf-chip-warning" />}
                     {siteScope && <Chip label={siteScope} className="sf-chip-info" />}
                     {(() => {
@@ -836,6 +851,14 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
             {JSON.stringify(details, null, 2)}
           </pre>
         </details>
+      )}
+      {/* SERP Screenshot Overlay — draggable + resizable */}
+      {serpScreenshot && runId && (
+        <SerpScreenshotOverlay
+          src={`/api/v1/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(serpScreenshot)}`}
+          filename={serpScreenshot}
+          onClose={() => setSerpScreenshot(null)}
+        />
       )}
     </div>
   );

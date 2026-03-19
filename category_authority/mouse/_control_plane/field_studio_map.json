@@ -1,6 +1,259 @@
 {
   "component_sheets": [],
-  "component_sources": [],
+  "component_sources": [
+    {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "auto_derive_aliases": true,
+      "component_type": "sensor",
+      "first_data_row": 2,
+      "header_row": 1,
+      "mode": "sheet",
+      "priority": {
+        "availability": "expected",
+        "difficulty": "medium",
+        "effort": 8,
+        "required_level": "required"
+      },
+      "roles": {
+        "aliases": [],
+        "links": [
+          "J"
+        ],
+        "maker": "B",
+        "primary_identifier": "C",
+        "properties": [
+          {
+            "column": "D",
+            "constraints": [],
+            "field_key": "flawless_sensor",
+            "key": "flawless_sensor",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "E",
+            "constraints": [],
+            "field_key": "sensor_type",
+            "key": "sensor_type",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "F",
+            "constraints": [],
+            "field_key": "dpi",
+            "key": "dpi",
+            "type": "number",
+            "unit": "dpi",
+            "variance_policy": "upper_bound"
+          },
+          {
+            "column": "G",
+            "constraints": [],
+            "field_key": "ips",
+            "key": "ips",
+            "type": "number",
+            "unit": "ips",
+            "variance_policy": "upper_bound"
+          },
+          {
+            "column": "H",
+            "constraints": [],
+            "field_key": "acceleration",
+            "key": "acceleration",
+            "type": "number",
+            "unit": "g",
+            "variance_policy": "upper_bound"
+          },
+          {
+            "column": "I",
+            "constraints": [
+              "sensor_date <= release_date"
+            ],
+            "field_key": "sensor_date",
+            "key": "sensor_date",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          }
+        ]
+      },
+      "sheet": "sensors",
+      "start_row": 2,
+      "stop_after_blank_primary": 10,
+      "type": "sensor"
+    },
+    {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "auto_derive_aliases": true,
+      "component_type": "switch",
+      "first_data_row": 2,
+      "header_row": 1,
+      "mode": "sheet",
+      "priority": {
+        "availability": "expected",
+        "difficulty": "hard",
+        "effort": 8,
+        "required_level": "required"
+      },
+      "roles": {
+        "aliases": [],
+        "links": [
+          "H"
+        ],
+        "maker": "B",
+        "primary_identifier": "C",
+        "properties": [
+          {
+            "column": "D",
+            "constraints": [],
+            "field_key": "switch_type",
+            "key": "switch_type",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "E",
+            "constraints": [],
+            "field_key": "switch_life_span",
+            "key": "switch_life_span",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "F",
+            "constraints": [],
+            "field_key": "click_force",
+            "key": "click_force",
+            "type": "number",
+            "unit": "g",
+            "variance_policy": "override_allowed"
+          },
+          {
+            "column": "G",
+            "constraints": [],
+            "field_key": "releasing_force",
+            "key": "releasing_force",
+            "type": "number",
+            "unit": "g",
+            "variance_policy": "authoritative"
+          }
+        ]
+      },
+      "sheet": "switches",
+      "start_row": 2,
+      "stop_after_blank_primary": 10,
+      "type": "switch"
+    },
+    {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "auto_derive_aliases": true,
+      "component_type": "encoder",
+      "first_data_row": 2,
+      "header_row": 1,
+      "mode": "sheet",
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "medium",
+        "effort": 5,
+        "required_level": "expected"
+      },
+      "roles": {
+        "aliases": [],
+        "links": [
+          "G"
+        ],
+        "maker": "B",
+        "primary_identifier": "C",
+        "properties": [
+          {
+            "column": "D",
+            "constraints": [],
+            "field_key": "encoder_type",
+            "key": "encoder_type",
+            "type": "string",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "E",
+            "constraints": [],
+            "field_key": "encoder_steps",
+            "key": "encoder_steps",
+            "type": "number",
+            "unit": "",
+            "variance_policy": "authoritative"
+          },
+          {
+            "column": "F",
+            "constraints": [],
+            "field_key": "encoder_life_span",
+            "key": "encoder_life_span",
+            "type": "number",
+            "unit": "",
+            "variance_policy": "authoritative"
+          }
+        ]
+      },
+      "sheet": "encoder",
+      "start_row": 2,
+      "stop_after_blank_primary": 10,
+      "type": "encoder"
+    },
+    {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "auto_derive_aliases": true,
+      "component_type": "material",
+      "first_data_row": 2,
+      "header_row": 1,
+      "mode": "sheet",
+      "priority": {
+        "availability": "expected",
+        "difficulty": "easy",
+        "effort": 3,
+        "required_level": "expected"
+      },
+      "roles": {
+        "aliases": [],
+        "links": [],
+        "maker": "",
+        "primary_identifier": "B",
+        "properties": []
+      },
+      "sheet": "material",
+      "start_row": 2,
+      "stop_after_blank_primary": 10,
+      "type": "material"
+    }
+  ],
   "data_lists": [
     {
       "ai_assist": {

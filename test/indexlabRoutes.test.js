@@ -291,6 +291,63 @@ test('indexlabRoutes: relocated s3 run meta remains readable after source indexl
   }
 });
 
+test('indexlabRoutes: run listing forwards category scope alongside limit', async () => {
+  const calls = [];
+  const handler = registerIndexlabRoutes({
+    jsonRes,
+    toInt,
+    toFloat,
+    safeJoin: () => '',
+    safeReadJson: async () => null,
+    path,
+    INDEXLAB_ROOT: '/tmp/indexlab',
+    processStatus: () => ({ running: false }),
+    readIndexLabRunMeta: async () => null,
+    resolveIndexLabRunDirectory: async () => '',
+    readIndexLabRunEvents: async () => [],
+    readIndexLabRunNeedSet: async () => null,
+    readIndexLabRunSearchProfile: async () => null,
+    readIndexLabRunPhase07Retrieval: async () => null,
+    readIndexLabRunPhase08Extraction: async () => null,
+    readIndexLabRunDynamicFetchDashboard: async () => null,
+    readIndexLabRunSourceIndexingPackets: async () => null,
+    readIndexLabRunItemIndexingPacket: async () => null,
+    readIndexLabRunRunMetaPacket: async () => null,
+    readIndexLabRunSerpExplorer: async () => null,
+    readIndexLabRunLlmTraces: async () => null,
+    readIndexLabRunAutomationQueue: async () => null,
+    readIndexLabRunEvidenceIndex: async () => null,
+    listIndexLabRuns: async (args) => {
+      calls.push(args);
+      return [];
+    },
+    buildRoundSummaryFromEvents: () => ({}),
+    buildSearchHints: () => [],
+    buildAnchorsSuggestions: () => [],
+    buildKnownValuesSuggestions: () => [],
+    queryIndexSummary: async () => null,
+    urlIndexSummary: async () => null,
+    highYieldUrls: async () => [],
+    promptIndexSummary: async () => null,
+    readKnobSnapshots: async () => null,
+    evaluateAllSections: async () => null,
+    buildEvidenceReport: async () => null,
+    buildEffectiveSettingsSnapshot: async () => null,
+    buildScreenshotManifestFromEvents: async () => null,
+    computeCompoundCurve: async () => null,
+    diffRunPlans: async () => null,
+    buildFieldMapFromPacket: async () => null,
+    aggregateCrossRunMetrics: async () => null,
+    aggregateHostHealth: async () => null,
+  });
+
+  const res = createMockRes();
+  await handler(['indexlab', 'runs'], new URLSearchParams('limit=25&category=mouse'), 'GET', null, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(calls, [{ limit: 25, category: 'mouse' }]);
+});
+
 test('indexlabRoutes: inactive run with stale running meta resolves to failed terminal payload', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexlab-routes-terminal-state-'));
   const indexLabRoot = path.join(tempRoot, 'indexlab');

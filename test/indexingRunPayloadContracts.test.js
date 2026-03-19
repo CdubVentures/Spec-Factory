@@ -87,7 +87,7 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
     category: 'mouse',
     productId: 'mouse-v3-pro',
     runtimeSettingsPayload: createPayload({
-      searchEngines: ' bing,startpage,duckduckgo ',
+      searchEngines: ' bing,google-proxy,duckduckgo ',
       dynamicCrawleeEnabled: true,
       runtimeScreencastEnabled: true,
       importsRoot: '  ./imports  ',
@@ -203,7 +203,7 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
   assert.equal(payload.llmMaxOutputTokens, 256);
   assert.equal(payload.endpointNetworkScanLimit, 50);
 
-  assert.equal(payload.searchEngines, 'bing,startpage,duckduckgo');
+  assert.equal(payload.searchEngines, 'bing,google-proxy,duckduckgo');
   assert.equal(payload.llmModelPlan, 'gpt-plan');
   assert.equal(payload.llmMaxOutputTokensPlan, 128);
   assert.equal(payload.llmPlanFallbackModel, 'gpt-plan-fallback');
@@ -211,35 +211,30 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
   assert.equal(payload.reviewMode, true);
 });
 
-test('buildIndexingRunStartPayload ignores retired stage-2 discovery and triage knobs', async () => {
+// WHY: Retired stage-2 keys now flow through via the runtimeSettingsPayload spread.
+// The payload no longer filters them out — the backend snapshot transport carries
+// all settings, and the child ignores keys it doesn't recognize. This test now
+// verifies the keys propagate correctly rather than being excluded.
+test('buildIndexingRunStartPayload propagates all runtimeSettingsPayload keys via spread', async () => {
   const { buildIndexingRunStartPayload } = await loadRunStartPayloadModule();
 
   const payload = buildIndexingRunStartPayload({
-    requestedRunId: 'run-retired-knobs',
+    requestedRunId: 'run-spread-test',
     category: 'mouse',
     productId: 'mouse-acme-orbit-x1',
     runtimeSettingsPayload: createPayload({
       discoveryResultsPerQuery: '99',
       discoveryQueryConcurrency: '8',
-      phase3LlmTriageEnabled: true,
-      llmSerpRerankEnabled: true,
-      serpTriageEnabled: true,
+      fetchBudgetMs: 30000,
+      manufacturerAutoPromote: true,
     }),
     parsedValues: createParsedValues(),
     runControlPayload: {},
   });
 
-  for (const retiredKey of [
-    'discoveryResultsPerQuery',
-    'discoveryQueryConcurrency',
-    'phase3LlmTriageEnabled',
-    'llmSerpRerankEnabled',
-    'serpTriageEnabled',
-  ]) {
-    assert.equal(
-      Object.hasOwn(payload, retiredKey),
-      false,
-      `run payload should not forward retired stage-2 key ${retiredKey}`,
-    );
-  }
+  // WHY: These keys now flow through via the runtimeSettingsPayload spread
+  assert.equal(payload.discoveryResultsPerQuery, '99');
+  assert.equal(payload.discoveryQueryConcurrency, '8');
+  assert.equal(payload.fetchBudgetMs, 30000);
+  assert.equal(payload.manufacturerAutoPromote, true);
 });

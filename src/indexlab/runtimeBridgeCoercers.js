@@ -106,7 +106,7 @@ export function classifyLlmCallType(reason = '') {
   if (r === 'brand_resolution') return 'brand_resolver';
   if (r === 'needset_search_planner') return 'needset_planner';
   if (r === 'search_planner' || r.startsWith('discovery_planner') || r === 'uber_query_planner') return 'search_planner';
-  if (r.includes('triage') || r.includes('rerank') || r.includes('serp')) return 'serp_triage';
+  if (r.includes('triage') || r.includes('rerank') || r.includes('serp')) return 'serp_selector';
   if (r === 'domain_safety_classification') return 'domain_classifier';
   if (r.startsWith('extract') || r.includes('extract_batch')) return 'extraction';
   if (r === 'validate' || r.startsWith('validate_')) return 'validation';
@@ -120,7 +120,7 @@ export const LLM_CALL_TYPE_TAB = {
   brand_resolver: '02',
   needset_planner: '01',
   search_planner: '04',
-  serp_triage: '07',
+  serp_selector: '07',
   domain_classifier: '08'
 };
 

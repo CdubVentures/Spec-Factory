@@ -1,60 +1,38 @@
 {
-  "_doc": "Brand Resolver input contract for phase 2. Documents the real inputs feeding resolveBrandDomain() and the gating around its call site in searchDiscovery(). Updated 2026-03-16.",
-  "schema_version": "brand_resolver_input.runtime.v1 - boundary is resolveBrandDomain({ brand, category, config, callLlmFn, storage }) in brandResolver.js:1-52.",
-  "call_boundary": {
-    "brand": "SOURCE: searchDiscovery.js:181-187 passes variables.brand, which comes from the phase identity lock. searchDiscovery.js:169-171 skips the resolver when brand is empty.",
-    "category": "SOURCE: searchDiscovery.js:181-187 passes variables.category, derived from job.category || categoryConfig.category.",
-    "config": "SOURCE: searchDiscovery.js:181-187 passes config through unchanged. resolveBrandDomain() itself only forwards config into callLlmFn; the main LLM gating happens before the call.",
-    "callLlmFn": "SOURCE: searchDiscovery.js:144-149 constructs createBrandResolverCallLlm(...) only when hasLlmRouteApiKey(config, { role: 'triage' }) returns true. Otherwise null is passed and resolveBrandDomain() stays cache/empty only.",
-    "storage": "SOURCE: searchDiscovery.js:181-187 passes storage through unchanged for cache read/write via getBrandDomain() and upsertBrandDomain()."
-  },
-  "runtime_gates": {
-    "missing_brand": "SOURCE: searchDiscovery.js:169-171 sets skip_reason = 'no_brand_in_identity_lock' and does not call resolveBrandDomain() when variables.brand is empty.",
-    "triage_api_key": "SOURCE: searchDiscovery.js:144-149 requires hasLlmRouteApiKey(config, { role: 'triage' }) before constructing callLlmFn. The adapter still routes over the plan-model stack via modelOverride.",
-    "cache_short_circuit": "SOURCE: brandResolver.js:14-25 returns cached official_domain/support_domain/aliases immediately when storage.getBrandDomain(brandKey, categoryKey) yields a row.",
-    "llm_fallback": "SOURCE: brandResolver.js:27 returns the empty output object when callLlmFn is null.",
-    "error_fallback": "SOURCE: brandResolver.js:51-54 returns the empty output object on any resolver exception."
+  "_doc": "Call boundary for resolveBrandDomain().",
+  "validated_against": "2026-03-18",
+  "function": "resolveBrandDomain",
+  "file": "src/features/indexing/discovery/brandResolver.js",
+  "call_shape": {
+    "brand": "string",
+    "category": "string",
+    "config": "object",
+    "callLlmFn": "function|null",
+    "storage": "object|null"
   },
   "storage_contract": {
-    "getBrandDomain": "SOURCE: brandResolver.js:14-25 expects storage.getBrandDomain(brandKey, categoryKey) to return cached official_domain, aliases, support_domain, and optionally confidence.",
-    "cached_aliases_shape": "SOURCE: brandResolver.js:17 and parseAliases() at 56-64 accepts either a JSON string or an array for cached aliases.",
-    "upsertBrandDomain": "SOURCE: brandResolver.js:40-49 writes brand, category, official_domain, aliases as a JSON string, support_domain, and confidence = 0.8 after an LLM resolution."
+    "read": "storage.getBrandDomain(brand, category)",
+    "write": "storage.upsertBrandDomain({ brand, category, official_domain, aliases, support_domain, confidence })",
+    "cached_aliases_shape": "JSON string or array"
   },
-  "llm_adapter_contract": {
-    "role": "SOURCE: createBrandResolverCallLlm() in discoveryLlmAdapters.js:46-64 uses role = 'triage' and reason = 'brand_resolution'. 'triage' is a compatibility label; routing still resolves through the plan-model contract.",
-    "model": "SOURCE: discoveryLlmAdapters.js:49-53 chooses _resolvedBrandResolverReasoningModel or _resolvedBrandResolverBaseModel, falling back to llmModelReasoning / llmModelPlan / llmPlanFallbackModel. The retired llmModelTriage / llmModelFast keys are no longer authoritative.",
-    "timeout_ms": "SOURCE: discoveryLlmAdapters.js:83 uses config.llmTimeoutMs || 15000.",
-    "system_prompt": "SOURCE: discoveryLlmAdapters.js:72-77 asks for the official domain, aliases, support subdomain, and a short reasoning array.",
-    "json_schema": "SOURCE: brandResolverSchema() in discoveryLlmAdapters.js:1-13 requires official_domain and allows aliases, support_domain, and reasoning."
+  "llm_adapter": {
+    "factory": "createBrandResolverCallLlm",
+    "file": "src/features/indexing/discovery/discoveryLlmAdapters.js",
+    "routing": {
+      "reason": "brand_resolution",
+      "role": "triage",
+      "phase": "brandResolver"
+    },
+    "response_schema": {
+      "official_domain": "string (required)",
+      "aliases": "string[]",
+      "support_domain": "string",
+      "reasoning": "string[]"
+    }
   },
-  "normalization": {
-    "brand_trim": "SOURCE: brandResolver.js:7 trims brand into brandKey.",
-    "category_trim": "SOURCE: brandResolver.js:8 trims category into categoryKey.",
-    "official_domain": "SOURCE: brandResolver.js:36 lowercases and trims the LLM result.",
-    "aliases": "SOURCE: brandResolver.js:37 lowercases, trims, and filters empty alias strings.",
-    "support_domain": "SOURCE: brandResolver.js:38 lowercases and trims the LLM result.",
-    "reasoning": "SOURCE: brandResolver.js:39 trims reasoning strings and filters empty entries."
-  },
-  "_gap_summary": {
-    "total_gaps_observed": 3,
-    "material_gaps": 0,
-    "informational_only": 2,
-    "details": [
-      {
-        "id": "BRAND-IN-1",
-        "field": "host_hints contract",
-        "status": "CLOSED — host_hints is not a real gap. Brand Resolver returns officialDomain + aliases; host hints are synthesized downstream at searchDiscovery.js:373-378. No code expects or reads a dedicated host_hints input to the brand resolver."
-      },
-      {
-        "id": "BRAND-IN-2",
-        "field": "config dependency surface",
-        "status": "INFO - resolveBrandDomain() receives the full config object even though only the LLM adapter meaningfully uses it."
-      },
-      {
-        "id": "BRAND-IN-3",
-        "field": "standalone persisted input artifact",
-        "status": "INFO - Brand Resolver has no dedicated persisted input artifact; the contract exists in memory only."
-      }
-    ]
-  }
+  "caller_gates": [
+    "runDiscoverySeedPlan() only attempts resolution when a brand is present",
+    "runDiscoverySeedPlan() only creates callLlmFn when hasLlmRouteApiKey(config, { role: 'triage' }) is true",
+    "discoverCandidateSources() only calls the resolver when no precomputed brandResolution was passed in"
+  ]
 }

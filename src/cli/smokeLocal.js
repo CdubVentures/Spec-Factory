@@ -2,7 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { loadConfig } from '../config.js';
+import { loadConfigWithUserSettings } from '../config.js';
 import { defaultLocalOutputRoot } from '../core/config/runtimeArtifactRoots.js';
 import { createStorage } from '../s3/storage.js';
 import { runProduct } from '../pipeline/runProduct.js';
@@ -28,7 +28,7 @@ export async function main() {
   const runLlmMode = asBool(args.llm, Boolean(process.env.LLM_API_KEY));
   const { outputRoot, normalizedOutPath, summaryOutPath } = resolveSmokeLocalOutputPaths();
 
-  const config = loadConfig({
+  const config = loadConfigWithUserSettings({
     localMode: true,
     dryRun: true,
     localInputRoot: 'fixtures/s3',
@@ -64,7 +64,7 @@ export async function main() {
         reason: 'OPENAI_API_KEY not set'
       };
     } else {
-      const llmConfig = loadConfig({
+      const llmConfig = loadConfigWithUserSettings({
         localMode: true,
         dryRun: true,
         localInputRoot: 'fixtures/s3',

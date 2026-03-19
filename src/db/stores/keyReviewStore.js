@@ -584,11 +584,30 @@ export function createKeyReviewStore({ db, category, stmts }) {
     return result;
   }
 
+  function getKeyReviewStateById(id) {
+    const parsed = Number(id);
+    if (!Number.isFinite(parsed) || parsed <= 0) return null;
+    return db.prepare('SELECT * FROM key_review_state WHERE id = ?').get(parsed) || null;
+  }
+
+  function updateKeyReviewSelectedCandidate({ id, selectedCandidateId, selectedValue, confidenceScore }) {
+    db.prepare(`
+      UPDATE key_review_state
+      SET selected_candidate_id = ?,
+          selected_value = ?,
+          confidence_score = COALESCE(?, confidence_score),
+          updated_at = datetime('now')
+      WHERE id = ?
+    `).run(selectedCandidateId, selectedValue, confidenceScore, id);
+  }
+
   return {
     backfillKeyReviewSlotIds,
     deleteKeyReviewStateRowsByIds,
     upsertKeyReviewState,
     getKeyReviewState,
+    getKeyReviewStateById,
+    updateKeyReviewSelectedCandidate,
     getKeyReviewStatesForItem,
     getKeyReviewStatesForField,
     getKeyReviewStatesForComponent,

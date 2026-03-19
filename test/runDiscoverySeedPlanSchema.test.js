@@ -15,7 +15,6 @@ function makeConfig(overrides = {}) {
     searchEngines: 'bing,google',
     maxCandidateUrls: 10,
     fetchCandidateSources: true,
-    enableSchema4SearchPlan: true,
     ...overrides,
   };
 }
@@ -65,23 +64,61 @@ function makeHandoff() {
   };
 }
 
+function makeStorage() {
+  return {
+    resolveOutputKey: () => '_learning/test',
+    readJsonOrNull: async () => null,
+  };
+}
+
 function stubNormalizeFieldList(fields) { return fields; }
 function stubLoadSourceEntries() { return []; }
+
+// WHY: After orchestrator rewrite, stages 02-08 run real implementations.
+// These stubs return minimal valid shapes so the test focuses on schema4 wiring.
+function makeStageStubs({ captureSearchPlannerArgs } = {}) {
+  return {
+    runBrandResolverFn: async () => ({ brandResolution: null, promotedHosts: [] }),
+    runSearchProfileFn: () => ({
+      searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] },
+      effectiveHostPlan: null,
+      hostPlanQueryRows: [],
+    }),
+    runSearchPlannerFn: async (args) => {
+      if (captureSearchPlannerArgs) captureSearchPlannerArgs(args);
+      return { schema4Plan: null, uberSearchPlan: null };
+    },
+    runQueryJourneyFn: async () => ({
+      queries: [],
+      selectedQueryRowMap: new Map(),
+      profileQueryRowsByQuery: new Map(),
+      searchProfilePlanned: {},
+      searchProfileKeys: {},
+      executionQueryLimit: 0,
+      queryLimit: 8,
+      queryRejectLogCombined: [],
+    }),
+    executeSearchQueriesFn: async () => ({
+      rawResults: [],
+      searchAttempts: [],
+      searchJournal: [],
+      internalSatisfied: false,
+      externalSearchReason: null,
+    }),
+    processDiscoveryResultsFn: async () => ({
+      enabled: true,
+      approvedUrls: [],
+      candidateUrls: [],
+      candidates: [],
+    }),
+    runDomainClassifierFn: () => ({ enqueuedCount: 0, seededCount: 0 }),
+  };
+}
 
 describe('runDiscoverySeedPlan Schema 4 wiring', () => {
   it('passes searchPlanHandoff to discoverCandidateSourcesFn and attaches seed_search_plan_output when schema path enabled', async () => {
     const handoff = makeHandoff();
     let capturedArgs = null;
-
-    const stubDiscover = async (args) => {
-      capturedArgs = args;
-      return {
-        enabled: true,
-        approvedUrls: [],
-        candidateUrls: [],
-        queries: ['TestBrand TestModel sensor specs'],
-      };
-    };
 
     const stubComputeNeedSet = () => ({
       schema_version: 'needset_output.v2',
@@ -106,9 +143,13 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
 
     const stubBuildPlan = async () => schema4Output;
 
+    const stageStubs = makeStageStubs({
+      captureSearchPlannerArgs: (args) => { capturedArgs = args; },
+    });
+
     const result = await runDiscoverySeedPlan({
       config: makeConfig(),
-      storage: {},
+      storage: makeStorage(),
       category: 'mouse',
       categoryConfig: makeCategoryConfig(),
       job: makeJob(),
@@ -123,10 +164,10 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       planner: { enqueue: () => {}, seedCandidates: () => {} },
       normalizeFieldListFn: stubNormalizeFieldList,
       loadEnabledSourceEntriesFn: stubLoadSourceEntries,
-      discoverCandidateSourcesFn: stubDiscover,
       computeNeedSetFn: stubComputeNeedSet,
       buildSearchPlanningContextFn: stubBuildContext,
       buildSearchPlanFn: stubBuildPlan,
+      ...stageStubs,
     });
 
     assert.ok(capturedArgs, 'discoverCandidateSourcesFn should have been called');
@@ -139,52 +180,19 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
     assert.equal(result.seed_search_plan_output.schema_version, 'needset_planner_output.v2');
   });
 
-  it('passes null handoff when enableSchema4SearchPlan is false', async () => {
-    let capturedArgs = null;
-
-    const stubDiscover = async (args) => {
-      capturedArgs = args;
-      return { enabled: true, approvedUrls: [], candidateUrls: [], queries: [] };
-    };
-
-    await runDiscoverySeedPlan({
-      config: makeConfig({ enableSchema4SearchPlan: false }),
-      storage: {},
-      category: 'mouse',
-      categoryConfig: makeCategoryConfig(),
-      job: makeJob(),
-      runId: 'run-2',
-      logger: { info: () => {}, warn: () => {} },
-      roundContext: makeRoundContext(),
-      requiredFields: [],
-      llmContext: {},
-      frontierDb: null,
-      traceWriter: null,
-      learningStoreHints: null,
-      planner: { enqueue: () => {}, seedCandidates: () => {} },
-      normalizeFieldListFn: stubNormalizeFieldList,
-      loadEnabledSourceEntriesFn: stubLoadSourceEntries,
-      discoverCandidateSourcesFn: stubDiscover,
-    });
-
-    assert.ok(capturedArgs);
-    assert.equal(capturedArgs.searchPlanHandoff, null, 'handoff should be null when disabled');
-  });
-
   it('passes null handoff when schema computation throws', async () => {
     let capturedArgs = null;
     const logs = [];
 
-    const stubDiscover = async (args) => {
-      capturedArgs = args;
-      return { enabled: true, approvedUrls: [], candidateUrls: [], queries: [] };
-    };
+    const stubBuildPlan = async () => { throw new Error('Schema4 planner failed'); };
 
-    const stubComputeNeedSet = () => { throw new Error('NeedSet computation failed'); };
+    const stageStubs = makeStageStubs({
+      captureSearchPlannerArgs: (args) => { capturedArgs = args; },
+    });
 
     await runDiscoverySeedPlan({
       config: makeConfig(),
-      storage: {},
+      storage: makeStorage(),
       category: 'mouse',
       categoryConfig: makeCategoryConfig(),
       job: makeJob(),
@@ -199,10 +207,10 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       planner: { enqueue: () => {}, seedCandidates: () => {} },
       normalizeFieldListFn: stubNormalizeFieldList,
       loadEnabledSourceEntriesFn: stubLoadSourceEntries,
-      discoverCandidateSourcesFn: stubDiscover,
-      computeNeedSetFn: stubComputeNeedSet,
-      buildSearchPlanningContextFn: () => ({}),
-      buildSearchPlanFn: async () => ({}),
+      computeNeedSetFn: () => ({ fields: [], planner_seed: {} }),
+      buildSearchPlanningContextFn: () => ({ focus_groups: [] }),
+      buildSearchPlanFn: stubBuildPlan,
+      ...stageStubs,
     });
 
     assert.ok(capturedArgs);
@@ -213,14 +221,13 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
   it('passes null handoff when buildSearchPlan returns no handoff', async () => {
     let capturedArgs = null;
 
-    const stubDiscover = async (args) => {
-      capturedArgs = args;
-      return { enabled: true, approvedUrls: [], candidateUrls: [], queries: [] };
-    };
+    const stageStubs = makeStageStubs({
+      captureSearchPlannerArgs: (args) => { capturedArgs = args; },
+    });
 
     await runDiscoverySeedPlan({
       config: makeConfig(),
-      storage: {},
+      storage: makeStorage(),
       category: 'mouse',
       categoryConfig: makeCategoryConfig(),
       job: makeJob(),
@@ -235,10 +242,10 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       planner: { enqueue: () => {}, seedCandidates: () => {} },
       normalizeFieldListFn: stubNormalizeFieldList,
       loadEnabledSourceEntriesFn: stubLoadSourceEntries,
-      discoverCandidateSourcesFn: stubDiscover,
       computeNeedSetFn: () => ({ fields: [], planner_seed: {} }),
       buildSearchPlanningContextFn: () => ({ focus_groups: [] }),
       buildSearchPlanFn: async () => ({ planner: { mode: 'disabled' } }),
+      ...stageStubs,
     });
 
     assert.ok(capturedArgs);

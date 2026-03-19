@@ -18,7 +18,6 @@ test('bootstrapRunProductExecutionState wires category/planner/fetcher bootstrap
     },
   };
   const llmRuntime = {
-    llmBudgetGuard: { snapshot: () => ({ state: {} }) },
     llmCostRates: { prompt: 1 },
     llmContext: { enabled: true },
   };
@@ -262,7 +261,6 @@ test('bootstrapRunProductExecutionState wires category/planner/fetcher bootstrap
   assert.equal(result.fetcherStartFallbackReason, 'http_fallback');
   assert.equal(result.modeAwareFetcherRegistry.id, 'mode-aware-registry');
   assert.equal(result.llmRuntime, llmRuntime);
-  assert.equal(result.llmBudgetGuard, llmRuntime.llmBudgetGuard);
   assert.deepEqual(result.learningStoreHints, { hints: true });
   assert.deepEqual(result.discoveryResult, { seeded: true });
   assert.equal(result.phase08BatchRows.length, 0);

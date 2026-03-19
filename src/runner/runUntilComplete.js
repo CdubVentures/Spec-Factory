@@ -31,8 +31,7 @@ import {
   evaluateRequiredSearchExhaustion,
   makeLlmTargetFields,
   resolveMissingRequiredForPlanning,
-  shouldForceExpectedFieldRetry,
-  shouldStopForBudgetExhaustion
+  shouldForceExpectedFieldRetry
 } from './roundConfigBuilder.js';
 
 // WHY: Extract per-field { field_key, state } snapshots from a round result
@@ -54,7 +53,6 @@ export {
   evaluateRequiredSearchExhaustion,
   shouldForceExpectedFieldRetry,
   buildRoundConfig,
-  shouldStopForBudgetExhaustion,
   resolveMissingRequiredForPlanning,
   buildRoundRequirements,
   makeLlmTargetFields
@@ -300,11 +298,6 @@ export async function runUntilComplete({
     }
 
     const budgetBlockedReason = llmBlocked(roundResult.summary);
-    const budgetExceeded = budgetBlockedReason.includes('budget');
-    const stopForBudgetExhaustion = shouldStopForBudgetExhaustion({
-      budgetBlockedReason,
-      round
-    });
     const urlsFetchedCount = toArray(roundResult.summary?.urls_fetched).length;
     if (urlsFetchedCount > previousUrlCount) {
       noNewUrlsRounds = 0;
@@ -328,7 +321,7 @@ export async function runUntilComplete({
       result: roundResult,
       roundResult: {
         exhausted: false,
-        budgetExceeded,
+        budgetExceeded: false,
         nextActionHint: makeRoundHint(round + 1)
       }
     });
@@ -354,13 +347,6 @@ export async function runUntilComplete({
     if (isCompleted(roundResult.summary)) {
       completed = true;
       stopReason = 'complete';
-      break;
-    }
-
-    if (stopForBudgetExhaustion) {
-      exhausted = true;
-      needsManual = true;
-      stopReason = 'budget_exhausted';
       break;
     }
 

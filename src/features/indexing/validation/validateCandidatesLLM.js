@@ -1,4 +1,4 @@
-import { callLlmWithRouting, hasLlmRouteApiKey } from '../../../core/llm/client/routing.js';
+import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../../../core/llm/client/routing.js';
 import { normalizeFieldList } from '../../../utils/fieldKeys.js';
 import { buildExtractionContextMatrix, buildPrimeSourcesFromProvenance } from '../extraction/extractionContext.js';
 
@@ -188,30 +188,6 @@ export async function validateCandidatesLLM({
     };
   }
 
-  const budgetGuard = llmContext?.budgetGuard;
-  const budgetDecision = budgetGuard?.canCall({
-    reason: 'validate',
-    essential: false
-  }) || { allowed: true };
-  if (!budgetDecision.allowed) {
-    budgetGuard?.block?.(budgetDecision.reason);
-    logger?.warn?.('llm_validate_skipped_budget', {
-      reason: budgetDecision.reason,
-      productId: job.productId
-    });
-    return {
-      enabled: false,
-      accept: [],
-      reject: [],
-      unknown: [],
-      phase08: {
-        context_field_count: normalizedUncertain.length,
-        prime_source_rows: 0,
-        payload_chars: 0
-      }
-    };
-  }
-
   const uncertainSet = new Set(normalizedUncertain);
   const validatorPrimeSources = buildPrimeSourcesFromProvenance({
     uncertainFields: normalizedUncertain,
@@ -306,13 +282,10 @@ export async function validateCandidatesLLM({
       },
       costRates: llmContext.costRates || config,
       onUsage: async (usageRow) => {
-        budgetGuard?.recordCall({ costUsd: usageRow.cost_usd });
         if (typeof llmContext.recordUsage === 'function') {
           await llmContext.recordUsage(usageRow);
         }
       },
-      reasoningMode: Boolean(config._resolvedValidateUseReasoning ?? config.llmPlanUseReasoning ?? config.llmReasoningMode),
-      reasoningBudget: Number(config.llmReasoningBudget || 0),
       timeoutMs: config.llmTimeoutMs || config.openaiTimeoutMs,
       logger
     });
@@ -328,7 +301,7 @@ export async function validateCandidatesLLM({
 
     return {
       enabled: true,
-      llm_validate_model: config.llmModelPlan || '',
+      llm_validate_model: resolvePhaseModel(config, 'validate') || config.llmModelPlan || '',
       llm_validate_provider: config.llmProvider || '',
       phase08: {
         context_field_count: normalizedUncertain.length,

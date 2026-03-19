@@ -51,7 +51,7 @@ async function handleRunContext(state, deps, { ts, row }) {
 }
 
 async function handleSearchProfileGenerated(state, deps, { ts, row }) {
-  setPhaseCursor(state, 'phase_02_search_profile');
+  setPhaseCursor(state, 'phase_03_search_profile');
   const payload = extractRuntimeEventPayload(row);
   const applied = applySearchProfilePlannedPayload(state, payload, ts);
   if (applied) {
@@ -423,7 +423,7 @@ async function handleNeedsetComputed(state, deps, { ts, row }) {
 
 async function handleBrandResolved(state, deps, { ts, row }) {
   await startStage(state, 'search', ts, { trigger: 'brand_resolved' });
-  setPhaseCursor(state, 'phase_02_search_profile');
+  setPhaseCursor(state, 'phase_02_brand_resolver');
   const brandPayload = {
     scope: 'brand',
     brand: String(row.brand || '').trim(),
@@ -448,7 +448,7 @@ async function handleBrandResolved(state, deps, { ts, row }) {
 
 async function handleSearchPlanGenerated(state, deps, { ts, row }) {
   await startStage(state, 'search', ts, { trigger: 'search_plan_generated' });
-  setPhaseCursor(state, 'phase_02_search_profile');
+  setPhaseCursor(state, 'phase_04_search_planner');
   await emit(state, 'search', 'search_plan_generated', {
     scope: 'plan',
     pass_index: asInt(row.pass_index, 0),
@@ -462,14 +462,40 @@ async function handleSearchPlanGenerated(state, deps, { ts, row }) {
   }, ts);
 }
 
+async function handleQueryJourneyCompleted(state, deps, { ts, row }) {
+  setPhaseCursor(state, 'phase_05_query_journey');
+  // WHY: Populate query_journey data in prefetch so the GUI gate allows
+  // search_results bouncy ball only after query journey finishes.
+  if (!state.prefetchData) state.prefetchData = {};
+  state.prefetchData.query_journey = {
+    selected_query_count: asInt(row.selected_query_count, 0),
+    selected_queries: Array.isArray(row.selected_queries) ? row.selected_queries : [],
+    schema4_query_count: asInt(row.schema4_query_count, 0),
+    deterministic_query_count: asInt(row.deterministic_query_count, 0),
+    host_plan_query_count: asInt(row.host_plan_query_count, 0),
+    rejected_count: asInt(row.rejected_count, 0),
+  };
+  await emit(state, 'search', 'query_journey_completed', {
+    scope: 'journey',
+    selected_query_count: asInt(row.selected_query_count, 0),
+    selected_queries: Array.isArray(row.selected_queries) ? row.selected_queries : [],
+    schema4_query_count: asInt(row.schema4_query_count, 0),
+    deterministic_query_count: asInt(row.deterministic_query_count, 0),
+    host_plan_query_count: asInt(row.host_plan_query_count, 0),
+  }, ts);
+
+}
+
 async function handleSearchResultsCollected(state, deps, { ts, row }) {
   await startStage(state, 'search', ts, { trigger: 'search_results_collected' });
   const originalScope = String(row.scope || '').trim();
+  const _screenshotFilename = String(row.screenshot_filename || '').trim();
   await emit(state, 'search', 'search_results_collected', {
     scope: originalScope === 'frontier_cache' ? 'frontier_cache' : 'query',
     query: String(row.query || '').trim(),
     provider: String(row.provider || '').trim(),
     dedupe_count: asInt(row.dedupe_count, 0),
+    ...(_screenshotFilename ? { screenshot_filename: _screenshotFilename } : {}),
     results: Array.isArray(row.results) ? row.results.map((r) => ({
       title: String(r?.title || '').trim(),
       url: String(r?.url || '').trim(),
@@ -485,9 +511,9 @@ async function handleSearchResultsCollected(state, deps, { ts, row }) {
 }
 
 async function handleSerpTriageCompleted(state, deps, { ts, row }) {
-  await startStage(state, 'search', ts, { trigger: 'serp_triage_completed' });
-  setPhaseCursor(state, 'phase_03_serp_triage');
-  await emit(state, 'search', 'serp_triage_completed', {
+  await startStage(state, 'search', ts, { trigger: 'serp_selector_completed' });
+  setPhaseCursor(state, 'phase_07_serp_selector');
+  await emit(state, 'search', 'serp_selector_completed', {
     scope: 'triage',
     query: String(row.query || '').trim(),
     kept_count: asInt(row.kept_count, 0),
@@ -587,6 +613,7 @@ async function handleSearchEvent(state, deps, { eventName, ts, row }) {
   const { searchSlots } = deps;
 
   if (eventName === 'discovery_query_started') {
+    setPhaseCursor(state, 'phase_06_search_results');
     const query = String(row.query || '').trim();
     const provider = String(row.provider || '').trim();
     const queryKey = searchSlots.searchQueryKey(row);
@@ -698,6 +725,45 @@ async function handleLlmEvent(state, deps, { eventName, ts, row }) {
   }, ts);
 }
 
+// WHY: search_queued events are emitted by the orchestrator BEFORE Stage 06
+// starts. They pre-populate search worker slots so the GUI renders all planned
+// workers immediately. The bridge must call prePopulateSlots to reserve the
+// letter (a, b, c...) before discovery_query_started fires for each query.
+async function handleSearchQueued(state, deps, { ts, row }) {
+  const { searchSlots } = deps;
+  const query = String(row.query || '').trim();
+  const provider = String(row.provider || '').trim();
+  if (query && searchSlots?.prePopulateSlots) {
+    searchSlots.prePopulateSlots([{ query, provider }]);
+  }
+  await emit(state, 'search', 'search_queued', {
+    scope: 'query',
+    worker_id: String(row.worker_id || '').trim(),
+    slot: String(row.slot || '').trim(),
+    query,
+    state: 'queued',
+  }, ts);
+}
+
+async function handleDiscoveryEnqueueSummary(state, deps, { ts, row }) {
+  setPhaseCursor(state, 'phase_08_domain_classifier');
+  await emit(state, 'search', 'discovery_enqueue_summary', {
+    scope: 'enqueue',
+    input_approved_count: asInt(row.input_approved_count, 0),
+    input_candidate_count: asInt(row.input_candidate_count, 0),
+  }, ts);
+}
+
+// ── Bootstrap sub-step handler ─────────────────────────────────────────────
+
+async function handleBootstrapStep(state, _deps, { ts, row }) {
+  const step = String(row.step || '').trim();
+  const progress = Math.max(0, Math.min(100, Number(row.progress) || 0));
+  state.bootStep = step;
+  state.bootProgress = progress;
+  await writeRunMeta(state);
+}
+
 // ── Event handler registry (table-driven dispatch) ────────────────────────
 
 const EVENT_HANDLERS = new Map([
@@ -724,11 +790,15 @@ const EVENT_HANDLERS = new Map([
   ['needset_computed',                handleNeedsetComputed],
   ['brand_resolved',                  handleBrandResolved],
   ['search_plan_generated',           handleSearchPlanGenerated],
+  ['query_journey_completed',         handleQueryJourneyCompleted],
   ['search_results_collected',        handleSearchResultsCollected],
-  ['serp_triage_completed',           handleSerpTriageCompleted],
+  ['serp_selector_completed',           handleSerpTriageCompleted],
   ['domains_classified',              handleDomainsClassified],
   ['evidence_index_result',           handleEvidenceIndexResult],
   ['phase07_prime_sources_built',     handlePhase07PrimeSourcesBuilt],
+  ['discovery_enqueue_summary',       handleDiscoveryEnqueueSummary],
+  ['search_queued',                   handleSearchQueued],
+  ['bootstrap_step',                  handleBootstrapStep],
 ]);
 
 const LLM_EVENTS = new Set(['llm_call_started', 'llm_call_completed', 'llm_call_failed']);

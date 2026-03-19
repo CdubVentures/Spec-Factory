@@ -61,18 +61,6 @@ hdr1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF8B0000' } }
 const missingRows = [
   // ── Truly missing runtime keys ──
   {
-    key: 'enableQueryIndex', defaultValue: 'true', type: 'boolean',
-    section: 'Run Setup', group: 'Discovery & Source Strategy',
-    description: 'Enable the NDJSON query index that persists search queries across runs for dedup and learning. When off, query history is not tracked between runs.',
-    priority: 'Medium', category: 'Runtime',
-  },
-  {
-    key: 'enableUrlIndex', defaultValue: 'true', type: 'boolean',
-    section: 'Run Setup', group: 'Discovery & Source Strategy',
-    description: 'Enable the NDJSON URL index that persists discovered URLs across runs for dedup and frontier state. When off, URL discovery history resets each run.',
-    priority: 'Medium', category: 'Runtime',
-  },
-  {
     key: 'manufacturerAutoPromote', defaultValue: 'true', type: 'boolean',
     section: 'Run Setup', group: 'Manufacturer Research',
     description: 'Automatically promote manufacturer-discovered URLs to primary source candidates without requiring manual review in the curation queue.',
@@ -301,14 +289,14 @@ const summaryRows = [
   { metric: 'TOTAL NOT SURFACED IN GUI (Missing Knobs sheet)', count: 24, notes: 'All rows on the Missing Knobs sheet — these have no GUI control' },
   { metric: '', count: '', notes: '' },
   { metric: 'Breakdown by category:', count: '', notes: '' },
-  { metric: '  Truly Missing Runtime Keys', count: 9, notes: 'enableQueryIndex, enableUrlIndex, manufacturerAutoPromote, llmPlanDiscoveryQueries, categoryAuthorityRoot, helperFilesEnabled, helperFilesRoot, indexingHelperFilesEnabled, fetchBudgetMs' },
+  { metric: '  Truly Missing Runtime Keys', count: 7, notes: 'manufacturerAutoPromote, llmPlanDiscoveryQueries, categoryAuthorityRoot, helperFilesEnabled, helperFilesRoot, indexingHelperFilesEnabled, fetchBudgetMs' },
   { metric: '  Legacy / Cross-Layer Duplicates', count: 2, notes: 'concurrency (legacy alias), dynamicFetchPolicyMap (legacy alias)' },
   { metric: '  Max-Output-Token Companions (primary roles)', count: 7, notes: 'llmMaxOutputTokens{Plan,Triage,Fast,Reasoning,Extract,Validate,Write} — paired with rendered llmTokens* keys' },
   { metric: '  Max-Output-Token Companions (fallback roles)', count: 4, notes: 'llmMaxOutputTokens{Plan,Extract,Validate,Write}Fallback — paired with rendered fallback token keys' },
   { metric: '  Missing Convergence Keys', count: 2, notes: 'consensusTier4OverrideThreshold, consensusMinConfidence' },
   { metric: '', count: '', notes: '' },
   { metric: 'HIGH PRIORITY (should add soon)', count: 2, notes: 'helperFilesEnabled, fetchBudgetMs — affect runtime behavior significantly' },
-  { metric: 'MEDIUM PRIORITY (useful controls)', count: 15, notes: '7 primary token companions + enableQueryIndex, enableUrlIndex, llmPlanDiscoveryQueries, indexingHelperFilesEnabled, consensusTier4OverrideThreshold, consensusMinConfidence + llmMaxOutputTokensPlanFallback, llmMaxOutputTokensExtractFallback' },
+  { metric: 'MEDIUM PRIORITY (useful controls)', count: 13, notes: '7 primary token companions + llmPlanDiscoveryQueries, indexingHelperFilesEnabled, consensusTier4OverrideThreshold, consensusMinConfidence + llmMaxOutputTokensPlanFallback, llmMaxOutputTokensExtractFallback' },
   { metric: 'LOW PRIORITY (legacy/niche/debug)', count: 8, notes: 'Legacy aliases, path configs, remaining fallback token companions' },
 ];
 

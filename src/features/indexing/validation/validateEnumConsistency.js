@@ -1,4 +1,4 @@
-import { callLlmWithRouting, hasLlmRouteApiKey } from '../../../core/llm/client/routing.js';
+import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../../../core/llm/client/routing.js';
 
 function normalizeToken(value) {
   return String(value ?? '').trim().toLowerCase();
@@ -286,15 +286,13 @@ export async function runEnumConsistencyReview({
       },
       costRates,
       onUsage,
-      reasoningMode: Boolean(config?.llmReasoningMode),
-      reasoningBudget: Number(config?.llmReasoningBudget || 0),
       timeoutMs: Number(config?.llmTimeoutMs || config?.openaiTimeoutMs || 40_000),
       logger,
     });
 
     return {
       enabled: true,
-      model: String(config?.llmModelPlan || '').trim() || null,
+      model: resolvePhaseModel(config, 'validate') || String(config?.llmModelPlan || '').trim() || null,
       provider: String(config?.llmValidateProvider || config?.llmProvider || '').trim() || null,
       format_guidance: effectiveFormatGuidance,
       decisions: sanitizeEnumConsistencyDecisions(raw || {}, {

@@ -39,7 +39,7 @@ outgoing:
 
 general:
   instance_name: "Spec Harvester Local Search"
-  debug: true
+  debug: false
   enable_metrics: true
   open_metrics: ""   # set a password to enable /metrics with basic auth
 

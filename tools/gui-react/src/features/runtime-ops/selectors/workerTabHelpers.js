@@ -15,7 +15,7 @@ const CALL_TYPE_RANK = {
   needset_planner: 0,
   brand_resolver: 1,
   search_planner: 2,
-  serp_triage: 3,
+  serp_selector: 3,
   domain_classifier: 4,
   extraction: 5,
   validation: 6,
@@ -129,8 +129,10 @@ export function buildWorkerButtonLabel(worker) {
     return String(worker.call_type).replace(/_/g, ' ');
   }
 
-  if (worker.pool === 'search' && worker.slot) {
-    return `slot ${worker.slot}`;
+  if (worker.pool === 'search') {
+    const query = truncateText(worker.current_query, 40);
+    if (query) return query;
+    if (worker.slot) return `search-${worker.slot}`;
   }
 
   if (worker.pool === 'fetch') {
@@ -148,8 +150,8 @@ export function buildWorkerButtonSubtitle(worker) {
   }
 
   if (worker.pool === 'search') {
-    const queryLabel = truncateText(worker.current_query);
-    return [workerId, queryLabel].filter(Boolean).join(' \u00b7 ') || null;
+    const slot = worker.slot ? `slot ${worker.slot}` : null;
+    return [workerId, slot].filter(Boolean).join(' \u00b7 ') || null;
   }
 
   if (worker.pool === 'fetch') {

@@ -11,7 +11,7 @@ function makeInput(
   overrides: Partial<BuildIndexingRunModelPayloadInput> = {},
 ): BuildIndexingRunModelPayloadInput {
   return {
-    searchEngines: 'bing,startpage,duckduckgo',
+    searchEngines: 'bing,google-proxy,duckduckgo',
     searchEnginesFallback: 'bing',
     llmModelPlan: 'gpt-4o',
     llmMaxOutputTokensPlan: 4096,

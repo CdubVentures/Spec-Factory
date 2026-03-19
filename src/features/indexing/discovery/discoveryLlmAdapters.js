@@ -12,33 +12,6 @@ function brandResolverSchema() {
   };
 }
 
-function escalationPlannerSchema() {
-  return {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      queries: {
-        type: 'array',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            query: { type: 'string' },
-            target_fields: { type: 'array', items: { type: 'string' } },
-            expected_source_type: { type: 'string' }
-          },
-          required: ['query']
-        }
-      }
-    },
-    required: ['queries']
-  };
-}
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
 export function createBrandResolverCallLlm({ callRoutedLlmFn, config, logger }) {
   return async ({ brand, category }) => {
     const result = await callRoutedLlmFn({
@@ -55,33 +28,9 @@ export function createBrandResolverCallLlm({ callRoutedLlmFn, config, logger }) 
       ].join('\n'),
       user: JSON.stringify({ brand, category }),
       jsonSchema: brandResolverSchema(),
-      reasoningMode: false,
       timeoutMs: config.llmTimeoutMs || 15000,
       logger
     });
     return result;
-  };
-}
-
-export function createEscalationPlannerCallLlm({ callRoutedLlmFn, config }) {
-  return async ({ missingFields, product, previousQueries }) => {
-    const result = await callRoutedLlmFn({
-      config,
-      reason: 'escalation_planner',
-      role: 'plan',
-      phase: 'searchPlanner',
-      system: [
-        'You generate targeted search queries for missing product specification fields.',
-        'Given fields that were NOT found in previous rounds, generate surgical queries targeting specific source types.',
-        'Avoid repeating patterns from previousQueries.',
-        'Focus on manufacturer datasheets, lab reviews, teardowns, and technical databases.',
-        'Return strict JSON only.'
-      ].join('\n'),
-      user: JSON.stringify({ missingFields, product, previousQueries }),
-      jsonSchema: escalationPlannerSchema(),
-      reasoningMode: true,
-      timeoutMs: config.llmTimeoutMs || 30000
-    });
-    return toArray(result?.queries || result);
   };
 }

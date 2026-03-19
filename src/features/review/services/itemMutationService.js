@@ -422,6 +422,21 @@ export async function applyItemManualOverrideAndSync({
   return result;
 }
 
+export function buildManualOverrideEvidence({ mode, value, body }) {
+  if (mode === 'manual-override') {
+    return {
+      url: String(body?.evidenceUrl || 'gui://manual-entry'),
+      quote: String(body?.evidenceQuote || `Manually set to "${String(value)}" via GUI`),
+      source_id: null,
+      retrieved_at: new Date().toISOString(),
+    };
+  }
+  return {
+    url: 'gui://manual-entry',
+    quote: `Manually set to "${String(value)}" via GUI`,
+  };
+}
+
 export function resolveItemOverrideMode(parts, method) {
   if (routeMatches({ parts, method, scope: 'review', action: 'override' })) {
     return 'override';

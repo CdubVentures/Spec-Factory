@@ -22,7 +22,7 @@ function makeConfig(tempRoot, overrides = {}) {
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 20,
     discoveryQueryConcurrency: 4,
-    searchEngines: 'bing,startpage,duckduckgo',
+    searchEngines: 'bing,google-proxy,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
     ...overrides
@@ -134,22 +134,6 @@ test('discoverCandidateSources with logger emits search profile events without c
     }
   };
 
-  const originalFetch = global.fetch;
-  global.fetch = async () => ({
-    ok: true,
-    async json() {
-      return {
-        results: [
-          {
-            url: 'https://www.rtings.com/mouse/reviews/hyperx/pulsefire-haste-2-core-wireless',
-            title: 'HyperX Pulsefire Haste 2 Core Wireless',
-            content: 'Specs and measurements'
-          }
-        ]
-      };
-    }
-  });
-
   try {
     const result = await discoverCandidateSources({
       config,
@@ -159,22 +143,24 @@ test('discoverCandidateSources with logger emits search profile events without c
       runId: 'run-logger-profile',
       logger,
       planningHints: {},
-      llmContext: {}
+      llmContext: {},
+      _runSearchProvidersFn: async () => [
+        {
+          url: 'https://www.rtings.com/mouse/reviews/hyperx/pulsefire-haste-2-core-wireless',
+          title: 'HyperX Pulsefire Haste 2 Core Wireless',
+          snippet: 'Specs and measurements',
+          provider: 'bing'
+        }
+      ]
     });
 
     assert.equal(Array.isArray(result.search_profile?.query_rows), true);
-    assert.equal(events.some((event) => event.name === 'search_profile_generated'), true);
-    const plannerEvent = events.find((event) => event.name === 'search_plan_generated');
-    assert.equal(Boolean(plannerEvent), true, 'expected deterministic search planner event');
-    // WHY: Single merged planner — deterministic queries emitted as 'primary' when LLM unavailable
-    assert.ok(
-      plannerEvent?.payload?.pass_name === 'primary' || plannerEvent?.payload?.pass_name === 'deterministic_fallback',
-      `expected primary or deterministic_fallback, got: ${plannerEvent?.payload?.pass_name}`
-    );
-    assert.equal(Array.isArray(plannerEvent?.payload?.queries_generated), true);
-    assert.equal((plannerEvent?.payload?.queries_generated || []).length > 0, true);
+    const profileEvent = events.find((event) => event.name === 'search_profile_generated');
+    assert.equal(Boolean(profileEvent), true, 'expected deterministic search profile event');
+    assert.equal(profileEvent?.payload?.source, 'deterministic');
+    assert.equal(Array.isArray(profileEvent?.payload?.query_rows), true);
+    assert.equal((profileEvent?.payload?.query_rows || []).length > 0, true);
   } finally {
-    global.fetch = originalFetch;
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
@@ -226,7 +212,8 @@ test('discoverCandidateSources resolves brand from cache via deterministic path'
       runId: 'run-brand-cache-llm-off',
       logger,
       planningHints: {},
-      llmContext: {}
+      llmContext: {},
+      _runSearchProvidersFn: async () => []
     });
 
     const brandEvent = events.find((event) => event.name === 'brand_resolved');
@@ -244,8 +231,7 @@ test('discoverCandidateSources emits deterministic triage and domain-classifier 
   const config = makeConfig(tempRoot, {
     discoveryMaxQueries: 2,
     discoveryQueryConcurrency: 1,
-    searchEngines: 'bing,startpage,duckduckgo',
-    serpTriageEnabled: true,
+    searchEngines: 'bing,google-proxy,duckduckgo',
   });
   const storage = createStorage(config);
   const categoryConfig = {
@@ -306,7 +292,7 @@ test('discoverCandidateSources emits deterministic triage and domain-classifier 
       llmContext: {}
     });
 
-    // WHY: The LLM triage block no longer emits serp_triage_completed on the
+    // WHY: The LLM triage block no longer emits serp_selector_completed on the
     // deterministic path. Lane-quota selection replaced it. The pipeline now
     // emits discovery_results_reranked after lane selection.
     const rerankedEvent = events.find((event) => event.name === 'discovery_results_reranked');
@@ -445,7 +431,7 @@ test('discoverCandidateSources uses deterministic domain classification exclusiv
 test('discoverCandidateSources emits plan-only search result events when internet provider is unavailable', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-plan-only-events-'));
   const config = makeConfig(tempRoot, {
-    searchEngines: 'google',
+    searchEngines: '',
     googleCseKey: '',
     googleCseCx: '',
     searxngBaseUrl: ''
@@ -516,22 +502,6 @@ test('discoverCandidateSources returns provider diagnostics for dual mode fallba
   };
   const job = makeJob();
 
-  const originalFetch = global.fetch;
-  global.fetch = async () => ({
-    ok: true,
-    async json() {
-      return {
-        results: [
-          {
-            url: 'https://www.rtings.com/mouse/reviews/hyperx/pulsefire-haste-2-core-wireless',
-            title: 'HyperX Pulsefire Haste 2 Core Wireless',
-            content: 'Specs and measurements'
-          }
-        ]
-      };
-    }
-  });
-
   try {
     const result = await discoverCandidateSources({
       config,
@@ -541,14 +511,21 @@ test('discoverCandidateSources returns provider diagnostics for dual mode fallba
       runId: 'run-provider-diag',
       logger: null,
       planningHints: {},
-      llmContext: {}
+      llmContext: {},
+      _runSearchProvidersFn: async () => [
+        {
+          url: 'https://www.rtings.com/mouse/reviews/hyperx/pulsefire-haste-2-core-wireless',
+          title: 'HyperX Pulsefire Haste 2 Core Wireless',
+          snippet: 'Specs and measurements',
+          provider: 'bing'
+        }
+      ]
     });
 
     assert.equal(result.provider_state?.internet_ready, true);
     assert.equal(Object.hasOwn(result.provider_state || {}, 'google_missing_credentials'), false);
     assert.equal(Object.hasOwn(result.provider_state || {}, 'bing_missing_credentials'), false);
   } finally {
-    global.fetch = originalFetch;
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
@@ -556,7 +533,7 @@ test('discoverCandidateSources returns provider diagnostics for dual mode fallba
 test('discoverCandidateSources filters low-signal review URLs (rss/opensearch/search pages)', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-relevance-filter-'));
   const config = makeConfig(tempRoot, {
-    searchEngines: 'bing,startpage,duckduckgo'
+    searchEngines: 'bing,google-proxy,duckduckgo'
   });
   const storage = createStorage(config);
   const categoryConfig = {

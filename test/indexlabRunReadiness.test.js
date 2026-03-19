@@ -203,6 +203,8 @@ test('listIndexLabRuns includes relocated local runs after source indexlab direc
     assert.equal(relocated.category, category);
     assert.equal(relocated.product_id, productId);
     assert.equal(relocated.has_needset, true);
+    assert.equal(relocated.storage_origin, 'local');
+    assert.match(String(relocated.picker_label || ''), /Mouse/i);
     assert.equal(
       String(relocated.run_dir || '').includes(path.join(category, productId, runId, 'indexlab')),
       true,
@@ -280,7 +282,137 @@ test('listIndexLabRuns includes relocated s3 runs after source indexlab director
     assert.equal(relocated.category, category);
     assert.equal(relocated.product_id, productId);
     assert.equal(relocated.has_needset, true);
+    assert.equal(relocated.storage_origin, 's3');
+    assert.match(String(relocated.picker_label || ''), /Mouse/i);
     assert.equal(path.basename(String(relocated.run_dir || '')), 'indexlab');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('listIndexLabRuns applies category filtering before limit trimming so recent category runs are not hidden by other categories', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexlab-run-category-limit-'));
+  const indexLabRoot = path.join(tempRoot, 'indexlab');
+  const outputRoot = path.join(tempRoot, 'out');
+  await fs.mkdir(indexLabRoot, { recursive: true });
+  await fs.mkdir(outputRoot, { recursive: true });
+
+  await writeRun({
+    indexLabRoot,
+    runId: 'run-keyboard-newest',
+    startedAt: '2026-03-04T00:00:00.000Z',
+    withNeedset: true,
+    withSearchProfile: true,
+  });
+  await fs.writeFile(path.join(indexLabRoot, 'run-keyboard-newest', 'run.json'), `${JSON.stringify({
+    run_id: 'run-keyboard-newest',
+    category: 'keyboard',
+    product_id: 'keyboard-wooting-80he',
+    status: 'completed',
+    started_at: '2026-03-04T00:00:00.000Z',
+    ended_at: '2026-03-04T00:05:00.000Z',
+    counters: {
+      pages_checked: 0,
+      fetched_ok: 0,
+      fetched_404: 0,
+      fetched_blocked: 0,
+      fetched_error: 0,
+      parse_completed: 0,
+      indexed_docs: 0,
+      fields_filled: 0,
+    },
+  })}\n`, 'utf8');
+  await writeRun({
+    indexLabRoot,
+    runId: 'run-mouse-newest',
+    startedAt: '2026-03-03T00:00:00.000Z',
+    withNeedset: true,
+    withSearchProfile: true,
+  });
+  await fs.writeFile(path.join(indexLabRoot, 'run-mouse-newest', 'run.json'), `${JSON.stringify({
+    run_id: 'run-mouse-newest',
+    category: 'mouse',
+    product_id: 'mouse-razer-viper-v3-pro',
+    status: 'completed',
+    started_at: '2026-03-03T00:00:00.000Z',
+    ended_at: '2026-03-03T00:05:00.000Z',
+    counters: {
+      pages_checked: 0,
+      fetched_ok: 0,
+      fetched_404: 0,
+      fetched_blocked: 0,
+      fetched_error: 0,
+      parse_completed: 0,
+      indexed_docs: 0,
+      fields_filled: 0,
+    },
+  })}\n`, 'utf8');
+  await writeRun({
+    indexLabRoot,
+    runId: 'run-keyboard-second',
+    startedAt: '2026-03-02T00:00:00.000Z',
+    withNeedset: true,
+    withSearchProfile: true,
+  });
+  await fs.writeFile(path.join(indexLabRoot, 'run-keyboard-second', 'run.json'), `${JSON.stringify({
+    run_id: 'run-keyboard-second',
+    category: 'keyboard',
+    product_id: 'keyboard-logitech-g915',
+    status: 'completed',
+    started_at: '2026-03-02T00:00:00.000Z',
+    ended_at: '2026-03-02T00:05:00.000Z',
+    counters: {
+      pages_checked: 0,
+      fetched_ok: 0,
+      fetched_404: 0,
+      fetched_blocked: 0,
+      fetched_error: 0,
+      parse_completed: 0,
+      indexed_docs: 0,
+      fields_filled: 0,
+    },
+  })}\n`, 'utf8');
+  await writeRun({
+    indexLabRoot,
+    runId: 'run-mouse-second',
+    startedAt: '2026-03-01T00:00:00.000Z',
+    withNeedset: true,
+    withSearchProfile: true,
+  });
+  await fs.writeFile(path.join(indexLabRoot, 'run-mouse-second', 'run.json'), `${JSON.stringify({
+    run_id: 'run-mouse-second',
+    category: 'mouse',
+    product_id: 'mouse-logitech-g-pro-x-superlight-2',
+    status: 'completed',
+    started_at: '2026-03-01T00:00:00.000Z',
+    ended_at: '2026-03-01T00:05:00.000Z',
+    counters: {
+      pages_checked: 0,
+      fetched_ok: 0,
+      fetched_404: 0,
+      fetched_blocked: 0,
+      fetched_error: 0,
+      parse_completed: 0,
+      indexed_docs: 0,
+      fields_filled: 0,
+    },
+  })}\n`, 'utf8');
+
+  try {
+    initIndexLabDataBuilders({
+      indexLabRoot,
+      outputRoot,
+      storage: storageStub(),
+      config: {},
+      getSpecDbReady: () => false,
+      isProcessRunning: () => false,
+    });
+
+    const rows = await listIndexLabRuns({ limit: 2, category: 'mouse' });
+    assert.deepEqual(
+      rows.map((row) => row.run_id),
+      ['run-mouse-newest', 'run-mouse-second'],
+    );
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

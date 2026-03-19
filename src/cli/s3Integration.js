@@ -10,7 +10,7 @@ import {
   GetObjectCommand,
   GetObjectAclCommand
 } from '@aws-sdk/client-s3';
-import { loadConfig } from '../config.js';
+import { loadConfigWithUserSettings } from '../config.js';
 import { parseArgs, asBool } from './args.js';
 import { createStorage, toPosixKey } from '../s3/storage.js';
 import { runProduct } from '../pipeline/runProduct.js';
@@ -70,7 +70,7 @@ function assertNoPublicGrant(acl) {
 export async function runS3Integration(argv = process.argv.slice(2)) {
   const args = parseArgs(argv);
 
-  const config = loadConfig({
+  const config = loadConfigWithUserSettings({
     localMode: false,
     dryRun: asBool(args['dry-run'], false),
     writeMarkdownSummary: asBool(args['write-md'], true)

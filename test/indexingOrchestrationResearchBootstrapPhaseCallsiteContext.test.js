@@ -4,7 +4,7 @@ import { buildResearchBootstrapPhaseCallsiteContext } from '../src/features/inde
 
 test('buildResearchBootstrapPhaseCallsiteContext maps runProduct research-bootstrap callsite inputs to context keys', () => {
   const storage = { marker: 'storage' };
-  const config = { frontierEnableSqlite: true };
+  const config = {};
   const logger = { marker: 'logger' };
   const createFrontier = () => ({ load: async () => {} });
   const createUberAggressiveOrchestrator = (options) => ({ options });

@@ -248,8 +248,8 @@ export async function rerankSerpResults({
     const result = await callLlmWithRouting({
       config,
       reason: 'uber_serp_reranker',
-      role: 'plan',
-      phase: 'serpTriage',
+      role: 'triage',
+      phase: 'serpSelector',
       system: [
         'You rerank search results for evidence-first hardware spec extraction.',
         'Return strict JSON only.',
@@ -278,7 +278,6 @@ export async function rerankSerpResults({
           await llmContext.recordUsage(usageRow);
         }
       },
-      reasoningMode: false,
       timeoutMs: config.llmTimeoutMs || config.openaiTimeoutMs,
       logger
     });

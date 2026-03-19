@@ -2,7 +2,7 @@ import { normalizeWhitespace } from '../../../utils/common.js';
 import { normalizeFieldList } from '../../../utils/fieldKeys.js';
 import { buildFieldBatches, resolveBatchModel } from './fieldBatching.js';
 import { LLMCache } from '../../../core/llm/client/llmCache.js';
-import { hasAnyLlmApiKey } from '../../../core/llm/client/routing.js';
+import { hasAnyLlmApiKey, resolvePhaseModel } from '../../../core/llm/client/routing.js';
 import { prepareBatchPromptContext } from './batchPromptContext.js';
 import {
   selectBatchEvidence,
@@ -196,35 +196,11 @@ export async function extractCandidatesLLM({
       difficulty: { easy: 0, medium: effectiveFieldOrder.length, hard: 0, instrumented: 0 }
     }];
 
-  const budgetGuard = llmContext?.budgetGuard;
-  const startDecision = budgetGuard?.canCall({
-    reason: 'extract',
-    essential: false
-  }) || { allowed: true };
-  if (!startDecision.allowed) {
-    budgetGuard?.block?.(startDecision.reason);
-    logger?.warn?.('llm_extract_skipped_budget', {
-      reason: startDecision.reason,
-      productId: job.productId
-    });
-    return {
-      identityCandidates: {},
-      fieldCandidates: [],
-      conflicts: [],
-      notes: ['LLM extraction skipped by budget guard'],
-      phase08: createEmptyPhase08()
-    };
-  }
-
-  const cacheEnabled = Boolean(config.llmExtractionCacheEnabled);
-  const cache = cacheEnabled
-    ? new LLMCache({
+  const cache = new LLMCache({
       specDb,
       cacheDir: config.llmExtractionCacheDir || '.specfactory_tmp/llm_cache',
-      defaultTtlMs: Number(config.llmExtractionCacheTtlMs || 7 * 24 * 60 * 60 * 1000),
-      cacheJsonWrite: Boolean(config.cacheJsonWrite)
-    })
-    : null;
+      defaultTtlMs: Number(config.llmExtractionCacheTtlMs || 7 * 24 * 60 * 60 * 1000)
+    });
   let cacheHits = 0;
   const routeMatrixPolicy = llmContext?.route_matrix_policy || llmContext?.routeMatrixPolicy || null;
 
@@ -237,8 +213,7 @@ export async function extractCandidatesLLM({
       category: job.category || categoryConfig.category || ''
     },
     llmContext,
-    evidencePack,
-    budgetGuard
+    evidencePack
   });
 
   try {
@@ -257,38 +232,6 @@ export async function extractCandidatesLLM({
         fieldOrder: effectiveFieldOrder
       });
       if (!batchFields.length) {
-        continue;
-      }
-
-      const canCall = budgetGuard?.canCall({
-        reason: `extract_batch:${batch.id}`,
-        essential: false
-      }) || { allowed: true };
-      if (!canCall.allowed) {
-        budgetGuard?.block?.(canCall.reason);
-        logger?.warn?.('llm_extract_batch_skipped_budget', {
-          productId: job.productId,
-          batch: batch.id,
-          reason: canCall.reason
-        });
-        aggregateNotes.push(`Batch ${batch.id} skipped by budget guard.`);
-        phase08BatchRows.push({
-          batch_id: String(batch.id || ''),
-          status: 'skipped_budget',
-          route_reason: 'budget_guard',
-          model: '',
-          target_field_count: batchFields.length,
-          snippet_count: 0,
-          reference_count: 0,
-          raw_candidate_count: 0,
-          accepted_candidate_count: 0,
-          dropped_missing_refs: 0,
-          dropped_invalid_refs: 0,
-          dropped_evidence_verifier: 0,
-          min_refs_satisfied_count: 0,
-          min_refs_total: 0,
-          elapsed_ms: Math.max(0, Date.now() - batchStartedAt)
-        });
         continue;
       }
 
@@ -336,8 +279,8 @@ export async function extractCandidatesLLM({
       const effectiveReasoningMode = phaseReasoningForced || modelRoute.reasoningMode;
       const model = routePrimaryModel || (
         effectiveReasoningMode
-          ? (config._resolvedExtractionReasoningModel || config.llmModelReasoning || config._resolvedExtractionBaseModel || config.llmModelPlan || modelRoute.model)
-          : (config._resolvedExtractionBaseModel || modelRoute.model || config.llmModelPlan)
+          ? (resolvePhaseModel(config, 'extraction') || config.llmModelReasoning || modelRoute.model)
+          : (resolvePhaseModel(config, 'extraction') || modelRoute.model || config.llmModelPlan)
       );
       // WHY: Phase override token cap takes precedence, then route policy, then batch model route
       const phaseMaxTokens = Math.max(0, Number(config._resolvedExtractionMaxOutputTokens || 0));
@@ -434,7 +377,7 @@ export async function extractCandidatesLLM({
       const repatchEnabled = Boolean(batchRoutePolicy?.all_sources_confidence_repatch);
       const repatchModel = String(
         routeModels[1]
-          || (effectiveReasoningMode ? '' : (config._resolvedExtractionReasoningModel || config.llmModelReasoning || ''))
+          || (effectiveReasoningMode ? '' : (resolvePhaseModel(config, 'extraction') || config.llmModelReasoning || ''))
       ).trim();
       const repatchReason = `${modelRoute.reason}_repatch`;
       const primaryRequest = {
@@ -468,7 +411,6 @@ export async function extractCandidatesLLM({
           productId: job.productId || '',
           cache,
           cacheKey,
-          budgetGuard,
           providerPinEnabled: Boolean(config.llmForceRoleModelProvider),
           logger,
           invokeModel,
@@ -585,7 +527,6 @@ export async function extractCandidatesLLM({
         knownValuesFlat,
         goldenExamples,
         routeMatrixPolicy,
-        budgetGuard,
         invokeModel,
         hasKnownValueFn: hasKnownValue,
         resolveBatchRoutePolicyFn: resolveBatchRoutePolicy
@@ -596,7 +537,7 @@ export async function extractCandidatesLLM({
     }
 
     logger?.info?.('llm_extract_completed', {
-      model: config.llmModelPlan,
+      model: resolvePhaseModel(config, 'extraction') || config.llmModelPlan,
       candidate_count: primary.fieldCandidates.length,
       conflict_count: primary.conflicts.length,
       batch_count: usableBatches.length,

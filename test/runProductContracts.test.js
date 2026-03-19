@@ -2,26 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  buildInitialLlmBudgetState,
   enqueueAdapterSeedUrls,
   resolveScreencastCallback,
   createRunProductFetcherFactory,
 } from '../src/features/indexing/orchestration/shared/runProductContracts.js';
-
-test('runProduct contract helpers keep monthly budget carry-over while zeroing per-product counters', () => {
-  assert.deepEqual(
-    buildInitialLlmBudgetState({
-      monthly_cost_usd: 12.5,
-      product_cost_usd: 999,
-      product_calls: 123,
-    }),
-    {
-      monthlySpentUsd: 12.5,
-      productSpentUsd: 0,
-      productCallsTotal: 0,
-    },
-  );
-});
 
 test('runProduct contract helpers enqueue adapter seeds with adapter_seed priority', () => {
   const calls = [];

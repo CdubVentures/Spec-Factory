@@ -82,60 +82,6 @@ export const RuntimeFlowObservabilitySection = memo(function RuntimeFlowObservab
         </SettingGroupBlock>
         {traceControlsLocked ? renderDisabledHint('Trace ring and payload controls are disabled because Runtime Trace is OFF.') : null}
 
-        <div id={runtimeSubStepDomId('observability-trace-outputs')} className="scroll-mt-24" />
-        <SettingGroupBlock title="Data Streams">
-          <SettingRow label="Authority Snapshot Enabled" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: settings and authority propagation diagnostics.\nWhat this controls: whether authority snapshot payloads are emitted for cross-surface debugging.`}>
-            <SettingToggle
-              checked={runtimeDraft.authoritySnapshotEnabled}
-              onChange={(next) => updateDraft('authoritySnapshotEnabled', next)}
-              disabled={!runtimeSettingsReady}
-            />
-          </SettingRow>
-          <AdvancedSettingsBlock title="Dual-Write Toggles" count={6}>
-            <SettingRow label="Queue JSON Write" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: queue persistence diagnostics.\nWhat this controls: whether queue data is dual-written to JSON for migration safety.`}>
-              <SettingToggle
-                checked={runtimeDraft.queueJsonWrite}
-                onChange={(next) => updateDraft('queueJsonWrite', next)}
-                disabled={!runtimeSettingsReady}
-              />
-            </SettingRow>
-            <SettingRow label="Billing JSON Write" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: billing persistence diagnostics.\nWhat this controls: whether billing data is dual-written to JSON for migration safety.`}>
-              <SettingToggle
-                checked={runtimeDraft.billingJsonWrite}
-                onChange={(next) => updateDraft('billingJsonWrite', next)}
-                disabled={!runtimeSettingsReady}
-              />
-            </SettingRow>
-            <SettingRow label="Intel JSON Write" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: discovery-intel persistence diagnostics.\nWhat this controls: whether discovery intel data is dual-written to JSON for migration safety.`}>
-              <SettingToggle
-                checked={runtimeDraft.intelJsonWrite}
-                onChange={(next) => updateDraft('intelJsonWrite', next)}
-                disabled={!runtimeSettingsReady}
-              />
-            </SettingRow>
-            <SettingRow label="Corpus JSON Write" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: corpus and evidence persistence diagnostics.\nWhat this controls: whether corpus and evidence data are dual-written to JSON for migration safety.`}>
-              <SettingToggle
-                checked={runtimeDraft.corpusJsonWrite}
-                onChange={(next) => updateDraft('corpusJsonWrite', next)}
-                disabled={!runtimeSettingsReady}
-              />
-            </SettingRow>
-            <SettingRow label="Learning JSON Write" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: learning-store persistence diagnostics.\nWhat this controls: whether learning-store data is dual-written to JSON for migration safety.`}>
-              <SettingToggle
-                checked={runtimeDraft.learningJsonWrite}
-                onChange={(next) => updateDraft('learningJsonWrite', next)}
-                disabled={!runtimeSettingsReady}
-              />
-            </SettingRow>
-            <SettingRow label="Cache JSON Write" tip={`${OBSERVABILITY_PHASE_TIP}\nLives in: cache persistence diagnostics.\nWhat this controls: whether cache data is dual-written to JSON for migration safety.`}>
-              <SettingToggle
-                checked={runtimeDraft.cacheJsonWrite}
-                onChange={(next) => updateDraft('cacheJsonWrite', next)}
-                disabled={!runtimeSettingsReady}
-              />
-            </SettingRow>
-          </AdvancedSettingsBlock>
-        </SettingGroupBlock>
 
         <div id={runtimeSubStepDomId('observability-trace-video')} className="scroll-mt-24" />
         <SettingGroupBlock title="Video Capture">

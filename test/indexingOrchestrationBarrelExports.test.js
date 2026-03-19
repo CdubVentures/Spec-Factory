@@ -230,7 +230,7 @@ const SHARED_SAMPLE_EXPORTS = [
   'loadRouteMatrixPolicyForRun', 'resolveRuntimeControlKey',
   'resolveIndexingResumeKey', 'defaultRuntimeOverrides',
   'normalizeRuntimeOverrides', 'applyRuntimeOverridesToPlanner',
-  'buildInitialLlmBudgetState', 'enqueueAdapterSeedUrls',
+  'enqueueAdapterSeedUrls',
   'resolveScreencastCallback', 'createRunProductFetcherFactory',
   'buildIndexlabRuntimeCategoryConfig',
   'markSatisfiedLlmFields', 'isAnchorLocked',

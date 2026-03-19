@@ -33,7 +33,6 @@ export function buildProductFinalizationPipelineContracts({ context = {} } = {})
     identityLock: context.identityLock,
     learnedFieldAvailability: context.learnedFieldAvailability,
     learnedFieldYield: context.learnedFieldYield,
-    llmBudgetGuard: context.llmBudgetGuard,
     phase08BatchRows: context.phase08BatchRows,
     phase08FieldContexts: context.phase08FieldContexts,
     phase08PrimeRows: context.phase08PrimeRows,
@@ -65,7 +64,6 @@ export function buildProductFinalizationPipelineContracts({ context = {} } = {})
 
   const summary = freezeContract({
     llmRuntime: context.llmRuntime,
-    llmBudgetGuard: context.llmBudgetGuard,
     productId: context.productId,
     runId: context.runId,
     category: context.category,

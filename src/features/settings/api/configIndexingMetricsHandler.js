@@ -61,7 +61,7 @@ export function createIndexingMetricsHandler({
         fallback_defaults: fallbackDefaults,
         routing_snapshot: llmRoutingSnapshot(config),
         resolved_api_keys: {
-          geminiApiKey: String(config.geminiApiKey || config.llmPlanApiKey || '').trim(),
+          geminiApiKey: String(config.geminiApiKey || '').trim(),
           deepseekApiKey: String(config.deepseekApiKey || '').trim(),
           anthropicApiKey: String(config.anthropicApiKey || '').trim(),
           openaiApiKey: String(config.openaiApiKey || '').trim(),

@@ -1,6 +1,6 @@
 import { type RuntimeSettingDefaults } from '../../../stores/settingsManifest';
 
-export const SEARXNG_ENGINE_OPTIONS = ['google', 'bing', 'startpage', 'duckduckgo', 'brave'] as const;
+export const SEARXNG_ENGINE_OPTIONS = ['google', 'bing', 'google-proxy', 'duckduckgo', 'brave'] as const;
 export const OCR_BACKEND_OPTIONS = ['auto', 'tesseract', 'none'] as const;
 export const RESUME_MODE_OPTIONS = ['auto', 'force_resume', 'start_over'] as const;
 export const REPAIR_DEDUPE_RULE_OPTIONS = ['domain_once', 'domain_and_status', 'none'] as const;
@@ -109,7 +109,10 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   | 'llmMaxOutputTokensReasoningFallback'
   | 'resumeWindowHours'
   | 'reextractAfterHours'
-  | 'fetchBudgetMs',
+  | 'fetchBudgetMs'
+  | 'googleSearchTimeoutMs'
+  | 'googleSearchMinQueryIntervalMs'
+  | 'googleSearchMaxRetries',
   NumberBound
 > = {
   fetchBudgetMs: { min: 5000, max: 300_000, int: true },
@@ -209,6 +212,9 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   reextractAfterHours: { min: 0, max: 8_760, int: true },
   reCrawlStaleAfterDays: { min: 1, max: 3650, int: true },
   llmMaxOutputTokensReasoningFallback: { min: 128, max: 262_144, int: true },
+  googleSearchTimeoutMs: { min: 30_000, max: 120_000, int: true },
+  googleSearchMinQueryIntervalMs: { min: 0, max: 60_000, int: true },
+  googleSearchMaxRetries: { min: 0, max: 3, int: true },
 };
 
 export function toRuntimeDraft(defaults: RuntimeSettingDefaults): RuntimeDraft {

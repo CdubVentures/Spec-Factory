@@ -235,17 +235,17 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
   if (!hasStructured && calls.length === 0) {
     return (
       <div className="flex flex-col gap-5 p-5 overflow-y-auto flex-1">
-        <h3 className="text-sm font-semibold sf-text-primary">SERP Triage</h3>
+        <h3 className="text-sm font-semibold sf-text-primary">SERP Selector</h3>
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
         <div className="flex flex-col items-center gap-3 py-12 text-center">
           <div className="text-3xl opacity-60">&#9878;</div>
-          <div className="text-sm font-medium sf-text-muted">Waiting for SERP triage</div>
+          <div className="text-sm font-medium sf-text-muted">Waiting for SERP selection</div>
           <p className="max-w-md leading-relaxed sf-text-caption sf-text-subtle">
-            Triage results will appear after search result candidates are scored and ranked.
-            Each URL is evaluated for relevance, expected field coverage, and source tier quality before deciding keep or drop.
-            Starts with deterministic heuristics — escalates to LLM if quality gate is not met.
+            Selection results will appear after search result candidates are sent to the LLM selector.
+            Each URL is classified as approved (fetch now), candidate (backup), or reject (skip)
+            based on product identity match, source authority, and field coverage signals.
           </p>
-          <Chip label="Deterministic" className="sf-chip-neutral" />
+          <Chip label="LLM Selector" className="sf-chip-warning" />
         </div>
       </div>
     );
@@ -258,19 +258,19 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
       <div className="sf-surface-elevated rounded-sm border sf-border-soft px-7 py-6 space-y-5">
         <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
           <div className="flex items-baseline gap-3">
-            <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">SERP Triage</span>
-            <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Relevance Scoring</span>
+            <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">SERP Selector</span>
+            <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; URL Selection</span>
             <Chip label={overallStatus.toUpperCase()} className={overallStatus === 'done' ? 'sf-chip-success' : overallStatus === 'error' ? 'sf-chip-danger' : 'sf-chip-neutral'} />
           </div>
           <div className="flex items-center gap-2">
-            <Chip label={calls.length > 0 ? 'Deterministic + LLM' : 'Deterministic'} className={calls.length > 0 ? 'sf-chip-warning' : 'sf-chip-neutral'} />
+            <Chip label="LLM Selector" className="sf-chip-warning" />
             {calls.length > 0 && calls[0].model && (
               <Chip label={calls[0].model} className="sf-chip-neutral" />
             )}
             {calls.length > 0 && calls[0].provider && (
               <Chip label={calls[0].provider} className="sf-chip-accent" />
             )}
-            <Tip text="SERP Triage scores and ranks search result candidates. Starts with deterministic heuristic reranking — escalates to LLM if the quality gate is not met." />
+            <Tip text="LLM-based URL selector that decides which search results are worth fetching. Classifies each URL as approved (fetch now), candidate (backup), or reject (skip)." />
           </div>
         </div>
 
@@ -678,7 +678,7 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
       {hasStructured && (
         <details className="text-xs">
           <summary className="cursor-pointer sf-summary-toggle flex items-baseline gap-2 pb-1.5 border-b border-dashed sf-border-soft select-none">
-            <span className="text-[10px] font-semibold font-mono sf-text-subtle tracking-[0.04em] uppercase">debug &middot; raw serp triage json</span>
+            <span className="text-[10px] font-semibold font-mono sf-text-subtle tracking-[0.04em] uppercase">debug &middot; raw serp selector json</span>
           </summary>
           <pre className="mt-3 sf-pre-block text-xs font-mono rounded-sm p-4 overflow-x-auto overflow-y-auto max-h-[25rem] whitespace-pre-wrap break-all">
             {JSON.stringify(triage, null, 2)}

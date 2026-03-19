@@ -1,40 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
-import { fileURLToPath } from 'node:url';
+import { loadBundledModule } from './helpers/loadBundledModule.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-async function loadRuntimeIdxBadgeStripModule() {
-  const esbuild = await import('esbuild');
-  const srcPath = path.resolve(
-    __dirname,
-    '..',
-    'tools',
-    'gui-react',
-    'src',
-    'features',
-    'runtime-ops',
-    'components',
-    'RuntimeIdxBadgeStrip.tsx',
-  );
-  const result = await esbuild.build({
-    entryPoints: [srcPath],
-    bundle: true,
-    write: false,
-    format: 'esm',
-    platform: 'node',
-    loader: { '.ts': 'ts', '.tsx': 'tsx' },
+function loadRuntimeIdxBadgeStripModule() {
+  return loadBundledModule('tools/gui-react/src/features/runtime-ops/components/RuntimeIdxBadgeStrip.tsx', {
+    prefix: 'runtime-idx-badge-strip-',
   });
-  const code = result.outputFiles[0].text;
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-idx-badge-strip-'));
-  const tmpFile = path.join(tmpDir, 'runtimeIdxBadgeStrip.mjs');
-  fs.writeFileSync(tmpFile, code, 'utf8');
-  const mod = await import(`file://${tmpFile.replace(/\\/g, '/')}?v=${Date.now()}-${Math.random()}`);
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-  return mod;
 }
 
 function flattenNodes(node, acc = []) {

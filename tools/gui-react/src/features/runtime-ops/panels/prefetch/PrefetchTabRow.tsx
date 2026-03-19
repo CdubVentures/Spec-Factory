@@ -62,12 +62,12 @@ const TABS: { key: PrefetchTabKey; label: string; markerClass: string; idleClass
     tip: 'Raw results returned by configured providers for each query.\nSupports Google, Bing, SearXNG, and Dual mode, including provider usage counts.',
   },
   {
-    key: 'serp_triage',
-    label: 'SERP Triage',
-    markerClass: 'sf-prefetch-dot-info',
-    idleClass: 'sf-prefetch-tab-idle-info',
-    outlineClass: 'sf-prefetch-tab-outline-info',
-    tip: 'Scores and filters every search result before fetching.\nStarts with deterministic heuristics — escalates to LLM if quality gate is not met.',
+    key: 'serp_selector',
+    label: 'SERP Selector',
+    markerClass: 'sf-prefetch-dot-warning',
+    idleClass: 'sf-prefetch-tab-idle-warning',
+    outlineClass: 'sf-prefetch-tab-outline-warning',
+    tip: 'LLM-based URL selector that decides which search results are worth fetching.\nClassifies each URL as approved (fetch now), candidate (backup), or reject (skip).',
   },
   {
     key: 'domain_classifier',

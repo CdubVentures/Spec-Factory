@@ -26,7 +26,7 @@ This log is supplemental. The canonical live definitions remain the source files
 - The previous maintenance log in this repo overstated the current settings inventory. The live snapshot is now `265` default leaves, not `277`.
 - The current config manifest exports `10` groups and `330` env-backed keys, not `358`.
 - The current pipeline-settings UI is organized around `RuntimeSettingsFlowCard` plus `RuntimeFlow*Section` files. Older ownership references such as `RuntimeFlowLlmCortexSection.tsx` and `RuntimeFlowPlannerTriageSection.tsx` are stale.
-- Earlier retirement-wave claims in older copies no longer describe the live tree. Current source still contains keys such as `structuredMetadataExtruct*` and `daemonGracefulShutdownTimeoutMs` in `src/shared/settingsDefaults.js`.
+- Earlier retirement-wave claims in older copies no longer describe the live tree. The `structuredMetadataExtruct*` settings have been fully retired (2026-03-18). `daemonGracefulShutdownTimeoutMs` remains in `src/shared/settingsDefaults.js`.
 
 ## Live Snapshot
 

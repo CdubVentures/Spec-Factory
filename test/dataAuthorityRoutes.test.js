@@ -8,9 +8,7 @@ import { emitDataChange } from '../src/api/events/dataChangeContract.js';
 function makeCtx(overrides = {}) {
   const ctx = {
     jsonRes: (_res, status, body) => ({ status, body }),
-    config: {
-      authoritySnapshotEnabled: true,
-    },
+    config: {},
     sessionCache: {
       getSessionRules: async () => ({
         compiledAt: '2026-02-23T11:00:00.000Z',
@@ -95,20 +93,3 @@ test('data authority snapshot falls back to unknown sync state when specdb is un
   assert.deepEqual(result.body.changed_domains, ['mapping', 'review-layout', 'studio']);
 });
 
-test('data authority routes return false when feature flag is disabled', async () => {
-  const handler = registerDataAuthorityRoutes(makeCtx({
-    config: {
-      authoritySnapshotEnabled: false,
-    },
-  }));
-
-  const result = await handler(
-    ['data-authority', 'mouse', 'snapshot'],
-    new URLSearchParams(),
-    'GET',
-    {},
-    {},
-  );
-
-  assert.equal(result, false);
-});

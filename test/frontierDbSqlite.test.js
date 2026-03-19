@@ -400,22 +400,12 @@ test('A.2 url canon: tracking params are stripped for deduplication', async () =
 //   FrontierDbSqlite, they serve as interface documentation.
 // =========================================================================
 
-test('A.2 sqlite: factory should return JSON db when frontierEnableSqlite=false', async () => {
+test('A.2 factory: createFrontier returns FrontierDb (fallback when SQLite unavailable)', async () => {
   const storage = createStorage();
   const db = createFrontier({
     storage,
     key: FRONTIER_KEY,
-    config: { frontierEnableSqlite: false }
-  });
-  assert.ok(db instanceof FrontierDb);
-});
-
-test('A.2 factory: createFrontier returns FrontierDb even when sqlite=true (fallback)', async () => {
-  const storage = createStorage();
-  const db = createFrontier({
-    storage,
-    key: FRONTIER_KEY,
-    config: { frontierEnableSqlite: true }
+    config: {}
   });
   // Until SQLite is implemented, factory falls back to JSON FrontierDb
   assert.ok(db instanceof FrontierDb);

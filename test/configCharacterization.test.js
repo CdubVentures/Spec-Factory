@@ -27,11 +27,6 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   assert.equal(cfg.discoveryEnabled, true);
   assert.equal(cfg.fetchCandidateSources, true);
 
-  // Hardcoded invariants — must always be true
-  assert.equal(cfg.serpTriageEnabled, true);
-  // WHY: llmSerpRerankEnabled removed — LLM escalation gated by serpTriageEnabled + uberMode only
-  assert.equal(cfg.enableSchema4SearchPlan, true);
-
   // Concurrency / fetch defaults
   assert.equal(typeof cfg.concurrency, 'number');
   assert.equal(typeof cfg.perHostMinDelayMs, 'number');
@@ -59,7 +54,6 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   // LLM budget defaults
   assert.equal(typeof cfg.llmMonthlyBudgetUsd, 'number');
   assert.equal(typeof cfg.llmPerProductBudgetUsd, 'number');
-  assert.equal(cfg.llmDisableBudgetGuards, false);
 
   // Token map defaults (per-role token caps retired — only plan + reasoning)
   assert.equal(typeof cfg.llmMaxOutputTokens, 'number');
@@ -300,7 +294,7 @@ test('CHAR validate: default config is valid', () => {
   assert.equal(result.errors.length, 0);
 });
 
-test('CHAR validate: all 4 validation rules produce correct codes', () => {
+test('CHAR validate: all 3 validation rules produce correct codes', () => {
   // Rule 1: LLM_NO_API_KEY (warning)
   const r1 = validateConfig(loadConfig({ llmApiKey: '' }));
   assert.ok(r1.warnings.some(w => w.code === 'LLM_NO_API_KEY'));
@@ -312,10 +306,6 @@ test('CHAR validate: all 4 validation rules produce correct codes', () => {
   // Rule 3: S3_MODE_NO_CREDS (warning)
   const r3 = validateConfig({ outputMode: 's3', mirrorToS3: false });
   assert.ok(r3.warnings.some(w => w.code === 'S3_MODE_NO_CREDS'));
-
-  // Rule 4: BUDGET_GUARDS_DISABLED (warning)
-  const r4 = validateConfig(loadConfig({ llmDisableBudgetGuards: true }));
-  assert.ok(r4.warnings.some(w => w.code === 'BUDGET_GUARDS_DISABLED'));
 });
 
 test('CHAR validate: return shape is { valid, errors, warnings }', () => {
@@ -572,7 +562,7 @@ test('token cap aliasing: per-role fallback token cap keys are removed from conf
 // SECTION 21: PHASE_DEFS — all phases use llmPlanUseReasoning
 // =========================================================================
 
-test('PHASE_DEFS: triage phases (brandResolver, serpTriage) use llmPlanUseReasoning', () => {
+test('PHASE_DEFS: triage phases (brandResolver, serpSelector) use llmPlanUseReasoning', () => {
   const resolved = applyPostMergeNormalization(
     { ...SETTINGS_DEFAULTS },
     { llmPlanUseReasoning: true },
@@ -580,9 +570,8 @@ test('PHASE_DEFS: triage phases (brandResolver, serpTriage) use llmPlanUseReason
   );
   assert.equal(resolved._resolvedBrandResolverUseReasoning, true,
     'brandResolver must inherit from llmPlanUseReasoning');
-  assert.equal(resolved._resolvedSerpTriageUseReasoning, true,
-    'serpTriage must inherit from llmPlanUseReasoning');
-  // WHY: domainClassifier removed from PHASE_DEFS — now deterministic, no LLM
+  assert.equal(resolved._resolvedSerpSelectorUseReasoning, true,
+    'serpSelector must inherit from llmPlanUseReasoning');
 });
 
 test('PHASE_DEFS: all phases resolve baseModel to llmModelPlan', () => {
@@ -592,7 +581,7 @@ test('PHASE_DEFS: all phases resolve baseModel to llmModelPlan', () => {
     new Set(),
   );
   const phases = [
-    'Needset', 'SearchPlanner', 'BrandResolver', 'SerpTriage',
+    'Needset', 'SearchPlanner', 'BrandResolver', 'SerpSelector',
     'Extraction', 'Validate', 'Write',
   ];
   for (const phase of phases) {

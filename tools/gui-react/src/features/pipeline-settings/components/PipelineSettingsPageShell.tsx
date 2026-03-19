@@ -23,7 +23,7 @@ const PIPELINE_SECTIONS: PipelineSection[] = [
     label: 'Runtime Flow',
     phase: '01-06',
     subtitle: 'Pipeline execution',
-    tip: 'Owns the knobs that feed 01 NeedSet, 02 Brand Resolver, 03 Search Profile, 04 Search Planner, 05 Query Journey, 06 Search Results, 07 SERP Triage, 08 Fetch and Parse Entry, and 09 Fetch To Extraction. Search Planner is precomputed early from NeedSet, Search Profile is the deterministic and fallback profile branch, and Query Journey decides which branch reaches execution. Use this section when you need to change how discovery, fetch, browser fallback, parsing, or OCR behave before consensus begins.',
+    tip: 'Owns the knobs that feed 01 NeedSet, 02 Brand Resolver, 03 Search Profile, 04 Search Planner, 05 Query Journey, 06 Search Results, 07 SERP Selector, 08 Fetch and Parse Entry, and 09 Fetch To Extraction. Search Planner is precomputed early from NeedSet, Search Profile is the deterministic and fallback profile branch, and Query Journey decides which branch reaches execution. Use this section when you need to change how discovery, fetch, browser fallback, parsing, or OCR behave before consensus begins.',
   },
   {
     // WHY: internal id kept as 'convergence' to avoid cross-file rename blast radius
@@ -31,7 +31,7 @@ const PIPELINE_SECTIONS: PipelineSection[] = [
     label: 'Scoring & Retrieval',
     phase: 'ALGO',
     subtitle: 'Consensus, SERP triage & retrieval weights',
-    tip: 'Owns late ranking and scoring policy around 07 SERP Triage plus 11 Identity Gating To Consensus and 12 Consensus To Validation. Use it when the pipeline is keeping the wrong URLs, admitting weak evidence, or choosing the wrong final value during consensus.',
+    tip: 'Owns late ranking and scoring policy around 07 SERP Selector plus 11 Identity Gating To Consensus and 12 Consensus To Validation. Use it when the pipeline is keeping the wrong URLs, admitting weak evidence, or choosing the wrong final value during consensus.',
   },
   {
     id: 'source-strategy',

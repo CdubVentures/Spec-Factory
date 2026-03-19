@@ -45,7 +45,7 @@ function createMockCtx(overrides = {}) {
         total_checks: 149, pass_count: 0, fail_count: 10, skip_count: 139
       }),
       buildEvidenceReport: (runData) => ({ run_id: null, scenario: null }),
-      buildEffectiveSettingsSnapshot: (config) => ({ ts: '2026-03-09T12:00:00.000Z', searchEngines: 'bing,startpage,duckduckgo' }),
+      buildEffectiveSettingsSnapshot: (config) => ({ ts: '2026-03-09T12:00:00.000Z', searchEngines: 'bing,google-proxy,duckduckgo' }),
       ...overrides
     },
     responses
@@ -80,5 +80,5 @@ test('GET /indexlab/live-crawl/settings-snapshot returns snapshot', async () => 
   await handler(['indexlab', 'live-crawl', 'settings-snapshot'], params, 'GET', {}, {});
   assert.equal(responses[0].status, 200);
   assert.ok(responses[0].body.ts);
-  assert.equal(responses[0].body.searchEngines, 'bing,startpage,duckduckgo');
+  assert.equal(responses[0].body.searchEngines, 'bing,google-proxy,duckduckgo');
 });

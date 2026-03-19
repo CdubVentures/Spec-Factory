@@ -43,12 +43,12 @@
       "sha256": "e106de3ea7509d9036cf6a6b606663ef6c39a298584822408823224c21696b94"
     },
     {
-      "bytes": 105278,
+      "bytes": 86290,
       "path": "ui_field_catalog.json",
-      "sha256": "e7f6f7a0521ec370bd2e0d2e46a990c7e4357076b8128f0401ed22475bbed7a1"
+      "sha256": "95d4c67ef3ffee012cb2c8e7d4ef7bbac4709a70f0dfde3093bb988ea2584d52"
     }
   ],
   "category": "keyboard",
-  "generated_at": "2026-03-16T05:55:10.182Z",
+  "generated_at": "2026-03-18T19:57:26.821Z",
   "version": 1
 }

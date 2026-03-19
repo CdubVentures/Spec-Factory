@@ -43,7 +43,7 @@ const TABLE = [
   {
     label: 'plan triage: triage cap under ceiling → triage cap',
     role: 'plan',
-    reason: 'serp_triage',
+    reason: 'serp_selector',
     isFallback: false,
     registryMaxOutput: 65536,
     configPlanCap: 4096,
@@ -100,7 +100,7 @@ const TABLE = [
   {
     label: 'plan triage: registry ceiling clamps triage cap',
     role: 'plan',
-    reason: 'serp_triage',
+    reason: 'serp_selector',
     isFallback: false,
     registryMaxOutput: 256,
     configPlanCap: 4096,

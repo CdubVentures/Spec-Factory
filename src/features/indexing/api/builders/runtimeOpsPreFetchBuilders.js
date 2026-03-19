@@ -3,8 +3,9 @@ import { toInt, toFloat, parseTsMs, eventType, payloadOf } from './runtimeOpsEve
 function classifyPrefetchLlmReason(reason) {
   const r = String(reason || '').trim().toLowerCase();
   if (r === 'brand_resolution') return 'brand_resolver';
+  if (r === 'needset_search_planner') return 'needset_planner';
   if (r.startsWith('discovery_planner')) return 'search_planner';
-  if (r.includes('triage') || r.includes('rerank') || r.includes('serp')) return 'serp_triage';
+  if (r.includes('triage') || r.includes('rerank') || r.includes('serp')) return 'serp_selector';
   if (r === 'domain_safety_classification') return 'domain_classifier';
   return null;
 }
@@ -35,8 +36,9 @@ export function buildPreFetchPhases(events, meta, artifacts) {
   const llmPending = {};
   const llmGroups = {
     brand_resolver: [],
+    needset_planner: [],
     search_planner: [],
-    serp_triage: [],
+    serp_selector: [],
     domain_classifier: [],
   };
 
@@ -45,6 +47,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
   const searchThrottleByQuery = {};
 
   let brandResolution = null;
+  let queryJourney = null;
   const searchPlans = [];
   const searchResultDetails = [];
   const serpTriage = [];
@@ -235,11 +238,24 @@ export function buildPreFetchPhases(events, meta, artifacts) {
       });
     }
 
+    if (type === 'query_journey_completed') {
+      queryJourney = {
+        selected_query_count: toInt(payload.selected_query_count, 0),
+        selected_queries: Array.isArray(payload.selected_queries) ? payload.selected_queries : [],
+        schema4_query_count: toInt(payload.schema4_query_count, 0),
+        deterministic_query_count: toInt(payload.deterministic_query_count, 0),
+        host_plan_query_count: toInt(payload.host_plan_query_count, 0),
+        rejected_count: toInt(payload.rejected_count, 0),
+      };
+    }
+
     if (type === 'search_results_collected') {
+      const _screenshotFilename = String(payload.screenshot_filename || '').trim();
       searchResultDetails.push({
         query: String(payload.query || '').trim(),
         provider: String(payload.provider || '').trim(),
         dedupe_count: toInt(payload.dedupe_count, 0),
+        ...(_screenshotFilename ? { screenshot_filename: _screenshotFilename } : {}),
         results: Array.isArray(payload.results) ? payload.results.map((r) => {
           const rawUrl = String(r?.url || '').trim();
           let domain = String(r?.domain || '').trim();
@@ -261,7 +277,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
       });
     }
 
-    if (type === 'serp_triage_completed') {
+    if (type === 'serp_selector_completed') {
       serpTriage.push({
         query: String(payload.query || '').trim(),
         kept_count: toInt(payload.kept_count, 0),
@@ -397,7 +413,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
         discovered_count: toInt(artProfile.discovered_count, 0),
         approved_count: toInt(artProfile.approved_count, 0),
         candidate_count: toInt(artProfile.candidate_count, 0),
-        llm_serp_triage: Boolean(artProfile.llm_serp_triage),
+        llm_serp_selector: Boolean(artProfile.llm_serp_selector),
         serp_explorer: artProfile.serp_explorer && typeof artProfile.serp_explorer === 'object' ? artProfile.serp_explorer : null,
       }
     : {
@@ -430,11 +446,11 @@ export function buildPreFetchPhases(events, meta, artifacts) {
         discovered_count: 0,
         approved_count: 0,
         candidate_count: 0,
-        llm_serp_triage: false,
+        llm_serp_selector: false,
         serp_explorer: null,
       };
 
-  // Enrich searchResultDetails with triage decisions from serp_triage_completed
+  // Enrich searchResultDetails with triage decisions from serp_selector_completed
   // where URLs overlap between raw SERP results and triage candidates.
   if (serpTriage.length > 0 && searchResultDetails.length > 0) {
     const triageLookup = {};
@@ -500,9 +516,10 @@ export function buildPreFetchPhases(events, meta, artifacts) {
       reasoning: Array.isArray(artBrand.reasoning) ? artBrand.reasoning : [],
     } : null),
     search_plans: searchPlans,
+    query_journey: queryJourney,
     search_result_details: searchResultDetails,
     cross_query_url_counts: buildCrossQueryUrlCounts(searchResultDetails),
-    serp_triage: serpTriage,
+    serp_selector: serpTriage,
     domain_health: domainHealth,
   };
 }

@@ -1,99 +1,44 @@
 {
-  "_doc": "Schema 1 (NeedSetStartInput) field-by-field data source mapping. Updated 2026-03-17 against current seed, discovery, bootstrap, and finalization call sites.",
-
-  "schema_version": "needset_start_input.v2 — input contract only. computeNeedSet() emits 'needset_output.v2'; Schema 1 itself is not emitted as a runtime artifact.",
-
-  "run": {
-    "run_id":     "SOURCE: seedRound0NeedSet() passes ''; bootstrapRunProductExecutionState.js, runDiscoverySeedPlan.js, and buildNeedsetReasoningContext.js pass the active runId.",
-    "category":   "SOURCE: job.category — passed at all 4 call sites",
-    "product_id": "SOURCE: job.productId || s3Key — passed at all 4 call sites",
-    "brand":      "SOURCE: job.identityLock?.brand || '' — passed from all main call sites",
-    "model":      "SOURCE: job.identityLock?.model || '' — passed from all main call sites",
-    "base_model": "RESOLVED: Passed by bootstrapRunProductExecutionState.js, runDiscoverySeedPlan.js, and buildNeedsetReasoningContext.js via identityLock/base model context.",
-    "aliases":    "RESOLVED: Passed by bootstrapRunProductExecutionState.js, runDiscoverySeedPlan.js, and buildNeedsetReasoningContext.js via job aliases or identityLock aliases.",
-    "round":      "SOURCE: seedRound0NeedSet() and bootstrapRunProductExecutionState.js pass 0; runDiscoverySeedPlan.js passes roundContext.round || 0; buildNeedsetReasoningContext.js omits it so computeNeedSet() defaults to 0.",
-    "round_mode": "SOURCE: seedRound0NeedSet() and bootstrapRunProductExecutionState.js pass 'seed'; runDiscoverySeedPlan.js passes roundContext.round_mode || 'seed'; buildNeedsetReasoningContext.js omits it so computeNeedSet() defaults to 'seed'."
-  },
-
-  "identity": {
-    "state":              "SOURCE: needsetEngine.js:526 via mapIdentityState(identityContext). Maps 'locked'|'provisional'|'conflict' → PanelIdentityState.",
-    "source_label_state": "SOURCE: needsetEngine.js:527 via deriveSourceLabelState(identityContext). Uses status + confidence + contradiction_count.",
-    "confidence":         "SOURCE: needsetEngine.js:530 — toNumber(identityContext?.confidence, 0).",
-    "manufacturer":       "SOURCE: needsetEngine.js:528 — String(brand || identityContext?.manufacturer || '').",
-    "official_domain":    "SOURCE: needsetEngine.js:531 — identityContext?.official_domain || null.",
-    "support_domain":     "SOURCE: needsetEngine.js:532 — identityContext?.support_domain || null.",
-    "publishable":        "DROPPED: Not relevant for indexing/planning phase. Review/publish decisions happen downstream.",
-    "review_required":    "DROPPED: Not relevant for indexing/planning phase. Review phase handles this."
-  },
-
-  "settings": {
-    "_note": "DROPPED FROM SCHEMA 1: Settings flow directly to Phase 2 via searchPlanningContext.js:derivePlannerLimits(). The settings param in computeNeedSet() is declared but never read. Config reaches the planner without Schema 1 as intermediary."
-  },
-
-  "fields": {
-    "_note": "Array of per-field objects. Below documents the source for each sub-field.",
-
-    "field_key": "SOURCE: needsetEngine.js:342 — collectFieldKeys() unions fieldOrder + provenance keys + fieldRules keys.",
-    "label":     "SOURCE: needsetEngine.js:418 — String(rule.display_name || rule.ui?.label || field).",
-    "group_key": "SOURCE: needsetEngine.js:419 — String(rule.group || ''). From field_rules runtime JSON.",
-
-    "idx": {
-      "required_level":          "SOURCE: needsetEngine.js:345 — normalizeRequiredLevel(ruleRequiredLevel(rule)).",
-      "min_evidence_refs":       "SOURCE: needsetEngine.js:385 — toNumber(rule.min_evidence_refs, 0).",
-      "query_terms":             "SOURCE: needsetEngine.js:430 — rule.search_hints.query_terms.",
-      "domain_hints":            "SOURCE: needsetEngine.js:431 — rule.search_hints.domain_hints.",
-      "preferred_content_types": "SOURCE: needsetEngine.js:432 — rule.search_hints.preferred_content_types || content_types.",
-      "tooltip_md":              "SOURCE: needsetEngine.js:434 — rule.ui?.tooltip_md || null.",
-      "aliases":                 "SOURCE: needsetEngine.js:435 — rule.aliases || []."
-    },
-
-    "pass_target":          "SOURCE: needsetEngine.js:348 — clamp01(toNumber(prov.pass_target, 0.8)).",
-    "exact_match_required": "SOURCE: needsetEngine.js:422 — Boolean(rule.contract?.exact_match).",
-
-    "current": {
-      "status":               "SOURCE: needsetEngine.js:353 → mapInternalToSchemaState(). covered→accepted, missing→unknown.",
-      "value":                "SOURCE: needsetEngine.js:438 — prov.value ?? 'unk'.",
-      "confidence":           "SOURCE: needsetEngine.js:439 — toNumber(confidence, 0).",
-      "effective_confidence": "SOURCE: needsetEngine.js:386 — clamp01(toNumber(confidence, 0)).",
-      "refs_found":           "SOURCE: needsetEngine.js:384 — evidence.length || prov.confirmations.",
-      "best_tier_seen":       "SOURCE: needsetEngine.js:389-391 — Math.min of evidence[].tier.",
-      "meets_pass_target":    "SOURCE: needsetEngine.js:387 — covered || confidence >= passTarget.",
-      "reasons":              "SOURCE: needsetEngine.js:393-404 via deriveFieldReasons()."
-    },
-
-    "history": {
-      "_note":                          "RESOLVED: buildFieldHistories.js builds per-field history after each round. Discovery passes roundContext.previousFieldHistories into computeNeedSet(), and finalization can merge the current round through enrichNeedSetFieldHistories.js.",
-      "existing_queries":               "RESOLVED: buildFieldHistories merges searchPlanQueries[].target_fields → per-field query lists. Deduplicates via Set union.",
-      "domains_tried":                  "RESOLVED: buildFieldHistories unions prev.domains_tried + evidence[].rootDomain from current round provenance.",
-      "host_classes_tried":             "RESOLVED: buildFieldHistories classifies each evidence entry via classifyHostClass(tier, tierName, host) → HostClass enum. Unions with previous.",
-      "evidence_classes_tried":         "RESOLVED: buildFieldHistories classifies each evidence entry via classifyEvidenceClass(tier, tierName, method, host, url) → EvidenceClass enum. Unions with previous.",
-      "query_count":                    "RESOLVED: buildFieldHistories increments by count of new queries targeting this field per round.",
-      "urls_examined_count":            "RESOLVED: buildFieldHistories counts unique evidence URLs per field per round and accumulates.",
-      "no_value_attempts":              "RESOLVED: buildFieldHistories increments when field was targeted by queries but field value remains unknown.",
-      "duplicate_attempts_suppressed":  "RESOLVED: buildFieldHistories distributes round-level suppression count to all targeted fields."
+  "_doc": "Input contract for computeNeedSet() and the finalize-time buildFieldHistories() memory loop.",
+  "validated_against": "2026-03-18",
+  "computeNeedSet": {
+    "function": "computeNeedSet",
+    "file": "src/indexlab/needsetEngine.js",
+    "caller": "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
+    "shape": {
+      "runId": "string",
+      "category": "string",
+      "productId": "string",
+      "fieldOrder": "string[]",
+      "provenance": "object keyed by field_key",
+      "fieldRules": "object or { fields: object }",
+      "fieldReasoning": "object keyed by field_key",
+      "constraintAnalysis": "object",
+      "identityContext": "object",
+      "round": "number",
+      "roundMode": "string",
+      "brand": "string",
+      "model": "string",
+      "baseModel": "string",
+      "aliases": "string[]",
+      "settings": "object accepted by the signature but currently unused by computeNeedSet()",
+      "previousFieldHistories": "object keyed by field_key"
     }
   },
-
-  "debug": {
-    "idx_runtime_present": "SOURCE: needsetEngine.js:563-572. Backward-compat debug block."
+  "buildFieldHistories_followup": {
+    "function": "buildFieldHistories",
+    "file": "src/indexlab/buildFieldHistories.js",
+    "caller_family": "finalization and next-round bootstrap flow",
+    "shape": {
+      "previousFieldHistories": "object keyed by field_key",
+      "provenance": "object keyed by field_key",
+      "searchPlanQueries": "array of planner query rows with target_fields",
+      "duplicatesSuppressed": "number"
+    }
   },
-
-  "_gap_summary": {
-    "total_gaps_original": 10,
-    "resolved": 5,
-    "dropped_by_design": 5,
-    "remaining": 0,
-    "details": [
-      { "id": "GAP-1",  "field": "run.base_model",                "status": "RESOLVED — present at bootstrap, discovery seed, and finalization call sites" },
-      { "id": "GAP-2",  "field": "run.aliases",                   "status": "RESOLVED — present at bootstrap, discovery seed, and finalization call sites" },
-      { "id": "GAP-3",  "field": "identity.publishable",          "status": "DROPPED — not relevant for indexing/planning" },
-      { "id": "GAP-4",  "field": "identity.review_required",      "status": "DROPPED — not relevant for indexing/planning" },
-      { "id": "GAP-5",  "field": "settings block",                "status": "DROPPED — config flows directly to Phase 2, not through Schema 1" },
-      { "id": "GAP-6",  "field": "needsetIdentityLockThreshold",  "status": "DROPPED — informational only, actual value lives in config" },
-      { "id": "GAP-7",  "field": "needsetIdentityProvisionalThreshold", "status": "DROPPED — informational only, actual value is hardcoded" },
-      { "id": "GAP-8",  "field": "host_classes_tried",            "status": "RESOLVED — classifyHostClass() in buildFieldHistories.js" },
-      { "id": "GAP-9",  "field": "evidence_classes_tried",        "status": "RESOLVED — classifyEvidenceClass() in buildFieldHistories.js" },
-      { "id": "GAP-10", "field": "history counters",              "status": "RESOLVED — buildFieldHistories() feeds discovery/finalization round history" }
-    ]
-  }
+  "normalization_notes": [
+    "field universe is collected from fieldOrder, provenance keys, and rule keys",
+    "required levels are normalized to identity|critical|required|expected|optional",
+    "search hints are normalized before any planner-facing output is produced"
+  ]
 }

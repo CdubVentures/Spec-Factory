@@ -1,12 +1,14 @@
 {
-  "_doc": "Stage 13 output contract for validation to output. Validated against exportRunArtifacts(), finalExporter.js, and runProductCompletionLifecycle() on 2026-03-17.",
+  "_doc": "Stage 13 output contract for validation to output. Validated against exportRunArtifacts(), finalExporter.js, runProductCompletionLifecycle(), and runLearningExportPhase() on 2026-03-18.",
   "schema_version": "stage13.validation_to_output_output.v1",
   "producer": "runTerminalLearningExportLifecycle() plus buildRunResultPayload()",
   "source_files": [
     "src/exporter/exporter.js",
     "src/exporter/finalExporter.js",
     "src/features/indexing/orchestration/finalize/runProductCompletionLifecycle.js",
-    "src/features/indexing/orchestration/finalize/buildRunResultPayload.js"
+    "src/features/indexing/orchestration/finalize/buildRunResultPayload.js",
+    "src/pipeline/learningExportPhase.js",
+    "src/features/indexing/learning/selfImproveLoop.js"
   ],
   "artifact_outputs": {
     "exportInfo": {
@@ -22,14 +24,20 @@
       "runtime_gate": "Counts of applied runtime gate changes, warnings, and failures."
     },
     "learning": {
+      "profileKey": "Cross-run learning profile key under _learning/{category}/profiles/{profileId}.json.",
+      "learningRunKey": "Run-scoped learning export log under runs/{runId}/logs/learning.json.",
+      "profile": "Merged learning profile payload returned by persistLearningProfile()."
+    },
+    "learningGateResult": {
       "gateResults": "Per-field learning acceptance decisions.",
-      "acceptedUpdates": "Per-field accepted learning rows written to stores and profiles."
+      "acceptedUpdates": "Per-field accepted learning rows written to urlMemory, domainFieldYield, fieldAnchors, and componentLexicon."
     }
   },
   "storage_side_effects": [
     "Dual-write normalized output into SpecDb tables.",
     "Append run snapshot and source history JSONL files under final/.",
-    "Write evidence_pack.json, meta.json, summary.json, spec.json, provenance.json, traffic_light.json, and versioned publication artifacts when enabled."
+    "Write evidence_pack.json, meta.json, summary.json, spec.json, provenance.json, traffic_light.json, and versioned publication artifacts when enabled.",
+    "Write or update the cross-run learning profile and run-scoped learning log when selfImproveEnabled is true."
   ],
   "promotion_rules": [
     "Candidate must be publishable before promotion can occur.",

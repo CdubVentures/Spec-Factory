@@ -1,3 +1,5 @@
+import { resolvePhaseModel } from '../../../core/llm/client/routing.js';
+
 function toNumber(value, fallback = 0) {
   const parsed = Number.parseFloat(String(value ?? ''));
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -21,8 +23,8 @@ export class AggressiveReasoningResolver {
   constructor({
     config = {}
   } = {}) {
-    this.modelFast = String(config.llmModelPlan || 'gpt-5-low');
-    this.modelDeep = String(config.llmModelReasoning || 'gpt-5-high');
+    this.modelFast = resolvePhaseModel(config, 'extraction') || String(config.llmModelPlan || 'gpt-5-low');
+    this.modelDeep = String(config.llmModelReasoning || this.modelFast);
   }
 
   async resolve({

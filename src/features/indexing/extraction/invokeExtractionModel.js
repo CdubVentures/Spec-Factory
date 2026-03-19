@@ -217,7 +217,6 @@ export async function invokeExtractionModel({
   job = {},
   llmContext = {},
   evidencePack = {},
-  budgetGuard = null,
   callLlmFn = callLlmWithRouting,
   sanitizeExtractionResultFn = sanitizeExtractionResult
 } = {}) {
@@ -285,7 +284,6 @@ export async function invokeExtractionModel({
     },
     costRates: llmContext.costRates || config,
     onUsage: async (usageRow) => {
-      budgetGuard?.recordCall?.({ costUsd: usageRow.cost_usd });
       if (typeof llmContext.recordUsage === 'function') {
         await llmContext.recordUsage(usageRow);
       }

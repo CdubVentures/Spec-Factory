@@ -88,7 +88,7 @@ function requiredLevelToBucket(level) {
   return 'optional';
 }
 
-function computeDeltas(ctx) {
+export function computeDeltas(ctx) {
   const currentMap = new Map();
   for (const fg of (ctx.focus_groups || [])) {
     for (const fk of (fg.satisfied_field_keys || [])) currentMap.set(fk, 'satisfied');
@@ -348,6 +348,9 @@ export async function buildSearchPlan({
   // Call LLM
   let llmResult;
   try {
+    // WHY: phase must be 'needset' so this LLM call picks up the needset
+    // phase config from the SSOT (e.g. Gemini Flash), not the searchPlanner
+    // phase config (e.g. Pro). Each tab has its own LLM model settings.
     llmResult = await callLlmWithRouting({
       config,
       reason: 'needset_search_planner',

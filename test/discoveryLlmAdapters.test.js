@@ -2,7 +2,6 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createBrandResolverCallLlm,
-  createEscalationPlannerCallLlm
 } from '../src/features/indexing/discovery/discoveryLlmAdapters.js';
 
 function makeCallRoutedLlm(returnValue = {}) {
@@ -47,45 +46,6 @@ describe('discoveryLlmAdapters', () => {
       assert.ok(schema);
       assert.ok(schema.properties.official_domain);
       assert.ok(schema.properties.aliases);
-    });
-  });
-
-  // WHY: createDomainSafetyCallLlm removed — domain classifier is now deterministic.
-
-  describe('createEscalationPlannerCallLlm', () => {
-    it('formats prompt with missing fields and product and returns queries', async () => {
-      const routed = makeCallRoutedLlm([
-        { query: 'Razer Viper V3 Pro click latency test', target_fields: ['click_latency'], expected_source_type: 'lab_review' }
-      ]);
-      const callLlm = createEscalationPlannerCallLlm({
-        callRoutedLlmFn: routed.fn,
-        config: { llmModelPlan: 'test-model' }
-      });
-      const result = await callLlm({
-        missingFields: ['click_latency'],
-        product: { brand: 'Razer', model: 'Viper V3 Pro', category: 'mouse' },
-        previousQueries: ['Razer Viper V3 Pro specifications'],
-        config: {}
-      });
-      assert.ok(Array.isArray(result));
-      assert.equal(result[0].query, 'Razer Viper V3 Pro click latency test');
-      assert.ok(routed.calls[0].reason === 'escalation_planner');
-      assert.ok(routed.calls[0].user.includes('click_latency'));
-    });
-
-    it('uses plan model role instead of triage', async () => {
-      const routed = makeCallRoutedLlm([]);
-      const callLlm = createEscalationPlannerCallLlm({
-        callRoutedLlmFn: routed.fn,
-        config: { llmModelPlan: 'plan-model' }
-      });
-      await callLlm({
-        missingFields: ['weight'],
-        product: { brand: 'Razer', model: 'Viper', category: 'mouse' },
-        previousQueries: [],
-        config: {}
-      });
-      assert.equal(routed.calls[0].role, 'plan');
     });
   });
 });

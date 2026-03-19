@@ -19,13 +19,6 @@ export interface BuildIndexingRunRuntimePayloadInput {
   eventsJsonWrite: boolean;
   indexingSchemaPacketsValidationEnabled: boolean;
   indexingSchemaPacketsValidationStrict: boolean;
-  queueJsonWrite: boolean;
-  billingJsonWrite: boolean;
-  intelJsonWrite: boolean;
-  corpusJsonWrite: boolean;
-  learningJsonWrite: boolean;
-  cacheJsonWrite: boolean;
-  authoritySnapshotEnabled: boolean;
 }
 
 export function buildIndexingRunRuntimePayload(
@@ -50,12 +43,5 @@ export function buildIndexingRunRuntimePayload(
     eventsJsonWrite: input.eventsJsonWrite,
     indexingSchemaPacketsValidationEnabled: input.indexingSchemaPacketsValidationEnabled,
     indexingSchemaPacketsValidationStrict: input.indexingSchemaPacketsValidationStrict,
-    queueJsonWrite: input.queueJsonWrite,
-    billingJsonWrite: input.billingJsonWrite,
-    intelJsonWrite: input.intelJsonWrite,
-    corpusJsonWrite: input.corpusJsonWrite,
-    learningJsonWrite: input.learningJsonWrite,
-    cacheJsonWrite: input.cacheJsonWrite,
-    authoritySnapshotEnabled: input.authoritySnapshotEnabled,
   };
 }

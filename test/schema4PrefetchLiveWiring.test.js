@@ -411,7 +411,7 @@ test('buildPreFetchPhases: full live-run simulation populates every prefetch tab
     }, { ts: '2026-03-16T00:00:24.500Z' }),
 
     // -- SERP triage --
-    makeEvent('serp_triage_completed', {
+    makeEvent('serp_selector_completed', {
       query: 'Razer Viper V3 Pro specifications',
       kept_count: 2,
       dropped_count: 1,
@@ -424,10 +424,10 @@ test('buildPreFetchPhases: full live-run simulation populates every prefetch tab
 
     // -- LLM calls: SERP triage --
     makeEvent('llm_started', {
-      reason: 'serp_triage_batch', batch_id: 'st-1', model: 'gemini-2.0-flash', provider: 'gemini',
+      reason: 'serp_selector_batch', batch_id: 'st-1', model: 'gemini-2.0-flash', provider: 'gemini',
     }, { ts: '2026-03-16T00:00:24.000Z' }),
     makeEvent('llm_finished', {
-      reason: 'serp_triage_batch', batch_id: 'st-1', model: 'gemini-2.0-flash', provider: 'gemini',
+      reason: 'serp_selector_batch', batch_id: 'st-1', model: 'gemini-2.0-flash', provider: 'gemini',
       tokens: { input: 450, output: 180 },
     }, { ts: '2026-03-16T00:00:25.000Z' }),
 
@@ -539,9 +539,9 @@ test('buildPreFetchPhases: full live-run simulation populates every prefetch tab
   assert.equal(result.llm_calls.search_planner[0].status, 'finished');
   assert.equal(result.llm_calls.search_planner[0].tokens.input, 580);
 
-  assert.equal(result.llm_calls.serp_triage.length, 1, 'serp triage LLM call');
-  assert.equal(result.llm_calls.serp_triage[0].status, 'finished');
-  assert.equal(result.llm_calls.serp_triage[0].tokens.input, 450);
+  assert.equal(result.llm_calls.serp_selector.length, 1, 'serp triage LLM call');
+  assert.equal(result.llm_calls.serp_selector[0].status, 'finished');
+  assert.equal(result.llm_calls.serp_selector[0].tokens.input, 450);
 
   assert.equal(result.llm_calls.domain_classifier.length, 1, 'domain classifier LLM call');
   assert.equal(result.llm_calls.domain_classifier[0].status, 'finished');
@@ -599,14 +599,14 @@ test('buildPreFetchPhases: full live-run simulation populates every prefetch tab
   assert.equal(result.cross_query_url_counts['https://razer.com/viper-v3-pro/tech-specs'], 1);
 
   // ===== SERP TRIAGE =====
-  assert.equal(result.serp_triage.length, 1, 'serp triage completed');
-  assert.equal(result.serp_triage[0].query, 'Razer Viper V3 Pro specifications');
-  assert.equal(result.serp_triage[0].kept_count, 2);
-  assert.equal(result.serp_triage[0].dropped_count, 1);
-  assert.equal(result.serp_triage[0].candidates.length, 3);
-  assert.equal(result.serp_triage[0].candidates[0].score, 0.97);
-  assert.equal(result.serp_triage[0].candidates[0].score_components.base_relevance, 0.85);
-  assert.equal(result.serp_triage[0].candidates[2].decision, 'drop');
+  assert.equal(result.serp_selector.length, 1, 'serp triage completed');
+  assert.equal(result.serp_selector[0].query, 'Razer Viper V3 Pro specifications');
+  assert.equal(result.serp_selector[0].kept_count, 2);
+  assert.equal(result.serp_selector[0].dropped_count, 1);
+  assert.equal(result.serp_selector[0].candidates.length, 3);
+  assert.equal(result.serp_selector[0].candidates[0].score, 0.97);
+  assert.equal(result.serp_selector[0].candidates[0].score_components.base_relevance, 0.85);
+  assert.equal(result.serp_selector[0].candidates[2].decision, 'drop');
 
   // ===== DOMAIN HEALTH =====
   assert.equal(result.domain_health.length, 4, 'all 4 domains classified');
@@ -704,12 +704,3 @@ test('buildPreFetchPhases: Schema 4 data in needset artifact populates bundles, 
   assert.equal(result.needset.identity_state, 'locked');
 });
 
-// ---------------------------------------------------------------------------
-// 6. config.enableSchema4SearchPlan is true
-// ---------------------------------------------------------------------------
-
-test('config.enableSchema4SearchPlan is enabled', async () => {
-  const { loadConfig } = await import('../src/config.js');
-  const config = loadConfig();
-  assert.equal(config.enableSchema4SearchPlan, true, 'Schema 4 search plan path must be enabled');
-});

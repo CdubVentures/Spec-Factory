@@ -43,12 +43,12 @@
       "sha256": "b2a92a7c5e6f9c9e9b4669637214c3a850b59f9582207e431a1676046abc971b"
     },
     {
-      "bytes": 117549,
+      "bytes": 96681,
       "path": "ui_field_catalog.json",
-      "sha256": "8a8808522885dcf5528c3864216f27d1512150c09490fd1aa60d6950c241adf7"
+      "sha256": "e19c9751f91b7bd12c3b926be675b719ecea62935676f6cd8a3bfaea5011f486"
     }
   ],
   "category": "monitor",
-  "generated_at": "2026-03-16T05:55:10.303Z",
+  "generated_at": "2026-03-18T19:57:26.910Z",
   "version": 1
 }

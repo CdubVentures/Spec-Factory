@@ -9,6 +9,7 @@ import { isTestCategory } from '../../utils/testMode';
 import { useEventsStore } from '../../stores/eventsStore';
 import { useIndexLabStore, type IndexLabEvent } from '../../stores/indexlabStore';
 import { useSettingsAuthorityBootstrap, isSettingsAuthoritySnapshotReady } from '../../stores/settingsAuthority';
+import { useRuntimeSettingsStoreHydration } from '../../features/pipeline-settings';
 import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore';
 import type { ProcessStatus } from '../../types/events';
 import type { RuntimeEvent } from '../../types/events';
@@ -69,6 +70,10 @@ const THEME_RADIUS_LABELS: Record<SfThemeRadiusProfileId, string> = {
 
 export function AppShell() {
   useSettingsAuthorityBootstrap();
+  // WHY: Hydrate the runtime settings Zustand store at the app shell level so it's
+  // populated before any child page mounts. Without this, navigating directly to
+  // /llm-config leaves the store null and LLM hydration silently drops data.
+  useRuntimeSettingsStoreHydration();
   const settingsSnapshot = useSettingsAuthorityStore((s) => s.snapshot);
   const settingsReady = isSettingsAuthoritySnapshotReady(settingsSnapshot);
   const [allowDegradedRender, setAllowDegradedRender] = useState(false);

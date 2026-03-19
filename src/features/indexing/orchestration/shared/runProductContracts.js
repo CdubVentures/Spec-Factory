@@ -1,11 +1,3 @@
-export function buildInitialLlmBudgetState(billingSnapshot = {}) {
-  return {
-    monthlySpentUsd: Number(billingSnapshot?.monthly_cost_usd || 0),
-    productSpentUsd: 0,
-    productCallsTotal: 0,
-  };
-}
-
 export function enqueueAdapterSeedUrls(planner, adapterSeedUrls = []) {
   for (const url of adapterSeedUrls) {
     planner.enqueue(url, 'adapter_seed', { forceApproved: true, forceBrandBypass: false });

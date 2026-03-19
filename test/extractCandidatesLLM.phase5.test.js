@@ -103,7 +103,6 @@ test('extractCandidatesLLM batches extraction into <=7 calls and reuses cache on
         llmModelReasoning: 'gpt-4.1',
         llmTimeoutMs: 5_000,
         llmMaxBatchesPerProduct: 7,
-        llmExtractionCacheEnabled: true,
         llmExtractionCacheDir: tmp
       }
     };
@@ -181,96 +180,6 @@ test('extractCandidatesLLM drops non-auditable candidates when evidence verifier
   }
 });
 
-test('extractCandidatesLLM skips repatch when budget guard disallows extra call', async () => {
-  const originalFetch = global.fetch;
-  let callCount = 0;
-  const budgetReasons = [];
-  const blockedReasons = [];
-  global.fetch = async () => {
-    callCount += 1;
-    return {
-      ok: true,
-      status: 200,
-      async text() {
-        return JSON.stringify(
-          mockChatCompletionPayload({
-            identityCandidates: {},
-            fieldCandidates: [],
-            conflicts: [],
-            notes: []
-          })
-        );
-      }
-    };
-  };
-
-  const budgetGuard = {
-    canCall(options = {}) {
-      const reason = String(options.reason || '');
-      budgetReasons.push(reason);
-      if (reason.includes('_repatch')) {
-        return { allowed: false, reason: 'budget_max_calls_per_round_reached' };
-      }
-      return { allowed: true, reason: 'ok' };
-    },
-    recordCall() {},
-    block(reason) {
-      blockedReasons.push(String(reason || ''));
-    },
-    snapshot() {
-      return {
-        limits: {},
-        state: {
-          blockedReason: blockedReasons[blockedReasons.length - 1] || '',
-          roundCalls: callCount
-        }
-      };
-    }
-  };
-
-  try {
-    await extractCandidatesLLM({
-      job: {
-        productId: 'mouse-phase5-repatch-budget',
-        category: 'mouse',
-        identityLock: {},
-        anchors: {}
-      },
-      categoryConfig: {
-        category: 'mouse',
-        fieldOrder: ['sensor']
-      },
-      evidencePack: {
-        references: [{ id: 'ref-sensor', url: 'https://example.com/spec' }],
-        snippets: [{ id: 'ref-sensor', normalized_text: 'Sensor: Focus Pro 35K' }]
-      },
-      llmContext: {
-        budgetGuard,
-        route_matrix_policy: {
-          all_sources_confidence_repatch: true,
-          model_ladder_today: 'fast-model -> repatch-model',
-          min_evidence_refs_effective: 1
-        }
-      },
-      config: {
-
-        llmApiKey: 'sk-test',
-        llmBaseUrl: 'https://api.openai.com',
-        llmProvider: 'openai',
-        llmModelExtract: 'fallback-model',
-        llmModelPlan: 'plan-model',
-        llmTimeoutMs: 5_000
-      }
-    });
-
-    assert.equal(callCount, 1);
-    assert.equal(budgetReasons.some((reason) => reason.includes('_repatch')), true);
-    assert.equal(blockedReasons.includes('budget_max_calls_per_round_reached'), true);
-  } finally {
-    global.fetch = originalFetch;
-  }
-});
-
 test('extractCandidatesLLM skips repatch when role model provider pin is enabled', async () => {
   const originalFetch = global.fetch;
   let callCount = 0;
@@ -322,7 +231,8 @@ test('extractCandidatesLLM skips repatch when role model provider pin is enabled
         llmProvider: 'openai',
         llmModelPlan: 'gemini-2.5-flash-lite',
         llmForceRoleModelProvider: true,
-        llmTimeoutMs: 5_000
+        llmTimeoutMs: 5_000,
+        llmExtractionCacheDir: path.join(os.tmpdir(), `llm-cache-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       }
     });
 

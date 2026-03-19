@@ -123,7 +123,7 @@ export const techPowerUpAdapter = {
     const jsonExtraction = extractFromJsonPayloads(pageData.networkResponses || []);
 
     const tablePairs = extractTablePairs(pageData.html || '', {
-      useV2: config?.htmlTableExtractorV2 !== false
+      useV2: true
     });
     const tableFields = mapPairsToFieldCandidates(tablePairs, 'html_table');
     const tableIdentity = extractIdentityFromPairs(tablePairs);

@@ -138,6 +138,8 @@ Related terminal outputs:
 
 - `logs/events.jsonl.gz`
 - `logs/summary.json`
+- `_learning/{category}/profiles/{profileId}.json`
+- `runs/{runId}/logs/learning.json`
 - summary markdown and TSV artifacts
 - identity report artifacts
 - indexing schema packets plus AJV validation summary

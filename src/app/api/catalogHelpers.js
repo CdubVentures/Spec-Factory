@@ -51,6 +51,7 @@ export function createCatalogBuilder({
         identifier: entry.identifier || '',
         brand,
         model,
+        base_model: String(entry.base_model || '').trim(),
         variant,
         status: 'pending',
         hasFinal: false,

@@ -187,7 +187,7 @@ test('failed llm calls keep telemetry mapping and drain active aggregate count',
     event: 'llm_call_started',
     ts: '2025-01-01T00:01:00Z',
     batch_id: 'st-1',
-    reason: 'serp_triage_batch',
+    reason: 'serp_selector_batch',
     model: 'gpt-4o-mini',
     provider: 'openai'
   }));
@@ -197,7 +197,7 @@ test('failed llm calls keep telemetry mapping and drain active aggregate count',
     event: 'llm_call_failed',
     ts: '2025-01-01T00:01:01Z',
     batch_id: 'st-1',
-    reason: 'serp_triage_batch',
+    reason: 'serp_selector_batch',
     model: 'gpt-4o-mini',
     provider: 'openai',
     message: 'provider timeout'
@@ -206,7 +206,7 @@ test('failed llm calls keep telemetry mapping and drain active aggregate count',
 
   const failures = llmEvents(events, 'llm_failed');
   assert.equal(failures.length, 1);
-  assert.equal(failures[0].payload.call_type, 'serp_triage');
+  assert.equal(failures[0].payload.call_type, 'serp_selector');
   assert.equal(failures[0].payload.prefetch_tab, '07');
   assert.equal(failures[0].payload.message, 'provider timeout');
   assert.equal(bridge._llmAgg.total_calls, 1);

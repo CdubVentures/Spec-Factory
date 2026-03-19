@@ -1,0 +1,61 @@
+{
+  "_doc": "Google transport contract used by runSearchProviders().",
+  "validated_against": "2026-03-18",
+  "entrypoint": "src/features/indexing/search/searchGoogle.js :: searchGoogle()",
+  "activation_gate": {
+    "transport_router": "src/features/indexing/search/searchProviders.js :: splitEnginesByTransport()",
+    "path_enabled_when": "normalized searchEngines contains google",
+    "independent_of_searxng": true
+  },
+  "input_shape": {
+    "query": "string",
+    "limit": "number",
+    "timeoutMs": "number",
+    "proxyUrls": "string[]",
+    "minQueryIntervalMs": "number",
+    "postResultsDelayMs": "number",
+    "headless": "boolean",
+    "screenshotsEnabled": "boolean",
+    "screenshotQuality": "number",
+    "logger": "logger|null",
+    "requestThrottler": "object|null"
+  },
+  "runtime_behavior": [
+    "module-level pacing plus optional requestThrottler.acquire()",
+    "headless Crawlee/Playwright using system Chrome channel",
+    "stealth init script and Google-specific browser hardening",
+    "optional proxy rotation through Crawlee ProxyConfiguration",
+    "consent dismissal attempt",
+    "early CAPTCHA detection and session burn",
+    "optional cropped JPEG screenshot capture",
+    "parseGoogleResults() on the rendered DOM"
+  ],
+  "non_fatal_empty_cases": [
+    "CAPTCHA page",
+    "consent page",
+    "crawler error"
+  ],
+  "output_shape": {
+    "results": [
+      {
+        "url": "string",
+        "title": "string",
+        "snippet": "string",
+        "provider": "google",
+        "query": "string"
+      }
+    ],
+    "screenshot": {
+      "buffer": "Buffer",
+      "width": 1920,
+      "height": 1080,
+      "bytes": "number",
+      "ts": "ISO timestamp",
+      "queryHash": "string"
+    }
+  },
+  "downstream_use": {
+    "searchProviders_return": "merged and deduped with any SearXNG results",
+    "discoverySearchExecution_side_channel": "screenshotSink persists screenshot buffers into the run screenshot directory"
+  }
+}

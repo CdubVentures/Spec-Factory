@@ -36,7 +36,7 @@ test('runExtractionVerification prioritizes judge batches, invokes both models, 
     },
     config: {
       llmModelPlan: 'fast-model',
-      llmModelExtract: 'reason-model'
+      llmModelReasoning: 'reason-model'
     },
     llmContext: {
       runId: 'run-1',
@@ -74,11 +74,6 @@ test('runExtractionVerification prioritizes judge batches, invokes both models, 
           targetFields: options.batchFields
         }
       };
-    },
-    budgetGuard: {
-      canCall() {
-        return { allowed: true };
-      }
     },
     invokeModel: async (request) => {
       invokeCalls.push({
@@ -161,7 +156,7 @@ test('runExtractionVerification swallows verification failures and warns', async
     },
     config: {
 
-      llmModelExtract: 'reason-model'
+      llmModelReasoning: 'reason-model'
     },
     llmContext: {
       verification: {
@@ -189,11 +184,6 @@ test('runExtractionVerification swallows verification failures and warns', async
         targetFields: ['sensor']
       }
     }),
-    budgetGuard: {
-      canCall() {
-        return { allowed: true };
-      }
-    },
     invokeModel: async () => {
       throw new Error('verify broke');
     },

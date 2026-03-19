@@ -110,29 +110,12 @@ export async function validateComponentMatches({
   componentDBs = {},
   config = {},
   logger,
-  budgetGuard,
   costRates,
   onUsage,
 }) {
   const enabled = Boolean(hasLlmRouteApiKey(config, { role: 'validate' }));
   if (!enabled || items.length === 0) {
     return { enabled: false, decisions: [] };
-  }
-
-  // Budget check
-  if (budgetGuard) {
-    const budgetDecision = budgetGuard.canCall({
-      reason: 'validate_component_matches',
-      essential: false,
-    });
-    if (!budgetDecision.allowed) {
-      budgetGuard.block?.(budgetDecision.reason);
-      logger?.warn?.('component_validate_skipped_budget', {
-        reason: budgetDecision.reason,
-        item_count: items.length,
-      });
-      return { enabled: true, decisions: [], skipped_reason: 'budget' };
-    }
   }
 
   // Enrich items with component DB properties, variance policies, and constraints
@@ -195,9 +178,6 @@ export async function validateComponentMatches({
         },
         costRates,
         onUsage,
-        reasoningMode: Boolean(config?.llmReasoningMode ?? true),
-        reasoningBudget: Number(config?.llmReasoningBudget || 4096),
-        maxTokens: Number(config?.llmMaxOutputTokensValidate || config?.llmMaxOutputTokens || 4096),
         timeoutMs: Number(config?.llmTimeoutMs || config?.openaiTimeoutMs || 60_000),
         logger,
       });

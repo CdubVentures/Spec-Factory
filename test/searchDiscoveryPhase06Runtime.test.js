@@ -40,7 +40,7 @@ function makeConfig(tempRoot, overrides = {}) {
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 20,
     discoveryQueryConcurrency: 1,
-    searchEngines: 'bing,startpage,duckduckgo',
+    searchEngines: 'bing,google-proxy,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
     ...overrides,
@@ -246,8 +246,7 @@ test('discoverCandidateSources skips conditional triage at the 60 percent determ
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-triage-skip-'));
   const config = makeConfig(tempRoot, {
     discoveryMaxQueries: 1,
-    llmSerpRerankEnabled: true,
-    serpTriageEnabled: true,
+
     serpTriageMinScore: 0,
   });
   const storage = createStorage(config);
@@ -311,8 +310,7 @@ test('discoverCandidateSources enters triage flow when deterministic quality sta
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-triage-needed-'));
   const config = makeConfig(tempRoot, {
     discoveryMaxQueries: 1,
-    llmSerpRerankEnabled: true,
-    serpTriageEnabled: true,
+
     serpTriageMinScore: 0,
   });
   const storage = createStorage(config);
@@ -365,9 +363,9 @@ test('discoverCandidateSources enters triage flow when deterministic quality sta
     // selected.length=3, threshold=2 → 3 >= 2 → skips triage. This is correct:
     // lane-quota selection already diversified the set; LLM is only for ambiguity.
     const skippedOrTriaged = events.some((event) =>
-      event.name === 'llm_triage_skipped' || event.name === 'serp_triage_completed'
+      event.name === 'llm_triage_skipped' || event.name === 'serp_selector_completed'
     );
-    assert.ok(skippedOrTriaged, 'expected either llm_triage_skipped or serp_triage_completed');
+    assert.ok(skippedOrTriaged, 'expected either llm_triage_skipped or serp_selector_completed');
     // URLs should still be selected regardless of which path ran
     const rerankedEvent = events.find((event) => event.name === 'discovery_results_reranked');
     assert.ok(rerankedEvent, 'expected discovery_results_reranked event');
@@ -384,7 +382,7 @@ test('discoverCandidateSources falls back to top-level job identity for query gu
     discoveryMaxQueries: 1,
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 5,
-    serpTriageEnabled: true,
+
     serpTriageMinScore: 0,
   });
   const storage = createStorage(config);

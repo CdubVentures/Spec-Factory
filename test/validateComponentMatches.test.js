@@ -13,7 +13,6 @@ test('validateComponentMatches accepts onUsage param without error', async () =>
     componentDBs: {},
     config: {},
     logger: null,
-    budgetGuard: null,
     costRates: { llmCostInputPer1M: 1, llmCostOutputPer1M: 2, llmCostCachedInputPer1M: 0.5 },
     onUsage: (row) => usageCalls.push(row),
   });

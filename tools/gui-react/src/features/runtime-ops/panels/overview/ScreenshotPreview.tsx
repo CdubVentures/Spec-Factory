@@ -10,7 +10,7 @@ interface ScreenshotPreviewProps {
 export function ScreenshotPreview({ screenshot, runId }: ScreenshotPreviewProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const src = `/api/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(screenshot.filename)}`;
+  const src = `/api/v1/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(screenshot.filename)}`;
 
   return (
     <>

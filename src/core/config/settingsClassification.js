@@ -38,7 +38,6 @@ export const EXPLICIT_ENV_KEY_OVERRIDES = new Map([
   ['indexingCategoryAuthorityEnabled', ['INDEXING_HELPER_FILES_ENABLED']],
   ['categoryAuthorityRoot', ['CATEGORY_AUTHORITY_ROOT', LEGACY_HELPER_ROOT_ENV]],
   ['helperFilesRoot', ['CATEGORY_AUTHORITY_ROOT', LEGACY_HELPER_ROOT_ENV]],
-  ['articleExtractorV2Enabled', ['ARTICLE_EXTRACTOR_V2']],
   ['dynamicFetchPolicyMap', ['DYNAMIC_FETCH_POLICY_MAP_JSON']],
   ['dynamicFetchPolicyMapJson', ['DYNAMIC_FETCH_POLICY_MAP_JSON']],
   ['llmProvider', ['LLM_PROVIDER', 'LLM_BASE_URL', 'OPENAI_BASE_URL', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],

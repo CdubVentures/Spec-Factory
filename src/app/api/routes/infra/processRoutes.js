@@ -82,9 +82,11 @@ export function createInfraProcessRoutes({
 
       try {
         if (replaceRunning && isProcessRunning()) {
-          await stopProcess(9000);
-          const exited = await waitForProcessExit(8000);
-          if (!exited && isProcessRunning()) {
+          const stopResult = await stopProcess(9000);
+          // WHY: stopProcess already waits for exit internally — no redundant wait needed.
+          // Previous code called waitForProcessExit(8000) which passed 8000 as the proc arg
+          // (a number, not a process), causing a guaranteed 7s timeout doing nothing.
+          if (!stopResult.stop_confirmed && isProcessRunning()) {
             return jsonRes(res, 409, {
               error: 'process_replace_timeout',
               message: 'Existing process did not stop in time',

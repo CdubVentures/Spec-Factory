@@ -23,7 +23,7 @@ Use these instead when you need live settings truth:
 - Current `SETTINGS_DEFAULTS` leaf counts are `convergence=2`, `runtime=243`, `storage=7`, `ui=6`, `autosave=7`, for `265` total leaves.
 - Current config manifest totals are `10` groups and `330` env-backed keys.
 - The current pipeline settings UI is centered on `RuntimeSettingsFlowCard` plus `RuntimeFlow*Section` files. Older references such as `RuntimeFlowLlmCortexSection.tsx` and `RuntimeFlowPlannerTriageSection.tsx` are stale.
-- Current source still contains keys this historical copy previously described as retired, including `structuredMetadataExtruct*` and `daemonGracefulShutdownTimeoutMs` in `src/shared/settingsDefaults.js`.
+- The `structuredMetadataExtruct*` settings have been fully retired (2026-03-18). `daemonGracefulShutdownTimeoutMs` remains in `src/shared/settingsDefaults.js`.
 - Source strategy remains file-backed in `category_authority/<category>/sources.json` and `src/features/indexing/sources/sourceFileService.js`.
 - Default LLM route seeding still produces `15` rows (`field=9`, `component=3`, `list=3`) via `src/db/specDbHelpers.js`.
 

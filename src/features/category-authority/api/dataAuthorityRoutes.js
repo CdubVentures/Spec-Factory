@@ -185,8 +185,6 @@ export function registerDataAuthorityRoutes(ctx) {
   } = ctx;
 
   return async function handleDataAuthorityRoutes(parts, params, method, req, res) {
-    if (!config?.authoritySnapshotEnabled) return false;
-
     if (parts[0] !== 'data-authority' || !parts[1] || parts[2] !== 'snapshot' || parts[3]) {
       return false;
     }

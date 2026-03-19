@@ -67,6 +67,8 @@ export async function writeRunMeta(state, extra = {}) {
     identity_lock_status: state.identityLockStatus || '',
     dedupe_mode: state.dedupeMode || '',
     phase_cursor: state.phaseCursor || '',
+    boot_step: state.bootStep || '',
+    boot_progress: state.bootProgress || 0,
     startup_ms: state.startupMs,
     needset: state.needSet
       ? {

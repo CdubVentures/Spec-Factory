@@ -85,6 +85,11 @@ export interface RuntimeHydrationBindingSetters {
   setFetchBudgetMs?: (value: string) => void;
   setPerHostMinDelayMs: (value: string) => void;
   setSearxngMinQueryIntervalMs: (value: string) => void;
+  setGoogleSearchProxyUrlsJson: (value: string) => void;
+  setGoogleSearchTimeoutMs: (value: string) => void;
+  setGoogleSearchMinQueryIntervalMs: (value: string) => void;
+  setGoogleSearchMaxRetries: (value: string) => void;
+  setGoogleSearchScreenshotsEnabled: (value: boolean) => void;
   setDomainRequestRps: (value: string) => void;
   setDomainRequestBurst: (value: string) => void;
   setGlobalRequestRps: (value: string) => void;
@@ -177,28 +182,27 @@ export interface RuntimeHydrationBindingSetters {
   setDriftScanMaxProducts: (value: string) => void;
   setReCrawlStaleAfterDays: (value: string) => void;
   setDiscoveryEnabled: (value: boolean) => void;
-  setLlmExtractionCacheEnabled: (value: boolean) => void;
+
   setReextractIndexed: (value: boolean) => void;
   setFetchCandidateSources: (value: boolean) => void;
   setManufacturerAutoPromote?: (value: boolean) => void;
   setPdfBackendRouterEnabled: (value: boolean) => void;
   setCapturePageScreenshotEnabled: (value: boolean) => void;
-  setArticleExtractorV2Enabled: (value: boolean) => void;
-  setStaticDomExtractorEnabled: (value: boolean) => void;
-  setHtmlTableExtractorV2: (value: boolean) => void;
+
+
+
   setCategoryAuthorityEnabled: (value: boolean) => void;
   setIndexingCategoryAuthorityEnabled: (value: boolean) => void;
   setHelperSupportiveFillMissing: (value: boolean) => void;
   setDriftDetectionEnabled: (value: boolean) => void;
   setDriftAutoRepublish: (value: boolean) => void;
   setScannedPdfOcrEnabled: (value: boolean) => void;
-  setScannedPdfOcrPromoteCandidates: (value: boolean) => void;
+
   setDynamicCrawleeEnabled: (value: boolean) => void;
   setCrawleeHeadless: (value: boolean) => void;
   setLlmExtractSkipLowSignal: (value: boolean) => void;
   setLlmReasoningMode: (value: boolean) => void;
   setLlmPlanUseReasoning: (value: boolean) => void;
-  setLlmDisableBudgetGuards: (value: boolean) => void;
   setLlmVerifyMode: (value: boolean) => void;
   setLocalMode: (value: boolean) => void;
   setDryRun: (value: boolean) => void;
@@ -206,11 +210,11 @@ export interface RuntimeHydrationBindingSetters {
   setMirrorToS3Input: (value: boolean) => void;
   setWriteMarkdownSummary: (value: boolean) => void;
   setLlmWriteSummary: (value: boolean) => void;
-  setFetchSchedulerEnabled: (value: boolean) => void;
+
   setPreferHttpFetcher: (value: boolean) => void;
-  setFrontierEnableSqlite: (value: boolean) => void;
+
   setFrontierStripTrackingParams: (value: boolean) => void;
-  setFrontierRepairSearchEnabled: (value: boolean) => void;
+
   setAutoScrollEnabled: (value: boolean) => void;
   setGraphqlReplayEnabled: (value: boolean) => void;
   setRobotsTxtCompliant: (value: boolean) => void;
@@ -220,13 +224,7 @@ export interface RuntimeHydrationBindingSetters {
   setEventsJsonWrite: (value: boolean) => void;
   setIndexingSchemaPacketsValidationEnabled: (value: boolean) => void;
   setIndexingSchemaPacketsValidationStrict: (value: boolean) => void;
-  setQueueJsonWrite: (value: boolean) => void;
-  setBillingJsonWrite: (value: boolean) => void;
-  setIntelJsonWrite: (value: boolean) => void;
-  setCorpusJsonWrite: (value: boolean) => void;
-  setLearningJsonWrite: (value: boolean) => void;
-  setCacheJsonWrite: (value: boolean) => void;
-  setAuthoritySnapshotEnabled: (value: boolean) => void;
+
   setSelfImproveEnabled: (value: boolean) => void;
   setOutputMode: (value: string) => void;
   setLlmPlanProvider: (value: string) => void;
@@ -294,6 +292,11 @@ export interface RuntimeSettingsPayloadSerializerInput {
   fetchConcurrency: number | string;
   perHostMinDelayMs: number | string;
   searxngMinQueryIntervalMs: number | string;
+  googleSearchProxyUrlsJson: string;
+  googleSearchTimeoutMs: number | string;
+  googleSearchMinQueryIntervalMs: number | string;
+  googleSearchMaxRetries: number | string;
+  googleSearchScreenshotsEnabled: boolean;
   domainRequestRps: number | string;
   domainRequestBurst: number | string;
   globalRequestRps: number | string;
@@ -396,28 +399,22 @@ export interface RuntimeSettingsPayloadSerializerInput {
   categoryAuthorityRoot: string;
   helperFilesRoot?: string;
   batchStrategy: string;
-  llmExtractionCacheEnabled: boolean;
   reextractIndexed: boolean;
   fetchCandidateSources: boolean;
   manufacturerAutoPromote?: boolean;
   pdfBackendRouterEnabled: boolean;
   capturePageScreenshotEnabled: boolean;
-  articleExtractorV2Enabled: boolean;
-  staticDomExtractorEnabled: boolean;
-  htmlTableExtractorV2: boolean;
   categoryAuthorityEnabled: boolean;
   helperSupportiveFillMissing: boolean;
   driftDetectionEnabled: boolean;
   driftAutoRepublish: boolean;
   indexingCategoryAuthorityEnabled: boolean;
   scannedPdfOcrEnabled: boolean;
-  scannedPdfOcrPromoteCandidates: boolean;
   dynamicCrawleeEnabled: boolean;
   crawleeHeadless: boolean;
   llmExtractSkipLowSignal: boolean;
   llmReasoningMode: boolean;
   llmPlanUseReasoning: boolean;
-  llmDisableBudgetGuards: boolean;
   llmVerifyMode: boolean;
   localMode: boolean;
   dryRun: boolean;
@@ -425,11 +422,8 @@ export interface RuntimeSettingsPayloadSerializerInput {
   mirrorToS3Input: boolean;
   writeMarkdownSummary: boolean;
   llmWriteSummary: boolean;
-  fetchSchedulerEnabled: boolean;
   preferHttpFetcher: boolean;
-  frontierEnableSqlite: boolean;
   frontierStripTrackingParams: boolean;
-  frontierRepairSearchEnabled: boolean;
   autoScrollEnabled: boolean;
   graphqlReplayEnabled: boolean;
   robotsTxtCompliant: boolean;
@@ -439,13 +433,6 @@ export interface RuntimeSettingsPayloadSerializerInput {
   eventsJsonWrite: boolean;
   indexingSchemaPacketsValidationEnabled: boolean;
   indexingSchemaPacketsValidationStrict: boolean;
-  queueJsonWrite: boolean;
-  billingJsonWrite: boolean;
-  intelJsonWrite: boolean;
-  corpusJsonWrite: boolean;
-  learningJsonWrite: boolean;
-  cacheJsonWrite: boolean;
-  authoritySnapshotEnabled: boolean;
   selfImproveEnabled: boolean;
   runtimeSettingsFallbackBaseline: RuntimeSettingsNumericBaseline;
   resolveModelTokenDefaults: RuntimeModelTokenDefaultsResolver;

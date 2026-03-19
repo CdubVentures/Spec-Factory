@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { loadBundledModule } from './helpers/loadBundledModule.js';
 
 /**
  * Contract: PUT /api/v1/runtime-settings returns a `snapshot` field
@@ -76,21 +77,6 @@ test('PUT runtime-settings response includes full snapshot after persist', async
 // --- Client-side: normalizeRuntimeSaveResult prefers snapshot ---
 
 test('normalizeRuntimeSaveResult prefers response.snapshot over applied merge', async () => {
-  // We import the module via esbuild to test normalizeRuntimeSaveResult
-  const { fileURLToPath } = await import('node:url');
-  const path = await import('node:path');
-  const fs = await import('node:fs');
-  const os = await import('node:os');
-
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const esbuild = await import('esbuild');
-
-  const entryPath = path.resolve(
-    __dirname,
-    '..',
-    'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsAuthorityHooks.ts',
-  );
-
   const stubs = {
     react: `
       export function useEffect() {}
@@ -140,43 +126,13 @@ test('normalizeRuntimeSaveResult prefers response.snapshot over applied merge', 
     `,
   };
 
-  const result = await esbuild.build({
-    entryPoints: [entryPath],
-    bundle: true,
-    write: false,
-    format: 'esm',
-    platform: 'node',
-    loader: { '.ts': 'ts', '.tsx': 'tsx' },
-    plugins: [
-      {
-        name: 'stub-modules',
-        setup(build) {
-          build.onResolve({ filter: /.*/ }, (args) => {
-            if (Object.prototype.hasOwnProperty.call(stubs, args.path)) {
-              return { path: args.path, namespace: 'stub' };
-            }
-            return null;
-          });
-          build.onLoad({ filter: /.*/, namespace: 'stub' }, (args) => ({
-            contents: stubs[args.path],
-            loader: 'js',
-          }));
-        },
-      },
-    ],
-  });
-
-  const code = result.outputFiles[0].text;
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-snapshot-'));
-  const tmpFile = path.join(tmpDir, 'module.mjs');
-  fs.writeFileSync(tmpFile, code, 'utf8');
-
-  let mod;
-  try {
-    mod = await import(`file://${tmpFile.replace(/\\/g, '/')}?v=${Date.now()}-${Math.random()}`);
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
+  const mod = await loadBundledModule(
+    'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsAuthorityHooks.ts',
+    {
+      prefix: 'runtime-snapshot-',
+      stubs,
+    },
+  );
 
   // The module should export normalizeRuntimeSaveResult (or we test via the hook behavior).
   // Since normalizeRuntimeSaveResult is a module-private function, we test it indirectly

@@ -24,7 +24,6 @@ export function buildNeedsetReasoningContext({
   job = {},
   identity = {},
   categoryConfig = {},
-  llmBudgetGuard,
   fieldsBelowPassTarget = [],
   identityGate = {},
   identityConfidence = 0,
@@ -56,8 +55,6 @@ export function buildNeedsetReasoningContext({
     maxItems: Math.max(1, Number(config.maxHypothesisItems || 50)),
   });
 
-  const llmBudgetSnapshot = llmBudgetGuard.snapshot();
-  const llmBudgetBlockedReason = llmBudgetSnapshot.state.blockedReason || '';
   const fieldReasoning = buildFieldReasoningFn({
     fieldOrder,
     provenance,
@@ -66,7 +63,6 @@ export function buildNeedsetReasoningContext({
     missingRequiredFields: completenessStats.missingRequiredFields,
     constraintAnalysis,
     identityGateValidated: identityGate.validated,
-    llmBudgetBlockedReason,
     sourceResults: hypothesisSourceResults,
     fieldAvailabilityModel: learnedFieldAvailability,
     fieldYieldArtifact: learnedFieldYield,
@@ -140,7 +136,6 @@ export function buildNeedsetReasoningContext({
     hypothesisQueue,
     fieldReasoning,
     trafficLight,
-    llmBudgetBlockedReason,
     extractionGateOpen,
     needSet,
     needSetIdentityContext,

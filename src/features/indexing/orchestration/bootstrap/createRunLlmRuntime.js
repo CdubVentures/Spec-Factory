@@ -9,12 +9,7 @@ export function createRunLlmRuntime({
   traceWriter = null,
   routeMatrixPolicy = {},
   runtimeOverrides = {},
-  billingSnapshot = {},
   stableHashFn = () => 0,
-  buildInitialLlmBudgetStateFn = (snapshot = {}) => snapshot,
-  createBudgetGuardFn = () => ({
-    startRound() {},
-  }),
   normalizeCostRatesFn = () => ({}),
   appendCostLedgerEntryFn = async () => {},
   recordPromptResultFn = () => {},
@@ -23,12 +18,6 @@ export function createRunLlmRuntime({
   mkdirSyncFn = () => {},
   nowIsoFn = () => new Date().toISOString(),
 } = {}) {
-  const llmBudgetGuard = createBudgetGuardFn({
-    config,
-    ...buildInitialLlmBudgetStateFn(billingSnapshot),
-  });
-  llmBudgetGuard.startRound();
-
   const llmCostRates = normalizeCostRatesFn(config);
   let llmCostUsd = 0;
   let llmCallCount = 0;
@@ -65,7 +54,6 @@ export function createRunLlmRuntime({
         ? 'aggressive_always'
         : (llmVerifyForced ? 'missing_required_fields' : (llmVerifySampled ? 'sampling' : 'disabled')),
     },
-    budgetGuard: llmBudgetGuard,
     costRates: llmCostRates,
     traceWriter,
     route_matrix_policy: routeMatrixPolicy,
@@ -133,7 +121,6 @@ export function createRunLlmRuntime({
   };
 
   return {
-    llmBudgetGuard,
     llmCostRates,
     llmContext,
     getUsageState() {

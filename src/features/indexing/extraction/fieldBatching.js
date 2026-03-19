@@ -1,3 +1,4 @@
+import { resolvePhaseModel } from '../../../core/llm/client/routing.js';
 import { INSTRUMENTED_FIELDS } from '../../../constants.js';
 import {
   ruleDifficulty as ruleDifficultyAccessor,
@@ -159,7 +160,7 @@ export function resolveBatchModel({
   forcedHighFields = [],
   fieldRules = {}
 }) {
-  const fastModel = String(config.llmModelPlan || '').trim();
+  const fastModel = resolvePhaseModel(config, 'extraction') || String(config.llmModelPlan || '').trim();
   const reasoningModel = String(config.llmModelReasoning || fastModel).trim();
   const difficulty = batch?.difficulty || {};
   const fields = Array.isArray(batch?.fields) ? batch.fields.map((field) => normalizeField(field)) : [];

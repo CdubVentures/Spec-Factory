@@ -19,6 +19,7 @@ import {
   resolveArchivedIndexLabRunDirectory,
   refreshArchivedRunDirIndex,
   materializeArchivedRunLocation,
+  readArchivedS3RunMetaOnly,
 } from './archivedRunLocationHelpers.js';
 
 let _indexLabRoot = '';
@@ -34,6 +35,12 @@ let _evidenceReader = null;
 let _domainChecklistBuilder = null;
 let _automationQueueBuilder = null;
 let _runListBuilder = null;
+
+// WHY: Multiple subroutes (summary, workers, documents, prefetch) read the
+// same event log for the same run in a single request cycle. A short TTL
+// cache avoids redundant fs.readFile + parseNdjson work.
+const EVENT_CACHE_TTL_MS = 5_000;
+let _eventCache = new Map();
 
 export async function resolveIndexLabRunDirectory(runId) {
   const token = String(runId || '').trim();
@@ -112,6 +119,7 @@ export function initIndexLabDataBuilders({
   _outputRoot = outputRoot;
   _storage = storage;
   _config = config;
+  _eventCache = new Map();
   _getSpecDbReady = getSpecDbReady;
   _isProcessRunning = isProcessRunning;
   _processStatus = processStatus;
@@ -156,10 +164,18 @@ export function initIndexLabDataBuilders({
     readEvents: readIndexLabRunEvents,
     refreshArchivedRunDirIndex,
     materializeArchivedRunLocation,
+    readArchivedS3RunMetaOnly,
   });
 }
 
 export async function readIndexLabRunEvents(runId, limit = 2000) {
+  const effectiveLimit = Math.max(1, toInt(limit, 2000));
+  const cacheKey = `${String(runId || '').trim()}:${effectiveLimit}`;
+  const cached = _eventCache.get(cacheKey);
+  if (cached && (Date.now() - cached.at) < EVENT_CACHE_TTL_MS) {
+    return cached.rows;
+  }
+
   const runDir = await resolveIndexLabRunDirectory(runId);
   if (!runDir) return [];
   const eventsPath = path.join(runDir, 'run_events.ndjson');
@@ -169,8 +185,9 @@ export async function readIndexLabRunEvents(runId, limit = 2000) {
   } catch {
     return [];
   }
-  const rows = parseNdjson(text);
-  return rows.slice(-Math.max(1, toInt(limit, 2000)));
+  const rows = parseNdjson(text).slice(-effectiveLimit);
+  _eventCache.set(cacheKey, { rows, at: Date.now() });
+  return rows;
 }
 
 export function resolveRunProductId(meta = {}, events = []) {

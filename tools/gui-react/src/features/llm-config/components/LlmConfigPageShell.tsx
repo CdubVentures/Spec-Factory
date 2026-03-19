@@ -49,7 +49,7 @@ function PhaseNavIcon({ phaseId, active }: { phaseId: LlmPhaseId; active: boolea
             <path d="M16 16l5 5" />
           </>
         )}
-        {phaseId === 'serp-triage' && (
+        {phaseId === 'serp-selector' && (
           <>
             <path d="M3 6h18M3 12h12M3 18h8" />
             <path d="M19 10l2 2-2 2" />

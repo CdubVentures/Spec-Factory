@@ -17,6 +17,7 @@ import {
   applyLaneDecisionStatusAndAudit,
   resolveItemFieldMutationRequest,
   applyItemManualOverrideAndSync,
+  buildManualOverrideEvidence,
   resolveItemOverrideMode,
 } from '../features/review/services/itemMutationService.js';
 
@@ -33,6 +34,7 @@ export {
   applyLaneDecisionStatusAndAudit,
   resolveItemFieldMutationRequest,
   applyItemManualOverrideAndSync,
+  buildManualOverrideEvidence,
   resolveItemOverrideMode,
 };
 
@@ -124,17 +126,7 @@ async function handleReviewItemOverrideMutationEndpoint({
       return true;
     }
 
-    const manualEvidence = mode === 'manual-override'
-      ? {
-        url: String(body?.evidenceUrl || 'gui://manual-entry'),
-        quote: String(body?.evidenceQuote || `Manually set to "${String(value)}" via GUI`),
-        source_id: null,
-        retrieved_at: new Date().toISOString(),
-      }
-      : {
-        url: 'gui://manual-entry',
-        quote: `Manually set to "${String(value)}" via GUI`,
-      };
+    const manualEvidence = buildManualOverrideEvidence({ mode, value, body });
     const result = await applyItemManualOverrideAndSync({
       storage,
       config,

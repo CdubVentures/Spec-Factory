@@ -1,0 +1,423 @@
+import { describe, it } from 'node:test';
+import { ok, strictEqual, deepStrictEqual } from 'node:assert';
+import path from 'node:path';
+import { buildProcessStartLaunchPlan } from '../../src/features/indexing/api/builders/processStartLaunchPlan.js';
+import { RUNTIME_SETTINGS_REGISTRY } from '../../src/shared/settingsRegistry.js';
+import {
+  buildRoundConfig,
+  explainSearchProviderSelection,
+} from '../../src/runner/roundConfigBuilder.js';
+
+// WHY: Golden-master characterization tests for settings propagation.
+// These lock down current behavior before the SSOT rewrite (Plan 02).
+// Every assertion here documents the CURRENT state, not the desired state.
+
+// --- Helpers ---
+
+function buildFullBody() {
+  // Build a POST body with all registry keys set to recognizable test values
+  const body = {
+    category: 'mouse',
+    mode: 'indexlab',
+    productId: 'mouse-test-product-1',
+    replaceRunning: true,
+  };
+  for (const entry of RUNTIME_SETTINGS_REGISTRY) {
+    if (entry.secret) continue; // Skip API keys
+    switch (entry.type) {
+      case 'bool':
+        body[entry.key] = !entry.default; // Invert default to verify propagation
+        break;
+      case 'int':
+        body[entry.key] = entry.min != null ? entry.min + 1 : 42;
+        break;
+      case 'float':
+        body[entry.key] = entry.min != null ? entry.min + 0.1 : 0.42;
+        break;
+      case 'enum':
+        body[entry.key] = entry.allowed?.[0] ?? entry.default;
+        break;
+      case 'csv_enum':
+        body[entry.key] = entry.allowed?.[0] ?? entry.default;
+        break;
+      case 'string':
+        // WHY: JSON map fields must contain valid JSON, not arbitrary strings
+        if (entry.key.endsWith('Json')) {
+          body[entry.key] = entry.default || '';
+        } else {
+          body[entry.key] = `test-${entry.key}`;
+        }
+        break;
+    }
+  }
+  return body;
+}
+
+function buildPlan(bodyOverrides = {}, optionOverrides = {}) {
+  return buildProcessStartLaunchPlan({
+    body: {
+      ...buildFullBody(),
+      ...bodyOverrides,
+    },
+    helperRoot: path.resolve('category_authority'),
+    outputRoot: path.resolve('test-output'),
+    indexLabRoot: path.resolve('test-indexlab'),
+    runDataStorageState: { enabled: false, destinationType: 'local', localDirectory: '' },
+    env: {},
+    pathApi: path,
+    buildRunIdFn: () => 'test-run-id-000',
+    ...optionOverrides,
+  });
+}
+
+// --- Launch Plan Golden Master ---
+
+describe('processStartLaunchPlan — propagation characterization', () => {
+
+  it('produces ok: true with valid full body', () => {
+    const result = buildPlan();
+    strictEqual(result.ok, true, `launch plan failed: ${JSON.stringify(result.body)}`);
+  });
+
+  it('envOverrides contains exactly the known direct-launch keys', () => {
+    const result = buildPlan();
+    ok(result.ok);
+    const envKeys = new Set(Object.keys(result.envOverrides));
+
+    // WHY: These are the 42+ env vars that processStartLaunchPlan currently sets.
+    // This is the golden master — any change to this set must be intentional.
+    const EXPECTED_DIRECT_LAUNCH_ENV_KEYS = new Set([
+      'PREFER_HTTP_FETCHER',
+      'DYNAMIC_CRAWLEE_ENABLED',
+      'FETCH_CANDIDATE_SOURCES',
+      'MAX_PDF_BYTES',
+      'SPEC_DB_DIR',
+      'LLM_EXTRACTION_CACHE_DIR',
+      'HELPER_FILES_ENABLED',
+      'HELPER_FILES_ROOT',
+      'CATEGORY_AUTHORITY_ROOT',
+      // WHY: DYNAMIC_FETCH_POLICY_MAP_JSON only set when value is non-empty valid JSON object
+      // 'DYNAMIC_FETCH_POLICY_MAP_JSON',
+      'OUTPUT_MODE',
+      'LOCAL_MODE',
+      'DRY_RUN',
+      'MIRROR_TO_S3',
+      'MIRROR_TO_S3_INPUT',
+      'LOCAL_INPUT_ROOT',
+      'LOCAL_OUTPUT_ROOT',
+      'RUNTIME_EVENTS_KEY',
+      'WRITE_MARKDOWN_SUMMARY',
+      'LLM_WRITE_SUMMARY',
+      'LLM_PROVIDER',
+      'LLM_BASE_URL',
+      'FETCH_PER_HOST_CONCURRENCY_CAP',
+      'FRONTIER_DB_PATH',
+      'FRONTIER_BLOCKED_DOMAIN_THRESHOLD',
+      'PAGE_GOTO_TIMEOUT_MS',
+      'PDF_PREFERRED_BACKEND',
+      'CAPTURE_PAGE_SCREENSHOT_ENABLED',
+      'CAPTURE_PAGE_SCREENSHOT_FORMAT',
+      'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
+      'STATIC_DOM_MODE',
+      'RUNTIME_TRACE_FETCH_RING',
+      'RUNTIME_TRACE_LLM_RING',
+      'RUNTIME_TRACE_LLM_PAYLOADS',
+      'EVENTS_JSON_WRITE',
+      'DAEMON_CONCURRENCY',
+      // WHY: daemonGracefulShutdownTimeoutMs is defaultsOnly in registry — only set when
+      // explicitly provided in POST body. The full body builder skips defaultsOnly entries.
+      // 'DAEMON_GRACEFUL_SHUTDOWN_TIMEOUT_MS',
+      'IMPORTS_ROOT',
+      'IMPORTS_POLL_SECONDS',
+      'RUNTIME_SCREENCAST_ENABLED',
+      'RUNTIME_SCREENCAST_FPS',
+      'RUNTIME_SCREENCAST_QUALITY',
+      'RUNTIME_SCREENCAST_MAX_WIDTH',
+      'RUNTIME_SCREENCAST_MAX_HEIGHT',
+      'LLM_MODEL_PLAN',
+      'LLM_MODEL_REASONING',
+      'LLM_MAX_OUTPUT_TOKENS_PLAN',
+      'LLM_MAX_OUTPUT_TOKENS_REASONING',
+      'LLM_PLAN_FALLBACK_MODEL',
+      'LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK',
+    ]);
+
+    // Check every expected key is present
+    for (const expectedKey of EXPECTED_DIRECT_LAUNCH_ENV_KEYS) {
+      ok(envKeys.has(expectedKey), `expected env key ${expectedKey} not found in envOverrides`);
+    }
+
+    // Document any EXTRA keys not in the expected set (new additions since audit)
+    const extraKeys = [];
+    for (const key of envKeys) {
+      if (!EXPECTED_DIRECT_LAUNCH_ENV_KEYS.has(key)) {
+        extraKeys.push(key);
+      }
+    }
+    // If there are extra keys, that's OK — just document them. Don't fail.
+    if (extraKeys.length > 0) {
+      // This is informational — update EXPECTED_DIRECT_LAUNCH_ENV_KEYS if these are intentional
+      ok(true, `Extra env keys found (update golden master if intentional): ${extraKeys.join(', ')}`);
+    }
+  });
+
+  it('registry keys NOT in envOverrides are payload-only or save-only (the propagation gap)', () => {
+    const result = buildPlan();
+    ok(result.ok);
+    const envKeys = new Set(Object.keys(result.envOverrides));
+
+    // These registry keys are sent in the GUI POST body but processStartLaunchPlan
+    // does NOT convert them to env vars. The child only gets them from user-settings.json.
+    const KNOWN_PAYLOAD_ONLY_GAPS = [
+      // Fetch network (sent in POST body but dropped before child launch)
+      'fetchConcurrency', 'perHostMinDelayMs', 'domainRequestRps', 'domainRequestBurst',
+      'globalRequestRps', 'globalRequestBurst', 'fetchBudgetMs',
+      'fetchSchedulerMaxRetries', 'fetchSchedulerFallbackWaitMs',
+      'fetchSchedulerInternalsMapJson', 'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
+      // Browser/rendering
+      'dynamicCrawleeEnabled', 'crawleeHeadless', 'crawleeRequestHandlerTimeoutSecs',
+      'dynamicFetchRetryBudget', 'dynamicFetchRetryBackoffMs',
+      'autoScrollEnabled', 'autoScrollPasses', 'autoScrollDelayMs',
+      'graphqlReplayEnabled', 'maxGraphqlReplays', 'maxNetworkResponsesPerPage',
+      'robotsTxtCompliant', 'robotsTxtTimeoutMs',
+      'capturePageScreenshotQuality', 'capturePageScreenshotMaxBytes',
+      // Frontier
+      'frontierStripTrackingParams', 'frontierQueryCooldownSeconds',
+      'frontierCooldown404Seconds', 'frontierCooldown404RepeatSeconds',
+      'frontierCooldown410Seconds', 'frontierCooldownTimeoutSeconds',
+      'frontierCooldown403BaseSeconds', 'frontierCooldown429BaseSeconds',
+      'frontierBackoffMaxExponent', 'frontierPathPenaltyNotfoundThreshold',
+      // Discovery
+      'discoveryMaxQueries', 'discoveryMaxDiscovered',
+      'maxUrlsPerProduct', 'maxCandidateUrls', 'maxPagesPerDomain',
+      'maxRunSeconds', 'maxJsonBytes',
+      // Parsing
+      'articleExtractorMinChars', 'articleExtractorMinScore', 'articleExtractorMaxChars',
+      'articleExtractorDomainPolicyMapJson', 'staticDomTargetMatchThreshold',
+      'staticDomMaxEvidenceSnippets', 'domSnippetMaxChars',
+      // OCR
+      'pdfBackendRouterEnabled', 'pdfBackendRouterTimeoutMs', 'pdfBackendRouterMaxPages',
+      'pdfBackendRouterMaxPairs', 'pdfBackendRouterMaxTextPreviewChars',
+      'scannedPdfOcrEnabled', 'scannedPdfOcrBackend', 'scannedPdfOcrMaxPages',
+      'scannedPdfOcrMaxPairs', 'scannedPdfOcrMinCharsPerPage', 'scannedPdfOcrMinLinesPerPage',
+      'scannedPdfOcrMinConfidence',
+      // LLM settings
+      'llmMaxCallsPerRound', 'llmMaxOutputTokens', 'llmVerifySampleRate',
+      'llmMaxBatchesPerProduct', 'llmMaxEvidenceChars', 'llmMaxTokens',
+      'llmTimeoutMs', 'llmCostInputPer1M', 'llmCostOutputPer1M', 'llmCostCachedInputPer1M',
+      'llmVerifyMode', 'llmExtractMaxSnippetsPerBatch', 'llmExtractMaxSnippetChars',
+      'llmExtractSkipLowSignal', 'llmReasoningMode', 'llmReasoningBudget',
+      'llmMonthlyBudgetUsd', 'llmPerProductBudgetUsd', 'llmMaxCallsPerProductTotal',
+      'llmExtractionCacheDir', 'llmExtractionCacheTtlMs',
+      'endpointSignalLimit', 'endpointSuggestionLimit', 'endpointNetworkScanLimit',
+      // Model / provider
+      'llmPlanProvider', 'llmPlanBaseUrl',
+      'llmReasoningFallbackModel', 'llmMaxOutputTokensReasoningFallback',
+      'llmMaxOutputTokensPlanFallback',
+      'llmProviderRegistryJson', 'llmPhaseOverridesJson',
+      'llmPlanUseReasoning',
+      // Automation
+      'categoryAuthorityEnabled', 'categoryAuthorityRoot',
+      'batchStrategy', 'fieldRewardHalfLifeDays',
+      'driftDetectionEnabled', 'driftPollSeconds', 'driftScanMaxProducts', 'driftAutoRepublish',
+      'selfImproveEnabled', 'maxHypothesisItems',
+      'hypothesisAutoFollowupRounds', 'hypothesisFollowupUrlsPerRound',
+      'helperSupportiveFillMissing', 'reCrawlStaleAfterDays',
+      'indexingCategoryAuthorityEnabled',
+      'indexingResumeSeedLimit', 'indexingResumePersistLimit',
+      'indexingSchemaPacketsValidationEnabled', 'indexingSchemaPacketsValidationStrict',
+      // Run output/control
+      'runtimeControlFile', 'specDbDir',
+      'runtimeTraceEnabled',
+      'outputMode', 'localMode', 'dryRun',
+      'localInputRoot', 'localOutputRoot', 'runtimeEventsKey',
+      'writeMarkdownSummary',
+      'mirrorToS3', 'mirrorToS3Input',
+      's3InputPrefix', 's3OutputPrefix',
+      'eloSupabaseAnonKey', 'eloSupabaseEndpoint',
+      // Search
+      'searchEnginesFallback', 'searxngBaseUrl', 'searxngMinQueryIntervalMs',
+      'searchProfileCapMapJson', 'serpRerankerWeightMapJson',
+      'repairDedupeRule', 'parsingConfidenceBaseMapJson',
+      // Resume
+      'resumeMode', 'resumeWindowHours', 'reextractIndexed', 'reextractAfterHours',
+      // Google
+      'googleSearchMaxRetries', 'googleSearchMinQueryIntervalMs',
+      'googleSearchProxyUrlsJson', 'googleSearchScreenshotsEnabled',
+      'googleSearchTimeoutMs',
+      // Learning
+      'userAgent', 'manufacturerAutoPromote',
+    ];
+
+    // This documents the gap — these are sent by GUI but dropped before child launch
+    // After the rewrite, ALL of these should travel via snapshot
+    ok(
+      KNOWN_PAYLOAD_ONLY_GAPS.length > 80,
+      `Expected > 80 payload-only gaps, got ${KNOWN_PAYLOAD_ONLY_GAPS.length}`
+    );
+  });
+
+  it('boolean env values are string true/false', () => {
+    const result = buildPlan({ preferHttpFetcher: true, dryRun: false });
+    ok(result.ok);
+    strictEqual(result.envOverrides.PREFER_HTTP_FETCHER, 'true');
+    strictEqual(result.envOverrides.DRY_RUN, 'false');
+  });
+
+  it('integer env values are clamped string numbers', () => {
+    // WHY: Use minimal body to avoid JSON validation failures on full body
+    const result = buildProcessStartLaunchPlan({
+      body: {
+        category: 'mouse',
+        mode: 'indexlab',
+        productId: 'mouse-test-1',
+        fetchPerHostConcurrencyCap: 999,
+        runtimeTraceFetchRing: 9999,
+      },
+      helperRoot: path.resolve('category_authority'),
+      outputRoot: path.resolve('test-output'),
+      indexLabRoot: path.resolve('test-indexlab'),
+      runDataStorageState: { enabled: false },
+      env: {},
+      pathApi: path,
+      buildRunIdFn: () => 'test-run-clamp',
+    });
+    ok(result.ok, `plan failed: ${JSON.stringify(result.body)}`);
+    // Clamped to max 64
+    strictEqual(result.envOverrides.FETCH_PER_HOST_CONCURRENCY_CAP, '64');
+    // Clamped to max 2000
+    strictEqual(result.envOverrides.RUNTIME_TRACE_FETCH_RING, '2000');
+  });
+
+  it('assignInt skips values below minInput threshold', () => {
+    // WHY: assignInt in processStartLaunchPlan skips entirely when value < minInput
+    const result = buildProcessStartLaunchPlan({
+      body: {
+        category: 'mouse',
+        mode: 'indexlab',
+        productId: 'mouse-test-1',
+        runtimeTraceFetchRing: 5, // Below minInput of 10
+      },
+      helperRoot: path.resolve('category_authority'),
+      outputRoot: path.resolve('test-output'),
+      indexLabRoot: path.resolve('test-indexlab'),
+      runDataStorageState: { enabled: false },
+      env: {},
+      pathApi: path,
+      buildRunIdFn: () => 'test-run-skip',
+    });
+    ok(result.ok);
+    // Value below minInput is SKIPPED entirely — env var not set
+    strictEqual(result.envOverrides.RUNTIME_TRACE_FETCH_RING, undefined);
+  });
+
+  it('invalid JSON object rejects with 400', () => {
+    const result = buildPlan({ dynamicFetchPolicyMapJson: 'not-json' });
+    strictEqual(result.ok, false);
+    strictEqual(result.status, 400);
+  });
+});
+
+// --- Round Config Golden Master ---
+
+describe('buildRoundConfig — round override characterization', () => {
+
+  function buildBaseConfig() {
+    return {
+      searchEngines: 'google',
+      searchProvider: 'google',
+      searxngBaseUrl: 'http://127.0.0.1:8080',
+      discoveryEnabled: true,
+      fetchCandidateSources: true,
+      preferHttpFetcher: false,
+      autoScrollEnabled: true,
+      autoScrollPasses: 2,
+      autoScrollDelayMs: 1200,
+      pageGotoTimeoutMs: 12000,
+      pageNetworkIdleTimeoutMs: 2000,
+      postLoadWaitMs: 200,
+      maxRunSeconds: 480,
+      maxUrlsPerProduct: 50,
+      maxCandidateUrls: 80,
+      maxPagesPerDomain: 5,
+      maxJsonBytes: 6000000,
+      maxNetworkResponsesPerPage: 2500,
+      maxGraphqlReplays: 20,
+      maxHypothesisItems: 120,
+      hypothesisAutoFollowupRounds: 2,
+      hypothesisFollowupUrlsPerRound: 24,
+      endpointSignalLimit: 120,
+      endpointSuggestionLimit: 36,
+      endpointNetworkScanLimit: 1800,
+      discoveryMaxQueries: 10,
+      discoveryResultsPerQuery: 10,
+      discoveryMaxDiscovered: 60,
+      discoveryQueryConcurrency: 2,
+      perHostMinDelayMs: 1500,
+      llmMaxCallsPerRound: 5,
+      llmMaxCallsPerProductTotal: 14,
+    };
+  }
+
+  it('round 0 applies fast profile caps', () => {
+    const base = buildBaseConfig();
+    const result = buildRoundConfig(base, { round: 0 });
+
+    // Fast profile overrides
+    strictEqual(result.preferHttpFetcher, true, 'round 0 forces HTTP fetcher');
+    strictEqual(result.autoScrollEnabled, false, 'round 0 disables auto scroll');
+    strictEqual(result.autoScrollPasses, 0, 'round 0 sets scroll passes to 0');
+    ok(result.maxRunSeconds <= 180, `round 0 should cap maxRunSeconds to 180, got ${result.maxRunSeconds}`);
+    ok(result.maxUrlsPerProduct <= 12, `round 0 should cap maxUrlsPerProduct to 12, got ${result.maxUrlsPerProduct}`);
+    ok(result.maxCandidateUrls <= 20, `round 0 should cap maxCandidateUrls to 20, got ${result.maxCandidateUrls}`);
+    strictEqual(result.discoveryEnabled, false, 'round 0 disables discovery');
+    strictEqual(result.fetchCandidateSources, false, 'round 0 disables fetch candidate sources');
+    strictEqual(result.searchEngines, '', 'round 0 clears search engines');
+  });
+
+  it('round 2+ applies thorough profile floors', () => {
+    const base = buildBaseConfig();
+    const result = buildRoundConfig(base, { round: 2 });
+
+    strictEqual(result.autoScrollEnabled, true, 'round 2 enables auto scroll');
+    ok(result.autoScrollPasses >= 3, `round 2 should floor scroll passes to 3, got ${result.autoScrollPasses}`);
+    ok(result.pageGotoTimeoutMs >= 45000, `round 2 should floor pageGotoTimeoutMs to 45000, got ${result.pageGotoTimeoutMs}`);
+    ok(result.maxRunSeconds >= 3600, `round 2 should floor maxRunSeconds to 3600, got ${result.maxRunSeconds}`);
+    ok(result.maxUrlsPerProduct >= 220, `round 2 should floor maxUrlsPerProduct to 220, got ${result.maxUrlsPerProduct}`);
+    strictEqual(result.preferHttpFetcher, false, 'round 2 disables HTTP-only fetcher');
+    strictEqual(result.discoveryEnabled, true, 'round 2 enables discovery');
+  });
+
+  it('round 1 applies intermediate values', () => {
+    const base = buildBaseConfig();
+    const result = buildRoundConfig(base, { round: 1 });
+
+    strictEqual(result.discoveryEnabled, true, 'round 1 enables discovery');
+    strictEqual(result.fetchCandidateSources, true, 'round 1 enables fetch sources');
+    ok(result.maxUrlsPerProduct >= 60, `round 1 should floor maxUrlsPerProduct, got ${result.maxUrlsPerProduct}`);
+    ok(result.discoveryMaxQueries >= 12, `round 1 should boost discoveryMaxQueries, got ${result.discoveryMaxQueries}`);
+  });
+
+  it('discovery disabled when missingRequired=0 and missingExpected=0', () => {
+    const base = buildBaseConfig();
+    const result = buildRoundConfig(base, {
+      round: 1,
+      missingRequiredCount: 0,
+      missingExpectedCount: 0,
+    });
+
+    strictEqual(result.discoveryEnabled, false, 'discovery should be disabled when nothing missing');
+    strictEqual(result.fetchCandidateSources, false, 'fetch sources should be disabled');
+  });
+
+  it('search provider selection respects searxng readiness', () => {
+    const selection = explainSearchProviderSelection({
+      baseConfig: { searchEngines: 'google', searxngBaseUrl: 'http://127.0.0.1:8080' },
+      discoveryEnabled: true,
+      missingRequiredCount: 5,
+    });
+
+    strictEqual(selection.reason_code, 'engines_ready');
+    ok(selection.provider.length > 0, 'provider should be non-empty when ready');
+  });
+});

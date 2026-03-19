@@ -16,7 +16,6 @@ export function buildFieldReasoning({
   missingRequiredFields,
   constraintAnalysis,
   identityGateValidated,
-  llmBudgetBlockedReason,
   sourceResults,
   fieldAvailabilityModel = {},
   fieldYieldArtifact = {},
@@ -36,8 +35,6 @@ export function buildFieldReasoning({
   const blockedByRobotsOrTos =
     (sourceResults || []).length > 0 &&
     (blockedSourceCount + robotsOnlySourceCount) >= Math.max(1, Math.ceil((sourceResults || []).length * 0.7));
-  const budgetExhausted = String(llmBudgetBlockedReason || '').includes('budget');
-
   function highYieldDomainCountForField(field) {
     let count = 0;
     for (const row of Object.values(fieldYieldArtifact?.by_domain || {})) {
@@ -115,8 +112,6 @@ export function buildFieldReasoning({
 
       if (!identityGateValidated) {
         unknownReason = 'identity_ambiguous';
-      } else if (budgetExhausted) {
-        unknownReason = 'budget_exhausted';
       } else if ((contradictionsByField[field] || []).length > 0) {
         unknownReason = 'conflicting_sources_unresolved';
       } else if (blockedByRobotsOrTos) {

@@ -39,6 +39,21 @@ function extractCliArgValue(cliArgs = [], argName = '') {
   return '';
 }
 
+function normalizeStorageDestinationToken(value) {
+  const token = String(value || '').trim().toLowerCase();
+  return token === 's3' ? 's3' : 'local';
+}
+
+function resolveProcessStorageDestination(runDataStorageState = {}) {
+  if (!runDataStorageState || typeof runDataStorageState !== 'object') {
+    return 'local';
+  }
+  if (runDataStorageState.enabled !== true) {
+    return 'local';
+  }
+  return normalizeStorageDestinationToken(runDataStorageState.destinationType);
+}
+
 function normalizeUrlToken(value, fallback) {
   const raw = String(value || '').trim() || String(fallback || '').trim();
   try {
@@ -114,6 +129,12 @@ export function createProcessRuntime({
     command: null,
     startedAt: null,
     runId: null,
+    category: null,
+    productId: null,
+    brand: null,
+    model: null,
+    variant: null,
+    storageDestination: null,
     exitCode: null,
     endedAt: null,
   };
@@ -131,12 +152,26 @@ export function createProcessRuntime({
     const running = isProcessRunning();
     const active = running ? childProc : null;
     const runId = normalizeRunIdToken(active?._runId || lastProcessSnapshot.runId || relocatingRunId || '');
+    const productId = String(active?._productId || lastProcessSnapshot.productId || '').trim();
+    const storageDestination = normalizeStorageDestinationToken(
+      active?._storageDestination
+      || lastProcessSnapshot.storageDestination
+      || resolveProcessStorageDestination(runDataStorageState),
+    );
     return {
       running,
       relocating: Boolean(relocatingRunId),
       relocatingRunId: relocatingRunId || null,
       run_id: runId || null,
       runId: runId || null,
+      category: String(active?._category || lastProcessSnapshot.category || '').trim() || null,
+      product_id: productId || null,
+      productId: productId || null,
+      brand: String(active?._brand || lastProcessSnapshot.brand || '').trim() || null,
+      model: String(active?._model || lastProcessSnapshot.model || '').trim() || null,
+      variant: String(active?._variant || lastProcessSnapshot.variant || '').trim() || null,
+      storage_destination: storageDestination,
+      storageDestination: storageDestination,
       pid: active?.pid || lastProcessSnapshot.pid || null,
       command: active?._cmd || lastProcessSnapshot.command || null,
       startedAt: active?._startedAt || lastProcessSnapshot.startedAt || null,
@@ -394,6 +429,12 @@ export function createProcessRuntime({
     child._cmd = `${childNodeCommand} ${cmd} ${cliArgs.join(' ')}`;
     child._startedAt = new Date().toISOString();
     child._runId = runId || null;
+    child._category = extractCliArgValue(cliArgs, '--category') || null;
+    child._productId = extractCliArgValue(cliArgs, '--product-id') || null;
+    child._brand = extractCliArgValue(cliArgs, '--brand') || null;
+    child._model = extractCliArgValue(cliArgs, '--model') || null;
+    child._variant = extractCliArgValue(cliArgs, '--variant') || null;
+    child._storageDestination = resolveProcessStorageDestination(runDataStorageState);
     child._outputRoot = resolveProjectPath(envOverrides.LOCAL_OUTPUT_ROOT || outputRoot || '.');
     child._indexLabRoot = resolveProjectPath(extractCliArgValue(cliArgs, '--out') || indexLabRoot || '.');
     lastProcessSnapshot = {
@@ -401,6 +442,12 @@ export function createProcessRuntime({
       command: child._cmd,
       startedAt: child._startedAt,
       runId: child._runId || null,
+      category: child._category || null,
+      productId: child._productId || null,
+      brand: child._brand || null,
+      model: child._model || null,
+      variant: child._variant || null,
+      storageDestination: child._storageDestination || null,
       exitCode: null,
       endedAt: null,
     };
@@ -429,6 +476,12 @@ export function createProcessRuntime({
         command: child._cmd || lastProcessSnapshot.command,
         startedAt: child._startedAt || lastProcessSnapshot.startedAt,
         runId: child._runId || lastProcessSnapshot.runId || null,
+        category: child._category || lastProcessSnapshot.category || null,
+        productId: child._productId || lastProcessSnapshot.productId || null,
+        brand: child._brand || lastProcessSnapshot.brand || null,
+        model: child._model || lastProcessSnapshot.model || null,
+        variant: child._variant || lastProcessSnapshot.variant || null,
+        storageDestination: child._storageDestination || lastProcessSnapshot.storageDestination || null,
         exitCode: resolvedExitCode,
         endedAt: new Date().toISOString(),
       };
@@ -645,17 +698,14 @@ export function createProcessRuntime({
       return status;
     }
 
+    // WHY: On Windows, SIGTERM/SIGKILL don't reliably kill child process trees.
+    // Send SIGTERM with a short grace period, then go straight to tree kill.
     try { runningProc.kill('SIGTERM'); } catch { /* ignore */ }
-    let exited = await waitForProcessExit(runningProc, Math.min(3000, timeoutMs));
-
-    if (!exited && runningProc.exitCode === null) {
-      try { runningProc.kill('SIGKILL'); } catch { /* ignore */ }
-      exited = await waitForProcessExit(runningProc, 2000);
-    }
+    let exited = await waitForProcessExit(runningProc, Math.min(1500, timeoutMs));
 
     if (!exited && runningProc.exitCode === null) {
       await killWindowsProcessTree(runningProc.pid);
-      exited = await waitForProcessExit(runningProc, Math.max(1000, timeoutMs - 5000));
+      exited = await waitForProcessExit(runningProc, Math.max(1000, timeoutMs - 2000));
     }
     let orphanKilled = 0;
     if (force) {

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { PrefetchNeedSetData, PrefetchSchema4Bundle, PrefetchNeedSetPlannerRow, NeedSetField } from '../../types';
+import type { PrefetchNeedSetData, PrefetchSchema4Bundle, PrefetchNeedSetPlannerRow, NeedSetField, PrefetchLlmCall } from '../../types';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
 import { Tip } from '../../../../shared/ui/feedback/Tip';
 import type { RuntimeIdxBadge } from '../../types';
@@ -16,6 +16,7 @@ interface PrefetchNeedSetPanelProps {
   data: PrefetchNeedSetData;
   persistScope: string;
   idxRuntime?: RuntimeIdxBadge[];
+  needsetPlannerCalls?: PrefetchLlmCall[];
 }
 
 /* ── Theme-aligned badge helpers ───────────────────────────────────── */
@@ -302,6 +303,21 @@ function FamilyIcon({ family, size = 14 }: { family: string; size?: number }) {
   return <svg {...common}><circle cx="8" cy="8" r="6" /></svg>;
 }
 
+/* ── LLM Pending Bar ──────────────────────────────────────────────── */
+
+function LlmPendingBar() {
+  return (
+    <div className="flex items-center gap-2.5 py-3 px-4 rounded-sm sf-surface-elevated border sf-border-soft">
+      <div className="w-20 h-1 rounded-sm overflow-hidden sf-bg-surface-soft-strong">
+        <div className="h-full w-full rounded-sm bg-[var(--sf-token-accent)] animate-pulse" />
+      </div>
+      <span className="text-[10px] font-mono font-semibold tracking-[0.02em] sf-text-muted">
+        search planner LLM in progress&hellip;
+      </span>
+    </div>
+  );
+}
+
 /* ── Section header ────────────────────────────────────────────────── */
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
@@ -318,7 +334,7 @@ const PLANNER_SORT_KEYS = ['field_key', 'required_level', 'state', 'bundle_id'] 
 const SORT_DIRS = ['asc', 'desc'] as const;
 const DRILLDOWN_FILTERS = ['unresolved', 'escalated', 'all'] as const;
 
-export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: PrefetchNeedSetPanelProps) {
+export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPlannerCalls }: PrefetchNeedSetPanelProps) {
   const [plannerSortKey, setPlannerSortKey] = usePersistedTab<PlannerSortKey>(`runtimeOps:needset:sortKey:${persistScope}`, 'required_level', { validValues: PLANNER_SORT_KEYS });
   const [plannerSortDir, setPlannerSortDir] = usePersistedTab<'asc' | 'desc'>(`runtimeOps:needset:sortDir:${persistScope}`, 'asc', { validValues: SORT_DIRS });
   const [fieldFilter, setFieldFilter] = usePersistedTab<string>(`runtimeOps:needset:fieldFilter:${persistScope}`, '');
@@ -363,9 +379,16 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
   const round = data.round;
   const roundMode = data.round_mode;
   const hasData = summary !== undefined || bundles.length > 0;
+  // WHY: Pre-LLM data (blockers, deltas, field history) arrives instantly from
+  // Schema 2/3. LLM-dependent sections (bundles, profile, drilldown) need Schema 4.
+  const hasPreLlmData = summary !== undefined;
+  const hasLlmData = bundles.length > 0;
+  const isLlmPending = hasPreLlmData && !hasLlmData;
 
+  // WHY: Builder always sets rows=[] (not undefined), so ?? never triggers.
+  // Use length check to fall back to deriving rows from bundles.
   const plannerRows = useMemo(
-    () => data.rows ?? derivePlannerRows(bundles),
+    () => (data.rows && data.rows.length > 0) ? data.rows : derivePlannerRows(bundles),
     [data.rows, bundles],
   );
 
@@ -562,6 +585,12 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
       )}
 
       {/* ── Search Focus Bundles ──────────────────────────── */}
+      {isLlmPending && (
+        <div>
+          <SectionHeader>search focus bundles</SectionHeader>
+          <LlmPendingBar />
+        </div>
+      )}
       {bundles.length > 0 && (
         <div>
           <SectionHeader>search focus bundles</SectionHeader>
@@ -601,6 +630,12 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
       )}
 
       {/* ── Profile Influence ─────────────────────────────── */}
+      {isLlmPending && (
+        <div>
+          <SectionHeader>profile influence</SectionHeader>
+          <LlmPendingBar />
+        </div>
+      )}
       {profileEntries.length > 0 && profileInfluence && (
         <div>
           <SectionHeader>profile influence</SectionHeader>
@@ -734,7 +769,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
       )}
 
       {/* ── Field History ──────────────────────────────────── */}
-      {historyFields.length > 0 && (
+      {(historyFields.length > 0 || hasPreLlmData) && (
         <div>
           <div
             onClick={toggleHistoryOpen}
@@ -742,13 +777,23 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
           >
             <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary flex-1">field history</span>
             <span className="text-[11px] font-mono sf-text-subtle">
-              {historyFields.length} tracked{stuckFieldCount > 0 && (
-                <span className="text-[var(--sf-state-error-fg)]"> &middot; {stuckFieldCount} stuck</span>
+              {historyFields.length > 0 ? (
+                <>{historyFields.length} tracked{stuckFieldCount > 0 && (
+                  <span className="text-[var(--sf-state-error-fg)]"> &middot; {stuckFieldCount} stuck</span>
+                )}</>
+              ) : (
+                <>awaiting search data</>
               )} &middot; {historyOpen ? 'collapse \u25B4' : 'expand \u25BE'}
             </span>
           </div>
 
-          {historyOpen && (
+          {historyOpen && historyFields.length === 0 && (
+            <div className="mt-3 px-4 py-3 rounded-sm sf-surface-elevated border sf-border-soft text-xs sf-text-muted italic">
+              No search history yet &mdash; history populates as searches complete and fields accumulate evidence across rounds.
+            </div>
+          )}
+
+          {historyOpen && historyFields.length > 0 && (
             <div className="mt-3 space-y-2">
               {/* Summary stat */}
               {stuckFieldCount > 0 && (
@@ -855,6 +900,12 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
       )}
 
       {/* ── Field Drilldown ───────────────────────────────── */}
+      {isLlmPending && (
+        <div>
+          <SectionHeader>field drilldown</SectionHeader>
+          <LlmPendingBar />
+        </div>
+      )}
       {plannerRows.length > 0 && (
         <div>
           <div

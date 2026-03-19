@@ -200,7 +200,6 @@ export function createProductCompletionRuntime({
             contribution: context.contribution,
             llmEstimatedUsageCount: context.llmEstimatedUsageCount,
             llmRetryWithoutSchemaCount: context.llmRetryWithoutSchemaCount,
-            llmBudgetBlockedReason: context.llmBudgetBlockedReason,
             indexingHelperFlowEnabled: context.indexingHelperFlowEnabled,
             helperContext: context.helperContext,
             helperFilledFields: context.helperFilledFields,

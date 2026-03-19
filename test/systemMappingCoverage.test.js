@@ -1,31 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
-import { fileURLToPath } from 'node:url';
 import { FIELD_SYSTEM_MAP as BACKEND_FIELD_SYSTEM_MAP } from '../src/field-rules/consumerGate.js';
+import { loadBundledModule } from './helpers/loadBundledModule.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-async function loadSystemMapping() {
-  const esbuild = await import('esbuild');
-  const srcPath = path.resolve(__dirname, '..', 'tools', 'gui-react', 'src', 'features', 'studio', 'workbench', 'systemMapping.ts');
-  const result = await esbuild.build({
-    entryPoints: [srcPath],
-    bundle: false,
-    write: false,
-    format: 'esm',
-    platform: 'neutral',
-    loader: { '.ts': 'ts' },
+function loadSystemMapping() {
+  return loadBundledModule('tools/gui-react/src/features/studio/workbench/systemMapping.ts', {
+    prefix: 'sysmapping-',
   });
-  const code = result.outputFiles[0].text;
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sysmapping-'));
-  const tmpFile = path.join(tmpDir, 'systemMapping.mjs');
-  fs.writeFileSync(tmpFile, code, 'utf8');
-  const mod = await import(`file://${tmpFile.replace(/\\/g, '/')}`);
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-  return mod;
 }
 
 let FIELD_SYSTEM_MAP;

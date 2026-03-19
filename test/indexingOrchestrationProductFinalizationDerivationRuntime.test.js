@@ -310,7 +310,6 @@ test('runProductFinalizationDerivation can delegate through finalizationDerivati
           hypothesisQueue: [{ field: 'weight_g' }],
           fieldReasoning: { weight_g: { reason: 'missing' } },
           trafficLight: { yellow: ['weight_g'] },
-          llmBudgetBlockedReason: '',
           extractionGateOpen: true,
           needSet: { needs: [{ field_key: 'weight_g' }] },
         };

@@ -90,7 +90,7 @@ test('characterization: triage group uses llmMaxOutputTokensTriage', () => {
     llmMaxOutputTokensTriage: 512,
     llmMaxOutputTokensPlan: 2048,
   };
-  const route = resolveLlmRoute(config, { role: 'plan', reason: 'serp_triage' });
+  const route = resolveLlmRoute(config, { role: 'plan', reason: 'serp_selector' });
   assert.equal(route.model, 'gpt-4.1-mini');
 });
 

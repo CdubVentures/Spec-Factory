@@ -18,6 +18,7 @@ export interface CatalogRow {
   identifier: string;
   brand: string;
   model: string;
+  base_model: string;
   variant: string;
   status: string;
   hasFinal: boolean;

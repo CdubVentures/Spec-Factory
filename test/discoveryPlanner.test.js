@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeQueryRows } from '../src/features/indexing/discovery/discoveryPlanner.js';
-import { planUberQueries } from '../src/research/queryPlanner.js';
+import { normalizeQueryRows, planUberQueries } from '../src/research/queryPlanner.js';
 
 function makeChatCompletionResponse(payload) {
   return {
@@ -50,12 +49,7 @@ test('planUberQueries makes single LLM call and dedupes output', async () => {
       missingFields: ['click_latency', 'sensor'],
       missingCriticalFields: ['click_latency'],
       baseQueries: ['logitech g pro x superlight 2 specs'],
-      llmContext: {
-        budgetGuard: {
-          canCall: () => ({ allowed: true }),
-          recordCall: () => {}
-        }
-      }
+      llmContext: {}
     });
 
     // WHY: Single planner call — one LLM call

@@ -15,11 +15,10 @@ import {
 
 test('buildEffectiveSettingsSnapshot captures required keys', () => {
   const config = {
-    searchEngines: 'bing,startpage,duckduckgo',
+    searchEngines: 'bing,google-proxy,duckduckgo',
     discoveryEnabled: true,
     preferHttpFetcher: true,
     dynamicCrawleeEnabled: true,
-    fetchSchedulerEnabled: true,
     fetchSchedulerMaxRetries: 3,
     perHostMinDelayMs: 2000,
     pageGotoTimeoutMs: 30000,
@@ -33,7 +32,7 @@ test('buildEffectiveSettingsSnapshot captures required keys', () => {
   };
   const snap = buildEffectiveSettingsSnapshot(config);
   assert.ok(snap.ts);
-  assert.equal(snap.searchEngines, 'bing,startpage,duckduckgo');
+  assert.equal(snap.searchEngines, 'bing,google-proxy,duckduckgo');
   assert.equal(snap.maxRunSeconds, 600);
   // All required keys present
   for (const key of REQUIRED_SETTINGS_KEYS) {

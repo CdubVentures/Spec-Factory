@@ -6,12 +6,6 @@ export const ROLE_BADGE_STYLE: Record<LlmModelRole, { fg: string; bg: string }> 
   embedding: { fg: 'var(--sf-state-success-fg)', bg: 'var(--sf-state-success-bg)' },
 };
 
-export const ROLE_ICON: Record<LlmModelRole, { d: string; viewBox: string; size: number }> = {
-  primary: { d: 'M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z', viewBox: '0 0 12 12', size: 10 },
-  reasoning: { d: 'M7 0 0 7l7 7 7-7L7 0Z', viewBox: '0 0 14 14', size: 12.5 },
-  embedding: { d: 'M6 1v10M1 6h10', viewBox: '0 0 12 12', size: 10 },
-};
-
 export const ROLE_LABEL: Record<LlmModelRole, string> = {
   primary: 'Primary',
   reasoning: 'Reasoning',
@@ -21,5 +15,4 @@ export const ROLE_LABEL: Record<LlmModelRole, string> = {
 export const MODEL_ROLE_OPTIONS: readonly { value: LlmModelRole; label: string }[] = [
   { value: 'primary', label: 'Primary' },
   { value: 'reasoning', label: 'Reasoning' },
-  { value: 'embedding', label: 'Embedding' },
 ];

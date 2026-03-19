@@ -31,7 +31,7 @@ function makeConfig(tempRoot, overrides = {}) {
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 20,
     discoveryQueryConcurrency: 1,
-    searchEngines: 'bing,startpage,duckduckgo',
+    searchEngines: 'bing,google-proxy,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
     ...overrides,
@@ -91,7 +91,7 @@ const EXPECTED_PROFILE_KEYS = [
   'brand_resolution', 'schema4_planner', 'schema4_learning', 'schema4_panel',
   'key', 'run_key', 'latest_key',
   'query_stats', 'discovered_count', 'approved_count', 'candidate_count',
-  'llm_query_planning', 'llm_serp_triage', 'serp_explorer',
+  'llm_query_planning', 'llm_serp_selector', 'serp_explorer',
 ];
 
 describe('searchProfileFinal shape regression', () => {
@@ -349,26 +349,6 @@ describe('searchProfileFinal shape regression', () => {
     };
 
     let capturedArgs = null;
-    const stubDiscover = async (args) => {
-      capturedArgs = args;
-      return {
-        enabled: true,
-        approvedUrls: [],
-        candidateUrls: [],
-        queries: handoff.queries.map((q) => q.q),
-        search_profile: {
-          brand_resolution: null,
-          schema4_planner: {
-            mode: args.searchPlanHandoff?._planner?.mode || 'unknown',
-            planner_confidence: args.searchPlanHandoff?._planner?.planner_confidence ?? 0,
-            duplicates_suppressed: args.searchPlanHandoff?._planner?.duplicates_suppressed ?? 0,
-            targeted_exceptions: args.searchPlanHandoff?._planner?.targeted_exceptions ?? 0,
-          },
-          schema4_learning: args.searchPlanHandoff?._learning || null,
-          schema4_panel: args.searchPlanHandoff?._panel || null,
-        },
-      };
-    };
 
     const result = await runDiscoverySeedPlan({
       config: {
@@ -376,9 +356,11 @@ describe('searchProfileFinal shape regression', () => {
         searchEngines: 'bing,google',
         maxCandidateUrls: 10,
         fetchCandidateSources: true,
-        enableSchema4SearchPlan: true,
       },
-      storage: {},
+      storage: {
+        resolveOutputKey: () => '_learning/test',
+        readJsonOrNull: async () => null,
+      },
       category: 'mouse',
       categoryConfig: {
         category: 'mouse',
@@ -399,7 +381,6 @@ describe('searchProfileFinal shape regression', () => {
       planner: { enqueue: () => {}, seedCandidates: () => {} },
       normalizeFieldListFn: (f) => f,
       loadEnabledSourceEntriesFn: () => [],
-      discoverCandidateSourcesFn: stubDiscover,
       computeNeedSetFn: () => ({
         schema_version: 'needset_output.v2',
         fields: [],
@@ -419,6 +400,40 @@ describe('searchProfileFinal shape regression', () => {
         learning_writeback: mockLearning,
         panel: mockPanel,
       }),
+      runBrandResolverFn: async () => ({ brandResolution: null, promotedHosts: [] }),
+      runSearchProfileFn: () => ({
+        searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] },
+        effectiveHostPlan: null,
+        hostPlanQueryRows: [],
+      }),
+      runSearchPlannerFn: async (args) => {
+        capturedArgs = args;
+        return { schema4Plan: null, uberSearchPlan: null };
+      },
+      runQueryJourneyFn: async () => ({
+        queries: [],
+        selectedQueryRowMap: new Map(),
+        profileQueryRowsByQuery: new Map(),
+        searchProfilePlanned: {},
+        searchProfileKeys: {},
+        executionQueryLimit: 0,
+        queryLimit: 8,
+        queryRejectLogCombined: [],
+      }),
+      executeSearchQueriesFn: async () => ({
+        rawResults: [],
+        searchAttempts: [],
+        searchJournal: [],
+        internalSatisfied: false,
+        externalSearchReason: null,
+      }),
+      processDiscoveryResultsFn: async () => ({
+        enabled: true,
+        approvedUrls: [],
+        candidateUrls: [],
+        candidates: [],
+      }),
+      runDomainClassifierFn: () => ({ enqueuedCount: 0, seededCount: 0 }),
     });
 
     // Verify _planner, _learning, _panel were attached to handoff

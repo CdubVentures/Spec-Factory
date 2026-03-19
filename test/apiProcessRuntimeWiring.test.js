@@ -85,7 +85,7 @@ function createHarness(options = {}) {
     handleIndexLabProcessCompletion: async (payload) => {
       indexCalls.push(payload);
     },
-    runDataStorageState: {},
+    runDataStorageState: options.runDataStorageState || {},
     indexLabRoot: path.resolve('artifacts/indexlab'),
     outputRoot: path.resolve('out'),
     outputPrefix: 'specs/outputs',
@@ -108,6 +108,48 @@ function createHarness(options = {}) {
     projectRoot,
   };
 }
+
+test('process runtime status preserves live run identity fields and storage destination from launch args', async () => {
+  const h = createHarness({
+    runDataStorageState: {
+      enabled: true,
+      destinationType: 's3',
+    },
+  });
+
+  const status = h.runtime.startProcess(
+    'src/cli/spec.js',
+    [
+      'indexlab',
+      '--run-id', '20260318061504-16a0b3',
+      '--category', 'mouse',
+      '--product-id', 'mouse-razer-viper-v3-pro-white',
+      '--brand', 'Razer',
+      '--model', 'Viper V3 Pro',
+      '--variant', 'White',
+    ],
+  );
+
+  assert.equal(status.category, 'mouse');
+  assert.equal(status.product_id, 'mouse-razer-viper-v3-pro-white');
+  assert.equal(status.productId, 'mouse-razer-viper-v3-pro-white');
+  assert.equal(status.brand, 'Razer');
+  assert.equal(status.model, 'Viper V3 Pro');
+  assert.equal(status.variant, 'White');
+  assert.equal(status.storage_destination, 's3');
+  assert.equal(status.storageDestination, 's3');
+
+  h.children[0].emit('exit', 0, null);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  const after = h.runtime.processStatus();
+  assert.equal(after.category, 'mouse');
+  assert.equal(after.product_id, 'mouse-razer-viper-v3-pro-white');
+  assert.equal(after.brand, 'Razer');
+  assert.equal(after.model, 'Viper V3 Pro');
+  assert.equal(after.variant, 'White');
+  assert.equal(after.storage_destination, 's3');
+});
 
 test('process runtime start emits process-status and preserves run-id in status payload', async () => {
   const h = createHarness();
@@ -281,7 +323,8 @@ test('process runtime stop with stubborn active child does not scan unrelated or
   assert.equal(stopStatus.stop_attempted, true);
   assert.equal(stopStatus.stop_confirmed, false);
   assert.equal(stopStatus.orphan_killed, 0);
-  assert.deepEqual(child.killSignals, ['SIGTERM', 'SIGKILL']);
+  // WHY: On Windows, SIGKILL is skipped — goes straight from SIGTERM to tree kill.
+  assert.deepEqual(child.killSignals, ['SIGTERM']);
   assert.equal(h.spawnCalls.length, 1);
   assert.equal(h.execCalls.length, 0);
 });

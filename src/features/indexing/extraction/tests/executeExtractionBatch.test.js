@@ -56,7 +56,6 @@ test('executeExtractionBatch returns cached results without invoking the model',
 test('executeExtractionBatch upgrades the batch result when repatch finds more candidates', async () => {
   const invocations = [];
   const cacheWrites = [];
-  const budgetReasons = [];
   const primary = buildSanitizedResult();
   const repatched = buildSanitizedResult([
     {
@@ -78,12 +77,6 @@ test('executeExtractionBatch upgrades the batch result when repatch finds more c
       }
     },
     cacheKey: 'cache-key-2',
-    budgetGuard: {
-      canCall(options = {}) {
-        budgetReasons.push(String(options.reason || ''));
-        return { allowed: true, reason: 'ok' };
-      }
-    },
     invokeModel: async (request) => {
       invocations.push(request);
       return request.model === 'repatch-model' ? repatched : primary;
@@ -118,55 +111,10 @@ test('executeExtractionBatch upgrades the batch result when repatch finds more c
       }
     ]
   );
-  assert.deepEqual(budgetReasons, ['extract_batch:batch-repatch_repatch']);
   assert.equal(result.cacheHit, false);
   assert.deepEqual(result.notes, []);
   assert.deepEqual(result.sanitized, repatched);
   assert.deepEqual(cacheWrites, [['cache-key-2', repatched]]);
-});
-
-test('executeExtractionBatch records a note when budget guard blocks repatch', async () => {
-  const blockedReasons = [];
-  const warningEvents = [];
-  let invokeCount = 0;
-  const primary = buildSanitizedResult();
-
-  const result = await executeExtractionBatch({
-    batchId: 'batch-budget',
-    productId: 'mouse-budget',
-    budgetGuard: {
-      canCall() {
-        return { allowed: false, reason: 'budget_max_calls_per_round_reached' };
-      },
-      block(reason) {
-        blockedReasons.push(String(reason || ''));
-      }
-    },
-    logger: {
-      warn(event, payload) {
-        warningEvents.push([event, payload]);
-      }
-    },
-    invokeModel: async () => {
-      invokeCount += 1;
-      return primary;
-    },
-    primaryRequest: {
-      model: 'fast-model',
-      reason: 'extract_batch:batch-budget'
-    },
-    repatchRequest: {
-      model: 'repatch-model',
-      reason: 'extract_batch:batch-budget_repatch',
-      reasoningMode: true
-    }
-  });
-
-  assert.equal(invokeCount, 1);
-  assert.deepEqual(blockedReasons, ['budget_max_calls_per_round_reached']);
-  assert.equal(warningEvents[0][0], 'llm_extract_batch_repatch_skipped_budget');
-  assert.deepEqual(result.sanitized, primary);
-  assert.deepEqual(result.notes, ['Batch batch-budget repatch skipped by budget guard.']);
 });
 
 test('executeExtractionBatch records a note when provider pin disables repatch', async () => {

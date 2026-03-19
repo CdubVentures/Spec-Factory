@@ -600,15 +600,6 @@ export function buildFieldRuleDraft({
     publish_gate: (requiredLevel === 'identity' || requiredLevel === 'required') && !isInstrumentedField,
     publish_gate_reason: requiredLevel === 'identity' ? 'missing_identity' : (requiredLevel === 'required' ? 'missing_required' : ''),
     block_publish_when_unk: (requiredLevel === 'identity' || requiredLevel === 'required') && !isInstrumentedField,
-    surfaces: {
-      hub_cards: false,
-      xxl: false,
-      filters: false,
-      versus: false,
-      radar: false,
-      spec_table: true,
-      hide_if_unk: true
-    },
     ui,
     validate
   };

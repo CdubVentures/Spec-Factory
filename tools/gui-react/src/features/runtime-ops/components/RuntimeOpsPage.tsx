@@ -1,10 +1,15 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client';
+import { Spinner } from '../../../components/common/Spinner';
+import type { ProcessStatus } from '../../../types/events';
 import { useUiStore } from '../../../stores/uiStore';
 import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
 import { useIndexLabStore } from '../../indexing/state/indexlabStore';
+import { buildIndexLabRunsQueryKey, buildIndexLabRunsRequestPath } from '../../indexing/state/indexlabRunsQuery';
+import type { IndexLabRunSummary, IndexLabRunsResponse } from '../../indexing/types';
 import { resolveRunActiveScope } from '../selectors/runActivityScopeHelpers.js';
+import { BootProgressBar } from './BootProgressBar';
 import { MetricsRail } from '../panels/overview/MetricsRail';
 import { OverviewTab } from '../panels/overview/OverviewTab';
 import { WorkersTab } from '../panels/workers/WorkersTab';
@@ -13,6 +18,7 @@ import { ExtractionTab } from '../panels/overview/ExtractionTab';
 import { FallbacksTab } from '../panels/overview/FallbacksTab';
 import { QueueTab } from '../panels/overview/QueueTab';
 import { CompoundTab } from '../panels/compound/CompoundTab';
+import { RuntimeOpsRunPicker } from './RuntimeOpsRunPicker';
 import type {
   RuntimeOpsTab,
   RuntimeOpsSummaryResponse,
@@ -23,17 +29,6 @@ import type {
   FallbacksResponse,
   QueueStateResponse,
 } from '../types';
-
-interface ProcessStatus {
-  running: boolean;
-  run_id?: string | null;
-  runId?: string | null;
-  startedAt?: string | null;
-}
-
-interface IndexLabRunsResponse {
-  runs: Array<{ run_id: string; category: string; started_at: string; status: string }>;
-}
 
 const TAB_DEFS: { key: RuntimeOpsTab; label: string; desc: string }[] = [
   { key: 'overview', label: 'Overview', desc: 'Health cards, throughput, blockers' },
@@ -69,8 +64,93 @@ function getRefetchInterval(
   return isRunning ? activeMs : idleMs;
 }
 
+function toToken(value: unknown): string {
+  return String(value || '').trim();
+}
+
+function titleCaseWords(value = ''): string {
+  const words = toToken(value).split(/\s+/).filter(Boolean);
+  return words.map((word) => {
+    if (/\d/.test(word)) {
+      return word.toUpperCase();
+    }
+    const lower = word.toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  }).join(' ');
+}
+
+function humanizeProductId({
+  category = '',
+  productId = '',
+}: {
+  category?: string;
+  productId?: string;
+}): string {
+  const categoryToken = toToken(category).toLowerCase();
+  let productToken = toToken(productId);
+  if (categoryToken && productToken.toLowerCase().startsWith(`${categoryToken}-`)) {
+    productToken = productToken.slice(categoryToken.length + 1);
+  }
+  const humanized = titleCaseWords(productToken.replace(/[_-]+/g, ' '));
+  return humanized || titleCaseWords(categoryToken);
+}
+
+function toRunDisplayToken(runId = ''): string {
+  const token = toToken(runId);
+  if (!token) return '';
+  if (token.length <= 5) return token;
+  const segments = token.split(/[^A-Za-z0-9]+/).filter(Boolean);
+  for (let index = segments.length - 1; index >= 0; index -= 1) {
+    const segment = toToken(segments[index]);
+    if (segment.length >= 5) {
+      return segment.slice(-5);
+    }
+  }
+  return token.slice(-5);
+}
+
+function buildRunPickerLabel({
+  category = '',
+  productId = '',
+  brand = '',
+  model = '',
+  variant = '',
+  runId = '',
+}: {
+  category?: string;
+  productId?: string;
+  brand?: string;
+  model?: string;
+  variant?: string;
+  runId?: string;
+}): string {
+  const categoryLabel = titleCaseWords(category);
+  const identityLabel = [brand, model, variant].map(toToken).filter(Boolean).join(' ')
+    || humanizeProductId({ category, productId });
+  const dedupedIdentityLabel = identityLabel.toLowerCase() === categoryLabel.toLowerCase()
+    ? ''
+    : identityLabel;
+  const runToken = toRunDisplayToken(runId);
+  const lead = [categoryLabel, dedupedIdentityLabel].filter(Boolean).join(' • ');
+  if (!lead) return runToken;
+  return runToken ? `${lead} - ${runToken}` : lead;
+}
+
+function resolveStorageDestination(status: ProcessStatus | undefined): 'local' | 's3' {
+  return toToken(status?.storageDestination || status?.storage_destination).toLowerCase() === 's3'
+    ? 's3'
+    : 'local';
+}
+
+function resolveStorageState(status: ProcessStatus | undefined): 'live' | 'relocating' | 'stored' {
+  if (status?.relocating) return 'relocating';
+  if (status?.running) return 'live';
+  return 'stored';
+}
+
 export function RuntimeOpsPage() {
   const category = useUiStore((s) => s.category);
+  const categoryScope = category === 'all' ? '' : category;
   const selectedRunId = useIndexLabStore((s) => s.pickerRunId);
   const setSelectedRunId = useIndexLabStore((s) => s.setPickerRunId);
   const [activeTab, setActiveTab] = usePersistedTab<RuntimeOpsTab>(
@@ -94,34 +174,64 @@ export function RuntimeOpsPage() {
   const isRunning = Boolean(processStatus?.running);
   const processStatusRunId = String(processStatus?.run_id || processStatus?.runId || '').trim();
 
-  const { data: runsResp } = useQuery({
-    queryKey: ['indexlab', 'runs'],
-    queryFn: () => api.get<IndexLabRunsResponse>('/indexlab/runs?limit=40'),
+  const {
+    data: runsResp,
+    isLoading: runsLoading,
+    isFetching: runsFetching,
+  } = useQuery({
+    queryKey: buildIndexLabRunsQueryKey({ category: categoryScope, limit: 40 }),
+    queryFn: () => api.get<IndexLabRunsResponse>(buildIndexLabRunsRequestPath({ category: categoryScope, limit: 40 })),
     refetchInterval: getRefetchInterval(isRunning, false, 3000, 15000),
   });
 
   const runs = useMemo(() => {
-    const rows = runsResp?.runs ?? [];
-    if (category === 'all') return rows;
-    return rows.filter((r) => r.category === category);
-  }, [runsResp, category]);
+    return runsResp?.runs ?? [];
+  }, [runsResp]);
 
   const effectiveRunId = selectedRunId || processStatusRunId || runs[0]?.run_id || '';
 
-  const runOptions = useMemo(() => {
-    const rows = [...runs];
+  const runOptions = useMemo<IndexLabRunSummary[]>(() => {
+    const rows = runs.map((row) => {
+      if (row.run_id === processStatusRunId) {
+        return {
+          ...row,
+          storage_origin: resolveStorageDestination(processStatus),
+          storage_state: resolveStorageState(processStatus),
+        };
+      }
+      return {
+        ...row,
+        storage_state: row.storage_state || (row.status === 'running' || row.status === 'starting' ? 'live' : 'stored'),
+      };
+    });
     if (effectiveRunId && !rows.some((row) => row.run_id === effectiveRunId)) {
+      const fallbackCategory = toToken(processStatus?.category || categoryScope || category);
+      const fallbackProductId = toToken(processStatus?.product_id || processStatus?.productId);
       rows.unshift({
         run_id: effectiveRunId,
-        category,
+        category: fallbackCategory,
+        product_id: fallbackProductId,
         started_at: String(processStatus?.startedAt || ''),
-        status: isRunning ? 'running' : 'starting',
+        ended_at: '',
+        status: processStatus?.relocating ? 'relocating' : (isRunning ? 'running' : 'starting'),
+        storage_origin: resolveStorageDestination(processStatus),
+        storage_state: resolveStorageState(processStatus),
+        picker_label: buildRunPickerLabel({
+          category: fallbackCategory,
+          productId: fallbackProductId,
+          brand: toToken(processStatus?.brand),
+          model: toToken(processStatus?.model),
+          variant: toToken(processStatus?.variant),
+          runId: effectiveRunId,
+        }),
       });
     }
     return rows;
-  }, [runs, effectiveRunId, category, processStatus?.startedAt, isRunning]);
+  }, [runs, effectiveRunId, processStatusRunId, processStatus, categoryScope, category, isRunning]);
 
   const hasRuns = runOptions.length > 0;
+  const showRunsLoadingState = runsLoading && !hasRuns;
+  const showNoRunsState = !runsLoading && !hasRuns;
 
   useEffect(() => {
     if (!effectiveRunId || selectedRunId === effectiveRunId) return;
@@ -144,6 +254,29 @@ export function RuntimeOpsPage() {
     enabled: Boolean(effectiveRunId),
     refetchInterval: getRefetchInterval(isSelectedRunActive, activeTab !== 'overview', 2000, 10000),
   });
+
+  const runHeaderStatus = useMemo(() => {
+    if (runsLoading) {
+      return { text: 'Loading run history...', spinner: true, tone: 'muted' as const };
+    }
+    if (selectedRun?.storage_state === 'relocating' || selectedRun?.status === 'relocating') {
+      return { text: 'Relocating run artifacts...', spinner: true, tone: 'warning' as const };
+    }
+    // WHY: Only show "Starting..." when process is genuinely transitioning —
+    // processStatus reports the run but isRunning hasn't flipped yet.
+    if (selectedRun?.status === 'starting' && processStatusRunId === effectiveRunId && !isRunning) {
+      return { text: 'Starting...', spinner: true, tone: 'muted' as const };
+    }
+    if (isSelectedRunActive) {
+      // WHY: During boot (phase_00_bootstrap), show spinner + progress bar.
+      // Once needset fires the prefetch tabs take over — no need for header progress.
+      if (summary?.phase_cursor === 'phase_00_bootstrap') {
+        return { text: '', spinner: true, tone: 'muted' as const };
+      }
+      return { text: 'Live', spinner: false, tone: 'success' as const };
+    }
+    return null;
+  }, [runsLoading, selectedRun?.status, selectedRun?.storage_state, isSelectedRunActive, processStatusRunId, effectiveRunId, isRunning, summary?.phase_cursor]);
 
   const blockerValidValues = useMemo(
     () => (summary?.top_blockers ?? []).map((blocker) => blocker.host),
@@ -234,33 +367,44 @@ export function RuntimeOpsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center border-b sf-border-default sf-surface-shell px-4">
-        <div className="flex items-center gap-2 mr-4 py-2">
-          <label className="sf-text-caption sf-text-muted font-medium">Run:</label>
-          {hasRuns ? (
-            <select
-              value={effectiveRunId}
-              onChange={(e) => setSelectedRunId(e.target.value)}
-              className="sf-select sf-text-caption px-2 py-1 max-w-[16rem] truncate"
-            >
-              {runOptions.map((r) => (
-                <option key={r.run_id} value={r.run_id}>
-                  {r.run_id} ({r.status})
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span className="sf-text-caption sf-text-subtle italic">No runs yet</span>
-          )}
-          {isSelectedRunActive && (
-            <span className="inline-flex items-center gap-1 sf-text-caption sf-status-text-success">
-              <span className="inline-block w-2 h-2 rounded-full sf-chip-success animate-pulse" />
-              Live
-            </span>
-          )}
+      <div className="flex items-end gap-4 border-b sf-border-default sf-surface-shell px-4">
+        <div className="flex flex-col py-2">
+          <div className="flex min-h-5 items-center gap-2 pb-1">
+            {runHeaderStatus ? (
+              <>
+                {runHeaderStatus.spinner ? <Spinner className="h-3.5 w-3.5" /> : null}
+                {runHeaderStatus.text ? (
+                  <span className={`sf-text-caption ${
+                    runHeaderStatus.tone === 'success'
+                      ? 'sf-status-text-success'
+                      : runHeaderStatus.tone === 'warning'
+                        ? 'sf-status-text-warning'
+                        : 'sf-text-muted'
+                  }`}>
+                    {runHeaderStatus.text}
+                  </span>
+                ) : null}
+              </>
+            ) : null}
+            {isSelectedRunActive && summary?.phase_cursor === 'phase_00_bootstrap' && summary.boot_step && (
+              <BootProgressBar step={summary.boot_step} progress={summary.boot_progress ?? 0} />
+            )}
+          </div>
+          <div className="flex min-w-0 items-center gap-2">
+            <label className="shrink-0 sf-text-caption sf-text-muted font-medium">Run:</label>
+            <div className="min-w-0">
+              <RuntimeOpsRunPicker
+                runs={runOptions}
+                value={effectiveRunId}
+                onChange={setSelectedRunId}
+                isLoading={runsLoading}
+                isRefreshing={runsFetching && !runsLoading}
+              />
+            </div>
+          </div>
         </div>
 
-        <nav className="flex gap-1 ml-2 px-1 py-1 sf-tab-strip rounded">
+        <nav className="flex shrink-0 gap-1 px-1 py-1 sf-tab-strip rounded">
           {TAB_DEFS.map((t) => (
             <button
               key={t.key}
@@ -279,7 +423,11 @@ export function RuntimeOpsPage() {
         <MetricsRail data={metricsResp} />
 
         <div className="flex flex-1 min-h-0 min-w-0 flex-col">
-          {!hasRuns ? (
+          {showRunsLoadingState ? (
+            <div className="flex flex-col items-center justify-center flex-1 gap-3 p-8">
+              <div className="sf-text-caption sf-text-muted">Loading runtime runs…</div>
+            </div>
+          ) : showNoRunsState ? (
             <div className="flex flex-col items-center justify-center flex-1 gap-4 p-8">
               <div className="text-4xl opacity-30">{`\u2699\uFE0F`}</div>
               <div className="text-center max-w-md">

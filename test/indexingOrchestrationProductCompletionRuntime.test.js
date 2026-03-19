@@ -25,7 +25,6 @@ test('createProductCompletionRuntime builds analysis keys and run-completed payl
       contribution: { llmFields: ['weight_g'] },
       llmEstimatedUsageCount: 5,
       llmRetryWithoutSchemaCount: 1,
-      llmBudgetBlockedReason: '',
       indexingHelperFlowEnabled: true,
       helperContext: { active: true },
       helperFilledFields: ['weight_g'],

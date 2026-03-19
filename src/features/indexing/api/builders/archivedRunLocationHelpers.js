@@ -129,6 +129,53 @@ export async function materializeArchivedRunLocation(location = {}, runId = '') 
   return '';
 }
 
+// WHY: Downloads ONLY run.json from S3 (single read, no listKeys).
+// Used by the run-list builder so archived runs can appear in the picker
+// without materializing the entire S3 run directory.
+export async function readArchivedS3RunMetaOnly(location = {}, runId = '') {
+  if (!location || typeof location !== 'object' || location.type !== 's3') return null;
+  const keyBase = String(location.keyBase || '').trim().replace(/\/+$/g, '');
+  if (!keyBase) return null;
+  const s3Settings = resolveArchivedS3Settings();
+  if (!s3Settings) return null;
+
+  const cacheRoot = buildArchivedS3CacheRoot(runId || location.runId || '');
+  const cacheIndexLabDir = path.join(cacheRoot, 'indexlab');
+  const cacheMetaPath = path.join(cacheIndexLabDir, 'run.json');
+
+  // Check local cache first — avoids S3 call if already materialized.
+  const cachedMeta = await safeReadJson(cacheMetaPath);
+  if (cachedMeta && typeof cachedMeta === 'object') return cachedMeta;
+
+  // Single-file S3 read (no listKeys).
+  const metaKey = `${keyBase}/indexlab/run.json`;
+  let text = '';
+  try {
+    text = String(await s3Settings.storage.readTextOrNull(metaKey) || '');
+  } catch {
+    return null;
+  }
+  if (!text) return null;
+
+  let parsed = null;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object') return null;
+
+  // Cache locally so subsequent calls (and full hydration) short-circuit.
+  try {
+    await fs.mkdir(cacheIndexLabDir, { recursive: true });
+    await fs.writeFile(cacheMetaPath, text, 'utf8');
+  } catch {
+    // Best-effort cache write.
+  }
+
+  return parsed;
+}
+
 async function addArchivedS3RunHints(nextIndex = new Map(), s3Settings = null) {
   if (!s3Settings) return;
   const runsRoot = path.join(path.resolve(_outputRoot || '.'), 'runs');

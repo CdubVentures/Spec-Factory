@@ -82,6 +82,9 @@ export function buildRuntimeOpsSummary(events, meta) {
   return {
     status,
     round,
+    phase_cursor: String(safeMeta.phase_cursor || '').trim(),
+    boot_step: String(safeMeta.boot_step || '').trim(),
+    boot_progress: Math.max(0, Math.min(100, Number(safeMeta.boot_progress) || 0)),
     total_fetches: totalFetches,
     total_parses: parseFinished,
     total_llm_calls: llmFinished,

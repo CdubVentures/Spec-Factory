@@ -4,6 +4,9 @@ export interface RuntimeOpsSummaryResponse {
   run_id: string;
   status: string;
   round: number;
+  phase_cursor?: string;
+  boot_step?: string;
+  boot_progress?: number;
   total_fetches: number;
   total_parses: number;
   total_llm_calls: number;
@@ -218,7 +221,7 @@ export interface QueueStateResponse {
 export interface RuntimeOpsWorkerRow {
   worker_id: string;
   pool: string;
-  state: 'idle' | 'running' | 'stuck';
+  state: 'idle' | 'running' | 'stuck' | 'queued';
   stage: 'search' | 'fetch' | 'parse' | 'index' | 'llm';
   current_url: string;
   started_at: string;
@@ -398,7 +401,7 @@ export type PrefetchTabKey =
   | 'brand_resolver'
   | 'search_planner'
   | 'query_journey'
-  | 'serp_triage'
+  | 'serp_selector'
   | 'domain_classifier'
   | 'search_results';
 
@@ -628,7 +631,7 @@ export interface PrefetchSearchProfileData {
   approved_count?: number;
   candidate_count?: number;
   status?: string;
-  llm_serp_triage?: boolean;
+  llm_serp_selector?: boolean;
   serp_explorer?: {
     query_count: number;
     candidates_checked: number;
@@ -718,6 +721,7 @@ export interface SearchResultDetail {
   provider: string;
   dedupe_count: number;
   results: SerpResultRow[];
+  screenshot_filename?: string;
 }
 
 // ── SERP Triage Story Mode ──
@@ -831,17 +835,27 @@ export interface PreFetchPhasesResponse {
   search_profile: PrefetchSearchProfileData;
   llm_calls: {
     brand_resolver: PrefetchLlmCall[];
+    needset_planner: PrefetchLlmCall[];
     search_planner: PrefetchLlmCall[];
-    serp_triage: PrefetchLlmCall[];
+    serp_selector: PrefetchLlmCall[];
     domain_classifier: PrefetchLlmCall[];
   };
   search_results: PrefetchSearchResult[];
   brand_resolution: BrandResolutionData | null;
   search_plans: SearchPlanPass[];
+  query_journey?: {
+    selected_query_count: number;
+    selected_queries: string[];
+    schema4_query_count: number;
+    deterministic_query_count: number;
+    host_plan_query_count: number;
+    rejected_count: number;
+  } | null;
   search_result_details: SearchResultDetail[];
   cross_query_url_counts?: Record<string, number>;
-  serp_triage: SerpTriageResult[];
+  serp_selector: SerpTriageResult[];
   domain_health: DomainHealthRow[];
+  phase_cursor?: string;
   idx_runtime?: Partial<Record<PrefetchTabKey, RuntimeIdxBadge[]>>;
 }
 

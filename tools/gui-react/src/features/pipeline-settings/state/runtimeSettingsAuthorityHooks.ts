@@ -11,11 +11,13 @@ import {
   markDomainFlushedByUnmount,
   isDomainFlushedByUnload,
 } from '../../../stores/settingsUnloadGuard';
+import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore';
 import {
   readRuntimeSettingsBootstrap,
   RUNTIME_SETTINGS_QUERY_KEY,
   type RuntimeSettings,
 } from './runtimeSettingsAuthorityHelpers';
+import { shouldAutoSave } from './settingsAutoSaveGate';
 
 type RuntimeSettingsPersistResult = {
   ok: boolean;
@@ -27,6 +29,7 @@ interface RuntimeSettingsAuthorityOptions {
   payload: RuntimeSettings;
   dirty: boolean;
   autoSaveEnabled: boolean;
+  initialHydrationApplied?: boolean;
   enabled?: boolean;
   onPersisted?: (result: RuntimeSettingsPersistResult) => void;
   onError?: (error: Error | unknown) => void;
@@ -38,6 +41,7 @@ interface RuntimeSettingsAuthorityResult {
   isSaving: boolean;
   reload: () => Promise<RuntimeSettings | undefined>;
   saveNow: () => void;
+  flushIfDirty: () => Promise<void>;
 }
 
 interface RuntimeSettingsReaderOptions {
@@ -96,6 +100,20 @@ export function useRuntimeSettingsReader({
   };
 }
 
+/**
+ * Lightweight hook that hydrates the runtime settings Zustand store from the server.
+ * WHY: Must be called at the AppShell level so the store is populated before any
+ * child page mounts. Without this, navigating directly to /llm-config leaves the
+ * store null, and LLM hydration via updateKeys silently drops data.
+ */
+export function useRuntimeSettingsStoreHydration(): void {
+  const { settings } = useRuntimeSettingsReader();
+  const storeHydrate = useRuntimeSettingsValueStore((s) => s.hydrate);
+  useEffect(() => {
+    if (settings) storeHydrate(settings);
+  }, [settings, storeHydrate]);
+}
+
 function normalizeRuntimeSaveResult(
   response: unknown,
   fallbackPayload: RuntimeSettings,
@@ -123,6 +141,7 @@ export function useRuntimeSettingsAuthority({
   payload,
   dirty,
   autoSaveEnabled,
+  initialHydrationApplied = true,
   enabled = true,
   onPersisted,
   onError,
@@ -135,6 +154,14 @@ export function useRuntimeSettingsAuthority({
     queryFn: () => api.get<RuntimeSettings>('/runtime-settings'),
     enabled,
   });
+
+  // WHY: Hydrate the shared Zustand value store when server data arrives.
+  // This makes runtime settings available to ALL consumers (FlowCard, LlmConfigPage,
+  // IndexingPage mutations) from one SSOT instead of each maintaining local copies.
+  const storeHydrate = useRuntimeSettingsValueStore((s) => s.hydrate);
+  useEffect(() => {
+    if (settings) storeHydrate(settings);
+  }, [settings, storeHydrate]);
 
   const payloadRef = useRef(payload);
   const payloadFingerprintRef = useRef(payloadFingerprint);
@@ -155,10 +182,12 @@ export function useRuntimeSettingsAuthority({
     }
   };
 
+  const storeMarkClean = useRuntimeSettingsValueStore((s) => s.markClean);
   const recordPersistSuccess = (nextPayload: RuntimeSettings) => {
     const savedFingerprint = autoSaveFingerprint(nextPayload);
     lastAutoSavedFingerprintRef.current = savedFingerprint;
     lastAutoSaveAttemptFingerprintRef.current = savedFingerprint;
+    storeMarkClean();
     publishSettingsPropagation({ domain: 'runtime' });
   };
 
@@ -215,9 +244,19 @@ export function useRuntimeSettingsAuthority({
   const saveMutate = saveMutation.mutate;
 
   useEffect(() => {
-    if (!autoSaveEnabled || !dirty || !payloadFingerprint) return;
-    if (payloadFingerprint === lastAutoSavedFingerprintRef.current) return;
-    if (payloadFingerprint === lastAutoSaveAttemptFingerprintRef.current) return;
+    // WHY: shouldAutoSave gates on initialHydrationApplied to prevent firing
+    // before server data is applied to the editor. Without this gate, a user
+    // who edits a field before hydration completes triggers an auto-save that
+    // sends defaults + one edit, wiping all previously saved settings.
+    const canSave = shouldAutoSave({
+      autoSaveEnabled,
+      dirty,
+      payloadFingerprint,
+      lastSavedFingerprint: lastAutoSavedFingerprintRef.current,
+      lastAttemptFingerprint: lastAutoSaveAttemptFingerprintRef.current,
+      initialHydrationApplied,
+    });
+    if (!canSave) return;
     const nextPayload = payloadRef.current;
     lastAutoSaveAttemptFingerprintRef.current = payloadFingerprint;
     const timer = setTimeout(() => {
@@ -231,7 +270,7 @@ export function useRuntimeSettingsAuthority({
         pendingAutoSaveTimerRef.current = null;
       }
     };
-  }, [autoSaveEnabled, dirty, payloadFingerprint, saveMutate]);
+  }, [autoSaveEnabled, dirty, payloadFingerprint, initialHydrationApplied, saveMutate]);
 
   useEffect(() => {
     return registerUnloadGuard({
@@ -293,11 +332,23 @@ export function useRuntimeSettingsAuthority({
     saveMutation.mutate(payloadRef.current);
   }
 
+  async function flushIfDirty(): Promise<void> {
+    const fp = payloadFingerprintRef.current;
+    if (!fp || fp === lastAutoSavedFingerprintRef.current) return;
+    if (pendingAutoSaveTimerRef.current) {
+      clearTimeout(pendingAutoSaveTimerRef.current);
+      pendingAutoSaveTimerRef.current = null;
+    }
+    lastAutoSaveAttemptFingerprintRef.current = fp;
+    await saveMutation.mutateAsync(payloadRef.current);
+  }
+
   return {
     settings,
     isLoading,
     isSaving: saveMutation.isPending,
     reload,
     saveNow,
+    flushIfDirty,
   };
 }

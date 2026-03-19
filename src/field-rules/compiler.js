@@ -162,9 +162,11 @@ async function ensurePhase1Artifacts({ category, generatedRoot }) {
     throw new Error(`missing_or_invalid:${fieldRulesPath}`);
   }
   const normalizedFieldRules = normalizeFieldRulesForPhase1(fieldRules);
-  await writeJsonStable(fieldRulesPath, normalizedFieldRules);
+  // Preserve insertion-order key layout from compileCategoryFieldStudio
+  const canonicalJson = JSON.stringify(normalizedFieldRules, null, 2) + '\n';
+  await fs.writeFile(fieldRulesPath, canonicalJson, 'utf8');
   if (await fileExists(fieldRulesRuntimePath)) {
-    await writeJsonStable(fieldRulesRuntimePath, normalizedFieldRules);
+    await fs.writeFile(fieldRulesRuntimePath, canonicalJson, 'utf8');
   }
 
   await writeJsonStable(parseTemplatesPath, buildParseTemplates(normalizedFieldRules));

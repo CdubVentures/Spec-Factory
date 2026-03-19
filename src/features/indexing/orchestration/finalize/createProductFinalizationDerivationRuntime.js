@@ -377,7 +377,6 @@ export function createProductFinalizationDerivationRuntime({
           job: context.job,
           identity,
           categoryConfig: context.categoryConfig,
-          llmBudgetGuard: context.llmBudgetGuard,
           fieldsBelowPassTarget,
           identityGate,
           identityConfidence,

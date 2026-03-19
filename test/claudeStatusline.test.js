@@ -210,6 +210,38 @@ test('global statusline shows unknown context before Claude exposes live context
   }
 });
 
+test('global statusline uses current project settings instead of stale sibling-session effort on a new session', async () => {
+  const fixture = await createFixture({
+    settingsEffort: 'high',
+    transcriptLines: []
+  });
+
+  await fs.writeFile(
+    path.join(fixture.rootDir, 'older-session.jsonl'),
+    `${transcriptStdoutLine('Set model to Opus 4.6 (1M context) (default) with max effort')}\n`,
+    'utf8'
+  );
+
+  try {
+    const input = buildInput({
+      projectDir: fixture.projectDir,
+      transcriptPath: fixture.transcriptPath,
+      contextWindow: {
+        remaining_percentage: 100
+      }
+    });
+
+    const output = runStatusline({
+      scriptPath: GLOBAL_STATUSLINE_SCRIPT,
+      input
+    });
+
+    assert.equal(output, 'Opus 4.6 | 100% [########] | High');
+  } finally {
+    await removeFixture(fixture.rootDir);
+  }
+});
+
 test('global statusline prefers the latest transcript effort and model label over stale settings', async () => {
   const fixture = await createFixture({
     settingsEffort: 'high',

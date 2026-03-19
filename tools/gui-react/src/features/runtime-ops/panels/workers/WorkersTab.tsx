@@ -44,7 +44,7 @@ const PREFETCH_TAB_KEYS = [
   'search_planner',
   'query_journey',
   'search_results',
-  'serp_triage',
+  'serp_selector',
   'domain_classifier',
 ] as const satisfies ReadonlyArray<PrefetchTabKey>;
 
@@ -76,8 +76,8 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
   const { data: prefetchData } = useQuery({
     queryKey: ['runtime-ops', runId, 'prefetch'],
     queryFn: () => api.get<PreFetchPhasesResponse>(`/indexlab/run/${runId}/runtime/prefetch`),
-    enabled: Boolean(runId) && prefetchTab !== null,
-    refetchInterval: getRefetchInterval(isRunning, prefetchTab === null, 3000, 15000),
+    enabled: Boolean(runId) && (prefetchTab !== null || isRunning),
+    refetchInterval: getRefetchInterval(isRunning, false, prefetchTab !== null ? 3000 : 5000, 15000),
   });
 
   const { settings: runtimeSettingsSnapshot } = useRuntimeSettingsReader();
@@ -143,11 +143,12 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
   const busyPrefetchTabs = useMemo(
     () => buildBusyPrefetchTabs({
       isRunning,
-      activeTab: prefetchTab,
+      workers,
       prefetchData,
+      phaseCursor: prefetchData?.phase_cursor,
       tabKeys: PREFETCH_TAB_KEYS,
     }),
-    [isRunning, prefetchTab, prefetchData],
+    [isRunning, workers, prefetchData],
   );
 
   return (
@@ -177,7 +178,7 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
       <div className="flex flex-1 min-h-0">
         <div className="flex flex-col flex-1 min-h-0">
           {isPrefetchActive ? (
-            renderPrefetchPanel(prefetchTab, prefetchData, category, liveSettings)
+            renderPrefetchPanel(prefetchTab, prefetchData, category, liveSettings, runId)
           ) : activeWorker ? (
             renderWorkerPanel({
               worker: activeWorker,
@@ -263,13 +264,13 @@ function renderWorkerPanel({
   return <WorkerLivePanel worker={worker} runId={runId} wsUrl={wsUrl} isRunning={isRunning} />;
 }
 
-function renderPrefetchPanel(tab: PrefetchTabKey, data: PreFetchPhasesResponse | undefined, persistScope: string, liveSettings: PrefetchLiveSettings | undefined) {
+function renderPrefetchPanel(tab: PrefetchTabKey, data: PreFetchPhasesResponse | undefined, persistScope: string, liveSettings: PrefetchLiveSettings | undefined, runId?: string) {
   const emptyNeedset: PrefetchNeedSetData = { total_fields: 0 };
   const emptyProfile = { query_count: 0, provider: '', llm_query_planning: false, identity_aliases: [], variant_guard_terms: [], query_rows: [], query_guard: {} };
 
   switch (tab) {
     case 'needset':
-      return <PrefetchNeedSetPanel data={data?.needset ?? emptyNeedset} persistScope={persistScope} idxRuntime={data?.idx_runtime?.needset} />;
+      return <PrefetchNeedSetPanel data={data?.needset ?? emptyNeedset} persistScope={persistScope} idxRuntime={data?.idx_runtime?.needset} needsetPlannerCalls={data?.llm_calls?.needset_planner} />;
     case 'search_profile':
       return <PrefetchSearchProfilePanel data={data?.search_profile ?? emptyProfile} searchPlans={data?.search_plans} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.search_profile} />;
     case 'brand_resolver':
@@ -297,9 +298,9 @@ function renderPrefetchPanel(tab: PrefetchTabKey, data: PreFetchPhasesResponse |
         />
       );
     case 'search_results':
-      return <PrefetchSearchResultsPanel results={data?.search_results ?? []} searchResultDetails={data?.search_result_details} searchPlans={data?.search_plans} crossQueryUrlCounts={data?.cross_query_url_counts} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.search_results} />;
-    case 'serp_triage':
-      return <PrefetchSerpTriagePanel calls={data?.llm_calls?.serp_triage ?? []} serpTriage={data?.serp_triage} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.serp_triage} />;
+      return <PrefetchSearchResultsPanel results={data?.search_results ?? []} searchResultDetails={data?.search_result_details} searchPlans={data?.search_plans} crossQueryUrlCounts={data?.cross_query_url_counts} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.search_results} runId={runId} />;
+    case 'serp_selector':
+      return <PrefetchSerpTriagePanel calls={data?.llm_calls?.serp_selector ?? []} serpTriage={data?.serp_selector} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.serp_selector} />;
     case 'domain_classifier':
       return <PrefetchDomainClassifierPanel calls={data?.llm_calls?.domain_classifier ?? []} domainHealth={data?.domain_health} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.domain_classifier} />;
     default:

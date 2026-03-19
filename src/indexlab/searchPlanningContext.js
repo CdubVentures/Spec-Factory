@@ -2,6 +2,8 @@
 // Groups per-field data into per-group focus_groups[], attaches group_catalog metadata,
 // aggregates hints/history with SET semantics (unresolved fields only).
 
+import { resolvePhaseModel, roleTokenCap } from '../core/llm/client/routing.js';
+
 const GROUP_DEFAULTS = {
   sensor_performance: { desc: 'Sensor and performance metrics', source_target: 'spec_sheet', content_target: 'technical_specs', search_intent: 'exact_match', host_class: 'lab_review' },
   connectivity:       { desc: 'Connection and wireless specs',  source_target: 'product_page', content_target: 'technical_specs', search_intent: 'exact_match', host_class: 'manufacturer' },
@@ -63,9 +65,7 @@ function derivePlannerLimits(config) {
     maxCandidateUrls: toInt(config.maxCandidateUrls, 50),
     maxPagesPerDomain: toInt(config.maxPagesPerDomain, 2),
     maxRunSeconds: toInt(config.maxRunSeconds, 300),
-    llmModelPlan: Boolean(config._resolvedNeedsetUseReasoning ?? config.llmPlanUseReasoning)
-      ? String(config._resolvedNeedsetReasoningModel || config.llmModelReasoning || config._resolvedNeedsetBaseModel || config.llmModelPlan || '')
-      : String(config._resolvedNeedsetBaseModel || config.llmModelPlan || ''),
+    llmModelPlan: resolvePhaseModel(config, 'needset') || String(config.llmModelPlan || ''),
     llmProvider: String(config.llmProvider || ''),
     llmMaxOutputTokensPlan: toInt(config._resolvedNeedsetMaxOutputTokens ?? config.llmMaxOutputTokensPlan, 2048),
     searchProfileCapMap: parseCapMap(config.searchProfileCapMapJson),

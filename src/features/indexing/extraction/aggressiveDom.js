@@ -1,3 +1,5 @@
+import { resolvePhaseModel } from '../../../core/llm/client/routing.js';
+
 function normalizeWhitespace(value) {
   return String(value || '')
     .replace(/\s+/g, ' ')
@@ -47,8 +49,8 @@ export class AggressiveDomExtractor {
   constructor({
     config = {}
   } = {}) {
-    this.modelFast = String(config.llmModelPlan || 'gpt-5-low');
-    this.modelDeep = String(config.llmModelReasoning || 'gpt-5-high');
+    this.modelFast = resolvePhaseModel(config, 'extraction') || String(config.llmModelPlan || 'gpt-5-low');
+    this.modelDeep = String(config.llmModelReasoning || this.modelFast);
   }
 
   async extractFromDom(rawHtml, targetFields = [], identity = {}, sourceMetadata = {}, opts = {}) {

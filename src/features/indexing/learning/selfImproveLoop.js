@@ -312,9 +312,8 @@ export async function persistLearningProfile({
     });
   }
 
-  /* --- JSON path: write when configured or when SQLite is unavailable --- */
-  const shouldWriteJson = !specDb || config.learningJsonWrite;
-  if (shouldWriteJson) {
+  /* --- JSON path: write only when SQLite is unavailable (fallback) --- */
+  if (!specDb) {
     await storage.writeObject(profileKey, Buffer.from(JSON.stringify(merged, null, 2), 'utf8'), {
       contentType: 'application/json'
     });

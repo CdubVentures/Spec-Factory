@@ -237,7 +237,7 @@ function ConvergenceGroupIcon({ label, active }: { label: string; active: boolea
             <path d="M4 18h16" />
           </>
         ) : null}
-        {label === 'SERP Triage' ? (
+        {label === 'SERP Selector' ? (
           <>
             <path d="M4 6h16l-6 7v5l-4-2v-3z" />
             <path d="M9 10h6" />
@@ -386,7 +386,7 @@ export function PipelineSettingsPage() {
   const convergenceGroupLabels = CONVERGENCE_KNOB_GROUPS.map((g) => g.label);
   const [activeKnobGroupLabel, setActiveKnobGroupLabel] = usePersistedTab<string>(
     'pipeline-settings:convergence:knob-group',
-    convergenceGroupLabels.find((label) => label === 'SERP Triage') ?? convergenceGroupLabels[0] ?? '',
+    convergenceGroupLabels.find((label) => label === 'SERP Selector') ?? convergenceGroupLabels[0] ?? '',
   );
   const activeGroup =
     CONVERGENCE_KNOB_GROUPS.find((g) => g.label === activeKnobGroupLabel) ??

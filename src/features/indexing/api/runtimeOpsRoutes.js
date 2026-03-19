@@ -27,6 +27,7 @@ import {
   buildRuntimeAssetCandidatePaths,
   createRuntimeScreenshotMetadataResolver,
 } from './builders/runtimeOpsScreenshotAssetHelpers.js';
+import { buildArchivedS3CacheRoot } from './builders/archivedRunLocationHelpers.js';
 
 function isRunStillActive(processStatus, runId = '') {
   if (typeof processStatus !== 'function') return false;
@@ -73,6 +74,73 @@ function resolveInactiveRunMeta(meta = {}, events = [], runId = '', processStatu
   };
 }
 
+// ---------------------------------------------------------------------------
+// Asset fast-path: serves screenshot files without run resolution / event read
+// ---------------------------------------------------------------------------
+
+async function tryServeAssetFastPath({ runId, encodedFilename, directRunDir, OUTPUT_ROOT, storage, path, jsonRes, res }) {
+  let filename = '';
+  try {
+    filename = decodeURIComponent(encodedFilename);
+  } catch {
+    jsonRes(res, 400, { error: 'invalid_filename' });
+    return true;
+  }
+  if (!filename || filename.includes('..')) {
+    jsonRes(res, 400, { error: 'invalid_filename' });
+    return true;
+  }
+  if (path.isAbsolute(filename)) {
+    jsonRes(res, 400, { error: 'invalid_filename' });
+    return true;
+  }
+
+  const fs = await import('node:fs');
+  const mimeMap = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
+
+  // Build candidate runDirs: direct local path + S3 cache path
+  const candidateRunDirs = [directRunDir];
+  const s3CacheRoot = buildArchivedS3CacheRoot(runId);
+  if (s3CacheRoot) {
+    candidateRunDirs.push(path.join(s3CacheRoot, 'indexlab'));
+  }
+
+  // Security boundaries
+  const screenshotDirs = candidateRunDirs.map((d) => path.resolve(path.join(d, 'screenshots')));
+  const outputRootResolved = OUTPUT_ROOT ? path.resolve(OUTPUT_ROOT) : '';
+
+  for (const candidateRunDir of candidateRunDirs) {
+    const candidates = buildRuntimeAssetCandidatePaths({
+      filename,
+      storage,
+      OUTPUT_ROOT,
+      path,
+      runDir: candidateRunDir,
+      runId,
+    }).filter((candidatePath) => (
+      screenshotDirs.some((sd) => candidatePath.startsWith(sd))
+      || (outputRootResolved && candidatePath.startsWith(outputRootResolved))
+    ));
+
+    for (const candidatePath of candidates) {
+      try {
+        await fs.promises.access(candidatePath);
+        const ext = path.extname(filename).toLowerCase();
+        const contentType = mimeMap[ext] || 'application/octet-stream';
+        res.writeHead(200, { 'Content-Type': contentType });
+        const stream = fs.createReadStream(candidatePath);
+        stream.pipe(res);
+        return true;
+      } catch {
+        // Try the next candidate.
+      }
+    }
+  }
+
+  // No fast-path hit — signal fallback to full resolution.
+  return null;
+}
+
 export function registerRuntimeOpsRoutes(ctx) {
   const {
     jsonRes,
@@ -111,6 +179,25 @@ export function registerRuntimeOpsRoutes(ctx) {
     const runId = String(parts[2] || '').trim();
     const directRunDir = safeJoin(INDEXLAB_ROOT, runId);
     if (!directRunDir) return jsonRes(res, 400, { error: 'invalid_run_id' });
+
+    // WHY: Asset requests are the most frequent (one per screenshot thumbnail).
+    // Serving them without run resolution, meta read, or event read avoids
+    // triggering full S3 hydration for archived runs.
+    const earlySubPath = String(parts[4] || '').trim();
+    if (earlySubPath === 'assets' && parts[5]) {
+      const fastResult = await tryServeAssetFastPath({
+        runId,
+        encodedFilename: String(parts[5] || '').trim(),
+        directRunDir,
+        OUTPUT_ROOT,
+        storage,
+        path,
+        jsonRes,
+        res,
+      });
+      if (fastResult !== null) return fastResult;
+      // Fast path missed — fall through to full resolution below.
+    }
 
     const runDir = typeof resolveIndexLabRunDirectory === 'function'
       ? (await resolveIndexLabRunDirectory(runId).catch(() => '')) || directRunDir
@@ -284,6 +371,7 @@ export function registerRuntimeOpsRoutes(ctx) {
       return jsonRes(res, 200, {
         run_id: runId,
         ...prefetch,
+        phase_cursor: String(resolvedMeta?.phase_cursor || '').trim(),
         idx_runtime: buildRuntimeIdxBadgesBySurface(fieldRulesPayload),
       });
     }

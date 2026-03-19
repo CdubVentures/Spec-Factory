@@ -45,7 +45,7 @@ export async function runLlmHealthCheck({
   // WHY: Use registry-resolved route when no explicit provider/model override
   const route = resolveLlmRoute(config, { role: 'extract' });
   const resolvedProvider = String(provider || route.provider || config.llmProvider || 'openai').trim().toLowerCase();
-  const resolvedModel = String(model || route.model || config.llmModelExtract || '').trim();
+  const resolvedModel = String(model || route.model || config.llmModelPlan || '').trim();
   const resolvedApiKey = route.apiKey || config.llmApiKey || '';
   const resolvedBaseUrl = route.baseUrl || config.llmBaseUrl || '';
 

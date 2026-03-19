@@ -5,7 +5,6 @@ export interface BuildIndexingRunLlmSettingsPayloadInput {
   parsedLlmMaxOutputTokens: number;
   llmMinOutputTokens: number;
   parsedLlmVerifySampleRate: number;
-  llmDisableBudgetGuards: boolean;
   parsedLlmMaxBatchesPerProduct: number;
   parsedLlmMaxEvidenceChars: number;
   parsedLlmMaxTokens: number;
@@ -26,7 +25,6 @@ export function buildIndexingRunLlmSettingsPayload(
     llmMaxCallsPerRound: Math.max(1, input.parsedLlmMaxCallsPerRound),
     llmMaxOutputTokens: Math.max(input.llmMinOutputTokens, input.parsedLlmMaxOutputTokens),
     llmVerifySampleRate: Math.max(1, input.parsedLlmVerifySampleRate),
-    llmDisableBudgetGuards: input.llmDisableBudgetGuards,
     llmMaxBatchesPerProduct: Math.max(1, input.parsedLlmMaxBatchesPerProduct),
     llmMaxEvidenceChars: Math.max(1000, input.parsedLlmMaxEvidenceChars),
     llmMaxTokens: Math.max(256, input.parsedLlmMaxTokens),

@@ -12,6 +12,7 @@ import {
 } from '../state/RuntimeFlowModelTokenDefaults';
 import { RuntimeFlowHeaderControls } from './RuntimeFlowHeaderControls';
 import { collectRuntimeFlowDraftPayload } from '../state/RuntimeFlowDraftPayload';
+import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore';
 import {
   RUNTIME_NUMBER_BOUNDS,
   RESUME_MODE_OPTIONS,
@@ -160,9 +161,7 @@ export function RuntimeSettingsFlowCard({
   });
 
   const runtimeDraft = runtimeEditor.values;
-  const setRuntimeDraft = runtimeEditor.setValues;
   const runtimeDirty = runtimeEditor.dirty;
-  const setRuntimeDirty = runtimeEditor.setDirty;
   const runtimeSaveState = runtimeEditor.saveStatus.kind;
   const runtimeSaveMessage = runtimeEditor.saveStatus.message;
   const runtimeSettingsLoading = runtimeEditor.isLoading;
@@ -225,24 +224,23 @@ export function RuntimeSettingsFlowCard({
     runtimeAutoSaveDelaySeconds,
   });
 
+  // WHY: Use runtimeEditor.updateKey which pushes to the Zustand store synchronously.
+  // Previously this used setRuntimeDraft (raw useState setter) which bypassed the store.
   const updateDraft = useCallback(<K extends keyof RuntimeDraft>(key: K, value: RuntimeDraft[K]) => {
-    setRuntimeDraft((previous) => ({ ...previous, [key]: value }));
-    setRuntimeDirty(true);
-  }, [setRuntimeDraft, setRuntimeDirty]);
+    runtimeEditor.updateKey(key, value);
+  }, [runtimeEditor]);
 
+  // WHY: Use runtimeEditor.updateKey so the store is updated synchronously.
   const onNumberChange = useCallback(<K extends keyof RuntimeDraft>(
     key: K,
     eventValue: string,
     bounds: NumberBound,
   ) => {
-    setRuntimeDraft((previous) => {
-      const current = previous[key];
-      const fallback = typeof current === 'number' ? current : 0;
-      const next = parseBoundedNumber(eventValue, fallback, bounds) as RuntimeDraft[K];
-      return { ...previous, [key]: next };
-    });
-    setRuntimeDirty(true);
-  }, [setRuntimeDraft, setRuntimeDirty]);
+    const current = runtimeDraft[key];
+    const fallback = typeof current === 'number' ? current : 0;
+    const next = parseBoundedNumber(eventValue, fallback, bounds) as RuntimeDraft[K];
+    runtimeEditor.updateKey(key, next);
+  }, [runtimeDraft, runtimeEditor]);
 
   const getNumberBounds = useCallback(<K extends keyof RuntimeDraft>(key: K): NumberBound => {
     return RUNTIME_NUMBER_BOUNDS[key as keyof typeof RUNTIME_NUMBER_BOUNDS];
@@ -255,8 +253,12 @@ export function RuntimeSettingsFlowCard({
       );
       if (!confirmed) return;
     }
-    setRuntimeDraft(runtimeManifestDefaults);
-    setRuntimeDirty(true);
+    // WHY: Use setValues for bulk replacement, then push the full payload to the
+    // Zustand store so all consumers see the reset immediately.
+    runtimeEditor.setValues(runtimeManifestDefaults);
+    const resetPayload = payloadFromRuntimeDraft(runtimeManifestDefaults);
+    useRuntimeSettingsValueStore.getState().replaceValues(resetPayload);
+    runtimeEditor.setDirty(true);
     setActiveStep('run-setup');
   }
 

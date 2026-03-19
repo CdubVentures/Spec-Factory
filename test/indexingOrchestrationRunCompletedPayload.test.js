@@ -26,7 +26,6 @@ test('buildRunCompletedPayload builds canonical run_completed telemetry payload'
     contribution: { llmFields: ['dpi', 'weight_g'] },
     llmEstimatedUsageCount: 5,
     llmRetryWithoutSchemaCount: 2,
-    llmBudgetBlockedReason: '',
     indexingHelperFlowEnabled: true,
     helperContext: {
       active_match: { id: 1 },
@@ -100,7 +99,6 @@ test('buildRunCompletedPayload applies safe defaults for missing optional sectio
     contribution: {},
     llmEstimatedUsageCount: 0,
     llmRetryWithoutSchemaCount: 0,
-    llmBudgetBlockedReason: 'budget',
     indexingHelperFlowEnabled: false,
     helperContext: {},
     helperFilledFields: null,
@@ -142,5 +140,4 @@ test('buildRunCompletedPayload applies safe defaults for missing optional sectio
   assert.equal(payload.hypothesis_queue_count, 0);
   assert.equal(payload.aggressive_enabled, false);
   assert.equal(payload.aggressive_stage, 'disabled');
-  assert.equal(payload.llm_budget_blocked_reason, 'budget');
 });

@@ -253,8 +253,8 @@ const PREFETCH_SURFACE_SPECS = {
     label: 'Search Results',
     fields: SEARCH_RUNTIME_FIELDS,
   },
-  serp_triage: {
-    label: 'SERP Triage',
+  serp_selector: {
+    label: 'SERP Selector',
     fields: [],
   },
   domain_classifier: {
@@ -400,7 +400,7 @@ function llmWorkerFieldPaths(worker = {}) {
   if (prefetchTab === 'search_planner' || prefetchTab === 'query_journey' || prefetchTab === 'search_results' || prefetchTab === 'search_profile') {
     return SEARCH_RUNTIME_FIELDS;
   }
-  if (prefetchTab === 'brand_resolver' || prefetchTab === 'serp_triage' || prefetchTab === 'domain_classifier') {
+  if (prefetchTab === 'brand_resolver' || prefetchTab === 'serp_selector' || prefetchTab === 'domain_classifier') {
     return [];
   }
   return EXTRACTION_RUNTIME_FIELDS;

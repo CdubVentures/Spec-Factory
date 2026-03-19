@@ -76,18 +76,18 @@ describe('providerHasApiKey', () => {
     deepStrictEqual(providerHasApiKey(provider, emptyKeys()), false);
   });
 
-  // ── Global catch-all (llmPlanApiKey) ──
+  // ── No global catch-all — providers need their own key ──
 
-  it('user-added provider resolves from llmPlanApiKey catch-all', () => {
+  it('user-added provider without own apiKey returns false even when llmPlanApiKey set', () => {
     const provider = makeProvider({ id: 'provider-12345', name: 'My LLM' });
     const keys = { ...emptyKeys(), llmPlanApiKey: 'sk-global-key' };
-    deepStrictEqual(providerHasApiKey(provider, keys), true);
+    deepStrictEqual(providerHasApiKey(provider, keys), false);
   });
 
-  it('default provider also falls back to llmPlanApiKey', () => {
+  it('default provider without dedicated key returns false even when llmPlanApiKey set', () => {
     const provider = makeProvider({ id: 'default-anthropic', name: 'Anthropic', type: 'anthropic' });
     const keys = { ...emptyKeys(), llmPlanApiKey: 'sk-global-key' };
-    deepStrictEqual(providerHasApiKey(provider, keys), true);
+    deepStrictEqual(providerHasApiKey(provider, keys), false);
   });
 
   // ── Priority: registry key wins over runtime key ──

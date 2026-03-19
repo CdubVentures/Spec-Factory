@@ -358,13 +358,22 @@ export function registerStudioRoutes(ctx) {
         : body;
       try {
         const incomingSummary = summarizeStudioMapPayload(normalizedFieldStudioMap);
-        if (!incomingSummary.has_mapping_payload && params.get('allowEmptyOverwrite') !== 'true') {
+        if (params.get('allowEmptyOverwrite') !== 'true') {
           const existingMap = await loadFieldStudioMap({ category, config }).catch(() => null);
           const existingSummary = summarizeStudioMapPayload(existingMap?.map);
-          if (existingSummary.has_mapping_payload) {
+          if (!incomingSummary.has_mapping_payload && existingSummary.has_mapping_payload) {
             return jsonRes(res, 409, {
               error: 'empty_map_overwrite_rejected',
               message: 'Incoming studio map has no component sources or data lists. Add mapping payload or set allowEmptyOverwrite=true to force.',
+              existing: existingSummary,
+              incoming: incomingSummary,
+            });
+          }
+          // Guard: reject saves that drop component_sources when existing map has them
+          if (existingSummary.component_sources > 0 && incomingSummary.component_sources === 0) {
+            return jsonRes(res, 409, {
+              error: 'component_sources_dropped',
+              message: 'Incoming studio map drops component_sources that exist in the current map. Include component_sources or set allowEmptyOverwrite=true to force.',
               existing: existingSummary,
               incoming: incomingSummary,
             });

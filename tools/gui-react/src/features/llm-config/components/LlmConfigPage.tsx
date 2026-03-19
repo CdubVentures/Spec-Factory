@@ -4,18 +4,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client';
 import {
   buildRuntimeLlmTokenProfileLookup,
-
-  collectRuntimeFlowDraftPayload,
-  createRuntimeModelTokenDefaultsResolver,
   deriveRuntimeLlmModelOptions,
   deriveRuntimeLlmTokenContractPresetMax,
-  normalizeRuntimeDraft,
+  createRuntimeModelTokenDefaultsResolver,
   parseBoundedNumber,
-  readRuntimeSettingsBootstrap,
   RUNTIME_NUMBER_BOUNDS,
-  runtimeDraftEqual,
   toRuntimeDraft,
-  useRuntimeSettingsEditorAdapter,
   type NumberBound,
   type RuntimeDraft,
 } from '../../pipeline-settings';
@@ -30,12 +24,14 @@ import { usePersistedTab } from '../../../stores/tabStore';
 import { LlmConfigPageShell } from './LlmConfigPageShell';
 import { LLM_PHASE_IDS } from '../state/llmPhaseRegistry';
 import type { LlmPhaseId } from '../types/llmPhaseTypes';
-import { parseProviderRegistry, serializeProviderRegistry, syncCostsFromRegistry } from '../state/llmProviderRegistryBridge';
+import { parseProviderRegistry, syncCostsFromRegistry } from '../state/llmProviderRegistryBridge';
 import { mergeDefaultsIntoRegistry } from '../state/llmDefaultProviderRegistry';
-import { parsePhaseOverrides, serializePhaseOverrides } from '../state/llmPhaseOverridesBridge';
 import { providerHasApiKey, PROVIDER_API_KEY_MAP, type RuntimeApiKeySlice } from '../state/llmProviderApiKeyGate';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
 import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes';
+import { useLlmPolicyAuthority } from '../state/useLlmPolicyAuthority';
+import { DEFAULT_LLM_POLICY } from '../state/llmPolicyDefaults';
+import { flattenLlmPolicy, routeFlatKeyUpdate } from '../state/llmPolicyAdapter';
 
 const LlmGlobalSection = lazy(async () => {
   const module = await import('../sections/LlmGlobalSection');
@@ -77,15 +73,7 @@ export function LlmConfigPage() {
   const setRuntimeAutoSaveEnabled = useUiStore((state) => state.setRuntimeAutoSaveEnabled);
   const runtimeReadyFlag = useSettingsAuthorityStore((state) => state.snapshot.runtimeReady);
 
-  const runtimeBootstrap = useMemo(
-    () => readRuntimeSettingsBootstrap(queryClient, RUNTIME_SETTING_DEFAULTS),
-    [queryClient],
-  );
   const runtimeManifestDefaults = useMemo(() => toRuntimeDraft(RUNTIME_SETTING_DEFAULTS), []);
-  const runtimeBootstrapDraft = useMemo(
-    () => normalizeRuntimeDraft(undefined, runtimeBootstrap),
-    [runtimeBootstrap],
-  );
 
   const [activePhase, setActivePhase] = usePersistedTab<LlmPhaseId>(
     'llm-config:active-phase',
@@ -107,72 +95,64 @@ export function LlmConfigPage() {
     runtimeManifestDefaults,
   }), [indexingLlmConfig, runtimeManifestDefaults]);
 
-  const resolveModelTokenDefaults = useMemo(() => createRuntimeModelTokenDefaultsResolver({
-    indexingLlmConfig,
-    llmTokenProfileLookup,
-    llmTokenContractPresetMax,
-    runtimeManifestDefaults,
-  }), [indexingLlmConfig, llmTokenContractPresetMax, llmTokenProfileLookup, runtimeManifestDefaults]);
-
-  const payloadFromRuntimeDraft = useCallback((nextRuntimeDraft: RuntimeDraft) => collectRuntimeFlowDraftPayload({
-    nextRuntimeDraft,
-    runtimeManifestDefaults,
-    resolveModelTokenDefaults,
-  }), [resolveModelTokenDefaults, runtimeManifestDefaults]);
-
-  // WHY: LLM config is always autosaved — no user toggle.
-  const runtimeEditor = useRuntimeSettingsEditorAdapter<RuntimeDraft>({
-    bootstrapValues: runtimeBootstrapDraft,
-    payloadFromValues: payloadFromRuntimeDraft,
-    normalizeSnapshot: (snapshot) => normalizeRuntimeDraft(snapshot, runtimeBootstrap),
-    valuesEqual: runtimeDraftEqual,
-    autoSaveEnabled: true,
+  // WHY: LLM config now uses the dedicated LlmPolicy authority instead of
+  // useRuntimeSettingsEditorAdapter. The authority auto-saves to PUT /llm-policy.
+  const llmAuthority = useLlmPolicyAuthority({
+    autoSaveEnabled: runtimeAutoSaveEnabled,
+    defaultPolicy: DEFAULT_LLM_POLICY,
   });
 
-  const runtimeDraft = runtimeEditor.values;
-  const setRuntimeDraft = runtimeEditor.setValues;
-  const setRuntimeDirty = runtimeEditor.setDirty;
-  const runtimeSettingsLoading = runtimeEditor.isLoading;
-  const runtimeSettingsSaving = runtimeEditor.isSaving;
-  const saveNow = runtimeEditor.saveNow;
-  const runtimeSaveState = runtimeEditor.saveStatus.kind;
+  const { policy } = llmAuthority;
+  const saveNow = llmAuthority.saveNow;
 
-  const {
-    llmModelPlan,
-    llmModelReasoning,
-    llmMaxOutputTokensPlan,
-  } = runtimeDraft;
+  // WHY: Adapter layer — child sections still receive flat-key RuntimeDraft interface.
+  // flattenLlmPolicy converts the composite to flat keys for backward compat.
+  const runtimeDraft = useMemo(
+    () => flattenLlmPolicy(policy) as unknown as RuntimeDraft,
+    [policy],
+  );
+
+  const runtimeSettingsLoading = llmAuthority.isLoading;
+  const runtimeSettingsSaving = llmAuthority.isSaving;
+  const runtimeSettingsReady = runtimeReadyFlag && !runtimeSettingsLoading;
 
   const llmModelOptions = useMemo(() => deriveRuntimeLlmModelOptions({
     indexingLlmConfig,
-    llmModelPlan,
-    llmModelReasoning,
+    llmModelPlan: policy.models.plan,
+    llmModelReasoning: policy.models.reasoning,
   }), [
     indexingLlmConfig,
-    llmModelPlan,
-    llmModelReasoning,
+    policy.models.plan,
+    policy.models.reasoning,
   ]);
 
-  const runtimeSettingsReady = runtimeReadyFlag && !runtimeSettingsLoading;
-
+  // WHY: updateDraft adapter routes flat-key writes to the correct policy group.
   const updateDraft = useCallback(<K extends keyof RuntimeDraft>(key: K, value: RuntimeDraft[K]) => {
-    setRuntimeDraft((previous) => ({ ...previous, [key]: value }));
-    setRuntimeDirty(true);
-  }, [setRuntimeDraft, setRuntimeDirty]);
+    const route = routeFlatKeyUpdate(key as string, value);
+    if (!route) return;
+    if ('group' in route) {
+      llmAuthority.updateGroup(route.group, route.patch as never);
+    } else if ('topLevel' in route) {
+      llmAuthority.updatePolicy(route.topLevel);
+    }
+  }, [llmAuthority]);
 
   const onNumberChange = useCallback(<K extends keyof RuntimeDraft>(
     key: K,
     eventValue: string,
     bounds: NumberBound,
   ) => {
-    setRuntimeDraft((previous) => {
-      const current = previous[key];
-      const fallback = typeof current === 'number' ? current : 0;
-      const next = parseBoundedNumber(eventValue, fallback, bounds) as RuntimeDraft[K];
-      return { ...previous, [key]: next };
-    });
-    setRuntimeDirty(true);
-  }, [setRuntimeDraft, setRuntimeDirty]);
+    const current = (runtimeDraft as Record<string, unknown>)[key as string];
+    const fallback = typeof current === 'number' ? current : 0;
+    const next = parseBoundedNumber(eventValue, fallback, bounds);
+    const route = routeFlatKeyUpdate(key as string, next);
+    if (!route) return;
+    if ('group' in route) {
+      llmAuthority.updateGroup(route.group, route.patch as never);
+    } else if ('topLevel' in route) {
+      llmAuthority.updatePolicy(route.topLevel);
+    }
+  }, [runtimeDraft, llmAuthority]);
 
   const getNumberBounds = useCallback(<K extends keyof RuntimeDraft>(key: K): NumberBound => {
     return RUNTIME_NUMBER_BOUNDS[key as keyof typeof RUNTIME_NUMBER_BOUNDS];
@@ -183,58 +163,41 @@ export function LlmConfigPage() {
     () => parseProviderRegistry(RUNTIME_SETTING_DEFAULTS.llmProviderRegistryJson),
     [],
   );
-  // WHY: resolved_api_keys comes from the server's configBuilder which reads .env vars.
-  // This is the only path for .env API keys to reach the GUI.
   const serverResolvedKeys = indexingLlmConfig?.resolved_api_keys as
     | Record<string, string>
     | undefined;
 
   const registry: LlmProviderEntry[] = useMemo(() => {
     const merged = mergeDefaultsIntoRegistry(
-      parseProviderRegistry(runtimeDraft.llmProviderRegistryJson),
+      policy.providerRegistry as LlmProviderEntry[],
       defaultRegistry,
     );
-    // Seed API keys into default providers from all available sources:
-    // 1. provider.apiKey (user typed directly in provider card)
-    // 2. standalone runtime fields (geminiApiKey, etc.)
-    // 3. server-resolved .env keys (resolved_api_keys from /indexing/llm-config)
     return merged.map((provider) => {
       if (provider.apiKey) return provider;
-      const envField = PROVIDER_API_KEY_MAP[provider.id] as keyof typeof runtimeDraft | undefined;
-      const envValue = envField ? runtimeDraft[envField] : undefined;
-      if (envValue) return { ...provider, apiKey: envValue as string };
-      if (provider.id === 'default-gemini' && runtimeDraft.llmPlanApiKey) {
-        return { ...provider, apiKey: runtimeDraft.llmPlanApiKey as string };
+      const envField = PROVIDER_API_KEY_MAP[provider.id] as keyof typeof policy.apiKeys | undefined;
+      const envValue = envField ? (policy.apiKeys as Record<string, string>)[envField] : undefined;
+      if (envValue) return { ...provider, apiKey: envValue };
+      if (provider.id === 'default-gemini' && policy.apiKeys.plan) {
+        return { ...provider, apiKey: policy.apiKeys.plan };
       }
-      // Fallback: server-resolved .env key
       const serverKey = envField && serverResolvedKeys ? serverResolvedKeys[envField] : undefined;
       if (serverKey) return { ...provider, apiKey: serverKey };
       return provider;
     });
   }, [
-    runtimeDraft.llmProviderRegistryJson,
-    runtimeDraft.geminiApiKey,
-    runtimeDraft.deepseekApiKey,
-    runtimeDraft.anthropicApiKey,
-    runtimeDraft.openaiApiKey,
-    runtimeDraft.llmPlanApiKey,
+    policy.providerRegistry,
+    policy.apiKeys,
     defaultRegistry,
     serverResolvedKeys,
   ]);
 
   const runtimeApiKeys: RuntimeApiKeySlice = useMemo(() => ({
-    geminiApiKey: runtimeDraft.geminiApiKey ?? '',
-    deepseekApiKey: runtimeDraft.deepseekApiKey ?? '',
-    anthropicApiKey: runtimeDraft.anthropicApiKey ?? '',
-    openaiApiKey: runtimeDraft.openaiApiKey ?? '',
-    llmPlanApiKey: runtimeDraft.llmPlanApiKey ?? '',
-  }), [
-    runtimeDraft.geminiApiKey,
-    runtimeDraft.deepseekApiKey,
-    runtimeDraft.anthropicApiKey,
-    runtimeDraft.openaiApiKey,
-    runtimeDraft.llmPlanApiKey,
-  ]);
+    geminiApiKey: policy.apiKeys.gemini ?? '',
+    deepseekApiKey: policy.apiKeys.deepseek ?? '',
+    anthropicApiKey: policy.apiKeys.anthropic ?? '',
+    openaiApiKey: policy.apiKeys.openai ?? '',
+    llmPlanApiKey: policy.apiKeys.plan ?? '',
+  }), [policy.apiKeys]);
 
   const apiKeyFilter = useCallback(
     (provider: LlmProviderEntry) => providerHasApiKey(provider, runtimeApiKeys),
@@ -242,44 +205,39 @@ export function LlmConfigPage() {
   );
 
   const onRegistryChange = useCallback((nextRegistry: LlmProviderEntry[]) => {
-    const serialized = serializeProviderRegistry(nextRegistry);
-    setRuntimeDraft((previous) => {
-      const next = { ...previous, llmProviderRegistryJson: serialized };
-      // WHY: Re-bridge costs so flat fields stay in sync when model costs
-      // are edited in the Provider Registry panel.
-      const costs = syncCostsFromRegistry(nextRegistry, previous.llmModelPlan as string);
-      if (costs) {
-        next.llmCostInputPer1M = costs.llmCostInputPer1M;
-        next.llmCostOutputPer1M = costs.llmCostOutputPer1M;
-        next.llmCostCachedInputPer1M = costs.llmCostCachedInputPer1M;
-      }
-      return next;
+    // WHY: Re-bridge costs so budget fields stay in sync when model costs
+    // are edited in the Provider Registry panel.
+    const costs = syncCostsFromRegistry(nextRegistry, policy.models.plan);
+    llmAuthority.updatePolicy({
+      providerRegistry: nextRegistry,
+      ...(costs ? {
+        budget: {
+          ...policy.budget,
+          costInputPer1M: costs.llmCostInputPer1M,
+          costOutputPer1M: costs.llmCostOutputPer1M,
+          costCachedInputPer1M: costs.llmCostCachedInputPer1M,
+        },
+      } : {}),
     });
-    setRuntimeDirty(true);
-  }, [setRuntimeDraft, setRuntimeDirty]);
+  }, [llmAuthority, policy.models.plan, policy.budget]);
 
   /* --- Phase Overrides bridge --- */
-  const phaseOverrides: LlmPhaseOverrides = useMemo(
-    () => parsePhaseOverrides(runtimeDraft.llmPhaseOverridesJson),
-    [runtimeDraft.llmPhaseOverridesJson],
-  );
+  const phaseOverrides: LlmPhaseOverrides = policy.phaseOverrides as LlmPhaseOverrides;
 
   const onPhaseOverrideChange = useCallback((nextOverrides: LlmPhaseOverrides) => {
-    const serialized = serializePhaseOverrides(nextOverrides);
-    setRuntimeDraft((previous) => ({ ...previous, llmPhaseOverridesJson: serialized }));
-    setRuntimeDirty(true);
-  }, [setRuntimeDraft, setRuntimeDirty]);
+    llmAuthority.updatePolicy({ phaseOverrides: nextOverrides });
+  }, [llmAuthority]);
 
   const globalDraft = useMemo(() => ({
-    llmModelPlan: runtimeDraft.llmModelPlan,
-    llmModelReasoning: runtimeDraft.llmModelReasoning,
-    llmPlanUseReasoning: runtimeDraft.llmPlanUseReasoning,
-    llmMaxOutputTokensPlan: runtimeDraft.llmMaxOutputTokensPlan,
+    llmModelPlan: policy.models.plan,
+    llmModelReasoning: policy.models.reasoning,
+    llmPlanUseReasoning: policy.reasoning.enabled,
+    llmMaxOutputTokensPlan: policy.tokens.plan,
   }), [
-    runtimeDraft.llmModelPlan,
-    runtimeDraft.llmModelReasoning,
-    runtimeDraft.llmPlanUseReasoning,
-    runtimeDraft.llmMaxOutputTokensPlan,
+    policy.models.plan,
+    policy.models.reasoning,
+    policy.reasoning.enabled,
+    policy.tokens.plan,
   ]);
 
   const inputCls = 'sf-input w-full py-2 sf-text-label leading-5 focus:outline-none focus:ring-2 focus:ring-accent/25 disabled:opacity-60';
@@ -293,60 +251,46 @@ export function LlmConfigPage() {
       );
       if (!confirmed) return;
     }
-    // Reset to manifest defaults but preserve API keys and enabled state from current registry.
-    // WHY: Without this, providers the user configured (keys, enabled) revert to manifest
-    // defaults — Anthropic/OpenAI become disabled and all provider apiKey fields go blank.
-    setRuntimeDraft((prev) => {
-      const currentRegistry = parseProviderRegistry(prev.llmProviderRegistryJson);
-
-      // Resolve each default provider's API key from ALL sources:
-      // 1. provider.apiKey in stored registry
-      // 2. standalone runtime field (geminiApiKey, etc.)
-      // 3. server-resolved .env keys (resolved_api_keys from /indexing/llm-config)
-      const resolvedKeys: Record<string, string> = {};
-      for (const provider of currentRegistry) {
-        let key = provider.apiKey?.trim() || '';
-        if (!key) {
-          const field = PROVIDER_API_KEY_MAP[provider.id] as keyof typeof prev | undefined;
-          if (field) key = String(prev[field] || '').trim();
-        }
-        if (!key && provider.id === 'default-gemini') {
-          key = String(prev.llmPlanApiKey || '').trim();
-        }
-        if (key) resolvedKeys[provider.id] = key;
+    // WHY: Preserve API keys and enabled state from current registry when resetting.
+    const currentRegistry = policy.providerRegistry as LlmProviderEntry[];
+    const resolvedKeys: Record<string, string> = {};
+    for (const provider of currentRegistry) {
+      let key = provider.apiKey?.trim() || '';
+      if (!key) {
+        const field = PROVIDER_API_KEY_MAP[provider.id] as keyof typeof policy.apiKeys | undefined;
+        if (field) key = String((policy.apiKeys as Record<string, string>)[field] || '').trim();
       }
-      // Also check server-resolved .env keys for any provider still missing
-      if (serverResolvedKeys) {
-        for (const [field, envKey] of Object.entries(PROVIDER_API_KEY_MAP)) {
-          if (!resolvedKeys[field] && serverResolvedKeys[envKey]) {
-            resolvedKeys[field] = serverResolvedKeys[envKey];
-          }
+      if (key) resolvedKeys[provider.id] = key;
+    }
+    if (serverResolvedKeys) {
+      for (const [field, envKey] of Object.entries(PROVIDER_API_KEY_MAP)) {
+        if (!resolvedKeys[field] && serverResolvedKeys[envKey]) {
+          resolvedKeys[field] = serverResolvedKeys[envKey];
         }
       }
+    }
 
-      // Reset registry to defaults, then inject resolved apiKey + preserved enabled
-      const resetRegistry = parseProviderRegistry(runtimeManifestDefaults.llmProviderRegistryJson);
-      const preservedRegistry = resetRegistry.map((provider) => {
-        const currentProvider = currentRegistry.find((p) => p.id === provider.id);
-        return {
-          ...provider,
-          apiKey: resolvedKeys[provider.id] || provider.apiKey,
-          enabled: currentProvider ? currentProvider.enabled : provider.enabled,
-        };
-      });
-
+    const resetRegistry = parseProviderRegistry(RUNTIME_SETTING_DEFAULTS.llmProviderRegistryJson);
+    const preservedRegistry = resetRegistry.map((provider) => {
+      const currentProvider = currentRegistry.find((p) => p.id === provider.id);
       return {
-        ...runtimeManifestDefaults,
-        llmProviderRegistryJson: serializeProviderRegistry(preservedRegistry),
-        geminiApiKey: prev.geminiApiKey || resolvedKeys['default-gemini'] || '',
-        deepseekApiKey: prev.deepseekApiKey || resolvedKeys['default-deepseek'] || '',
-        anthropicApiKey: prev.anthropicApiKey || resolvedKeys['default-anthropic'] || '',
-        openaiApiKey: prev.openaiApiKey || resolvedKeys['default-openai'] || '',
-        llmPlanApiKey: prev.llmPlanApiKey,
+        ...provider,
+        apiKey: resolvedKeys[provider.id] || provider.apiKey,
+        enabled: currentProvider ? currentProvider.enabled : provider.enabled,
       };
     });
-    setRuntimeDirty(true);
-    // Force immediate save so reset persists even without auto-save
+
+    llmAuthority.updatePolicy({
+      ...DEFAULT_LLM_POLICY,
+      providerRegistry: preservedRegistry,
+      apiKeys: {
+        gemini: policy.apiKeys.gemini || resolvedKeys['default-gemini'] || '',
+        deepseek: policy.apiKeys.deepseek || resolvedKeys['default-deepseek'] || '',
+        anthropic: policy.apiKeys.anthropic || resolvedKeys['default-anthropic'] || '',
+        openai: policy.apiKeys.openai || resolvedKeys['default-openai'] || '',
+        plan: policy.apiKeys.plan,
+      },
+    });
     setTimeout(() => saveNow(), 0);
   }
 
@@ -383,7 +327,7 @@ export function LlmConfigPage() {
     activePhase === 'needset' ||
     activePhase === 'brand-resolver' ||
     activePhase === 'search-planner' ||
-    activePhase === 'serp-triage' ||
+    activePhase === 'serp-selector' ||
     activePhase === 'validate' ||
     activePhase === 'write'
   ) {

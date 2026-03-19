@@ -1,10 +1,13 @@
 {
-  "_doc": "Stage 13 input contract for validation to output. Validated against runProductCompletionLifecycle() on 2026-03-17.",
+  "_doc": "Stage 13 input contract for validation to output. Validated against runProductCompletionLifecycle(), persistSelfImproveLearningStores(), and runLearningExportPhase() on 2026-03-18.",
   "schema_version": "stage13.validation_to_output_input.v1",
   "producer": "runProductFinalizationDerivation() feeding runProductCompletionLifecycle()",
   "source_files": [
     "src/features/indexing/orchestration/finalize/runProductCompletionLifecycle.js",
     "src/features/indexing/orchestration/finalize/createProductCompletionRuntime.js",
+    "src/features/indexing/orchestration/finalize/persistSelfImproveLearningStores.js",
+    "src/pipeline/learningExportPhase.js",
+    "src/features/indexing/learning/selfImproveLoop.js",
     "src/exporter/exporter.js",
     "src/exporter/finalExporter.js"
   ],
@@ -47,8 +50,17 @@
       "hypothesisFollowupSeededUrls"
     ],
     "learning_and_export_dependencies": [
+      "learningProfile",
+      "discoveryResult",
       "evaluateFieldLearningGatesFn",
+      "emitLearningGateEventsFn",
+      "importSpecDbFn",
+      "UrlMemoryStoreClass",
+      "DomainFieldYieldStoreClass",
+      "FieldAnchorsStoreClass",
+      "ComponentLexiconStoreClass",
       "populateLearningStoresFn",
+      "persistLearningProfileFn",
       "exportRunArtifactsFn",
       "writeFinalOutputsFn",
       "runTerminalLearningExportLifecycleFn",
@@ -63,7 +75,8 @@
     "build summary artifacts",
     "persist identity report and source intel",
     "run post-learning updates",
-    "run learning gate and persist stores",
+    "run learning gate and persist acceptedUpdates into stores",
+    "persist _learning profile and run-scoped learning log",
     "export run artifacts and final outputs",
     "build run result payload"
   ]

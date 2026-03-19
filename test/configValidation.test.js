@@ -58,7 +58,6 @@ test('C.1 config defaults: runtime fetch/search defaults use canonical tuned val
   assert.equal(config.discoveryQueryConcurrency, 2);
   assert.equal(config.discoveryMaxDiscovered, 60);
   assert.equal(config.fetchPerHostConcurrencyCap, 1);
-  assert.equal(config.fetchSchedulerEnabled, true);
   assert.equal(config.dynamicFetchRetryBudget, 1);
   assert.equal(config.dynamicFetchRetryBackoffMs, 2_500);
   assert.equal(config.frontierBlockedDomainThreshold, 1);
@@ -69,19 +68,6 @@ test('C.1 config defaults: retired bingSearchEndpoint knob is absent', () => {
   assert.equal(Object.hasOwn(config, 'bingSearchEndpoint'), false);
 });
 
-
-test('C.1 config invariants: SERP triage flag stays enabled even when env disables it', () => {
-  const previousSerpTriageEnabled = process.env.SERP_TRIAGE_ENABLED;
-  process.env.SERP_TRIAGE_ENABLED = 'false';
-  try {
-    const config = loadConfig({ runProfile: 'standard' });
-    assert.equal(config.serpTriageEnabled, true);
-    // WHY: llmSerpRerankEnabled removed — LLM escalation gated by serpTriageEnabled + uberMode only
-  } finally {
-    if (previousSerpTriageEnabled === undefined) delete process.env.SERP_TRIAGE_ENABLED;
-    else process.env.SERP_TRIAGE_ENABLED = previousSerpTriageEnabled;
-  }
-});
 
 test('C.1 config defaults: indexing helper files disabled by default', () => {
   const config = loadConfig();
@@ -106,12 +92,6 @@ test('C.1 validate: no search provider emits warning', () => {
   assert.ok(result.warnings.some((w) => w.code === 'DISCOVERY_NO_SEARCH_PROVIDER'));
 });
 
-test('C.1 validate: budget guards disabled is warning', () => {
-  const config = loadConfig({ llmDisableBudgetGuards: true });
-  const result = validateConfig(config);
-  assert.ok(result.warnings.some((w) => w.code === 'BUDGET_GUARDS_DISABLED'));
-});
-
 // =========================================================================
 // SECTION 3: Valid configuration passes
 // =========================================================================
@@ -133,7 +113,7 @@ test('C.1 validate: LLM enabled with API key is valid', () => {
 
 test('C.1 validate: search provider configured does not emit discovery warning', () => {
   const config = loadConfig({
-    searchEngines: 'bing,startpage,duckduckgo'
+    searchEngines: 'bing,google-proxy,duckduckgo'
   });
   const result = validateConfig(config);
   assert.ok(!result.warnings.some((w) => w.code === 'DISCOVERY_NO_SEARCH_PROVIDER'));

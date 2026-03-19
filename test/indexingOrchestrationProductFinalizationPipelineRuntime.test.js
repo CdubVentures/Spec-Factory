@@ -14,9 +14,6 @@ function createPipelineContext() {
         llmRetryWithoutSchemaCount: 1,
       }),
     },
-    llmBudgetGuard: {
-      snapshot: () => ({ state: { blockedReason: '' } }),
-    },
     productId: 'product-1',
     runId: 'run-1',
     category: 'mouse',
@@ -128,7 +125,6 @@ test('createProductFinalizationPipelineRuntime derives, summarizes, and complete
     hypothesisQueue: [{ field: 'shape' }],
     fieldReasoning: { shape: { reason: 'anchored' } },
     trafficLight: { green: ['shape'] },
-    llmBudgetBlockedReason: '',
     extractionGateOpen: true,
     needSet: { needs: [{ field_key: 'shape' }] },
     phase07PrimeSources: { summary: { refs_selected_total: 2 } },

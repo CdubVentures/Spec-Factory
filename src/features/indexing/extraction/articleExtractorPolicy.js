@@ -40,7 +40,7 @@ export function resolveArticleExtractionPolicy(config = {}, source = {}) {
     matchedHost,
     overrideApplied: false,
     mode: 'auto',
-    enabled: config.articleExtractorV2Enabled !== false,
+    enabled: true,
     minChars: Math.max(100, Number(config.articleExtractorMinChars || 700)),
     minScore: Math.max(1, Number(config.articleExtractorMinScore || 45)),
     maxChars: Math.max(1000, Number(config.articleExtractorMaxChars || 24_000))

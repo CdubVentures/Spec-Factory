@@ -19,6 +19,11 @@ import {
   respondMissingComponentIdentityId,
   buildComponentMutationContextArgs,
   resolveComponentIdentityMutationPlan,
+  clearComponentValueAcceptedCandidate,
+  replaceComponentUserAliases,
+  updateComponentLinks,
+  updateComponentReviewStatus,
+  updateComponentValueNeedsReview,
 } from '../features/review/services/componentMutationService.js';
 
 // Re-export for characterization tests and any external consumers
@@ -33,6 +38,11 @@ export {
   respondMissingComponentIdentityId,
   buildComponentMutationContextArgs,
   resolveComponentIdentityMutationPlan,
+  clearComponentValueAcceptedCandidate,
+  replaceComponentUserAliases,
+  updateComponentLinks,
+  updateComponentReviewStatus,
+  updateComponentValueNeedsReview,
 };
 
 async function handleComponentOverrideEndpoint({
@@ -211,9 +221,7 @@ async function handleComponentOverrideEndpoint({
           });
 
           if (!acceptedCandidateId) {
-            runtimeSpecDb.db.prepare(
-              'UPDATE component_values SET accepted_candidate_id = NULL, updated_at = datetime(\'now\') WHERE category = ? AND id = ?'
-            ).run(runtimeSpecDb.category, existingProperty.id);
+            clearComponentValueAcceptedCandidate({ runtimeSpecDb, componentValueId: existingProperty.id });
           }
 
           await cascadeComponentMutation({
@@ -231,24 +239,15 @@ async function handleComponentOverrideEndpoint({
           if (respondMissingComponentIdentityId({ respond, componentIdentityId })) {
             return true;
           }
-          const idRow = { id: componentIdentityId };
-          if (idRow?.id) {
-            runtimeSpecDb.db.prepare('DELETE FROM component_aliases WHERE component_id = ? AND source = ?').run(idRow.id, 'user');
-            for (const alias of aliases) {
-              runtimeSpecDb.insertAlias(idRow.id, alias, 'user');
-            }
+          if (componentIdentityId) {
+            replaceComponentUserAliases({ runtimeSpecDb, componentIdentityId, aliases, componentType, name, componentMaker });
           }
-          runtimeSpecDb.updateAliasesOverridden(componentType, name, componentMaker, aliases.length > 0);
         } else if (property === '__links') {
           const links = normalizeStringEntries(value);
           if (respondMissingComponentIdentityId({ respond, componentIdentityId })) {
             return true;
           }
-          runtimeSpecDb.db.prepare(`
-            UPDATE component_identity
-            SET links = ?, source = 'user', updated_at = datetime('now')
-            WHERE category = ? AND id = ?
-          `).run(JSON.stringify(links), runtimeSpecDb.category, componentIdentityId);
+          updateComponentLinks({ runtimeSpecDb, componentIdentityId, links });
         } else if (property === '__name' || property === '__maker') {
           const mutationPlan = resolveComponentIdentityMutationPlan({
             property,
@@ -321,11 +320,7 @@ async function handleComponentOverrideEndpoint({
         })) {
           return true;
         }
-        runtimeSpecDb.db.prepare(`
-          UPDATE component_identity
-          SET review_status = ?, updated_at = datetime('now')
-          WHERE category = ? AND id = ?
-        `).run(review_status, runtimeSpecDb.category, componentIdentityId);
+        updateComponentReviewStatus({ runtimeSpecDb, componentIdentityId, reviewStatus: review_status });
       }
 
       specDbCache.delete(category);
@@ -520,11 +515,7 @@ async function handleComponentKeyReviewConfirmEndpoint({
         confirmStatusOverride,
       });
       if (componentSlotId) {
-        runtimeSpecDb.db.prepare(`
-          UPDATE component_values
-          SET needs_review = ?, updated_at = datetime('now')
-          WHERE category = ? AND id = ?
-        `).run(confirmStatusOverride === 'pending' ? 1 : 0, runtimeSpecDb.category, componentSlotId);
+        updateComponentValueNeedsReview({ runtimeSpecDb, componentSlotId, needsReview: confirmStatusOverride === 'pending' });
       }
 
       specDbCache.delete(category);

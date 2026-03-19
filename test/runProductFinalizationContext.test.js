@@ -24,7 +24,6 @@ test('buildRunProductFinalizationContext maps runProduct runtime state into fina
     sourceIntel: { data: {} },
     learnedFieldAvailability: { dpi: 'known' },
     learnedFieldYield: { dpi: 2 },
-    llmBudgetGuard: { snapshot: () => ({ state: {} }) },
     phase08BatchRows: [{ id: 1 }],
     phase08FieldContexts: { dpi: { source_count: 1 } },
     phase08PrimeRows: [{ field: 'dpi' }],

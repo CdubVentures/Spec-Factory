@@ -11,6 +11,8 @@ import {
 import { buildRequestedRunId } from './indexingRunId';
 import type { SearxngStatusResponse } from '../types';
 import type { PreflightResult } from '../../llm-config';
+import { readRuntimeSettingsValues } from '../../../stores/runtimeSettingsValueStore';
+import { assembleLlmPolicyFromFlat } from '../../llm-config/state/llmPolicyDefaults';
 
 type RunControlPayloadValue = string | number | boolean;
 
@@ -79,18 +81,29 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
     StartIndexLabMutationVariables,
     StartIndexLabMutationContext
   >({
-    mutationFn: ({ requestedRunId }) => {
+    mutationFn: async ({ requestedRunId }) => {
+      // WHY: Read the latest settings from the shared Zustand store at mutation time.
+      // This ensures we always use the current editor state, even if the prop-based
+      // runtimeSettingsPayload hasn't re-rendered yet. The store is the SSOT.
+      const currentSettings = readRuntimeSettingsValues() ?? runtimeSettingsPayload;
+      // WHY: Flush runtime settings to the persisted SSOT before spawning the
+      // child process. The child calls loadConfigWithUserSettings() which reads
+      // from persisted user-settings.json as fallback. The snapshot transport
+      // (RUNTIME_SETTINGS_SNAPSHOT) is now the primary path, but we still persist
+      // to user-settings.json for CLI compatibility and as a safety net.
+      await api.put('/runtime-settings', currentSettings);
       const parsedValues = deriveIndexingRunStartParsedValues({
-        runtimeSettingsPayload,
+        runtimeSettingsPayload: currentSettings,
         runtimeSettingsBaseline,
       });
       return api.post<ProcessStatus>('/process/start', buildIndexingRunStartPayload({
         requestedRunId,
         category,
         productId: singleProductId,
-        runtimeSettingsPayload,
+        runtimeSettingsPayload: currentSettings,
         parsedValues,
         runControlPayload,
+        llmPolicy: assembleLlmPolicyFromFlat(currentSettings as unknown as Record<string, unknown>) as unknown as Record<string, unknown>,
       }));
     },
     onMutate: ({ requestedRunId }) => {
@@ -108,7 +121,7 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
         removeRunScopedQueries(optimisticRunId);
       }
       queryClient.removeQueries({ queryKey: ['indexing', 'domain-checklist'] });
-      queryClient.invalidateQueries({ queryKey: ['indexlab', 'runs'], exact: true });
+      queryClient.invalidateQueries({ queryKey: ['indexlab', 'runs'] });
       queryClient.invalidateQueries({ queryKey: ['runtime-ops'] });
       return { previousRunId };
     },

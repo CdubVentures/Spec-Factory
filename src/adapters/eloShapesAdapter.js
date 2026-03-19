@@ -166,7 +166,7 @@ export const eloShapesAdapter = {
 
   async extractFromPage({ pageData, config }) {
     const pairs = extractTablePairs(pageData.html || '', {
-      useV2: config?.htmlTableExtractorV2 !== false
+      useV2: true
     });
     return {
       fieldCandidates: mapPairsToFieldCandidates(pairs, 'html_table'),

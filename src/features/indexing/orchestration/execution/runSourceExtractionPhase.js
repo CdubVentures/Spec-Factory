@@ -228,9 +228,7 @@ export async function runSourceExtractionPhase({
       embeddedState: pageData.embeddedState,
       networkResponses: pageData.networkResponses,
       structuredMetadata: pageData.structuredMetadata || null,
-      staticDomExtractorEnabled: config.staticDomExtractorEnabled !== false,
       staticDomMode: config.staticDomMode || 'cheerio',
-      htmlTableExtractorV2: config.htmlTableExtractorV2 !== false,
       staticDomTargetMatchThreshold: Number(config.staticDomTargetMatchThreshold || 0.55),
       staticDomMaxEvidenceSnippets: Number(config.staticDomMaxEvidenceSnippets || 120),
       identityTarget: jobIdentityLock || {}

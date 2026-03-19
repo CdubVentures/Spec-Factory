@@ -7,7 +7,6 @@ export async function executeExtractionBatch({
   productId,
   cache = null,
   cacheKey = '',
-  budgetGuard = null,
   providerPinEnabled = false,
   logger = null,
   invokeModel,
@@ -40,33 +39,18 @@ export async function executeExtractionBatch({
       });
       notes.push(`Batch ${batchId} repatch skipped by provider pin.`);
     } else {
-      const canRepatchCall = budgetGuard?.canCall?.({
-        reason: repatchRequest?.reason,
-        essential: false
-      }) || { allowed: true };
-
-      if (!canRepatchCall.allowed) {
-        budgetGuard?.block?.(canRepatchCall.reason);
-        logger?.warn?.('llm_extract_batch_repatch_skipped_budget', {
+      try {
+        const repatched = await invokeModel(repatchRequest);
+        if (countFieldCandidates(repatched) > countFieldCandidates(sanitized)) {
+          sanitized = repatched;
+        }
+      } catch (repatchError) {
+        logger?.warn?.('llm_extract_batch_repatch_failed', {
           productId,
           batch: batchId,
-          reason: canRepatchCall.reason
+          model: repatchRequest?.model || '',
+          message: repatchError?.message || 'unknown_error'
         });
-        notes.push(`Batch ${batchId} repatch skipped by budget guard.`);
-      } else {
-        try {
-          const repatched = await invokeModel(repatchRequest);
-          if (countFieldCandidates(repatched) > countFieldCandidates(sanitized)) {
-            sanitized = repatched;
-          }
-        } catch (repatchError) {
-          logger?.warn?.('llm_extract_batch_repatch_failed', {
-            productId,
-            batch: batchId,
-            model: repatchRequest?.model || '',
-            message: repatchError?.message || 'unknown_error'
-          });
-        }
       }
     }
   }

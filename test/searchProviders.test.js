@@ -38,8 +38,8 @@ test('normalizeSearchEngines migrates legacy bing → bing', () => {
   assert.equal(normalizeSearchEngines('bing'), 'bing');
 });
 
-test('normalizeSearchEngines migrates legacy searxng → bing,startpage,duckduckgo', () => {
-  assert.equal(normalizeSearchEngines('searxng'), 'bing,startpage,duckduckgo');
+test('normalizeSearchEngines migrates legacy searxng → bing,google-proxy,duckduckgo', () => {
+  assert.equal(normalizeSearchEngines('searxng'), 'bing,google-proxy,duckduckgo');
 });
 
 test('normalizeSearchEngines migrates legacy none → empty string', () => {
@@ -47,11 +47,11 @@ test('normalizeSearchEngines migrates legacy none → empty string', () => {
 });
 
 test('normalizeSearchEngines passes through valid CSV', () => {
-  assert.equal(normalizeSearchEngines('bing,startpage,duckduckgo'), 'bing,startpage,duckduckgo');
+  assert.equal(normalizeSearchEngines('bing,google-proxy,duckduckgo'), 'bing,google-proxy,duckduckgo');
 });
 
 test('normalizeSearchEngines strips invalid tokens from CSV', () => {
-  assert.equal(normalizeSearchEngines('bing,yahoo,startpage'), 'bing,startpage');
+  assert.equal(normalizeSearchEngines('bing,yahoo,google-proxy'), 'bing,google-proxy');
 });
 
 test('normalizeSearchEngines deduplicates engines', () => {
@@ -100,19 +100,19 @@ test('runSearchProviders with searchEngines sends one fetch with engines param',
   try {
     const rows = await runSearchProviders({
       config: makeSearchConfig({
-        searchEngines: 'bing,startpage',
+        searchEngines: 'bing,google-proxy',
       }),
       query: 'razer viper v3 pro',
       limit: 5
     });
 
     assert.equal(calls, 1, 'exactly one fetch call');
-    assert.ok(capturedUrl.includes('engines=bing%2Cstartpage'), `engines param present in URL: ${capturedUrl}`);
+    assert.ok(capturedUrl.includes('engines=bing%2Cstartpage'), `engines param translates google-proxy to startpage for SearXNG: ${capturedUrl}`);
     assert.equal(rows.length, 2);
     assert.equal(rows[0].provider, 'bing', 'per-result engine attribution from SearXNG');
-    assert.equal(rows[1].provider, 'startpage', 'per-result engine attribution from SearXNG');
+    assert.equal(rows[1].provider, 'google-proxy', 'per-result engine attribution from SearXNG');
     assert.deepEqual(rows[0].engines, ['bing']);
-    assert.deepEqual(rows[1].engines, ['startpage']);
+    assert.deepEqual(rows[1].engines, ['google-proxy']);
   } finally {
     global.fetch = originalFetch;
   }
@@ -158,17 +158,25 @@ test('runSearchProviders backward compat: old searchProvider dual still works', 
     });
   };
 
+  // WHY: dual migrates to bing,google. Google now routes through Crawlee,
+  // so SearXNG only receives bing. We inject a mock for the google path.
+  const mockSearchGoogle = async ({ query }) => ({
+    results: [{ url: 'https://example.com/google-dual', title: 'Google Dual', snippet: 'data', provider: 'google', query }]
+  });
+
   try {
     const rows = await runSearchProviders({
       config: makeSearchConfig({
         searchProvider: 'dual',
       }),
       query: 'logitech g pro x superlight 2',
-      limit: 5
+      limit: 5,
+      _searchGoogleFn: mockSearchGoogle,
     });
 
-    assert.ok(capturedUrl.includes('engines=bing%2Cgoogle'), `migrated engines in URL: ${capturedUrl}`);
-    assert.equal(rows.length, 1);
+    assert.ok(capturedUrl.includes('engines=bing'), `SearXNG gets bing from dual: ${capturedUrl}`);
+    assert.ok(!capturedUrl.includes('google'), 'SearXNG does NOT get google from dual');
+    assert.equal(rows.length, 2, 'both google (Crawlee) and bing (SearXNG) results');
   } finally {
     global.fetch = originalFetch;
   }
@@ -216,7 +224,7 @@ test('runSearchProviders applies request throttler', async () => {
   try {
     const rows = await runSearchProviders({
       config: makeSearchConfig({
-        searchEngines: 'bing,google',
+        searchEngines: 'bing',
       }),
       query: 'g pro x superlight 2',
       limit: 6,
@@ -279,15 +287,34 @@ test('runSearchProviders emits search_request_throttled event when acquire waits
 test('searchSearxng adds random jitter to inter-query delay', async () => {
   const { searchSearxng } = await import('../src/features/indexing/search/searchProviders.js');
   const originalFetch = global.fetch;
-  const timestamps = [];
-  global.fetch = async () => {
-    timestamps.push(Date.now());
-    return {
-      ok: true,
-      async json() {
-        return { results: [{ url: `https://example.com/r${timestamps.length}`, title: 'R', content: 'C' }] };
-      }
-    };
+  const originalSetTimeout = global.setTimeout;
+  const originalClearTimeout = global.clearTimeout;
+  const originalRandom = Math.random;
+  const delays = [];
+  const jitterSamples = [0.01, 0.93, 0.22, 0.77, 0.35, 0.88];
+  let jitterIndex = 0;
+  global.fetch = async () => ({
+    ok: true,
+    async json() {
+      return { results: [{ url: `https://example.com/r${delays.length + 1}`, title: 'R', content: 'C' }] };
+    }
+  });
+  global.setTimeout = (callback, delay, ...args) => {
+    if (Number(delay) < 1_000) {
+      delays.push(Number(delay));
+      callback(...args);
+      return 0;
+    }
+    return originalSetTimeout(callback, delay, ...args);
+  };
+  global.clearTimeout = (token) => {
+    if (token === 0) return;
+    return originalClearTimeout(token);
+  };
+  Math.random = () => {
+    const value = jitterSamples[jitterIndex % jitterSamples.length];
+    jitterIndex += 1;
+    return value;
   };
 
   try {
@@ -300,19 +327,18 @@ test('searchSearxng adds random jitter to inter-query delay', async () => {
         minQueryIntervalMs: 200,
       });
     }
-    const gaps = [];
-    for (let i = 1; i < timestamps.length; i++) {
-      gaps.push(timestamps[i] - timestamps[i - 1]);
-    }
-    // Every gap should be >= base interval
-    for (const gap of gaps) {
-      assert.ok(gap >= 190, `gap ${gap}ms should be >= ~200ms min interval`);
+    assert.equal(delays.length, 6, 'one scheduled pacing delay per query');
+    for (const delay of delays) {
+      assert.ok(delay >= 200, `delay ${delay}ms should be >= base interval`);
     }
     // Jitter adds 0–50% of base (0–100ms), so spread across 5 gaps should be > 20ms
-    const spread = Math.max(...gaps) - Math.min(...gaps);
-    assert.ok(spread > 20, `gap spread ${spread}ms should show jitter variance (not a fixed metronome)`);
+    const spread = Math.max(...delays) - Math.min(...delays);
+    assert.ok(spread > 20, `delay spread ${spread}ms should show jitter variance (not a fixed metronome)`);
   } finally {
     global.fetch = originalFetch;
+    global.setTimeout = originalSetTimeout;
+    global.clearTimeout = originalClearTimeout;
+    Math.random = originalRandom;
   }
 });
 
@@ -401,15 +427,15 @@ test('runSearchProviders drops results from engines that returned anti-bot garba
 
 test('searchEngineAvailability reports engine list and readiness', () => {
   const available = searchEngineAvailability({
-    searchEngines: 'bing,startpage,duckduckgo',
+    searchEngines: 'bing,google-proxy,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080'
   });
   assert.equal(available.searxng_ready, true);
   assert.equal(available.internet_ready, true);
-  assert.deepEqual(available.engines, ['bing', 'startpage', 'duckduckgo']);
+  assert.deepEqual(available.engines, ['bing', 'google-proxy', 'duckduckgo']);
   assert.equal(available.bing_ready, true);
   assert.equal(available.google_ready, false);
-  assert.deepEqual(available.active_providers, ['bing', 'startpage', 'duckduckgo']);
+  assert.deepEqual(available.active_providers, ['bing', 'google-proxy', 'duckduckgo']);
 });
 
 test('searchEngineAvailability with empty engines reports not ready', () => {
@@ -422,14 +448,17 @@ test('searchEngineAvailability with empty engines reports not ready', () => {
   assert.deepEqual(available.active_providers, []);
 });
 
-test('searchEngineAvailability with no searxng reports not ready', () => {
+test('searchEngineAvailability with no searxng: google still ready, bing not', () => {
   const available = searchEngineAvailability({
     searchEngines: 'bing,google',
     searxngBaseUrl: ''
   });
   assert.equal(available.searxng_ready, false);
-  assert.equal(available.internet_ready, false);
-  assert.deepEqual(available.active_providers, []);
+  // WHY: Google goes through Crawlee — ready without SearXNG.
+  // Bing needs SearXNG — not ready.
+  assert.equal(available.google_ready, true);
+  assert.equal(available.internet_ready, true, 'internet ready via google Crawlee');
+  assert.deepEqual(available.active_providers, ['google'], 'only google is active without SearXNG');
 });
 
 test('searchEngineAvailability backward compat: legacy searchProvider dual works', () => {
@@ -622,4 +651,232 @@ test('searchEngineAvailability reports empty fallback when not configured', () =
   });
   assert.deepEqual(available.fallback_engines, []);
   assert.equal(available.fallback_ready, false);
+});
+
+// ── Google Crawlee routing ──
+
+test('google engine routes through searchGoogle, not SearXNG fetch', async () => {
+  const originalFetch = global.fetch;
+  let searxngFetchCount = 0;
+  global.fetch = async () => {
+    searxngFetchCount++;
+    return makeJsonResponse({ results: [] });
+  };
+
+  let googleCallCount = 0;
+  const mockSearchGoogle = async ({ query, limit }) => {
+    googleCallCount++;
+    return {
+      results: [
+        { url: 'https://example.com/google-result', title: 'Google Result', snippet: 'via Crawlee', provider: 'google', query }
+      ]
+    };
+  };
+
+  try {
+    const rows = await runSearchProviders({
+      config: makeSearchConfig({ searchEngines: 'google' }),
+      query: 'logitech mx master 3s',
+      limit: 5,
+      _searchGoogleFn: mockSearchGoogle,
+    });
+
+    assert.equal(searxngFetchCount, 0, 'SearXNG fetch was NOT called for google');
+    assert.equal(googleCallCount, 1, 'searchGoogle was called once');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].provider, 'google');
+    assert.equal(rows[0].url, 'https://example.com/google-result');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('google,bing splits: google via Crawlee, bing via SearXNG, results merged', async () => {
+  const originalFetch = global.fetch;
+  let searxngFetchCount = 0;
+  global.fetch = async (url) => {
+    searxngFetchCount++;
+    const urlStr = String(url);
+    assert.ok(urlStr.includes('engines=bing'), `SearXNG only gets bing, got: ${urlStr}`);
+    assert.ok(!urlStr.includes('google'), 'SearXNG must NOT get google');
+    return makeJsonResponse({
+      results: [
+        { url: 'https://example.com/bing-result', title: 'Bing Result', content: 'from bing', engine: 'bing', engines: ['bing'] }
+      ]
+    });
+  };
+
+  let googleCallCount = 0;
+  const mockSearchGoogle = async ({ query }) => {
+    googleCallCount++;
+    return {
+      results: [
+        { url: 'https://example.com/google-result', title: 'Google Result', snippet: 'via Crawlee', provider: 'google', query }
+      ]
+    };
+  };
+
+  try {
+    const rows = await runSearchProviders({
+      config: makeSearchConfig({ searchEngines: 'google,bing' }),
+      query: 'test dual',
+      limit: 5,
+      _searchGoogleFn: mockSearchGoogle,
+    });
+
+    assert.equal(googleCallCount, 1, 'searchGoogle called once');
+    assert.equal(searxngFetchCount, 1, 'SearXNG called once for bing');
+    assert.equal(rows.length, 2, 'merged results from both');
+    const providers = rows.map(r => r.provider).sort();
+    assert.deepEqual(providers, ['bing', 'google'], 'both providers present');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('fallback with google also routes through Crawlee', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async (url) => {
+    const urlStr = String(url);
+    if (urlStr.includes('engines=duckduckgo')) {
+      return makeJsonResponse({ results: [] });
+    }
+    return makeJsonResponse({ results: [] });
+  };
+
+  let googleCallCount = 0;
+  const mockSearchGoogle = async ({ query }) => {
+    googleCallCount++;
+    return {
+      results: [
+        { url: 'https://example.com/google-fallback', title: 'Google Fallback', snippet: 'fb', provider: 'google', query }
+      ]
+    };
+  };
+
+  try {
+    const rows = await runSearchProviders({
+      config: makeSearchConfig({ searchEngines: 'duckduckgo', searchEnginesFallback: 'google' }),
+      query: 'test fallback google',
+      limit: 5,
+      _searchGoogleFn: mockSearchGoogle,
+    });
+
+    assert.equal(googleCallCount, 1, 'google fallback routed through Crawlee');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].provider, 'google');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('google_ready is true even without searxngBaseUrl', () => {
+  const available = searchEngineAvailability({
+    searchEngines: 'google',
+    searxngBaseUrl: ''
+  });
+  assert.equal(available.google_ready, true, 'google_ready independent of SearXNG');
+  assert.equal(available.google_search_ready, true);
+});
+
+test('internet_ready is true when only google is configured (no SearXNG needed)', () => {
+  const available = searchEngineAvailability({
+    searchEngines: 'google',
+    searxngBaseUrl: ''
+  });
+  assert.equal(available.internet_ready, true, 'internet is ready with google-only');
+});
+
+test('legacy dual routes google through Crawlee', async () => {
+  const originalFetch = global.fetch;
+  let searxngEngines = '';
+  global.fetch = async (url) => {
+    const parsed = new URL(String(url));
+    searxngEngines = parsed.searchParams.get('engines') || '';
+    return makeJsonResponse({
+      results: [
+        { url: 'https://example.com/bing', title: 'Bing', content: 'data', engine: 'bing', engines: ['bing'] }
+      ]
+    });
+  };
+
+  let googleCalled = false;
+  const mockSearchGoogle = async ({ query }) => {
+    googleCalled = true;
+    return {
+      results: [
+        { url: 'https://example.com/google', title: 'Google', snippet: 'data', provider: 'google', query }
+      ]
+    };
+  };
+
+  try {
+    const rows = await runSearchProviders({
+      config: makeSearchConfig({ searchProvider: 'dual' }),
+      query: 'legacy dual test',
+      limit: 5,
+      _searchGoogleFn: mockSearchGoogle,
+    });
+
+    assert.equal(googleCalled, true, 'google routed through Crawlee from legacy dual');
+    assert.equal(searxngEngines, 'bing', 'SearXNG only gets bing from legacy dual');
+    assert.equal(rows.length, 2);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('screenshotSink is called when google returns a screenshot', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => makeJsonResponse({ results: [] });
+
+  const sinkCalls = [];
+  const mockSearchGoogle = async ({ query }) => ({
+    results: [{ url: 'https://example.com/g', title: 'G', snippet: 's', provider: 'google', query }],
+    screenshot: { buffer: Buffer.from('fake-jpeg'), width: 1920, height: 1080, bytes: 9, ts: '2026-03-18T00:00:00Z', queryHash: 'abc123' },
+  });
+
+  try {
+    const rows = await runSearchProviders({
+      config: makeSearchConfig({ searchEngines: 'google', googleSearchScreenshotsEnabled: true }),
+      query: 'screenshot test',
+      limit: 5,
+      _searchGoogleFn: mockSearchGoogle,
+      screenshotSink: async (data) => { sinkCalls.push(data); },
+    });
+
+    assert.equal(rows.length, 1);
+    assert.equal(sinkCalls.length, 1, 'screenshotSink called once');
+    assert.ok(Buffer.isBuffer(sinkCalls[0].buffer), 'buffer passed to sink');
+    assert.equal(sinkCalls[0].queryHash, 'abc123');
+    assert.equal(sinkCalls[0].query, 'screenshot test');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('screenshotSink is NOT called when screenshots are disabled', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => makeJsonResponse({ results: [] });
+
+  const sinkCalls = [];
+  const mockSearchGoogle = async ({ query, screenshotsEnabled }) => ({
+    results: [{ url: 'https://example.com/g', title: 'G', snippet: 's', provider: 'google', query }],
+    // No screenshot when disabled
+    ...(screenshotsEnabled ? { screenshot: { buffer: Buffer.from('jpeg'), width: 1920, height: 1080, bytes: 4, ts: 'T', queryHash: 'h' } } : {}),
+  });
+
+  try {
+    await runSearchProviders({
+      config: makeSearchConfig({ searchEngines: 'google', googleSearchScreenshotsEnabled: false }),
+      query: 'no screenshot',
+      limit: 5,
+      _searchGoogleFn: mockSearchGoogle,
+      screenshotSink: async (data) => { sinkCalls.push(data); },
+    });
+
+    assert.equal(sinkCalls.length, 0, 'screenshotSink NOT called when disabled');
+  } finally {
+    global.fetch = originalFetch;
+  }
 });

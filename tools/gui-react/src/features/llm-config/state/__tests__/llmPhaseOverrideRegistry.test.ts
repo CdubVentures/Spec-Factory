@@ -29,7 +29,7 @@ describe('PHASE_OVERRIDE_REGISTRY', () => {
       'extraction',
       'needset',
       'search-planner',
-      'serp-triage',
+      'serp-selector',
       'validate',
       'write',
     ]);
@@ -49,8 +49,8 @@ describe('uiPhaseIdToOverrideKey', () => {
     strictEqual(uiPhaseIdToOverrideKey('search-planner'), 'searchPlanner');
   });
 
-  it('returns override key for serp-triage', () => {
-    strictEqual(uiPhaseIdToOverrideKey('serp-triage'), 'serpTriage');
+  it('returns override key for serp-selector', () => {
+    strictEqual(uiPhaseIdToOverrideKey('serp-selector'), 'serpSelector');
   });
 
   it('returns undefined for global', () => {

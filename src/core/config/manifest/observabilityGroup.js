@@ -3,10 +3,6 @@ export const observabilityGroup = Object.freeze({
   title: "Observability and Operations",
   notes: "Telemetry persistence, daemon behavior, and operational traces.",
   entries: Object.freeze([
-    { key: "BILLING_JSON_WRITE", defaultValue: "false", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
-    { key: "BRAIN_JSON_WRITE", defaultValue: "false", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
-    { key: "CACHE_JSON_WRITE", defaultValue: "false", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
-    { key: "CORPUS_JSON_WRITE", defaultValue: "false", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
     { key: "DAEMON_CONCURRENCY", defaultValue: "3", type: "integer", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
     { key: "DRIFT_AUTO_REPUBLISH", defaultValue: "true", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
     { key: "DRIFT_DETECTION_ENABLED", defaultValue: "true", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
@@ -15,8 +11,5 @@ export const observabilityGroup = Object.freeze({
     { key: "EVENTS_JSON_WRITE", defaultValue: "true", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
     { key: "IMPORTS_POLL_SECONDS", defaultValue: "10", type: "integer", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
     { key: "IMPORTS_ROOT", defaultValue: "imports", type: "string", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
-    { key: "INTEL_JSON_WRITE", defaultValue: "false", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
-    { key: "LEARNING_JSON_WRITE", defaultValue: "false", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
-    { key: "QUEUE_JSON_WRITE", defaultValue: "false", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." }
   ]),
 });

@@ -59,7 +59,6 @@ export function shouldQueueLlmRetry({ reason = '', status = 0, discoveryOnly = f
   if (discoveryOnly) return false;
   if (!token) return false;
   if (token === 'runtime_override_disable_llm') return true;
-  if (token === 'llm_budget_guard_blocked') return true;
   if (token === 'http_status_source_unavailable' && code >= 500) return true;
   return false;
 }

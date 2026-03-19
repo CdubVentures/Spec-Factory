@@ -31,7 +31,6 @@ export async function runProductFinalizationDerivation({
   identityLock = {},
   learnedFieldAvailability = {},
   learnedFieldYield = {},
-  llmBudgetGuard,
   phase08BatchRows = [],
   phase08FieldContexts = {},
   phase08PrimeRows = [],
@@ -116,7 +115,6 @@ export async function runProductFinalizationDerivation({
         identityLock,
         learnedFieldAvailability,
         learnedFieldYield,
-        llmBudgetGuard,
         phase08BatchRows,
         phase08FieldContexts,
         phase08PrimeRows,
@@ -340,7 +338,6 @@ export async function runProductFinalizationDerivation({
   const hypothesisQueue = needsetReasoningContext.hypothesisQueue;
   const fieldReasoning = needsetReasoningContext.fieldReasoning;
   const trafficLight = needsetReasoningContext.trafficLight;
-  const llmBudgetBlockedReason = needsetReasoningContext.llmBudgetBlockedReason;
   const extractionGateOpen = needsetReasoningContext.extractionGateOpen;
   const needSet = needsetReasoningContext.needSet;
 
@@ -447,7 +444,6 @@ export async function runProductFinalizationDerivation({
     hypothesisQueue,
     fieldReasoning,
     trafficLight,
-    llmBudgetBlockedReason,
     extractionGateOpen,
     needSet,
     searchPlanOutput,

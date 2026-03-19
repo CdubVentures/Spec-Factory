@@ -1,3 +1,5 @@
+import { resolvePhaseModel } from '../../../../core/llm/client/routing.js';
+
 export function buildRunSummaryOperationsSection({
   config = {},
   helperRoot = '',
@@ -24,9 +26,6 @@ export function buildRunSummaryOperationsSection({
   llmContext = {},
   llmCallCount = 0,
   llmCostUsd = 0,
-  llmBudgetLimits = {},
-  llmBudgetState = {},
-  llmBudgetBlockedReason = null,
   aggressiveExtraction = {},
   categoryConfig = {},
   fetcherMode = '',
@@ -103,9 +102,9 @@ export function buildRunSummaryOperationsSection({
     llm: {
       enabled: Boolean(config.llmApiKey),
       provider: config.llmProvider || 'openai',
-      model_extract: config.llmModelPlan || null,
-      model_plan: config.llmModelPlan || null,
-      model_validate: config.llmModelPlan || null,
+      model_extract: resolvePhaseModel(config, 'extraction') || config.llmModelPlan || null,
+      model_plan: resolvePhaseModel(config, 'needset') || config.llmModelPlan || null,
+      model_validate: resolvePhaseModel(config, 'validate') || config.llmModelPlan || null,
       target_field_count: llmTargetFields.length,
       target_fields: llmTargetFields.slice(0, 80),
       golden_examples_count: goldenExamples.length,
@@ -124,15 +123,7 @@ export function buildRunSummaryOperationsSection({
       call_count_run: llmCallCount,
       cost_usd_run: Number.parseFloat((llmCostUsd || 0).toFixed(8)),
       budget: {
-        monthly_budget_usd: llmBudgetLimits.monthlyBudgetUsd,
-        monthly_spent_usd_after_run: llmBudgetState.monthlySpentUsd,
-        per_product_budget_usd: llmBudgetLimits.productBudgetUsd,
-        per_product_spent_usd_after_run: llmBudgetState.productSpentUsd,
-        max_calls_per_product_total: llmBudgetLimits.maxCallsPerProductTotal,
-        calls_per_product_total_after_run: llmBudgetState.productCallsTotal,
-        max_calls_per_round: llmBudgetLimits.maxCallsPerRound,
-        calls_used_current_round: llmBudgetState.roundCalls,
-        blocked_reason: llmBudgetBlockedReason || null,
+        blocked_reason: null,
       },
     },
     aggressive_extraction: aggressiveExtraction,

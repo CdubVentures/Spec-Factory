@@ -304,7 +304,6 @@ export function extractStaticDomCandidates({
   title = '',
   identityTarget = {},
   mode = 'cheerio',
-  htmlTableExtractorV2 = true,
   targetMatchThreshold = 0.55,
   maxEvidenceSnippets = 120
 } = {}) {
@@ -354,7 +353,7 @@ export function extractStaticDomCandidates({
     for (const cluster of clusters) {
       const pairs = extractTablePairs(cluster.html || '', {
         mode: parserMode,
-        useV2: htmlTableExtractorV2 !== false
+        useV2: true
       });
       const mapped = mapPairsToFieldCandidates(pairs, 'dom');
       const identityFromPairs = extractIdentityFromPairs(pairs);
@@ -376,7 +375,7 @@ export function extractStaticDomCandidates({
     parseErrorCount += 1;
     const pairs = extractTablePairs(sourceHtml, {
       mode: 'regex_fallback',
-      useV2: htmlTableExtractorV2 !== false
+      useV2: true
     });
     const mapped = mapPairsToFieldCandidates(pairs, 'dom');
     const match = evaluateTargetMatchText({

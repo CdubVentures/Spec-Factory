@@ -58,12 +58,12 @@
       "sha256": "a7ebc0b762264836f812e95c4faaac03c6117d9f93d0b7c15618945a6339710f"
     },
     {
-      "bytes": 84558,
+      "bytes": 69706,
       "path": "ui_field_catalog.json",
-      "sha256": "d1d53479b32244708c109774ffd9011ef2e02bdd89fb5a3322bd70e7f0a685a8"
+      "sha256": "6aeda789dd38f5ad05a7844bcb1ca8f261c815354572156ca402aa28a7b9d2e8"
     }
   ],
   "category": "mouse",
-  "generated_at": "2026-03-16T05:55:10.413Z",
+  "generated_at": "2026-03-18T19:57:26.996Z",
   "version": 1
 }

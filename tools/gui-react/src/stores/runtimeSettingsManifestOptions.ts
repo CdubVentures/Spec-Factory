@@ -11,13 +11,13 @@ import type {
 export const RUNTIME_PROFILE_OPTIONS = Object.freeze(['standard'] as RuntimeProfile[]);
 
 export const SEARXNG_ENGINE_OPTIONS: readonly SearxngEngine[] = Object.freeze([
-  'google', 'bing', 'startpage', 'duckduckgo', 'brave',
+  'google', 'bing', 'google-proxy', 'duckduckgo', 'brave',
 ] as const);
 
 export const SEARXNG_ENGINE_LABELS: Record<SearxngEngine, string> = {
-  google: 'Google',
+  google: 'Google (Crawlee)',
   bing: 'Bing',
-  startpage: 'Startpage (Google proxy)',
+  'google-proxy': 'Google Proxy',
   duckduckgo: 'DuckDuckGo',
   brave: 'Brave',
 };

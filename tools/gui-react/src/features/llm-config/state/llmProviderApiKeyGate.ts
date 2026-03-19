@@ -41,7 +41,6 @@ export function extractRegistryApiKeys(
  *  1. Local providers (ollama) — always true, no key needed
  *  2. Registry-level apiKey on the provider entry
  *  3. Runtime key mapped from default provider ID (e.g. default-gemini → geminiApiKey)
- *  4. Global catch-all llmPlanApiKey
  */
 export function providerHasApiKey(
   provider: LlmProviderEntry,
@@ -53,8 +52,6 @@ export function providerHasApiKey(
 
   const runtimeKeyField = PROVIDER_API_KEY_MAP[provider.id];
   if (runtimeKeyField && runtimeKeys[runtimeKeyField]?.trim()) return true;
-
-  if (runtimeKeys.llmPlanApiKey?.trim()) return true;
 
   return false;
 }

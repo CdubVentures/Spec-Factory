@@ -57,7 +57,7 @@ export function deriveModelOptions(catalogRows: CatalogRow[], singleBrand: strin
     ...new Set(
       catalogRows
         .filter((row) => normalizeToken(row.brand) === normalizeToken(singleBrand))
-        .map((row) => String(row.model || '').trim())
+        .map((row) => String(row.base_model || row.model || '').trim())
         .filter(Boolean)
     ),
   ];
@@ -66,10 +66,10 @@ export function deriveModelOptions(catalogRows: CatalogRow[], singleBrand: strin
 export function deriveVariantOptions(catalogRows: CatalogRow[], singleBrand: string, singleModel: string): CatalogVariantOption[] {
   if (!singleBrand || !singleModel) return [];
   return catalogRows
-    .filter((row) => normalizeToken(row.brand) === normalizeToken(singleBrand) && normalizeToken(row.model) === normalizeToken(singleModel))
+    .filter((row) => normalizeToken(row.brand) === normalizeToken(singleBrand) && normalizeToken(row.base_model || row.model) === normalizeToken(singleModel))
     .map((row) => ({
       productId: row.productId,
-      label: displayVariant(String(row.variant || '')),
+      label: row.variant ? displayVariant(String(row.variant)) : String(row.model || ''),
     }));
 }
 
@@ -81,9 +81,9 @@ export function deriveCatalogFamilyCountLookup(catalogRows: CatalogRow[]) {
   const map = new Map<string, number>();
   for (const row of catalogRows) {
     const brand = normalizeToken(row.brand);
-    const model = normalizeToken(row.model);
-    if (!brand || !model) continue;
-    const key = `${brand}||${model}`;
+    const baseModel = normalizeToken(row.base_model || row.model);
+    if (!brand || !baseModel) continue;
+    const key = `${brand}||${baseModel}`;
     map.set(key, (map.get(key) || 0) + 1);
   }
   return map;
@@ -96,7 +96,7 @@ export function deriveSelectedAmbiguityMeter({
   singleModel,
 }: SelectedAmbiguityMeterInput): SelectedAmbiguityMeter {
   const activeBrand = String(selectedCatalogProduct?.brand || singleBrand || '').trim();
-  const activeModel = String(selectedCatalogProduct?.model || singleModel || '').trim();
+  const activeModel = String(selectedCatalogProduct?.base_model || selectedCatalogProduct?.model || singleModel || '').trim();
   if (!activeBrand || !activeModel) {
     return unknownAmbiguityMeter();
   }

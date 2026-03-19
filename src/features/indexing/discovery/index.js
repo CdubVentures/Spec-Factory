@@ -79,8 +79,6 @@ export {
   resolveEnabledSourceEntries,
 } from './searchDiscovery.js';
 
-export { planEscalationQueries } from './escalationPlanner.js';
-
 export {
   recordPromptResult,
   lookupPromptHistory,

@@ -142,15 +142,13 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     }
 
     const BOOL_KEYS = [
-      // discoveryEnabled removed — hardcoded invariant, no longer in GET boolMap
-      // phase2LlmEnabled removed — hardcoded invariant, no longer in GET boolMap
-      'reextractIndexed', 'scannedPdfOcrEnabled', 'scannedPdfOcrPromoteCandidates',
-      'dynamicCrawleeEnabled', 'crawleeHeadless', 'fetchSchedulerEnabled', 'preferHttpFetcher', 'runtimeScreencastEnabled',
-      'frontierEnableSqlite', 'frontierStripTrackingParams', 'frontierRepairSearchEnabled',
+      'reextractIndexed', 'scannedPdfOcrEnabled',
+      'dynamicCrawleeEnabled', 'crawleeHeadless', 'preferHttpFetcher', 'runtimeScreencastEnabled',
+      'frontierStripTrackingParams',
       'autoScrollEnabled', 'graphqlReplayEnabled', 'robotsTxtCompliant',
       'fetchCandidateSources',
       'runtimeTraceEnabled', 'runtimeTraceLlmPayloads',
-      'eventsJsonWrite', 'authoritySnapshotEnabled',
+      'eventsJsonWrite',
     ];
     for (const key of BOOL_KEYS) {
       assert.equal(typeof body[key], 'boolean', `expected boolean for ${key}, got ${typeof body[key]}`);
@@ -185,7 +183,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       frontierBlockedDomainThreshold: SETTINGS_DEFAULTS.runtime.frontierBlockedDomainThreshold,
       dynamicFetchRetryBudget: SETTINGS_DEFAULTS.runtime.dynamicFetchRetryBudget,
       dynamicFetchRetryBackoffMs: SETTINGS_DEFAULTS.runtime.dynamicFetchRetryBackoffMs,
-      fetchSchedulerEnabled: SETTINGS_DEFAULTS.runtime.fetchSchedulerEnabled,
       fetchSchedulerInternalsMapJson: SETTINGS_DEFAULTS.runtime.fetchSchedulerInternalsMapJson,
       serpRerankerWeightMapJson: SETTINGS_DEFAULTS.runtime.serpRerankerWeightMapJson,
       preferHttpFetcher: SETTINGS_DEFAULTS.runtime.preferHttpFetcher,
@@ -200,7 +197,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   });
 
   await t.test('PUT with valid partial payload applies changes and returns applied', async () => {
-    // discoveryEnabled removed from PUT boolMap — it's a hardcoded invariant.
     const payload = { fetchConcurrency: 8, searchEngines: 'google' };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
@@ -262,7 +258,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.ok(body.rejected);
-    // searchEngines is CSV — invalid tokens are stripped, leaving empty string (accepted)
     assert.equal(body.applied.searchEngines, '');
     assert.equal(body.rejected.resumeMode, 'invalid_enum');
   });

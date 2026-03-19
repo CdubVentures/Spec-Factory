@@ -352,23 +352,17 @@ test('process/start forwards representative runtime override families into child
       llmBaseUrl: 'http://llm.test',
       openaiApiKey: 'sk-openai',
       anthropicApiKey: 'sk-anthropic',
-      fetchSchedulerEnabled: false,
       preferHttpFetcher: true,
       frontierDbPath: 'runtime/frontier.json',
-      frontierEnableSqlite: true,
-      frontierRepairSearchEnabled: true,
       pdfPreferredBackend: 'camelot',
       capturePageScreenshotEnabled: true,
       capturePageScreenshotFormat: 'png',
       capturePageScreenshotSelectors: 'main,.spec-sheet',
-      articleExtractorV2Enabled: true,
-      staticDomExtractorEnabled: true,
       staticDomMode: 'cheerio',
       runtimeTraceFetchRing: 55,
       runtimeTraceLlmRing: 77,
       runtimeTraceLlmPayloads: true,
       eventsJsonWrite: true,
-      queueJsonWrite: true,
       daemonConcurrency: 3,
       importsRoot: './imports',
       importsPollSeconds: 12,
@@ -411,24 +405,18 @@ test('process/start forwards representative runtime override families into child
   assert.equal(capturedEnv?.OPENAI_API_KEY, 'sk-openai');
   assert.equal(capturedEnv?.ANTHROPIC_API_KEY, 'sk-anthropic');
 
-  assert.equal(capturedEnv?.FETCH_SCHEDULER_ENABLED, 'false');
   assert.equal(capturedEnv?.PREFER_HTTP_FETCHER, 'true');
   assert.equal(capturedEnv?.FRONTIER_DB_PATH, 'runtime/frontier.json');
-  assert.equal(capturedEnv?.FRONTIER_ENABLE_SQLITE, 'true');
-  assert.equal(capturedEnv?.FRONTIER_REPAIR_SEARCH_ENABLED, 'true');
   assert.equal(capturedEnv?.PDF_PREFERRED_BACKEND, 'camelot');
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_ENABLED, 'true');
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_FORMAT, 'png');
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_SELECTORS, 'main,.spec-sheet');
-  assert.equal(capturedEnv?.ARTICLE_EXTRACTOR_V2, 'true');
-  assert.equal(capturedEnv?.STATIC_DOM_EXTRACTOR_ENABLED, 'true');
   assert.equal(capturedEnv?.STATIC_DOM_MODE, 'cheerio');
 
   assert.equal(capturedEnv?.RUNTIME_TRACE_FETCH_RING, '55');
   assert.equal(capturedEnv?.RUNTIME_TRACE_LLM_RING, '77');
   assert.equal(capturedEnv?.RUNTIME_TRACE_LLM_PAYLOADS, 'true');
   assert.equal(capturedEnv?.EVENTS_JSON_WRITE, 'true');
-  assert.equal(capturedEnv?.QUEUE_JSON_WRITE, 'true');
   assert.equal(capturedEnv?.DAEMON_CONCURRENCY, '3');
   assert.equal(capturedEnv?.IMPORTS_ROOT, './imports');
   assert.equal(capturedEnv?.IMPORTS_POLL_SECONDS, '12');
@@ -498,8 +486,6 @@ test('process/start ignores retired and not-implemented runtime env knobs', asyn
       discoveryResultsPerQuery: 99,
       discoveryQueryConcurrency: 16,
       phase3LlmTriageEnabled: true,
-      llmSerpRerankEnabled: true,
-      serpTriageEnabled: true,
       workersSearch: 8,
       workersFetch: 6,
       workersParse: 4,
@@ -528,7 +514,6 @@ test('process/start ignores retired and not-implemented runtime env knobs', asyn
   for (const forbiddenEnvKey of [
     'DISCOVERY_RESULTS_PER_QUERY',
     'DISCOVERY_QUERY_CONCURRENCY',
-    'LLM_SERP_RERANK_ENABLED',
     'SERP_TRIAGE_ENABLED',
     'PHASE3_LLM_TRIAGE_ENABLED',
     'WORKERS_SEARCH',

@@ -32,9 +32,9 @@ export interface ConvergenceKnobGroup {
 
 export const CONVERGENCE_KNOB_GROUPS = [
   {
-    label: 'SERP Triage',
+    label: 'SERP Selector',
     knobs: [
-      { key: 'serpTriageMinScore', label: 'Min Score Threshold', tip: 'Phase coverage: 07 SERP Triage.\nLives in: processDiscoveryResults() after raw search results are normalized and reranked.\nWhat this controls: the minimum combined triage score a candidate URL must reach to survive into approved or candidate routing. Higher values make admission stricter and reduce fetch volume.', type: 'int', min: 1, max: 10 },
+      { key: 'serpTriageMinScore', label: 'Min Score Threshold', tip: 'Phase coverage: 07 SERP Selector.\nLives in: processDiscoveryResults() after raw search results are normalized and reranked.\nWhat this controls: the minimum combined triage score a candidate URL must reach to survive into approved or candidate routing. Higher values make admission stricter and reduce fetch volume.', type: 'int', min: 1, max: 10 },
     ],
   },
 ] as ConvergenceKnobGroup[];

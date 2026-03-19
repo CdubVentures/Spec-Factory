@@ -8,6 +8,22 @@ function normalizeQuery(value) {
   return String(value || '').trim().replace(/\s+/g, ' ');
 }
 
+export function normalizeQueryRows(rawQueries = []) {
+  const rows = Array.isArray(rawQueries) ? rawQueries : [];
+  return rows.map((item) => {
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
+      return {
+        query: String(item.query || '').replace(/\s+/g, ' ').trim(),
+        target_fields: Array.isArray(item.target_fields) ? item.target_fields.map((f) => String(f || '').trim()).filter(Boolean) : []
+      };
+    }
+    return {
+      query: String(item || '').replace(/\s+/g, ' ').trim(),
+      target_fields: []
+    };
+  }).filter((row) => row.query);
+}
+
 function groupFieldsByTier(fields, archetypeContext = {}) {
   const uncoveredSearchWorthy = new Set(archetypeContext.uncovered_search_worthy || []);
   const critical = [];
@@ -178,14 +194,10 @@ export async function planUberQueries({
       },
       costRates: llmContext.costRates || config,
       onUsage: async (usageRow) => {
-        const budgetGuard = llmContext?.budgetGuard;
-        budgetGuard?.recordCall?.({ costUsd: usageRow.cost_usd });
         if (typeof llmContext.recordUsage === 'function') {
           await llmContext.recordUsage(usageRow);
         }
       },
-      reasoningMode: Boolean(config._resolvedSearchPlannerUseReasoning ?? config.llmPlanUseReasoning ?? config.llmReasoningMode),
-      reasoningBudget: Number(config.llmReasoningBudget || 0),
       timeoutMs: config.llmTimeoutMs || config.openaiTimeoutMs,
       logger
     });

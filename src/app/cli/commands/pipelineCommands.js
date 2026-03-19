@@ -62,8 +62,12 @@ export function createPipelineCommands({
 
     if (!s3Key) {
       const seedIsUrl = looksHttpUrl(seed);
-      const brand = String(args.brand || 'unknown').trim() || 'unknown';
-      const model = String(args.model || args.sku || '').trim() || 'unknown-model';
+      // WHY: When only --seed is given (e.g. "Razer Viper V3 Pro"), parse
+      // the first token as brand and the rest as model so query templates
+      // don't produce "unknown unknown-model" garbage queries.
+      const seedTokens = (!seedIsUrl && seed) ? seed.split(/\s+/).filter(Boolean) : [];
+      const brand = String(args.brand || seedTokens[0] || 'unknown').trim() || 'unknown';
+      const model = String(args.model || args.sku || (seedTokens.length > 1 ? seedTokens.slice(1).join(' ') : '')).trim() || 'unknown-model';
       const variant = String(args.variant || '').trim();
       const sku = String(args.sku || '').trim();
       const title = String(args.title || (!seedIsUrl ? seed : '')).trim();

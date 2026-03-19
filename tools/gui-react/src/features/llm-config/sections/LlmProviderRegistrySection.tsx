@@ -7,7 +7,6 @@ import type {
 import { createDefaultProvider, createDefaultModel } from '../state/llmProviderRegistryBridge';
 import { ROLE_BADGE_STYLE, MODEL_ROLE_OPTIONS } from '../state/llmRoleBadgeStyles';
 import { isDefaultProvider } from '../state/llmDefaultProviderRegistry';
-import { ModelRoleBadge } from '../components/ModelRoleBadge';
 
 /* ── Provider SVG icons (14x14, sized to match sf-text-caption) ── */
 
@@ -106,37 +105,33 @@ function ProviderModelRow({
         )}
       </td>
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}>
-        {identityLocked ? (
-          <ModelRoleBadge role={model.role} />
-        ) : (
-          <div className="relative inline-flex">
-            <select
-              className="sf-text-caption font-medium cursor-pointer"
-              style={{
-                backgroundColor: roleStyle.bg,
-                color: roleStyle.fg,
-                border: 'none',
-                outline: 'none',
-                appearance: 'none',
-                WebkitAppearance: 'none',
-                borderRadius: 'var(--sf-radius-chip)',
-                padding: 'var(--sf-space-0-5) var(--sf-space-3) var(--sf-space-0-5) var(--sf-space-1-5)',
-              }}
-              value={model.role}
-              onChange={(e) => onModelChange({ ...model, role: e.target.value as LlmModelRole })}
-            >
-              {MODEL_ROLE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-            <span
-              className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ color: roleStyle.fg, fontSize: 'var(--sf-token-font-size-micro)', lineHeight: 1 }}
-            >
-              ▾
-            </span>
-          </div>
-        )}
+        <div className="relative inline-flex">
+          <select
+            className="sf-text-caption font-medium cursor-pointer"
+            style={{
+              backgroundColor: roleStyle.bg,
+              color: roleStyle.fg,
+              border: 'none',
+              outline: 'none',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              borderRadius: 'var(--sf-radius-chip)',
+              padding: 'var(--sf-space-0-5) var(--sf-space-3) var(--sf-space-0-5) var(--sf-space-1-5)',
+            }}
+            value={model.role}
+            onChange={(e) => onModelChange({ ...model, role: e.target.value as LlmModelRole })}
+          >
+            {MODEL_ROLE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <span
+            className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ color: roleStyle.fg, fontSize: 'var(--sf-token-font-size-micro)', lineHeight: 1 }}
+          >
+            ▾
+          </span>
+        </div>
       </td>
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}>
         <input
@@ -197,16 +192,16 @@ function ProviderModelRow({
         />
       </td>
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)', textAlign: 'center' }}>
-        {!identityLocked && (
-          <button
-            className="sf-icon-button sf-text-caption"
-            style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}
-            onClick={onRemove}
-            title="Remove model"
-          >
-            ✕
-          </button>
-        )}
+        <button
+          className="sf-icon-button sf-text-caption"
+          style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}
+          onClick={() => {
+            if (window.confirm(`Remove ${model.modelId || 'this model'}?`)) onRemove();
+          }}
+          title="Remove model"
+        >
+          ✕
+        </button>
       </td>
     </tr>
   );

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { loadConfig, loadDotEnvFile, validateConfig } from '../config.js';
+import { loadConfigWithUserSettings, loadDotEnvFile, validateConfig } from '../config.js';
 import { defaultIndexLabRoot } from '../core/config/runtimeArtifactRoots.js';
 import { createStorage, toPosixKey } from '../s3/storage.js';
 import { parseArgs, asBool } from './args.js';
@@ -260,7 +260,7 @@ function buildConfig(args) {
   if (args['search-engines']) overrides.searchEngines = args['search-engines'];
   if (args['search-provider']) overrides.searchEngines = args['search-provider'];
   if (args['fetch-candidate-sources'] !== undefined) overrides.fetchCandidateSources = asBool(args['fetch-candidate-sources']);
-  return loadConfig(overrides);
+  return loadConfigWithUserSettings(overrides);
 }
 
 // --- Factory instantiations: existing commands ---

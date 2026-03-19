@@ -536,7 +536,7 @@ try {
 }
 
 export function createFrontier({ storage, key, config = {} } = {}) {
-  if (config.frontierEnableSqlite && _FrontierDbSqlite) {
+  if (_FrontierDbSqlite) {
     try {
       const dbPath = String(config.frontierSqlitePath || key || '_intel/frontier/frontier.db')
         .replace(/\.json$/, '.db');

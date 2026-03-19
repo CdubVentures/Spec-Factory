@@ -3,11 +3,6 @@ import assert from 'node:assert/strict';
 import { loadConfig } from '../src/config.js';
 
 describe('FetchScheduler config knobs', () => {
-  it('fetchSchedulerEnabled defaults to true', () => {
-    const config = loadConfig({});
-    assert.equal(config.fetchSchedulerEnabled, true);
-  });
-
   it('fetchSchedulerMaxRetries defaults to 1', () => {
     const config = loadConfig({});
     assert.equal(config.fetchSchedulerMaxRetries, 1);

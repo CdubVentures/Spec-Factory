@@ -1,8 +1,6 @@
 import { memo, Suspense, lazy, useMemo, useCallback } from 'react';
 import {
-  MasterSwitchRow,
   SettingGroupBlock,
-  SettingToggle,
   type NumberBound,
   type RuntimeDraft,
 } from '../../pipeline-settings';
@@ -345,54 +343,9 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
               onChange={(e) => onNumberChange('llmPerProductBudgetUsd', e.target.value, getNumberBounds('llmPerProductBudgetUsd'))}
             />
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Budget guards</label>
-            <div className="flex items-center gap-2 h-9">
-              <SettingToggle
-                checked={!runtimeDraft.llmDisableBudgetGuards}
-                onChange={(v) => updateDraft('llmDisableBudgetGuards', !v)}
-              />
-              <span className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>
-                {runtimeDraft.llmDisableBudgetGuards ? 'Disabled' : 'Enabled'}
-              </span>
-            </div>
-          </div>
         </div>
       </SettingGroupBlock>
 
-      {/* ── Section 4: Extraction Cache ── */}
-      <SettingGroupBlock title="Extraction Cache">
-        <MasterSwitchRow
-          label="Cache Enabled"
-          tip="Cache LLM extraction results to avoid redundant calls."
-        >
-          <SettingToggle
-            checked={runtimeDraft.llmExtractionCacheEnabled}
-            onChange={(v) => updateDraft('llmExtractionCacheEnabled', v)}
-          />
-        </MasterSwitchRow>
-        {runtimeDraft.llmExtractionCacheEnabled && (
-          <div className="grid grid-cols-2 gap-x-3.5 gap-y-2.5">
-            <div className="flex flex-col gap-1">
-              <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Cache dir</label>
-              <input
-                className={inputCls}
-                value={runtimeDraft.llmExtractionCacheDir}
-                onChange={(e) => updateDraft('llmExtractionCacheDir', e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Cache TTL (ms)</label>
-              <input
-                className={inputCls}
-                type="number"
-                value={runtimeDraft.llmExtractionCacheTtlMs}
-                onChange={(e) => onNumberChange('llmExtractionCacheTtlMs', e.target.value, getNumberBounds('llmExtractionCacheTtlMs'))}
-              />
-            </div>
-          </div>
-        )}
-      </SettingGroupBlock>
     </>
   );
 });

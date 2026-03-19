@@ -10,14 +10,14 @@ import {
 import { SETTINGS_DEFAULTS } from '../src/shared/settingsDefaults.js';
 
 describe('Stage 2 knob retirement — hardcoded values', () => {
-  it('serpTriageEnabled is hardcoded true regardless of env', () => {
+  it('serpTriageEnabled is fully retired (no longer in config)', () => {
     const config = loadConfig();
-    assert.equal(config.serpTriageEnabled, true);
+    assert.equal(config.serpTriageEnabled, undefined);
   });
 
   it('llmSerpRerankEnabled is fully retired (no longer in config)', () => {
     const config = loadConfig();
-    // WHY: llmSerpRerankEnabled removed entirely — LLM escalation gated by serpTriageEnabled + uberMode
+    // WHY: llmSerpRerankEnabled removed entirely — LLM escalation gated by uberMode only
     assert.equal(config.llmSerpRerankEnabled, undefined);
   });
 

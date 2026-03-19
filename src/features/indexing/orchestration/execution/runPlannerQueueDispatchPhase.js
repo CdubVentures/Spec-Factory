@@ -118,68 +118,46 @@ export async function runPlannerQueueDispatchPhase({
     return maxRunMs > 0 && elapsedMs >= maxRunMs;
   };
 
-  if (config.fetchSchedulerEnabled) {
-    while (planner?.hasNext?.() && !shouldStopScheduler()) {
-      const schedulerContext = buildFetchSchedulerDrainContextFn({
-        ...buildFetchSchedulerDrainPhaseCallsiteContextFn({
-          planner,
-          config,
-          initialMode,
-          prepareNextPlannerSource: processPreflight,
-          fetchFn: (preflight) => processPreflightPayload(preflight, { throwOnFetchFailure: true }),
-          fetchWithModeFn: (preflight, fetchModeOverride) => processPreflightPayload(preflight, {
-            fetchModeOverride,
-            skipBeforeFetch: false,
-            throwOnFetchFailure: true,
-          }),
-          shouldSkipPreflight: (preflight) => !preflight || preflight.mode !== 'process',
-          shouldStopScheduler,
-          classifyOutcomeFn: (error) => {
-            if (error?.fetchFailureOutcome) {
-              return error.fetchFailureOutcome;
-            }
-            return String(error?.fetchFailureOutcome || '').trim() || 'fetch_error';
-          },
-          handleSchedulerFetchError: (preflight, error) => {
-            logger?.error?.('fetch_scheduler_drain_failed', {
-              url: preflight?.source?.url || '',
-              message: error?.message || String(error || ''),
-            });
-          },
-          handleSchedulerSkipped: (preflight) => {
-            logger?.info?.('scheduler_source_skipped', {
-              url: preflight?.source?.url || '',
-            });
-          },
-          emitSchedulerEvent: (name, payload) => {
-            logger?.info?.(name, payload);
-          },
-          createFetchScheduler,
+  while (planner?.hasNext?.() && !shouldStopScheduler()) {
+    const schedulerContext = buildFetchSchedulerDrainContextFn({
+      ...buildFetchSchedulerDrainPhaseCallsiteContextFn({
+        planner,
+        config,
+        initialMode,
+        prepareNextPlannerSource: processPreflight,
+        fetchFn: (preflight) => processPreflightPayload(preflight, { throwOnFetchFailure: true }),
+        fetchWithModeFn: (preflight, fetchModeOverride) => processPreflightPayload(preflight, {
+          fetchModeOverride,
+          skipBeforeFetch: false,
+          throwOnFetchFailure: true,
         }),
-      });
+        shouldSkipPreflight: (preflight) => !preflight || preflight.mode !== 'process',
+        shouldStopScheduler,
+        classifyOutcomeFn: (error) => {
+          if (error?.fetchFailureOutcome) {
+            return error.fetchFailureOutcome;
+          }
+          return String(error?.fetchFailureOutcome || '').trim() || 'fetch_error';
+        },
+        handleSchedulerFetchError: (preflight, error) => {
+          logger?.error?.('fetch_scheduler_drain_failed', {
+            url: preflight?.source?.url || '',
+            message: error?.message || String(error || ''),
+          });
+        },
+        handleSchedulerSkipped: (preflight) => {
+          logger?.info?.('scheduler_source_skipped', {
+            url: preflight?.source?.url || '',
+          });
+        },
+        emitSchedulerEvent: (name, payload) => {
+          logger?.info?.(name, payload);
+        },
+        createFetchScheduler,
+      }),
+    });
 
-      await runFetchSchedulerDrainFn(schedulerContext);
-    }
-
-    return {
-      runtimePauseAnnounced: currentRuntimePauseAnnounced,
-      fetchWorkerSeq: currentFetchWorkerSeq,
-      artifactSequence: currentArtifactSequence,
-      ...(currentTerminalReason ? { terminalReason: currentTerminalReason } : {}),
-    };
-  }
-
-  while (planner?.hasNext?.()) {
-    const preflight = await processPreflight();
-    if (!preflight) {
-      break;
-    }
-    if (preflight.mode === 'stop') {
-      currentTerminalReason = 'max_run_seconds_reached';
-      break;
-    }
-
-    await processPreflightPayload(preflight);
+    await runFetchSchedulerDrainFn(schedulerContext);
   }
 
   return {

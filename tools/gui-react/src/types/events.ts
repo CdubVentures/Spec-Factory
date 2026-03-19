@@ -15,6 +15,14 @@ export interface ProcessStatus {
   relocatingRunId?: string | null;
   run_id?: string | null;
   runId?: string | null;
+  category?: string | null;
+  product_id?: string | null;
+  productId?: string | null;
+  brand?: string | null;
+  model?: string | null;
+  variant?: string | null;
+  storage_destination?: 'local' | 's3';
+  storageDestination?: 'local' | 's3';
   pid?: number;
   command?: string;
   startedAt?: string;

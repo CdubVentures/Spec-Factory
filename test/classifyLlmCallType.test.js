@@ -17,9 +17,9 @@ describe('classifyLlmCallType', () => {
     ['uber_query_planner', 'search_planner'],
 
     // serp triage
-    ['serp_triage', 'serp_triage'],
-    ['serp_rerank', 'serp_triage'],
-    ['triage_candidates', 'serp_triage'],
+    ['serp_selector', 'serp_selector'],
+    ['serp_rerank', 'serp_selector'],
+    ['triage_candidates', 'serp_selector'],
 
     // domain classifier
     ['domain_safety_classification', 'domain_classifier'],

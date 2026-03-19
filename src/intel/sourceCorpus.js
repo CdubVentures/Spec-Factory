@@ -382,9 +382,8 @@ export async function persistSourceCorpus({
     }
   }
 
-  // Write JSON blob when: specDb is null, or config.corpusJsonWrite is true
-  const shouldWriteJson = !specDb || config.corpusJsonWrite === true;
-  if (shouldWriteJson) {
+  // Write JSON blob only when specDb is not available (fallback)
+  if (!specDb) {
     const payload = {
       category,
       updated_at: new Date().toISOString(),

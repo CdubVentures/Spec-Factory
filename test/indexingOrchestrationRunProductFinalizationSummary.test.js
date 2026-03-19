@@ -22,12 +22,6 @@ test('buildRunProductFinalizationSummary captures runtime usage and builds the c
         };
       },
     },
-    llmBudgetGuard: {
-      snapshot: () => {
-        calls.push('snapshot');
-        return { state: { blockedReason: '' } };
-      },
-    },
     productId: 'product-1',
     runId: 'run-1',
     category: 'mouse',
@@ -77,7 +71,6 @@ test('buildRunProductFinalizationSummary captures runtime usage and builds the c
     llmSourcesUsed: 2,
     contribution: { llmFields: ['shape'] },
     llmContext: { verification: { done: true } },
-    llmBudgetBlockedReason: '',
     aggressiveExtraction: { enabled: false },
     categoryConfig: { category: 'mouse' },
     fetcherMode: 'playwright',
@@ -133,7 +126,6 @@ test('buildRunProductFinalizationSummary captures runtime usage and builds the c
 
   assert.deepEqual(calls, [
     'getUsageState',
-    'snapshot',
     ['buildRunSummaryPayloadPhaseCallsiteContextFn', {
       productId: 'product-1',
       runId: 'run-1',
@@ -188,8 +180,6 @@ test('buildRunProductFinalizationSummary captures runtime usage and builds the c
       llmContext: { verification: { done: true } },
       llmCallCount: 6,
       llmCostUsd: 0.12,
-      llmBudgetSnapshot: { state: { blockedReason: '' } },
-      llmBudgetBlockedReason: '',
         aggressiveExtraction: { enabled: false },
       categoryConfig: { category: 'mouse' },
       fetcherMode: 'playwright',
@@ -284,8 +274,6 @@ test('buildRunProductFinalizationSummary captures runtime usage and builds the c
       llmContext: { verification: { done: true } },
       llmCallCount: 6,
       llmCostUsd: 0.12,
-      llmBudgetSnapshot: { state: { blockedReason: '' } },
-      llmBudgetBlockedReason: '',
         aggressiveExtraction: { enabled: false },
       categoryConfig: { category: 'mouse' },
       fetcherMode: 'playwright',
@@ -381,8 +369,6 @@ test('buildRunProductFinalizationSummary captures runtime usage and builds the c
         llmContext: { verification: { done: true } },
         llmCallCount: 6,
         llmCostUsd: 0.12,
-        llmBudgetSnapshot: { state: { blockedReason: '' } },
-        llmBudgetBlockedReason: '',
             aggressiveExtraction: { enabled: false },
         categoryConfig: { category: 'mouse' },
         fetcherMode: 'playwright',
@@ -431,5 +417,4 @@ test('buildRunProductFinalizationSummary captures runtime usage and builds the c
   assert.equal(result.llmCostUsd, 0.12);
   assert.equal(result.llmEstimatedUsageCount, 4);
   assert.equal(result.llmRetryWithoutSchemaCount, 1);
-  assert.deepEqual(result.llmBudgetSnapshot, { state: { blockedReason: '' } });
 });

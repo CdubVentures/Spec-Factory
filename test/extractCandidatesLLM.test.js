@@ -102,7 +102,8 @@ test('extractCandidatesLLM keeps only candidates with valid evidenceRefs', async
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
         llmModelExtract: 'test-model',
-        llmTimeoutMs: 5_000
+        llmTimeoutMs: 5_000,
+        llmExtractionCacheDir: path.join(os.tmpdir(), `llm-cache-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       }
     });
 
@@ -180,7 +181,8 @@ test('extractCandidatesLLM returns known-answer candidates with evidence refs', 
         llmModelExtract: 'deepseek-reasoner',
         llmReasoningMode: true,
         llmReasoningBudget: 1024,
-        llmTimeoutMs: 5_000
+        llmTimeoutMs: 5_000,
+        llmExtractionCacheDir: path.join(os.tmpdir(), `llm-cache-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       }
     });
 
@@ -260,7 +262,8 @@ test('extractCandidatesLLM uses route matrix model ladder + token cap override',
         llmMaxOutputTokensPlan: 8192,
         llmMaxOutputTokens: 8192,
         llmMaxOutputTokensExtract: 8192,
-        llmTimeoutMs: 5_000
+        llmTimeoutMs: 5_000,
+        llmExtractionCacheDir: path.join(os.tmpdir(), `llm-cache-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       }
     });
 
@@ -355,7 +358,8 @@ test('extractCandidatesLLM sends promoted visual assets as multimodal images whe
         llmProvider: 'openai',
         llmModelExtract: 'test-model',
         llmModelPlan: 'test-model',
-        llmTimeoutMs: 5_000
+        llmTimeoutMs: 5_000,
+        llmExtractionCacheDir: path.join(os.tmpdir(), `llm-cache-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       },
       logger: {
         info: (...args) => infoCalls.push(args),
@@ -446,7 +450,8 @@ test('extractCandidatesLLM applies route evidence source policy (single source +
         llmProvider: 'openai',
         llmModelExtract: 'test-model',
         llmModelPlan: 'test-model',
-        llmTimeoutMs: 5_000
+        llmTimeoutMs: 5_000,
+        llmExtractionCacheDir: path.join(os.tmpdir(), `llm-cache-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       }
     });
 
@@ -544,7 +549,8 @@ test('extractCandidatesLLM applies studio prompt flags from route policy', async
         llmProvider: 'openai',
         llmModelExtract: 'test-model',
         llmModelPlan: 'test-model',
-        llmTimeoutMs: 5_000
+        llmTimeoutMs: 5_000,
+        llmExtractionCacheDir: path.join(os.tmpdir(), `llm-cache-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       }
     });
 
@@ -619,7 +625,8 @@ test('extractCandidatesLLM supports insufficient_evidence_action=escalate', asyn
         llmProvider: 'openai',
         llmModelExtract: 'test-model',
         llmModelPlan: 'test-model',
-        llmTimeoutMs: 5_000
+        llmTimeoutMs: 5_000,
+        llmExtractionCacheDir: path.join(os.tmpdir(), `llm-cache-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       }
     });
 

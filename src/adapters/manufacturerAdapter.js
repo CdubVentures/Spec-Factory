@@ -481,7 +481,7 @@ export const manufacturerAdapter = {
 
   async extractFromPage({ source, pageData, config }) {
     const pairs = extractTablePairs(pageData.html || '', {
-      useV2: config?.htmlTableExtractorV2 !== false
+      useV2: true
     });
     const fieldCandidates = mapPairsToFieldCandidates(pairs, 'html_table');
     const identityCandidates = extractIdentityFromPairs(pairs);
@@ -499,8 +499,7 @@ export const manufacturerAdapter = {
       requestedBackend: config?.pdfPreferredBackend || 'auto'
     });
     pdfStats.docs_discovered = pdfUrls.length;
-    const scannedOcrPromoteCandidates = config?.scannedPdfOcrEnabled === true
-      && config?.scannedPdfOcrPromoteCandidates === true;
+    const scannedOcrPromoteCandidates = config?.scannedPdfOcrEnabled === true;
 
     for (const pdfUrl of pdfUrls.slice(0, 4)) {
       try {

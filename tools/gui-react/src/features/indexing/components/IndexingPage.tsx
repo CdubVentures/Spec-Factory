@@ -9,6 +9,7 @@ import {
   readRuntimeSettingsBootstrap,
   useRuntimeSettingsReader,
 } from '../../pipeline-settings';
+import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore';
 import {
   RUNTIME_SETTING_DEFAULTS,
 } from '../../../stores/settingsManifest';
@@ -55,10 +56,17 @@ export function IndexingPage() {
     [queryClient],
   );
   const runtimeManifestDefaults = useMemo(() => toRuntimeDraft(RUNTIME_SETTING_DEFAULTS), []);
-  const {
-    settings: runtimeSettingsData,
-    isLoading: runtimeSettingsLoading,
-  } = useRuntimeSettingsReader();
+  // WHY: Read from the shared Zustand value store — not React Query.
+  // The store always has the latest editor state (including unsaved edits).
+  // React Query only has the last server-persisted snapshot, which may be
+  // up to 1500ms behind if the user just edited a setting.
+  // WHY: ?? undefined converts the store's null to the undefined that downstream
+  // consumers expect (buildIndexingRuntimeDraft, buildIndexingRuntimeSettingsProjection).
+  const runtimeSettingsData = useRuntimeSettingsValueStore((s) => s.values) ?? undefined;
+  const runtimeSettingsHydrated = useRuntimeSettingsValueStore((s) => s.hydrated);
+  // WHY: Keep useRuntimeSettingsReader for the initial fetch trigger — the authority
+  // hook hydrates the Zustand store when server data arrives. We only need isLoading.
+  const { isLoading: runtimeSettingsLoading } = useRuntimeSettingsReader();
   const runtimeDraft = useMemo(
     () => buildIndexingRuntimeDraft({
       runtimeSettings: runtimeSettingsData,

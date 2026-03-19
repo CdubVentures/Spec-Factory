@@ -17,7 +17,6 @@ test('buildRunSummaryPayload exposes category_authority telemetry and omits lega
     llmTargetFields: [],
     goldenExamples: [],
     contribution: { llmFields: [], componentFields: [] },
-    llmBudgetSnapshot: { limits: {}, state: {} },
     manufacturerSources: [],
     needSet: { needs: [] },
     phase07PrimeSources: { summary: {} },

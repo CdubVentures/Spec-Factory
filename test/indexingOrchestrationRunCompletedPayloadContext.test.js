@@ -19,7 +19,6 @@ test('buildRunCompletedPayloadContext maps runProduct run_completed inputs to pa
     contribution: { llmFields: ['dpi'] },
     llmEstimatedUsageCount: 4,
     llmRetryWithoutSchemaCount: 1,
-    llmBudgetBlockedReason: '',
     indexingHelperFlowEnabled: true,
     helperContext: { active_match: {} },
     helperFilledFields: ['dpi'],

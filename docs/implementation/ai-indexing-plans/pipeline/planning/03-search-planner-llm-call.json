@@ -1,171 +1,59 @@
 {
-  "_doc": "Search Planner LLM call contract. Documents the exact prompt, payload shape, response schema, and post-processing rules for the Schema 4 NeedSet planner LLM call. Source: searchPlanBuilder.js:24-78 (schema+prompt), 305-374 (call), 383-434 (post-processing). Updated 2026-03-16.",
-
-  "call_site": {
-    "function": "buildSearchPlan()",
-    "file": "src/indexlab/searchPlanBuilder.js:352-375",
-    "routing": "callLlmWithRouting()",
-    "reason": "needset_search_planner",
+  "_doc": "Live routed LLM contract used by planUberQueries() in Stage 04 Search Planner.",
+  "validated_against": "2026-03-18",
+  "routing": {
+    "reason": "search_planner",
     "role": "plan",
-    "gate": "hasLlmRouteApiKey(config, { role: 'plan' }) — returns disabled result when false"
+    "phase": "searchPlanner",
+    "gate": "hasLlmRouteApiKey(config, { role: 'plan' }) plus resolvePhaseModel(config, 'searchPlanner')"
   },
-
-  "system_prompt": {
-    "_source": "searchPlanBuilder.js:60-78 (PLANNER_SYSTEM_PROMPT)",
-    "role": "search planner for hardware specification data collection",
-    "rules": [
-      "Generate 1-3 queries per active group, each targeting different search strategies",
-      "Vary query families: manufacturer_html, manual_pdf, support_docs, review_lookup, benchmark_lookup, fallback_web, targeted_single",
-      "Prefer manufacturer docs, instrumented lab reviews, and trusted spec databases",
-      "Avoid junk domains, login pages, forums, and irrelevant topics",
-      "Do NOT repeat queries from existing_queries — generate DIFFERENT patterns",
-      "Use domains_tried_union to AVOID domains already visited — target DIFFERENT domains",
-      "Use host_classes_tried_union to diversify: if 'manufacturer' tried, try 'review' or 'database'",
-      "Use evidence_classes_tried_union to vary content types: if 'html' tried, target 'pdf' or 'json-ld'",
-      "When no_value_attempts is high (3+), radically change search strategy",
-      "weak_field_keys need CORROBORATION queries (authoritative sources to confirm)",
-      "conflict_field_keys need RESOLUTION queries (manufacturer/official sources to settle)",
-      "Use aliases_union to generate variant-aware queries",
-      "Each query must have 'family' (strategy type) and 'q' (search query text)",
-      "Optionally include 'target_fields', 'preferred_domains', and 'exact_match_required'",
-      "Return JSON with a 'groups' array where each group has 'key' and 'queries' array"
-    ]
+  "system_prompt_rules": [
+    "generate 12-24 short, diverse search queries",
+    "cover different angles instead of repeating base_queries",
+    "prioritize manufacturer docs, manuals, labs, and trusted spec databases",
+    "also include official support pages and product comparison sites",
+    "never put domain names in query text",
+    "focus on gaps not already covered by archetype-emitted sources",
+    "prioritize critical unresolved fields when present"
+  ],
+  "user_payload_shape": {
+    "identity_lock": {
+      "brand": "string",
+      "model": "string",
+      "variant": "string",
+      "product_id": "string"
+    },
+    "missing_fields": {
+      "all": "string[]",
+      "uncovered_search_worthy": "string[]",
+      "covered_by_archetypes": "string[]",
+      "total": "number"
+    },
+    "missing_critical_fields": "string[]",
+    "base_queries": "string[]",
+    "frontier_summary": "object",
+    "archetypes_emitted": "string[]",
+    "hosts_targeted": "string[]",
+    "uncovered_search_worthy": "string[]"
   },
-
-  "user_payload": {
-    "_source": "searchPlanBuilder.js:305-344 (llmPayload)",
-    "_encoding": "JSON.stringify — sent as the 'user' message",
-
-    "identity": {
-      "manufacturer": "string — identity.manufacturer || run.brand || ''",
-      "model":        "string — identity.model || run.model || ''",
-      "category":     "string — run.category || ''"
-    },
-
-    "round": "number — run.round || 0",
-
-    "missing_critical_fields": "string[] — ctx.needset.missing_critical_fields || []",
-
-    "limits": {
-      "discoveryMaxQueries": "number — plannerLimits.discoveryMaxQueries || 6",
-      "maxUrlsPerProduct":   "number — plannerLimits.maxUrlsPerProduct || 20"
-    },
-
-    "focus_groups": {
-      "_note": "Only groups with phase='now' or phase='next' (hold groups filtered out). Dead domains and dead query hashes removed before inclusion.",
-      "_per_group_shape": {
-        "key":                            "string — group identifier",
-        "phase":                          "string — 'now' or 'next' (hold filtered out)",
-        "priority":                       "string — 'core' | 'secondary' | 'optional'",
-        "unresolved_field_keys":          "string[] — fields still needing data",
-        "weak_field_keys":                "string[] — fields needing corroboration",
-        "conflict_field_keys":            "string[] — fields needing resolution",
-        "core_unresolved_count":          "number",
-        "secondary_unresolved_count":     "number",
-        "query_terms_union":              "string[] — CAPPED TO 5",
-        "domain_hints_union":             "string[] — dead domains removed, CAPPED TO 5",
-        "existing_queries_union":         "string[] — dead hashes removed, CAPPED TO 5",
-        "aliases_union":                  "string[] — CAPPED TO 5",
-        "preferred_content_types_union":  "string[] — CAPPED TO 5",
-        "domains_tried_union":            "string[] — CAPPED TO 5",
-        "host_classes_tried_union":       "string[] — UNCAPPED (small enum set)",
-        "evidence_classes_tried_union":   "string[] — UNCAPPED (small enum set)",
-        "no_value_attempts":              "number",
-        "host_class":                     "string",
-        "source_target":                  "string",
-        "search_intent":                  "string",
-        "urls_examined_count":            "number",
-        "query_count":                    "number"
-      }
-    },
-
-    "existing_queries": "string[] — ctx.needset.existing_queries || [] — global de-dup list"
-  },
-
   "response_schema": {
-    "_source": "searchPlanBuilder.js:24-58 (PLANNER_RESPONSE_SCHEMA)",
-    "_encoding": "JSON Schema passed via callLlmWithRouting({ jsonSchema })",
-
-    "planner_confidence": { "type": "number", "_note": "0-1 overall plan quality" },
-    "groups": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["key", "queries"],
-        "properties": {
-          "key":              { "type": "string", "_note": "must match a focus_group key from the payload" },
-          "phase":            { "type": "string", "_note": "optional echo of input phase" },
-          "reason_active":    { "type": "string", "_note": "why this group is being searched" },
-          "query_family_mix": { "type": "string", "_note": "human-readable strategy description" },
-          "queries": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["family", "q"],
-              "properties": {
-                "family":               { "type": "string", "_note": "manufacturer_html | manual_pdf | support_docs | review_lookup | benchmark_lookup | fallback_web | targeted_single" },
-                "q":                    { "type": "string", "_note": "the actual search query text" },
-                "target_fields":        { "type": "array", "items": { "type": "string" }, "_note": "optional field keys this query targets" },
-                "preferred_domains":    { "type": "array", "items": { "type": "string" }, "_note": "optional preferred domains" },
-                "exact_match_required": { "type": "boolean", "_note": "optional exact match flag" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "duplicates_suppressed": { "type": "integer", "_note": "LLM self-reported dupe count (informational only — real dedup is post-LLM)" },
-    "targeted_exceptions":   { "type": "integer", "_note": "exceptional queries added outside normal rules" }
+    "queries": "string[]",
+    "preferred_domains": "string[]",
+    "negative_filters": "string[]",
+    "max_queries": "integer",
+    "max_new_domains": "integer",
+    "sitemap_mode_recommended": "boolean"
   },
-
-  "response_normalization": {
-    "_source": "searchPlanBuilder.js:383-390",
-    "_note": "Some models (e.g. Gemini) return a single group object { key, queries } instead of wrapping in { groups: [...] }. Both shapes are accepted.",
-    "array_groups": "if llmResult.groups is an array, use directly",
-    "single_group": "if llmResult.key exists and llmResult.queries is an array, wrap as [llmResult]",
-    "empty_fallback": "otherwise groups = []"
-  },
-
-  "post_processing": {
-    "_source": "searchPlanBuilder.js:393-434",
-
-    "dedup": {
-      "_note": "Queries are deduped by hash against (1) existing_queries from Schema 3 and (2) previously emitted queries in this call",
-      "hash_function": "queryHashFn (default: stableHash of lowercased/trimmed/space-normalized text)",
-      "existing_hashes_source": "ctx.needset.existing_queries mapped through queryHashFn"
-    },
-
-    "capping": {
-      "per_group_cap": "3 queries max per group (PER_GROUP_CAP constant, line 80)",
-      "global_cap": "max(1, parseInt(config.discoveryMaxQueries, 10) || 6) (line 391)",
-      "cap_overflow": "queries exceeding either cap are counted as dupesDropped"
-    },
-
-    "query_assembly": {
-      "_note": "Each accepted query is enriched with metadata before inclusion in Schema 4",
-      "q":                    "string — trimmed query text from LLM",
-      "family":               "string — from LLM or 'unknown' fallback",
-      "query_hash":           "string — deterministic hash for cross-round dedup",
-      "group_key":            "string — from the LLM group.key",
-      "target_fields":        "string[] — from LLM or [] fallback",
-      "preferred_domains":    "string[] — from LLM or [] fallback",
-      "exact_match_required": "boolean — from LLM or false fallback"
-    }
-  },
-
-  "error_handling": {
-    "llm_call_failure": "catch block (line 376-379) returns makeErrorResult(ctx, error) — mode='error', plannerComplete=false, error message captured",
-    "no_api_key": "hasLlmRouteApiKey gate (line 283) returns makeDisabledResult(ctx) — mode='disabled', plannerComplete=true, zero queries",
-    "empty_llm_response": "normalized to groups=[] — returns Schema 4 with zero queries but full panel/bundle metadata"
-  },
-
-  "llm_call_parameters": {
-    "reason": "needset_search_planner",
-    "role": "plan",
-    "system": "PLANNER_SYSTEM_PROMPT (18 rules)",
-    "user": "JSON.stringify(llmPayload)",
-    "jsonSchema": "PLANNER_RESPONSE_SCHEMA",
-    "timeoutMs": "config.llmTimeoutMs || 40000",
-    "model": "config.llmModelPlan (resolved at call time)"
+  "normalization_and_post_processing": [
+    "query text is normalized and deduped by lowercase form",
+    "fallback queries are deduped baseQueries capped to the stage cap",
+    "result queries are capped to the stage cap",
+    "preferred_domains and negative_filters are also deduped"
+  ],
+  "failure_modes": {
+    "no_plan_route_api_key": "returns source deterministic with deduped base queries",
+    "no_searchPlanner_model": "returns source deterministic with deduped base queries",
+    "llm_call_failure": "returns source deterministic_fallback with deduped base queries",
+    "empty_llm_query_list": "returns source deterministic_fallback with deduped base queries"
   }
 }

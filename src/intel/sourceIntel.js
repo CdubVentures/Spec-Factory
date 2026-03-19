@@ -1118,7 +1118,7 @@ export async function persistSourceIntel({
     }
   }
 
-  if (config.intelJsonWrite || !specDb) {
+  if (!specDb) {
     await storage.writeObject(loaded.key, Buffer.from(JSON.stringify(payload, null, 2), 'utf8'), {
       contentType: 'application/json'
     });

@@ -1,3 +1,4 @@
+import { resolvePhaseModel } from '../../../core/llm/client/routing.js';
 import { normalizeFieldList } from '../../../utils/fieldKeys.js';
 import { appendLlmVerificationReport } from '../validation/verificationReport.js';
 import { prepareBatchPromptContext } from './batchPromptContext.js';
@@ -84,7 +85,6 @@ export async function runExtractionVerification({
   knownValuesFlat = {},
   goldenExamples = [],
   routeMatrixPolicy = null,
-  budgetGuard = null,
   invokeModel,
   hasKnownValueFn,
   resolveBatchRoutePolicyFn,
@@ -103,8 +103,8 @@ export async function runExtractionVerification({
   });
   const usageFast = { prompt_tokens: 0, completion_tokens: 0, cost_usd: 0 };
   const usageReason = { prompt_tokens: 0, completion_tokens: 0, cost_usd: 0 };
-  const fastModel = String(config.llmModelPlan || '').trim();
-  const reasonModel = String(config.llmModelExtract || '').trim();
+  const fastModel = resolvePhaseModel(config, 'extraction') || String(config.llmModelPlan || '').trim();
+  const reasonModel = String(config.llmModelReasoning || config.llmModelPlan || '').trim();
   const requiredSet = new Set(normalizeFieldList(categoryConfig.requiredFields || [], {
     fieldOrder: categoryConfig.fieldOrder || []
   }));
@@ -165,47 +165,35 @@ export async function runExtractionVerification({
       let reasonResult = null;
 
       if (fastModel) {
-        const canFastCall = budgetGuard?.canCall?.({
+        fastResult = await invokeModel({
+          model: fastModel,
+          routeRole: 'plan',
+          reasoningMode: false,
           reason: 'verify_extract_fast',
-          essential: false
-        }) || { allowed: true };
-        if (canFastCall.allowed) {
-          fastResult = await invokeModel({
-            model: fastModel,
-            routeRole: 'plan',
-            reasoningMode: false,
-            reason: 'verify_extract_fast',
-            usageTracker: usageFast,
-            userPayload: verifyPayload,
-            promptEvidence: verifyPromptEvidence,
-            fieldSet: verifyFieldSet,
-            validRefs: verifyRefs,
-            scopedEvidencePack: verifyInvocationEvidencePack,
-            routeMatrixPolicy: verifyRoutePolicy
-          });
-        }
+          usageTracker: usageFast,
+          userPayload: verifyPayload,
+          promptEvidence: verifyPromptEvidence,
+          fieldSet: verifyFieldSet,
+          validRefs: verifyRefs,
+          scopedEvidencePack: verifyInvocationEvidencePack,
+          routeMatrixPolicy: verifyRoutePolicy
+        });
       }
 
       if (reasonModel) {
-        const canReasonCall = budgetGuard?.canCall?.({
+        reasonResult = await invokeModel({
+          model: reasonModel,
+          routeRole: 'extract',
+          reasoningMode: true,
           reason: 'verify_extract_reason',
-          essential: false
-        }) || { allowed: true };
-        if (canReasonCall.allowed) {
-          reasonResult = await invokeModel({
-            model: reasonModel,
-            routeRole: 'extract',
-            reasoningMode: true,
-            reason: 'verify_extract_reason',
-            usageTracker: usageReason,
-            userPayload: verifyPayload,
-            promptEvidence: verifyPromptEvidence,
-            fieldSet: verifyFieldSet,
-            validRefs: verifyRefs,
-            scopedEvidencePack: verifyInvocationEvidencePack,
-            routeMatrixPolicy: verifyRoutePolicy
-          });
-        }
+          usageTracker: usageReason,
+          userPayload: verifyPayload,
+          promptEvidence: verifyPromptEvidence,
+          fieldSet: verifyFieldSet,
+          validRefs: verifyRefs,
+          scopedEvidencePack: verifyInvocationEvidencePack,
+          routeMatrixPolicy: verifyRoutePolicy
+        });
       }
 
       const fastSet = collectRequiredFilled(fastResult?.fieldCandidates || [], requiredSet, hasKnownValueFn);

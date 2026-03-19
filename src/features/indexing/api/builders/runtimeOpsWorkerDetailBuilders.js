@@ -107,7 +107,7 @@ export function buildWorkerDetail(events, workerId, options = {}) {
           };
         }
       }
-      if (type === 'serp_triage_completed' && Array.isArray(payload.candidates)) {
+      if (type === 'serp_selector_completed' && Array.isArray(payload.candidates)) {
         for (const c of payload.candidates) {
           const url = String(c?.url || '').trim();
           if (url) {

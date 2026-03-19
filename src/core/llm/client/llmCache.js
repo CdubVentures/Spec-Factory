@@ -25,13 +25,11 @@ export class LLMCache {
   constructor({
     specDb = null,
     cacheDir = '',
-    defaultTtlMs = 7 * 24 * 60 * 60 * 1000,
-    cacheJsonWrite = false
+    defaultTtlMs = 7 * 24 * 60 * 60 * 1000
   } = {}) {
     this.specDb = specDb;
     this.cacheDir = String(cacheDir || '').trim();
     this.defaultTtlMs = Math.max(1, Number(defaultTtlMs || 0) || (7 * 24 * 60 * 60 * 1000));
-    this.cacheJsonWrite = Boolean(cacheJsonWrite);
     this._setCount = 0;
   }
 
@@ -126,8 +124,8 @@ export class LLMCache {
       }
     }
 
-    // Write JSON file if cacheJsonWrite is enabled, or if specDb is not available
-    if ((this.cacheJsonWrite || !this.specDb) && this.cacheDir) {
+    // Write JSON file only when specDb is not available (fallback)
+    if (!this.specDb && this.cacheDir) {
       const filePath = this.filePathForKey(key);
       await fs.mkdir(path.dirname(filePath), { recursive: true });
       const payload = {

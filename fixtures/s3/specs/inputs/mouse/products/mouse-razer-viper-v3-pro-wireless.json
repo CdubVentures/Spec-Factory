@@ -1,0 +1,16 @@
+{
+  "productId": "mouse-razer-viper-v3-pro-wireless",
+  "category": "mouse",
+  "identityLock": {
+    "brand": "Razer",
+    "model": "Viper V3 Pro",
+    "variant": "Wireless",
+    "sku": "",
+    "mpn": "",
+    "gtin": ""
+  },
+  "seedUrls": [
+    "https://www.razer.com"
+  ],
+  "anchors": {}
+}

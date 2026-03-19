@@ -79,9 +79,9 @@ const PROVIDERS = Object.freeze({
     preference_rank: 2, // Measured: some results, low relevance
     rate_limits: { requests_per_second: 3, burst: 10, cooldown_ms: 500 },
   }),
-  // Startpage: privacy-focused Google proxy via SearXNG.
-  startpage: Object.freeze({
-    name: 'startpage',
+  // Google Proxy: privacy-focused Google proxy via SearXNG (engine: startpage).
+  'google-proxy': Object.freeze({
+    name: 'google-proxy',
     supports_site: true,
     supports_filetype: false,
     supports_since: false,
@@ -182,7 +182,7 @@ const OPERATOR_KEYS = {
  * Boolean supports: AND (all must support for merged to support).
  * Numerics: minimum of max_query_length, sum of max_results_per_request.
  * Rate limits: minimum requests_per_second, minimum burst, maximum cooldown_ms.
- * WHY: CSV searchEngines like 'bing,startpage,duckduckgo' must yield a safe
+ * WHY: CSV searchEngines like 'bing,google-proxy,duckduckgo' must yield a safe
  * merged capability set reflecting the least capable engine in the set.
  */
 function mergeCapabilities(capsList) {
@@ -212,7 +212,7 @@ function mergeCapabilities(capsList) {
 
 /**
  * Get frozen capability object for a provider or CSV engine list.
- * Accepts single provider names (e.g. 'bing') or CSV strings (e.g. 'bing,startpage,duckduckgo').
+ * Accepts single provider names (e.g. 'bing') or CSV strings (e.g. 'bing,google-proxy,duckduckgo').
  * @throws on unknown provider names.
  */
 export function getProviderCapabilities(providerName) {

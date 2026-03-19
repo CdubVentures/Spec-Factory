@@ -16,7 +16,6 @@ export interface BuildIndexingRunLearningPayloadInput {
   llmPlanProvider: string;
   llmPlanBaseUrl: string;
   llmPlanApiKey: string;
-  llmExtractionCacheEnabled: boolean;
   llmExtractionCacheDir: string;
   parsedLlmExtractionCacheTtlMs: number;
   parsedLlmMaxCallsPerProductTotal: number;
@@ -50,7 +49,6 @@ export function buildIndexingRunLearningPayload(
     llmPlanProvider: String(input.llmPlanProvider || '').trim(),
     llmPlanBaseUrl: String(input.llmPlanBaseUrl || '').trim(),
     llmPlanApiKey: String(input.llmPlanApiKey || '').trim(),
-    llmExtractionCacheEnabled: input.llmExtractionCacheEnabled,
     llmExtractionCacheDir: String(input.llmExtractionCacheDir || '').trim(),
     llmExtractionCacheTtlMs: Math.max(60000, input.parsedLlmExtractionCacheTtlMs),
     llmMaxCallsPerProductTotal: Math.max(1, input.parsedLlmMaxCallsPerProductTotal),

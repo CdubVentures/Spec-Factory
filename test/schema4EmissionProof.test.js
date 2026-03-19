@@ -289,6 +289,13 @@ function makeLoggerSpy() {
 // Minimal stubs
 // ---------------------------------------------------------------------------
 
+function makeStorage() {
+  return {
+    resolveOutputKey: () => '_learning/test',
+    readJsonOrNull: async () => null,
+  };
+}
+
 function makePlanner() {
   const enqueued = [];
   const seeded = [];
@@ -300,11 +307,49 @@ function makePlanner() {
   };
 }
 
+// WHY: After orchestrator rewrite, stages 02-08 run real implementations.
+// These stubs return minimal valid shapes so the test focuses on NeedSet emission.
+function makeStageStubs() {
+  return {
+    runBrandResolverFn: async () => ({ brandResolution: null, promotedHosts: [] }),
+    runSearchProfileFn: () => ({
+      searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] },
+      effectiveHostPlan: null,
+      hostPlanQueryRows: [],
+    }),
+    runSearchPlannerFn: async () => ({ schema4Plan: null, uberSearchPlan: null }),
+    runQueryJourneyFn: async () => ({
+      queries: [],
+      selectedQueryRowMap: new Map(),
+      profileQueryRowsByQuery: new Map(),
+      searchProfilePlanned: {},
+      searchProfileKeys: {},
+      executionQueryLimit: 0,
+      queryLimit: 8,
+      queryRejectLogCombined: [],
+    }),
+    executeSearchQueriesFn: async () => ({
+      rawResults: [],
+      searchAttempts: [],
+      searchJournal: [],
+      internalSatisfied: false,
+      externalSearchReason: null,
+    }),
+    processDiscoveryResultsFn: async () => ({
+      enabled: true,
+      approvedUrls: [],
+      candidateUrls: [],
+      candidates: [],
+    }),
+    runDomainClassifierFn: () => ({ enqueuedCount: 0, seededCount: 0 }),
+  };
+}
+
 // =========================================================================
 // TEST SUITE
 // =========================================================================
 
-test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundles, deltas when enableSchema4SearchPlan is true', async () => {
+test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundles, deltas', async () => {
   const logger = makeLoggerSpy();
   const schema2 = makeSchema2();
   const schema4 = makeSchema4();
@@ -312,12 +357,13 @@ test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundle
 
   await runDiscoverySeedPlan({
     config: {
-      enableSchema4SearchPlan: true,
-      searchEngines: 'bing,startpage,duckduckgo',
+
+      searchEngines: 'bing,google-proxy,duckduckgo',
       discoveryEnabled: true,
       maxCandidateUrls: 10,
       fetchCandidateSources: false,
     },
+    storage: makeStorage(),
     category: 'mouse',
     categoryConfig: {
       category: 'mouse',
@@ -336,20 +382,18 @@ test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundle
     computeNeedSetFn: () => schema2,
     buildSearchPlanningContextFn: (args) => ({ ...args, context_ready: true }),
     buildSearchPlanFn: async () => schema4,
-    discoverCandidateSourcesFn: async () => ({
-      enabled: true,
-      candidateUrls: ['https://razer.com/viper-v3-pro'],
-      approvedUrls: ['https://razer.com/viper-v3-pro'],
-    }),
+    ...makeStageStubs(),
   });
 
-  // Find the needset_computed emission
+  // WHY: needSet.js now emits two needset_computed events — a schema2_preview
+  // early, then the full schema4_planner one after the LLM call completes.
   const needsetCalls = logger.calls.filter(
     (c) => c.level === 'info' && c.event === 'needset_computed',
   );
-  assert.equal(needsetCalls.length, 1, 'exactly one needset_computed emitted');
+  const schema4Calls = needsetCalls.filter((c) => c.payload?.scope === 'schema4_planner');
+  assert.equal(schema4Calls.length, 1, 'exactly one schema4_planner needset_computed emitted');
 
-  const payload = needsetCalls[0].payload;
+  const payload = schema4Calls[0].payload;
 
   // -- scope and schema_version --
   assert.equal(payload.scope, 'schema4_planner', 'scope must be schema4_planner');
@@ -461,57 +505,19 @@ test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundle
   assert.equal(handoffCalls[0].payload.planner_mode, 'standard');
 });
 
-test('runDiscoverySeedPlan does NOT emit needset_computed when enableSchema4SearchPlan is false', async () => {
-  const logger = makeLoggerSpy();
-  const planner = makePlanner();
-
-  await runDiscoverySeedPlan({
-    config: {
-      enableSchema4SearchPlan: false,
-      searchEngines: 'bing,startpage,duckduckgo',
-      discoveryEnabled: true,
-      maxCandidateUrls: 0,
-      fetchCandidateSources: false,
-    },
-    category: 'mouse',
-    categoryConfig: { category: 'mouse', fieldOrder: [], fieldGroups: {} },
-    job: { productId: 'mouse-test', brand: 'Test', model: 'Model' },
-    runId: 'run-disabled',
-    logger,
-    roundContext: {},
-    requiredFields: [],
-    llmContext: {},
-    planner,
-    normalizeFieldListFn: (list) => (Array.isArray(list) ? list : []),
-    loadEnabledSourceEntriesFn: async () => [],
-    computeNeedSetFn: () => { throw new Error('should not be called'); },
-    buildSearchPlanningContextFn: () => { throw new Error('should not be called'); },
-    buildSearchPlanFn: async () => { throw new Error('should not be called'); },
-    discoverCandidateSourcesFn: async () => ({
-      enabled: false,
-      candidateUrls: [],
-      approvedUrls: [],
-    }),
-  });
-
-  const needsetCalls = logger.calls.filter(
-    (c) => c.level === 'info' && c.event === 'needset_computed',
-  );
-  assert.equal(needsetCalls.length, 0, 'no needset_computed when Schema 4 disabled');
-});
-
 test('runDiscoverySeedPlan handles schema4 computation failure gracefully', async () => {
   const logger = makeLoggerSpy();
   const planner = makePlanner();
 
   await runDiscoverySeedPlan({
     config: {
-      enableSchema4SearchPlan: true,
-      searchEngines: 'bing,startpage,duckduckgo',
+
+      searchEngines: 'bing,google-proxy,duckduckgo',
       discoveryEnabled: true,
       maxCandidateUrls: 0,
       fetchCandidateSources: false,
     },
+    storage: makeStorage(),
     category: 'mouse',
     categoryConfig: { category: 'mouse', fieldOrder: [], fieldGroups: {} },
     job: { productId: 'mouse-test', brand: 'Test', model: 'Model' },
@@ -523,21 +529,18 @@ test('runDiscoverySeedPlan handles schema4 computation failure gracefully', asyn
     planner,
     normalizeFieldListFn: (list) => (Array.isArray(list) ? list : []),
     loadEnabledSourceEntriesFn: async () => [],
-    computeNeedSetFn: () => { throw new Error('LLM unavailable'); },
-    buildSearchPlanningContextFn: () => ({}),
-    buildSearchPlanFn: async () => ({}),
-    discoverCandidateSourcesFn: async () => ({
-      enabled: false,
-      candidateUrls: [],
-      approvedUrls: [],
-    }),
+    computeNeedSetFn: () => ({ fields: [], planner_seed: {} }),
+    buildSearchPlanningContextFn: () => ({ focus_groups: [] }),
+    buildSearchPlanFn: async () => { throw new Error('LLM unavailable'); },
+    ...makeStageStubs(),
   });
 
-  // No needset_computed because the whole block failed
-  const needsetCalls = logger.calls.filter(
-    (c) => c.level === 'info' && c.event === 'needset_computed',
+  // No schema4_planner needset_computed because the LLM call failed.
+  // The early schema2_preview may still fire before the failure.
+  const schema4Calls = logger.calls.filter(
+    (c) => c.level === 'info' && c.event === 'needset_computed' && c.payload?.scope === 'schema4_planner',
   );
-  assert.equal(needsetCalls.length, 0, 'no needset_computed on failure');
+  assert.equal(schema4Calls.length, 0, 'no schema4_planner needset_computed on failure');
 
   // But a warning was logged
   const warnCalls = logger.calls.filter(
@@ -553,12 +556,13 @@ test('runDiscoverySeedPlan does NOT emit needset_computed when schema4 has no pa
 
   await runDiscoverySeedPlan({
     config: {
-      enableSchema4SearchPlan: true,
-      searchEngines: 'bing,startpage,duckduckgo',
+
+      searchEngines: 'bing,google-proxy,duckduckgo',
       discoveryEnabled: true,
       maxCandidateUrls: 0,
       fetchCandidateSources: false,
     },
+    storage: makeStorage(),
     category: 'mouse',
     categoryConfig: { category: 'mouse', fieldOrder: [], fieldGroups: {} },
     job: { productId: 'mouse-test', brand: 'Test', model: 'Model' },
@@ -578,15 +582,13 @@ test('runDiscoverySeedPlan does NOT emit needset_computed when schema4 has no pa
       search_plan_handoff: { queries: [], total: 0 },
       panel: null,
     }),
-    discoverCandidateSourcesFn: async () => ({
-      enabled: false,
-      candidateUrls: [],
-      approvedUrls: [],
-    }),
+    ...makeStageStubs(),
   });
 
-  const needsetCalls = logger.calls.filter(
-    (c) => c.level === 'info' && c.event === 'needset_computed',
+  // No schema4_planner needset_computed when panel is null.
+  // The early schema2_preview may still fire.
+  const schema4Calls = logger.calls.filter(
+    (c) => c.level === 'info' && c.event === 'needset_computed' && c.payload?.scope === 'schema4_planner',
   );
-  assert.equal(needsetCalls.length, 0, 'no needset_computed when panel is null');
+  assert.equal(schema4Calls.length, 0, 'no schema4_planner needset_computed when panel is null');
 });

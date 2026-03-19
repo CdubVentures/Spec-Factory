@@ -1,52 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { loadBundledModule } from './helpers/loadBundledModule.js';
 
 import { RUNTIME_SETTINGS_ROUTE_PUT } from '../src/features/settings-authority/settingsContract.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let runtimeSettingsDomainModulePromise;
 
 async function loadRuntimeSettingsDomain() {
   if (!runtimeSettingsDomainModulePromise) {
-    runtimeSettingsDomainModulePromise = (async () => {
-      const esbuild = await import('esbuild');
-      const srcPath = path.resolve(
-        __dirname,
-        '..',
-        'tools',
-        'gui-react',
-        'src',
-        'features',
-        'pipeline-settings',
-        'state',
-        'runtimeSettingsDomain.ts',
-      );
-      const result = await esbuild.build({
-        entryPoints: [srcPath],
-        bundle: true,
-        write: false,
-        format: 'esm',
-        platform: 'node',
-        loader: {
-          '.ts': 'ts',
-          '.tsx': 'tsx',
-        },
-      });
-      const code = result.outputFiles[0].text;
-      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-settings-domain-'));
-      const tmpFile = path.join(tmpDir, 'runtimeSettingsDomain.mjs');
-      fs.writeFileSync(tmpFile, code, 'utf8');
-      try {
-        return await import(`file://${tmpFile.replace(/\\/g, '/')}`);
-      } finally {
-        fs.rmSync(tmpDir, { recursive: true, force: true });
-      }
-    })();
+    runtimeSettingsDomainModulePromise = loadBundledModule(
+      'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsDomain.ts',
+      { prefix: 'runtime-settings-domain-' },
+    );
   }
   return runtimeSettingsDomainModulePromise;
 }
@@ -85,7 +50,7 @@ function createNumericBaseline(fallback = 11) {
 
 function createSerializerInput(overrides = {}) {
   return {
-    searchEngines: 'bing,startpage,duckduckgo',
+    searchEngines: 'bing,google-proxy,duckduckgo',
     searxngBaseUrl: '  https://example.test/search  ',
     llmPlanApiKey: '  key-live  ',
     llmModelPlan: 'gpt-plan',
@@ -116,7 +81,7 @@ test('runtime settings serializer emits every runtime PUT frontend key without s
   assert.equal(Object.hasOwn(payload, 'profile'), false, 'profile is not a runtime PUT key — must not be in payload');
   assert.equal(Object.hasOwn(payload, 'runProfile'), false, 'runProfile is not a runtime PUT key — must not be in payload');
   assert.equal(Object.hasOwn(payload, 'discoveryEnabled'), false, 'discoveryEnabled is a hardcoded invariant — must not be in payload');
-  assert.equal(payload.searchEngines, 'bing,startpage,duckduckgo');
+  assert.equal(payload.searchEngines, 'bing,google-proxy,duckduckgo');
   assert.equal(payload.searxngBaseUrl, 'https://example.test/search');
   assert.equal(payload.llmPlanApiKey, 'key-live');
   assert.equal(payload.llmPlanFallbackModel, 'gpt-plan-fallback');
@@ -151,7 +116,6 @@ test('runtime settings serializer preserves budget and reasoning knobs as parsed
     llmReasoningBudget: '3072',
     llmMonthlyBudgetUsd: '7.5',
     llmPerProductBudgetUsd: '1.25',
-    llmDisableBudgetGuards: true,
     llmMaxCallsPerRound: '12',
     llmMaxOutputTokens: '6144',
     llmVerifySampleRate: '5',
@@ -172,7 +136,6 @@ test('runtime settings serializer preserves budget and reasoning knobs as parsed
   assert.equal(payload.llmReasoningBudget, 3072);
   assert.equal(payload.llmMonthlyBudgetUsd, 7.5);
   assert.equal(payload.llmPerProductBudgetUsd, 1.25);
-  assert.equal(payload.llmDisableBudgetGuards, true);
   assert.equal(payload.llmMaxCallsPerRound, 12);
   assert.equal(payload.llmMaxOutputTokens, 6144);
   assert.equal(payload.llmVerifySampleRate, 5);

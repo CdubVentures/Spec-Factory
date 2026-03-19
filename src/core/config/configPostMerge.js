@@ -2,6 +2,7 @@
 // Applies canonical defaults, overrides, coercions, clamping, and fallback chains.
 // Clamping ranges derive from shared SSOT (settingsClampingRanges).
 
+import { assembleLlmPolicy } from '../llm/llmPolicySchema.js';
 import { buildRegistryLookup } from '../llm/routeResolver.js';
 import {
   normalizeModelPricingMap,
@@ -200,7 +201,7 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
 // Phase-level LLM override resolver
 // ---------------------------------------------------------------------------
 
-function resolvePhaseOverrides(merged) {
+export function resolvePhaseOverrides(merged) {
   let overrides = {};
   try {
     overrides = JSON.parse(merged.llmPhaseOverridesJson || '{}') || {};
@@ -211,7 +212,7 @@ function resolvePhaseOverrides(merged) {
     { id: 'needset',          globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
     { id: 'searchPlanner',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
     { id: 'brandResolver',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-    { id: 'serpTriage',       globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+    { id: 'serpSelector',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensTriage' },
     { id: 'extraction',       globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
     { id: 'validate',         globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
     { id: 'write',            globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
@@ -228,4 +229,9 @@ function resolvePhaseOverrides(merged) {
     merged[`${prefix}UseReasoning`] = phaseOverride.useReasoning ?? merged[def.groupToggle] ?? false;
     merged[`${prefix}MaxOutputTokens`] = phaseOverride.maxOutputTokens ?? merged[def.globalTokens];
   }
+
+  // WHY: Cache the assembled composite so routing.js can read it without
+  // re-assembling on every call. This is the bridge from flat keys to
+  // the composite policy object.
+  merged._llmPolicy = assembleLlmPolicy(merged);
 }

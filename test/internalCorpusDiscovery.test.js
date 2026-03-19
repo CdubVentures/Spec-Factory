@@ -193,7 +193,7 @@ test('discoverCandidateSources skips external search when internal recall alread
     discoveryMaxQueries: 2,
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 20,
-    searchEngines: 'bing,startpage,duckduckgo',
+    searchEngines: 'bing,google-proxy,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
     searchCacheTtlSeconds: 0
@@ -271,23 +271,6 @@ test('discoverCandidateSources annotates dual-mode internet search reason when p
   const categoryConfig = baseCategoryConfig();
   const job = jobFixture();
 
-  const originalFetch = global.fetch;
-  global.fetch = async () => ({
-    ok: true,
-    async json() {
-      return {
-        results: [
-          {
-            url: 'https://www.razer.com/gaming-mice/viper-v3-pro',
-            title: 'Razer Viper V3 Pro',
-            content: 'Official specs',
-            engine: 'bing'
-          }
-        ]
-      };
-    }
-  });
-
   try {
     const discovery = await discoverCandidateSources({
       config,
@@ -300,7 +283,15 @@ test('discoverCandidateSources annotates dual-mode internet search reason when p
         missingRequiredFields: ['weight', 'dpi'],
         requiredOnlySearch: true
       },
-      llmContext: {}
+      llmContext: {},
+      _runSearchProvidersFn: async () => [
+        {
+          url: 'https://www.razer.com/gaming-mice/viper-v3-pro',
+          title: 'Razer Viper V3 Pro',
+          snippet: 'Official specs',
+          provider: 'bing'
+        }
+      ]
     });
 
     assert.equal(discovery.external_search_reason, 'required_fields_missing_internal_under_target');
@@ -312,7 +303,6 @@ test('discoverCandidateSources annotates dual-mode internet search reason when p
     );
     assert.equal(discovery.provider_state?.fallback_reason, null);
   } finally {
-    global.fetch = originalFetch;
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });

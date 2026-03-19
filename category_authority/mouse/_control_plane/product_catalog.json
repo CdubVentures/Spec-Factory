@@ -11,7 +11,8 @@
       "added_at": "2026-02-15T03:49:54.678Z",
       "added_by": "seed",
       "id": 1,
-      "identifier": "121cc826"
+      "identifier": "121cc826",
+      "base_model": "AW610M"
     },
     "mouse-alienware-aw620m": {
       "brand": "Alienware",
@@ -22,7 +23,8 @@
       "added_at": "2026-02-15T03:49:54.700Z",
       "added_by": "seed",
       "id": 2,
-      "identifier": "34500132"
+      "identifier": "34500132",
+      "base_model": "AW620M"
     },
     "mouse-alienware-alienware-pro": {
       "brand": "Alienware",
@@ -33,7 +35,8 @@
       "added_at": "2026-02-15T03:49:54.722Z",
       "added_by": "seed",
       "id": 3,
-      "identifier": "b5936172"
+      "identifier": "b5936172",
+      "base_model": "Alienware Pro"
     },
     "mouse-alienware-aw720m": {
       "brand": "Alienware",
@@ -44,7 +47,8 @@
       "added_at": "2026-02-15T03:49:54.755Z",
       "added_by": "seed",
       "id": 4,
-      "identifier": "f97115ea"
+      "identifier": "f97115ea",
+      "base_model": "AW720M"
     },
     "mouse-alienware-aw320m": {
       "brand": "Alienware",
@@ -55,29 +59,32 @@
       "added_at": "2026-02-15T03:49:54.773Z",
       "added_by": "seed",
       "id": 5,
-      "identifier": "c7151694"
+      "identifier": "c7151694",
+      "base_model": "AW320M"
     },
     "mouse-acer-cestus-310": {
       "brand": "Acer",
       "model": "Cestus 310",
-      "variant": "",
+      "variant": "310",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:54.800Z",
       "added_by": "seed",
       "id": 6,
-      "identifier": "c730517d"
+      "identifier": "c730517d",
+      "base_model": "Cestus"
     },
     "mouse-acer-cestus-330": {
       "brand": "Acer",
       "model": "Cestus 330",
-      "variant": "",
+      "variant": "330",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:54.823Z",
       "added_by": "seed",
       "id": 7,
-      "identifier": "e2edde94"
+      "identifier": "e2edde94",
+      "base_model": "Cestus"
     },
     "mouse-aorus-m2": {
       "brand": "Aorus",
@@ -88,7 +95,8 @@
       "added_at": "2026-02-15T03:49:54.893Z",
       "added_by": "seed",
       "id": 10,
-      "identifier": "08be9e3f"
+      "identifier": "08be9e3f",
+      "base_model": "M2"
     },
     "mouse-aorus-m3": {
       "brand": "Aorus",
@@ -99,7 +107,8 @@
       "added_at": "2026-02-15T03:49:54.922Z",
       "added_by": "seed",
       "id": 11,
-      "identifier": "098d418e"
+      "identifier": "098d418e",
+      "base_model": "M3"
     },
     "mouse-aorus-m4": {
       "brand": "Aorus",
@@ -110,7 +119,8 @@
       "added_at": "2026-02-15T03:49:54.938Z",
       "added_by": "seed",
       "id": 12,
-      "identifier": "7793814a"
+      "identifier": "7793814a",
+      "base_model": "M4"
     },
     "mouse-aorus-m5": {
       "brand": "Aorus",
@@ -121,7 +131,8 @@
       "added_at": "2026-02-15T03:49:54.955Z",
       "added_by": "seed",
       "id": 13,
-      "identifier": "06ac86e8"
+      "identifier": "06ac86e8",
+      "base_model": "M5"
     },
     "mouse-aorus-m6": {
       "brand": "Aorus",
@@ -132,7 +143,8 @@
       "added_at": "2026-02-15T03:49:54.968Z",
       "added_by": "seed",
       "id": 14,
-      "identifier": "dc354956"
+      "identifier": "dc354956",
+      "base_model": "M6"
     },
     "mouse-cooler-master-mm310": {
       "brand": "Cooler Master",
@@ -143,7 +155,8 @@
       "added_at": "2026-02-15T03:49:54.983Z",
       "added_by": "seed",
       "id": 15,
-      "identifier": "6edf2199"
+      "identifier": "6edf2199",
+      "base_model": "MM310"
     },
     "mouse-cooler-master-mm311": {
       "brand": "Cooler Master",
@@ -154,29 +167,32 @@
       "added_at": "2026-02-15T03:49:55.003Z",
       "added_by": "seed",
       "id": 16,
-      "identifier": "9dbdf1e7"
+      "identifier": "9dbdf1e7",
+      "base_model": "MM311"
     },
     "mouse-cooler-master-mm711-wired": {
       "brand": "Cooler Master",
       "model": "MM711 Wired",
-      "variant": "",
+      "variant": "Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.019Z",
       "added_by": "seed",
       "id": 17,
-      "identifier": "70ee0843"
+      "identifier": "70ee0843",
+      "base_model": "MM711"
     },
     "mouse-cooler-master-mm712-wired": {
       "brand": "Cooler Master",
       "model": "MM712 Wired",
-      "variant": "",
+      "variant": "Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.034Z",
       "added_by": "seed",
       "id": 18,
-      "identifier": "aa37e442"
+      "identifier": "aa37e442",
+      "base_model": "MM712"
     },
     "mouse-cooler-master-mm712": {
       "brand": "Cooler Master",
@@ -187,73 +203,80 @@
       "added_at": "2026-02-15T03:49:55.052Z",
       "added_by": "seed",
       "id": 19,
-      "identifier": "faded1f9"
+      "identifier": "faded1f9",
+      "base_model": "MM712"
     },
     "mouse-cooler-master-mm712-30th-anniversary-edition": {
       "brand": "Cooler Master",
       "model": "MM712 30th Anniversary Edition",
-      "variant": "",
+      "variant": "30th Anniversary Edition",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.066Z",
       "added_by": "seed",
       "id": 20,
-      "identifier": "df9fd3ce"
+      "identifier": "df9fd3ce",
+      "base_model": "MM712"
     },
     "mouse-corsair-m55-wired": {
       "brand": "Corsair",
       "model": "M55 Wired",
-      "variant": "",
+      "variant": "Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.086Z",
       "added_by": "seed",
       "id": 21,
-      "identifier": "aee1e8e4"
+      "identifier": "aee1e8e4",
+      "base_model": "M55"
     },
     "mouse-corsair-m55-wireless": {
       "brand": "Corsair",
       "model": "M55 Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.102Z",
       "added_by": "seed",
       "id": 22,
-      "identifier": "763ee931"
+      "identifier": "763ee931",
+      "base_model": "M55"
     },
     "mouse-corsair-m55-rgb-pro": {
       "brand": "Corsair",
       "model": "M55 RGB Pro",
-      "variant": "",
+      "variant": "RGB Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.117Z",
       "added_by": "seed",
       "id": 23,
-      "identifier": "64c69842"
+      "identifier": "64c69842",
+      "base_model": "M55"
     },
     "mouse-corsair-m75-air-wireless": {
       "brand": "Corsair",
       "model": "M75 Air Wireless",
-      "variant": "",
+      "variant": "Air Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.142Z",
       "added_by": "seed",
       "id": 24,
-      "identifier": "1d3c6fa6"
+      "identifier": "1d3c6fa6",
+      "base_model": "M75"
     },
     "mouse-corsair-m75-wireless": {
       "brand": "Corsair",
       "model": "M75 Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.160Z",
       "added_by": "seed",
       "id": 25,
-      "identifier": "b794700f"
+      "identifier": "b794700f",
+      "base_model": "M75"
     },
     "mouse-corsair-m75": {
       "brand": "Corsair",
@@ -264,359 +287,392 @@
       "added_at": "2026-02-15T03:49:55.175Z",
       "added_by": "seed",
       "id": 26,
-      "identifier": "d6f32365"
+      "identifier": "d6f32365",
+      "base_model": "M75"
     },
     "mouse-corsair-scimitar-elite-wireless-se": {
       "brand": "Corsair",
       "model": "Scimitar Elite Wireless Se",
-      "variant": "",
+      "variant": "Elite Wireless Se",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.193Z",
       "added_by": "seed",
       "id": 27,
-      "identifier": "b01900d7"
+      "identifier": "b01900d7",
+      "base_model": "Scimitar"
     },
     "mouse-corsair-scimitar-elite-wireless": {
       "brand": "Corsair",
       "model": "Scimitar Elite Wireless",
-      "variant": "",
+      "variant": "Elite Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.212Z",
       "added_by": "seed",
       "id": 28,
-      "identifier": "92849336"
+      "identifier": "92849336",
+      "base_model": "Scimitar"
     },
     "mouse-corsair-scimitar-rgb-elite": {
       "brand": "Corsair",
       "model": "Scimitar RGB Elite",
-      "variant": "",
+      "variant": "RGB Elite",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.232Z",
       "added_by": "seed",
       "id": 29,
-      "identifier": "372705b4"
+      "identifier": "372705b4",
+      "base_model": "Scimitar"
     },
     "mouse-corsair-scimitar-pro-rgb": {
       "brand": "Corsair",
       "model": "Scimitar Pro RGB",
-      "variant": "",
+      "variant": "Pro RGB",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.249Z",
       "added_by": "seed",
       "id": 30,
-      "identifier": "0cc7c5c8"
+      "identifier": "0cc7c5c8",
+      "base_model": "Scimitar"
     },
     "mouse-corsair-nightsabre-wireless": {
       "brand": "Corsair",
       "model": "Nightsabre Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.266Z",
       "added_by": "seed",
       "id": 31,
-      "identifier": "184b7bb7"
+      "identifier": "184b7bb7",
+      "base_model": "Nightsabre"
     },
     "mouse-corsair-darkstar-wireless-rgb": {
       "brand": "Corsair",
       "model": "Darkstar Wireless RGB",
-      "variant": "",
+      "variant": "Wireless RGB",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.286Z",
       "added_by": "seed",
       "id": 32,
-      "identifier": "b3c4105e"
+      "identifier": "b3c4105e",
+      "base_model": "Darkstar"
     },
     "mouse-corsair-m65-rgb-ultra-wireless": {
       "brand": "Corsair",
       "model": "M65 RGB Ultra Wireless",
-      "variant": "",
+      "variant": "RGB Ultra Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.305Z",
       "added_by": "seed",
       "id": 33,
-      "identifier": "68b79bca"
+      "identifier": "68b79bca",
+      "base_model": "M65"
     },
     "mouse-corsair-m65-rgb-ultra": {
       "brand": "Corsair",
       "model": "M65 RGB Ultra",
-      "variant": "",
+      "variant": "RGB Ultra",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.415Z",
       "added_by": "seed",
       "id": 34,
-      "identifier": "7d32758a"
+      "identifier": "7d32758a",
+      "base_model": "M65"
     },
     "mouse-corsair-m65-rgb-laser": {
       "brand": "Corsair",
       "model": "M65 RGB Laser",
-      "variant": "",
+      "variant": "RGB Laser",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.432Z",
       "added_by": "seed",
       "id": 35,
-      "identifier": "7e1fb4e6"
+      "identifier": "7e1fb4e6",
+      "base_model": "M65"
     },
     "mouse-corsair-m65-rgb-elite": {
       "brand": "Corsair",
       "model": "M65 RGB Elite",
-      "variant": "",
+      "variant": "RGB Elite",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.448Z",
       "added_by": "seed",
       "id": 36,
-      "identifier": "26743cde"
+      "identifier": "26743cde",
+      "base_model": "M65"
     },
     "mouse-corsair-katar-pro-xt": {
       "brand": "Corsair",
       "model": "Katar Pro XT",
-      "variant": "",
+      "variant": "Pro XT",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.468Z",
       "added_by": "seed",
       "id": 37,
-      "identifier": "08c80ef0"
+      "identifier": "08c80ef0",
+      "base_model": "Katar"
     },
     "mouse-corsair-katar-elite-wireless": {
       "brand": "Corsair",
       "model": "Katar Elite Wireless",
-      "variant": "",
+      "variant": "Elite Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.486Z",
       "added_by": "seed",
       "id": 38,
-      "identifier": "8081869a"
+      "identifier": "8081869a",
+      "base_model": "Katar"
     },
     "mouse-corsair-katar-pro-wireless": {
       "brand": "Corsair",
       "model": "Katar Pro Wireless",
-      "variant": "",
+      "variant": "Pro Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.515Z",
       "added_by": "seed",
       "id": 39,
-      "identifier": "4b9b9a1e"
+      "identifier": "4b9b9a1e",
+      "base_model": "Katar"
     },
     "mouse-corsair-dark-core-rgb-pro-se": {
       "brand": "Corsair",
       "model": "Dark Core RGB Pro SE",
-      "variant": "",
+      "variant": "RGB Pro SE",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.534Z",
       "added_by": "seed",
       "id": 40,
-      "identifier": "bd466b80"
+      "identifier": "bd466b80",
+      "base_model": "Dark Core"
     },
     "mouse-corsair-dark-core-rgb-pro": {
       "brand": "Corsair",
       "model": "Dark Core RGB Pro",
-      "variant": "",
+      "variant": "RGB Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.549Z",
       "added_by": "seed",
       "id": 41,
-      "identifier": "2d095ed8"
+      "identifier": "2d095ed8",
+      "base_model": "Dark Core"
     },
     "mouse-corsair-dark-core-rgb-se": {
       "brand": "Corsair",
       "model": "Dark Core RGB SE",
-      "variant": "",
+      "variant": "RGB SE",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.566Z",
       "added_by": "seed",
       "id": 42,
-      "identifier": "119c3efc"
+      "identifier": "119c3efc",
+      "base_model": "Dark Core"
     },
     "mouse-corsair-ironclaw-rgb": {
       "brand": "Corsair",
       "model": "Ironclaw RGB",
-      "variant": "",
+      "variant": "RGB",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.583Z",
       "added_by": "seed",
       "id": 43,
-      "identifier": "01280363"
+      "identifier": "01280363",
+      "base_model": "Ironclaw"
     },
     "mouse-corsair-ironclaw-rgb-wireless": {
       "brand": "Corsair",
       "model": "Ironclaw RGB Wireless",
-      "variant": "",
+      "variant": "RGB Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.603Z",
       "added_by": "seed",
       "id": 44,
-      "identifier": "ec67b773"
+      "identifier": "ec67b773",
+      "base_model": "Ironclaw"
     },
     "mouse-corsair-harpoon-rgb-wireless": {
       "brand": "Corsair",
       "model": "Harpoon RGB Wireless",
-      "variant": "",
+      "variant": "RGB Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.619Z",
       "added_by": "seed",
       "id": 45,
-      "identifier": "b922b435"
+      "identifier": "b922b435",
+      "base_model": "Harpoon"
     },
     "mouse-corsair-harpoon-rgb": {
       "brand": "Corsair",
       "model": "Harpoon RGB",
-      "variant": "",
+      "variant": "RGB",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.637Z",
       "added_by": "seed",
       "id": 46,
-      "identifier": "e1e1d17f"
+      "identifier": "e1e1d17f",
+      "base_model": "Harpoon"
     },
     "mouse-corsair-sabre-rgb-pro": {
       "brand": "Corsair",
       "model": "Sabre RGB Pro",
-      "variant": "",
+      "variant": "RGB Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.765Z",
       "added_by": "seed",
       "id": 47,
-      "identifier": "38f6f6da"
+      "identifier": "38f6f6da",
+      "base_model": "Sabre"
     },
     "mouse-corsair-sabre-pro-optical": {
       "brand": "Corsair",
       "model": "Sabre Pro Optical",
-      "variant": "",
+      "variant": "Pro Optical",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.825Z",
       "added_by": "seed",
       "id": 48,
-      "identifier": "b3e16868"
+      "identifier": "b3e16868",
+      "base_model": "Sabre"
     },
     "mouse-corsair-sabre-rgb-pro-wireless": {
       "brand": "Corsair",
       "model": "Sabre RGB Pro Wireless",
-      "variant": "",
+      "variant": "RGB Pro Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.843Z",
       "added_by": "seed",
       "id": 49,
-      "identifier": "a79e0b95"
+      "identifier": "a79e0b95",
+      "base_model": "Sabre"
     },
     "mouse-corsair-sabre-v2-pro": {
       "brand": "Corsair",
       "model": "Sabre v2 Pro",
-      "variant": "",
+      "variant": "v2 Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.865Z",
       "added_by": "seed",
       "id": 50,
-      "identifier": "bcf659ca"
+      "identifier": "bcf659ca",
+      "base_model": "Sabre"
     },
     "mouse-corsair-nightsword-rgb-tunable": {
       "brand": "Corsair",
       "model": "Nightsword RGB Tunable",
-      "variant": "",
+      "variant": "RGB Tunable",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.882Z",
       "added_by": "seed",
       "id": 51,
-      "identifier": "430aab0b"
+      "identifier": "430aab0b",
+      "base_model": "Nightsword"
     },
     "mouse-corsair-glaive-rgb-pro": {
       "brand": "Corsair",
       "model": "Glaive RGB Pro",
-      "variant": "",
+      "variant": "RGB Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.901Z",
       "added_by": "seed",
       "id": 52,
-      "identifier": "a974c9b2"
+      "identifier": "a974c9b2",
+      "base_model": "Glaive"
     },
     "mouse-asus-rog-harpe-ii-ace": {
       "brand": "Asus",
       "model": "ROG Harpe II Ace",
-      "variant": "",
+      "variant": "Ace",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.917Z",
       "added_by": "seed",
       "id": 53,
-      "identifier": "b3ab70c1"
+      "identifier": "b3ab70c1",
+      "base_model": "ROG Harpe II"
     },
     "mouse-asus-rog-harpe-ace-extreme": {
       "brand": "Asus",
       "model": "ROG Harpe Ace Extreme",
-      "variant": "",
+      "variant": "Ace Extreme",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.934Z",
       "added_by": "seed",
       "id": 54,
-      "identifier": "d33a425f"
+      "identifier": "d33a425f",
+      "base_model": "ROG Harpe"
     },
     "mouse-asus-rog-harpe-ace-mini": {
       "brand": "Asus",
       "model": "ROG Harpe Ace Mini",
-      "variant": "",
+      "variant": "Ace Mini",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.954Z",
       "added_by": "seed",
       "id": 55,
-      "identifier": "f7a7d717"
+      "identifier": "f7a7d717",
+      "base_model": "ROG Harpe"
     },
     "mouse-asus-rog-harpe-ace-aim-lab": {
       "brand": "Asus",
       "model": "ROG Harpe Ace Aim Lab",
-      "variant": "",
+      "variant": "Ace Aim Lab",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.969Z",
       "added_by": "seed",
       "id": 56,
-      "identifier": "7f69b779"
+      "identifier": "7f69b779",
+      "base_model": "ROG Harpe"
     },
     "mouse-asus-rog-keris-ii-ace": {
       "brand": "Asus",
       "model": "ROG Keris II Ace",
-      "variant": "",
+      "variant": "Ace",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:55.984Z",
       "added_by": "seed",
       "id": 57,
-      "identifier": "9cc534a2"
+      "identifier": "9cc534a2",
+      "base_model": "ROG Keris II"
     },
     "mouse-asus-rog-keris-ii-origin": {
       "brand": "Asus",
       "model": "ROG Keris II Origin",
-      "variant": "",
+      "variant": "Origin",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.000Z",
       "added_by": "seed",
       "id": 58,
-      "identifier": "8cb46ba9"
+      "identifier": "8cb46ba9",
+      "base_model": "ROG Keris II"
     },
     "mouse-asus-rog-keris": {
       "brand": "Asus",
@@ -627,84 +683,92 @@
       "added_at": "2026-02-15T03:49:56.018Z",
       "added_by": "seed",
       "id": 59,
-      "identifier": "48daf257"
+      "identifier": "48daf257",
+      "base_model": "ROG Keris"
     },
     "mouse-asus-rog-keris-wireless-aimpoint": {
       "brand": "Asus",
       "model": "ROG Keris Wireless AimPoint",
-      "variant": "",
+      "variant": "Wireless AimPoint",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.036Z",
       "added_by": "seed",
       "id": 60,
-      "identifier": "d22591fa"
+      "identifier": "d22591fa",
+      "base_model": "ROG Keris"
     },
     "mouse-asus-rog-strix-impact-iii": {
       "brand": "Asus",
       "model": "ROG Strix Impact III",
-      "variant": "",
+      "variant": "Impact III",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.054Z",
       "added_by": "seed",
       "id": 61,
-      "identifier": "83df3295"
+      "identifier": "83df3295",
+      "base_model": "ROG Strix"
     },
     "mouse-asus-rog-strix-impact-iii-wireless": {
       "brand": "Asus",
       "model": "ROG Strix Impact III Wireless",
-      "variant": "",
+      "variant": "Impact III Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.068Z",
       "added_by": "seed",
       "id": 62,
-      "identifier": "b7965ea6"
+      "identifier": "b7965ea6",
+      "base_model": "ROG Strix"
     },
     "mouse-asus-rog-gladius-iii-wireless-aimpoint": {
       "brand": "Asus",
       "model": "ROG Gladius III Wireless AimPoint",
-      "variant": "",
+      "variant": "Wireless AimPoint",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.084Z",
       "added_by": "seed",
       "id": 63,
-      "identifier": "bd209d9b"
+      "identifier": "bd209d9b",
+      "base_model": "ROG Gladius III"
     },
     "mouse-asus-rog-gladius-iii-wireless-aimpoint-eva-02": {
       "brand": "Asus",
       "model": "ROG Gladius III Wireless AimPoint EVA-02",
-      "variant": "",
+      "variant": "Wireless AimPoint EVA-02",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.102Z",
       "added_by": "seed",
       "id": 64,
-      "identifier": "f87e0f0c"
+      "identifier": "f87e0f0c",
+      "base_model": "ROG Gladius III"
     },
     "mouse-asus-rog-gladius-iii-core": {
       "brand": "Asus",
       "model": "ROG Gladius III Core",
-      "variant": "",
+      "variant": "Core",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.119Z",
       "added_by": "seed",
       "id": 65,
-      "identifier": "22ffc286"
+      "identifier": "22ffc286",
+      "base_model": "ROG Gladius III"
     },
     "mouse-asus-rog-gladius-iii-wireless": {
       "brand": "Asus",
       "model": "ROG Gladius III Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.134Z",
       "added_by": "seed",
       "id": 66,
-      "identifier": "51a69e6f"
+      "identifier": "51a69e6f",
+      "base_model": "ROG Gladius III"
     },
     "mouse-asus-rog-gladius-iii": {
       "brand": "Asus",
@@ -715,7 +779,8 @@
       "added_at": "2026-02-15T03:49:56.150Z",
       "added_by": "seed",
       "id": 67,
-      "identifier": "b514e1df"
+      "identifier": "b514e1df",
+      "base_model": "ROG Gladius III"
     },
     "mouse-asus-rog-chakram": {
       "brand": "Asus",
@@ -726,293 +791,320 @@
       "added_at": "2026-02-15T03:49:56.164Z",
       "added_by": "seed",
       "id": 68,
-      "identifier": "ae26a21e"
+      "identifier": "ae26a21e",
+      "base_model": "ROG Chakram"
     },
     "mouse-asus-rog-chakram-x-origin": {
       "brand": "Asus",
       "model": "ROG Chakram X Origin",
-      "variant": "",
+      "variant": "X Origin",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.181Z",
       "added_by": "seed",
       "id": 69,
-      "identifier": "52f0d374"
+      "identifier": "52f0d374",
+      "base_model": "ROG Chakram"
     },
     "mouse-asus-rog-chakram-x-core": {
       "brand": "Asus",
       "model": "ROG Chakram X Core",
-      "variant": "",
+      "variant": "X Core",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.200Z",
       "added_by": "seed",
       "id": 70,
-      "identifier": "69b6ce63"
+      "identifier": "69b6ce63",
+      "base_model": "ROG Chakram"
     },
     "mouse-asus-rog-spatha-x": {
       "brand": "Asus",
       "model": "ROG Spatha X",
-      "variant": "",
+      "variant": "X",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.220Z",
       "added_by": "seed",
       "id": 71,
-      "identifier": "0f81ef57"
+      "identifier": "0f81ef57",
+      "base_model": "ROG Spatha"
     },
     "mouse-asus-gx1000-eagle-eye-mouse": {
       "brand": "Asus",
       "model": "GX1000 Eagle Eye Mouse",
-      "variant": "",
+      "variant": "Eagle Eye Mouse",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.241Z",
       "added_by": "seed",
       "id": 72,
-      "identifier": "eb4e26c9"
+      "identifier": "eb4e26c9",
+      "base_model": "GX1000"
     },
     "mouse-glorious-model-o-2-wireless": {
       "brand": "Glorious",
       "model": "Model O 2 Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.260Z",
       "added_by": "seed",
       "id": 73,
-      "identifier": "fe151452"
+      "identifier": "fe151452",
+      "base_model": "Model O 2"
     },
     "mouse-glorious-model-o-2-wired": {
       "brand": "Glorious",
       "model": "Model O 2 Wired",
-      "variant": "",
+      "variant": "Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.274Z",
       "added_by": "seed",
       "id": 74,
-      "identifier": "f8078e74"
+      "identifier": "f8078e74",
+      "base_model": "Model O 2"
     },
     "mouse-glorious-model-o-2-mini-wireless": {
       "brand": "Glorious",
       "model": "Model O 2 Mini Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.305Z",
       "added_by": "seed",
       "id": 75,
-      "identifier": "809d5a63"
+      "identifier": "809d5a63",
+      "base_model": "Model O 2 Mini"
     },
     "mouse-glorious-model-o-2-mini-wired": {
       "brand": "Glorious",
       "model": "Model O 2 Mini Wired",
-      "variant": "",
+      "variant": "Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.334Z",
       "added_by": "seed",
       "id": 76,
-      "identifier": "07680515"
+      "identifier": "07680515",
+      "base_model": "Model O 2 Mini"
     },
     "mouse-glorious-model-o-2-pro-series-wireless-8khz-edition": {
       "brand": "Glorious",
       "model": "Model O 2 PRO Series Wireless 8KHz Edition",
-      "variant": "",
+      "variant": "Series Wireless 8KHz Edition",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.357Z",
       "added_by": "seed",
       "id": 77,
-      "identifier": "46d9f51f"
+      "identifier": "46d9f51f",
+      "base_model": "Model O 2 PRO"
     },
     "mouse-glorious-model-o-2-pro-series": {
       "brand": "Glorious",
       "model": "Model O 2 PRO Series",
-      "variant": "",
+      "variant": "Series",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.375Z",
       "added_by": "seed",
       "id": 78,
-      "identifier": "981f0219"
+      "identifier": "981f0219",
+      "base_model": "Model O 2 PRO"
     },
     "mouse-glorious-model-d-wired": {
       "brand": "Glorious",
       "model": "Model D Wired",
-      "variant": "",
+      "variant": "Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.391Z",
       "added_by": "seed",
       "id": 79,
-      "identifier": "f821cfe9"
+      "identifier": "f821cfe9",
+      "base_model": "Model D"
     },
     "mouse-glorious-model-d-minus-wired": {
       "brand": "Glorious",
       "model": "Model D Minus Wired",
-      "variant": "",
+      "variant": "Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.410Z",
       "added_by": "seed",
       "id": 80,
-      "identifier": "66aadffb"
+      "identifier": "66aadffb",
+      "base_model": "Model D Minus"
     },
     "mouse-glorious-model-d-minus-wireless": {
       "brand": "Glorious",
       "model": "Model D Minus Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.434Z",
       "added_by": "seed",
       "id": 81,
-      "identifier": "9a2ebed6"
+      "identifier": "9a2ebed6",
+      "base_model": "Model D Minus"
     },
     "mouse-glorious-model-d-2-pro-series-wireless": {
       "brand": "Glorious",
       "model": "Model D 2 PRO Series Wireless",
-      "variant": "",
+      "variant": "Series Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.451Z",
       "added_by": "seed",
       "id": 82,
-      "identifier": "9c60af25"
+      "identifier": "9c60af25",
+      "base_model": "Model D 2 PRO"
     },
     "mouse-glorious-model-d-2-pro-series-wireless-8khz-edition": {
       "brand": "Glorious",
       "model": "Model D 2 PRO Series Wireless 8Khz Edition",
-      "variant": "",
+      "variant": "Series Wireless 8Khz Edition",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.470Z",
       "added_by": "seed",
       "id": 83,
-      "identifier": "7fed4e87"
+      "identifier": "7fed4e87",
+      "base_model": "Model D 2 PRO"
     },
     "mouse-glorious-model-d-2-wireless": {
       "brand": "Glorious",
       "model": "Model D 2 Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.487Z",
       "added_by": "seed",
       "id": 84,
-      "identifier": "489a7906"
+      "identifier": "489a7906",
+      "base_model": "Model D 2"
     },
     "mouse-glorious-model-d-2-wired": {
       "brand": "Glorious",
       "model": "Model D 2 Wired",
-      "variant": "",
+      "variant": "Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.507Z",
       "added_by": "seed",
       "id": 85,
-      "identifier": "f07cb6ba"
+      "identifier": "f07cb6ba",
+      "base_model": "Model D 2"
     },
     "mouse-glorious-model-i-2-wireless": {
       "brand": "Glorious",
       "model": "Model I 2 Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.525Z",
       "added_by": "seed",
       "id": 86,
-      "identifier": "c5a81d79"
+      "identifier": "c5a81d79",
+      "base_model": "Model I 2"
     },
     "mouse-glorious-model-i-2-wired": {
       "brand": "Glorious",
       "model": "Model I 2 Wired",
-      "variant": "",
+      "variant": "Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.541Z",
       "added_by": "seed",
       "id": 87,
-      "identifier": "7a6deb42"
+      "identifier": "7a6deb42",
+      "base_model": "Model I 2"
     },
     "mouse-glorious-series-2-pro-wireless": {
       "brand": "Glorious",
       "model": "Series 2 PRO Wireless",
-      "variant": "",
+      "variant": "PRO Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.557Z",
       "added_by": "seed",
       "id": 88,
-      "identifier": "7444cd0b"
+      "identifier": "7444cd0b",
+      "base_model": "Series 2"
     },
     "mouse-hyperx-pulsefire-haste-2-pro-wireless": {
       "brand": "HyperX",
       "model": "Pulsefire Haste 2 Pro Wireless",
-      "variant": "",
+      "variant": "Pro Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.574Z",
       "added_by": "seed",
       "id": 89,
-      "identifier": "4a8c34c6"
+      "identifier": "4a8c34c6",
+      "base_model": "Pulsefire Haste 2"
     },
     "mouse-hyperx-pulsefire-haste-2-wireless": {
       "brand": "HyperX",
       "model": "Pulsefire Haste 2 Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.588Z",
       "added_by": "seed",
       "id": 90,
-      "identifier": "0aaa6298"
+      "identifier": "0aaa6298",
+      "base_model": "Pulsefire Haste 2"
     },
     "mouse-hyperx-pulsefire-haste-2-core-wireless": {
       "brand": "HyperX",
       "model": "Pulsefire Haste 2 Core Wireless",
-      "variant": "",
+      "variant": "2 Core Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.606Z",
       "added_by": "seed",
       "id": 91,
-      "identifier": "8966deeb"
+      "identifier": "8966deeb",
+      "base_model": "Pulsefire Haste"
     },
     "mouse-hyperx-pulsefire-haste-2": {
       "brand": "HyperX",
       "model": "Pulsefire Haste 2",
-      "variant": "",
+      "variant": "2",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.624Z",
       "added_by": "seed",
       "id": 92,
-      "identifier": "3c8dd1f0"
+      "identifier": "3c8dd1f0",
+      "base_model": "Pulsefire Haste"
     },
     "mouse-hyperx-pulsefire-wireless-haste-2-mini-wireless": {
       "brand": "HyperX",
       "model": "Pulsefire Wireless Haste 2 Mini Wireless",
-      "variant": "",
+      "variant": "2 Mini Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.639Z",
       "added_by": "seed",
       "id": 93,
-      "identifier": "c5a85a6c"
+      "identifier": "c5a85a6c",
+      "base_model": "Pulsefire Wireless Haste"
     },
     "mouse-hyperx-pulsefire-haste-wireless": {
       "brand": "HyperX",
       "model": "Pulsefire Haste Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.659Z",
       "added_by": "seed",
       "id": 94,
-      "identifier": "8fbbccff"
+      "identifier": "8fbbccff",
+      "base_model": "Pulsefire Haste"
     },
     "mouse-hyperx-pulsefire-haste": {
       "brand": "HyperX",
@@ -1023,7 +1115,8 @@
       "added_at": "2026-02-15T03:49:56.674Z",
       "added_by": "seed",
       "id": 95,
-      "identifier": "b84c3bba"
+      "identifier": "b84c3bba",
+      "base_model": "Pulsefire Haste"
     },
     "mouse-hyperx-pulsefire-surge": {
       "brand": "HyperX",
@@ -1034,7 +1127,8 @@
       "added_at": "2026-02-15T03:49:56.689Z",
       "added_by": "seed",
       "id": 96,
-      "identifier": "bf2aa496"
+      "identifier": "bf2aa496",
+      "base_model": "Pulsefire Surge"
     },
     "mouse-hyperx-pulsefire-core": {
       "brand": "HyperX",
@@ -1045,117 +1139,128 @@
       "added_at": "2026-02-15T03:49:56.707Z",
       "added_by": "seed",
       "id": 97,
-      "identifier": "a514e783"
+      "identifier": "a514e783",
+      "base_model": "Pulsefire Core"
     },
     "mouse-logitech-g-pro-x-superlight-2-dex": {
       "brand": "Logitech G",
       "model": "Pro X Superlight 2 Dex",
-      "variant": "",
+      "variant": "Dex",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.725Z",
       "added_by": "seed",
       "id": 98,
-      "identifier": "42331300"
+      "identifier": "42331300",
+      "base_model": "Pro X Superlight 2"
     },
     "mouse-logitech-g-pro-2-lightspeed": {
       "brand": "Logitech G",
       "model": "Pro 2 Lightspeed",
-      "variant": "",
+      "variant": "Lightspeed",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.741Z",
       "added_by": "seed",
       "id": 99,
-      "identifier": "64110d84"
+      "identifier": "64110d84",
+      "base_model": "Pro 2"
     },
     "mouse-logitech-g-g309-lightspeed": {
       "brand": "Logitech G",
       "model": "G309 Lightspeed",
-      "variant": "",
+      "variant": "Lightspeed",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.757Z",
       "added_by": "seed",
       "id": 100,
-      "identifier": "5659e87a"
+      "identifier": "5659e87a",
+      "base_model": "G309"
     },
     "mouse-logitech-g-pro-x-superlight-2": {
       "brand": "Logitech G",
       "model": "Pro X Superlight 2",
-      "variant": "",
+      "variant": "Superlight 2",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.772Z",
       "added_by": "seed",
       "id": 101,
-      "identifier": "e3e0576c"
+      "identifier": "e3e0576c",
+      "base_model": "Pro X"
     },
     "mouse-logitech-g-g502-x-plus": {
       "brand": "Logitech G",
       "model": "G502 X Plus",
-      "variant": "",
+      "variant": "Plus",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.791Z",
       "added_by": "seed",
       "id": 102,
-      "identifier": "bdcfb5df"
+      "identifier": "bdcfb5df",
+      "base_model": "G502 X"
     },
     "mouse-logitech-g-pro-x-superlight": {
       "brand": "Logitech G",
       "model": "Pro X Superlight",
-      "variant": "",
+      "variant": "Superlight",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.814Z",
       "added_by": "seed",
       "id": 103,
-      "identifier": "bfa8d0a1"
+      "identifier": "bfa8d0a1",
+      "base_model": "Pro X"
     },
     "mouse-logitech-g-pro-x-superlight-2c": {
       "brand": "Logitech G",
       "model": "Pro X Superlight 2c",
-      "variant": "",
+      "variant": "Superlight 2c",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.833Z",
       "added_by": "seed",
       "id": 104,
-      "identifier": "143cf827"
+      "identifier": "143cf827",
+      "base_model": "Pro X"
     },
     "mouse-logitech-g-pro-x-2-superstrike": {
       "brand": "Logitech G",
       "model": "Pro X 2 Superstrike",
-      "variant": "",
+      "variant": "2 Superstrike",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.857Z",
       "added_by": "seed",
       "id": 105,
-      "identifier": "83165eba"
+      "identifier": "83165eba",
+      "base_model": "Pro X"
     },
     "mouse-logitech-g-g502-x-lightspeed-wireless": {
       "brand": "Logitech G",
       "model": "G502 X Lightspeed Wireless",
-      "variant": "",
+      "variant": "Lightspeed Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.885Z",
       "added_by": "seed",
       "id": 106,
-      "identifier": "93969710"
+      "identifier": "93969710",
+      "base_model": "G502 X"
     },
     "mouse-logitech-g-pro-wireless": {
       "brand": "Logitech G",
       "model": "Pro Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.909Z",
       "added_by": "seed",
       "id": 107,
-      "identifier": "d05bc0c5"
+      "identifier": "d05bc0c5",
+      "base_model": "Pro"
     },
     "mouse-logitech-g-g502-x": {
       "brand": "Logitech G",
@@ -1166,194 +1271,212 @@
       "added_at": "2026-02-15T03:49:56.926Z",
       "added_by": "seed",
       "id": 108,
-      "identifier": "2844f036"
+      "identifier": "2844f036",
+      "base_model": "G502 X"
     },
     "mouse-logitech-g-g705-wireless": {
       "brand": "Logitech G",
       "model": "G705 Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.949Z",
       "added_by": "seed",
       "id": 109,
-      "identifier": "08e5f27a"
+      "identifier": "08e5f27a",
+      "base_model": "G705"
     },
     "mouse-logitech-g-g502-lightspeed": {
       "brand": "Logitech G",
       "model": "G502 Lightspeed",
-      "variant": "",
+      "variant": "Lightspeed",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.971Z",
       "added_by": "seed",
       "id": 110,
-      "identifier": "532b11c0"
+      "identifier": "532b11c0",
+      "base_model": "G502"
     },
     "mouse-logitech-g-g305-lightspeed": {
       "brand": "Logitech G",
       "model": "G305 Lightspeed",
-      "variant": "",
+      "variant": "Lightspeed",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:56.987Z",
       "added_by": "seed",
       "id": 111,
-      "identifier": "c2e832ba"
+      "identifier": "c2e832ba",
+      "base_model": "G305"
     },
     "mouse-logitech-g-g502-hero": {
       "brand": "Logitech G",
       "model": "G502 Hero",
-      "variant": "",
+      "variant": "Hero",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.005Z",
       "added_by": "seed",
       "id": 112,
-      "identifier": "7101f1a5"
+      "identifier": "7101f1a5",
+      "base_model": "G502"
     },
     "mouse-logitech-g-g903-lightspeed": {
       "brand": "Logitech G",
       "model": "G903 Lightspeed",
-      "variant": "",
+      "variant": "Lightspeed",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.021Z",
       "added_by": "seed",
       "id": 113,
-      "identifier": "dbe9d673"
+      "identifier": "dbe9d673",
+      "base_model": "G903"
     },
     "mouse-logitech-g-g703-hero-lightspeed": {
       "brand": "Logitech G",
       "model": "G703 Hero Lightspeed",
-      "variant": "",
+      "variant": "Hero Lightspeed",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.036Z",
       "added_by": "seed",
       "id": 114,
-      "identifier": "fca02f8c"
+      "identifier": "fca02f8c",
+      "base_model": "G703"
     },
     "mouse-logitech-g-g203-lightsync": {
       "brand": "Logitech G",
       "model": "G203 Lightsync",
-      "variant": "",
+      "variant": "Lightsync",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.058Z",
       "added_by": "seed",
       "id": 115,
-      "identifier": "487e89fc"
+      "identifier": "487e89fc",
+      "base_model": "G203"
     },
     "mouse-logitech-g-g403-hero": {
       "brand": "Logitech G",
       "model": "G403 Hero",
-      "variant": "",
+      "variant": "Hero",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.077Z",
       "added_by": "seed",
       "id": 116,
-      "identifier": "e3745dd1"
+      "identifier": "e3745dd1",
+      "base_model": "G403"
     },
     "mouse-msi-clutch-gm41-lw-wireless": {
       "brand": "MSI",
       "model": "Clutch GM41 LW Wireless",
-      "variant": "",
+      "variant": "LW Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.092Z",
       "added_by": "seed",
       "id": 117,
-      "identifier": "50e18c34"
+      "identifier": "50e18c34",
+      "base_model": "Clutch GM41"
     },
     "mouse-msi-clutch-gm41-lw-v2": {
       "brand": "MSI",
       "model": "Clutch GM41 LW V2",
-      "variant": "",
+      "variant": "LW V2",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.107Z",
       "added_by": "seed",
       "id": 118,
-      "identifier": "66057ed8"
+      "identifier": "66057ed8",
+      "base_model": "Clutch GM41"
     },
     "mouse-msi-clutch-gm20-elite": {
       "brand": "MSI",
       "model": "Clutch GM20 Elite",
-      "variant": "",
+      "variant": "Elite",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.125Z",
       "added_by": "seed",
       "id": 119,
-      "identifier": "8c2598aa"
+      "identifier": "8c2598aa",
+      "base_model": "Clutch GM20"
     },
     "mouse-msi-versa-300-wireless": {
       "brand": "MSI",
       "model": "Versa 300 Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.140Z",
       "added_by": "seed",
       "id": 120,
-      "identifier": "5c8b7c3a"
+      "identifier": "5c8b7c3a",
+      "base_model": "Versa 300"
     },
     "mouse-msi-versa-300-elite-wireless": {
       "brand": "MSI",
       "model": "Versa 300 Elite Wireless",
-      "variant": "",
+      "variant": "Elite Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.156Z",
       "added_by": "seed",
       "id": 121,
-      "identifier": "cb856d84"
+      "identifier": "cb856d84",
+      "base_model": "Versa 300"
     },
     "mouse-msi-clutch-gm31-lw": {
       "brand": "MSI",
       "model": "Clutch GM31 LW",
-      "variant": "",
+      "variant": "LW",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.188Z",
       "added_by": "seed",
       "id": 122,
-      "identifier": "535284bd"
+      "identifier": "535284bd",
+      "base_model": "Clutch GM31"
     },
     "mouse-msi-clutch-gm51-lw-wireless": {
       "brand": "MSI",
       "model": "Clutch GM51 LW Wireless",
-      "variant": "",
+      "variant": "LW Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.203Z",
       "added_by": "seed",
       "id": 123,
-      "identifier": "40ae24b8"
+      "identifier": "40ae24b8",
+      "base_model": "Clutch GM51"
     },
     "mouse-msi-clutch-gm51-lw": {
       "brand": "MSI",
       "model": "Clutch GM51 LW",
-      "variant": "",
+      "variant": "LW",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.219Z",
       "added_by": "seed",
       "id": 124,
-      "identifier": "4b4b9a56"
+      "identifier": "4b4b9a56",
+      "base_model": "Clutch GM51"
     },
     "mouse-msi-clutch-gm31-lw-wireless": {
       "brand": "MSI",
       "model": "Clutch GM31 LW Wireless",
-      "variant": "",
+      "variant": "LW Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.238Z",
       "added_by": "seed",
       "id": 125,
-      "identifier": "aa3a36c5"
+      "identifier": "aa3a36c5",
+      "base_model": "Clutch GM31"
     },
     "mouse-msi-forge-gm300": {
       "brand": "MSI",
@@ -1364,7 +1487,8 @@
       "added_at": "2026-02-15T03:49:57.256Z",
       "added_by": "seed",
       "id": 126,
-      "identifier": "a6c8d5fe"
+      "identifier": "a6c8d5fe",
+      "base_model": "Forge GM300"
     },
     "mouse-msi-forge-gm100": {
       "brand": "MSI",
@@ -1375,7 +1499,8 @@
       "added_at": "2026-02-15T03:49:57.274Z",
       "added_by": "seed",
       "id": 127,
-      "identifier": "efba2dc1"
+      "identifier": "efba2dc1",
+      "base_model": "Forge GM100"
     },
     "mouse-msi-forge-gm310": {
       "brand": "MSI",
@@ -1386,7 +1511,8 @@
       "added_at": "2026-02-15T03:49:57.288Z",
       "added_by": "seed",
       "id": 128,
-      "identifier": "36aa6f10"
+      "identifier": "36aa6f10",
+      "base_model": "Forge GM310"
     },
     "mouse-msi-clutch-gm30": {
       "brand": "MSI",
@@ -1397,7 +1523,8 @@
       "added_at": "2026-02-15T03:49:57.310Z",
       "added_by": "seed",
       "id": 129,
-      "identifier": "a4c20298"
+      "identifier": "a4c20298",
+      "base_model": "Clutch GM30"
     },
     "mouse-msi-clutch-gm08": {
       "brand": "MSI",
@@ -1408,7 +1535,8 @@
       "added_at": "2026-02-15T03:49:57.333Z",
       "added_by": "seed",
       "id": 130,
-      "identifier": "2918f1ca"
+      "identifier": "2918f1ca",
+      "base_model": "Clutch GM08"
     },
     "mouse-msi-clutch-dm07": {
       "brand": "MSI",
@@ -1419,7 +1547,8 @@
       "added_at": "2026-02-15T03:49:57.351Z",
       "added_by": "seed",
       "id": 131,
-      "identifier": "8c9175e2"
+      "identifier": "8c9175e2",
+      "base_model": "Clutch DM07"
     },
     "mouse-msi-clutch-gm11": {
       "brand": "MSI",
@@ -1430,18 +1559,20 @@
       "added_at": "2026-02-15T03:49:57.369Z",
       "added_by": "seed",
       "id": 132,
-      "identifier": "160b8c6d"
+      "identifier": "160b8c6d",
+      "base_model": "Clutch GM11"
     },
     "mouse-msi-clutch-gm41-lw": {
       "brand": "MSI",
       "model": "Clutch GM41 LW",
-      "variant": "",
+      "variant": "LW",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.385Z",
       "added_by": "seed",
       "id": 133,
-      "identifier": "3995e482"
+      "identifier": "3995e482",
+      "base_model": "Clutch GM41"
     },
     "mouse-razer-cobra": {
       "brand": "Razer",
@@ -1452,106 +1583,116 @@
       "added_at": "2026-02-15T03:49:57.411Z",
       "added_by": "seed",
       "id": 134,
-      "identifier": "5ae596e2"
+      "identifier": "5ae596e2",
+      "base_model": "Cobra"
     },
     "mouse-razer-cobra-pro": {
       "brand": "Razer",
       "model": "Cobra Pro",
-      "variant": "",
+      "variant": "Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.435Z",
       "added_by": "seed",
       "id": 135,
-      "identifier": "e49216f1"
+      "identifier": "e49216f1",
+      "base_model": "Cobra"
     },
     "mouse-razer-viper-mini-signature-edition": {
       "brand": "Razer",
       "model": "Viper Mini Signature Edition",
-      "variant": "",
+      "variant": "Signature Edition",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.453Z",
       "added_by": "seed",
       "id": 136,
-      "identifier": "d8d1e1f5"
+      "identifier": "d8d1e1f5",
+      "base_model": "Viper Mini"
     },
     "mouse-razer-deathadder-v3-pro": {
       "brand": "Razer",
       "model": "Deathadder V3 Pro",
-      "variant": "",
+      "variant": "V3 Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.575Z",
       "added_by": "seed",
       "id": 137,
-      "identifier": "307a7df0"
+      "identifier": "307a7df0",
+      "base_model": "Deathadder"
     },
     "mouse-razer-deathadder-v3-hyperspeed": {
       "brand": "Razer",
       "model": "Deathadder V3 Hyperspeed",
-      "variant": "",
+      "variant": "V3 Hyperspeed",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.593Z",
       "added_by": "seed",
       "id": 138,
-      "identifier": "d4a6fce6"
+      "identifier": "d4a6fce6",
+      "base_model": "Deathadder"
     },
     "mouse-razer-deathadder-v3": {
       "brand": "Razer",
       "model": "Deathadder V3",
-      "variant": "",
+      "variant": "V3",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.613Z",
       "added_by": "seed",
       "id": 139,
-      "identifier": "e6a3960e"
+      "identifier": "e6a3960e",
+      "base_model": "Deathadder"
     },
     "mouse-razer-viper-v3-pro": {
       "brand": "Razer",
       "model": "Viper V3 Pro",
-      "variant": "",
+      "variant": "V3 Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.633Z",
       "added_by": "seed",
       "id": 140,
-      "identifier": "4b80eddc"
+      "identifier": "4b80eddc",
+      "base_model": "Viper"
     },
     "mouse-razer-viper-v3-hyperspeed": {
       "brand": "Razer",
       "model": "Viper V3 Hyperspeed",
-      "variant": "",
+      "variant": "V3 Hyperspeed",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.649Z",
       "added_by": "seed",
       "id": 141,
-      "identifier": "113c2fa1"
+      "identifier": "113c2fa1",
+      "base_model": "Viper"
     },
     "mouse-razer-naga-v2-pro": {
       "brand": "Razer",
       "model": "Naga V2 Pro",
-      "variant": "",
+      "variant": "Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.668Z",
       "added_by": "seed",
       "id": 142,
-      "identifier": "cf44792e"
+      "identifier": "cf44792e",
+      "base_model": "Naga V2"
     },
     "mouse-razer-naga-v2-hyperspeed": {
       "brand": "Razer",
       "model": "Naga V2 Hyperspeed",
-      "variant": "",
+      "variant": "Hyperspeed",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.688Z",
       "added_by": "seed",
       "id": 143,
-      "identifier": "9f2a6c42"
+      "identifier": "9f2a6c42",
+      "base_model": "Naga V2"
     },
     "mouse-razer-naga-x": {
       "brand": "Razer",
@@ -1562,7 +1703,8 @@
       "added_at": "2026-02-15T03:49:57.705Z",
       "added_by": "seed",
       "id": 144,
-      "identifier": "71d18839"
+      "identifier": "71d18839",
+      "base_model": "Naga X"
     },
     "mouse-razer-naga-left-handed-edition": {
       "brand": "Razer",
@@ -1573,40 +1715,44 @@
       "added_at": "2026-02-15T03:49:57.723Z",
       "added_by": "seed",
       "id": 145,
-      "identifier": "6de02a10"
+      "identifier": "6de02a10",
+      "base_model": "Naga Left-Handed Edition"
     },
     "mouse-razer-basilisk-v3-pro-35k": {
       "brand": "Razer",
       "model": "Basilisk V3 Pro 35k",
-      "variant": "",
+      "variant": "Pro 35k",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.740Z",
       "added_by": "seed",
       "id": 146,
-      "identifier": "fe3834e3"
+      "identifier": "fe3834e3",
+      "base_model": "Basilisk V3"
     },
     "mouse-razer-basilisk-v3-35k": {
       "brand": "Razer",
       "model": "Basilisk V3 35k",
-      "variant": "",
+      "variant": "35k",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.757Z",
       "added_by": "seed",
       "id": 147,
-      "identifier": "74b98f20"
+      "identifier": "74b98f20",
+      "base_model": "Basilisk V3"
     },
     "mouse-razer-basilisk-v3-x-hyperspeed": {
       "brand": "Razer",
       "model": "Basilisk V3 X Hyperspeed",
-      "variant": "",
+      "variant": "X Hyperspeed",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.774Z",
       "added_by": "seed",
       "id": 148,
-      "identifier": "0f96e516"
+      "identifier": "0f96e516",
+      "base_model": "Basilisk V3"
     },
     "mouse-razer-orochi-v2": {
       "brand": "Razer",
@@ -1617,7 +1763,8 @@
       "added_at": "2026-02-15T03:49:57.802Z",
       "added_by": "seed",
       "id": 149,
-      "identifier": "8a415ba4"
+      "identifier": "8a415ba4",
+      "base_model": "Orochi V2"
     },
     "mouse-razer-pro-click": {
       "brand": "Razer",
@@ -1628,29 +1775,32 @@
       "added_at": "2026-02-15T03:49:57.875Z",
       "added_by": "seed",
       "id": 150,
-      "identifier": "94fb079d"
+      "identifier": "94fb079d",
+      "base_model": "Pro Click"
     },
     "mouse-redragon-aatrox-m811-mmo": {
       "brand": "Redragon",
       "model": "Aatrox M811 MMO",
-      "variant": "",
+      "variant": "MMO",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.955Z",
       "added_by": "seed",
       "id": 151,
-      "identifier": "2e40d794"
+      "identifier": "2e40d794",
+      "base_model": "Aatrox M811"
     },
     "mouse-redragon-aatrox-m811-pro": {
       "brand": "Redragon",
       "model": "Aatrox M811 Pro",
-      "variant": "",
+      "variant": "Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:57.993Z",
       "added_by": "seed",
       "id": 152,
-      "identifier": "5e2860f5"
+      "identifier": "5e2860f5",
+      "base_model": "Aatrox M811"
     },
     "mouse-redragon-bullseye-m806": {
       "brand": "Redragon",
@@ -1661,18 +1811,20 @@
       "added_at": "2026-02-15T03:49:58.018Z",
       "added_by": "seed",
       "id": 153,
-      "identifier": "2c031bf1"
+      "identifier": "2c031bf1",
+      "base_model": "Bullseye M806"
     },
     "mouse-redragon-bullseye-m806-pro": {
       "brand": "Redragon",
       "model": "Bullseye M806 Pro",
-      "variant": "",
+      "variant": "Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.036Z",
       "added_by": "seed",
       "id": 154,
-      "identifier": "853cd9bc"
+      "identifier": "853cd9bc",
+      "base_model": "Bullseye M806"
     },
     "mouse-redragon-cobra-m711": {
       "brand": "Redragon",
@@ -1683,18 +1835,20 @@
       "added_at": "2026-02-15T03:49:58.053Z",
       "added_by": "seed",
       "id": 155,
-      "identifier": "f33eca09"
+      "identifier": "f33eca09",
+      "base_model": "Cobra M711"
     },
     "mouse-redragon-cobra-m711-fps": {
       "brand": "Redragon",
       "model": "Cobra M711 FPS",
-      "variant": "",
+      "variant": "FPS",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.070Z",
       "added_by": "seed",
       "id": 156,
-      "identifier": "3c878435"
+      "identifier": "3c878435",
+      "base_model": "Cobra M711"
     },
     "mouse-redragon-devourer-m993": {
       "brand": "Redragon",
@@ -1705,18 +1859,20 @@
       "added_at": "2026-02-15T03:49:58.086Z",
       "added_by": "seed",
       "id": 157,
-      "identifier": "3dcf2450"
+      "identifier": "3dcf2450",
+      "base_model": "Devourer M993"
     },
     "mouse-redragon-eisa-k1ng-m916-pro-1khz": {
       "brand": "Redragon",
       "model": "EISA K1NG M916 Pro (1khz)",
-      "variant": "",
+      "variant": "Pro (1khz)",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.101Z",
       "added_by": "seed",
       "id": 158,
-      "identifier": "dd2b2f2e"
+      "identifier": "dd2b2f2e",
+      "base_model": "K1NG M916"
     },
     "mouse-redragon-fyzu-m995": {
       "brand": "Redragon",
@@ -1727,7 +1883,8 @@
       "added_at": "2026-02-15T03:49:58.119Z",
       "added_by": "seed",
       "id": 159,
-      "identifier": "da10dc12"
+      "identifier": "da10dc12",
+      "base_model": "FYZU M995"
     },
     "mouse-redragon-gainer-m656": {
       "brand": "Redragon",
@@ -1738,7 +1895,8 @@
       "added_at": "2026-02-15T03:49:58.136Z",
       "added_by": "seed",
       "id": 160,
-      "identifier": "7c04d043"
+      "identifier": "7c04d043",
+      "base_model": "Gainer M656"
     },
     "mouse-redragon-impact-elite-m913": {
       "brand": "Redragon",
@@ -1749,7 +1907,8 @@
       "added_at": "2026-02-15T03:49:58.149Z",
       "added_by": "seed",
       "id": 161,
-      "identifier": "93d45c3e"
+      "identifier": "93d45c3e",
+      "base_model": "Impact Elite M913"
     },
     "mouse-redragon-impact-m908": {
       "brand": "Redragon",
@@ -1760,95 +1919,104 @@
       "added_at": "2026-02-15T03:49:58.166Z",
       "added_by": "seed",
       "id": 162,
-      "identifier": "8aad1217"
+      "identifier": "8aad1217",
+      "base_model": "Impact M908"
     },
     "mouse-redragon-invader-m719-pro": {
       "brand": "Redragon",
       "model": "Invader M719 Pro",
-      "variant": "",
+      "variant": "Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.183Z",
       "added_by": "seed",
       "id": 163,
-      "identifier": "56b72df3"
+      "identifier": "56b72df3",
+      "base_model": "Invader M719"
     },
     "mouse-redragon-k1ing-m916-pro-4k-hz": {
       "brand": "Redragon",
       "model": "K1ING M916 Pro (4K Hz)",
-      "variant": "",
+      "variant": "Pro (4K Hz)",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.201Z",
       "added_by": "seed",
       "id": 164,
-      "identifier": "a3d79007"
+      "identifier": "a3d79007",
+      "base_model": "K1ING M916"
     },
     "mouse-redragon-k1ng-m724-1k-hz": {
       "brand": "Redragon",
       "model": "K1NG M724 (1K Hz)",
-      "variant": "",
+      "variant": "(1K Hz)",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.233Z",
       "added_by": "seed",
       "id": 165,
-      "identifier": "853ef2ef"
+      "identifier": "853ef2ef",
+      "base_model": "K1NG M724"
     },
     "mouse-redragon-k1ng-m916-24ghz-wireless": {
       "brand": "Redragon",
       "model": "K1NG M916 (2.4Ghz Wireless)",
-      "variant": "",
+      "variant": "(2.4Ghz Wireless)",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.251Z",
       "added_by": "seed",
       "id": 166,
-      "identifier": "ffb4ccf4"
+      "identifier": "ffb4ccf4",
+      "base_model": "K1NG M916"
     },
     "mouse-redragon-k1ng-m916-pro-1k-hz": {
       "brand": "Redragon",
       "model": "K1NG M916 PRO (1K Hz)",
-      "variant": "",
+      "variant": "PRO (1K Hz)",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.271Z",
       "added_by": "seed",
       "id": 167,
-      "identifier": "7b0de1a2"
+      "identifier": "7b0de1a2",
+      "base_model": "K1NG M916"
     },
     "mouse-redragon-k1ng-m996-8k-hz": {
       "brand": "Redragon",
       "model": "K1NG M996 (8K Hz)",
-      "variant": "",
+      "variant": "(8K Hz)",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.289Z",
       "added_by": "seed",
       "id": 168,
-      "identifier": "19a98602"
+      "identifier": "19a98602",
+      "base_model": "K1NG M996"
     },
     "mouse-redragon-k1ng-max-m918-1k-hz": {
       "brand": "Redragon",
       "model": "K1NG MAX M918 (1K Hz)",
-      "variant": "",
+      "variant": "(1K Hz)",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.318Z",
       "added_by": "seed",
       "id": 169,
-      "identifier": "a714eb25"
+      "identifier": "a714eb25",
+      "base_model": "K1NG MAX M918"
     },
     "mouse-redragon-k1ng-max-m918-pro-1k-hz": {
       "brand": "Redragon",
       "model": "K1NG MAX M918 PRO (1K Hz)",
-      "variant": "",
+      "variant": "PRO (1K Hz)",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.342Z",
       "added_by": "seed",
       "id": 170,
-      "identifier": "be3a7930"
+      "identifier": "be3a7930",
+      "base_model": "K1NG MAX M918"
     },
     "mouse-redragon-legend-chroma-m990": {
       "brand": "Redragon",
@@ -1859,40 +2027,44 @@
       "added_at": "2026-02-15T03:49:58.376Z",
       "added_by": "seed",
       "id": 171,
-      "identifier": "117577e1"
+      "identifier": "117577e1",
+      "base_model": "Legend Chroma M990"
     },
     "mouse-redragon-m991-wireless-fps": {
       "brand": "Redragon",
       "model": "M991 Wireless FPS",
-      "variant": "",
+      "variant": "Wireless FPS",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.397Z",
       "added_by": "seed",
       "id": 172,
-      "identifier": "6c645ea1"
+      "identifier": "6c645ea1",
+      "base_model": "M991"
     },
     "mouse-redragon-mirage-m690-pro": {
       "brand": "Redragon",
       "model": "Mirage M690 Pro",
-      "variant": "",
+      "variant": "Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.415Z",
       "added_by": "seed",
       "id": 173,
-      "identifier": "8acb1bcd"
+      "identifier": "8acb1bcd",
+      "base_model": "Mirage M690"
     },
     "mouse-redragon-mirage-2-m690-1": {
       "brand": "Redragon",
       "model": "Mirage 2 M690-1",
-      "variant": "",
+      "variant": "1",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.432Z",
       "added_by": "seed",
       "id": 174,
-      "identifier": "87dc8f62"
+      "identifier": "87dc8f62",
+      "base_model": "Mirage 2 M690"
     },
     "mouse-redragon-nirvana-m652": {
       "brand": "Redragon",
@@ -1903,7 +2075,8 @@
       "added_at": "2026-02-15T03:49:58.451Z",
       "added_by": "seed",
       "id": 175,
-      "identifier": "53e67328"
+      "identifier": "53e67328",
+      "base_model": "Nirvana M652"
     },
     "mouse-redragon-predator-m612": {
       "brand": "Redragon",
@@ -1914,29 +2087,32 @@
       "added_at": "2026-02-15T03:49:58.467Z",
       "added_by": "seed",
       "id": 176,
-      "identifier": "d8c6e57a"
+      "identifier": "d8c6e57a",
+      "base_model": "Predator M612"
     },
     "mouse-redragon-predator-m612-pro": {
       "brand": "Redragon",
       "model": "Predator M612 Pro",
-      "variant": "",
+      "variant": "Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.493Z",
       "added_by": "seed",
       "id": 177,
-      "identifier": "6a36e4a6"
+      "identifier": "6a36e4a6",
+      "base_model": "Predator M612"
     },
     "mouse-redragon-rind-m813-pro": {
       "brand": "Redragon",
       "model": "Rind M813 Pro",
-      "variant": "",
+      "variant": "Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.521Z",
       "added_by": "seed",
       "id": 178,
-      "identifier": "f81c13f6"
+      "identifier": "f81c13f6",
+      "base_model": "Rind M813"
     },
     "mouse-redragon-storm-m808": {
       "brand": "Redragon",
@@ -1947,18 +2123,20 @@
       "added_at": "2026-02-15T03:49:58.551Z",
       "added_by": "seed",
       "id": 179,
-      "identifier": "b3ed137a"
+      "identifier": "b3ed137a",
+      "base_model": "Storm M808"
     },
     "mouse-redragon-storm-m808-n": {
       "brand": "Redragon",
       "model": "Storm M808-N",
-      "variant": "",
+      "variant": "N",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.567Z",
       "added_by": "seed",
       "id": 180,
-      "identifier": "798a040b"
+      "identifier": "798a040b",
+      "base_model": "Storm M808"
     },
     "mouse-redragon-storm-pro-m808": {
       "brand": "Redragon",
@@ -1969,18 +2147,20 @@
       "added_at": "2026-02-15T03:49:58.587Z",
       "added_by": "seed",
       "id": 181,
-      "identifier": "d53ce2a5"
+      "identifier": "d53ce2a5",
+      "base_model": "Storm Pro M808"
     },
     "mouse-redragon-taipan-pro-m810-pro": {
       "brand": "Redragon",
       "model": "Taipan Pro M810 Pro",
-      "variant": "",
+      "variant": "Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.607Z",
       "added_by": "seed",
       "id": 182,
-      "identifier": "a6343d7c"
+      "identifier": "a6343d7c",
+      "base_model": "Taipan Pro M810"
     },
     "mouse-redragon-trident-m616": {
       "brand": "Redragon",
@@ -1991,18 +2171,20 @@
       "added_at": "2026-02-15T03:49:58.630Z",
       "added_by": "seed",
       "id": 183,
-      "identifier": "acdeea27"
+      "identifier": "acdeea27",
+      "base_model": "Trident M616"
     },
     "mouse-redragon-trident-m693": {
       "brand": "Redragon",
       "model": "Trident M693",
-      "variant": "",
+      "variant": "M693",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.652Z",
       "added_by": "seed",
       "id": 184,
-      "identifier": "e94fc932"
+      "identifier": "e94fc932",
+      "base_model": "Trident"
     },
     "mouse-redragon-vampire-elite-m686": {
       "brand": "Redragon",
@@ -2013,7 +2195,8 @@
       "added_at": "2026-02-15T03:49:58.671Z",
       "added_by": "seed",
       "id": 185,
-      "identifier": "bc04f901"
+      "identifier": "bc04f901",
+      "base_model": "Vampire Elite M686"
     },
     "mouse-redragon-woki-m994": {
       "brand": "Redragon",
@@ -2024,7 +2207,8 @@
       "added_at": "2026-02-15T03:49:58.689Z",
       "added_by": "seed",
       "id": 186,
-      "identifier": "da08a7d3"
+      "identifier": "da08a7d3",
+      "base_model": "Woki M994"
     },
     "mouse-cougar-revenger-pro-4k": {
       "brand": "Cougar",
@@ -2035,7 +2219,8 @@
       "added_at": "2026-02-15T03:49:58.706Z",
       "added_by": "seed",
       "id": 187,
-      "identifier": "f5da730c"
+      "identifier": "f5da730c",
+      "base_model": "Revenger Pro 4k"
     },
     "mouse-cougar-dualblader": {
       "brand": "Cougar",
@@ -2046,7 +2231,8 @@
       "added_at": "2026-02-15T03:49:58.744Z",
       "added_by": "seed",
       "id": 188,
-      "identifier": "92d2afe4"
+      "identifier": "92d2afe4",
+      "base_model": "Dualblader"
     },
     "mouse-cougar-700m-evo-esports": {
       "brand": "Cougar",
@@ -2057,7 +2243,8 @@
       "added_at": "2026-02-15T03:49:58.760Z",
       "added_by": "seed",
       "id": 189,
-      "identifier": "0719bafc"
+      "identifier": "0719bafc",
+      "base_model": "700M EVO eSPORTS"
     },
     "mouse-cougar-minos-neo": {
       "brand": "Cougar",
@@ -2068,7 +2255,8 @@
       "added_at": "2026-02-15T03:49:58.775Z",
       "added_by": "seed",
       "id": 190,
-      "identifier": "0d596e80"
+      "identifier": "0d596e80",
+      "base_model": "Minos Neo"
     },
     "mouse-cougar-airblader": {
       "brand": "Cougar",
@@ -2079,18 +2267,20 @@
       "added_at": "2026-02-15T03:49:58.859Z",
       "added_by": "seed",
       "id": 191,
-      "identifier": "a4e10836"
+      "identifier": "a4e10836",
+      "base_model": "Airblader"
     },
     "mouse-cougar-airblader-tournamanet": {
       "brand": "Cougar",
       "model": "Airblader Tournamanet",
-      "variant": "",
+      "variant": "Tournamanet",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.883Z",
       "added_by": "seed",
       "id": 192,
-      "identifier": "00897461"
+      "identifier": "00897461",
+      "base_model": "Airblader"
     },
     "mouse-cougar-minox-xt": {
       "brand": "Cougar",
@@ -2101,7 +2291,8 @@
       "added_at": "2026-02-15T03:49:58.903Z",
       "added_by": "seed",
       "id": 193,
-      "identifier": "fc6013c8"
+      "identifier": "fc6013c8",
+      "base_model": "Minox XT"
     },
     "mouse-cougar-minos-x2": {
       "brand": "Cougar",
@@ -2112,7 +2303,8 @@
       "added_at": "2026-02-15T03:49:58.919Z",
       "added_by": "seed",
       "id": 194,
-      "identifier": "f0143da2"
+      "identifier": "f0143da2",
+      "base_model": "Minos X2"
     },
     "mouse-cougar-minos-ex": {
       "brand": "Cougar",
@@ -2123,40 +2315,44 @@
       "added_at": "2026-02-15T03:49:58.939Z",
       "added_by": "seed",
       "id": 195,
-      "identifier": "ef76bd53"
+      "identifier": "ef76bd53",
+      "base_model": "Minos EX"
     },
     "mouse-cougar-surpassion-ex": {
       "brand": "Cougar",
       "model": "Surpassion EX",
-      "variant": "",
+      "variant": "EX",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.955Z",
       "added_by": "seed",
       "id": 196,
-      "identifier": "2594a5a3"
+      "identifier": "2594a5a3",
+      "base_model": "Surpassion"
     },
     "mouse-cougar-surpassion-rx": {
       "brand": "Cougar",
       "model": "Surpassion RX",
-      "variant": "",
+      "variant": "RX",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.972Z",
       "added_by": "seed",
       "id": 197,
-      "identifier": "6845ddb6"
+      "identifier": "6845ddb6",
+      "base_model": "Surpassion"
     },
     "mouse-endgame-gear-xm2w-4k-wireless": {
       "brand": "Endgame Gear",
       "model": "XM2w 4k Wireless",
-      "variant": "",
+      "variant": "4k Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:58.991Z",
       "added_by": "seed",
       "id": 198,
-      "identifier": "accabfdf"
+      "identifier": "accabfdf",
+      "base_model": "XM2w"
     },
     "mouse-endgame-gear-op1": {
       "brand": "Endgame Gear",
@@ -2167,95 +2363,104 @@
       "added_at": "2026-02-15T03:49:59.024Z",
       "added_by": "seed",
       "id": 199,
-      "identifier": "f86e946a"
+      "identifier": "f86e946a",
+      "base_model": "OP1"
     },
     "mouse-endgame-gear-op1-rgb": {
       "brand": "Endgame Gear",
       "model": "OP1 RGB",
-      "variant": "",
+      "variant": "RGB",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.038Z",
       "added_by": "seed",
       "id": 200,
-      "identifier": "f1156ded"
+      "identifier": "f1156ded",
+      "base_model": "OP1"
     },
     "mouse-endgame-gear-op1-8k": {
       "brand": "Endgame Gear",
       "model": "OP1 8k",
-      "variant": "",
+      "variant": "8k",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.054Z",
       "added_by": "seed",
       "id": 201,
-      "identifier": "6655dc93"
+      "identifier": "6655dc93",
+      "base_model": "OP1"
     },
     "mouse-endgame-gear-op1w-4k-wireless": {
       "brand": "Endgame Gear",
       "model": "OP1w 4k Wireless",
-      "variant": "",
+      "variant": "4k Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.071Z",
       "added_by": "seed",
       "id": 202,
-      "identifier": "4e77b421"
+      "identifier": "4e77b421",
+      "base_model": "OP1w"
     },
     "mouse-endgame-gear-op1we-wireless": {
       "brand": "Endgame Gear",
       "model": "OP1we Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.089Z",
       "added_by": "seed",
       "id": 203,
-      "identifier": "2eccfb0a"
+      "identifier": "2eccfb0a",
+      "base_model": "OP1we"
     },
     "mouse-endgame-gear-xm2we-wireless": {
       "brand": "Endgame Gear",
       "model": "XM2we Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.107Z",
       "added_by": "seed",
       "id": 204,
-      "identifier": "e95bfe6f"
+      "identifier": "e95bfe6f",
+      "base_model": "XM2we"
     },
     "mouse-endgame-gear-xm2-8k": {
       "brand": "Endgame Gear",
       "model": "XM2 8k",
-      "variant": "",
+      "variant": "8k",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.139Z",
       "added_by": "seed",
       "id": 205,
-      "identifier": "0cb71efb"
+      "identifier": "0cb71efb",
+      "base_model": "XM2"
     },
     "mouse-endgame-gear-xm1r": {
       "brand": "Endgame Gear",
       "model": "XM1r",
-      "variant": "",
+      "variant": "r",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.164Z",
       "added_by": "seed",
       "id": 206,
-      "identifier": "c8bc0510"
+      "identifier": "c8bc0510",
+      "base_model": "XM1"
     },
     "mouse-endgame-gear-xm1-rgb": {
       "brand": "Endgame Gear",
       "model": "XM1 RGB",
-      "variant": "",
+      "variant": "RGB",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.177Z",
       "added_by": "seed",
       "id": 207,
-      "identifier": "f74080c4"
+      "identifier": "f74080c4",
+      "base_model": "XM1"
     },
     "mouse-evga-x12": {
       "brand": "EVGA",
@@ -2266,7 +2471,8 @@
       "added_at": "2026-02-15T03:49:59.200Z",
       "added_by": "seed",
       "id": 208,
-      "identifier": "c640d0bd"
+      "identifier": "c640d0bd",
+      "base_model": "X12"
     },
     "mouse-evga-x17": {
       "brand": "EVGA",
@@ -2277,95 +2483,104 @@
       "added_at": "2026-02-15T03:49:59.219Z",
       "added_by": "seed",
       "id": 209,
-      "identifier": "c5513b8d"
+      "identifier": "c5513b8d",
+      "base_model": "X17"
     },
     "mouse-evga-x15-mmo": {
       "brand": "EVGA",
       "model": "X15 MMO",
-      "variant": "",
+      "variant": "MMO",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.248Z",
       "added_by": "seed",
       "id": 210,
-      "identifier": "99e662a8"
+      "identifier": "99e662a8",
+      "base_model": "X15"
     },
     "mouse-evga-x20-wireless": {
       "brand": "EVGA",
       "model": "X20 Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.273Z",
       "added_by": "seed",
       "id": 211,
-      "identifier": "2422839d"
+      "identifier": "2422839d",
+      "base_model": "X20"
     },
     "mouse-finalmouse-ulx-prophecy-clix": {
       "brand": "Finalmouse",
       "model": "ULX Prophecy - Clix",
-      "variant": "",
+      "variant": "Clix",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.293Z",
       "added_by": "seed",
       "id": 212,
-      "identifier": "399a46bc"
+      "identifier": "399a46bc",
+      "base_model": "ULX Prophecy"
     },
     "mouse-finalmouse-ulx-prophecy-scream": {
       "brand": "Finalmouse",
       "model": "ULX Prophecy - Scream",
-      "variant": "",
+      "variant": "Scream",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.310Z",
       "added_by": "seed",
       "id": 213,
-      "identifier": "029f6c14"
+      "identifier": "029f6c14",
+      "base_model": "ULX Prophecy"
     },
     "mouse-finalmouse-ulx-prophecy-tarik": {
       "brand": "Finalmouse",
       "model": "ULX Prophecy - Tarik",
-      "variant": "",
+      "variant": "Tarik",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.327Z",
       "added_by": "seed",
       "id": 214,
-      "identifier": "d7369a1a"
+      "identifier": "d7369a1a",
+      "base_model": "ULX Prophecy"
     },
     "mouse-finalmouse-ulx-prophecy-tfue": {
       "brand": "Finalmouse",
       "model": "ULX Prophecy - Tfue",
-      "variant": "",
+      "variant": "Tfue",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.343Z",
       "added_by": "seed",
       "id": 215,
-      "identifier": "780c8397"
+      "identifier": "780c8397",
+      "base_model": "ULX Prophecy"
     },
     "mouse-fnatic-x-lamzu-maya-x-8k": {
       "brand": "Fnatic",
       "model": "x Lamzu MAYA X 8K",
-      "variant": "",
+      "variant": "X 8K",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.359Z",
       "added_by": "seed",
       "id": 216,
-      "identifier": "4e7df0d7"
+      "identifier": "4e7df0d7",
+      "base_model": "x Lamzu MAYA"
     },
     "mouse-fnatic-x-lamzu-maya-8k": {
       "brand": "Fnatic",
       "model": "x Lamzu MAYA 8K",
-      "variant": "",
+      "variant": "8K",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.374Z",
       "added_by": "seed",
       "id": 217,
-      "identifier": "6e0bd352"
+      "identifier": "6e0bd352",
+      "base_model": "x Lamzu MAYA"
     },
     "mouse-fnatic-x-lamzu-thorn": {
       "brand": "Fnatic",
@@ -2376,7 +2591,8 @@
       "added_at": "2026-02-15T03:49:59.389Z",
       "added_by": "seed",
       "id": 218,
-      "identifier": "a164bdca"
+      "identifier": "a164bdca",
+      "base_model": "x Lamzu THORN"
     },
     "mouse-fnatic-bolt": {
       "brand": "Fnatic",
@@ -2387,271 +2603,296 @@
       "added_at": "2026-02-15T03:49:59.405Z",
       "added_by": "seed",
       "id": 219,
-      "identifier": "062b81e9"
+      "identifier": "062b81e9",
+      "base_model": "Bolt"
     },
     "mouse-g-wolves-htr-pro-8k-wireless": {
       "brand": "G-Wolves",
       "model": "HTR PRO 8k Wireless",
-      "variant": "",
+      "variant": "PRO 8k Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.423Z",
       "added_by": "seed",
       "id": 220,
-      "identifier": "0258a321"
+      "identifier": "0258a321",
+      "base_model": "HTR"
     },
     "mouse-g-wolves-htr-8k-wireless": {
       "brand": "G-Wolves",
       "model": "HTR 8k Wireless",
-      "variant": "",
+      "variant": "8k Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.454Z",
       "added_by": "seed",
       "id": 221,
-      "identifier": "a520c5af"
+      "identifier": "a520c5af",
+      "base_model": "HTR"
     },
     "mouse-g-wolves-ht-s2-8k-wireless": {
       "brand": "G-Wolves",
       "model": "HT-S2 8k Wireless",
-      "variant": "",
+      "variant": "8k Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.471Z",
       "added_by": "seed",
       "id": 222,
-      "identifier": "a7efbfe1"
+      "identifier": "a7efbfe1",
+      "base_model": "HT-S2"
     },
     "mouse-g-wolves-hts-ultra-8k-wireless": {
       "brand": "G-Wolves",
       "model": "HTS Ultra 8K Wireless",
-      "variant": "",
+      "variant": "Ultra 8K Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.484Z",
       "added_by": "seed",
       "id": 223,
-      "identifier": "472b0564"
+      "identifier": "472b0564",
+      "base_model": "HTS"
     },
     "mouse-g-wolves-hati-s-ace-wireless": {
       "brand": "G-Wolves",
       "model": "Hati-S ACE Wireless",
-      "variant": "",
+      "variant": "ACE Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.500Z",
       "added_by": "seed",
       "id": 224,
-      "identifier": "58394e24"
+      "identifier": "58394e24",
+      "base_model": "Hati-S"
     },
     "mouse-g-wolves-hati-s-open-source-wireless": {
       "brand": "G-Wolves",
       "model": "Hati-S OPEN Source Wireless",
-      "variant": "",
+      "variant": "OPEN Source Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.521Z",
       "added_by": "seed",
       "id": 225,
-      "identifier": "af971c4c"
+      "identifier": "af971c4c",
+      "base_model": "Hati-S"
     },
     "mouse-g-wolves-hts-plus-8k-wireless": {
       "brand": "G-Wolves",
       "model": "HTS Plus 8K Wireless",
-      "variant": "",
+      "variant": "8K Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.537Z",
       "added_by": "seed",
       "id": 226,
-      "identifier": "8c7fcee6"
+      "identifier": "8c7fcee6",
+      "base_model": "HTS Plus"
     },
     "mouse-g-wolves-hts-plus-4k-wireless": {
       "brand": "G-Wolves",
       "model": "HTS Plus 4K Wireless",
-      "variant": "",
+      "variant": "4K Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.552Z",
       "added_by": "seed",
       "id": 227,
-      "identifier": "6f1799a2"
+      "identifier": "6f1799a2",
+      "base_model": "HTS Plus"
     },
     "mouse-g-wolves-hts-plus-ace-wireless": {
       "brand": "G-Wolves",
       "model": "HTS Plus Ace Wireless",
-      "variant": "",
+      "variant": "Ace Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.568Z",
       "added_by": "seed",
       "id": 228,
-      "identifier": "3fce1580"
+      "identifier": "3fce1580",
+      "base_model": "HTS Plus"
     },
     "mouse-g-wolves-hts-plus-classic-wireless": {
       "brand": "G-Wolves",
       "model": "HTS Plus Classic Wireless",
-      "variant": "",
+      "variant": "Classic Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.583Z",
       "added_by": "seed",
       "id": 229,
-      "identifier": "e262efd5"
+      "identifier": "e262efd5",
+      "base_model": "HTS Plus"
     },
     "mouse-g-wolves-htx-mini-8k-wireless": {
       "brand": "G-Wolves",
       "model": "HTX Mini 8K Wireless",
-      "variant": "",
+      "variant": "Mini 8K Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.599Z",
       "added_by": "seed",
       "id": 230,
-      "identifier": "ce22f43d"
+      "identifier": "ce22f43d",
+      "base_model": "HTX"
     },
     "mouse-g-wolves-htx-4k-wireless": {
       "brand": "G-Wolves",
       "model": "HTX 4K Wireless",
-      "variant": "",
+      "variant": "4K Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.617Z",
       "added_by": "seed",
       "id": 231,
-      "identifier": "cf7164ed"
+      "identifier": "cf7164ed",
+      "base_model": "HTX"
     },
     "mouse-g-wolves-htx-ace-wireless": {
       "brand": "G-Wolves",
       "model": "HTX ACE Wireless",
-      "variant": "",
+      "variant": "ACE Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.648Z",
       "added_by": "seed",
       "id": 232,
-      "identifier": "a5c42140"
+      "identifier": "a5c42140",
+      "base_model": "HTX"
     },
     "mouse-g-wolves-hsk-pro-4k-wireless": {
       "brand": "G-Wolves",
       "model": "HSK Pro 4K Wireless",
-      "variant": "",
+      "variant": "4K Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.675Z",
       "added_by": "seed",
       "id": 233,
-      "identifier": "bce4060c"
+      "identifier": "bce4060c",
+      "base_model": "HSK Pro"
     },
     "mouse-g-wolves-hsk-pro-ace-wireless": {
       "brand": "G-Wolves",
       "model": "HSK Pro ACE Wireless",
-      "variant": "",
+      "variant": "ACE Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.719Z",
       "added_by": "seed",
       "id": 234,
-      "identifier": "86673285"
+      "identifier": "86673285",
+      "base_model": "HSK Pro"
     },
     "mouse-g-wolves-hsk-plus-4k-wireless": {
       "brand": "G-Wolves",
       "model": "HSK Plus 4k Wireless",
-      "variant": "",
+      "variant": "4k Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.740Z",
       "added_by": "seed",
       "id": 235,
-      "identifier": "f959894f"
+      "identifier": "f959894f",
+      "base_model": "HSK Plus"
     },
     "mouse-g-wolves-hsk-plus-lite-wireless": {
       "brand": "G-Wolves",
       "model": "HSK Plus Lite Wireless",
-      "variant": "",
+      "variant": "Lite Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.756Z",
       "added_by": "seed",
       "id": 236,
-      "identifier": "f09ff7b3"
+      "identifier": "f09ff7b3",
+      "base_model": "HSK Plus"
     },
     "mouse-g-wolves-hsk-plus-ace-2-wireless": {
       "brand": "G-Wolves",
       "model": "HSK Plus Ace-2 Wireless",
-      "variant": "",
+      "variant": "Ace-2 Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.772Z",
       "added_by": "seed",
       "id": 237,
-      "identifier": "074d5e38"
+      "identifier": "074d5e38",
+      "base_model": "HSK Plus"
     },
     "mouse-g-wolves-hati-m-htm-ace-wireless": {
       "brand": "G-Wolves",
       "model": "Hati-M HTM ACE Wireless",
-      "variant": "",
+      "variant": "HTM ACE Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.787Z",
       "added_by": "seed",
       "id": 238,
-      "identifier": "de5ffd7a"
+      "identifier": "de5ffd7a",
+      "base_model": "Hati-M"
     },
     "mouse-g-wolves-hati-htm-ace-wired": {
       "brand": "G-Wolves",
       "model": "Hati HTM ACE Wired",
-      "variant": "",
+      "variant": "ACE Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.804Z",
       "added_by": "seed",
       "id": 239,
-      "identifier": "5633b101"
+      "identifier": "5633b101",
+      "base_model": "Hati HTM"
     },
     "mouse-g-wolves-hati-htm-classic-wired": {
       "brand": "G-Wolves",
       "model": "Hati HTM Classic Wired",
-      "variant": "",
+      "variant": "Classic Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.818Z",
       "added_by": "seed",
       "id": 240,
-      "identifier": "7e26cc5e"
+      "identifier": "7e26cc5e",
+      "base_model": "Hati HTM"
     },
     "mouse-g-wolves-hati-s-hts-ace-wired": {
       "brand": "G-Wolves",
       "model": "Hati-S HTS ACE Wired",
-      "variant": "",
+      "variant": "ACE Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.835Z",
       "added_by": "seed",
       "id": 241,
-      "identifier": "e7d826ac"
+      "identifier": "e7d826ac",
+      "base_model": "Hati-S HTS"
     },
     "mouse-g-wolves-hsk-wired": {
       "brand": "G-Wolves",
       "model": "HSK Wired",
-      "variant": "",
+      "variant": "Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.858Z",
       "added_by": "seed",
       "id": 242,
-      "identifier": "6195b80f"
+      "identifier": "6195b80f",
+      "base_model": "HSK"
     },
     "mouse-g-wolves-skoll-mini-sk-s-wired": {
       "brand": "G-Wolves",
       "model": "Skoll Mini SK-S Wired",
-      "variant": "",
+      "variant": "SK-S Wired",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.890Z",
       "added_by": "seed",
       "id": 243,
-      "identifier": "7c7efd31"
+      "identifier": "7c7efd31",
+      "base_model": "Skoll Mini"
     },
     "mouse-lamzu-tachi": {
       "brand": "Lamzu",
@@ -2662,51 +2903,56 @@
       "added_at": "2026-02-15T03:49:59.910Z",
       "added_by": "seed",
       "id": 244,
-      "identifier": "d0035553"
+      "identifier": "d0035553",
+      "base_model": "Tachi"
     },
     "mouse-lamzu-maya-4k": {
       "brand": "Lamzu",
       "model": "Maya 4k",
-      "variant": "",
+      "variant": "4k",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.932Z",
       "added_by": "seed",
       "id": 245,
-      "identifier": "5f87e147"
+      "identifier": "5f87e147",
+      "base_model": "Maya"
     },
     "mouse-lamzu-maya-x": {
       "brand": "Lamzu",
       "model": "Maya X",
-      "variant": "",
+      "variant": "X",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.949Z",
       "added_by": "seed",
       "id": 246,
-      "identifier": "30465f5c"
+      "identifier": "30465f5c",
+      "base_model": "Maya"
     },
     "mouse-lamzu-maya-4k-compatible": {
       "brand": "Lamzu",
       "model": "Maya (4k Compatible)",
-      "variant": "",
+      "variant": "(4k Compatible)",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.965Z",
       "added_by": "seed",
       "id": 247,
-      "identifier": "ec1dd907"
+      "identifier": "ec1dd907",
+      "base_model": "Maya"
     },
     "mouse-lamzu-maya-doodle": {
       "brand": "Lamzu",
       "model": "Maya Doodle",
-      "variant": "",
+      "variant": "Doodle",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:59.982Z",
       "added_by": "seed",
       "id": 248,
-      "identifier": "b9baec2d"
+      "identifier": "b9baec2d",
+      "base_model": "Maya"
     },
     "mouse-lamzu-paro": {
       "brand": "Lamzu",
@@ -2717,139 +2963,152 @@
       "added_at": "2026-02-15T03:49:59.999Z",
       "added_by": "seed",
       "id": 249,
-      "identifier": "f1bd6f3a"
+      "identifier": "f1bd6f3a",
+      "base_model": "Paro"
     },
     "mouse-lamzu-thorn-4k": {
       "brand": "Lamzu",
       "model": "Thorn 4k",
-      "variant": "",
+      "variant": "4k",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.023Z",
       "added_by": "seed",
       "id": 250,
-      "identifier": "8bb1c93f"
+      "identifier": "8bb1c93f",
+      "base_model": "Thorn"
     },
     "mouse-lamzu-thorn-4k-4k-compatible": {
       "brand": "Lamzu",
       "model": "Thorn 4k (4K Compatible)",
-      "variant": "",
+      "variant": "4k (4K Compatible)",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.043Z",
       "added_by": "seed",
       "id": 251,
-      "identifier": "8e24cd3e"
+      "identifier": "8e24cd3e",
+      "base_model": "Thorn"
     },
     "mouse-lamzu-atlantis-mini-4k": {
       "brand": "Lamzu",
       "model": "Atlantis Mini 4k",
-      "variant": "",
+      "variant": "Mini 4k",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.058Z",
       "added_by": "seed",
       "id": 252,
-      "identifier": "21aca032"
+      "identifier": "21aca032",
+      "base_model": "Atlantis"
     },
     "mouse-lamzu-atlantis-mini-pro-4k-compatible": {
       "brand": "Lamzu",
       "model": "Atlantis Mini Pro (4k Compatible)",
-      "variant": "",
+      "variant": "Mini Pro (4k Compatible)",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.077Z",
       "added_by": "seed",
       "id": 253,
-      "identifier": "6e24b6b0"
+      "identifier": "6e24b6b0",
+      "base_model": "Atlantis"
     },
     "mouse-lamzu-atlantis-mini-champion-edition": {
       "brand": "Lamzu",
       "model": "Atlantis Mini [Champion Edition]",
-      "variant": "",
+      "variant": "Mini [Champion Edition]",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.104Z",
       "added_by": "seed",
       "id": 254,
-      "identifier": "323211ab"
+      "identifier": "323211ab",
+      "base_model": "Atlantis"
     },
     "mouse-lamzu-atlantis-og-v2-4k": {
       "brand": "Lamzu",
       "model": "Atlantis OG V2 4k",
-      "variant": "",
+      "variant": "OG V2 4k",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.120Z",
       "added_by": "seed",
       "id": 255,
-      "identifier": "e716588d"
+      "identifier": "e716588d",
+      "base_model": "Atlantis"
     },
     "mouse-lamzu-atlantis-og-v2-pro-4k-compatible": {
       "brand": "Lamzu",
       "model": "Atlantis OG V2 Pro (4k Compatible)",
-      "variant": "",
+      "variant": "OG V2 Pro (4k Compatible)",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.136Z",
       "added_by": "seed",
       "id": 256,
-      "identifier": "4189c1f1"
+      "identifier": "4189c1f1",
+      "base_model": "Atlantis"
     },
     "mouse-lenovo-legion-m300s-rgb": {
       "brand": "Lenovo Legion",
       "model": "M300s RGB",
-      "variant": "",
+      "variant": "RGB",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.154Z",
       "added_by": "seed",
       "id": 257,
-      "identifier": "802ca291"
+      "identifier": "802ca291",
+      "base_model": "M300s"
     },
     "mouse-lenovo-legion-m210-rgb": {
       "brand": "Lenovo Legion",
       "model": "M210 RGB",
-      "variant": "",
+      "variant": "RGB",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.172Z",
       "added_by": "seed",
       "id": 258,
-      "identifier": "15167d3f"
+      "identifier": "15167d3f",
+      "base_model": "M210"
     },
     "mouse-lenovo-legion-m410-wireless-rgb": {
       "brand": "Lenovo Legion",
       "model": "M410 Wireless RGB",
-      "variant": "",
+      "variant": "Wireless RGB",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.189Z",
       "added_by": "seed",
       "id": 259,
-      "identifier": "f6727c7b"
+      "identifier": "f6727c7b",
+      "base_model": "M410"
     },
     "mouse-lenovo-legion-m600s-wireless": {
       "brand": "Lenovo Legion",
       "model": "M600s Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.216Z",
       "added_by": "seed",
       "id": 260,
-      "identifier": "6b48c3f7"
+      "identifier": "6b48c3f7",
+      "base_model": "M600s"
     },
     "mouse-lenovo-legion-m600-wireless": {
       "brand": "Lenovo Legion",
       "model": "M600 Wireless",
-      "variant": "",
+      "variant": "Wireless",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.248Z",
       "added_by": "seed",
       "id": 261,
-      "identifier": "f7dc9399"
+      "identifier": "f7dc9399",
+      "base_model": "M600"
     },
     "mouse-mad-catz-bat-6": {
       "brand": "Mad Catz",
@@ -2860,18 +3119,20 @@
       "added_at": "2026-02-15T03:50:00.288Z",
       "added_by": "seed",
       "id": 262,
-      "identifier": "d271c914"
+      "identifier": "d271c914",
+      "base_model": "B.A.T. 6+"
     },
     "mouse-mad-catz-mojo-m1": {
       "brand": "Mad Catz",
       "model": "M.O.J.O. M1",
-      "variant": "",
+      "variant": "M1",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.309Z",
       "added_by": "seed",
       "id": 263,
-      "identifier": "2d538583"
+      "identifier": "2d538583",
+      "base_model": "M.O.J.O."
     },
     "mouse-mad-catz-rat-8-adv": {
       "brand": "Mad Catz",
@@ -2882,7 +3143,8 @@
       "added_at": "2026-02-15T03:50:00.332Z",
       "added_by": "seed",
       "id": 264,
-      "identifier": "91a405e1"
+      "identifier": "91a405e1",
+      "base_model": "R.A.T. 8+ ADV"
     },
     "mouse-mad-catz-rat-pro-x3-supreme": {
       "brand": "Mad Catz",
@@ -2893,18 +3155,20 @@
       "added_at": "2026-02-15T03:50:00.360Z",
       "added_by": "seed",
       "id": 265,
-      "identifier": "7454a2ea"
+      "identifier": "7454a2ea",
+      "base_model": "R.A.T. PRO X3 Supreme"
     },
     "mouse-mad-catz-rat-pro-x3": {
       "brand": "Mad Catz",
       "model": "R.A.T. PRO X3",
-      "variant": "",
+      "variant": "X3",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.376Z",
       "added_by": "seed",
       "id": 266,
-      "identifier": "de25c40d"
+      "identifier": "de25c40d",
+      "base_model": "R.A.T. PRO"
     },
     "mouse-mad-catz-rat-8": {
       "brand": "Mad Catz",
@@ -2915,7 +3179,8 @@
       "added_at": "2026-02-15T03:50:00.393Z",
       "added_by": "seed",
       "id": 267,
-      "identifier": "89e9d8ec"
+      "identifier": "89e9d8ec",
+      "base_model": "R.A.T. 8+"
     },
     "mouse-mad-catz-rat-6": {
       "brand": "Mad Catz",
@@ -2926,18 +3191,20 @@
       "added_at": "2026-02-15T03:50:00.409Z",
       "added_by": "seed",
       "id": 268,
-      "identifier": "9b985e9a"
+      "identifier": "9b985e9a",
+      "base_model": "R.A.T. 6+"
     },
     "mouse-mad-catz-rat-pro-s3": {
       "brand": "Mad Catz",
       "model": "R.A.T. PRO S3",
-      "variant": "",
+      "variant": "S3",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.427Z",
       "added_by": "seed",
       "id": 269,
-      "identifier": "d4a15dde"
+      "identifier": "d4a15dde",
+      "base_model": "R.A.T. PRO"
     },
     "mouse-mad-catz-rat-4": {
       "brand": "Mad Catz",
@@ -2948,7 +3215,8 @@
       "added_at": "2026-02-15T03:50:00.455Z",
       "added_by": "seed",
       "id": 270,
-      "identifier": "e0ee8894"
+      "identifier": "e0ee8894",
+      "base_model": "R.A.T. 4+"
     },
     "mouse-mad-catz-rat-2": {
       "brand": "Mad Catz",
@@ -2959,7 +3227,8 @@
       "added_at": "2026-02-15T03:50:00.475Z",
       "added_by": "seed",
       "id": 271,
-      "identifier": "9a32f359"
+      "identifier": "9a32f359",
+      "base_model": "R.A.T. 2+"
     },
     "mouse-mad-catz-rat-1": {
       "brand": "Mad Catz",
@@ -2970,18 +3239,20 @@
       "added_at": "2026-02-15T03:50:00.501Z",
       "added_by": "seed",
       "id": 272,
-      "identifier": "f0ba4861"
+      "identifier": "f0ba4861",
+      "base_model": "R.A.T. 1+"
     },
     "mouse-mad-catz-mojo-m2": {
       "brand": "Mad Catz",
       "model": "M.O.J.O. M2",
-      "variant": "",
+      "variant": "M2",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.526Z",
       "added_by": "seed",
       "id": 273,
-      "identifier": "1b2066ca"
+      "identifier": "1b2066ca",
+      "base_model": "M.O.J.O."
     },
     "mouse-mad-catz-rat-dws": {
       "brand": "Mad Catz",
@@ -2992,7 +3263,8 @@
       "added_at": "2026-02-15T03:50:00.551Z",
       "added_by": "seed",
       "id": 274,
-      "identifier": "02cd263f"
+      "identifier": "02cd263f",
+      "base_model": "R.A.T. DWS"
     },
     "mouse-mad-catz-rat-air": {
       "brand": "Mad Catz",
@@ -3003,7 +3275,8 @@
       "added_at": "2026-02-15T03:50:00.567Z",
       "added_by": "seed",
       "id": 275,
-      "identifier": "401fda81"
+      "identifier": "401fda81",
+      "base_model": "R.A.T. AIR"
     },
     "mouse-nzxt-lift-elite-wireless": {
       "brand": "NZXT",
@@ -3014,7 +3287,8 @@
       "added_at": "2026-02-15T03:50:00.594Z",
       "added_by": "seed",
       "id": 276,
-      "identifier": "d952a904"
+      "identifier": "d952a904",
+      "base_model": "Lift Elite Wireless"
     },
     "mouse-nzxt-lift-2-symm": {
       "brand": "NZXT",
@@ -3025,7 +3299,8 @@
       "added_at": "2026-02-15T03:50:00.609Z",
       "added_by": "seed",
       "id": 277,
-      "identifier": "f635660a"
+      "identifier": "f635660a",
+      "base_model": "Lift 2 Symm"
     },
     "mouse-nzxt-lift-2-ergo": {
       "brand": "NZXT",
@@ -3036,18 +3311,20 @@
       "added_at": "2026-02-15T03:50:00.623Z",
       "added_by": "seed",
       "id": 278,
-      "identifier": "d6d8a4da"
+      "identifier": "d6d8a4da",
+      "base_model": "Lift 2 Ergo"
     },
     "mouse-turtle-beach-kone-ii-air": {
       "brand": "Turtle Beach",
       "model": "Kone II Air",
-      "variant": "",
+      "variant": "Air",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.639Z",
       "added_by": "seed",
       "id": 279,
-      "identifier": "6bf3d159"
+      "identifier": "6bf3d159",
+      "base_model": "Kone II"
     },
     "mouse-turtle-beach-kone-ii": {
       "brand": "Turtle Beach",
@@ -3058,51 +3335,56 @@
       "added_at": "2026-02-15T03:50:00.659Z",
       "added_by": "seed",
       "id": 280,
-      "identifier": "7000e6fc"
+      "identifier": "7000e6fc",
+      "base_model": "Kone II"
     },
     "mouse-turtle-beach-burst-ii-air": {
       "brand": "Turtle Beach",
       "model": "Burst II Air",
-      "variant": "",
+      "variant": "Air",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.676Z",
       "added_by": "seed",
       "id": 281,
-      "identifier": "bfcd2d6d"
+      "identifier": "bfcd2d6d",
+      "base_model": "Burst II"
     },
     "mouse-turtle-beach-pure-air": {
       "brand": "Turtle Beach",
       "model": "Pure Air",
-      "variant": "",
+      "variant": "Air",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.692Z",
       "added_by": "seed",
       "id": 282,
-      "identifier": "305f2278"
+      "identifier": "305f2278",
+      "base_model": "Pure"
     },
     "mouse-turtle-beach-pure-sel": {
       "brand": "Turtle Beach",
       "model": "Pure Sel",
-      "variant": "",
+      "variant": "Sel",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.709Z",
       "added_by": "seed",
       "id": 283,
-      "identifier": "e2fc401f"
+      "identifier": "e2fc401f",
+      "base_model": "Pure"
     },
     "mouse-turtle-beach-kone-xp-air": {
       "brand": "Turtle Beach",
       "model": "Kone XP Air",
-      "variant": "",
+      "variant": "Air",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:00.735Z",
       "added_by": "seed",
       "id": 284,
-      "identifier": "47c86be0"
+      "identifier": "47c86be0",
+      "base_model": "Kone XP"
     },
     "mouse-pulsar-x3": {
       "brand": "Pulsar",
@@ -3113,7 +3395,8 @@
       "added_at": "2026-02-15T03:50:00.759Z",
       "added_by": "seed",
       "id": 285,
-      "identifier": "77865bf6"
+      "identifier": "77865bf6",
+      "base_model": "X3"
     },
     "mouse-pulsar-x3-mini": {
       "brand": "Pulsar",
@@ -3124,7 +3407,8 @@
       "added_at": "2026-02-15T03:50:00.786Z",
       "added_by": "seed",
       "id": 286,
-      "identifier": "7d047f46"
+      "identifier": "7d047f46",
+      "base_model": "X3 Mini"
     },
     "mouse-pulsar-x3-lhd": {
       "brand": "Pulsar",
@@ -3135,7 +3419,8 @@
       "added_at": "2026-02-15T03:50:00.820Z",
       "added_by": "seed",
       "id": 287,
-      "identifier": "913fc6af"
+      "identifier": "913fc6af",
+      "base_model": "X3 LHD"
     },
     "mouse-pulsar-x3-lhd-mini": {
       "brand": "Pulsar",
@@ -3146,7 +3431,8 @@
       "added_at": "2026-02-15T03:50:00.837Z",
       "added_by": "seed",
       "id": 288,
-      "identifier": "e552cc6e"
+      "identifier": "e552cc6e",
+      "base_model": "X3 LHD Mini"
     },
     "mouse-pulsar-x2-crazylight": {
       "brand": "Pulsar",
@@ -3157,7 +3443,8 @@
       "added_at": "2026-02-15T03:50:00.860Z",
       "added_by": "seed",
       "id": 289,
-      "identifier": "a58940cf"
+      "identifier": "a58940cf",
+      "base_model": "X2 Crazylight"
     },
     "mouse-pulsar-x2-v3-mini": {
       "brand": "Pulsar",
@@ -3168,7 +3455,8 @@
       "added_at": "2026-02-15T03:50:00.883Z",
       "added_by": "seed",
       "id": 290,
-      "identifier": "6bb997f4"
+      "identifier": "6bb997f4",
+      "base_model": "X2 v3 Mini"
     },
     "mouse-pulsar-x2-v3": {
       "brand": "Pulsar",
@@ -3179,7 +3467,8 @@
       "added_at": "2026-02-15T03:50:00.905Z",
       "added_by": "seed",
       "id": 291,
-      "identifier": "0e7a2d62"
+      "identifier": "0e7a2d62",
+      "base_model": "X2 v3"
     },
     "mouse-pulsar-x2-wired": {
       "brand": "Pulsar",
@@ -3190,7 +3479,8 @@
       "added_at": "2026-02-15T03:50:00.924Z",
       "added_by": "seed",
       "id": 292,
-      "identifier": "c922210b"
+      "identifier": "c922210b",
+      "base_model": "X2 Wired"
     },
     "mouse-pulsar-x2-v2-mini": {
       "brand": "Pulsar",
@@ -3201,7 +3491,8 @@
       "added_at": "2026-02-15T03:50:00.942Z",
       "added_by": "seed",
       "id": 293,
-      "identifier": "348fa48a"
+      "identifier": "348fa48a",
+      "base_model": "X2 v2 Mini"
     },
     "mouse-pulsar-x2-v2": {
       "brand": "Pulsar",
@@ -3212,7 +3503,8 @@
       "added_at": "2026-02-15T03:50:00.966Z",
       "added_by": "seed",
       "id": 294,
-      "identifier": "e1d50742"
+      "identifier": "e1d50742",
+      "base_model": "X2 v2"
     },
     "mouse-pulsar-x2-v1-mini": {
       "brand": "Pulsar",
@@ -3223,40 +3515,44 @@
       "added_at": "2026-02-15T03:50:00.983Z",
       "added_by": "seed",
       "id": 295,
-      "identifier": "aa242665"
+      "identifier": "aa242665",
+      "base_model": "X2 v1 Mini"
     },
     "mouse-pulsar-x2-v1": {
       "brand": "Pulsar",
       "model": "X2 v1",
-      "variant": "",
+      "variant": "v1",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:01.000Z",
       "added_by": "seed",
       "id": 296,
-      "identifier": "05aa322f"
+      "identifier": "05aa322f",
+      "base_model": "X2"
     },
     "mouse-pulsar-founders-edition-x2-v2": {
       "brand": "Pulsar",
       "model": "[Founders Edition] X2 v2",
-      "variant": "",
+      "variant": "[Founders Edition] v2",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:01.016Z",
       "added_by": "seed",
       "id": 297,
-      "identifier": "b43fcb57"
+      "identifier": "b43fcb57",
+      "base_model": "X2"
     },
     "mouse-pulsar-founders-edition-x2-v2-mini": {
       "brand": "Pulsar",
       "model": "[Founders Edition] X2 v2 Mini",
-      "variant": "",
+      "variant": "Mini",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:01.050Z",
       "added_by": "seed",
       "id": 298,
-      "identifier": "dfc6c326"
+      "identifier": "dfc6c326",
+      "base_model": "[Founders Edition] X2 v2"
     },
     "mouse-pulsar-x2h-v3": {
       "brand": "Pulsar",
@@ -3267,7 +3563,8 @@
       "added_at": "2026-02-15T03:50:01.077Z",
       "added_by": "seed",
       "id": 299,
-      "identifier": "4d67f537"
+      "identifier": "4d67f537",
+      "base_model": "X2H v3"
     },
     "mouse-pulsar-x2h-v3-mini": {
       "brand": "Pulsar",
@@ -3278,7 +3575,8 @@
       "added_at": "2026-02-15T03:50:01.104Z",
       "added_by": "seed",
       "id": 300,
-      "identifier": "02428298"
+      "identifier": "02428298",
+      "base_model": "X2H v3 Mini"
     },
     "mouse-pulsar-x2h": {
       "brand": "Pulsar",
@@ -3289,7 +3587,8 @@
       "added_at": "2026-02-15T03:50:01.124Z",
       "added_by": "seed",
       "id": 301,
-      "identifier": "8b8e1987"
+      "identifier": "8b8e1987",
+      "base_model": "X2H"
     },
     "mouse-pulsar-x2h-medium": {
       "brand": "Pulsar",
@@ -3300,7 +3599,8 @@
       "added_at": "2026-02-15T03:50:01.152Z",
       "added_by": "seed",
       "id": 302,
-      "identifier": "e3aa14d4"
+      "identifier": "e3aa14d4",
+      "base_model": "X2H Medium"
     },
     "mouse-pulsar-x2h-wired": {
       "brand": "Pulsar",
@@ -3311,7 +3611,8 @@
       "added_at": "2026-02-15T03:50:01.174Z",
       "added_by": "seed",
       "id": 303,
-      "identifier": "eb51d393"
+      "identifier": "eb51d393",
+      "base_model": "X2H Wired"
     },
     "mouse-pulsar-x2h-mini": {
       "brand": "Pulsar",
@@ -3322,7 +3623,8 @@
       "added_at": "2026-02-15T03:50:01.203Z",
       "added_by": "seed",
       "id": 304,
-      "identifier": "e4d8d7b3"
+      "identifier": "e4d8d7b3",
+      "base_model": "X2H Mini"
     },
     "mouse-pulsar-x2h-es": {
       "brand": "Pulsar",
@@ -3333,7 +3635,8 @@
       "added_at": "2026-02-15T03:50:01.224Z",
       "added_by": "seed",
       "id": 305,
-      "identifier": "48a74f60"
+      "identifier": "48a74f60",
+      "base_model": "X2H eS"
     },
     "mouse-pulsar-founders-edition-x2h": {
       "brand": "Pulsar",
@@ -3344,7 +3647,8 @@
       "added_at": "2026-02-15T03:50:01.300Z",
       "added_by": "seed",
       "id": 306,
-      "identifier": "d5a99d9e"
+      "identifier": "d5a99d9e",
+      "base_model": "[Founders Edition] X2H"
     },
     "mouse-pulsar-founders-edition-x2h-mini": {
       "brand": "Pulsar",
@@ -3355,7 +3659,8 @@
       "added_at": "2026-02-15T03:50:01.375Z",
       "added_by": "seed",
       "id": 307,
-      "identifier": "142b19ff"
+      "identifier": "142b19ff",
+      "base_model": "[Founders Edition] X2H Mini"
     },
     "mouse-pulsar-founders-edition-x2h-es": {
       "brand": "Pulsar",
@@ -3366,7 +3671,8 @@
       "added_at": "2026-02-15T03:50:01.471Z",
       "added_by": "seed",
       "id": 308,
-      "identifier": "b57f27c4"
+      "identifier": "b57f27c4",
+      "base_model": "[Founders Edition] X2H eS"
     },
     "mouse-pulsar-x2a-v3": {
       "brand": "Pulsar",
@@ -3377,7 +3683,8 @@
       "added_at": "2026-02-15T03:50:01.511Z",
       "added_by": "seed",
       "id": 309,
-      "identifier": "ed950e65"
+      "identifier": "ed950e65",
+      "base_model": "X2A v3"
     },
     "mouse-pulsar-x2a-wired": {
       "brand": "Pulsar",
@@ -3388,29 +3695,32 @@
       "added_at": "2026-02-15T03:50:01.542Z",
       "added_by": "seed",
       "id": 310,
-      "identifier": "c0623650"
+      "identifier": "c0623650",
+      "base_model": "X2A Wired"
     },
     "mouse-pulsar-founders-edition-x2a-es": {
       "brand": "Pulsar",
       "model": "[Founders Edition] X2A eS",
-      "variant": "",
+      "variant": "[Founders Edition] eS",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:01.558Z",
       "added_by": "seed",
       "id": 311,
-      "identifier": "93b4d312"
+      "identifier": "93b4d312",
+      "base_model": "X2A"
     },
     "mouse-pulsar-x2a-es": {
       "brand": "Pulsar",
       "model": "X2A eS",
-      "variant": "",
+      "variant": "eS",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:01.576Z",
       "added_by": "seed",
       "id": 312,
-      "identifier": "14751a57"
+      "identifier": "14751a57",
+      "base_model": "X2A"
     },
     "mouse-pulsar-x2a-mini": {
       "brand": "Pulsar",
@@ -3421,7 +3731,8 @@
       "added_at": "2026-02-15T03:50:01.602Z",
       "added_by": "seed",
       "id": 313,
-      "identifier": "f0a37ee8"
+      "identifier": "f0a37ee8",
+      "base_model": "X2A Mini"
     },
     "mouse-pulsar-x2a": {
       "brand": "Pulsar",
@@ -3432,7 +3743,8 @@
       "added_at": "2026-02-15T03:50:01.618Z",
       "added_by": "seed",
       "id": 314,
-      "identifier": "a7ca85e8"
+      "identifier": "a7ca85e8",
+      "base_model": "X2A"
     },
     "mouse-pulsar-xlite-v4": {
       "brand": "Pulsar",
@@ -3443,7 +3755,8 @@
       "added_at": "2026-02-15T03:50:01.636Z",
       "added_by": "seed",
       "id": 315,
-      "identifier": "03db7b1e"
+      "identifier": "03db7b1e",
+      "base_model": "Xlite v4"
     },
     "mouse-pulsar-xlite-v4-large": {
       "brand": "Pulsar",
@@ -3454,7 +3767,8 @@
       "added_at": "2026-02-15T03:50:01.651Z",
       "added_by": "seed",
       "id": 316,
-      "identifier": "7d593cd9"
+      "identifier": "7d593cd9",
+      "base_model": "Xlite v4 Large"
     },
     "mouse-pulsar-xlite-v4-mini": {
       "brand": "Pulsar",
@@ -3465,7 +3779,8 @@
       "added_at": "2026-02-15T03:50:01.668Z",
       "added_by": "seed",
       "id": 317,
-      "identifier": "c2c1f00b"
+      "identifier": "c2c1f00b",
+      "base_model": "Xlite v4 Mini"
     },
     "mouse-pulsar-xlite-v4-es": {
       "brand": "Pulsar",
@@ -3476,7 +3791,8 @@
       "added_at": "2026-02-15T03:50:01.684Z",
       "added_by": "seed",
       "id": 318,
-      "identifier": "ec9669d4"
+      "identifier": "ec9669d4",
+      "base_model": "Xlite v4 eS"
     },
     "mouse-pulsar-xlite-wired": {
       "brand": "Pulsar",
@@ -3487,7 +3803,8 @@
       "added_at": "2026-02-15T03:50:01.783Z",
       "added_by": "seed",
       "id": 319,
-      "identifier": "ca28de65"
+      "identifier": "ca28de65",
+      "base_model": "Xlite Wired"
     },
     "mouse-pulsar-founders-edition-xlite-v3-es": {
       "brand": "Pulsar",
@@ -3498,7 +3815,8 @@
       "added_at": "2026-02-15T03:50:01.883Z",
       "added_by": "seed",
       "id": 320,
-      "identifier": "79710aca"
+      "identifier": "79710aca",
+      "base_model": "[Founders Edition] Xlite v3 eS"
     },
     "mouse-pulsar-xlite-v3-large": {
       "brand": "Pulsar",
@@ -3509,7 +3827,8 @@
       "added_at": "2026-02-15T03:50:01.941Z",
       "added_by": "seed",
       "id": 321,
-      "identifier": "4f6ef937"
+      "identifier": "4f6ef937",
+      "base_model": "Xlite v3 Large"
     },
     "mouse-pulsar-xlite-v3-medium": {
       "brand": "Pulsar",
@@ -3520,7 +3839,8 @@
       "added_at": "2026-02-15T03:50:01.964Z",
       "added_by": "seed",
       "id": 322,
-      "identifier": "af049bc3"
+      "identifier": "af049bc3",
+      "base_model": "Xlite v3 Medium"
     },
     "mouse-pulsar-xlite-v3-mini": {
       "brand": "Pulsar",
@@ -3531,7 +3851,8 @@
       "added_at": "2026-02-15T03:50:01.981Z",
       "added_by": "seed",
       "id": 323,
-      "identifier": "a539b9da"
+      "identifier": "a539b9da",
+      "base_model": "Xlite v3 Mini"
     },
     "mouse-pulsar-xlite-v3-es": {
       "brand": "Pulsar",
@@ -3542,7 +3863,8 @@
       "added_at": "2026-02-15T03:50:01.997Z",
       "added_by": "seed",
       "id": 324,
-      "identifier": "81c621ba"
+      "identifier": "81c621ba",
+      "base_model": "Xlite v3 eS"
     },
     "mouse-pulsar-xlite-v2": {
       "brand": "Pulsar",
@@ -3553,7 +3875,8 @@
       "added_at": "2026-02-15T03:50:02.013Z",
       "added_by": "seed",
       "id": 325,
-      "identifier": "65b04193"
+      "identifier": "65b04193",
+      "base_model": "Xlite v2"
     },
     "mouse-pulsar-xlite-v2-mini": {
       "brand": "Pulsar",
@@ -3564,7 +3887,8 @@
       "added_at": "2026-02-15T03:50:02.032Z",
       "added_by": "seed",
       "id": 326,
-      "identifier": "69afb17a"
+      "identifier": "69afb17a",
+      "base_model": "Xlite v2 Mini"
     },
     "mouse-pulsar-first-edition-feinmann-f01": {
       "brand": "Pulsar",
@@ -3575,7 +3899,8 @@
       "added_at": "2026-02-15T03:50:02.050Z",
       "added_by": "seed",
       "id": 327,
-      "identifier": "e01b1b6d"
+      "identifier": "e01b1b6d",
+      "base_model": "[First Edition] Feinmann F01"
     },
     "mouse-pwnage-trinity-cf": {
       "brand": "Pwnage",
@@ -3586,51 +3911,56 @@
       "added_at": "2026-02-15T03:50:02.065Z",
       "added_by": "seed",
       "id": 328,
-      "identifier": "532bf4ac"
+      "identifier": "532bf4ac",
+      "base_model": "Trinity CF"
     },
     "mouse-pwnage-stormbreaker-max-cf": {
       "brand": "Pwnage",
       "model": "StormBreaker MAX CF",
-      "variant": "",
+      "variant": "MAX CF",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:02.082Z",
       "added_by": "seed",
       "id": 329,
-      "identifier": "b7396841"
+      "identifier": "b7396841",
+      "base_model": "StormBreaker"
     },
     "mouse-pwnage-stormbreaker-8k": {
       "brand": "Pwnage",
       "model": "StormBreaker 8k",
-      "variant": "",
+      "variant": "8k",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:02.098Z",
       "added_by": "seed",
       "id": 330,
-      "identifier": "878cdf4a"
+      "identifier": "878cdf4a",
+      "base_model": "StormBreaker"
     },
     "mouse-pwnage-stormbreaker-x-whzy-max-cf": {
       "brand": "Pwnage",
       "model": "StormBreaker x Whzy MAX CF",
-      "variant": "",
+      "variant": "x Whzy MAX CF",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:02.126Z",
       "added_by": "seed",
       "id": 331,
-      "identifier": "546fcf6f"
+      "identifier": "546fcf6f",
+      "base_model": "StormBreaker"
     },
     "mouse-pwnage-stormbreaker-x-blg-valorant": {
       "brand": "Pwnage",
       "model": "StormBreaker X BLG Valorant",
-      "variant": "",
+      "variant": "X BLG Valorant",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:02.141Z",
       "added_by": "seed",
       "id": 332,
-      "identifier": "fbdc9a44"
+      "identifier": "fbdc9a44",
+      "base_model": "StormBreaker"
     },
     "mouse-pwnage-ultra-custom-wireless-ambi": {
       "brand": "Pwnage",
@@ -3641,7 +3971,8 @@
       "added_at": "2026-02-15T03:50:02.157Z",
       "added_by": "seed",
       "id": 333,
-      "identifier": "81767df7"
+      "identifier": "81767df7",
+      "base_model": "Ultra Custom Wireless Ambi"
     },
     "mouse-pwnage-ultra-custom-ergo": {
       "brand": "Pwnage",
@@ -3652,7 +3983,8 @@
       "added_at": "2026-02-15T03:50:02.175Z",
       "added_by": "seed",
       "id": 334,
-      "identifier": "43b6613f"
+      "identifier": "43b6613f",
+      "base_model": "Ultra Custom Ergo"
     },
     "mouse-pwnage-ultra-custom-wireless-ergo-gen-2": {
       "brand": "Pwnage",
@@ -3663,7 +3995,8 @@
       "added_at": "2026-02-15T03:50:02.191Z",
       "added_by": "seed",
       "id": 335,
-      "identifier": "50e49039"
+      "identifier": "50e49039",
+      "base_model": "Ultra Custom Wireless Ergo Gen 2"
     },
     "mouse-pwnage-ultra-custom-wireless-symm-1-gen-2": {
       "brand": "Pwnage",
@@ -3674,7 +4007,8 @@
       "added_at": "2026-02-15T03:50:02.204Z",
       "added_by": "seed",
       "id": 336,
-      "identifier": "847ccad2"
+      "identifier": "847ccad2",
+      "base_model": "Ultra Custom Wireless Symm 1 Gen 2"
     },
     "mouse-pwnage-ultra-custom-wireless-symm-2": {
       "brand": "Pwnage",
@@ -3685,7 +4019,8 @@
       "added_at": "2026-02-15T03:50:02.220Z",
       "added_by": "seed",
       "id": 337,
-      "identifier": "5e1092cf"
+      "identifier": "5e1092cf",
+      "base_model": "Ultra Custom Wireless Symm 2"
     },
     "mouse-pwnage-ultra-custom-symm-2": {
       "brand": "Pwnage",
@@ -3696,7 +4031,8 @@
       "added_at": "2026-02-15T03:50:02.236Z",
       "added_by": "seed",
       "id": 338,
-      "identifier": "ee655502"
+      "identifier": "ee655502",
+      "base_model": "Ultra Custom Symm 2"
     },
     "mouse-pwnage-ultra-custom-symm": {
       "brand": "Pwnage",
@@ -3707,7 +4043,8 @@
       "added_at": "2026-02-15T03:50:02.254Z",
       "added_by": "seed",
       "id": 339,
-      "identifier": "83cc269f"
+      "identifier": "83cc269f",
+      "base_model": "Ultra Custom Symm"
     },
     "mouse-cooler-master-mm730": {
       "brand": "Cooler Master",
@@ -3718,7 +4055,8 @@
       "added_at": "2026-02-15T03:50:02.272Z",
       "added_by": "seed",
       "id": 340,
-      "identifier": "4a756528"
+      "identifier": "4a756528",
+      "base_model": "MM730"
     },
     "mouse-cooler-master-mm731": {
       "brand": "Cooler Master",
@@ -3729,42 +4067,46 @@
       "added_at": "2026-02-15T03:50:02.288Z",
       "added_by": "seed",
       "id": 341,
-      "identifier": "8048f950"
+      "identifier": "8048f950",
+      "base_model": "MM731"
     },
     "mouse-razer-deathadder-v4-pro": {
       "brand": "Razer",
       "model": "Deathadder V4 Pro",
-      "variant": "",
+      "variant": "V4 Pro",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:50:02.318Z",
       "added_by": "seed",
       "id": 342,
-      "identifier": "343eb2f8"
+      "identifier": "343eb2f8",
+      "base_model": "Deathadder"
     },
     "mouse-acer-cestus-335": {
       "brand": "Acer",
       "model": "Cestus 335",
-      "variant": "",
+      "variant": "335",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:54.853Z",
       "added_by": "seed",
       "id": 8,
       "identifier": "5b2844dc",
-      "updated_at": "2026-02-15T22:13:32.008Z"
+      "updated_at": "2026-02-15T22:13:32.008Z",
+      "base_model": "Cestus"
     },
     "mouse-acer-cestus-350": {
       "brand": "Acer",
       "model": "Cestus 350",
-      "variant": "",
+      "variant": "350",
       "status": "active",
       "seed_urls": [],
       "added_at": "2026-02-15T03:49:54.873Z",
       "added_by": "seed",
       "id": 9,
       "identifier": "3186be5c",
-      "updated_at": "2026-02-15T22:28:52.248Z"
+      "updated_at": "2026-02-15T22:28:52.248Z",
+      "base_model": "Cestus"
     },
     "mouse-steelseries-aerox-9": {
       "brand": "SteelSeries",
@@ -3775,7 +4117,8 @@
       "added_at": "2026-03-10T05:56:01.320Z",
       "added_by": "manual",
       "id": 343,
-      "identifier": "4bff34cf"
+      "identifier": "4bff34cf",
+      "base_model": "Aerox 9"
     }
   }
 }

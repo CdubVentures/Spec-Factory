@@ -31,6 +31,8 @@ export function workerStateBadgeClass(state: string): string {
       return 'sf-chip-danger animate-pulse';
     case 'running':
       return 'sf-chip-info';
+    case 'queued':
+      return 'sf-chip-neutral opacity-50';
     case 'idle':
       return 'sf-chip-neutral';
     default:
@@ -548,8 +550,9 @@ export function prefetchTabAccent(tab: string): string {
     case 'query_journey': return 'sf-prefetch-tab-selected-info';
     case 'brand_resolver':
     case 'search_planner':
-    case 'serp_triage':
+    case 'serp_selector':
     case 'domain_classifier': return 'sf-prefetch-tab-selected-warning';
     default: return 'sf-prefetch-tab-selected-neutral';
   }
 }
+

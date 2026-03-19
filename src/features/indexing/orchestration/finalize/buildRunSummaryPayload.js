@@ -56,8 +56,6 @@ export function buildRunSummaryPayload({
   llmContext = {},
   llmCallCount = 0,
   llmCostUsd = 0,
-  llmBudgetSnapshot = {},
-  llmBudgetBlockedReason = null,
   aggressiveExtraction = {},
   categoryConfig = {},
   fetcherMode = '',
@@ -100,8 +98,6 @@ export function buildRunSummaryPayload({
   buildTopEvidenceReferencesFn,
   nowIsoFn = () => new Date().toISOString(),
 } = {}) {
-  const llmBudgetLimits = llmBudgetSnapshot.limits || {};
-  const llmBudgetState = llmBudgetSnapshot.state || {};
   const helperRootKey = `helper${'FilesRoot'}`;
   const helperRoot = config[helperRootKey] || legacyRootFallback;
 
@@ -174,9 +170,6 @@ export function buildRunSummaryPayload({
       llmContext,
       llmCallCount,
       llmCostUsd,
-      llmBudgetLimits,
-      llmBudgetState,
-      llmBudgetBlockedReason,
       aggressiveExtraction,
       categoryConfig,
       fetcherMode,

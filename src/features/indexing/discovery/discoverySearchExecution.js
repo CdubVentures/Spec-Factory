@@ -238,11 +238,28 @@ export async function executeSearchQueries({
           query,
           provider: config.searchEngines
         });
+        // WHY: screenshotSink persists Google Crawlee SERP screenshots to
+        // {indexLabRoot}/{runId}/screenshots/{filename} — the same directory
+        // the asset route resolves via buildRuntimeAssetCandidatePaths.
+        let _googleScreenshotFilename = '';
+        const screenshotSink = async ({ buffer, queryHash, query: q, ts }) => {
+          try {
+            const filename = `google-serp-${queryHash}-${(ts || '').replace(/[:.]/g, '-')}.jpeg`;
+            const screenshotDir = _p4aPath.join(_p4aDefaultIndexLabRoot(), runId, 'screenshots');
+            _p4aFs.mkdirSync(screenshotDir, { recursive: true });
+            _p4aFs.writeFileSync(_p4aPath.join(screenshotDir, filename), buffer);
+            _googleScreenshotFilename = filename;
+            logger?.info?.('google_crawlee_screenshot_saved', { query: q, filename, bytes: buffer.length });
+          } catch (err) {
+            logger?.warn?.('google_crawlee_screenshot_save_failed', { query: q, message: err.message });
+          }
+        };
         let providerResults = await runSearchProvidersFn({
           config,
           query,
           limit: resultsPerQuery,
-          logger
+          logger,
+          screenshotSink,
         });
         let reasonCode = 'internet_search';
         // WHY: Search-first — zero results from provider → try learned URLs
@@ -311,6 +328,7 @@ export async function executeSearchQueries({
             query,
             provider: resolvedProvider,
             dedupe_count: 0,
+            screenshot_filename: _googleScreenshotFilename || '',
             results: providerResults.slice(0, 30).map((r, idx) => {
               const rawUrl = String(r?.url || '').trim();
               let domain = '';

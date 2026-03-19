@@ -1,5 +1,6 @@
 {
   "category": "mouse",
+  "publish_gate": "required_complete",
   "component_db_sources": {
     "encoder": {
       "entity_count": 40,
@@ -11626,8 +11627,8 @@
       ]
     }
   },
-  "publish_gate": "required_complete",
   "source_context": "field_studio_map",
+  "version": "field_rules_mouse_compiled_v1",
   "source_tabs": {
     "data_values": {
       "notes": "Observed values across products; can be used for suggestion/inference but not strict enums.",
@@ -11653,6 +11654,5 @@
       "notes": "Entity source sheet mapped by column roles (primary identifier, maker, aliases, links, properties).",
       "role": "component_db:switch"
     }
-  },
-  "version": "field_rules_mouse_compiled_v1"
+  }
 }

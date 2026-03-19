@@ -164,7 +164,6 @@ export function buildRunProductFinalizationContext({
     identityLock,
     learnedFieldAvailability: bootstrapState.learnedFieldAvailability,
     learnedFieldYield: bootstrapState.learnedFieldYield,
-    llmBudgetGuard: bootstrapState.llmBudgetGuard,
     phase08BatchRows: bootstrapState.phase08BatchRows,
     phase08FieldContexts: bootstrapState.phase08FieldContexts,
     phase08PrimeRows: bootstrapState.phase08PrimeRows,

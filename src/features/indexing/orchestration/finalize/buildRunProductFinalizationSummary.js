@@ -4,7 +4,6 @@ import { buildRunSummaryPayload } from './buildRunSummaryPayload.js';
 
 export function buildRunProductFinalizationSummary({
   llmRuntime,
-  llmBudgetGuard,
   productId = '',
   runId = '',
   category = '',
@@ -54,7 +53,6 @@ export function buildRunProductFinalizationSummary({
   llmSourcesUsed = 0,
   contribution = {},
   llmContext = {},
-  llmBudgetBlockedReason = '',
   aggressiveExtraction = null,
   categoryConfig = {},
   fetcherMode = '',
@@ -104,8 +102,6 @@ export function buildRunProductFinalizationSummary({
     llmEstimatedUsageCount,
     llmRetryWithoutSchemaCount,
   } = llmRuntime.getUsageState();
-  const llmBudgetSnapshot = llmBudgetGuard.snapshot();
-
   const summary = buildRunSummaryPayloadFn({
     ...buildRunSummaryPayloadContextFn({
       ...buildRunSummaryPayloadPhaseCallsiteContextFn({
@@ -162,8 +158,6 @@ export function buildRunProductFinalizationSummary({
         llmContext,
         llmCallCount,
         llmCostUsd,
-        llmBudgetSnapshot,
-        llmBudgetBlockedReason,
         aggressiveExtraction,
         categoryConfig,
         fetcherMode,
@@ -213,6 +207,5 @@ export function buildRunProductFinalizationSummary({
     llmCostUsd,
     llmEstimatedUsageCount,
     llmRetryWithoutSchemaCount,
-    llmBudgetSnapshot,
   };
 }

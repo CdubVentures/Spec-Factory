@@ -1,11 +1,24 @@
 import { SEARXNG_AVAILABLE_ENGINES } from '../../../shared/settingsDefaults.js';
 
+// WHY: Our app uses 'google-proxy' but SearXNG knows it as 'startpage'.
+// Translate at the SearXNG boundary so both sides use their own vocabulary.
+const TO_SEARXNG = { 'google-proxy': 'startpage' };
+const FROM_SEARXNG = { startpage: 'google-proxy' };
+
+function toSearxngEngines(csv) {
+  return csv.split(',').map(e => TO_SEARXNG[e] || e).join(',');
+}
+
+function fromSearxngEngine(name) {
+  return FROM_SEARXNG[name] || name;
+}
+
 // WHY: Legacy migration map for old searchProvider enum values → new searchEngines CSV.
 const LEGACY_MIGRATION_MAP = {
   dual: 'bing,google',
   google: 'google',
   bing: 'bing',
-  searxng: 'bing,startpage,duckduckgo',
+  searxng: 'bing,google-proxy,duckduckgo',
   none: '',
 };
 
@@ -126,7 +139,12 @@ async function acquireSearchSlot({
 
 // Module-level pacing to prevent upstream engine rate-limiting (CAPTCHA/ban).
 // SearXNG fans out across upstream engines, so rapid queries trigger bans.
-let _lastSearxngQueryMs = 0;
+// WHY: Uses a serialized promise chain instead of a shared timestamp.
+// A shared timestamp has a race condition: all concurrent queries read the same
+// value, compute the same sleep, and wake simultaneously — bursting SearXNG.
+// The promise chain ensures each query waits for the previous one's pacing to
+// complete before starting its own, regardless of concurrency.
+let _searxngPaceChain = Promise.resolve();
 const SEARXNG_MIN_QUERY_INTERVAL_MS = 2_000;
 
 function resolveSearxngMinQueryIntervalMs(value) {
@@ -135,6 +153,18 @@ function resolveSearxngMinQueryIntervalMs(value) {
     return SEARXNG_MIN_QUERY_INTERVAL_MS;
   }
   return parsed;
+}
+
+function acquireSearxngPaceSlot(minIntervalMs) {
+  if (minIntervalMs <= 0) return Promise.resolve();
+  return new Promise((resolve) => {
+    _searxngPaceChain = _searxngPaceChain.then(async () => {
+      const jitterMs = Math.floor(Math.random() * minIntervalMs * 0.5);
+      const delayMs = minIntervalMs + jitterMs;
+      await new Promise((r) => setTimeout(r, delayMs));
+      resolve();
+    });
+  });
 }
 
 export async function searchSearxng({
@@ -159,18 +189,12 @@ export async function searchSearxng({
     baseUrl,
     fallbackKey: '127.0.0.1'
   });
-  // WHY: Fixed-interval queries are trivially detected as bot traffic by upstream
-  // engines (Bing, Startpage). Adding random jitter (0–50% of base interval)
-  // makes the timing pattern look more human and reduces CAPTCHA triggers.
+  // WHY: Serialized pacing via promise chain. Each query waits for the previous
+  // one to finish its delay before starting. Prevents concurrent queries from
+  // bursting SearXNG simultaneously (the old timestamp-based approach had a race
+  // condition where all concurrent queries read the same timestamp and woke together).
   const minIntervalMs = resolveSearxngMinQueryIntervalMs(minQueryIntervalMs);
-  const jitterMs = Math.floor(Math.random() * minIntervalMs * 0.5);
-  const targetIntervalMs = minIntervalMs + jitterMs;
-  const now = Date.now();
-  const elapsed = now - _lastSearxngQueryMs;
-  if (elapsed < targetIntervalMs) {
-    await new Promise((r) => setTimeout(r, targetIntervalMs - elapsed));
-  }
-  _lastSearxngQueryMs = Date.now();
+  await acquireSearxngPaceSlot(minIntervalMs);
   const url = new URL('/search', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`);
   url.searchParams.set('q', query);
   url.searchParams.set('format', 'json');
@@ -178,7 +202,7 @@ export async function searchSearxng({
   url.searchParams.set('safesearch', '0');
   const normalizedEngines = String(engines || '').trim();
   if (normalizedEngines) {
-    url.searchParams.set('engines', normalizedEngines);
+    url.searchParams.set('engines', toSearxngEngines(normalizedEngines));
   }
 
   const controller = new AbortController();
@@ -192,14 +216,17 @@ export async function searchSearxng({
       return [];
     }
     const payload = await response.json();
-    return (payload.results || []).slice(0, Math.max(1, Number(limit || 10))).map((item) => ({
-      url: item.url,
-      title: item.title || '',
-      snippet: item.content || item.snippet || '',
-      provider: item.engine || (Array.isArray(item.engines) && item.engines[0]) || String(provider || 'searxng').trim() || 'searxng',
-      engines: Array.isArray(item.engines) ? item.engines : [],
-      query
-    }));
+    return (payload.results || []).slice(0, Math.max(1, Number(limit || 10))).map((item) => {
+      const rawEngine = item.engine || (Array.isArray(item.engines) && item.engines[0]) || String(provider || 'searxng').trim() || 'searxng';
+      return {
+        url: item.url,
+        title: item.title || '',
+        snippet: item.content || item.snippet || '',
+        provider: fromSearxngEngine(rawEngine),
+        engines: Array.isArray(item.engines) ? item.engines.map(fromSearxngEngine) : [],
+        query,
+      };
+    });
   } finally {
     clearTimeout(timeout);
   }
@@ -239,21 +266,100 @@ async function attemptSearch({ searxBase, engines, query, limit, config, logger,
   }
 }
 
+// WHY: Parses the googleSearchProxyUrlsJson setting into a string array.
+function parseProxyUrlList(jsonStr) {
+  if (!jsonStr) return [];
+  try {
+    const parsed = JSON.parse(jsonStr);
+    return Array.isArray(parsed) ? parsed.filter(u => typeof u === 'string' && u.trim()) : [];
+  } catch { return []; }
+}
+
+// WHY: Splits engine list into google (Crawlee) vs SearXNG-routed engines.
+function splitEnginesByTransport(engineList) {
+  const google = engineList.filter(e => e === 'google');
+  const searxng = engineList.filter(e => e !== 'google');
+  return { google, searxng };
+}
+
+// WHY: Attempts a Google search via fetch or Crawlee browser (based on screenshotsEnabled).
+async function attemptGoogleCrawlee({ query, limit, config, logger, requestThrottler, _searchGoogleFn, screenshotSink }) {
+  try {
+    const searchFn = _searchGoogleFn || (await import('./searchGoogle.js')).searchGoogle;
+    const result = await searchFn({
+      query,
+      limit,
+      timeoutMs: config.googleSearchTimeoutMs,
+      proxyUrls: parseProxyUrlList(config.googleSearchProxyUrlsJson),
+      minQueryIntervalMs: config.googleSearchMinQueryIntervalMs,
+      maxRetries: config.googleSearchMaxRetries,
+      screenshotsEnabled: config.googleSearchScreenshotsEnabled,
+      logger,
+      requestThrottler,
+    });
+    const googleResults = result?.results || [];
+    if (googleResults.length === 0) {
+      logger?.warn?.('google_crawlee_zero_results', { query, has_screenshot: Boolean(result?.screenshot) });
+    }
+    if (result?.proxyKB !== undefined) {
+      logger?.info?.('google_search_proxy_bandwidth', {
+        query, proxyKB: result.proxyKB,
+        mode: config.googleSearchScreenshotsEnabled ? 'browser' : 'fetch',
+      });
+    }
+    // WHY: Screenshot buffer is a side-channel — pass to sink for persistence
+    // without changing the result array contract.
+    if (result?.screenshot && typeof screenshotSink === 'function') {
+      await screenshotSink({ ...result.screenshot, query }).catch(() => {});
+    }
+    return googleResults;
+  } catch (error) {
+    logger?.warn?.('google_crawlee_search_failed', { query, message: error.message, stack: String(error.stack || '').slice(0, 300) });
+    return [];
+  }
+}
+
+// WHY: Dispatches a mixed engine list — google goes through Crawlee,
+// everything else through SearXNG. Results are merged and deduped.
+async function dispatchEngines({ engineList, searxBase, query, limit, config, logger, requestThrottler, _searchGoogleFn, screenshotSink }) {
+  const { google, searxng } = splitEnginesByTransport(engineList);
+  const promises = [];
+
+  if (google.length > 0) {
+    promises.push(attemptGoogleCrawlee({ query, limit, config, logger, requestThrottler, _searchGoogleFn, screenshotSink }));
+  }
+
+  if (searxng.length > 0 && searxBase) {
+    promises.push(attemptSearch({ searxBase, engines: searxng.join(','), query, limit, config, logger, requestThrottler }));
+  }
+
+  const resultSets = await Promise.all(promises);
+  return dedupeResults(resultSets.flat());
+}
+
 export async function runSearchProviders({
   config,
   query,
   limit = 10,
   logger,
-  requestThrottler
+  requestThrottler,
+  _searchGoogleFn,
+  screenshotSink,
 }) {
   const engines = normalizeSearchEngines(config.searchEngines ?? config.searchProvider);
   if (!engines) return [];
 
+  const engineList = engines.split(',');
+  const { google, searxng } = splitEnginesByTransport(engineList);
   const searxBase = searxngBaseUrl(config);
-  if (!searxBase) return [];
+
+  // Need at least one viable path: google engines OR (searxng engines + searxng base)
+  const hasGooglePath = google.length > 0;
+  const hasSearxngPath = searxng.length > 0 && Boolean(searxBase);
+  if (!hasGooglePath && !hasSearxngPath) return [];
 
   // Primary attempt
-  const primaryResults = await attemptSearch({ searxBase, engines, query, limit, config, logger, requestThrottler });
+  const primaryResults = await dispatchEngines({ engineList, searxBase, query, limit, config, logger, requestThrottler, _searchGoogleFn, screenshotSink });
   if (primaryResults.length > 0) return primaryResults;
 
   // Fallback attempt — only if primary returned nothing usable
@@ -266,7 +372,8 @@ export async function runSearchProviders({
     fallback_engines: fallbackEngines,
   });
 
-  return attemptSearch({ searxBase, engines: fallbackEngines, query, limit, config, logger, requestThrottler });
+  const fallbackList = fallbackEngines.split(',');
+  return dispatchEngines({ engineList: fallbackList, searxBase, query, limit, config, logger, requestThrottler, _searchGoogleFn, screenshotSink });
 }
 
 export function searchEngineAvailability(config) {
@@ -276,20 +383,32 @@ export function searchEngineAvailability(config) {
   const fallbackEngines = normalizeSearchEngines(config.searchEnginesFallback);
   const fallbackEngineList = fallbackEngines ? fallbackEngines.split(',') : [];
   const searxngReady = Boolean(searxngBaseUrl(config));
+  const { google, searxng } = splitEnginesByTransport(engineList);
+
+  // WHY: Google goes through Crawlee — it's ready if configured, independent of SearXNG.
+  const googleReady = google.length > 0;
+  // WHY: SearXNG engines need both SearXNG running AND engines configured.
+  const searxngEnginesReady = searxngReady && searxng.length > 0;
+  // WHY: Internet is ready if we have ANY viable search path.
+  const internetReady = googleReady || searxngEnginesReady;
+  const activeProviders = [
+    ...(googleReady ? google : []),
+    ...(searxngEnginesReady ? searxng : []),
+  ];
 
   return {
     // WHY: Keep legacy field names for downstream log compat
     provider: engines || 'none',
     engines: engineList,
     bing_ready: searxngReady && engineList.includes('bing'),
-    google_ready: searxngReady && engineList.includes('google'),
-    google_search_ready: searxngReady && engineList.includes('google'),
+    google_ready: googleReady,
+    google_search_ready: googleReady,
     searxng_ready: searxngReady,
-    active_providers: searxngReady ? engineList : [],
+    active_providers: activeProviders,
     fallback_engines: fallbackEngineList,
-    fallback_ready: searxngReady && fallbackEngineList.length > 0,
+    fallback_ready: (searxngReady && fallbackEngineList.some(e => e !== 'google')) || fallbackEngineList.includes('google'),
     fallback_reason: null,
-    internet_ready: searxngReady && engineList.length > 0
+    internet_ready: internetReady,
   };
 }
 

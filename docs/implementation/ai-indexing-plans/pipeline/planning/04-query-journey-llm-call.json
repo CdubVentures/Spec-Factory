@@ -1,49 +1,51 @@
 {
-  "_doc": "LLM surfaces used by the live Stage 04/06 discovery path. After the rework there are two optional routed LLM calls in this area: the fallback query planner and the SERP reranker. Updated 2026-03-18.",
-  "query_journey_fallback_planner": {
-    "function": "planUberQueries()",
-    "source_file": "src/research/queryPlanner.js",
-    "reason": "search_planner",
-    "role": "plan",
-    "gate": "Used only when Schema 4 is disabled or fewer than 6 guarded Schema 4 queries survive. No routed plan key returns deterministic fallback queries.",
-    "payload": {
-      "identity_lock": "brand, model, variant, product_id",
-      "missing_fields": "grouped field inventory with uncovered_search_worthy hints",
-      "missing_critical_fields": "top critical unresolved fields",
-      "base_queries": "deterministic fallback query set",
-      "frontier_summary": "frontier cache snapshot",
-      "archetypes_emitted": "existing archetype coverage hints"
-    },
-    "response": {
-      "queries": "string[]",
-      "preferred_domains": "string[]",
-      "negative_filters": "string[]",
-      "max_queries": "integer",
-      "max_new_domains": "integer",
-      "sitemap_mode_recommended": "boolean"
-    },
-    "failure_mode": "Any gate failure, missing route, empty LLM response, or exception falls back to deterministic queries."
+  "_doc": "There is no Query Journey-owned LLM call in the current implementation.",
+  "validated_against": "2026-03-18",
+  "query_journey_itself": {
+    "llm_call": false,
+    "implemented_by": [
+      "src/features/indexing/discovery/stages/queryJourney.js",
+      "src/features/indexing/discovery/discoveryQueryPlan.js",
+      "src/features/indexing/discovery/searchPlanHandoffAdapter.js"
+    ],
+    "operations": [
+      "merge deterministic, Schema 4, and uber query sources",
+      "dedupeQueryRows()",
+      "prioritizeQueryRows()",
+      "enforceIdentityQueryGuard()",
+      "append guarded host-plan rows",
+      "write planned search_profile"
+    ]
   },
-  "serp_reranker": {
-    "function": "rerankSerpResults()",
-    "source_file": "src/research/serpReranker.js",
-    "reason": "uber_serp_reranker",
-    "role": "plan",
-    "gate": "Runs only when SERP triage is enabled, deterministic quality is insufficient, and routed plan access exists.",
-    "payload": {
-      "identity_lock": "brand, model, variant",
-      "missing_fields": "top unresolved fields",
-      "results": "top deterministic rows with rank, url, host, title, snippet, and score_det"
+  "adjacent_llm_surfaces": [
+    {
+      "surface": "NeedSet Schema 4 planner",
+      "when": "before Query Journey",
+      "owner": "src/indexlab/searchPlanBuilder.js",
+      "reason": "needset_search_planner"
     },
-    "response": {
-      "selected_urls": "Array<{ url, keep, reason?, score? }>"
+    {
+      "surface": "Stage 04 Search Planner",
+      "when": "immediately before Query Journey",
+      "owner": "src/research/queryPlanner.js",
+      "reason": "search_planner"
     },
-    "failure_mode": "Route absence, LLM failure, or empty selections fall back to deterministic ordering. An explicit all-drop response is preserved as an explicit all-drop outcome."
-  },
-  "non_llm_steps": {
-    "convertHandoffToExecutionPlan": "deterministic",
-    "enforceIdentityQueryGuard": "deterministic",
-    "executeSearchQueries": "deterministic orchestration",
-    "processDiscoveryResults hard drops, classification, lane routing, and scoring": "deterministic before any optional rerank"
+    {
+      "surface": "SERP selector / reranker",
+      "when": "after Query Journey",
+      "owner": [
+        "src/features/indexing/discovery/serpSelectorLlmAdapter.js",
+        "src/research/serpReranker.js"
+      ],
+      "reason": [
+        "serp_url_selector",
+        "uber_serp_reranker"
+      ]
+    }
+  ],
+  "current_runtime_values": {
+    "searchProfilePlanned.llm_queries": "Schema 4 query texts plus Search Planner uber query texts",
+    "processDiscoveryResults_llmQueries_arg": "canonical callers currently pass []",
+    "processDiscoveryResults_uberSearchPlan_arg": "canonical callers forward uberSearchPlan or null"
   }
 }

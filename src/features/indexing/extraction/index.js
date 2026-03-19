@@ -69,11 +69,6 @@ export {
   buildDossier,
 } from './dossierBuilder.js';
 
-export {
-  StructuredMetadataClient,
-  createStructuredMetadataClient,
-} from './structuredMetadataClient.js';
-
 export { mergeStructuredMetadataCandidates } from './structuredMetadataMerger.js';
 
 export {

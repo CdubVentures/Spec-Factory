@@ -658,9 +658,7 @@ export function extractCandidatesFromPage({
   embeddedState,
   networkResponses,
   structuredMetadata = null,
-  staticDomExtractorEnabled = true,
   staticDomMode = 'cheerio',
-  htmlTableExtractorV2 = true,
   staticDomTargetMatchThreshold = 0.55,
   staticDomMaxEvidenceSnippets = 120,
   identityTarget = {}
@@ -737,19 +735,16 @@ export function extractCandidatesFromPage({
     },
     auditRejectedFieldCandidates: []
   };
-  if (staticDomExtractorEnabled !== false) {
-    staticDom = extractStaticDomCandidates({
-      html,
-      title,
-      identityTarget,
-      mode: staticDomMode,
-      htmlTableExtractorV2,
-      targetMatchThreshold: staticDomTargetMatchThreshold,
-      maxEvidenceSnippets: staticDomMaxEvidenceSnippets
-    });
-    candidateRows.push(...(staticDom.fieldCandidates || []));
-    mergeIdentityCandidates(identity, staticDom.identityCandidates);
-  }
+  staticDom = extractStaticDomCandidates({
+    html,
+    title,
+    identityTarget,
+    mode: staticDomMode,
+    targetMatchThreshold: staticDomTargetMatchThreshold,
+    maxEvidenceSnippets: staticDomMaxEvidenceSnippets
+  });
+  candidateRows.push(...(staticDom.fieldCandidates || []));
+  mergeIdentityCandidates(identity, staticDom.identityCandidates);
 
   const domFallback = extractDomFallback(html);
   for (const [field, value] of Object.entries(domFallback)) {

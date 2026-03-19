@@ -232,10 +232,34 @@ export function createItemStateStore({ db, category, stmts, expandListLinkValues
     }
   }
 
+  function getItemFieldStateByProductAndField(productId, fieldKey) {
+    const pid = String(productId || '').trim();
+    const fk = String(fieldKey || '').trim();
+    if (!pid || !fk) return null;
+    return db.prepare(
+      'SELECT * FROM item_field_state WHERE category = ? AND product_id = ? AND field_key = ? LIMIT 1'
+    ).get(category, pid, fk) || null;
+  }
+
+  function markItemFieldStateReviewComplete(productId, fieldKey) {
+    const pid = String(productId || '').trim();
+    const fk = String(fieldKey || '').trim();
+    if (!pid || !fk) return;
+    db.prepare(`
+      UPDATE item_field_state
+      SET needs_ai_review = 0,
+          ai_review_complete = 1,
+          updated_at = datetime('now')
+      WHERE category = ? AND product_id = ? AND field_key = ?
+    `).run(category, pid, fk);
+  }
+
   return {
     upsertItemFieldState,
     getItemFieldState,
     getItemFieldStateById,
+    getItemFieldStateByProductAndField,
+    markItemFieldStateReviewComplete,
     upsertItemComponentLink,
     upsertItemListLink,
     removeItemListLinksForField,

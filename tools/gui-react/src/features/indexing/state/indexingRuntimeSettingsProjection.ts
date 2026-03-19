@@ -19,7 +19,6 @@ export interface Phase05RuntimeSettings {
   dynamicFetchRetryBudget: string;
   dynamicFetchRetryBackoffMs: string;
   scannedPdfOcrEnabled: boolean;
-  scannedPdfOcrPromoteCandidates: boolean;
   scannedPdfOcrBackend: RuntimeOcrBackend;
   scannedPdfOcrMaxPages: string;
   scannedPdfOcrMaxPairs: string;
@@ -67,7 +66,6 @@ export function buildIndexingPhase05RuntimeSettings(
     dynamicFetchRetryBudget: toDisplayString(runtimeDraft.dynamicFetchRetryBudget),
     dynamicFetchRetryBackoffMs: toDisplayString(runtimeDraft.dynamicFetchRetryBackoffMs),
     scannedPdfOcrEnabled: runtimeDraft.scannedPdfOcrEnabled,
-    scannedPdfOcrPromoteCandidates: runtimeDraft.scannedPdfOcrPromoteCandidates,
     scannedPdfOcrBackend: runtimeDraft.scannedPdfOcrBackend,
     scannedPdfOcrMaxPages: toDisplayString(runtimeDraft.scannedPdfOcrMaxPages),
     scannedPdfOcrMaxPairs: toDisplayString(runtimeDraft.scannedPdfOcrMaxPairs),

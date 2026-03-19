@@ -8,14 +8,14 @@ test('buildResearchBootstrapContext maps runProduct research bootstrap inputs to
 
   const context = buildResearchBootstrapContext({
     storage: { marker: 'storage' },
-    config: { frontierEnableSqlite: true },
+    config: {},
     logger: { marker: 'logger' },
     createFrontier,
     createUberAggressiveOrchestrator,
   });
 
   assert.deepEqual(context.storage, { marker: 'storage' });
-  assert.deepEqual(context.config, { frontierEnableSqlite: true });
+  assert.deepEqual(context.config, {});
   assert.deepEqual(context.logger, { marker: 'logger' });
   assert.equal(context.createFrontierFn, createFrontier);
   assert.equal(

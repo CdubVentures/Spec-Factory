@@ -1,78 +1,59 @@
 {
-  "_doc": "Stage 04 cumulative discovery input contract. After the orchestration rework, the adapter and guard logic still starts in Query Journey, but the same contract now flows directly into Stage 05 execution and Stage 06 SERP processing inside searchDiscovery.js. Updated 2026-03-18.",
-  "runtime_scope": {
-    "query_journey": "convertHandoffToExecutionPlan() plus enforceIdentityQueryGuard()",
-    "search_results": "executeSearchQueries()",
-    "serp_triage": "processDiscoveryResults()"
+  "_doc": "Live inputs to Stage 05 Query Journey.",
+  "validated_against": "2026-03-18",
+  "owner": "src/features/indexing/discovery/stages/queryJourney.js",
+  "upstream_sources": {
+    "deterministic_profile": "runSearchProfile() / buildSearchProfile()",
+    "schema4_plan": "runSearchPlanner() -> resolveSchema4ExecutionPlan()",
+    "uber_search_plan": "runSearchPlanner() -> planUberQueries()",
+    "host_plan_rows": "buildScoredQueryRowsFromHostPlan() when validatedRegistry is present"
   },
-  "phase_1_handoff_adapter": {
-    "function": "convertHandoffToExecutionPlan(handoff)",
-    "source_file": "src/features/indexing/discovery/searchPlanHandoffAdapter.js",
-    "input": {
-      "queries": "Schema 4 handoff rows with q, query_hash, family, group_key, target_fields, preferred_domains, and exact_match_required"
+  "inputs": {
+    "searchProfileBase": {
+      "base_templates": "string[]",
+      "queries": "string[]",
+      "query_rows": "deterministic query row objects",
+      "variant_guard_terms": "string[]",
+      "query_reject_log": "array"
     },
-    "output": {
-      "queries": "string[] - flat deduped query strings",
-      "queryRows": "Array<RowObject> - source='schema4_planner', domain_hint from the first preferred_domain, doc_hint=''",
-      "selectedQueryRowMap": "Map<lowercase_query, RowObject>",
-      "source": "'schema4'"
-    }
+    "schema4Plan": "guarded Schema 4 execution plan or null",
+    "uberSearchPlan": "Stage 04 Search Planner output or null",
+    "hostPlanQueryRows": "array of scored host-plan rows or []",
+    "variables": {
+      "brand": "string",
+      "model": "string",
+      "variant": "string",
+      "category": "string"
+    },
+    "config": "object",
+    "searchProfileCaps": {
+      "dedupeQueriesCap": "number",
+      "deterministicAliasCap": "number",
+      "llmAliasValidationCap": "number",
+      "llmDocHintQueriesCap": "number",
+      "llmFieldTargetQueriesCap": "number"
+    },
+    "missingFields": "string[]",
+    "planningHints": {
+      "missingCriticalFields": "string[]",
+      "missingRequiredFields": "string[]"
+    },
+    "effectiveHostPlan": "object|null",
+    "categoryConfig": "object",
+    "job": "object",
+    "runId": "string",
+    "logger": "logger|null",
+    "storage": "storage adapter",
+    "brandResolution": "object|null",
+    "searchPlanHandoff": "original Schema 4 handoff with metadata bridge or null"
   },
-  "phase_2_identity_guard": {
-    "function": "enforceIdentityQueryGuard({ rows, variables, variantGuardTerms })",
-    "source_file": "src/features/indexing/discovery/discoveryQueryPlan.js",
-    "input": {
-      "rows": "adapter output rows or fallback query rows",
-      "variables": "{ brand, model, variant, category }",
-      "variantGuardTerms": "optional guard aliases from Search Profile"
-    },
-    "output": {
-      "rows": "filtered rows that still point at the locked product",
-      "rejectLog": "Array<{ query, source, reason, stage:'pre_execution_guard', detail }>",
-      "guardContext": "brandTokens, modelTokens, requiredDigitGroups, allowedModelTokens"
-    }
+  "derived_caps": {
+    "queryLimit": "max(1, config.discoveryMaxQueries || 8)",
+    "mergedQueryCap": "max(queryLimit, 6)",
+    "executionQueryLimit": "max(queryLimit, queries.length)"
   },
-  "phase_3_search_execution": {
-    "function": "executeSearchQueries({ queries, selectedQueryRowMap, profileQueryRowMap, ... })",
-    "source_file": "src/features/indexing/discovery/discoverySearchExecution.js",
-    "input": {
-      "queries": "guarded query strings",
-      "selectedQueryRowMap": "schema4 or fallback row map",
-      "profileQueryRowMap": "planned search-profile query metadata",
-      "config": "searchEngines, discoveryInternalFirst, discoveryInternalMinResults, discoveryResultsPerQuery, discoveryQueryConcurrency, and provider settings",
-      "providerState": "resolved internet provider availability",
-      "frontierDb": "query cooldown cache and query recording",
-      "categoryConfig": "approved hosts, source roles, and field order",
-      "job": "product identity and category context"
-    },
-    "output": {
-      "rawResults": "provider rows from internal corpus, frontier reuse, internet providers, or plan-only fallback",
-      "searchAttempts": "per-query execution records",
-      "searchJournal": "execution timeline rows",
-      "internalSatisfied": "boolean",
-      "externalSearchReason": "string|null"
-    }
-  },
-  "phase_4_result_processing": {
-    "function": "processDiscoveryResults({ rawResults, searchAttempts, searchJournal, ... })",
-    "source_file": "src/features/indexing/discovery/discoveryResultProcessor.js",
-    "input": {
-      "rawResults": "output of executeSearchQueries()",
-      "searchProfilePlanned": "planned profile written before execution",
-      "searchProfileKeys": "storage keys for input/run/latest profile artifacts",
-      "brandResolution": "cache-first brand host hints",
-      "effectiveHostPlan": "optional host-plan policy used by the fallback branch",
-      "focusGroups": "NeedSet pressure signals used for lane quotas",
-      "learning": "yield data and search memory used during scoring"
-    },
-    "subphases": [
-      "dedupeSerpResults() removes cross-provider duplicate URLs",
-      "applyHardDropFilter() rejects protocol, denylist, and cooldown failures before semantic scoring",
-      "classifyUrlCandidate() derives host, rootDomain, tier, role, doc_kind_guess, identity_match_level, variant_guard_hit, and multi_model_hint",
-      "assignSoftLabels() keeps semantic edge cases as annotations instead of immediate drops",
-      "assignLanes(), computeLaneQuotas(), and selectByLaneQuota() choose the selected set",
-      "rerankSerpResults() may reorder the selected set when deterministic quality is insufficient and routed plan access exists",
-      "writeSearchProfileArtifacts() persists the executed search_profile and serp_explorer"
-    ]
-  }
+  "internal_outputs_built_inside_stage": [
+    "profileQueryRowsByQuery map",
+    "searchProfileKeys"
+  ]
 }

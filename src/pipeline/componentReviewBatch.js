@@ -9,7 +9,6 @@ import path from 'node:path';
 import { nowIso } from '../utils/common.js';
 import { componentReviewPath } from '../engine/curationSuggestions.js';
 import { validateComponentMatches } from '../features/indexing/validation/index.js';
-import { createBudgetGuard } from '../billing/budgetGuard.js';
 import { normalizeCostRates } from '../billing/costRates.js';
 
 function isObject(v) {
@@ -83,9 +82,7 @@ export async function runComponentReviewBatch({
   // Load component DBs
   const componentDBs = await loadComponentDBs(helperRoot, category);
 
-  // Budget guard
   const costRates = normalizeCostRates(config);
-  const budgetGuard = createBudgetGuard(config);
 
   // Run AI validation
   const result = await validateComponentMatches({
@@ -93,7 +90,6 @@ export async function runComponentReviewBatch({
     componentDBs,
     config,
     logger,
-    budgetGuard,
     costRates,
   });
 

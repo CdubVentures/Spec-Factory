@@ -117,6 +117,13 @@ test('run view actions publish status and refresh both shared and run-scoped que
   assert.equal(invalidatedKeys.includes(JSON.stringify(['runtime-ops', 'run-123'])), true);
   assert.equal(invalidatedKeys.includes(JSON.stringify(['indexlab', 'run', 'run-123', 'events'])), true);
   assert.equal(invalidatedKeys.includes(JSON.stringify(['indexing', 'domain-checklist'])), true);
+  assert.deepEqual(
+    queryClient.calls.find((entry) =>
+      entry.kind === 'invalidateQueries'
+      && JSON.stringify(entry.queryKey) === JSON.stringify(['indexlab', 'runs'])
+    ),
+    { kind: 'invalidateQueries', queryKey: ['indexlab', 'runs'], exact: undefined, type: undefined },
+  );
   assert.equal(removedKeys.includes(JSON.stringify(['indexlab', 'run', 'run-123', 'events'])), true);
   assert.equal(removedKeys.includes(JSON.stringify(['runtime-ops', 'run-123'])), true);
   assert.equal(

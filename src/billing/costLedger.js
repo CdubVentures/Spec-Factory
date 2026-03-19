@@ -497,14 +497,12 @@ export async function appendCostLedgerEntry({
     try {
       specDb.insertBillingEntry(toDbEntry(normalized));
     } catch {
-      // fall through — JSON path below will still run if billingJsonWrite is set
+      // fall through — JSON fallback path below handles non-specDb case
     }
   }
 
-  // Skip JSON/NDJSON writes when specDb is available and billingJsonWrite is not forced
-  const writeJson = config.billingJsonWrite || !specDb;
-
-  if (writeJson) {
+  // Write JSON/NDJSON only when specDb is not available (fallback)
+  if (!specDb) {
     const key = ledgerKey(storage, month);
     const legacyKey = legacyLedgerKey(storage, month);
     const flatKey = flatLedgerKey(storage);

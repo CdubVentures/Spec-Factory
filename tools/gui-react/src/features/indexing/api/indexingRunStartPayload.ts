@@ -11,7 +11,7 @@ import type { RuntimeSettings } from '../../pipeline-settings';
 const LLM_MIN_OUTPUT_TOKENS = LLM_SETTING_LIMITS.maxTokens.min;
 const LLM_EXTRACT_MIN_SNIPPET_CHARS = 128;
 
-type StartIndexingRunPayloadValue = string | number | boolean;
+type StartIndexingRunPayloadValue = string | number | boolean | Record<string, unknown>;
 type StartIndexingRunPayloadRecord = Record<string, StartIndexingRunPayloadValue>;
 
 interface StartIndexingRunPayloadParsedValues extends ReturnType<typeof deriveIndexingRunStartParsedValues> {}
@@ -23,6 +23,7 @@ interface BuildIndexingRunStartPayloadInput {
   runtimeSettingsPayload: RuntimeSettings;
   parsedValues: StartIndexingRunPayloadParsedValues;
   runControlPayload: StartIndexingRunPayloadRecord;
+  llmPolicy?: Record<string, unknown>;
 }
 
 const readString = (value: StartIndexingRunPayloadValue | undefined): string => (
@@ -32,6 +33,22 @@ const readString = (value: StartIndexingRunPayloadValue | undefined): string => 
 const readBool = (value: StartIndexingRunPayloadValue | undefined): boolean => (
   Boolean(value)
 );
+
+// WHY: Extract all serializable values from RuntimeSettings for the POST body.
+// This ensures ALL settings keys flow through to the backend snapshot,
+// not just the ones that the hand-picked payload builder lists explicitly.
+function spreadRuntimeSettings(settings: RuntimeSettings): StartIndexingRunPayloadRecord {
+  const result: StartIndexingRunPayloadRecord = {};
+  for (const [key, value] of Object.entries(settings)) {
+    if (value === undefined || value === null) continue;
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      result[key] = value;
+    } else if (typeof value === 'object') {
+      result[key] = value as Record<string, unknown>;
+    }
+  }
+  return result;
+}
 
 export function buildIndexingRunStartPayload(
   input: BuildIndexingRunStartPayloadInput,
@@ -43,11 +60,20 @@ export function buildIndexingRunStartPayload(
     runtimeSettingsPayload,
     parsedValues,
     runControlPayload,
+    llmPolicy,
   } = input;
   const s = runtimeSettingsPayload;
   const p = parsedValues;
 
+  // WHY: Spread the full runtimeSettingsPayload first so ALL settings keys
+  // (including the 17 that were previously dropped: deepseekApiKey, fetchBudgetMs,
+  // geminiApiKey, googleSearch*, helperFilesRoot, llmPhaseOverridesJson,
+  // llmPlanUseReasoning, llmProviderRegistryJson, manufacturerAutoPromote,
+  // searxngMinQueryIntervalMs) flow through to the POST body → backend snapshot.
+  // Hand-picked fields below overlay on top with priority because they include
+  // min/max enforcement and parsed numeric values from deriveIndexingRunStartParsedValues.
   const runtimePayload: StartIndexingRunPayloadRecord = {
+    ...spreadRuntimeSettings(runtimeSettingsPayload),
     requestedRunId: String(requestedRunId || '').trim(),
     category,
     mode: 'indexlab',
@@ -66,7 +92,6 @@ export function buildIndexingRunStartPayload(
     crawleeRequestHandlerTimeoutSecs: Math.max(0, p.parsedCrawleeTimeout),
     dynamicFetchRetryBudget: Math.max(0, p.parsedRetryBudget),
     dynamicFetchRetryBackoffMs: Math.max(0, p.parsedRetryBackoff),
-    fetchSchedulerEnabled: readBool(s.fetchSchedulerEnabled),
     fetchSchedulerMaxRetries: Math.max(0, p.parsedFetchSchedulerMaxRetries),
     fetchSchedulerFallbackWaitMs: Math.max(0, p.parsedFetchSchedulerFallbackWaitMs),
     preferHttpFetcher: readBool(s.preferHttpFetcher),
@@ -74,7 +99,6 @@ export function buildIndexingRunStartPayload(
     pageNetworkIdleTimeoutMs: Math.max(0, p.parsedPageNetworkIdleTimeoutMs),
     postLoadWaitMs: Math.max(0, p.parsedPostLoadWaitMs),
     frontierDbPath: readString(s.frontierDbPath),
-    frontierEnableSqlite: readBool(s.frontierEnableSqlite),
     frontierStripTrackingParams: readBool(s.frontierStripTrackingParams),
     frontierQueryCooldownSeconds: Math.max(0, p.parsedFrontierQueryCooldownSeconds),
     frontierCooldown404Seconds: Math.max(0, p.parsedFrontierCooldown404Seconds),
@@ -86,7 +110,6 @@ export function buildIndexingRunStartPayload(
     frontierBackoffMaxExponent: Math.max(1, p.parsedFrontierBackoffMaxExponent),
     frontierPathPenaltyNotfoundThreshold: Math.max(1, p.parsedFrontierPathPenaltyNotfoundThreshold),
     frontierBlockedDomainThreshold: Math.max(1, p.parsedFrontierBlockedDomainThreshold),
-    frontierRepairSearchEnabled: readBool(s.frontierRepairSearchEnabled),
     autoScrollEnabled: readBool(s.autoScrollEnabled),
     autoScrollPasses: Math.max(0, p.parsedAutoScrollPasses),
     autoScrollDelayMs: Math.max(0, p.parsedAutoScrollDelayMs),
@@ -114,17 +137,9 @@ export function buildIndexingRunStartPayload(
       eventsJsonWrite: readBool(s.eventsJsonWrite),
       indexingSchemaPacketsValidationEnabled: readBool(s.indexingSchemaPacketsValidationEnabled),
       indexingSchemaPacketsValidationStrict: readBool(s.indexingSchemaPacketsValidationStrict),
-      queueJsonWrite: readBool(s.queueJsonWrite),
-      billingJsonWrite: readBool(s.billingJsonWrite),
-      intelJsonWrite: readBool(s.intelJsonWrite),
-      corpusJsonWrite: readBool(s.corpusJsonWrite),
-      learningJsonWrite: readBool(s.learningJsonWrite),
-      cacheJsonWrite: readBool(s.cacheJsonWrite),
-      authoritySnapshotEnabled: readBool(s.authoritySnapshotEnabled),
     }),
     ...buildIndexingRunOcrPolicyPayload({
       scannedPdfOcrEnabled: readBool(s.scannedPdfOcrEnabled),
-      scannedPdfOcrPromoteCandidates: readBool(s.scannedPdfOcrPromoteCandidates),
       scannedPdfOcrBackend: readString(s.scannedPdfOcrBackend),
       parsedScannedPdfOcrMaxPages: p.parsedScannedPdfOcrMaxPages,
       parsedScannedPdfOcrMaxPairs: p.parsedScannedPdfOcrMaxPairs,
@@ -160,22 +175,13 @@ export function buildIndexingRunStartPayload(
     capturePageScreenshotQuality: Math.max(1, p.parsedCapturePageScreenshotQuality),
     capturePageScreenshotMaxBytes: Math.max(1024, p.parsedCapturePageScreenshotMaxBytes),
     capturePageScreenshotSelectors: readString(s.capturePageScreenshotSelectors),
-    articleExtractorV2Enabled: readBool(s.articleExtractorV2Enabled),
     articleExtractorMinChars: Math.max(50, p.parsedArticleExtractorMinChars),
     articleExtractorMinScore: Math.max(1, p.parsedArticleExtractorMinScore),
     articleExtractorMaxChars: Math.max(256, p.parsedArticleExtractorMaxChars),
-    staticDomExtractorEnabled: readBool(s.staticDomExtractorEnabled),
     staticDomMode: readString(s.staticDomMode),
     staticDomTargetMatchThreshold: Math.max(0, Math.min(1, p.parsedStaticDomTargetMatchThreshold)),
     staticDomMaxEvidenceSnippets: Math.max(10, p.parsedStaticDomMaxEvidenceSnippets),
     articleExtractorDomainPolicyMapJson: readString(s.articleExtractorDomainPolicyMapJson),
-    htmlTableExtractorV2: readBool(s.htmlTableExtractorV2),
-    structuredMetadataExtructEnabled: readBool(s.structuredMetadataExtructEnabled),
-    structuredMetadataExtructUrl: readString(s.structuredMetadataExtructUrl),
-    structuredMetadataExtructTimeoutMs: Math.max(250, p.parsedStructuredMetadataExtructTimeoutMs),
-    structuredMetadataExtructMaxItemsPerSurface: Math.max(1, p.parsedStructuredMetadataExtructMaxItemsPerSurface),
-    structuredMetadataExtructCacheEnabled: readBool(s.structuredMetadataExtructCacheEnabled),
-    structuredMetadataExtructCacheLimit: Math.max(32, p.parsedStructuredMetadataExtructCacheLimit),
     domSnippetMaxChars: Math.max(600, p.parsedDomSnippetMaxChars),
     runtimeControlFile: readString(s.runtimeControlFile),
     specDbDir: readString(s.specDbDir),
@@ -220,7 +226,6 @@ export function buildIndexingRunStartPayload(
       llmPlanProvider: readString(s.llmPlanProvider),
       llmPlanBaseUrl: readString(s.llmPlanBaseUrl),
       llmPlanApiKey: readString(s.llmPlanApiKey),
-      llmExtractionCacheEnabled: readBool(s.llmExtractionCacheEnabled),
       llmExtractionCacheDir: readString(s.llmExtractionCacheDir),
       parsedLlmExtractionCacheTtlMs: p.parsedLlmExtractionCacheTtlMs,
       parsedLlmMaxCallsPerProductTotal: p.parsedLlmMaxCallsPerProductTotal,
@@ -238,7 +243,6 @@ export function buildIndexingRunStartPayload(
       parsedLlmMaxOutputTokens: p.parsedLlmMaxOutputTokens,
       llmMinOutputTokens: LLM_MIN_OUTPUT_TOKENS,
       parsedLlmVerifySampleRate: p.parsedLlmVerifySampleRate,
-      llmDisableBudgetGuards: readBool(s.llmDisableBudgetGuards),
       parsedLlmMaxBatchesPerProduct: p.parsedLlmMaxBatchesPerProduct,
       parsedLlmMaxEvidenceChars: p.parsedLlmMaxEvidenceChars,
       parsedLlmMaxTokens: p.parsedLlmMaxTokens,
@@ -264,6 +268,9 @@ export function buildIndexingRunStartPayload(
       llmMaxOutputTokensReasoningFallback: Number(s.llmMaxOutputTokensReasoningFallback || 0),
     }),
     ...runControlPayload,
+    // WHY: Composite LlmPolicy sent as one field. The backend disassembles it
+    // to flat keys for env overrides. This replaces individual flat-key forwarding.
+    ...(llmPolicy ? { llmPolicy } : {}),
   };
 
   return runtimePayload;

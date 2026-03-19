@@ -18,7 +18,7 @@ function makeConfig(tempRoot, overrides = {}) {
     discoveryResultsPerQuery: 5,
     discoveryMaxDiscovered: 20,
     discoveryQueryConcurrency: 1,
-    searchEngines: 'bing,startpage,duckduckgo',
+    searchEngines: 'bing,google-proxy,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
     ...overrides
@@ -483,7 +483,6 @@ test('discoverCandidateSources honors explicit all-drop LLM SERP triage without 
     llmProvider: 'openai',
     llmApiKey: 'test-key',
     llmBaseUrl: 'http://localhost:4141',
-    llmSerpRerankEnabled: true
   });
   const storage = createStorage(config);
   installCachedBrandAndDomainLookups(storage, {
@@ -601,8 +600,6 @@ test('discoverCandidateSources keeps only explicit LLM keep URLs when triage omi
     llmProvider: 'openai',
     llmApiKey: 'test-key',
     llmBaseUrl: 'http://localhost:4141',
-    llmSerpRerankEnabled: true,
-    serpTriageEnabled: true,
     serpTriageMinScore: 0,
   });
   const storage = createStorage(config);

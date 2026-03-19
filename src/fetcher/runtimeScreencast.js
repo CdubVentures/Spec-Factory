@@ -1,5 +1,3 @@
-import { wait } from '../utils/common.js';
-
 function screencastIntervalMs(config = {}) {
   const requestedFps = Math.max(1, Number(config.runtimeScreencastFps || 2));
   const screenshotFps = Math.min(requestedFps, 2);
@@ -39,6 +37,37 @@ function emitRuntimeFrame({ onFrame, workerId, data, width, height }) {
   }
 }
 
+function createInterruptibleWaitController() {
+  let interruptWait = null;
+
+  return {
+    async wait(ms) {
+      if (ms <= 0) {
+        return;
+      }
+      await new Promise((resolve) => {
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          interruptWait = null;
+          resolve();
+        };
+        const timeout = setTimeout(finish, ms);
+        interruptWait = () => {
+          clearTimeout(timeout);
+          finish();
+        };
+      });
+    },
+    interrupt() {
+      if (typeof interruptWait === 'function') {
+        interruptWait();
+      }
+    },
+  };
+}
+
 export async function attachRuntimeScreencast({
   page,
   config = {},
@@ -54,6 +83,7 @@ export async function attachRuntimeScreencast({
   let stopped = false;
   let cdpSession = null;
   let cdpFrameCount = 0;
+  const waitController = createInterruptibleWaitController();
 
   const captureScreenshotFrame = async ({ allowWhenStopped = false } = {}) => {
     if ((stopped && !allowWhenStopped) || typeof page?.screenshot !== 'function') {
@@ -93,6 +123,7 @@ export async function attachRuntimeScreencast({
     cdpSession.on('Page.screencastFrame', (params) => {
       try {
         cdpFrameCount += 1;
+        waitController.interrupt();
         cdpSession.send('Page.screencastFrameAck', { sessionId: params.sessionId }).catch(() => {});
         emitRuntimeFrame({
           onFrame,
@@ -110,13 +141,13 @@ export async function attachRuntimeScreencast({
   }
 
   const fallbackLoop = (async () => {
-    await wait(fallbackDelayMs);
+    await waitController.wait(fallbackDelayMs);
     if (stopped || cdpFrameCount > 0) {
       return;
     }
     await captureScreenshotFrame();
     while (!stopped && cdpFrameCount === 0) {
-      await wait(intervalMs);
+      await waitController.wait(intervalMs);
       if (stopped || cdpFrameCount > 0) {
         return;
       }
@@ -127,6 +158,7 @@ export async function attachRuntimeScreencast({
   return async () => {
     const needsFinalCapture = cdpFrameCount === 0;
     stopped = true;
+    waitController.interrupt();
     await fallbackLoop.catch(() => {});
     if (needsFinalCapture) {
       await captureScreenshotFrame({ allowWhenStopped: true });

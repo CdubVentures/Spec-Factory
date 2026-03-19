@@ -1,6 +1,6 @@
 import { extractRootDomain } from '../../../utils/common.js';
-// WHY: planDiscoveryQueriesLLM removed — merged into single planUberQueries call
 import { searchEngineAvailability } from '../search/searchProviders.js';
+import { planUberQueries } from '../../../research/queryPlanner.js';
 import {
   buildSearchProfile,
   buildScoredQueryRowsFromHostPlan,
@@ -8,7 +8,6 @@ import {
 } from '../search/queryBuilder.js';
 import { normalizeFieldList } from '../../../utils/fieldKeys.js';
 import { lookupFieldRule } from '../search/queryFieldRuleGates.js';
-import { planUberQueries } from '../../../research/queryPlanner.js';
 import { buildEffectiveHostPlan } from './domainHintResolver.js';
 import { resolveBrandDomain } from './brandResolver.js';
 import { promoteFromBrandResolution } from '../sources/manufacturerPromoter.js';
@@ -104,6 +103,10 @@ export async function discoverCandidateSources({
   sourceEntries = null,
   searchPlanHandoff = null,
   focusGroups = [],
+  brandResolution: preComputedBrandResolution = null,
+  _runSearchProvidersFn,
+  _searchSourceCorpusFn,
+  _executeSearchQueriesFn,
 }) {
   if (!config.discoveryEnabled) {
     // WHY: Defensive emit so prefetch GUI always gets brand_resolved feedback
@@ -154,10 +157,15 @@ export async function discoverCandidateSources({
     storage,
     category: categoryConfig.category
   });
-  let brandResolution = null;
+  // WHY: Brand resolution may be pre-computed by the orchestrator (runDiscoverySeedPlan)
+  // so the search planner can use brand data. When pre-computed, skip internal resolution.
+  let brandResolution = preComputedBrandResolution;
   let brandStatus = 'skipped';
   let brandSkipReason = '';
-  if (!variables.brand) {
+  if (brandResolution) {
+    brandStatus = brandResolution.officialDomain ? 'resolved' : 'resolved_empty';
+    brandSkipReason = '';
+  } else if (!variables.brand) {
     brandSkipReason = 'no_brand_in_identity_lock';
   } else {
     try {
@@ -265,113 +273,9 @@ export async function discoverCandidateSources({
     runId
   });
 
-  // Declare shared variables set by either Schema 4 or old path
-  let queries;
-  let executionQueryLimit;
-  let queryLimit;
-  let selectedQueryRowMap;
-  let profileQueryRowsByQuery;
-  let searchProfilePlanned;
-  // WHY: llmQueries removed — merged into single uberSearchPlan
-  let uberSearchPlan = null;
-  let effectiveHostPlan = null;
-  let searchProfileBase = null;
-  // WHY: uberMode removed — single planner call always active
-
-  // === Schema 4 handoff path ===
-  const schema4Plan = resolveSchema4ExecutionPlan({
-    searchPlanHandoff,
-    variables,
-    logger,
-  });
-
-  // WHY: Schema 4 handoff must meet a minimum query threshold to be useful.
-  // If the LLM only generates a few queries (e.g. single group), the old
-  // 7-layer path produces better coverage with base templates + LLM planners.
-  const SCHEMA4_MIN_QUERIES = 6;
-  if (schema4Plan && schema4Plan.queries.length >= SCHEMA4_MIN_QUERIES) {
-    queries = schema4Plan.queries;
-    queryLimit = queries.length;
-    executionQueryLimit = queries.length;
-    selectedQueryRowMap = schema4Plan.selectedQueryRowMap;
-    profileQueryRowsByQuery = schema4Plan.selectedQueryRowMap;
-    searchProfilePlanned = {
-      category: categoryConfig.category,
-      product_id: job.productId,
-      run_id: runId,
-      base_model: job.baseModel || '',
-      aliases: job.aliases || [],
-      generated_at: new Date().toISOString(),
-      status: 'planned',
-      provider: config.searchEngines,
-      source: 'schema4_planner',
-      selected_queries: queries,
-      selected_query_count: queries.length,
-      query_rows: schema4Plan.queryRows,
-      query_reject_log: schema4Plan.rejectLog.slice(0, 300),
-      query_guard: {
-        brand_tokens: toArray(schema4Plan.guardContext?.brandTokens),
-        model_tokens: toArray(schema4Plan.guardContext?.modelTokens),
-        required_digit_groups: toArray(schema4Plan.guardContext?.requiredDigitGroups),
-        accepted_query_count: queries.length,
-        rejected_query_count: schema4Plan.rejectLog.length,
-      },
-      effective_host_plan: null,
-      brand_resolution: brandResolution ? {
-        officialDomain: brandResolution.officialDomain || '',
-        supportDomain: brandResolution.supportDomain || '',
-        aliases: brandResolution.aliases || [],
-        confidence: brandResolution.confidence ?? 0,
-        reasoning: brandResolution.reasoning || [],
-      } : null,
-      schema4_planner: searchPlanHandoff ? {
-        mode: searchPlanHandoff._planner?.mode || 'unknown',
-        planner_confidence: searchPlanHandoff._planner?.planner_confidence ?? 0,
-        duplicates_suppressed: searchPlanHandoff._planner?.duplicates_suppressed ?? 0,
-        targeted_exceptions: searchPlanHandoff._planner?.targeted_exceptions ?? 0,
-      } : null,
-      schema4_learning: searchPlanHandoff?._learning || null,
-      schema4_panel: searchPlanHandoff?._panel || null,
-      key: searchProfileKeys.inputKey,
-      run_key: searchProfileKeys.runKey,
-      latest_key: searchProfileKeys.latestKey,
-    };
-    await writeSearchProfileArtifacts({
-      storage,
-      payload: searchProfilePlanned,
-      keys: searchProfileKeys,
-    });
-    logger?.info?.('schema4_path_active', {
-      total_handoff: searchPlanHandoff.queries.length,
-      post_guard: schema4Plan.queries.length,
-      rejected: schema4Plan.rejectLog.length,
-    });
-    logger?.info?.('search_profile_generated', {
-      run_id: runId,
-      category: categoryConfig.category,
-      product_id: job.productId,
-      query_count: queries.length,
-      key: searchProfileKeys.inputKey,
-      source: 'schema4_planner',
-      query_rows: schema4Plan.queryRows.slice(0, 220).map((r) => ({
-        query: r.query,
-        hint_source: r.hint_source || '',
-        target_fields: r.target_fields || [],
-        doc_hint: r.doc_hint || '',
-        domain_hint: r.domain_hint || '',
-      })),
-    });
-  } else {
-  if (schema4Plan && schema4Plan.queries.length < SCHEMA4_MIN_QUERIES) {
-    logger?.info?.('schema4_path_insufficient_queries', {
-      schema4_count: schema4Plan.queries.length,
-      min_required: SCHEMA4_MIN_QUERIES,
-      fallback: 'old_path',
-    });
-  }
-  // === OLD PATH: 7-layer append chain ===
+  // === Stage 03: Search Profile (ALWAYS runs — deterministic query generation) ===
   const profileMaxQueries = Math.max(6, Number(config.discoveryMaxQueries || 8) * 2);
-  searchProfileBase = buildSearchProfile({
+  const searchProfileBase = buildSearchProfile({
     job,
     categoryConfig,
     missingFields,
@@ -384,7 +288,6 @@ export async function discoverCandidateSources({
     docHintQueriesCap: searchProfileCaps.llmDocHintQueriesCap,
     fieldYieldByDomain: learning.fieldYield?.by_domain || null,
   });
-  const phase3SearchActive = Boolean(categoryConfig?.validatedRegistry);
   const brandResolutionHints = [...new Set(
     [
       brandResolution?.officialDomain,
@@ -393,8 +296,9 @@ export async function discoverCandidateSources({
       .map((value) => String(value || '').trim().toLowerCase())
       .filter(Boolean)
   )];
+  let effectiveHostPlan = null;
   let hostPlanQueryRows = [];
-  if (phase3SearchActive) {
+  if (categoryConfig?.validatedRegistry) {
     const hostPlanHintTokens = collectHostPlanHintTokens({
       categoryConfig,
       focusFields: missingFields,
@@ -406,9 +310,6 @@ export async function discoverCandidateSources({
       brandResolutionHints,
     });
     if (!effectiveHostPlan?.blocked) {
-      // WHY: Resolve raw field keys (e.g. polling_rate_hz) to human-readable
-      // query terms (e.g. "polling rate") from field rules. Raw keys would
-      // keyword-stuff queries and hurt search precision.
       const hostPlanFocusTerms = missingFields.slice(0, 3).map(field => {
         const rule = lookupFieldRule(categoryConfig, field);
         const terms = toArray(rule?.search_hints?.query_terms)
@@ -417,19 +318,30 @@ export async function discoverCandidateSources({
       });
       hostPlanQueryRows = buildScoredQueryRowsFromHostPlan(
         effectiveHostPlan,
-        {
-          brand: variables.brand,
-          model: variables.model,
-          variant: variables.variant,
-        },
+        { brand: variables.brand, model: variables.model, variant: variables.variant },
         missingFields,
         { resolvedTerms: hostPlanFocusTerms }
       );
     }
   }
+
+  // === Stage 04: Search Planner (LLM enrichment) ===
+  const schema4Plan = resolveSchema4ExecutionPlan({
+    searchPlanHandoff,
+    variables,
+    logger,
+  });
+  if (schema4Plan && schema4Plan.queries.length > 0) {
+    logger?.info?.('schema4_path_active', {
+      total_handoff: searchPlanHandoff?.queries?.length ?? 0,
+      post_guard: schema4Plan.queries.length,
+      rejected: schema4Plan.rejectLog.length,
+    });
+  }
+
   const baseQueries = toArray(searchProfileBase?.base_templates);
   const targetedQueries = toArray(searchProfileBase?.queries);
-  profileQueryRowsByQuery = new Map(
+  const profileQueryRowsByQuery = new Map(
     toArray(searchProfileBase?.query_rows).map((row) => {
       const token = String(row?.query || '').trim().toLowerCase();
       return [token, row];
@@ -437,7 +349,9 @@ export async function discoverCandidateSources({
   );
   const resolveProfileQueryRow = (query) => profileQueryRowsByQuery.get(String(query || '').trim().toLowerCase()) || null;
 
-  // Build compressed archetype context for planner blindness fix
+  // WHY: planUberQueries is the Search Planner's own LLM call (Stage 04).
+  // It enriches queries beyond what the deterministic search profile and
+  // Schema 4 needset planner produce. Its worker shows under Search Planner tab.
   const archetypeSummary = searchProfileBase?.archetype_summary || {};
   const coverageAnalysis = searchProfileBase?.coverage_analysis || {};
   const archetypeContext = {
@@ -447,10 +361,8 @@ export async function discoverCandidateSources({
     representative_gaps: (coverageAnalysis.uncovered_search_worthy || []).slice(0, 10)
   };
   const enrichedLlmContext = { ...llmContext, archetypeContext };
-
-  // WHY: Single LLM planner call — replaces two separate discovery+uber calls
   const frontierSummary = frontierDb?.snapshotForProduct?.(job.productId || '') || {};
-  uberSearchPlan = await planUberQueries({
+  const uberSearchPlan = await planUberQueries({
     config,
     logger,
     llmContext: enrichedLlmContext,
@@ -468,21 +380,19 @@ export async function discoverCandidateSources({
       pass_name: 'primary',
       queries_generated: toArray(uberSearchPlan.queries),
       stop_condition: 'planner_complete',
-      plan_rationale: `LLM planner generated ${toArray(uberSearchPlan.queries).length} queries for ${toArray(planningHints.missingCriticalFields).length} missing critical fields`,
+      plan_rationale: `LLM planner generated ${toArray(uberSearchPlan.queries).length} queries`,
       query_target_map: {},
       missing_critical_fields: toArray(planningHints.missingCriticalFields).slice(0, 30),
       mode: String(llmContext?.mode || 'standard'),
     });
   }
 
-  queryLimit = Math.max(
-    1,
-    Number(
-      uberSearchPlan?.max_queries ||
-      config.discoveryMaxQueries ||
-      8
-    )
-  );
+  // === Stage 05: Query Journey (merge ALL streams — no branching) ===
+  // WHY: Four input streams merged into one candidate list:
+  // 1. Deterministic base + targeted queries (from search profile)
+  // 2. Schema 4 needset planner queries (from orchestrator LLM call)
+  // 3. Search Planner uber queries (from planUberQueries LLM call)
+  // 4. Host-plan rows (appended after guard)
   const queryCandidates = [
     ...baseQueries.map((query) => ({ query, source: 'base_template', target_fields: [] })),
     ...targetedQueries.map((query) => {
@@ -496,13 +406,23 @@ export async function discoverCandidateSources({
         hint_source: String(profileRow?.hint_source || '').trim()
       };
     }),
-    ...toArray(uberSearchPlan?.queries).map((query) => ({ query, source: 'uber', target_fields: [] }))
+    ...toArray(schema4Plan?.queryRows).map((row) => ({
+      query: row.query,
+      source: 'schema4',
+      target_fields: toArray(row.target_fields),
+      doc_hint: String(row.doc_hint || '').trim(),
+      domain_hint: String(row.domain_hint || '').trim(),
+      hint_source: String(row.hint_source || 'schema4_planner').trim(),
+    })),
+    ...toArray(uberSearchPlan?.queries).map((query) => ({
+      query, source: 'uber', target_fields: []
+    })),
   ];
+
+  const queryLimit = Math.max(1, Number(config.discoveryMaxQueries || 8));
   const mergedQueryCap = Math.max(queryLimit, 6);
   const mergedQueries = dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap);
-  // WHY: Build scoring context maps from data already in scope.
-  // Field priority drives Signal 1 (field value); host field fit drives
-  // Signal 2 (source fit) and Signal 5 (overconstraint).
+
   const fieldPriority = new Map();
   for (const f of toArray(planningHints.missingCriticalFields)) {
     const key = String(f || '').trim();
@@ -545,10 +465,11 @@ export async function discoverCandidateSources({
     variables,
     variantGuardTerms: toArray(searchProfileBase?.variant_guard_terms)
   });
-  const legacySelectedRows = guardedQueries.rows.map((row) => ({
+  const guardedSelectedRows = guardedQueries.rows.map((row) => ({
     ...row,
     hint_source: String(row?.hint_source || '').trim(),
   }));
+
   let appendedHostPlanRows = [];
   let hostPlanRejectLog = [];
   if (hostPlanQueryRows.length > 0) {
@@ -559,52 +480,23 @@ export async function discoverCandidateSources({
     });
     hostPlanRejectLog = guardedHostPlanRows.rejectLog;
     const seenQueries = new Set(
-      legacySelectedRows.map((row) => String(row?.query || '').trim().toLowerCase()).filter(Boolean)
+      guardedSelectedRows.map((row) => String(row?.query || '').trim().toLowerCase()).filter(Boolean)
     );
-    const uniqueHostPlanRows = guardedHostPlanRows.rows.filter((row) => {
+    appendedHostPlanRows = guardedHostPlanRows.rows.filter((row) => {
       const token = String(row?.query || '').trim().toLowerCase();
-      if (!token || seenQueries.has(token)) {
-        return false;
-      }
+      if (!token || seenQueries.has(token)) return false;
       seenQueries.add(token);
       return true;
     });
-    appendedHostPlanRows = uniqueHostPlanRows;
   }
-  const mergedSelectedRows = [...legacySelectedRows, ...appendedHostPlanRows];
-  // WHY: One global deterministic budget replaces the old two-cap approach
-  // (DETERMINISTIC_CAP on base/targeted + hostPlanExtraCap on host plan rows).
-  // Two separate caps could stack to 6 deterministic rows total.
-  const DETERMINISTIC_BUDGET = 3;
-  const isDeterministicRow = (row) => {
-    const sources = toArray(row?.sources);
-    // Mixed-source rows (deduped LLM + deterministic) count as planner
-    return !sources.some(s => s === 'llm' || s === 'uber');
-  };
-  let deterministicCount = 0;
-  let budgetRejectLog = [];
-  const selectedQueryRows = mergedSelectedRows.filter(row => {
-    if (!isDeterministicRow(row)) return true;
-    deterministicCount++;
-    if (deterministicCount <= DETERMINISTIC_BUDGET) return true;
-    budgetRejectLog.push({
-      query: String(row?.query || '').trim(),
-      source: toArray(row?.sources),
-      reason: 'deterministic_budget',
-      stage: 'post_merge_budget',
-      detail: `budget:${DETERMINISTIC_BUDGET}`
-    });
-    return false;
-  });
-  queries = selectedQueryRows.map((row) => String(row?.query || '').trim()).filter(Boolean);
+
+  const selectedQueryRows = [...guardedSelectedRows, ...appendedHostPlanRows];
+  let queries = selectedQueryRows.map((row) => String(row?.query || '').trim()).filter(Boolean);
   if (!queries.length && rankedCappedQueries.length > 0) {
     const fallback = String(rankedCappedQueries[0]?.query || '').trim();
     if (fallback) {
       queries = [fallback];
-      selectedQueryRows.push({
-        ...rankedCappedQueries[0],
-        query: fallback,
-      });
+      selectedQueryRows.push({ ...rankedCappedQueries[0], query: fallback });
       guardedQueries.rejectLog.push({
         query: fallback,
         source: toArray(rankedCappedQueries[0]?.sources),
@@ -614,20 +506,22 @@ export async function discoverCandidateSources({
       });
     }
   }
+
   const queryRejectLogCombined = [
     ...toArray(searchProfileBase?.query_reject_log),
+    ...toArray(schema4Plan?.rejectLog),
     ...toArray(mergedQueries.rejectLog),
     ...toArray(rankedCapRejectLog),
     ...toArray(guardedQueries.rejectLog),
     ...toArray(hostPlanRejectLog),
-    ...budgetRejectLog,
   ].slice(0, 300);
-  executionQueryLimit = Math.max(queryLimit, queries.length);
-  selectedQueryRowMap = new Map(
+
+  const executionQueryLimit = Math.max(queryLimit, queries.length);
+  const selectedQueryRowMap = new Map(
     selectedQueryRows.map((row) => [String(row?.query || '').trim().toLowerCase(), row])
   );
-  const resolveSelectedQueryRow = (query) => selectedQueryRowMap.get(String(query || '').trim().toLowerCase()) || null;
-  searchProfilePlanned = {
+
+  const searchProfilePlanned = {
     ...searchProfileBase,
     category: categoryConfig.category,
     product_id: job.productId,
@@ -637,7 +531,7 @@ export async function discoverCandidateSources({
     generated_at: new Date().toISOString(),
     status: 'planned',
     provider: config.searchEngines,
-    llm_queries: toArray(uberSearchPlan?.queries),
+    llm_queries: [...toArray(schema4Plan?.queries), ...toArray(uberSearchPlan?.queries)],
     query_reject_log: queryRejectLogCombined,
     query_guard: {
       brand_tokens: toArray(guardedQueries.guardContext?.brandTokens),
@@ -657,37 +551,23 @@ export async function discoverCandidateSources({
       confidence: brandResolution.confidence ?? 0,
       reasoning: brandResolution.reasoning || [],
     } : null,
-    schema4_planner: null,
-    schema4_learning: null,
-    schema4_panel: null,
+    schema4_planner: searchPlanHandoff ? {
+      mode: searchPlanHandoff._planner?.mode || 'unknown',
+      planner_confidence: searchPlanHandoff._planner?.planner_confidence ?? 0,
+      duplicates_suppressed: searchPlanHandoff._planner?.duplicates_suppressed ?? 0,
+      targeted_exceptions: searchPlanHandoff._planner?.targeted_exceptions ?? 0,
+    } : null,
+    schema4_learning: searchPlanHandoff?._learning || null,
+    schema4_panel: searchPlanHandoff?._panel || null,
     key: searchProfileKeys.inputKey,
     run_key: searchProfileKeys.runKey,
-    latest_key: searchProfileKeys.latestKey
+    latest_key: searchProfileKeys.latestKey,
   };
   await writeSearchProfileArtifacts({
     storage,
     payload: searchProfilePlanned,
-    keys: searchProfileKeys
+    keys: searchProfileKeys,
   });
-  if (toArray(uberSearchPlan?.queries).length === 0 && queries.length > 0) {
-    logger?.info?.('search_plan_generated', {
-      pass_index: 0,
-      pass_name: 'deterministic_fallback',
-      queries_generated: queries.slice(0, executionQueryLimit),
-      stop_condition: 'deterministic_queries_ready',
-      plan_rationale: 'Deterministic search-profile planner generated fallback queries without LLM',
-      query_target_map: queries.slice(0, executionQueryLimit).reduce((acc, query) => {
-        const row = resolveSelectedQueryRow(query) || resolveProfileQueryRow(query);
-        const fields = toArray(row?.target_fields);
-        if (fields.length > 0) {
-          acc[query] = fields;
-        }
-        return acc;
-      }, {}),
-      missing_critical_fields: toArray(planningHints.missingCriticalFields).slice(0, 30),
-      mode: 'deterministic'
-    });
-  }
   logger?.info?.('search_profile_generated', {
     run_id: runId,
     category: categoryConfig.category,
@@ -695,8 +575,7 @@ export async function discoverCandidateSources({
     alias_count: toArray(searchProfileBase?.identity_aliases).length,
     query_count: queries.length,
     key: searchProfileKeys.inputKey,
-    hint_source_counts: searchProfilePlanned?.hint_source_counts || {},
-    source: 'runtime_planner',
+    source: schema4Plan ? 'merged_planner' : 'deterministic',
     effective_host_plan: searchProfilePlanned?.effective_host_plan || null,
     query_rows: toArray(searchProfilePlanned?.query_rows)
       .slice(0, 220)
@@ -715,11 +594,21 @@ export async function discoverCandidateSources({
           ? queryRow.score_breakdown
           : null,
         warnings: Array.isArray(queryRow?.warnings) ? queryRow.warnings : []
-      }))
+      })),
   });
-  } // end old path (else branch)
 
-  // === CONVERGENCE: both Schema 4 and old paths ===
+  // WHY: Emit query_journey_completed so the runtime bridge knows when to
+  // advance the phase cursor and the GUI can gate search worker bouncy balls.
+  logger?.info?.('query_journey_completed', {
+    selected_query_count: queries.length,
+    selected_queries: queries.slice(0, 50),
+    schema4_query_count: toArray(schema4Plan?.queries).length,
+    deterministic_query_count: baseQueries.length + targetedQueries.length,
+    host_plan_query_count: appendedHostPlanRows.length,
+    rejected_count: queryRejectLogCombined.length,
+  });
+
+  // === Stage 06: Search Results ===
   const resultsPerQuery = Math.max(1, Number(config.discoveryResultsPerQuery || 10));
   const discoveryCap = Math.max(1, Number(config.discoveryMaxDiscovered || 120));
   const queryConcurrency = Math.max(1, Number(config.discoveryQueryConcurrency || 1));
@@ -730,7 +619,8 @@ export async function discoverCandidateSources({
     toArray(planningHints.missingRequiredFields),
     { fieldOrder: categoryConfig.fieldOrder || [] }
   );
-  const searchResult = await executeSearchQueries({
+  const executeSearchQueriesFn = _executeSearchQueriesFn || executeSearchQueries;
+  const searchResult = await executeSearchQueriesFn({
     config, storage, logger, runtimeTraceWriter, frontierDb,
     categoryConfig, job, runId,
     queries, executionQueryLimit, queryConcurrency, resultsPerQuery, queryLimit,
@@ -740,6 +630,8 @@ export async function discoverCandidateSources({
     providerState,
     requiredOnlySearch,
     missingRequiredFields,
+    _runSearchProvidersFn,
+    _searchSourceCorpusFn,
   });
   const { rawResults, searchAttempts, searchJournal,
           internalSatisfied, externalSearchReason } = searchResult;

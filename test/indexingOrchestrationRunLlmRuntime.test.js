@@ -3,14 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createRunLlmRuntime } from '../src/features/indexing/orchestration/bootstrap/createRunLlmRuntime.js';
 
-test('createRunLlmRuntime initializes verification state, budget guard, and merged forced-high fields', () => {
-  const startRoundCalls = [];
-  const budgetGuard = {
-    startRound() {
-      startRoundCalls.push('start');
-    },
-  };
-
+test('createRunLlmRuntime initializes verification state and merged forced-high fields', () => {
   const runtime = createRunLlmRuntime({
     storage: { id: 'storage' },
     config: {
@@ -31,24 +24,10 @@ test('createRunLlmRuntime initializes verification state, budget guard, and merg
     runtimeOverrides: {
       force_high_fields: ['dpi', 'sensor'],
     },
-    billingSnapshot: {
-      monthly_cost_usd: 12.5,
-    },
     stableHashFn: () => 3,
-    buildInitialLlmBudgetStateFn: (snapshot) => ({
-      monthlySpentUsd: snapshot.monthly_cost_usd,
-      productSpentUsd: 0,
-      productCallsTotal: 0,
-    }),
-    createBudgetGuardFn: (state) => {
-      assert.equal(state.monthlySpentUsd, 12.5);
-      return budgetGuard;
-    },
     normalizeCostRatesFn: () => ({ extract: 0.42 }),
   });
 
-  assert.deepEqual(startRoundCalls, ['start']);
-  assert.equal(runtime.llmBudgetGuard, budgetGuard);
   assert.deepEqual(runtime.llmCostRates, { extract: 0.42 });
   assert.equal(runtime.llmContext.round, 2);
   assert.equal(runtime.llmContext.mode, 'production');
@@ -83,16 +62,7 @@ test('createRunLlmRuntime records usage counters, billing entries, and prompt in
     traceWriter: null,
     routeMatrixPolicy: {},
     runtimeOverrides: {},
-    billingSnapshot: {},
     stableHashFn: () => 0,
-    buildInitialLlmBudgetStateFn: () => ({
-      monthlySpentUsd: 0,
-      productSpentUsd: 0,
-      productCallsTotal: 0,
-    }),
-    createBudgetGuardFn: () => ({
-      startRound() {},
-    }),
     normalizeCostRatesFn: () => ({ extract: 0.2 }),
     appendCostLedgerEntryFn: async (payload) => {
       ledgerEntries.push(payload);

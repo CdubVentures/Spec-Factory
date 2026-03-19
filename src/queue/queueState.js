@@ -234,8 +234,8 @@ export async function saveQueueState({ storage, category, state, specDb = null, 
   const normalized = normalizeState(category, state);
   normalized.updated_at = nowIso();
 
-  // JSON writes only when enabled (or when specDb is not available — fallback)
-  if (config.queueJsonWrite !== false || !specDb) {
+  // JSON fallback when SQLite is not available
+  if (!specDb) {
     const key = queueStateKey({ storage, category });
     const legacyKey = legacyQueueStateKey(storage, category);
     const payload = Buffer.from(JSON.stringify(normalized, null, 2), 'utf8');
@@ -287,13 +287,6 @@ export async function upsertQueueProduct({
       updated_at: nowIso()
     });
     specDb.upsertQueueProduct(jsRowToSqliteUpsert(productId, next));
-
-    // Optionally also write JSON
-    if (config.queueJsonWrite) {
-      const loaded = await loadQueueState({ storage, category, specDb });
-      loaded.state.products[productId] = next;
-      await saveQueueState({ storage, category, state: loaded.state, specDb, config });
-    }
 
     const key = queueStateKey({ storage, category });
     return { key, product: next };
@@ -559,13 +552,6 @@ export async function recordQueueRunResult({
 
     specDb.upsertQueueProduct(jsRowToSqliteUpsert(productId, next));
 
-    // Optionally also write JSON
-    if (config.queueJsonWrite) {
-      const loaded = await loadQueueState({ storage, category, specDb });
-      loaded.state.products[productId] = next;
-      await saveQueueState({ storage, category, state: loaded.state, specDb, config });
-    }
-
     const key = queueStateKey({ storage, category });
     return { key, product: next };
   }
@@ -649,13 +635,6 @@ export async function recordQueueFailure({
 
     specDb.upsertQueueProduct(jsRowToSqliteUpsert(productId, next));
 
-    // Optionally also write JSON
-    if (config.queueJsonWrite) {
-      const loaded = await loadQueueState({ storage, category, specDb });
-      loaded.state.products[productId] = next;
-      await saveQueueState({ storage, category, state: loaded.state, specDb, config });
-    }
-
     const key = queueStateKey({ storage, category });
     return { key, product: next };
   }
@@ -717,12 +696,6 @@ export async function markStaleQueueProducts({
         next_action_hint: 'recrawl_stale'
       });
       marked.push(row.product_id);
-    }
-
-    // Optionally also update JSON
-    if (config.queueJsonWrite && marked.length > 0) {
-      const loaded = await loadQueueState({ storage, category, specDb });
-      await saveQueueState({ storage, category, state: loaded.state, specDb, config });
     }
 
     return { stale_marked: marked.length, products: marked };
@@ -837,15 +810,6 @@ export async function clearQueueByStatus({
 
     if (removed.length > 0) {
       specDb.clearQueueByStatus(wantedStatus);
-
-      // Optionally also clear from JSON
-      if (config.queueJsonWrite) {
-        const loaded = await loadQueueState({ storage, category, specDb });
-        for (const pid of removed) {
-          delete loaded.state.products[pid];
-        }
-        await saveQueueState({ storage, category, state: loaded.state, specDb, config });
-      }
     }
 
     return {
@@ -895,13 +859,6 @@ export async function markQueueRunning({
       updated_at: nowIso()
     });
     specDb.upsertQueueProduct(jsRowToSqliteUpsert(productId, next));
-
-    // Optionally also write JSON
-    if (config.queueJsonWrite) {
-      const loaded = await loadQueueState({ storage, category, specDb });
-      loaded.state.products[productId] = next;
-      await saveQueueState({ storage, category, state: loaded.state, specDb, config });
-    }
 
     const key = queueStateKey({ storage, category });
     return { key, product: next };

@@ -93,7 +93,6 @@ import { recordQueryResult, recordUrlVisit, recordPromptResult } from '../featur
 import { captureKnobSnapshot, recordKnobSnapshot } from '../features/indexing/telemetry/index.js';
 import { defaultIndexLabRoot } from '../core/config/runtimeArtifactRoots.js';
 import { CONFIG_MANIFEST_DEFAULTS } from '../core/config/manifest.js';
-import { createBudgetGuard } from '../billing/budgetGuard.js';
 import { normalizeCostRates } from '../billing/costRates.js';
 // --- orchestration/shared: helpers, scoring, type coercion, identity, runtime ---
 import {
@@ -114,7 +113,7 @@ import {
   selectPreferredRouteRow, deriveRouteMatrixPolicy,
   loadRouteMatrixPolicyForRun, resolveRuntimeControlKey,
   defaultRuntimeOverrides, normalizeRuntimeOverrides, applyRuntimeOverridesToPlanner,
-  buildInitialLlmBudgetState, enqueueAdapterSeedUrls,
+  enqueueAdapterSeedUrls,
   resolveScreencastCallback, createRunProductFetcherFactory,
   buildIndexlabRuntimeCategoryConfig,
   PASS_TARGET_EXEMPT_FIELDS, markSatisfiedLlmFields,
@@ -542,7 +541,6 @@ export async function runProduct({
     helperSupportiveSyntheticSources,
     artifactsByHost,
     llmValidatorDecisions,
-    llmBudgetGuard,
     llmRuntime,
     llmContext,
     phase08BatchRows,

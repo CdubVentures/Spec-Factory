@@ -1,9 +1,9 @@
 // Post-execution result processing extracted from searchDiscovery.js.
 // Takes raw search results and produces the final discovery output:
-// SERP dedup → hard-drop filter → soft labels → lane assignment →
-// surface-aware scoring → lane-quota selection → conditional LLM rerank →
-// reject audit → trace enrichment → artifact writing → return value.
+// SERP dedup → hard-drop filter → LLM SERP selector → reject audit →
+// trace enrichment → artifact writing → return value.
 
+import { resolvePhaseModel } from '../../../core/llm/client/routing.js';
 import { toPosixKey } from '../../../s3/storage.js';
 import {
   inferRoleForHost,
@@ -11,7 +11,6 @@ import {
   isDeniedHost,
   resolveTierForHost,
 } from '../../../categories/loader.js';
-import { rerankSerpResults } from '../../../research/serpReranker.js';
 import { dedupeSerpResults } from '../search/serpDedupe.js';
 import {
   normalizeHost,
@@ -19,8 +18,6 @@ import {
   uniqueTokens,
   countTokenHits,
   normalizeIdentityTokens,
-  manufacturerHostHintsForBrand,
-  manufacturerHostMatchesBrand,
 } from './discoveryIdentity.js';
 import {
   classifyUrlCandidate,
@@ -30,13 +27,12 @@ import {
 import {
   buildQueryAttemptStats,
   writeSearchProfileArtifacts,
-  normalizeTriageScore,
 } from './discoveryHelpers.js';
 import { applyHardDropFilter } from './triageHardDropFilter.js';
-import { assignSoftLabels } from './triageSoftLabeler.js';
-import { assignLanes, computeLaneQuotas, selectByLaneQuota } from './triageLaneRouter.js';
-import { scoreCandidates } from './triageSurfaceScorer.js';
 import { sampleRejectAudit, buildAuditTrail } from './triageRejectAuditor.js';
+import { buildSerpSelectorInput, validateSelectorOutput, adaptSerpSelectorOutput } from './serpSelector.js';
+import { createSerpSelectorCallLlm } from './serpSelectorLlmAdapter.js';
+import { callLlmWithRouting } from '../../../core/llm/client/routing.js';
 
 export async function processDiscoveryResults({
   // From executeSearchQueries return
@@ -53,6 +49,8 @@ export async function processDiscoveryResults({
   effectiveHostPlan,
   // NeedSet pressure signals for lane-quota selection
   focusGroups = [],
+  // DI seam for SERP selector (testing)
+  _serpSelectorCallFn,
 }) {
   const { deduped: dedupedResults, stats: dedupeStats } = dedupeSerpResults(rawResults);
   logger?.info?.('discovery_serp_deduped', {
@@ -261,131 +259,65 @@ export async function processDiscoveryResults({
     });
   }
 
-  // ── Phase 3: Soft labels (replaces resolveDiscoveryAdmissionExclusionReason) ──
-  // WHY: No admission exclusion kill gate. Forum subdomain, sibling model page,
-  // multi_model_hint, manufacturer brand mismatch all become soft labels.
-  assignSoftLabels({
-    candidates: candidateRows,
-    categoryConfig,
-    identityLock,
-    variables,
-    brandResolution,
-    effectiveHostPlan,
-    searchProfileBase,
+  // ── SERP Selector (LLM-only, no deterministic fallback) ──
+  const { selectorInput, candidateMap, overflowRows } = buildSerpSelectorInput({
+    runId, category: categoryConfig.category, productId: job.productId,
+    variables, identityLock, brandResolution,
+    missingFields, missingCriticalFields: missingFields,
+    focusFields: toArray(focusGroups),
+    effectiveHostPlan, searchProfileBase,
+    candidateRows, queryMetaByQuery: new Map(
+      toArray(searchProfilePlanned?.query_rows).map((row) => [String(row?.query || '').trim(), row || {}])
+    ),
+    categoryConfig, frontierDb,
+    discoveryCap,
+    maxUrlsPerProduct: Number(config?.maxUrlsPerProduct || 0) || undefined,
+    maxCandidateUrls: Number(config?.maxCandidateUrls || 0) || undefined,
+  });
+  const sentCandidateIds = [...candidateMap.keys()];
+
+  const callSelector = _serpSelectorCallFn || createSerpSelectorCallLlm({
+    callRoutedLlmFn: callLlmWithRouting, config, logger,
   });
 
-  // ── Phase 4: Lane assignment + surface-aware scoring ──
-  assignLanes({ labeledCandidates: candidateRows });
-
-  const fieldYieldMap = learning?.fieldYield || {};
-  scoreCandidates({
-    lanedCandidates: candidateRows,
-    categoryConfig,
-    missingFields,
-    fieldYieldMap,
-    identityLock,
-    effectiveHostPlan,
-    focusGroups,
-  });
-
-  // Derive selection_priority from triage_disposition
-  for (const candidate of candidateRows) {
-    if (!candidate.selection_priority) {
-      candidate.selection_priority =
-        candidate.triage_disposition === 'fetch_high' ? 'high'
-        : candidate.triage_disposition === 'fetch_normal' ? 'medium'
-        : candidate.triage_disposition === 'fetch_low' ? 'low'
-        : 'low';
-    }
-    candidate.triage_enriched = true;
-    candidate.triage_schema_version = 1;
-  }
-
-  // ── Phase 5: Lane-quota selection (replaces score-ordered slice) ──
-  const { quotas: laneQuotas, boost_reasons: laneBoostReasons } = computeLaneQuotas({
-    missingFields,
-    focusGroups,
-    totalBudget: discoveryCap,
-    fieldYieldMap,
-  });
-
-  const { selected, notSelected, laneStats } = selectByLaneQuota({
-    lanedCandidates: candidateRows.sort((a, b) => (b.score || 0) - (a.score || 0)),
-    laneQuotas,
-  });
-
-  // ── Phase 6: Conditional LLM rerank (last-mile resolver on selected set) ──
-  const triageEnabledSetting = config.serpTriageEnabled !== false;
-  const triageMinScore = Math.max(0, Number.parseFloat(String(config.serpTriageMinScore ?? 0)) || 0);
-  // WHY: LLM escalation is gated by serpTriageEnabled + uberMode only.
-  // The old llmSerpRerankEnabled hardcoded knob was removed — always on when triage is enabled.
-  const llmTriageConfigEnabled = Boolean(triageEnabledSetting && uberMode);
-  const highQualityCount = selected
-    .filter((r) => (Number(r.score) || 0) >= triageMinScore).length;
-  const needsLlmTriage = highQualityCount < Math.ceil(selected.length * 0.6);
-  const llmTriageEnabled = llmTriageConfigEnabled && needsLlmTriage;
-  if (llmTriageConfigEnabled && !needsLlmTriage) {
-    logger?.info?.('llm_triage_skipped', {
-      reason: 'sufficient_deterministic_quality',
-      high_quality_count: highQualityCount,
-      threshold: Math.ceil(selected.length * 0.6),
+  let selectorOutput = null;
+  let validation = { valid: false, reason: '' };
+  try {
+    selectorOutput = await callSelector({ selectorInput, llmContext: {
+      category: categoryConfig.category,
+      productId: job.productId,
+      runId,
+      ...llmContext,
+    }});
+    validation = validateSelectorOutput({
+      selectorOutput,
+      candidateIds: sentCandidateIds,
+      maxTotalKeep: selectorInput.selection_limits.max_total_keep,
     });
-  }
-  let llmTriageApplied = false;
-  if (llmTriageEnabled) {
-    try {
-      const llmReranked = await rerankSerpResults({
-        config,
-        logger,
-        llmContext,
-        identity: identityLock,
-        missingFields,
-        serpResults: selected,
-        frontier: frontierDb,
-        topK: selected.length,
-        domainSafetyResults
-      });
-      if (llmReranked.length > 0 && !llmReranked.explicitAllDrop) {
-        // WHY: LLM can re-order within selected set but not add/remove URLs.
-        // Merge LLM scores into selected rows for observability.
-        const llmByUrl = new Map(llmReranked.map((r) => [String(r.url || '').trim(), r]));
-        for (const row of selected) {
-          const llmRow = llmByUrl.get(String(row.url || '').trim());
-          if (llmRow) {
-            row.llm_rerank_score = normalizeTriageScore(llmRow);
-            row.llm_rerank_reason = String(llmRow.rerank_reason || llmRow.reason_code || '').trim();
-          }
-        }
-        llmTriageApplied = true;
-        logger?.info?.('serp_triage_completed', {
-          query: '',
-          kept_count: selected.length,
-          dropped_count: 0,
-          triage_min_score: triageMinScore,
-          candidates: selected.slice(0, 40).map((r) => ({
-            url: String(r?.url || '').trim(),
-            title: String(r?.title || '').trim(),
-            domain: String(r?.host || '').trim(),
-            score: Number(r?.score || 0),
-            llm_score: r.llm_rerank_score || null,
-            decision: 'keep',
-            rationale: r.llm_rerank_reason || 'lane_selected',
-            role: String(r?.role || '').trim(),
-            identity_prelim: String(r?.identity_prelim || '').trim(),
-            host_trust_class: String(r?.host_trust_class || '').trim(),
-            primary_lane: r?.primary_lane ?? null,
-            triage_disposition: String(r?.triage_disposition || '').trim(),
-            doc_kind_guess: String(r?.doc_kind_guess || '').trim(),
-            approval_bucket: String(r?.approval_bucket || '').trim(),
-          }))
-        });
-      }
-    } catch (err) {
-      logger?.warn?.('serp_triage_llm_error', {
-        error: String(err?.message || 'unknown'),
-      });
+    if (!validation.valid) {
+      logger?.warn?.('serp_selector_invalid_output', { reason: validation.reason });
     }
+  } catch (err) {
+    logger?.warn?.('serp_selector_failed', { error: String(err?.message || 'unknown') });
   }
+
+  // WHY: No deterministic fallback. On any failure, treat as all-reject
+  // so the run continues with zero selected URLs rather than garbage.
+  const validOutput = validation.valid ? selectorOutput : {
+    keep_ids: [], approved_ids: [], candidate_ids: [],
+    reject_ids: [...sentCandidateIds],
+    results: [...sentCandidateIds].map((id) => ({
+      id, decision: 'reject', score: 0, confidence: 'low',
+      fetch_rank: null, page_type: 'unknown', authority_bucket: 'unknown',
+      reason_code: 'unclear', reason: 'selector_output_invalid',
+    })),
+    summary: { input_count: sentCandidateIds.length, approved_count: 0, candidate_count: 0, reject_count: sentCandidateIds.length },
+  };
+
+  const { selected, notSelected, laneStats, laneQuotas } = adaptSerpSelectorOutput({
+    selectorOutput: validOutput, candidateMap, overflowRows,
+  });
+  const laneBoostReasons = [];
 
   const discovered = selected;
 
@@ -419,6 +351,45 @@ export async function processDiscoveryResults({
   logger?.info?.('discovery_results_reranked', {
     discovered_count: discovered.length,
     approved_count: discovered.filter((item) => item.approved_domain || item.approvedDomain).length
+  });
+
+  // WHY: Emit serp_selector_completed so the bridge handler populates
+  // the SERP Selector prefetch panel and enriches search worker URLs.
+  // Built from validOutput.results (raw LLM decisions) + candidateMap (original URLs).
+  const selectorDecisionMap = {
+    approved: 'keep',
+    candidate: 'maybe',
+    reject: 'drop',
+  };
+  logger?.info?.('serp_selector_completed', {
+    query: '',
+    kept_count: validOutput.keep_ids.length,
+    dropped_count: validOutput.reject_ids.length,
+    candidates: toArray(validOutput.results).slice(0, 120).map((r) => {
+      const orig = candidateMap.get(r.id) || {};
+      return {
+        url: String(orig.url || '').trim(),
+        title: String(orig.title || '').trim(),
+        domain: String(orig.host || '').trim(),
+        snippet: String(orig.snippet || '').slice(0, 260),
+        score: Number(r.score || 0),
+        decision: selectorDecisionMap[r.decision] || 'drop',
+        rationale: String(r.reason || '').trim(),
+        score_components: {
+          base_relevance: Number(r.score || 0),
+          tier_boost: 0,
+          identity_match: 0,
+          penalties: 0,
+        },
+        role: String(orig.role || '').trim(),
+        identity_prelim: String(r.confidence === 'high' ? 'exact' : r.confidence === 'medium' ? 'family' : 'uncertain').trim(),
+        host_trust_class: String(r.authority_bucket || 'unknown').trim(),
+        primary_lane: null,
+        triage_disposition: r.decision === 'approved' ? 'fetch_high' : r.decision === 'candidate' ? 'fetch_normal' : 'fetch_low',
+        doc_kind_guess: String(r.page_type || 'unknown').trim(),
+        approval_bucket: r.decision === 'reject' ? '' : r.decision,
+      };
+    }),
   });
 
   const approvedOnly = discovered.filter((item) => item.approved_domain || item.approvedDomain);
@@ -564,11 +535,10 @@ export async function processDiscoveryResults({
   const serpExplorer = {
     generated_at: new Date().toISOString(),
     provider: config.searchEngines,
-    llm_triage_enabled: llmTriageEnabled,
-    llm_triage_applied: llmTriageApplied,
-    llm_triage_model: llmTriageEnabled
-      ? String(config.llmModelPlan || '').trim()
-      : '',
+    // WHY: LLM selector is now the only triage path
+    llm_selector_enabled: true,
+    llm_selector_applied: validation.valid,
+    llm_selector_model: resolvePhaseModel(config, 'serpSelector') || String(config.llmModelPlan || '').trim(),
     query_count: serpQueryRows.length,
     candidates_checked: candidateTraceRows.length,
     urls_triaged: candidateRows.length,
@@ -582,7 +552,7 @@ export async function processDiscoveryResults({
     soft_exclude_count: notSelected.length,
     lane_stats: laneStats,
     lane_quotas: laneQuotas,
-    lane_boost_reasons: laneBoostReasons,
+    lane_boost_reasons: laneBoostReasons || [],
     audit_trail: auditTrail,
     queries: serpQueryRows
   };
@@ -597,9 +567,9 @@ export async function processDiscoveryResults({
     approved_count: approvedOnly.length,
     candidate_count: candidateOnly.length,
     llm_query_planning: true,
-    llm_query_model: String(config.llmModelPlan || '').trim(),
-    llm_serp_triage: llmTriageEnabled,
-    llm_serp_triage_model: String(config.llmModelPlan || '').trim(),
+    llm_query_model: resolvePhaseModel(config, 'searchPlanner') || String(config.llmModelPlan || '').trim(),
+    llm_serp_selector: true,
+    llm_serp_selector_model: resolvePhaseModel(config, 'serpSelector') || String(config.llmModelPlan || '').trim(),
     serp_explorer: serpExplorer
   };
   await writeSearchProfileArtifacts({
@@ -631,9 +601,9 @@ export async function processDiscoveryResults({
     provider_state: providerState,
     query_concurrency: queryConcurrency,
     llm_query_planning: true,
-    llm_query_model: String(config.llmModelPlan || '').trim(),
-    llm_serp_triage: llmTriageEnabled,
-    llm_serp_triage_model: String(config.llmModelPlan || '').trim(),
+    llm_query_model: resolvePhaseModel(config, 'searchPlanner') || String(config.llmModelPlan || '').trim(),
+    llm_serp_selector: true,
+    llm_serp_selector_model: resolvePhaseModel(config, 'serpSelector') || String(config.llmModelPlan || '').trim(),
     query_count: queries.length,
     query_reject_count: toArray(searchProfileFinal?.query_reject_log).length,
     discovered_count: discovered.length,

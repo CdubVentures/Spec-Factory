@@ -37,7 +37,6 @@
 
 ## Error Paths
 
-- `authoritySnapshotEnabled` disabled in config: route family returns `false`; no snapshot endpoint is exposed.
 - Missing or invalid category: `400 { error: 'category_required' }`.
 - Missing SpecDb sync state: route falls back to default `unknown` sync metadata instead of failing.
 

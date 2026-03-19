@@ -70,24 +70,6 @@ test('extractCandidatesFromPage includes static DOM table extraction when enable
   assert.equal(extracted.staticDom.parserStats.accepted_field_candidates >= 2, true);
 });
 
-test('extractCandidatesFromPage can disable static DOM extractor', () => {
-  const extracted = extractCandidatesFromPage({
-    host: 'example.com',
-    html: '<table><tr><th>Weight</th><td>59 g</td></tr></table>',
-    title: 'Example Mouse',
-    ldjsonBlocks: [],
-    embeddedState: {},
-    networkResponses: [],
-    staticDomExtractorEnabled: false
-  });
-
-  assert.equal(extracted.staticDom.parserStats.accepted_field_candidates, 0);
-  assert.equal(
-    extracted.fieldCandidates.some((row) => row.field === 'weight' && row.page_product_cluster_id),
-    false
-  );
-});
-
 test('extractCandidatesFromPage merges structured metadata surfaces with target identity gating', () => {
   const extracted = extractCandidatesFromPage({
     host: 'example.com',
@@ -136,8 +118,7 @@ test('extractCandidatesFromPage merges structured metadata surfaces with target 
     identityTarget: {
       brand: 'Logitech',
       model: 'G Pro X Superlight 2'
-    },
-    staticDomExtractorEnabled: false
+    }
   });
 
   const weights = extracted.fieldCandidates

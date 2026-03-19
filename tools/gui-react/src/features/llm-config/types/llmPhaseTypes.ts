@@ -3,7 +3,7 @@ export type LlmPhaseId =
   | 'needset'
   | 'brand-resolver'
   | 'search-planner'
-  | 'serp-triage'
+  | 'serp-selector'
   | 'extraction'
   | 'validate'
   | 'write';

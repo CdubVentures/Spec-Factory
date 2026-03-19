@@ -16,7 +16,7 @@ test('buildFetchSchedulerDrainContext maps runProduct scheduler inputs to drain 
 
   const context = buildFetchSchedulerDrainContext({
     planner: { hasNext: () => false },
-    config: { fetchSchedulerEnabled: true },
+    config: {},
     initialMode: 'http',
     prepareNextPlannerSource,
     fetchFn,
@@ -31,7 +31,7 @@ test('buildFetchSchedulerDrainContext maps runProduct scheduler inputs to drain 
   });
 
   assert.equal(typeof context.planner.hasNext, 'function');
-  assert.deepEqual(context.config, { fetchSchedulerEnabled: true });
+  assert.deepEqual(context.config, {});
   assert.equal(context.initialMode, 'http');
   assert.equal(context.prepareNextPlannerSourceFn, prepareNextPlannerSource);
   assert.equal(context.fetchFn, fetchFn);

@@ -86,7 +86,7 @@ export function DrawerShotsTab({ screenshots, runId, workerId, isRunning }: Draw
             >
               <div className="relative">
                 <img
-                  src={`/api/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(s.filename)}`}
+                  src={`/api/v1/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(s.filename)}`}
                   alt={s.filename}
                   className="w-full rounded-t"
                   loading="lazy"
@@ -119,7 +119,7 @@ export function DrawerShotsTab({ screenshots, runId, workerId, isRunning }: Draw
           />
           <div className="relative z-10 max-w-[90vw] max-h-[90vh]">
             <img
-              src={`/api/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(screenshots[lightboxIndex].filename)}`}
+              src={`/api/v1/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(screenshots[lightboxIndex].filename)}`}
               alt={screenshots[lightboxIndex].filename}
               className="max-w-full max-h-[90vh] object-contain rounded"
             />

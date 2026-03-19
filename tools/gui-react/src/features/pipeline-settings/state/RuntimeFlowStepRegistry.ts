@@ -32,7 +32,7 @@ export const RUNTIME_STEPS: RuntimeStepEntry[] = [
     id: 'run-setup',
     phase: '01',
     label: 'Run Setup',
-    tip: 'Stages 01-07 discovery setup: NeedSet through SERP Triage.',
+    tip: 'Stages 01-07 discovery setup: NeedSet through SERP Selector.',
     options: [
       'Search Route',
       'SearXNG Base URL',

@@ -13,11 +13,11 @@ import type { RuntimeDraft, NumberBound } from '../types/settingPrimitiveTypes';
 import { AdvancedSettingsBlock, SettingGroupBlock, SettingNumberInput, SettingRow, SettingToggle } from '../components/RuntimeFlowPrimitives';
 
 const DISCOVERY_PHASE_TIP =
-  'Phase coverage: 01 NeedSet, 02 Brand Resolver, 03 Search Profile, 04 Search Planner, 05 Query Journey, 06 Search Results, and 07 SERP Triage.';
+  'Phase coverage: 01 NeedSet, 02 Brand Resolver, 03 Search Profile, 04 Search Planner, 05 Query Journey, 06 Search Results, and 07 SERP Selector.';
 const PROFILE_PLANNER_JOURNEY_NOTE =
   'Ordering note: Search Planner is precomputed early from NeedSet, Search Profile is the deterministic and fallback profile branch inside searchDiscovery(), and Query Journey chooses the Schema 4 handoff or the legacy profile chain before search executes.';
 const BUDGET_PHASE_TIP =
-  'Phase coverage: 05 Query Journey, 06 Search Results, 07 SERP Triage, and 08 Fetch and Parse Entry.';
+  'Phase coverage: 05 Query Journey, 06 Search Results, 07 SERP Selector, and 08 Fetch and Parse Entry.';
 const RESUME_PHASE_TIP =
   'Phase coverage: runtime bootstrap plus late refresh before Stage 09 Fetch To Extraction.';
 
@@ -183,6 +183,33 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
         >
           <input type="text" value={runtimeDraft.searxngBaseUrl} onChange={(event) => updateDraft('searxngBaseUrl', event.target.value)} disabled={!runtimeSettingsReady} className={inputCls} placeholder="http://localhost:8080" />
         </SettingRow>
+        <AdvancedSettingsBlock title="Google Crawlee" count={5}>
+          <SettingRow
+            label="Proxy URLs (JSON array)"
+            tip="Rotating proxy URLs for Google searches. Each retry uses a fresh IP from the pool."
+          >
+            <textarea
+              value={runtimeDraft.googleSearchProxyUrlsJson}
+              onChange={(event) => updateDraft('googleSearchProxyUrlsJson', event.target.value)}
+              disabled={!runtimeSettingsReady}
+              className={`${inputCls} min-h-[88px] font-mono sf-text-label`}
+              spellCheck={false}
+              placeholder='["http://user:pass@proxy1:80", "http://user:pass@proxy2:80"]'
+            />
+          </SettingRow>
+          <SettingRow label="SERP Screenshots" tip="Capture a JPEG screenshot of each Google SERP. Adds a render delay per query but provides visual proof of results.">
+            <SettingToggle checked={runtimeDraft.googleSearchScreenshotsEnabled} onChange={(next) => updateDraft('googleSearchScreenshotsEnabled', next)} disabled={!runtimeSettingsReady} />
+          </SettingRow>
+          <SettingRow label="Timeout (ms)" tip="Maximum time for a single Google search request.">
+            <SettingNumberInput draftKey="googleSearchTimeoutMs" value={runtimeDraft.googleSearchTimeoutMs} bounds={getNumberBounds('googleSearchTimeoutMs')} step={1000} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
+          </SettingRow>
+          <SettingRow label="Min Query Interval (ms)" tip="Minimum delay between Google searches. Random jitter is added on top. Set to 0 for no delay.">
+            <SettingNumberInput draftKey="googleSearchMinQueryIntervalMs" value={runtimeDraft.googleSearchMinQueryIntervalMs} bounds={getNumberBounds('googleSearchMinQueryIntervalMs')} step={500} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
+          </SettingRow>
+          <SettingRow label="Max Retries" tip="Retry attempts per query when proxy is configured. Each retry rotates to a new IP. Ignored without a proxy.">
+            <SettingNumberInput draftKey="googleSearchMaxRetries" value={runtimeDraft.googleSearchMaxRetries} bounds={getNumberBounds('googleSearchMaxRetries')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
+          </SettingRow>
+        </AdvancedSettingsBlock>
         <SettingRow
           label="Fetch Candidate Sources"
           tip={`${DISCOVERY_PHASE_TIP}\nLives in: SERP triage output and planner queue seeding.\nWhat this controls: whether non-approved candidate URLs are still harvested and seeded into candidate fetch queues after triage.`}
@@ -221,7 +248,7 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
           </SettingRow>
           <SettingRow
             label="SERP Reranker Weight Map (JSON)"
-            tip={`Phase coverage: 07 SERP Triage.\nLives in: deterministic rerank scoring after search results are deduped and classified.\nWhat this controls: the JSON weight map that applies bonuses and penalties before approved and candidate URLs are chosen.`}
+            tip={`Phase coverage: 07 SERP Selector.\nLives in: deterministic rerank scoring after search results are deduped and classified.\nWhat this controls: the JSON weight map that applies bonuses and penalties before approved and candidate URLs are chosen.`}
             disabled={plannerControlsLocked}
           >
             <textarea value={runtimeDraft.serpRerankerWeightMapJson} onChange={(event) => updateDraft('serpRerankerWeightMapJson', event.target.value)} disabled={!runtimeSettingsReady || plannerControlsLocked} className={`${inputCls} min-h-[88px] font-mono sf-text-label`} spellCheck={false} />

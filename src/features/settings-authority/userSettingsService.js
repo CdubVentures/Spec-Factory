@@ -24,6 +24,7 @@ import {
   recordSettingsWriteOutcome,
 } from '../../observability/settingsPersistenceCounters.js';
 import { DUAL_KEY_PAIRS } from '../../core/config/settingsKeyMap.js';
+import { resolvePhaseOverrides } from '../../core/config/configPostMerge.js';
 
 const RUNTIME_KEYS_TO_PERSIST = new Set(RUNTIME_SETTINGS_KEYS);
 const CONVERGENCE_KEYS_TO_PERSIST = new Set(CONVERGENCE_SETTINGS_KEYS);
@@ -607,6 +608,18 @@ export function applyRuntimeSettingsToConfig(config, runtimeSettings = {}) {
     config[key] = value;
     const partner = DUAL_KEY_PARTNER.get(key);
     if (partner) config[partner] = value;
+  }
+  // WHY: Phase override _resolved* fields are computed during configPostMerge
+  // but user settings are applied AFTER that. Re-resolve whenever ANY global
+  // input to phase resolution changes — not just llmPhaseOverridesJson.
+  // Without this, changing llmModelPlan in the GUI leaves _resolved*BaseModel
+  // stale at the old value, causing phases to use the wrong model.
+  const phaseResolutionInputs = [
+    'llmPhaseOverridesJson', 'llmModelPlan', 'llmModelReasoning',
+    'llmPlanUseReasoning', 'llmMaxOutputTokensPlan', 'llmMaxOutputTokensTriage',
+  ];
+  if (phaseResolutionInputs.some((key) => Object.hasOwn(source, key))) {
+    resolvePhaseOverrides(config);
   }
 }
 

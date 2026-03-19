@@ -48,13 +48,6 @@ export const RuntimeFlowOcrSection = memo(function RuntimeFlowOcrSection({
               disabled={!runtimeSettingsReady}
             />
           </MasterSwitchRow>
-          <SettingRow label="Promote OCR Candidates" tip={`${OCR_PHASE_TIP}\nLives in: OCR candidate admission into the broader extraction context.\nWhat this controls: whether values discovered through OCR may be promoted into the main extraction candidate set.`} disabled={ocrControlsLocked}>
-            <SettingToggle
-              checked={runtimeDraft.scannedPdfOcrPromoteCandidates}
-              onChange={(next) => updateDraft('scannedPdfOcrPromoteCandidates', next)}
-              disabled={!runtimeSettingsReady || ocrControlsLocked}
-            />
-          </SettingRow>
           <SettingRow label="OCR Backend" tip={`${OCR_PHASE_TIP}\nLives in: OCR engine routing.\nWhat this controls: which OCR backend is selected for scanned-document processing.`} disabled={ocrControlsLocked}>
             <select
               value={runtimeDraft.scannedPdfOcrBackend}

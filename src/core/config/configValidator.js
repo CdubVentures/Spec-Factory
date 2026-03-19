@@ -29,13 +29,6 @@ export function validateConfig(config) {
     });
   }
 
-  // Rule 8: Budget guards disabled is risky
-  if (config.llmDisableBudgetGuards) {
-    warnings.push({
-      code: 'BUDGET_GUARDS_DISABLED',
-      message: 'LLM_DISABLE_BUDGET_GUARDS=true — no cost ceiling in effect'
-    });
-  }
 
   return {
     valid: errors.length === 0,

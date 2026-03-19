@@ -7,7 +7,6 @@ export function runSourceLlmFieldCandidatePhase({
   logger = null,
   isIdentityLockedFieldFn = () => false,
   isAnchorLockedFn = () => false,
-  budgetRetryReason = 'llm_budget_guard_blocked',
 } = {}) {
   const llmFieldCandidates = (llmExtraction.fieldCandidates || []).filter((row) => {
     if (isIdentityLockedFieldFn(row.field)) {
@@ -18,21 +17,5 @@ export function runSourceLlmFieldCandidatePhase({
     }
     return true;
   });
-  const llmNotesLower = (llmExtraction.notes || [])
-    .map((note) => String(note || '').toLowerCase())
-    .join(' | ');
-
-  if (
-    llmEligibleSource
-    && llmFieldCandidates.length === 0
-    && (llmNotesLower.includes('budget guard') || llmNotesLower.includes('skipped by budget'))
-  ) {
-    llmRetryReasonByUrl.set(sourceUrl, budgetRetryReason);
-    logger?.info?.('llm_retry_source_queued', {
-      url: sourceUrl,
-      reason: budgetRetryReason
-    });
-  }
-
   return { llmFieldCandidates };
 }

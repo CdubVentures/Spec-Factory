@@ -3,7 +3,7 @@
 flowchart LR
     subgraph BOOT["Bootstrap"]
         direction TB
-        B0["runProduct()<br/>run id + logger + trace writer<br/>identity lock + runtime overrides<br/>planner, frontier, learning, resume"]
+        B0["runProduct()<br/>run id + logger + trace writer<br/>identity lock + runtime overrides<br/>planner + frontier + resume<br/>learning profile + store-hint readback"]
     end
 
     subgraph DISCOVERY["Discovery Seed (01-07)"]
@@ -12,7 +12,7 @@ flowchart LR
         S02["02 Brand Resolver<br/>official/support domain<br/>aliases + confidence<br/>auto-promotion hints"]
         S03["03 Search Planner<br/>Schema 3 context<br/>optional Schema 4 handoff<br/>panel + learning writeback"]
         S04["04 Query Journey<br/>Schema 4 adapter or fallback planner<br/>identity guard + reject log<br/>selected query rows"]
-        S05["05 Search Results<br/>internal-first search<br/>frontier reuse + provider execution<br/>plan-only fallback"]
+        S05["05 Search Results<br/>internal-first search<br/>Google Crawlee + SearXNG transport split<br/>frontier reuse + plan-only fallback"]
         S06["06 SERP Triage<br/>hard drops + soft labels<br/>lane quotas + optional rerank<br/>searchProfileFinal + serp_explorer"]
         S07["07 Queue Seeding<br/>approvedUrls -> enqueue<br/>candidateUrls -> seedCandidates<br/>SourcePlanner revalidation"]
         S01 --> S02 --> S03 --> S04 --> S05 --> S06 --> S07
@@ -30,23 +30,30 @@ flowchart LR
         direction TB
         S11["11 Consensus<br/>clustered field selection<br/>provenance + candidates<br/>agreementScore + pass-target lists"]
         S12["12 Finalization Derivation<br/>synthetic source ingestion<br/>critic + validator + inference + runtime gate<br/>needSet + traffic light + publishability"]
-        S13["13 Completion Lifecycle<br/>schema packets + AJV validation<br/>run_completed + run_result<br/>learning + exports + final promotion"]
+        S13["13 Completion Lifecycle<br/>schema packets + AJV validation<br/>run_completed + run_result<br/>learning gate + store/profile writeback<br/>exports + final promotion"]
         S11 --> S12 --> S13
     end
 
     ART["Durable Outputs<br/>runs/ + latest/ + final/<br/>history/runs.jsonl + evidence/sources.jsonl<br/>logs/events.jsonl.gz + logs/summary.json"]
     SCHEMA["Indexing Schema Packets<br/>sourceCollection + itemPacket + runMetaPacket<br/>validation summary emitted during finalization"]
+    GOOGLE["Google Crawlee Sidecar<br/>splitEnginesByTransport()<br/>searchGoogle() headless browser + optional screenshot<br/>captcha/consent returns empty results"]
+    LEARN["Learning Loop<br/>bootstrap reads learningStoreHints + profile seeds<br/>Schema 4 emits learning_writeback<br/>acceptedUpdates persist to stores + _learning profile<br/>next run reuses anchors, URLs, and domain yield"]
 
     B0 --> DISCOVERY
     S07 --> EXEC
     S10 --> FINALIZE
+    S05 -.->|google via Crawlee| GOOGLE
     S03 -.->|seed_search_plan_output| S12
     S12 -.->|"updated NeedSet<br/>+ repair reasoning"| S01
     S13 --> ART
     S13 --> SCHEMA
+    S13 --> LEARN
+    LEARN -.->|next run hints + seeds| B0
 
     classDef phase fill:#d9eefc,stroke:#0f4c81,stroke-width:3px,color:#0b1f33
     classDef durable fill:#dff3e4,stroke:#2f855a,stroke-width:3px,color:#123524
+    classDef sidecar fill:#fef3d6,stroke:#b7791f,stroke-width:2px,color:#4a3410
 
     class B0,S01,S02,S03,S04,S05,S06,S07,S08,S09,S10,S11,S12,S13 phase
     class ART,SCHEMA durable
+    class GOOGLE,LEARN sidecar

@@ -7,6 +7,9 @@ export interface IndexLabRunSummary {
   status: string;
   started_at: string;
   ended_at: string;
+  storage_origin?: 'local' | 's3';
+  storage_state?: 'live' | 'relocating' | 'stored';
+  picker_label?: string;
   has_needset?: boolean;
   has_search_profile?: boolean;
   identity_fingerprint?: string;
@@ -337,8 +340,8 @@ export interface IndexLabSearchProfileResponse {
   llm_query_planning?: boolean;
   llm_query_model?: string;
   llm_queries?: Array<{ query?: string; target_fields?: string[] }>;
-  llm_serp_triage?: boolean;
-  llm_serp_triage_model?: string;
+  llm_serp_selector?: boolean;
+  llm_serp_selector_model?: string;
   discovered_count?: number;
   approved_count?: number;
   candidate_count?: number;

@@ -87,7 +87,6 @@ export {
 } from './runtimeHelpers.js';
 
 export {
-  buildInitialLlmBudgetState,
   enqueueAdapterSeedUrls,
   resolveScreencastCallback,
   createRunProductFetcherFactory,

@@ -215,7 +215,15 @@ export function buildRuntimeOpsWorkers(events, options) {
       applyFetchAssignment(w, parseTsMs(w.started_at));
     }
 
-    if (isStartEvent(type)) {
+    // WHY: search_queued events pre-populate workers before execution starts.
+    // The worker was just created above with state 'idle' — set it to 'queued'.
+    if (type === 'search_queued' && resolvedPool === 'search') {
+      w.state = 'queued';
+      if (payload.slot != null) w.slot = String(payload.slot);
+      const rawQ = payload.query != null ? String(payload.query) : w.current_query;
+      w.current_query = rawQ;
+      w.tasks_started = 0;
+    } else if (isStartEvent(type)) {
       w.state = 'running';
       w.current_url = extractUrl(evt) || w.current_url;
       w.started_at = String(evt?.ts || '').trim() || w.started_at;

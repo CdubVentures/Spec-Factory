@@ -213,15 +213,15 @@ export function resolveTokenProfileForModel(cfg, model) {
 }
 
 export function collectLlmModels(cfg = {}) {
+  // WHY: Only include actively configured models + well-known defaults.
+  // The pricing catalog (llmModelPricingMap) is for billing lookups, not model selection.
   const candidates = [
     cfg.llmModelPlan,
     cfg.llmModelReasoning,
     cfg.llmPlanFallbackModel,
+    cfg.llmReasoningFallbackModel,
     ...parseCsvTokens(cfg.llmModelCatalog || '')
   ];
-  if (cfg.llmModelPricingMap && typeof cfg.llmModelPricingMap === 'object') {
-    candidates.push(...Object.keys(cfg.llmModelPricingMap));
-  }
   candidates.push(
     'gemini-2.5-flash-lite',
     'gemini-2.5-flash',

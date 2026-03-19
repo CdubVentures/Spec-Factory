@@ -37,7 +37,7 @@ test('shouldQueueLlmRetry only returns true for retryable skip reasons', () => {
     reason: 'llm_budget_guard_blocked',
     status: 200,
     discoveryOnly: false
-  }), true);
+  }), false);
   assert.equal(shouldQueueLlmRetry({
     reason: 'http_status_source_unavailable',
     status: 503,
@@ -69,12 +69,12 @@ test('buildNextLlmRetryRows merges previous unresolved and new retries', () => {
         url: 'https://example.com/attempted',
         first_seen_at: '2026-02-10T00:00:00.000Z',
         last_seen_at: '2026-02-10T00:00:00.000Z',
-        last_reason: 'llm_budget_guard_blocked',
+        last_reason: 'runtime_override_disable_llm',
         retry_count: 1
       }
     ],
     newReasonByUrl: new Map([
-      ['https://example.com/new', 'llm_budget_guard_blocked'],
+      ['https://example.com/new', 'runtime_override_disable_llm'],
       ['https://example.com/attempted', 'runtime_override_disable_llm']
     ]),
     attemptedUrls: new Set(['https://example.com/attempted']),

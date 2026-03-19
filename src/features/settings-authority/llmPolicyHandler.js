@@ -1,0 +1,71 @@
+// WHY: Dedicated endpoint for the composite LlmPolicy object.
+// GET returns the assembled policy from live config.
+// PUT receives a composite, disassembles to flat keys, persists, and applies.
+
+import { assembleLlmPolicy, disassembleLlmPolicy, LLM_POLICY_FLAT_KEYS } from '../../core/llm/llmPolicySchema.js';
+import { emitDataChange } from '../../api/events/dataChangeContract.js';
+import { applyRuntimeSettingsToConfig } from './userSettingsService.js';
+
+export function createLlmPolicyHandler({
+  jsonRes,
+  readJsonBody,
+  config,
+  broadcastWs,
+  persistenceCtx,
+}) {
+  return async function handleLlmPolicy(parts, params, method, req, res) {
+    if (parts[0] !== 'llm-policy') return false;
+
+    if (method === 'GET') {
+      const policy = assembleLlmPolicy(config);
+      return jsonRes(res, 200, { ok: true, policy });
+    }
+
+    if (method === 'PUT' || method === 'POST') {
+      const body = await readJsonBody(req).catch(() => ({}));
+      const flatKeys = disassembleLlmPolicy(body);
+
+      // WHY: Apply to live config so subsequent reads see the new values.
+      applyRuntimeSettingsToConfig(config, flatKeys);
+
+      // WHY: Merge with existing persisted runtime to avoid wiping non-LLM keys.
+      const userSettingsState = persistenceCtx.getUserSettingsState();
+      const currentUserRuntime = (
+        userSettingsState?.runtime && typeof userSettingsState.runtime === 'object'
+      ) ? userSettingsState.runtime : {};
+
+      const nextRuntimeSnapshot = { ...currentUserRuntime };
+      for (const key of LLM_POLICY_FLAT_KEYS) {
+        if (key in flatKeys) {
+          nextRuntimeSnapshot[key] = flatKeys[key];
+        }
+      }
+
+      persistenceCtx.recordRouteWriteAttempt('runtime', 'llm-policy-route');
+      try {
+        await persistenceCtx.persistCanonicalSections({ runtime: nextRuntimeSnapshot });
+        persistenceCtx.recordRouteWriteOutcome('runtime', 'llm-policy-route', true);
+      } catch {
+        persistenceCtx.recordRouteWriteOutcome('runtime', 'llm-policy-route', false, 'llm_policy_persist_failed');
+        return jsonRes(res, 500, { ok: false, error: 'llm_policy_persist_failed' });
+      }
+
+      emitDataChange({
+        broadcastWs,
+        event: 'runtime-settings-updated',
+        meta: { source: 'llm-policy' },
+      });
+      emitDataChange({
+        broadcastWs,
+        event: 'user-settings-updated',
+        domains: ['settings'],
+        meta: { section: 'runtime', source: 'llm-policy' },
+      });
+
+      const policy = assembleLlmPolicy(config);
+      return jsonRes(res, 200, { ok: true, policy });
+    }
+
+    return false;
+  };
+}

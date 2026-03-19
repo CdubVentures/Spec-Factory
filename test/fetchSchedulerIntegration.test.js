@@ -16,24 +16,7 @@ function makeSource(url, host) {
   return { url, host: host || new URL(url).hostname, tier: 1 };
 }
 
-describe('FetchScheduler integration — feature flag', () => {
-  it('feature flag defaults to enabled in the standard config', () => {
-    const config = loadConfig({});
-    assert.equal(config.fetchSchedulerEnabled, true);
-  });
-
-  it('feature flag true enables scheduler', () => {
-    const saved = process.env.FETCH_SCHEDULER_ENABLED;
-    try {
-      process.env.FETCH_SCHEDULER_ENABLED = 'true';
-      const config = loadConfig({});
-      assert.equal(config.fetchSchedulerEnabled, true);
-    } finally {
-      if (saved === undefined) delete process.env.FETCH_SCHEDULER_ENABLED;
-      else process.env.FETCH_SCHEDULER_ENABLED = saved;
-    }
-  });
-
+describe('FetchScheduler integration', () => {
   it('sequential mode produces identical results to expected behavior', async () => {
     const processed = [];
     const sources = makeQueue([

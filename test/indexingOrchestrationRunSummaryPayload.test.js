@@ -210,21 +210,6 @@ test('buildRunSummaryPayload assembles canonical run summary with stable helper/
     },
     llmCallCount: 6,
     llmCostUsd: 0.123456789,
-    llmBudgetSnapshot: {
-      limits: {
-        monthlyBudgetUsd: 100,
-        productBudgetUsd: 10,
-        maxCallsPerProductTotal: 200,
-        maxCallsPerRound: 30,
-      },
-      state: {
-        monthlySpentUsd: 2.5,
-        productSpentUsd: 0.75,
-        productCallsTotal: 10,
-        roundCalls: 3,
-      },
-    },
-    llmBudgetBlockedReason: 'none',
     aggressiveExtraction: {
       enabled: false,
       stage: 'disabled',
@@ -423,7 +408,6 @@ test('buildRunSummaryPayload falls back to legacy helper root and excludes helpe
     curationSuggestionResult: {},
     contribution: {},
     llmContext: {},
-    llmBudgetSnapshot: {},
     aggressiveExtraction: {},
     categoryConfig: {},
     manufacturerSources: [],
@@ -481,10 +465,6 @@ test('buildRunSummaryPayload preserves disabled llm defaults and rounds numeric 
     previousResumeStateAgeHours: 1.236,
     parserHealthAverage: 0.123456789,
     llmCostUsd: 0.987654321,
-    llmBudgetSnapshot: {
-      limits: {},
-      state: {},
-    },
     sourceResults: [],
     identityGate: {},
     identityLock: {},

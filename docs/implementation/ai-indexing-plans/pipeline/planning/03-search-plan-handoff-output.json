@@ -1,67 +1,44 @@
 {
-  "_doc": "Cumulative discovery artifact contract after search plan selection and downstream discovery processing. Updated 2026-03-18 against searchDiscovery.js, discoverySearchExecution.js, and discoveryResultProcessor.js.",
-  "_pipeline_data_accumulated": {
-    "schema_1": "NeedSet start input from bootstrap/discovery/finalization call sites.",
-    "schema_2": "NeedSet output with field states, blockers, planner_seed, and history feedback.",
-    "schema_3": "SearchPlanningContext with focus_groups, planner limits, anti-garbage unions, learning, and previous_round_fields.",
-    "schema_4": "NeedSet planner output with search_plan_handoff, planner panel, and learning writeback.",
-    "brand_resolver": "officialDomain, supportDomain, aliases, confidence, reasoning.",
-    "search_execution": "raw SERP results, search attempts, search journal, internal/external search reasons.",
-    "post_execution": "SERP dedupe, hard drops, classification, soft labels, lane-based selection, optional LLM rerank, serp_explorer, and discovered URLs."
-  },
-  "searchProfileFinal": {
-    "_doc": "The persisted search_profile artifact written by writeSearchProfileArtifacts().",
-    "schema4_path_fields": {
-      "provider": "string - config.searchEngines",
-      "source": "string - 'schema4_planner'",
-      "selected_queries": "string[] - guarded Schema 4 query strings",
-      "query_rows": "Array<QueryRow> - per-query metadata from the handoff adapter",
-      "schema4_planner": "planner metadata from buildSearchPlan()",
-      "schema4_learning": "learning writeback from buildSearchPlan()",
-      "schema4_panel": "panel payload from buildSearchPlan()",
-      "effective_host_plan": "null on the Schema 4 branch"
-    },
-    "fallback_path_fields": {
-      "provider": "string - config.searchEngines",
-      "llm_queries": "string[] - fallback planner query strings from planUberQueries()",
-      "effective_host_plan": "object|null - populated when host-plan search is active",
-      "schema4_planner": "null",
-      "schema4_learning": "null",
-      "schema4_panel": "null"
-    },
-    "execution_additions": {
-      "status": "'executed'",
-      "query_rows": "rows enriched with result_count, attempts, providers, and frontier_cache",
-      "query_stats": "per-query execution summary",
-      "discovered_count": "total selected URLs",
-      "approved_count": "selected approved-domain URLs",
-      "candidate_count": "selected non-approved URLs",
-      "serp_explorer": "lane-aware triage breakdown and audit trail"
+  "_doc": "Live adaptation path from search_plan_handoff into Query Journey execution rows.",
+  "validated_against": "2026-03-18",
+  "adapter": {
+    "function": "convertHandoffToExecutionPlan",
+    "file": "src/features/indexing/discovery/searchPlanHandoffAdapter.js",
+    "output": {
+      "queries": "string[]",
+      "selectedQueryRowMap": "Map keyed by lowercased query",
+      "queryRows": [
+        {
+          "query": "string",
+          "source": "schema4_planner",
+          "target_fields": "string[]",
+          "domain_hint": "preferred_domains[0] or empty string",
+          "doc_hint": "",
+          "hint_source": "schema4_search_plan",
+          "family": "string",
+          "group_key": "string",
+          "query_hash": "string"
+        }
+      ],
+      "source": "schema4"
     }
   },
-  "discoverCandidateSources_return": {
-    "enabled": "boolean",
-    "discoveryKey": "storage key for the discovery payload",
-    "candidatesKey": "storage key for the candidate payload",
-    "candidates": "Array<DiscoveredURL> - selected discovery rows after lane selection",
-    "approvedUrls": "string[] - fed to planner.enqueue(... forceApproved=true)",
-    "candidateUrls": "string[] - fed to planner.seedCandidates(...) when enabled",
-    "queries": "string[] - executed query strings",
-    "search_profile": "the executed searchProfileFinal artifact",
-    "provider_state": "resolved provider availability snapshot",
-    "uber_search_plan": "object|null - fallback query planner output from planUberQueries() when generated",
-    "internal_satisfied": "boolean",
-    "external_search_reason": "string|null",
-    "search_attempts": "Array<SearchAttempt>",
-    "search_journal": "Array<SearchJournalRow>",
-    "serp_explorer": "same object embedded on search_profile",
-    "seed_search_plan_output": "object|null - Schema 4 output attached by runDiscoverySeedPlan() so finalization can reuse it without another planner call"
+  "guarded_execution_plan": {
+    "function": "resolveSchema4ExecutionPlan",
+    "file": "src/features/indexing/discovery/searchDiscovery.js",
+    "returns_null_when": [
+      "searchPlanHandoff has no queries",
+      "adapter emits zero queries",
+      "identity guard rejects every adapted query"
+    ],
+    "output": {
+      "queries": "accepted query strings",
+      "queryRows": "accepted row objects after identity guard",
+      "selectedQueryRowMap": "Map keyed by lowercased query",
+      "rejectLog": "identity guard reject log",
+      "guardContext": "brand/model/digit guard context",
+      "source": "schema4"
+    }
   },
-  "adapter_conversion": {
-    "_doc": "convertHandoffToExecutionPlan() turns the Schema 4 handoff into the same row-map shape used by the fallback query-planner branch.",
-    "queries": "string[] - flat deduped query strings",
-    "selectedQueryRowMap": "Map<lowercase_query, RowObject>",
-    "queryRows": "Array<RowObject> with query, source, target_fields, domain_hint, doc_hint, hint_source, family, group_key, and query_hash",
-    "source": "'schema4'"
-  }
+  "important_note": "There is no minimum-query threshold that makes Schema 4 win outright. Surviving Schema 4 rows are merged with deterministic Search Profile rows later."
 }

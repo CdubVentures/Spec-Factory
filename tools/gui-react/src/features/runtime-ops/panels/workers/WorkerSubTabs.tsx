@@ -24,6 +24,7 @@ function stateAnimClass(state: string): string {
   switch (state) {
     case 'stuck': return 'animate-pulse';
     case 'running': return 'animate-dot-bounce';
+    case 'queued': return '';
     default: return '';
   }
 }
@@ -84,15 +85,20 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
               const isSelected = w.worker_id === selectedWorkerId;
               const subtitle = buildWorkerButtonSubtitle(w);
 
+              const isQueued = w.state === 'queued';
+
               return (
                 <button
                   key={w.worker_id}
                   type="button"
-                  onClick={() => onSelectWorker(w.worker_id)}
+                  onClick={isQueued ? undefined : () => onSelectWorker(w.worker_id)}
+                  disabled={isQueued}
                   className={`sf-prefetch-tab-button flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap border transition-all ${
-                    isSelected
-                      ? `sf-prefetch-tab-selected ${poolSelectedTabClass(w.pool)} shadow-sm`
-                      : `${poolOutlineTabClass(w.pool)} hover:shadow-sm`
+                    isQueued
+                      ? 'opacity-60 cursor-default'
+                      : isSelected
+                        ? `sf-prefetch-tab-selected ${poolSelectedTabClass(w.pool)} shadow-sm`
+                        : `${poolOutlineTabClass(w.pool)} hover:shadow-sm`
                   }`}
                   title={`${w.worker_id} — ${w.state}${w.pool === 'llm' && w.call_type ? ` — ${w.call_type}` : ''}${w.pool === 'search' && w.current_query ? ` — ${w.current_query}` : ''}`}
                 >
@@ -110,6 +116,11 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
                   {w.state === 'stuck' && (
                     <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('stuck')}`}>
                       STUCK
+                    </span>
+                  )}
+                  {isQueued && (
+                    <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('queued')}`}>
+                      QUEUED
                     </span>
                   )}
                 </button>

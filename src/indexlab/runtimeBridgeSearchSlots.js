@@ -13,17 +13,44 @@ export function createSearchSlotScheduler({ observability, counters }) {
     return `${query}::${provider}`;
   }
 
+  // WHY: Pre-populate all search worker slots when query journey completes.
+  // Workers appear immediately in the GUI as "queued" before execution starts.
+  function prePopulateSlots(queries = []) {
+    const populated = [];
+    for (const entry of queries) {
+      const queryKey = searchQueryKey(entry);
+      if (_queryToSlot.has(queryKey)) continue;
+      if (_searchNextSlotIndex >= _searchSlotLabels.length) break;
+      const letter = _searchSlotLabels[_searchNextSlotIndex];
+      _searchNextSlotIndex += 1;
+      const slot = {
+        worker_id: `search-${letter}`,
+        slot: letter,
+        state: 'queued',
+        tasks_started: 0,
+        current_query_key: queryKey,
+      };
+      _searchSlots.set(letter, slot);
+      _queryToSlot.set(queryKey, letter);
+      populated.push({ ...slot, query: String(entry.query || '').trim(), provider: String(entry.provider || '').trim() });
+    }
+    return populated;
+  }
+
   function allocateSlot(queryKey) {
-    for (const [letter, slot] of _searchSlots) {
-      if (slot.state === 'idle') {
-        observability.search_slot_reuse += 1;
-        slot.state = 'running';
-        slot.tasks_started += 1;
-        slot.current_query_key = queryKey;
-        _queryToSlot.set(queryKey, letter);
-        return slot;
+    // WHY: If the slot was pre-populated as 'queued', transition to 'running'.
+    const existingLetter = _queryToSlot.get(queryKey);
+    if (existingLetter) {
+      const existing = _searchSlots.get(existingLetter);
+      if (existing && existing.state === 'queued') {
+        existing.state = 'running';
+        existing.tasks_started = 1;
+        return existing;
       }
     }
+    // WHY: Each query gets its own letter slot (a, b, c, d...) so the GUI
+    // shows one worker per query. No reuse — completed slots stay visible
+    // as finished workers while new queries get fresh letters.
     if (_searchNextSlotIndex < _searchSlotLabels.length) {
       const letter = _searchSlotLabels[_searchNextSlotIndex];
       _searchNextSlotIndex += 1;
@@ -107,5 +134,5 @@ export function createSearchSlotScheduler({ observability, counters }) {
     _searchNextSlotIndex = 0;
   }
 
-  return { searchQueryKey, allocateSlot, releaseSlot, getQuerySlot, getSlots, getSlotLabels, getQueryToSlot, getNextSlotIndex, reset };
+  return { searchQueryKey, allocateSlot, releaseSlot, prePopulateSlots, getQuerySlot, getSlots, getSlotLabels, getQueryToSlot, getNextSlotIndex, reset };
 }

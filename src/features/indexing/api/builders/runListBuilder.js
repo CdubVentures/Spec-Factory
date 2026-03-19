@@ -9,7 +9,68 @@ export function createRunListBuilder({
   readEvents,
   refreshArchivedRunDirIndex,
   materializeArchivedRunLocation,
+  readArchivedS3RunMetaOnly = async () => null,
 }) {
+  const toToken = (value) => String(value || '').trim();
+
+  const titleCaseWords = (value = '') => {
+    const words = toToken(value).split(/\s+/).filter(Boolean);
+    return words.map((word) => {
+      if (/\d/.test(word)) {
+        return word.toUpperCase();
+      }
+      const lower = word.toLowerCase();
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    }).join(' ');
+  };
+
+  const humanizeProductId = ({ category = '', productId = '' } = {}) => {
+    const categoryToken = toToken(category).toLowerCase();
+    let productToken = toToken(productId);
+    if (categoryToken && productToken.toLowerCase().startsWith(`${categoryToken}-`)) {
+      productToken = productToken.slice(categoryToken.length + 1);
+    }
+    const humanized = titleCaseWords(productToken.replace(/[_-]+/g, ' '));
+    return humanized || titleCaseWords(categoryToken);
+  };
+
+  const toRunDisplayToken = (runId = '') => {
+    const token = toToken(runId);
+    if (!token) return '';
+    if (token.length <= 5) return token;
+    const segments = token.split(/[^A-Za-z0-9]+/).filter(Boolean);
+    for (let i = segments.length - 1; i >= 0; i -= 1) {
+      const segment = toToken(segments[i]);
+      if (segment.length >= 5) {
+        return segment.slice(-5);
+      }
+    }
+    return token.slice(-5);
+  };
+
+  const buildPickerLabel = ({ category = '', productId = '', runId = '' } = {}) => {
+    const categoryLabel = titleCaseWords(category);
+    const productLabel = humanizeProductId({ category, productId });
+    const runToken = toRunDisplayToken(runId);
+    const lead = [categoryLabel, productLabel].filter(Boolean).join(' • ');
+    if (!lead) return runToken;
+    return runToken ? `${lead} - ${runToken}` : lead;
+  };
+
+  const resolveStorageOrigin = (runLocation) => {
+    if (typeof runLocation === 'string') return 'local';
+    const type = toToken(runLocation?.type).toLowerCase();
+    if (type === 's3') return 's3';
+    return 'local';
+  };
+
+  const resolveStorageState = (status = '') => {
+    const token = toToken(status).toLowerCase();
+    return token === 'running' || token === 'starting'
+      ? 'live'
+      : 'stored';
+  };
+
   const summarizeEvents = (events = []) => {
     const counters = {
       pages_checked: 0,
@@ -74,8 +135,9 @@ export function createRunListBuilder({
     };
   };
 
-  async function listIndexLabRuns({ limit = 50 } = {}) {
+  async function listIndexLabRuns({ limit = 50, category = '' } = {}) {
     const indexLabRoot = getIndexLabRoot();
+    const categoryFilter = toToken(category).toLowerCase();
     const runLocations = new Map();
     try {
       const entries = await fs.readdir(indexLabRoot, { withFileTypes: true });
@@ -109,49 +171,83 @@ export function createRunListBuilder({
     }));
     dirs.sort((a, b) => (mtimeCache.get(b) ?? 0) - (mtimeCache.get(a) ?? 0));
     const scanLimit = Math.max(Math.max(1, toInt(limit, 50)) * 2, 120);
-    dirs = dirs.slice(0, scanLimit);
+    if (!categoryFilter) {
+      dirs = dirs.slice(0, scanLimit);
+    }
 
-    const rows = [];
-    for (const dir of dirs) {
-      try {
-        const runLocation = runLocations.get(dir);
-        const runDir = typeof runLocation === 'string'
-          ? String(runLocation || '').trim()
-          : await materializeArchivedRunLocation(runLocation, dir);
-        if (!runDir) continue;
-        const runMetaPath = path.join(runDir, 'run.json');
-        const runEventsPath = path.join(runDir, 'run_events.ndjson');
-        const runNeedSetPath = path.join(runDir, 'needset.json');
-        const runSearchProfilePath = path.join(runDir, 'search_profile.json');
-        const meta = await safeReadJson(runMetaPath);
-        const stat = await safeStat(runMetaPath) || await safeStat(runEventsPath);
-        const needSetStat = await safeStat(runNeedSetPath);
-        const searchProfileStat = await safeStat(runSearchProfilePath);
-        const eventRows = await readEvents(dir, 6000);
-        const eventSummary = summarizeEvents(eventRows);
-        const rawStatus = String(meta?.status || 'unknown').trim();
-        const resolvedStatus = (
-          rawStatus.toLowerCase() === 'running' && !isRunStillActive(String(meta?.run_id || dir).trim())
-        ) ? 'completed' : rawStatus;
-        const useEventDerivedCounters = rawStatus.toLowerCase() === 'running' && resolvedStatus !== rawStatus;
-        const hasMetaCounters = meta?.counters && typeof meta.counters === 'object';
-        const hasNeedSet = Boolean(
-          meta?.artifacts?.has_needset
-          || meta?.needset
-          || needSetStat
-        );
-        const hasSearchProfile = Boolean(
-          meta?.artifacts?.has_search_profile
-          || meta?.search_profile
-          || searchProfileStat
-        );
-        rows.push({
-          run_id: String(meta?.run_id || dir).trim(),
-          category: String(meta?.category || '').trim(),
-          product_id: String(meta?.product_id || eventSummary.productId || '').trim(),
+    // WHY: Process runs concurrently instead of sequentially.
+    // Each run requires at least 1 async read (safeReadJson for run.json).
+    // With 120 runs that's 120 serial round-trips — parallelizing cuts
+    // wall-clock time dramatically.
+    async function processRun(dir) {
+      const runLocation = runLocations.get(dir);
+      const storageOrigin = resolveStorageOrigin(runLocation);
+      const isS3Location = runLocation && typeof runLocation === 'object' && runLocation.type === 's3';
+
+      // S3 archived run: try metadata-only read first.
+      if (isS3Location) {
+        const s3Meta = await readArchivedS3RunMetaOnly(runLocation, dir);
+        const s3Status = String(s3Meta?.status || '').trim().toLowerCase();
+        const s3HasCounters = s3Meta?.counters && typeof s3Meta.counters === 'object';
+        if (s3Meta && s3HasCounters && s3Status !== 'running') {
+          const rowCategory = toToken(s3Meta.category);
+          if (categoryFilter && rowCategory.toLowerCase() !== categoryFilter) return null;
+          const rowRunId = toToken(s3Meta.run_id || dir);
+          const rowProductId = toToken(s3Meta.product_id);
+          const resolvedStatus = String(s3Meta.status || 'unknown').trim();
+          return {
+            run_id: rowRunId,
+            category: rowCategory,
+            product_id: rowProductId,
+            status: resolvedStatus,
+            started_at: String(s3Meta.started_at || '').trim(),
+            ended_at: String(s3Meta.ended_at || '').trim(),
+            identity_fingerprint: String(s3Meta.identity_fingerprint || '').trim(),
+            identity_lock_status: String(s3Meta.identity_lock_status || '').trim(),
+            dedupe_mode: String(s3Meta.dedupe_mode || '').trim(),
+            phase_cursor: String(s3Meta.phase_cursor || '').trim(),
+            startup_ms: normalizeStartupMs(s3Meta.startup_ms),
+            events_path: '',
+            run_dir: '',
+            storage_origin: storageOrigin,
+            storage_state: resolveStorageState(resolvedStatus),
+            picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, runId: rowRunId }),
+            has_needset: Boolean(s3Meta.artifacts?.has_needset || s3Meta.needset),
+            has_search_profile: Boolean(s3Meta.artifacts?.has_search_profile || s3Meta.search_profile),
+            counters: s3Meta.counters,
+          };
+        }
+        // Metadata insufficient — fall through to full materialization.
+      }
+
+      const runDir = typeof runLocation === 'string'
+        ? String(runLocation || '').trim()
+        : await materializeArchivedRunLocation(runLocation, dir);
+      if (!runDir) return null;
+      const runMetaPath = path.join(runDir, 'run.json');
+      const runEventsPath = path.join(runDir, 'run_events.ndjson');
+      const meta = await safeReadJson(runMetaPath);
+      const rawStatus = String(meta?.status || 'unknown').trim();
+      const resolvedStatus = (
+        rawStatus.toLowerCase() === 'running' && !isRunStillActive(String(meta?.run_id || dir).trim())
+      ) ? 'completed' : rawStatus;
+      const hasMetaCounters = meta?.counters && typeof meta.counters === 'object';
+      const needsEvents = rawStatus.toLowerCase() === 'running' || !hasMetaCounters;
+
+      // Skip expensive event reading + stat calls when run.json
+      // already carries counters and the run is not active.
+      if (!needsEvents) {
+        const rowCategory = toToken(meta?.category);
+        if (categoryFilter && rowCategory.toLowerCase() !== categoryFilter) return null;
+        const rowRunId = toToken(meta?.run_id || dir);
+        const rowProductId = toToken(meta?.product_id);
+        return {
+          run_id: rowRunId,
+          category: rowCategory,
+          product_id: rowProductId,
           status: String(resolvedStatus || 'unknown').trim(),
-          started_at: String(meta?.started_at || eventSummary.startedAt || stat?.mtime?.toISOString?.() || '').trim(),
-          ended_at: String(meta?.ended_at || (resolvedStatus !== 'running' ? eventSummary.endedAt : '') || '').trim(),
+          started_at: String(meta?.started_at || '').trim(),
+          ended_at: String(meta?.ended_at || '').trim(),
           identity_fingerprint: String(meta?.identity_fingerprint || '').trim(),
           identity_lock_status: String(meta?.identity_lock_status || '').trim(),
           dedupe_mode: String(meta?.dedupe_mode || '').trim(),
@@ -159,15 +255,68 @@ export function createRunListBuilder({
           startup_ms: normalizeStartupMs(meta?.startup_ms),
           events_path: runEventsPath,
           run_dir: runDir,
-          has_needset: hasNeedSet,
-          has_search_profile: hasSearchProfile,
-          counters: (!useEventDerivedCounters && hasMetaCounters) ? meta.counters : eventSummary.counters
-        });
-      } catch {
-        // WHY: One unreadable run must not crash the entire listing
-        continue;
+          storage_origin: storageOrigin,
+          storage_state: resolveStorageState(resolvedStatus),
+          picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, runId: rowRunId }),
+          has_needset: Boolean(meta?.artifacts?.has_needset || meta?.needset),
+          has_search_profile: Boolean(meta?.artifacts?.has_search_profile || meta?.search_profile),
+          counters: meta.counters,
+        };
       }
+
+      const runNeedSetPath = path.join(runDir, 'needset.json');
+      const runSearchProfilePath = path.join(runDir, 'search_profile.json');
+      const stat = await safeStat(runMetaPath) || await safeStat(runEventsPath);
+      const needSetStat = await safeStat(runNeedSetPath);
+      const searchProfileStat = await safeStat(runSearchProfilePath);
+      const eventRows = await readEvents(dir, 6000);
+      const eventSummary = summarizeEvents(eventRows);
+      const rowCategory = toToken(meta?.category);
+      if (categoryFilter && rowCategory.toLowerCase() !== categoryFilter) return null;
+      const rowRunId = toToken(meta?.run_id || dir);
+      const rowProductId = toToken(meta?.product_id || eventSummary.productId);
+      const useEventDerivedCounters = rawStatus.toLowerCase() === 'running' && resolvedStatus !== rawStatus;
+      const hasNeedSet = Boolean(
+        meta?.artifacts?.has_needset
+        || meta?.needset
+        || needSetStat
+      );
+      const hasSearchProfile = Boolean(
+        meta?.artifacts?.has_search_profile
+        || meta?.search_profile
+        || searchProfileStat
+      );
+      return {
+        run_id: rowRunId,
+        category: rowCategory,
+        product_id: rowProductId,
+        status: String(resolvedStatus || 'unknown').trim(),
+        started_at: String(meta?.started_at || eventSummary.startedAt || stat?.mtime?.toISOString?.() || '').trim(),
+        ended_at: String(meta?.ended_at || (resolvedStatus !== 'running' ? eventSummary.endedAt : '') || '').trim(),
+        identity_fingerprint: String(meta?.identity_fingerprint || '').trim(),
+        identity_lock_status: String(meta?.identity_lock_status || '').trim(),
+        dedupe_mode: String(meta?.dedupe_mode || '').trim(),
+        phase_cursor: String(meta?.phase_cursor || '').trim(),
+        startup_ms: normalizeStartupMs(meta?.startup_ms),
+        events_path: runEventsPath,
+        run_dir: runDir,
+        storage_origin: storageOrigin,
+        storage_state: resolveStorageState(resolvedStatus),
+        picker_label: buildPickerLabel({
+          category: rowCategory,
+          productId: rowProductId,
+          runId: rowRunId,
+        }),
+        has_needset: hasNeedSet,
+        has_search_profile: hasSearchProfile,
+        counters: (!useEventDerivedCounters && hasMetaCounters) ? meta.counters : eventSummary.counters,
+      };
     }
+
+    const settled = await Promise.allSettled(dirs.map((dir) => processRun(dir)));
+    const rows = settled
+      .filter((r) => r.status === 'fulfilled' && r.value != null)
+      .map((r) => r.value);
 
     rows.sort((a, b) => {
       const aMs = Date.parse(String(a.started_at || ''));

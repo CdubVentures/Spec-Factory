@@ -26,7 +26,6 @@ test('article extractor policy: normalizes host map and aliases', () => {
 
 test('article extractor policy: resolves subdomain match and applies overrides', () => {
   const policy = resolveArticleExtractionPolicy({
-    articleExtractorV2Enabled: true,
     articleExtractorMinChars: 700,
     articleExtractorMinScore: 45,
     articleExtractorMaxChars: 24000,

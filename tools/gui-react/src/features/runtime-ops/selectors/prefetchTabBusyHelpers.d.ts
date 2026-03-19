@@ -4,8 +4,9 @@ export declare const DEFAULT_PREFETCH_TAB_KEYS: PrefetchTabKey[];
 
 export interface PrefetchBusyTabOptions {
   isRunning?: boolean;
-  activeTab?: PrefetchTabKey | null;
+  workers?: Array<{ pool: string; state: string; call_type?: string | null }>;
   prefetchData?: PreFetchPhasesResponse | undefined;
+  phaseCursor?: string;
   tabKeys?: PrefetchTabKey[] | readonly PrefetchTabKey[];
 }
 

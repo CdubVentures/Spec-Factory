@@ -40,9 +40,6 @@ test('runProductFinalizationDerivation preserves derivation phase ordering and s
     identityLock: { family_model_count: 2, ambiguity_level: 'medium' },
     learnedFieldAvailability: { shape: 'high' },
     learnedFieldYield: { shape: 'high' },
-    llmBudgetGuard: {
-      snapshot: () => ({ state: { blockedReason: '' } }),
-    },
     phase08BatchRows: [{ batch: 1 }],
     phase08FieldContexts: { shape: { context: true } },
     phase08PrimeRows: [{ field: 'shape' }],
@@ -212,7 +209,6 @@ test('runProductFinalizationDerivation preserves derivation phase ordering and s
         hypothesisQueue: [{ field: 'weight_g' }],
         fieldReasoning: { weight_g: { reason: 'missing' } },
         trafficLight: { yellow: ['weight_g'] },
-        llmBudgetBlockedReason: '',
         extractionGateOpen: true,
         needSet: { needs: [{ field_key: 'weight_g' }] },
       };
@@ -317,9 +313,6 @@ test('runProductFinalizationDerivation disables expensive finalization phases wh
     terminalReason: 'max_run_seconds_reached',
     fieldOrder: [],
     llmValidatorDecisions: { enabled: false, prior: true },
-    llmBudgetGuard: {
-      snapshot: () => ({ state: { blockedReason: '' } }),
-    },
     buildDedicatedSyntheticSourceIngestionContextFn: (payload) => payload,
     runDedicatedSyntheticSourceIngestionPhaseFn: async () => {},
     buildIdentityConsensusPhaseCallsiteContextFn: (payload) => payload,
@@ -400,7 +393,6 @@ test('runProductFinalizationDerivation disables expensive finalization phases wh
       hypothesisQueue: [],
       fieldReasoning: {},
       trafficLight: {},
-      llmBudgetBlockedReason: '',
       extractionGateOpen: true,
       needSet: {},
     }),
@@ -460,7 +452,6 @@ test('runProductFinalizationDerivation uses seed schema4 from discoveryResult in
     categoryConfig: { criticalFieldSet: new Set(), fieldGroupsData: { sensor_performance: {} } },
     fieldOrder: ['sensor'],
     llmValidatorDecisions: {},
-    llmBudgetGuard: { snapshot: () => ({ state: { blockedReason: '' } }) },
     logger: { warn: () => {} },
     llmContext: {},
     discoveryResult: { enabled: true, seed_search_plan_output: schema4Output },
@@ -492,7 +483,7 @@ test('runProductFinalizationDerivation uses seed schema4 from discoveryResult in
     buildNeedsetReasoningPhaseCallsiteContextFn: (p) => p,
     buildNeedsetReasoningContextFn: () => ({
       hypothesisQueue: [], fieldReasoning: {}, trafficLight: {},
-      llmBudgetBlockedReason: '', extractionGateOpen: true,
+      extractionGateOpen: true,
       needSet: { fields: [{ field_key: 'sensor', state: 'missing', required_level: 'critical' }], total_fields: 1 },
     }),
     buildPhase07PrimeSourcesOptionsFn: () => ({}),

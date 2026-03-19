@@ -257,6 +257,8 @@ export class SpecDb {
   upsertItemFieldState(opts) { this._itemStateStore.upsertItemFieldState(opts); }
   getItemFieldState(productId) { return this._itemStateStore.getItemFieldState(productId); }
   getItemFieldStateById(id) { return this._itemStateStore.getItemFieldStateById(id); }
+  getItemFieldStateByProductAndField(pid, fk) { return this._itemStateStore.getItemFieldStateByProductAndField(pid, fk); }
+  markItemFieldStateReviewComplete(pid, fk) { this._itemStateStore.markItemFieldStateReviewComplete(pid, fk); }
   upsertItemComponentLink(opts) { this._itemStateStore.upsertItemComponentLink(opts); }
   upsertItemListLink(opts) { this._itemStateStore.upsertItemListLink(opts); }
   removeItemListLinksForField(productId, fieldKey) { this._itemStateStore.removeItemListLinksForField(productId, fieldKey); }
@@ -580,6 +582,8 @@ export class SpecDb {
 
   upsertKeyReviewState(row) { return this._keyReviewStore.upsertKeyReviewState(row); }
   getKeyReviewState(opts) { return this._keyReviewStore.getKeyReviewState(opts); }
+  getKeyReviewStateById(id) { return this._keyReviewStore.getKeyReviewStateById(id); }
+  updateKeyReviewSelectedCandidate(opts) { this._keyReviewStore.updateKeyReviewSelectedCandidate(opts); }
   getKeyReviewStatesForItem(id) { return this._keyReviewStore.getKeyReviewStatesForItem(id); }
   getKeyReviewStatesForField(fk, tk) { return this._keyReviewStore.getKeyReviewStatesForField(fk, tk); }
   getKeyReviewStatesForComponent(ci) { return this._keyReviewStore.getKeyReviewStatesForComponent(ci); }

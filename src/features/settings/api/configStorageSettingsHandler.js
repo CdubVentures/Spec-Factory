@@ -53,8 +53,13 @@ export function createStorageSettingsHandler({
       return jsonRes(res, 200, sanitizeRunDataStorageSettingsForResponse(runDataStorageState));
     }
 
-    if (method === 'PUT') {
+    // WHY: Accept both PUT and POST. sendBeacon() always POSTs, so the unload
+    // autosave guard needs POST to work. Both methods do the same thing.
+    if (method === 'PUT' || method === 'POST') {
       const body = await readJsonBody(req).catch(() => ({}));
+      // WHY: clearS3SecretAccessKey and clearS3SessionToken are sent by the
+      // GUI to explicitly clear stored secrets. They must be in the allowlist
+      // so they aren't rejected as unknown_key.
       const storageMutableKeys = [
         'enabled',
         'destinationType',
@@ -65,6 +70,8 @@ export function createStorageSettingsHandler({
         's3AccessKeyId',
         's3SecretAccessKey',
         's3SessionToken',
+        'clearS3SecretAccessKey',
+        'clearS3SessionToken',
       ];
       const STORAGE_ALLOWED = new Set(storageMutableKeys);
       const rejected = {};
@@ -84,6 +91,15 @@ export function createStorageSettingsHandler({
           const message = error instanceof Error ? error.message : 'local_directory_create_failed';
           return jsonRes(res, 400, { error: message });
         }
+      }
+      // WHY: Handle explicit secret-clearing flags from the GUI.
+      // When the user clicks "clear" on a secret field, the GUI sends
+      // clearS3SecretAccessKey: true or clearS3SessionToken: true.
+      if (body?.clearS3SecretAccessKey === true) {
+        normalized.s3SecretAccessKey = '';
+      }
+      if (body?.clearS3SessionToken === true) {
+        normalized.s3SessionToken = '';
       }
       const normalizedStorageSnapshot = snapshotStorageSettings({
         ...currentStorageSnapshot,

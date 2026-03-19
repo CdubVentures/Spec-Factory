@@ -141,7 +141,7 @@ Schemas: `13-validation-to-output-input.json`, `13-validation-to-output-output.j
 
 What enters:
 
-- stage 12 finalization outputs plus learning stores, exporter hooks, artifact roots, summary state, and telemetry context
+- stage 12 finalization outputs plus learning profile/store dependencies, exporter hooks, artifact roots, summary state, and telemetry context
 
 What happens:
 
@@ -149,14 +149,14 @@ What happens:
 - indexing schema packets are built and validated during `runIndexingSchemaArtifactsPhase()`
 - finalization telemetry and `run_completed` events are emitted
 - summary markdown/TSV and identity report artifacts are built and persisted
-- source intel and learning stores are finalized
-- terminal export lifecycle writes run artifacts, latest snapshot, and promoted final outputs when eligible
+- source intel is finalized, learning gates run, accepted updates populate stores, and the `_learning` profile is exported
+- terminal export lifecycle writes run artifacts, latest snapshot, promoted final outputs when eligible, and the run-scoped learning log
 
 What leaves:
 
 - `exportInfo`
 - `finalExport`
-- `learning`
-- `learningGateResult`
+- `learning` (profile export result)
+- `learningGateResult` (gate decisions + accepted updates)
 - `categoryBrain`
 - the final run-result payload returned to callers

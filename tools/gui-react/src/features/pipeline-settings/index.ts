@@ -69,6 +69,7 @@ export {
   useRuntimeSettingsAuthority,
   useRuntimeSettingsBootstrap,
   useRuntimeSettingsReader,
+  useRuntimeSettingsStoreHydration,
   type RuntimeSettings,
   type RuntimeSettingsNumericBaseline,
 } from './state/runtimeSettingsAuthority';

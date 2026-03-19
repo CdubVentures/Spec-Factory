@@ -39,20 +39,6 @@ export async function writeSummaryMarkdownLLM({
     return null;
   }
 
-  const budgetGuard = llmContext?.budgetGuard;
-  const budgetDecision = budgetGuard?.canCall({
-    reason: 'write',
-    essential: false
-  }) || { allowed: true };
-  if (!budgetDecision.allowed) {
-    budgetGuard?.block?.(budgetDecision.reason);
-    logger?.warn?.('llm_summary_skipped_budget', {
-      reason: budgetDecision.reason,
-      productId: normalized.productId
-    });
-    return null;
-  }
-
   const payload = {
     productId: normalized.productId,
     runId: normalized.runId,
@@ -103,13 +89,10 @@ export async function writeSummaryMarkdownLLM({
       },
       costRates: llmContext.costRates || config,
       onUsage: async (usageRow) => {
-        budgetGuard?.recordCall({ costUsd: usageRow.cost_usd });
         if (typeof llmContext.recordUsage === 'function') {
           await llmContext.recordUsage(usageRow);
         }
       },
-      reasoningMode: Boolean(config._resolvedWriteUseReasoning ?? config.llmPlanUseReasoning ?? config.llmReasoningMode),
-      reasoningBudget: Number(config.llmReasoningBudget || 0),
       timeoutMs: config.llmTimeoutMs || config.openaiTimeoutMs,
       logger
     });

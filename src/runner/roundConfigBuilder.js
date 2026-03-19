@@ -134,7 +134,8 @@ function resolveSearchProviderDecision({
     missingRequiredCount: normalizedMissingRequired,
     requiredSearchIteration: normalizedRequiredIteration,
     bingReady: searxngReady && engineList.includes('bing'),
-    googleReady: searxngReady && engineList.includes('google'),
+    // WHY: Google goes through Crawlee, not SearXNG — ready if configured.
+    googleReady: engineList.includes('google'),
     searxngReady,
     hasFreeProvider: searxngReady
   };
@@ -462,24 +463,6 @@ export function buildRoundConfig(baseConfig, {
   }
 
   return next;
-}
-
-export function shouldStopForBudgetExhaustion({
-  budgetBlockedReason = '',
-  round = 0
-} = {}) {
-  const reason = String(budgetBlockedReason || '').trim().toLowerCase();
-  if (!reason.includes('budget')) {
-    return false;
-  }
-  if (round < 1) {
-    return false;
-  }
-  // Per-round caps are soft throttles and reset each round.
-  if (reason.includes('max_calls_per_round')) {
-    return false;
-  }
-  return true;
 }
 
 export function makeLlmTargetFields({

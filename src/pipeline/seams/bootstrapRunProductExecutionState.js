@@ -17,7 +17,6 @@ import {
   loadLearningProfile,
 } from '../../features/indexing/learning/index.js';
 import {
-  buildInitialLlmBudgetState,
   enqueueAdapterSeedUrls,
   resolveScreencastCallback,
   createRunProductFetcherFactory,
@@ -47,7 +46,6 @@ import { DeterministicParser, ComponentResolver, retrieveGoldenExamples } from '
 import { loadSourceIntel } from '../../intel/sourceIntel.js';
 import { readBillingSnapshot } from '../../billing/costLedger.js';
 import { defaultIndexLabRoot } from '../../core/config/runtimeArtifactRoots.js';
-import { createBudgetGuard } from '../../billing/budgetGuard.js';
 import { normalizeCostRates } from '../../billing/costRates.js';
 import { normalizeFieldList } from '../../utils/fieldKeys.js';
 import { createFieldRulesEngine } from '../../engine/fieldRulesEngine.js';
@@ -86,8 +84,6 @@ const DEFAULT_DEPS = {
   PlaywrightFetcherClass: PlaywrightFetcher,
   readBillingSnapshotFn: readBillingSnapshot,
   createRunLlmRuntimeFn: createRunLlmRuntime,
-  buildInitialLlmBudgetStateFn: buildInitialLlmBudgetState,
-  createBudgetGuardFn: createBudgetGuard,
   normalizeCostRatesFn: normalizeCostRates,
   appendCostLedgerEntryFn: appendCostLedgerEntry,
   recordPromptResultFn: recordPromptResult,
@@ -131,8 +127,11 @@ export async function bootstrapRunProductExecutionState({
 } = {}) {
   const runtimeDeps = { ...DEFAULT_DEPS, ...deps };
 
+  logger.info('bootstrap_step', { step: 'config', progress: 0 });
   const authoringCategoryConfig = await runtimeDeps.loadCategoryConfigFn(category, { storage, config });
   const categoryConfig = runtimeDeps.buildIndexlabRuntimeCategoryConfigFn(authoringCategoryConfig);
+
+  logger.info('bootstrap_step', { step: 'storage', progress: 20 });
   const routeMatrixPolicy = await runtimeDeps.loadRouteMatrixPolicyForRunFn({
     config,
     category,
@@ -204,6 +203,7 @@ export async function bootstrapRunProductExecutionState({
   const learnedFieldYield = categoryBrainLoaded?.artifacts?.fieldYield?.value || {};
   const learnedFieldAvailability = categoryBrainLoaded?.artifacts?.fieldAvailability?.value || {};
 
+  logger.info('bootstrap_step', { step: 'planner', progress: 50 });
   const {
     adapterManager,
     sourceIntel,
@@ -285,7 +285,7 @@ export async function bootstrapRunProductExecutionState({
   const blockedDomainsApplied = new Set();
   const hostBudgetByHost = new Map();
   const blockedDomainThreshold = Math.max(1, toInt(config.frontierBlockedDomainThreshold, 2));
-  const repairSearchEnabled = config.frontierRepairSearchEnabled !== false;
+  const repairSearchEnabled = true;
   const repairDedupeRule = String(config.repairDedupeRule || 'domain_once').trim().toLowerCase();
   const llmSatisfiedFields = new Set();
   const helperSupportiveSyntheticSources = [];
@@ -306,6 +306,7 @@ export async function bootstrapRunProductExecutionState({
   let hypothesisFollowupRoundsExecuted = 0;
   let hypothesisFollowupSeededUrls = 0;
 
+  logger.info('bootstrap_step', { step: 'llm', progress: 85 });
   const billingSnapshot = await runtimeDeps.readBillingSnapshotFn({
     storage,
     month: billingMonth,
@@ -324,8 +325,6 @@ export async function bootstrapRunProductExecutionState({
     runtimeOverrides,
     billingSnapshot,
     stableHashFn: stableHash,
-    buildInitialLlmBudgetStateFn: runtimeDeps.buildInitialLlmBudgetStateFn,
-    createBudgetGuardFn: runtimeDeps.createBudgetGuardFn,
     normalizeCostRatesFn: runtimeDeps.normalizeCostRatesFn,
     appendCostLedgerEntryFn: runtimeDeps.appendCostLedgerEntryFn,
     recordPromptResultFn: runtimeDeps.recordPromptResultFn,
@@ -333,7 +332,6 @@ export async function bootstrapRunProductExecutionState({
     joinPathFn: runtimeDeps.joinPathFn,
     mkdirSyncFn: runtimeDeps.mkdirSyncFn,
   });
-  const llmBudgetGuard = llmRuntime.llmBudgetGuard;
   const llmContext = llmRuntime.llmContext;
   const phase08BatchRows = [];
   let phase08FieldContexts = {};
@@ -507,7 +505,6 @@ export async function bootstrapRunProductExecutionState({
     hypothesisFollowupRoundsExecuted,
     hypothesisFollowupSeededUrls,
     llmRuntime,
-    llmBudgetGuard,
     llmContext,
     phase08BatchRows,
     phase08FieldContexts,

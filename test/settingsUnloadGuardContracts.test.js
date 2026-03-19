@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { loadBundledModule } from './helpers/loadBundledModule.js';
 
 /**
  * settingsUnloadGuard contract tests.
@@ -12,39 +13,10 @@ import assert from 'node:assert/strict';
  * via esbuild bundling (same harness pattern as settingsAutosaveFlushOnUnmountContracts).
  */
 
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-async function loadGuardModule() {
-  const esbuild = await import('esbuild');
-  const entryPath = path.resolve(
-    __dirname,
-    '..',
-    'tools/gui-react/src/stores/settingsUnloadGuard.ts',
-  );
-  const result = await esbuild.build({
-    entryPoints: [entryPath],
-    bundle: true,
-    write: false,
-    format: 'esm',
-    platform: 'node',
-    loader: { '.ts': 'ts', '.tsx': 'tsx' },
+function loadGuardModule() {
+  return loadBundledModule('tools/gui-react/src/stores/settingsUnloadGuard.ts', {
+    prefix: 'unload-guard-',
   });
-  const code = result.outputFiles[0].text;
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'unload-guard-'));
-  const tmpFile = path.join(tmpDir, 'module.mjs');
-  fs.writeFileSync(tmpFile, code, 'utf8');
-  try {
-    return await import(
-      `file://${tmpFile.replace(/\\/g, '/')}?v=${Date.now()}-${Math.random()}`
-    );
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
 }
 
 function createWindowStub() {

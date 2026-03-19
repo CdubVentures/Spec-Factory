@@ -34,9 +34,7 @@ function makeIdentityLock() {
 
 function makeConfig(overrides = {}) {
   return {
-    serpTriageEnabled: true,
     serpTriageMinScore: 0,
-    llmSerpRerankEnabled: false,
     searchProvider: 'dual',
     llmModelPlan: 'test-model',
     s3InputPrefix: '_test',
@@ -94,6 +92,33 @@ function makeSearchProfilePlanned() {
       },
     ],
     queries: ['razer viper v3 pro specs', 'razer viper v3 pro review'],
+  };
+}
+
+// WHY: LLM selector is the only triage path. Stub approves all candidates.
+function makeStubSerpSelectorCallFn() {
+  return async ({ selectorInput }) => {
+    const ids = selectorInput.candidates.map((c) => c.id);
+    return {
+      schema_version: 'serp_selector_output.v1',
+      keep_ids: ids,
+      approved_ids: ids.slice(0, 1),
+      candidate_ids: ids.slice(1),
+      reject_ids: [],
+      results: ids.map((id, i) => ({
+        id,
+        decision: i === 0 ? 'approved' : 'candidate',
+        score: i === 0 ? 0.95 : 0.6,
+        confidence: 'high',
+        fetch_rank: i + 1,
+        page_type: 'product_page',
+        authority_bucket: 'official',
+        likely_field_keys: ['weight'],
+        reason_code: 'exact_official_product',
+        reason: 'Stub selector',
+      })),
+      summary: { input_count: ids.length, approved_count: 1, candidate_count: ids.length - 1, reject_count: 0 },
+    };
   };
 }
 
@@ -162,6 +187,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       queryConcurrency: 2,
       discoveryCap: 20,
       effectiveHostPlan: null,
+      _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
     // Top-level keys
@@ -218,6 +244,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       queryConcurrency: 1,
       discoveryCap: 20,
       effectiveHostPlan: null,
+      _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
     for (const url of result.approvedUrls) {
@@ -266,6 +293,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       queryConcurrency: 1,
       discoveryCap: 20,
       effectiveHostPlan: null,
+      _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
     const se = result.serp_explorer;
@@ -273,7 +301,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
 
     // Capture actual keys for shape contract
     const requiredKeys = [
-      'generated_at', 'llm_triage_enabled', 'llm_triage_applied',
+      'generated_at', 'llm_selector_enabled', 'llm_selector_applied',
       'query_count', 'candidates_checked', 'urls_triaged',
       'urls_selected', 'urls_rejected',
       'dedupe_input', 'dedupe_output', 'duplicates_removed', 'queries',
@@ -283,8 +311,8 @@ describe('Characterization — processDiscoveryResults output contract shape', (
     }
     assert.ok(Array.isArray(se.queries), 'serp_explorer.queries is array');
     assert.equal(typeof se.generated_at, 'string');
-    assert.equal(typeof se.llm_triage_enabled, 'boolean');
-    assert.equal(typeof se.llm_triage_applied, 'boolean');
+    assert.equal(typeof se.llm_selector_enabled, 'boolean');
+    assert.equal(typeof se.llm_selector_applied, 'boolean');
     assert.equal(typeof se.query_count, 'number');
     assert.equal(typeof se.candidates_checked, 'number');
     assert.equal(typeof se.urls_triaged, 'number');
@@ -327,6 +355,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       queryConcurrency: 1,
       discoveryCap: 20,
       effectiveHostPlan: null,
+      _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
     const queryRow = result.serp_explorer.queries.find((q) => q.candidates.length > 0);
@@ -390,6 +419,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       queryConcurrency: 1,
       discoveryCap: 20,
       effectiveHostPlan: null,
+      _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
     const sp = result.search_profile;
@@ -402,8 +432,8 @@ describe('Characterization — processDiscoveryResults output contract shape', (
     assert.equal(typeof sp.candidate_count, 'number');
     assert.equal(typeof sp.llm_query_planning, 'boolean');
     assert.equal(typeof sp.llm_query_model, 'string');
-    assert.equal(typeof sp.llm_serp_triage, 'boolean');
-    assert.equal(typeof sp.llm_serp_triage_model, 'string');
+    assert.equal(typeof sp.llm_serp_selector, 'boolean');
+    assert.equal(typeof sp.llm_serp_selector_model, 'string');
     assert.ok(typeof sp.serp_explorer === 'object', 'serp_explorer embedded in search_profile');
   });
 
@@ -440,6 +470,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       queryConcurrency: 1,
       discoveryCap: 20,
       effectiveHostPlan: null,
+      _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
     // 2 storage writes: discoveryPayload + candidatePayload
@@ -484,6 +515,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       queryConcurrency: 1,
       discoveryCap: 20,
       effectiveHostPlan: null,
+      _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
     const eventNames = logger.events.map((e) => e.event);
@@ -538,6 +570,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       queryConcurrency: 1,
       discoveryCap: 20,
       effectiveHostPlan: null,
+      _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
     // Denied host must not appear in candidates

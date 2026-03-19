@@ -147,6 +147,82 @@ test('CHAR apply: runtime and convergence apply functions can be mixed', () => {
 // SECTION 5: no rollback capability (characterizing current limitation)
 // =========================================================================
 
+// =========================================================================
+// SECTION 5b: llmPhaseOverridesJson must re-resolve _resolved* fields
+// =========================================================================
+
+test('applyRuntimeSettingsToConfig re-resolves phase overrides when llmPhaseOverridesJson changes', () => {
+  const config = loadConfig();
+  // Before: all phases use global llmModelPlan
+  assert.equal(config._resolvedNeedsetBaseModel, config.llmModelPlan);
+  assert.equal(config._resolvedExtractionBaseModel, config.llmModelPlan);
+
+  // Apply phase overrides via runtime settings (simulates GUI save)
+  const overrides = JSON.stringify({
+    needset: { baseModel: 'gpt-5-low' },
+    extraction: { baseModel: 'deepseek-chat' },
+  });
+  applyRuntimeSettingsToConfig(config, { llmPhaseOverridesJson: overrides });
+
+  // After: overridden phases must use their per-phase model, not the global
+  assert.equal(config._resolvedNeedsetBaseModel, 'gpt-5-low');
+  assert.equal(config._resolvedExtractionBaseModel, 'deepseek-chat');
+  // Non-overridden phases still use global
+  assert.equal(config._resolvedSearchPlannerBaseModel, config.llmModelPlan);
+  assert.equal(config._resolvedBrandResolverBaseModel, config.llmModelPlan);
+});
+
+test('applyRuntimeSettingsToConfig re-resolves _resolved* when llmModelPlan changes without llmPhaseOverridesJson', () => {
+  const config = loadConfig();
+  const originalModel = config.llmModelPlan;
+  // Before: all phases inherit from llmModelPlan
+  assert.equal(config._resolvedNeedsetBaseModel, originalModel);
+  assert.equal(config._resolvedSerpSelectorBaseModel, originalModel);
+
+  // Change ONLY the global base model — no phase overrides change
+  applyRuntimeSettingsToConfig(config, { llmModelPlan: 'gemini-2.5-flash' });
+
+  // After: all _resolved* keys must reflect the new global model
+  assert.equal(config._resolvedNeedsetBaseModel, 'gemini-2.5-flash',
+    '_resolvedNeedsetBaseModel must update when llmModelPlan changes');
+  assert.equal(config._resolvedSerpSelectorBaseModel, 'gemini-2.5-flash',
+    '_resolvedSerpSelectorBaseModel must update when llmModelPlan changes');
+  assert.equal(config._resolvedSearchPlannerBaseModel, 'gemini-2.5-flash',
+    '_resolvedSearchPlannerBaseModel must update when llmModelPlan changes');
+  assert.equal(config._resolvedBrandResolverBaseModel, 'gemini-2.5-flash',
+    '_resolvedBrandResolverBaseModel must update when llmModelPlan changes');
+});
+
+test('applyRuntimeSettingsToConfig re-resolves reasoning overrides per phase', () => {
+  const config = loadConfig();
+
+  const overrides = JSON.stringify({
+    serpSelector: { useReasoning: true, reasoningModel: 'deepseek-reasoner' },
+  });
+  applyRuntimeSettingsToConfig(config, { llmPhaseOverridesJson: overrides });
+
+  assert.equal(config._resolvedSerpSelectorUseReasoning, true);
+  assert.equal(config._resolvedSerpSelectorReasoningModel, 'deepseek-reasoner');
+});
+
+test('applyRuntimeSettingsToConfig clears phase overrides when set to empty JSON', () => {
+  const config = loadConfig();
+
+  // First apply overrides
+  applyRuntimeSettingsToConfig(config, {
+    llmPhaseOverridesJson: JSON.stringify({ needset: { baseModel: 'gpt-5-low' } }),
+  });
+  assert.equal(config._resolvedNeedsetBaseModel, 'gpt-5-low');
+
+  // Then clear them
+  applyRuntimeSettingsToConfig(config, { llmPhaseOverridesJson: '{}' });
+  assert.equal(config._resolvedNeedsetBaseModel, config.llmModelPlan);
+});
+
+// =========================================================================
+// SECTION 5: no rollback capability (characterizing current limitation)
+// =========================================================================
+
 test('CHAR apply: in-place mutation has no rollback — values are permanently changed', () => {
   const config = loadConfig();
   const original = config.maxUrlsPerProduct;

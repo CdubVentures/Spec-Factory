@@ -5,7 +5,7 @@ import {
   buildSearchProfile,
   buildTargetedQueries
 } from '../src/features/indexing/search/queryBuilder.js';
-import { normalizeQueryRows } from '../src/features/indexing/discovery/discoveryPlanner.js';
+import { normalizeQueryRows } from '../src/research/queryPlanner.js';
 
 function makeJob(overrides = {}) {
   return {

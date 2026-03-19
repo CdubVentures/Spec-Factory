@@ -94,7 +94,8 @@ export function registerIndexlabRoutes(ctx) {
     // IndexLab runs + event replay
     if (parts[0] === 'indexlab' && parts[1] === 'runs' && method === 'GET') {
       const limit = Math.max(1, toInt(params.get('limit'), 50));
-      const rows = await listIndexLabRuns({ limit });
+      const category = String(params.get('category') || '').trim();
+      const rows = await listIndexLabRuns({ limit, category });
       return jsonRes(res, 200, {
         root: INDEXLAB_ROOT,
         runs: rows

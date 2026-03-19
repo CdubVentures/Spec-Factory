@@ -6,6 +6,7 @@ import {
   hasLlmRouteApiKey,
   llmRoutingSnapshot,
   resolvePhaseModel,
+  resolvePhaseReasoning,
   resolveLlmFallbackRoute,
   resolveLlmRoute
 } from '../src/core/llm/client/routing.js';
@@ -409,7 +410,7 @@ test('resolvePhaseModel returns empty string when config is empty and phase is u
 });
 
 test('resolvePhaseModel works for all 8 known phases', () => {
-  const phases = ['needset', 'searchPlanner', 'brandResolver', 'serpTriage', 'domainClassifier', 'extraction', 'validate', 'write'];
+  const phases = ['needset', 'searchPlanner', 'brandResolver', 'serpSelector', 'domainClassifier', 'extraction', 'validate', 'write'];
   for (const phase of phases) {
     const cap = phase.charAt(0).toUpperCase() + phase.slice(1);
     const config = phaseConfig({
@@ -479,4 +480,57 @@ test('resolveLlmRoute phase resolution picks reasoning model when phase enables 
   });
   const route = resolveLlmRoute(config, { role: 'extract', phase: 'extraction' });
   assert.equal(route.model, 'deepseek-reasoner');
+});
+
+// ---------------------------------------------------------------------------
+// resolvePhaseReasoning — phase-aware reasoning auto-resolution
+// ---------------------------------------------------------------------------
+
+test('resolvePhaseReasoning returns true when phase config enables reasoning', () => {
+  const config = phaseConfig({
+    _resolvedSearchPlannerUseReasoning: true,
+  });
+  assert.equal(resolvePhaseReasoning(config, 'searchPlanner'), true);
+});
+
+test('resolvePhaseReasoning returns false when phase config disables reasoning', () => {
+  const config = phaseConfig({
+    _resolvedSearchPlannerUseReasoning: false,
+  });
+  assert.equal(resolvePhaseReasoning(config, 'searchPlanner'), false);
+});
+
+test('resolvePhaseReasoning falls back to llmPlanUseReasoning when phase key missing', () => {
+  const config = phaseConfig({
+    llmPlanUseReasoning: true,
+    // _resolvedWriteUseReasoning intentionally missing
+  });
+  assert.equal(resolvePhaseReasoning(config, 'write'), true);
+});
+
+test('resolvePhaseReasoning ignores legacy llmReasoningMode — panel SSOT only', () => {
+  const config = {
+    llmReasoningMode: true,
+    // llmPlanUseReasoning not set — should default to false, NOT fall through to llmReasoningMode
+  };
+  assert.equal(resolvePhaseReasoning(config, 'validate'), false);
+});
+
+test('resolvePhaseReasoning returns false when no reasoning config at all', () => {
+  assert.equal(resolvePhaseReasoning({}, 'needset'), false);
+});
+
+test('resolvePhaseReasoning returns false for empty phase with no global toggle', () => {
+  assert.equal(resolvePhaseReasoning({}, ''), false);
+});
+
+test('resolvePhaseReasoning works for all known phases', () => {
+  const phases = ['needset', 'searchPlanner', 'brandResolver', 'serpSelector', 'extraction', 'validate', 'write'];
+  for (const phase of phases) {
+    const cap = phase.charAt(0).toUpperCase() + phase.slice(1);
+    const config = phaseConfig({
+      [`_resolved${cap}UseReasoning`]: true,
+    });
+    assert.equal(resolvePhaseReasoning(config, phase), true, `phase ${phase} should resolve reasoning to true`);
+  }
 });

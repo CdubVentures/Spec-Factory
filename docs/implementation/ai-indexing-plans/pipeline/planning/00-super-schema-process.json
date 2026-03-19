@@ -1,105 +1,210 @@
 {
-  "_doc": "Aggregate manifest for planning/discovery contracts. After the orchestration rework, the per-file JSON contracts in this folder are authoritative. This file stays compact on purpose so it does not drift from those component docs.",
-  "generated_at": "2026-03-18",
-  "source_folder": "docs/implementation/ai-indexing-plans/pipeline/planning",
-  "authoritative_files": [
-    "01-needset-input.json",
-    "01-needset-output.json",
-    "01-needset-planner-context.json",
-    "01-needset-planner-output.json",
-    "02-brand-resolver-input.json",
-    "02-brand-resolver-output.json",
-    "03-search-planner-input.json",
-    "03-search-planner-llm-call.json",
-    "03-search-planner-output.json",
-    "03-search-plan-handoff-input.json",
-    "03-search-plan-handoff-output.json",
-    "04-query-journey-input.json",
-    "04-query-journey-llm-call.json",
-    "04-query-journey-output.json",
-    "05-searxng-execution-input.json"
+  "_doc": "High-level map of the live discovery seed/planning pipeline.",
+  "validated_against": "2026-03-18",
+  "historical_numbering_note": "The numbered files in this folder are documentation buckets, not the exact runtime order.",
+  "canonical_entrypoint": "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
+  "compatibility_entrypoint": "src/features/indexing/discovery/searchDiscovery.js",
+  "live_entrypoints": [
+    "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
+    "src/features/indexing/discovery/stages/needSet.js",
+    "src/features/indexing/discovery/stages/brandResolver.js",
+    "src/features/indexing/discovery/stages/searchProfile.js",
+    "src/features/indexing/discovery/stages/searchPlanner.js",
+    "src/features/indexing/discovery/stages/queryJourney.js",
+    "src/features/indexing/discovery/stages/domainClassifier.js",
+    "src/features/indexing/discovery/discoverySearchExecution.js",
+    "src/features/indexing/discovery/discoveryResultProcessor.js",
+    "src/indexlab/needsetEngine.js",
+    "src/indexlab/searchPlanningContext.js",
+    "src/indexlab/searchPlanBuilder.js",
+    "src/research/queryPlanner.js",
+    "src/features/indexing/search/searchProviders.js",
+    "src/features/indexing/search/searchGoogle.js"
   ],
-  "runtime_code": {
-    "orchestration_entry": "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
-    "needset": "src/indexlab/needsetEngine.js",
-    "search_planning_context": "src/indexlab/searchPlanningContext.js",
-    "schema4_planner": "src/indexlab/searchPlanBuilder.js",
-    "discovery_runtime": "src/features/indexing/discovery/searchDiscovery.js",
-    "search_execution": "src/features/indexing/discovery/discoverySearchExecution.js",
-    "serp_processing": "src/features/indexing/discovery/discoveryResultProcessor.js",
-    "planner_queue": "src/planner/sourcePlanner.js"
-  },
-  "process_sequence": [
+  "runtime_order": [
     {
-      "stage": "01",
-      "stage_name": "NeedSet",
-      "purpose": "Runtime product context to NeedSet output, planner context, and planner seed."
+      "step": 0,
+      "name": "Seed setup",
+      "owner": "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
+      "does": [
+        "loadEnabledSourceEntries()",
+        "normalizePlanningHints()",
+        "force discoveryEnabled=true",
+        "default empty searchEngines to bing,google"
+      ]
     },
     {
-      "stage": "02",
-      "stage_name": "Brand Resolver",
-      "purpose": "Cache-first official/support domain and alias resolution used to bias host approval and manufacturer promotion."
+      "step": 1,
+      "name": "NeedSet",
+      "owner": "src/features/indexing/discovery/stages/needSet.js",
+      "does": [
+        "computeNeedSet() builds schema_version needset_output.v2",
+        "buildSearchPlanningContext() builds schema_version search_planning_context.v2",
+        "buildSearchPlan() builds schema_version needset_planner_output.v2",
+        "emit needset_computed preview before the Schema 4 LLM call",
+        "emit needset_computed again with Schema 4 panel data when available",
+        "emit schema4_handoff_ready when search_plan_handoff has queries"
+      ]
     },
     {
-      "stage": "03",
-      "stage_name": "Search Planner",
-      "purpose": "Schema 3 planning context to optional Schema 4 handoff and planner panel."
+      "step": 2,
+      "name": "Brand Resolver",
+      "owner": "src/features/indexing/discovery/stages/brandResolver.js",
+      "does": [
+        "cache-first brand-domain lookup",
+        "optional routed triage LLM call",
+        "optional manufacturer auto-promotion into categoryConfig source maps",
+        "emit brand_resolved through the caller logger"
+      ],
+      "conditional": [
+        "skips to empty result when brand is empty",
+        "skips to empty result when no triage route is available",
+        "returns empty result on resolver failure"
+      ]
     },
     {
-      "stage": "04",
-      "stage_name": "Query Journey",
-      "purpose": "Schema 4 adapter path or fallback query-planner path, followed by mandatory identity query guard."
+      "step": 3,
+      "name": "Search Profile",
+      "owner": "src/features/indexing/discovery/stages/searchProfile.js",
+      "does": [
+        "load learning artifacts and merge learningStoreHints into the lexicon",
+        "build deterministic Search Profile",
+        "optionally build Effective Host Plan and host-plan query rows"
+      ],
+      "note": "This stage is in-memory only. The planned search_profile artifact is written by Query Journey."
     },
     {
-      "stage": "05",
-      "stage_name": "Search Results",
-      "purpose": "Provider-facing query execution, frontier reuse, internal-first logic, and plan-only fallback."
+      "step": 4,
+      "name": "Search Planner",
+      "owner": "src/features/indexing/discovery/stages/searchPlanner.js",
+      "does": [
+        "adapt Schema 4 handoff through resolveSchema4ExecutionPlan()",
+        "derive archetype/frontier context from Search Profile output",
+        "call planUberQueries() with reason search_planner",
+        "emit search_plan_generated when the stage has query output"
+      ]
     },
     {
-      "stage": "06",
-      "stage_name": "SERP Triage",
-      "purpose": "Hard drops, classification, soft labels, lane quotas, optional LLM rerank, and final discovery artifacts."
+      "step": 5,
+      "name": "Query Journey",
+      "owner": "src/features/indexing/discovery/stages/queryJourney.js",
+      "does": [
+        "merge deterministic base templates, deterministic targeted rows, guarded Schema 4 rows, and Search Planner uber queries",
+        "dedupe and rank the merged rows",
+        "apply identity guard to the ranked set",
+        "guard host-plan rows separately and append unique survivors",
+        "write the planned search_profile artifact",
+        "emit search_profile_generated and query_journey_completed"
+      ]
     },
     {
-      "stage": "07",
-      "stage_name": "Domain Classifier",
-      "purpose": "Planner queue revalidation and approved/candidate routing via SourcePlanner."
+      "step": 6,
+      "name": "Search execution",
+      "owner": "src/features/indexing/discovery/discoverySearchExecution.js",
+      "does": [
+        "emit search_queued before execution so the GUI pre-populates worker slots",
+        "internal-first corpus search when enabled",
+        "frontier cache reuse",
+        "Google Crawlee transport for google",
+        "SearXNG transport for non-google engines",
+        "plan-only fallback only when no provider path exists and rawResults is still empty"
+      ],
+      "canonical_query_concurrency": 1,
+      "compatibility_query_concurrency": "discoverCandidateSources() still passes max(1, config.discoveryQueryConcurrency || 1)"
+    },
+    {
+      "step": 7,
+      "name": "SERP triage",
+      "owner": "src/features/indexing/discovery/discoveryResultProcessor.js",
+      "does": [
+        "dedupe results",
+        "hard drops",
+        "deterministic domain classification",
+        "LLM selector path when serpSelectorEnabled and a triage route are both available",
+        "fallback deterministic soft-label, lane, scoring, and quota selection path",
+        "optional rerankSerpResults() annotation on the deterministic path",
+        "write executed search_profile and discovery payloads"
+      ]
+    },
+    {
+      "step": 8,
+      "name": "Planner queue handoff",
+      "owner": "src/features/indexing/discovery/stages/domainClassifier.js",
+      "does": [
+        "enqueue approved URLs as discovery_approved",
+        "seed candidate URLs only when fetchCandidateSources is enabled and maxCandidateUrls > 0",
+        "emit discovery_enqueue_summary from planner counters when available"
+      ]
     }
   ],
-  "stage_notes": {
-    "03": "The Schema 4 handoff is built once at run start by buildSearchPlan().",
-    "04": "The fallback query planner used by the live runtime is planUberQueries() in src/research/queryPlanner.js. discoveryPlanner.js is not on the current searchDiscovery.js path.",
-    "05": "The provider-facing contract uses config.searchEngines plus providerState, not the older searchProvider naming.",
-    "06": "SERP processing is now lane-based: hard drops, soft labels, assignLanes(), computeLaneQuotas(), selectByLaneQuota(), then optional rerankSerpResults()."
+  "artifacts": {
+    "search_profile_keys": [
+      "{s3InputPrefix}/_discovery/{category}/{runId}.search_profile.json",
+      "{category}/{productId}/runs/{runId}/analysis/search_profile.json",
+      "{category}/{productId}/latest/search_profile.json"
+    ],
+    "post_triage_payloads": [
+      "{s3InputPrefix}/_discovery/{category}/{runId}.json",
+      "{s3InputPrefix}/_sources/candidates/{category}/{runId}.json"
+    ],
+    "run_screenshots": [
+      "{indexLabRoot}/{runId}/screenshots/google-serp-*.jpeg"
+    ],
+    "seed_phase_carrythrough": "runDiscoverySeedPlan() attaches seed_search_plan_output to the discovery result"
   },
   "llm_surfaces": [
     {
-      "stage": "02",
-      "label": "Brand Resolver",
-      "function": "resolveBrandDomain()",
-      "reason": "triage",
-      "gate": "brand present + routed triage key + no cache hit"
-    },
-    {
-      "stage": "03",
-      "label": "Schema 4 planner",
-      "function": "buildSearchPlan()",
+      "surface": "NeedSet Schema 4 planner",
       "reason": "needset_search_planner",
-      "gate": "enableSchema4SearchPlan + routed plan key"
+      "role": "plan",
+      "owner": "src/indexlab/searchPlanBuilder.js"
     },
     {
-      "stage": "04",
-      "label": "Fallback query planner",
-      "function": "planUberQueries()",
+      "surface": "Brand Resolver",
+      "reason": "brand_resolution",
+      "role": "triage",
+      "owner": "src/features/indexing/discovery/discoveryLlmAdapters.js"
+    },
+    {
+      "surface": "Search Planner",
       "reason": "search_planner",
-      "gate": "Schema 4 absent or guarded query count < 6 + routed plan key"
+      "role": "plan",
+      "owner": "src/research/queryPlanner.js"
     },
     {
-      "stage": "06",
-      "label": "SERP reranker",
-      "function": "rerankSerpResults()",
+      "surface": "SERP selector",
+      "reason": "serp_url_selector",
+      "role": "triage",
+      "owner": "src/features/indexing/discovery/serpSelectorLlmAdapter.js",
+      "conditional": "only when config.serpSelectorEnabled is true and hasLlmRouteApiKey(config, { role: 'triage' }) is true"
+    },
+    {
+      "surface": "SERP reranker",
       "reason": "uber_serp_reranker",
-      "gate": "triage enabled + deterministic quality gap + routed plan key"
+      "role": "plan",
+      "owner": "src/research/serpReranker.js",
+      "conditional": "only on the deterministic triage path when deterministic quality is weak"
     }
-  ]
+  ],
+  "runtime_bridge": {
+    "panel_seed_event": "needset_computed",
+    "search_slot_owner": "src/indexlab/runtimeBridgeSearchSlots.js",
+    "search_slot_events": [
+      "search_queued",
+      "discovery_query_started",
+      "discovery_query_completed"
+    ],
+    "search_profile_event_note": "search_profile_generated is emitted from Query Journey after Search Planner, but the bridge maps it to the Search Profile tab"
+  },
+  "learning_loop": {
+    "bootstrap_readback": "src/features/indexing/orchestration/bootstrap/loadLearningStoreHintsForRun.js",
+    "bootstrap_readback_gate": "loadLearningStoreHintsForRun() returns null unless selfImproveEnabled=true",
+    "runtime_learning_reads": [
+      "_learning/{category}/field_lexicon.json",
+      "_learning/{category}/query_templates.json",
+      "_learning/{category}/field_yield.json"
+    ],
+    "finalization_writeback": "src/features/indexing/orchestration/finalize/persistSelfImproveLearningStores.js",
+    "current_wiring_note": "buildSearchPlan() supports learning dead-domain/dead-query suppression, but runNeedSet() currently passes learning: null into buildSearchPlanningContext()."
+  }
 }

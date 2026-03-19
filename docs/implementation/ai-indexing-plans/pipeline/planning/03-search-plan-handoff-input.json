@@ -1,57 +1,26 @@
 {
-  "_doc": "Schema 4 search_plan_handoff shape — input to the handoff adapter. Produced by buildSearchPlan() in searchPlanBuilder.js, then enriched by runDiscoverySeedPlan.js with planner/learning/panel metadata. Updated 2026-03-16.",
-
+  "_doc": "Input shape carried from buildSearchPlan() into Query Journey.",
+  "validated_against": "2026-03-18",
+  "source": "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
   "search_plan_handoff": {
     "queries": [
       {
-        "q": "string — the search query text",
-        "query_hash": "string — deterministic hash for dedup across rounds",
-        "family": "string — query family: manufacturer_html | manual_pdf | review_lookup | benchmark_lookup | support_docs | fallback_web | targeted_single",
-        "group_key": "string — field group this query targets (e.g. sensor_performance, physical)",
-        "target_fields": ["string — field keys this query is expected to resolve"],
-        "preferred_domains": ["string — domains to prefer for this query (used as domain_hint)"],
-        "exact_match_required": "boolean — whether results must exact-match the product identity"
+        "q": "string",
+        "family": "string",
+        "query_hash": "string",
+        "group_key": "string",
+        "target_fields": "string[]",
+        "preferred_domains": "string[]",
+        "exact_match_required": "boolean"
       }
     ],
-    "query_hashes": ["string — flat array of all query_hash values for dedup"],
-    "total": "number — count of queries"
+    "query_hashes": "string[]",
+    "total": "number"
   },
-
-  "_metadata_enrichment": {
-    "_doc": "runDiscoverySeedPlan.js attaches these underscore-prefixed fields to the handoff object after Schema 4 completes. They are NOT part of the buildSearchPlan() output — they are added at the orchestration layer so searchDiscovery.js can thread them into searchProfilePlanned.",
-
-    "_planner": {
-      "_source": "schema4.planner — from buildSearchPlan() return value",
-      "mode": "string — llm | disabled | error",
-      "model": "string — LLM model used for planning",
-      "planner_complete": "boolean — whether the planner finished successfully",
-      "planner_confidence": "number — overall plan confidence 0-1 from LLM response",
-      "queries_generated": "number — count of queries produced",
-      "duplicates_suppressed": "number — queries dropped during dedup",
-      "targeted_exceptions": "number — exceptional queries added outside normal rules",
-      "error": "string | null — error message if mode is 'error'"
-    },
-
-    "_learning": {
-      "_source": "schema4.learning_writeback — from buildSearchPlan() return value",
-      "query_hashes_generated": ["string — hashes of all generated queries"],
-      "queries_generated": ["string — raw query text of all generated queries"],
-      "families_used": ["string — query families represented in the plan"],
-      "domains_targeted": ["string — preferred domains across all queries"],
-      "groups_activated": ["string — field groups that received queries"],
-      "duplicates_suppressed": "number — dedup counter"
-    },
-
-    "_panel": {
-      "_source": "schema4.panel — from buildSearchPlan() return value",
-      "round": "number — current round number",
-      "round_mode": "string — seed | carry_forward | repair",
-      "identity": "object — product identity context",
-      "summary": "object — needset summary stats",
-      "blockers": "object — blocking field issues",
-      "bundles": "Array<{ key, label, desc, priority, phase, source_target, content_target, search_intent, host_class, query_family_mix, reason_active, queries[], fields[] }>",
-      "profile_influence": "object — 14-key influence breakdown",
-      "deltas": "Array<{ field, from, to }> — round-over-round changes"
-    }
-  }
+  "metadata_attached_by_orchestrator_when_queries_exist": {
+    "_planner": "schema4.planner",
+    "_learning": "schema4.learning_writeback",
+    "_panel": "schema4.panel"
+  },
+  "consumer": "src/features/indexing/discovery/searchDiscovery.js"
 }

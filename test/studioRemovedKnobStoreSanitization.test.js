@@ -1,30 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { loadBundledModule } from './helpers/loadBundledModule.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-async function loadFieldRulesStore() {
-  const esbuild = await import('esbuild');
-  const srcPath = path.resolve(__dirname, '..', 'tools', 'gui-react', 'src', 'features', 'studio', 'state', 'useFieldRulesStore.ts');
-  const result = await esbuild.build({
-    entryPoints: [srcPath],
-    bundle: true,
-    write: false,
-    format: 'esm',
-    platform: 'node',
-    loader: { '.ts': 'ts' },
+function loadFieldRulesStore() {
+  return loadBundledModule('tools/gui-react/src/features/studio/state/useFieldRulesStore.ts', {
+    prefix: 'field-rules-store-',
   });
-  const code = result.outputFiles[0].text;
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'field-rules-store-'));
-  const tmpFile = path.join(tmpDir, 'useFieldRulesStore.mjs');
-  fs.writeFileSync(tmpFile, code, 'utf8');
-  const mod = await import(`file://${tmpFile.replace(/\\/g, '/')}`);
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-  return mod;
 }
 
 test('field rules store preserves non-indexlab knobs through hydrate, update, and snapshot', async () => {

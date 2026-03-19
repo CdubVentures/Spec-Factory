@@ -8,6 +8,7 @@ import {
   deriveSelectedRunForChecklist,
 } from '../selectors/indexingRunSelectors';
 import { deriveRunAutoSelectionDecision } from './indexingRunSelection';
+import { buildIndexLabRunsQueryKey, buildIndexLabRunsRequestPath } from './indexlabRunsQuery';
 import type { IndexLabRunsResponse } from '../types';
 
 interface UseIndexingRunSelectionStateInput {
@@ -36,10 +37,11 @@ export function useIndexingRunSelectionState(input: UseIndexingRunSelectionState
     clearedRunViewId,
     setClearedRunViewId,
   } = input;
+  const categoryScope = isAll ? '' : category;
 
   const { data: indexlabRunsResp } = useQuery({
-    queryKey: ['indexlab', 'runs'],
-    queryFn: () => api.get<IndexLabRunsResponse>('/indexlab/runs?limit=80'),
+    queryKey: buildIndexLabRunsQueryKey({ category: categoryScope, limit: 80 }),
+    queryFn: () => api.get<IndexLabRunsResponse>(buildIndexLabRunsRequestPath({ category: categoryScope, limit: 80 })),
     refetchInterval: getRefetchInterval(isProcessRunning, false),
   });
 

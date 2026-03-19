@@ -68,22 +68,15 @@ export const RuntimeFlowParsingSection = memo(function RuntimeFlowParsingSection
 
       <div id={runtimeSubStepDomId('parsing-article')} className="scroll-mt-24" />
       <SettingGroupBlock title="Article Extraction">
-        <MasterSwitchRow label="Article Extractor V2 Enabled" tip={`${PARSING_PHASE_TIP}\nLives in: article/readability parsing before evidence packing.\nWhat this controls: whether long-form pages may flow through the readability-v2 article extraction path.`} hint="Controls article char limits, score threshold, and domain policies below">
-          <SettingToggle
-            checked={runtimeDraft.articleExtractorV2Enabled}
-            onChange={(next) => updateDraft('articleExtractorV2Enabled', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </MasterSwitchRow>
-        <SettingRow label="Article Extractor Min Chars" tip={`${PARSING_PHASE_TIP}\nLives in: article acceptance gating.\nWhat this controls: the minimum extracted body length required before article output is treated as usable evidence.`} disabled={!runtimeDraft.articleExtractorV2Enabled}>
-          <SettingNumberInput draftKey="articleExtractorMinChars" value={runtimeDraft.articleExtractorMinChars} bounds={getNumberBounds('articleExtractorMinChars')} step={10} disabled={!runtimeSettingsReady || !runtimeDraft.articleExtractorV2Enabled} className={inputCls} onNumberChange={onNumberChange} />
+        <SettingRow label="Article Extractor Min Chars" tip={`${PARSING_PHASE_TIP}\nLives in: article acceptance gating.\nWhat this controls: the minimum extracted body length required before article output is treated as usable evidence.`}>
+          <SettingNumberInput draftKey="articleExtractorMinChars" value={runtimeDraft.articleExtractorMinChars} bounds={getNumberBounds('articleExtractorMinChars')} step={10} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
-        <SettingRow label="Article Extractor Min Score" tip={`${PARSING_PHASE_TIP}\nLives in: article quality gating.\nWhat this controls: the minimum extractor score required before article output survives into extraction context.`} disabled={!runtimeDraft.articleExtractorV2Enabled}>
-          <SettingNumberInput draftKey="articleExtractorMinScore" value={runtimeDraft.articleExtractorMinScore} bounds={getNumberBounds('articleExtractorMinScore')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.articleExtractorV2Enabled} className={inputCls} onNumberChange={onNumberChange} />
+        <SettingRow label="Article Extractor Min Score" tip={`${PARSING_PHASE_TIP}\nLives in: article quality gating.\nWhat this controls: the minimum extractor score required before article output survives into extraction context.`}>
+          <SettingNumberInput draftKey="articleExtractorMinScore" value={runtimeDraft.articleExtractorMinScore} bounds={getNumberBounds('articleExtractorMinScore')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
         <AdvancedSettingsBlock title="Article Limits & Policies" count={2}>
-          <SettingRow label="Article Extractor Max Chars" tip={`${PARSING_PHASE_TIP}\nLives in: article evidence truncation.\nWhat this controls: the maximum amount of extracted article body text retained for downstream use.`} disabled={!runtimeDraft.articleExtractorV2Enabled}>
-            <SettingNumberInput draftKey="articleExtractorMaxChars" value={runtimeDraft.articleExtractorMaxChars} bounds={getNumberBounds('articleExtractorMaxChars')} step={100} disabled={!runtimeSettingsReady || !runtimeDraft.articleExtractorV2Enabled} className={inputCls} onNumberChange={onNumberChange} />
+          <SettingRow label="Article Extractor Max Chars" tip={`${PARSING_PHASE_TIP}\nLives in: article evidence truncation.\nWhat this controls: the maximum amount of extracted article body text retained for downstream use.`}>
+            <SettingNumberInput draftKey="articleExtractorMaxChars" value={runtimeDraft.articleExtractorMaxChars} bounds={getNumberBounds('articleExtractorMaxChars')} step={100} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
           <SettingRow label="Article Extractor Domain Policy Map (JSON)" tip={`${PARSING_PHASE_TIP}\nLives in: host-specific article parsing policy.\nWhat this controls: an optional JSON override map for per-domain article-extractor mode decisions.`}>
             <textarea
@@ -98,43 +91,29 @@ export const RuntimeFlowParsingSection = memo(function RuntimeFlowParsingSection
 
       <div id={runtimeSubStepDomId('parsing-dom')} className="scroll-mt-24" />
       <SettingGroupBlock title="Static DOM">
-        <MasterSwitchRow label="Static DOM Extractor Enabled" tip={`${PARSING_PHASE_TIP}\nLives in: deterministic DOM parsing before optional LLM extraction.\nWhat this controls: whether the runtime may use the static DOM extractor as a fallback or companion parser path.`} hint="Controls DOM extraction mode, match threshold, and snippet limits below">
-          <SettingToggle
-            checked={runtimeDraft.staticDomExtractorEnabled}
-            onChange={(next) => updateDraft('staticDomExtractorEnabled', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </MasterSwitchRow>
-        <SettingRow label="Static DOM Mode" tip={`${PARSING_PHASE_TIP}\nLives in: static DOM parser selection.\nWhat this controls: which deterministic DOM extraction mode is used when the static extractor is enabled.`} disabled={!runtimeDraft.staticDomExtractorEnabled}>
+        <SettingRow label="Static DOM Mode" tip={`${PARSING_PHASE_TIP}\nLives in: static DOM parser selection.\nWhat this controls: which deterministic DOM extraction mode is used when the static extractor is enabled.`}>
           <input
             type="text"
             value={runtimeDraft.staticDomMode}
             onChange={(event) => updateDraft('staticDomMode', event.target.value)}
-            disabled={!runtimeSettingsReady || !runtimeDraft.staticDomExtractorEnabled}
+            disabled={!runtimeSettingsReady}
             className={inputCls}
           />
         </SettingRow>
-        <SettingRow label="Static DOM Target Match Threshold" tip={`${PARSING_PHASE_TIP}\nLives in: static DOM candidate admission.\nWhat this controls: the minimum target-match confidence a DOM-derived candidate must reach before it is accepted.`} disabled={!runtimeDraft.staticDomExtractorEnabled}>
-          <SettingNumberInput draftKey="staticDomTargetMatchThreshold" value={runtimeDraft.staticDomTargetMatchThreshold} bounds={getNumberBounds('staticDomTargetMatchThreshold')} step={0.01} disabled={!runtimeSettingsReady || !runtimeDraft.staticDomExtractorEnabled} className={inputCls} onNumberChange={onNumberChange} />
+        <SettingRow label="Static DOM Target Match Threshold" tip={`${PARSING_PHASE_TIP}\nLives in: static DOM candidate admission.\nWhat this controls: the minimum target-match confidence a DOM-derived candidate must reach before it is accepted.`}>
+          <SettingNumberInput draftKey="staticDomTargetMatchThreshold" value={runtimeDraft.staticDomTargetMatchThreshold} bounds={getNumberBounds('staticDomTargetMatchThreshold')} step={0.01} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
         <AdvancedSettingsBlock title="DOM Snippet Limits" count={2}>
-          <SettingRow label="Static DOM Max Evidence Snippets" tip={`${PARSING_PHASE_TIP}\nLives in: DOM evidence retention.\nWhat this controls: how many DOM snippets may be stored per candidate field.`} disabled={!runtimeDraft.staticDomExtractorEnabled}>
-            <SettingNumberInput draftKey="staticDomMaxEvidenceSnippets" value={runtimeDraft.staticDomMaxEvidenceSnippets} bounds={getNumberBounds('staticDomMaxEvidenceSnippets')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.staticDomExtractorEnabled} className={inputCls} onNumberChange={onNumberChange} />
+          <SettingRow label="Static DOM Max Evidence Snippets" tip={`${PARSING_PHASE_TIP}\nLives in: DOM evidence retention.\nWhat this controls: how many DOM snippets may be stored per candidate field.`}>
+            <SettingNumberInput draftKey="staticDomMaxEvidenceSnippets" value={runtimeDraft.staticDomMaxEvidenceSnippets} bounds={getNumberBounds('staticDomMaxEvidenceSnippets')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
-          <SettingRow label="DOM Snippet Max Chars" tip={`${PARSING_PHASE_TIP}\nLives in: DOM snippet truncation.\nWhat this controls: the maximum number of DOM characters retained from a single source snippet.`} disabled={!runtimeDraft.staticDomExtractorEnabled}>
-            <SettingNumberInput draftKey="domSnippetMaxChars" value={runtimeDraft.domSnippetMaxChars} bounds={getNumberBounds('domSnippetMaxChars')} step={50} disabled={!runtimeSettingsReady || !runtimeDraft.staticDomExtractorEnabled} className={inputCls} onNumberChange={onNumberChange} />
+          <SettingRow label="DOM Snippet Max Chars" tip={`${PARSING_PHASE_TIP}\nLives in: DOM snippet truncation.\nWhat this controls: the maximum number of DOM characters retained from a single source snippet.`}>
+            <SettingNumberInput draftKey="domSnippetMaxChars" value={runtimeDraft.domSnippetMaxChars} bounds={getNumberBounds('domSnippetMaxChars')} step={50} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
         </AdvancedSettingsBlock>
       </SettingGroupBlock>
 
       <SettingGroupBlock title="Additional Parsers">
-        <SettingRow label="HTML Table Extractor V2" tip={`${PARSING_PHASE_TIP}\nLives in: HTML table parsing before candidate emission.\nWhat this controls: whether the runtime enables the table-focused HTML extractor v2 path.`}>
-          <SettingToggle
-            checked={runtimeDraft.htmlTableExtractorV2}
-            onChange={(next) => updateDraft('htmlTableExtractorV2', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </SettingRow>
         <SettingRow label="Spec DB Dir" tip={`Phase coverage: 13 Validation To Output and durable storage.\nLives in: final artifact persistence rather than the extraction stage itself.\nWhat this controls: the root directory used for per-category spec SQLite databases.`}>
           <input
             type="text"

@@ -15,8 +15,8 @@
     "productId": "Product identifier.",
     "exportInfo": "runBase/latestBase export paths.",
     "finalExport": "Promotion result and final storage keys.",
-    "learning": "Learning export result.",
-    "learningGateResult": "Per-field learning gate decisions and accepted updates.",
+    "learning": "Learning profile export result from persistLearningProfile() with profileKey, learningRunKey, and merged profile payload.",
+    "learningGateResult": "Per-field learning gate decisions and acceptedUpdates used to populate learning stores.",
     "categoryBrain": "Updated category learning/profile artifact from post-learning updates.",
     "needSet": "Late-stage need-driven payload preserved for downstream repair and GUI use."
   }

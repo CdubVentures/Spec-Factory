@@ -40,9 +40,7 @@ export function createReviewGridStateRuntime({
 
       const lookedUpItemFieldState = itemFieldStateId
         ? specDb.getItemFieldStateById(itemFieldStateId)
-        : specDb.db.prepare(
-            'SELECT * FROM item_field_state WHERE category = ? AND product_id = ? AND field_key = ? LIMIT 1'
-          ).get(category, productId, fieldKey);
+        : specDb.getItemFieldStateByProductAndField(productId, fieldKey);
       const ifs = lookedUpItemFieldState || seedItemFieldState || null;
       if (!ifs) return null;
 
@@ -64,7 +62,7 @@ export function createReviewGridStateRuntime({
         aiConfirmPrimaryStatus,
         userAcceptPrimaryStatus,
       });
-      return specDb.db.prepare('SELECT * FROM key_review_state WHERE id = ?').get(id) || null;
+      return specDb.getKeyReviewStateById(id) || null;
     } catch {
       return null;
     }
@@ -80,7 +78,7 @@ export function createReviewGridStateRuntime({
     }
     const idReq = resolveExplicitPositiveId(body, ['id']);
     if (idReq.provided) {
-      const byId = idReq.id ? specDb.db.prepare('SELECT * FROM key_review_state WHERE id = ?').get(idReq.id) : null;
+      const byId = idReq.id ? specDb.getKeyReviewStateById(idReq.id) : null;
       if (byId) return { stateRow: byId, error: null };
       return {
         stateRow: null,
@@ -126,13 +124,7 @@ export function createReviewGridStateRuntime({
     if (keyReviewState.target_kind !== 'grid_key') return;
     if (!keyReviewState.item_identifier || !keyReviewState.field_key) return;
     try {
-      specDb.db.prepare(
-        `UPDATE item_field_state
-         SET needs_ai_review = 0,
-             ai_review_complete = 1,
-             updated_at = datetime('now')
-         WHERE category = ? AND product_id = ? AND field_key = ?`
-      ).run(category, keyReviewState.item_identifier, keyReviewState.field_key);
+      specDb.markItemFieldStateReviewComplete(keyReviewState.item_identifier, keyReviewState.field_key);
     } catch { /* best-effort sync */ }
   }
 
@@ -143,9 +135,7 @@ export function createReviewGridStateRuntime({
     const fieldKey = String(keyReviewState.field_key || '').trim();
     if (!productId || !fieldKey) return;
 
-    const current = specDb.db.prepare(
-      'SELECT * FROM item_field_state WHERE category = ? AND product_id = ? AND field_key = ?'
-    ).get(category, productId, fieldKey) || null;
+    const current = specDb.getItemFieldStateByProductAndField(productId, fieldKey) || null;
     const selectedCandidateId = String(keyReviewState.selected_candidate_id || '').trim() || null;
     const candidateRow = selectedCandidateId ? specDb.getCandidateById(selectedCandidateId) : null;
     const selectedValue = candidateRow?.value ?? keyReviewState.selected_value ?? current?.value ?? null;
@@ -199,19 +189,12 @@ export function createReviewGridStateRuntime({
     const scoreValue = Number.isFinite(Number(confidenceScore))
       ? Number(confidenceScore)
       : null;
-    specDb.db.prepare(`
-      UPDATE key_review_state
-      SET selected_candidate_id = ?,
-          selected_value = ?,
-          confidence_score = COALESCE(?, confidence_score),
-          updated_at = datetime('now')
-      WHERE id = ?
-    `).run(
+    specDb.updateKeyReviewSelectedCandidate({
+      id: state.id,
       selectedCandidateId,
       selectedValue,
-      scoreValue,
-      state.id
-    );
+      confidenceScore: scoreValue,
+    });
 
     const at = new Date().toISOString();
     specDb.updateKeyReviewUserAccept({ id: state.id, lane: 'primary', status: 'accepted', at });
@@ -225,31 +208,7 @@ export function createReviewGridStateRuntime({
       reason: reason || 'User accepted item value via override',
     });
 
-    return specDb.db.prepare('SELECT * FROM key_review_state WHERE id = ?').get(state.id) || null;
-  }
-
-  function deleteKeyReviewStateRows(specDb, stateIds = []) {
-    if (!specDb || !Array.isArray(stateIds) || stateIds.length === 0) return 0;
-    const ids = stateIds
-      .map((value) => Number.parseInt(String(value), 10))
-      .filter((value) => Number.isFinite(value) && value > 0);
-    if (ids.length === 0) return 0;
-
-    const tx = specDb.db.transaction((rows) => {
-      for (const id of rows) {
-        specDb.db.prepare(`
-          DELETE FROM key_review_run_sources
-          WHERE key_review_run_id IN (
-            SELECT run_id FROM key_review_runs WHERE key_review_state_id = ?
-          )
-        `).run(id);
-        specDb.db.prepare('DELETE FROM key_review_runs WHERE key_review_state_id = ?').run(id);
-        specDb.db.prepare('DELETE FROM key_review_audit WHERE key_review_state_id = ?').run(id);
-        specDb.db.prepare('DELETE FROM key_review_state WHERE id = ?').run(id);
-      }
-    });
-    tx(ids);
-    return ids.length;
+    return specDb.getKeyReviewStateById(state.id) || null;
   }
 
   function resetTestModeSharedReviewState(specDb, category) {
@@ -260,7 +219,7 @@ export function createReviewGridStateRuntime({
       WHERE category = ?
         AND target_kind IN ('component_key', 'enum_key')
     `).all(category).map((row) => row.id);
-    return deleteKeyReviewStateRows(specDb, ids);
+    return specDb.deleteKeyReviewStateRowsByIds(ids);
   }
 
   function purgeTestModeCategoryState(specDb, category) {
@@ -293,7 +252,7 @@ export function createReviewGridStateRuntime({
         FROM key_review_state
         WHERE category = ?
       `).all(cat).map((row) => row.id);
-      clearedKeyReview = deleteKeyReviewStateRows(specDb, keyReviewIds);
+      clearedKeyReview = specDb.deleteKeyReviewStateRowsByIds(keyReviewIds);
 
       const sourceIds = specDb.db.prepare(`
         SELECT source_id
@@ -409,7 +368,7 @@ export function createReviewGridStateRuntime({
         AND target_kind = 'grid_key'
         AND item_identifier = ?
     `).all(category, pid).map((row) => row.id);
-    const clearedKeyReview = deleteKeyReviewStateRows(specDb, stateIds);
+    const clearedKeyReview = specDb.deleteKeyReviewStateRowsByIds(stateIds);
 
     let deletedCandidates = 0;
     let deletedFieldState = 0;

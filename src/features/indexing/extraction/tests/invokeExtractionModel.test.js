@@ -70,8 +70,6 @@ test('invokeExtractionModel forwards multimodal payload, tracks usage, and sanit
     completion_tokens: 0,
     cost_usd: 0
   };
-  const budgetCalls = [];
-
   const result = await invokeExtractionModel({
     model: 'fast-model',
     routeRole: 'extract',
@@ -129,11 +127,6 @@ test('invokeExtractionModel forwards multimodal payload, tracks usage, and sanit
         total_chars: 120
       }
     },
-    budgetGuard: {
-      recordCall({ costUsd }) {
-        budgetCalls.push(costUsd);
-      }
-    },
     callLlmFn: async (options) => {
       await options.onUsage({
         prompt_tokens: 10,
@@ -167,7 +160,6 @@ test('invokeExtractionModel forwards multimodal payload, tracks usage, and sanit
   assert.equal(usageTracker.prompt_tokens, 10);
   assert.equal(usageTracker.completion_tokens, 5);
   assert.equal(usageTracker.cost_usd, 0.25);
-  assert.deepEqual(budgetCalls, [0.25]);
   assert.equal(usageRows.length, 1);
   assert.equal(sanitizeCalls.length, 1);
   assert.equal(sanitizeCalls[0].result.notes.length, 0);

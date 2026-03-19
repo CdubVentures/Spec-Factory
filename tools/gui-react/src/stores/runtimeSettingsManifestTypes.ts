@@ -12,7 +12,6 @@ export interface RuntimeSettingDefaults {
   llmReasoningBudget: number;
   llmMonthlyBudgetUsd: number;
   llmPerProductBudgetUsd: number;
-  llmDisableBudgetGuards: boolean;
   llmMaxCallsPerRound: number;
   llmMaxOutputTokens: number;
   llmVerifySampleRate: number;
@@ -45,7 +44,7 @@ export interface RuntimeSettingDefaults {
   llmMaxOutputTokensReasoning: number;
   llmMaxOutputTokensPlanFallback: number;
   llmMaxOutputTokensReasoningFallback: number;
-  llmExtractionCacheEnabled: boolean;
+
   llmExtractionCacheDir: string;
   llmExtractionCacheTtlMs: number;
   llmMaxCallsPerProductTotal: number;
@@ -66,7 +65,7 @@ export interface RuntimeSettingDefaults {
   llmProviderRegistryJson: string;
   llmPhaseOverridesJson: string;
   scannedPdfOcrEnabled: boolean;
-  scannedPdfOcrPromoteCandidates: boolean;
+
   reextractIndexed: boolean;
   discoveryEnabled: boolean;
   fetchCandidateSources: boolean;
@@ -91,23 +90,17 @@ export interface RuntimeSettingDefaults {
   capturePageScreenshotMaxBytes: number;
   capturePageScreenshotSelectors: string;
   runtimeControlFile: string;
-  articleExtractorV2Enabled: boolean;
+
   articleExtractorMinChars: number;
   articleExtractorMinScore: number;
   articleExtractorMaxChars: number;
   articleExtractorDomainPolicyMapJson: string;
-  htmlTableExtractorV2: boolean;
-  staticDomExtractorEnabled: boolean;
+
+
   staticDomMode: string;
   staticDomTargetMatchThreshold: number;
   staticDomMaxEvidenceSnippets: number;
   domSnippetMaxChars: number;
-  structuredMetadataExtructEnabled: boolean;
-  structuredMetadataExtructUrl: string;
-  structuredMetadataExtructTimeoutMs: number;
-  structuredMetadataExtructMaxItemsPerSurface: number;
-  structuredMetadataExtructCacheEnabled: boolean;
-  structuredMetadataExtructCacheLimit: number;
   categoryAuthorityEnabled: boolean;
   categoryAuthorityRoot: string;
   helperFilesRoot: string;
@@ -156,7 +149,7 @@ export interface RuntimeSettingDefaults {
   endpointNetworkScanLimit: number;
   dynamicCrawleeEnabled: boolean;
   crawleeHeadless: boolean;
-  fetchSchedulerEnabled: boolean;
+
   fetchSchedulerMaxRetries: number;
   fetchSchedulerFallbackWaitMs: number;
   fetchSchedulerInternalsMapJson: string;
@@ -165,7 +158,7 @@ export interface RuntimeSettingDefaults {
   pageNetworkIdleTimeoutMs: number;
   postLoadWaitMs: number;
   frontierDbPath: string;
-  frontierEnableSqlite: boolean;
+
   frontierStripTrackingParams: boolean;
   frontierQueryCooldownSeconds: number;
   frontierCooldown404Seconds: number;
@@ -177,7 +170,7 @@ export interface RuntimeSettingDefaults {
   frontierBackoffMaxExponent: number;
   frontierPathPenaltyNotfoundThreshold: number;
   frontierBlockedDomainThreshold: number;
-  frontierRepairSearchEnabled: boolean;
+
   repairDedupeRule: RuntimeRepairDedupeRule;
   autoScrollEnabled: boolean;
   autoScrollPasses: number;
@@ -192,27 +185,26 @@ export interface RuntimeSettingDefaults {
   runtimeTraceLlmRing: number;
   runtimeTraceLlmPayloads: boolean;
   eventsJsonWrite: boolean;
-  queueJsonWrite: boolean;
-  billingJsonWrite: boolean;
-  intelJsonWrite: boolean;
-  corpusJsonWrite: boolean;
-  learningJsonWrite: boolean;
-  cacheJsonWrite: boolean;
   daemonConcurrency: number;
   daemonGracefulShutdownTimeoutMs: number;
   importsRoot: string;
   importsPollSeconds: number;
-  authoritySnapshotEnabled: boolean;
+
   runtimeScreencastEnabled: boolean;
   runtimeScreencastFps: number;
   runtimeScreencastQuality: number;
   runtimeScreencastMaxWidth: number;
   runtimeScreencastMaxHeight: number;
   runtimeAutoSaveEnabled: boolean;
+  googleSearchProxyUrlsJson: string;
+  googleSearchTimeoutMs: number;
+  googleSearchMinQueryIntervalMs: number;
+  googleSearchMaxRetries: number;
+  googleSearchScreenshotsEnabled: boolean;
 }
 
 export type RuntimeProfile = 'standard';
-export type SearxngEngine = 'google' | 'bing' | 'startpage' | 'duckduckgo' | 'brave';
+export type SearxngEngine = 'google' | 'bing' | 'google-proxy' | 'duckduckgo' | 'brave';
 export type RuntimeResumeMode = 'auto' | 'force_resume' | 'start_over';
 export type RuntimeOcrBackend = 'auto' | 'tesseract' | 'none';
 export type RuntimeRepairDedupeRule = 'domain_once' | 'domain_and_status' | 'none';

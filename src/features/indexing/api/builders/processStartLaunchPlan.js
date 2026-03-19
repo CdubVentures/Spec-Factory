@@ -1,7 +1,9 @@
 import path from 'node:path';
 
+import { disassembleLlmPolicy, LLM_FLAT_KEY_TO_ENV } from '../../../../core/llm/llmPolicySchema.js';
 import { defaultLocalOutputRoot } from '../../../../core/config/runtimeArtifactRoots.js';
 import { buildRunId } from '../../../../utils/common.js';
+import { writeRuntimeSettingsSnapshot } from '../../../../core/config/runtimeSettingsSnapshot.js';
 
 function buildError(status, body) {
   return { ok: false, status, body };
@@ -114,19 +116,15 @@ export function buildProcessStartLaunchPlan(options = {}) {
     profile,
     dryRun,
     fetchPerHostConcurrencyCap,
-    fetchSchedulerEnabled,
     preferHttpFetcher,
     pageGotoTimeoutMs,
     frontierDbPath,
-    frontierEnableSqlite,
-    frontierRepairSearchEnabled,
     frontierBlockedDomainThreshold,
     dynamicFetchPolicyMapJson,
     runtimeTraceFetchRing,
     runtimeTraceLlmRing,
     runtimeTraceLlmPayloads,
     eventsJsonWrite,
-    queueJsonWrite,
     daemonConcurrency,
     daemonGracefulShutdownTimeoutMs,
     importsRoot,
@@ -143,8 +141,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     capturePageScreenshotEnabled,
     capturePageScreenshotFormat,
     capturePageScreenshotSelectors,
-    articleExtractorV2Enabled,
-    staticDomExtractorEnabled,
     staticDomMode,
     specDbDir,
     ['helper' + 'FilesRoot']: legacyHelperFilesRoot,
@@ -176,6 +172,7 @@ export function buildProcessStartLaunchPlan(options = {}) {
     llmPlanFallbackModel,
     llmMaxOutputTokensPlanFallback,
     llmExtractionCacheDir,
+    llmPolicy: rawLlmPolicy,
     seed,
     fields,
     providers,
@@ -260,7 +257,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
   }
 
   const envOverrides = {
-    FETCH_SCHEDULER_ENABLED: 'true',
     PREFER_HTTP_FETCHER: 'false',
     DYNAMIC_CRAWLEE_ENABLED: 'false',
   };
@@ -308,11 +304,8 @@ export function buildProcessStartLaunchPlan(options = {}) {
   assignString(envOverrides, 'OPENAI_API_KEY', openaiApiKey);
   assignString(envOverrides, 'ANTHROPIC_API_KEY', anthropicApiKey);
 
-  assignBoolean(envOverrides, 'FETCH_SCHEDULER_ENABLED', fetchSchedulerEnabled);
   assignBoolean(envOverrides, 'PREFER_HTTP_FETCHER', preferHttpFetcher);
   assignString(envOverrides, 'FRONTIER_DB_PATH', frontierDbPath);
-  assignBoolean(envOverrides, 'FRONTIER_ENABLE_SQLITE', frontierEnableSqlite);
-  assignBoolean(envOverrides, 'FRONTIER_REPAIR_SEARCH_ENABLED', frontierRepairSearchEnabled);
   assignInt(envOverrides, 'FRONTIER_BLOCKED_DOMAIN_THRESHOLD', frontierBlockedDomainThreshold, { minInput: 1, minClamp: 1, maxClamp: 50 });
   assignInt(envOverrides, 'FETCH_PER_HOST_CONCURRENCY_CAP', fetchPerHostConcurrencyCap, { minInput: 1, minClamp: 1, maxClamp: 64 });
   assignInt(envOverrides, 'PAGE_GOTO_TIMEOUT_MS', pageGotoTimeoutMs, { minInput: 0, minClamp: 0, maxClamp: 120_000 });
@@ -321,15 +314,12 @@ export function buildProcessStartLaunchPlan(options = {}) {
   assignBoolean(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_ENABLED', capturePageScreenshotEnabled);
   assignString(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_FORMAT', capturePageScreenshotFormat);
   assignString(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_SELECTORS', capturePageScreenshotSelectors);
-  assignBoolean(envOverrides, 'ARTICLE_EXTRACTOR_V2', articleExtractorV2Enabled);
-  assignBoolean(envOverrides, 'STATIC_DOM_EXTRACTOR_ENABLED', staticDomExtractorEnabled);
   assignString(envOverrides, 'STATIC_DOM_MODE', staticDomMode);
 
   assignInt(envOverrides, 'RUNTIME_TRACE_FETCH_RING', runtimeTraceFetchRing, { minInput: 10, minClamp: 10, maxClamp: 2000 });
   assignInt(envOverrides, 'RUNTIME_TRACE_LLM_RING', runtimeTraceLlmRing, { minInput: 10, minClamp: 10, maxClamp: 2000 });
   assignBoolean(envOverrides, 'RUNTIME_TRACE_LLM_PAYLOADS', runtimeTraceLlmPayloads);
   assignBoolean(envOverrides, 'EVENTS_JSON_WRITE', eventsJsonWrite);
-  assignBoolean(envOverrides, 'QUEUE_JSON_WRITE', queueJsonWrite);
   assignInt(envOverrides, 'DAEMON_CONCURRENCY', daemonConcurrency, { minInput: 1, minClamp: 1, maxClamp: 128 });
   assignInt(envOverrides, 'DAEMON_GRACEFUL_SHUTDOWN_TIMEOUT_MS', daemonGracefulShutdownTimeoutMs, { minInput: 1000, minClamp: 1000, maxClamp: 600_000 });
   assignString(envOverrides, 'IMPORTS_ROOT', importsRoot);
@@ -339,6 +329,20 @@ export function buildProcessStartLaunchPlan(options = {}) {
   assignInt(envOverrides, 'RUNTIME_SCREENCAST_QUALITY', runtimeScreencastQuality, { minInput: 10, minClamp: 10, maxClamp: 100 });
   assignInt(envOverrides, 'RUNTIME_SCREENCAST_MAX_WIDTH', runtimeScreencastMaxWidth, { minInput: 320, minClamp: 320, maxClamp: 3840 });
   assignInt(envOverrides, 'RUNTIME_SCREENCAST_MAX_HEIGHT', runtimeScreencastMaxHeight, { minInput: 240, minClamp: 240, maxClamp: 2160 });
+
+  // WHY: When the composite llmPolicy is present, disassemble it to flat keys
+  // and apply as env overrides. This replaces individual field forwarding with
+  // a single policy object — every new registry setting auto-propagates.
+  if (rawLlmPolicy && typeof rawLlmPolicy === 'object') {
+    const policyFlat = disassembleLlmPolicy(rawLlmPolicy);
+    for (const [flatKey, value] of Object.entries(policyFlat)) {
+      if (value === undefined || value === null || value === '') continue;
+      // WHY: Convert camelCase flat key to SCREAMING_SNAKE env key.
+      // Not all flat keys have env var equivalents — only apply those that do.
+      const envKey = LLM_FLAT_KEY_TO_ENV[flatKey];
+      if (envKey) envOverrides[envKey] = String(value);
+    }
+  }
 
   const applyModelOverride = (envKey, value, { allowEmpty = false } = {}) => {
     if (value === undefined || value === null) return false;
@@ -371,6 +375,19 @@ export function buildProcessStartLaunchPlan(options = {}) {
     applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK', llmMaxOutputTokensPlanFallback);
   }
 
+
+  // WHY: Plan 05 — Write a runtime settings snapshot with ALL settings from the POST body.
+  // The child process reads this snapshot via RUNTIME_SETTINGS_SNAPSHOT env var.
+  // This ensures ALL 196 settings reach the child, not just the 42 that get env vars.
+  // Existing env var assignments above are kept for backward compat during migration.
+  try {
+    const snapshotPath = writeRuntimeSettingsSnapshot(requestedRunId, body, effectiveHelperRoot);
+    envOverrides.RUNTIME_SETTINGS_SNAPSHOT = snapshotPath;
+  } catch (err) {
+    // WHY: Snapshot write failure is non-fatal during migration. The child still
+    // has env vars + user-settings.json as fallback. Log and continue.
+    console.error('Failed to write runtime settings snapshot:', err?.message || err);
+  }
 
   return {
     ok: true,
