@@ -271,8 +271,8 @@ export async function processDiscoveryResults({
     ),
     categoryConfig, frontierDb,
     discoveryCap,
-    maxUrlsPerProduct: Number(config?.maxUrlsPerProduct || 0) || undefined,
-    maxCandidateUrls: Number(config?.maxCandidateUrls || 0) || undefined,
+    serpSelectorUrlCap: Number(config?.serpSelectorUrlCap || 0) || undefined,
+    domainClassifierUrlCap: Number(config?.domainClassifierUrlCap || 0) || undefined,
   });
   const sentCandidateIds = [...candidateMap.keys()];
 

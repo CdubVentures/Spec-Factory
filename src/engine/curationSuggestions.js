@@ -1,7 +1,8 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { nowIso } from '../utils/common.js';
 import { normalizeFieldKey } from './engineTextHelpers.js';
+import { generateSuggestionId, deduplicateByKey, stableSortSuggestions } from './curationPureDomain.js';
+import { readJsonDoc, writeJsonDoc } from './curationPersistence.js';
 
 function normalizeCategory(value) {
   return String(value || '').trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/_+$/g, '') || 'category';
@@ -17,32 +18,6 @@ function suggestionDocDefaults(category) {
     category: normalizeCategory(category),
     suggestions: []
   };
-}
-
-async function readJsonOrNull(filePath) {
-  try {
-    const raw = await fs.readFile(filePath, 'utf8');
-    return JSON.parse(raw);
-  } catch (error) {
-    if (error?.code === 'ENOENT') {
-      return null;
-    }
-    throw error;
-  }
-}
-
-function stableSortSuggestions(rows = []) {
-  return [...rows].sort((a, b) => {
-    const byField = String(a.field_key || '').localeCompare(String(b.field_key || ''));
-    if (byField !== 0) {
-      return byField;
-    }
-    const byValue = String(a.value || '').localeCompare(String(b.value || ''));
-    if (byValue !== 0) {
-      return byValue;
-    }
-    return String(a.first_seen_at || '').localeCompare(String(b.first_seen_at || ''));
-  });
 }
 
 export function enumSuggestionPath({ config = {}, category }) {
@@ -64,50 +39,42 @@ export async function appendComponentCurationSuggestions({
   specDb = null
 }) {
   const filePath = componentSuggestionPath({ config, category });
-  const existing = await readJsonOrNull(filePath);
-  const next = existing && typeof existing === 'object'
-    ? existing
-    : suggestionDocDefaults(category);
+  const next = await readJsonDoc(filePath, () => suggestionDocDefaults(category));
   const currentSuggestions = Array.isArray(next.suggestions) ? next.suggestions : [];
-  const index = new Map();
 
-  for (const row of currentSuggestions) {
-    const componentType = normalizeFieldKey(row?.component_type);
-    const value = normalizeValueToken(row?.value);
-    if (!componentType || !value) continue;
-    index.set(`${componentType}::${value.toLowerCase()}`, row);
-  }
+  const compKeyFn = (row) => {
+    const ct = normalizeFieldKey(row?.component_type);
+    const v = normalizeValueToken(row?.value);
+    return ct && v ? `${ct}::${v.toLowerCase()}` : '';
+  };
 
-  let appended = 0;
-  for (const row of suggestions) {
-    const componentType = normalizeFieldKey(row?.component_type);
-    const value = normalizeValueToken(row?.normalized_value ?? row?.value ?? row?.raw_value);
-    if (!componentType || !value) continue;
-    const key = `${componentType}::${value.toLowerCase()}`;
-    if (index.has(key)) continue;
-    const suggestion = {
-      suggestion_id: `comp_${componentType}_${value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')}`,
-      suggestion_type: 'new_component',
-      component_type: componentType,
-      field_key: normalizeFieldKey(row?.field_key),
-      value,
-      status: 'pending',
-      source: 'runtime_field_rules_engine',
-      product_id: String(productId || '').trim() || null,
-      run_id: String(runId || '').trim() || null,
-      first_seen_at: nowIso()
-    };
-    index.set(key, suggestion);
-    currentSuggestions.push(suggestion);
-    appended += 1;
+  const incoming = suggestions
+    .map((row) => {
+      const componentType = normalizeFieldKey(row?.component_type);
+      const value = normalizeValueToken(row?.normalized_value ?? row?.value ?? row?.raw_value);
+      if (!componentType || !value) return null;
+      return {
+        suggestion_id: generateSuggestionId('comp', componentType, value),
+        suggestion_type: 'new_component',
+        component_type: componentType,
+        field_key: normalizeFieldKey(row?.field_key),
+        value,
+        status: 'pending',
+        source: 'runtime_field_rules_engine',
+        product_id: String(productId || '').trim() || null,
+        run_id: String(runId || '').trim() || null,
+        first_seen_at: nowIso()
+      };
+    })
+    .filter(Boolean);
 
-    // Dual-write to SpecDb
+  const { appended } = deduplicateByKey(currentSuggestions, incoming, compKeyFn);
+  currentSuggestions.push(...appended);
+
+  for (const suggestion of appended) {
     if (specDb) {
       try {
-        specDb.upsertCurationSuggestion({
-          ...suggestion,
-          last_seen_at: nowIso()
-        });
+        specDb.upsertCurationSuggestion({ ...suggestion, last_seen_at: nowIso() });
       } catch { /* best-effort */ }
     }
   }
@@ -117,12 +84,11 @@ export async function appendComponentCurationSuggestions({
   next.suggestions = stableSortSuggestions(currentSuggestions);
   next.updated_at = nowIso();
 
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
+  await writeJsonDoc(filePath, next);
 
   return {
     path: filePath,
-    appended_count: appended,
+    appended_count: appended.length,
     total_count: next.suggestions.length
   };
 }
@@ -136,61 +102,47 @@ export async function appendEnumCurationSuggestions({
   specDb = null
 }) {
   const filePath = enumSuggestionPath({ config, category });
-  const existing = await readJsonOrNull(filePath);
-  const next = existing && typeof existing === 'object'
-    ? existing
-    : suggestionDocDefaults(category);
+  const next = await readJsonDoc(filePath, () => suggestionDocDefaults(category));
   const currentSuggestions = Array.isArray(next.suggestions) ? next.suggestions : [];
-  const index = new Map();
 
-  for (const row of currentSuggestions) {
-    const fieldKey = normalizeFieldKey(row?.field_key);
-    const value = normalizeValueToken(row?.value);
-    if (!fieldKey || !value) {
-      continue;
-    }
-    index.set(`${fieldKey}::${value.toLowerCase()}`, row);
-  }
+  const enumKeyFn = (row) => {
+    const fk = normalizeFieldKey(row?.field_key);
+    const v = normalizeValueToken(row?.value);
+    return fk && v ? `${fk}::${v.toLowerCase()}` : '';
+  };
 
-  let appended = 0;
-  for (const row of suggestions) {
+  // Flatten array values before dedup
+  const incoming = suggestions.flatMap((row) => {
     const fieldKey = normalizeFieldKey(row?.field_key);
-    // Handle array values (e.g. list-type fields like connectivity: ['wired','wireless','bluetooth'])
     const rawValue = row?.normalized_value ?? row?.value ?? row?.raw_value;
     const valuesToProcess = Array.isArray(rawValue) ? rawValue : [rawValue];
-    for (const singleValue of valuesToProcess) {
-      const value = normalizeValueToken(singleValue);
-      if (!fieldKey || !value) {
-        continue;
-      }
-      const key = `${fieldKey}::${value.toLowerCase()}`;
-      if (index.has(key)) {
-        continue;
-      }
-      const suggestion = {
-        suggestion_id: `enum_${fieldKey}_${value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')}`,
-        suggestion_type: 'enum_value',
-        field_key: fieldKey,
-        value,
-        status: 'pending',
-        source: 'runtime_field_rules_engine',
-        product_id: String(productId || '').trim() || null,
-        run_id: String(runId || '').trim() || null,
-        first_seen_at: nowIso()
-      };
-      index.set(key, suggestion);
-      currentSuggestions.push(suggestion);
-      appended += 1;
+    return valuesToProcess
+      .map((singleValue) => {
+        const value = normalizeValueToken(singleValue);
+        if (!fieldKey || !value) return null;
+        return {
+          suggestion_id: generateSuggestionId('enum', fieldKey, value),
+          suggestion_type: 'enum_value',
+          field_key: fieldKey,
+          value,
+          status: 'pending',
+          source: 'runtime_field_rules_engine',
+          product_id: String(productId || '').trim() || null,
+          run_id: String(runId || '').trim() || null,
+          first_seen_at: nowIso()
+        };
+      })
+      .filter(Boolean);
+  });
 
-      // Dual-write to SpecDb
-      if (specDb) {
-        try {
-          specDb.upsertCurationSuggestion({
-            ...suggestion,
-            last_seen_at: nowIso()
-          });
-        } catch { /* best-effort */ }
-      }
+  const { appended } = deduplicateByKey(currentSuggestions, incoming, enumKeyFn);
+  currentSuggestions.push(...appended);
+
+  for (const suggestion of appended) {
+    if (specDb) {
+      try {
+        specDb.upsertCurationSuggestion({ ...suggestion, last_seen_at: nowIso() });
+      } catch { /* best-effort */ }
     }
   }
 
@@ -199,12 +151,11 @@ export async function appendEnumCurationSuggestions({
   next.suggestions = stableSortSuggestions(currentSuggestions);
   next.updated_at = nowIso();
 
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
+  await writeJsonDoc(filePath, next);
 
   return {
     path: filePath,
-    appended_count: appended,
+    appended_count: appended.length,
     total_count: next.suggestions.length
   };
 }
@@ -225,22 +176,24 @@ export async function appendComponentReviewItems({
   specDb = null
 }) {
   const filePath = componentReviewPath({ config, category });
-  const existing = await readJsonOrNull(filePath);
-  const next = existing && typeof existing === 'object'
-    ? existing
-    : { version: 1, category: normalizeCategory(category), items: [] };
+  const next = await readJsonDoc(filePath, () => ({ version: 1, category: normalizeCategory(category), items: [] }));
   const currentItems = Array.isArray(next.items) ? next.items : [];
-  const index = new Map();
 
-  for (const row of currentItems) {
-    const componentType = normalizeFieldKey(row?.component_type);
-    const rawQuery = normalizeValueToken(row?.raw_query);
+  const reviewKeyFn = (row) => {
+    const ct = normalizeFieldKey(row?.component_type);
+    const rq = normalizeValueToken(row?.raw_query);
     const pid = normalizeValueToken(row?.product_id);
-    if (!componentType || !rawQuery) continue;
-    index.set(`${componentType}::${rawQuery.toLowerCase()}::${pid}`, row);
+    return ct && rq ? `${ct}::${rq.toLowerCase()}::${pid}` : '';
+  };
+
+  // Build index for score updates on existing duplicates
+  const existingIndex = new Map();
+  for (const row of currentItems) {
+    const key = reviewKeyFn(row);
+    if (key) existingIndex.set(key, row);
   }
 
-  let appended = 0;
+  let appendedCount = 0;
   for (const row of items) {
     const componentType = normalizeFieldKey(row?.component_type);
     const rawQuery = normalizeValueToken(row?.raw_query);
@@ -248,8 +201,8 @@ export async function appendComponentReviewItems({
     const pid = String(productId || '').trim();
     const dedupKey = `${componentType}::${rawQuery.toLowerCase()}::${pid}`;
 
-    if (index.has(dedupKey)) {
-      const entry = index.get(dedupKey);
+    if (existingIndex.has(dedupKey)) {
+      const entry = existingIndex.get(dedupKey);
       entry.name_score = row.name_score ?? entry.name_score;
       entry.property_score = row.property_score ?? entry.property_score;
       entry.combined_score = row.combined_score ?? entry.combined_score;
@@ -257,7 +210,7 @@ export async function appendComponentReviewItems({
     }
 
     const item = {
-      review_id: `cr_${componentType}_${rawQuery.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')}_${pid.replace(/[^a-z0-9]+/gi, '_').substring(0, 30)}`,
+      review_id: generateSuggestionId('cr', componentType, rawQuery) + `_${pid.replace(/[^a-z0-9]+/gi, '_').substring(0, 30)}`,
       component_type: componentType,
       field_key: normalizeFieldKey(row?.field_key),
       raw_query: rawQuery,
@@ -274,11 +227,10 @@ export async function appendComponentReviewItems({
       product_attributes: row.product_attributes && typeof row.product_attributes === 'object' ? row.product_attributes : {},
       created_at: nowIso(),
     };
-    index.set(dedupKey, item);
+    existingIndex.set(dedupKey, item);
     currentItems.push(item);
-    appended += 1;
+    appendedCount += 1;
 
-    // Dual-write to SpecDb
     if (specDb) {
       try {
         specDb.upsertComponentReviewItem(item);
@@ -291,12 +243,11 @@ export async function appendComponentReviewItems({
   next.items = currentItems;
   next.updated_at = nowIso();
 
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
+  await writeJsonDoc(filePath, next);
 
   return {
     path: filePath,
-    appended_count: appended,
+    appended_count: appendedCount,
     total_count: next.items.length
   };
 }
@@ -317,47 +268,40 @@ export async function appendComponentIdentityObservations({
   specDb = null
 }) {
   const filePath = componentIdentityPath({ config, category });
-  const existing = await readJsonOrNull(filePath);
-  const next = existing && typeof existing === 'object'
-    ? existing
-    : { version: 1, category: normalizeCategory(category), observations: [] };
+  const next = await readJsonDoc(filePath, () => ({ version: 1, category: normalizeCategory(category), observations: [] }));
   const currentObs = Array.isArray(next.observations) ? next.observations : [];
-  const index = new Map();
 
-  for (const row of currentObs) {
-    const componentType = normalizeFieldKey(row?.component_type);
-    const rawQuery = normalizeValueToken(row?.raw_query);
+  const identityKeyFn = (row) => {
+    const ct = normalizeFieldKey(row?.component_type);
+    const rq = normalizeValueToken(row?.raw_query);
     const pid = normalizeValueToken(row?.product_id);
-    if (!componentType || !rawQuery) continue;
-    index.set(`${componentType}::${rawQuery.toLowerCase()}::${pid}`, row);
-  }
+    return ct && rq ? `${ct}::${rq.toLowerCase()}::${pid}` : '';
+  };
 
-  let appended = 0;
-  for (const row of observations) {
-    const componentType = normalizeFieldKey(row?.component_type);
-    const rawQuery = normalizeValueToken(row?.raw_query);
-    if (!componentType || !rawQuery) continue;
-    const pid = String(productId || '').trim();
-    const dedupKey = `${componentType}::${rawQuery.toLowerCase()}::${pid}`;
+  const incoming = observations
+    .map((row) => {
+      const componentType = normalizeFieldKey(row?.component_type);
+      const rawQuery = normalizeValueToken(row?.raw_query);
+      if (!componentType || !rawQuery) return null;
+      const pid = String(productId || '').trim();
+      return {
+        component_type: componentType,
+        canonical_name: normalizeValueToken(row?.canonical_name),
+        raw_query: rawQuery,
+        match_type: row.match_type || 'exact_or_alias',
+        score: row.score ?? 1.0,
+        field_key: normalizeFieldKey(row?.field_key),
+        product_id: pid || null,
+        run_id: String(runId || '').trim() || null,
+        observed_at: nowIso(),
+      };
+    })
+    .filter(Boolean);
 
-    if (index.has(dedupKey)) continue;
+  const { appended } = deduplicateByKey(currentObs, incoming, identityKeyFn);
+  currentObs.push(...appended);
 
-    const obs = {
-      component_type: componentType,
-      canonical_name: normalizeValueToken(row?.canonical_name),
-      raw_query: rawQuery,
-      match_type: row.match_type || 'exact_or_alias',
-      score: row.score ?? 1.0,
-      field_key: normalizeFieldKey(row?.field_key),
-      product_id: pid || null,
-      run_id: String(runId || '').trim() || null,
-      observed_at: nowIso(),
-    };
-    index.set(dedupKey, obs);
-    currentObs.push(obs);
-    appended += 1;
-
-    // Dual-write to SpecDb: update item_component_links
+  for (const obs of appended) {
     if (specDb && obs.canonical_name && obs.product_id) {
       try {
         specDb.upsertItemComponentLink({
@@ -378,12 +322,11 @@ export async function appendComponentIdentityObservations({
   next.observations = currentObs;
   next.updated_at = nowIso();
 
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
+  await writeJsonDoc(filePath, next);
 
   return {
     path: filePath,
-    appended_count: appended,
+    appended_count: appended.length,
     total_count: next.observations.length
   };
 }

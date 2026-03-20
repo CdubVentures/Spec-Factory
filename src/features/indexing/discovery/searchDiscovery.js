@@ -1,4 +1,5 @@
 import { extractRootDomain } from '../../../utils/common.js';
+import { configInt } from '../../../shared/settingsAccessor.js';
 import { searchEngineAvailability } from '../search/searchProviders.js';
 import { planUberQueries } from '../../../research/queryPlanner.js';
 import {
@@ -219,7 +220,7 @@ export async function discoverCandidateSources({
 
   // WHY: Auto-promote brand-resolved domains into first-class source entries
   // so they pass isApprovedHost() and carry correct crawl config.
-  if (config.manufacturerAutoPromote && brandResolution?.officialDomain) {
+  if (brandResolution?.officialDomain) {
     const sourcesFileData = categoryConfig.sources || {};
     const promotedMap = promoteFromBrandResolution(brandResolution, {
       sources: categoryConfig.sourceRegistry || {},
@@ -274,7 +275,7 @@ export async function discoverCandidateSources({
   });
 
   // === Stage 03: Search Profile (ALWAYS runs — deterministic query generation) ===
-  const profileMaxQueries = Math.max(6, Number(config.discoveryMaxQueries || 8) * 2);
+  const profileMaxQueries = Math.max(1, configInt(config, 'searchProfileQueryCap'));
   const searchProfileBase = buildSearchProfile({
     job,
     categoryConfig,
@@ -371,7 +372,7 @@ export async function discoverCandidateSources({
     missingCriticalFields: planningHints.missingCriticalFields || [],
     baseQueries: [...baseQueries, ...targetedQueries],
     frontierSummary,
-    cap: Math.max(12, Number(config.discoveryMaxQueries || 12) * 2)
+    cap: Math.max(1, configInt(config, 'searchPlannerQueryCap'))
   });
 
   if (toArray(uberSearchPlan?.queries).length > 0) {
@@ -419,8 +420,8 @@ export async function discoverCandidateSources({
     })),
   ];
 
-  const queryLimit = Math.max(1, Number(config.discoveryMaxQueries || 8));
-  const mergedQueryCap = Math.max(queryLimit, 6);
+  const searchPlannerCap = Math.max(1, configInt(config, 'searchPlannerQueryCap'));
+  const mergedQueryCap = searchPlannerCap;
   const mergedQueries = dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap);
 
   const fieldPriority = new Map();
@@ -516,7 +517,7 @@ export async function discoverCandidateSources({
     ...toArray(hostPlanRejectLog),
   ].slice(0, 300);
 
-  const executionQueryLimit = Math.max(queryLimit, queries.length);
+  const executionQueryLimit = Math.min(searchPlannerCap, queries.length);
   const selectedQueryRowMap = new Map(
     selectedQueryRows.map((row) => [String(row?.query || '').trim().toLowerCase(), row])
   );
@@ -609,9 +610,9 @@ export async function discoverCandidateSources({
   });
 
   // === Stage 06: Search Results ===
-  const resultsPerQuery = Math.max(1, Number(config.discoveryResultsPerQuery || 10));
-  const discoveryCap = Math.max(1, Number(config.discoveryMaxDiscovered || 120));
-  const queryConcurrency = Math.max(1, Number(config.discoveryQueryConcurrency || 1));
+  const resultsPerQuery = Math.max(1, configInt(config, 'discoveryResultsPerQuery'));
+  const discoveryCap = Math.max(1, configInt(config, 'searchPlannerQueryCap'));
+  const queryConcurrency = Math.max(1, configInt(config, 'discoveryQueryConcurrency'));
 
   const providerState = searchEngineAvailability(config);
   const requiredOnlySearch = Boolean(planningHints.requiredOnlySearch);
@@ -623,7 +624,7 @@ export async function discoverCandidateSources({
   const searchResult = await executeSearchQueriesFn({
     config, storage, logger, runtimeTraceWriter, frontierDb,
     categoryConfig, job, runId,
-    queries, executionQueryLimit, queryConcurrency, resultsPerQuery, queryLimit,
+    queries, executionQueryLimit, queryConcurrency, resultsPerQuery, queryLimit: searchPlannerCap,
     searchProfileCaps, missingFields, variables,
     selectedQueryRowMap,
     profileQueryRowMap: profileQueryRowsByQuery,

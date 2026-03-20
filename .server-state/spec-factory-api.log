@@ -445,3 +445,405 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
 @smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
 See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
 or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\Temp\spec-factory\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\Temp\spec-factory\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  BillingPage-C3KSLlhk.js, buttonClasses-x-rUW2Cc.js, CatalogPage--bf39PiS.js, CategoryManager-sm4zygw5.js, ComponentReviewPage-DVTfsHzl.js, DataTable-Bosp7JNx.js, DrawerShell-BU2B9H2R.js, fieldNormalize-gPMNHgg-.js, FlagsSection-D-mmG8iY.js, formatting-B6A_RRxb.js, index-CvkXVHOR.css, index-ZdlY2NOV.js, IndexingPage-oNrgSXSk.js, indexlabRunsQuery-CAcCVi-O.js, invalidateFieldRulesQueries-ebMw0g-v.js, LlmConfigPage-2HsMa4ZF.js, LlmExtractionSection-DNxqJCUV.js, LlmGlobalSection-0KXVkp8v.js, LlmPhaseSection-6sracE-O.js, llmPolicyDefaults-zKZDLTgf.js, LlmProviderRegistrySection-D-dOv3Nd.js, llmSettingsManifest-Dn-9Efng.js, LlmSettingsPage-D3SKXuci.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-m1GRvvge.js, OverviewPage-CymPVNJD.js, PipelineSettingsPage-DC_a9b_V.js, PipelineSourceStrategySection-OGFaL-to.js, ProductPage-B59phBnc.js, ReviewPage-F9hTqUfu.js, RuntimeFlowAutomationSection-L4Ky4YIp.js, RuntimeFlowBrowserRenderingSection-D0dT9qhs.js, RuntimeFlowDraftPayload-N1lUa7X0.js, RuntimeFlowFetchNetworkSection-C5cHU9a7.js, RuntimeFlowHeaderControls-DpryL3w7.js, RuntimeFlowObservabilitySection-B3t409lC.js, RuntimeFlowOcrSection-BjrGIBh_.js, RuntimeFlowParsingSection-CV2pRIvZ.js, RuntimeFlowRunOutputSection-D2G8eSGk.js, RuntimeFlowRunSetupSection-DGDYALhW.js, RuntimeOpsPage-NLkrn4-2.js, RuntimeSettingsFlowCard-23PvKf-D.js, runtimeSettingsParsing-DdvlotUq.js, settingsStatus-BVm315aX.js, SidebarShell-Di-gaBXz.js, StoragePage-vt79mh8A.js, StudioPage-DbkPpJlA.js, TabStrip-Klqv926z.js, TestModePage-0cMF8n2W.js, TrafficLight-BNEGE2s5.js, useFieldLabels-CBzT_c99.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\Temp\spec-factory\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\Temp\spec-factory\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  BillingPage-C3KSLlhk.js, buttonClasses-x-rUW2Cc.js, CatalogPage--bf39PiS.js, CategoryManager-sm4zygw5.js, ComponentReviewPage-DVTfsHzl.js, DataTable-Bosp7JNx.js, DrawerShell-BU2B9H2R.js, fieldNormalize-gPMNHgg-.js, FlagsSection-D-mmG8iY.js, formatting-B6A_RRxb.js, index-CvkXVHOR.css, index-ZdlY2NOV.js, IndexingPage-oNrgSXSk.js, indexlabRunsQuery-CAcCVi-O.js, invalidateFieldRulesQueries-ebMw0g-v.js, LlmConfigPage-2HsMa4ZF.js, LlmExtractionSection-DNxqJCUV.js, LlmGlobalSection-0KXVkp8v.js, LlmPhaseSection-6sracE-O.js, llmPolicyDefaults-zKZDLTgf.js, LlmProviderRegistrySection-D-dOv3Nd.js, llmSettingsManifest-Dn-9Efng.js, LlmSettingsPage-D3SKXuci.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-m1GRvvge.js, OverviewPage-CymPVNJD.js, PipelineSettingsPage-DC_a9b_V.js, PipelineSourceStrategySection-OGFaL-to.js, ProductPage-B59phBnc.js, ReviewPage-F9hTqUfu.js, RuntimeFlowAutomationSection-L4Ky4YIp.js, RuntimeFlowBrowserRenderingSection-D0dT9qhs.js, RuntimeFlowDraftPayload-N1lUa7X0.js, RuntimeFlowFetchNetworkSection-C5cHU9a7.js, RuntimeFlowHeaderControls-DpryL3w7.js, RuntimeFlowObservabilitySection-B3t409lC.js, RuntimeFlowOcrSection-BjrGIBh_.js, RuntimeFlowParsingSection-CV2pRIvZ.js, RuntimeFlowRunOutputSection-D2G8eSGk.js, RuntimeFlowRunSetupSection-DGDYALhW.js, RuntimeOpsPage-NLkrn4-2.js, RuntimeSettingsFlowCard-23PvKf-D.js, runtimeSettingsParsing-DdvlotUq.js, settingsStatus-BVm315aX.js, SidebarShell-Di-gaBXz.js, StoragePage-vt79mh8A.js, StudioPage-DbkPpJlA.js, TabStrip-Klqv926z.js, TestModePage-0cMF8n2W.js, TrafficLight-BNEGE2s5.js, useFieldLabels-CBzT_c99.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 1194 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 1194 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+[indexlab-relocation] failed InvalidBucketName: The specified bucket is not valid.
+    at ProtocolLib.getErrorSchemaOrThrowBaseException (C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\core\dist-cjs\submodules\protocols\index.js:69:67)
+    at AwsRestXmlProtocol.handleError (C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\core\dist-cjs\submodules\protocols\index.js:1801:65)
+    at AwsRestXmlProtocol.deserializeResponse (C:\Users\Chris\Desktop\Spec Factory\node_modules\@smithy\core\dist-cjs\submodules\protocols\index.js:309:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@smithy\core\dist-cjs\submodules\schema\index.js:26:24
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-sdk-s3\dist-cjs\index.js:386:20
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@smithy\middleware-retry\dist-cjs\index.js:254:46
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-flexible-checksums\dist-cjs\index.js:241:24
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-sdk-s3\dist-cjs\index.js:63:28
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-sdk-s3\dist-cjs\index.js:90:20 {
+  '$fault': 'client',
+  '$retryable': undefined,
+  '$metadata': {
+    httpStatusCode: 400,
+    requestId: 'NGZ4YZH3VXQRTD64',
+    extendedRequestId: '34aFy+sPaerUcqeWdmlHtXPLQxJ/rFimyXSc/PJzTUHeC228OAIL3hdUvbDiUoGBJK0a9rSyYtr+mD7q76gGR3kxnCLc+g01',
+    cfId: undefined,
+    attempts: 1,
+    totalRetryDelay: 0
+  },
+  Code: 'InvalidBucketName',
+  BucketName: 'b',
+  RequestId: 'NGZ4YZH3VXQRTD64',
+  HostId: '34aFy+sPaerUcqeWdmlHtXPLQxJ/rFimyXSc/PJzTUHeC228OAIL3hdUvbDiUoGBJK0a9rSyYtr+mD7q76gGR3kxnCLc+g01'
+}
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 561 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 573 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+[indexlab-relocation] failed InvalidBucketName: The specified bucket is not valid.
+    at ProtocolLib.getErrorSchemaOrThrowBaseException (C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\core\dist-cjs\submodules\protocols\index.js:69:67)
+    at AwsRestXmlProtocol.handleError (C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\core\dist-cjs\submodules\protocols\index.js:1801:65)
+    at AwsRestXmlProtocol.deserializeResponse (C:\Users\Chris\Desktop\Spec Factory\node_modules\@smithy\core\dist-cjs\submodules\protocols\index.js:309:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@smithy\core\dist-cjs\submodules\schema\index.js:26:24
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-sdk-s3\dist-cjs\index.js:386:20
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@smithy\middleware-retry\dist-cjs\index.js:254:46
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-flexible-checksums\dist-cjs\index.js:241:24
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-sdk-s3\dist-cjs\index.js:63:28
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-sdk-s3\dist-cjs\index.js:90:20 {
+  '$fault': 'client',
+  '$retryable': undefined,
+  '$metadata': {
+    httpStatusCode: 400,
+    requestId: 'Q2HQCCWTVZ14K6V6',
+    extendedRequestId: 'N6zcwBc9YI6AC1Mlgf40ijrdF6K8FWAeeJ8uyvXkz1MTlSDQtG4sS0DUeQYgXe5RKzHm3Nx4oUk=',
+    cfId: undefined,
+    attempts: 1,
+    totalRetryDelay: 0
+  },
+  Code: 'InvalidBucketName',
+  BucketName: 'b',
+  RequestId: 'Q2HQCCWTVZ14K6V6',
+  HostId: 'N6zcwBc9YI6AC1Mlgf40ijrdF6K8FWAeeJ8uyvXkz1MTlSDQtG4sS0DUeQYgXe5RKzHm3Nx4oUk='
+}
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 399 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 570 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 567 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 568 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+[indexlab-relocation] failed InvalidBucketName: The specified bucket is not valid.
+    at ProtocolLib.getErrorSchemaOrThrowBaseException (C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\core\dist-cjs\submodules\protocols\index.js:69:67)
+    at AwsRestXmlProtocol.handleError (C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\core\dist-cjs\submodules\protocols\index.js:1801:65)
+    at AwsRestXmlProtocol.deserializeResponse (C:\Users\Chris\Desktop\Spec Factory\node_modules\@smithy\core\dist-cjs\submodules\protocols\index.js:309:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@smithy\core\dist-cjs\submodules\schema\index.js:26:24
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-sdk-s3\dist-cjs\index.js:386:20
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@smithy\middleware-retry\dist-cjs\index.js:254:46
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-flexible-checksums\dist-cjs\index.js:241:24
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-sdk-s3\dist-cjs\index.js:63:28
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-sdk-s3\dist-cjs\index.js:90:20 {
+  '$fault': 'client',
+  '$retryable': undefined,
+  '$metadata': {
+    httpStatusCode: 400,
+    requestId: 'M84MZCGKHNT1Z9X0',
+    extendedRequestId: 'zsW/MTYEu+jyEbfEb2d5lqNTftWxIfFKAmVN4SqFPEqinky75aGSYZfCjvzte3Pwm435sFmBK5lSmcZz3nQV8Syonb0LKkba',
+    cfId: undefined,
+    attempts: 1,
+    totalRetryDelay: 0
+  },
+  Code: 'InvalidBucketName',
+  BucketName: 'b',
+  RequestId: 'M84MZCGKHNT1Z9X0',
+  HostId: 'zsW/MTYEu+jyEbfEb2d5lqNTftWxIfFKAmVN4SqFPEqinky75aGSYZfCjvzte3Pwm435sFmBK5lSmcZz3nQV8Syonb0LKkba'
+}
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 569 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 342 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\Temp\settings-canonical-only-8b8SzC\run-data\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\Temp\settings-canonical-only-8b8SzC\run-data\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  BillingPage-W1765iZ2.js, buttonClasses-x-rUW2Cc.js, CatalogPage-BPkSM0rg.js, CategoryManager-C6Dgec9X.js, ComponentReviewPage-CjMkQrrG.js, DataTable-Bosp7JNx.js, DrawerShell-D47hhP0p.js, fieldNormalize-gPMNHgg-.js, FlagsSection-Bxb7yDsy.js, formatting-B6A_RRxb.js, index-Bz9Z8Xkn.js, index-CvkXVHOR.css, IndexingPage-BnjELooc.js, indexlabRunsQuery-Bvpzyxzy.js, invalidateFieldRulesQueries-ss9oVA-d.js, LlmConfigPage-BlJ5U1bi.js, LlmExtractionSection-C7ccZuYr.js, LlmGlobalSection-91kMRbwl.js, LlmPhaseSection-xNDt8-V_.js, llmPolicyDefaults-C8fjhXC5.js, LlmProviderRegistrySection-CYOJ_y12.js, llmSettingsManifest-Dn-9Efng.js, LlmSettingsPage-BS866jx3.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-m1GRvvge.js, OverviewPage-dUVM4Rz5.js, PipelineSettingsPage-CPDe1u3d.js, PipelineSourceStrategySection-C6Ic6zZq.js, ProductPage-5-enCWxe.js, ReviewPage-DMiEv-ys.js, RuntimeFlowAutomationSection-s7RaE2nT.js, RuntimeFlowBrowserRenderingSection-CCmhGNFT.js, RuntimeFlowDraftPayload-D7ShesHW.js, RuntimeFlowFetchNetworkSection-CyhqjQ2_.js, RuntimeFlowHeaderControls-2kfll3m4.js, RuntimeFlowObservabilitySection-ZQB8jd-p.js, RuntimeFlowOcrSection-DPkhm-Te.js, RuntimeFlowParsingSection-REFTgArc.js, RuntimeFlowRunOutputSection-EQMHxFAx.js, RuntimeFlowRunSetupSection-ClDx3A8c.js, RuntimeOpsPage-DriucE4k.js, RuntimeSettingsFlowCard-DRMba7lx.js, runtimeSettingsParsing-CqmB93aq.js, settingsStatus-BVm315aX.js, SidebarShell-BSQPn40q.js, StoragePage-B6coL_XY.js, StudioPage-DamDY7da.js, TabStrip-Klqv926z.js, TestModePage-Dg2-Njw6.js, TrafficLight-DAKC5eDl.js, useFieldLabels-BgUvxMyJ.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\Temp\settings-canonical-only-4vKEAp\run-data\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\Temp\settings-canonical-only-4vKEAp\run-data\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  BillingPage-DbgxgIOz.js, buttonClasses-x-rUW2Cc.js, CatalogPage-DXf0qmsS.js, CategoryManager-BIix0U8j.js, ComponentReviewPage-BRt0RWj0.js, DataTable-Bosp7JNx.js, DrawerShell-BudjM4tf.js, fieldNormalize-gPMNHgg-.js, FlagsSection-MjW0Sldm.js, formatting-B6A_RRxb.js, index-CUU7Tp7U.js, index-DpyGN_0Z.css, IndexingPage-Cg3e3Kf_.js, indexlabRunsQuery-DNpvNRVK.js, invalidateFieldRulesQueries-BLrp4BVX.js, LlmConfigPage-B5JY-u7D.js, LlmExtractionSection-DtW00U1Y.js, LlmGlobalSection-B0aTRJwQ.js, LlmPhaseSection-BrvaPsam.js, llmPolicyDefaults-BA7B7aWe.js, LlmProviderRegistrySection-Bu55frv7.js, llmSettingsManifest-Dn-9Efng.js, LlmSettingsPage-BmoRm3-R.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-m1GRvvge.js, OverviewPage-C7Bq5i4D.js, PipelineSettingsPage-uTTq_ZUc.js, PipelineSourceStrategySection-CZ-bhFnn.js, ProductPage-0_Flg7Nk.js, ReviewPage-RKJAyHj8.js, RuntimeFlowAutomationSection-BFHkOa6N.js, RuntimeFlowBrowserRenderingSection-DjSyBcP-.js, RuntimeFlowDraftPayload-DL2y_Ay4.js, RuntimeFlowFetchNetworkSection-Bcm97r5z.js, RuntimeFlowHeaderControls-CYVnEErX.js, RuntimeFlowObservabilitySection-Cc5sY7ZF.js, RuntimeFlowOcrSection-BiW-G9dF.js, RuntimeFlowParsingSection-D264E7yx.js, RuntimeFlowRunOutputSection-BW1hQA7X.js, RuntimeFlowRunSetupSection-CgDuKHo8.js, RuntimeOpsPage-ffq7Y20K.js, RuntimeSettingsFlowCard-DXkQwGDm.js, runtimeSettingsParsing-3nafJEe0.js, settingsStatus-BVm315aX.js, SidebarShell-UEWMhU3p.js, StoragePage-DJ0Asmhv.js, StudioPage-DYao_c0G.js, TabStrip-Klqv926z.js, TestModePage-DHwpfoOl.js, TrafficLight-CA_2B0k9.js, useFieldLabels-BY1Rq8aW.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] API error: DISCOVERY_DEFAULTS is not defined
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\Temp\settings-canonical-only-4vKEAp\run-data\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\Temp\settings-canonical-only-4vKEAp\run-data\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  BillingPage-DbgxgIOz.js, buttonClasses-x-rUW2Cc.js, CatalogPage-DXf0qmsS.js, CategoryManager-BIix0U8j.js, ComponentReviewPage-BRt0RWj0.js, DataTable-Bosp7JNx.js, DrawerShell-BudjM4tf.js, fieldNormalize-gPMNHgg-.js, FlagsSection-MjW0Sldm.js, formatting-B6A_RRxb.js, index-CUU7Tp7U.js, index-DpyGN_0Z.css, IndexingPage-Cg3e3Kf_.js, indexlabRunsQuery-DNpvNRVK.js, invalidateFieldRulesQueries-BLrp4BVX.js, LlmConfigPage-B5JY-u7D.js, LlmExtractionSection-DtW00U1Y.js, LlmGlobalSection-B0aTRJwQ.js, LlmPhaseSection-BrvaPsam.js, llmPolicyDefaults-BA7B7aWe.js, LlmProviderRegistrySection-Bu55frv7.js, llmSettingsManifest-Dn-9Efng.js, LlmSettingsPage-BmoRm3-R.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-m1GRvvge.js, OverviewPage-C7Bq5i4D.js, PipelineSettingsPage-uTTq_ZUc.js, PipelineSourceStrategySection-CZ-bhFnn.js, ProductPage-0_Flg7Nk.js, ReviewPage-RKJAyHj8.js, RuntimeFlowAutomationSection-BFHkOa6N.js, RuntimeFlowBrowserRenderingSection-DjSyBcP-.js, RuntimeFlowDraftPayload-DL2y_Ay4.js, RuntimeFlowFetchNetworkSection-Bcm97r5z.js, RuntimeFlowHeaderControls-CYVnEErX.js, RuntimeFlowObservabilitySection-Cc5sY7ZF.js, RuntimeFlowOcrSection-BiW-G9dF.js, RuntimeFlowParsingSection-D264E7yx.js, RuntimeFlowRunOutputSection-BW1hQA7X.js, RuntimeFlowRunSetupSection-CgDuKHo8.js, RuntimeOpsPage-ffq7Y20K.js, RuntimeSettingsFlowCard-DXkQwGDm.js, runtimeSettingsParsing-3nafJEe0.js, settingsStatus-BVm315aX.js, SidebarShell-UEWMhU3p.js, StoragePage-DJ0Asmhv.js, StudioPage-DYao_c0G.js, TabStrip-Klqv926z.js, TestModePage-DHwpfoOl.js, TrafficLight-CA_2B0k9.js, useFieldLabels-BY1Rq8aW.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\Temp\settings-canonical-only-4vKEAp\run-data\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\Temp\settings-canonical-only-4vKEAp\run-data\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  BillingPage-30ZE-I1r.js, buttonClasses-x-rUW2Cc.js, CatalogPage-CI9krJi-.js, CategoryManager-ClBvjUI1.js, ComponentReviewPage-Kcy-rnxg.js, DataTable-Bosp7JNx.js, DrawerShell-DG_knwSv.js, fieldNormalize-gPMNHgg-.js, FlagsSection-ZA7xydxi.js, formatting-B6A_RRxb.js, index-BtfRZGs4.js, index-DpyGN_0Z.css, IndexingPage-D1pzpvk_.js, indexlabRunsQuery-RG7r3JN1.js, invalidateFieldRulesQueries-BWlDjSey.js, LlmConfigPage-v5A-gRh6.js, LlmExtractionSection-DgQFOZ9P.js, LlmGlobalSection-B0c0EphJ.js, LlmPhaseSection-1ImZI7OB.js, llmPolicyDefaults-Mhx1GdoQ.js, LlmProviderRegistrySection-DIuF8qmh.js, llmSettingsManifest-Dn-9Efng.js, LlmSettingsPage-D_esu3R_.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-m1GRvvge.js, OverviewPage-CwFEm3Ol.js, PipelineSettingsPage-YfIcnzDw.js, PipelineSourceStrategySection-C87G-SNd.js, ProductPage-CvGZvxwC.js, ReviewPage-BrUa-_mA.js, RuntimeFlowAutomationSection-hAjoAo04.js, RuntimeFlowBrowserRenderingSection-B4wk3fG-.js, RuntimeFlowDraftPayload-hSmH94qb.js, RuntimeFlowFetchNetworkSection-FJj-EXC0.js, RuntimeFlowHeaderControls-DXEpxgWl.js, RuntimeFlowObservabilitySection-B1n9CHBu.js, RuntimeFlowOcrSection-Dtz99hMl.js, RuntimeFlowParsingSection-DbzdO7rp.js, RuntimeFlowRunOutputSection-CLYnmWW5.js, RuntimeFlowRunSetupSection-Do_URqN9.js, RuntimeOpsPage-BcNrzArQ.js, RuntimeSettingsFlowCard-SjLD_428.js, runtimeSettingsParsing-BeqQecCf.js, settingsStatus-BVm315aX.js, SidebarShell-Dbz8GqDp.js, StoragePage-DnQha24k.js, StudioPage-BkvWwPfC.js, TabStrip-Klqv926z.js, TestModePage-rmpbZkKq.js, TrafficLight-DnaicYm6.js, useFieldLabels-CFosLuEa.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js

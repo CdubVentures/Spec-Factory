@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { DataTable } from '../../components/common/DataTable';
-import { TrafficLight } from '../../components/common/TrafficLight';
+import { DataTable } from '../../shared/ui/data-display/DataTable';
+import { TrafficLight } from '../../shared/ui/feedback/TrafficLight';
 import { pct } from '../../utils/formatting';
 import { humanizeField, hasKnownValue } from '../../utils/fieldNormalize';
 import type { ColumnDef } from '@tanstack/react-table';

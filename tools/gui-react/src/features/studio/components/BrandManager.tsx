@@ -11,12 +11,7 @@ import { invalidateFieldRulesQueries } from "../state/invalidateFieldRulesQuerie
 import type { ColumnDef } from "@tanstack/react-table";
 import type { BrandImpactAnalysis } from "../../../types/product";
 
-const btnPrimary =
-  "px-4 py-2 text-sm sf-primary-button transition-colors disabled:opacity-50";
-const btnSecondary =
-  "px-3 py-1.5 text-sm sf-icon-button transition-colors disabled:opacity-50";
-const btnDanger =
-  "px-3 py-1.5 text-sm sf-danger-button-solid transition-colors disabled:opacity-50";
+import { btnPrimary, btnSecondary, btnDangerSolid as btnDanger } from '../../../shared/ui/buttonClasses';
 const borderPanelCls = "sf-border-default";
 const textMutedCls = "sf-text-subtle";
 const textSubtleCls = "sf-text-subtle";

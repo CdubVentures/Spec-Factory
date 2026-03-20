@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useUiStore } from '../../stores/uiStore';
-import { MetricRow } from '../../components/common/MetricRow';
-import { ProgressBar } from '../../components/common/ProgressBar';
-import { DataTable } from '../../components/common/DataTable';
-import { StatusBadge } from '../../components/common/StatusBadge';
-import { TrafficLight } from '../../components/common/TrafficLight';
-import { Spinner } from '../../components/common/Spinner';
+import { MetricRow } from '../../shared/ui/data-display/MetricRow';
+import { ProgressBar } from '../../shared/ui/data-display/ProgressBar';
+import { DataTable } from '../../shared/ui/data-display/DataTable';
+import { StatusBadge } from '../../shared/ui/feedback/StatusBadge';
+import { TrafficLight } from '../../shared/ui/feedback/TrafficLight';
+import { Spinner } from '../../shared/ui/feedback/Spinner';
 import { pct, usd, relativeTime } from '../../utils/formatting';
 import { useProductStore } from '../../stores/productStore';
 import type { CatalogRow } from '../../types/product';

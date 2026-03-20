@@ -11,11 +11,7 @@ import BulkPasteGrid, { type BulkGridRow } from '../../../components/common/Bulk
 import type { ColumnDef } from '@tanstack/react-table';
 import { invalidateFieldRulesQueries } from '../../studio';
 
-// ── Styles ─────────────────────────────────────────────────────────
-const btnPrimary = 'px-4 py-2 text-sm sf-primary-button transition-colors disabled:opacity-50';
-const btnSecondary = 'px-3 py-1.5 text-sm sf-icon-button transition-colors disabled:opacity-50';
-const btnDanger = 'px-3 py-1.5 text-sm sf-bg-surface-soft-strong text-white rounded sf-hover-bg-surface-soft-strong disabled:opacity-50';
-const sectionCls = 'bg-white sf-bg-surface-soft rounded border sf-border-default sf-border-default p-4';
+import { btnPrimary, btnSecondary, btnDanger, sectionCls } from '../../../shared/ui/buttonClasses';
 const inputCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft rounded bg-white sf-bg-surface-soft-strong sf-text-subtle dark:placeholder:sf-text-muted placeholder:italic';
 const labelCls = 'text-xs font-medium sf-text-muted sf-text-subtle mb-1 block';
 const selectCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft rounded bg-white sf-bg-surface-soft-strong';

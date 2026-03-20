@@ -736,7 +736,7 @@ describe('resolveDomainCapSummary', () => {
       profile: 'standard',
       maxPagesPerDomain: 5,
       discoveryResultsPerQuery: 14,
-      discoveryMaxDiscovered: 140,
+      searchPlannerQueryCap: 140,
     });
     assert.equal(summary.value, '5');
     assert.equal(summary.queryCap, 14);
@@ -763,7 +763,7 @@ describe('resolveRuntimeDomainCapSummary', () => {
     const summary = resolveRuntimeDomainCapSummary({
       maxPagesPerDomain: 5,
       discoveryResultsPerQuery: 14,
-      discoveryMaxDiscovered: 140,
+      searchPlannerQueryCap: 140,
     });
     assert.equal(summary.value, '5');
     assert.equal(summary.queryCap, 14);

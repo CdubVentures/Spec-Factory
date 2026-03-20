@@ -16,7 +16,7 @@ import { useUiStore } from "../../../stores/uiStore";
 import { useRuntimeStore } from "../../runtime-ops/state/runtimeStore";
 import { JsonViewer } from "../../../shared/ui/data-display/JsonViewer";
 import { Spinner } from "../../../shared/ui/feedback/Spinner";
-import { EnumConfigurator } from "../../../shared/ui/forms/EnumConfigurator";
+import { EnumConfigurator } from "./EnumConfigurator";
 import { FieldRulesWorkbench } from "../workbench/FieldRulesWorkbench";
 import { SystemBadges } from "../workbench/SystemBadges";
 import type { DownstreamSystem } from "../workbench/systemMapping";

@@ -2,18 +2,20 @@
 // Returns real Google organic results as structured JSON.
 // No browser, no proxy, no CAPTCHA. ~3KB per response.
 
+import { createPacer } from './createPacer.js';
+
 const SERPER_URL = 'https://google.serper.dev/search';
 const DEFAULT_MIN_INTERVAL_MS = 500;
 const RETRY_BASE_MS = 1000;
 
 // ---------------------------------------------------------------------------
-// Module-level pacing
+// Module-level pacing — injectable via _pacer param
 // ---------------------------------------------------------------------------
 
-let _lastSerperQueryMs = 0;
+const _defaultPacer = createPacer({ minIntervalMs: DEFAULT_MIN_INTERVAL_MS });
 
 export function resetSerperPacingForTests() {
-  _lastSerperQueryMs = 0;
+  _defaultPacer.resetForTests();
 }
 
 // ---------------------------------------------------------------------------
@@ -51,6 +53,7 @@ export async function searchSerper({
   logger,
   requestThrottler,
   _fetchFn,
+  _pacer,
 } = {}) {
   const EMPTY = { results: [], proxyKB: 0 };
 
@@ -64,16 +67,9 @@ export async function searchSerper({
   const cap = Math.max(1, Math.min(100, Number(limit) || 20));
   const fetchFn = _fetchFn || globalThis.fetch;
 
-  // Pacing
-  const interval = Math.max(0, minQueryIntervalMs);
-  if (interval > 0) {
-    const now = Date.now();
-    const elapsed = now - _lastSerperQueryMs;
-    if (elapsed < interval) {
-      await new Promise(r => setTimeout(r, interval - elapsed));
-    }
-  }
-  _lastSerperQueryMs = Date.now();
+  // Pacing — injectable for tests
+  const pacer = _pacer || _defaultPacer;
+  await pacer.waitForSlot({ interval: minQueryIntervalMs });
 
   if (typeof requestThrottler?.acquire === 'function') {
     await requestThrottler.acquire({ key: 'google.serper.dev', provider: 'serper', query: q });

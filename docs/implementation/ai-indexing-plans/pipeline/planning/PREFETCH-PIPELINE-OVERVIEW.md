@@ -1,6 +1,6 @@
 # Prefetch Pipeline Overview
 
-Validated: 2026-03-18.
+Validated: 2026-03-19.
 
 Source of truth:
 
@@ -27,6 +27,33 @@ Stage 08: Domain Classifier - enqueue approved/candidate URLs to planner queue
 ```
 
 Every stage runs. There is no branching between stages. Conditional behavior stays inside the stage that owns it.
+
+## Three-Tier Search Model (V4)
+
+The discovery search system operates on three query tiers. NeedSet's job is to rank groups by easiest/most productive and tell Search Profile "focus on these now." When those groups are checked off, NeedSet surfaces the next batch. Search Profile and Search Planner write the actual queries.
+
+### Tier 1 — Broad Seeds (fire once, cooldown)
+- `{brand} {model} {variant} specifications`
+- `{brand} {model} {variant} {source}`
+- Query completion model: 1 query = parent, up to 10 SERP URLs = children. Parent done only when child scrape work done.
+- Complete when: `scrape_complete` or `exhausted` AND `new_fields_closed >= 1`
+- Cooldown: `seedCooldownMs` (default 30 days) via Unix timestamp comparison
+- NeedSet emits `seed_status` with per-seed `last_status`, `cooldown_until_ms`, `new_fields_closed_last_run`
+
+### Tier 2 — Group Searches (conditional)
+- `{brand} {model} {variant} {group} {description}`
+- NeedSet computes `group_search_worthy` using `group_query_count` (actual Tier 2 broad searches, NOT sum of key retries)
+- Skip reasons: `group_mostly_resolved` (coverage >= 80%), `too_few_missing_keys` (< 3 unresolved), `group_search_exhausted` (>= 3 broad searches), `group_on_hold`
+- Two-level fingerprint: `group_fingerprint_coarse` (stable = group_key) for broad suppression, `group_fingerprint_fine` (group_key + sorted keys) for "meaningfully different?"
+
+### Tier 3 — Individual Key Searches (progressive enrichment)
+- `{brand} {model} {variant} {key} {aliases}`
+- Each round: tack on domain hints, content types, phrasing; LLM gets creative with full history
+- NeedSet emits per-field `normalized_key`, `all_aliases`, `alias_shards`, `domains_tried_for_key`, `query_modes_tried_for_key`
+- `sorted_unresolved_keys` orders fields by: availability -> difficulty -> repeat -> need_score -> required_level
+
+### Query Execution History
+Structured per-query tracking with `tier`, `group_key`, `normalized_key`, `source_name` persisted by the execution layer at fire-time (never inferred from text). Passed fresh to `buildSearchPlanningContext` on each round.
 
 ## Canonical runtime order
 

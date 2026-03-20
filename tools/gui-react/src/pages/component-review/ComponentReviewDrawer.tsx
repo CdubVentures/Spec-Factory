@@ -12,9 +12,9 @@ import {
   DrawerValueRow,
   DrawerBadges,
   DrawerManualOverride,
-} from '../../components/common/DrawerShell';
-import { ActionTooltip } from '../../components/common/ActionTooltip';
-import { CellDrawer } from '../../components/common/CellDrawer';
+} from '../../shared/ui/overlay/DrawerShell';
+import { ActionTooltip } from '../../shared/ui/feedback/ActionTooltip';
+import { CellDrawer } from '../../shared/ui/overlay/CellDrawer';
 import { FlagsSection, FlagsOverviewSection } from '../../components/common/FlagsSection';
 import { PendingAIReviewSection } from '../../components/common/PendingAIReviewSection';
 import { LinkedProductsList } from '../../components/common/LinkedProductsList';

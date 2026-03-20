@@ -109,6 +109,13 @@ export {
   type SourceEntry,
 } from './state/sourceStrategyAuthority';
 
+// --- Auto-save effect (generic) ---
+export {
+  useSettingsAutoSaveEffect,
+  type UseSettingsAutoSaveOptions,
+  type UseSettingsAutoSaveResult,
+} from './state/useSettingsAutoSaveEffect';
+
 // --- UI primitives (shared across pipeline-settings, llm-config) ---
 export {
   AdvancedSettingsBlock,

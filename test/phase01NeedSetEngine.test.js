@@ -1,6 +1,14 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeNeedSet } from '../src/indexlab/needsetEngine.js';
+import {
+  computeNeedSet,
+  normalizeFieldKey,
+  buildAllAliases,
+  shardAliases,
+  availabilityRank,
+  difficultyRank,
+  requiredLevelRank,
+} from '../src/indexlab/needsetEngine.js';
 
 // --- Factories ---
 
@@ -672,7 +680,7 @@ describe('Phase 01 — NeedSet Event Payload Shape (via runtimeBridge)', () => {
 describe('Phase 01 — Schema 2 Top-Level Shape', () => {
   it('output includes schema_version, round, round_mode', () => {
     const result = computeNeedSet(makeBaseInput());
-    assert.equal(result.schema_version, 'needset_output.v2');
+    assert.equal(result.schema_version, 'needset_output.v2.1');
     assert.equal(typeof result.round, 'number');
     assert.equal(typeof result.round_mode, 'string');
   });
@@ -1180,5 +1188,329 @@ describe('Phase 01 — blockers.search_exhausted derivation', () => {
     }));
     // field is covered → not exhausted
     assert.equal(result.blockers.search_exhausted, 0);
+  });
+});
+
+// ── V4: normalizeFieldKey ──
+
+describe('V4 — normalizeFieldKey', () => {
+  it('replaces underscores with spaces', () => {
+    assert.equal(normalizeFieldKey('battery_hours'), 'battery hours');
+  });
+
+  it('lowercases', () => {
+    assert.equal(normalizeFieldKey('DPI_Max'), 'dpi max');
+  });
+
+  it('trims whitespace', () => {
+    assert.equal(normalizeFieldKey('  weight  '), 'weight');
+  });
+
+  it('single word unchanged except lowercase', () => {
+    assert.equal(normalizeFieldKey('rgb'), 'rgb');
+  });
+
+  it('empty/null → empty string', () => {
+    assert.equal(normalizeFieldKey(''), '');
+    assert.equal(normalizeFieldKey(null), '');
+    assert.equal(normalizeFieldKey(undefined), '');
+  });
+
+  it('multiple underscores', () => {
+    assert.equal(normalizeFieldKey('feet_material_type'), 'feet material type');
+  });
+});
+
+// ── V4: buildAllAliases ──
+
+describe('V4 — buildAllAliases', () => {
+  it('unions all sources, dedupes, sorts', () => {
+    const result = buildAllAliases({
+      normalizedKey: 'battery hours',
+      displayName: 'Battery Life (Hours)',
+      fieldAliases: ['battery life', 'battery runtime'],
+      queryTerms: ['battery life', 'battery hours', 'runtime'],
+    });
+    assert.deepStrictEqual(result, [
+      'battery hours',
+      'battery life',
+      'battery life (hours)',
+      'battery runtime',
+      'runtime',
+    ]);
+  });
+
+  it('case-insensitive dedup', () => {
+    const result = buildAllAliases({
+      normalizedKey: 'dpi',
+      displayName: 'DPI',
+      fieldAliases: ['dpi', 'CPI'],
+      queryTerms: ['DPI', 'cpi', 'max dpi'],
+    });
+    assert.ok(!result.some((a, i) => result.indexOf(a) !== i), 'no duplicates');
+    assert.ok(result.includes('dpi'));
+    assert.ok(result.includes('cpi'));
+    assert.ok(result.includes('max dpi'));
+  });
+
+  it('empty inputs → empty array', () => {
+    const result = buildAllAliases({
+      normalizedKey: '',
+      displayName: '',
+      fieldAliases: [],
+      queryTerms: [],
+    });
+    assert.deepStrictEqual(result, []);
+  });
+
+  it('filters out empty strings', () => {
+    const result = buildAllAliases({
+      normalizedKey: 'weight',
+      displayName: '',
+      fieldAliases: ['', '  '],
+      queryTerms: ['weight'],
+    });
+    assert.ok(!result.includes(''));
+    assert.ok(result.includes('weight'));
+  });
+});
+
+// ── V4: shardAliases ──
+
+describe('V4 — shardAliases', () => {
+  it('short alias list → single shard', () => {
+    const aliases = ['weight', 'mass', 'grams'];
+    const result = shardAliases(aliases, 8);
+    assert.equal(result.length, 1);
+    assert.deepStrictEqual(result[0], aliases);
+  });
+
+  it('long alias list → multiple shards at whole alias boundaries', () => {
+    const aliases = ['motion to photon latency', 'click delay', 'input lag', 'response time ms'];
+    const result = shardAliases(aliases, 5);
+    // "motion to photon latency" = 4 words → fits in shard 1
+    // "click delay" = 2 words → would make shard 1 = 6 words, over limit → shard 2
+    assert.equal(result.length, 3);
+    assert.deepStrictEqual(result[0], ['motion to photon latency']);
+    assert.deepStrictEqual(result[1], ['click delay', 'input lag']);
+    assert.deepStrictEqual(result[2], ['response time ms']);
+  });
+
+  it('never splits a multi-word alias across shards', () => {
+    const aliases = ['very long alias with many words here'];
+    const result = shardAliases(aliases, 3);
+    // Single alias exceeds limit but must stay intact in its own shard
+    assert.equal(result.length, 1);
+    assert.deepStrictEqual(result[0], ['very long alias with many words here']);
+  });
+
+  it('empty aliases → empty array', () => {
+    assert.deepStrictEqual(shardAliases([], 8), []);
+  });
+
+  it('respects custom maxTokensPerShard', () => {
+    const aliases = ['a', 'b', 'c', 'd', 'e'];
+    const result = shardAliases(aliases, 2);
+    assert.equal(result.length, 3);
+    assert.deepStrictEqual(result[0], ['a', 'b']);
+    assert.deepStrictEqual(result[1], ['c', 'd']);
+    assert.deepStrictEqual(result[2], ['e']);
+  });
+});
+
+// ── V4: Ranking helpers ──
+
+describe('V4 — availabilityRank', () => {
+  it('always=0, expected=1, sometimes=2, rare=3, editorial_only=4', () => {
+    assert.equal(availabilityRank('always'), 0);
+    assert.equal(availabilityRank('expected'), 1);
+    assert.equal(availabilityRank('sometimes'), 2);
+    assert.equal(availabilityRank('rare'), 3);
+    assert.equal(availabilityRank('editorial_only'), 4);
+  });
+
+  it('unknown → highest rank (least available)', () => {
+    assert.equal(availabilityRank('bogus'), 4);
+    assert.equal(availabilityRank(''), 4);
+  });
+});
+
+describe('V4 — difficultyRank', () => {
+  it('easy=0, medium=1, hard=2', () => {
+    assert.equal(difficultyRank('easy'), 0);
+    assert.equal(difficultyRank('medium'), 1);
+    assert.equal(difficultyRank('hard'), 2);
+  });
+
+  it('unknown → highest rank', () => {
+    assert.equal(difficultyRank('impossible'), 2);
+  });
+});
+
+describe('V4 — requiredLevelRank', () => {
+  it('identity=0, critical=1, required=2, expected=3, optional=4', () => {
+    assert.equal(requiredLevelRank('identity'), 0);
+    assert.equal(requiredLevelRank('critical'), 1);
+    assert.equal(requiredLevelRank('required'), 2);
+    assert.equal(requiredLevelRank('expected'), 3);
+    assert.equal(requiredLevelRank('optional'), 4);
+  });
+});
+
+// ── V4: Schema 2 field entry additions ──
+
+describe('V4 — Schema 2 field entries carry V4 fields', () => {
+  it('every field has normalized_key, all_aliases, alias_shards, availability, difficulty', () => {
+    const result = computeNeedSet(makeBaseInput());
+    for (const f of result.fields) {
+      assert.ok(typeof f.normalized_key === 'string', `${f.field_key} missing normalized_key`);
+      assert.ok(Array.isArray(f.all_aliases), `${f.field_key} missing all_aliases`);
+      assert.ok(Array.isArray(f.alias_shards), `${f.field_key} missing alias_shards`);
+      assert.ok(typeof f.availability === 'string', `${f.field_key} missing availability`);
+      assert.ok(typeof f.difficulty === 'string', `${f.field_key} missing difficulty`);
+      assert.ok(typeof f.repeat_count === 'number', `${f.field_key} missing repeat_count`);
+      assert.ok(Array.isArray(f.query_modes_tried_for_key), `${f.field_key} missing query_modes_tried_for_key`);
+      assert.ok(Array.isArray(f.domains_tried_for_key), `${f.field_key} missing domains_tried_for_key`);
+      assert.ok(Array.isArray(f.content_types_tried_for_key), `${f.field_key} missing content_types_tried_for_key`);
+    }
+  });
+
+  it('normalized_key derives correctly from field_key', () => {
+    const result = computeNeedSet(makeBaseInput({ fieldOrder: ['dpi_max'], fieldRules: { dpi_max: makeBaseRules().dpi_max } }));
+    const f = result.fields.find((x) => x.field_key === 'dpi_max');
+    assert.equal(f.normalized_key, 'dpi max');
+  });
+
+  it('all_aliases unions display_name + normalized_key + rule.aliases + query_terms', () => {
+    const rules = {
+      weight: {
+        required_level: 'required', display_name: 'Weight',
+        aliases: ['mass'], min_evidence_refs: 1,
+        search_hints: { query_terms: ['weight', 'grams'], preferred_content_types: ['spec'], domain_hints: [] }
+      }
+    };
+    const result = computeNeedSet(makeBaseInput({ fieldOrder: ['weight'], fieldRules: rules }));
+    const f = result.fields.find((x) => x.field_key === 'weight');
+    assert.ok(f.all_aliases.includes('weight'));
+    assert.ok(f.all_aliases.includes('mass'));
+    assert.ok(f.all_aliases.includes('grams'));
+  });
+
+  it('repeat_count = 0 on round 0', () => {
+    const result = computeNeedSet(makeBaseInput({ round: 0 }));
+    for (const f of result.fields) {
+      assert.equal(f.repeat_count, 0);
+    }
+  });
+
+  it('repeat_count carries from history on round 1+', () => {
+    const result = computeNeedSet(makeBaseInput({
+      fieldOrder: ['weight'],
+      fieldRules: { weight: makeBaseRules().weight },
+      round: 2,
+      previousFieldHistories: { weight: { query_count: 5, existing_queries: [], domains_tried: [], host_classes_tried: [], evidence_classes_tried: [], urls_examined_count: 0, no_value_attempts: 1, duplicate_attempts_suppressed: 0, query_modes_tried_for_key: ['key_search'] } }
+    }));
+    const f = result.fields.find((x) => x.field_key === 'weight');
+    assert.equal(f.repeat_count, 5);
+    assert.deepStrictEqual(f.query_modes_tried_for_key, ['key_search']);
+  });
+
+  it('query_modes_tried_for_key empty on round 0', () => {
+    const result = computeNeedSet(makeBaseInput({ round: 0 }));
+    const f = result.fields[0];
+    assert.deepStrictEqual(f.query_modes_tried_for_key, []);
+  });
+});
+
+// ── V4: search_intent per field ──
+
+describe('V4 — search_intent is per-field, not per-group', () => {
+  it('exact_match_required=true → search_intent=exact_match', () => {
+    const rules = {
+      f1: { required_level: 'required', contract: { exact_match: true }, search_hints: { query_terms: ['x'], domain_hints: [] } }
+    };
+    const result = computeNeedSet(makeBaseInput({ fieldOrder: ['f1'], fieldRules: rules }));
+    const f = result.fields.find((x) => x.field_key === 'f1');
+    assert.equal(f.search_intent, 'exact_match');
+  });
+
+  it('exact_match_required=false → search_intent=broad', () => {
+    const result = computeNeedSet(makeBaseInput());
+    const f = result.fields[0];
+    assert.equal(f.search_intent, 'broad');
+  });
+});
+
+// ── V4: Schema version bump ──
+
+describe('V4 — schema version', () => {
+  it('schema_version is needset_output.v2.1', () => {
+    const result = computeNeedSet(makeBaseInput());
+    assert.equal(result.schema_version, 'needset_output.v2.1');
+  });
+});
+
+// ── V4: sorted_unresolved_keys ──
+
+describe('V4 — sorted_unresolved_keys', () => {
+  it('exists on output and is an array', () => {
+    const result = computeNeedSet(makeBaseInput());
+    assert.ok(Array.isArray(result.sorted_unresolved_keys));
+  });
+
+  it('contains only unresolved field_keys', () => {
+    const result = computeNeedSet(makeBaseInput({
+      fieldOrder: ['weight', 'sensor'],
+      fieldRules: { weight: makeBaseRules().weight, sensor: makeBaseRules().sensor },
+      provenance: { weight: { value: '58g', confidence: 0.95, pass_target: 0.8 } }
+    }));
+    // weight is resolved, sensor is unresolved
+    assert.ok(!result.sorted_unresolved_keys.includes('weight'));
+    assert.ok(result.sorted_unresolved_keys.includes('sensor'));
+  });
+
+  it('sorts by availability first (easy-to-find fields first)', () => {
+    const rules = {
+      rare_field: { required_level: 'expected', priority: { availability: 'rare', difficulty: 'easy' }, search_hints: { query_terms: ['x'], domain_hints: [] } },
+      always_field: { required_level: 'expected', priority: { availability: 'always', difficulty: 'easy' }, search_hints: { query_terms: ['y'], domain_hints: [] } },
+    };
+    const result = computeNeedSet(makeBaseInput({ fieldOrder: ['rare_field', 'always_field'], fieldRules: rules }));
+    const idx_always = result.sorted_unresolved_keys.indexOf('always_field');
+    const idx_rare = result.sorted_unresolved_keys.indexOf('rare_field');
+    assert.ok(idx_always < idx_rare, 'always should sort before rare');
+  });
+
+  it('same availability → sorts by difficulty (easy before hard)', () => {
+    const rules = {
+      hard_field: { required_level: 'expected', priority: { availability: 'expected', difficulty: 'hard' }, search_hints: { query_terms: ['x'], domain_hints: [] } },
+      easy_field: { required_level: 'expected', priority: { availability: 'expected', difficulty: 'easy' }, search_hints: { query_terms: ['y'], domain_hints: [] } },
+    };
+    const result = computeNeedSet(makeBaseInput({ fieldOrder: ['hard_field', 'easy_field'], fieldRules: rules }));
+    const idx_easy = result.sorted_unresolved_keys.indexOf('easy_field');
+    const idx_hard = result.sorted_unresolved_keys.indexOf('hard_field');
+    assert.ok(idx_easy < idx_hard, 'easy should sort before hard');
+  });
+
+  it('required_level is tie-breaker only', () => {
+    const rules = {
+      optional_easy: { required_level: 'optional', priority: { availability: 'always', difficulty: 'easy' }, search_hints: { query_terms: ['x'], domain_hints: [] } },
+      critical_hard: { required_level: 'critical', priority: { availability: 'rare', difficulty: 'hard' }, search_hints: { query_terms: ['y'], domain_hints: [] } },
+    };
+    const result = computeNeedSet(makeBaseInput({ fieldOrder: ['optional_easy', 'critical_hard'], fieldRules: rules }));
+    const idx_opt = result.sorted_unresolved_keys.indexOf('optional_easy');
+    const idx_crit = result.sorted_unresolved_keys.indexOf('critical_hard');
+    // optional_easy has availability=always, difficulty=easy → sorts first despite being optional
+    assert.ok(idx_opt < idx_crit, 'availability/difficulty should outrank required_level');
+  });
+
+  it('backward compat: rows still sorted by bucket then field_key', () => {
+    const result = computeNeedSet(makeBaseInput());
+    for (let i = 1; i < result.rows.length; i++) {
+      const prev = result.rows[i - 1];
+      const curr = result.rows[i];
+      const prevBucket = prev.priority_bucket === 'core' ? 0 : prev.priority_bucket === 'secondary' ? 1 : 2;
+      const currBucket = curr.priority_bucket === 'core' ? 0 : curr.priority_bucket === 'secondary' ? 1 : 2;
+      assert.ok(prevBucket <= currBucket, 'rows should still be sorted by bucket');
+    }
   });
 });

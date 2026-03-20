@@ -106,15 +106,29 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
     deepStrictEqual(readOnlyKeys, ['awsRegion', 's3Bucket']);
   });
 
-  it('defaultsOnly entries are exactly 3 known keys', () => {
+  it('defaultsOnly entries are exactly the known set', () => {
     const defaultsOnlyKeys = RUNTIME_SETTINGS_REGISTRY
       .filter(e => e.defaultsOnly)
       .map(e => e.key)
       .sort();
     deepStrictEqual(defaultsOnlyKeys, [
+      'authoritySnapshotEnabled',
+      'billingJsonWrite',
+      'cacheJsonWrite',
+      'corpusJsonWrite',
       'daemonGracefulShutdownTimeoutMs',
       'discoveryEnabled',
+      'fetchCandidateSources',
+      'frontierRepairSearchEnabled',
+      'htmlTableExtractorV2',
+      'intelJsonWrite',
+      'learningJsonWrite',
+      'llmExtractionCacheEnabled',
+      'manufacturerAutoPromote',
+      'queueJsonWrite',
       'runtimeAutoSaveEnabled',
+      'scannedPdfOcrPromoteCandidates',
+      'staticDomExtractorEnabled',
     ]);
   });
 
@@ -212,7 +226,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
     const total = RUNTIME_SETTINGS_REGISTRY.length;
     // WHY: Lock down the count so adding/removing entries requires updating this test.
     // Current count: 215 lines in settingsRegistry.js, 209 entries (some are comments/constants).
-    ok(total >= 190 && total <= 210, `expected 190-210 entries, got ${total}`);
+    ok(total >= 200 && total <= 230, `expected 200-230 entries, got ${total}`);
   });
 
   it('type distribution baseline', () => {

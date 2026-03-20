@@ -67,6 +67,19 @@ export function validateLlmConfigForRun(
     });
   }
 
+  // 4. SERP Selector minimum token floor
+  const SERP_SELECTOR_MIN_TOKENS = 20_000;
+  const triageTokens = Number(draft.llmMaxOutputTokensTriage || 0);
+  if (triageTokens > 0 && triageTokens < SERP_SELECTOR_MIN_TOKENS) {
+    issues.push({
+      key: 'serp-selector-token-floor',
+      severity: 'error',
+      title: 'SERP Selector output tokens too low',
+      message: `SERP Selector needs at least ${SERP_SELECTOR_MIN_TOKENS.toLocaleString()} output tokens to classify 80-120 candidate URLs. Currently set to ${triageTokens.toLocaleString()}.`,
+      ringFields: [],
+    });
+  }
+
   const hasError = issues.some((i) => i.severity === 'error');
   return { valid: !hasError, issues };
 }

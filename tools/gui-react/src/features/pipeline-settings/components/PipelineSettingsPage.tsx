@@ -23,6 +23,7 @@ import {
   type SourceStrategyDraft,
   type SourceStrategyDraftField,
 } from '../sections/PipelineSourceStrategySection';
+import { makeSourceStrategyDraft } from '../state/sourceEntryDerived';
 
 const RuntimeSettingsFlowCard = lazy(async () => {
   const module = await import('./RuntimeSettingsFlowCard');
@@ -62,36 +63,7 @@ function resolveSourceHost(value: string, fallback: string): string {
   }
 }
 
-function makeSourceStrategyDraft(_category: string): SourceStrategyDraft {
-  return {
-    host: '',
-    display_name: '',
-    tier: 'tier2_lab',
-    authority: 'unknown',
-    base_url: '',
-    content_types: '',
-    doc_kinds: '',
-    crawl_config: {
-      method: 'http',
-      rate_limit_ms: '2000',
-      timeout_ms: '12000',
-      robots_txt_compliant: 'true',
-    },
-    field_coverage: {
-      high: '',
-      medium: '',
-      low: '',
-    },
-    discovery: {
-      method: 'search_first',
-      source_type: '',
-      search_pattern: '',
-      priority: '50',
-      enabled: 'true',
-      notes: '',
-    },
-  };
-}
+// WHY: Draft factory derived from backend contract SSOT (sourceEntryDerived.ts).
 
 function sourceStrategyDraftFromEntry(entry: SourceEntry): SourceStrategyDraft {
   const sourceIdFallback = String(entry.sourceId || '').replace(/_/g, '.');
@@ -369,7 +341,7 @@ export function PipelineSettingsPage() {
   }>({ kind: 'idle', message: '' });
   const [sourceDraftMode, setSourceDraftMode] = useState<'create' | 'edit' | null>(null);
   const [sourceDraftSourceId, setSourceDraftSourceId] = useState<string | null>(null);
-  const [sourceDraft, setSourceDraft] = useState<SourceStrategyDraft>(() => makeSourceStrategyDraft(category));
+  const [sourceDraft, setSourceDraft] = useState<SourceStrategyDraft>(() => makeSourceStrategyDraft());
 
   const [saveStatus, setSaveStatus] = useState<{
     kind: 'idle' | 'ok' | 'partial' | 'error';
@@ -473,7 +445,7 @@ export function PipelineSettingsPage() {
   function beginCreateSourceDraft() {
     setSourceDraftMode('create');
     setSourceDraftSourceId(null);
-    setSourceDraft(makeSourceStrategyDraft(category));
+    setSourceDraft(makeSourceStrategyDraft());
   }
 
   function beginEditSourceDraft(entry: SourceEntry) {

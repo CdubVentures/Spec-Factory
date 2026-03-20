@@ -9,8 +9,12 @@ import { StackedScoreBar } from '../../components/StackedScoreBar';
 import { KanbanLane, KanbanCard } from '../../components/KanbanLane';
 import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
 import { Tip } from '../../../../shared/ui/feedback/Tip';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
+import { Chip } from '../../../../shared/ui/feedback/Chip';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
 import { ProgressRing } from '../../components/ProgressRing';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
 import {
   computeDecisionCounts,
   computeTopDomains,
@@ -37,24 +41,6 @@ interface PrefetchSearchResultsPanelProps {
   liveSettings?: PrefetchLiveSettings;
   idxRuntime?: RuntimeIdxBadge[];
   runId?: string;
-}
-
-/* ── Theme-aligned helpers ── */
-
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline gap-2 pt-2 pb-1.5 mb-3 border-b-[1.5px] border-[var(--sf-token-text-primary)]">
-      <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary">{children}</span>
-    </div>
-  );
-}
-
-function Chip({ label, className }: { label: string; className?: string }) {
-  return (
-    <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.04em] ${className || 'sf-chip-accent'} border-[1.5px] border-current`}>
-      {label}
-    </span>
-  );
 }
 
 /* ── Result Detail Drawer ── */
@@ -188,6 +174,15 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
     return counts;
   }, [crossQueryUrlCounts, details]);
   const duplicateUrlCount = useMemo(() => Object.values(urlCounts).filter((c) => c > 1).length, [urlCounts]);
+  const firstSeenUrlKey: Map<string, string> = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const d of details) {
+      for (const r of d.results) {
+        if (r.url && !seen.has(r.url)) seen.set(r.url, `${d.query}::${r.url}`);
+      }
+    }
+    return seen;
+  }, [details]);
   const resultValues = useMemo(
     () => details.flatMap((detail) => detail.results.map((result) => `${detail.query}::${result.url}`)),
     [details],
@@ -334,24 +329,12 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
         {/* Big stat numbers */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-5">
-          <div>
-            <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">{results.length}</div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">queries</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">{totalResults}</div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">raw results</div>
-          </div>
-          <div>
-            <div className={`text-4xl font-bold leading-none tracking-tight ${uniqueUrlCount > 0 ? 'text-[var(--sf-token-accent)]' : 'sf-text-muted'}`}>{uniqueUrlCount || '-'}</div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">unique urls</div>
-          </div>
-          <div>
-            <div className={`text-4xl font-bold leading-none tracking-tight ${decisions.keep > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'}`}>{decisions.keep || '-'}</div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">kept</div>
-          </div>
-        </div>
+        <HeroStatGrid>
+          <HeroStat value={results.length} label="queries" />
+          <HeroStat value={totalResults} label="raw results" />
+          <HeroStat value={uniqueUrlCount || '-'} label="unique urls" colorClass={uniqueUrlCount > 0 ? 'text-[var(--sf-token-accent)]' : 'sf-text-muted'} />
+          <HeroStat value={decisions.keep || '-'} label="kept" colorClass={decisions.keep > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
+        </HeroStatGrid>
 
         {/* Narrative */}
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
@@ -699,23 +682,27 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                     <table className="w-full table-fixed text-xs border-t sf-border-soft">
                       <colgroup>
                         <col className="w-[2%]" />
-                        <col className="w-[4%]" />
+                        <col className="w-[3%]" />
                         {showSnippets ? (
                           <>
-                            <col className="w-[18%]" />
-                            <col className="w-[16%]" />
-                            <col className="w-[10%]" />
                             <col className="w-[14%]" />
+                            <col className="w-[14%]" />
+                            <col className="w-[9%]" />
+                            <col className="w-[5%]" />
+                            <col className="w-[5%]" />
                             <col className="w-[12%]" />
-                            <col className="w-[8%]" />
-                            <col className="w-[16%]" />
+                            <col className="w-[10%]" />
+                            <col className="w-[7%]" />
+                            <col className="w-[14%]" />
                           </>
                         ) : (
                           <>
-                            <col className="w-[24%]" />
-                            <col className="w-[24%]" />
-                            <col className="w-[14%]" />
-                            <col className="w-[18%]" />
+                            <col className="w-[20%]" />
+                            <col className="w-[20%]" />
+                            <col className="w-[10%]" />
+                            <col className="w-[6%]" />
+                            <col className="w-[6%]" />
+                            <col className="w-[16%]" />
                             <col className="w-[14%]" />
                           </>
                         )}
@@ -727,6 +714,8 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                           <th className="text-left px-2 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Title</th>
                           <th className="text-left px-2 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">URL</th>
                           <th className="text-left px-2 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Domain</th>
+                          <th className="text-center px-1 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Dup</th>
+                          <th className="text-center px-1 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Crawled</th>
                           {showSnippets && <th className="text-left px-2 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Snippet</th>}
                           <th className="text-left px-2 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Relevance</th>
                           <th className="text-left px-2 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Decision</th>
@@ -734,14 +723,17 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredResults.map((r, ri) => (
+                        {filteredResults.map((r, ri) => {
+                          const rowKey = `${detail.query}::${r.url}`;
+                          const isDuplicate = (urlCounts[r.url] || 1) > 1 && firstSeenUrlKey.get(r.url) !== rowKey;
+                          const isCrawled = Boolean(r.already_crawled);
+                          const rowBg = isDuplicate ? 'sf-danger-bg-soft' : isCrawled ? 'sf-purple-bg-soft' : '';
+                          return (
                           <tr
                             key={ri}
-                            className="border-b sf-border-soft hover:sf-surface-elevated cursor-pointer"
+                            className={`border-b sf-border-soft hover:sf-surface-elevated cursor-pointer ${rowBg}`}
                             onClick={() => setSelectedResultKey(
-                              selectedResultKey === `${detail.query}::${r.url}`
-                                ? null
-                                : `${detail.query}::${r.url}`,
+                              selectedResultKey === rowKey ? null : rowKey,
                             )}
                           >
                             <td className="text-center px-1 py-1"><UrlUniqueDot url={r.url} counts={urlCounts} /></td>
@@ -759,6 +751,20 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                               </a>
                             </td>
                             <td className="px-2 py-1 sf-text-subtle truncate overflow-hidden">{r.domain}</td>
+                            <td className="text-center px-1 py-1">
+                              {isDuplicate ? (
+                                <span className="text-[10px] font-semibold sf-chip-danger px-1.5 py-0.5 rounded">Yes</span>
+                              ) : (
+                                <span className="text-[10px] font-semibold sf-chip-success px-1.5 py-0.5 rounded">No</span>
+                              )}
+                            </td>
+                            <td className="text-center px-1 py-1">
+                              {isCrawled ? (
+                                <span className="text-[10px] font-semibold sf-chip-purple px-1.5 py-0.5 rounded">Yes</span>
+                              ) : (
+                                <span className="sf-text-subtle text-[10px]">—</span>
+                              )}
+                            </td>
                             {showSnippets && (
                               <td className="px-2 py-1 sf-text-subtle truncate overflow-hidden">{r.snippet || '-'}</td>
                             )}
@@ -780,7 +786,8 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                               <td className="px-2 py-1 sf-text-subtle truncate overflow-hidden">{r.reason || (hasDecisions ? '-' : '')}</td>
                             )}
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   ) : null}
@@ -843,14 +850,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
 
       {/* ── Debug ── */}
       {hasDetails && (
-        <details className="text-xs">
-          <summary className="cursor-pointer sf-summary-toggle flex items-baseline gap-2 pb-1.5 border-b border-dashed sf-border-soft select-none">
-            <span className="text-[10px] font-semibold font-mono sf-text-subtle tracking-[0.04em] uppercase">debug &middot; raw search results json</span>
-          </summary>
-          <pre className="mt-3 sf-pre-block text-xs font-mono rounded-sm p-4 overflow-x-auto overflow-y-auto max-h-[25rem] whitespace-pre-wrap break-all">
-            {JSON.stringify(details, null, 2)}
-          </pre>
-        </details>
+        <DebugJsonDetails label="raw search results json" data={details} />
       )}
       {/* SERP Screenshot Overlay — draggable + resizable */}
       {serpScreenshot && runId && (

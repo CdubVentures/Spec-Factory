@@ -156,6 +156,7 @@ export async function runDiscoverySeedPlan({
     brandResolution: brand.brandResolution,
     config: discoveryConfig, searchProfileCaps, variables,
     focusGroups: needset.focusGroups,
+    seedStatus: needset.schema3?.seed_status || null,
   });
 
   // === Stage 04: Search Planner ===
@@ -203,7 +204,7 @@ export async function runDiscoverySeedPlan({
 
   // === Stage 06: Search Execution ===
   const resultsPerQuery = Math.max(1, Number(discoveryConfig.discoveryResultsPerQuery || 10));
-  const discoveryCap = Math.max(1, Number(discoveryConfig.discoveryMaxDiscovered || 120));
+  const discoveryCap = Math.max(1, Number(discoveryConfig.searchPlannerQueryCap || 30));
   // WHY: Strict sequential execution — search-b must not start until search-a finishes.
   const queryConcurrency = 1;
   const providerState = searchEngineAvailability(discoveryConfig);

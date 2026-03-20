@@ -26,16 +26,15 @@ interface CompoundTabProps {
 
 const COMPOUND_SUB_TAB_KEYS = ['curve', 'queries', 'urls', 'plan-diff', 'knobs'] as const;
 
-const SUB_TAB_DEFS: { key: CompoundSubTab; label: string }[] = [
-  { key: 'curve', label: 'Compound Curve' },
-  { key: 'queries', label: 'Query Index' },
-  { key: 'urls', label: 'URL Index' },
-  { key: 'plan-diff', label: 'Plan Diff' },
-  { key: 'knobs', label: 'Knob Telemetry' },
-];
+import { TabStrip } from '../../../../shared/ui/navigation/TabStrip';
 
-const tabCls = 'px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer sf-tab-item';
-const activeTabCls = 'sf-tab-item-active';
+const SUB_TAB_DEFS = [
+  { id: 'curve', label: 'Compound Curve' },
+  { id: 'queries', label: 'Query Index' },
+  { id: 'urls', label: 'URL Index' },
+  { id: 'plan-diff', label: 'Plan Diff' },
+  { id: 'knobs', label: 'Knob Telemetry' },
+] as const;
 
 function verdictChipClass(verdict: string): string {
   switch (verdict) {
@@ -143,18 +142,11 @@ export function CompoundTab({ category, runs, isRunning }: CompoundTabProps) {
     <div className="flex flex-col gap-4 p-4 overflow-y-auto">
       <KpiStrip cards={kpiCards} />
 
-      <nav className="flex gap-1 px-1 py-1 sf-tab-strip rounded">
-        {SUB_TAB_DEFS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setActiveSubTab(t.key)}
-            className={`${tabCls} ${activeSubTab === t.key ? activeTabCls : ''}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
+      <TabStrip
+        tabs={SUB_TAB_DEFS}
+        activeTab={activeSubTab}
+        onSelect={setActiveSubTab}
+      />
 
       {activeSubTab === 'curve' && <CompoundCurveSubTab data={compoundCurve} />}
       {activeSubTab === 'queries' && <QueryIndexSubTab data={querySummary} />}

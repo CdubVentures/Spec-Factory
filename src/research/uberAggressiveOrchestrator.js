@@ -1,6 +1,7 @@
 import { planUberQueries } from './queryPlanner.js';
 import { rerankSerpResults } from './serpReranker.js';
 import { resolveDeepeningTier } from './frontierScheduler.js';
+import { configInt } from '../shared/settingsAccessor.js';
 
 function toArray(value) {
   return Array.isArray(value) ? value : [];
@@ -49,7 +50,7 @@ export class UberAggressiveOrchestrator {
       missingFields,
       baseQueries,
       frontierSummary,
-      cap: Math.max(4, Number(this.config.discoveryMaxQueries || 8) * 2)
+      cap: Math.max(1, configInt(this.config, 'searchPlannerQueryCap'))
     });
     return {
       tier,

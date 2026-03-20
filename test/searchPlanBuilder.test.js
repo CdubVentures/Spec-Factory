@@ -57,8 +57,8 @@ function makeFocusGroup(overrides = {}) {
 function makePlannerLimits(overrides = {}) {
   return {
     discoveryEnabled: true,
-    discoveryMaxQueries: 6,
-    discoveryMaxDiscovered: 80,
+    searchProfileQueryCap: 6,
+    searchPlannerQueryCap: 80,
     maxUrlsPerProduct: 20,
     maxCandidateUrls: 50,
     maxPagesPerDomain: 2,
@@ -131,7 +131,7 @@ function makeConfig(overrides = {}) {
     llmModelPlan: 'gemini-2.5-flash-lite',
     geminiApiKey: 'test-api-key-123',
     llmTimeoutMs: 30000,
-    discoveryMaxQueries: 6,
+    searchProfileQueryCap: 6,
     ...overrides
   };
 }
@@ -324,7 +324,7 @@ describe('buildSearchPlan', () => {
   // ===== LLM response parsing =====
 
   describe('LLM response parsing', () => {
-    it('valid response → queries extracted with correct structure', async () => {
+    it('valid response → no queries extracted (NeedSet does not author queries)', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext(),
@@ -332,12 +332,7 @@ describe('buildSearchPlan', () => {
       });
 
       assert.equal(result.planner.mode, 'llm');
-      assert.ok(result.search_plan_handoff.queries.length > 0);
-      const q = result.search_plan_handoff.queries[0];
-      assert.ok(q.q, 'has query text');
-      assert.ok(q.family, 'has family');
-      assert.ok(q.query_hash, 'has query_hash');
-      assert.ok(q.group_key, 'has group_key');
+      assert.equal(result.search_plan_handoff.queries.length, 0, 'NeedSet LLM does not generate queries');
     });
 
     it('empty groups array → empty queries', async () => {
@@ -351,17 +346,16 @@ describe('buildSearchPlan', () => {
     });
   });
 
-  // ===== Anti-garbage post-LLM =====
+  // ===== NeedSet no longer generates queries =====
 
-  describe('anti-garbage post-LLM', () => {
-    it('duplicate query_hash → dropped', async () => {
+  describe('NeedSet query removal', () => {
+    it('LLM response with queries → handoff still empty (queries ignored)', async () => {
       const dupeResponse = makeLlmResponse({
         groups: [{
           key: 'sensor_performance',
           queries: [
             { family: 'spec_sheet', q: 'razer viper specs' },
-            { family: 'review', q: 'razer viper specs' },
-            { family: 'review', q: 'razer viper specs  ' },
+            { family: 'review', q: 'razer viper review' },
           ]
         }]
       });
@@ -371,36 +365,7 @@ describe('buildSearchPlan', () => {
         config: makeConfig(),
       });
 
-      const queries = result.search_plan_handoff.queries;
-      const hashes = queries.map(q => q.query_hash);
-      assert.equal(hashes.length, new Set(hashes).size, 'no duplicate hashes');
-    });
-
-    it('global cap (discoveryMaxQueries) → excess dropped', async () => {
-      const manyQueries = Array.from({ length: 20 }, (_, i) => ({
-        family: 'spec', q: `unique query number ${i}`
-      }));
-      fetchMock = installFetchMock({ groups: [{ key: 'sensor_performance', queries: manyQueries }] });
-      const result = await buildSearchPlan({
-        searchPlanningContext: makeSearchPlanningContext(),
-        config: makeConfig({ discoveryMaxQueries: 5 }),
-      });
-
-      assert.ok(result.search_plan_handoff.queries.length <= 5);
-    });
-
-    it('per-group cap → excess dropped', async () => {
-      const manyQueries = Array.from({ length: 10 }, (_, i) => ({
-        family: 'spec', q: `group query ${i}`
-      }));
-      fetchMock = installFetchMock({ groups: [{ key: 'sensor_performance', queries: manyQueries }] });
-      const result = await buildSearchPlan({
-        searchPlanningContext: makeSearchPlanningContext(),
-        config: makeConfig({ discoveryMaxQueries: 100 }),
-      });
-
-      const sensorQueries = result.search_plan_handoff.queries.filter(q => q.group_key === 'sensor_performance');
-      assert.ok(sensorQueries.length <= 3, `per-group cap at 3, got ${sensorQueries.length}`);
+      assert.equal(result.search_plan_handoff.queries.length, 0, 'queries not extracted from LLM');
     });
   });
 
@@ -416,7 +381,7 @@ describe('buildSearchPlan', () => {
       assert.equal(result.schema_version, 'needset_planner_output.v2');
     });
 
-    it('search_plan_handoff.queries is array of deduped queries', async () => {
+    it('search_plan_handoff.queries is empty array (no query generation)', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext(),
@@ -424,7 +389,7 @@ describe('buildSearchPlan', () => {
       });
 
       assert.ok(Array.isArray(result.search_plan_handoff.queries));
-      assert.ok(result.search_plan_handoff.queries.length > 0);
+      assert.equal(result.search_plan_handoff.queries.length, 0);
     });
 
     it('search_plan_handoff.query_hashes matches generated queries', async () => {
@@ -459,7 +424,7 @@ describe('buildSearchPlan', () => {
       const sensorBundle = result.panel.bundles.find(b => b.key === 'sensor_performance');
       assert.ok(sensorBundle, 'sensor_performance bundle exists');
       assert.equal(sensorBundle.group_key, undefined, 'group_key should not be emitted');
-      assert.ok(sensorBundle.queries.length > 0, 'bundle has queries');
+      assert.equal(sensorBundle.queries, undefined, 'panel bundles do not carry queries');
     });
 
     it('panel.bundles carry display fields from focus_groups', async () => {
@@ -478,15 +443,23 @@ describe('buildSearchPlan', () => {
       assert.equal(bundle.host_class, 'lab_review');
     });
 
-    it('panel.profile_influence family counts correct', async () => {
+    it('panel.profile_influence has tier-aware shape', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext(),
         config: makeConfig(),
       });
 
-      assert.ok(result.panel.profile_influence);
-      assert.ok(typeof result.panel.profile_influence === 'object');
+      const pi = result.panel.profile_influence;
+      assert.ok(pi);
+      assert.equal(typeof pi.tier1_seed_active, 'boolean');
+      assert.equal(typeof pi.tier2_group_count, 'number');
+      assert.equal(typeof pi.tier3_key_count, 'number');
+      assert.equal(typeof pi.groups_now, 'number');
+      assert.equal(typeof pi.groups_next, 'number');
+      assert.equal(typeof pi.groups_hold, 'number');
+      assert.equal(typeof pi.total_unresolved_keys, 'number');
+      assert.equal(typeof pi.planner_confidence, 'number');
     });
 
     it('panel.identity/summary/blockers passthrough', async () => {
@@ -502,7 +475,7 @@ describe('buildSearchPlan', () => {
       assert.deepStrictEqual(result.panel.blockers, ctx.needset.blockers);
     });
 
-    it('learning_writeback uses spec key names', async () => {
+    it('learning_writeback has spec key names (all empty without query generation)', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext(),
@@ -511,10 +484,7 @@ describe('buildSearchPlan', () => {
 
       assert.ok(result.learning_writeback);
       assert.ok(Array.isArray(result.learning_writeback.query_hashes_generated));
-      assert.ok(result.learning_writeback.query_hashes_generated.length > 0);
       assert.ok(Array.isArray(result.learning_writeback.queries_generated));
-      assert.ok(result.learning_writeback.queries_generated.length > 0);
-      assert.equal(typeof result.learning_writeback.queries_generated[0], 'string');
       assert.ok(Array.isArray(result.learning_writeback.families_used));
       assert.ok(Array.isArray(result.learning_writeback.domains_targeted));
       assert.ok(Array.isArray(result.learning_writeback.groups_activated));
@@ -593,23 +563,13 @@ describe('buildSearchPlan', () => {
       assert.equal(result.planner.planner_confidence, 0);
     });
 
-    it('planner.duplicates_suppressed counts deduped queries', async () => {
-      const dupeResponse = makeLlmResponse({
-        groups: [{
-          key: 'sensor_performance',
-          queries: [
-            { family: 'spec_sheet', q: 'razer viper specs' },
-            { family: 'review', q: 'razer viper specs' },
-            { family: 'review', q: '  razer viper specs  ' },
-          ]
-        }]
-      });
-      fetchMock = installFetchMock(dupeResponse);
+    it('planner.duplicates_suppressed is 0 (no query extraction)', async () => {
+      fetchMock = installFetchMock(makeLlmResponse());
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext(),
         config: makeConfig(),
       });
-      assert.ok(result.planner.duplicates_suppressed >= 2, `expected >= 2, got ${result.planner.duplicates_suppressed}`);
+      assert.equal(result.planner.duplicates_suppressed, 0);
     });
 
     it('planner.targeted_exceptions from LLM response', async () => {
@@ -837,131 +797,77 @@ describe('buildSearchPlan', () => {
       assert.equal(connBundle.reason_active, null);
     });
 
-    it('bundle.queries contains only { q, family }', async () => {
+    it('panel bundles do not carry queries', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext(),
         config: makeConfig(),
       });
       const bundle = result.panel.bundles.find(b => b.key === 'sensor_performance');
-      assert.ok(bundle.queries.length > 0);
-      for (const q of bundle.queries) {
-        assert.deepStrictEqual(Object.keys(q).sort(), ['family', 'q']);
-      }
+      assert.equal(bundle.queries, undefined, 'no queries on panel bundle');
     });
   });
 
-  // ===== GAP-6: profile_influence expansion =====
+  // ===== Tier-aware profile_influence =====
 
-  describe('profile_influence full spec shape', () => {
-    it('all 7 family keys initialized to 0 even when unused', async () => {
-      fetchMock = installFetchMock(makeLlmResponse({ groups: [] }));
-      const result = await buildSearchPlan({
-        searchPlanningContext: makeSearchPlanningContext(),
-        config: makeConfig(),
-      });
-      const pi = result.panel.profile_influence;
-      for (const fam of ['manufacturer_html', 'manual_pdf', 'support_docs', 'review_lookup', 'benchmark_lookup', 'fallback_web', 'targeted_single']) {
-        assert.equal(pi[fam], 0, `${fam} should be 0`);
-      }
-    });
-
-    it('total_queries matches queries.length', async () => {
+  describe('profile_influence tier-aware shape', () => {
+    it('tier counts derived from Schema 3 focus_groups', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
-      const result = await buildSearchPlan({
-        searchPlanningContext: makeSearchPlanningContext(),
-        config: makeConfig(),
+      const ctx = makeSearchPlanningContext({
+        focus_groups: [
+          makeFocusGroup({ key: 'g1', phase: 'now', group_search_worthy: true, normalized_key_queue: ['a', 'b'] }),
+          makeFocusGroup({ key: 'g2', phase: 'next', group_search_worthy: false, normalized_key_queue: ['c'] }),
+          makeFocusGroup({ key: 'g3', phase: 'hold', group_search_worthy: false, normalized_key_queue: [] }),
+        ],
       });
-      assert.equal(result.panel.profile_influence.total_queries, result.search_plan_handoff.queries.length);
-    });
-
-    it('duplicates_suppressed from dedup counter', async () => {
-      const dupeResp = makeLlmResponse({
-        groups: [{
-          key: 'sensor_performance',
-          queries: [
-            { family: 'spec_sheet', q: 'query one' },
-            { family: 'review', q: 'query one' },
-            { family: 'review', q: 'query two' },
-          ]
-        }]
-      });
-      fetchMock = installFetchMock(dupeResp);
-      const result = await buildSearchPlan({
-        searchPlanningContext: makeSearchPlanningContext(),
-        config: makeConfig(),
-      });
-      assert.ok(result.panel.profile_influence.duplicates_suppressed >= 1);
-    });
-
-    it('focused_bundles = bundles with >= 1 query', async () => {
-      fetchMock = installFetchMock(makeLlmResponse());
-      const result = await buildSearchPlan({
-        searchPlanningContext: makeSearchPlanningContext(),
-        config: makeConfig(),
-      });
-      const bundlesWithQueries = result.panel.bundles.filter(b => b.queries.length > 0).length;
-      assert.equal(result.panel.profile_influence.focused_bundles, bundlesWithQueries);
-    });
-
-    it('targeted_exceptions from LLM response', async () => {
-      fetchMock = installFetchMock(makeLlmResponse({ targeted_exceptions: 3 }));
-      const result = await buildSearchPlan({
-        searchPlanningContext: makeSearchPlanningContext(),
-        config: makeConfig(),
-      });
-      assert.equal(result.panel.profile_influence.targeted_exceptions, 3);
-    });
-
-    it('trusted_host_share = manufacturer_html + support_docs', async () => {
-      const resp = makeLlmResponse({
-        groups: [{
-          key: 'sensor_performance',
-          queries: [
-            { family: 'manufacturer_html', q: 'razer spec page' },
-            { family: 'support_docs', q: 'razer support docs' },
-            { family: 'review_lookup', q: 'review test' },
-          ]
-        }]
-      });
-      fetchMock = installFetchMock(resp);
-      const result = await buildSearchPlan({
-        searchPlanningContext: makeSearchPlanningContext(),
-        config: makeConfig(),
-      });
+      const result = await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
       const pi = result.panel.profile_influence;
-      assert.equal(pi.trusted_host_share, pi.manufacturer_html + pi.support_docs);
+
+      assert.equal(pi.tier2_group_count, 1, 'one search-worthy group');
+      assert.equal(pi.tier3_key_count, 1, 'one key from non-worthy group with keys');
+      assert.equal(pi.groups_now, 1);
+      assert.equal(pi.groups_next, 1);
+      assert.equal(pi.groups_hold, 1);
+      assert.equal(pi.total_unresolved_keys, 3, 'a+b+c = 3 total keys');
     });
 
-    it('docs_manual_share = manual_pdf', async () => {
-      const resp = makeLlmResponse({
-        groups: [{
-          key: 'sensor_performance',
-          queries: [
-            { family: 'manual_pdf', q: 'razer manual pdf' },
-          ]
-        }]
+    it('tier1_seed_active reflects seed_status', async () => {
+      fetchMock = installFetchMock(makeLlmResponse());
+      const ctx = makeSearchPlanningContext({
+        seed_status: { specs_seed: { is_needed: true }, source_seeds: {} },
       });
-      fetchMock = installFetchMock(resp);
+      const result = await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
+      assert.equal(result.panel.profile_influence.tier1_seed_active, true);
+    });
+
+    it('tier1_seed_active false when no seeds needed', async () => {
+      fetchMock = installFetchMock(makeLlmResponse());
+      const ctx = makeSearchPlanningContext({
+        seed_status: { specs_seed: { is_needed: false }, source_seeds: {} },
+      });
+      const result = await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
+      assert.equal(result.panel.profile_influence.tier1_seed_active, false);
+    });
+
+    it('planner_confidence from LLM response', async () => {
+      fetchMock = installFetchMock(makeLlmResponse({ planner_confidence: 0.85 }));
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext(),
         config: makeConfig(),
       });
-      assert.equal(result.panel.profile_influence.docs_manual_share, result.panel.profile_influence.manual_pdf);
+      assert.equal(result.panel.profile_influence.planner_confidence, 0.85);
     });
 
-    it('disabled mode → all values 0', async () => {
+    it('disabled mode → defaults', async () => {
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext(),
         config: makeConfig({ geminiApiKey: '' }),
       });
       const pi = result.panel.profile_influence;
-      assert.equal(pi.total_queries, 0);
-      assert.equal(pi.focused_bundles, 0);
-      assert.equal(pi.duplicates_suppressed, 0);
-      assert.equal(pi.targeted_exceptions, 0);
-      assert.equal(pi.trusted_host_share, 0);
-      assert.equal(pi.docs_manual_share, 0);
+      assert.equal(pi.tier1_seed_active, false);
+      assert.equal(pi.tier2_group_count, 0);
+      assert.equal(pi.tier3_key_count, 0);
+      assert.equal(pi.planner_confidence, 0);
     });
   });
 

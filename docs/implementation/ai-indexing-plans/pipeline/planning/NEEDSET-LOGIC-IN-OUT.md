@@ -1,14 +1,14 @@
 # NeedSet Logic In And Out
 
-Validated against live code on 2026-03-18.
+Validated against live code on 2026-03-19.
 
 ## What this stage is
 
-NeedSet is the Stage 01 discovery boundary. The core Schema 2 gap model still comes from `computeNeedSet()`, but the live stage wrapper now owns the whole Schema 2 -> Schema 3 -> Schema 4 handoff:
+NeedSet is the Stage 01 discovery boundary. It assesses what fields are missing, groups them, ranks which groups are easiest/most productive to work on, and passes that information upstream. It does not write queries or decide search strategy.
 
-- Schema 2 via `computeNeedSet()`
-- Schema 3 via `buildSearchPlanningContext()`
-- Schema 4 via `buildSearchPlan()`
+- Schema 2 via `computeNeedSet()` — per-field gap assessment + V4 search packs
+- Schema 3 via `buildSearchPlanningContext()` — group-level aggregation, coverage/worthiness ranking, seed status
+- Schema 4 via `buildSearchPlan()` — LLM call that lives in the NeedSet stage wrapper (generates queries for Search Planner consumption)
 
 Primary owners:
 
@@ -18,7 +18,29 @@ Primary owners:
 - `src/indexlab/searchPlanBuilder.js`
 - `src/indexlab/buildFieldHistories.js` for next-round memory only
 
-`buildFieldHistories()` is part of the same round-memory story, but it runs later in finalization and prepares the next round's `previousFieldHistories`. It is not called from inside `computeNeedSet()`.
+`buildFieldHistories()` runs later in finalization and prepares the next round's `previousFieldHistories`. It is not called from inside `computeNeedSet()`.
+
+## Three-Tier Search Model
+
+NeedSet packages data for three downstream query tiers:
+
+### Tier 1 — Broad Seeds
+- `{brand} {model} {variant} specifications`
+- `{brand} {model} {variant} {source}`
+- Complete when: query searched + enough URLs scraped + at least 1 new field closed
+- Cooldown: `seedCooldownMs` (default 30 days) after successful completion
+- NeedSet emits: `seed_status` with per-seed `last_status`, `cooldown_until_ms`, `new_fields_closed_last_run`
+
+### Tier 2 — Group Searches
+- `{brand} {model} {variant} {group} {description}`
+- Skip logic: `group_search_worthy` boolean based on coverage ratio, unresolved count, and `group_query_count` (broad group queries, NOT individual key retries)
+- NeedSet emits: `group_description_short`, `group_description_long`, `coverage_ratio`, `group_fingerprint_coarse`/`fine`
+
+### Tier 3 — Individual Key Searches
+- `{brand} {model} {variant} {key} {aliases}` — progressively enriched each round
+- NeedSet emits: per-field `normalized_key`, `all_aliases`, `alias_shards`, `domains_tried_for_key`, `content_types_tried_for_key`, `query_modes_tried_for_key`
+
+NeedSet does NOT write queries. Its job is to say "these groups are easiest/most productive — focus on them now" and pass enriched descriptions and field packs upstream. When those groups are checked off, it surfaces the next batch. Search Profile and Search Planner do the actual query construction.
 
 ## Schema files in this folder
 
@@ -39,6 +61,10 @@ Primary owners:
 - prior memory: `previousFieldHistories`
 - stage services: `computeNeedSetFn`, `buildSearchPlanningContextFn`, `buildSearchPlanFn`
 
+`buildSearchPlanningContext()` also accepts (V4):
+
+- `queryExecutionHistory` — per-query completion state with structured metadata (`tier`, `group_key`, `normalized_key`, `source_name`). Fetched fresh immediately before call.
+
 `buildFieldHistories()` later consumes:
 
 - `previousFieldHistories`
@@ -52,21 +78,33 @@ Primary owners:
 
 1. Collect the field universe from `fieldOrder`, provenance keys, and rule keys.
 2. Normalize required level to `identity | critical | required | expected | optional`.
-3. Normalize search hints into:
-   - `query_terms`
-   - `domain_hints`
-   - `preferred_content_types`
-   - `tooltip_md`
-   - `aliases`
-4. Derive internal field state as `covered | missing | weak | conflict`, then map the public Schema 2 state to `accepted | unknown | weak | conflict`.
-5. Compute the emitted reasons:
-   - `missing`
-   - `conflict`
-   - `low_conf`
-   - `min_refs_fail`
-   - `publish_gate_block`
-6. Build per-field history from `previousFieldHistories` plus current evidence.
-7. Compute unresolved-field bundles, `rows`, `profile_mix`, `focus_fields`, `summary`, `blockers`, and `planner_seed`.
+3. Normalize search hints into `query_terms`, `domain_hints`, `preferred_content_types`, `tooltip_md`, `aliases`.
+4. Derive internal field state as `covered | missing | weak | conflict`, then map to Schema 2 state `accepted | unknown | weak | conflict`.
+5. Compute emitted reasons: `missing`, `conflict`, `low_conf`, `min_refs_fail`, `publish_gate_block`.
+6. Build per-field history from `previousFieldHistories` plus current evidence (includes V4 `query_modes_tried_for_key`).
+7. Build V4 per-field search packs: `normalized_key`, `all_aliases`, `alias_shards`, `availability`, `difficulty`, `repeat_count`, `search_intent` (per-key, not per-group — derived from `exact_match_required`).
+8. Compute `sorted_unresolved_keys` using V4 ordering (availability -> difficulty -> repeat -> need_score -> required_level).
+9. Compute unresolved-field bundles, `rows`, `profile_mix`, `focus_fields`, `summary`, `blockers`, and `planner_seed`.
+
+`buildSearchPlanningContext()` adds V4 group-level extensions:
+
+1. `group_description_short` / `group_description_long` — enriched, longer versions of the catalog `desc` so Search Profile has a better description to use in `{brand} {model} {variant} {group} {description}` queries
+2. `coverage_ratio`, `total_field_count`, `resolved_field_count`
+3. `group_query_count` (from `queryExecutionHistory`, counts Tier 2 broad searches only) vs `group_key_retry_count` (sum of individual key retries)
+4. `group_search_worthy` + `skip_reason` — determines if downstream should emit a Tier 2 group search or skip to Tier 3 keys
+5. `group_fingerprint_coarse` (stable = `group_key`) / `group_fingerprint_fine` (changes with unresolved set)
+6. `normalized_key_queue` — V4-sorted unresolved keys per group
+7. `productivity_score` — per-group ranking score (availability + difficulty + volume + need_score - repeat penalty)
+8. `seed_status` — per-seed completion with `last_status`, cooldown, `new_fields_closed`
+9. `pass_seed` — seed signals derivable from NeedSet data
+
+Phase assignment is productivity-based, not required_level-based:
+
+- Round 0 (Tier 1 seeds first): all unresolved groups are `next`
+- Round 1+: groups ranked by `productivity_score` — top half become `now`, rest stay `next`
+- Resolved or all-exhausted groups: `hold`
+
+Productivity score rewards easy-to-find fields (high availability), easy-to-extract fields (low difficulty), more unresolved fields per group (more bang per broad search), and higher need_score. It penalizes groups already searched multiple times. `required_level` only matters as a tie-break through `need_score`.
 
 `runNeedSet()` then:
 
@@ -77,43 +115,32 @@ Primary owners:
 5. attaches `_planner`, `_learning`, and `_panel` to `searchPlanHandoff` when queries exist
 6. emits `schema4_handoff_ready` when the handoff is non-empty
 
-Important correction: the code does not currently emit `tier_pref_unmet`. That comment exists as a future note, not live behavior.
-
 ## Important invariants
 
 - Canonical stage order is NeedSet first, Brand Resolver second.
 - Every field seen in `fieldOrder`, provenance, or rules is present in `fields[]`.
-- Round 0 history is zeroed. Later rounds carry forward `existing_queries`, `domains_tried`, host/evidence classes, and counters.
+- Round 0 history is zeroed. Later rounds carry forward `existing_queries`, `domains_tried`, host/evidence classes, counters, and `query_modes_tried_for_key`.
 - `need_score` is zero for covered fields and weighted by required level plus reason count for unresolved fields.
-- `identityContext` affects the top-level `identity` block. Brand Resolver does not mutate NeedSet identity directly.
-- GUI visibility does not wait for Schema 4: the preview `needset_computed` event is emitted before the Schema 4 LLM call.
+- `search_intent` is per-key (derived from `exact_match_required`), not per-group. Groups do not have `search_intent` or `host_class`.
+- `group_query_count` counts actual Tier 2 broad group searches, NOT the sum of individual key retries. This prevents false exhaustion.
+- `group_search_worthy` uses `group_query_count`, not `group_key_retry_count`.
+- Phase is productivity-based: groups ranked by `productivity_score`, not by `required_level`. Round 0 → all groups `next` (seeds first).
+- Tier escalation is natural: Tier 1 seeds → Tier 2 group searches (groups with `group_search_worthy = true`) → Tier 3 individual keys (remaining fields via `normalized_key_queue`). Groups should be searched before individual keys because broad searches net more results.
+- Seed completion requires `new_fields_closed >= 1`. Scraping 10 pages with 0 new fields = failed, no cooldown.
+- `queryExecutionHistory` must be fetched fresh immediately before `buildSearchPlanningContext` runs.
 
 ## Outputs out
 
-`computeNeedSet()` returns `schema_version: "needset_output.v2"` and includes both Schema 2 blocks and backward-compat fields.
+`computeNeedSet()` returns `schema_version: "needset_output.v2.1"` and includes Schema 2 blocks, V4 additions, and backward-compat fields.
 
 Primary blocks:
 
-- `round`
-- `round_mode`
+- `round`, `round_mode`
 - `identity`
-- `fields`
+- `fields` (with V4 per-field search packs)
 - `planner_seed`
-- `summary`
-- `blockers`
-
-Backward-compat blocks still emitted:
-
-- `run_id`
-- `category`
-- `product_id`
-- `generated_at`
-- `total_fields`
-- `focus_fields`
-- `bundles`
-- `profile_mix`
-- `rows`
-- `debug`
+- `sorted_unresolved_keys` (V4: availability -> difficulty -> repeat -> need_score -> required_level)
+- `summary`, `blockers`
 
 Each `fields[]` entry includes:
 
@@ -121,38 +148,28 @@ Each `fields[]` entry includes:
 - normalized hints: `idx.min_evidence_refs`, `idx.query_terms`, `idx.domain_hints`, `idx.preferred_content_types`, `idx.tooltip_md`, `idx.aliases`
 - evidence state: `state`, `value`, `confidence`, `effective_confidence`, `refs_found`, `min_refs`, `best_tier_seen`, `pass_target`, `meets_pass_target`, `exact_match_required`
 - planning state: `need_score`, `reasons`, `history`
+- V4 search pack: `normalized_key`, `all_aliases`, `alias_shards`, `availability`, `difficulty`, `repeat_count`, `search_intent` (per-key: `exact_match` or `broad`), `query_modes_tried_for_key`, `domains_tried_for_key`, `content_types_tried_for_key`
 
-`runNeedSet()` returns an in-memory stage payload:
+`buildSearchPlanningContext()` returns `schema_version: "search_planning_context.v2.1"` with V4 additions:
 
-- `schema2`
-- `schema3`
-- `seedSchema4`
-- `searchPlanHandoff`
-- `focusGroups`
+- Each `focus_groups[]` entry adds: `group_description_short`, `group_description_long`, `total_field_count`, `resolved_field_count`, `coverage_ratio`, `group_query_count`, `group_key_retry_count`, `group_search_worthy`, `skip_reason`, `group_fingerprint_coarse`, `group_fingerprint_fine`, `normalized_key_queue`, `group_search_terms`, `content_type_candidates`, `domains_tried_for_group`, `productivity_score`
+- Removed from focus_groups: `search_intent` (now per-key on Schema 2 field entry), `host_class` (removed — not a group-level concept)
+- Top-level: `seed_status` (per-seed completion state), `pass_seed` (seed signals)
 
-`planner_seed` currently includes:
-
-- `missing_critical_fields`
-- `unresolved_fields`
-- `existing_queries`
-- `current_product_identity` with `category`, `brand`, `model`
+Backward-compat blocks still emitted: `run_id`, `category`, `product_id`, `generated_at`, `total_fields`, `focus_fields`, `bundles`, `profile_mix`, `rows`, `debug`.
 
 ## Side effects and persistence
 
 - `computeNeedSet()` has no storage writes.
-- No standalone `needset.json` artifact is written by this stage in the current seed-planning path.
-- `runNeedSet()` emits:
-  - preview `needset_computed`
-  - optional Schema 4 `needset_computed`
-  - optional `schema4_handoff_ready`
+- `runNeedSet()` emits: preview `needset_computed`, optional Schema 4 `needset_computed`, optional `schema4_handoff_ready`.
 
 ## What it feeds next
 
 NeedSet feeds:
 
 - Stage 02 Brand Resolver only by pipeline sequencing
-- Stage 03 Search Profile through `focusGroups`
+- Stage 03 Search Profile through `focusGroups` — NeedSet tells Search Profile "focus on these groups now, they're easiest" via group ordering, `group_search_worthy`, and enriched descriptions. Search Profile builds the actual queries.
 - Stage 04 Search Planner through `searchPlanHandoff`
 - later-round anti-repeat behavior through `previousFieldHistories`
 
-`buildFieldHistories()` closes the loop after the round finishes. That is the path that remembers dead-end queries, exhausted domains, and duplicate suppression for the next NeedSet.
+`buildFieldHistories()` closes the loop after the round finishes.

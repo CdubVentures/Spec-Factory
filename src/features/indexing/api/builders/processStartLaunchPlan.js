@@ -135,7 +135,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     runtimeScreencastMaxWidth,
     runtimeScreencastMaxHeight,
     discoveryEnabled,
-    fetchCandidateSources,
     maxPdfBytes,
     pdfPreferredBackend,
     capturePageScreenshotEnabled,
@@ -261,7 +260,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     DYNAMIC_CRAWLEE_ENABLED: 'false',
   };
 
-  assignBoolean(envOverrides, 'FETCH_CANDIDATE_SOURCES', fetchCandidateSources);
   assignInt(envOverrides, 'MAX_PDF_BYTES', maxPdfBytes, { minInput: 1024, minClamp: 1024, maxClamp: 100_000_000 });
   assignString(envOverrides, 'SPEC_DB_DIR', effectiveSpecDbDir);
   assignString(envOverrides, 'LLM_EXTRACTION_CACHE_DIR', effectiveLlmExtractionCacheDir);

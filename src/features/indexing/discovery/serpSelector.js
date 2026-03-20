@@ -248,8 +248,8 @@ export function buildSerpSelectorInput({
   queryMetaByQuery,
   categoryConfig, frontierDb,
   discoveryCap,
-  maxUrlsPerProduct,
-  maxCandidateUrls,
+  serpSelectorUrlCap,
+  domainClassifierUrlCap,
 }) {
   const { brandTokens, modelTokens } = normalizeIdentityTokens(variables || {});
   const variantGuardTerms = toArray(searchProfileBase?.variant_guard_terms);
@@ -275,10 +275,10 @@ export function buildSerpSelectorInput({
     else normalRows.push(row);
   }
 
-  // WHY: Use config maxCandidateUrls when provided so the GUI knob controls
+  // WHY: Use domainClassifierUrlCap when provided so the GUI knob controls
   // how many candidates the LLM sees. Fall back to the named constant default.
-  const effectiveCap = (typeof maxCandidateUrls === 'number' && maxCandidateUrls > 0)
-    ? maxCandidateUrls
+  const effectiveCap = (typeof domainClassifierUrlCap === 'number' && domainClassifierUrlCap > 0)
+    ? domainClassifierUrlCap
     : SERP_SELECTOR_MAX_CANDIDATES;
 
   // Priority rows first, then fill normal up to effectiveCap total
@@ -339,12 +339,11 @@ export function buildSerpSelectorInput({
       })),
     },
     selection_limits: {
-      // WHY: Cap at maxUrlsPerProduct when provided — the planner will never
-      // approve more than that, so telling the LLM a higher number wastes its
-      // selection budget on URLs that can never be fetched.
+      // WHY: serpSelectorUrlCap is the GUI knob that directly controls
+      // how many URLs the selector LLM is allowed to keep.
       max_total_keep: Math.max(1, Math.min(
         Number(discoveryCap || 60),
-        (typeof maxUrlsPerProduct === 'number' && maxUrlsPerProduct > 0) ? maxUrlsPerProduct : Infinity,
+        (typeof serpSelectorUrlCap === 'number' && serpSelectorUrlCap > 0) ? serpSelectorUrlCap : Infinity,
       )),
       prefer_pinned: true,
     },

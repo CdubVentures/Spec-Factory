@@ -114,3 +114,51 @@ export function buildScreenshotRecord(evt, payload, kindOverride = null, options
     kind,
   };
 }
+
+// WHY: Generic schema-driven field projector. Iterates a frozen array of
+// { key, coerce } descriptors and produces an output object with exactly
+// those keys, each coerced to the declared type. Replaces hardcoded
+// property-by-property mapping in prefetch builders.
+const COERCE_DEFAULTS = {
+  string: '',
+  int: 0,
+  float: 0,
+  bool: false,
+  array: () => [],
+  object_or_null: null,
+  object_or_empty: () => ({}),
+  passthrough: null,
+};
+
+function isPlainObject(v) {
+  return v !== null && typeof v === 'object' && !Array.isArray(v);
+}
+
+export function projectShape(source, descriptors) {
+  const src = source && typeof source === 'object' ? source : {};
+  const out = {};
+  for (const { key, coerce } of descriptors) {
+    const raw = src[key];
+    switch (coerce) {
+      case 'string':  out[key] = String(raw || '').trim(); break;
+      case 'int':     out[key] = toInt(raw, 0); break;
+      case 'float':   out[key] = toFloat(raw, 0); break;
+      case 'bool':    out[key] = Boolean(raw); break;
+      case 'array':   out[key] = Array.isArray(raw) ? raw : []; break;
+      case 'object_or_null':  out[key] = isPlainObject(raw) ? raw : null; break;
+      case 'object_or_empty': out[key] = isPlainObject(raw) ? raw : {}; break;
+      case 'passthrough':     out[key] = raw ?? null; break;
+      default:                out[key] = raw ?? null; break;
+    }
+  }
+  return out;
+}
+
+export function buildDefaults(descriptors) {
+  const out = {};
+  for (const { key, coerce } of descriptors) {
+    const def = COERCE_DEFAULTS[coerce];
+    out[key] = typeof def === 'function' ? def() : def;
+  }
+  return out;
+}

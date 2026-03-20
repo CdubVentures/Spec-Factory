@@ -220,7 +220,46 @@ test('applyRuntimeSettingsToConfig clears phase overrides when set to empty JSON
 });
 
 // =========================================================================
-// SECTION 5: no rollback capability (characterizing current limitation)
+// SECTION 5: _registryLookup rebuild on llmProviderRegistryJson change
+// =========================================================================
+
+test('applyRuntimeSettingsToConfig rebuilds _registryLookup when llmProviderRegistryJson changes', () => {
+  const config = loadConfig();
+
+  const registry = JSON.stringify([{
+    id: 'test-provider',
+    name: 'Test',
+    type: 'openai-compatible',
+    baseUrl: 'https://test.example.com',
+    apiKey: 'test-key-123',
+    enabled: true,
+    models: [
+      { id: 'test-m1', modelId: 'test-model-alpha', role: 'primary', costInputPer1M: 1, costOutputPer1M: 2, costCachedPer1M: 0.1 },
+      { id: 'test-m2', modelId: 'test-model-beta', role: 'reasoning', costInputPer1M: 3, costOutputPer1M: 6, costCachedPer1M: 0.3 },
+    ],
+  }]);
+
+  applyRuntimeSettingsToConfig(config, { llmProviderRegistryJson: registry });
+
+  assert.equal(config._registryLookup.modelIndex.size, 2,
+    '_registryLookup must be rebuilt with 2 models from the new registry');
+
+  const alpha = config._registryLookup.modelIndex.get('test-model-alpha');
+  assert.ok(alpha, 'test-model-alpha must be in _registryLookup');
+  assert.equal(alpha[0].baseUrl, 'https://test.example.com');
+  assert.equal(alpha[0].apiKey, 'test-key-123');
+});
+
+test('applyRuntimeSettingsToConfig does NOT rebuild _registryLookup when unrelated keys change', () => {
+  const config = loadConfig();
+  const lookupBefore = config._registryLookup;
+  applyRuntimeSettingsToConfig(config, { llmModelPlan: 'some-model' });
+  assert.strictEqual(config._registryLookup, lookupBefore,
+    '_registryLookup must not be rebuilt when only llmModelPlan changes');
+});
+
+// =========================================================================
+// SECTION 6: no rollback capability (characterizing current limitation)
 // =========================================================================
 
 test('CHAR apply: in-place mutation has no rollback — values are permanently changed', () => {

@@ -5,10 +5,7 @@ import { deriveCompileReportsViewState } from "../state/compileReportsState";
 import { STUDIO_TIPS } from "../components/studioConstants";
 import type { StudioPageActivePanelReportsProps as CompileReportsTabProps } from "../components/studioPagePanelContracts";
 
-const btnPrimary =
-  "px-4 py-2 text-sm sf-primary-button transition-colors disabled:opacity-50";
-const sectionCls =
-  "bg-white sf-dk-surface-800 rounded border sf-border-default p-4";
+import { btnPrimary, sectionCls } from '../../../shared/ui/buttonClasses';
 
 export function CompileReportsTab({
   artifacts,

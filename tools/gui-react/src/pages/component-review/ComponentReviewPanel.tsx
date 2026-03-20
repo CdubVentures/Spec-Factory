@@ -1,7 +1,7 @@
 import { usePersistedToggle } from '../../stores/collapseStore';
 import { useQuery, useMutation, type QueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
-import { ActionTooltip } from '../../components/common/ActionTooltip';
+import { ActionTooltip } from '../../shared/ui/feedback/ActionTooltip';
 import type {
   ComponentReviewFlaggedItem,
   ComponentReviewDocument,

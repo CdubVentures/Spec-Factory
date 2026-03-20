@@ -6,15 +6,17 @@
 import { createHash } from 'node:crypto';
 import { PRESETS } from 'fingerprint-generator';
 import { parseGoogleResults, isCaptchaPage, isConsentPage } from './googleResultParser.js';
+import { createPacer } from './createPacer.js';
 
 // ---------------------------------------------------------------------------
-// Module-level pacing
+// Module-level pacing — injectable via _pacer param
 // ---------------------------------------------------------------------------
 
-let _lastGoogleQueryMs = 0;
 const DEFAULT_MIN_INTERVAL_MS = 4_000;
 const DEFAULT_POST_RESULTS_DELAY_MS = 2_000;
 const SCREENSHOT_QUALITY = 35;
+
+const _defaultPacer = createPacer({ minIntervalMs: DEFAULT_MIN_INTERVAL_MS });
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -33,7 +35,7 @@ function buildGoogleSearchUrl(query) {
 }
 
 export function resetGoogleSearchPacingForTests() {
-  _lastGoogleQueryMs = 0;
+  _defaultPacer.resetForTests();
 }
 
 // WHY: Minimal Chrome flags — too many flags create a detectable fingerprint.
@@ -80,6 +82,7 @@ export async function searchGoogle({
   logger,
   requestThrottler,
   _crawlerFactory,
+  _pacer,
 } = {}) {
   const EMPTY = { results: [], proxyKB: 0 };
 
@@ -87,16 +90,9 @@ export async function searchGoogle({
   const q = String(query).trim();
 
   try {
-    // Pacing
-    const interval = Math.max(0, minQueryIntervalMs);
-    const jitter = Math.floor(Math.random() * interval * 0.3);
-    const target = interval + jitter;
-    const now = Date.now();
-    const elapsed = now - _lastGoogleQueryMs;
-    if (elapsed < target) {
-      await new Promise(r => setTimeout(r, target - elapsed));
-    }
-    _lastGoogleQueryMs = Date.now();
+    // Pacing — injectable for tests
+    const pacer = _pacer || _defaultPacer;
+    await pacer.waitForSlot({ interval: minQueryIntervalMs, jitterFactor: 0.3 });
 
     if (typeof requestThrottler?.acquire === 'function') {
       await requestThrottler.acquire({ key: 'www.google.com', provider: 'google', query: q });

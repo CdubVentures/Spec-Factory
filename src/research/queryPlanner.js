@@ -164,7 +164,7 @@ export async function planUberQueries({
       phase: 'searchPlanner',
       system: [
         'You generate focused web research queries for hardware specification collection.',
-        'Output 12-24 short, diverse search queries in strict JSON. Each query targets a DIFFERENT angle.',
+        `Output exactly ${Math.max(1, cap)} short, diverse search queries in strict JSON. Each query targets a DIFFERENT angle.`,
         'Prioritize manufacturer docs, manuals, instrumented labs, and trusted spec databases.',
         'Also include official support pages and product comparison sites.',
         'Do not include junk domains, login workflows, or irrelevant topics.',

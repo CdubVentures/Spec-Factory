@@ -88,7 +88,8 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
     '--dry-run',
   ]);
 
-  assert.equal(result.envOverrides.FETCH_CANDIDATE_SOURCES, 'false');
+  // WHY: fetchCandidateSources retired — always true, no env override emitted.
+  assert.equal(result.envOverrides.FETCH_CANDIDATE_SOURCES, undefined);
   assert.equal(result.envOverrides.LOCAL_OUTPUT_ROOT, path.join(localStorageRoot, 'output'));
   assert.equal(result.envOverrides.SPEC_DB_DIR, path.join(localStorageRoot, '.specfactory_tmp'));
   assert.equal(

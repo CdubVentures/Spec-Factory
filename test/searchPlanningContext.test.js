@@ -1,6 +1,15 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSearchPlanningContext } from '../src/indexlab/searchPlanningContext.js';
+import {
+  buildSearchPlanningContext,
+  buildGroupDescriptionShort,
+  buildGroupDescriptionLong,
+  buildGroupFingerprintFine,
+  computeGroupQueryCount,
+  isGroupSearchWorthy,
+  buildNormalizedKeyQueue,
+  deriveSeedStatus,
+} from '../src/indexlab/searchPlanningContext.js';
 
 // --- Factories ---
 
@@ -130,7 +139,7 @@ describe('buildSearchPlanningContext', () => {
         runContext: makeRunContext()
       });
 
-      assert.equal(result.schema_version, 'search_planning_context.v2');
+      assert.equal(result.schema_version, 'search_planning_context.v2.1');
       assert.deepStrictEqual(result.focus_groups, []);
       assert.ok(result.needset);
       assert.ok(result.planner_limits);
@@ -160,14 +169,15 @@ describe('buildSearchPlanningContext', () => {
       });
 
       assert.equal(result.planner_limits.discoveryEnabled, true);
-      assert.equal(result.planner_limits.discoveryMaxQueries, 6);
-      assert.equal(result.planner_limits.discoveryMaxDiscovered, 80);
-      assert.equal(result.planner_limits.maxUrlsPerProduct, 20);
-      assert.equal(result.planner_limits.maxCandidateUrls, 50);
-      assert.equal(result.planner_limits.maxPagesPerDomain, 2);
-      assert.equal(result.planner_limits.maxRunSeconds, 300);
-      assert.equal(result.planner_limits.llmModelPlan, '');
-      assert.equal(result.planner_limits.llmProvider, '');
+      // WHY: Registry defaults are SSOT — no hardcoded fallbacks
+      assert.equal(result.planner_limits.searchProfileQueryCap, 10);
+      assert.equal(result.planner_limits.searchPlannerQueryCap, 30);
+      assert.equal(result.planner_limits.maxUrlsPerProduct, 50);
+      assert.equal(result.planner_limits.maxCandidateUrls, 80);
+      assert.equal(result.planner_limits.maxPagesPerDomain, 5);
+      assert.equal(result.planner_limits.maxRunSeconds, 480);
+      assert.equal(result.planner_limits.llmModelPlan, 'gemini-2.5-flash');
+      assert.equal(result.planner_limits.llmProvider, 'gemini');
       assert.equal(result.planner_limits.llmMaxOutputTokensPlan, 2048);
       assert.equal(result.planner_limits.searchProfileCapMap, null);
       assert.equal(result.planner_limits.searchEngines, 'bing,google');
@@ -330,7 +340,7 @@ describe('buildSearchPlanningContext', () => {
   // ===== Phase =====
 
   describe('phase', () => {
-    it('core unresolved group → now', () => {
+    it('round 0 (seeds first) → all unresolved groups are next', () => {
       const ns = makeNeedSetOutput({
         fields: [
           makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'critical' })
@@ -338,39 +348,46 @@ describe('buildSearchPlanningContext', () => {
       });
       const result = buildSearchPlanningContext({
         needSetOutput: ns,
-        runContext: makeRunContext()
+        runContext: makeRunContext({ round: 0 })
+      });
+      const grp = result.focus_groups.find(g => g.key === 'grp');
+      assert.equal(grp.phase, 'next');
+    });
+
+    it('round 1+ → top productivity groups become now', () => {
+      const ns = makeNeedSetOutput({
+        fields: [
+          makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'critical' })
+        ]
+      });
+      const result = buildSearchPlanningContext({
+        needSetOutput: ns,
+        runContext: makeRunContext({ round: 1 })
       });
       const grp = result.focus_groups.find(g => g.key === 'grp');
       assert.equal(grp.phase, 'now');
     });
 
-    it('secondary group when core exists → next', () => {
+    it('round 1+ with multiple groups → higher productivity group is now, lower is next', () => {
       const ns = makeNeedSetOutput({
         fields: [
-          makeField({ field_key: 'f_core', group_key: 'core_grp', state: 'unknown', required_level: 'critical' }),
-          makeField({ field_key: 'f_sec', group_key: 'sec_grp', state: 'unknown', required_level: 'expected' })
+          // easy group: 4 fields, all expected+easy+always
+          makeField({ field_key: 'e1', group_key: 'easy_grp', state: 'unknown', required_level: 'expected', availability: 'always', difficulty: 'easy', need_score: 30 }),
+          makeField({ field_key: 'e2', group_key: 'easy_grp', state: 'unknown', required_level: 'expected', availability: 'always', difficulty: 'easy', need_score: 30 }),
+          makeField({ field_key: 'e3', group_key: 'easy_grp', state: 'unknown', required_level: 'expected', availability: 'always', difficulty: 'easy', need_score: 30 }),
+          makeField({ field_key: 'e4', group_key: 'easy_grp', state: 'unknown', required_level: 'expected', availability: 'always', difficulty: 'easy', need_score: 30 }),
+          // hard group: 1 field, critical but rare+hard
+          makeField({ field_key: 'h1', group_key: 'hard_grp', state: 'unknown', required_level: 'critical', availability: 'rare', difficulty: 'hard', need_score: 80 }),
         ]
       });
       const result = buildSearchPlanningContext({
         needSetOutput: ns,
-        runContext: makeRunContext()
+        runContext: makeRunContext({ round: 1 })
       });
-      const secGrp = result.focus_groups.find(g => g.key === 'sec_grp');
-      assert.equal(secGrp.phase, 'next');
-    });
-
-    it('secondary group when no core → now', () => {
-      const ns = makeNeedSetOutput({
-        fields: [
-          makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'expected' })
-        ]
-      });
-      const result = buildSearchPlanningContext({
-        needSetOutput: ns,
-        runContext: makeRunContext()
-      });
-      const grp = result.focus_groups.find(g => g.key === 'grp');
-      assert.equal(grp.phase, 'now');
+      const easyGrp = result.focus_groups.find(g => g.key === 'easy_grp');
+      const hardGrp = result.focus_groups.find(g => g.key === 'hard_grp');
+      assert.equal(easyGrp.phase, 'now');
+      assert.equal(hardGrp.phase, 'next');
     });
 
     it('all-satisfied group → hold', () => {
@@ -463,7 +480,7 @@ describe('buildSearchPlanningContext', () => {
   // ===== group_catalog =====
 
   describe('group_catalog', () => {
-    it('known group gets default metadata', () => {
+    it('known group gets default metadata (no search_intent or host_class)', () => {
       const ns = makeNeedSetOutput({
         fields: [
           makeField({ field_key: 'sensor', group_key: 'sensor_performance', state: 'unknown' })
@@ -476,10 +493,11 @@ describe('buildSearchPlanningContext', () => {
       const entry = result.group_catalog.sensor_performance;
       assert.ok(entry);
       assert.equal(entry.source_target, 'spec_sheet');
-      assert.equal(entry.search_intent, 'exact_match');
+      assert.equal(entry.search_intent, undefined);
+      assert.equal(entry.host_class, undefined);
     });
 
-    it('unknown group gets generic fallback', () => {
+    it('unknown group gets generic fallback (no search_intent or host_class)', () => {
       const ns = makeNeedSetOutput({
         fields: [
           makeField({ field_key: 'f1', group_key: 'exotic_group', state: 'unknown' })
@@ -492,7 +510,7 @@ describe('buildSearchPlanningContext', () => {
       const entry = result.group_catalog.exotic_group;
       assert.ok(entry);
       assert.equal(entry.source_target, 'product_page');
-      assert.equal(entry.search_intent, 'broad');
+      assert.equal(entry.search_intent, undefined);
     });
 
     it('label comes from fieldGroupsData display_name', () => {
@@ -522,8 +540,8 @@ describe('buildSearchPlanningContext', () => {
     it('config values mapped correctly to planner-specific keys', () => {
       const config = {
         discoveryEnabled: true,
-        discoveryMaxQueries: 10,
-        discoveryMaxDiscovered: 100,
+        searchProfileQueryCap: 10,
+        searchPlannerQueryCap: 100,
         maxUrlsPerProduct: 30,
         maxCandidateUrls: 60,
         maxPagesPerDomain: 3,
@@ -541,8 +559,8 @@ describe('buildSearchPlanningContext', () => {
       });
 
       assert.equal(result.planner_limits.discoveryEnabled, true);
-      assert.equal(result.planner_limits.discoveryMaxQueries, 10);
-      assert.equal(result.planner_limits.discoveryMaxDiscovered, 100);
+      assert.equal(result.planner_limits.searchProfileQueryCap, 10);
+      assert.equal(result.planner_limits.searchPlannerQueryCap, 100);
       assert.equal(result.planner_limits.maxUrlsPerProduct, 30);
       assert.equal(result.planner_limits.maxCandidateUrls, 60);
       assert.equal(result.planner_limits.maxPagesPerDomain, 3);
@@ -623,7 +641,7 @@ describe('buildSearchPlanningContext', () => {
         needSetOutput: makeNeedSetOutput(),
         runContext: makeRunContext()
       });
-      assert.equal(result.schema_version, 'search_planning_context.v2');
+      assert.equal(result.schema_version, 'search_planning_context.v2.1');
     });
   });
 
@@ -668,7 +686,7 @@ describe('buildSearchPlanningContext', () => {
         ]
       });
       const rc = makeRunContext();
-      const config = { discoveryEnabled: true, discoveryMaxQueries: 8 };
+      const config = { discoveryEnabled: true, searchProfileQueryCap: 8 };
       const fgd = makeFieldGroupsData({
         groups: [
           { group_key: 'sensor_performance', display_name: 'Sensor & Performance', field_keys: ['sensor'], count: 1 },
@@ -930,7 +948,7 @@ describe('buildSearchPlanningContext', () => {
   // ===== PROFILE-GAP-1: Inline catalog metadata into focus_groups =====
 
   describe('GAP-1: inline catalog metadata', () => {
-    it('known group has label, desc, source_target, content_target, search_intent, host_class inlined', () => {
+    it('known group has label, desc, source_target, content_target inlined (no search_intent or host_class — those are per-key)', () => {
       const ns = makeNeedSetOutput({
         fields: [
           makeField({ field_key: 'sensor', group_key: 'sensor_performance', state: 'unknown' })
@@ -952,8 +970,8 @@ describe('buildSearchPlanningContext', () => {
       assert.equal(grp.desc, 'Sensor and performance metrics');
       assert.equal(grp.source_target, 'spec_sheet');
       assert.equal(grp.content_target, 'technical_specs');
-      assert.equal(grp.search_intent, 'exact_match');
-      assert.equal(grp.host_class, 'lab_review');
+      assert.equal(grp.search_intent, undefined);
+      assert.equal(grp.host_class, undefined);
     });
 
     it('unknown group gets generic fallback metadata', () => {
@@ -971,8 +989,8 @@ describe('buildSearchPlanningContext', () => {
       assert.equal(grp.label, 'exotic_group');
       assert.equal(grp.desc, '');
       assert.equal(grp.source_target, 'product_page');
-      assert.equal(grp.search_intent, 'broad');
-      assert.equal(grp.host_class, 'any');
+      assert.equal(grp.search_intent, undefined);
+      assert.equal(grp.host_class, undefined);
     });
 
     it('group_catalog is still present as top-level key (retained for GUI panel)', () => {
@@ -1076,7 +1094,7 @@ describe('buildSearchPlanningContext', () => {
       assert.equal(grp.phase, 'hold');
     });
 
-    it('group with SOME exhausted fields → phase unchanged from normal logic', () => {
+    it('group with SOME exhausted fields → not hold (still has unexhausted fields)', () => {
       const ns = makeNeedSetOutput({
         fields: [
           makeField({
@@ -1091,11 +1109,11 @@ describe('buildSearchPlanningContext', () => {
       });
       const result = buildSearchPlanningContext({
         needSetOutput: ns,
-        runContext: makeRunContext()
+        runContext: makeRunContext({ round: 1 })
       });
       const grp = result.focus_groups.find(g => g.key === 'grp');
       assert.equal(grp.search_exhausted_count, 1);
-      assert.equal(grp.phase, 'now'); // still has unexhausted core fields
+      assert.ok(grp.phase === 'now' || grp.phase === 'next'); // not hold — still has work
     });
   });
 
@@ -1319,8 +1337,6 @@ describe('buildSearchPlanningContext', () => {
             desc: 'Mechanical key switch specifications',
             source_target: 'spec_sheet',
             content_target: 'technical_specs',
-            search_intent: 'exact_match',
-            host_class: 'manufacturer'
           }
         ]
       });
@@ -1334,7 +1350,6 @@ describe('buildSearchPlanningContext', () => {
       assert.equal(grp.label, 'Key Switches');
       assert.equal(grp.desc, 'Mechanical key switch specifications');
       assert.equal(grp.source_target, 'spec_sheet');
-      assert.equal(grp.search_intent, 'exact_match');
     });
   });
 
@@ -1398,5 +1413,315 @@ describe('buildSearchPlanningContext', () => {
       assert.deepStrictEqual(mapKeys, fieldKeys);
       assert.equal(result.field_priority_map.hz, 'optional');
     });
+  });
+});
+
+// ── V4: Schema 3 helpers ──
+
+describe('V4 — buildGroupDescriptionShort', () => {
+  it('extracts search-safe tokens from catalog desc', () => {
+    assert.equal(buildGroupDescriptionShort('Sensor and performance metrics'), 'sensor performance metrics');
+  });
+
+  it('empty desc → empty string', () => {
+    assert.equal(buildGroupDescriptionShort(''), '');
+    assert.equal(buildGroupDescriptionShort(null), '');
+  });
+
+  it('caps at 10 tokens', () => {
+    const long = 'a b c d e f g h i j k l m n';
+    assert.ok(buildGroupDescriptionShort(long).split(/\s+/).length <= 10);
+  });
+});
+
+describe('V4 — buildGroupDescriptionLong', () => {
+  it('appends unresolved keys to desc', () => {
+    const result = buildGroupDescriptionLong('Sensor metrics', ['dpi', 'polling rate']);
+    assert.ok(result.includes('sensor'));
+    assert.ok(result.includes('dpi'));
+    assert.ok(result.includes('polling rate'));
+  });
+
+  it('caps at 20 tokens', () => {
+    const keys = Array.from({ length: 20 }, (_, i) => `field_${i}`);
+    const result = buildGroupDescriptionLong('Sensor and performance metrics', keys);
+    assert.ok(result.split(/\s+/).length <= 20);
+  });
+});
+
+describe('V4 — buildGroupFingerprintFine', () => {
+  it('produces group_key::sorted_keys format', () => {
+    assert.equal(
+      buildGroupFingerprintFine('sensor_performance', ['polling rate', 'dpi', 'lift distance']),
+      'sensor_performance::dpi,lift distance,polling rate'
+    );
+  });
+
+  it('empty keys → group_key:: only', () => {
+    assert.equal(buildGroupFingerprintFine('sp', []), 'sp::');
+  });
+});
+
+describe('V4 — computeGroupQueryCount', () => {
+  it('counts tier=group_search matching group_key', () => {
+    const history = {
+      queries: [
+        { tier: 'group_search', group_key: 'sp', status: 'scrape_complete' },
+        { tier: 'group_search', group_key: 'sp', status: 'scrape_incomplete' },
+        { tier: 'group_search', group_key: 'other', status: 'scrape_complete' },
+        { tier: 'key_search', group_key: 'sp', status: 'scrape_complete' },
+        { tier: 'seed', group_key: null, status: 'scrape_complete' },
+      ]
+    };
+    assert.equal(computeGroupQueryCount('sp', history), 2);
+  });
+
+  it('null history → 0', () => {
+    assert.equal(computeGroupQueryCount('sp', null), 0);
+  });
+});
+
+describe('V4 — isGroupSearchWorthy', () => {
+  it('worthy when all conditions met', () => {
+    const { worthy, skipReason } = isGroupSearchWorthy({
+      coverageRatio: 0.3, unresolvedCount: 5, groupQueryCount: 0, phase: 'now'
+    });
+    assert.equal(worthy, true);
+    assert.equal(skipReason, null);
+  });
+
+  it('not worthy when coverage >= threshold', () => {
+    const { worthy, skipReason } = isGroupSearchWorthy({
+      coverageRatio: 0.9, unresolvedCount: 5, groupQueryCount: 0, phase: 'now'
+    });
+    assert.equal(worthy, false);
+    assert.equal(skipReason, 'group_mostly_resolved');
+  });
+
+  it('not worthy when too few unresolved', () => {
+    const { worthy, skipReason } = isGroupSearchWorthy({
+      coverageRatio: 0.3, unresolvedCount: 2, groupQueryCount: 0, phase: 'now'
+    });
+    assert.equal(worthy, false);
+    assert.equal(skipReason, 'too_few_missing_keys');
+  });
+
+  it('not worthy when group_query_count >= max (uses broad query count, not key retries)', () => {
+    const { worthy, skipReason } = isGroupSearchWorthy({
+      coverageRatio: 0.3, unresolvedCount: 5, groupQueryCount: 3, phase: 'now'
+    });
+    assert.equal(worthy, false);
+    assert.equal(skipReason, 'group_search_exhausted');
+  });
+
+  it('not worthy when phase=hold', () => {
+    const { worthy, skipReason } = isGroupSearchWorthy({
+      coverageRatio: 0.3, unresolvedCount: 5, groupQueryCount: 0, phase: 'hold'
+    });
+    assert.equal(worthy, false);
+    assert.equal(skipReason, 'group_on_hold');
+  });
+});
+
+describe('V4 — buildNormalizedKeyQueue', () => {
+  it('sorts by availability → difficulty → repeat → need_score → required_level', () => {
+    const fields = [
+      { normalized_key: 'rare hard', availability: 'rare', difficulty: 'hard', repeat_count: 0, need_score: 80, required_level: 'critical' },
+      { normalized_key: 'expected easy', availability: 'expected', difficulty: 'easy', repeat_count: 0, need_score: 30, required_level: 'expected' },
+      { normalized_key: 'expected hard', availability: 'expected', difficulty: 'hard', repeat_count: 0, need_score: 60, required_level: 'required' },
+    ];
+    const queue = buildNormalizedKeyQueue(fields);
+    assert.deepStrictEqual(queue, ['expected easy', 'expected hard', 'rare hard']);
+  });
+});
+
+describe('V4 — deriveSeedStatus', () => {
+  it('specs seed needed when never run', () => {
+    const status = deriveSeedStatus(null, { official_domain: 'razer.com' });
+    assert.equal(status.specs_seed.is_needed, true);
+    assert.equal(status.specs_seed.last_status, 'never_run');
+  });
+
+  it('specs seed not needed when complete + on cooldown', () => {
+    const now = Date.now();
+    const history = {
+      queries: [{
+        tier: 'seed', source_name: null, status: 'scrape_complete',
+        completed_at_ms: now - 1000, new_fields_closed: 3, pending_count: 0,
+      }]
+    };
+    const status = deriveSeedStatus(history, {});
+    assert.equal(status.specs_seed.is_needed, false);
+    assert.equal(status.specs_seed.last_status, 'scrape_complete');
+    assert.ok(status.specs_seed.cooldown_until_ms > now);
+  });
+
+  it('specs seed needed when complete but 0 fields closed (no cooldown)', () => {
+    const history = {
+      queries: [{
+        tier: 'seed', source_name: null, status: 'scrape_complete',
+        completed_at_ms: Date.now() - 1000, new_fields_closed: 0, pending_count: 0,
+      }]
+    };
+    const status = deriveSeedStatus(history, {});
+    assert.equal(status.specs_seed.is_needed, true);
+    assert.equal(status.specs_seed.cooldown_until_ms, null);
+  });
+
+  it('source seeds tracked per source_name', () => {
+    const history = {
+      queries: [
+        { tier: 'seed', source_name: 'rtings.com', status: 'scrape_complete', completed_at_ms: Date.now() - 1000, new_fields_closed: 2, pending_count: 0 },
+        { tier: 'seed', source_name: 'amazon.com', status: 'scrape_incomplete', completed_at_ms: null, new_fields_closed: 0, pending_count: 3 },
+      ]
+    };
+    const status = deriveSeedStatus(history, { official_domain: 'razer.com' });
+    assert.equal(status.source_seeds['rtings.com'].is_needed, false);
+    assert.equal(status.source_seeds['amazon.com'].is_needed, true);
+    assert.equal(status.source_seeds['razer.com'].is_needed, true); // from identity, never run
+  });
+
+  it('query_completion_summary counts correctly', () => {
+    const history = {
+      queries: [
+        { tier: 'seed', status: 'scrape_complete', pending_count: 0 },
+        { tier: 'group_search', status: 'scrape_incomplete', pending_count: 3 },
+        { tier: 'key_search', status: 'exhausted', pending_count: 0 },
+      ]
+    };
+    const status = deriveSeedStatus(history, {});
+    assert.equal(status.query_completion_summary.total_queries, 3);
+    assert.equal(status.query_completion_summary.complete, 2);
+    assert.equal(status.query_completion_summary.incomplete, 1);
+    assert.equal(status.query_completion_summary.pending_scrapes, 3);
+  });
+});
+
+// ── V4: Schema 3 focus_group integration ──
+
+describe('V4 — focus_groups carry V4 fields', () => {
+  it('every focus_group has V4 coverage and description fields', () => {
+    const fields = [
+      makeField({ field_key: 'sensor', group_key: 'sp', required_level: 'critical', state: 'unknown' }),
+      makeField({ field_key: 'dpi', group_key: 'sp', required_level: 'required', state: 'accepted', value: '26000' }),
+      makeField({ field_key: 'hz', group_key: 'sp', required_level: 'expected', state: 'unknown' }),
+    ];
+    const result = buildSearchPlanningContext({
+      needSetOutput: makeNeedSetOutput({ fields }),
+      runContext: makeRunContext(),
+    });
+    const grp = result.focus_groups.find((g) => g.key === 'sp');
+    assert.ok(grp);
+    assert.equal(grp.total_field_count, 3);
+    assert.equal(grp.resolved_field_count, 1);
+    assert.ok(grp.coverage_ratio > 0.3 && grp.coverage_ratio < 0.4);
+    assert.equal(typeof grp.group_description_short, 'string');
+    assert.equal(typeof grp.group_description_long, 'string');
+    assert.equal(typeof grp.group_search_worthy, 'boolean');
+    assert.equal(typeof grp.group_fingerprint_coarse, 'string');
+    assert.equal(typeof grp.group_fingerprint_fine, 'string');
+    assert.ok(Array.isArray(grp.normalized_key_queue));
+    assert.ok(Array.isArray(grp.group_search_terms));
+    assert.ok(Array.isArray(grp.content_type_candidates));
+    assert.ok(Array.isArray(grp.domains_tried_for_group));
+    assert.equal(typeof grp.group_query_count, 'number');
+    assert.equal(typeof grp.group_key_retry_count, 'number');
+  });
+
+  it('group_search_worthy = true for group with many unresolved fields', () => {
+    const fields = Array.from({ length: 6 }, (_, i) =>
+      makeField({ field_key: `f${i}`, group_key: 'g', required_level: 'expected', state: 'unknown' })
+    );
+    const result = buildSearchPlanningContext({
+      needSetOutput: makeNeedSetOutput({ fields }),
+      runContext: makeRunContext(),
+    });
+    const grp = result.focus_groups[0];
+    assert.equal(grp.group_search_worthy, true);
+    assert.equal(grp.skip_reason, null);
+  });
+
+  it('group_search_worthy = false when only 1 unresolved field', () => {
+    const fields = [
+      makeField({ field_key: 'f1', group_key: 'g', required_level: 'expected', state: 'accepted', value: 'ok' }),
+      makeField({ field_key: 'f2', group_key: 'g', required_level: 'expected', state: 'accepted', value: 'ok' }),
+      makeField({ field_key: 'f3', group_key: 'g', required_level: 'expected', state: 'unknown' }),
+    ];
+    const result = buildSearchPlanningContext({
+      needSetOutput: makeNeedSetOutput({ fields }),
+      runContext: makeRunContext(),
+    });
+    const grp = result.focus_groups[0];
+    assert.equal(grp.group_search_worthy, false);
+    assert.equal(grp.skip_reason, 'too_few_missing_keys');
+  });
+
+  it('group_fingerprint_coarse is just group_key', () => {
+    const fields = [makeField({ field_key: 'f1', group_key: 'sp', state: 'unknown' })];
+    const result = buildSearchPlanningContext({
+      needSetOutput: makeNeedSetOutput({ fields }),
+      runContext: makeRunContext(),
+    });
+    assert.equal(result.focus_groups[0].group_fingerprint_coarse, 'sp');
+  });
+});
+
+// ── V4: Schema 3 top-level additions ──
+
+describe('V4 — Schema 3 top-level seed_status and pass_seed', () => {
+  it('seed_status present on output', () => {
+    const result = buildSearchPlanningContext({
+      needSetOutput: makeNeedSetOutput(),
+      runContext: makeRunContext(),
+    });
+    assert.ok(result.seed_status);
+    assert.ok(result.seed_status.specs_seed);
+    assert.ok(result.seed_status.query_completion_summary);
+  });
+
+  it('pass_seed.passA_specs_seed = true on round 0', () => {
+    const result = buildSearchPlanningContext({
+      needSetOutput: makeNeedSetOutput(),
+      runContext: makeRunContext({ round: 0 }),
+    });
+    assert.equal(result.pass_seed.passA_specs_seed, true);
+  });
+
+  it('pass_seed.passA_specs_seed = false on round 1+', () => {
+    const result = buildSearchPlanningContext({
+      needSetOutput: makeNeedSetOutput(),
+      runContext: makeRunContext({ round: 2 }),
+    });
+    assert.equal(result.pass_seed.passA_specs_seed, false);
+  });
+
+  it('pass_seed.passA_target_groups = phase:now groups (round 1+)', () => {
+    const fields = [
+      makeField({ field_key: 'f1', group_key: 'active', required_level: 'critical', state: 'unknown' }),
+    ];
+    const result = buildSearchPlanningContext({
+      needSetOutput: makeNeedSetOutput({ fields }),
+      runContext: makeRunContext({ round: 1 }),
+    });
+    assert.ok(result.pass_seed.passA_target_groups.includes('active'));
+  });
+
+  it('pass_seed.passA_target_groups = empty on round 0 (seeds first)', () => {
+    const fields = [
+      makeField({ field_key: 'f1', group_key: 'active', required_level: 'critical', state: 'unknown' }),
+    ];
+    const result = buildSearchPlanningContext({
+      needSetOutput: makeNeedSetOutput({ fields }),
+      runContext: makeRunContext({ round: 0 }),
+    });
+    assert.deepStrictEqual(result.pass_seed.passA_target_groups, []);
+  });
+
+  it('schema_version is search_planning_context.v2.1', () => {
+    const result = buildSearchPlanningContext({
+      needSetOutput: makeNeedSetOutput(),
+      runContext: makeRunContext(),
+    });
+    assert.equal(result.schema_version, 'search_planning_context.v2.1');
   });
 });

@@ -3,6 +3,7 @@
 // applies anti-garbage filtering, and assembles Schema 4.
 
 import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../core/llm/client/routing.js';
+import { configInt } from '../shared/settingsAccessor.js';
 
 // --- Query hashing (same algorithm as frontierDb.js, inlined to avoid coupling) ---
 
@@ -21,6 +22,9 @@ function defaultQueryHash(query) {
 
 // --- LLM schema + prompt ---
 
+// WHY: NeedSet LLM assesses group search priority and annotations.
+// It does NOT generate search queries — query authoring belongs to
+// Search Profile (deterministic tiers) and Search Planner (LLM).
 const PLANNER_RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
@@ -33,51 +37,23 @@ const PLANNER_RESPONSE_SCHEMA = {
           key: { type: 'string' },
           phase: { type: 'string' },
           reason_active: { type: 'string' },
-          query_family_mix: { type: 'string' },
-          queries: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                family: { type: 'string' },
-                q: { type: 'string' },
-                target_fields: { type: 'array', items: { type: 'string' } },
-                preferred_domains: { type: 'array', items: { type: 'string' } },
-                exact_match_required: { type: 'boolean' },
-              },
-              required: ['family', 'q'],
-            },
-          },
         },
-        required: ['key', 'queries'],
+        required: ['key'],
       },
     },
-    duplicates_suppressed: { type: 'integer' },
-    targeted_exceptions: { type: 'integer' },
   },
 };
 
 const PLANNER_SYSTEM_PROMPT = [
-  'You are a search planner for hardware specification data collection.',
-  'Given product identity, focus groups with unresolved fields, anti-garbage signals, and domain hints, generate targeted web search queries.',
+  'You are a search group assessor for hardware specification data collection.',
+  'Given product identity and focus groups with unresolved fields, assess each group.',
+  'You do NOT write search queries. Query authoring is handled by a separate stage.',
   'Rules:',
-  '- Generate 1-3 queries per active group, each targeting different search strategies.',
-  '- Vary query families: manufacturer_html, manual_pdf, support_docs, review_lookup, benchmark_lookup, fallback_web, targeted_single.',
-  '- Prefer manufacturer docs, instrumented lab reviews, and trusted spec databases.',
-  '- Avoid junk domains, login pages, forums, and irrelevant topics.',
-  '- Do NOT repeat queries from existing_queries — generate DIFFERENT patterns covering new angles.',
-  '- Use domains_tried_union to AVOID domains already visited. Target DIFFERENT domains.',
-  '- Use host_classes_tried_union to diversify: if "manufacturer" tried, try "review" or "database".',
-  '- Use evidence_classes_tried_union to vary content types: if "html" tried, target "pdf" or "json-ld".',
-  '- When no_value_attempts is high (3+), radically change search strategy — different terms, domains, angles.',
-  '- weak_field_keys need CORROBORATION queries (authoritative sources to confirm). conflict_field_keys need RESOLUTION queries (manufacturer/official sources to settle disagreements).',
-  '- Use aliases_union to generate variant-aware queries (e.g., "GPX2" vs "G Pro X Superlight 2").',
-  '- Each query must have a "family" (strategy type) and "q" (the search query text).',
-  '- Optionally include "target_fields", "preferred_domains", and "exact_match_required".',
-  '- Return JSON with a "groups" array where each group has a "key" and "queries" array.',
+  '- For each active group, explain why it is active (reason_active).',
+  '- Assign planner_confidence (0-1) reflecting how confident you are about the group priorities.',
+  '- weak_field_keys need corroboration from authoritative sources. conflict_field_keys need resolution from manufacturer/official sources.',
+  '- Return JSON with a "groups" array where each group has a "key" and "reason_active".',
 ].join('\n');
-
-const PER_GROUP_CAP = 3;
 
 // --- Core ---
 
@@ -99,9 +75,11 @@ export function computeDeltas(ctx) {
     }
   }
   const prev = ctx.previous_round_fields;
-  // WHY: On round 0 (no previous fields), show all fields as new entries
-  // so "what changed this round" always has content.
+  const round = ctx.run?.round ?? 0;
   if (!Array.isArray(prev) || !prev.length) {
+    // WHY: Round 0 — show all fields as "new" (first seen, not escalated).
+    // Round 1+ with no previous data — return empty. No baseline = no diff.
+    if (round > 0) return [];
     return [...currentMap.entries()].map(([field, state]) => ({
       field,
       from: 'none',
@@ -139,13 +117,30 @@ function assembleSchema4(ctx, queries, {
 } = {}) {
   const queryHashes = queries.map(q => q.query_hash);
 
-  // Family counts for profile_influence
-  const FAMILY_KEYS = ['manufacturer_html', 'manual_pdf', 'support_docs', 'review_lookup', 'benchmark_lookup', 'fallback_web', 'targeted_single'];
-  const familyCounts = Object.fromEntries(FAMILY_KEYS.map(k => [k, 0]));
-  for (const q of queries) {
-    const fam = q.family || 'unknown';
-    familyCounts[fam] = (familyCounts[fam] || 0) + 1;
-  }
+  // WHY: Tier-aware profile_influence — derived from Schema 3 data.
+  const focusGroups = ctx.focus_groups || [];
+  const seedStatus = ctx.seed_status || {};
+  const specsSeedNeeded = Boolean(seedStatus?.specs_seed?.is_needed);
+  const anySourceNeeded = Object.values(seedStatus?.source_seeds || {})
+    .some(s => Boolean(s?.is_needed));
+  const searchWorthyGroups = focusGroups.filter(g => g.group_search_worthy === true);
+  const nonWorthyWithKeys = focusGroups.filter(g =>
+    g.group_search_worthy === false &&
+    Array.isArray(g.normalized_key_queue) &&
+    g.normalized_key_queue.length > 0,
+  );
+  const tierInfluence = {
+    tier1_seed_active: specsSeedNeeded || anySourceNeeded,
+    tier2_group_count: searchWorthyGroups.length,
+    tier3_key_count: nonWorthyWithKeys.reduce((sum, g) => sum + g.normalized_key_queue.length, 0),
+    groups_now: focusGroups.filter(g => g.phase === 'now').length,
+    groups_next: focusGroups.filter(g => g.phase === 'next').length,
+    groups_hold: focusGroups.filter(g => g.phase === 'hold').length,
+    total_unresolved_keys: focusGroups.reduce(
+      (sum, g) => sum + (Array.isArray(g.normalized_key_queue) ? g.normalized_key_queue.length : 0), 0,
+    ),
+    planner_confidence: llmResult?.planner_confidence ?? 0,
+  };
 
   // Group bundles — read from Schema 3 focus_groups, include display fields
   const bundleMap = new Map();
@@ -240,19 +235,14 @@ function assembleSchema4(ctx, queries, {
       identity: ctx.identity,
       summary: ctx.needset?.summary || {},
       blockers: ctx.needset?.blockers || {},
+      // WHY: NeedSet panel shows groups/fields only — query authoring belongs
+      // to Search Profile + Search Planner stages. Queries still flow via
+      // search_plan_handoff for downstream consumption.
       bundles: [...bundleMap.values()].map(b => {
-        const { _fieldKeys, _satisfied, _weak, _conflict, ...clean } = b;
+        const { _fieldKeys, _satisfied, _weak, _conflict, queries, ...clean } = b;
         return clean;
       }),
-      profile_influence: {
-        ...familyCounts,
-        duplicates_suppressed: dupesDropped,
-        focused_bundles: [...bundleMap.values()].filter(b => b.queries.length > 0).length,
-        targeted_exceptions: llmResult?.targeted_exceptions ?? 0,
-        total_queries: queries.length,
-        trusted_host_share: (familyCounts.manufacturer_html || 0) + (familyCounts.support_docs || 0),
-        docs_manual_share: familyCounts.manual_pdf || 0,
-      },
+      profile_influence: tierInfluence,
       deltas: computeDeltas(ctx),
     },
     learning_writeback: {
@@ -311,7 +301,7 @@ export async function buildSearchPlan({
     round: run.round || 0,
     missing_critical_fields: ctx.needset?.missing_critical_fields || [], // GAP-12
     limits: {
-      discoveryMaxQueries: plannerLimits.discoveryMaxQueries || 6,
+      searchProfileQueryCap: plannerLimits.searchProfileQueryCap || 6,
       maxUrlsPerProduct: plannerLimits.maxUrlsPerProduct || 20,
     },
     // WHY: Truncate union arrays to top 5 and drop display-only metrics to keep
@@ -381,60 +371,8 @@ export async function buildSearchPlan({
     return makeErrorResult(ctx, error);
   }
 
-  // WHY: Some models (e.g. Gemini) return a single group object { key, queries }
-  // instead of wrapping in { groups: [...] }. Normalize both shapes.
-  let groups;
-  if (Array.isArray(llmResult?.groups)) {
-    groups = llmResult.groups;
-  } else if (llmResult?.key && Array.isArray(llmResult?.queries)) {
-    groups = [llmResult];
-  } else {
-    groups = [];
-  }
-  const globalCap = Math.max(1, toInt(config.discoveryMaxQueries, 6));
-
-  // Post-LLM anti-garbage: extract + dedup + cap
-  const existingHashes = new Set();
-  for (const eq of (ctx.needset?.existing_queries || [])) {
-    existingHashes.add(queryHashFn(eq));
-  }
-
-  const allQueries = [];
-  const seenHashes = new Set([...existingHashes]);
-  const perGroupCount = new Map();
-  let dupesDropped = 0;
-
-  for (const group of groups) {
-    const groupKey = group.key || '';
-    const groupQueries = Array.isArray(group.queries) ? group.queries : [];
-    let groupEmitted = perGroupCount.get(groupKey) || 0;
-
-    for (const rawQuery of groupQueries) {
-      if (!rawQuery.q || typeof rawQuery.q !== 'string') continue;
-      const q = rawQuery.q.trim();
-      if (!q) continue;
-
-      const queryHash = queryHashFn(q);
-      if (seenHashes.has(queryHash)) { dupesDropped++; continue; }
-      if (groupEmitted >= PER_GROUP_CAP) { dupesDropped++; continue; }
-      if (allQueries.length >= globalCap) { dupesDropped++; break; }
-
-      seenHashes.add(queryHash);
-      groupEmitted++;
-      allQueries.push({
-        q,
-        family: rawQuery.family || 'unknown',
-        query_hash: queryHash,
-        group_key: groupKey,
-        target_fields: Array.isArray(rawQuery.target_fields) ? rawQuery.target_fields : [],
-        preferred_domains: Array.isArray(rawQuery.preferred_domains) ? rawQuery.preferred_domains : [],
-        exact_match_required: Boolean(rawQuery.exact_match_required),
-      });
-    }
-    perGroupCount.set(groupKey, groupEmitted);
-
-    if (allQueries.length >= globalCap) break;
-  }
-
-  return assembleSchema4(ctx, allQueries, { mode: 'llm', plannerComplete: true, model: resolvePhaseModel(config, 'needset'), llmResult, dupesDropped });
+  // WHY: NeedSet LLM no longer generates queries — query authoring belongs
+  // to Search Profile (tiers) and Search Planner (LLM). We pass empty
+  // queries to assembleSchema4; group annotations flow via llmResult.
+  return assembleSchema4(ctx, [], { mode: 'llm', plannerComplete: true, model: resolvePhaseModel(config, 'needset'), llmResult, dupesDropped: 0 });
 }

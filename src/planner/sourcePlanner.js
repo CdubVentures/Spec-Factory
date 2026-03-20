@@ -55,7 +55,8 @@ export class SourcePlanner {
     this.config = config;
     this.categoryConfig = categoryConfig;
     this.preferred = job.preferredSources || {};
-    this.fetchCandidateSources = Boolean(config.fetchCandidateSources);
+    // WHY: fetchCandidateSources retired — always true (trust the process).
+    this.fetchCandidateSources = true;
 
     const requiredFieldsRaw = options.requiredFields || [];
     this.requiredFields = requiredFieldsRaw

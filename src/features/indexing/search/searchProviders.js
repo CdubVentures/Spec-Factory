@@ -381,9 +381,16 @@ export async function runSearchProviders({
   screenshotSink,
 }) {
   // WHY: Serper mode is exclusive — when enabled, skip all Crawlee/SearXNG paths.
-  const serperActive = Boolean(config.serperApiKey);
+  const serperActive = Boolean(config.serperApiKey) && config.serperEnabled !== false;
+  logger?.info?.('search_provider_routing', {
+    serperActive,
+    hasApiKey: Boolean(config.serperApiKey),
+    serperEnabled: config.serperEnabled,
+    query: String(query || '').slice(0, 60),
+  });
   if (serperActive) {
     const results = await attemptSerperSearch({ query, limit, config, logger, requestThrottler, _searchSerperFn });
+    logger?.info?.('serper_dispatch_result', { query: String(query || '').slice(0, 60), resultCount: results.length });
     return { results: dedupeResults(results), usedFallback: false, provider: 'serper' };
   }
 
@@ -419,7 +426,7 @@ export async function runSearchProviders({
 }
 
 export function searchEngineAvailability(config) {
-  const serperReady = Boolean(config.serperApiKey);
+  const serperReady = Boolean(config.serperApiKey) && config.serperEnabled !== false;
 
   // Support both new searchEngines and legacy searchProvider
   const engines = normalizeSearchEngines(config.searchEngines ?? config.searchProvider);

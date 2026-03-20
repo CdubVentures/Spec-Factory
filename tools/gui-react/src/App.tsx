@@ -19,17 +19,17 @@ const OverviewPage = lazyNamedPage(() => import('./pages/overview/OverviewPage')
 const ProductPage = lazyNamedPage(() => import('./pages/product/ProductPage'), 'ProductPage');
 const LlmSettingsPage = lazyNamedPage(() => import('./pages/llm-settings/LlmSettingsPage'), 'LlmSettingsPage');
 const BillingPage = lazyNamedPage(() => import('./pages/billing/BillingPage'), 'BillingPage');
-const StudioPage = lazyNamedPage(() => import('./pages/studio/StudioPage'), 'StudioPage');
-const CatalogPage = lazyNamedPage(() => import('./pages/catalog/CatalogPage'), 'CatalogPage');
-const CategoryManager = lazyNamedPage(() => import('./pages/catalog/CategoryManager'), 'CategoryManager');
-const ReviewPage = lazyNamedPage(() => import('./pages/review/ReviewPage'), 'ReviewPage');
+const StudioPage = lazyNamedPage(() => import('./features/studio/components/StudioPage'), 'StudioPage');
+const CatalogPage = lazyNamedPage(() => import('./features/catalog/components/CatalogPage'), 'CatalogPage');
+const CategoryManager = lazyNamedPage(() => import('./features/catalog/components/CategoryManager'), 'CategoryManager');
+const ReviewPage = lazyNamedPage(() => import('./features/review/components/ReviewPage'), 'ReviewPage');
 const ComponentReviewPage = lazyNamedPage(() => import('./pages/component-review/ComponentReviewPage'), 'ComponentReviewPage');
 const TestModePage = lazyNamedPage(() => import('./pages/test-mode/TestModePage'), 'TestModePage');
 const IndexingPage = lazyNamedPage(() => import('./features/indexing/components/IndexingPage'), 'IndexingPage');
-const PipelineSettingsPage = lazyNamedPage(() => import('./pages/pipeline-settings/PipelineSettingsPage'), 'PipelineSettingsPage');
-const RuntimeOpsPage = lazyNamedPage(() => import('./pages/runtime-ops/RuntimeOpsPage'), 'RuntimeOpsPage');
+const PipelineSettingsPage = lazyNamedPage(() => import('./features/pipeline-settings/components/PipelineSettingsPage'), 'PipelineSettingsPage');
+const RuntimeOpsPage = lazyNamedPage(() => import('./features/runtime-ops/components/RuntimeOpsPage'), 'RuntimeOpsPage');
 const StoragePage = lazyNamedPage(() => import('./pages/storage/StoragePage'), 'StoragePage');
-const LlmConfigPage = lazyNamedPage(() => import('./pages/llm-config/LlmConfigPage'), 'LlmConfigPage');
+const LlmConfigPage = lazyNamedPage(() => import('./features/llm-config/components/LlmConfigPage'), 'LlmConfigPage');
 
 const queryClient = new QueryClient({
   defaultOptions: {

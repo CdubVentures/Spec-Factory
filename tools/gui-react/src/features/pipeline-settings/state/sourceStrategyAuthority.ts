@@ -2,56 +2,10 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { api } from '../../../api/client';
 import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract';
 import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract';
-
-export interface DiscoveryConfig {
-  method: 'search_first' | 'manual';
-  source_type: string;
-  search_pattern: string;
-  priority: number;
-  enabled: boolean;
-  notes: string;
-}
-
-export interface CrawlConfig {
-  method: string;
-  rate_limit_ms: number;
-  timeout_ms: number;
-  robots_txt_compliant: boolean;
-}
-
-export interface FieldCoverage {
-  high: string[];
-  medium: string[];
-  low: string[];
-}
-
-export interface SourceEntry {
-  sourceId: string;
-  display_name: string;
-  tier: string;
-  authority: string;
-  base_url: string;
-  content_types: string[];
-  doc_kinds: string[];
-  crawl_config: CrawlConfig;
-  field_coverage: FieldCoverage;
-  discovery: DiscoveryConfig;
-}
-
-interface SourceEntryEnvelope {
-  ok: boolean;
-  applied: Partial<SourceEntry>;
-  snapshot: SourceEntry | null;
-  rejected: Record<string, string>;
-}
-
-// WHY: Extract the source entry from the standardized response envelope.
-function extractSourceEntryFromEnvelope(response: SourceEntryEnvelope): SourceEntry {
-  if (response.snapshot && typeof response.snapshot === 'object' && 'sourceId' in response.snapshot) {
-    return response.snapshot;
-  }
-  return response as unknown as SourceEntry;
-}
+// WHY: O(1) — types and envelope extractor derived from backend contract SSOT.
+import { extractSourceEntryFromEnvelope } from './sourceEntryDerived';
+import type { SourceEntry, SourceEntryEnvelope } from './sourceEntryDerived';
+export type { SourceEntry, DiscoveryConfig, CrawlConfig, FieldCoverage } from './sourceEntryDerived';
 
 interface SourceStrategyAuthorityOptions {
   category: string;

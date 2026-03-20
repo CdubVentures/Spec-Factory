@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client';
-import { Spinner } from '../../../components/common/Spinner';
+import { Spinner } from '../../../shared/ui/feedback/Spinner';
 import type { ProcessStatus } from '../../../types/events';
 import { useUiStore } from '../../../stores/uiStore';
 import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
@@ -30,15 +30,15 @@ import type {
   QueueStateResponse,
 } from '../types';
 
-const TAB_DEFS: { key: RuntimeOpsTab; label: string; desc: string }[] = [
-  { key: 'overview', label: 'Overview', desc: 'Health cards, throughput, blockers' },
-  { key: 'workers', label: 'Workers', desc: 'Live worker table with stuck detection' },
-  { key: 'documents', label: 'Documents', desc: 'Document lifecycle tracing' },
-  { key: 'extraction', label: 'Extraction', desc: 'Field extraction matrix and method lineage' },
-  { key: 'fallbacks', label: 'Fallbacks', desc: 'Fetch mode transitions and host degradation' },
-  { key: 'queue', label: 'Queue', desc: 'Repair queue lanes and job inspection' },
-  { key: 'compound', label: 'Compound', desc: 'Cross-run learning curves and index analytics' },
-];
+const TAB_DEFS = [
+  { id: 'overview', label: 'Overview', description: 'Health cards, throughput, blockers' },
+  { id: 'workers', label: 'Workers', description: 'Live worker table with stuck detection' },
+  { id: 'documents', label: 'Documents', description: 'Document lifecycle tracing' },
+  { id: 'extraction', label: 'Extraction', description: 'Field extraction matrix and method lineage' },
+  { id: 'fallbacks', label: 'Fallbacks', description: 'Fetch mode transitions and host degradation' },
+  { id: 'queue', label: 'Queue', description: 'Repair queue lanes and job inspection' },
+  { id: 'compound', label: 'Compound', description: 'Cross-run learning curves and index analytics' },
+] as const;
 
 const RUNTIME_OPS_TAB_KEYS = [
   'overview',
@@ -50,9 +50,7 @@ const RUNTIME_OPS_TAB_KEYS = [
   'compound',
 ] as const satisfies ReadonlyArray<RuntimeOpsTab>;
 
-const tabCls = 'px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer sf-tab-item';
-const activeTabCls = 'sf-tab-item-active';
-const inactiveTabCls = '';
+import { TabStrip } from '../../../shared/ui/navigation/TabStrip';
 
 function getRefetchInterval(
   isRunning: boolean,
@@ -404,19 +402,12 @@ export function RuntimeOpsPage() {
           </div>
         </div>
 
-        <nav className="flex shrink-0 gap-1 px-1 py-1 sf-tab-strip rounded">
-          {TAB_DEFS.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              title={t.desc}
-              onClick={() => setActiveTab(t.key)}
-              className={`${tabCls} ${activeTab === t.key ? activeTabCls : inactiveTabCls}`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
+        <TabStrip
+          tabs={TAB_DEFS}
+          activeTab={activeTab}
+          onSelect={setActiveTab}
+          className="flex shrink-0 gap-1 px-1 py-1 sf-tab-strip rounded"
+        />
       </div>
 
       <div className="flex flex-1 min-h-0">

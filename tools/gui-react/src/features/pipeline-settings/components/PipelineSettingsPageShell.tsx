@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Tip } from '../../../shared/ui/feedback/Tip';
+import { SidebarShell } from '../../../shared/ui/navigation/SidebarShell';
 
 export type PipelineSectionId = 'runtime-flow' | 'convergence' | 'source-strategy';
 
@@ -9,32 +9,23 @@ export const PIPELINE_SECTION_IDS = [
   'source-strategy',
 ] as const satisfies readonly PipelineSectionId[];
 
-interface PipelineSection {
-  id: PipelineSectionId;
-  label: string;
-  phase: string;
-  subtitle: string;
-  tip: string;
-}
-
-const PIPELINE_SECTIONS: PipelineSection[] = [
+const PIPELINE_SECTIONS = [
   {
-    id: 'runtime-flow',
+    id: 'runtime-flow' as const,
     label: 'Runtime Flow',
     phase: '01-06',
     subtitle: 'Pipeline execution',
     tip: 'Owns the knobs that feed 01 NeedSet, 02 Brand Resolver, 03 Search Profile, 04 Search Planner, 05 Query Journey, 06 Search Results, 07 SERP Selector, 08 Fetch and Parse Entry, and 09 Fetch To Extraction. Search Planner is precomputed early from NeedSet, Search Profile is the deterministic and fallback profile branch, and Query Journey decides which branch reaches execution. Use this section when you need to change how discovery, fetch, browser fallback, parsing, or OCR behave before consensus begins.',
   },
   {
-    // WHY: internal id kept as 'convergence' to avoid cross-file rename blast radius
-    id: 'convergence',
+    id: 'convergence' as const,
     label: 'Scoring & Retrieval',
     phase: 'ALGO',
     subtitle: 'Consensus, SERP triage & retrieval weights',
     tip: 'Owns late ranking and scoring policy around 07 SERP Selector plus 11 Identity Gating To Consensus and 12 Consensus To Validation. Use it when the pipeline is keeping the wrong URLs, admitting weak evidence, or choosing the wrong final value during consensus.',
   },
   {
-    id: 'source-strategy',
+    id: 'source-strategy' as const,
     label: 'Source Strategy',
     phase: 'SRCS',
     subtitle: 'Per-host source rules',
@@ -99,70 +90,16 @@ export function PipelineSettingsPageShell({
   headerActions,
   activePanel,
 }: PipelineSettingsPageShellProps) {
-  const activeSectionData =
-    PIPELINE_SECTIONS.find((section) => section.id === activeSection) ?? PIPELINE_SECTIONS[0];
-
   return (
-    <div
-      className="flex h-full min-h-0 rounded overflow-hidden sf-shell border"
-      style={{ borderColor: 'var(--sf-surface-border)' }}
+    <SidebarShell
+      title="Pipeline Settings"
+      items={PIPELINE_SECTIONS}
+      activeItem={activeSection}
+      onSelect={onSelectSection}
+      renderIcon={(id, active) => <SectionNavIcon id={id} active={active} />}
+      headerActions={headerActions}
     >
-      <aside className="sf-sidebar w-60 shrink-0 min-h-0 flex flex-col gap-0.5 overflow-y-auto overflow-x-hidden p-3">
-        <div
-          className="mb-3 px-2 pt-1 sf-text-caption font-bold uppercase tracking-widest"
-          style={{ color: 'var(--sf-muted)' }}
-        >
-          Pipeline Settings
-        </div>
-        {PIPELINE_SECTIONS.map((section) => {
-          const isActive = activeSection === section.id;
-          return (
-            <button
-              key={section.id}
-              onClick={() => onSelectSection(section.id)}
-              className={`group w-full min-h-[74px] sf-nav-item px-2.5 py-2.5 text-left ${isActive ? 'sf-nav-item-active' : ''}`}
-            >
-              <div className="flex items-center gap-2.5">
-                <SectionNavIcon id={section.id} active={isActive} />
-                <div className="min-w-0 flex-1">
-                  <div
-                    className="sf-text-label font-semibold leading-5"
-                    style={{ color: isActive ? 'rgb(var(--sf-color-accent-strong-rgb))' : 'var(--sf-text)' }}
-                  >
-                    {section.label}
-                  </div>
-                  <div className="sf-text-caption leading-4" style={{ color: 'var(--sf-muted)' }}>
-                    {section.subtitle}
-                  </div>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </aside>
-
-      <div className="sf-shell-main flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden p-4 md:p-5 space-y-4">
-        <div
-          className="flex items-start justify-between gap-4 pb-4 border-b"
-          style={{ borderColor: 'var(--sf-surface-border)' }}
-        >
-          <div className="flex items-start gap-2">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold" style={{ color: 'var(--sf-text)' }}>
-                  {activeSectionData.label}
-                </h2>
-                <Tip text={activeSectionData.tip} />
-              </div>
-              <p className="mt-1 sf-text-label" style={{ color: 'var(--sf-muted)' }}>
-                {activeSectionData.subtitle}
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-start justify-end gap-3 shrink-0">{headerActions}</div>
-        </div>
-        {activePanel}
-      </div>
-    </div>
+      {activePanel}
+    </SidebarShell>
   );
 }

@@ -1,20 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePersistedTab } from '../../stores/tabStore';
+import { TabStrip } from '../../shared/ui/navigation/TabStrip';
 import { useUiStore } from '../../stores/uiStore';
 import { useLlmSettingsAuthority, useLlmSettingsBootstrapRows } from '../../stores/llmSettingsAuthority';
 import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore';
-import { Spinner } from '../../components/common/Spinner';
+import { Spinner } from '../../shared/ui/feedback/Spinner';
 import { resolveLlmSettingsStatusText } from '../../shared/ui/feedback/settingsStatus';
 import type { LlmRouteRow, LlmScope } from '../../types/llmSettings';
 import { LLM_ROUTE_PRESET_LIMITS, LLM_SETTING_LIMITS } from '../../stores/settingsManifest';
 import type { LlmRoutePresetConfig } from '../../stores/settingsManifest';
 
 const SCOPE_KEYS = ['field', 'component', 'list'] as const satisfies ReadonlyArray<LlmScope>;
-const scopes: Array<{ key: LlmScope; label: string }> = [
-  { key: 'field', label: 'Field Keys' },
-  { key: 'component', label: 'Component Review' },
-  { key: 'list', label: 'List Review' }
-];
+const scopes = [
+  { id: 'field', label: 'Field Keys' },
+  { id: 'component', label: 'Component Review' },
+  { id: 'list', label: 'List Review' },
+] as const;
 
 const REQUIRED_LEVEL_RANK: Record<string, number> = {
   identity: 7,
@@ -442,6 +443,11 @@ export function LlmSettingsPage() {
     return counts;
   }, [rows]);
 
+  const scopeTabs = useMemo(
+    () => scopes.map((s) => ({ ...s, count: scopeCounts[s.id] || 0 })),
+    [scopeCounts],
+  );
+
   const filterOptions = useMemo(() => ({
     required: [...new Set(scopeRows.map((row) => row.required_level).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     difficulty: [...new Set(scopeRows.map((row) => row.difficulty).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
@@ -621,21 +627,12 @@ export function LlmSettingsPage() {
         </div>
       </div>
 
-      <div className="sf-tab-strip flex flex-wrap items-center gap-1 rounded p-1">
-        {scopes.map((scope) => (
-          <button
-            key={scope.key}
-            onClick={() => setActiveScope(scope.key)}
-            className={`rounded sf-tab-item px-3 py-2 sf-text-label font-medium ${
-              activeScope === scope.key
-                ? 'sf-tab-item-active'
-                : ''
-            }`}
-          >
-            {scope.label} ({scopeCounts[scope.key] || 0})
-          </button>
-        ))}
-      </div>
+      <TabStrip
+        tabs={scopeTabs}
+        activeTab={activeScope}
+        onSelect={setActiveScope}
+        className="sf-tab-strip flex flex-wrap items-center gap-1 rounded p-1"
+      />
 
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-12 lg:col-span-4">

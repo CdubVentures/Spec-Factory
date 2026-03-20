@@ -1,12 +1,13 @@
 import { JsonViewer } from '../../../shared/ui/data-display/JsonViewer';
 import { Tip } from '../../../shared/ui/feedback/Tip';
 import { ComboSelect } from '../../../shared/ui/forms/ComboSelect';
-import { EnumConfigurator } from '../../../shared/ui/forms/EnumConfigurator';
+import { EnumConfigurator } from '../components/EnumConfigurator';
 import { TagPicker } from '../../../shared/ui/forms/TagPicker';
 import { TierPicker } from '../../../shared/ui/forms/TierPicker';
 import {
   parseBoundedIntInput,
 } from '../state/numericInputHelpers';
+import { PARSE_TEMPLATES, isUnitBearingTemplate, resolveOutputType } from '../state/parseTemplateRegistry';
 import {
   STUDIO_NUMERIC_KNOB_BOUNDS,
 } from '../state/studioNumericKnobBounds';
@@ -51,25 +52,16 @@ export function ParseTab({
   B: BadgeSlot;
 }) {
   const pt = strN(rule, 'parse.template', strN(rule, 'parse_template'));
-  const showUnits = ['number_with_unit', 'list_of_numbers_with_unit', 'list_numbers_or_ranges_with_unit'].includes(pt);
+  const showUnits = isUnitBearingTemplate(pt);
 
   return (
     <div className="space-y-3">
       <div>
         <div className={`${labelCls} flex items-center`}><span>Parse Template<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.parse_template} /></span><B p="parse.template" /></div>
         <select className={`${selectCls} w-full`} value={pt} onChange={(e) => onUpdate('parse.template', e.target.value)}>
-          <option value="">none</option>
-          <option value="text_field">text_field</option>
-          <option value="number_with_unit">number_with_unit</option>
-          <option value="boolean_yes_no_unk">boolean_yes_no_unk</option>
-          <option value="component_reference">component_reference</option>
-          <option value="date_field">date_field</option>
-          <option value="url_field">url_field</option>
-          <option value="list_of_numbers_with_unit">list_of_numbers_with_unit</option>
-          <option value="list_numbers_or_ranges_with_unit">list_numbers_or_ranges_with_unit</option>
-          <option value="list_of_tokens_delimited">list_of_tokens_delimited</option>
-          <option value="token_list">token_list</option>
-          <option value="text_block">text_block</option>
+          {PARSE_TEMPLATES.map((t) => (
+            <option key={t} value={t}>{t || 'none'}</option>
+          ))}
         </select>
       </div>
 
@@ -77,13 +69,7 @@ export function ParseTab({
         <div className="flex items-center gap-2">
           <span className={PREVIEW_LABEL_CLASS}>Output type:</span>
           <span className="px-1.5 py-0.5 text-[10px] rounded sf-chip-neutral font-mono">
-            {pt === 'boolean_yes_no_unk' ? 'boolean'
-              : pt === 'number_with_unit' || pt === 'list_of_numbers_with_unit' || pt === 'list_numbers_or_ranges_with_unit' ? 'number'
-              : pt === 'url_field' ? 'url'
-              : pt === 'date_field' ? 'date'
-              : pt === 'list_of_tokens_delimited' || pt === 'token_list' ? 'list'
-              : pt === 'component_reference' ? 'component_ref'
-              : 'string'}
+            {resolveOutputType(pt)}
           </span>
         </div>
       )}

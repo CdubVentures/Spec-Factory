@@ -433,12 +433,7 @@ export function AppShell() {
             </div>
           ) : (
             <>
-              {!settingsReady && (
-                <div className="mb-3 sf-status sf-status-warning sf-shell-warning">
-                  Settings are still hydrating. Some controls may remain read-only until reload completes.
-                </div>
-              )}
-              {settingsSnapshot.uiSettingsPersistState === 'saving' && (
+{settingsSnapshot.uiSettingsPersistState === 'saving' && (
                 <div className="mb-3 sf-status sf-status-info sf-shell-saving">
                   Saving autosave preference changes...
                 </div>

@@ -2,38 +2,17 @@ import { useMemo } from 'react';
 import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
 import { type SourceEntry, type DiscoveryConfig, type CrawlConfig, type FieldCoverage } from '../state/sourceStrategyAuthority';
 import { SectionNavIcon } from '../components/PipelineSettingsPageShell';
+// WHY: O(1) — types, draft shape, and enum options derived from backend contract SSOT.
+import {
+  TIER_OPTIONS,
+  AUTHORITY_OPTIONS,
+  DISCOVERY_METHOD_OPTIONS,
+  type SourceStrategyDraft,
+} from '../state/sourceEntryDerived';
+export type { SourceStrategyDraft } from '../state/sourceEntryDerived';
 
 type SortColumn = 'host' | 'name' | 'tier' | 'authority' | 'discovery' | 'priority' | 'enabled';
 type SortDirection = 'asc' | 'desc';
-
-export interface SourceStrategyDraft {
-  host: string;
-  display_name: string;
-  tier: string;
-  authority: string;
-  base_url: string;
-  content_types: string;
-  doc_kinds: string;
-  crawl_config: {
-    method: string;
-    rate_limit_ms: string;
-    timeout_ms: string;
-    robots_txt_compliant: string;
-  };
-  field_coverage: {
-    high: string;
-    medium: string;
-    low: string;
-  };
-  discovery: {
-    method: string;
-    source_type: string;
-    search_pattern: string;
-    priority: string;
-    enabled: string;
-    notes: string;
-  };
-}
 
 export type SourceStrategyDraftField =
   | 'host'
@@ -56,24 +35,6 @@ export type SourceStrategyDraftField =
   | 'discovery.priority'
   | 'discovery.enabled'
   | 'discovery.notes';
-
-const TIER_OPTIONS = [
-  'tier1_manufacturer',
-  'tier2_lab',
-  'tier3_retailer',
-  'tier4_community',
-  'tier5_aggregator',
-] as const;
-
-const AUTHORITY_OPTIONS = [
-  'authoritative',
-  'instrumented',
-  'aggregator',
-  'community',
-  'unknown',
-] as const;
-
-const DISCOVERY_METHOD_OPTIONS = ['search_first', 'manual'] as const;
 
 function resolveSourceId(entry: SourceEntry): string {
   return String(entry.sourceId || '').trim();

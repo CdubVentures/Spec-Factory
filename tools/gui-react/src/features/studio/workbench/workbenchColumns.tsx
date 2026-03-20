@@ -2,13 +2,9 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import type { WorkbenchRow, ColumnPreset } from './workbenchTypes';
 
-// ── Parse template options ───────────────────────────────────────────
-const PARSE_TEMPLATE_OPTIONS = [
-  '', 'text_field', 'number_with_unit', 'boolean_yes_no_unk',
-  'component_reference', 'date_field', 'url_field',
-  'list_of_numbers_with_unit', 'list_numbers_or_ranges_with_unit',
-  'list_of_tokens_delimited', 'token_list', 'text_block',
-];
+import { PARSE_TEMPLATES } from '../state/parseTemplateRegistry';
+
+const PARSE_TEMPLATE_OPTIONS = PARSE_TEMPLATES as unknown as string[];
 
 const REQUIRED_LEVEL_OPTIONS = [
   'identity', 'required', 'critical', 'expected', 'optional', 'editorial', 'commerce',

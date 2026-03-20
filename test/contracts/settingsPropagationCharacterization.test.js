@@ -89,7 +89,7 @@ describe('processStartLaunchPlan — propagation characterization', () => {
     const EXPECTED_DIRECT_LAUNCH_ENV_KEYS = new Set([
       'PREFER_HTTP_FETCHER',
       'DYNAMIC_CRAWLEE_ENABLED',
-      'FETCH_CANDIDATE_SOURCES',
+      // WHY: FETCH_CANDIDATE_SOURCES retired — deprecated, always true, no longer manifested
       'MAX_PDF_BYTES',
       'SPEC_DB_DIR',
       'LLM_EXTRACTION_CACHE_DIR',
@@ -190,7 +190,7 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       'frontierCooldown403BaseSeconds', 'frontierCooldown429BaseSeconds',
       'frontierBackoffMaxExponent', 'frontierPathPenaltyNotfoundThreshold',
       // Discovery
-      'discoveryMaxQueries', 'discoveryMaxDiscovered',
+      'searchProfileQueryCap', 'searchPlannerQueryCap',
       'maxUrlsPerProduct', 'maxCandidateUrls', 'maxPagesPerDomain',
       'maxRunSeconds', 'maxJsonBytes',
       // Parsing
@@ -351,9 +351,9 @@ describe('buildRoundConfig — round override characterization', () => {
       endpointSignalLimit: 120,
       endpointSuggestionLimit: 36,
       endpointNetworkScanLimit: 1800,
-      discoveryMaxQueries: 10,
+      searchProfileQueryCap: 10,
       discoveryResultsPerQuery: 10,
-      discoveryMaxDiscovered: 60,
+      searchPlannerQueryCap: 60,
       discoveryQueryConcurrency: 2,
       perHostMinDelayMs: 1500,
       llmMaxCallsPerRound: 5,
@@ -373,7 +373,7 @@ describe('buildRoundConfig — round override characterization', () => {
     ok(result.maxUrlsPerProduct <= 12, `round 0 should cap maxUrlsPerProduct to 12, got ${result.maxUrlsPerProduct}`);
     ok(result.maxCandidateUrls <= 20, `round 0 should cap maxCandidateUrls to 20, got ${result.maxCandidateUrls}`);
     strictEqual(result.discoveryEnabled, false, 'round 0 disables discovery');
-    strictEqual(result.fetchCandidateSources, false, 'round 0 disables fetch candidate sources');
+    strictEqual(result.fetchCandidateSources, true, 'fetch candidate sources is always enabled');
     strictEqual(result.searchEngines, '', 'round 0 clears search engines');
   });
 
@@ -397,7 +397,7 @@ describe('buildRoundConfig — round override characterization', () => {
     strictEqual(result.discoveryEnabled, true, 'round 1 enables discovery');
     strictEqual(result.fetchCandidateSources, true, 'round 1 enables fetch sources');
     ok(result.maxUrlsPerProduct >= 60, `round 1 should floor maxUrlsPerProduct, got ${result.maxUrlsPerProduct}`);
-    ok(result.discoveryMaxQueries >= 12, `round 1 should boost discoveryMaxQueries, got ${result.discoveryMaxQueries}`);
+    ok(result.searchProfileQueryCap >= 1, `round 1 should preserve searchProfileQueryCap, got ${result.searchProfileQueryCap}`);
   });
 
   it('discovery disabled when missingRequired=0 and missingExpected=0', () => {
@@ -409,7 +409,7 @@ describe('buildRoundConfig — round override characterization', () => {
     });
 
     strictEqual(result.discoveryEnabled, false, 'discovery should be disabled when nothing missing');
-    strictEqual(result.fetchCandidateSources, false, 'fetch sources should be disabled');
+    strictEqual(result.fetchCandidateSources, true, 'fetch sources is always enabled');
   });
 
   it('search provider selection respects searxng readiness', () => {

@@ -259,7 +259,6 @@ function buildConfig(args) {
   if (args['discovery-enabled'] !== undefined) overrides.discoveryEnabled = asBool(args['discovery-enabled']);
   if (args['search-engines']) overrides.searchEngines = args['search-engines'];
   if (args['search-provider']) overrides.searchEngines = args['search-provider'];
-  if (args['fetch-candidate-sources'] !== undefined) overrides.fetchCandidateSources = asBool(args['fetch-candidate-sources']);
   return loadConfigWithUserSettings(overrides);
 }
 

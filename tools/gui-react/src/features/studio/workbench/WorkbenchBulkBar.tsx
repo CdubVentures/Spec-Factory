@@ -10,12 +10,9 @@ interface Props {
 }
 
 const REQUIRED_OPTIONS = ['identity', 'required', 'critical', 'expected', 'optional', 'editorial', 'commerce'];
-const TEMPLATE_OPTIONS = [
-  '', 'text_field', 'number_with_unit', 'boolean_yes_no_unk',
-  'component_reference', 'date_field', 'url_field',
-  'list_of_numbers_with_unit', 'list_numbers_or_ranges_with_unit',
-  'list_of_tokens_delimited', 'token_list', 'text_block',
-];
+import { PARSE_TEMPLATES } from '../state/parseTemplateRegistry';
+
+const TEMPLATE_OPTIONS = PARSE_TEMPLATES as unknown as string[];
 const POLICY_OPTIONS = ['open', 'closed', 'open_prefer_known'];
 
 export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {

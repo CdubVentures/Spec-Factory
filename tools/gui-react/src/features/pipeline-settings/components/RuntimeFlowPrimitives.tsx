@@ -189,15 +189,17 @@ export function AdvancedSettingsBlock({
   title,
   count,
   children,
+  disabled = false,
 }: {
   title: string;
   count: number;
   children: ReactNode;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <section
-      className="rounded border px-3 py-2.5"
+      className={`rounded border px-3 py-2.5 ${disabled ? 'opacity-50 pointer-events-none select-none' : ''}`}
       style={{
         borderColor: 'var(--sf-border)',
         backgroundColor: 'var(--sf-surface)',

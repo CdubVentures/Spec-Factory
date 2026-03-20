@@ -1,14 +1,15 @@
-import { toInt, toFloat, parseTsMs, eventType, payloadOf } from './runtimeOpsEventPrimitives.js';
-
-function classifyPrefetchLlmReason(reason) {
-  const r = String(reason || '').trim().toLowerCase();
-  if (r === 'brand_resolution') return 'brand_resolver';
-  if (r === 'needset_search_planner') return 'needset_planner';
-  if (r.startsWith('discovery_planner')) return 'search_planner';
-  if (r.includes('triage') || r.includes('rerank') || r.includes('serp')) return 'serp_selector';
-  if (r === 'domain_safety_classification') return 'domain_classifier';
-  return null;
-}
+import { toInt, toFloat, parseTsMs, eventType, payloadOf, projectShape, buildDefaults } from './runtimeOpsEventPrimitives.js';
+// WHY: O(1) — LLM reason classification + shape descriptors from contract SSOT.
+import {
+  classifyPrefetchLlmReason,
+  PREFETCH_LLM_GROUP_KEYS,
+  SEARCH_RESULT_ENTRY_SHAPE,
+  SEARCH_RESULT_DETAIL_SHAPE,
+  SERP_SCORE_COMPONENTS_SHAPE,
+  SERP_TRIAGE_CANDIDATE_SHAPE,
+  SERP_TRIAGE_ENVELOPE_SHAPE,
+  SEARCH_PROFILE_SHAPE,
+} from '../contracts/prefetchContract.js';
 
 function buildCrossQueryUrlCounts(details) {
   const urlQueryCount = {};
@@ -34,13 +35,8 @@ export function buildPreFetchPhases(events, meta, artifacts) {
   let bestSchema4Panel = null;
 
   const llmPending = {};
-  const llmGroups = {
-    brand_resolver: [],
-    needset_planner: [],
-    search_planner: [],
-    serp_selector: [],
-    domain_classifier: [],
-  };
+  // WHY: O(1) — group keys derived from contract SSOT, not hardcoded.
+  const llmGroups = Object.fromEntries(PREFETCH_LLM_GROUP_KEYS.map((k) => [k, []]));
 
   const searchPending = {};
   const searchResults = [];
@@ -251,60 +247,31 @@ export function buildPreFetchPhases(events, meta, artifacts) {
 
     if (type === 'search_results_collected') {
       const _screenshotFilename = String(payload.screenshot_filename || '').trim();
+      const envelope = projectShape(payload, SEARCH_RESULT_DETAIL_SHAPE);
       searchResultDetails.push({
-        query: String(payload.query || '').trim(),
-        provider: String(payload.provider || '').trim(),
-        dedupe_count: toInt(payload.dedupe_count, 0),
+        ...envelope,
         ...(_screenshotFilename ? { screenshot_filename: _screenshotFilename } : {}),
         results: Array.isArray(payload.results) ? payload.results.map((r) => {
-          const rawUrl = String(r?.url || '').trim();
-          let domain = String(r?.domain || '').trim();
-          if (!domain && rawUrl) {
-            try { domain = new URL(rawUrl).hostname.replace(/^www\./, ''); } catch { /* ignore */ }
+          const projected = projectShape(r, SEARCH_RESULT_ENTRY_SHAPE);
+          // WHY: Domain fallback — derive from URL when event omits domain.
+          if (!projected.domain && projected.url) {
+            try { projected.domain = new URL(projected.url).hostname.replace(/^www\./, ''); } catch { /* ignore */ }
           }
-          return {
-            title: String(r?.title || '').trim(),
-            url: rawUrl,
-            domain,
-            snippet: String(r?.snippet || '').trim(),
-            rank: toInt(r?.rank, 0),
-            relevance_score: toFloat(r?.relevance_score, 0),
-            decision: String(r?.decision || '').trim(),
-            reason: String(r?.reason || '').trim(),
-            provider: String(r?.provider || '').trim(),
-          };
+          return projected;
         }) : [],
       });
     }
 
     if (type === 'serp_selector_completed') {
+      const envelope = projectShape(payload, SERP_TRIAGE_ENVELOPE_SHAPE);
       serpTriage.push({
-        query: String(payload.query || '').trim(),
-        kept_count: toInt(payload.kept_count, 0),
-        dropped_count: toInt(payload.dropped_count, 0),
+        ...envelope,
         candidates: Array.isArray(payload.candidates) ? payload.candidates.map((c) => ({
-          url: String(c?.url || '').trim(),
-          title: String(c?.title || '').trim(),
-          domain: String(c?.domain || '').trim(),
-          snippet: String(c?.snippet || '').trim(),
-          score: toFloat(c?.score, 0),
-          decision: String(c?.decision || '').trim(),
-          rationale: String(c?.rationale || '').trim(),
-          score_components: c?.score_components && typeof c.score_components === 'object'
-            ? {
-                base_relevance: toFloat(c.score_components.base_relevance, 0),
-                tier_boost: toFloat(c.score_components.tier_boost, 0),
-                identity_match: toFloat(c.score_components.identity_match, 0),
-                penalties: toFloat(c.score_components.penalties, 0),
-              }
-            : { base_relevance: 0, tier_boost: 0, identity_match: 0, penalties: 0 },
-          role: String(c?.role || '').trim(),
-          identity_prelim: String(c?.identity_prelim || '').trim(),
-          host_trust_class: String(c?.host_trust_class || '').trim(),
-          primary_lane: c?.primary_lane ?? null,
-          triage_disposition: String(c?.triage_disposition || '').trim(),
-          doc_kind_guess: String(c?.doc_kind_guess || '').trim(),
-          approval_bucket: String(c?.approval_bucket || '').trim(),
+          ...projectShape(c, SERP_TRIAGE_CANDIDATE_SHAPE),
+          score_components: projectShape(
+            c?.score_components && typeof c.score_components === 'object' ? c.score_components : {},
+            SERP_SCORE_COMPONENTS_SHAPE,
+          ),
         })) : [],
       });
     }
@@ -383,72 +350,19 @@ export function buildPreFetchPhases(events, meta, artifacts) {
         };
 
   const search_profile = artProfile
-    ? {
-        query_count: toInt(artProfile.query_count, Array.isArray(artProfile.query_rows) ? artProfile.query_rows.length : 0),
-        selected_query_count: toInt(artProfile.selected_query_count, 0),
-        provider: String(artProfile.provider || '').trim(),
-        llm_query_planning: Boolean(artProfile.llm_query_planning),
-        llm_query_model: String(artProfile.llm_query_model || '').trim(),
-        llm_queries: Array.isArray(artProfile.llm_queries) ? artProfile.llm_queries : [],
-        identity_aliases: Array.isArray(artProfile.identity_aliases) ? artProfile.identity_aliases : [],
-        variant_guard_terms: Array.isArray(artProfile.variant_guard_terms) ? artProfile.variant_guard_terms : [],
-        focus_fields: Array.isArray(artProfile.focus_fields) ? artProfile.focus_fields : [],
-        query_rows: Array.isArray(artProfile.query_rows) ? artProfile.query_rows.filter((r) => !r?.frontier_cache) : [],
-        query_guard: artProfile.query_guard && typeof artProfile.query_guard === 'object' ? artProfile.query_guard : {},
-        hint_source_counts: artProfile.hint_source_counts && typeof artProfile.hint_source_counts === 'object' ? artProfile.hint_source_counts : {},
-        field_rule_gate_counts: artProfile.field_rule_gate_counts && typeof artProfile.field_rule_gate_counts === 'object' ? artProfile.field_rule_gate_counts : {},
-        field_rule_hint_counts_by_field: artProfile.field_rule_hint_counts_by_field && typeof artProfile.field_rule_hint_counts_by_field === 'object' ? artProfile.field_rule_hint_counts_by_field : {},
-        generated_at: String(artProfile.generated_at || '').trim(),
-        product_id: String(artProfile.product_id || '').trim(),
-        source: String(artProfile.source || '').trim(),
-        query_reject_log: Array.isArray(artProfile.query_reject_log) ? artProfile.query_reject_log : [],
-        alias_reject_log: Array.isArray(artProfile.alias_reject_log) ? artProfile.alias_reject_log : [],
-        effective_host_plan: artProfile.effective_host_plan && typeof artProfile.effective_host_plan === 'object' ? artProfile.effective_host_plan : null,
-        brand_resolution: artProfile.brand_resolution && typeof artProfile.brand_resolution === 'object' ? artProfile.brand_resolution : null,
-        schema4_planner: artProfile.schema4_planner && typeof artProfile.schema4_planner === 'object' ? artProfile.schema4_planner : null,
-        schema4_learning: artProfile.schema4_learning && typeof artProfile.schema4_learning === 'object' ? artProfile.schema4_learning : null,
-        schema4_panel: artProfile.schema4_panel && typeof artProfile.schema4_panel === 'object' ? artProfile.schema4_panel : null,
-        base_model: String(artProfile.base_model || '').trim(),
-        aliases: Array.isArray(artProfile.aliases) ? artProfile.aliases : [],
-        discovered_count: toInt(artProfile.discovered_count, 0),
-        approved_count: toInt(artProfile.approved_count, 0),
-        candidate_count: toInt(artProfile.candidate_count, 0),
-        llm_serp_selector: Boolean(artProfile.llm_serp_selector),
-        serp_explorer: artProfile.serp_explorer && typeof artProfile.serp_explorer === 'object' ? artProfile.serp_explorer : null,
-      }
-    : {
-        query_count: 0,
-        selected_query_count: 0,
-        provider: '',
-        llm_query_planning: false,
-        llm_query_model: '',
-        llm_queries: [],
-        identity_aliases: [],
-        variant_guard_terms: [],
-        focus_fields: [],
-        query_rows: [],
-        query_guard: {},
-        hint_source_counts: {},
-        field_rule_gate_counts: {},
-        field_rule_hint_counts_by_field: {},
-        generated_at: '',
-        product_id: '',
-        source: '',
-        query_reject_log: [],
-        alias_reject_log: [],
-        effective_host_plan: null,
-        brand_resolution: null,
-        schema4_planner: null,
-        schema4_learning: null,
-        schema4_panel: null,
-        base_model: '',
-        aliases: [],
-        discovered_count: 0,
-        approved_count: 0,
-        candidate_count: 0,
-        llm_serp_selector: false,
-        serp_explorer: null,
-      };
+    ? (() => {
+        const projected = projectShape(artProfile, SEARCH_PROFILE_SHAPE);
+        // WHY: query_count fallback — use query_rows length when query_count is missing.
+        if (!artProfile.query_count && Array.isArray(artProfile.query_rows)) {
+          projected.query_count = artProfile.query_rows.length;
+        }
+        // WHY: Filter frontier_cache rows from query_rows before sending to UI.
+        if (Array.isArray(projected.query_rows)) {
+          projected.query_rows = projected.query_rows.filter((r) => !r?.frontier_cache);
+        }
+        return projected;
+      })()
+    : buildDefaults(SEARCH_PROFILE_SHAPE);
 
   // Enrich searchResultDetails with triage decisions from serp_selector_completed
   // where URLs overlap between raw SERP results and triage candidates.

@@ -12,10 +12,11 @@ import { LLM_PRICING_SOURCES } from '../../billing/modelPricingCatalog.js';
 const RUNTIME_SETTINGS_DEFAULTS = Object.freeze(SETTINGS_DEFAULTS?.runtime || {});
 const CONVERGENCE_SETTINGS_DEFAULTS = Object.freeze(SETTINGS_DEFAULTS?.convergence || {});
 
-export function runtimeSettingDefault(key, fallback) {
-  return Object.hasOwn(RUNTIME_SETTINGS_DEFAULTS, key)
-    ? RUNTIME_SETTINGS_DEFAULTS[key]
-    : fallback;
+export function runtimeSettingDefault(key) {
+  if (!Object.hasOwn(RUNTIME_SETTINGS_DEFAULTS, key)) {
+    throw new Error(`runtimeSettingDefault: unknown key "${key}" — not in registry`);
+  }
+  return RUNTIME_SETTINGS_DEFAULTS[key];
 }
 
 export function convergenceSettingDefault(key, fallback) {
@@ -25,7 +26,7 @@ export function convergenceSettingDefault(key, fallback) {
 }
 
 export function parseRuntimeJsonDefault(key, fallback) {
-  const raw = runtimeSettingDefault(key, '');
+  const raw = Object.hasOwn(RUNTIME_SETTINGS_DEFAULTS, key) ? RUNTIME_SETTINGS_DEFAULTS[key] : '';
   if (typeof raw !== 'string' || raw.trim() === '') {
     return Object.freeze({ ...fallback });
   }
@@ -117,8 +118,7 @@ export const PARSING_CONFIDENCE_BASE_DEFAULTS = parseRuntimeJsonDefault('parsing
 
 export const REPAIR_DEDUPE_RULE_DEFAULT = 'domain_once';
 export const DEFAULT_USER_AGENT = runtimeSettingDefault(
-  'userAgent',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+  'userAgent'
 );
 
 // ---------------------------------------------------------------------------

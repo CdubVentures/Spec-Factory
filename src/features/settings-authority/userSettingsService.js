@@ -25,6 +25,7 @@ import {
 } from '../../observability/settingsPersistenceCounters.js';
 import { DUAL_KEY_PAIRS } from '../../core/config/settingsKeyMap.js';
 import { resolvePhaseOverrides } from '../../core/config/configPostMerge.js';
+import { buildRegistryLookup } from '../../core/llm/routeResolver.js';
 
 const RUNTIME_KEYS_TO_PERSIST = new Set(RUNTIME_SETTINGS_KEYS);
 const CONVERGENCE_KEYS_TO_PERSIST = new Set(CONVERGENCE_SETTINGS_KEYS);
@@ -608,6 +609,13 @@ export function applyRuntimeSettingsToConfig(config, runtimeSettings = {}) {
     config[key] = value;
     const partner = DUAL_KEY_PARTNER.get(key);
     if (partner) config[partner] = value;
+  }
+  // WHY: _registryLookup is built during configPostMerge from llmProviderRegistryJson,
+  // but that key is often absent from buildRawConfig (it only lives in user-settings /
+  // snapshot). Rebuild whenever the registry JSON changes so that model→provider routing
+  // uses the correct registry entries, API keys, and cost rates.
+  if (Object.hasOwn(source, 'llmProviderRegistryJson')) {
+    config._registryLookup = buildRegistryLookup(config.llmProviderRegistryJson);
   }
   // WHY: Phase override _resolved* fields are computed during configPostMerge
   // but user settings are applied AFTER that. Re-resolve whenever ANY global

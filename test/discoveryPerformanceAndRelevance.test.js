@@ -74,9 +74,9 @@ function makeConfig(tempRoot, overrides = {}) {
     s3InputPrefix: 'specs/inputs',
     s3OutputPrefix: 'specs/outputs',
     discoveryEnabled: true,
-    discoveryMaxQueries: 4,
+    searchProfileQueryCap: 4,
     discoveryResultsPerQuery: 5,
-    discoveryMaxDiscovered: 20,
+    searchPlannerQueryCap: 20,
     discoveryQueryConcurrency: 4,
     searchEngines: 'bing,brave,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
@@ -101,7 +101,7 @@ function makeJob(overrides = {}) {
 test('discoverCandidateSources runs internet query fanout with concurrency > 1', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-discovery-concurrency-'));
   const config = makeConfig(tempRoot, {
-    discoveryMaxQueries: 4,
+    searchProfileQueryCap: 4,
     discoveryQueryConcurrency: 4
   });
   const storage = createStorage(config);
@@ -167,7 +167,7 @@ test('discoverCandidateSources runs internet query fanout with concurrency > 1',
 test('discoverCandidateSources with logger emits search profile events without crashing', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-logger-profile-'));
   const config = makeConfig(tempRoot, {
-    discoveryMaxQueries: 3,
+    searchProfileQueryCap: 3,
     discoveryQueryConcurrency: 1,
     searchEngines: 'bing,google',
     searxngBaseUrl: 'http://127.0.0.1:8080'
@@ -285,7 +285,7 @@ test('discoverCandidateSources resolves brand from cache via deterministic path'
 test('discoverCandidateSources emits deterministic triage and domain-classifier events when LLM triage is unavailable', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-deterministic-triage-events-'));
   const config = makeConfig(tempRoot, {
-    discoveryMaxQueries: 2,
+    searchProfileQueryCap: 2,
     discoveryQueryConcurrency: 1,
     searchEngines: 'bing,brave,duckduckgo',
     // WHY: LLM API key required so the SERP selector call reaches fetch
@@ -391,7 +391,7 @@ test('discoverCandidateSources emits deterministic triage and domain-classifier 
 test('discoverCandidateSources uses deterministic domain classification exclusively (LLM domain safety eliminated)', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-domain-deterministic-only-'));
   const config = makeConfig(tempRoot, {
-    discoveryMaxQueries: 1,
+    searchProfileQueryCap: 1,
     discoveryQueryConcurrency: 1,
     llmProvider: 'openai',
     llmBaseUrl: 'http://llm.test',

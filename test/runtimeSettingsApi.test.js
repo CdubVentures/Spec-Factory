@@ -146,7 +146,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'dynamicCrawleeEnabled', 'crawleeHeadless', 'preferHttpFetcher', 'runtimeScreencastEnabled',
       'frontierStripTrackingParams',
       'autoScrollEnabled', 'graphqlReplayEnabled', 'robotsTxtCompliant',
-      'fetchCandidateSources',
       'runtimeTraceEnabled', 'runtimeTraceLlmPayloads',
       'eventsJsonWrite',
     ];
@@ -175,7 +174,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const expected = {
       fetchConcurrency: SETTINGS_DEFAULTS.runtime.fetchConcurrency,
       fetchPerHostConcurrencyCap: SETTINGS_DEFAULTS.runtime.fetchPerHostConcurrencyCap,
-      discoveryMaxDiscovered: SETTINGS_DEFAULTS.runtime.discoveryMaxDiscovered,
+      searchPlannerQueryCap: SETTINGS_DEFAULTS.runtime.searchPlannerQueryCap,
       pageGotoTimeoutMs: SETTINGS_DEFAULTS.runtime.pageGotoTimeoutMs,
       postLoadWaitMs: SETTINGS_DEFAULTS.runtime.postLoadWaitMs,
       frontierCooldown403BaseSeconds: SETTINGS_DEFAULTS.runtime.frontierCooldown403BaseSeconds,

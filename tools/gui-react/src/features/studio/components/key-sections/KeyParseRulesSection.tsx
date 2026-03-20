@@ -4,6 +4,7 @@ import { Tip } from "../../../../shared/ui/feedback/Tip";
 import { ComboSelect } from "../../../../shared/ui/forms/ComboSelect";
 import { TagPicker } from "../../../../shared/ui/forms/TagPicker";
 import { strN, boolN, arrN } from "../../state/nestedValueHelpers";
+import { PARSE_TEMPLATES, isUnitBearingTemplate } from "../../state/parseTemplateRegistry";
 import {
   selectCls,
   labelCls,
@@ -33,10 +34,7 @@ export function KeyParseRulesSection({
           "parse.template",
           strN(currentRule, "parse_template"),
         );
-        const showUnits =
-          pt === "number_with_unit" ||
-          pt === "list_of_numbers_with_unit" ||
-          pt === "list_numbers_or_ranges_with_unit";
+        const showUnits = isUnitBearingTemplate(pt);
         return (
           <>
             <div
@@ -68,30 +66,9 @@ export function KeyParseRulesSection({
                     )
                   }
                 >
-                  <option value="">none</option>
-                  <option value="text_field">text_field</option>
-                  <option value="number_with_unit">
-                    number_with_unit
-                  </option>
-                  <option value="boolean_yes_no_unk">
-                    boolean_yes_no_unk
-                  </option>
-                  <option value="component_reference">
-                    component_reference
-                  </option>
-                  <option value="date_field">date_field</option>
-                  <option value="url_field">url_field</option>
-                  <option value="list_of_numbers_with_unit">
-                    list_of_numbers_with_unit
-                  </option>
-                  <option value="list_numbers_or_ranges_with_unit">
-                    list_numbers_or_ranges_with_unit
-                  </option>
-                  <option value="list_of_tokens_delimited">
-                    list_of_tokens_delimited
-                  </option>
-                  <option value="token_list">token_list</option>
-                  <option value="text_block">text_block</option>
+                  {PARSE_TEMPLATES.map((t) => (
+                    <option key={t} value={t}>{t || 'none'}</option>
+                  ))}
                 </select>
               </div>
               {showUnits ? (

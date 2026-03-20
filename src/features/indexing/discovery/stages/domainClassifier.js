@@ -58,9 +58,16 @@ export function runDomainClassifier({
     planner.enqueue(url, 'discovery_approved', { forceApproved: true, forceBrandBypass: false, triageMeta: meta });
   }
   let seededCount = 0;
-  if (discoveryResult.enabled && config.maxCandidateUrls > 0 && config.fetchCandidateSources) {
-    planner.seedCandidates(discoveryResult.candidateUrls || [], { triageMetaMap });
-    seededCount = (discoveryResult.candidateUrls || []).length;
+  if (discoveryResult.enabled) {
+    const serpCap = Number(config.serpSelectorUrlCap || 0);
+    const rawCount = Number(config.domainClassifierUrlCap ?? config.maxCandidateUrls ?? 0);
+    // WHY: domain classifier count must never exceed serp selector count.
+    const urlCount = (serpCap > 0 && rawCount > serpCap) ? serpCap : rawCount;
+    if (urlCount > 0) {
+      const capped = (discoveryResult.candidateUrls || []).slice(0, urlCount);
+      planner.seedCandidates(capped, { triageMetaMap });
+      seededCount = capped.length;
+    }
   }
 
   if (planner.enqueueCounters) {

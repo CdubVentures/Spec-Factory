@@ -1,7 +1,11 @@
 import { useMemo } from 'react';
 import type { PrefetchNeedSetData, PrefetchSchema4Bundle, PrefetchNeedSetPlannerRow, NeedSetField, PrefetchLlmCall } from '../../types';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
 import { Tip } from '../../../../shared/ui/feedback/Tip';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
+import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
 import type { RuntimeIdxBadge } from '../../types';
 import {
   formatNumber,
@@ -118,11 +122,10 @@ interface BundleCardProps {
 
 function BundleCard({ bundle, expanded, onToggle }: BundleCardProps) {
   const fields = bundle.fields ?? [];
-  const queries = bundle.queries ?? [];
   const satisfiedCount = fields.filter(f => f.state === 'satisfied').length;
   const totalCount = fields.length;
   const progressPct = totalCount > 0 ? (satisfiedCount / totalCount) * 100 : 0;
-  const isActive = queries.length > 0;
+  const hasUnresolved = fields.some(f => f.state !== 'satisfied');
 
   const sortedFields = useMemo(() =>
     [...fields].sort((a, b) => {
@@ -132,7 +135,7 @@ function BundleCard({ bundle, expanded, onToggle }: BundleCardProps) {
   [fields]);
 
   return (
-    <div className={`sf-surface-elevated border sf-border-soft rounded-sm transition-opacity ${isActive ? 'opacity-100' : 'opacity-70'}`}>
+    <div className={`sf-surface-elevated border sf-border-soft rounded-sm transition-opacity ${hasUnresolved ? 'opacity-100' : 'opacity-70'}`}>
       {/* Clickable header */}
       <div
         onClick={onToggle}
@@ -147,35 +150,20 @@ function BundleCard({ bundle, expanded, onToggle }: BundleCardProps) {
           </span>
         </div>
 
-        {/* Center: label + desc + metadata grid */}
+        {/* Center: label + desc + reason */}
         <div className="min-w-0">
           <div className="text-[15px] font-bold sf-text-primary leading-tight">{bundle.label || bundle.key}</div>
           <div className="mt-0.5 text-xs sf-text-muted truncate">{bundle.desc}</div>
 
-          {/* Metadata grid — only for active bundles */}
-          {isActive && bundle.search_intent && (
-            <div className="grid grid-cols-2 gap-x-5 gap-y-1 mt-2.5 pt-2 border-t sf-border-soft">
-              {([
-                ['intent', bundle.search_intent],
-                ['hosts', bundle.host_class],
-                ['mix', bundle.query_family_mix],
-                ['reason active', bundle.reason_active],
-              ] as const).filter(([, val]) => val).map(([lbl, val]) => (
-                <div key={lbl} className="flex gap-1.5 items-baseline">
-                  <span className="text-[8px] font-bold uppercase tracking-[0.08em] sf-text-subtle shrink-0 min-w-[3.2rem]">{lbl}</span>
-                  <span className="text-[11px] font-mono sf-text-muted">{val}</span>
-                </div>
-              ))}
+          {bundle.reason_active && (
+            <div className="flex gap-1.5 items-baseline mt-2 pt-2 border-t sf-border-soft">
+              <span className="text-[8px] font-bold uppercase tracking-[0.08em] sf-text-subtle shrink-0 min-w-[3.2rem]">reason</span>
+              <span className="text-[11px] font-mono sf-text-muted">{bundle.reason_active}</span>
             </div>
-          )}
-
-          {/* Inactive message */}
-          {!isActive && (
-            <div className="text-[10px] font-mono sf-text-subtle italic mt-1">Not queued this round</div>
           )}
         </div>
 
-        {/* Right: ratio + bar + query count */}
+        {/* Right: ratio + bar */}
         <div className="text-right shrink-0 min-w-[8.5rem]">
           <div className={`text-[13px] font-bold font-mono mb-1.5 ${progressPct === 100 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-primary'}`}>
             {satisfiedCount}/{totalCount}
@@ -187,27 +175,8 @@ function BundleCard({ bundle, expanded, onToggle }: BundleCardProps) {
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          {isActive && (
-            <div className="mt-2 text-[10px] font-bold uppercase tracking-[0.04em] text-[var(--sf-token-accent)]">
-              {queries.length} {queries.length === 1 ? 'query' : 'queries'}
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Expanded: planned queries */}
-      {expanded && isActive && queries.length > 0 && (
-        <div className="border-t sf-border-soft px-5 py-3 sf-surface-elevated">
-          <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle mb-2">planned queries</div>
-          {queries.map((q, i) => (
-            <div key={`${bundle.key}-q-${i}`} className="flex items-center gap-2 py-0.5">
-              <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${queryFamilyBadge(q.family)}`} />
-              <span className="text-xs font-mono text-[var(--sf-token-accent)]">{q.q}</span>
-              <span className="ml-auto text-[9px] font-mono sf-text-subtle shrink-0">{q.family.replace(/_/g, ' ')}</span>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Expanded: field table */}
       {expanded && (
@@ -277,15 +246,17 @@ function groupBundlesByPhase(bundles: PrefetchSchema4Bundle[]) {
 function categorizeDeltas(deltas: Array<{ field: string; from: string; to: string }>) {
   const resolved: string[] = [];
   const improved: string[] = [];
+  const newFields: string[] = [];
   const escalated: string[] = [];
   const regressed: string[] = [];
   for (const d of deltas) {
     if (d.to === 'satisfied') resolved.push(d.field);
+    else if (d.from === 'none') newFields.push(d.field);
     else if (d.to === 'weak' && d.from === 'missing') improved.push(d.field);
     else if (d.from === 'satisfied' || d.from === 'weak') regressed.push(d.field);
     else escalated.push(d.field);
   }
-  return { resolved, improved, escalated, regressed };
+  return { resolved, improved, newFields, escalated, regressed };
 }
 
 /* ── Source family icons (profile influence) ───────────────────────── */
@@ -319,14 +290,6 @@ function LlmPendingBar() {
 }
 
 /* ── Section header ────────────────────────────────────────────────── */
-
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline gap-2 pt-2 pb-1.5 mb-3 border-b-[1.5px] border-[var(--sf-token-text-primary)]">
-      <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary">{children}</span>
-    </div>
-  );
-}
 
 /* ── Main Panel ─────────────────────────────────────────────────────── */
 
@@ -364,7 +327,6 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
       host_class: (b.host_class ?? null) as string | null,
       query_family_mix: (b.query_family_mix ?? null) as string | null,
       reason_active: (b.reason_active ?? null) as string | null,
-      queries: (b.queries ?? []) as Array<{ q: string; family: string }>,
       fields: Array.isArray(b.fields)
         ? b.fields.map((f) => ({
             key: f.key ?? '',
@@ -431,31 +393,20 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
   const sortArrow = (key: PlannerSortKey) =>
     plannerSortKey === key ? (plannerSortDir === 'asc' ? ' \u25b4' : ' \u25be') : '';
 
-  const PROFILE_BAR_FAMILIES = ['manufacturer_html', 'manual_pdf', 'support_docs', 'review_lookup', 'benchmark_lookup', 'fallback_web', 'targeted_single'] as const;
-  const profileEntries = useMemo(() => {
+  const TIER_LABELS = ['tier1_seed', 'tier2_group', 'tier3_key'] as const;
+  const tierEntries = useMemo(() => {
     if (!profileInfluence) return [];
-    return PROFILE_BAR_FAMILIES
-      .map((family) => ({ family, count: profileInfluence[family] ?? 0 }))
-      .filter((e) => e.count > 0);
+    return ([
+      { tier: 'tier1_seed' as const, count: profileInfluence.tier1_seed_active ? 1 : 0 },
+      { tier: 'tier2_group' as const, count: profileInfluence.tier2_group_count ?? 0 },
+      { tier: 'tier3_key' as const, count: profileInfluence.tier3_key_count ?? 0 },
+    ] as const).filter(e => e.count > 0);
   }, [profileInfluence]);
 
-  const profileTotal = profileEntries.reduce((s, e) => s + e.count, 0);
+  const tierTotal = tierEntries.reduce((s, e) => s + e.count, 0);
   const grouped = useMemo(() => groupBundlesByPhase(bundles), [bundles]);
   const deltaCats = useMemo(() => categorizeDeltas(deltas), [deltas]);
   const activeBundles = grouped.now.length + grouped.next.length;
-  const totalQueries = bundles.reduce((s, b) => s + (b.queries?.length ?? 0), 0);
-
-  /* Queries grouped by family for the preview drawer */
-  const queryByFamily = useMemo(() => {
-    const map: Record<string, string[]> = {};
-    for (const b of bundles) {
-      for (const q of (b.queries ?? [])) {
-        if (!map[q.family]) map[q.family] = [];
-        map[q.family].push(q.q);
-      }
-    }
-    return map;
-  }, [bundles]);
 
   /* ── Field history (anti-garbage feedback loop) ────────────────────── */
   const ESCALATION_THRESHOLD = 3;
@@ -524,36 +475,21 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
 
         {/* Big stat numbers — 4-col grid with colored values */}
         {summary && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-5">
-            <div>
-              <div className="text-4xl font-bold text-[var(--sf-state-error-fg)] leading-none tracking-tight">{formatNumber(summary.core_unresolved)}</div>
-              <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">core unresolved</div>
-            </div>
-            <div>
-              <div className={`text-4xl font-bold leading-none tracking-tight ${summary.conflicts > 0 ? 'text-[var(--sf-state-error-fg)]' : 'text-[var(--sf-state-success-fg)]'}`}>{formatNumber(summary.conflicts)}</div>
-              <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">conflict</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">{activeBundles}/{bundles.length}</div>
-              <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">bundles active / tracked</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">{totalQueries}</div>
-              <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">queries queued</div>
-            </div>
-          </div>
+          <HeroStatGrid>
+            <HeroStat value={formatNumber(summary.core_unresolved)} label="core unresolved" colorClass="text-[var(--sf-state-error-fg)]" />
+            <HeroStat value={formatNumber(summary.conflicts)} label="conflict" colorClass={summary.conflicts > 0 ? 'text-[var(--sf-state-error-fg)]' : 'text-[var(--sf-state-success-fg)]'} />
+            <HeroStat value={`${activeBundles}/${bundles.length}`} label="bundles active / tracked" />
+            <HeroStat value={profileInfluence?.total_unresolved_keys ?? 0} label="unresolved keys" />
+          </HeroStatGrid>
         )}
 
-        {/* Narrative */}
+        {/* Narrative — tier-aware */}
         {summary && profileInfluence && (
           <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
-            NeedSet is shaping the next search round toward{' '}
-            {profileEntries.length > 0 && (
-              <strong className="sf-text-primary not-italic">
-                {profileEntries.map(e => e.family.replace(/_/g, ' ')).join(', ')}
-              </strong>
-            )}
-            {' '}&mdash; {summary.core_unresolved + summary.secondary_unresolved + (summary.optional_unresolved ?? 0)} unresolved fields across {activeBundles} active bundles, with {summary.core_unresolved} core fields still missing.
+            {profileInfluence.tier1_seed_active && <strong className="sf-text-primary not-italic">Tier 1 seeds active. </strong>}
+            {profileInfluence.tier2_group_count > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.tier2_group_count} group searches queued. </strong>}
+            {profileInfluence.tier3_key_count > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.tier3_key_count} individual key searches. </strong>}
+            {summary.core_unresolved + summary.secondary_unresolved + (summary.optional_unresolved ?? 0)} unresolved fields across {activeBundles} active bundles, with {summary.core_unresolved} core fields still missing.
           </div>
         )}
       </div>
@@ -636,77 +572,51 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
           <LlmPendingBar />
         </div>
       )}
-      {profileEntries.length > 0 && profileInfluence && (
+      {tierEntries.length > 0 && profileInfluence && (
         <div>
-          <SectionHeader>profile influence</SectionHeader>
+          <SectionHeader>tier influence</SectionHeader>
           <div className="space-y-3">
-            {/* Segmented bar */}
-            {profileTotal > 0 && (
+            {/* Segmented bar — tier distribution */}
+            {tierTotal > 0 && (
               <div className="flex h-5 rounded-sm overflow-hidden border sf-border-soft">
-                {profileEntries.map((e) => (
+                {tierEntries.map((e) => (
                   <div
-                    key={e.family}
-                    className={`${queryFamilyBadge(e.family)} flex items-center justify-center text-[10px] font-bold`}
-                    style={{ width: `${(e.count / profileTotal) * 100}%` }}
-                    title={`${e.family.replace(/_/g, ' ')}: ${e.count}`}
+                    key={e.tier}
+                    className={`flex items-center justify-center text-[10px] font-bold ${
+                      e.tier === 'tier1_seed' ? 'bg-blue-600 text-white' :
+                      e.tier === 'tier2_group' ? 'bg-amber-500 text-white' :
+                      'bg-emerald-600 text-white'
+                    }`}
+                    style={{ width: `${(e.count / tierTotal) * 100}%` }}
+                    title={`${e.tier.replace(/_/g, ' ')}: ${e.count}`}
                   >
                     {e.count}
                   </div>
                 ))}
               </div>
             )}
-            {/* Legend with icons */}
+            {/* Legend */}
             <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs sf-text-muted">
-              {profileEntries.map((e) => (
-                <span key={e.family} className="flex items-center gap-2">
-                  <span className={`inline-flex items-center justify-center w-6 h-6 rounded ${queryFamilyBadge(e.family)}`}>
-                    <FamilyIcon family={e.family} size={15} />
-                  </span>
-                  <span className="font-semibold">{e.family.replace(/_/g, ' ')}</span>
+              {tierEntries.map((e) => (
+                <span key={e.tier} className="flex items-center gap-2">
+                  <span className={`inline-block w-3 h-3 rounded-sm ${
+                    e.tier === 'tier1_seed' ? 'bg-blue-600' :
+                    e.tier === 'tier2_group' ? 'bg-amber-500' :
+                    'bg-emerald-600'
+                  }`} />
+                  <span className="font-semibold">{e.tier.replace(/_/g, ' ')}</span>
                   <span className="font-mono font-bold sf-text-primary">{e.count}</span>
                 </span>
               ))}
             </div>
-            {/* Stats row + preview toggle */}
+            {/* Stats row */}
             <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted pt-2 border-t sf-border-soft">
-              <span>trusted-host share <strong className="sf-text-primary">{profileInfluence.trusted_host_share ?? 0}/{profileInfluence.total_queries ?? 0}</strong></span>
-              <span>docs/manual share <strong className="sf-text-primary">{profileInfluence.docs_manual_share ?? 0}/{profileInfluence.total_queries ?? 0}</strong></span>
-              <span>targeted exceptions <strong className="sf-text-primary">{profileInfluence.targeted_exceptions ?? 0}/{profileInfluence.total_queries ?? 0}</strong></span>
-              <span>dupes suppressed <strong className="sf-text-primary">{profileInfluence.duplicates_suppressed ?? 0}</strong></span>
-              <span className="flex-1" />
-              <button
-                onClick={toggleShowQueryPreview}
-                className="text-[10px] font-bold uppercase tracking-[0.04em] text-[var(--sf-token-accent)] hover:underline cursor-pointer bg-transparent border-none p-0"
-              >
-                {showQueryPreview ? 'hide preview \u25B4' : 'queued search preview \u25BE'}
-              </button>
+              <span>groups now <strong className="sf-text-primary">{profileInfluence.groups_now}</strong></span>
+              <span>groups next <strong className="sf-text-primary">{profileInfluence.groups_next}</strong></span>
+              <span>groups hold <strong className="sf-text-primary">{profileInfluence.groups_hold}</strong></span>
+              <span>unresolved keys <strong className="sf-text-primary">{profileInfluence.total_unresolved_keys}</strong></span>
+              <span>confidence <strong className="sf-text-primary">{(profileInfluence.planner_confidence ?? 0).toFixed(2)}</strong></span>
             </div>
-
-            {/* Queries preview drawer */}
-            {showQueryPreview && (
-              <div className="border-t sf-border-soft pt-3 space-y-3">
-                {profileEntries.map(e => {
-                  const queries = queryByFamily[e.family] ?? [];
-                  if (queries.length === 0) return null;
-                  return (
-                    <div key={e.family}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`inline-flex items-center justify-center w-5 h-5 rounded ${queryFamilyBadge(e.family)}`}>
-                          <FamilyIcon family={e.family} size={13} />
-                        </span>
-                        <span className="text-[11px] font-bold font-mono sf-text-primary">{e.family.replace(/_/g, ' ')}</span>
-                        <span className="text-[10px] font-mono sf-text-subtle">&mdash; {e.count} {e.count === 1 ? 'query' : 'queries'}</span>
-                      </div>
-                      {queries.map((q, i) => (
-                        <div key={`${e.family}-${i}`} className="pl-5 text-[11px] font-mono sf-text-muted leading-relaxed">
-                          &rarr; {q}
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -716,8 +626,8 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
         <div>
           <SectionHeader>what changed this round</SectionHeader>
           <div className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-4 space-y-3">
-            {/* Counter cards — use chip classes for readable color pairs */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+            {/* Counter cards */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
               <div>
                 <div className={`text-[22px] font-bold leading-none ${deltaCats.resolved.length > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-subtle'}`}>
                   {deltaCats.resolved.length > 0 ? `+${deltaCats.resolved.length}` : '0'}
@@ -729,6 +639,10 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
                   {deltaCats.improved.length > 0 ? `+${deltaCats.improved.length}` : '0'}
                 </div>
                 <div className={`mt-1 text-[10px] font-bold font-mono uppercase tracking-[0.06em] ${deltaCats.improved.length > 0 ? 'text-[var(--sf-token-accent)]' : 'sf-text-subtle'}`}>improved</div>
+              </div>
+              <div>
+                <div className="text-[22px] font-bold sf-text-subtle leading-none">{deltaCats.newFields.length}</div>
+                <div className="mt-1 text-[10px] font-bold font-mono uppercase tracking-[0.06em] sf-text-subtle">new</div>
               </div>
               <div>
                 <div className={`text-[22px] font-bold leading-none ${deltaCats.escalated.length > 0 ? 'text-[var(--sf-state-confirm-fg)]' : 'sf-text-subtle'}`}>
@@ -771,21 +685,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
       {/* ── Field History ──────────────────────────────────── */}
       {(historyFields.length > 0 || hasPreLlmData) && (
         <div>
-          <div
-            onClick={toggleHistoryOpen}
-            className="flex items-baseline gap-2 pt-2 pb-1.5 border-b-[1.5px] border-[var(--sf-token-text-primary)] cursor-pointer select-none"
-          >
-            <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary flex-1">field history</span>
-            <span className="text-[11px] font-mono sf-text-subtle">
-              {historyFields.length > 0 ? (
-                <>{historyFields.length} tracked{stuckFieldCount > 0 && (
-                  <span className="text-[var(--sf-state-error-fg)]"> &middot; {stuckFieldCount} stuck</span>
-                )}</>
-              ) : (
-                <>awaiting search data</>
-              )} &middot; {historyOpen ? 'collapse \u25B4' : 'expand \u25BE'}
-            </span>
-          </div>
+          <CollapsibleSectionHeader isOpen={historyOpen} onToggle={toggleHistoryOpen} summary={historyFields.length > 0 ? <>{historyFields.length} tracked{stuckFieldCount > 0 && <span className="text-[var(--sf-state-error-fg)]"> &middot; {stuckFieldCount} stuck</span>}</> : <>awaiting search data</>}>field history</CollapsibleSectionHeader>
 
           {historyOpen && historyFields.length === 0 && (
             <div className="mt-3 px-4 py-3 rounded-sm sf-surface-elevated border sf-border-soft text-xs sf-text-muted italic">
@@ -908,15 +808,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
       )}
       {plannerRows.length > 0 && (
         <div>
-          <div
-            onClick={toggleDrilldownOpen}
-            className="flex items-baseline gap-2 pt-2 pb-1.5 border-b-[1.5px] border-[var(--sf-token-text-primary)] cursor-pointer select-none"
-          >
-            <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary flex-1">field drilldown</span>
-            <span className="text-[11px] font-mono sf-text-subtle">
-              {drilldownRows.length} fields &middot; {drilldownOpen ? 'collapse \u25B4' : 'expand \u25BE'}
-            </span>
-          </div>
+          <CollapsibleSectionHeader isOpen={drilldownOpen} onToggle={toggleDrilldownOpen} summary={<>{drilldownRows.length} fields</>}>field drilldown</CollapsibleSectionHeader>
 
           {drilldownOpen && (
             <div className="mt-3 space-y-2">
@@ -1006,14 +898,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
       )}
 
       {/* ── Debug ─────────────────────────────────────────── */}
-      <details className="text-xs">
-        <summary className="cursor-pointer sf-summary-toggle flex items-baseline gap-2 pb-1.5 border-b border-dashed sf-border-soft select-none">
-          <span className="text-[10px] font-semibold font-mono sf-text-subtle tracking-[0.04em] uppercase">debug &middot; raw needset json</span>
-        </summary>
-        <pre className="mt-3 sf-pre-block text-xs font-mono rounded-sm p-4 overflow-x-auto overflow-y-auto max-h-[25rem] whitespace-pre-wrap break-all">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      </details>
+      <DebugJsonDetails label="raw needset json" data={data} />
     </div>
   );
 }

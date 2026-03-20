@@ -1,4 +1,5 @@
 import { usePersistedTab } from '../../../stores/tabStore';
+import { TabStrip } from '../../../shared/ui/navigation/TabStrip';
 import { BrandManager } from '../../studio';
 import { ProductManager } from './ProductManager';
 
@@ -19,22 +20,13 @@ export function CatalogPage() {
 
   return (
     <div className="space-y-4 sf-text-primary sf-border-default">
-      {/* Sub-tab bar */}
-      <div className="inline-flex gap-1 p-1 sf-tab-strip">
-        {subTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium sf-tab-item ${
-              activeTab === tab.id ? 'sf-tab-item-active' : ''
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <TabStrip
+        tabs={subTabs}
+        activeTab={activeTab}
+        onSelect={setActiveTab}
+        className="inline-flex gap-1 p-1 sf-tab-strip"
+      />
 
-      {/* Tab content */}
       {activeTab === 'brands' && <BrandManager />}
       {activeTab === 'models' && <ProductManager />}
     </div>

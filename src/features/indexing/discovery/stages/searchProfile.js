@@ -8,6 +8,7 @@ import {
 } from '../../search/queryBuilder.js';
 import { lookupFieldRule } from '../../search/queryFieldRuleGates.js';
 import { buildEffectiveHostPlan } from '../domainHintResolver.js';
+import { configInt } from '../../../../shared/settingsAccessor.js';
 import { toArray } from '../discoveryIdentity.js';
 
 /**
@@ -24,8 +25,9 @@ export function runSearchProfile({
   searchProfileCaps,
   variables,
   focusGroups,
+  seedStatus = null,
 }) {
-  const profileMaxQueries = Math.max(6, Number(config.discoveryMaxQueries || 8) * 2);
+  const profileMaxQueries = Math.max(1, configInt(config, 'searchProfileQueryCap'));
   const searchProfileBase = buildSearchProfile({
     job,
     categoryConfig,
@@ -38,6 +40,8 @@ export function runSearchProfile({
     fieldTargetQueriesCap: searchProfileCaps.llmFieldTargetQueriesCap,
     docHintQueriesCap: searchProfileCaps.llmDocHintQueriesCap,
     fieldYieldByDomain: learning?.fieldYield?.by_domain || null,
+    seedStatus,
+    focusGroups,
   });
 
   const brandResolutionHints = [...new Set(

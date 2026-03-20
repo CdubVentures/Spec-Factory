@@ -56,7 +56,7 @@ export function buildRunSummaryIdentityDiscoverySection({
     sources_identity_matched: sourceResults.filter((source) => source.identity.match).length,
     discovery: {
       enabled: discoveryResult.enabled,
-      fetch_candidate_sources: Boolean(config.fetchCandidateSources),
+      fetch_candidate_sources: true,
       discovery_key: discoveryResult.discoveryKey,
       candidates_key: discoveryResult.candidatesKey,
       candidate_count: (discoveryResult.candidates || []).length,

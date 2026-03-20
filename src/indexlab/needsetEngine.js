@@ -1,8 +1,60 @@
 import {
-  ruleRequiredLevel
+  ruleRequiredLevel,
+  ruleAvailability,
+  ruleDifficulty,
 } from '../engine/ruleAccessors.js';
 
 const UNKNOWN_VALUE_TOKENS = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined']);
+
+// ── V4 helpers ──
+
+export function normalizeFieldKey(fieldKey) {
+  return String(fieldKey ?? '').trim().toLowerCase().replace(/_/g, ' ');
+}
+
+export function buildAllAliases({ normalizedKey, displayName, fieldAliases, queryTerms } = {}) {
+  const set = new Set();
+  for (const raw of [normalizedKey, displayName, ...(fieldAliases || []), ...(queryTerms || [])]) {
+    const token = String(raw ?? '').trim().toLowerCase();
+    if (token) set.add(token);
+  }
+  return [...set].sort();
+}
+
+export function shardAliases(aliases, maxTokensPerShard = 8) {
+  if (!Array.isArray(aliases) || aliases.length === 0) return [];
+  const shards = [];
+  let current = [];
+  let currentTokens = 0;
+  for (const alias of aliases) {
+    const words = alias.split(/\s+/).length;
+    if (current.length > 0 && currentTokens + words > maxTokensPerShard) {
+      shards.push(current);
+      current = [];
+      currentTokens = 0;
+    }
+    current.push(alias);
+    currentTokens += words;
+  }
+  if (current.length > 0) shards.push(current);
+  return shards;
+}
+
+const AVAILABILITY_RANKS = { always: 0, expected: 1, sometimes: 2, rare: 3, editorial_only: 4 };
+const DIFFICULTY_RANKS = { easy: 0, medium: 1, hard: 2 };
+const REQUIRED_LEVEL_RANKS = { identity: 0, critical: 1, required: 2, expected: 3, optional: 4 };
+
+export function availabilityRank(avail) {
+  return AVAILABILITY_RANKS[avail] ?? 4;
+}
+
+export function difficultyRank(diff) {
+  return DIFFICULTY_RANKS[diff] ?? 2;
+}
+
+export function requiredLevelRank(level) {
+  return REQUIRED_LEVEL_RANKS[level] ?? 4;
+}
 
 const BUCKET_ORDER = { core: 0, secondary: 1, optional: 2 };
 
@@ -315,7 +367,8 @@ function deriveFieldHistory({ round, provenance, previousFieldHistories, field }
       urls_examined_count: 0,
       refs_found: 0,
       no_value_attempts: 0,
-      duplicate_attempts_suppressed: 0
+      duplicate_attempts_suppressed: 0,
+      query_modes_tried_for_key: [],
     };
   }
 
@@ -335,7 +388,8 @@ function deriveFieldHistory({ round, provenance, previousFieldHistories, field }
     urls_examined_count: toNumber(prev.urls_examined_count, 0),
     refs_found: evidence.length,
     no_value_attempts: toNumber(prev.no_value_attempts, 0),
-    duplicate_attempts_suppressed: toNumber(prev.duplicate_attempts_suppressed, 0)
+    duplicate_attempts_suppressed: toNumber(prev.duplicate_attempts_suppressed, 0),
+    query_modes_tried_for_key: Array.isArray(prev.query_modes_tried_for_key) ? prev.query_modes_tried_for_key : [],
   };
 }
 
@@ -407,7 +461,9 @@ export function computeNeedSet({
         state: internalState,
         preferred_content_types: preferredContentTypes,
         query_terms: searchHints.query_terms,
-        domain_hints: searchHints.domain_hints
+        domain_hints: searchHints.domain_hints,
+        availability: ruleAvailability(rule),
+        difficulty: ruleDifficulty(rule),
       });
     }
 
@@ -453,6 +509,18 @@ export function computeNeedSet({
     const fieldAliases = Array.isArray(rule.aliases) ? rule.aliases : [];
     const exactMatchRequired = Boolean(rule.contract?.exact_match);
 
+    // V4: per-field search pack
+    const fieldAvailability = ruleAvailability(rule);
+    const fieldDifficulty = ruleDifficulty(rule);
+    const normalizedKey = normalizeFieldKey(field);
+    const allAliases = buildAllAliases({
+      normalizedKey,
+      displayName: label,
+      fieldAliases,
+      queryTerms: searchHints.query_terms,
+    });
+    const aliasShards = shardAliases(allAliases, 8);
+
     schema2Fields.push({
       field_key: field,
       label,
@@ -478,7 +546,18 @@ export function computeNeedSet({
       exact_match_required: exactMatchRequired,
       need_score: needScore,
       reasons,
-      history
+      history,
+      // V4 per-field search pack
+      normalized_key: normalizedKey,
+      all_aliases: allAliases,
+      alias_shards: aliasShards,
+      availability: fieldAvailability,
+      difficulty: fieldDifficulty,
+      search_intent: exactMatchRequired ? 'exact_match' : 'broad',
+      repeat_count: toNumber(history.query_count, 0),
+      query_modes_tried_for_key: history.query_modes_tried_for_key || [],
+      domains_tried_for_key: history.domains_tried || [],
+      content_types_tried_for_key: history.evidence_classes_tried || [],
     });
   }
 
@@ -591,6 +670,26 @@ export function computeNeedSet({
     }
   };
 
+  // --- V4: sorted_unresolved_keys (availability → difficulty → repeat → need_score → required_level) ---
+  const unresolvedWithScores = schema2Fields
+    .filter((f) => f.state !== 'accepted')
+    .map((f) => ({
+      field_key: f.field_key,
+      avail: availabilityRank(f.availability),
+      diff: difficultyRank(f.difficulty),
+      repeat: toNumber(f.repeat_count, 0),
+      need: f.need_score,
+      req: requiredLevelRank(f.required_level),
+    }));
+  unresolvedWithScores.sort((a, b) =>
+    (a.avail - b.avail)
+    || (a.diff - b.diff)
+    || (a.repeat - b.repeat)
+    || (b.need - a.need)
+    || (a.req - b.req)
+  );
+  const sortedUnresolvedKeys = unresolvedWithScores.map((f) => f.field_key);
+
   // --- Debug ---
   const debug = {
     suppressed_duplicate_rows: [],
@@ -605,12 +704,13 @@ export function computeNeedSet({
 
   return {
     // Schema 2 additions
-    schema_version: 'needset_output.v2',
+    schema_version: 'needset_output.v2.1',
     round,
     round_mode: roundMode,
     identity,
     fields: schema2Fields,
     planner_seed: plannerSeed,
+    sorted_unresolved_keys: sortedUnresolvedKeys,
 
     // Existing output (backward compat)
     run_id: String(runId || '').trim(),

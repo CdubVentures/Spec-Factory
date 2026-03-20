@@ -17,13 +17,7 @@ const subTabs: Array<{ id: StudioTabId; label: string }> = [
   { id: "reports", label: "4) Compile & Reports" },
 ];
 
-const btnPrimary =
-  "px-4 py-2 text-sm sf-primary-button transition-colors disabled:opacity-50";
-const btnSecondary =
-  "px-3 py-1.5 text-sm sf-icon-button transition-colors disabled:opacity-50";
-const sectionCls =
-  "bg-white sf-dk-surface-800 rounded border sf-border-default p-4";
-const actionBtnWidth = "w-56";
+import { btnPrimary, btnSecondary, sectionCls, actionBtnWidth } from '../../../shared/ui/buttonClasses';
 
 export interface StudioPageShellProps {
   category: string;

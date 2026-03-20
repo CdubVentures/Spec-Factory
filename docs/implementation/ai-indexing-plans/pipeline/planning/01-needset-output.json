@@ -1,7 +1,7 @@
 {
   "_doc": "Actual output shape returned by computeNeedSet().",
-  "validated_against": "2026-03-18",
-  "schema_version": "needset_output.v2",
+  "validated_against": "2026-03-19",
+  "schema_version": "needset_output.v2.1",
   "top_level_keys": [
     "schema_version",
     "round",
@@ -9,6 +9,7 @@
     "identity",
     "fields",
     "planner_seed",
+    "sorted_unresolved_keys",
     "run_id",
     "category",
     "product_id",
@@ -71,9 +72,23 @@
       "urls_examined_count": "number",
       "refs_found": "number",
       "no_value_attempts": "number",
-      "duplicate_attempts_suppressed": "number"
+      "duplicate_attempts_suppressed": "number",
+      "query_modes_tried_for_key": "string[] (V4)"
+    },
+    "_v4_search_pack": {
+      "normalized_key": "string — human-search-safe form of field_key",
+      "all_aliases": "string[] — union of display_name, normalized_key, rule.aliases, query_terms",
+      "alias_shards": "string[][] — whole-alias-boundary chunks for query construction",
+      "search_intent": "string — exact_match|broad (per-key, derived from exact_match_required)",
+      "availability": "string — always|expected|sometimes|rare|editorial_only",
+      "difficulty": "string — easy|medium|hard",
+      "repeat_count": "number — from history.query_count",
+      "query_modes_tried_for_key": "string[] — which query patterns were used",
+      "domains_tried_for_key": "string[] — alias of history.domains_tried",
+      "content_types_tried_for_key": "string[] — alias of history.evidence_classes_tried"
     }
   },
+  "sorted_unresolved_keys": "string[] (V4) — unresolved field_keys sorted by availability -> difficulty -> repeat -> need_score -> required_level",
   "planner_seed": {
     "missing_critical_fields": "string[]",
     "unresolved_fields": "string[]",
@@ -90,9 +105,5 @@
     "profile_mix",
     "rows",
     "debug"
-  ],
-  "not_emitted": [
-    "tier_pref_unmet is not a live emitted reason",
-    "NeedSet does not write a standalone artifact file in the seed-planning path"
   ]
 }

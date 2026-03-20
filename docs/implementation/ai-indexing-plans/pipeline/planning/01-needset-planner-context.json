@@ -1,9 +1,9 @@
 {
   "_doc": "Actual output shape returned by buildSearchPlanningContext().",
-  "validated_against": "2026-03-18",
+  "validated_against": "2026-03-19",
   "function": "buildSearchPlanningContext",
   "file": "src/indexlab/searchPlanningContext.js",
-  "schema_version": "search_planning_context.v2",
+  "schema_version": "search_planning_context.v2.1",
   "top_level_keys": [
     "schema_version",
     "run",
@@ -14,15 +14,41 @@
     "focus_groups",
     "field_priority_map",
     "learning",
-    "previous_round_fields"
+    "previous_round_fields",
+    "seed_status",
+    "pass_seed"
   ],
+  "v4_new_input": {
+    "queryExecutionHistory": {
+      "_doc": "Optional. Fetched fresh immediately before call. null/empty on round 0.",
+      "queries": [
+        {
+          "query_hash": "string",
+          "query_text": "string",
+          "status": "not_run|searched|urls_admitted|scraping_in_progress|scrape_incomplete|scrape_complete|exhausted",
+          "completed_at_ms": "number|null",
+          "results_returned": "number",
+          "admitted_count": "number",
+          "scraped_complete_count": "number",
+          "scraped_incomplete_count": "number",
+          "pending_count": "number",
+          "fields_extracted_unique": "number",
+          "new_fields_closed": "number",
+          "tier": "seed|group_search|key_search",
+          "group_key": "string|null",
+          "normalized_key": "string|null",
+          "source_name": "string|null"
+        }
+      ]
+    }
+  },
   "run_block": {
     "run_id": "string",
     "category": "string",
     "product_id": "string",
     "brand": "string",
     "model": "string",
-    "base_model": "string (empty in the current runDiscoverySeedPlan caller)",
+    "base_model": "string",
     "aliases": "string[]",
     "round": "number",
     "round_mode": "string"
@@ -49,38 +75,89 @@
     "searchEngines"
   ],
   "focus_group_entry": {
-    "key": "string",
-    "label": "string",
-    "desc": "string",
-    "source_target": "string",
-    "content_target": "string",
-    "search_intent": "string",
-    "host_class": "string",
-    "field_keys": "string[]",
-    "satisfied_field_keys": "string[]",
-    "unresolved_field_keys": "string[]",
-    "weak_field_keys": "string[]",
-    "conflict_field_keys": "string[]",
-    "search_exhausted_field_keys": "string[]",
-    "search_exhausted_count": "number",
-    "core_unresolved_count": "number",
-    "secondary_unresolved_count": "number",
-    "optional_unresolved_count": "number",
-    "exact_match_count": "number",
-    "no_value_attempts": "number",
-    "duplicate_attempts_suppressed": "number",
-    "urls_examined_count": "number",
-    "query_count": "number",
-    "query_terms_union": "string[]",
-    "domain_hints_union": "string[]",
-    "preferred_content_types_union": "string[]",
-    "existing_queries_union": "string[]",
-    "domains_tried_union": "string[]",
-    "host_classes_tried_union": "string[]",
-    "evidence_classes_tried_union": "string[]",
-    "aliases_union": "string[]",
-    "priority": "core|secondary|optional",
-    "phase": "now|next|hold"
+    "_existing": {
+      "key": "string",
+      "label": "string",
+      "desc": "string",
+      "source_target": "string",
+      "content_target": "string",
+      "field_keys": "string[]",
+      "satisfied_field_keys": "string[]",
+      "unresolved_field_keys": "string[]",
+      "weak_field_keys": "string[]",
+      "conflict_field_keys": "string[]",
+      "search_exhausted_field_keys": "string[]",
+      "search_exhausted_count": "number",
+      "core_unresolved_count": "number",
+      "secondary_unresolved_count": "number",
+      "optional_unresolved_count": "number",
+      "exact_match_count": "number",
+      "no_value_attempts": "number",
+      "duplicate_attempts_suppressed": "number",
+      "urls_examined_count": "number",
+      "query_count": "number",
+      "query_terms_union": "string[]",
+      "domain_hints_union": "string[]",
+      "preferred_content_types_union": "string[]",
+      "existing_queries_union": "string[]",
+      "domains_tried_union": "string[]",
+      "host_classes_tried_union": "string[]",
+      "evidence_classes_tried_union": "string[]",
+      "aliases_union": "string[]",
+      "priority": "core|secondary|optional",
+      "phase": "now|next|hold — productivity-based: round 0 all next (seeds first), round 1+ top half by productivity_score = now, rest = next",
+      "productivity_score": "number — group ranking score (availability + difficulty + volume + need_score - repeat penalty)",
+      "_removed": "search_intent and host_class removed from group level — search_intent is per-key on Schema 2 field entry"
+    },
+    "_v4_additions": {
+      "group_description_short": "string — search-safe 4-10 token version of catalog desc",
+      "group_description_long": "string — catalog desc + top unresolved keys, capped at 20 tokens",
+      "total_field_count": "number",
+      "resolved_field_count": "number",
+      "coverage_ratio": "number — 0.0 to 1.0",
+      "group_query_count": "number — Tier 2 broad group searches only (from queryExecutionHistory)",
+      "group_key_retry_count": "number — sum of per-field repeat_counts",
+      "group_search_worthy": "boolean — should downstream emit a Tier 2 group search?",
+      "skip_reason": "string|null — group_mostly_resolved|too_few_missing_keys|group_search_exhausted|group_on_hold",
+      "group_fingerprint_coarse": "string — group_key (stable, for broad suppression)",
+      "group_fingerprint_fine": "string — group_key::sorted_unresolved_keys (changes with unresolved set)",
+      "normalized_key_queue": "string[] — V4-sorted unresolved keys",
+      "group_search_terms": "string[] — alias of query_terms_union",
+      "content_type_candidates": "string[] — alias of preferred_content_types_union",
+      "domains_tried_for_group": "string[] — alias of domains_tried_union",
+      "productivity_score": "number — group ranking score for phase assignment"
+    }
   },
-  "wiring_note": "runDiscoverySeedPlan() currently passes learning: null, so learning-aware dead-domain/dead-query suppression support is present in the function but not wired into this caller."
+  "seed_status": {
+    "_doc": "V4 addition. Per-seed completion state with cooldown tracking.",
+    "specs_seed": {
+      "is_needed": "boolean",
+      "last_status": "never_run|searched|scrape_incomplete|scrape_complete|exhausted",
+      "last_completed_at_ms": "number|null",
+      "cooldown_until_ms": "number|null",
+      "new_fields_closed_last_run": "number"
+    },
+    "source_seeds": {
+      "[sourceName]": {
+        "is_needed": "boolean",
+        "last_status": "never_run|searched|scrape_incomplete|scrape_complete|exhausted",
+        "last_completed_at_ms": "number|null",
+        "cooldown_until_ms": "number|null",
+        "new_fields_closed_last_run": "number"
+      }
+    },
+    "query_completion_summary": {
+      "total_queries": "number",
+      "complete": "number — scrape_complete + exhausted",
+      "incomplete": "number",
+      "pending_scrapes": "number"
+    }
+  },
+  "pass_seed": {
+    "_doc": "V4 addition. Seed signals derivable from NeedSet data.",
+    "passA_specs_seed": "boolean — true when round === 0",
+    "passA_source_candidates": "string[] — official_domain + support_domain",
+    "passA_target_groups": "string[] — groups with phase === now"
+  },
+  "wiring_note": "queryExecutionHistory is a new optional parameter. On round 0 it is null. On later rounds it must be fetched fresh immediately before buildSearchPlanningContext runs."
 }

@@ -12,176 +12,175 @@ function normalizeText(value) {
   return String(value ?? '').trim();
 }
 
-const FIELD_DOCS = {
-  'contract.type': {
-    section: 'Contract (Type, Shape, Unit)',
-    key: 'Data Type',
+// WHY: Unified registry — adding a new IDX field path = 1 registry entry, zero switch edits.
+// Each entry carries the extractor (how to detect a meaningful value) and docs (tooltip text).
+
+// ---------------------------------------------------------------------------
+// Extraction helpers — 5 patterns cover all 28 field paths
+// ---------------------------------------------------------------------------
+
+function extractString(rule, ...accessors) {
+  for (const accessor of accessors) {
+    const value = accessor(rule);
+    if (normalizeText(value)) return true;
+  }
+  return false;
+}
+
+function extractNumeric(rule, ...accessors) {
+  for (const accessor of accessors) {
+    const value = accessor(rule);
+    if (value !== undefined && value !== null && Number.isFinite(Number(value))) return true;
+  }
+  return false;
+}
+
+function extractArray(rule, accessor) {
+  return toArray(accessor(rule)).length > 0;
+}
+
+function extractArrayFiltered(rule, accessor) {
+  return toArray(accessor(rule)).map(normalizeText).filter(Boolean).length > 0;
+}
+
+function extractPresence(rule, ...accessors) {
+  return accessors.some((accessor) => accessor(rule) !== undefined);
+}
+
+function extractObjectTruthy(rule, ...accessors) {
+  return accessors.some((accessor) => hasTruthyObjectEntries(accessor(rule)));
+}
+
+// ---------------------------------------------------------------------------
+// IDX_FIELD_PATH_REGISTRY — single source of truth for field paths
+// ---------------------------------------------------------------------------
+
+const IDX_FIELD_PATH_REGISTRY = [
+  // --- Contract ---
+  { path: 'contract.type', extractor: (r) => extractString(r, r => r?.contract?.type, r => r?.data_type, r => r?.type),
+    section: 'Contract (Type, Shape, Unit)', key: 'Data Type',
     on: 'This runtime stage uses the declared data type to normalize and validate extracted values.',
-    off: 'This runtime stage ignores the field-specific IDX data-type rule and falls back to default handling.',
-  },
-  'contract.shape': {
-    section: 'Contract (Type, Shape, Unit)',
-    key: 'Shape',
+    off: 'This runtime stage ignores the field-specific IDX data-type rule and falls back to default handling.' },
+  { path: 'contract.shape', extractor: (r) => extractString(r, r => r?.contract?.shape, r => r?.output_shape, r => r?.shape),
+    section: 'Contract (Type, Shape, Unit)', key: 'Shape',
     on: 'This runtime stage uses the declared output shape when normalizing extracted values.',
-    off: 'This runtime stage ignores the field-specific IDX shape rule and falls back to default handling.',
-  },
-  'contract.unit': {
-    section: 'Contract (Type, Shape, Unit)',
-    key: 'Unit',
+    off: 'This runtime stage ignores the field-specific IDX shape rule and falls back to default handling.' },
+  { path: 'contract.unit', extractor: (r) => extractString(r, r => r?.contract?.unit, r => r?.unit),
+    section: 'Contract (Type, Shape, Unit)', key: 'Unit',
     on: 'This runtime stage uses the configured unit for numeric normalization and extraction context.',
-    off: 'This runtime stage ignores the field-specific IDX unit rule and keeps default unit handling.',
-  },
-  'contract.range': {
-    section: 'Contract (Type, Shape, Unit)',
-    key: 'Range',
+    off: 'This runtime stage ignores the field-specific IDX unit rule and keeps default unit handling.' },
+  { path: 'contract.range', extractor: (r) => extractPresence(r, r => r?.contract?.range?.min, r => r?.contract?.range?.max),
+    section: 'Contract (Type, Shape, Unit)', key: 'Range',
     on: 'This runtime stage uses the configured min/max range for numeric validation.',
-    off: 'This runtime stage ignores the field-specific IDX range rule and skips that min/max guard.',
-  },
-  'contract.list_rules': {
-    section: 'Contract (Type, Shape, Unit)',
-    key: 'List Rules',
+    off: 'This runtime stage ignores the field-specific IDX range rule and skips that min/max guard.' },
+  { path: 'contract.list_rules', extractor: (r) => extractObjectTruthy(r, r => r?.contract?.list_rules, r => r?.list_rules),
+    section: 'Contract (Type, Shape, Unit)', key: 'List Rules',
     on: 'This runtime stage uses the configured list rules for dedupe, ordering, and item limits.',
-    off: 'This runtime stage ignores the field-specific IDX list-rule settings and falls back to default list handling.',
-  },
-  'contract.unknown_token': {
-    section: 'Contract (Type, Shape, Unit)',
-    key: 'Unknown Token',
+    off: 'This runtime stage ignores the field-specific IDX list-rule settings and falls back to default list handling.' },
+  { path: 'contract.unknown_token', extractor: (r) => extractString(r, r => r?.contract?.unknown_token, r => r?.unknown_token),
+    section: 'Contract (Type, Shape, Unit)', key: 'Unknown Token',
     on: 'This runtime stage includes the configured unknown token in extraction guidance when the field cannot be resolved.',
-    off: 'This runtime stage omits the field-specific unknown token and falls back to default extraction guidance.',
-  },
-  'priority.required_level': {
-    section: 'Priority & Effort',
-    key: 'Required Level',
+    off: 'This runtime stage omits the field-specific unknown token and falls back to default extraction guidance.' },
+  // --- Priority ---
+  { path: 'priority.required_level', extractor: (r) => extractString(r, r => r?.priority?.required_level, r => r?.required_level),
+    section: 'Priority & Effort', key: 'Required Level',
     on: 'This runtime stage uses the configured required level to prioritize missing or weak fields.',
-    off: 'This runtime stage ignores the field-specific IDX required-level override and falls back to default priority handling.',
-  },
-  'priority.availability': {
-    section: 'Priority & Effort',
-    key: 'Availability',
+    off: 'This runtime stage ignores the field-specific IDX required-level override and falls back to default priority handling.' },
+  { path: 'priority.availability', extractor: (r) => extractString(r, r => r?.priority?.availability, r => r?.availability),
+    section: 'Priority & Effort', key: 'Availability',
     on: 'This runtime stage uses the configured availability to tune search and extraction effort.',
-    off: 'This runtime stage ignores the field-specific IDX availability override and falls back to default effort handling.',
-  },
-  'priority.difficulty': {
-    section: 'Priority & Effort',
-    key: 'Difficulty',
+    off: 'This runtime stage ignores the field-specific IDX availability override and falls back to default effort handling.' },
+  { path: 'priority.difficulty', extractor: (r) => extractString(r, r => r?.priority?.difficulty, r => r?.difficulty),
+    section: 'Priority & Effort', key: 'Difficulty',
     on: 'This runtime stage uses the configured difficulty to choose extraction strategy and batching.',
-    off: 'This runtime stage ignores the field-specific IDX difficulty override and falls back to default strategy handling.',
-  },
-  'priority.effort': {
-    section: 'Priority & Effort',
-    key: 'Effort',
+    off: 'This runtime stage ignores the field-specific IDX difficulty override and falls back to default strategy handling.' },
+  { path: 'priority.effort', extractor: (r) => extractNumeric(r, r => r?.priority?.effort, r => r?.effort),
+    section: 'Priority & Effort', key: 'Effort',
     on: 'This runtime stage uses the configured effort budget to scale search and extraction work.',
-    off: 'This runtime stage ignores the field-specific IDX effort override and falls back to default budgeting.',
-  },
-  'ai_assist.mode': {
-    section: 'AI Assist',
-    key: 'Mode',
+    off: 'This runtime stage ignores the field-specific IDX effort override and falls back to default budgeting.' },
+  // --- AI Assist ---
+  { path: 'ai_assist.mode', extractor: (r) => extractString(r, r => r?.ai_assist?.mode),
+    section: 'AI Assist', key: 'Mode',
     on: 'This runtime stage uses the configured AI assist mode when deciding whether and how to invoke LLM extraction.',
-    off: 'This runtime stage ignores the field-specific IDX AI mode override and falls back to default AI routing.',
-  },
-  'ai_assist.model_strategy': {
-    section: 'AI Assist',
-    key: 'Model Strategy',
+    off: 'This runtime stage ignores the field-specific IDX AI mode override and falls back to default AI routing.' },
+  { path: 'ai_assist.model_strategy', extractor: (r) => extractString(r, r => r?.ai_assist?.model_strategy),
+    section: 'AI Assist', key: 'Model Strategy',
     on: 'This runtime stage uses the configured AI model strategy when selecting fast versus deep reasoning.',
-    off: 'This runtime stage ignores the field-specific IDX model-strategy override and falls back to automatic model selection.',
-  },
-  'ai_assist.max_tokens': {
-    section: 'AI Assist',
-    key: 'Max Tokens',
+    off: 'This runtime stage ignores the field-specific IDX model-strategy override and falls back to automatic model selection.' },
+  { path: 'ai_assist.max_tokens', extractor: (r) => extractNumeric(r, r => r?.ai_assist?.max_tokens),
+    section: 'AI Assist', key: 'Max Tokens',
     on: 'This runtime stage uses the configured AI token budget when shaping extraction output limits.',
-    off: 'This runtime stage ignores the field-specific IDX max-token override and falls back to automatic token budgeting.',
-  },
-  'ai_assist.reasoning_note': {
-    section: 'AI Assist',
-    key: 'Reasoning Note',
+    off: 'This runtime stage ignores the field-specific IDX max-token override and falls back to automatic token budgeting.' },
+  { path: 'ai_assist.reasoning_note', extractor: (r) => extractString(r, r => r?.ai_assist?.reasoning_note),
+    section: 'AI Assist', key: 'Reasoning Note',
     on: 'This runtime stage injects the configured reasoning note into extraction guidance for the field.',
-    off: 'This runtime stage ignores the field-specific IDX reasoning note and relies on default guidance only.',
-  },
-  'parse.template': {
-    section: 'Parse Rules',
-    key: 'Parse Template',
+    off: 'This runtime stage ignores the field-specific IDX reasoning note and relies on default guidance only.' },
+  // --- Parse ---
+  { path: 'parse.template', extractor: (r) => extractString(r, r => r?.parse?.template, r => r?.parse_template),
+    section: 'Parse Rules', key: 'Parse Template',
     on: 'This runtime stage uses the configured parse template when shaping extraction prompts and normalization.',
-    off: 'This runtime stage ignores the field-specific IDX parse template and falls back to default parsing guidance.',
-  },
-  'enum.policy': {
-    section: 'Enum Policy',
-    key: 'Policy',
+    off: 'This runtime stage ignores the field-specific IDX parse template and falls back to default parsing guidance.' },
+  // --- Enum ---
+  { path: 'enum.policy', extractor: (r) => extractString(r, r => r?.enum?.policy, r => r?.enum_policy),
+    section: 'Enum Policy', key: 'Policy',
     on: 'This runtime stage uses the configured enum policy when normalizing and validating enumerated values.',
-    off: 'This runtime stage ignores the field-specific IDX enum policy and falls back to default enum handling.',
-  },
-  'enum.source': {
-    section: 'Enum Policy',
-    key: 'Source',
+    off: 'This runtime stage ignores the field-specific IDX enum policy and falls back to default enum handling.' },
+  { path: 'enum.source', extractor: (r) => extractString(r, r => r?.enum?.source, r => r?.enum_source),
+    section: 'Enum Policy', key: 'Source',
     on: 'This runtime stage uses the configured enum source to bias normalization toward known values.',
-    off: 'This runtime stage ignores the field-specific IDX enum source and falls back to default enum sourcing.',
-  },
-  'evidence.required': {
-    section: 'Evidence Requirements',
-    key: 'Evidence Required',
+    off: 'This runtime stage ignores the field-specific IDX enum source and falls back to default enum sourcing.' },
+  // --- Evidence ---
+  { path: 'evidence.required', extractor: (r) => extractPresence(r, r => r?.evidence?.required, r => r?.evidence_required),
+    section: 'Evidence Requirements', key: 'Evidence Required',
     on: 'This runtime stage uses the configured evidence-required policy when judging extraction quality.',
-    off: 'This runtime stage ignores the field-specific IDX evidence-required setting and relaxes that field-specific gate.',
-  },
-  'evidence.min_evidence_refs': {
-    section: 'Evidence Requirements',
-    key: 'Min Evidence Refs',
+    off: 'This runtime stage ignores the field-specific IDX evidence-required setting and relaxes that field-specific gate.' },
+  { path: 'evidence.min_evidence_refs', extractor: (r) => extractNumeric(r, r => r?.evidence?.min_evidence_refs, r => r?.min_evidence_refs),
+    section: 'Evidence Requirements', key: 'Min Evidence Refs',
     on: 'This runtime stage uses the configured minimum evidence reference count when prioritizing and validating the field.',
-    off: 'This runtime stage ignores the field-specific IDX minimum-evidence requirement and falls back to default evidence thresholds.',
-  },
-  'evidence.conflict_policy': {
-    section: 'Evidence Requirements',
-    key: 'Conflict Policy',
+    off: 'This runtime stage ignores the field-specific IDX minimum-evidence requirement and falls back to default evidence thresholds.' },
+  { path: 'evidence.conflict_policy', extractor: (r) => extractString(r, r => r?.evidence?.conflict_policy),
+    section: 'Evidence Requirements', key: 'Conflict Policy',
     on: 'This runtime stage includes the configured conflict policy in extraction guidance for conflicting evidence.',
-    off: 'This runtime stage ignores the field-specific IDX conflict policy and falls back to default conflict guidance.',
-  },
-  'evidence.tier_preference': {
-    section: 'Evidence Requirements',
-    key: 'Tier Preference',
+    off: 'This runtime stage ignores the field-specific IDX conflict policy and falls back to default conflict guidance.' },
+  { path: 'evidence.tier_preference', extractor: (r) => extractArray(r, r => r?.evidence?.tier_preference),
+    section: 'Evidence Requirements', key: 'Tier Preference',
     on: 'This runtime stage includes the configured tier preference when prioritizing supporting evidence.',
-    off: 'This runtime stage ignores the field-specific IDX tier preference and falls back to default evidence ordering.',
-  },
-  constraints: {
-    section: 'Cross-Field Constraints',
-    key: 'Constraints',
+    off: 'This runtime stage ignores the field-specific IDX tier preference and falls back to default evidence ordering.' },
+  // --- Constraints ---
+  { path: 'constraints', extractor: (r) => extractArray(r, r => r?.constraints),
+    section: 'Cross-Field Constraints', key: 'Constraints',
     on: 'This runtime stage includes the configured cross-field constraints in extraction and validation context.',
-    off: 'This runtime stage ignores the field-specific IDX constraints and falls back to unconstrained field handling.',
-  },
-  'component.type': {
-    section: 'Components',
-    key: 'Component Type',
+    off: 'This runtime stage ignores the field-specific IDX constraints and falls back to unconstrained field handling.' },
+  // --- Components ---
+  { path: 'component.type', extractor: (r) => extractString(r, r => r?.component?.type, r => r?.component_db_ref),
+    section: 'Components', key: 'Component Type',
     on: 'This runtime stage uses the configured component type when matching and validating component references.',
-    off: 'This runtime stage ignores the field-specific IDX component type and falls back to generic value handling.',
-  },
-  aliases: {
-    section: 'Extraction Hints & Aliases',
-    key: 'Aliases',
+    off: 'This runtime stage ignores the field-specific IDX component type and falls back to generic value handling.' },
+  // --- Aliases & Hints ---
+  { path: 'aliases', extractor: (r) => extractArray(r, r => r?.aliases),
+    section: 'Extraction Hints & Aliases', key: 'Aliases',
     on: 'This runtime stage uses the configured aliases when building and tracing field-aware search queries.',
-    off: 'This runtime stage ignores the field-specific IDX aliases and falls back to canonical field names only.',
-  },
-  'ui.tooltip_md': {
-    section: 'Extraction Hints & Aliases',
-    key: 'Tooltip Markdown',
+    off: 'This runtime stage ignores the field-specific IDX aliases and falls back to canonical field names only.' },
+  { path: 'ui.tooltip_md', extractor: (r) => extractString(r, r => r?.ui?.tooltip_md, r => r?.tooltip_md),
+    section: 'Extraction Hints & Aliases', key: 'Tooltip Markdown',
     on: 'This runtime stage uses the configured tooltip guidance when expanding field-aware query and extraction context.',
-    off: 'This runtime stage ignores the field-specific IDX tooltip guidance and relies on default field naming only.',
-  },
-  'search_hints.query_terms': {
-    section: 'Search Hints',
-    key: 'Query Terms',
+    off: 'This runtime stage ignores the field-specific IDX tooltip guidance and relies on default field naming only.' },
+  // --- Search Hints ---
+  { path: 'search_hints.query_terms', extractor: (r) => extractArrayFiltered(r, r => r?.search_hints?.query_terms),
+    section: 'Search Hints', key: 'Query Terms',
     on: 'This runtime stage uses the configured query-term hints to expand field-aware discovery queries.',
-    off: 'This runtime stage ignores the field-specific IDX query terms and falls back to default query generation.',
-  },
-  'search_hints.domain_hints': {
-    section: 'Search Hints',
-    key: 'Domain Hints',
+    off: 'This runtime stage ignores the field-specific IDX query terms and falls back to default query generation.' },
+  { path: 'search_hints.domain_hints', extractor: (r) => extractArrayFiltered(r, r => r?.search_hints?.domain_hints),
+    section: 'Search Hints', key: 'Domain Hints',
     on: 'This runtime stage uses the configured domain hints to bias discovery toward relevant hosts.',
-    off: 'This runtime stage ignores the field-specific IDX domain hints and does not apply those host hints.',
-  },
-  'search_hints.preferred_content_types': {
-    section: 'Search Hints',
-    key: 'Preferred Content Types',
+    off: 'This runtime stage ignores the field-specific IDX domain hints and does not apply those host hints.' },
+  { path: 'search_hints.preferred_content_types', extractor: (r) => extractArrayFiltered(r, r => r?.search_hints?.preferred_content_types),
+    section: 'Search Hints', key: 'Preferred Content Types',
     on: 'This runtime stage uses the configured preferred content types to bias which source formats it pursues.',
-    off: 'This runtime stage ignores the field-specific IDX preferred content types and falls back to generic source selection.',
-  },
-};
+    off: 'This runtime stage ignores the field-specific IDX preferred content types and falls back to generic source selection.' },
+];
+
+const FIELD_PATH_LOOKUP = new Map(IDX_FIELD_PATH_REGISTRY.map((e) => [e.path, e]));
 
 const SEARCH_RUNTIME_FIELDS = [
   'priority.required_level',
@@ -274,67 +273,10 @@ function hasTruthyObjectEntries(value) {
   return isObject(value) && Object.values(value).some((entry) => entry !== null && entry !== undefined && normalizeText(entry) !== '');
 }
 
-function hasMeaningfulValue(rule = {}, fieldPath = '') {
-  switch (fieldPath) {
-    case 'contract.type':
-      return Boolean(normalizeText(rule?.contract?.type || rule?.data_type || rule?.type));
-    case 'contract.shape':
-      return Boolean(normalizeText(rule?.contract?.shape || rule?.output_shape || rule?.shape));
-    case 'contract.unit':
-      return Boolean(normalizeText(rule?.contract?.unit || rule?.unit));
-    case 'contract.range':
-      return rule?.contract?.range?.min !== undefined || rule?.contract?.range?.max !== undefined;
-    case 'contract.list_rules':
-      return hasTruthyObjectEntries(rule?.contract?.list_rules) || hasTruthyObjectEntries(rule?.list_rules);
-    case 'contract.unknown_token':
-      return Boolean(normalizeText(rule?.contract?.unknown_token || rule?.unknown_token));
-    case 'priority.required_level':
-      return Boolean(normalizeText(rule?.priority?.required_level || rule?.required_level));
-    case 'priority.availability':
-      return Boolean(normalizeText(rule?.priority?.availability || rule?.availability));
-    case 'priority.difficulty':
-      return Boolean(normalizeText(rule?.priority?.difficulty || rule?.difficulty));
-    case 'priority.effort':
-      return Number.isFinite(Number(rule?.priority?.effort ?? rule?.effort));
-    case 'ai_assist.mode':
-      return Boolean(normalizeText(rule?.ai_assist?.mode));
-    case 'ai_assist.model_strategy':
-      return Boolean(normalizeText(rule?.ai_assist?.model_strategy));
-    case 'ai_assist.max_tokens':
-      return Number.isFinite(Number(rule?.ai_assist?.max_tokens));
-    case 'ai_assist.reasoning_note':
-      return Boolean(normalizeText(rule?.ai_assist?.reasoning_note));
-    case 'parse.template':
-      return Boolean(normalizeText(rule?.parse?.template || rule?.parse_template));
-    case 'enum.policy':
-      return Boolean(normalizeText(rule?.enum?.policy || rule?.enum_policy));
-    case 'enum.source':
-      return Boolean(normalizeText(rule?.enum?.source || rule?.enum_source));
-    case 'evidence.required':
-      return rule?.evidence?.required !== undefined || rule?.evidence_required !== undefined;
-    case 'evidence.min_evidence_refs':
-      return Number.isFinite(Number(rule?.evidence?.min_evidence_refs ?? rule?.min_evidence_refs));
-    case 'evidence.conflict_policy':
-      return Boolean(normalizeText(rule?.evidence?.conflict_policy));
-    case 'evidence.tier_preference':
-      return toArray(rule?.evidence?.tier_preference).length > 0;
-    case 'constraints':
-      return toArray(rule?.constraints).length > 0;
-    case 'component.type':
-      return Boolean(normalizeText(rule?.component?.type || rule?.component_db_ref));
-    case 'aliases':
-      return toArray(rule?.aliases).length > 0;
-    case 'ui.tooltip_md':
-      return Boolean(normalizeText(rule?.ui?.tooltip_md || rule?.tooltip_md));
-    case 'search_hints.query_terms':
-      return toArray(rule?.search_hints?.query_terms).map(normalizeText).filter(Boolean).length > 0;
-    case 'search_hints.domain_hints':
-      return toArray(rule?.search_hints?.domain_hints).map(normalizeText).filter(Boolean).length > 0;
-    case 'search_hints.preferred_content_types':
-      return toArray(rule?.search_hints?.preferred_content_types).map(normalizeText).filter(Boolean).length > 0;
-    default:
-      return false;
-  }
+// WHY: Registry-driven — adding a new field path = 1 entry in IDX_FIELD_PATH_REGISTRY above.
+export function hasMeaningfulValue(rule = {}, fieldPath = '') {
+  const entry = FIELD_PATH_LOOKUP.get(fieldPath);
+  return entry ? entry.extractor(rule) : false;
 }
 
 function buildBadgesForFields(fieldRulesPayload = {}, fieldPaths = [], surfaceLabel = '') {
@@ -366,7 +308,7 @@ export function buildRuntimeIdxTooltip({
   surfaceLabel = '',
   active = true,
 } = {}) {
-  const doc = FIELD_DOCS[fieldPath] || {
+  const doc = FIELD_PATH_LOOKUP.get(fieldPath) || {
     section: 'Field Studio',
     key: fieldPath,
     on: 'This runtime stage uses the configured IDX rule for this field.',

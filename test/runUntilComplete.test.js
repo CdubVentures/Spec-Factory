@@ -551,7 +551,7 @@ test('buildRoundConfig applies production-mode budgets with boosted limits', () 
 
   assert.equal((config.maxUrlsPerProduct || 0) >= 90, true);
   assert.equal((config.maxCandidateUrls || 0) >= 120, true);
-  assert.equal((config.discoveryMaxQueries || 0) >= 8, true);
+  assert.equal((config.searchProfileQueryCap || 0) >= 8, true);
 });
 
 test('buildContractEffortPlan derives weighted effort from field rule contracts', () => {
@@ -646,7 +646,7 @@ test('buildRoundConfig raises deep-search budgets for high contract effort plans
 
   assert.equal(high.maxUrlsPerProduct >= low.maxUrlsPerProduct, true);
   assert.equal(high.maxCandidateUrls >= low.maxCandidateUrls, true);
-  assert.equal(high.discoveryMaxQueries >= low.discoveryMaxQueries, true);
+  assert.equal(high.searchProfileQueryCap >= low.searchProfileQueryCap, true);
 });
 
 // --- Characterization tests for newly-exported private functions ---

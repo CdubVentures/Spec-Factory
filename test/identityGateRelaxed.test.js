@@ -443,8 +443,8 @@ describe('Step 4: Performance tuning defaults', () => {
     assert.equal(config.perHostMinDelayMs, 1500);
     assert.equal(config.pageGotoTimeoutMs, 12000);
     assert.equal(config.pageNetworkIdleTimeoutMs, 2000);
-    assert.equal(config.discoveryMaxQueries, 10);
-    assert.equal(config.discoveryMaxDiscovered, 60);
+    assert.equal(config.searchProfileQueryCap, 10);
+    assert.equal(config.searchPlannerQueryCap, 30);
   });
 });
 

@@ -3,7 +3,7 @@ import { useCollapseStore } from '../../stores/collapseStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { wsManager } from '../../api/ws';
-import { Spinner } from '../../components/common/Spinner';
+import { Spinner } from '../../shared/ui/feedback/Spinner';
 import { useUiStore } from '../../stores/uiStore';
 
 // ── Types ───────────────────────────────────────────────────────────
@@ -114,10 +114,9 @@ interface ImportProgress {
 
 // ── Styles ──────────────────────────────────────────────────────────
 
+import { btnPrimary, btnSecondary, btnDangerSolid as btnDanger } from '../../shared/ui/buttonClasses';
+
 const btnCls = 'px-3 py-1.5 text-sm rounded disabled:opacity-50 transition-colors';
-const btnPrimary = `${btnCls} sf-primary-button`;
-const btnDanger = `${btnCls} sf-danger-button-solid`;
-const btnSecondary = `${btnCls} sf-icon-button`;
 const cardCls = 'border sf-border-default rounded-lg p-3 sf-surface-card';
 const stepDoneCls = 'sf-chip-success';
 const stepActiveCls = 'sf-chip-info';

@@ -83,7 +83,7 @@ export async function runBrandResolver({
   // WHY: Auto-promote brand-resolved domains into first-class source entries
   // so they pass isApprovedHost() and carry correct crawl config.
   const promotedHosts = [];
-  if (config.manufacturerAutoPromote && brandResolution?.officialDomain) {
+  if (brandResolution?.officialDomain) {
     const variables = {
       brand: String(job?.brand || job?.identityLock?.brand || '').trim(),
     };

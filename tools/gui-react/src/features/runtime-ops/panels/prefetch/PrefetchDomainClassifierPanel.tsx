@@ -6,8 +6,12 @@ import { ScoreBar } from '../../components/ScoreBar';
 import { StackedScoreBar } from '../../components/StackedScoreBar';
 import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
 import { Tip } from '../../../../shared/ui/feedback/Tip';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
+import { Chip } from '../../../../shared/ui/feedback/Chip';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
 import { ProgressRing } from '../../components/ProgressRing';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
 import {
   computeSafetyClassCounts,
   computeRoleCounts,
@@ -25,24 +29,6 @@ interface PrefetchDomainClassifierPanelProps {
   persistScope: string;
   liveSettings?: PrefetchLiveSettings;
   idxRuntime?: RuntimeIdxBadge[];
-}
-
-/* ── Theme-aligned helpers ── */
-
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline gap-2 pt-2 pb-1.5 mb-3 border-b-[1.5px] border-[var(--sf-token-text-primary)]">
-      <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary">{children}</span>
-    </div>
-  );
-}
-
-function Chip({ label, className }: { label: string; className?: string }) {
-  return (
-    <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.04em] ${className || 'sf-chip-accent'} border-[1.5px] border-current`}>
-      {label}
-    </span>
-  );
 }
 
 /* ── Domain Detail Drawer ── */
@@ -187,24 +173,12 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
         {/* Big stat numbers */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-5">
-          <div>
-            <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">{uniqueDomains}</div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">domains</div>
-          </div>
-          <div>
-            <div className={`text-4xl font-bold leading-none tracking-tight ${safetyCounts.safe > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'}`}>{safetyCounts.safe}</div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">safe</div>
-          </div>
-          <div>
-            <div className={`text-4xl font-bold leading-none tracking-tight ${safetyCounts.caution > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'}`}>{safetyCounts.caution}</div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">caution</div>
-          </div>
-          <div>
-            <div className={`text-4xl font-bold leading-none tracking-tight ${safetyCounts.blocked > 0 ? 'text-[var(--sf-state-error-fg)]' : 'sf-text-muted'}`}>{safetyCounts.blocked}</div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">blocked</div>
-          </div>
-        </div>
+        <HeroStatGrid>
+          <HeroStat value={uniqueDomains} label="domains" />
+          <HeroStat value={safetyCounts.safe} label="safe" colorClass={safetyCounts.safe > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
+          <HeroStat value={safetyCounts.caution} label="caution" colorClass={safetyCounts.caution > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
+          <HeroStat value={safetyCounts.blocked} label="blocked" colorClass={safetyCounts.blocked > 0 ? 'text-[var(--sf-state-error-fg)]' : 'sf-text-muted'} />
+        </HeroStatGrid>
 
         {/* Narrative */}
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
@@ -375,14 +349,7 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
 
       {/* ── Debug ── */}
       {hasStructured && (
-        <details className="text-xs">
-          <summary className="cursor-pointer sf-summary-toggle flex items-baseline gap-2 pb-1.5 border-b border-dashed sf-border-soft select-none">
-            <span className="text-[10px] font-semibold font-mono sf-text-subtle tracking-[0.04em] uppercase">debug &middot; raw domain classifier json</span>
-          </summary>
-          <pre className="mt-3 sf-pre-block text-xs font-mono rounded-sm p-4 overflow-x-auto overflow-y-auto max-h-[25rem] whitespace-pre-wrap break-all">
-            {JSON.stringify(health, null, 2)}
-          </pre>
-        </details>
+        <DebugJsonDetails label="raw domain classifier json" data={health} />
       )}
     </div>
   );

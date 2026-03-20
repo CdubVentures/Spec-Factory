@@ -212,6 +212,7 @@ export async function executeSearchQueries({
                   decision: '',
                   reason: 'frontier_query_cache',
                   provider: cached.provider,
+                  already_crawled: Boolean(frontierDb?.getUrlRow?.(rawUrl)?.fetch_count > 0),
                 };
               })
             });
@@ -351,6 +352,7 @@ export async function executeSearchQueries({
                 decision: '',
                 reason: '',
                 provider: String(r?.provider || '').trim(),
+                already_crawled: Boolean(frontierDb?.getUrlRow?.(rawUrl)?.fetch_count > 0),
               };
             })
           });
@@ -446,7 +448,8 @@ export async function executeSearchQueries({
               relevance_score: 0,
               decision: '',
               reason: 'plan_only_no_provider',
-              provider: 'plan'
+              provider: 'plan',
+              already_crawled: Boolean(frontierDb?.getUrlRow?.(rawUrl)?.fetch_count > 0),
             };
           })
         });

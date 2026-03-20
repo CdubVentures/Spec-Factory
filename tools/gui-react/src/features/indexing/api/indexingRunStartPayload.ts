@@ -154,8 +154,8 @@ export function buildIndexingRunStartPayload(
     }),
     ...buildIndexingRunDiscoveryPayload({
       fetchCandidateSources: readBool(s.fetchCandidateSources),
-      parsedDiscoveryMaxQueries: p.parsedDiscoveryMaxQueries,
-      parsedDiscoveryMaxDiscovered: p.parsedDiscoveryMaxDiscovered,
+      parsedSearchProfileQueryCap: p.parsedSearchProfileQueryCap,
+      parsedSearchPlannerQueryCap: p.parsedSearchPlannerQueryCap,
       parsedMaxUrlsPerProduct: p.parsedMaxUrlsPerProduct,
       parsedMaxCandidateUrls: p.parsedMaxCandidateUrls,
       parsedMaxPagesPerDomain: p.parsedMaxPagesPerDomain,

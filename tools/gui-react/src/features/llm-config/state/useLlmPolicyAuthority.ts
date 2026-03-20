@@ -9,12 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint';
 import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from '../../../stores/settingsManifest';
 import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract';
-import {
-  registerUnloadGuard,
-  markDomainFlushedByUnmount,
-  isDomainFlushedByUnload,
-} from '../../../stores/settingsUnloadGuard';
-import { shouldAutoSave } from '../../pipeline-settings/state/settingsAutoSaveGate';
+import { useSettingsAutoSaveEffect } from '../../pipeline-settings/state/useSettingsAutoSaveEffect';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore';
 import type { RuntimeSettings } from '../../pipeline-settings';
 import { LLM_POLICY_QUERY_KEY, fetchLlmPolicy, persistLlmPolicy } from '../api/llmPolicyApi';
@@ -59,16 +54,8 @@ export function useLlmPolicyAuthority({
   // This is distinct from the store's dirty which tracks runtime settings unsaved changes.
   const [dirty, setDirty] = useState(false);
   const initialHydrationAppliedRef = useRef(false);
-  const dirtyRef = useRef(dirty);
-  const lastSavedFingerprintRef = useRef('');
-  const lastAttemptFingerprintRef = useRef('');
-  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  dirtyRef.current = dirty;
 
   const payloadFingerprint = useMemo(() => autoSaveFingerprint(policy), [policy]);
-  const payloadFingerprintRef = useRef(payloadFingerprint);
-  payloadFingerprintRef.current = payloadFingerprint;
 
   const { data: serverData, isLoading, refetch } = useQuery({
     queryKey: LLM_POLICY_QUERY_KEY,
@@ -77,6 +64,29 @@ export function useLlmPolicyAuthority({
       return res.policy;
     },
   });
+
+  const readCurrentPolicy = useCallback((): LlmPolicy => {
+    const currentStore = useRuntimeSettingsValueStore.getState().values;
+    return currentStore
+      ? assembleLlmPolicyFromFlat(currentStore as unknown as Record<string, unknown>)
+      : defaultPolicy;
+  }, [defaultPolicy]);
+
+  const saveFnRef = useRef<() => void>(() => {});
+  const getUnloadBody = useCallback(() => readCurrentPolicy(), [readCurrentPolicy]);
+
+  const { markSaved, clearAttemptFingerprint, seedFingerprint, prepareFlush } =
+    useSettingsAutoSaveEffect({
+      domain: 'llm-policy',
+      debounceMs: SETTINGS_AUTOSAVE_DEBOUNCE_MS.runtime,
+      payloadFingerprint,
+      dirty,
+      autoSaveEnabled,
+      initialHydrationApplied: initialHydrationAppliedRef.current,
+      saveFn: () => saveFnRef.current(),
+      getUnloadBody,
+      unloadUrl: '/api/v1/llm-policy',
+    });
 
   // WHY: Hydrate once from server — push flat keys into the store.
   // The composite policy is then derived from the store via useMemo above.
@@ -87,10 +97,8 @@ export function useLlmPolicyAuthority({
     initialHydrationAppliedRef.current = true;
     const flat = flattenLlmPolicy(serverData);
     useRuntimeSettingsValueStore.getState().hydrateKeys(flat as Partial<RuntimeSettings>);
-    const fp = autoSaveFingerprint(serverData);
-    lastSavedFingerprintRef.current = fp;
-    lastAttemptFingerprintRef.current = fp;
-  }, [serverData]);
+    seedFingerprint(autoSaveFingerprint(serverData));
+  }, [serverData, seedFingerprint]);
 
   const saveMutation = useMutation({
     mutationFn: (nextPolicy: LlmPolicy) => persistLlmPolicy(nextPolicy),
@@ -98,13 +106,7 @@ export function useLlmPolicyAuthority({
       if (result.policy) {
         queryClient.setQueryData(LLM_POLICY_QUERY_KEY, result.policy);
       }
-      // WHY: Read the current policy from the store (derived) for fingerprint.
-      const currentStore = useRuntimeSettingsValueStore.getState().values;
-      const currentPolicy = currentStore
-        ? assembleLlmPolicyFromFlat(currentStore as unknown as Record<string, unknown>)
-        : policy;
-      const fp = autoSaveFingerprint(currentPolicy);
-      lastSavedFingerprintRef.current = fp;
+      markSaved(autoSaveFingerprint(readCurrentPolicy()));
       setDirty(false);
       // WHY: Clear the store's dirty flag after successful LLM policy save.
       // Without this, updateKeys() from user edits sets store.dirty=true,
@@ -113,86 +115,12 @@ export function useLlmPolicyAuthority({
       useRuntimeSettingsValueStore.getState().markClean();
       publishSettingsPropagation({ domain: 'runtime' });
     },
+    onError: (error) => {
+      clearAttemptFingerprint();
+      console.error('LLM policy auto-save failed:', error);
+    },
   });
-
-  // WHY: Debounced auto-save matching the runtime authority pattern.
-  // Reads the composite from the store (derived) at save time.
-  useEffect(() => {
-    const canSave = shouldAutoSave({
-      autoSaveEnabled,
-      dirty,
-      payloadFingerprint,
-      lastSavedFingerprint: lastSavedFingerprintRef.current,
-      lastAttemptFingerprint: lastAttemptFingerprintRef.current,
-      initialHydrationApplied: initialHydrationAppliedRef.current,
-    });
-    if (!canSave) return;
-    lastAttemptFingerprintRef.current = payloadFingerprint;
-    const timer = setTimeout(() => {
-      pendingTimerRef.current = null;
-      // WHY: Read the latest composite from the store at save time.
-      const currentStore = useRuntimeSettingsValueStore.getState().values;
-      const currentPolicy = currentStore
-        ? assembleLlmPolicyFromFlat(currentStore as unknown as Record<string, unknown>)
-        : policy;
-      saveMutation.mutate(currentPolicy);
-    }, SETTINGS_AUTOSAVE_DEBOUNCE_MS.runtime);
-    pendingTimerRef.current = timer;
-    return () => {
-      clearTimeout(timer);
-      if (pendingTimerRef.current === timer) pendingTimerRef.current = null;
-    };
-  }, [autoSaveEnabled, dirty, payloadFingerprint, saveMutation, policy]);
-
-  // WHY: Unload guard ensures dirty edits survive hard reload.
-  useEffect(() => {
-    return registerUnloadGuard({
-      domain: 'llm-policy',
-      isDirty: () => {
-        if (!dirtyRef.current) return false;
-        const fp = payloadFingerprintRef.current;
-        return Boolean(fp) && fp !== lastSavedFingerprintRef.current;
-      },
-      getPayload: () => {
-        const currentStore = useRuntimeSettingsValueStore.getState().values;
-        const currentPolicy = currentStore
-          ? assembleLlmPolicyFromFlat(currentStore as unknown as Record<string, unknown>)
-          : defaultPolicy;
-        return {
-          url: '/api/v1/llm-policy',
-          method: 'PUT',
-          body: currentPolicy,
-        };
-      },
-      markFlushed: () => {
-        lastAttemptFingerprintRef.current = payloadFingerprintRef.current;
-      },
-    });
-  }, [defaultPolicy]);
-
-  // WHY: Unmount flush for tab navigation.
-  useEffect(() => {
-    return () => {
-      if (isDomainFlushedByUnload('llm-policy')) return;
-      if (pendingTimerRef.current) {
-        clearTimeout(pendingTimerRef.current);
-        pendingTimerRef.current = null;
-      }
-      if (!dirtyRef.current) return;
-      const fp = payloadFingerprintRef.current;
-      if (!fp || fp === lastSavedFingerprintRef.current) return;
-      lastAttemptFingerprintRef.current = fp;
-      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-        const currentStore = useRuntimeSettingsValueStore.getState().values;
-        const currentPolicy = currentStore
-          ? assembleLlmPolicyFromFlat(currentStore as unknown as Record<string, unknown>)
-          : defaultPolicy;
-        const blob = new Blob([JSON.stringify(currentPolicy)], { type: 'application/json' });
-        navigator.sendBeacon('/api/v1/llm-policy', blob);
-      }
-      markDomainFlushedByUnmount('llm-policy');
-    };
-  }, [defaultPolicy]);
+  saveFnRef.current = () => saveMutation.mutate(readCurrentPolicy());
 
   // WHY: Edits write flat keys directly to the store. The composite is re-derived
   // from the store on the next render via useMemo. No local policy state to sync.
@@ -220,15 +148,9 @@ export function useLlmPolicyAuthority({
   }, [saveMutation, policy]);
 
   const flushIfDirty = useCallback(async () => {
-    const fp = payloadFingerprintRef.current;
-    if (!fp || fp === lastSavedFingerprintRef.current) return;
-    if (pendingTimerRef.current) {
-      clearTimeout(pendingTimerRef.current);
-      pendingTimerRef.current = null;
-    }
-    lastAttemptFingerprintRef.current = fp;
-    await saveMutation.mutateAsync(policy);
-  }, [saveMutation, policy]);
+    if (!prepareFlush()) return;
+    await saveMutation.mutateAsync(readCurrentPolicy());
+  }, [saveMutation, readCurrentPolicy, prepareFlush]);
 
   const reload = useCallback(async () => {
     const result = await refetch();
@@ -237,12 +159,10 @@ export function useLlmPolicyAuthority({
       // WHY: Use hydrateKeys for server reload, not updateKeys. updateKeys
       // would mark dirty and block future hydrate() calls from /runtime-settings.
       useRuntimeSettingsValueStore.getState().hydrateKeys(flat as Partial<RuntimeSettings>);
-      const fp = autoSaveFingerprint(result.data);
-      lastSavedFingerprintRef.current = fp;
-      lastAttemptFingerprintRef.current = fp;
+      seedFingerprint(autoSaveFingerprint(result.data));
       setDirty(false);
     }
-  }, [refetch]);
+  }, [refetch, seedFingerprint]);
 
   return {
     policy,

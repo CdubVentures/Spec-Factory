@@ -251,30 +251,30 @@ describe('buildSerpSelectorInput', () => {
     assert.equal(limits.max_candidate, undefined);
   });
 
-  it('max_total_keep capped by maxUrlsPerProduct when lower than discoveryCap', () => {
+  it('max_total_keep capped by serpSelectorUrlCap when lower than discoveryCap', () => {
     const { selectorInput } = buildSerpSelectorInput(makeBaseContext({
       discoveryCap: 120,
-      maxUrlsPerProduct: 50,
+      serpSelectorUrlCap: 50,
     }));
     assert.equal(selectorInput.selection_limits.max_total_keep, 50);
   });
 
-  it('max_total_keep uses discoveryCap when maxUrlsPerProduct is higher', () => {
+  it('max_total_keep uses discoveryCap when serpSelectorUrlCap is higher', () => {
     const { selectorInput } = buildSerpSelectorInput(makeBaseContext({
       discoveryCap: 30,
-      maxUrlsPerProduct: 50,
+      serpSelectorUrlCap: 50,
     }));
     assert.equal(selectorInput.selection_limits.max_total_keep, 30);
   });
 
-  it('max_total_keep falls back to discoveryCap when maxUrlsPerProduct not provided', () => {
+  it('max_total_keep falls back to discoveryCap when serpSelectorUrlCap not provided', () => {
     const { selectorInput } = buildSerpSelectorInput(makeBaseContext({
       discoveryCap: 60,
     }));
     assert.equal(selectorInput.selection_limits.max_total_keep, 60);
   });
 
-  it('candidate cap reads from maxCandidateUrls when provided', () => {
+  it('candidate cap reads from domainClassifierUrlCap when provided', () => {
     const rows = [];
     for (let i = 0; i < 100; i++) {
       rows.push(makeCandidateRow({
@@ -285,13 +285,13 @@ describe('buildSerpSelectorInput', () => {
         tier: 4,
       }));
     }
-    const ctx = makeBaseContext({ candidateRows: rows, maxCandidateUrls: 40 });
+    const ctx = makeBaseContext({ candidateRows: rows, domainClassifierUrlCap: 40 });
     const { selectorInput, overflowRows } = buildSerpSelectorInput(ctx);
     assert.ok(selectorInput.candidates.length <= 40, `Expected <= 40, got ${selectorInput.candidates.length}`);
     assert.ok(overflowRows.length >= 60, `Expected >= 60 overflow, got ${overflowRows.length}`);
   });
 
-  it('candidate cap defaults to SERP_SELECTOR_MAX_CANDIDATES when maxCandidateUrls not provided', () => {
+  it('candidate cap defaults to SERP_SELECTOR_MAX_CANDIDATES when domainClassifierUrlCap not provided', () => {
     const rows = [];
     for (let i = 0; i < SERP_SELECTOR_MAX_CANDIDATES + 5; i++) {
       rows.push(makeCandidateRow({

@@ -287,7 +287,7 @@ export function buildRoundConfig(baseConfig, {
     ...baseConfig,
     runProfile: 'standard',
     discoveryEnabled: round > 0,
-    fetchCandidateSources: round > 0,
+    fetchCandidateSources: true,
     searchEngines: round === 0 ? '' : baseConfig.searchEngines,
     llmMaxCallsPerRound:
       round === 0
@@ -332,9 +332,9 @@ export function buildRoundConfig(baseConfig, {
     next.maxUrlsPerProduct = Math.min(next.maxUrlsPerProduct || 12, 12);
     next.maxCandidateUrls = Math.min(next.maxCandidateUrls || 20, 20);
     next.maxPagesPerDomain = Math.min(next.maxPagesPerDomain || 2, 2);
-    next.discoveryMaxQueries = Math.min(next.discoveryMaxQueries || 4, 4);
+    next.searchProfileQueryCap = Math.min(next.searchProfileQueryCap || 4, 4);
     next.discoveryResultsPerQuery = Math.min(next.discoveryResultsPerQuery || 6, 6);
-    next.discoveryMaxDiscovered = Math.min(next.discoveryMaxDiscovered || 60, 60);
+    next.searchPlannerQueryCap = Math.min(next.searchPlannerQueryCap || 60, 60);
     next.discoveryQueryConcurrency = Math.max(next.discoveryQueryConcurrency || 0, 4);
     next.perHostMinDelayMs = Math.min(next.perHostMinDelayMs || 150, 150);
   } else if (isThoroughRound) {
@@ -362,26 +362,21 @@ export function buildRoundConfig(baseConfig, {
     next.endpointSuggestionLimit = Math.max(next.endpointSuggestionLimit || 0, 36);
     next.discoveryEnabled = true;
     next.fetchCandidateSources = true;
-    next.discoveryMaxQueries = Math.max(next.discoveryMaxQueries || 0, 24);
     next.discoveryResultsPerQuery = Math.max(next.discoveryResultsPerQuery || 0, 20);
-    next.discoveryMaxDiscovered = Math.max(next.discoveryMaxDiscovered || 0, 300);
     next.discoveryQueryConcurrency = Math.max(next.discoveryQueryConcurrency || 0, 8);
   }
 
   if (round > 0) {
-    next.discoveryMaxQueries = Math.max(next.discoveryMaxQueries || 0, Math.max(12, toInt(baseConfig.discoveryMaxQueries, 8) + 4));
     next.maxUrlsPerProduct = Math.max(next.maxUrlsPerProduct || 0, Math.max(120, 25));
     next.maxCandidateUrls = Math.max(next.maxCandidateUrls || 0, Math.max(180, toInt(baseConfig.maxCandidateUrls, 50) + 40));
     next.maxPagesPerDomain = Math.max(next.maxPagesPerDomain || 0, Math.max(3, 6));
   }
 
   if (expectedCount > 0) {
-    next.discoveryMaxQueries = Math.max(next.discoveryMaxQueries || 0, 10 + Math.min(14, expectedCount * 2));
     next.discoveryResultsPerQuery = Math.max(next.discoveryResultsPerQuery || 0, 10);
     next.maxUrlsPerProduct = Math.max(next.maxUrlsPerProduct || 0, 90 + Math.min(140, expectedCount * 12));
     next.maxCandidateUrls = Math.max(next.maxCandidateUrls || 0, 130 + Math.min(200, expectedCount * 16));
   } else if (rareCount > 0 && sometimesCount === 0) {
-    next.discoveryMaxQueries = Math.min(next.discoveryMaxQueries || 8, 6);
     next.maxUrlsPerProduct = Math.min(next.maxUrlsPerProduct || 60, 70);
     next.maxCandidateUrls = Math.min(next.maxCandidateUrls || 90, 90);
   }
@@ -392,17 +387,14 @@ export function buildRoundConfig(baseConfig, {
   const expectedRequiredCount = Math.max(0, toInt(contractEffort.expected_required_count, 0));
   if (round > 0 && contractTotalEffort > 0) {
     const effortTier = Math.min(4, Math.floor(contractTotalEffort / 8));
-    const queryBoost = effortTier + Math.min(6, expectedRequiredCount);
     const urlBoost = (effortTier * 20) + (hardMissingCount * 14) + (contractCriticalMissingCount * 10);
     const candidateBoost = (effortTier * 30) + (hardMissingCount * 18) + (contractCriticalMissingCount * 12);
-    next.discoveryMaxQueries = Math.max(next.discoveryMaxQueries || 0, (next.discoveryMaxQueries || 0) + queryBoost);
     next.maxUrlsPerProduct = Math.max(next.maxUrlsPerProduct || 0, (next.maxUrlsPerProduct || 0) + urlBoost);
     next.maxCandidateUrls = Math.max(next.maxCandidateUrls || 0, (next.maxCandidateUrls || 0) + candidateBoost);
   }
 
   {
     let discoveryEnabled = Boolean(next.discoveryEnabled);
-    let fetchCandidateSources = Boolean(next.fetchCandidateSources);
 
     if (hasExplicitMissingCounts) {
       const shouldContinue =
@@ -410,7 +402,6 @@ export function buildRoundConfig(baseConfig, {
         resolvedPreviousValidated === false;
       if (resolvedMissingRequired === 0 && resolvedMissingExpected === 0 && !shouldContinue) {
         discoveryEnabled = false;
-        fetchCandidateSources = false;
       } else if (
         resolvedMissingRequired > 0 &&
         Boolean(baseConfig.discoveryInternalFirst) &&
@@ -418,15 +409,13 @@ export function buildRoundConfig(baseConfig, {
         requiredIteration <= 1
       ) {
         discoveryEnabled = false;
-        fetchCandidateSources = false;
       } else {
         discoveryEnabled = true;
-        fetchCandidateSources = true;
       }
     }
 
     next.discoveryEnabled = discoveryEnabled;
-    next.fetchCandidateSources = fetchCandidateSources;
+    next.fetchCandidateSources = true;
     const searchProviderSelection = explainSearchProviderSelection({
       baseConfig,
       discoveryEnabled,

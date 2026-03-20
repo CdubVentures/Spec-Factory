@@ -26,6 +26,16 @@ function resolveBrandFilterMode(selectedSize: number, availableSize: number): Br
   return 'custom';
 }
 
+// WHY: selectedField and selectedProductId are always derived from activeCell.
+// This helper guarantees the three fields stay in sync across all setters.
+function withActiveCell(cell: ActiveCell | null) {
+  return {
+    activeCell: cell,
+    selectedField: cell?.field ?? '',
+    selectedProductId: cell?.productId ?? '',
+  };
+}
+
 interface ReviewState {
   selectedField: string;
   selectedProductId: string;
@@ -49,7 +59,6 @@ interface ReviewState {
   showOnlyFlagged: boolean;
 
   // Existing actions
-  setSelectedField: (field: string) => void;
   setActiveCell: (cell: ActiveCell | null) => void;
   openDrawer: (productId: string, field: string) => void;
   closeDrawer: () => void;
@@ -95,19 +104,9 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   sortMode: 'brand',
   showOnlyFlagged: false,
 
-  setSelectedField: (field) => set({ selectedField: field }),
-  setActiveCell: (cell) => set({
-    activeCell: cell,
-    selectedField: cell?.field ?? '',
-    selectedProductId: cell?.productId ?? '',
-  }),
+  setActiveCell: (cell) => set(withActiveCell(cell)),
   openDrawer: (productId, field) => {
-    set({
-      activeCell: { productId, field },
-      selectedField: field,
-      selectedProductId: productId,
-      drawerOpen: true,
-    });
+    set({ ...withActiveCell({ productId, field }), drawerOpen: true });
   },
   closeDrawer: () => set({ drawerOpen: false }),
   setFlaggedCells: (cells) => set({ flaggedCells: cells, flagIndex: cells.length > 0 ? 0 : -1 }),
@@ -115,35 +114,19 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
     const { flaggedCells, flagIndex } = get();
     if (flaggedCells.length === 0) return;
     const next = (flagIndex + 1) % flaggedCells.length;
-    const cell = flaggedCells[next];
-    set({
-      flagIndex: next,
-      activeCell: cell,
-      selectedField: cell.field,
-      selectedProductId: cell.productId,
-      drawerOpen: true,
-    });
+    set({ flagIndex: next, ...withActiveCell(flaggedCells[next]), drawerOpen: true });
   },
   prevFlagged: () => {
     const { flaggedCells, flagIndex } = get();
     if (flaggedCells.length === 0) return;
     const prev = (flagIndex - 1 + flaggedCells.length) % flaggedCells.length;
-    const cell = flaggedCells[prev];
-    set({
-      flagIndex: prev,
-      activeCell: cell,
-      selectedField: cell.field,
-      selectedProductId: cell.productId,
-      drawerOpen: true,
-    });
+    set({ flagIndex: prev, ...withActiveCell(flaggedCells[prev]), drawerOpen: true });
   },
 
   // Cell mode actions
   selectCell: (productId, field) => {
     set({
-      activeCell: { productId, field },
-      selectedField: field,
-      selectedProductId: productId,
+      ...withActiveCell({ productId, field }),
       cellMode: 'selected',
       editingValue: '',
       originalEditingValue: '',

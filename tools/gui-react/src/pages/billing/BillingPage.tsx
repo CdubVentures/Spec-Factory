@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useUiStore } from '../../stores/uiStore';
-import { MetricRow } from '../../components/common/MetricRow';
-import { Spinner } from '../../components/common/Spinner';
+import { MetricRow } from '../../shared/ui/data-display/MetricRow';
+import { Spinner } from '../../shared/ui/feedback/Spinner';
 import { usd, compactNumber } from '../../utils/formatting';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 

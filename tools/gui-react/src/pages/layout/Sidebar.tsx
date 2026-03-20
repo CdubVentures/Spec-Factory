@@ -4,8 +4,8 @@ import { useProductStore } from '../../stores/productStore';
 import { useRuntimeStore } from '../../stores/runtimeStore';
 import { usePersistedTab } from '../../stores/tabStore';
 import { useCatalogQuery } from '../../hooks/useCatalogQuery';
-import { StatusBadge } from '../../components/common/StatusBadge';
-import { Spinner } from '../../components/common/Spinner';
+import { StatusBadge } from '../../shared/ui/feedback/StatusBadge';
+import { Spinner } from '../../shared/ui/feedback/Spinner';
 import { isTestCategory, formatTestCategory } from '../../utils/testMode';
 
 const VARIANT_PLACEHOLDERS = new Set(['unk', 'unknown', 'na', 'n/a', 'none', 'null', '']);

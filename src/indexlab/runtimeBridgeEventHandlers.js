@@ -506,6 +506,7 @@ async function handleSearchResultsCollected(state, deps, { ts, row }) {
       decision: String(r?.decision || '').trim(),
       reason: String(r?.reason || '').trim(),
       provider: String(r?.provider || '').trim(),
+      already_crawled: Boolean(r?.already_crawled),
     })) : [],
   }, ts);
 }

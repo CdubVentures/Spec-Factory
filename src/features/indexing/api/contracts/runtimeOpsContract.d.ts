@@ -1,0 +1,29 @@
+// WHY: Type declarations for frontend TS imports of runtime ops contracts.
+
+export declare const SUMMARY_KEYS: readonly string[];
+export declare const DOCUMENT_ROW_KEYS: readonly string[];
+export declare const DOCUMENT_DETAIL_KEYS: readonly string[];
+export declare const METRICS_RAIL_KEYS: readonly string[];
+export declare const POOL_METRIC_KEYS: readonly string[];
+export declare const QUALITY_METRIC_KEYS: readonly string[];
+export declare const FAILURE_METRIC_KEYS: readonly string[];
+export declare const FALLBACK_RESPONSE_KEYS: readonly string[];
+export declare const FALLBACK_EVENT_KEYS: readonly string[];
+export declare const HOST_FALLBACK_PROFILE_KEYS: readonly string[];
+export declare const QUEUE_STATE_KEYS: readonly string[];
+export declare const QUEUE_JOB_KEYS: readonly string[];
+export declare const LANE_SUMMARY_KEYS: readonly string[];
+export declare const BLOCKED_HOST_KEYS: readonly string[];
+export declare const PIPELINE_FLOW_KEYS: readonly string[];
+export declare const PIPELINE_STAGE_KEYS: readonly string[];
+export declare const PIPELINE_TRANSITION_KEYS: readonly string[];
+export declare const WORKER_ROW_BASE_KEYS: readonly string[];
+export declare const WORKER_FETCH_EXTRA_KEYS: readonly string[];
+export declare const WORKER_SEARCH_EXTRA_KEYS: readonly string[];
+export declare const WORKER_LLM_EXTRA_KEYS: readonly string[];
+export declare const EXTRACTION_RESPONSE_KEYS: readonly string[];
+export declare const EXTRACTION_FIELD_KEYS: readonly string[];
+export declare const EXTRACTION_CANDIDATE_KEYS: readonly string[];
+export declare const LLM_DASHBOARD_KEYS: readonly string[];
+export declare const LLM_CALL_ROW_KEYS: readonly string[];
+export declare const LLM_DASHBOARD_SUMMARY_KEYS: readonly string[];

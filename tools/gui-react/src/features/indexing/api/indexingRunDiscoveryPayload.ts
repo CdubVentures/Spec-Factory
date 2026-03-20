@@ -2,8 +2,8 @@ type IndexingRunDiscoveryPayloadPrimitive = string | number | boolean;
 
 export interface BuildIndexingRunDiscoveryPayloadInput {
   fetchCandidateSources: boolean;
-  parsedDiscoveryMaxQueries: number;
-  parsedDiscoveryMaxDiscovered: number;
+  parsedSearchProfileQueryCap: number;
+  parsedSearchPlannerQueryCap: number;
   parsedMaxUrlsPerProduct: number;
   parsedMaxCandidateUrls: number;
   parsedMaxPagesPerDomain: number;
@@ -19,8 +19,8 @@ export function buildIndexingRunDiscoveryPayload(
     // WHY: discoveryEnabled is a hardcoded invariant per the rollout plan — always on.
     discoveryEnabled: true,
     fetchCandidateSources: input.fetchCandidateSources,
-    discoveryMaxQueries: Math.max(1, input.parsedDiscoveryMaxQueries),
-    discoveryMaxDiscovered: Math.max(1, input.parsedDiscoveryMaxDiscovered),
+    searchProfileQueryCap: Math.max(1, input.parsedSearchProfileQueryCap),
+    searchPlannerQueryCap: Math.max(1, input.parsedSearchPlannerQueryCap),
     maxUrlsPerProduct: Math.max(1, input.parsedMaxUrlsPerProduct),
     maxCandidateUrls: Math.max(1, input.parsedMaxCandidateUrls),
     maxPagesPerDomain: Math.max(1, input.parsedMaxPagesPerDomain),

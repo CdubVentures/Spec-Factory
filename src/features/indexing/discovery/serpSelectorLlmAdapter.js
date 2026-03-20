@@ -100,11 +100,26 @@ Keep approved_ids and candidate_ids ordered best-to-worst.
 The union of approved_ids and candidate_ids must equal keep_ids.
 Do not include ids that were not in the input.`;
 
+// WHY: SERP selector returns one JSON decision per candidate (80-120 URLs).
+// At ~120 tokens per decision + arrays + summary, anything below 20k truncates.
+const SERP_SELECTOR_MIN_OUTPUT_TOKENS = 20_000;
+
 export function createSerpSelectorCallLlm({ callRoutedLlmFn, config, logger }) {
   return async ({ selectorInput, llmContext = {} }) => {
     const payloadJson = JSON.stringify(selectorInput);
+    const configuredTokens = Number(config.llmMaxOutputTokensTriage || 0);
+    if (configuredTokens > 0 && configuredTokens < SERP_SELECTOR_MIN_OUTPUT_TOKENS) {
+      logger?.warn?.('serp_selector_token_floor', {
+        configured: configuredTokens,
+        minimum: SERP_SELECTOR_MIN_OUTPUT_TOKENS,
+        action: 'clamped_to_minimum',
+      });
+    }
+    const effectiveConfig = (configuredTokens > 0 && configuredTokens < SERP_SELECTOR_MIN_OUTPUT_TOKENS)
+      ? { ...config, llmMaxOutputTokensTriage: SERP_SELECTOR_MIN_OUTPUT_TOKENS }
+      : config;
     return callRoutedLlmFn({
-      config,
+      config: effectiveConfig,
       reason: 'serp_url_selector',
       role: 'triage',
       phase: 'serpSelector',

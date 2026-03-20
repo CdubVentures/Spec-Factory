@@ -4,9 +4,10 @@ import { api } from '../../../api/client';
 import { useUiStore } from '../../../stores/uiStore';
 import { coerceCategories } from '../../../utils/categoryStoreSync.js';
 
+import { btnPrimary } from '../../../shared/ui/buttonClasses';
+
 const sectionCls = 'sf-surface-card rounded p-4';
 const chipCls = 'inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm';
-const btnPrimary = 'px-4 py-2 text-sm sf-primary-button transition-colors disabled:opacity-50';
 const inputCls = 'sf-input px-3 py-1.5 text-sm';
 
 interface CreateCategoryResult {

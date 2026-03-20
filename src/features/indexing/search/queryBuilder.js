@@ -486,6 +486,8 @@ export function buildSearchProfile({
   fieldTargetQueriesCap = 3,
   docHintQueriesCap = 3,
   fieldYieldByDomain = null,
+  seedStatus = null,
+  focusGroups = null,
 }) {
   const resolvedIdentity = resolveJobIdentity(job);
   const brand = resolvedIdentity.brand;
@@ -513,19 +515,44 @@ export function buildSearchProfile({
       brandResolutionHints.unshift(official);
     }
   }
-  const queryRows = buildQueryRows({
-    job,
-    categoryConfig,
-    focusFields,
-    tooltipHints,
-    lexicon,
-    learnedQueries,
-    identityAliases,
-    maxRows: Math.max(24, Number(maxQueries || 24) * 3),
-    rejectLog: queryRejectLog,
-    brandResolutionHints,
-    fieldYieldByDomain
-  });
+
+  // WHY: Tier dispatch — when seedStatus is provided, use tier-aware generation.
+  // When absent, fall through to the existing archetype pipeline (backward compat).
+  const modes = seedStatus ? determineQueryModes(seedStatus, focusGroups || []) : null;
+  const hasTierMode = modes && (modes.runTier1Seeds || modes.runTier2Groups || modes.runTier3Keys);
+
+  let queryRows;
+  if (hasTierMode) {
+    const tierRows = [];
+    if (modes.runTier1Seeds) {
+      tierRows.push(...buildTier1Queries(job, seedStatus, brandResolution));
+    }
+    if (modes.runTier2Groups) {
+      tierRows.push(...buildTier2Queries(job, focusGroups));
+    }
+    if (modes.runTier3Keys) {
+      tierRows.push(...buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldByDomain));
+    }
+    queryRows = tierRows;
+    // WHY: Archetype metadata is sparse in tier mode — no archetype pipeline ran.
+    queryRows._archetypeSlots = [];
+    queryRows._coveredFieldSet = new Set();
+    queryRows._hardFieldRows = [];
+  } else {
+    queryRows = buildQueryRows({
+      job,
+      categoryConfig,
+      focusFields,
+      tooltipHints,
+      lexicon,
+      learnedQueries,
+      identityAliases,
+      maxRows: Math.max(24, Number(maxQueries || 24) * 3),
+      rejectLog: queryRejectLog,
+      brandResolutionHints,
+      fieldYieldByDomain
+    });
+  }
 
   const querySet = new Set();
   const selectedQueries = [];
@@ -555,10 +582,14 @@ export function buildSearchProfile({
     querySet.add(normalized);
     selectedQueries.push(cleanedQuery);
   };
-  for (const query of baseTemplates) {
-    addQuery(query, 'base_template');
+  if (!hasTierMode) {
+    for (const query of baseTemplates) {
+      addQuery(query, 'base_template');
+    }
   }
-  const interleaved = roundRobinInterleave(groupByTargetField(queryRows));
+  const interleaved = hasTierMode
+    ? queryRows
+    : roundRobinInterleave(groupByTargetField(queryRows));
   for (const row of interleaved) {
     addQuery(row.query, row.hint_source || 'query_row');
   }
@@ -587,12 +618,14 @@ export function buildSearchProfile({
     hintSourceCounts[token] = (hintSourceCounts[token] || 0) + 1;
   }
 
-  // Base templates fallback guarantee: never empty
-  const effectiveBaseTemplates = baseTemplates.length > 0
-    ? baseTemplates
-    : (brand && model)
-      ? [clean(`${brand} ${model} ${variant} specifications`), clean(`${brand} ${model} ${variant} review`)]
-      : [];
+  // Base templates: tier1 seeds when in tier mode, otherwise existing fallback
+  const effectiveBaseTemplates = hasTierMode
+    ? boundedRows.filter((r) => r.tier === 'seed').map((r) => r.query)
+    : baseTemplates.length > 0
+      ? baseTemplates
+      : (brand && model)
+        ? [clean(`${brand} ${model} ${variant} specifications`), clean(`${brand} ${model} ${variant} review`)]
+        : [];
 
   // Archetype summary + coverage analysis from stashed metadata
   const archetypeSlots = queryRows._archetypeSlots || [];
@@ -627,6 +660,142 @@ export function buildSearchProfile({
 export function buildTargetedQueries(options = {}) {
   const profile = buildSearchProfile(options);
   return toArray(profile?.queries).slice(0, Math.max(1, Number(options?.maxQueries || 24)));
+}
+
+// ── Tier-Aware Query Generation ──
+
+/**
+ * WHY: Three tiers run independently — all can be active simultaneously.
+ * Tier 1 = seed (broad), Tier 2 = group (mid), Tier 3 = key (narrow).
+ * @param {object|null} seedStatus - from needset.schema3.seed_status
+ * @param {Array} focusGroups - from needset.focusGroups
+ * @returns {{ runTier1Seeds: boolean, runTier2Groups: boolean, runTier3Keys: boolean }}
+ */
+export function determineQueryModes(seedStatus, focusGroups) {
+  const groups = Array.isArray(focusGroups) ? focusGroups : [];
+  const specsSeedNeeded = Boolean(seedStatus?.specs_seed?.is_needed);
+  const anySourceNeeded = Object.values(seedStatus?.source_seeds || {})
+    .some((s) => Boolean(s?.is_needed));
+
+  return {
+    runTier1Seeds: specsSeedNeeded || anySourceNeeded,
+    runTier2Groups: groups.some((g) => g.group_search_worthy === true),
+    runTier3Keys: groups.some((g) =>
+      g.group_search_worthy === false &&
+      Array.isArray(g.normalized_key_queue) &&
+      g.normalized_key_queue.length > 0,
+    ),
+  };
+}
+
+/**
+ * WHY: Tier 1 — broad seed queries. Cast the wide net first.
+ * @returns {Array<object>} queryRow[]
+ */
+export function buildTier1Queries(job, seedStatus, brandResolution) {
+  const identity = resolveJobIdentity(job);
+  const brand = identity.brand;
+  const model = identity.model;
+  const variant = identity.variant;
+  const product = clean([brand, model, variant].filter(Boolean).join(' '));
+  const rows = [];
+
+  if (seedStatus?.specs_seed?.is_needed) {
+    rows.push({
+      query: clean(`${product} specifications`),
+      hint_source: 'tier1_seed',
+      tier: 'seed',
+      target_fields: [],
+      doc_hint: 'spec',
+      alias: '',
+      domain_hint: '',
+      source_host: '',
+    });
+  }
+
+  for (const [source, info] of Object.entries(seedStatus?.source_seeds || {})) {
+    if (!info?.is_needed) continue;
+    rows.push({
+      query: clean(`${product} ${source}`),
+      hint_source: 'tier1_seed',
+      tier: 'seed',
+      target_fields: [],
+      doc_hint: '',
+      alias: '',
+      domain_hint: clean(source),
+      source_host: clean(source),
+    });
+  }
+
+  return rows;
+}
+
+/**
+ * WHY: Tier 2 — one broad query per search-worthy group, ordered by productivity.
+ * @returns {Array<object>} queryRow[]
+ */
+export function buildTier2Queries(job, focusGroups) {
+  const identity = resolveJobIdentity(job);
+  const brand = identity.brand;
+  const model = identity.model;
+  const variant = identity.variant;
+  const product = clean([brand, model, variant].filter(Boolean).join(' '));
+  const groups = Array.isArray(focusGroups) ? focusGroups : [];
+
+  return groups
+    .filter((g) => g.group_search_worthy === true)
+    .sort((a, b) => (b.productivity_score || 0) - (a.productivity_score || 0))
+    .map((g) => ({
+      query: clean(`${product} ${g.label || ''} ${g.group_description_long || ''}`),
+      hint_source: 'tier2_group',
+      tier: 'group_search',
+      target_fields: toArray(g.unresolved_field_keys),
+      doc_hint: '',
+      alias: '',
+      domain_hint: '',
+      source_host: '',
+      group_key: g.key || '',
+    }));
+}
+
+/**
+ * WHY: Tier 3 — individual key queries from normalized_key_queue.
+ * Walks keys already sorted by availability → difficulty → need_score.
+ * @returns {Array<object>} queryRow[]
+ */
+export function buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldByDomain) {
+  const identity = resolveJobIdentity(job);
+  const brand = identity.brand;
+  const model = identity.model;
+  const variant = identity.variant;
+  const product = clean([brand, model, variant].filter(Boolean).join(' '));
+  const groups = Array.isArray(focusGroups) ? focusGroups : [];
+  const rows = [];
+
+  for (const g of groups) {
+    if (g.group_search_worthy !== false) continue;
+    const keys = toArray(g.normalized_key_queue);
+    if (keys.length === 0) continue;
+
+    for (const key of keys) {
+      const readable = clean(String(key || '').replace(/_/g, ' '));
+      if (!readable) continue;
+      rows.push({
+        query: clean(`${product} ${readable}`),
+        hint_source: 'tier3_key',
+        tier: 'key_search',
+        target_fields: [key],
+        doc_hint: '',
+        alias: '',
+        domain_hint: '',
+        source_host: '',
+        group_key: g.key || '',
+        normalized_key: key,
+      });
+    }
+  }
+
+  return rows;
 }
 
 export { collectHostPlanHintTokens } from './queryFieldRuleGates.js';

@@ -8,6 +8,7 @@ import {
   prioritizeQueryRows,
   enforceIdentityQueryGuard,
 } from '../discoveryQueryPlan.js';
+import { configInt } from '../../../../shared/settingsAccessor.js';
 import { toArray } from '../discoveryIdentity.js';
 import {
   buildSearchProfileKeys,
@@ -80,8 +81,8 @@ export async function runQueryJourney({
     })),
   ];
 
-  const queryLimit = Math.max(1, Number(config.discoveryMaxQueries || 8));
-  const mergedQueryCap = Math.max(queryLimit, 6);
+  const queryLimit = Math.max(1, configInt(config, 'searchPlannerQueryCap'));
+  const mergedQueryCap = queryLimit;
   const mergedQueries = dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap);
 
   const fieldPriority = new Map();
@@ -177,7 +178,7 @@ export async function runQueryJourney({
     ...toArray(hostPlanRejectLog),
   ].slice(0, 300);
 
-  const executionQueryLimit = Math.max(queryLimit, queries.length);
+  const executionQueryLimit = Math.min(queryLimit, queries.length);
   const selectedQueryRowMap = new Map(
     selectedQueryRows.map((row) => [String(row?.query || '').trim().toLowerCase(), row]),
   );

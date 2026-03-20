@@ -91,9 +91,9 @@ function makeConfig(tempRoot, overrides = {}) {
     s3InputPrefix: 'specs/inputs',
     s3OutputPrefix: 'specs/outputs',
     discoveryEnabled: true,
-    discoveryMaxQueries: 4,
+    searchProfileQueryCap: 4,
     discoveryResultsPerQuery: 5,
-    discoveryMaxDiscovered: 20,
+    searchPlannerQueryCap: 20,
     discoveryQueryConcurrency: 1,
     searchEngines: 'bing,brave,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
@@ -303,7 +303,7 @@ test('discoverCandidateSources accepts zero results when internet search returns
 test('discoverCandidateSources skips conditional triage at the 60 percent deterministic-quality boundary', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-triage-skip-'));
   const config = makeConfig(tempRoot, {
-    discoveryMaxQueries: 1,
+    searchProfileQueryCap: 1,
     serpTriageMinScore: 0,
   });
   const storage = createStorage(config);
@@ -380,7 +380,7 @@ test('discoverCandidateSources skips conditional triage at the 60 percent determ
 test('discoverCandidateSources enters triage flow when deterministic quality stays below threshold', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-triage-needed-'));
   const config = makeConfig(tempRoot, {
-    discoveryMaxQueries: 1,
+    searchProfileQueryCap: 1,
     serpTriageMinScore: 0,
   });
   const storage = createStorage(config);
@@ -455,9 +455,9 @@ test('discoverCandidateSources enters triage flow when deterministic quality sta
 test('discoverCandidateSources falls back to top-level job identity for query guard and live candidate scoring', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-top-level-identity-'));
   const config = makeConfig(tempRoot, {
-    discoveryMaxQueries: 1,
+    searchProfileQueryCap: 1,
     discoveryResultsPerQuery: 5,
-    discoveryMaxDiscovered: 5,
+    searchPlannerQueryCap: 5,
 
     serpTriageMinScore: 0,
   });
@@ -538,7 +538,7 @@ test('discoverCandidateSources falls back to top-level job identity for query gu
 test('discoverCandidateSources reuses cached frontier query results during same-product cooldown', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-query-cache-'));
   const config = makeConfig(tempRoot, {
-    discoveryMaxQueries: 1,
+    searchProfileQueryCap: 1,
     searchTemplates: undefined,
   });
   const storage = createStorage(config);
@@ -687,7 +687,7 @@ test('discoverCandidateSources produces non-null effective_host_plan from brand 
 test('discoverCandidateSources ignores cooldown-only empty cache and still executes internet search', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-empty-query-cache-'));
   const config = makeConfig(tempRoot, {
-    discoveryMaxQueries: 1,
+    searchProfileQueryCap: 1,
     searchTemplates: undefined,
   });
   const storage = createStorage(config);

@@ -4296,6 +4296,13 @@ html[data-sf-theme='slate'] .sf-danger-bg-soft {
   background: rgb(127 29 29 / 0.18);
 }
 
+.sf-purple-bg-soft {
+  background-color: rgb(250 245 255);
+}
+html[data-sf-theme='slate'] .sf-purple-bg-soft {
+  background: rgb(88 28 135 / 0.15);
+}
+
 html[data-sf-theme='slate'] .sf-progress-active-shell {
   border-color: rgb(12 74 110 / 0.50);
   background: rgb(12 74 110 / 0.14);

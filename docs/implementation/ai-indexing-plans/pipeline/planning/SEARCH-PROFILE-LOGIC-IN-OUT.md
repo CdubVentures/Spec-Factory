@@ -1,6 +1,6 @@
 # Search Profile Logic In And Out
 
-Validated against live code on 2026-03-18.
+Validated against live code on 2026-03-19.
 
 ## What this stage is
 
@@ -166,3 +166,11 @@ Search Profile feeds:
 - Stage 05 Query Journey with deterministic `query_rows`, `variant_guard_terms`, and optional `effective_host_plan`
 
 It also becomes the main discovery review artifact once execution finishes.
+
+### V4 tier-aware consumption (planned)
+
+NeedSet now tells Search Profile which groups to focus on and provides enriched descriptions. Search Profile consumes these to build actual queries:
+
+- **Tier 1**: `seed_status.specs_seed.is_needed` and `seed_status.source_seeds[name].is_needed` determine whether broad seed queries should fire
+- **Tier 2**: `focus_group.group_search_worthy` determines whether to emit a `{brand} {model} {variant} {group} {description}` query or skip to individual keys. Uses `group_description_long` as the enriched description.
+- **Tier 3**: `focus_group.normalized_key_queue` provides the ordered list of individual keys. Each field's `all_aliases`, `alias_shards`, `domains_tried_for_key`, `query_modes_tried_for_key` feed progressive enrichment across rounds.

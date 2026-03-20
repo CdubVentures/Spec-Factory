@@ -1,29 +1,20 @@
 import { requestOpenAICompatibleChatCompletion } from './openaiCompatible.js';
-import { requestDeepSeekChatCompletion } from './deepseek.js';
-import { requestGeminiChatCompletion } from './gemini.js';
 
-export function selectLlmProvider(provider) {
-  const token = String(provider || '').trim().toLowerCase();
-  if (token === 'deepseek') {
-    return {
-      name: 'deepseek',
-      request: requestDeepSeekChatCompletion
-    };
-  }
-  if (token === 'gemini') {
-    return {
-      name: 'gemini',
-      request: requestGeminiChatCompletion
-    };
-  }
-  if (token === 'chatmock') {
-    return {
-      name: 'chatmock',
-      request: requestOpenAICompatibleChatCompletion
-    };
-  }
-  return {
-    name: 'openai',
-    request: requestOpenAICompatibleChatCompletion
-  };
+// WHY: All providers use the OpenAI-compatible protocol. The dedicated deepseek.js / gemini.js
+// wrappers only differed by default baseUrl, which routing.js already resolves.
+// Dispatch by registry `type` field OR by provider name — both land here.
+const PROVIDER_DISPATCH = new Map([
+  ['openai-compatible', { name: 'openai', request: requestOpenAICompatibleChatCompletion }],
+  ['openai', { name: 'openai', request: requestOpenAICompatibleChatCompletion }],
+  ['deepseek', { name: 'deepseek', request: requestOpenAICompatibleChatCompletion }],
+  ['gemini', { name: 'gemini', request: requestOpenAICompatibleChatCompletion }],
+  ['anthropic', { name: 'anthropic', request: requestOpenAICompatibleChatCompletion }],
+  ['chatmock', { name: 'chatmock', request: requestOpenAICompatibleChatCompletion }],
+]);
+
+const DEFAULT_PROVIDER = { name: 'openai', request: requestOpenAICompatibleChatCompletion };
+
+export function selectLlmProvider(providerOrType) {
+  const token = String(providerOrType || '').trim().toLowerCase();
+  return PROVIDER_DISPATCH.get(token) || DEFAULT_PROVIDER;
 }

@@ -3,7 +3,12 @@ import { usePersistedNullableTab } from '../../../../stores/tabStore';
 import { usePersistedToggle } from '../../../../stores/collapseStore';
 import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
 import { Tip } from '../../../../shared/ui/feedback/Tip';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
+import { Chip } from '../../../../shared/ui/feedback/Chip';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
+import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
 import type {
   PrefetchSearchProfileData,
   SearchPlanPass,
@@ -26,24 +31,6 @@ interface PrefetchQueryJourneyPanelProps {
   searchResultDetails?: SearchResultDetail[];
   persistScope: string;
   idxRuntime?: RuntimeIdxBadge[];
-}
-
-/* ── Theme-aligned helpers (match NeedSet / Brand Resolver / Search Profile) ── */
-
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline gap-2 pt-2 pb-1.5 mb-3 border-b-[1.5px] border-[var(--sf-token-text-primary)]">
-      <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary">{children}</span>
-    </div>
-  );
-}
-
-function Chip({ label, className }: { label: string; className?: string }) {
-  return (
-    <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.04em] ${className || 'sf-chip-accent'} border-[1.5px] border-current`}>
-      {label}
-    </span>
-  );
 }
 
 /* ── Query Journey Drawer ── */
@@ -216,24 +203,12 @@ export function PrefetchQueryJourneyPanel({
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
         {/* Big stat numbers */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-5">
-          <div>
-            <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">{plannedCount}</div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">planned</div>
-          </div>
-          <div>
-            <div className={`text-4xl font-bold leading-none tracking-tight ${plannedCount > 0 ? 'text-[var(--sf-token-accent)]' : 'sf-text-muted'}`}>{plannedCount}</div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">sent</div>
-          </div>
-          <div>
-            <div className={`text-4xl font-bold leading-none tracking-tight ${resultsCount > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'}`}>{resultsCount}</div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">results received</div>
-          </div>
-          <div>
-            <div className={`text-4xl font-bold leading-none tracking-tight ${pendingCount > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'}`}>{pendingCount}</div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">still pending</div>
-          </div>
-        </div>
+        <HeroStatGrid>
+          <HeroStat value={plannedCount} label="planned" />
+          <HeroStat value={plannedCount} label="sent" colorClass={plannedCount > 0 ? 'text-[var(--sf-token-accent)]' : 'sf-text-muted'} />
+          <HeroStat value={resultsCount} label="results received" colorClass={resultsCount > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
+          <HeroStat value={pendingCount} label="still pending" colorClass={pendingCount > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
+        </HeroStatGrid>
 
         {/* Narrative */}
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
@@ -263,15 +238,7 @@ export function PrefetchQueryJourneyPanel({
 
       {/* ── Ranking Explainer (collapsible) ── */}
       <div>
-        <div
-          onClick={toggleRankingOpen}
-          className="flex items-baseline gap-2 pt-2 pb-1.5 border-b-[1.5px] border-[var(--sf-token-text-primary)] cursor-pointer select-none"
-        >
-          <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary flex-1">ranking formula</span>
-          <span className="text-[11px] font-mono sf-text-subtle">
-            {rankingOpen ? 'collapse \u25B4' : 'expand \u25BE'}
-          </span>
-        </div>
+        <CollapsibleSectionHeader isOpen={rankingOpen} onToggle={toggleRankingOpen}>ranking formula</CollapsibleSectionHeader>
 
         {rankingOpen && (
           <div className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-4 mt-3 space-y-4">
@@ -388,14 +355,7 @@ export function PrefetchQueryJourneyPanel({
       )}
 
       {/* ── Debug ── */}
-      <details className="text-xs">
-        <summary className="cursor-pointer sf-summary-toggle flex items-baseline gap-2 pb-1.5 border-b border-dashed sf-border-soft select-none">
-          <span className="text-[10px] font-semibold font-mono sf-text-subtle tracking-[0.04em] uppercase">debug &middot; raw query journey json</span>
-        </summary>
-        <pre className="mt-3 sf-pre-block text-xs font-mono rounded-sm p-4 overflow-x-auto overflow-y-auto max-h-[25rem] whitespace-pre-wrap break-all">
-          {JSON.stringify(journeyRows, null, 2)}
-        </pre>
-      </details>
+      <DebugJsonDetails label="raw query journey json" data={journeyRows} />
     </div>
   );
 }

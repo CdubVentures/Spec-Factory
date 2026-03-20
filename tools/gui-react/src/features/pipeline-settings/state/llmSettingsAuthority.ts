@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client';
 import type { LlmRouteResponse, LlmRouteRow } from '../../../types/llmSettings';
@@ -6,11 +6,7 @@ import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint';
 import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from '../../../stores/settingsManifest';
 import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract';
 import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract';
-import {
-  registerUnloadGuard,
-  markDomainFlushedByUnmount,
-  isDomainFlushedByUnload,
-} from '../../../stores/settingsUnloadGuard';
+import { useSettingsAutoSaveEffect } from './useSettingsAutoSaveEffect';
 
 interface LlmSettingsSavePayload {
   rows: LlmRouteRow[];
@@ -30,6 +26,7 @@ interface LlmSettingsAuthorityOptions {
   rows: LlmRouteRow[];
   dirty: boolean;
   autoSaveEnabled: boolean;
+  initialHydrationApplied?: boolean;
   editVersion: number;
   onPersisted?: (result: LlmSettingsSaveResult, payload: LlmSettingsSavePayload) => void;
   onSaveSuccess?: (response: LlmRouteResponse, payload: LlmSettingsSavePayload) => void;
@@ -120,6 +117,7 @@ export function useLlmSettingsAuthority({
   rows,
   dirty,
   autoSaveEnabled,
+  initialHydrationApplied = true,
   editVersion,
   onPersisted,
   onSaveSuccess,
@@ -128,21 +126,10 @@ export function useLlmSettingsAuthority({
 }: LlmSettingsAuthorityOptions): LlmSettingsAuthorityResult {
   const queryClient = useQueryClient();
   const queryKey = llmSettingsRoutesQueryKey(category);
-  const lastAutoSavedFingerprintRef = useRef('');
-  const lastAutoSaveAttemptFingerprintRef = useRef('');
-  const pendingAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rowsFingerprint = autoSaveFingerprint(rows);
   const rowsRef = useRef(rows);
-  const rowsFingerprintRef = useRef(rowsFingerprint);
-  const enabledRef = useRef(enabled);
-  const dirtyRef = useRef(dirty);
-  const autoSaveEnabledRef = useRef(autoSaveEnabled);
   const editVersionRef = useRef(editVersion);
   rowsRef.current = rows;
-  rowsFingerprintRef.current = rowsFingerprint;
-  enabledRef.current = enabled;
-  dirtyRef.current = dirty;
-  autoSaveEnabledRef.current = autoSaveEnabled;
   editVersionRef.current = editVersion;
 
   const { data, isLoading, refetch } = useQuery({
@@ -150,6 +137,36 @@ export function useLlmSettingsAuthority({
     queryFn: () => api.get<LlmRouteResponse>(`/llm-settings/${category}/routes`),
     enabled: enabled && autoQueryEnabled,
   });
+
+  const resetMutation = useMutation({
+    mutationFn: () => api.post<LlmRouteResponse>(`/llm-settings/${category}/routes/reset`),
+    onSuccess: (response) => {
+      queryClient.setQueryData(queryKey, response);
+      onResetSuccess?.(response);
+    },
+  });
+
+  const saveFnRef = useRef<() => void>(() => {});
+  const getUnloadBody = useCallback(() => ({ rows: rowsRef.current }), []);
+
+  const { markSaved, clearAttemptFingerprint, seedFingerprint } =
+    useSettingsAutoSaveEffect({
+      domain: 'llm',
+      debounceMs: SETTINGS_AUTOSAVE_DEBOUNCE_MS.llmRoutes,
+      payloadFingerprint: rowsFingerprint,
+      dirty,
+      autoSaveEnabled,
+      initialHydrationApplied,
+      enabled: enabled && !resetMutation.isPending,
+      saveFn: () => saveFnRef.current(),
+      getUnloadBody,
+      unloadUrl: `/api/v1/llm-settings/${category}/routes`,
+    });
+
+  const handleAutoSaveError = (error: Error | unknown) => {
+    clearAttemptFingerprint();
+    onError?.(error);
+  };
 
   const saveMutation = useMutation(
     createSettingsOptimisticMutationContract<
@@ -191,97 +208,22 @@ export function useLlmSettingsAuthority({
         };
       },
       onPersisted: (result, payload) => {
-        const savedFingerprint = autoSaveFingerprint(payload.rows);
-        lastAutoSavedFingerprintRef.current = savedFingerprint;
-        lastAutoSaveAttemptFingerprintRef.current = savedFingerprint;
+        markSaved(autoSaveFingerprint(payload.rows));
         publishSettingsPropagation({ domain: 'llm', category });
         onPersisted?.(result.persisted, payload);
         onSaveSuccess?.(result.response, payload);
       },
-      onError,
+      onError: handleAutoSaveError,
     }),
   );
-
-  const resetMutation = useMutation({
-    mutationFn: () => api.post<LlmRouteResponse>(`/llm-settings/${category}/routes/reset`),
-    onSuccess: (response) => {
-      queryClient.setQueryData(queryKey, response);
-      onResetSuccess?.(response);
-    },
-  });
-  const saveMutate = saveMutation.mutate;
-
-  useEffect(() => {
-    if (!enabled || !autoSaveEnabled || !dirty || saveMutation.isPending || resetMutation.isPending) return;
-    if (!rowsFingerprint) return;
-    if (rowsFingerprint === lastAutoSavedFingerprintRef.current) return;
-    if (rowsFingerprint === lastAutoSaveAttemptFingerprintRef.current) return;
-    const nextRows = rows;
-    lastAutoSaveAttemptFingerprintRef.current = rowsFingerprint;
-    const timer = setTimeout(() => {
-      pendingAutoSaveTimerRef.current = null;
-      saveMutate({ rows: nextRows, version: editVersion });
-    }, SETTINGS_AUTOSAVE_DEBOUNCE_MS.llmRoutes);
-    pendingAutoSaveTimerRef.current = timer;
-    return () => {
-      clearTimeout(timer);
-      if (pendingAutoSaveTimerRef.current === timer) {
-        pendingAutoSaveTimerRef.current = null;
-      }
-    };
-  }, [enabled, autoSaveEnabled, dirty, rowsFingerprint, rows, editVersion, saveMutate, resetMutation.isPending, saveMutation.isPending]);
-
-  useEffect(() => {
-    return registerUnloadGuard({
-      domain: 'llm',
-      isDirty: () => {
-        if (!enabledRef.current || !autoSaveEnabledRef.current || !dirtyRef.current) return false;
-        const fp = rowsFingerprintRef.current;
-        return Boolean(fp) && fp !== lastAutoSavedFingerprintRef.current;
-      },
-      getPayload: () => ({
-        url: `/api/v1/llm-settings/${category}/routes`,
-        method: 'PUT',
-        body: { rows: rowsRef.current },
-      }),
-      markFlushed: () => {
-        lastAutoSaveAttemptFingerprintRef.current = rowsFingerprintRef.current;
-      },
-    });
-  }, [category]);
-
-  useEffect(() => () => {
-    if (isDomainFlushedByUnload('llm')) return;
-    if (pendingAutoSaveTimerRef.current) {
-      clearTimeout(pendingAutoSaveTimerRef.current);
-      pendingAutoSaveTimerRef.current = null;
-    }
-    if (!enabled || !autoSaveEnabled || !dirty || saveMutation.isPending || resetMutation.isPending) return;
-    if (!rowsFingerprint) return;
-    if (rowsFingerprint === lastAutoSavedFingerprintRef.current) return;
-    lastAutoSaveAttemptFingerprintRef.current = rowsFingerprint;
-    saveMutate({ rows, version: editVersion });
-    markDomainFlushedByUnmount('llm');
-  }, [
-    enabled,
-    autoSaveEnabled,
-    dirty,
-    rowsFingerprint,
-    rows,
-    editVersion,
-    saveMutate,
-    saveMutation.isPending,
-    resetMutation.isPending,
-  ]);
+  saveFnRef.current = () => saveMutation.mutate({ rows: rowsRef.current, version: editVersionRef.current });
 
   async function reload() {
     const result = await refetch();
     if (!result.data) return;
     queryClient.setQueryData(queryKey, result.data);
     const loadedRows = Array.isArray(result.data.rows) ? result.data.rows : [];
-    const loadedFingerprint = autoSaveFingerprint(loadedRows);
-    lastAutoSavedFingerprintRef.current = loadedFingerprint;
-    lastAutoSaveAttemptFingerprintRef.current = loadedFingerprint;
+    seedFingerprint(autoSaveFingerprint(loadedRows));
   }
 
   function save() {

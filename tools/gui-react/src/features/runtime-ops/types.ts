@@ -483,29 +483,23 @@ export interface PrefetchSchema4Bundle {
   phase: 'now' | 'next' | 'hold';
   source_target: string;
   content_target: string;
-  search_intent: string | null;
-  host_class: string | null;
-  query_family_mix: string | null;
+  search_intent?: string | null;
+  host_class?: string | null;
+  query_family_mix?: string | null;
   reason_active: string | null;
-  queries: Array<{ q: string; family: string }>;
   fields: PrefetchNeedSetBundleField[];
 }
 
-/** Schema 4 profile influence (13 keys) */
+/** Tier-aware profile influence — derived from Schema 3 focus_groups + seed_status */
 export interface PrefetchNeedSetProfileInfluence {
-  manufacturer_html: number;
-  manual_pdf: number;
-  support_docs: number;
-  review_lookup: number;
-  benchmark_lookup: number;
-  fallback_web: number;
-  targeted_single: number;
-  duplicates_suppressed: number;
-  focused_bundles: number;
-  targeted_exceptions: number;
-  total_queries: number;
-  trusted_host_share: number;
-  docs_manual_share: number;
+  tier1_seed_active: boolean;
+  tier2_group_count: number;
+  tier3_key_count: number;
+  groups_now: number;
+  groups_next: number;
+  groups_hold: number;
+  total_unresolved_keys: number;
+  planner_confidence: number;
 }
 
 export interface PrefetchNeedSetData {
@@ -591,6 +585,7 @@ export interface PrefetchSearchProfileData {
   source?: string;
   query_reject_log?: Array<{ query?: string; source?: string; reason: string; stage?: string; detail?: string }>;
   alias_reject_log?: Array<{ alias?: string; source?: string; reason?: string; stage?: string }>;
+  effective_host_plan?: Record<string, unknown> | null;
   brand_resolution?: {
     officialDomain: string;
     supportDomain: string;
@@ -634,7 +629,6 @@ export interface PrefetchSearchProfileData {
   discovered_count?: number;
   approved_count?: number;
   candidate_count?: number;
-  status?: string;
   llm_serp_selector?: boolean;
   serp_explorer?: {
     query_count: number;
@@ -718,6 +712,7 @@ export interface SerpResultRow {
   decision: string;
   reason: string;
   provider?: string;
+  already_crawled?: boolean;
 }
 
 export interface SearchResultDetail {
@@ -828,7 +823,7 @@ export interface PrefetchLiveSettings {
   scannedPdfOcrEnabled?: boolean;
   maxPagesPerDomain?: number;
   discoveryResultsPerQuery?: number;
-  discoveryMaxDiscovered?: number;
+  searchPlannerQueryCap?: number;
 }
 
 // ── Pre-Fetch Phases Response ──

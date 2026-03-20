@@ -3,6 +3,9 @@ import { usePersistedNullableTab } from '../../../../stores/tabStore';
 import type { PrefetchSearchProfileData, PrefetchSearchProfileQueryRow, SearchPlanPass, PrefetchLiveSettings } from '../../types';
 import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
 import { Tip } from '../../../../shared/ui/feedback/Tip';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
+import { Chip } from '../../../../shared/ui/feedback/Chip';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
 import { deriveLlmPlannerStatus } from '../../selectors/searchProfileHelpers.js';
 import {
   shouldShowSearchProfileGateBadges,
@@ -20,6 +23,7 @@ import {
 import { providerDisplayLabel } from '../../selectors/searchResultsHelpers.js';
 import { formatTooltip, TooltipBadge } from '../../components/PrefetchTooltip';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
 import type { RuntimeIdxBadge } from '../../types';
 
 interface PrefetchSearchProfilePanelProps {
@@ -31,22 +35,6 @@ interface PrefetchSearchProfilePanelProps {
 }
 
 /* ── Theme-aligned helpers ───────────────────────────────────────────── */
-
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline gap-2 pt-2 pb-1.5 mb-3 border-b-[1.5px] border-[var(--sf-token-text-primary)]">
-      <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary">{children}</span>
-    </div>
-  );
-}
-
-function Chip({ label, className }: { label: string; className?: string }) {
-  return (
-    <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.04em] ${className || 'sf-chip-accent'} border-[1.5px] border-current`}>
-      {label}
-    </span>
-  );
-}
 
 function toChipLabel(value: unknown): string {
   if (typeof value === 'string') return value.trim();
@@ -236,9 +224,6 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
           <div className="flex items-baseline gap-3">
             <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Search Profile</span>
             <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Discovery Pipeline</span>
-            {data.status && (
-              <Chip label={data.status === 'executed' ? 'EXECUTED' : data.status.toUpperCase()} className={data.status === 'executed' ? 'sf-chip-success' : 'sf-chip-warning'} />
-            )}
             {isSchema4 && <Chip label="Schema 4" className="sf-chip-info" />}
             {!isSchema4 && data.query_rows.length > 0 && <Chip label="Deterministic" className="sf-chip-neutral" />}
           </div>
@@ -252,34 +237,12 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
         {/* Big stat numbers */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-5">
-          <div>
-            <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">
-              {data.selected_query_count ?? data.query_count}
-            </div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">queries</div>
-          </div>
-          <div>
-            <div className={`text-4xl font-bold leading-none tracking-tight ${(data.discovered_count ?? 0) > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'}`}>
-              {data.discovered_count ?? totalResults}
-            </div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">
-              {(data.discovered_count ?? 0) > 0 ? 'urls discovered' : 'serp results'}
-            </div>
-          </div>
-          <div>
-            <div className={`text-4xl font-bold leading-none tracking-tight ${(data.approved_count ?? 0) > 0 ? 'text-[var(--sf-token-accent)]' : 'sf-text-muted'}`}>
-              {data.approved_count ?? 0}
-            </div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">approved</div>
-          </div>
-          <div>
-            <div className={`text-4xl font-bold leading-none tracking-tight ${(guardRejected ?? 0) > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'}`}>
-              {guardRejected ?? guardGuarded ?? 0}
-            </div>
-            <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">guard rejected</div>
-          </div>
-        </div>
+        <HeroStatGrid>
+          <HeroStat value={data.selected_query_count ?? data.query_count} label="queries" />
+          <HeroStat value={data.discovered_count ?? totalResults} label={(data.discovered_count ?? 0) > 0 ? 'urls discovered' : 'serp results'} colorClass={(data.discovered_count ?? 0) > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
+          <HeroStat value={data.approved_count ?? 0} label="approved" colorClass={(data.approved_count ?? 0) > 0 ? 'text-[var(--sf-token-accent)]' : 'sf-text-muted'} />
+          <HeroStat value={guardRejected ?? guardGuarded ?? 0} label="guard rejected" colorClass={(guardRejected ?? 0) > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
+        </HeroStatGrid>
 
         {/* Narrative */}
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
@@ -574,14 +537,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
       {/* ══════════════════════════════════════════════════════════════════
           DEBUG
           ══════════════════════════════════════════════════════════════════ */}
-      <details className="text-xs">
-        <summary className="cursor-pointer sf-summary-toggle flex items-baseline gap-2 pb-1.5 border-b border-dashed sf-border-soft select-none">
-          <span className="text-[10px] font-semibold font-mono sf-text-subtle tracking-[0.04em] uppercase">debug &middot; raw search profile json</span>
-        </summary>
-        <pre className="mt-3 sf-pre-block text-xs font-mono rounded-sm p-4 overflow-x-auto overflow-y-auto max-h-[25rem] whitespace-pre-wrap break-all">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      </details>
+      <DebugJsonDetails label="raw search profile json" data={data} />
     </div>
   );
 }

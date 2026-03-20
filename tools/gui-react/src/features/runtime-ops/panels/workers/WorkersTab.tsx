@@ -92,7 +92,7 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
       scannedPdfOcrEnabled: toOptionalBoolean(runtimeSettingsSnapshot.scannedPdfOcrEnabled),
       maxPagesPerDomain: toOptionalPositiveInt(runtimeSettingsSnapshot.maxPagesPerDomain),
       discoveryResultsPerQuery: toOptionalPositiveInt(runtimeSettingsSnapshot.discoveryResultsPerQuery),
-      discoveryMaxDiscovered: toOptionalPositiveInt(runtimeSettingsSnapshot.discoveryMaxDiscovered),
+      searchPlannerQueryCap: toOptionalPositiveInt(runtimeSettingsSnapshot.searchPlannerQueryCap),
     };
   }, [runtimeSettingsSnapshot]);
 

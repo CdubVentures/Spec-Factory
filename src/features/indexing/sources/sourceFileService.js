@@ -4,21 +4,16 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-export const DISCOVERY_DEFAULTS = Object.freeze({
-  method: 'manual',
-  source_type: '',
-  search_pattern: '',
-  priority: 50,
-  enabled: true,
-  notes: '',
-});
+// WHY: O(1) — DISCOVERY_DEFAULTS and SOURCE_ENTRY_MUTABLE_KEYS now derived
+// from the canonical Zod schema via sourceEntryContract.
+export {
+  DISCOVERY_DEFAULTS,
+  sourceEntryMutableKeys,
+} from '../discovery/contracts/sourceEntryContract.js';
+import { DISCOVERY_DEFAULTS, sourceEntryMutableKeys } from '../discovery/contracts/sourceEntryContract.js';
 
-// WHY: Whitelist for PATCH/PUT — prevents blind shallow merge of unknown keys.
-export const SOURCE_ENTRY_MUTABLE_KEYS = Object.freeze(new Set([
-  'display_name', 'tier', 'authority', 'base_url', 'content_types', 'doc_kinds',
-  'crawl_config', 'field_coverage', 'discovery', 'enabled', 'notes', 'label',
-  'url', 'approved', 'source_type',
-]));
+// WHY: Frozen Set for backward compat — existing callers expect a Set, not a function.
+export const SOURCE_ENTRY_MUTABLE_KEYS = Object.freeze(sourceEntryMutableKeys());
 
 // WHY: Keys that must be plain objects when present (not arrays, not primitives).
 const OBJECT_TYPED_KEYS = new Set(['discovery', 'crawl_config', 'field_coverage']);

@@ -319,6 +319,16 @@ UI drift and one-off styling are forbidden.
 
 ---
 
+## O(1) Feature Scaling & Registry-Driven Architecture
+
+For all code generation, architecture design, and refactoring, you must strictly adhere to the **O(1) Feature Scaling Rule**.
+
+- **The One-File Rule:** Whenever a new standard field, entity, or configuration parameter is added to the system, it MUST require modifying exactly ONE file (the central definition, schema, or registry).
+- **No Whack-a-Mole Coding:** You are STRICTLY FORBIDDEN from writing or maintaining code that requires a human to manually touch a database model, an API payload, a state management slice, and a UI component just to add a simple setting or field.
+- **Dynamic Derivation:** All TypeScript interfaces (payloads, normalized state, UI props) MUST be dynamically inferred from the central registry (e.g., using mapped types `Record<keyof typeof Registry, ...>`, Zod, or generic schemas). Never manually duplicate registry keys into interfaces.
+- **Generic Engines Over Hardcoding:** Serialization, hydration, and UI rendering layers must utilize generic loops that iterate over the registry. 
+- **The Abstraction Mandate:** If you find yourself writing repetitive boilerplate or hardcoding specific keys in multiple files for standard fields, STOP immediately, delete the repetitive code, output `[STATE: REFACTOR]`, and build a generic schema-driven abstraction.
+
 ## Configurability & knobs
 
 - No magic numbers for behavior (timeouts/retries/pagination/flags).

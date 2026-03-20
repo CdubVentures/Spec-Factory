@@ -190,6 +190,11 @@ export const RUNTIME_STEPS: RuntimeStepEntry[] = [
 export const RUNTIME_SUB_STEPS: Record<RuntimeStepId, RuntimeSubStepEntry[]> = {
   'run-setup': [
     {
+      id: 'run-setup-timeout',
+      label: 'Run Timeout',
+      tip: 'Maximum wall-clock time per product run. Enforced at scheduler, lifecycle, hypothesis, preflight, and repair phases.',
+    },
+    {
       id: 'run-setup-discovery',
       label: 'Discovery',
       tip: 'Phases 01-07. Search Planner is precomputed from NeedSet, Search Profile is the deterministic/fallback branch, and Query Journey chooses between them before search executes.',
@@ -197,7 +202,7 @@ export const RUNTIME_SUB_STEPS: Record<RuntimeStepId, RuntimeSubStepEntry[]> = {
     {
       id: 'run-setup-budgets',
       label: 'URL Budgets',
-      tip: 'Phases 05-08. Caps how many URLs, pages, bytes, and seconds discovery can spend before the fetch handoff.',
+      tip: 'Caps how many URLs and pages discovery can spend before the fetch handoff.',
     },
     {
       id: 'run-setup-resume',

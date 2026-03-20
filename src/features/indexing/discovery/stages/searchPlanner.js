@@ -4,6 +4,7 @@
 import { planUberQueries } from '../../../../research/queryPlanner.js';
 import { resolveSchema4ExecutionPlan } from '../searchDiscovery.js';
 import { toArray } from '../discoveryIdentity.js';
+import { configInt } from '../../../../shared/settingsAccessor.js';
 
 /**
  * @param {object} ctx
@@ -56,7 +57,7 @@ export async function runSearchPlanner({
     missingCriticalFields: planningHints.missingCriticalFields || [],
     baseQueries: [...baseQueries, ...targetedQueries],
     frontierSummary,
-    cap: Math.max(12, Number(config.discoveryMaxQueries || 12) * 2),
+    cap: Math.max(1, configInt(config, 'searchPlannerQueryCap')),
   });
 
   if (toArray(uberSearchPlan?.queries).length > 0) {

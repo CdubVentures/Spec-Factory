@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { DataTable } from '../../components/common/DataTable';
+import { DataTable } from '../../shared/ui/data-display/DataTable';
 import { EVENT_MEANINGS } from '../../utils/constants';
 import type { RuntimeEvent } from '../../types/events';
 import type { ColumnDef } from '@tanstack/react-table';

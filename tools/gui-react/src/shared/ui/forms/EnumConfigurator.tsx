@@ -1,1 +1,1 @@
-export * from '../../../components/common/EnumConfigurator';
+export * from '../../../features/studio/components/EnumConfigurator';

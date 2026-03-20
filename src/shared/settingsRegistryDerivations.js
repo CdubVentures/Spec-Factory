@@ -193,6 +193,40 @@ export function deriveValueTypeMap(registry) {
   return Object.freeze(typeMap);
 }
 
+// --- Manifest derivation (Phase 2 SSOT) ---
+
+const REGISTRY_TO_MANIFEST_TYPE = Object.freeze({
+  int: 'integer',
+  float: 'number',
+  bool: 'boolean',
+  string: 'string',
+  enum: 'string',
+  csv_enum: 'string',
+});
+
+/**
+ * Derive miscGroup manifest entries from registry.
+ * Produces: frozen array of { key, defaultValue, type, secret, userMutable, description }
+ * matching the shape expected by CONFIG_MANIFEST consumers.
+ * WHY: Eliminates 81 hand-maintained entries that drifted from registry defaults.
+ */
+export function deriveMiscGroupEntries(registry) {
+  const entries = [];
+  for (const entry of registry) {
+    if (!entry.envKey) continue;
+    if (entry.routeOnly) continue;
+    entries.push(Object.freeze({
+      key: entry.envKey,
+      defaultValue: String(entry.default ?? ''),
+      type: REGISTRY_TO_MANIFEST_TYPE[entry.type] || 'string',
+      secret: !!entry.secret,
+      userMutable: false,
+      description: 'System-level setting. User/domain-generated values must not be stored here.',
+    }));
+  }
+  return Object.freeze(entries);
+}
+
 // --- Plan 03: New derivation functions for SSOT rewrite ---
 
 /**

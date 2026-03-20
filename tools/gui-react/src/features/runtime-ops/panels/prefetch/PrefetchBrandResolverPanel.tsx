@@ -5,8 +5,14 @@ import type { PrefetchLlmCall, BrandResolutionData, BrandCandidate, PrefetchLive
 import { llmCallStatusBadgeClass, formatMs, pctString } from '../../helpers';
 import { ScoreBar } from '../../components/ScoreBar';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
+import { LlmCallCard } from '../../components/LlmCallCard';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
 import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
 import { Tip } from '../../../../shared/ui/feedback/Tip';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
+import { Chip } from '../../../../shared/ui/feedback/Chip';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
+import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
 import type { RuntimeIdxBadge } from '../../types';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
@@ -28,7 +34,7 @@ const SKIP_REASON_LABELS: Record<string, string> = {
 
 /* ── Theme-aligned badge helpers ───────────────────────────────────── */
 
-function statusBadgeClass(status: string): string {
+function brandResolutionBadgeClass(status: string): string {
   if (status === 'resolved') return 'sf-chip-success';
   if (status === 'resolved_empty') return 'sf-chip-warning';
   if (status === 'failed') return 'sf-chip-danger';
@@ -62,24 +68,6 @@ function sourceLabel(calls: PrefetchLlmCall[], hasResolution: boolean): { text: 
   if (!hasResolution) return { text: '', badgeClass: '' };
   if (calls.length === 0) return { text: 'Cache', badgeClass: 'sf-chip-info' };
   return { text: 'LLM', badgeClass: 'sf-chip-warning' };
-}
-
-function Chip({ label, className }: { label: string; className?: string }) {
-  return (
-    <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.04em] ${className || 'sf-chip-accent'} border-[1.5px] border-current`}>
-      {label}
-    </span>
-  );
-}
-
-/* ── Section header (matches NeedSet) ─────────────────────────────── */
-
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline gap-2 pt-2 pb-1.5 mb-3 border-b-[1.5px] border-[var(--sf-token-text-primary)]">
-      <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary">{children}</span>
-    </div>
-  );
 }
 
 /* ── Candidate Drawer ─────────────────────────────────────────────── */
@@ -192,7 +180,7 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
             <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Brand Resolver</span>
             <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Domain Resolution</span>
             {status && (
-              <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] ${statusBadgeClass(status)} border-[1.5px] border-current`}>
+              <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] ${brandResolutionBadgeClass(status)} border-[1.5px] border-current`}>
                 {status === 'resolved_empty' ? 'no domain found' : status}
               </span>
             )}
@@ -215,26 +203,12 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
 
         {/* Big stat numbers — 4-col grid with colored values */}
         {hasStructured && (isResolved || isResolvedEmpty) && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-5">
-            <div>
-              <div className={`text-4xl font-bold leading-none tracking-tight ${confidenceStatColor(br!.confidence)}`}>
-                {pctString(br!.confidence)}
-              </div>
-              <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">confidence</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">{br!.aliases.length}</div>
-              <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">aliases found</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-[var(--sf-token-accent)] leading-none tracking-tight">{br!.candidates.length}</div>
-              <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">candidates</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold sf-text-primary leading-none tracking-tight">{calls.length}</div>
-              <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] sf-text-muted">llm calls</div>
-            </div>
-          </div>
+          <HeroStatGrid>
+            <HeroStat value={pctString(br!.confidence)} label="confidence" colorClass={confidenceStatColor(br!.confidence)} />
+            <HeroStat value={br!.aliases.length} label="aliases found" />
+            <HeroStat value={br!.candidates.length} label="candidates" />
+            <HeroStat value={calls.length} label="llm calls" colorClass="sf-text-primary" />
+          </HeroStatGrid>
         )}
 
         {/* Narrative */}
@@ -472,57 +446,12 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
       {/* ── LLM Call Details ───────────────────────────────── */}
       {calls.length > 0 && (
         <div>
-          <div
-            onClick={toggleLlmCallsOpen}
-            className="flex items-baseline gap-2 pt-2 pb-1.5 border-b-[1.5px] border-[var(--sf-token-text-primary)] cursor-pointer select-none"
-          >
-            <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary flex-1">llm call details</span>
-            <span className="text-[11px] font-mono sf-text-subtle">
-              {calls.length} call{calls.length !== 1 ? 's' : ''}
-              {totalTokens > 0 && <> &middot; {totalTokens.toLocaleString()} tok</>}
-              {totalDuration > 0 && <> &middot; {formatMs(totalDuration)}</>}
-              {' '}&middot; {llmCallsOpen ? 'collapse \u25B4' : 'expand \u25BE'}
-            </span>
-          </div>
+          <CollapsibleSectionHeader isOpen={llmCallsOpen} onToggle={toggleLlmCallsOpen} summary={<>{calls.length} call{calls.length !== 1 ? 's' : ''}{totalTokens > 0 && <> &middot; {totalTokens.toLocaleString()} tok</>}{totalDuration > 0 && <> &middot; {formatMs(totalDuration)}</>}</>}>llm call details</CollapsibleSectionHeader>
 
           {llmCallsOpen && (
             <div className="mt-3 space-y-2">
               {calls.map((call, i) => (
-                <div key={i} className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-3.5 space-y-2">
-                  {/* Call header row */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold font-mono uppercase tracking-[0.06em] ${llmCallStatusBadgeClass(call.status)} border-[1.5px] border-current`}>
-                      {call.status}
-                    </span>
-                    {call.model && (
-                      <span className="text-[11px] font-mono sf-text-muted">{call.model}</span>
-                    )}
-                    {call.provider && (
-                      <span className="text-[11px] font-mono sf-text-subtle">{call.provider}</span>
-                    )}
-                    <span className="ml-auto flex items-baseline gap-3 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted">
-                      {call.tokens && <span>tok <strong className="sf-text-primary">{call.tokens.input}+{call.tokens.output}</strong></span>}
-                      {call.duration_ms !== undefined && <span>dur <strong className="sf-text-primary">{formatMs(call.duration_ms)}</strong></span>}
-                    </span>
-                  </div>
-                  {call.error && (
-                    <div className="px-3 py-2 rounded-sm border border-[var(--sf-state-error-border)] bg-[var(--sf-state-error-bg)] text-xs text-[var(--sf-state-error-fg)]">
-                      {call.error}
-                    </div>
-                  )}
-                  {call.prompt_preview && (
-                    <div>
-                      <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle mb-1">prompt</div>
-                      <pre className="max-h-32 overflow-x-auto overflow-y-auto whitespace-pre-wrap rounded-sm p-3 font-mono text-[11px] sf-pre-block">{call.prompt_preview}</pre>
-                    </div>
-                  )}
-                  {call.response_preview && (
-                    <div>
-                      <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle mb-1">response</div>
-                      <pre className="max-h-32 overflow-x-auto overflow-y-auto whitespace-pre-wrap rounded-sm p-3 font-mono text-[11px] sf-pre-block">{call.response_preview}</pre>
-                    </div>
-                  )}
-                </div>
+                <LlmCallCard key={i} call={call} />
               ))}
             </div>
           )}
@@ -531,14 +460,7 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
 
       {/* ── Debug ─────────────────────────────────────────── */}
       {hasStructured && (
-        <details className="text-xs">
-          <summary className="cursor-pointer sf-summary-toggle flex items-baseline gap-2 pb-1.5 border-b border-dashed sf-border-soft select-none">
-            <span className="text-[10px] font-semibold font-mono sf-text-subtle tracking-[0.04em] uppercase">debug &middot; raw brand resolver json</span>
-          </summary>
-          <pre className="mt-3 sf-pre-block text-xs font-mono rounded-sm p-4 overflow-x-auto overflow-y-auto max-h-[25rem] whitespace-pre-wrap break-all">
-            {JSON.stringify(br, null, 2)}
-          </pre>
-        </details>
+        <DebugJsonDetails label="raw brand resolver json" data={br} />
       )}
     </div>
   );

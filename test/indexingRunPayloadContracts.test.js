@@ -136,8 +136,8 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       parsedScannedPdfOcrMinChars: 0,
       parsedScannedPdfOcrMinLines: 0,
       parsedScannedPdfOcrMinConfidence: 1.5,
-      parsedDiscoveryMaxQueries: 0,
-      parsedDiscoveryMaxDiscovered: 0,
+      parsedSearchProfileQueryCap: 0,
+      parsedSearchPlannerQueryCap: 0,
       parsedMaxUrlsPerProduct: 0,
       parsedMaxCandidateUrls: 0,
       parsedMaxPagesPerDomain: 0,
@@ -195,7 +195,7 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
   assert.equal(payload.scannedPdfOcrMinConfidence, 1);
   assert.equal(payload.dynamicFetchPolicyMapJson, '{"mouse":"full"}');
 
-  assert.equal(payload.discoveryMaxQueries, 1);
+  assert.equal(payload.searchProfileQueryCap, 1);
 
   assert.equal(payload.llmProvider, 'openai');
   assert.equal(payload.llmPlanProvider, 'openai');

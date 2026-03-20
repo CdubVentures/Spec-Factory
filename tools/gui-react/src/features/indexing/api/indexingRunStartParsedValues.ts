@@ -1,127 +1,53 @@
+// WHY: O(1) Feature Scaling — parsed numeric values are registry-driven. Adding a
+// new int/float setting to settingsRegistry.js auto-parses it here. Zero per-field code.
+
 import {
   parseRuntimeFloat,
   parseRuntimeInt,
   type RuntimeSettings,
   type RuntimeSettingsNumericBaseline,
 } from '../../pipeline-settings';
+import { RUNTIME_SETTINGS_REGISTRY } from '../../../shared/registryDerivedSettingsMaps';
 
 type DeriveIndexingRunStartParsedValuesInput = {
   runtimeSettingsPayload: RuntimeSettings;
   runtimeSettingsBaseline: RuntimeSettingsNumericBaseline;
 };
 
-const readNumericValue = (
-  runtimeSettingsPayload: RuntimeSettings,
-  key: string,
-): number | string => {
-  const value = runtimeSettingsPayload[key];
-  if (typeof value === 'number' || typeof value === 'string') {
-    return value;
-  }
-  return '';
+// WHY: Legacy key names preserved for backward compat with existing consumers.
+// New settings use the standard `parsed${Capitalize(key)}` naming automatically.
+const KEY_NAME_OVERRIDES: Record<string, string> = {
+  fetchConcurrency: 'parsedConcurrency',
+  crawleeRequestHandlerTimeoutSecs: 'parsedCrawleeTimeout',
+  dynamicFetchRetryBudget: 'parsedRetryBudget',
+  dynamicFetchRetryBackoffMs: 'parsedRetryBackoff',
+  scannedPdfOcrMinCharsPerPage: 'parsedScannedPdfOcrMinChars',
+  scannedPdfOcrMinLinesPerPage: 'parsedScannedPdfOcrMinLines',
 };
+
+function parsedKeyName(registryKey: string): string {
+  if (registryKey in KEY_NAME_OVERRIDES) return KEY_NAME_OVERRIDES[registryKey];
+  return `parsed${registryKey.charAt(0).toUpperCase()}${registryKey.slice(1)}`;
+}
 
 export function deriveIndexingRunStartParsedValues({
   runtimeSettingsPayload,
   runtimeSettingsBaseline,
-}: DeriveIndexingRunStartParsedValuesInput) {
-  const readValue = (key: string) => readNumericValue(runtimeSettingsPayload, key);
+}: DeriveIndexingRunStartParsedValuesInput): Record<string, number> {
+  const baseline = runtimeSettingsBaseline as unknown as Record<string, number>;
+  const result: Record<string, number> = {};
 
-  return {
-    parsedConcurrency: parseRuntimeInt(readValue('fetchConcurrency'), runtimeSettingsBaseline.fetchConcurrency),
-    parsedPerHostMinDelayMs: parseRuntimeInt(readValue('perHostMinDelayMs'), runtimeSettingsBaseline.perHostMinDelayMs),
-    parsedDomainRequestRps: parseRuntimeInt(readValue('domainRequestRps'), runtimeSettingsBaseline.domainRequestRps),
-    parsedDomainRequestBurst: parseRuntimeInt(readValue('domainRequestBurst'), runtimeSettingsBaseline.domainRequestBurst),
-    parsedGlobalRequestRps: parseRuntimeInt(readValue('globalRequestRps'), runtimeSettingsBaseline.globalRequestRps),
-    parsedGlobalRequestBurst: parseRuntimeInt(readValue('globalRequestBurst'), runtimeSettingsBaseline.globalRequestBurst),
-    parsedFetchPerHostConcurrencyCap: parseRuntimeInt(readValue('fetchPerHostConcurrencyCap'), runtimeSettingsBaseline.fetchPerHostConcurrencyCap),
-    parsedCrawleeTimeout: parseRuntimeInt(readValue('crawleeRequestHandlerTimeoutSecs'), runtimeSettingsBaseline.crawleeRequestHandlerTimeoutSecs),
-    parsedRetryBudget: parseRuntimeInt(readValue('dynamicFetchRetryBudget'), runtimeSettingsBaseline.dynamicFetchRetryBudget),
-    parsedRetryBackoff: parseRuntimeInt(readValue('dynamicFetchRetryBackoffMs'), runtimeSettingsBaseline.dynamicFetchRetryBackoffMs),
-    parsedFetchSchedulerMaxRetries: parseRuntimeInt(readValue('fetchSchedulerMaxRetries'), runtimeSettingsBaseline.fetchSchedulerMaxRetries),
-    parsedPageGotoTimeoutMs: parseRuntimeInt(readValue('pageGotoTimeoutMs'), runtimeSettingsBaseline.pageGotoTimeoutMs),
-    parsedPageNetworkIdleTimeoutMs: parseRuntimeInt(readValue('pageNetworkIdleTimeoutMs'), runtimeSettingsBaseline.pageNetworkIdleTimeoutMs),
-    parsedPostLoadWaitMs: parseRuntimeInt(readValue('postLoadWaitMs'), runtimeSettingsBaseline.postLoadWaitMs),
-    parsedFrontierQueryCooldownSeconds: parseRuntimeInt(readValue('frontierQueryCooldownSeconds'), runtimeSettingsBaseline.frontierQueryCooldownSeconds),
-    parsedFrontierCooldown404Seconds: parseRuntimeInt(readValue('frontierCooldown404Seconds'), runtimeSettingsBaseline.frontierCooldown404Seconds),
-    parsedFrontierCooldown404RepeatSeconds: parseRuntimeInt(readValue('frontierCooldown404RepeatSeconds'), runtimeSettingsBaseline.frontierCooldown404RepeatSeconds),
-    parsedFrontierCooldown410Seconds: parseRuntimeInt(readValue('frontierCooldown410Seconds'), runtimeSettingsBaseline.frontierCooldown410Seconds),
-    parsedFrontierCooldownTimeoutSeconds: parseRuntimeInt(readValue('frontierCooldownTimeoutSeconds'), runtimeSettingsBaseline.frontierCooldownTimeoutSeconds),
-    parsedFrontierCooldown403BaseSeconds: parseRuntimeInt(readValue('frontierCooldown403BaseSeconds'), runtimeSettingsBaseline.frontierCooldown403BaseSeconds),
-    parsedFrontierCooldown429BaseSeconds: parseRuntimeInt(readValue('frontierCooldown429BaseSeconds'), runtimeSettingsBaseline.frontierCooldown429BaseSeconds),
-    parsedFrontierBackoffMaxExponent: parseRuntimeInt(readValue('frontierBackoffMaxExponent'), runtimeSettingsBaseline.frontierBackoffMaxExponent),
-    parsedFrontierPathPenaltyNotfoundThreshold: parseRuntimeInt(readValue('frontierPathPenaltyNotfoundThreshold'), runtimeSettingsBaseline.frontierPathPenaltyNotfoundThreshold),
-    parsedFrontierBlockedDomainThreshold: parseRuntimeInt(readValue('frontierBlockedDomainThreshold'), runtimeSettingsBaseline.frontierBlockedDomainThreshold),
-    parsedAutoScrollPasses: parseRuntimeInt(readValue('autoScrollPasses'), runtimeSettingsBaseline.autoScrollPasses),
-    parsedAutoScrollDelayMs: parseRuntimeInt(readValue('autoScrollDelayMs'), runtimeSettingsBaseline.autoScrollDelayMs),
-    parsedMaxGraphqlReplays: parseRuntimeInt(readValue('maxGraphqlReplays'), runtimeSettingsBaseline.maxGraphqlReplays),
-    parsedMaxNetworkResponsesPerPage: parseRuntimeInt(readValue('maxNetworkResponsesPerPage'), runtimeSettingsBaseline.maxNetworkResponsesPerPage),
-    parsedRobotsTxtTimeoutMs: parseRuntimeInt(readValue('robotsTxtTimeoutMs'), runtimeSettingsBaseline.robotsTxtTimeoutMs),
-    parsedRuntimeScreencastFps: parseRuntimeInt(readValue('runtimeScreencastFps'), runtimeSettingsBaseline.runtimeScreencastFps),
-    parsedRuntimeScreencastQuality: parseRuntimeInt(readValue('runtimeScreencastQuality'), runtimeSettingsBaseline.runtimeScreencastQuality),
-    parsedRuntimeScreencastMaxWidth: parseRuntimeInt(readValue('runtimeScreencastMaxWidth'), runtimeSettingsBaseline.runtimeScreencastMaxWidth),
-    parsedRuntimeScreencastMaxHeight: parseRuntimeInt(readValue('runtimeScreencastMaxHeight'), runtimeSettingsBaseline.runtimeScreencastMaxHeight),
-    parsedEndpointSignalLimit: parseRuntimeInt(readValue('endpointSignalLimit'), runtimeSettingsBaseline.endpointSignalLimit),
-    parsedEndpointSuggestionLimit: parseRuntimeInt(readValue('endpointSuggestionLimit'), runtimeSettingsBaseline.endpointSuggestionLimit),
-    parsedEndpointNetworkScanLimit: parseRuntimeInt(readValue('endpointNetworkScanLimit'), runtimeSettingsBaseline.endpointNetworkScanLimit),
-    parsedDiscoveryMaxQueries: parseRuntimeInt(readValue('discoveryMaxQueries'), runtimeSettingsBaseline.discoveryMaxQueries),
-    parsedDiscoveryMaxDiscovered: parseRuntimeInt(readValue('discoveryMaxDiscovered'), runtimeSettingsBaseline.discoveryMaxDiscovered),
-    parsedMaxUrlsPerProduct: parseRuntimeInt(readValue('maxUrlsPerProduct'), runtimeSettingsBaseline.maxUrlsPerProduct),
-    parsedMaxCandidateUrls: parseRuntimeInt(readValue('maxCandidateUrls'), runtimeSettingsBaseline.maxCandidateUrls),
-    parsedMaxPagesPerDomain: parseRuntimeInt(readValue('maxPagesPerDomain'), runtimeSettingsBaseline.maxPagesPerDomain),
-    parsedMaxRunSeconds: parseRuntimeInt(readValue('maxRunSeconds'), runtimeSettingsBaseline.maxRunSeconds),
-    parsedMaxJsonBytes: parseRuntimeInt(readValue('maxJsonBytes'), runtimeSettingsBaseline.maxJsonBytes),
-    parsedMaxPdfBytes: parseRuntimeInt(readValue('maxPdfBytes'), runtimeSettingsBaseline.maxPdfBytes),
-    parsedPdfBackendRouterTimeoutMs: parseRuntimeInt(readValue('pdfBackendRouterTimeoutMs'), runtimeSettingsBaseline.pdfBackendRouterTimeoutMs),
-    parsedPdfBackendRouterMaxPages: parseRuntimeInt(readValue('pdfBackendRouterMaxPages'), runtimeSettingsBaseline.pdfBackendRouterMaxPages),
-    parsedPdfBackendRouterMaxPairs: parseRuntimeInt(readValue('pdfBackendRouterMaxPairs'), runtimeSettingsBaseline.pdfBackendRouterMaxPairs),
-    parsedPdfBackendRouterMaxTextPreviewChars: parseRuntimeInt(readValue('pdfBackendRouterMaxTextPreviewChars'), runtimeSettingsBaseline.pdfBackendRouterMaxTextPreviewChars),
-    parsedCapturePageScreenshotQuality: parseRuntimeInt(readValue('capturePageScreenshotQuality'), runtimeSettingsBaseline.capturePageScreenshotQuality),
-    parsedCapturePageScreenshotMaxBytes: parseRuntimeInt(readValue('capturePageScreenshotMaxBytes'), runtimeSettingsBaseline.capturePageScreenshotMaxBytes),
-    parsedArticleExtractorMinChars: parseRuntimeInt(readValue('articleExtractorMinChars'), runtimeSettingsBaseline.articleExtractorMinChars),
-    parsedArticleExtractorMinScore: parseRuntimeInt(readValue('articleExtractorMinScore'), runtimeSettingsBaseline.articleExtractorMinScore),
-    parsedArticleExtractorMaxChars: parseRuntimeInt(readValue('articleExtractorMaxChars'), runtimeSettingsBaseline.articleExtractorMaxChars),
-    parsedStaticDomTargetMatchThreshold: parseRuntimeFloat(readValue('staticDomTargetMatchThreshold'), runtimeSettingsBaseline.staticDomTargetMatchThreshold),
-    parsedStaticDomMaxEvidenceSnippets: parseRuntimeInt(readValue('staticDomMaxEvidenceSnippets'), runtimeSettingsBaseline.staticDomMaxEvidenceSnippets),
-    parsedDomSnippetMaxChars: parseRuntimeInt(readValue('domSnippetMaxChars'), runtimeSettingsBaseline.domSnippetMaxChars),
-    parsedLlmExtractionCacheTtlMs: parseRuntimeInt(readValue('llmExtractionCacheTtlMs'), runtimeSettingsBaseline.llmExtractionCacheTtlMs),
-    parsedLlmMaxCallsPerProductTotal: parseRuntimeInt(readValue('llmMaxCallsPerProductTotal'), runtimeSettingsBaseline.llmMaxCallsPerProductTotal),
+  for (const entry of RUNTIME_SETTINGS_REGISTRY) {
+    if (entry.type !== 'int' && entry.type !== 'float') continue;
 
-    parsedLlmExtractMaxSnippetsPerBatch: parseRuntimeInt(readValue('llmExtractMaxSnippetsPerBatch'), runtimeSettingsBaseline.llmExtractMaxSnippetsPerBatch),
-    parsedLlmExtractMaxSnippetChars: parseRuntimeInt(readValue('llmExtractMaxSnippetChars'), runtimeSettingsBaseline.llmExtractMaxSnippetChars),
-    parsedLlmReasoningBudget: parseRuntimeInt(readValue('llmReasoningBudget'), runtimeSettingsBaseline.llmReasoningBudget),
-    parsedLlmMonthlyBudgetUsd: parseRuntimeFloat(readValue('llmMonthlyBudgetUsd'), runtimeSettingsBaseline.llmMonthlyBudgetUsd),
-    parsedLlmPerProductBudgetUsd: parseRuntimeFloat(readValue('llmPerProductBudgetUsd'), runtimeSettingsBaseline.llmPerProductBudgetUsd),
-    parsedLlmMaxCallsPerRound: parseRuntimeInt(readValue('llmMaxCallsPerRound'), runtimeSettingsBaseline.llmMaxCallsPerRound),
-    parsedLlmMaxOutputTokens: parseRuntimeInt(readValue('llmMaxOutputTokens'), runtimeSettingsBaseline.llmMaxOutputTokens),
-    parsedLlmVerifySampleRate: parseRuntimeInt(readValue('llmVerifySampleRate'), runtimeSettingsBaseline.llmVerifySampleRate),
-    parsedLlmMaxBatchesPerProduct: parseRuntimeInt(readValue('llmMaxBatchesPerProduct'), runtimeSettingsBaseline.llmMaxBatchesPerProduct),
-    parsedLlmMaxEvidenceChars: parseRuntimeInt(readValue('llmMaxEvidenceChars'), runtimeSettingsBaseline.llmMaxEvidenceChars),
-    parsedLlmMaxTokens: parseRuntimeInt(readValue('llmMaxTokens'), runtimeSettingsBaseline.llmMaxTokens),
-    parsedLlmTimeoutMs: parseRuntimeInt(readValue('llmTimeoutMs'), runtimeSettingsBaseline.llmTimeoutMs),
-    parsedLlmCostInputPer1M: parseRuntimeFloat(readValue('llmCostInputPer1M'), runtimeSettingsBaseline.llmCostInputPer1M),
-    parsedLlmCostOutputPer1M: parseRuntimeFloat(readValue('llmCostOutputPer1M'), runtimeSettingsBaseline.llmCostOutputPer1M),
-    parsedLlmCostCachedInputPer1M: parseRuntimeFloat(readValue('llmCostCachedInputPer1M'), runtimeSettingsBaseline.llmCostCachedInputPer1M),
-    parsedMaxHypothesisItems: parseRuntimeInt(readValue('maxHypothesisItems'), runtimeSettingsBaseline.maxHypothesisItems),
-    parsedHypothesisAutoFollowupRounds: parseRuntimeInt(readValue('hypothesisAutoFollowupRounds'), runtimeSettingsBaseline.hypothesisAutoFollowupRounds),
-    parsedHypothesisFollowupUrlsPerRound: parseRuntimeInt(readValue('hypothesisFollowupUrlsPerRound'), runtimeSettingsBaseline.hypothesisFollowupUrlsPerRound),
-    parsedRuntimeTraceFetchRing: parseRuntimeInt(readValue('runtimeTraceFetchRing'), runtimeSettingsBaseline.runtimeTraceFetchRing),
-    parsedRuntimeTraceLlmRing: parseRuntimeInt(readValue('runtimeTraceLlmRing'), runtimeSettingsBaseline.runtimeTraceLlmRing),
-    parsedDaemonConcurrency: parseRuntimeInt(readValue('daemonConcurrency'), runtimeSettingsBaseline.daemonConcurrency),
-    parsedDaemonGracefulShutdownTimeoutMs: parseRuntimeInt(readValue('daemonGracefulShutdownTimeoutMs'), runtimeSettingsBaseline.daemonGracefulShutdownTimeoutMs),
-    parsedImportsPollSeconds: parseRuntimeInt(readValue('importsPollSeconds'), runtimeSettingsBaseline.importsPollSeconds),
-    parsedIndexingResumeSeedLimit: parseRuntimeInt(readValue('indexingResumeSeedLimit'), runtimeSettingsBaseline.indexingResumeSeedLimit),
-    parsedIndexingResumePersistLimit: parseRuntimeInt(readValue('indexingResumePersistLimit'), runtimeSettingsBaseline.indexingResumePersistLimit),
-    parsedFieldRewardHalfLifeDays: parseRuntimeInt(readValue('fieldRewardHalfLifeDays'), runtimeSettingsBaseline.fieldRewardHalfLifeDays),
-    parsedDriftPollSeconds: parseRuntimeInt(readValue('driftPollSeconds'), runtimeSettingsBaseline.driftPollSeconds),
-    parsedDriftScanMaxProducts: parseRuntimeInt(readValue('driftScanMaxProducts'), runtimeSettingsBaseline.driftScanMaxProducts),
-    parsedReCrawlStaleAfterDays: parseRuntimeInt(readValue('reCrawlStaleAfterDays'), runtimeSettingsBaseline.reCrawlStaleAfterDays),
-    parsedScannedPdfOcrMaxPages: parseRuntimeInt(readValue('scannedPdfOcrMaxPages'), runtimeSettingsBaseline.scannedPdfOcrMaxPages),
-    parsedScannedPdfOcrMaxPairs: parseRuntimeInt(readValue('scannedPdfOcrMaxPairs'), runtimeSettingsBaseline.scannedPdfOcrMaxPairs),
-    parsedScannedPdfOcrMinChars: parseRuntimeInt(readValue('scannedPdfOcrMinCharsPerPage'), runtimeSettingsBaseline.scannedPdfOcrMinCharsPerPage),
-    parsedScannedPdfOcrMinLines: parseRuntimeInt(readValue('scannedPdfOcrMinLinesPerPage'), runtimeSettingsBaseline.scannedPdfOcrMinLinesPerPage),
-    parsedScannedPdfOcrMinConfidence: parseRuntimeFloat(readValue('scannedPdfOcrMinConfidence'), runtimeSettingsBaseline.scannedPdfOcrMinConfidence),
-  };
+    const raw = runtimeSettingsPayload[entry.key];
+    const value = typeof raw === 'number' || typeof raw === 'string' ? raw : '';
+    const fb = baseline[entry.key] ?? 0;
+
+    result[parsedKeyName(entry.key)] = entry.type === 'float'
+      ? parseRuntimeFloat(value, fb)
+      : parseRuntimeInt(value, fb);
+  }
+
+  return result;
 }
-
-
