@@ -81,7 +81,9 @@ export async function runQueryJourney({
     })),
   ];
 
-  const queryLimit = Math.max(1, configInt(config, 'searchPlannerQueryCap'));
+  // WHY: searchProfileQueryCap is the hard cap on the final profile output.
+  // searchPlannerQueryCap caps the LLM planner contribution (applied in Stage 04).
+  const queryLimit = configInt(config, 'searchProfileQueryCap');
   const mergedQueryCap = queryLimit;
   const mergedQueries = dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap);
 
@@ -238,35 +240,6 @@ export async function runQueryJourney({
     payload: searchProfilePlanned,
     keys: searchProfileKeys,
   });
-  logger?.info?.('search_profile_generated', {
-    run_id: runId,
-    category: categoryConfig.category,
-    product_id: job.productId,
-    alias_count: toArray(searchProfileBase?.identity_aliases).length,
-    query_count: queries.length,
-    key: searchProfileKeys.inputKey,
-    source: schema4Plan ? 'merged_planner' : 'deterministic',
-    effective_host_plan: searchProfilePlanned?.effective_host_plan || null,
-    query_rows: toArray(searchProfilePlanned?.query_rows)
-      .slice(0, 220)
-      .map((queryRow) => ({
-        query: String(queryRow?.query || '').trim(),
-        hint_source: String(queryRow?.hint_source || '').trim(),
-        target_fields: Array.isArray(queryRow?.target_fields) ? queryRow.target_fields : [],
-        doc_hint: String(queryRow?.doc_hint || '').trim(),
-        domain_hint: String(queryRow?.domain_hint || '').trim(),
-        source_host: String(queryRow?.source_host || '').trim(),
-        attempts: Number.parseInt(String(queryRow?.attempts || 0), 10) || 0,
-        result_count: Number.parseInt(String(queryRow?.result_count || 0), 10) || 0,
-        providers: Array.isArray(queryRow?.providers) ? queryRow.providers : [],
-        score: Number.isFinite(Number(queryRow?.score)) ? Number(queryRow.score) : 0,
-        score_breakdown: queryRow?.score_breakdown && typeof queryRow.score_breakdown === 'object'
-          ? queryRow.score_breakdown
-          : null,
-        warnings: Array.isArray(queryRow?.warnings) ? queryRow.warnings : [],
-      })),
-  });
-
   // WHY: Emit query_journey_completed so the runtime bridge knows when to
   // advance the phase cursor and the GUI can gate search worker bouncy balls.
   logger?.info?.('query_journey_completed', {

@@ -7,6 +7,7 @@ import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader'
 import { Chip } from '../../../../shared/ui/feedback/Chip';
 import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
 import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
 import type {
@@ -182,24 +183,22 @@ export function PrefetchQueryJourneyPanel({
     <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* ── Hero Band ── */}
-      <div className="sf-surface-elevated rounded-sm border sf-border-soft px-7 py-6 space-y-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
-          <div className="flex items-baseline gap-3">
-            <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Query Journey</span>
-            <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Lifecycle Tracker</span>
-            {resultsCount === journeyRows.length && journeyRows.length > 0 && (
-              <Chip label="COMPLETE" className="sf-chip-success" />
-            )}
-            {pendingCount > 0 && (
-              <Chip label="IN PROGRESS" className="sf-chip-warning" />
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Chip label="Deterministic" className="sf-chip-neutral" />
-            <Tip text="Story view for what was planned first, what got sent, and why each query was selected. Click any row to see the full journey detail." />
-          </div>
-        </div>
-
+      <HeroBand
+        titleRow={<>
+          <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Query Journey</span>
+          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Lifecycle Tracker</span>
+          {resultsCount === journeyRows.length && journeyRows.length > 0 && (
+            <Chip label="COMPLETE" className="sf-chip-success" />
+          )}
+          {pendingCount > 0 && (
+            <Chip label="IN PROGRESS" className="sf-chip-warning" />
+          )}
+        </>}
+        trailing={<>
+          <Chip label="Deterministic" className="sf-chip-neutral" />
+          <Tip text="Story view for what was planned first, what got sent, and why each query was selected. Click any row to see the full journey detail." />
+        </>}
+      >
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
         {/* Big stat numbers */}
@@ -234,7 +233,7 @@ export function PrefetchQueryJourneyPanel({
             <> First searched: <strong className="sf-text-primary not-italic font-mono text-xs">{firstSearched.query}</strong> ({firstSearched.selected_by_label}).</>
           )}
         </div>
-      </div>
+      </HeroBand>
 
       {/* ── Ranking Explainer (collapsible) ── */}
       <div>

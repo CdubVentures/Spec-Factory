@@ -491,10 +491,12 @@ export interface PrefetchSchema4Bundle {
 }
 
 /** Tier-aware profile influence — derived from Schema 3 focus_groups + seed_status */
+/** Tier-aware profile influence — 4 targeting categories */
 export interface PrefetchNeedSetProfileInfluence {
-  tier1_seed_active: boolean;
-  tier2_group_count: number;
-  tier3_key_count: number;
+  targeted_specification: number;
+  targeted_sources: number;
+  targeted_groups: number;
+  targeted_single: number;
   groups_now: number;
   groups_next: number;
   groups_hold: number;
@@ -504,6 +506,7 @@ export interface PrefetchNeedSetProfileInfluence {
 
 export interface PrefetchNeedSetData {
   total_fields: number;
+  identity_state?: string | null;
   summary?: PrefetchNeedSetSummary;
   blockers?: { missing: number; weak: number; conflict: number; needs_exact_match?: number; search_exhausted?: number };
   focus_fields?: string[];
@@ -516,6 +519,7 @@ export interface PrefetchNeedSetData {
   round?: number;
   round_mode?: string;
   schema_version?: string | null;
+  snapshots?: Array<{ needset_size: number; total_fields: number; identity_state: string | null; ts: string }>;
   debug?: {
     suppressed_duplicate_rows: string[];
     state_inputs: Record<string, unknown>;

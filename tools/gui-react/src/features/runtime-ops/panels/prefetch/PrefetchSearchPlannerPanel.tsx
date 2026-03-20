@@ -11,6 +11,7 @@ import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader'
 import { Chip } from '../../../../shared/ui/feedback/Chip';
 import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
 import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
 import type { RuntimeIdxBadge } from '../../types';
 
 interface PrefetchSearchPlannerPanelProps {
@@ -172,20 +173,18 @@ function Schema4PlannerView({
     <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* ── Hero Band ── */}
-      <div className="sf-surface-elevated rounded-sm border sf-border-soft px-7 py-6 space-y-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
-          <div className="flex items-baseline gap-3">
-            <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">NeedSet Planner</span>
-            <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Search Plan</span>
-            <Chip label={overallStatus.toUpperCase()} className={overallStatus === 'finished' ? 'sf-chip-success' : 'sf-chip-danger'} />
-          </div>
-          <div className="flex items-center gap-2">
-            <Chip label="Schema 4" className="sf-chip-info" />
-            <Chip label="LLM" className="sf-chip-warning" />
-            <Tip text="The NeedSet Planner generates targeted search queries to close field coverage gaps identified by the NeedSet. Schema 4 uses a single focused LLM call instead of multi-pass discovery." />
-          </div>
-        </div>
-
+      <HeroBand
+        titleRow={<>
+          <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">NeedSet Planner</span>
+          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Search Plan</span>
+          <Chip label={overallStatus.toUpperCase()} className={overallStatus === 'finished' ? 'sf-chip-success' : 'sf-chip-danger'} />
+        </>}
+        trailing={<>
+          <Chip label="Schema 4" className="sf-chip-info" />
+          <Chip label="LLM" className="sf-chip-warning" />
+          <Tip text="The NeedSet Planner generates targeted search queries to close field coverage gaps identified by the NeedSet. Schema 4 uses a single focused LLM call instead of multi-pass discovery." />
+        </>}
+      >
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
         <HeroStatGrid>
@@ -204,7 +203,7 @@ function Schema4PlannerView({
           )}
           .
         </div>
-      </div>
+      </HeroBand>
 
       {/* ── Query Plan ── */}
       <div>
@@ -403,19 +402,17 @@ export function PrefetchSearchPlannerPanel({
     <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* ── Hero Band ── */}
-      <div className="sf-surface-elevated rounded-sm border sf-border-soft px-7 py-6 space-y-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
-          <div className="flex items-baseline gap-3">
-            <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Search Planner</span>
-            <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Query Generation</span>
-            <Chip label={overallStatus.toUpperCase()} className={overallStatus === 'finished' ? 'sf-chip-success' : 'sf-chip-danger'} />
-          </div>
-          <div className="flex items-center gap-2">
-            <Chip label="LLM" className="sf-chip-warning" />
-            <Tip text="The Search Planner LLM generates targeted queries in multiple passes (Primary, Fast, Reason, Validate) to close missing field coverage gaps identified by the NeedSet." />
-          </div>
-        </div>
-
+      <HeroBand
+        titleRow={<>
+          <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Search Planner</span>
+          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Query Generation</span>
+          <Chip label={overallStatus.toUpperCase()} className={overallStatus === 'finished' ? 'sf-chip-success' : 'sf-chip-danger'} />
+        </>}
+        trailing={<>
+          <Chip label="LLM" className="sf-chip-warning" />
+          <Tip text="The Search Planner LLM generates targeted queries in multiple passes (Primary, Fast, Reason, Validate) to close missing field coverage gaps identified by the NeedSet." />
+        </>}
+      >
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
         {/* Big stat numbers */}
@@ -441,7 +438,7 @@ export function PrefetchSearchPlannerPanel({
           )}
           .
         </div>
-      </div>
+      </HeroBand>
 
       {/* ── Planner Context (collapsible) ── */}
       {plannerInputSummary.callCountWithPayload > 0 && (

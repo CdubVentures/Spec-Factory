@@ -12,6 +12,7 @@ import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDe
 import { ProgressRing } from '../../components/ProgressRing';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
 import {
   computeSafetyClassCounts,
   computeRoleCounts,
@@ -156,23 +157,23 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
   return (
     <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
-      {/* ── Hero Band ── */}
-      <div className="sf-surface-elevated rounded-sm border sf-border-soft px-7 py-6 space-y-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
-          <div className="flex items-baseline gap-3">
-            <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Domain Classifier</span>
-            <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Safety &amp; Routing</span>
-            <Chip label={overallStatus.toUpperCase()} className={overallStatus === 'done' ? 'sf-chip-success' : 'sf-chip-neutral'} />
-          </div>
-          <div className="flex items-center gap-2">
-            <Chip label="Deterministic" className="sf-chip-neutral" />
-            <Tip text="The Domain Classifier assesses each discovered domain for safety, source tier, and pacing constraints using deterministic heuristics (deny-lists, approved hosts, tier resolution). Routes URLs to priority, manufacturer, general, or candidate queues. No LLM call." />
-          </div>
-        </div>
-
+      <HeroBand
+        titleRow={<>
+          <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Domain Classifier</span>
+          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Safety &amp; Routing</span>
+          <Chip label={overallStatus.toUpperCase()} className={overallStatus === 'done' ? 'sf-chip-success' : 'sf-chip-neutral'} />
+        </>}
+        trailing={<>
+          <Chip label="Deterministic" className="sf-chip-neutral" />
+          <Tip text="The Domain Classifier assesses each discovered domain for safety, source tier, and pacing constraints using deterministic heuristics (deny-lists, approved hosts, tier resolution). Routes URLs to priority, manufacturer, general, or candidate queues. No LLM call." />
+        </>}
+        footer={<>
+          <span>avg budget <strong className="sf-text-primary">{avgBudget}</strong></span>
+          {cooldownSummary.totalInCooldown > 0 && <span>in cooldown <strong className="text-[var(--sf-state-warning-fg)]">{cooldownSummary.totalInCooldown}</strong></span>}
+        </>}
+      >
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
-        {/* Big stat numbers */}
         <HeroStatGrid>
           <HeroStat value={uniqueDomains} label="domains" />
           <HeroStat value={safetyCounts.safe} label="safe" colorClass={safetyCounts.safe > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
@@ -180,7 +181,6 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
           <HeroStat value={safetyCounts.blocked} label="blocked" colorClass={safetyCounts.blocked > 0 ? 'text-[var(--sf-state-error-fg)]' : 'sf-text-muted'} />
         </HeroStatGrid>
 
-        {/* Narrative */}
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
           <strong className="sf-text-primary not-italic">{uniqueDomains}</strong> domain{uniqueDomains !== 1 ? 's' : ''} classified
           {safetyCounts.safe > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{safetyCounts.safe}</strong> safe</>}
@@ -189,13 +189,7 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
           {cooldownSummary.totalInCooldown > 0 && <>, <strong className="sf-text-primary not-italic">{cooldownSummary.totalInCooldown}</strong> in cooldown</>}
           .
         </div>
-
-        {/* Inline stats row */}
-        <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted pt-3.5 mt-3.5 border-t sf-border-soft">
-          <span>avg budget <strong className="sf-text-primary">{avgBudget}</strong></span>
-          {cooldownSummary.totalInCooldown > 0 && <span>in cooldown <strong className="text-[var(--sf-state-warning-fg)]">{cooldownSummary.totalInCooldown}</strong></span>}
-        </div>
-      </div>
+      </HeroBand>
 
       {/* ── Fetch Capacity Warning ── */}
       {showWarningBanner && (

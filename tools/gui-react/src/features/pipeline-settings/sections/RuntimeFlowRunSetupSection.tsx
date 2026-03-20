@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import {
   RUNTIME_SEARCH_PRIMARY_HELP,
@@ -63,6 +63,16 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
   getNumberBounds,
   renderDisabledHint,
 }: RuntimeFlowRunSetupSectionProps) {
+  // WHY: On hydration, domainClassifierUrlCap may exceed serpSelectorUrlCap
+  // (e.g. stale saved value of 200 vs serp selector default of 50). Clamp it.
+  useEffect(() => {
+    const serpCap = Number(runtimeDraft.serpSelectorUrlCap) || 0;
+    const dcCap = Number(runtimeDraft.domainClassifierUrlCap) || 0;
+    if (serpCap > 0 && dcCap > serpCap) {
+      updateDraft('domainClassifierUrlCap', serpCap);
+    }
+  }, [runtimeDraft.serpSelectorUrlCap, runtimeDraft.domainClassifierUrlCap, updateDraft]);
+
   const slots = parseEngineSlots(runtimeDraft.searchEngines);
   const fallbackRaw = (runtimeDraft.searchEnginesFallback ?? '').split(',')[0]?.trim() || '';
   const fallbackEngine: EngineSlot = (SEARXNG_ENGINE_OPTIONS as readonly string[]).includes(fallbackRaw) ? fallbackRaw as SearxngEngine : 'none';
@@ -251,13 +261,13 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
         <AdvancedSettingsBlock title="Query & URL Counts" count={4}>
           <SettingRow
             label="Search Profile Query Count / Run"
-            tip="Exact number of queries each search generation phase produces (deterministic aliases, LLM-enriched, field-targeted). Applied per phase before the query journey merges all candidates."
+            tip="Hard cap on the final merged query profile output (deterministic + LLM planner combined). The Query Journey enforces this as the ceiling on total queries sent to search."
           >
             <SettingNumberInput draftKey="searchProfileQueryCap" value={runtimeDraft.searchProfileQueryCap} bounds={getNumberBounds('searchProfileQueryCap')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
           <SettingRow
             label="Search Planner Query Count / Run"
-            tip="Exact number of queries that execute after all phases are merged and ranked. This is the hard ceiling on search engine calls per product."
+            tip="Hard cap on how many queries the LLM search planner can generate. Applied at Stage 04 before merging with deterministic queries. The final merged count is governed by Search Profile Query Count."
           >
             <SettingNumberInput draftKey="searchPlannerQueryCap" value={runtimeDraft.searchPlannerQueryCap} bounds={getNumberBounds('searchPlannerQueryCap')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>

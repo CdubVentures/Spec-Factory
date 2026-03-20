@@ -518,20 +518,27 @@ export function buildSearchProfile({
 
   // WHY: Tier dispatch — when seedStatus is provided, use tier-aware generation.
   // When absent, fall through to the existing archetype pipeline (backward compat).
+  // Budget: seeds get first dibs, then groups fill remaining, then keys fill rest.
   const modes = seedStatus ? determineQueryModes(seedStatus, focusGroups || []) : null;
   const hasTierMode = modes && (modes.runTier1Seeds || modes.runTier2Groups || modes.runTier3Keys);
+  const maxQueryCap = Math.max(1, Number(maxQueries || 24));
 
   let queryRows;
   if (hasTierMode) {
     const tierRows = [];
+    // Priority 1: seeds
     if (modes.runTier1Seeds) {
       tierRows.push(...buildTier1Queries(job, seedStatus, brandResolution));
     }
-    if (modes.runTier2Groups) {
-      tierRows.push(...buildTier2Queries(job, focusGroups));
+    // Priority 2: groups (fill remaining budget)
+    if (modes.runTier2Groups && tierRows.length < maxQueryCap) {
+      const groupRows = buildTier2Queries(job, focusGroups);
+      tierRows.push(...groupRows.slice(0, maxQueryCap - tierRows.length));
     }
-    if (modes.runTier3Keys) {
-      tierRows.push(...buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldByDomain));
+    // Priority 3: keys (fill remaining budget)
+    if (modes.runTier3Keys && tierRows.length < maxQueryCap) {
+      const keyRows = buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldByDomain);
+      tierRows.push(...keyRows.slice(0, maxQueryCap - tierRows.length));
     }
     queryRows = tierRows;
     // WHY: Archetype metadata is sparse in tier mode — no archetype pipeline ran.
@@ -598,7 +605,6 @@ export function buildSearchProfile({
     addQuery(`${brand} ${model} datasheet pdf`, 'fallback');
   }
 
-  const maxQueryCap = Math.max(1, Number(maxQueries || 24));
   const boundedQueries = selectedQueries.slice(0, maxQueryCap);
   if (selectedQueries.length > boundedQueries.length) {
     for (const query of selectedQueries.slice(maxQueryCap)) {
@@ -665,8 +671,9 @@ export function buildTargetedQueries(options = {}) {
 // ── Tier-Aware Query Generation ──
 
 /**
- * WHY: Three tiers run independently — all can be active simultaneously.
- * Tier 1 = seed (broad), Tier 2 = group (mid), Tier 3 = key (narrow).
+ * WHY: Reports which tiers have available work. All three can be true.
+ * Budget allocation (priority ordering) happens in buildSearchProfile —
+ * seeds get first dibs, then groups, then keys fill remaining budget.
  * @param {object|null} seedStatus - from needset.schema3.seed_status
  * @param {Array} focusGroups - from needset.focusGroups
  * @returns {{ runTier1Seeds: boolean, runTier2Groups: boolean, runTier3Keys: boolean }}
@@ -690,6 +697,8 @@ export function determineQueryModes(seedStatus, focusGroups) {
 
 /**
  * WHY: Tier 1 — broad seed queries. Cast the wide net first.
+ * Uses both seed_status.source_seeds (from NeedSet history) and
+ * brandResolution (from Stage 02) for source domains.
  * @returns {Array<object>} queryRow[]
  */
 export function buildTier1Queries(job, seedStatus, brandResolution) {
@@ -699,6 +708,7 @@ export function buildTier1Queries(job, seedStatus, brandResolution) {
   const variant = identity.variant;
   const product = clean([brand, model, variant].filter(Boolean).join(' '));
   const rows = [];
+  const emittedSources = new Set();
 
   if (seedStatus?.specs_seed?.is_needed) {
     rows.push({
@@ -713,17 +723,43 @@ export function buildTier1Queries(job, seedStatus, brandResolution) {
     });
   }
 
+  // Source seeds from NeedSet history
   for (const [source, info] of Object.entries(seedStatus?.source_seeds || {})) {
     if (!info?.is_needed) continue;
+    const s = clean(source);
+    if (!s || emittedSources.has(s.toLowerCase())) continue;
+    emittedSources.add(s.toLowerCase());
     rows.push({
-      query: clean(`${product} ${source}`),
+      query: clean(`${product} ${s}`),
       hint_source: 'tier1_seed',
       tier: 'seed',
       target_fields: [],
       doc_hint: '',
       alias: '',
-      domain_hint: clean(source),
-      source_host: clean(source),
+      domain_hint: s,
+      source_host: s,
+    });
+  }
+
+  // WHY: Brand Resolver (Stage 02) runs before Search Profile (Stage 03).
+  // Add official/support domains as source seeds if not already covered
+  // by seed_status.source_seeds.
+  const brandDomains = [
+    brandResolution?.officialDomain,
+    brandResolution?.supportDomain,
+  ].map((d) => clean(String(d || ''))).filter(Boolean);
+  for (const domain of brandDomains) {
+    if (emittedSources.has(domain.toLowerCase())) continue;
+    emittedSources.add(domain.toLowerCase());
+    rows.push({
+      query: clean(`${product} ${domain}`),
+      hint_source: 'tier1_seed',
+      tier: 'seed',
+      target_fields: [],
+      doc_hint: '',
+      alias: '',
+      domain_hint: domain,
+      source_host: domain,
     });
   }
 

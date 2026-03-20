@@ -11,6 +11,7 @@ import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader'
 import { Chip } from '../../../../shared/ui/feedback/Chip';
 import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
 import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
 import { ProgressRing } from '../../components/ProgressRing';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
 import { LlmCallCard } from '../../components/LlmCallCard';
@@ -245,25 +246,29 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
     <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* ── Hero Band ── */}
-      <div className="sf-surface-elevated rounded-sm border sf-border-soft px-7 py-6 space-y-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
-          <div className="flex items-baseline gap-3">
-            <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">SERP Selector</span>
-            <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; URL Selection</span>
-            <Chip label={overallStatus.toUpperCase()} className={overallStatus === 'done' ? 'sf-chip-success' : overallStatus === 'error' ? 'sf-chip-danger' : 'sf-chip-neutral'} />
-          </div>
-          <div className="flex items-center gap-2">
-            <Chip label="LLM Selector" className="sf-chip-warning" />
-            {calls.length > 0 && calls[0].model && (
-              <Chip label={calls[0].model} className="sf-chip-neutral" />
-            )}
-            {calls.length > 0 && calls[0].provider && (
-              <Chip label={calls[0].provider} className="sf-chip-accent" />
-            )}
-            <Tip text="LLM-based URL selector that decides which search results are worth fetching. Classifies each URL as approved (fetch now), candidate (backup), or reject (skip)." />
-          </div>
-        </div>
-
+      <HeroBand
+        titleRow={<>
+          <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">SERP Selector</span>
+          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; URL Selection</span>
+          <Chip label={overallStatus.toUpperCase()} className={overallStatus === 'done' ? 'sf-chip-success' : overallStatus === 'error' ? 'sf-chip-danger' : 'sf-chip-neutral'} />
+        </>}
+        trailing={<>
+          <Chip label="LLM Selector" className="sf-chip-warning" />
+          {calls.length > 0 && calls[0].model && (
+            <Chip label={calls[0].model} className="sf-chip-neutral" />
+          )}
+          {calls.length > 0 && calls[0].provider && (
+            <Chip label={calls[0].provider} className="sf-chip-accent" />
+          )}
+          <Tip text="LLM-based URL selector that decides which search results are worth fetching. Classifies each URL as approved (fetch now), candidate (backup), or reject (skip)." />
+        </>}
+        footer={<>
+          {uniqueDomains > 0 && <span>domains <strong className="sf-text-primary">{uniqueDomains}</strong></span>}
+          <span>llm calls <strong className="sf-text-primary">{calls.length}</strong></span>
+          <span>queries triaged <strong className="sf-text-primary">{triage.length}</strong></span>
+          {allDroppedQueries.length > 0 && <span>all-dropped queries <strong className="text-[var(--sf-state-error-fg)]">{allDroppedQueries.length}</strong></span>}
+        </>}
+      >
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
         {/* Big stat numbers */}
@@ -288,15 +293,7 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
           )}
           .
         </div>
-
-        {/* Inline stats row */}
-        <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted pt-3.5 mt-3.5 border-t sf-border-soft">
-          {uniqueDomains > 0 && <span>domains <strong className="sf-text-primary">{uniqueDomains}</strong></span>}
-          <span>llm calls <strong className="sf-text-primary">{calls.length}</strong></span>
-          <span>queries triaged <strong className="sf-text-primary">{triage.length}</strong></span>
-          {allDroppedQueries.length > 0 && <span>all-dropped queries <strong className="text-[var(--sf-state-error-fg)]">{allDroppedQueries.length}</strong></span>}
-        </div>
-      </div>
+      </HeroBand>
 
       {/* ── All-Dropped Warnings ── */}
       {allDroppedQueries.length > 0 && (

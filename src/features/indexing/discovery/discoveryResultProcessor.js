@@ -33,6 +33,7 @@ import { sampleRejectAudit, buildAuditTrail } from './triageRejectAuditor.js';
 import { buildSerpSelectorInput, validateSelectorOutput, adaptSerpSelectorOutput } from './serpSelector.js';
 import { createSerpSelectorCallLlm } from './serpSelectorLlmAdapter.js';
 import { callLlmWithRouting } from '../../../core/llm/client/routing.js';
+import { configInt } from '../../../shared/settingsAccessor.js';
 
 export async function processDiscoveryResults({
   // From executeSearchQueries return
@@ -260,19 +261,18 @@ export async function processDiscoveryResults({
   }
 
   // ── SERP Selector (LLM-only, no deterministic fallback) ──
+  const officialDomain = normalizeHost(String(brandResolution?.officialDomain || '').trim());
+  const supportDomain = normalizeHost(String(brandResolution?.supportDomain || '').trim());
+
   const { selectorInput, candidateMap, overflowRows } = buildSerpSelectorInput({
     runId, category: categoryConfig.category, productId: job.productId,
-    variables, identityLock, brandResolution,
-    missingFields, missingCriticalFields: missingFields,
-    focusFields: toArray(focusGroups),
-    effectiveHostPlan, searchProfileBase,
-    candidateRows, queryMetaByQuery: new Map(
-      toArray(searchProfilePlanned?.query_rows).map((row) => [String(row?.query || '').trim(), row || {}])
-    ),
-    categoryConfig, frontierDb,
+    variables, brandResolution,
+    effectiveHostPlan,
+    candidateRows,
+    categoryConfig,
     discoveryCap,
-    serpSelectorUrlCap: Number(config?.serpSelectorUrlCap || 0) || undefined,
-    domainClassifierUrlCap: Number(config?.domainClassifierUrlCap || 0) || undefined,
+    serpSelectorUrlCap: configInt(config, 'serpSelectorUrlCap'),
+    domainClassifierUrlCap: configInt(config, 'domainClassifierUrlCap'),
   });
   const sentCandidateIds = [...candidateMap.keys()];
 
@@ -292,7 +292,7 @@ export async function processDiscoveryResults({
     validation = validateSelectorOutput({
       selectorOutput,
       candidateIds: sentCandidateIds,
-      maxTotalKeep: selectorInput.selection_limits.max_total_keep,
+      maxTotalKeep: selectorInput.max_keep,
     });
     if (!validation.valid) {
       logger?.warn?.('serp_selector_invalid_output', { reason: validation.reason });
@@ -303,21 +303,12 @@ export async function processDiscoveryResults({
 
   // WHY: No deterministic fallback. On any failure, treat as all-reject
   // so the run continues with zero selected URLs rather than garbage.
-  const validOutput = validation.valid ? selectorOutput : {
-    keep_ids: [], approved_ids: [], candidate_ids: [],
-    reject_ids: [...sentCandidateIds],
-    results: [...sentCandidateIds].map((id) => ({
-      id, decision: 'reject', score: 0, confidence: 'low',
-      fetch_rank: null, page_type: 'unknown', authority_bucket: 'unknown',
-      reason_code: 'unclear', reason: 'selector_output_invalid',
-    })),
-    summary: { input_count: sentCandidateIds.length, approved_count: 0, candidate_count: 0, reject_count: sentCandidateIds.length },
-  };
+  const validOutput = validation.valid ? selectorOutput : { keep_ids: [] };
 
-  const { selected, notSelected, laneStats, laneQuotas } = adaptSerpSelectorOutput({
+  const { selected, notSelected } = adaptSerpSelectorOutput({
     selectorOutput: validOutput, candidateMap, overflowRows,
+    officialDomain, supportDomain, categoryConfig,
   });
-  const laneBoostReasons = [];
 
   const discovered = selected;
 
@@ -355,39 +346,30 @@ export async function processDiscoveryResults({
 
   // WHY: Emit serp_selector_completed so the bridge handler populates
   // the SERP Selector prefetch panel and enriches search worker URLs.
-  // Built from validOutput.results (raw LLM decisions) + candidateMap (original URLs).
-  const selectorDecisionMap = {
-    approved: 'keep',
-    candidate: 'maybe',
-    reject: 'drop',
-  };
+  const keepIdSet = new Set(toArray(validOutput.keep_ids));
   logger?.info?.('serp_selector_completed', {
     query: '',
-    kept_count: validOutput.keep_ids.length,
-    dropped_count: validOutput.reject_ids.length,
-    candidates: toArray(validOutput.results).slice(0, 120).map((r) => {
-      const orig = candidateMap.get(r.id) || {};
+    kept_count: selected.length,
+    dropped_count: notSelected.length,
+    candidates: [...candidateMap.entries()].slice(0, 120).map(([id, orig]) => {
+      const isKept = keepIdSet.has(id);
+      const enriched = isKept ? selected.find((r) => r.url === orig.url) : null;
       return {
         url: String(orig.url || '').trim(),
         title: String(orig.title || '').trim(),
         domain: String(orig.host || '').trim(),
         snippet: String(orig.snippet || '').slice(0, 260),
-        score: Number(r.score || 0),
-        decision: selectorDecisionMap[r.decision] || 'drop',
-        rationale: String(r.reason || '').trim(),
-        score_components: {
-          base_relevance: Number(r.score || 0),
-          tier_boost: 0,
-          identity_match: 0,
-          penalties: 0,
-        },
-        role: String(orig.role || '').trim(),
-        identity_prelim: String(r.confidence === 'high' ? 'exact' : r.confidence === 'medium' ? 'family' : 'uncertain').trim(),
-        host_trust_class: String(r.authority_bucket || 'unknown').trim(),
-        primary_lane: null,
-        triage_disposition: r.decision === 'approved' ? 'fetch_high' : r.decision === 'candidate' ? 'fetch_normal' : 'fetch_low',
-        doc_kind_guess: String(r.page_type || 'unknown').trim(),
-        approval_bucket: r.decision === 'reject' ? '' : r.decision,
+        score: enriched?.score || 0,
+        decision: isKept ? 'keep' : 'drop',
+        rationale: isKept ? 'llm_selected' : 'not_selected',
+        score_components: { base_relevance: enriched?.score || 0, tier_boost: 0, identity_match: 0, penalties: 0 },
+        role: '',
+        identity_prelim: enriched?.identity_prelim || 'uncertain',
+        host_trust_class: enriched?.host_trust_class || 'unknown',
+        primary_lane: enriched?.primary_lane || null,
+        triage_disposition: enriched?.triage_disposition || 'fetch_low',
+        doc_kind_guess: enriched?.doc_kind_guess || 'unknown',
+        approval_bucket: isKept ? 'approved' : '',
       };
     }),
   });
@@ -550,9 +532,9 @@ export async function processDiscoveryResults({
     // Additive Stage 06 fields
     hard_drop_count: hardDrops.length,
     soft_exclude_count: notSelected.length,
-    lane_stats: laneStats,
-    lane_quotas: laneQuotas,
-    lane_boost_reasons: laneBoostReasons || [],
+    lane_stats: { _compatibility: true, lanes: [] },
+    lane_quotas: { _compatibility: true },
+    lane_boost_reasons: [],
     audit_trail: auditTrail,
     queries: serpQueryRows
   };

@@ -12,6 +12,7 @@ import { Tip } from '../../../../shared/ui/feedback/Tip';
 import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
 import { Chip } from '../../../../shared/ui/feedback/Chip';
 import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
 import { ProgressRing } from '../../components/ProgressRing';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
@@ -302,30 +303,34 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
     <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* ── Hero Band ── */}
-      <div className="sf-surface-elevated rounded-sm border sf-border-soft px-7 py-6 space-y-5">
-        {/* Title row */}
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
-          <div className="flex items-baseline gap-3">
-            <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Search Results</span>
-            <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; SERP Pipeline</span>
-            <Chip label={overallStatus.toUpperCase()} className={statusChipClass} />
-            {isProgressing && (
-              <Chip label={`${details.length}/${results.length} DETAILED`} className="sf-chip-info" />
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {engineCounts.size > 0 ? (
-              [...engineCounts.entries()].map(([eng, cnt]) => (
-                <Chip key={eng} label={`${providerDisplayLabel(eng)} (${cnt})`} className="sf-chip-accent" />
-              ))
-            ) : liveSettings?.searchEngines ? (
-              <Chip label={providerDisplayLabel(liveSettings.searchEngines)} className="sf-chip-accent" />
-            ) : null}
-            <Chip label="Deterministic" className="sf-chip-neutral" />
-            <Tip text="Search Results shows what came back from configured providers (Google, Bing, SearXNG, or Dual). Raw results are deduped and triaged into Keep/Maybe/Drop decisions based on relevance scoring." />
-          </div>
-        </div>
-
+      <HeroBand
+        titleRow={<>
+          <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Search Results</span>
+          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; SERP Pipeline</span>
+          <Chip label={overallStatus.toUpperCase()} className={statusChipClass} />
+          {isProgressing && (
+            <Chip label={`${details.length}/${results.length} DETAILED`} className="sf-chip-info" />
+          )}
+        </>}
+        trailing={<>
+          {engineCounts.size > 0 ? (
+            [...engineCounts.entries()].map(([eng, cnt]) => (
+              <Chip key={eng} label={`${providerDisplayLabel(eng)} (${cnt})`} className="sf-chip-accent" />
+            ))
+          ) : liveSettings?.searchEngines ? (
+            <Chip label={providerDisplayLabel(liveSettings.searchEngines)} className="sf-chip-accent" />
+          ) : null}
+          <Chip label="Deterministic" className="sf-chip-neutral" />
+          <Tip text="Search Results shows what came back from configured providers (Google, Bing, SearXNG, or Dual). Raw results are deduped and triaged into Keep/Maybe/Drop decisions based on relevance scoring." />
+        </>}
+        footer={<>
+          {uniqueDomains > 0 && <span>domains <strong className="sf-text-primary">{uniqueDomains}</strong></span>}
+          <span>domain cap <strong className="sf-text-primary">{domainCapSummary.value}</strong></span>
+          {totalDeduped > 0 && <span>deduped <strong className="sf-text-primary">{totalDeduped}</strong></span>}
+          {decisions.maybe > 0 && <span>maybe <strong className="sf-text-primary">{decisions.maybe}</strong></span>}
+          {totalThrottleEvents > 0 && <span>throttle <strong className="sf-text-primary">{totalThrottleEvents} events / {formatMs(totalThrottleWaitMs)}</strong></span>}
+        </>}
+      >
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
         {/* Big stat numbers */}
@@ -350,16 +355,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
           )}
           .
         </div>
-
-        {/* Inline stats row */}
-        <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted pt-3.5 mt-3.5 border-t sf-border-soft">
-          {uniqueDomains > 0 && <span>domains <strong className="sf-text-primary">{uniqueDomains}</strong></span>}
-          <span>domain cap <strong className="sf-text-primary">{domainCapSummary.value}</strong></span>
-          {totalDeduped > 0 && <span>deduped <strong className="sf-text-primary">{totalDeduped}</strong></span>}
-          {decisions.maybe > 0 && <span>maybe <strong className="sf-text-primary">{decisions.maybe}</strong></span>}
-          {totalThrottleEvents > 0 && <span>throttle <strong className="sf-text-primary">{totalThrottleEvents} events / {formatMs(totalThrottleWaitMs)}</strong></span>}
-        </div>
-      </div>
+      </HeroBand>
 
       {/* ── Provider Failures ── */}
       {failedQueries.length > 0 && (

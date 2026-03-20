@@ -289,6 +289,33 @@ export async function discoverCandidateSources({
     docHintQueriesCap: searchProfileCaps.llmDocHintQueriesCap,
     fieldYieldByDomain: learning.fieldYield?.by_domain || null,
   });
+
+  // WHY: Emit search_profile_generated HERE (Stage 03) with deterministic-only
+  // data. The merged count belongs to query_journey_completed (Stage 05).
+  logger?.info?.('search_profile_generated', {
+    run_id: runId,
+    category: categoryConfig.category,
+    product_id: job.productId,
+    alias_count: toArray(searchProfileBase?.identity_aliases).length,
+    query_count: toArray(searchProfileBase?.queries).length,
+    source: 'deterministic',
+    query_rows: toArray(searchProfileBase?.query_rows).slice(0, 220).map((row) => ({
+      query: String(row?.query || '').trim(),
+      hint_source: String(row?.hint_source || '').trim(),
+      target_fields: Array.isArray(row?.target_fields) ? row.target_fields : [],
+      doc_hint: String(row?.doc_hint || '').trim(),
+      domain_hint: String(row?.domain_hint || '').trim(),
+      source_host: String(row?.source_host || '').trim(),
+      attempts: 0,
+      result_count: 0,
+      providers: [],
+      score: Number.isFinite(Number(row?.score)) ? Number(row.score) : 0,
+      score_breakdown: row?.score_breakdown && typeof row.score_breakdown === 'object'
+        ? row.score_breakdown : null,
+      warnings: Array.isArray(row?.warnings) ? row.warnings : [],
+    })),
+  });
+
   const brandResolutionHints = [...new Set(
     [
       brandResolution?.officialDomain,
@@ -569,35 +596,6 @@ export async function discoverCandidateSources({
     payload: searchProfilePlanned,
     keys: searchProfileKeys,
   });
-  logger?.info?.('search_profile_generated', {
-    run_id: runId,
-    category: categoryConfig.category,
-    product_id: job.productId,
-    alias_count: toArray(searchProfileBase?.identity_aliases).length,
-    query_count: queries.length,
-    key: searchProfileKeys.inputKey,
-    source: schema4Plan ? 'merged_planner' : 'deterministic',
-    effective_host_plan: searchProfilePlanned?.effective_host_plan || null,
-    query_rows: toArray(searchProfilePlanned?.query_rows)
-      .slice(0, 220)
-      .map((queryRow) => ({
-        query: String(queryRow?.query || '').trim(),
-        hint_source: String(queryRow?.hint_source || '').trim(),
-        target_fields: Array.isArray(queryRow?.target_fields) ? queryRow.target_fields : [],
-        doc_hint: String(queryRow?.doc_hint || '').trim(),
-        domain_hint: String(queryRow?.domain_hint || '').trim(),
-        source_host: String(queryRow?.source_host || '').trim(),
-        attempts: Number.parseInt(String(queryRow?.attempts || 0), 10) || 0,
-        result_count: Number.parseInt(String(queryRow?.result_count || 0), 10) || 0,
-        providers: Array.isArray(queryRow?.providers) ? queryRow.providers : [],
-        score: Number.isFinite(Number(queryRow?.score)) ? Number(queryRow.score) : 0,
-        score_breakdown: queryRow?.score_breakdown && typeof queryRow.score_breakdown === 'object'
-          ? queryRow.score_breakdown
-          : null,
-        warnings: Array.isArray(queryRow?.warnings) ? queryRow.warnings : []
-      })),
-  });
-
   // WHY: Emit query_journey_completed so the runtime bridge knows when to
   // advance the phase cursor and the GUI can gate search worker bouncy balls.
   logger?.info?.('query_journey_completed', {

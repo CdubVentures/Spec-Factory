@@ -8,7 +8,7 @@ NeedSet is the Stage 01 discovery boundary. It assesses what fields are missing,
 
 - Schema 2 via `computeNeedSet()` — per-field gap assessment + V4 search packs
 - Schema 3 via `buildSearchPlanningContext()` — group-level aggregation, coverage/worthiness ranking, seed status
-- Schema 4 via `buildSearchPlan()` — LLM call that lives in the NeedSet stage wrapper (generates queries for Search Planner consumption)
+- Schema 4 via `buildSearchPlan()` — LLM call for group-level annotations only (does NOT generate queries)
 
 Primary owners:
 
@@ -110,10 +110,10 @@ Productivity score rewards easy-to-find fields (high availability), easy-to-extr
 
 1. calls `buildSearchPlanningContext()` on the Schema 2 output
 2. emits `needset_computed` with `scope: "schema2_preview"` before the Schema 4 LLM call
-3. calls `buildSearchPlan()`
-4. emits `needset_computed` again with `scope: "schema4_planner"` when `schema4.panel` exists
-5. attaches `_planner`, `_learning`, and `_panel` to `searchPlanHandoff` when queries exist
-6. emits `schema4_handoff_ready` when the handoff is non-empty
+3. calls `buildSearchPlan()` — LLM assesses groups (`reason_active`, `planner_confidence`) but does NOT generate queries. Query authoring belongs to Search Profile (deterministic tiers) and Search Planner (LLM enrichment).
+4. emits `needset_computed` again with `scope: "schema4_planner"` when `schema4.panel` exists. Panel bundles do not carry queries. `profile_influence` shows tier-aware targeting: `targeted_specification`, `targeted_sources`, `targeted_groups`, `targeted_single`, group phase counts, and `planner_confidence`.
+5. `searchPlanHandoff.queries` is always empty — NeedSet does not author queries
+6. emits `schema4_handoff_ready` when the handoff metadata is non-empty
 
 ## Important invariants
 
@@ -168,8 +168,8 @@ Backward-compat blocks still emitted: `run_id`, `category`, `product_id`, `gener
 NeedSet feeds:
 
 - Stage 02 Brand Resolver only by pipeline sequencing
-- Stage 03 Search Profile through `focusGroups` — NeedSet tells Search Profile "focus on these groups now, they're easiest" via group ordering, `group_search_worthy`, and enriched descriptions. Search Profile builds the actual queries.
-- Stage 04 Search Planner through `searchPlanHandoff`
+- Stage 03 Search Profile through `focusGroups` and `seedStatus` — NeedSet tells Search Profile which tier to operate in via `seed_status` (Tier 1), `group_search_worthy` (Tier 2), and `normalized_key_queue` (Tier 3). Search Profile uses `determineQueryModes()` to read these signals and fires the appropriate tier builders.
+- Stage 04 Search Planner through `searchPlanHandoff` (metadata only, no queries)
 - later-round anti-repeat behavior through `previousFieldHistories`
 
 `buildFieldHistories()` closes the loop after the round finishes.

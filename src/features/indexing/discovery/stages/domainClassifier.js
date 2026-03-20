@@ -3,6 +3,7 @@
 // Builds triage metadata map so planner.enqueue() can look up triage labels.
 
 import { canonicalizeQueueUrl } from '../../../../planner/sourcePlannerUrlUtils.js';
+import { configInt } from '../../../../shared/settingsAccessor.js';
 
 /**
  * @param {object} ctx
@@ -59,10 +60,10 @@ export function runDomainClassifier({
   }
   let seededCount = 0;
   if (discoveryResult.enabled) {
-    const serpCap = Number(config.serpSelectorUrlCap || 0);
-    const rawCount = Number(config.domainClassifierUrlCap ?? config.maxCandidateUrls ?? 0);
+    const serpCap = configInt(config, 'serpSelectorUrlCap');
+    const dcCap = configInt(config, 'domainClassifierUrlCap');
     // WHY: domain classifier count must never exceed serp selector count.
-    const urlCount = (serpCap > 0 && rawCount > serpCap) ? serpCap : rawCount;
+    const urlCount = Math.min(dcCap, serpCap);
     if (urlCount > 0) {
       const capped = (discoveryResult.candidateUrls || []).slice(0, urlCount);
       planner.seedCandidates(capped, { triageMetaMap });

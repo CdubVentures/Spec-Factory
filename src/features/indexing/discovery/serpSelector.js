@@ -1,20 +1,17 @@
 // WHY: Core pure functions for the LLM-based SERP URL selector.
-// Builds input, validates output, adapts output back to pipeline format.
-// No I/O — all functions are pure (except frontierDb lookups in buildSerpSelectorInput).
+// Simplified: LLM just picks URLs, all metadata derived deterministically.
 
 import {
   normalizeHost,
   toArray,
-  countTokenHits,
-  normalizeIdentityTokens,
 } from './discoveryIdentity.js';
 import {
-  detectVariantGuardHit,
-  detectMultiModelHint,
   guessDocKind,
 } from './discoveryUrlClassifier.js';
 import {
   isApprovedHost,
+  resolveTierForHost,
+  inferRoleForHost,
 } from '../../../categories/loader.js';
 
 // ---------------------------------------------------------------------------
@@ -26,99 +23,32 @@ export const SERP_SELECTOR_ABSOLUTE_MAX_CANDIDATES = 120;
 export const SERP_SELECTOR_TITLE_MAX_CHARS = 200;
 export const SERP_SELECTOR_SNIPPET_MAX_CHARS = 260;
 
-const VALID_DECISIONS = new Set(['approved', 'candidate', 'reject']);
-
-const AUTHORITY_TO_HOST_TRUST = {
-  official: 'official',
-  support: 'support',
-  validated_registry: 'trusted_specdb',
-  internal: 'official',
-  trusted_review: 'trusted_review',
-  trusted_database: 'trusted_specdb',
-  retailer: 'retailer',
-  community: 'community',
-  unknown: 'unknown',
-};
-
-const AUTHORITY_TO_LANE = {
+const HOST_TRUST_TO_LANE = {
   official: 1,
   support: 1,
-  validated_registry: 4,
-  internal: 1,
+  trusted_specdb: 4,
   trusted_review: 3,
-  trusted_database: 4,
   retailer: 5,
   community: 7,
   unknown: 6,
 };
 
-const PAGE_TYPE_TO_SURFACE = {
-  product_page: 'json_ld',
-  support_page: 'json_ld',
-  manual_pdf: 'pdf_table',
-  spec_pdf: 'pdf_table',
-  review: 'article_text',
-  database: 'html_table',
-  retailer_detail: 'embedded_state',
-  internal_doc: 'html_table',
-  broad_article: 'article_text',
-  category_or_search: 'weak_surface',
-  forum_or_social: 'weak_surface',
-  homepage: 'weak_surface',
-  login_or_account: 'weak_surface',
-  unknown: 'article_text',
-};
-
 // ---------------------------------------------------------------------------
-// serpSelectorOutputSchema
+// serpSelectorOutputSchema — just keep_ids
 // ---------------------------------------------------------------------------
 
 export function serpSelectorOutputSchema() {
   return {
     type: 'object',
-    additionalProperties: false,
     properties: {
-      schema_version: { type: 'string' },
       keep_ids: { type: 'array', items: { type: 'string' } },
-      approved_ids: { type: 'array', items: { type: 'string' } },
-      candidate_ids: { type: 'array', items: { type: 'string' } },
-      reject_ids: { type: 'array', items: { type: 'string' } },
-      results: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            id: { type: 'string' },
-            decision: { type: 'string', enum: ['approved', 'candidate', 'reject'] },
-            score: { type: 'number' },
-            confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
-            fetch_rank: { type: ['integer', 'null'] },
-            page_type: { type: 'string' },
-            authority_bucket: { type: 'string' },
-            likely_field_keys: { type: 'array', items: { type: 'string' } },
-            reason_code: { type: 'string' },
-            reason: { type: 'string' },
-          },
-          required: ['id', 'decision', 'score', 'confidence', 'fetch_rank', 'page_type', 'authority_bucket', 'reason_code', 'reason'],
-        },
-      },
-      summary: {
-        type: 'object',
-        properties: {
-          input_count: { type: 'integer' },
-          approved_count: { type: 'integer' },
-          candidate_count: { type: 'integer' },
-          reject_count: { type: 'integer' },
-          notes: { type: 'array', items: { type: 'string' } },
-        },
-      },
     },
-    required: ['keep_ids', 'approved_ids', 'candidate_ids', 'reject_ids', 'results', 'summary'],
+    required: ['keep_ids'],
   };
 }
 
 // ---------------------------------------------------------------------------
-// validateSelectorOutput
+// validateSelectorOutput — simple checks
 // ---------------------------------------------------------------------------
 
 export function validateSelectorOutput({ selectorOutput, candidateIds, maxTotalKeep }) {
@@ -128,106 +58,21 @@ export function validateSelectorOutput({ selectorOutput, candidateIds, maxTotalK
     return fail('selectorOutput is not an object');
   }
 
-  const { results, keep_ids, approved_ids, candidate_ids, reject_ids } = selectorOutput;
+  const { keep_ids } = selectorOutput;
 
-  // Structural: results array
-  if (!Array.isArray(results)) return fail('results is not an array');
-  if (results.length !== candidateIds.length) {
-    return fail(`results.length (${results.length}) !== candidateIds.length (${candidateIds.length})`);
-  }
-
-  // Structural: ID arrays exist
   if (!Array.isArray(keep_ids)) return fail('keep_ids is not an array');
-  if (!Array.isArray(approved_ids)) return fail('approved_ids is not an array');
-  if (!Array.isArray(candidate_ids)) return fail('candidate_ids is not an array');
-  if (!Array.isArray(reject_ids)) return fail('reject_ids is not an array');
 
-  // Structural: every result has valid ID and decision
-  const resultIdSet = new Set();
   const candidateIdSet = new Set(candidateIds);
-  const approvedFromResults = [];
-  const candidateFromResults = [];
-  const rejectFromResults = [];
+  const seen = new Set();
 
-  for (const r of results) {
-    const id = String(r?.id || '').trim();
-    if (!id) return fail('result has empty id');
-    if (!candidateIdSet.has(id)) return fail(`unknown id in results: ${id}`);
-    if (resultIdSet.has(id)) return fail(`duplicate id in results: ${id}`);
-    resultIdSet.add(id);
-
-    const decision = String(r?.decision || '').trim();
-    if (!VALID_DECISIONS.has(decision)) return fail(`invalid decision: ${decision} for id ${id}`);
-
-    if (decision === 'approved') approvedFromResults.push(id);
-    else if (decision === 'candidate') candidateFromResults.push(id);
-    else rejectFromResults.push(id);
+  for (const id of keep_ids) {
+    const trimmed = String(id || '').trim();
+    if (!trimmed) return fail('keep_ids contains empty id');
+    if (!candidateIdSet.has(trimmed)) return fail(`unknown id in keep_ids: ${trimmed}`);
+    if (seen.has(trimmed)) return fail(`duplicate id in keep_ids: ${trimmed}`);
+    seen.add(trimmed);
   }
 
-  // Structural: every candidateId appears in results
-  for (const id of candidateIds) {
-    if (!resultIdSet.has(id)) return fail(`candidate id missing from results: ${id}`);
-  }
-
-  // Decision↔array consistency
-  const setEq = (a, b) => {
-    const sa = new Set(a);
-    const sb = new Set(b);
-    if (sa.size !== sb.size) return false;
-    for (const v of sa) if (!sb.has(v)) return false;
-    return true;
-  };
-
-  if (!setEq(approved_ids, approvedFromResults)) {
-    return fail('approved_ids does not match results with decision=approved');
-  }
-  if (!setEq(candidate_ids, candidateFromResults)) {
-    return fail('candidate_ids does not match results with decision=candidate');
-  }
-  if (!setEq(reject_ids, rejectFromResults)) {
-    return fail('reject_ids does not match results with decision=reject');
-  }
-
-  const expectedKeep = new Set([...approved_ids, ...candidate_ids]);
-  const actualKeep = new Set(keep_ids);
-  if (!setEq(expectedKeep, actualKeep)) {
-    return fail('keep_ids does not equal approved_ids ∪ candidate_ids');
-  }
-
-  // Cross-array duplicates
-  const allBuckets = [...approved_ids, ...candidate_ids, ...reject_ids];
-  const bucketSet = new Set();
-  for (const id of allBuckets) {
-    if (bucketSet.has(id)) return fail(`id appears in multiple arrays: ${id}`);
-    bucketSet.add(id);
-  }
-
-  // Fetch_rank integrity
-  const keptResults = results.filter((r) => r.decision !== 'reject');
-  const rejectedResults = results.filter((r) => r.decision === 'reject');
-
-  for (const r of keptResults) {
-    if (r.fetch_rank === null || r.fetch_rank === undefined || !Number.isInteger(r.fetch_rank) || r.fetch_rank < 1) {
-      return fail(`kept row ${r.id} has invalid fetch_rank: ${r.fetch_rank}`);
-    }
-  }
-  for (const r of rejectedResults) {
-    if (r.fetch_rank !== null) {
-      return fail(`rejected row ${r.id} has non-null fetch_rank: ${r.fetch_rank}`);
-    }
-  }
-
-  // Contiguous 1..N
-  if (keptResults.length > 0) {
-    const ranks = keptResults.map((r) => r.fetch_rank).sort((a, b) => a - b);
-    const rankSet = new Set(ranks);
-    if (rankSet.size !== ranks.length) return fail('duplicate fetch_rank among kept rows');
-    for (let i = 0; i < ranks.length; i++) {
-      if (ranks[i] !== i + 1) return fail(`fetch_rank not contiguous: expected ${i + 1}, got ${ranks[i]}`);
-    }
-  }
-
-  // Limit compliance
   if (keep_ids.length > maxTotalKeep) {
     return fail(`keep_ids.length (${keep_ids.length}) exceeds max_total_keep (${maxTotalKeep})`);
   }
@@ -236,27 +81,23 @@ export function validateSelectorOutput({ selectorOutput, candidateIds, maxTotalK
 }
 
 // ---------------------------------------------------------------------------
-// buildSerpSelectorInput
+// buildSerpSelectorInput — stripped to essentials
 // ---------------------------------------------------------------------------
 
 export function buildSerpSelectorInput({
-  runId, category, productId, round, roundMode,
-  variables, identityLock, brandResolution,
-  missingFields, missingCriticalFields, focusFields,
-  effectiveHostPlan, searchProfileBase,
+  runId, category, productId,
+  variables, brandResolution,
+  effectiveHostPlan,
   candidateRows,
-  queryMetaByQuery,
-  categoryConfig, frontierDb,
+  categoryConfig,
   discoveryCap,
   serpSelectorUrlCap,
   domainClassifierUrlCap,
 }) {
-  const { brandTokens, modelTokens } = normalizeIdentityTokens(variables || {});
-  const variantGuardTerms = toArray(searchProfileBase?.variant_guard_terms);
   const officialDomain = normalizeHost(String(brandResolution?.officialDomain || '').trim());
   const supportDomain = normalizeHost(String(brandResolution?.supportDomain || '').trim());
 
-  // --- Priority-based candidate capping ---
+  // --- Priority-based candidate capping (unchanged) ---
   const isPinned = (row) => {
     const host = normalizeHost(String(row?.host || ''));
     if (officialDomain && host === officialDomain) return true;
@@ -275,18 +116,14 @@ export function buildSerpSelectorInput({
     else normalRows.push(row);
   }
 
-  // WHY: Use domainClassifierUrlCap when provided so the GUI knob controls
-  // how many candidates the LLM sees. Fall back to the named constant default.
   const effectiveCap = (typeof domainClassifierUrlCap === 'number' && domainClassifierUrlCap > 0)
     ? domainClassifierUrlCap
     : SERP_SELECTOR_MAX_CANDIDATES;
 
-  // Priority rows first, then fill normal up to effectiveCap total
   const priorityCapped = priorityRows.slice(0, SERP_SELECTOR_ABSOLUTE_MAX_CANDIDATES);
   const normalSlots = Math.max(0, effectiveCap - priorityCapped.length);
   const normalCapped = normalRows.slice(0, normalSlots);
   let sentRows = [...priorityCapped, ...normalCapped];
-  // Hard emergency ceiling
   sentRows = sentRows.slice(0, SERP_SELECTOR_ABSOLUTE_MAX_CANDIDATES);
 
   const sentUrlSet = new Set(sentRows.map((r) => r.url));
@@ -297,293 +134,98 @@ export function buildSerpSelectorInput({
   const candidates = sentRows.map((row, idx) => {
     const id = `c_${idx}`;
     candidateMap.set(id, row);
-    return buildCandidateEntry({
-      id, row, brandTokens, modelTokens, variantGuardTerms,
-      officialDomain, supportDomain,
-      effectiveHostPlan, categoryConfig, frontierDb, queryMetaByQuery,
-      variables,
-    });
+    const url = String(row?.url || '');
+    const host = normalizeHost(String(row?.host || ''));
+    return {
+      id,
+      url,
+      host,
+      title: String(row?.title || '').slice(0, SERP_SELECTOR_TITLE_MAX_CHARS),
+      snippet: String(row?.snippet || '').slice(0, SERP_SELECTOR_SNIPPET_MAX_CHARS),
+    };
   });
 
-  // --- Assemble SelectorInput ---
+  // WHY: serpSelectorUrlCap is the hard cap on how many URLs the LLM keeps.
+  // Caller resolves via configInt — store guarantees min/max clamping.
+  const maxKeep = serpSelectorUrlCap;
+
   const selectorInput = {
-    schema_version: 'serp_selector_input.v1',
-    run: {
-      run_id: runId || '',
-      category: category || categoryConfig?.category || '',
-      product_id: productId || '',
-      round: round ?? 0,
-      round_mode: roundMode || '',
+    product: {
+      brand: String(variables?.brand || ''),
+      model: String(variables?.model || ''),
+      variant: String(variables?.variant || ''),
     },
-    product_lock: {
-      brand: String(identityLock?.brand || ''),
-      model: String(identityLock?.model || ''),
-      variant: String(identityLock?.variant || ''),
-      aliases: toArray(searchProfileBase?.identity_aliases).map((a) => String(a?.alias || a || '')).filter(Boolean),
-      variant_guard_terms: variantGuardTerms,
-      negative_terms: toArray(searchProfileBase?.negative_terms),
-      identity_lock: {
-        brand_tokens: toArray(identityLock?.brand_tokens),
-        model_tokens: toArray(identityLock?.model_tokens),
-        allowed_model_tokens: toArray(identityLock?.allowed_model_tokens),
-        required_digit_groups: toArray(identityLock?.required_digit_groups),
-      },
-    },
-    need_context: {
-      missing_critical_fields: toArray(missingCriticalFields),
-      unresolved_fields: toArray(missingFields),
-      focus_fields: toArray(focusFields).map((f) => ({
-        field_key: String(f?.field_key || ''),
-        required_level: String(f?.required_level || 'optional'),
-        need_score: Number(f?.need_score || 0),
-      })),
-    },
-    selection_limits: {
-      // WHY: serpSelectorUrlCap is the GUI knob that directly controls
-      // how many URLs the selector LLM is allowed to keep.
-      max_total_keep: Math.max(1, Math.min(
-        Number(discoveryCap || 60),
-        (typeof serpSelectorUrlCap === 'number' && serpSelectorUrlCap > 0) ? serpSelectorUrlCap : Infinity,
-      )),
-      prefer_pinned: true,
-    },
+    official_domain: officialDomain || undefined,
+    max_keep: maxKeep,
     candidates,
   };
-
-  // Optional sections
-  if (brandResolution?.officialDomain) {
-    selectorInput.brand_resolution = {
-      official_domain: String(brandResolution.officialDomain || ''),
-      support_domain: String(brandResolution.supportDomain || ''),
-      aliases: toArray(brandResolution.aliases).map((a) => String(a || '')).filter(Boolean),
-      confidence: Number(brandResolution.confidence || 0),
-      reasoning: toArray(brandResolution.reasoning).map((r) => String(r || '')).filter(Boolean),
-    };
-  }
-
-  if (effectiveHostPlan) {
-    const hostPlanEntries = Object.entries(effectiveHostPlan.policy_map || {}).map(([host, policy]) => ({
-      host,
-      role: String(policy?.role || 'other'),
-      score: Number(policy?.score || 0),
-      reason: String(policy?.reason || ''),
-    }));
-    selectorInput.source_hints = {
-      preferred_domains: toArray(categoryConfig?.sourceHosts)
-        .filter((h) => h?.tierName === 'manufacturer' || h?.tierName === 'lab')
-        .map((h) => String(h?.host || '')).filter(Boolean).slice(0, 20),
-      effective_host_plan: hostPlanEntries.slice(0, 20),
-    };
-  }
 
   return { selectorInput, candidateMap, overflowRows };
 }
 
-function buildCandidateEntry({
-  id, row, brandTokens, modelTokens, variantGuardTerms,
-  officialDomain, supportDomain,
-  effectiveHostPlan, categoryConfig, frontierDb, queryMetaByQuery,
-  variables,
+// ---------------------------------------------------------------------------
+// adaptSerpSelectorOutput — derive all metadata deterministically
+// ---------------------------------------------------------------------------
+
+export function adaptSerpSelectorOutput({
+  selectorOutput, candidateMap, overflowRows = [],
+  officialDomain, supportDomain, categoryConfig,
 }) {
-  const host = normalizeHost(String(row?.host || ''));
-  const url = String(row?.url || '');
-  let pathname = '';
-  try { pathname = new URL(url).pathname; } catch { /* ignore */ }
-  const title = String(row?.title || '').slice(0, SERP_SELECTOR_TITLE_MAX_CHARS);
-  const snippet = String(row?.snippet || '').slice(0, SERP_SELECTOR_SNIPPET_MAX_CHARS);
-  const haystack = `${title} ${snippet} ${url}`.toLowerCase();
-
-  // Host signals — product-resolved, not generic
-  const hostIsOfficial = Boolean(officialDomain && host === officialDomain);
-  const hostIsSupport = Boolean(supportDomain && host === supportDomain);
-  const hostIsPreferred = Boolean(isApprovedHost(host, categoryConfig));
-  const hostPlanHit = Boolean(effectiveHostPlan?.policy_map?.[host]);
-  const validatedRegistryHost = Boolean(categoryConfig?.validatedRegistry?.[host]);
-
-  // Identity signals
-  const brandMatch = countTokenHits(haystack, brandTokens) > 0;
-  const modelMatch = countTokenHits(haystack, modelTokens) > 0;
-  const variantGuardHit = detectVariantGuardHit({
-    title, snippet, url,
-    variantGuardTerms,
-    targetVariant: String(variables?.variant || ''),
-  });
-  const multiModelHint = detectMultiModelHint({ title, snippet });
-
-  // Surface flags
-  const isPdf = pathname.toLowerCase().endsWith('.pdf');
-  const docKind = guessDocKind({ url, pathname, title, snippet });
-  const looksLikeProductDetail = docKind === 'product_page' || docKind === 'spec';
-  const looksLikeSupportDoc = docKind === 'support';
-  const looksLikeManualOrDatasheet = docKind === 'manual_pdf' || docKind === 'spec_pdf';
-  const looksLikeCategoryOrSearch = /\/(category|categories|search|tag|tags|archive)\b/i.test(pathname);
-  const looksLikeForumOrSocial = /\b(forum|community|discuss|reddit|twitter|facebook)\b/i.test(host + pathname);
-  const looksLikeHomepage = pathname === '/' || pathname === '';
-  const looksLikeLoginOrAccount = /\/(login|signin|account|cart|checkout|register)\b/i.test(pathname);
-
-  // History flags
-  const deadDomain = Boolean(frontierDb?.isDomainDead?.(host));
-  const cooldownUrl = Boolean(frontierDb?.shouldSkipUrl?.(url));
-  const repeatLoser = Boolean(frontierDb?.isRepeatLoser?.(url));
-
-  // Query hits
-  const seenQueries = toArray(row?.seen_in_queries);
-  const queryHits = seenQueries.map((q) => {
-    const meta = queryMetaByQuery?.get(String(q || '').trim()) || {};
-    return {
-      q: String(q || '').trim(),
-      source: String(meta?.hint_source || 'other'),
-      target_fields: toArray(meta?.target_fields),
-    };
-  }).filter((h) => h.q);
-
-  const likelyFields = [...new Set(queryHits.flatMap((h) => h.target_fields))];
-
-  // Pinned status
-  const pinned = hostIsOfficial || hostIsSupport || hostPlanHit || validatedRegistryHost;
-
-  // Page type hint
-  const pageTypeHint = mapDocKindToPageType(docKind);
-
-  // Page extension
-  const pageExt = isPdf ? 'pdf' : 'html';
-
-  return {
-    id,
-    url,
-    host,
-    path: pathname,
-    title,
-    snippet,
-    provider: String(toArray(row?.seen_by_providers)[0] || row?.provider || ''),
-    source_channel: 'internet',
-    page_ext: pageExt,
-    page_type_hint: pageTypeHint,
-    best_rank: Number(row?.rank || 0),
-    seen_in_queries: seenQueries.length,
-    seen_by_providers: toArray(row?.seen_by_providers).length,
-    query_hits: queryHits.slice(0, 10),
-    likely_fields_from_query: likelyFields.slice(0, 20),
-    pinned,
-    pin_reason: pinned
-      ? (hostIsOfficial ? 'official_host' : hostIsSupport ? 'support_host' : hostPlanHit ? 'host_plan' : 'validated_registry')
-      : undefined,
-    host_signals: {
-      official_host: hostIsOfficial,
-      support_host: hostIsSupport,
-      preferred_host: hostIsPreferred,
-      effective_host_plan_hit: hostPlanHit,
-      validated_registry_host: validatedRegistryHost,
-    },
-    identity_signals: {
-      brand_match: brandMatch,
-      model_match: modelMatch,
-      variant_guard_hit: variantGuardHit,
-      foreign_model_tokens: [],
-    },
-    surface_flags: {
-      is_pdf: isPdf,
-      looks_like_product_detail: looksLikeProductDetail,
-      looks_like_support_doc: looksLikeSupportDoc,
-      looks_like_manual_or_datasheet: looksLikeManualOrDatasheet,
-      looks_like_category_or_search: looksLikeCategoryOrSearch,
-      looks_like_forum_or_social: looksLikeForumOrSocial,
-      looks_like_homepage: looksLikeHomepage,
-      looks_like_login_or_account: looksLikeLoginOrAccount,
-    },
-    history_flags: {
-      dead_domain: deadDomain,
-      cooldown_url: cooldownUrl,
-      repeat_loser: repeatLoser,
-    },
-  };
-}
-
-function mapDocKindToPageType(docKind) {
-  const map = {
-    product_page: 'product_page',
-    support: 'support_page',
-    manual_pdf: 'manual_pdf',
-    spec_pdf: 'spec_pdf',
-    spec: 'database',
-    spec_sheet: 'database',
-    teardown_review: 'review',
-    lab_review: 'review',
-    review: 'review',
-    forum: 'forum_thread',
-    community: 'forum_index',
-    other: 'unknown',
-  };
-  return map[docKind] || 'unknown';
-}
-
-// ---------------------------------------------------------------------------
-// adaptSerpSelectorOutput
-// ---------------------------------------------------------------------------
-
-export function adaptSerpSelectorOutput({ selectorOutput, candidateMap, overflowRows = [] }) {
-  const results = toArray(selectorOutput?.results);
+  const keepIds = toArray(selectorOutput?.keep_ids).map((id) => String(id || '').trim()).filter(Boolean);
+  const keepSet = new Set(keepIds);
   const selected = [];
   const notSelected = [];
 
-  // Sort by fetch_rank for kept rows
-  const sortedResults = [...results].sort((a, b) => {
-    if (a.decision === 'reject' && b.decision === 'reject') return 0;
-    if (a.decision === 'reject') return 1;
-    if (b.decision === 'reject') return -1;
-    return (a.fetch_rank || 0) - (b.fetch_rank || 0);
-  });
+  const totalKept = keepIds.length;
 
-  for (const result of sortedResults) {
-    const id = String(result?.id || '');
+  for (let rank = 0; rank < keepIds.length; rank++) {
+    const id = keepIds[rank];
     const originalRow = candidateMap.get(id);
     if (!originalRow) continue;
 
-    const decision = String(result?.decision || '');
-    const score = Number(result?.score || 0) * 100;
-    const authorityBucket = String(result?.authority_bucket || 'unknown');
-    const pageType = String(result?.page_type || 'unknown');
-    const confidence = String(result?.confidence || 'low');
-    const reasonCode = String(result?.reason_code || 'unclear');
-    const reason = String(result?.reason || '');
+    const host = normalizeHost(String(originalRow.host || ''));
+    const url = String(originalRow.url || '');
+    let pathname = '';
+    try { pathname = new URL(url).pathname; } catch { /* ignore */ }
 
-    const enrichedRow = {
+    const hostTrust = deriveHostTrust({ host, officialDomain, supportDomain, categoryConfig });
+    const docKind = guessDocKind({ url, pathname, title: originalRow.title || '', snippet: originalRow.snippet || '' });
+    const score = totalKept > 1 ? Math.round(100 - (rank * (99 / (totalKept - 1)))) : 100;
+
+    selected.push({
       ...originalRow,
-      // WHY: approvedDomain preserved from original row, NOT from LLM decision
       approvedDomain: Boolean(originalRow.approvedDomain),
       approved_domain: Boolean(originalRow.approvedDomain || originalRow.approved_domain),
-      identity_prelim: mapAuthorityToIdentityPrelim(authorityBucket, confidence),
-      host_trust_class: AUTHORITY_TO_HOST_TRUST[authorityBucket] || 'unknown',
-      doc_kind_guess: pageType,
-      extraction_surface_prior: PAGE_TYPE_TO_SURFACE[pageType] || 'article_text',
-      primary_lane: AUTHORITY_TO_LANE[authorityBucket] || 6,
-      triage_disposition: decision === 'approved' ? 'fetch_high' : decision === 'candidate' ? 'fetch_normal' : 'fetch_low',
-      approval_bucket: decision === 'reject' ? undefined : decision,
-      selection_priority: decision === 'approved' ? 'high' : decision === 'candidate' ? 'medium' : 'low',
-      soft_reason_codes: [reasonCode],
+      identity_prelim: hostTrust === 'official' || hostTrust === 'support' ? 'exact' : 'uncertain',
+      host_trust_class: hostTrust,
+      doc_kind_guess: docKind,
+      primary_lane: HOST_TRUST_TO_LANE[hostTrust] || 6,
+      triage_disposition: 'fetch_high',
+      approval_bucket: 'approved',
+      selection_priority: rank < Math.ceil(totalKept / 3) ? 'high' : 'medium',
+      soft_reason_codes: ['llm_selected'],
       score,
       score_source: 'llm_selector',
-      score_breakdown: {
-        llm_score: Number(result?.score || 0),
-        llm_confidence: confidence,
-        llm_reason_code: reasonCode,
-        llm_reason: reason,
-        score_source: 'llm_selector',
-      },
-      triage_enriched: true,
-      triage_schema_version: 2,
-      target_fields: toArray(result?.likely_field_keys),
-      _fetch_rank: result?.fetch_rank ?? null,
-    };
-
-    if (decision === 'approved' || decision === 'candidate') {
-      selected.push(enrichedRow);
-    } else {
-      notSelected.push(enrichedRow);
-    }
+      score_breakdown: { score_source: 'llm_selector', rank: rank + 1 },
+    });
   }
 
-  // Add overflow rows (capped out of selector input)
+  // Not-selected: everything in candidateMap not in keepSet
+  for (const [id, originalRow] of candidateMap) {
+    if (keepSet.has(id)) continue;
+    notSelected.push({
+      ...originalRow,
+      approvedDomain: Boolean(originalRow.approvedDomain),
+      approved_domain: Boolean(originalRow.approvedDomain || originalRow.approved_domain),
+      triage_disposition: 'fetch_low',
+      selection_priority: 'low',
+      score: 0,
+      score_source: 'llm_selector',
+      score_breakdown: { score_source: 'llm_selector', reason: 'not_selected' },
+    });
+  }
+
+  // Overflow rows (capped out of selector input)
   for (const row of overflowRows) {
     notSelected.push({
       ...row,
@@ -591,42 +233,24 @@ export function adaptSerpSelectorOutput({ selectorOutput, candidateMap, overflow
       approved_domain: Boolean(row.approvedDomain || row.approved_domain),
       triage_disposition: 'selector_input_capped',
       selection_priority: 'low',
-      triage_enriched: true,
-      triage_schema_version: 2,
       score: 0,
       score_source: 'llm_selector',
       score_breakdown: { score_source: 'llm_selector', reason: 'selector_input_capped' },
     });
   }
 
-  // Compatibility-only lane stats
-  const laneCounts = {};
-  for (const row of selected) {
-    const lane = row.primary_lane || 6;
-    laneCounts[lane] = (laneCounts[lane] || 0) + 1;
-  }
-  const laneStats = {
-    _compatibility: true,
-    lanes: Object.entries(laneCounts).map(([lane, count]) => ({
-      lane: Number(lane),
-      selected: count,
-    })),
-  };
-  const laneQuotas = {
-    _compatibility: true,
-  };
-
-  return { selected, notSelected, laneStats, laneQuotas };
+  return { selected, notSelected };
 }
 
-function mapAuthorityToIdentityPrelim(authorityBucket, confidence) {
-  if (authorityBucket === 'official' || authorityBucket === 'support') {
-    return confidence === 'high' ? 'exact' : 'family';
+function deriveHostTrust({ host, officialDomain, supportDomain, categoryConfig }) {
+  if (officialDomain && host === officialDomain) return 'official';
+  if (supportDomain && host === supportDomain) return 'support';
+  if (categoryConfig?.validatedRegistry?.[host]) return 'trusted_specdb';
+  if (categoryConfig) {
+    const role = inferRoleForHost(host, categoryConfig);
+    if (role === 'review' || role === 'lab') return 'trusted_review';
+    if (role === 'retailer') return 'retailer';
+    if (isApprovedHost(host, categoryConfig)) return 'trusted_review';
   }
-  if (authorityBucket === 'validated_registry' || authorityBucket === 'internal') {
-    return 'exact';
-  }
-  if (confidence === 'high') return 'exact';
-  if (confidence === 'medium') return 'family';
-  return 'uncertain';
+  return 'unknown';
 }

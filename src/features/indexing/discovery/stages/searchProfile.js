@@ -26,8 +26,10 @@ export function runSearchProfile({
   variables,
   focusGroups,
   seedStatus = null,
+  logger,
+  runId,
 }) {
-  const profileMaxQueries = Math.max(1, configInt(config, 'searchProfileQueryCap'));
+  const profileMaxQueries = configInt(config, 'searchProfileQueryCap');
   const searchProfileBase = buildSearchProfile({
     job,
     categoryConfig,
@@ -42,6 +44,33 @@ export function runSearchProfile({
     fieldYieldByDomain: learning?.fieldYield?.by_domain || null,
     seedStatus,
     focusGroups,
+  });
+
+  // WHY: Emit search_profile_generated HERE (Stage 03) so the runtime bridge
+  // receives the deterministic-only count. Query Journey (Stage 05) merges
+  // profile + planner queries but that merged count belongs to query_journey_completed.
+  logger?.info?.('search_profile_generated', {
+    run_id: runId,
+    category: categoryConfig.category,
+    product_id: job.productId,
+    alias_count: toArray(searchProfileBase?.identity_aliases).length,
+    query_count: toArray(searchProfileBase?.queries).length,
+    source: 'deterministic',
+    query_rows: toArray(searchProfileBase?.query_rows).slice(0, 220).map((row) => ({
+      query: String(row?.query || '').trim(),
+      hint_source: String(row?.hint_source || '').trim(),
+      target_fields: Array.isArray(row?.target_fields) ? row.target_fields : [],
+      doc_hint: String(row?.doc_hint || '').trim(),
+      domain_hint: String(row?.domain_hint || '').trim(),
+      source_host: String(row?.source_host || '').trim(),
+      attempts: 0,
+      result_count: 0,
+      providers: [],
+      score: Number.isFinite(Number(row?.score)) ? Number(row.score) : 0,
+      score_breakdown: row?.score_breakdown && typeof row.score_breakdown === 'object'
+        ? row.score_breakdown : null,
+      warnings: Array.isArray(row?.warnings) ? row.warnings : [],
+    })),
   });
 
   const brandResolutionHints = [...new Set(

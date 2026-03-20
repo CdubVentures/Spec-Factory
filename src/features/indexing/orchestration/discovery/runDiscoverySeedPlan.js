@@ -5,6 +5,7 @@
 
 import { loadEnabledSourceEntries } from '../shared/runProductOrchestrationHelpers.js';
 import { normalizeFieldList } from '../../../../utils/fieldKeys.js';
+import { configInt } from '../../../../shared/settingsAccessor.js';
 import { computeNeedSet } from '../../../../indexlab/needsetEngine.js';
 import { buildSearchPlanningContext } from '../../../../indexlab/searchPlanningContext.js';
 import { buildSearchPlan } from '../../../../indexlab/searchPlanBuilder.js';
@@ -157,6 +158,7 @@ export async function runDiscoverySeedPlan({
     config: discoveryConfig, searchProfileCaps, variables,
     focusGroups: needset.focusGroups,
     seedStatus: needset.schema3?.seed_status || null,
+    logger, runId,
   });
 
   // === Stage 04: Search Planner ===
@@ -203,8 +205,10 @@ export async function runDiscoverySeedPlan({
   }
 
   // === Stage 06: Search Execution ===
-  const resultsPerQuery = Math.max(1, Number(discoveryConfig.discoveryResultsPerQuery || 10));
-  const discoveryCap = Math.max(1, Number(discoveryConfig.searchPlannerQueryCap || 30));
+  const resultsPerQuery = configInt(discoveryConfig, 'discoveryResultsPerQuery');
+  // WHY: discoveryCap must derive from serpSelectorUrlCap (a URL count),
+  // not searchPlannerQueryCap (a query count). The old code conflated the two.
+  const discoveryCap = configInt(discoveryConfig, 'serpSelectorUrlCap');
   // WHY: Strict sequential execution — search-b must not start until search-a finishes.
   const queryConcurrency = 1;
   const providerState = searchEngineAvailability(discoveryConfig);

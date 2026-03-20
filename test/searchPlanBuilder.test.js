@@ -452,9 +452,10 @@ describe('buildSearchPlan', () => {
 
       const pi = result.panel.profile_influence;
       assert.ok(pi);
-      assert.equal(typeof pi.tier1_seed_active, 'boolean');
-      assert.equal(typeof pi.tier2_group_count, 'number');
-      assert.equal(typeof pi.tier3_key_count, 'number');
+      assert.equal(typeof pi.targeted_specification, 'number');
+      assert.equal(typeof pi.targeted_sources, 'number');
+      assert.equal(typeof pi.targeted_groups, 'number');
+      assert.equal(typeof pi.targeted_single, 'number');
       assert.equal(typeof pi.groups_now, 'number');
       assert.equal(typeof pi.groups_next, 'number');
       assert.equal(typeof pi.groups_hold, 'number');
@@ -811,7 +812,7 @@ describe('buildSearchPlan', () => {
   // ===== Tier-aware profile_influence =====
 
   describe('profile_influence tier-aware shape', () => {
-    it('tier counts derived from Schema 3 focus_groups', async () => {
+    it('targeting counts derived from Schema 3 focus_groups', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const ctx = makeSearchPlanningContext({
         focus_groups: [
@@ -823,30 +824,30 @@ describe('buildSearchPlan', () => {
       const result = await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
       const pi = result.panel.profile_influence;
 
-      assert.equal(pi.tier2_group_count, 1, 'one search-worthy group');
-      assert.equal(pi.tier3_key_count, 1, 'one key from non-worthy group with keys');
+      assert.equal(pi.targeted_groups, 1, 'one search-worthy group');
+      assert.equal(pi.targeted_single, 1, 'one key from non-worthy group with keys');
       assert.equal(pi.groups_now, 1);
       assert.equal(pi.groups_next, 1);
       assert.equal(pi.groups_hold, 1);
       assert.equal(pi.total_unresolved_keys, 3, 'a+b+c = 3 total keys');
     });
 
-    it('tier1_seed_active reflects seed_status', async () => {
+    it('targeted_specification reflects seed_status specs_seed', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const ctx = makeSearchPlanningContext({
         seed_status: { specs_seed: { is_needed: true }, source_seeds: {} },
       });
       const result = await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
-      assert.equal(result.panel.profile_influence.tier1_seed_active, true);
+      assert.equal(result.panel.profile_influence.targeted_specification, 1);
     });
 
-    it('tier1_seed_active false when no seeds needed', async () => {
+    it('targeted_sources counts needed source seeds', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const ctx = makeSearchPlanningContext({
-        seed_status: { specs_seed: { is_needed: false }, source_seeds: {} },
+        seed_status: { specs_seed: { is_needed: false }, source_seeds: { 'razer.com': { is_needed: true }, 'rtings.com': { is_needed: true }, 'amazon.com': { is_needed: false } } },
       });
       const result = await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
-      assert.equal(result.panel.profile_influence.tier1_seed_active, false);
+      assert.equal(result.panel.profile_influence.targeted_sources, 2);
     });
 
     it('planner_confidence from LLM response', async () => {
@@ -864,9 +865,10 @@ describe('buildSearchPlan', () => {
         config: makeConfig({ geminiApiKey: '' }),
       });
       const pi = result.panel.profile_influence;
-      assert.equal(pi.tier1_seed_active, false);
-      assert.equal(pi.tier2_group_count, 0);
-      assert.equal(pi.tier3_key_count, 0);
+      assert.equal(pi.targeted_specification, 0);
+      assert.equal(pi.targeted_sources, 0);
+      assert.equal(pi.targeted_groups, 0);
+      assert.equal(pi.targeted_single, 0);
       assert.equal(pi.planner_confidence, 0);
     });
   });

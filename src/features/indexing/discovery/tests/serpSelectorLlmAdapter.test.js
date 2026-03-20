@@ -61,8 +61,8 @@ describe('createSerpSelectorCallLlm', () => {
 
     assert.ok(capturedArgs.jsonSchema);
     assert.equal(capturedArgs.jsonSchema.type, 'object');
-    assert.ok(capturedArgs.jsonSchema.properties.results);
     assert.ok(capturedArgs.jsonSchema.properties.keep_ids);
+    assert.deepEqual(capturedArgs.jsonSchema.required, ['keep_ids']);
   });
 
   it('passes timeoutMs from config', async () => {

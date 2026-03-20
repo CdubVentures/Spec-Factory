@@ -1,6 +1,6 @@
 # Search Profile Logic In And Out
 
-Validated against live code on 2026-03-19.
+Validated against live code on 2026-03-20.
 
 ## What this stage is
 
@@ -36,7 +36,8 @@ Coverage is split across:
 - optional `brandResolution`
 - `config` and derived search-profile caps
 - `variables`
-- `focusGroups`
+- `focusGroups` — from NeedSet Schema 3 with V4 extensions (`group_search_worthy`, `normalized_key_queue`, `productivity_score`, `group_description_long`)
+- `seedStatus` — from NeedSet Schema 3 (`seed_status.specs_seed`, `seed_status.source_seeds`)
 
 Optional host-plan enrichment also uses:
 
@@ -52,23 +53,17 @@ Optional host-plan enrichment also uses:
 1. Resolve identity and build deterministic aliases.
 2. Build `variant_guard_terms`.
 3. Expand `categoryConfig.searchTemplates` into `base_templates`.
-4. Build deterministic `query_rows` from:
-   - archetype planner rows
-   - uncovered hard-field rows
-   - field-rule `search_hints`
-   - domain-hint soft-bias rows
-   - alias-driven rows
-   - learned field templates
-   - learned brand templates
-5. Interleave query rows round-robin by target field.
-6. Dedupe and cap selected queries.
-7. Produce support blocks such as:
-   - `field_target_queries`
-   - `doc_hint_queries`
-   - `archetype_summary`
-   - `coverage_analysis`
-   - `hint_source_counts`
-   - field-rule gate/hint counts
+4. **Tier dispatch** via `determineQueryModes(seedStatus, focusGroups)`:
+   - Returns 3 independent booleans: `runTier1Seeds`, `runTier2Groups`, `runTier3Keys`
+   - All three can be true simultaneously (mixed tier mode)
+   - When `seedStatus` is provided and any tier is active, tier builders run instead of the legacy archetype pipeline
+   - When `seedStatus` is absent, falls through to the existing archetype pipeline (backward compat)
+5. **Tier 1** (`buildTier1Queries`): `{brand} {model} {variant} specifications` + `{brand} {model} {variant} {source}` per needed source seed. Tagged `tier: 'seed'`, `hint_source: 'tier1_seed'`.
+6. **Tier 2** (`buildTier2Queries`): one broad query per search-worthy group: `{brand} {model} {variant} {label} {group_description_long}`. Sorted by `productivity_score` descending. Tagged `tier: 'group_search'`, `hint_source: 'tier2_group'`, `group_key`.
+7. **Tier 3** (`buildTier3Queries`): one query per key from `normalized_key_queue` for non-worthy groups: `{brand} {model} {variant} {key}`. Tagged `tier: 'key_search'`, `hint_source: 'tier3_key'`, `group_key`, `normalized_key`.
+8. **Legacy path** (when no `seedStatus`): Build deterministic `query_rows` from archetype planner, field-rules, domain hints, aliases, learned templates. Interleave round-robin by target field.
+9. Dedupe and cap selected queries.
+10. Produce support blocks: `field_target_queries`, `doc_hint_queries`, `archetype_summary`, `coverage_analysis`, `hint_source_counts`, field-rule gate/hint counts.
 
 `runSearchProfile()` then optionally adds:
 
@@ -80,13 +75,12 @@ Those host-plan rows are not part of `buildSearchProfile()` output. They are app
 ## Important invariants
 
 - Search Profile always runs when the canonical discovery pipeline runs, even if Schema 4 is disabled or empty.
-- Stage 04 Search Planner does consume Search Profile now:
-  - `base_templates`
-  - targeted query rows
-  - `archetype_summary`
-  - `coverage_analysis`
+- Search Profile is fully deterministic — no LLM calls. Tier dispatch is based on NeedSet signals (`seed_status`, `group_search_worthy`, `normalized_key_queue`).
+- When `seedStatus` is provided, `determineQueryModes()` gates which tiers fire. Tiers are independent — all three can be active simultaneously (e.g. Tier 2 for worthy groups + Tier 3 for exhausted groups' keys).
+- When `seedStatus` is absent (backward compat), the legacy archetype pipeline runs unchanged.
+- Stage 04 Search Planner consumes Search Profile: `base_templates`, targeted query rows, `archetype_summary`, `coverage_analysis`.
 - `effective_host_plan` is optional and can be blocked by registry population rules.
-- Search Profile itself does not emit `search_profile_generated`. That event is emitted by Query Journey when the planned artifact is written.
+- Search Profile emits `search_profile_generated` with the deterministic query count and row details.
 - Search Profile is a deterministic base, not the final query-selection authority. Query Journey still dedupes, ranks, guards, and appends host-plan rows.
 
 ## Outputs out
@@ -167,10 +161,12 @@ Search Profile feeds:
 
 It also becomes the main discovery review artifact once execution finishes.
 
-### V4 tier-aware consumption (planned)
+### Tier-aware consumption (implemented)
 
-NeedSet now tells Search Profile which groups to focus on and provides enriched descriptions. Search Profile consumes these to build actual queries:
+NeedSet tells Search Profile which tier to operate in. Search Profile reads the signals and fires the appropriate builders:
 
-- **Tier 1**: `seed_status.specs_seed.is_needed` and `seed_status.source_seeds[name].is_needed` determine whether broad seed queries should fire
-- **Tier 2**: `focus_group.group_search_worthy` determines whether to emit a `{brand} {model} {variant} {group} {description}` query or skip to individual keys. Uses `group_description_long` as the enriched description.
-- **Tier 3**: `focus_group.normalized_key_queue` provides the ordered list of individual keys. Each field's `all_aliases`, `alias_shards`, `domains_tried_for_key`, `query_modes_tried_for_key` feed progressive enrichment across rounds.
+- **Tier 1**: `seed_status.specs_seed.is_needed` and `seed_status.source_seeds[name].is_needed` → `buildTier1Queries()` emits broad seed queries
+- **Tier 2**: `focus_group.group_search_worthy === true` → `buildTier2Queries()` emits one broad query per worthy group, sorted by `productivity_score`. Uses `group_description_long` as the enriched description.
+- **Tier 3**: `focus_group.group_search_worthy === false` with non-empty `normalized_key_queue` → `buildTier3Queries()` emits one query per key, ordered by availability/difficulty.
+- **Mixed mode**: Tier 2 + Tier 3 can run simultaneously when some groups are still worth broad searching while others are exhausted.
+- **Backward compat**: When `seedStatus` is not passed, the legacy archetype pipeline runs unchanged.

@@ -13,6 +13,7 @@ import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader'
 import { Chip } from '../../../../shared/ui/feedback/Chip';
 import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
 import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
 import type { RuntimeIdxBadge } from '../../types';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
@@ -173,32 +174,29 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
     <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* ── Hero Band ─────────────────────────────────────── */}
-      <div className="sf-surface-elevated rounded-sm border sf-border-soft px-7 py-6 space-y-5">
-        {/* Title row */}
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
-          <div className="flex items-baseline gap-3">
-            <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Brand Resolver</span>
-            <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Domain Resolution</span>
-            {status && (
-              <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] ${brandResolutionBadgeClass(status)} border-[1.5px] border-current`}>
-                {status === 'resolved_empty' ? 'no domain found' : status}
-              </span>
-            )}
-            {!status && calls.length > 0 && (
-              <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] ${llmCallStatusBadgeClass(calls[0].status)} border-[1.5px] border-current`}>
-                {calls[0].status}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Chip label="LLM" className="sf-chip-warning" />
-            {source.text && (
-              <Chip label={`source: ${source.text.toLowerCase()}`} className={source.badgeClass} />
-            )}
-            <Tip text="The Brand Resolver identifies the official manufacturer domain and aliases so search queries can use targeted site: filters for higher-quality sources." />
-          </div>
-        </div>
-
+      <HeroBand
+        titleRow={<>
+          <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Brand Resolver</span>
+          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Domain Resolution</span>
+          {status && (
+            <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] ${brandResolutionBadgeClass(status)} border-[1.5px] border-current`}>
+              {status === 'resolved_empty' ? 'no domain found' : status}
+            </span>
+          )}
+          {!status && calls.length > 0 && (
+            <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] ${llmCallStatusBadgeClass(calls[0].status)} border-[1.5px] border-current`}>
+              {calls[0].status}
+            </span>
+          )}
+        </>}
+        trailing={<>
+          <Chip label="LLM" className="sf-chip-warning" />
+          {source.text && (
+            <Chip label={`source: ${source.text.toLowerCase()}`} className={source.badgeClass} />
+          )}
+          <Tip text="The Brand Resolver identifies the official manufacturer domain and aliases so search queries can use targeted site: filters for higher-quality sources." />
+        </>}
+      >
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
         {/* Big stat numbers — 4-col grid with colored values */}
@@ -245,7 +243,7 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
             {br!.skip_reason || 'the LLM call did not return a usable result.'}
           </div>
         )}
-      </div>
+      </HeroBand>
 
       {/* ── Disambiguation Warning ─────────────────────────── */}
       {isLowConfidence && (

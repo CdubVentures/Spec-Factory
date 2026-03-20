@@ -6,6 +6,7 @@ import { Tip } from '../../../../shared/ui/feedback/Tip';
 import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
 import { Chip } from '../../../../shared/ui/feedback/Chip';
 import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
 import { deriveLlmPlannerStatus } from '../../selectors/searchProfileHelpers.js';
 import {
   shouldShowSearchProfileGateBadges,
@@ -218,22 +219,19 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
       {/* ══════════════════════════════════════════════════════════════════
           HERO BAND
           ══════════════════════════════════════════════════════════════════ */}
-      <div className="sf-surface-elevated rounded-sm border sf-border-soft px-7 py-6 space-y-5">
-        {/* Title row */}
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
-          <div className="flex items-baseline gap-3">
-            <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Search Profile</span>
-            <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Discovery Pipeline</span>
-            {isSchema4 && <Chip label="Schema 4" className="sf-chip-info" />}
-            {!isSchema4 && data.query_rows.length > 0 && <Chip label="Deterministic" className="sf-chip-neutral" />}
-          </div>
-          <div className="flex items-center gap-2">
-            {providerLabel && <Chip label={providerLabel} className="sf-chip-accent" />}
-            <Chip label="Deterministic" className="sf-chip-neutral" />
-            <Tip text="The Search Profile assembles queries, aliases, and variant guards used to discover source URLs. It combines deterministic rules with LLM planner query output." />
-          </div>
-        </div>
-
+      <HeroBand
+        titleRow={<>
+          <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Search Profile</span>
+          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Discovery Pipeline</span>
+          {isSchema4 && <Chip label="Schema 4" className="sf-chip-info" />}
+          {!isSchema4 && data.query_rows.length > 0 && <Chip label="Deterministic" className="sf-chip-neutral" />}
+        </>}
+        trailing={<>
+          {providerLabel && <Chip label={providerLabel} className="sf-chip-accent" />}
+          <Chip label="Deterministic" className="sf-chip-neutral" />
+          <Tip text="The Search Profile assembles queries, aliases, and variant guards used to discover source URLs. It combines deterministic rules with LLM planner query output." />
+        </>}
+      >
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
         {/* Big stat numbers */}
@@ -271,7 +269,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
             </>
           )}
         </div>
-      </div>
+      </HeroBand>
 
       {/* ══════════════════════════════════════════════════════════════════
           QUERY TABLE

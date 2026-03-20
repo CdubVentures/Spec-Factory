@@ -125,6 +125,9 @@ class S3Storage {
       if (error?.$metadata?.httpStatusCode === 404 || error?.name === 'NoSuchKey') {
         return null;
       }
+      if (error instanceof SyntaxError) {
+        return null;
+      }
       throw error;
     }
   }
@@ -288,6 +291,11 @@ class LocalStorage {
       return await this.readJson(key);
     } catch (err) {
       if (err.code === 'ENOENT') {
+        return null;
+      }
+      // WHY: Corrupted JSON should not crash the caller — return null
+      // so fallback chains (e.g. billing rollup) can continue.
+      if (err instanceof SyntaxError) {
         return null;
       }
       throw err;

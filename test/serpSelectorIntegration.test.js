@@ -131,56 +131,11 @@ function makeBaseArgs(overrides = {}) {
 }
 
 function makeSelectorOutput(candidateIds) {
-  const approvedIds = candidateIds.slice(0, 1);
-  const candidateIdSlice = candidateIds.slice(1);
-  const keepIds = [...approvedIds, ...candidateIdSlice];
-  return {
-    schema_version: 'serp_selector_output.v1',
-    keep_ids: keepIds,
-    approved_ids: approvedIds,
-    candidate_ids: candidateIdSlice,
-    reject_ids: [],
-    results: candidateIds.map((id, i) => ({
-      id,
-      decision: i === 0 ? 'approved' : 'candidate',
-      score: i === 0 ? 0.95 : 0.65,
-      confidence: 'high',
-      fetch_rank: i + 1,
-      page_type: 'product_page',
-      authority_bucket: 'official',
-      likely_field_keys: ['weight'],
-      reason_code: 'exact_official_product',
-      reason: 'Test match',
-    })),
-    summary: {
-      input_count: candidateIds.length,
-      approved_count: approvedIds.length,
-      candidate_count: candidateIdSlice.length,
-      reject_count: 0,
-    },
-  };
+  return { keep_ids: [...candidateIds] };
 }
 
-function makeAllRejectOutput(candidateIds) {
-  return {
-    schema_version: 'serp_selector_output.v1',
-    keep_ids: [],
-    approved_ids: [],
-    candidate_ids: [],
-    reject_ids: candidateIds,
-    results: candidateIds.map((id) => ({
-      id,
-      decision: 'reject',
-      score: 0.1,
-      confidence: 'low',
-      fetch_rank: null,
-      page_type: 'unknown',
-      authority_bucket: 'unknown',
-      reason_code: 'low_value_surface',
-      reason: 'Junk',
-    })),
-    summary: { input_count: candidateIds.length, approved_count: 0, candidate_count: 0, reject_count: candidateIds.length },
-  };
+function makeAllRejectOutput() {
+  return { keep_ids: [] };
 }
 
 // ---------------------------------------------------------------------------
@@ -199,7 +154,8 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
     });
     const result = await processDiscoveryResults(args);
     assert.ok(selectorInput, 'selector was called');
-    assert.equal(selectorInput.schema_version, 'serp_selector_input.v1');
+    assert.ok(selectorInput.product, 'input has product');
+    assert.ok(selectorInput.candidates, 'input has candidates');
     assert.equal(result.enabled, true);
     assert.ok(result.candidates.length >= 1);
   });
@@ -225,7 +181,7 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
       logger,
       _serpSelectorCallFn: async ({ selectorInput }) => {
         const ids = selectorInput.candidates.map((c) => c.id);
-        return makeAllRejectOutput(ids);
+        return makeAllRejectOutput();
       },
     });
     const result = await processDiscoveryResults(args);
@@ -248,11 +204,8 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
     const logger = makeStubLogger();
     const args = makeBaseArgs({
       logger,
-      _serpSelectorCallFn: async ({ selectorInput }) => {
-        const ids = selectorInput.candidates.map((c) => c.id);
-        const output = makeSelectorOutput(ids);
-        output.results[0].id = 'FAKE_UNKNOWN_ID';
-        return output;
+      _serpSelectorCallFn: async () => {
+        return { keep_ids: ['FAKE_UNKNOWN_ID'] };
       },
     });
     const result = await processDiscoveryResults(args);

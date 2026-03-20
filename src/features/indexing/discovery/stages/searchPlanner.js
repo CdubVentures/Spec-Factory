@@ -57,7 +57,7 @@ export async function runSearchPlanner({
     missingCriticalFields: planningHints.missingCriticalFields || [],
     baseQueries: [...baseQueries, ...targetedQueries],
     frontierSummary,
-    cap: Math.max(1, configInt(config, 'searchPlannerQueryCap')),
+    cap: configInt(config, 'searchPlannerQueryCap'),
   });
 
   if (toArray(uberSearchPlan?.queries).length > 0) {

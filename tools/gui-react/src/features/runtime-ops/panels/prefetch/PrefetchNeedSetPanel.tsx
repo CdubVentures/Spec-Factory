@@ -6,6 +6,7 @@ import { Tip } from '../../../../shared/ui/feedback/Tip';
 import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
 import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
 import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
 import type { RuntimeIdxBadge } from '../../types';
 import {
   formatNumber,
@@ -125,7 +126,7 @@ function BundleCard({ bundle, expanded, onToggle }: BundleCardProps) {
   const satisfiedCount = fields.filter(f => f.state === 'satisfied').length;
   const totalCount = fields.length;
   const progressPct = totalCount > 0 ? (satisfiedCount / totalCount) * 100 : 0;
-  const hasUnresolved = fields.some(f => f.state !== 'satisfied');
+  const isActive = bundle.phase === 'now' || fields.some(f => f.state !== 'satisfied');
 
   const sortedFields = useMemo(() =>
     [...fields].sort((a, b) => {
@@ -135,7 +136,7 @@ function BundleCard({ bundle, expanded, onToggle }: BundleCardProps) {
   [fields]);
 
   return (
-    <div className={`sf-surface-elevated border sf-border-soft rounded-sm transition-opacity ${hasUnresolved ? 'opacity-100' : 'opacity-70'}`}>
+    <div className={`sf-surface-elevated border sf-border-soft rounded-sm transition-opacity ${isActive ? 'opacity-100' : 'opacity-70'}`}>
       {/* Clickable header */}
       <div
         onClick={onToggle}
@@ -150,16 +151,28 @@ function BundleCard({ bundle, expanded, onToggle }: BundleCardProps) {
           </span>
         </div>
 
-        {/* Center: label + desc + reason */}
+        {/* Center: label + desc + metadata grid */}
         <div className="min-w-0">
           <div className="text-[15px] font-bold sf-text-primary leading-tight">{bundle.label || bundle.key}</div>
           <div className="mt-0.5 text-xs sf-text-muted truncate">{bundle.desc}</div>
 
-          {bundle.reason_active && (
-            <div className="flex gap-1.5 items-baseline mt-2 pt-2 border-t sf-border-soft">
-              <span className="text-[8px] font-bold uppercase tracking-[0.08em] sf-text-subtle shrink-0 min-w-[3.2rem]">reason</span>
-              <span className="text-[11px] font-mono sf-text-muted">{bundle.reason_active}</span>
+          {/* Metadata grid — reason from LLM planner */}
+          {isActive && bundle.reason_active && (
+            <div className="grid grid-cols-2 gap-x-5 gap-y-1 mt-2.5 pt-2 border-t sf-border-soft">
+              {([
+                ['reason active', bundle.reason_active],
+              ] as const).filter(([, val]) => val).map(([lbl, val]) => (
+                <div key={lbl} className="flex gap-1.5 items-baseline">
+                  <span className="text-[8px] font-bold uppercase tracking-[0.08em] sf-text-subtle shrink-0 min-w-[3.2rem]">{lbl}</span>
+                  <span className="text-[11px] font-mono sf-text-muted">{val}</span>
+                </div>
+              ))}
             </div>
+          )}
+
+          {/* Inactive message */}
+          {!isActive && (
+            <div className="text-[10px] font-mono sf-text-subtle italic mt-1">Not queued this round</div>
           )}
         </div>
 
@@ -393,14 +406,12 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
   const sortArrow = (key: PlannerSortKey) =>
     plannerSortKey === key ? (plannerSortDir === 'asc' ? ' \u25b4' : ' \u25be') : '';
 
-  const TIER_LABELS = ['tier1_seed', 'tier2_group', 'tier3_key'] as const;
+  const TIER_CATEGORIES = ['targeted_specification', 'targeted_sources', 'targeted_groups', 'targeted_single'] as const;
   const tierEntries = useMemo(() => {
     if (!profileInfluence) return [];
-    return ([
-      { tier: 'tier1_seed' as const, count: profileInfluence.tier1_seed_active ? 1 : 0 },
-      { tier: 'tier2_group' as const, count: profileInfluence.tier2_group_count ?? 0 },
-      { tier: 'tier3_key' as const, count: profileInfluence.tier3_key_count ?? 0 },
-    ] as const).filter(e => e.count > 0);
+    return TIER_CATEGORIES
+      .map((cat) => ({ category: cat, count: (profileInfluence[cat] as number) ?? 0 }))
+      .filter(e => e.count > 0);
   }, [profileInfluence]);
 
   const tierTotal = tierEntries.reduce((s, e) => s + e.count, 0);
@@ -453,24 +464,21 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
     <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* ── Hero Band ─────────────────────────────────────── */}
-      <div className="sf-surface-elevated rounded-sm border sf-border-soft px-7 py-6 space-y-5">
-        {/* Title row */}
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
-          <div className="flex items-baseline gap-3">
-            <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">NeedSet</span>
-            <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Search Planner</span>
-            {round !== undefined && (
-              <span className="px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] text-[var(--sf-token-accent)] border-[1.5px] border-[var(--sf-token-accent)]">
-                round {round} &middot; {roundMode === 'seed' ? 'seeding' : roundMode === 'repair' ? 'repair' : 'carry-forward'}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] sf-chip-warning border-[1.5px] border-current">LLM</span>
-            <Tip text="Search gap planner — groups unresolved fields into search bundles by priority, content type, and source affinity." />
-          </div>
-        </div>
-
+      <HeroBand
+        titleRow={<>
+          <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">NeedSet</span>
+          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Search Planner</span>
+          {round !== undefined && (
+            <span className="px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] text-[var(--sf-token-accent)] border-[1.5px] border-[var(--sf-token-accent)]">
+              round {round} &middot; {roundMode === 'seed' ? 'seeding' : roundMode === 'repair' ? 'repair' : 'carry-forward'}
+            </span>
+          )}
+        </>}
+        trailing={<>
+          <span className="px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] sf-chip-warning border-[1.5px] border-current">LLM</span>
+          <Tip text="Search gap planner — groups unresolved fields into search bundles by priority, content type, and source affinity." />
+        </>}
+      >
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
         {/* Big stat numbers — 4-col grid with colored values */}
@@ -486,13 +494,14 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
         {/* Narrative — tier-aware */}
         {summary && profileInfluence && (
           <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
-            {profileInfluence.tier1_seed_active && <strong className="sf-text-primary not-italic">Tier 1 seeds active. </strong>}
-            {profileInfluence.tier2_group_count > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.tier2_group_count} group searches queued. </strong>}
-            {profileInfluence.tier3_key_count > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.tier3_key_count} individual key searches. </strong>}
+            {profileInfluence.targeted_specification > 0 && <strong className="sf-text-primary not-italic">Specification seed active. </strong>}
+            {profileInfluence.targeted_sources > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_sources} source seeds queued. </strong>}
+            {profileInfluence.targeted_groups > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_groups} group searches queued. </strong>}
+            {profileInfluence.targeted_single > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_single} individual key searches. </strong>}
             {summary.core_unresolved + summary.secondary_unresolved + (summary.optional_unresolved ?? 0)} unresolved fields across {activeBundles} active bundles, with {summary.core_unresolved} core fields still missing.
           </div>
         )}
-      </div>
+      </HeroBand>
 
       {/* ── Why We're Stuck ───────────────────────────────── */}
       {blockers && (
@@ -574,21 +583,22 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
       )}
       {tierEntries.length > 0 && profileInfluence && (
         <div>
-          <SectionHeader>tier influence</SectionHeader>
+          <SectionHeader>profile influence</SectionHeader>
           <div className="space-y-3">
             {/* Segmented bar — tier distribution */}
             {tierTotal > 0 && (
               <div className="flex h-5 rounded-sm overflow-hidden border sf-border-soft">
                 {tierEntries.map((e) => (
                   <div
-                    key={e.tier}
+                    key={e.category}
                     className={`flex items-center justify-center text-[10px] font-bold ${
-                      e.tier === 'tier1_seed' ? 'bg-blue-600 text-white' :
-                      e.tier === 'tier2_group' ? 'bg-amber-500 text-white' :
+                      e.category === 'targeted_specification' ? 'bg-blue-600 text-white' :
+                      e.category === 'targeted_sources' ? 'bg-violet-600 text-white' :
+                      e.category === 'targeted_groups' ? 'bg-amber-500 text-white' :
                       'bg-emerald-600 text-white'
                     }`}
                     style={{ width: `${(e.count / tierTotal) * 100}%` }}
-                    title={`${e.tier.replace(/_/g, ' ')}: ${e.count}`}
+                    title={`${e.category.replace(/_/g, ' ')}: ${e.count}`}
                   >
                     {e.count}
                   </div>
@@ -598,13 +608,14 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
             {/* Legend */}
             <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs sf-text-muted">
               {tierEntries.map((e) => (
-                <span key={e.tier} className="flex items-center gap-2">
+                <span key={e.category} className="flex items-center gap-2">
                   <span className={`inline-block w-3 h-3 rounded-sm ${
-                    e.tier === 'tier1_seed' ? 'bg-blue-600' :
-                    e.tier === 'tier2_group' ? 'bg-amber-500' :
+                    e.category === 'targeted_specification' ? 'bg-blue-600' :
+                    e.category === 'targeted_sources' ? 'bg-violet-600' :
+                    e.category === 'targeted_groups' ? 'bg-amber-500' :
                     'bg-emerald-600'
                   }`} />
-                  <span className="font-semibold">{e.tier.replace(/_/g, ' ')}</span>
+                  <span className="font-semibold">{e.category.replace(/_/g, ' ')}</span>
                   <span className="font-mono font-bold sf-text-primary">{e.count}</span>
                 </span>
               ))}

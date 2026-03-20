@@ -1,7 +1,7 @@
 {
   "snapshotId": "test-run-id-000",
   "schemaVersion": "1.0",
-  "createdAt": 1773991613994,
+  "createdAt": 1773993966629,
   "source": "gui",
   "settings": {
     "articleExtractorDomainPolicyMapJson": "",

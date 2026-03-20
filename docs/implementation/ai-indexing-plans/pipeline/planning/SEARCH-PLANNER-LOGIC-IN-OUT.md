@@ -1,13 +1,13 @@
 # Search Planner Logic In And Out
 
-Validated against live code on 2026-03-19.
+Validated against live code on 2026-03-20.
 
 ## What this stage is
 
-Search Planner is the Stage 04 planner boundary owned by `runSearchPlanner()`. It is not the Stage 01 Schema 4 NeedSet planner. Its job is to:
+Search Planner is the Stage 04 planner boundary owned by `runSearchPlanner()`. Its job is to:
 
-- adapt the Stage 01 Schema 4 handoff into guarded execution rows
-- call `planUberQueries()` for extra query exploration driven by Search Profile context
+- adapt the Stage 01 Schema 4 handoff (now always empty — NeedSet no longer generates queries)
+- call `planUberQueries()` for LLM-driven query enrichment based on Search Profile's tier-aware deterministic output
 
 Primary owners:
 
@@ -58,9 +58,9 @@ The live stage does this:
 
 1. Call `resolveSchema4ExecutionPlan()`:
    - adapt `searchPlanHandoff` with `convertHandoffToExecutionPlan()`
-   - guard the adapted rows with `enforceIdentityQueryGuard()`
-   - return `null` when the handoff is empty or every row is rejected
-   - emit `schema4_path_active` when guarded Schema 4 rows survive
+   - `searchPlanHandoff.queries` is now always empty (NeedSet no longer generates queries)
+   - `schema4Plan` will have 0 query rows — Schema 4 path is effectively inactive
+   - guard and return logic unchanged for backward compat
 2. Build `archetypeContext` from Search Profile:
    - `archetypes_emitted`
    - `hosts_targeted`
@@ -113,8 +113,8 @@ The live stage does this:
 
 Important distinction:
 
-- `schema4Plan` comes from Stage 01 Schema 4 handoff adaptation
-- `uberSearchPlan` comes from the Stage 04 Search Planner LLM call or deterministic fallback
+- `schema4Plan` comes from Stage 01 Schema 4 handoff adaptation — now always empty (NeedSet no longer generates queries). Retained for backward compat.
+- `uberSearchPlan` comes from the Stage 04 Search Planner LLM call or deterministic fallback — this is now the primary LLM query enrichment path.
 
 ## Side effects and persistence
 

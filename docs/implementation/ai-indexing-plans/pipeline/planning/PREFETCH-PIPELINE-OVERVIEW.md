@@ -1,6 +1,6 @@
 # Prefetch Pipeline Overview
 
-Validated: 2026-03-19.
+Validated: 2026-03-20.
 
 Source of truth:
 
@@ -16,10 +16,10 @@ Source of truth:
 ## Strict 8-Stage Sequential Flow
 
 ```text
-Stage 01: NeedSet           - Schema 2 -> Schema 3 -> Schema 4 planner handoff
+Stage 01: NeedSet           - Schema 2 -> Schema 3 -> Schema 4 group annotations (no queries)
 Stage 02: Brand Resolver    - brand domain, aliases, support domain, auto-promotion
-Stage 03: Search Profile    - deterministic query base + optional effective host plan
-Stage 04: Search Planner    - Schema 4 adaptation + uber query planning
+Stage 03: Search Profile    - tier-aware deterministic query generation + optional host plan
+Stage 04: Search Planner    - LLM query enrichment via planUberQueries
 Stage 05: Query Journey     - merge, dedupe, rank, guard, write planned search_profile
 Stage 06: Search Results    - internal/frontier/provider execution
 Stage 07: SERP Triage       - selector path or deterministic lane-selection path
@@ -62,20 +62,21 @@ Structured per-query tracking with `tier`, `group_key`, `normalized_key`, `sourc
 2. Force `discoveryEnabled=true` and default empty `searchEngines` to `bing,google`.
 3. Stage 01 NeedSet:
    - `computeNeedSet()` builds Schema 2.
-   - `buildSearchPlanningContext()` builds Schema 3.
-   - `buildSearchPlan()` builds Schema 4.
+   - `buildSearchPlanningContext()` builds Schema 3 (includes `seed_status`, `focus_groups` with V4 tier signals).
+   - `buildSearchPlan()` builds Schema 4 — LLM assesses groups (`reason_active`, `planner_confidence`) but does NOT generate queries. `search_plan_handoff.queries` is always empty.
    - `runNeedSet()` emits `needset_computed` twice when Schema 4 succeeds:
      - `scope: schema2_preview` before the Schema 4 LLM call
-     - `scope: schema4_planner` after the panel is assembled
+     - `scope: schema4_planner` after panel is assembled. Panel `profile_influence` shows tier targeting: `targeted_specification`, `targeted_sources`, `targeted_groups`, `targeted_single`.
 4. Stage 02 Brand Resolver:
    - `runBrandResolver()` resolves brand domains after NeedSet so the NeedSet worker appears first in the GUI.
    - manufacturer auto-promotion happens here when enabled.
 5. Stage 03 Search Profile:
-   - `runSearchProfile()` builds deterministic `searchProfileBase`.
+   - `runSearchProfile()` receives `seedStatus` and `focusGroups` from NeedSet.
+   - `buildSearchProfile()` calls `determineQueryModes()` to decide which tiers fire, then runs `buildTier1Queries`, `buildTier2Queries`, `buildTier3Queries` as appropriate. Fully deterministic, no LLM.
    - optional `buildEffectiveHostPlan()` and `buildScoredQueryRowsFromHostPlan()` run here.
 6. Stage 04 Search Planner:
-   - `resolveSchema4ExecutionPlan()` adapts the Schema 4 handoff.
-   - `planUberQueries()` fires the Search Planner LLM call.
+   - `resolveSchema4ExecutionPlan()` adapts the Schema 4 handoff (now always empty queries — NeedSet no longer generates them).
+   - `planUberQueries()` fires the Search Planner LLM call for query enrichment.
    - `search_plan_generated` is emitted here.
 7. Stage 05 Query Journey:
    - merge deterministic rows, guarded Schema 4 rows, Search Planner uber queries, then append separately guarded host-plan rows.
@@ -127,7 +128,7 @@ Important nuance: `search_profile_generated` is emitted from Query Journey when 
 
 | Stage | Tab / Worker | Reason | Role | Owner |
 |-------|---------------|--------|------|-------|
-| 01 NeedSet | needset | `needset_search_planner` | `plan` | `src/indexlab/searchPlanBuilder.js` |
+| 01 NeedSet | needset | `needset_search_planner` | `plan` | `src/indexlab/searchPlanBuilder.js` (group annotations only, no queries) |
 | 02 Brand Resolver | brand_resolver | `brand_resolution` | `triage` | `src/features/indexing/discovery/discoveryLlmAdapters.js` |
 | 04 Search Planner | search_planner | `search_planner` | `plan` | `src/research/queryPlanner.js` |
 | 07 SERP Triage | serp_triage | `serp_url_selector` | `triage` | `src/features/indexing/discovery/serpSelectorLlmAdapter.js` |
@@ -139,10 +140,10 @@ Important nuance: `search_profile_generated` is emitted from Query Journey when 
 
 Main merged candidate set:
 
-1. Deterministic base templates from `searchProfileBase.base_templates`
-2. Deterministic targeted rows from `searchProfileBase.query_rows`
-3. Guarded Schema 4 rows from `resolveSchema4ExecutionPlan()`
-4. Search Planner uber queries from `planUberQueries()`
+1. Tier-aware deterministic rows from `searchProfileBase.query_rows` (tagged with `tier: 'seed' | 'group_search' | 'key_search'`)
+2. Deterministic base templates from `searchProfileBase.base_templates` (Tier 1 seeds when in tier mode)
+3. Schema 4 rows from `resolveSchema4ExecutionPlan()` (now always empty — NeedSet no longer generates queries)
+4. Search Planner uber queries from `planUberQueries()` (LLM enrichment)
 
 Then:
 
@@ -235,12 +236,12 @@ Search screenshots:
 - `{indexLabRoot}/{runId}/screenshots/google-serp-*.jpeg`
 
 Seed-phase carry-through:
-- `runDiscoverySeedPlan()` attaches `seed_search_plan_output` to the discovery result so finalization can reuse the Schema 4 output without re-calling the NeedSet planner LLM.
+- `runDiscoverySeedPlan()` attaches `seed_search_plan_output` to the discovery result so finalization can reuse the Schema 4 output without re-calling the NeedSet planner LLM. Note: Schema 4 no longer contains queries, only group annotations and tier metadata.
 
 ## Conditional behavior
 
 - Brand resolution short-circuits on empty brand, cache hit, missing route key, or resolver error.
-- NeedSet preview `needset_computed` emits before the Schema 4 LLM call; the Schema 4 `needset_computed` event is conditional on `schema4.panel`.
+- NeedSet preview `needset_computed` emits before the Schema 4 LLM call; the Schema 4 `needset_computed` event is conditional on `schema4.panel`. Panel bundles do not carry queries. `profile_influence` shows tier-aware targeting counts.
 - Search Planner falls back to deterministic output when no `plan` route API key or no stage model is available.
 - `buildEffectiveHostPlan()` only runs when `categoryConfig.validatedRegistry` exists.
 - External search can be skipped when `discoveryInternalFirst` satisfies required-field pressure.
