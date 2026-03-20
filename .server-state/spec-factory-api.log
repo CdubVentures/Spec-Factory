@@ -210,3 +210,238 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
 @smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
 See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
 or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\Temp\spec-factory\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\Temp\spec-factory\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  BillingPage-1XF3JFsP.js, CatalogPage-DHwXsLlX.js, CategoryManager-DPHSnk4k.js, ComponentReviewPage-CyXbAnFE.js, DataTable-Bosp7JNx.js, DrawerShell-BOaAXmE8.js, fieldNormalize-gPMNHgg-.js, FlagsSection-C6XMJ0UA.js, formatting-B6A_RRxb.js, index-D6xpvnuT.js, index-V6rDmRDc.css, IndexingPage-tJZB5h7T.js, indexlabRunsQuery-yECGgHwJ.js, invalidateFieldRulesQueries-CUh7AodM.js, LlmConfigPage-DryFvmHN.js, LlmExtractionSection-CjMCsP1c.js, LlmGlobalSection-BpJVMK3-.js, LlmPhaseSection-I8_pHQdP.js, llmPolicyDefaults-BtP3OEWP.js, LlmProviderRegistrySection-BmYcxHjs.js, llmSettingsManifest-Dn-9Efng.js, LlmSettingsPage-CtEEGcDH.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-m1GRvvge.js, OverviewPage-BsRJbdH6.js, PipelineSettingsPage-D5cXbU87.js, PipelineSourceStrategySection-Bazc3kbF.js, ProductPage-i5p4ceEB.js, ReviewPage-DzUfy-0p.js, RuntimeFlowAutomationSection-yiGLQ801.js, RuntimeFlowBrowserRenderingSection-CjkI6m3q.js, RuntimeFlowDraftPayload-CVQk4aZr.js, RuntimeFlowFetchNetworkSection-el2rKfrn.js, RuntimeFlowHeaderControls-DSmxDi8T.js, RuntimeFlowObservabilitySection-mFPlR2GR.js, RuntimeFlowOcrSection-BWtcxfQ-.js, RuntimeFlowParsingSection-hSlOs6pD.js, RuntimeFlowRunOutputSection-CggzbNiT.js, RuntimeFlowRunSetupSection-BnP6rutB.js, RuntimeOpsPage-CKBx1LYx.js, RuntimeSettingsFlowCard-S3oyt8Dv.js, runtimeSettingsParsing-CyFmwvPL.js, settingsStatus-BVm315aX.js, StoragePage-D8Tg9niL.js, StudioPage-Dc3fAGVf.js, TestModePage-B19uuUhf.js, TrafficLight-DbwM0wvJ.js, useFieldLabels-D0PpSeLl.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 609 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+[indexlab-relocation] failed InvalidBucketName: The specified bucket is not valid.
+    at ProtocolLib.getErrorSchemaOrThrowBaseException (C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\core\dist-cjs\submodules\protocols\index.js:69:67)
+    at AwsRestXmlProtocol.handleError (C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\core\dist-cjs\submodules\protocols\index.js:1801:65)
+    at AwsRestXmlProtocol.deserializeResponse (C:\Users\Chris\Desktop\Spec Factory\node_modules\@smithy\core\dist-cjs\submodules\protocols\index.js:309:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@smithy\core\dist-cjs\submodules\schema\index.js:26:24
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-sdk-s3\dist-cjs\index.js:386:20
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@smithy\middleware-retry\dist-cjs\index.js:254:46
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-flexible-checksums\dist-cjs\index.js:241:24
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-sdk-s3\dist-cjs\index.js:63:28
+    at async C:\Users\Chris\Desktop\Spec Factory\node_modules\@aws-sdk\middleware-sdk-s3\dist-cjs\index.js:90:20 {
+  '$fault': 'client',
+  '$retryable': undefined,
+  '$metadata': {
+    httpStatusCode: 400,
+    requestId: '539PEW09N479WK4B',
+    extendedRequestId: 'vXlZ49fkyMsmYcCxXai6bFnxBgJWj1mzcbhckP3M3GGWOt1bGB3HOMTHobw5m3sh5x8GBFIWY4TJWYIXHUSTExVifKvTgLNC',
+    cfId: undefined,
+    attempts: 1,
+    totalRetryDelay: 0
+  },
+  Code: 'InvalidBucketName',
+  BucketName: 'b',
+  RequestId: '539PEW09N479WK4B',
+  HostId: 'vXlZ49fkyMsmYcCxXai6bFnxBgJWj1mzcbhckP3M3GGWOt1bGB3HOMTHobw5m3sh5x8GBFIWY4TJWYIXHUSTExVifKvTgLNC'
+}
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 565 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 1193 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 567 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 570 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 570 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 570 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 570 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 571 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.
+@smithy/node-http-handler:WARN - socket usage at capacity=50 and 572 additional requests are enqueued.
+See https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler config.

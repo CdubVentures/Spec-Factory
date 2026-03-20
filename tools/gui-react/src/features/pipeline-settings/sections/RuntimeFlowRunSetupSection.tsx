@@ -183,7 +183,33 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
         >
           <input type="text" value={runtimeDraft.searxngBaseUrl} onChange={(event) => updateDraft('searxngBaseUrl', event.target.value)} disabled={!runtimeSettingsReady} className={inputCls} placeholder="http://localhost:8080" />
         </SettingRow>
-        <AdvancedSettingsBlock title="Google Crawlee" count={5}>
+        <SettingRow
+          label="Max Engine Retries"
+          tip={`Global retry limit for all search engines (Google Crawlee, SearXNG-routed Bing/Brave/DuckDuckGo, etc.).\nWhen a search attempt fails or returns zero results, the engine retries up to this many times.\nEach retry rotates to a fresh proxy from the configured proxy pool before re-sending the request.\nFor Google Crawlee, retries use Crawlee's built-in proxy rotation via session pool.\nFor SearXNG engines, retries re-send the query to the SearXNG instance.\nSet to 0 to disable retries entirely.`}
+        >
+          <SettingNumberInput draftKey="searchMaxRetries" value={runtimeDraft.searchMaxRetries} bounds={getNumberBounds('searchMaxRetries')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
+        </SettingRow>
+        <AdvancedSettingsBlock title="Serper.dev" count={2}>
+          <SettingRow
+            label="API Key"
+            tip="Serper.dev API key for real Google organic results. When set, Serper becomes the exclusive search provider — Crawlee and SearXNG are bypassed. No browser, no proxy, no CAPTCHA."
+          >
+            <input
+              type="password"
+              value={runtimeDraft.serperApiKey}
+              onChange={(event) => updateDraft('serperApiKey', event.target.value)}
+              disabled={!runtimeSettingsReady}
+              className={`${inputCls} font-mono sf-text-label`}
+              spellCheck={false}
+              placeholder="Enter Serper.dev API key"
+              autoComplete="off"
+            />
+          </SettingRow>
+          <SettingRow label="Results Per Query" tip="Number of Google organic results to request per query (10-100). Google caps at ~10 organic results per page, so values above 10 depend on Serper's internal pagination.">
+            <SettingNumberInput draftKey="serperResultCount" value={runtimeDraft.serperResultCount} bounds={getNumberBounds('serperResultCount')} step={10} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
+          </SettingRow>
+        </AdvancedSettingsBlock>
+        <AdvancedSettingsBlock title="Google Crawlee" count={4}>
           <SettingRow
             label="Proxy URLs (JSON array)"
             tip="Rotating proxy URLs for Google searches. Each retry uses a fresh IP from the pool."
@@ -191,23 +217,20 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
             <textarea
               value={runtimeDraft.googleSearchProxyUrlsJson}
               onChange={(event) => updateDraft('googleSearchProxyUrlsJson', event.target.value)}
-              disabled={!runtimeSettingsReady}
+              disabled={!runtimeSettingsReady || Boolean(runtimeDraft.serperApiKey)}
               className={`${inputCls} min-h-[88px] font-mono sf-text-label`}
               spellCheck={false}
               placeholder='["http://user:pass@proxy1:80", "http://user:pass@proxy2:80"]'
             />
           </SettingRow>
           <SettingRow label="SERP Screenshots" tip="Capture a JPEG screenshot of each Google SERP. Adds a render delay per query but provides visual proof of results.">
-            <SettingToggle checked={runtimeDraft.googleSearchScreenshotsEnabled} onChange={(next) => updateDraft('googleSearchScreenshotsEnabled', next)} disabled={!runtimeSettingsReady} />
+            <SettingToggle checked={runtimeDraft.googleSearchScreenshotsEnabled} onChange={(next) => updateDraft('googleSearchScreenshotsEnabled', next)} disabled={!runtimeSettingsReady || Boolean(runtimeDraft.serperApiKey)} />
           </SettingRow>
           <SettingRow label="Timeout (ms)" tip="Maximum time for a single Google search request.">
-            <SettingNumberInput draftKey="googleSearchTimeoutMs" value={runtimeDraft.googleSearchTimeoutMs} bounds={getNumberBounds('googleSearchTimeoutMs')} step={1000} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
+            <SettingNumberInput draftKey="googleSearchTimeoutMs" value={runtimeDraft.googleSearchTimeoutMs} bounds={getNumberBounds('googleSearchTimeoutMs')} step={1000} disabled={!runtimeSettingsReady || Boolean(runtimeDraft.serperApiKey)} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
           <SettingRow label="Min Query Interval (ms)" tip="Minimum delay between Google searches. Random jitter is added on top. Set to 0 for no delay.">
-            <SettingNumberInput draftKey="googleSearchMinQueryIntervalMs" value={runtimeDraft.googleSearchMinQueryIntervalMs} bounds={getNumberBounds('googleSearchMinQueryIntervalMs')} step={500} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow label="Max Retries" tip="Retry attempts per query when proxy is configured. Each retry rotates to a new IP. Ignored without a proxy.">
-            <SettingNumberInput draftKey="googleSearchMaxRetries" value={runtimeDraft.googleSearchMaxRetries} bounds={getNumberBounds('googleSearchMaxRetries')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
+            <SettingNumberInput draftKey="googleSearchMinQueryIntervalMs" value={runtimeDraft.googleSearchMinQueryIntervalMs} bounds={getNumberBounds('googleSearchMinQueryIntervalMs')} step={500} disabled={!runtimeSettingsReady || Boolean(runtimeDraft.serperApiKey)} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
         </AdvancedSettingsBlock>
         <SettingRow

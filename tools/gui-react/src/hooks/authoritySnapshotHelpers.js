@@ -2,7 +2,7 @@ import {
   resolveDataChangeInvalidationQueryKeys,
   shouldHandleDataChangeMessage,
   resolveDataChangeScopedCategories,
-} from '../utils/data-change/index.js';
+} from '../features/data-change/index.js';
 
 function normalizedToken(value) {
   return String(value || '').trim();

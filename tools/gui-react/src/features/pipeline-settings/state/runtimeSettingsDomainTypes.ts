@@ -90,6 +90,9 @@ export interface RuntimeHydrationBindingSetters {
   setGoogleSearchMinQueryIntervalMs: (value: string) => void;
   setGoogleSearchMaxRetries: (value: string) => void;
   setGoogleSearchScreenshotsEnabled: (value: boolean) => void;
+  setSerperApiKey: (value: string) => void;
+  setSerperResultCount: (value: string) => void;
+  setSearchMaxRetries: (value: string) => void;
   setDomainRequestRps: (value: string) => void;
   setDomainRequestBurst: (value: string) => void;
   setGlobalRequestRps: (value: string) => void;
@@ -110,7 +113,6 @@ export interface RuntimeHydrationBindingSetters {
   setDynamicFetchRetryBudget: (value: string) => void;
   setDynamicFetchRetryBackoffMs: (value: string) => void;
   setFetchSchedulerMaxRetries: (value: string) => void;
-  setFetchSchedulerFallbackWaitMs: (value: string) => void;
   setPageGotoTimeoutMs: (value: string) => void;
   setPageNetworkIdleTimeoutMs: (value: string) => void;
   setPostLoadWaitMs: (value: string) => void;
@@ -297,6 +299,9 @@ export interface RuntimeSettingsPayloadSerializerInput {
   googleSearchMinQueryIntervalMs: number | string;
   googleSearchMaxRetries: number | string;
   googleSearchScreenshotsEnabled: boolean;
+  serperApiKey: string;
+  serperResultCount: number | string;
+  searchMaxRetries: number | string;
   domainRequestRps: number | string;
   domainRequestBurst: number | string;
   globalRequestRps: number | string;
@@ -319,7 +324,6 @@ export interface RuntimeSettingsPayloadSerializerInput {
   dynamicFetchRetryBudget: number | string;
   dynamicFetchRetryBackoffMs: number | string;
   fetchSchedulerMaxRetries: number | string;
-  fetchSchedulerFallbackWaitMs: number | string;
   pageGotoTimeoutMs: number | string;
   pageNetworkIdleTimeoutMs: number | string;
   postLoadWaitMs: number | string;

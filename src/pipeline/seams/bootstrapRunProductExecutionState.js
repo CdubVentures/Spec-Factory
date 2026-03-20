@@ -131,7 +131,7 @@ export async function bootstrapRunProductExecutionState({
   const authoringCategoryConfig = await runtimeDeps.loadCategoryConfigFn(category, { storage, config });
   const categoryConfig = runtimeDeps.buildIndexlabRuntimeCategoryConfigFn(authoringCategoryConfig);
 
-  logger.info('bootstrap_step', { step: 'storage', progress: 20 });
+  logger.info('bootstrap_step', { step: 'storage', progress: 15 });
   const routeMatrixPolicy = await runtimeDeps.loadRouteMatrixPolicyForRunFn({
     config,
     category,
@@ -203,7 +203,7 @@ export async function bootstrapRunProductExecutionState({
   const learnedFieldYield = categoryBrainLoaded?.artifacts?.fieldYield?.value || {};
   const learnedFieldAvailability = categoryBrainLoaded?.artifacts?.fieldAvailability?.value || {};
 
-  logger.info('bootstrap_step', { step: 'planner', progress: 50 });
+  logger.info('bootstrap_step', { step: 'planner', progress: 40 });
   const {
     adapterManager,
     sourceIntel,
@@ -275,6 +275,10 @@ export async function bootstrapRunProductExecutionState({
   let fetcher = createFetcherForMode(initialFetcherMode) || createFetcherForMode('playwright');
   let fetcherMode = initialFetcherMode;
   let fetcherStartFallbackReason = '';
+  // WHY: Warm up browser in background while discovery runs.
+  // fetcher.start() has zero dependency on discovery data. PlaywrightFetcher.start()
+  // and CrawleeFetcher.start() are both idempotent — safe to call twice.
+  const fetcherBootPromise = fetcher.start().catch((err) => ({ error: err }));
 
   const sourceResults = [];
   const attemptedSourceUrls = new Set();
@@ -306,7 +310,7 @@ export async function bootstrapRunProductExecutionState({
   let hypothesisFollowupRoundsExecuted = 0;
   let hypothesisFollowupSeededUrls = 0;
 
-  logger.info('bootstrap_step', { step: 'llm', progress: 85 });
+  logger.info('bootstrap_step', { step: 'llm', progress: 65 });
   const billingSnapshot = await runtimeDeps.readBillingSnapshotFn({
     storage,
     month: billingMonth,
@@ -352,6 +356,7 @@ export async function bootstrapRunProductExecutionState({
     readLearningHintsFromStoresFn: runtimeDeps.readLearningHintsFromStoresFn,
   });
 
+  logger.info('bootstrap_step', { step: 'needset', progress: 85 });
   const initialNeedSet = runtimeDeps.computeNeedSetFn({
     runId,
     category,
@@ -418,6 +423,13 @@ export async function bootstrapRunProductExecutionState({
     planner,
     logger,
   });
+
+  // WHY: Await the background browser boot before entering fetch phase.
+  // If it failed, runFetcherStartPhase handles the fallback to HTTP.
+  const fetcherBootResult = await fetcherBootPromise;
+  if (fetcherBootResult?.error) {
+    logger.warn('fetcher_background_boot_failed', { message: fetcherBootResult.error.message });
+  }
 
   const fetcherStartState = await runtimeDeps.runFetcherStartPhaseFn({
     ...runtimeDeps.buildFetcherStartContextFn({

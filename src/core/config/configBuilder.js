@@ -208,7 +208,6 @@ export function buildRawConfig({ manifestApplicator }) {
     globalRequestBurst: parseIntEnv('GLOBAL_REQUEST_BURST', runtimeSettingDefault('globalRequestBurst', 0)),
     fetchPerHostConcurrencyCap: parseIntEnv('FETCH_PER_HOST_CONCURRENCY_CAP', runtimeSettingDefault('fetchPerHostConcurrencyCap', 1)),
     fetchSchedulerMaxRetries: parseIntEnv('FETCH_SCHEDULER_MAX_RETRIES', runtimeSettingDefault('fetchSchedulerMaxRetries', 1)),
-    fetchSchedulerFallbackWaitMs: parseIntEnv('FETCH_SCHEDULER_FALLBACK_WAIT_MS', runtimeSettingDefault('fetchSchedulerFallbackWaitMs', 60000)),
     fetchSchedulerInternalsMap: normalizedFetchSchedulerInternalsMap,
     fetchSchedulerInternalsMapJson: JSON.stringify(normalizedFetchSchedulerInternalsMap),
     fetchSchedulerDefaultDelayMs: parseIntEnv('FETCH_SCHEDULER_DEFAULT_DELAY_MS', normalizedFetchSchedulerInternalsMap.defaultDelayMs),

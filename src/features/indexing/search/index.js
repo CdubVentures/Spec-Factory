@@ -13,3 +13,5 @@ export {
 export { dedupeSerpResults } from './serpDedupe.js';
 export { evaluateSearchLoopStop } from './searchLoop.js';
 export { searchGoogle } from './searchGoogle.js';
+export { searchSerper } from './searchSerper.js';
+export { searchBrave } from './searchBrave.js';

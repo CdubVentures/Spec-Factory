@@ -185,6 +185,8 @@ export function buildRuntimeOpsWorkers(events, options) {
         base.avg_duration_ms = 0;
         base.last_result_count = 0;
         base.last_duration_ms = 0;
+        base.primary_count = 0;
+        base.fallback_count = 0;
         base._result_sum = 0;
         base._duration_sum = 0;
       }
@@ -284,6 +286,11 @@ export function buildRuntimeOpsWorkers(events, options) {
         w.current_query = null;
         w.current_provider = null;
         w.tasks_completed += 1;
+        if (Boolean(payload.is_fallback)) {
+          w.fallback_count += 1;
+        } else {
+          w.primary_count += 1;
+        }
         const resultCount = toInt(payload.result_count, 0);
         const durationMs = toInt(payload.duration_ms, 0);
         if (resultCount === 0) w.zero_result_count += 1;

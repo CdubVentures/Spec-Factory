@@ -268,9 +268,9 @@ export function RuntimeOpsPage() {
       return { text: 'Starting...', spinner: true, tone: 'muted' as const };
     }
     if (isSelectedRunActive) {
-      // WHY: During boot (phase_00_bootstrap), show spinner + progress bar.
-      // Once needset fires the prefetch tabs take over — no need for header progress.
-      if (summary?.phase_cursor === 'phase_00_bootstrap') {
+      // WHY: During boot (phase_00_bootstrap) or before first poll,
+      // show spinner + progress bar. Prefetch tabs take over at needset.
+      if (!summary || summary.phase_cursor === 'phase_00_bootstrap') {
         return { text: '', spinner: true, tone: 'muted' as const };
       }
       return { text: 'Live', spinner: false, tone: 'success' as const };
@@ -386,8 +386,8 @@ export function RuntimeOpsPage() {
                 ) : null}
               </>
             ) : null}
-            {isSelectedRunActive && summary?.phase_cursor === 'phase_00_bootstrap' && summary.boot_step && (
-              <BootProgressBar step={summary.boot_step} progress={summary.boot_progress ?? 0} />
+            {isSelectedRunActive && (!summary || summary.phase_cursor === 'phase_00_bootstrap') && (
+              <BootProgressBar step={summary?.boot_step ?? 'config'} progress={summary?.boot_progress ?? 0} />
             )}
           </div>
           <div className="flex min-w-0 items-center gap-2">

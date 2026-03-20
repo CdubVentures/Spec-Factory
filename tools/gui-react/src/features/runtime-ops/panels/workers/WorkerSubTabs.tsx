@@ -113,6 +113,16 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
                       </span>
                     )}
                   </span>
+                  {w.pool === 'search' && (w.primary_count ?? 0) > 0 && (
+                    <span className="px-1 py-0 rounded sf-text-nano font-semibold font-mono sf-chip-info shrink-0">
+                      P:{w.primary_count}
+                    </span>
+                  )}
+                  {w.pool === 'search' && (w.fallback_count ?? 0) > 0 && (
+                    <span className="px-1 py-0 rounded sf-text-nano font-semibold font-mono sf-chip-warning shrink-0">
+                      F:{w.fallback_count}
+                    </span>
+                  )}
                   {w.state === 'stuck' && (
                     <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('stuck')}`}>
                       STUCK

@@ -11,6 +11,7 @@ import {
   resolveSnapshotPath,
   readRuntimeSettingsSnapshot,
 } from './core/config/runtimeSettingsSnapshot.js';
+import { applySnapshotToConfig } from './core/config/resolveEffectiveRuntimeConfig.js';
 
 export { _loadConfig as loadConfig };
 export { validateConfig } from './core/config/configValidator.js';
@@ -37,13 +38,12 @@ export function loadConfigWithUserSettings(overrides = {}) {
   if (snapshotPath) {
     try {
       const snapshot = readRuntimeSettingsSnapshot(snapshotPath);
-      // WHY: Overlay snapshot settings onto config. Snapshot values win for all keys
-      // because they represent the exact editor state at the moment the user clicked Start.
-      for (const [key, value] of Object.entries(snapshot.settings || {})) {
-        if (value !== undefined && value !== null) {
-          config[key] = value;
-        }
-      }
+      // WHY: Use the alias-aware resolver to overlay snapshot settings onto config.
+      // Snapshot values win for all keys because they represent the exact editor state
+      // at the moment the user clicked Start. applySnapshotToConfig maps setting keys
+      // (fetchConcurrency, resumeMode, etc.) to config keys (concurrency,
+      // indexingResumeMode, etc.) so runtime consumers read the correct values.
+      applySnapshotToConfig(config, snapshot.settings || {});
       // WHY: applyRuntimeSettingsToConfig handles dual-key sync + phase override
       // re-resolution. We call it with the snapshot settings to ensure _resolved*
       // phase fields are computed correctly.

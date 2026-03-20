@@ -122,7 +122,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'resumeWindowHours', 'reextractAfterHours',
       'scannedPdfOcrMaxPages', 'scannedPdfOcrMaxPairs', 'scannedPdfOcrMinCharsPerPage', 'scannedPdfOcrMinLinesPerPage',
       'crawleeRequestHandlerTimeoutSecs', 'dynamicFetchRetryBudget', 'dynamicFetchRetryBackoffMs',
-      'fetchSchedulerMaxRetries', 'fetchSchedulerFallbackWaitMs', 'pageGotoTimeoutMs', 'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
+      'fetchSchedulerMaxRetries', 'pageGotoTimeoutMs', 'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
       'frontierQueryCooldownSeconds', 'frontierCooldown404Seconds', 'frontierCooldown404RepeatSeconds',
       'frontierCooldown410Seconds', 'frontierCooldownTimeoutSeconds', 'frontierCooldown403BaseSeconds',
       'frontierCooldown429BaseSeconds', 'frontierBlockedDomainThreshold',

@@ -175,7 +175,7 @@ export function LlmConfigPage() {
     return merged.map((provider) => {
       if (provider.apiKey) return provider;
       const envField = PROVIDER_API_KEY_MAP[provider.id] as keyof typeof policy.apiKeys | undefined;
-      const envValue = envField ? (policy.apiKeys as Record<string, string>)[envField] : undefined;
+      const envValue = envField ? policy.apiKeys[envField] : undefined;
       if (envValue) return { ...provider, apiKey: envValue };
       if (provider.id === 'default-gemini' && policy.apiKeys.plan) {
         return { ...provider, apiKey: policy.apiKeys.plan };
@@ -258,7 +258,7 @@ export function LlmConfigPage() {
       let key = provider.apiKey?.trim() || '';
       if (!key) {
         const field = PROVIDER_API_KEY_MAP[provider.id] as keyof typeof policy.apiKeys | undefined;
-        if (field) key = String((policy.apiKeys as Record<string, string>)[field] || '').trim();
+        if (field) key = String(policy.apiKeys[field] || '').trim();
       }
       if (key) resolvedKeys[provider.id] = key;
     }

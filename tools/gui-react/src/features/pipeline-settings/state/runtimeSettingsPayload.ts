@@ -132,6 +132,15 @@ export function collectRuntimeSettingsPayload(
       runtimeSettingsFallbackBaseline.googleSearchMaxRetries,
     ),
     googleSearchScreenshotsEnabled: input.googleSearchScreenshotsEnabled,
+    serperApiKey: String(input.serperApiKey || '').trim(),
+    serperResultCount: parseRuntimeInt(
+      input.serperResultCount,
+      runtimeSettingsFallbackBaseline.serperResultCount,
+    ),
+    searchMaxRetries: parseRuntimeInt(
+      input.searchMaxRetries,
+      runtimeSettingsFallbackBaseline.searchMaxRetries,
+    ),
     domainRequestRps: parseRuntimeInt(
       input.domainRequestRps,
       runtimeSettingsFallbackBaseline.domainRequestRps,
@@ -231,10 +240,6 @@ export function collectRuntimeSettingsPayload(
     fetchSchedulerMaxRetries: parseRuntimeInt(
       input.fetchSchedulerMaxRetries,
       runtimeSettingsFallbackBaseline.fetchSchedulerMaxRetries,
-    ),
-    fetchSchedulerFallbackWaitMs: parseRuntimeInt(
-      input.fetchSchedulerFallbackWaitMs,
-      runtimeSettingsFallbackBaseline.fetchSchedulerFallbackWaitMs,
     ),
     pageGotoTimeoutMs: parseRuntimeInt(
       input.pageGotoTimeoutMs,

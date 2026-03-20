@@ -1,7 +1,7 @@
 {
   "snapshotId": "test-run-id-000",
   "schemaVersion": "1.0",
-  "createdAt": 1773910626871,
+  "createdAt": 1773968155699,
   "source": "gui",
   "settings": {
     "articleExtractorDomainPolicyMapJson": "",
@@ -47,7 +47,6 @@
     "fetchCandidateSources": false,
     "fetchConcurrency": 2,
     "fetchPerHostConcurrencyCap": 2,
-    "fetchSchedulerFallbackWaitMs": 1,
     "fetchSchedulerInternalsMapJson": "{\"defaultDelayMs\":300,\"defaultConcurrency\":3,\"defaultMaxRetries\":1,\"retryWaitMs\":15000}",
     "fetchSchedulerMaxRetries": 1,
     "fieldRewardHalfLifeDays": 2,
@@ -70,6 +69,8 @@
     "googleSearchProxyUrlsJson": "[\"http://zruyrjpq-rotate:dfm4udpzx5p0@p.webshare.io:80\"]",
     "googleSearchScreenshotsEnabled": false,
     "googleSearchTimeoutMs": 30001,
+    "serperApiKey": "test-serperApiKey",
+    "serperResultCount": 11,
     "graphqlReplayEnabled": false,
     "helperFilesRoot": "test-helperFilesRoot",
     "helperSupportiveFillMissing": false,
@@ -178,6 +179,7 @@
     "scannedPdfOcrMinLinesPerPage": 2,
     "searchEngines": "google",
     "searchEnginesFallback": "google",
+    "searchMaxRetries": 1,
     "searchProfileCapMapJson": "{\"deterministicAliasCap\":6,\"llmAliasValidationCap\":12,\"llmDocHintQueriesCap\":3,\"llmFieldTargetQueriesCap\":3,\"dedupeQueriesCap\":24}",
     "searxngBaseUrl": "test-searxngBaseUrl",
     "searxngMinQueryIntervalMs": 1,

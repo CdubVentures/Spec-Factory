@@ -624,7 +624,8 @@ async function handleSearchEvent(state, deps, { eventName, ts, row }) {
       scope: 'query', query, provider,
       worker_id: slot.worker_id,
       slot: slot.slot,
-      tasks_started: slot.tasks_started
+      tasks_started: slot.tasks_started,
+      is_fallback: Boolean(row.is_fallback),
     }, ts);
   } else if (eventName === 'discovery_query_completed') {
     const query = String(row.query || '').trim();
@@ -639,7 +640,8 @@ async function handleSearchEvent(state, deps, { eventName, ts, row }) {
       duration_ms: asInt(row.duration_ms, 0),
       worker_id: slot.worker_id,
       slot: slot.slot,
-      tasks_started: slot.tasks_started
+      tasks_started: slot.tasks_started,
+      is_fallback: Boolean(row.is_fallback),
     }, ts);
   } else if (eventName === 'search_request_throttled') {
     const query = String(row.query || '').trim();

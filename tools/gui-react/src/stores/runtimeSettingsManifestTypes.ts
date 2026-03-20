@@ -151,7 +151,6 @@ export interface RuntimeSettingDefaults {
   crawleeHeadless: boolean;
 
   fetchSchedulerMaxRetries: number;
-  fetchSchedulerFallbackWaitMs: number;
   fetchSchedulerInternalsMapJson: string;
   preferHttpFetcher: boolean;
   pageGotoTimeoutMs: number;
@@ -201,6 +200,9 @@ export interface RuntimeSettingDefaults {
   googleSearchMinQueryIntervalMs: number;
   googleSearchMaxRetries: number;
   googleSearchScreenshotsEnabled: boolean;
+  serperApiKey: string;
+  serperResultCount: number;
+  searchMaxRetries: number;
 }
 
 export type RuntimeProfile = 'standard';

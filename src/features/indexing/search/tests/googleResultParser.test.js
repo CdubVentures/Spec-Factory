@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURE_PATH = join(__dirname, 'fixtures', 'google-serp-sample.html');
 const FIXTURE_HTML = readFileSync(FIXTURE_PATH, 'utf8');
+const ANDROID_FIXTURE_PATH = join(__dirname, 'fixtures', 'google-serp-android-mobile.html');
+const ANDROID_FIXTURE_HTML = readFileSync(ANDROID_FIXTURE_PATH, 'utf8');
 
 // WHY: Lazy import — module under test may not exist yet (RED phase).
 async function loadParser() {
@@ -58,6 +60,42 @@ describe('googleResultParser', () => {
       assert.deepEqual(parseGoogleResults(''), []);
       assert.deepEqual(parseGoogleResults(null), []);
       assert.deepEqual(parseGoogleResults(undefined), []);
+    });
+
+    it('parses Android mobile SERP fixture into >= 5 results', async () => {
+      const { parseGoogleResults } = await loadParser();
+      const results = parseGoogleResults(ANDROID_FIXTURE_HTML);
+      assert.ok(Array.isArray(results), 'returns an array');
+      assert.ok(results.length >= 5, `expected >= 5 results from Android mobile SERP, got ${results.length}`);
+      for (const row of results) {
+        assert.ok(typeof row.url === 'string' && row.url.startsWith('http'), `url is valid: ${row.url}`);
+        assert.ok(typeof row.title === 'string' && row.title.length > 0, `title is non-empty: ${row.title}`);
+        assert.ok(typeof row.snippet === 'string', 'snippet is a string');
+      }
+    });
+
+    it('finds anchor-inside-h3 on Android mobile SERP (reverse nesting)', async () => {
+      const { parseGoogleResults } = await loadParser();
+      // WHY: Android mobile SERP has h3 > div > span > a (anchor INSIDE h3),
+      // opposite of desktop a > h3 (anchor WRAPPING h3).
+      const html = `<div id="search"><div id="rso">
+        <div data-hveid="123"><div class="tF2Cxc">
+          <h3 class="yuRUbf"><div><span>
+            <a href="https://www.rtings.com/mouse/reviews/razer/viper-v3-pro">Razer Viper V3 Pro Review</a>
+          </span></div></h3>
+          <div><span>The Razer Viper V3 Pro is an excellent wireless gaming mouse with a very low weight.</span></div>
+        </div></div>
+        <div data-hveid="456"><div class="tF2Cxc">
+          <h3 class="yuRUbf"><div><span>
+            <a href="https://www.techpowerup.com/review/razer-viper-v3-pro/">Razer Viper V3 Pro Specs</a>
+          </span></div></h3>
+          <div><span>Full specifications and detailed review of the Razer Viper V3 Pro gaming mouse.</span></div>
+        </div></div>
+      </div></div>`;
+      const results = parseGoogleResults(html);
+      assert.ok(results.length >= 2, `expected >= 2 results, got ${results.length}`);
+      assert.ok(results[0].url.includes('rtings.com'), 'first URL from rtings');
+      assert.ok(results[1].url.includes('techpowerup.com'), 'second URL from techpowerup');
     });
 
     it('falls back to tier 2 when tier 1 selectors yield zero', async () => {

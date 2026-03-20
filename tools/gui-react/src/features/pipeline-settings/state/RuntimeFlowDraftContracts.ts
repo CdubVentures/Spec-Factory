@@ -25,7 +25,6 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   | 'dynamicFetchRetryBudget'
   | 'dynamicFetchRetryBackoffMs'
   | 'fetchSchedulerMaxRetries'
-  | 'fetchSchedulerFallbackWaitMs'
   | 'pageGotoTimeoutMs'
   | 'pageNetworkIdleTimeoutMs'
   | 'postLoadWaitMs'
@@ -112,7 +111,9 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   | 'fetchBudgetMs'
   | 'googleSearchTimeoutMs'
   | 'googleSearchMinQueryIntervalMs'
-  | 'googleSearchMaxRetries',
+  | 'googleSearchMaxRetries'
+  | 'serperResultCount'
+  | 'searchMaxRetries',
   NumberBound
 > = {
   fetchBudgetMs: { min: 5000, max: 300_000, int: true },
@@ -128,7 +129,6 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   dynamicFetchRetryBudget: { min: 0, max: 30, int: true },
   dynamicFetchRetryBackoffMs: { min: 0, max: 120_000, int: true },
   fetchSchedulerMaxRetries: { min: 0, max: 20, int: true },
-  fetchSchedulerFallbackWaitMs: { min: 0, max: 600_000, int: true },
   pageGotoTimeoutMs: { min: 0, max: 120_000, int: true },
   pageNetworkIdleTimeoutMs: { min: 0, max: 60_000, int: true },
   postLoadWaitMs: { min: 0, max: 60_000, int: true },
@@ -215,6 +215,8 @@ export const RUNTIME_NUMBER_BOUNDS: Record<
   googleSearchTimeoutMs: { min: 30_000, max: 120_000, int: true },
   googleSearchMinQueryIntervalMs: { min: 0, max: 60_000, int: true },
   googleSearchMaxRetries: { min: 0, max: 3, int: true },
+  serperResultCount: { min: 10, max: 100, int: true },
+  searchMaxRetries: { min: 0, max: 5, int: true },
 };
 
 export function toRuntimeDraft(defaults: RuntimeSettingDefaults): RuntimeDraft {

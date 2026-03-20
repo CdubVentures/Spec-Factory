@@ -241,7 +241,15 @@ function AttemptRow({ attempt, isDebugOpen, isResultsOpen, onToggleDebug, onTogg
     <tr className={`border-t sf-border-soft sf-table-row ${
       isAttemptRunning ? 'sf-table-row-accent' : ''
     } ${isDebugOpen || isResultsOpen ? 'sf-table-row-highlight' : ''}`}>
-      <td className="px-2.5 py-2.5 text-right font-mono sf-text-dim sf-text-caption">#{attempt.attempt_no}</td>
+      <td className="px-2.5 py-2.5 text-right font-mono sf-text-caption">
+        <span
+          className="font-semibold"
+          style={{ color: attempt.attempt_type === 'fallback' ? 'rgb(146 64 14)' : 'rgb(var(--sf-color-accent-rgb))' }}
+          title={attempt.attempt_type === 'fallback' ? `Fallback attempt #${attempt.attempt_no}` : `Primary attempt #${attempt.attempt_no}`}
+        >
+          {attempt.attempt_type_label || `p${attempt.attempt_no}`}
+        </span>
+      </td>
       <td className="px-2.5 py-2.5 min-w-0">
         <span
           className={`font-mono text-xs block truncate max-w-full ${isAttemptRunning ? '' : 'sf-text-primary'}`}

@@ -5,6 +5,7 @@ const BOOT_STEP_LABEL: Record<string, string> = {
   storage: 'Loading data',
   planner: 'Setting up planner',
   llm: 'Preparing LLM runtime',
+  needset: 'Computing field gaps',
 };
 
 interface BootProgressBarProps {

@@ -88,6 +88,17 @@ export function collectRuntimeFlowDraftPayload({
       RUNTIME_NUMBER_BOUNDS.googleSearchMaxRetries,
     ),
     googleSearchScreenshotsEnabled: nextRuntimeDraft.googleSearchScreenshotsEnabled,
+    serperApiKey: String(nextRuntimeDraft.serperApiKey || '').trim(),
+    serperResultCount: parseBoundedNumber(
+      nextRuntimeDraft.serperResultCount,
+      runtimeManifestDefaults.serperResultCount,
+      RUNTIME_NUMBER_BOUNDS.serperResultCount,
+    ),
+    searchMaxRetries: parseBoundedNumber(
+      nextRuntimeDraft.searchMaxRetries,
+      runtimeManifestDefaults.searchMaxRetries,
+      RUNTIME_NUMBER_BOUNDS.searchMaxRetries,
+    ),
     domainRequestRps: parseBoundedNumber(
       nextRuntimeDraft.domainRequestRps,
       runtimeManifestDefaults.domainRequestRps,
@@ -181,11 +192,6 @@ export function collectRuntimeFlowDraftPayload({
       nextRuntimeDraft.fetchSchedulerMaxRetries,
       runtimeManifestDefaults.fetchSchedulerMaxRetries,
       RUNTIME_NUMBER_BOUNDS.fetchSchedulerMaxRetries,
-    ),
-    fetchSchedulerFallbackWaitMs: parseBoundedNumber(
-      nextRuntimeDraft.fetchSchedulerFallbackWaitMs,
-      runtimeManifestDefaults.fetchSchedulerFallbackWaitMs,
-      RUNTIME_NUMBER_BOUNDS.fetchSchedulerFallbackWaitMs,
     ),
     pageGotoTimeoutMs: parseBoundedNumber(
       nextRuntimeDraft.pageGotoTimeoutMs,

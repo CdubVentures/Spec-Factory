@@ -8,8 +8,4 @@ describe('FetchScheduler config knobs', () => {
     assert.equal(config.fetchSchedulerMaxRetries, 1);
   });
 
-  it('fetchSchedulerFallbackWaitMs defaults to 60000', () => {
-    const config = loadConfig({});
-    assert.equal(config.fetchSchedulerFallbackWaitMs, 60000);
-  });
 });

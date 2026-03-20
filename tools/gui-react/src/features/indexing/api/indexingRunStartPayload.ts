@@ -93,7 +93,6 @@ export function buildIndexingRunStartPayload(
     dynamicFetchRetryBudget: Math.max(0, p.parsedRetryBudget),
     dynamicFetchRetryBackoffMs: Math.max(0, p.parsedRetryBackoff),
     fetchSchedulerMaxRetries: Math.max(0, p.parsedFetchSchedulerMaxRetries),
-    fetchSchedulerFallbackWaitMs: Math.max(0, p.parsedFetchSchedulerFallbackWaitMs),
     preferHttpFetcher: readBool(s.preferHttpFetcher),
     pageGotoTimeoutMs: Math.max(0, p.parsedPageGotoTimeoutMs),
     pageNetworkIdleTimeoutMs: Math.max(0, p.parsedPageNetworkIdleTimeoutMs),

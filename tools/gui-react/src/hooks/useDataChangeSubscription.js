@@ -6,7 +6,7 @@ import {
   dataChangeAffectsCategory,
   dataChangeAffectsDomains,
   shouldHandleDataChangeMessage,
-} from '../utils/data-change/index.js';
+} from '../features/data-change/index.js';
 
 export {
   resolveDataChangeEventName,

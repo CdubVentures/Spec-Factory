@@ -142,6 +142,17 @@ export function normalizeRuntimeDraft(
       RUNTIME_NUMBER_BOUNDS.googleSearchMaxRetries,
     ),
     googleSearchScreenshotsEnabled: parseBoolean(raw.googleSearchScreenshotsEnabled, fallback.googleSearchScreenshotsEnabled),
+    serperApiKey: parseString(raw.serperApiKey, fallback.serperApiKey, true),
+    serperResultCount: parseBoundedNumber(
+      raw.serperResultCount,
+      fallback.serperResultCount,
+      RUNTIME_NUMBER_BOUNDS.serperResultCount,
+    ),
+    searchMaxRetries: parseBoundedNumber(
+      raw.searchMaxRetries,
+      fallback.searchMaxRetries,
+      RUNTIME_NUMBER_BOUNDS.searchMaxRetries,
+    ),
     domainRequestRps: parseBoundedNumber(
       raw.domainRequestRps,
       fallback.domainRequestRps,
@@ -235,11 +246,6 @@ export function normalizeRuntimeDraft(
       raw.fetchSchedulerMaxRetries,
       fallback.fetchSchedulerMaxRetries,
       RUNTIME_NUMBER_BOUNDS.fetchSchedulerMaxRetries,
-    ),
-    fetchSchedulerFallbackWaitMs: parseBoundedNumber(
-      raw.fetchSchedulerFallbackWaitMs,
-      fallback.fetchSchedulerFallbackWaitMs,
-      RUNTIME_NUMBER_BOUNDS.fetchSchedulerFallbackWaitMs,
     ),
     pageGotoTimeoutMs: parseBoundedNumber(
       raw.pageGotoTimeoutMs,

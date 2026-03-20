@@ -167,12 +167,14 @@ describe('processStartLaunchPlan — propagation characterization', () => {
     const envKeys = new Set(Object.keys(result.envOverrides));
 
     // These registry keys are sent in the GUI POST body but processStartLaunchPlan
-    // does NOT convert them to env vars. The child only gets them from user-settings.json.
+    // does NOT convert them to env vars. On the happy path, the child reads them from
+    // the RUNTIME_SETTINGS_SNAPSHOT file (Plan 05). If the snapshot write fails,
+    // these fall back to user-settings.json (stale-start risk).
     const KNOWN_PAYLOAD_ONLY_GAPS = [
       // Fetch network (sent in POST body but dropped before child launch)
       'fetchConcurrency', 'perHostMinDelayMs', 'domainRequestRps', 'domainRequestBurst',
       'globalRequestRps', 'globalRequestBurst', 'fetchBudgetMs',
-      'fetchSchedulerMaxRetries', 'fetchSchedulerFallbackWaitMs',
+      'fetchSchedulerMaxRetries',
       'fetchSchedulerInternalsMapJson', 'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
       // Browser/rendering
       'dynamicCrawleeEnabled', 'crawleeHeadless', 'crawleeRequestHandlerTimeoutSecs',

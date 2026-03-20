@@ -41,6 +41,11 @@ export function createRuntimeHydrationBindings(
         apply: setters.setGoogleSearchProxyUrlsJson,
       },
       {
+        key: 'serperApiKey',
+        allowEmpty: true,
+        apply: setters.setSerperApiKey,
+      },
+      {
         key: 'searxngBaseUrl',
         allowEmpty: true,
         apply: setters.setSearxngBaseUrl,
@@ -272,6 +277,8 @@ export function createRuntimeHydrationBindings(
       { key: 'googleSearchTimeoutMs', apply: (value) => setters.setGoogleSearchTimeoutMs(String(value)) },
       { key: 'googleSearchMinQueryIntervalMs', apply: (value) => setters.setGoogleSearchMinQueryIntervalMs(String(value)) },
       { key: 'googleSearchMaxRetries', apply: (value) => setters.setGoogleSearchMaxRetries(String(value)) },
+      { key: 'serperResultCount', apply: (value) => setters.setSerperResultCount(String(value)) },
+      { key: 'searchMaxRetries', apply: (value) => setters.setSearchMaxRetries(String(value)) },
       { key: 'domainRequestRps', apply: (value) => setters.setDomainRequestRps(String(value)) },
       { key: 'domainRequestBurst', apply: (value) => setters.setDomainRequestBurst(String(value)) },
       { key: 'globalRequestRps', apply: (value) => setters.setGlobalRequestRps(String(value)) },
@@ -313,7 +320,6 @@ export function createRuntimeHydrationBindings(
       { key: 'dynamicFetchRetryBudget', apply: (value) => setters.setDynamicFetchRetryBudget(String(value)) },
       { key: 'dynamicFetchRetryBackoffMs', apply: (value) => setters.setDynamicFetchRetryBackoffMs(String(value)) },
       { key: 'fetchSchedulerMaxRetries', apply: (value) => setters.setFetchSchedulerMaxRetries(String(value)) },
-      { key: 'fetchSchedulerFallbackWaitMs', apply: (value) => setters.setFetchSchedulerFallbackWaitMs(String(value)) },
       { key: 'pageGotoTimeoutMs', apply: (value) => setters.setPageGotoTimeoutMs(String(value)) },
       { key: 'pageNetworkIdleTimeoutMs', apply: (value) => setters.setPageNetworkIdleTimeoutMs(String(value)) },
       { key: 'postLoadWaitMs', apply: (value) => setters.setPostLoadWaitMs(String(value)) },

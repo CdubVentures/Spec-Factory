@@ -223,6 +223,35 @@ export function fallbackResultBadgeClass(result: string): string {
   }
 }
 
+export function searchProviderBadgeClass(provider: string): string {
+  switch (provider) {
+    case 'serper':
+      return 'sf-chip-accent';
+    case 'google':
+      return 'sf-chip-info';
+    case 'brave-api':
+      return 'sf-chip-success';
+    case 'bing':
+    case 'duckduckgo':
+    case 'brave':
+      return 'sf-chip-warning';
+    default:
+      return 'sf-chip-neutral';
+  }
+}
+
+export function searchProviderLabel(provider: string): string {
+  switch (provider) {
+    case 'serper': return 'Serper';
+    case 'google': return 'Google';
+    case 'brave-api': return 'Brave API';
+    case 'bing': return 'Bing';
+    case 'duckduckgo': return 'DuckDuckGo';
+    case 'brave': return 'Brave';
+    default: return provider;
+  }
+}
+
 export function fetchModeBadgeClass(mode: string): string {
   switch (mode) {
     case 'playwright':

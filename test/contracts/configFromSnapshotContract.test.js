@@ -1,10 +1,14 @@
-import { describe, it } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import { ok, strictEqual } from 'node:assert';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 import {
   applySnapshotToConfig,
   isRegistrySetting,
   getConfigKey,
 } from '../../src/core/config/resolveEffectiveRuntimeConfig.js';
+import { loadConfigWithUserSettings } from '../../src/config.js';
 
 // WHY: Plan 06 contract test. Validates the effective config resolver.
 
@@ -73,5 +77,58 @@ describe('resolveEffectiveRuntimeConfig — Plan 06', () => {
     strictEqual(getConfigKey('fetchConcurrency'), 'concurrency');
     strictEqual(getConfigKey('resumeMode'), 'indexingResumeMode');
     strictEqual(getConfigKey('autoScrollEnabled'), 'autoScrollEnabled');
+  });
+});
+
+// WHY: Integration test proving loadConfigWithUserSettings remaps alias keys
+// from the snapshot. This is the critical path: GUI sends canonical setting keys
+// (fetchConcurrency, resumeMode, etc.) but runtime consumers read the config keys
+// (concurrency, indexingResumeMode, etc.). If the remap is missing, consumers
+// get stale defaults.
+describe('loadConfigWithUserSettings — snapshot alias remap', () => {
+  let tmpDir;
+  let snapshotPath;
+  let origEnv;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sf-alias-test-'));
+    origEnv = process.env.RUNTIME_SETTINGS_SNAPSHOT;
+    const snapshot = {
+      snapshotId: 'alias-test',
+      schemaVersion: '1.0',
+      createdAt: Date.now(),
+      source: 'test',
+      settings: {
+        fetchConcurrency: 12,
+        resumeMode: 'force_resume',
+        resumeWindowHours: 72,
+        reextractAfterHours: 48,
+        reextractIndexed: false,
+      },
+    };
+    snapshotPath = path.join(tmpDir, 'alias-test-settings.json');
+    fs.writeFileSync(snapshotPath, JSON.stringify(snapshot), 'utf8');
+    process.env.RUNTIME_SETTINGS_SNAPSHOT = snapshotPath;
+  });
+
+  afterEach(() => {
+    if (origEnv === undefined) delete process.env.RUNTIME_SETTINGS_SNAPSHOT;
+    else process.env.RUNTIME_SETTINGS_SNAPSHOT = origEnv;
+    try { fs.rmSync(tmpDir, { recursive: true }); } catch { /* ignore */ }
+  });
+
+  it('alias keys in snapshot are remapped to config keys consumers read', () => {
+    const config = loadConfigWithUserSettings();
+
+    // Config keys (what consumers read) must have the snapshot values
+    strictEqual(config.concurrency, 12, 'config.concurrency should be 12 from fetchConcurrency');
+    strictEqual(config.indexingResumeMode, 'force_resume', 'config.indexingResumeMode from resumeMode');
+    strictEqual(config.indexingResumeMaxAgeHours, 72, 'config.indexingResumeMaxAgeHours from resumeWindowHours');
+    strictEqual(config.indexingReextractAfterHours, 48, 'config.indexingReextractAfterHours from reextractAfterHours');
+    strictEqual(config.indexingReextractEnabled, false, 'config.indexingReextractEnabled from reextractIndexed');
+
+    // Canonical setting keys should also be set (dual-key compat)
+    strictEqual(config.fetchConcurrency, 12, 'canonical key should also be set');
+    strictEqual(config.resumeMode, 'force_resume', 'canonical key should also be set');
   });
 });

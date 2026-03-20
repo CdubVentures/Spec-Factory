@@ -83,7 +83,8 @@ export async function executeSearchQueries({
       query,
       provider: cached?.provider || 'frontier_cache',
       cache_hit: true,
-      reason_code: 'frontier_query_cache'
+      reason_code: 'frontier_query_cache',
+      is_fallback: false,
     });
     logger.info('discovery_query_completed', {
       query,
@@ -91,7 +92,8 @@ export async function executeSearchQueries({
       result_count: toArray(cached?.results).length,
       duration_ms: 0,
       cache_hit: true,
-      reason_code: 'frontier_query_cache'
+      reason_code: 'frontier_query_cache',
+      is_fallback: false,
     });
   };
 
@@ -236,7 +238,8 @@ export async function executeSearchQueries({
         const startedAt = Date.now();
         logger?.info?.('discovery_query_started', {
           query,
-          provider: config.searchEngines
+          provider: config.searchEngines,
+          is_fallback: false,
         });
         // WHY: screenshotSink persists Google Crawlee SERP screenshots to
         // {indexLabRoot}/{runId}/screenshots/{filename} — the same directory
@@ -254,13 +257,17 @@ export async function executeSearchQueries({
             logger?.warn?.('google_crawlee_screenshot_save_failed', { query: q, message: err.message });
           }
         };
-        let providerResults = await runSearchProvidersFn({
+        const searchProviderResult = await runSearchProvidersFn({
           config,
           query,
           limit: resultsPerQuery,
           logger,
           screenshotSink,
         });
+        // WHY: runSearchProviders returns { results, usedFallback } — destructure
+        // but stay backward-compat with callers that may still return a plain array.
+        let providerResults = Array.isArray(searchProviderResult) ? searchProviderResult : (searchProviderResult?.results ?? []);
+        const usedFallback = Array.isArray(searchProviderResult) ? false : Boolean(searchProviderResult?.usedFallback);
         let reasonCode = 'internet_search';
         // WHY: Search-first — zero results from provider → try learned URLs
         // from frontier, else accept 0. No synthetic URL fallback.
@@ -319,7 +326,8 @@ export async function executeSearchQueries({
           query,
           provider: config.searchEngines,
           result_count: providerResults.length,
-          duration_ms: durationMs
+          duration_ms: durationMs,
+          is_fallback: usedFallback,
         });
         if (providerResults.length > 0) {
           const engines = [...new Set(providerResults.map((r) => r?.provider).filter(Boolean))];
@@ -407,13 +415,15 @@ export async function executeSearchQueries({
       for (const [query, rows] of plannedByQuery.entries()) {
         logger?.info?.('discovery_query_started', {
           query,
-          provider: 'plan'
+          provider: 'plan',
+          is_fallback: false,
         });
         logger?.info?.('discovery_query_completed', {
           query,
           provider: 'plan',
           result_count: rows.length,
-          duration_ms: 0
+          duration_ms: 0,
+          is_fallback: false,
         });
         logger?.info?.('search_results_collected', {
           query,

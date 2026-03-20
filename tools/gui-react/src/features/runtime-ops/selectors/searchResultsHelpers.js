@@ -356,7 +356,9 @@ export function resolveRuntimeDomainCapSummary(liveSettings) {
 }
 
 const PROVIDER_LABELS = {
+  serper: 'Serper',
   google: 'Google',
+  'brave-api': 'Brave API',
   bing: 'Bing',
   searxng: 'SearXNG',
   dual: 'Dual',

@@ -48,17 +48,40 @@ export function isCaptchaPage(url, html) {
 }
 
 // ---------------------------------------------------------------------------
-// Result extraction — Tier 1 (standard .g containers)
+// Shared helpers
+// ---------------------------------------------------------------------------
+
+function isExternalUrl(rawUrl) {
+  return rawUrl && rawUrl.startsWith('http') &&
+    (!rawUrl.includes('google.com') || rawUrl.includes('/amp/'));
+}
+
+function findSnippet(container, title) {
+  if (!container) return '';
+  for (const el of container.querySelectorAll('span, div')) {
+    const text = (el.textContent || '').trim();
+    if (text.length > 40 && !text.includes(title) && !el.querySelector('h3')) {
+      return text;
+    }
+  }
+  return '';
+}
+
+// ---------------------------------------------------------------------------
+// Result extraction — Tier 1 (multi-strategy)
 // ---------------------------------------------------------------------------
 
 function extractTier1(doc, limit) {
   // WHY: Google's DOM structure changes frequently. Try multiple selector
-  // strategies in order of specificity. As of 2026-03, Google no longer uses
-  // .g class containers — results are h3 elements inside anchor tags within #rso.
+  // strategies. Desktop strategies (A, B) return early if they find results.
+  // Mobile strategies (C, D, E) accumulate across all three since they
+  // capture different result types on the same Android SERP.
+
+  const results = [];
+  const seen = new Set();
 
   // Strategy A: classic .g containers (legacy, still works in some regions)
   const containers = doc.querySelectorAll('#search .g, #rso .g');
-  const results = [];
   for (const container of containers) {
     if (results.length >= limit) break;
     const anchor = container.querySelector('a[href]');
@@ -78,57 +101,62 @@ function extractTier1(doc, limit) {
   }
   if (results.length > 0) return results;
 
-  // Strategy B: h3 elements inside anchor tags within #rso (2026+ Google)
+  // Strategy B: h3 inside anchor tags within #rso (desktop 2026+)
   const h3Links = doc.querySelectorAll('#rso a[href] h3, #search a[href] h3');
-  const seen = new Set();
   for (const h3 of h3Links) {
     if (results.length >= limit) break;
     const anchor = h3.closest('a');
     if (!anchor) continue;
 
     const rawUrl = cleanGoogleUrl(anchor.getAttribute('href'));
-    if (!rawUrl || !rawUrl.startsWith('http')) continue;
-    if (rawUrl.includes('google.com') && !rawUrl.includes('/amp/')) continue;
+    if (!isExternalUrl(rawUrl)) continue;
     if (seen.has(rawUrl)) continue;
     seen.add(rawUrl);
 
     const title = (h3.textContent || '').trim();
     if (!title) continue;
 
-    // Walk up to find snippet in a sibling/parent container
-    let snippet = '';
     const parentBlock = anchor.closest('[data-sokoban]') || anchor.parentElement?.parentElement?.parentElement;
-    if (parentBlock) {
-      for (const el of parentBlock.querySelectorAll('span, div')) {
-        const text = (el.textContent || '').trim();
-        if (text.length > 40 && !text.includes(title) && el.querySelector('h3') === null) {
-          snippet = text;
-          break;
-        }
-      }
-    }
-
-    results.push({ url: rawUrl, title, snippet });
+    results.push({ url: rawUrl, title, snippet: findSnippet(parentBlock, title) });
   }
   if (results.length > 0) return results;
 
-  // Strategy C: Android mobile SERP — h3 is NOT inside an anchor tag.
-  // Results are in [data-hveid] containers where the h3 and link are siblings.
+  // --- Mobile strategies: accumulate across C + D + E ---
+
+  // Strategy C: Android mobile — h3 with anchor INSIDE (h3 > ... > a)
+  // WHY: MODERN_ANDROID fingerprint gets a SERP where the anchor is nested
+  // inside the h3 (h3 > div > span > a), opposite of desktop (a > h3).
+  const mobileH3s = doc.querySelectorAll('#rso h3');
+  for (const h3 of mobileH3s) {
+    if (results.length >= limit) break;
+    const anchor = h3.querySelector('a[href]');
+    if (!anchor) continue;
+
+    const rawUrl = cleanGoogleUrl(anchor.getAttribute('href'));
+    if (!isExternalUrl(rawUrl)) continue;
+    if (seen.has(rawUrl)) continue;
+    seen.add(rawUrl);
+
+    const title = (h3.textContent || '').trim();
+    if (!title) continue;
+
+    const container = h3.closest('[data-hveid]') || h3.closest('.tF2Cxc') || h3.parentElement?.parentElement;
+    results.push({ url: rawUrl, title, snippet: findSnippet(container, title) });
+  }
+
+  // Strategy D: Android mobile — h3 + sibling anchor in [data-hveid] container
+  // WHY: Some mobile results have h3 and external link as siblings, not nested.
   const hveidContainers = doc.querySelectorAll('#rso [data-hveid]');
   for (const container of hveidContainers) {
     if (results.length >= limit) break;
     const h3 = container.querySelector('h3');
     if (!h3) continue;
 
-    // Find external link in the same container (sibling, not wrapping h3)
     const anchors = container.querySelectorAll('a[href]');
     let bestAnchor = null;
     for (const a of anchors) {
       const href = cleanGoogleUrl(a.getAttribute('href'));
-      if (href && href.startsWith('http') && !href.includes('google.com')) {
-        bestAnchor = a;
-        break;
-      }
+      if (isExternalUrl(href)) { bestAnchor = a; break; }
     }
     if (!bestAnchor) continue;
 
@@ -139,17 +167,9 @@ function extractTier1(doc, limit) {
     const title = (h3.textContent || '').trim();
     if (!title) continue;
 
-    let snippet = '';
-    for (const el of container.querySelectorAll('span, div')) {
-      const text = (el.textContent || '').trim();
-      if (text.length > 40 && !text.includes(title) && el.querySelector('h3') === null) {
-        snippet = text;
-        break;
-      }
-    }
-
-    results.push({ url: rawUrl, title, snippet });
+    results.push({ url: rawUrl, title, snippet: findSnippet(container, title) });
   }
+
   return results;
 }
 

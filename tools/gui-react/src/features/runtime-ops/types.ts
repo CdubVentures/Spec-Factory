@@ -246,6 +246,8 @@ export interface RuntimeOpsWorkerRow {
   avg_duration_ms?: number;
   last_result_count?: number;
   last_duration_ms?: number;
+  primary_count?: number;
+  fallback_count?: number;
   call_type?: string | null;
   model?: string | null;
   round?: number | null;
@@ -334,6 +336,8 @@ export interface SearchResultEntry {
 
 export interface SearchWorkerAttempt {
   attempt_no: number;
+  attempt_type: 'primary' | 'fallback';
+  attempt_type_label: string;
   query: string;
   provider: string;
   resolved_provider: string | null;

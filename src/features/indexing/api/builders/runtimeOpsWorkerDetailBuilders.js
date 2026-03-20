@@ -166,17 +166,25 @@ export function buildWorkerDetail(events, workerId, options = {}) {
 
     const history = [];
     let attemptNo = 0;
+    let primaryNo = 0;
+    let fallbackNo = 0;
     for (const evt of workerEvents) {
       const type = eventType(evt);
       const payload = payloadOf(evt);
       const ts = String(evt?.ts || '').trim();
       if (type === 'search_started') {
         attemptNo += 1;
+        const isFallback = Boolean(payload.is_fallback);
+        const attemptType = isFallback ? 'fallback' : 'primary';
+        const typeNo = isFallback ? (++fallbackNo) : (++primaryNo);
+        const attemptTypeLabel = `${isFallback ? 'f' : 'p'}${typeNo}`;
         const rawQuery = String(payload.current_query || payload.query || '').trim();
         const rawProvider = String(payload.current_provider || payload.provider || '').trim();
         const qMatch = queryResultsMap[rawQuery.toLowerCase()];
         history.push({
           attempt_no: attemptNo,
+          attempt_type: attemptType,
+          attempt_type_label: attemptTypeLabel,
           query: rawQuery,
           provider: rawProvider,
           resolved_provider: qMatch?.resolved_provider || null,
@@ -194,6 +202,16 @@ export function buildWorkerDetail(events, workerId, options = {}) {
           match.result_count = toInt(payload.result_count, 0);
           match.duration_ms = toInt(payload.duration_ms, 0);
           match.finished_ts = ts;
+          // Backfill is_fallback from search_finished if search_started didn't have it
+          if (!match.attempt_type || match.attempt_type === 'primary') {
+            const finishedIsFallback = Boolean(payload.is_fallback);
+            if (finishedIsFallback && match.attempt_type === 'primary') {
+              match.attempt_type = 'fallback';
+              primaryNo--;
+              const fNo = ++fallbackNo;
+              match.attempt_type_label = `f${fNo}`;
+            }
+          }
           // Backfill resolved provider + results if not set from search_started
           if (!match.resolved_provider || match.results.length === 0) {
             const rawQ = String(payload.current_query || payload.query || '').trim();
@@ -205,11 +223,17 @@ export function buildWorkerDetail(events, workerId, options = {}) {
           }
         } else {
           attemptNo += 1;
+          const isFallback = Boolean(payload.is_fallback);
+          const attemptType = isFallback ? 'fallback' : 'primary';
+          const typeNo = isFallback ? (++fallbackNo) : (++primaryNo);
+          const attemptTypeLabel = `${isFallback ? 'f' : 'p'}${typeNo}`;
           const rawQuery = String(payload.current_query || payload.query || '').trim();
           const rawProvider = String(payload.current_provider || payload.provider || '').trim();
           const qMatch = queryResultsMap[rawQuery.toLowerCase()];
           history.push({
             attempt_no: attemptNo,
+            attempt_type: attemptType,
+            attempt_type_label: attemptTypeLabel,
             query: rawQuery,
             provider: rawProvider,
             resolved_provider: qMatch?.resolved_provider || null,
@@ -231,8 +255,11 @@ export function buildWorkerDetail(events, workerId, options = {}) {
       if (historyQuerySet.has(qKey)) continue;
       if (queriesTrackedByAnyWorker.has(qKey)) continue;
       attemptNo += 1;
+      const pNo = ++primaryNo;
       history.push({
         attempt_no: attemptNo,
+        attempt_type: 'primary',
+        attempt_type_label: `p${pNo}`,
         query: qr.query || qKey,
         provider: qr.resolved_provider || '',
         resolved_provider: qr.resolved_provider || null,

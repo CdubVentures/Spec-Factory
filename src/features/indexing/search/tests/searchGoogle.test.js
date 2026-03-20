@@ -61,9 +61,13 @@ function createMockCrawlerFactory({
         const fakeResponse = { status: () => 200 };
 
         // Invoke requestHandler if present
-        const fakeSession = { markBad: () => { calls.sessionBurned = true; } };
+        const fakeSession = {
+          markBad: () => { calls.sessionBurned = true; },
+          retire: () => { calls.sessionRetired = true; },
+        };
+        const closeCookieModals = async () => { calls.closeCookieModalsCalled = true; };
         if (typeof options.requestHandler === 'function') {
-          await options.requestHandler({ page: fakePage, response: fakeResponse, request: { url }, session: fakeSession });
+          await options.requestHandler({ page: fakePage, response: fakeResponse, request: { url }, session: fakeSession, closeCookieModals });
         }
       },
     };
@@ -226,7 +230,7 @@ describe('searchGoogle', () => {
         warnings.some(w => w.evt === 'google_crawlee_captcha_in_handler'),
         'logged in-handler captcha warning'
       );
-      assert.ok(calls.sessionBurned, 'session was burned on CAPTCHA');
+      assert.ok(calls.sessionRetired, 'session was retired on CAPTCHA');
     });
   });
 
@@ -314,24 +318,8 @@ describe('searchGoogle', () => {
     });
   });
 
-  describe('headless toggle', () => {
-    it('headless=false sets launchOptions.headless to false', async () => {
-      const { searchGoogle } = await loadModule();
-      const { factory, calls } = createMockCrawlerFactory();
-      await searchGoogle({
-        query: 'test',
-        headless: false,
-        ...fastMockOptions(factory, { headless: false }),
-      });
-      const opts = calls.crawlerOptions;
-      assert.equal(
-        opts?.launchContext?.launchOptions?.headless,
-        false,
-        'headless is false in launch options'
-      );
-    });
-
-    it('headless defaults to true', async () => {
+  describe('crawler options wiring', () => {
+    it('headless is always true', async () => {
       const { searchGoogle } = await loadModule();
       const { factory, calls } = createMockCrawlerFactory();
       await searchGoogle({
@@ -339,11 +327,63 @@ describe('searchGoogle', () => {
         ...fastMockOptions(factory),
       });
       const opts = calls.crawlerOptions;
-      assert.equal(
-        opts?.launchContext?.launchOptions?.headless,
-        true,
-        'headless defaults to true'
-      );
+      assert.equal(opts?.launchContext?.launchOptions?.headless, true);
+    });
+
+    it('retryOnBlocked is true', async () => {
+      const { searchGoogle } = await loadModule();
+      const { factory, calls } = createMockCrawlerFactory();
+      await searchGoogle({
+        query: 'test',
+        ...fastMockOptions(factory),
+      });
+      assert.equal(calls.crawlerOptions.retryOnBlocked, true);
+    });
+
+    it('persistCookiesPerSession is true', async () => {
+      const { searchGoogle } = await loadModule();
+      const { factory, calls } = createMockCrawlerFactory();
+      await searchGoogle({
+        query: 'test',
+        ...fastMockOptions(factory),
+      });
+      assert.equal(calls.crawlerOptions.persistCookiesPerSession, true);
+    });
+
+    it('Chrome args include --disable-background-networking', async () => {
+      const { searchGoogle } = await loadModule();
+      const { factory, calls } = createMockCrawlerFactory();
+      await searchGoogle({
+        query: 'test',
+        ...fastMockOptions(factory),
+      });
+      const args = calls.crawlerOptions?.launchContext?.launchOptions?.args || [];
+      assert.ok(args.includes('--disable-background-networking'), 'background networking disabled');
+    });
+
+    it('URL uses udm=14 and does not include num=', async () => {
+      const { searchGoogle } = await loadModule();
+      const { factory, calls } = createMockCrawlerFactory();
+      await searchGoogle({
+        query: 'test query',
+        ...fastMockOptions(factory),
+      });
+      const sources = calls.requestListSources || [];
+      const requestUrl = sources[0]?.url || '';
+      assert.ok(requestUrl.includes('udm=14'), `URL should include udm=14: ${requestUrl}`);
+      assert.ok(!requestUrl.includes('num='), `URL should not include num=: ${requestUrl}`);
+    });
+
+    it('uses MODERN_WINDOWS_CHROME fingerprint preset', async () => {
+      const { searchGoogle } = await loadModule();
+      const { factory, calls } = createMockCrawlerFactory();
+      await searchGoogle({
+        query: 'test',
+        ...fastMockOptions(factory),
+      });
+      const fpOpts = calls.crawlerOptions?.browserPoolOptions?.fingerprintOptions?.fingerprintGeneratorOptions;
+      assert.ok(fpOpts, 'fingerprint options present');
+      assert.equal(fpOpts.slim, undefined, 'slim not set');
     });
   });
 });

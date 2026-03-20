@@ -47,11 +47,11 @@ test('normalizeSearchEngines migrates legacy none → empty string', () => {
 });
 
 test('normalizeSearchEngines passes through valid CSV', () => {
-  assert.equal(normalizeSearchEngines('bing,startpage,duckduckgo'), 'bing,startpage,duckduckgo');
+  assert.equal(normalizeSearchEngines('bing,google-proxy,duckduckgo'), 'bing,google-proxy,duckduckgo');
 });
 
 test('normalizeSearchEngines strips invalid tokens from CSV', () => {
-  assert.equal(normalizeSearchEngines('bing,yahoo,startpage'), 'bing,startpage');
+  assert.equal(normalizeSearchEngines('bing,yahoo,google-proxy'), 'bing,google-proxy');
 });
 
 test('normalizeSearchEngines deduplicates engines', () => {
@@ -98,7 +98,7 @@ test('runSearchProviders with searchEngines sends one fetch with engines param',
   };
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({
         searchEngines: 'bing,duckduckgo',
       }),
@@ -127,7 +127,7 @@ test('runSearchProviders with searchEngines empty string returns [] immediately'
   };
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({
         searchEngines: '',
       }),
@@ -165,7 +165,7 @@ test('runSearchProviders backward compat: old searchProvider dual still works', 
   });
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({
         searchProvider: 'dual',
       }),
@@ -191,7 +191,7 @@ test('runSearchProviders backward compat: old searchProvider none returns []', a
   };
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({
         searchProvider: 'none',
       }),
@@ -222,7 +222,7 @@ test('runSearchProviders applies request throttler', async () => {
   };
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({
         searchEngines: 'bing',
       }),
@@ -402,7 +402,7 @@ test('runSearchProviders drops results from engines that returned anti-bot garba
   };
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({ searchEngines: 'bing,duckduckgo' }),
       query: 'Asus ROG Chakram specifications',
       limit: 10
@@ -427,15 +427,15 @@ test('runSearchProviders drops results from engines that returned anti-bot garba
 
 test('searchEngineAvailability reports engine list and readiness', () => {
   const available = searchEngineAvailability({
-    searchEngines: 'bing,startpage,duckduckgo',
+    searchEngines: 'bing,google-proxy,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080'
   });
   assert.equal(available.searxng_ready, true);
   assert.equal(available.internet_ready, true);
-  assert.deepEqual(available.engines, ['bing', 'startpage', 'duckduckgo']);
+  assert.deepEqual(available.engines, ['bing', 'google-proxy', 'duckduckgo']);
   assert.equal(available.bing_ready, true);
   assert.equal(available.google_ready, false);
-  assert.deepEqual(available.active_providers, ['bing', 'startpage', 'duckduckgo']);
+  assert.deepEqual(available.active_providers, ['bing', 'google-proxy', 'duckduckgo']);
 });
 
 test('searchEngineAvailability with empty engines reports not ready', () => {
@@ -489,7 +489,7 @@ test('runSearchProviders does NOT trigger fallback when primary returns results'
   };
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows, usedFallback } = await runSearchProviders({
       config: makeSearchConfig({ searchEngines: 'duckduckgo', searchEnginesFallback: 'bing' }),
       query: 'test product specs',
       limit: 5
@@ -497,6 +497,7 @@ test('runSearchProviders does NOT trigger fallback when primary returns results'
     assert.equal(fetchCount, 1, 'only one fetch call — no fallback');
     assert.equal(rows.length, 1);
     assert.equal(rows[0].url, 'https://example.com/primary');
+    assert.equal(usedFallback, false, 'usedFallback is false when primary succeeds');
   } finally {
     global.fetch = originalFetch;
   }
@@ -517,7 +518,7 @@ test('runSearchProviders triggers fallback when primary returns 0 results', asyn
   };
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows, usedFallback } = await runSearchProviders({
       config: makeSearchConfig({ searchEngines: 'duckduckgo', searchEnginesFallback: 'bing' }),
       query: 'test product specs',
       limit: 5
@@ -525,6 +526,7 @@ test('runSearchProviders triggers fallback when primary returns 0 results', asyn
     assert.equal(fetchCount, 2, 'two fetch calls — primary + fallback');
     assert.equal(rows.length, 1);
     assert.equal(rows[0].url, 'https://example.com/fallback');
+    assert.equal(usedFallback, true, 'usedFallback is true when fallback provided results');
   } finally {
     global.fetch = originalFetch;
   }
@@ -551,7 +553,7 @@ test('runSearchProviders triggers fallback when primary results are all garbage-
   };
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({ searchEngines: 'duckduckgo', searchEnginesFallback: 'bing' }),
       query: 'Razer Viper specifications',
       limit: 5
@@ -569,7 +571,7 @@ test('runSearchProviders returns empty when both primary and fallback return 0',
   global.fetch = async () => makeJsonResponse({ results: [] });
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({ searchEngines: 'duckduckgo', searchEnginesFallback: 'bing' }),
       query: 'nonexistent product',
       limit: 5
@@ -589,7 +591,7 @@ test('runSearchProviders with empty searchEnginesFallback does not attempt fallb
   };
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({ searchEngines: 'duckduckgo', searchEnginesFallback: '' }),
       query: 'test query',
       limit: 5
@@ -674,7 +676,7 @@ test('google engine routes through searchGoogle, not SearXNG fetch', async () =>
   };
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({ searchEngines: 'google' }),
       query: 'logitech mx master 3s',
       limit: 5,
@@ -717,7 +719,7 @@ test('google,bing splits: google via Crawlee, bing via SearXNG, results merged',
   };
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({ searchEngines: 'google,bing' }),
       query: 'test dual',
       limit: 5,
@@ -755,7 +757,7 @@ test('fallback with google also routes through Crawlee', async () => {
   };
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({ searchEngines: 'duckduckgo', searchEnginesFallback: 'google' }),
       query: 'test fallback google',
       limit: 5,
@@ -811,7 +813,7 @@ test('legacy dual routes google through Crawlee', async () => {
   };
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({ searchProvider: 'dual' }),
       query: 'legacy dual test',
       limit: 5,
@@ -837,7 +839,7 @@ test('screenshotSink is called when google returns a screenshot', async () => {
   });
 
   try {
-    const rows = await runSearchProviders({
+    const { results: rows } = await runSearchProviders({
       config: makeSearchConfig({ searchEngines: 'google', googleSearchScreenshotsEnabled: true }),
       query: 'screenshot test',
       limit: 5,

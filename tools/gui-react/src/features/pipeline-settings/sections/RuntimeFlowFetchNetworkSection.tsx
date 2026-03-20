@@ -66,9 +66,6 @@ export const RuntimeFlowFetchNetworkSection = memo(function RuntimeFlowFetchNetw
           <SettingRow label="Fetch Scheduler Max Retries" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: scheduler retry loop before fallback handling.\nWhat this controls: how many scheduler-managed retries a fetch may consume before the runtime waits for fallback or gives up on that attempt.`}>
             <SettingNumberInput draftKey="fetchSchedulerMaxRetries" value={runtimeDraft.fetchSchedulerMaxRetries} bounds={getNumberBounds('fetchSchedulerMaxRetries')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
-          <SettingRow label="Fetch Scheduler Fallback Wait (ms)" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: scheduler fallback queue timing.\nWhat this controls: how long the runtime waits before it revisits queued fetch work that previously had to fall back.`}>
-            <SettingNumberInput draftKey="fetchSchedulerFallbackWaitMs" value={runtimeDraft.fetchSchedulerFallbackWaitMs} bounds={getNumberBounds('fetchSchedulerFallbackWaitMs')} step={100} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
           <SettingRow
             label="Fetch Scheduler Internals Map (JSON)"
             tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: scheduler internal defaults override layer.\nWhat this controls: an optional JSON map for low-level delay, concurrency, retry, and fallback-wait defaults used by the fetch scheduler.`}

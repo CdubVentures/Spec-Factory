@@ -95,33 +95,25 @@ describe('deriveRuntimeDefaults', () => {
     'googleSearchProxyUrlsJson',
     'googleSearchScreenshotsEnabled',
     'googleSearchTimeoutMs',
+    'searchMaxRetries',
   ]);
   const DEFAULTS_ONLY_KEYS = new Set([
-    'articleExtractorV2Enabled',
     'authoritySnapshotEnabled',
     'billingJsonWrite',
     'cacheJsonWrite',
     'corpusJsonWrite',
-    'fetchSchedulerEnabled',
-    'frontierEnableSqlite',
     'frontierRepairSearchEnabled',
     'htmlTableExtractorV2',
     'intelJsonWrite',
     'learningJsonWrite',
-    'llmDisableBudgetGuards',
     'llmExtractionCacheEnabled',
     'queueJsonWrite',
     'scannedPdfOcrPromoteCandidates',
     'staticDomExtractorEnabled',
-    'structuredMetadataExtructCacheEnabled',
-    'structuredMetadataExtructCacheLimit',
-    'structuredMetadataExtructEnabled',
-    'structuredMetadataExtructMaxItemsPerSurface',
-    'structuredMetadataExtructTimeoutMs',
-    'structuredMetadataExtructUrl',
   ]);
-  // WHY: searchEngines default changed from 'startpage' to 'google' in the registry
-  const KNOWN_VALUE_DRIFT_KEYS = new Set(['searchEngines']);
+  // WHY: Track any known value drift between registry-derived defaults and settingsDefaults.
+  // searchEngines drift was fixed when settingsDefaults aligned to registry default ('google').
+  const KNOWN_VALUE_DRIFT_KEYS = new Set([]);
 
   it('derived key set matches existing (modulo known registry/defaults drift)', () => {
     const derivedKeys = sortedKeys(derived).filter(k => !REGISTRY_ONLY_KEYS.has(k));

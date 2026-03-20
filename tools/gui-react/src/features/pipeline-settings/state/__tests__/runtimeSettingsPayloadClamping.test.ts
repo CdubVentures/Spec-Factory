@@ -99,7 +99,6 @@ function makeInput(
     dynamicFetchRetryBudget: 3,
     dynamicFetchRetryBackoffMs: 1000,
     fetchSchedulerMaxRetries: 3,
-    fetchSchedulerFallbackWaitMs: 5000,
     pageGotoTimeoutMs: 30000,
     pageNetworkIdleTimeoutMs: 5000,
     postLoadWaitMs: 1000,

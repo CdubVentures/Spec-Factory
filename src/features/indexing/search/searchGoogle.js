@@ -1,6 +1,6 @@
 // WHY: Google search via Crawlee/Playwright headless browser.
 // Google requires JS execution — raw HTTP fetch gets an empty shell.
-// Always headless, always blocks non-essential resources to minimize proxy bandwidth.
+// Always headless, blocks all non-essential resources to minimize proxy bandwidth.
 // screenshotsEnabled controls whether a SERP screenshot is captured.
 
 import { createHash } from 'node:crypto';
@@ -24,23 +24,29 @@ function queryHash(query) {
   return createHash('sha256').update(String(query)).digest('hex').slice(0, 12);
 }
 
-function buildGoogleSearchUrl(query, limit = 10) {
+// WHY: udm=14 forces "Web" tab — strips AI Overviews, People Also Ask,
+// shopping carousels. nfpr=1 prevents query "correction". pws=0 disables
+// personalization. filter=0 shows near-duplicates for broader coverage.
+function buildGoogleSearchUrl(query) {
   const q = encodeURIComponent(String(query));
-  return `https://www.google.com/search?q=${q}&hl=en&num=${Math.min(Math.max(1, limit), 20)}`;
+  return `https://www.google.com/search?q=${q}&hl=en&udm=14&nfpr=1&pws=0&filter=0`;
 }
 
 export function resetGoogleSearchPacingForTests() {
   _lastGoogleQueryMs = 0;
 }
 
-// WHY: Data-saving headers tell Google to serve lighter JS bundles.
-// The fingerprint suite handles UA, Sec-Ch-Ua, and other stealth headers.
-const DATA_SAVING_HEADERS = {
-  'Save-Data': 'on',
-  'ECT': 'slow-2g',
-  'Downlink': '0.4',
-  'RTT': '1800',
-};
+// WHY: Minimal Chrome flags — too many flags create a detectable fingerprint.
+// Only essentials: anti-automation detection, proxy leak prevention, and
+// background networking (the one flag that saves real bandwidth).
+const CHROME_ARGS = [
+  '--disable-blink-features=AutomationControlled',
+  '--no-first-run',
+  '--no-default-browser-check',
+  '--enforce-webrtc-ip-permission-check',
+  '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
+  '--disable-background-networking',
+];
 
 // ---------------------------------------------------------------------------
 // Main export
@@ -96,7 +102,7 @@ export async function searchGoogle({
       await requestThrottler.acquire({ key: 'www.google.com', provider: 'google', query: q });
     }
 
-    const url = buildGoogleSearchUrl(q, limit);
+    const url = buildGoogleSearchUrl(q);
     const cap = Math.max(1, Number(limit) || 10);
 
     // Resolve crawler factory
@@ -122,57 +128,77 @@ export async function searchGoogle({
     const crawlerOptions = {
       maxRequestsPerCrawl: 1,
       requestHandlerTimeoutSecs: Math.ceil(timeoutMs / 1000) + 10,
+      retryOnBlocked: true,
+      maxSessionRotations: 2,
       ...(proxyConfiguration ? { proxyConfiguration } : {}),
       useSessionPool: Boolean(proxyConfiguration),
       persistCookiesPerSession: true,
       maxRequestRetries: proxyConfiguration ? maxRetries : 0,
+      ...(proxyConfiguration ? {
+        sessionPoolOptions: {
+          maxPoolSize: 10,
+          sessionOptions: {
+            maxUsageCount: 5,
+            maxAgeSecs: 300,
+            maxErrorScore: 1,
+          },
+        },
+      } : {}),
       launchContext: {
         launchOptions: {
           headless: true,
           channel: 'chrome',
-          args: [
-            '--disable-blink-features=AutomationControlled',
-            '--no-first-run',
-            '--no-default-browser-check',
-            '--enforce-webrtc-ip-permission-check',
-            '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
-          ],
+          args: CHROME_ARGS,
         },
       },
       browserPoolOptions: {
-        // WHY: Crawlee's built-in fingerprint generator creates realistic
-        // browser fingerprints (UA, viewport, canvas, WebGL, navigator)
-        // using Bayesian networks. Replaces our manual stealth script.
         useFingerprints: true,
         fingerprintOptions: {
           fingerprintGeneratorOptions: {
-            ...PRESETS.MODERN_ANDROID,
+            ...PRESETS.MODERN_WINDOWS_CHROME,
           },
         },
         maxOpenPagesPerBrowser: 1,
-        retireBrowserAfterPageCount: 1,
+        retireBrowserAfterPageCount: 5,
       },
       preNavigationHooks: [
-        async ({ page }, gotoOptions) => {
+        async ({ page, blockRequests }, gotoOptions) => {
           gotoOptions.waitUntil = 'domcontentloaded';
           gotoOptions.timeout = Math.max(5000, Number(timeoutMs) || 30_000);
 
-          // WHY: Allow document + stylesheet + essential scripts only.
-          // Block images, fonts, XHR, fetch, and non-essential scripts.
-          // XHR/fetch are post-load analytics/suggestions — not needed for results.
+          // WHY: CDP-level blocking — no Node.js round-trips per request.
+          // Blocks images, fonts, media, analytics by URL pattern.
+          if (typeof blockRequests === 'function') {
+            await blockRequests({
+              urlPatterns: [
+                '.jpg', '.jpeg', '.png', '.svg', '.gif', '.webp', '.ico',
+                '.woff', '.woff2', '.ttf', '.eot', '.otf',
+                '.pdf', '.zip', '.mp4', '.webm', '.mp3',
+                'adsbygoogle', 'analytics', 'doubleclick',
+                'googlesyndication', 'googletagmanager',
+                'accounts.google', 'play.google',
+                'gstatic.com/og/', 'apis.google.com', 'ssl.gstatic.com/gb/',
+                'lh3.googleusercontent.com', 'encrypted-tbn',
+                'youtube.com', 'ytimg.com',
+                'maps.google', 'maps.gstatic', 'translate.google',
+              ],
+            });
+          }
+
+          // WHY: Allow document + bootstrap Google scripts only.
+          // Stub CSS (parser uses JSDOM, doesn't need styles — saves ~500KB).
+          // Block lazy XJS chunks (/d=0/) — 17 feature modules we don't need (~100-165KB wire).
+          // Keep bootstrap XJS (/d=1/) — needed for SearchGuard verification.
           await page.route('**', (route, request) => {
             const type = request.resourceType();
-            if (type === 'document' || type === 'stylesheet') {
-              return route.continue();
+            if (type === 'document') return route.continue();
+            if (type === 'stylesheet') {
+              return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
             }
             if (type === 'script') {
               const u = request.url();
-              if (u.includes('analytics') || u.includes('adservice') ||
-                  u.includes('doubleclick') || u.includes('googlesyndication') ||
-                  u.includes('googletagmanager') || u.includes('recaptcha') ||
-                  u.includes('accounts.google') || u.includes('play.google')) {
-                return route.abort();
-              }
+              if (u.includes('gstatic.com/og/')) return route.abort();
+              if (u.includes('/xjs/_/js/') && u.includes('/d=0/')) return route.abort();
               if (u.includes('google.com') || u.includes('gstatic.com')) {
                 return route.continue();
               }
@@ -181,46 +207,41 @@ export async function searchGoogle({
             return route.abort();
           });
 
-          // Track bytes through proxy
-          page.on('response', async (response) => {
-            try {
-              const body = await response.body();
-              proxyBytesTotal += body.length;
-            } catch { /* aborted responses */ }
-          });
-
-          // WHY: Only add data-saving hints — fingerprint suite handles
-          // UA, Sec-Ch-Ua, and all other stealth headers automatically.
-          await page.setExtraHTTPHeaders(DATA_SAVING_HEADERS);
+          // WHY: CDP Network.loadingFinished.encodedDataLength gives actual
+          // compressed wire bytes (what the proxy meters), not decompressed
+          // body.length which overestimates by ~3-4x.
+          try {
+            const cdpMetrics = await page.context().newCDPSession(page);
+            await cdpMetrics.send('Network.enable');
+            cdpMetrics.on('Network.loadingFinished', (params) => {
+              proxyBytesTotal += params.encodedDataLength || 0;
+            });
+          } catch { /* CDP not available in test mocks */ }
         },
       ],
-      requestHandler: async ({ page, session }) => {
-        // Consent popup handling
-        try {
-          const consentBtn = await page.waitForSelector(
-            'button[aria-label="Accept all"], #L2AGLb, button:has-text("Accept all"), button:has-text("Reject all")',
-            { timeout: 2_000 },
-          ).catch(() => null);
-          if (consentBtn) {
-            await consentBtn.click();
-            await page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => {});
-          }
-        } catch { /* best-effort */ }
+      requestHandler: async ({ page, session, closeCookieModals }) => {
+        // WHY: Crawlee's built-in consent handler covers many frameworks.
+        if (typeof closeCookieModals === 'function') {
+          try { await closeCookieModals(); } catch { /* best-effort */ }
+        }
 
         // CAPTCHA detection
         const earlyUrl = page.url();
         const earlyHtml = await page.content();
         if (isCaptchaPage(earlyUrl, earlyHtml)) {
-          session?.markBad?.();
+          session?.retire?.();
           logger?.warn?.('google_crawlee_captcha_in_handler', {
-            query: q, url: earlyUrl, session_burned: Boolean(session?.markBad),
+            query: q, url: earlyUrl, session_retired: Boolean(session?.retire),
           });
-          throw new Error('CAPTCHA detected — burning session, rotating proxy');
+          throw new Error('CAPTCHA detected — retiring session, rotating proxy');
         }
 
-        // Wait for results
+        // WHY: Wait until 3+ real results exist in DOM, not just the container.
         try {
-          await page.waitForSelector('#search, #rso, .g', { timeout: 15_000 });
+          await page.waitForFunction(() => {
+            const c = document.querySelector('#rso') || document.querySelector('#search');
+            return c && c.querySelectorAll('a[href] h3').length >= 3;
+          }, { timeout: 15_000, polling: 100 });
         } catch { /* may not appear on CAPTCHA pages */ }
 
         // Render delay only when screenshotting
@@ -234,14 +255,15 @@ export async function searchGoogle({
         pageUrl = page.url();
         pageHtml = await page.content();
 
-        // Debug: save HTML for parser development
+        // WHY: Page.stopLoading cancels in-flight requests immediately
+        // (unlike setOffline which lets already-started requests complete).
+        // Belt-and-suspenders: also go offline to catch setTimeout callbacks.
         try {
-          const { writeFile: _wf, mkdir: _md } = await import('node:fs/promises');
-          const { join: _join } = await import('node:path');
-          const debugDir = _join(process.cwd(), '.specfactory_tmp', 'crawlee_debug');
-          await _md(debugDir, { recursive: true });
-          await _wf(_join(debugDir, `serp-${Date.now()}.html`), pageHtml);
-        } catch { /* debug only */ }
+          const cdp = await page.context().newCDPSession(page);
+          await cdp.send('Page.stopLoading');
+          await cdp.detach();
+          await page.context().setOffline(true);
+        } catch { /* best-effort — page may already be closing */ }
 
         // Screenshot capture
         if (screenshotsEnabled) {

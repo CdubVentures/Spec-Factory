@@ -233,37 +233,46 @@ export async function searchSearxng({
 }
 
 async function attemptSearch({ searxBase, engines, query, limit, config, logger, requestThrottler }) {
-  try {
-    const rows = await searchSearxng({
-      baseUrl: searxBase,
-      query,
-      limit,
-      timeoutMs: config.searxngTimeoutMs,
-      minQueryIntervalMs: config.searxngMinQueryIntervalMs,
-      engines,
-      provider: engines,
-      logger,
-      requestThrottler
-    });
-    const cleaned = filterGarbageEngineResults(rows, query);
-    if (cleaned.length < rows.length) {
-      logger?.warn?.('search_engine_garbage_filtered', {
+  const maxRetries = Math.max(0, Number(config.searchMaxRetries ?? 0));
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const rows = await searchSearxng({
+        baseUrl: searxBase,
         query,
+        limit,
+        timeoutMs: config.searxngTimeoutMs,
+        minQueryIntervalMs: config.searxngMinQueryIntervalMs,
         engines,
-        original_count: rows.length,
-        filtered_count: cleaned.length,
-        dropped: rows.length - cleaned.length,
+        provider: engines,
+        logger,
+        requestThrottler
       });
+      const cleaned = filterGarbageEngineResults(rows, query);
+      if (cleaned.length < rows.length) {
+        logger?.warn?.('search_engine_garbage_filtered', {
+          query,
+          engines,
+          original_count: rows.length,
+          filtered_count: cleaned.length,
+          dropped: rows.length - cleaned.length,
+        });
+      }
+      const deduped = dedupeResults(cleaned);
+      if (deduped.length > 0 || attempt === maxRetries) return deduped;
+      logger?.info?.('searxng_retry', { query, engines, attempt: attempt + 1, maxRetries, reason: 'zero_results' });
+    } catch (error) {
+      if (attempt === maxRetries) {
+        logger?.warn?.('search_provider_failed', {
+          provider: engines,
+          query,
+          message: error.message
+        });
+        return [];
+      }
+      logger?.info?.('searxng_retry', { query, engines, attempt: attempt + 1, maxRetries, reason: error.message });
     }
-    return dedupeResults(cleaned);
-  } catch (error) {
-    logger?.warn?.('search_provider_failed', {
-      provider: engines,
-      query,
-      message: error.message
-    });
-    return [];
   }
+  return [];
 }
 
 // WHY: Parses the googleSearchProxyUrlsJson setting into a string array.
@@ -292,7 +301,7 @@ async function attemptGoogleCrawlee({ query, limit, config, logger, requestThrot
       timeoutMs: config.googleSearchTimeoutMs,
       proxyUrls: parseProxyUrlList(config.googleSearchProxyUrlsJson),
       minQueryIntervalMs: config.googleSearchMinQueryIntervalMs,
-      maxRetries: config.googleSearchMaxRetries,
+      maxRetries: config.searchMaxRetries ?? config.googleSearchMaxRetries,
       screenshotsEnabled: config.googleSearchScreenshotsEnabled,
       logger,
       requestThrottler,
@@ -315,6 +324,30 @@ async function attemptGoogleCrawlee({ query, limit, config, logger, requestThrot
     return googleResults;
   } catch (error) {
     logger?.warn?.('google_crawlee_search_failed', { query, message: error.message, stack: String(error.stack || '').slice(0, 300) });
+    return [];
+  }
+}
+
+// WHY: Serper.dev API — real Google results as structured JSON.
+// No browser, no proxy, no CAPTCHA. Used exclusively when enabled.
+async function attemptSerperSearch({ query, limit, config, logger, requestThrottler, _searchSerperFn }) {
+  try {
+    const searchFn = _searchSerperFn || (await import('./searchSerper.js')).searchSerper;
+    const result = await searchFn({
+      query,
+      apiKey: config.serperApiKey,
+      limit: config.serperResultCount || limit,
+      logger,
+      requestThrottler,
+    });
+    const serperResults = result?.results || [];
+    if (serperResults.length === 0) {
+      logger?.warn?.('serper_zero_results', { query });
+    }
+    logger?.info?.('serper_search_bandwidth', { query, proxyKB: 0, mode: 'api' });
+    return serperResults;
+  } catch (error) {
+    logger?.warn?.('serper_search_failed', { query, message: error.message });
     return [];
   }
 }
@@ -344,10 +377,18 @@ export async function runSearchProviders({
   logger,
   requestThrottler,
   _searchGoogleFn,
+  _searchSerperFn,
   screenshotSink,
 }) {
+  // WHY: Serper mode is exclusive — when enabled, skip all Crawlee/SearXNG paths.
+  const serperActive = Boolean(config.serperApiKey);
+  if (serperActive) {
+    const results = await attemptSerperSearch({ query, limit, config, logger, requestThrottler, _searchSerperFn });
+    return { results: dedupeResults(results), usedFallback: false, provider: 'serper' };
+  }
+
   const engines = normalizeSearchEngines(config.searchEngines ?? config.searchProvider);
-  if (!engines) return [];
+  if (!engines) return { results: [], usedFallback: false };
 
   const engineList = engines.split(',');
   const { google, searxng } = splitEnginesByTransport(engineList);
@@ -356,15 +397,15 @@ export async function runSearchProviders({
   // Need at least one viable path: google engines OR (searxng engines + searxng base)
   const hasGooglePath = google.length > 0;
   const hasSearxngPath = searxng.length > 0 && Boolean(searxBase);
-  if (!hasGooglePath && !hasSearxngPath) return [];
+  if (!hasGooglePath && !hasSearxngPath) return { results: [], usedFallback: false };
 
   // Primary attempt
   const primaryResults = await dispatchEngines({ engineList, searxBase, query, limit, config, logger, requestThrottler, _searchGoogleFn, screenshotSink });
-  if (primaryResults.length > 0) return primaryResults;
+  if (primaryResults.length > 0) return { results: primaryResults, usedFallback: false };
 
   // Fallback attempt — only if primary returned nothing usable
   const fallbackEngines = normalizeSearchEngines(config.searchEnginesFallback);
-  if (!fallbackEngines) return [];
+  if (!fallbackEngines) return { results: [], usedFallback: false };
 
   logger?.info?.('search_fallback_triggered', {
     query,
@@ -373,10 +414,13 @@ export async function runSearchProviders({
   });
 
   const fallbackList = fallbackEngines.split(',');
-  return dispatchEngines({ engineList: fallbackList, searxBase, query, limit, config, logger, requestThrottler, _searchGoogleFn, screenshotSink });
+  const fallbackResults = await dispatchEngines({ engineList: fallbackList, searxBase, query, limit, config, logger, requestThrottler, _searchGoogleFn, screenshotSink });
+  return { results: fallbackResults, usedFallback: fallbackResults.length > 0 };
 }
 
 export function searchEngineAvailability(config) {
+  const serperReady = Boolean(config.serperApiKey);
+
   // Support both new searchEngines and legacy searchProvider
   const engines = normalizeSearchEngines(config.searchEngines ?? config.searchProvider);
   const engineList = engines ? engines.split(',') : [];
@@ -385,28 +429,28 @@ export function searchEngineAvailability(config) {
   const searxngReady = Boolean(searxngBaseUrl(config));
   const { google, searxng } = splitEnginesByTransport(engineList);
 
-  // WHY: Google goes through Crawlee — it's ready if configured, independent of SearXNG.
   const googleReady = google.length > 0;
-  // WHY: SearXNG engines need both SearXNG running AND engines configured.
   const searxngEnginesReady = searxngReady && searxng.length > 0;
-  // WHY: Internet is ready if we have ANY viable search path.
-  const internetReady = googleReady || searxngEnginesReady;
-  const activeProviders = [
-    ...(googleReady ? google : []),
-    ...(searxngEnginesReady ? searxng : []),
-  ];
+  // WHY: Serper OR Google OR SearXNG = internet ready.
+  const internetReady = serperReady || googleReady || searxngEnginesReady;
+  const activeProviders = serperReady
+    ? ['serper']
+    : [
+        ...(googleReady ? google : []),
+        ...(searxngEnginesReady ? searxng : []),
+      ];
 
   return {
-    // WHY: Keep legacy field names for downstream log compat
-    provider: engines || 'none',
-    engines: engineList,
+    provider: serperReady ? 'serper' : (engines || 'none'),
+    engines: serperReady ? ['serper'] : engineList,
+    serper_ready: serperReady,
     bing_ready: searxngReady && engineList.includes('bing'),
-    google_ready: googleReady,
-    google_search_ready: googleReady,
+    google_ready: serperReady || googleReady,
+    google_search_ready: serperReady || googleReady,
     searxng_ready: searxngReady,
     active_providers: activeProviders,
-    fallback_engines: fallbackEngineList,
-    fallback_ready: (searxngReady && fallbackEngineList.some(e => e !== 'google')) || fallbackEngineList.includes('google'),
+    fallback_engines: serperReady ? [] : fallbackEngineList,
+    fallback_ready: serperReady ? false : ((searxngReady && fallbackEngineList.some(e => e !== 'google')) || fallbackEngineList.includes('google')),
     fallback_reason: null,
     internet_ready: internetReady,
   };

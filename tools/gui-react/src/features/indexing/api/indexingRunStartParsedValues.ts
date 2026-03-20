@@ -39,7 +39,6 @@ export function deriveIndexingRunStartParsedValues({
     parsedRetryBudget: parseRuntimeInt(readValue('dynamicFetchRetryBudget'), runtimeSettingsBaseline.dynamicFetchRetryBudget),
     parsedRetryBackoff: parseRuntimeInt(readValue('dynamicFetchRetryBackoffMs'), runtimeSettingsBaseline.dynamicFetchRetryBackoffMs),
     parsedFetchSchedulerMaxRetries: parseRuntimeInt(readValue('fetchSchedulerMaxRetries'), runtimeSettingsBaseline.fetchSchedulerMaxRetries),
-    parsedFetchSchedulerFallbackWaitMs: parseRuntimeInt(readValue('fetchSchedulerFallbackWaitMs'), runtimeSettingsBaseline.fetchSchedulerFallbackWaitMs),
     parsedPageGotoTimeoutMs: parseRuntimeInt(readValue('pageGotoTimeoutMs'), runtimeSettingsBaseline.pageGotoTimeoutMs),
     parsedPageNetworkIdleTimeoutMs: parseRuntimeInt(readValue('pageNetworkIdleTimeoutMs'), runtimeSettingsBaseline.pageNetworkIdleTimeoutMs),
     parsedPostLoadWaitMs: parseRuntimeInt(readValue('postLoadWaitMs'), runtimeSettingsBaseline.postLoadWaitMs),

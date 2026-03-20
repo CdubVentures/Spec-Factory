@@ -20,7 +20,7 @@ import {
   resolveDataChangeScopedCategories,
   recordDataChangeInvalidationFlush,
   createDataChangeInvalidationScheduler,
-} from '../../utils/data-change/index.js';
+} from '../../features/data-change/index.js';
 import { coerceCategories, resolveActiveCategory } from '../../utils/categoryStoreSync.js';
 import { usePersistedToggle } from '../../stores/collapseStore';
 import { usePersistedTab } from '../../stores/tabStore';

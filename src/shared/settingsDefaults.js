@@ -1,7 +1,11 @@
 // Canonical shared settings defaults.
 // Tune runtime/convergence/UI defaults here.
 
-export const SEARXNG_AVAILABLE_ENGINES = Object.freeze(['google', 'bing', 'startpage', 'duckduckgo', 'brave']);
+// WHY: Import from registry SSOT to eliminate duplicate engine list.
+// Registry uses app-internal names (google-proxy); the SearXNG translation
+// layer in searchProviders.js handles mapping to SearXNG-native names (startpage).
+import { SEARXNG_AVAILABLE_ENGINES } from './settingsRegistry.js';
+export { SEARXNG_AVAILABLE_ENGINES };
 
 export const SETTINGS_DEFAULTS = Object.freeze({
   convergence: Object.freeze({
@@ -9,8 +13,11 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   }),
   // Canonical runtime settings. GUI aliases retired — use canonical names only.
   runtime: Object.freeze({
-    searchEngines: 'startpage',
+    searchEngines: 'google',
     searchEnginesFallback: 'bing',
+    searchMaxRetries: 3,
+    serperApiKey: '',
+    serperResultCount: 20,
     searxngBaseUrl: 'http://127.0.0.1:8080',
     llmPlanApiKey: '',
     llmModelPlan: 'gemini-2.5-flash',
@@ -22,7 +29,6 @@ export const SETTINGS_DEFAULTS = Object.freeze({
     llmReasoningBudget: 32768,
     llmMonthlyBudgetUsd: 300,
     llmPerProductBudgetUsd: 0.35,
-    llmDisableBudgetGuards: false,
     llmMaxCallsPerRound: 5,
     llmMaxOutputTokens: 1400,
     llmVerifySampleRate: 25,
@@ -303,7 +309,6 @@ export const SETTINGS_DEFAULTS = Object.freeze({
     capturePageScreenshotMaxBytes: 5000000,
     capturePageScreenshotSelectors: 'table,[data-spec-table],.specs-table,.spec-table,.specifications',
     runtimeControlFile: '_runtime/control/runtime_overrides.json',
-    articleExtractorV2Enabled: true,
     articleExtractorMinChars: 700,
     articleExtractorMinScore: 45,
     articleExtractorMaxChars: 24000,
@@ -314,12 +319,6 @@ export const SETTINGS_DEFAULTS = Object.freeze({
     staticDomTargetMatchThreshold: 0.55,
     staticDomMaxEvidenceSnippets: 120,
     domSnippetMaxChars: 3600,
-    structuredMetadataExtructEnabled: false,
-    structuredMetadataExtructUrl: '',
-    structuredMetadataExtructTimeoutMs: 10000,
-    structuredMetadataExtructMaxItemsPerSurface: 50,
-    structuredMetadataExtructCacheEnabled: true,
-    structuredMetadataExtructCacheLimit: 512,
     categoryAuthorityEnabled: true,
     categoryAuthorityRoot: 'category_authority',
     helperFilesRoot: 'category_authority',
@@ -366,9 +365,7 @@ export const SETTINGS_DEFAULTS = Object.freeze({
     endpointNetworkScanLimit: 1800,
     dynamicCrawleeEnabled: true,
     crawleeHeadless: true,
-    fetchSchedulerEnabled: true,
     fetchSchedulerMaxRetries: 1,
-    fetchSchedulerFallbackWaitMs: 60000,
     fetchSchedulerInternalsMapJson: '{"defaultDelayMs":300,"defaultConcurrency":3,"defaultMaxRetries":1,"retryWaitMs":15000}',
     fetchBudgetMs: 45000,
     preferHttpFetcher: true,
@@ -376,7 +373,6 @@ export const SETTINGS_DEFAULTS = Object.freeze({
     pageNetworkIdleTimeoutMs: 2000,
     postLoadWaitMs: 200,
     frontierDbPath: '_intel/frontier/frontier.json',
-    frontierEnableSqlite: true,
     frontierStripTrackingParams: true,
     frontierQueryCooldownSeconds: 21600,
     frontierCooldown404Seconds: 259200,

@@ -67,7 +67,7 @@ export interface LlmPhaseOverride {
   baseModel?: string;
   reasoningModel?: string;
   useReasoning?: boolean;
-  maxOutputTokens?: number;
+  maxOutputTokens?: number | null;
 }
 
 export interface LlmProviderRegistryEntry {
@@ -84,8 +84,8 @@ export interface LlmProviderRegistryEntry {
     costInputPer1M?: number;
     costOutputPer1M?: number;
     costCachedPer1M?: number;
-    maxContextTokens?: number;
-    maxOutputTokens?: number;
+    maxContextTokens?: number | null;
+    maxOutputTokens?: number | null;
   }>;
 }
 
@@ -95,7 +95,7 @@ export interface LlmPolicy {
   apiKeys: LlmPolicyApiKeys;
   tokens: LlmPolicyTokens;
   reasoning: LlmPolicyReasoning;
-  phaseOverrides: Record<string, LlmPhaseOverride>;
+  phaseOverrides: Record<string, Partial<LlmPhaseOverride>>;
   providerRegistry: LlmProviderRegistryEntry[];
   extraction: LlmPolicyExtraction;
   budget: LlmPolicyBudget;

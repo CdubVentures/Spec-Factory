@@ -199,7 +199,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
   // --- Dead knob documentation ---
 
   it('documents known dead/legacy knobs exist in registry (pre-retirement baseline)', () => {
-    const knownDead = ['fetchSchedulerFallbackWaitMs', 'runtimeTraceLlmRing', 'helperFilesRoot'];
+    const knownDead = ['runtimeTraceLlmRing', 'helperFilesRoot'];
     for (const key of knownDead) {
       const entry = RUNTIME_SETTINGS_REGISTRY.find(e => e.key === key);
       ok(entry, `dead knob ${key} should exist in registry before retirement`);
