@@ -116,6 +116,7 @@ export function initIndexLabDataBuilders({
   processStatus = null,
   runDataStorageState = null,
   getIndexLabRoot = null,
+  getRunDataArchiveStorage = null,
 }) {
   _resolveIndexLabRoot = typeof getIndexLabRoot === 'function'
     ? getIndexLabRoot
@@ -127,7 +128,7 @@ export function initIndexLabDataBuilders({
   _getSpecDbReady = getSpecDbReady;
   _isProcessRunning = isProcessRunning;
   _processStatus = processStatus;
-  initArchivedRunLocationHelpers({ outputRoot, runDataArchiveStorage, runDataStorageState });
+  initArchivedRunLocationHelpers({ outputRoot, runDataArchiveStorage, runDataStorageState, getRunDataArchiveStorage });
   _phaseReaders = createPhaseDataReaders({
     resolveRunDir: resolveIndexLabRunDirectory,
     readMeta: readIndexLabRunMeta,

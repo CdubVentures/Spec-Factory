@@ -91,7 +91,6 @@ test('runDiscoverySeedPlan builds discovery hints, applies runtime search-disabl
     roundContext: {
       missing_required_fields: ['weight_g'],
       missing_critical_fields: ['battery_life_hours'],
-      bundle_hints: [{ bundle_id: 'core_spec_sheet', fields: ['weight_g'] }],
     },
     requiredFields: ['weight_g'],
     llmContext: { marker: 'llm' },

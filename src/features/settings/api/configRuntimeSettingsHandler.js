@@ -48,13 +48,16 @@ export function createRuntimeSettingsHandler({
 
     // GET /api/v1/runtime-settings
     if (method === 'GET') {
-      return jsonRes(res, 200, buildRuntimeSettingsGetSnapshot(config, toInt));
+      const snapshot = buildRuntimeSettingsGetSnapshot(config, toInt);
+      console.log('[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency=', snapshot.fetchConcurrency);
+      return jsonRes(res, 200, snapshot);
     }
 
     // PUT or POST /api/v1/runtime-settings
     // WHY: POST accepted because navigator.sendBeacon (autosave on hard reload) always sends POST.
     if (method === 'PUT' || method === 'POST') {
       const body = await readJsonBody(req).catch(() => ({}));
+      console.log('[SETTINGS-DEBUG]', method, '/runtime-settings keys=', Object.keys(body || {}).length, 'fetchConcurrency=', (body || {}).fetchConcurrency);
       const STRING_ENUM_MAP = RUNTIME_SETTINGS_ROUTE_PUT.stringEnumMap;
       const STRING_FREE_MAP = RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap;
       const DYNAMIC_FETCH_POLICY_MAP_JSON_KEY = RUNTIME_SETTINGS_ROUTE_PUT.dynamicFetchPolicyMapJsonKey;

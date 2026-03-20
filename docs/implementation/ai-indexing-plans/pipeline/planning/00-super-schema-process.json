@@ -78,10 +78,12 @@
       "name": "Search Planner",
       "owner": "src/features/indexing/discovery/stages/searchPlanner.js",
       "does": [
-        "adapt Schema 4 handoff through resolveSchema4ExecutionPlan()",
-        "derive archetype/frontier context from Search Profile output",
-        "call planUberQueries() with reason search_planner",
-        "emit search_plan_generated when the stage has query output"
+        "receive tier-tagged query_rows from Search Profile",
+        "call enhanceQueryRows() for tier-aware LLM query enhancement",
+        "tier metadata is passthrough — only query strings change",
+        "Tier 3 rows carry progressive enrichment context (aliases, domain hints, content types, retry history)",
+        "fallback: rows returned unchanged when no API key, no model, or LLM fails twice",
+        "emit search_plan_generated when LLM enhancement succeeds"
       ]
     },
     {
@@ -89,12 +91,13 @@
       "name": "Query Journey",
       "owner": "src/features/indexing/discovery/stages/queryJourney.js",
       "does": [
-        "merge deterministic base templates, deterministic targeted rows, guarded Schema 4 rows, and Search Planner uber queries",
-        "dedupe and rank the merged rows",
+        "receive enhanced rows from Search Planner (LLM-enhanced or deterministic fallback — treated identically)",
+        "dedupe, rank by field priority, cap to searchProfileQueryCap",
         "apply identity guard to the ranked set",
         "guard host-plan rows separately and append unique survivors",
+        "build llm_queries from rows where hint_source ends with _llm",
         "write the planned search_profile artifact",
-        "emit search_profile_generated and query_journey_completed"
+        "emit query_journey_completed"
       ]
     },
     {

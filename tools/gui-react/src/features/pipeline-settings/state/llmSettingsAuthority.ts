@@ -138,10 +138,14 @@ export function useLlmSettingsAuthority({
     enabled: enabled && autoQueryEnabled,
   });
 
+  const seedFingerprintRef = useRef<(fp: string) => void>(() => {});
+
   const resetMutation = useMutation({
     mutationFn: () => api.post<LlmRouteResponse>(`/llm-settings/${category}/routes/reset`),
     onSuccess: (response) => {
       queryClient.setQueryData(queryKey, response);
+      const resetRows = Array.isArray(response.rows) ? response.rows : [];
+      seedFingerprintRef.current(autoSaveFingerprint(resetRows));
       onResetSuccess?.(response);
     },
   });
@@ -162,6 +166,8 @@ export function useLlmSettingsAuthority({
       getUnloadBody,
       unloadUrl: `/api/v1/llm-settings/${category}/routes`,
     });
+
+  seedFingerprintRef.current = seedFingerprint;
 
   const handleAutoSaveError = (error: Error | unknown) => {
     clearAttemptFingerprint();

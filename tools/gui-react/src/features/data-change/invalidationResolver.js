@@ -117,6 +117,7 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   ]),
   storage: Object.freeze([
     ['storage-settings'],
+    ['indexlab', 'runs'],
   ]),
   'source-strategy': Object.freeze([
     ['source-strategy', CATEGORY_TOKEN],

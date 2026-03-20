@@ -180,6 +180,14 @@ export async function executeSearchQueries({
     const requiresRequiredCoverage = requiredOnlySearch || (missingRequiredFields || []).length > 0;
     internalSatisfied = requiresRequiredCoverage && internalUrlCount >= internalMinResults;
 
+    logger?.info?.('internal_search_satisfaction', {
+      internal_url_count: internalUrlCount,
+      internal_min_results: internalMinResults,
+      requires_required_coverage: requiresRequiredCoverage,
+      missing_required_field_count: (missingRequiredFields || []).length,
+      satisfied: internalSatisfied,
+    });
+
     if (requiresRequiredCoverage) {
       externalSearchReason = internalSatisfied
         ? 'internal_satisfied_skip_external'

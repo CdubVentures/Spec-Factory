@@ -36,9 +36,15 @@ NeedSet packages data for three downstream query tiers:
 - Skip logic: `group_search_worthy` boolean based on coverage ratio, unresolved count, and `group_query_count` (broad group queries, NOT individual key retries)
 - NeedSet emits: `group_description_short`, `group_description_long`, `coverage_ratio`, `group_fingerprint_coarse`/`fine`
 
-### Tier 3 — Individual Key Searches
-- `{brand} {model} {variant} {key} {aliases}` — progressively enriched each round
-- NeedSet emits: per-field `normalized_key`, `all_aliases`, `alias_shards`, `domains_tried_for_key`, `content_types_tried_for_key`, `query_modes_tried_for_key`
+### Tier 3 — Individual Key Searches (progressive enrichment)
+- Progressively enriched per-key based on `repeat_count` (how many times that specific key has been searched, not which round):
+  - `repeat_count=0` (3a): `{brand} {model} {variant} {key}` — bare query
+  - `repeat_count=1` (3b): `+ {aliases}` — aliases carried forward on all subsequent passes
+  - `repeat_count=2` (3c): `+ {untried domain hint}` — prefers domains not in `domains_tried_for_key`
+  - `repeat_count=3+` (3d): `+ {untried content type}` — prefers types not in `content_types_tried_for_key`
+- Each pass is cumulative — 3c includes aliases from 3b, 3d includes both aliases and domain hints
+- NeedSet emits enriched `normalized_key_queue` objects per group with: `normalized_key`, `repeat_count`, `all_aliases`, `alias_shards`, `domain_hints`, `preferred_content_types`, `domains_tried_for_key`, `content_types_tried_for_key`
+- `repeat_count` is tracked via `query_count` in `previousFieldHistories`, incremented by `buildFieldHistories()` at finalization based on `target_fields` attribution
 
 NeedSet does NOT write queries. Its job is to say "these groups are easiest/most productive — focus on them now" and pass enriched descriptions and field packs upstream. When those groups are checked off, it surfaces the next batch. Search Profile and Search Planner do the actual query construction.
 

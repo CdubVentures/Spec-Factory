@@ -4,6 +4,11 @@ import { RUNTIME_SETTING_DEFAULTS } from '../../../stores/settingsManifest';
 
 export type RuntimeSettings = Record<string, string | number | boolean>;
 
+export interface RuntimeEditorSaveStatus {
+  kind: 'idle' | 'ok' | 'partial' | 'error';
+  message: string;
+}
+
 export const RUNTIME_SETTINGS_QUERY_KEY = ['runtime-settings'] as const;
 
 type RuntimeSettingsDefaultsMap = typeof RUNTIME_SETTING_DEFAULTS;

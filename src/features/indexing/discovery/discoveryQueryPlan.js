@@ -32,18 +32,7 @@ import {
 // Manufacturer URL plan generation
 // ---------------------------------------------------------------------------
 
-let _manufacturerPlanUrlCallCount = 0;
-
-export function getManufacturerPlanUrlCallCount() {
-  return _manufacturerPlanUrlCallCount;
-}
-
-export function resetManufacturerPlanUrlCallCount() {
-  _manufacturerPlanUrlCallCount = 0;
-}
-
 export function buildManufacturerPlanUrls({ host, variables, queries, maxQueries = 3, deterministicAliasCap = 6, logger = null, reason = '' }) {
-  _manufacturerPlanUrlCallCount += 1;
   const urls = [];
 
   // Feature flag: DISABLE_URL_GUESS_FALLBACK (default: false)
@@ -108,7 +97,7 @@ export function buildManufacturerPlanUrls({ host, variables, queries, maxQueries
     reason: reason || 'plan_only',
     host,
     url_count: result.length,
-    call_count: _manufacturerPlanUrlCallCount
+    host
   });
   return result;
 }
@@ -243,6 +232,16 @@ export function dedupeQueryRows(rows = [], limit = 24) {
       if (!existing.hint_source) {
         existing.hint_source = String(row?.hint_source || '').trim();
       }
+      // WHY: Tier metadata must survive dedup merge so frontier records correct tier.
+      if (!existing.tier) {
+        existing.tier = String(row?.tier || '').trim() || undefined;
+      }
+      if (!existing.group_key) {
+        existing.group_key = String(row?.group_key || '').trim() || undefined;
+      }
+      if (!existing.normalized_key) {
+        existing.normalized_key = String(row?.normalized_key || '').trim() || undefined;
+      }
       rejectLog.push({
         query,
         source,
@@ -268,7 +267,12 @@ export function dedupeQueryRows(rows = [], limit = 24) {
       target_fields: uniqueTokens(toArray(row?.target_fields), 16),
       doc_hint: String(row?.doc_hint || '').trim(),
       domain_hint: String(row?.domain_hint || '').trim().toLowerCase(),
-      hint_source: String(row?.hint_source || '').trim()
+      hint_source: String(row?.hint_source || '').trim(),
+      // WHY: Tier metadata must survive dedup for frontier recording and analytics.
+      tier: String(row?.tier || '').trim() || undefined,
+      group_key: String(row?.group_key || '').trim() || undefined,
+      normalized_key: String(row?.normalized_key || '').trim() || undefined,
+      original_query: row?.original_query || undefined,
     });
     seen.set(normalized, out.length - 1);
   }

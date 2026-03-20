@@ -3,7 +3,6 @@
 // Builds triage metadata map so planner.enqueue() can look up triage labels.
 
 import { canonicalizeQueueUrl } from '../../../../planner/sourcePlannerUrlUtils.js';
-import { configInt } from '../../../../shared/settingsAccessor.js';
 
 /**
  * @param {object} ctx
@@ -23,6 +22,10 @@ export function runDomainClassifier({
     try {
       canonical = canonicalizeQueueUrl(new URL(candidate.url));
     } catch {
+      logger?.warn?.('domain_classifier_url_skip', {
+        url: String(candidate.url || '').slice(0, 200),
+        reason: 'malformed_url',
+      });
       continue;
     }
     triageMetaMap.set(canonical, {
@@ -54,35 +57,24 @@ export function runDomainClassifier({
     });
   }
 
-  for (const url of discoveryResult.approvedUrls || []) {
+  // WHY: Single enqueue path — triage metadata drives queue routing.
+  // No caps, no approved/candidate split. SERP selector already decided what survives.
+  const selectedUrls = discoveryResult.selectedUrls || [];
+  for (const url of selectedUrls) {
     const meta = triageMetaMap.size > 0 ? _lookupTriageMeta(url, triageMetaMap) : null;
-    planner.enqueue(url, 'discovery_approved', { forceApproved: true, forceBrandBypass: false, triageMeta: meta });
-  }
-  let seededCount = 0;
-  if (discoveryResult.enabled) {
-    const serpCap = configInt(config, 'serpSelectorUrlCap');
-    const dcCap = configInt(config, 'domainClassifierUrlCap');
-    // WHY: domain classifier count must never exceed serp selector count.
-    const urlCount = Math.min(dcCap, serpCap);
-    if (urlCount > 0) {
-      const capped = (discoveryResult.candidateUrls || []).slice(0, urlCount);
-      planner.seedCandidates(capped, { triageMetaMap });
-      seededCount = capped.length;
-    }
+    planner.enqueue(url, 'discovery', { triageMeta: meta });
   }
 
   if (planner.enqueueCounters) {
     const counters = planner.enqueueCounters;
     logger?.info?.('discovery_enqueue_summary', {
       ...counters,
-      input_approved_count: (discoveryResult.approvedUrls || []).length,
-      input_candidate_count: (discoveryResult.candidateUrls || []).length,
+      input_selected_count: selectedUrls.length,
     });
   }
 
   return {
-    enqueuedCount: (discoveryResult.approvedUrls || []).length,
-    seededCount,
+    enqueuedCount: selectedUrls.length,
   };
 }
 

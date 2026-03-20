@@ -92,12 +92,11 @@ export function buildSerpSelectorInput({
   categoryConfig,
   discoveryCap,
   serpSelectorUrlCap,
-  domainClassifierUrlCap,
 }) {
   const officialDomain = normalizeHost(String(brandResolution?.officialDomain || '').trim());
   const supportDomain = normalizeHost(String(brandResolution?.supportDomain || '').trim());
 
-  // --- Priority-based candidate capping (unchanged) ---
+  // --- Priority-based candidate capping ---
   const isPinned = (row) => {
     const host = normalizeHost(String(row?.host || ''));
     if (officialDomain && host === officialDomain) return true;
@@ -116,9 +115,9 @@ export function buildSerpSelectorInput({
     else normalRows.push(row);
   }
 
-  const effectiveCap = (typeof domainClassifierUrlCap === 'number' && domainClassifierUrlCap > 0)
-    ? domainClassifierUrlCap
-    : SERP_SELECTOR_MAX_CANDIDATES;
+  // WHY: SERP_SELECTOR_MAX_CANDIDATES is the fixed input cap for how many
+  // candidates to send to the LLM. serpSelectorUrlCap controls max_keep.
+  const effectiveCap = SERP_SELECTOR_MAX_CANDIDATES;
 
   const priorityCapped = priorityRows.slice(0, SERP_SELECTOR_ABSOLUTE_MAX_CANDIDATES);
   const normalSlots = Math.max(0, effectiveCap - priorityCapped.length);

@@ -48,8 +48,6 @@ export async function processDiscoveryResults({
   queries, searchProfilePlanned, searchProfileKeys, providerState, queryConcurrency, discoveryCap,
   // Host plan
   effectiveHostPlan,
-  // NeedSet pressure signals for lane-quota selection
-  focusGroups = [],
   // DI seam for SERP selector (testing)
   _serpSelectorCallFn,
 }) {
@@ -272,7 +270,6 @@ export async function processDiscoveryResults({
     categoryConfig,
     discoveryCap,
     serpSelectorUrlCap: configInt(config, 'serpSelectorUrlCap'),
-    domainClassifierUrlCap: configInt(config, 'domainClassifierUrlCap'),
   });
   const sentCandidateIds = [...candidateMap.keys()];
 
@@ -374,8 +371,7 @@ export async function processDiscoveryResults({
     }),
   });
 
-  const approvedOnly = discovered.filter((item) => item.approved_domain || item.approvedDomain);
-  const candidateOnly = discovered.filter((item) => !(item.approved_domain || item.approvedDomain));
+  const selectedUrls = discovered.map((item) => item.url);
   const queryAttemptStats = buildQueryAttemptStats(searchAttempts);
   const attemptMap = new Map(queryAttemptStats.map((row) => [row.query, row]));
   const queryRowsEnriched = toArray(searchProfilePlanned.query_rows).map((row) => {
@@ -524,6 +520,8 @@ export async function processDiscoveryResults({
     query_count: serpQueryRows.length,
     candidates_checked: candidateTraceRows.length,
     urls_triaged: candidateRows.length,
+    // WHY: candidates_sent is how many the LLM saw; urls_selected is how many it kept.
+    candidates_sent: selectorInput.candidates.length,
     urls_selected: selectedUrlSet.size,
     urls_rejected: candidateTraceRows.filter((row) => row.decision === 'rejected').length,
     dedupe_input: dedupeStats.total_input,
@@ -532,9 +530,6 @@ export async function processDiscoveryResults({
     // Additive Stage 06 fields
     hard_drop_count: hardDrops.length,
     soft_exclude_count: notSelected.length,
-    lane_stats: { _compatibility: true, lanes: [] },
-    lane_quotas: { _compatibility: true },
-    lane_boost_reasons: [],
     audit_trail: auditTrail,
     queries: serpQueryRows
   };
@@ -546,8 +541,7 @@ export async function processDiscoveryResults({
     query_rows: queryRowsEnriched,
     query_stats: queryAttemptStats,
     discovered_count: discovered.length,
-    approved_count: approvedOnly.length,
-    candidate_count: candidateOnly.length,
+    selected_count: selectedUrls.length,
     llm_query_planning: true,
     llm_query_model: resolvePhaseModel(config, 'searchPlanner') || String(config.llmModelPlan || '').trim(),
     llm_serp_selector: true,
@@ -589,8 +583,7 @@ export async function processDiscoveryResults({
     query_count: queries.length,
     query_reject_count: toArray(searchProfileFinal?.query_reject_log).length,
     discovered_count: discovered.length,
-    approved_count: approvedOnly.length,
-    candidate_count: candidateOnly.length,
+    selected_count: selectedUrls.length,
     queries,
     query_guard: searchProfileFinal.query_guard || null,
     query_reject_log: toArray(searchProfileFinal.query_reject_log).slice(0, 200),
@@ -611,8 +604,8 @@ export async function processDiscoveryResults({
     productId: job.productId,
     runId,
     generated_at: new Date().toISOString(),
-    candidate_count: candidateOnly.length,
-    candidates: candidateOnly
+    candidate_count: discovered.length,
+    candidates: discovered
   };
 
   await storage.writeObject(
@@ -631,8 +624,7 @@ export async function processDiscoveryResults({
     discoveryKey,
     candidatesKey,
     candidates: discovered,
-    approvedUrls: approvedOnly.map((item) => item.url),
-    candidateUrls: candidateOnly.map((item) => item.url),
+    selectedUrls,
     queries,
     llm_queries: llmQueries,
     search_profile: searchProfileFinal,

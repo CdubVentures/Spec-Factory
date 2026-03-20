@@ -361,33 +361,26 @@ describe('buildRoundConfig — round override characterization', () => {
     };
   }
 
-  it('round 0 applies fast profile caps', () => {
+  // WHY: Round-mode overrides (fast/thorough) were removed. Pipeline settings
+  // are now the single source of truth. These tests verify settings pass through.
+  it('round 0 passes user settings through unchanged', () => {
     const base = buildBaseConfig();
     const result = buildRoundConfig(base, { round: 0 });
 
-    // Fast profile overrides
-    strictEqual(result.preferHttpFetcher, true, 'round 0 forces HTTP fetcher');
-    strictEqual(result.autoScrollEnabled, false, 'round 0 disables auto scroll');
-    strictEqual(result.autoScrollPasses, 0, 'round 0 sets scroll passes to 0');
-    ok(result.maxRunSeconds <= 180, `round 0 should cap maxRunSeconds to 180, got ${result.maxRunSeconds}`);
-    ok(result.maxUrlsPerProduct <= 12, `round 0 should cap maxUrlsPerProduct to 12, got ${result.maxUrlsPerProduct}`);
-    ok(result.maxCandidateUrls <= 20, `round 0 should cap maxCandidateUrls to 20, got ${result.maxCandidateUrls}`);
-    strictEqual(result.discoveryEnabled, false, 'round 0 disables discovery');
-    strictEqual(result.fetchCandidateSources, true, 'fetch candidate sources is always enabled');
-    strictEqual(result.searchEngines, '', 'round 0 clears search engines');
+    // User settings pass through — no round-mode overrides
+    strictEqual(result.searchProfileQueryCap, 10, 'searchProfileQueryCap passes through');
+    strictEqual(result.maxRunSeconds, base.maxRunSeconds, 'maxRunSeconds passes through');
+    strictEqual(result.autoScrollEnabled, base.autoScrollEnabled, 'autoScrollEnabled passes through');
   });
 
-  it('round 2+ applies thorough profile floors', () => {
+  it('round 2+ passes user settings through unchanged', () => {
     const base = buildBaseConfig();
     const result = buildRoundConfig(base, { round: 2 });
 
-    strictEqual(result.autoScrollEnabled, true, 'round 2 enables auto scroll');
-    ok(result.autoScrollPasses >= 3, `round 2 should floor scroll passes to 3, got ${result.autoScrollPasses}`);
-    ok(result.pageGotoTimeoutMs >= 45000, `round 2 should floor pageGotoTimeoutMs to 45000, got ${result.pageGotoTimeoutMs}`);
-    ok(result.maxRunSeconds >= 3600, `round 2 should floor maxRunSeconds to 3600, got ${result.maxRunSeconds}`);
-    ok(result.maxUrlsPerProduct >= 220, `round 2 should floor maxUrlsPerProduct to 220, got ${result.maxUrlsPerProduct}`);
-    strictEqual(result.preferHttpFetcher, false, 'round 2 disables HTTP-only fetcher');
-    strictEqual(result.discoveryEnabled, true, 'round 2 enables discovery');
+    // User settings pass through — no round-mode overrides
+    strictEqual(result.searchProfileQueryCap, 10, 'searchProfileQueryCap passes through');
+    strictEqual(result.maxRunSeconds, base.maxRunSeconds, 'maxRunSeconds passes through');
+    strictEqual(result.autoScrollEnabled, base.autoScrollEnabled, 'autoScrollEnabled passes through');
   });
 
   it('round 1 applies intermediate values', () => {

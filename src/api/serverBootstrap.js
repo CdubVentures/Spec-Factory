@@ -37,7 +37,7 @@ export function bootstrapServer({ projectRoot }) {
   const env = createBootstrapEnvironment({ projectRoot });
   const {
     config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
-    storage, runDataStorageState, runDataArchiveStorage,
+    storage, runDataStorageState, runDataArchiveStorage, getRunDataArchiveStorage,
     resolveProjectPath, cleanVariant, catalogKey, markEnumSuggestionStatusBound,
   } = env;
 
@@ -91,7 +91,7 @@ export function bootstrapServer({ projectRoot }) {
     indexLabRoot: INDEXLAB_ROOT, outputRoot: OUTPUT_ROOT,
     storage, runDataArchiveStorage, config,
     getSpecDbReady, isProcessRunning, processStatus, runDataStorageState,
-    getIndexLabRoot,
+    getIndexLabRoot, getRunDataArchiveStorage,
   });
 
   // ── Phase 3: Domain runtimes (review + catalog) ──

@@ -1,7 +1,7 @@
 {
   "snapshotId": "test-run-id-000",
   "schemaVersion": "1.0",
-  "createdAt": 1774039529299,
+  "createdAt": 1774042844380,
   "source": "gui",
   "settings": {
     "articleExtractorDomainPolicyMapJson": "",
@@ -23,7 +23,6 @@
     "crawleeHeadless": false,
     "crawleeRequestHandlerTimeoutSecs": 1,
     "daemonConcurrency": 2,
-    "searchPlannerQueryCap": 42,
     "searchProfileQueryCap": 2,
     "discoveryQueryConcurrency": 2,
     "discoveryResultsPerQuery": 42,

@@ -14,10 +14,12 @@ export function createRuntimeOpsRouteContext(options = {}) {
   const {
     jsonRes, toInt, INDEXLAB_ROOT, OUTPUT_ROOT, config, storage,
     processStatus, getLastScreencastFrame, safeReadJson, safeJoin, path,
+    getIndexLabRoot,
   } = options;
 
   return {
     jsonRes, toInt, INDEXLAB_ROOT, OUTPUT_ROOT, config, storage,
+    getIndexLabRoot,
     readIndexLabRunEvents, readIndexLabRunSearchProfile, readIndexLabRunMeta,
     readIndexLabRunSourceIndexingPackets, resolveIndexLabRunDirectory,
     processStatus, getLastScreencastFrame, safeReadJson, safeJoin, path,

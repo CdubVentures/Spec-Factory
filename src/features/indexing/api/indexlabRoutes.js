@@ -12,6 +12,7 @@ export function registerIndexlabRoutes(ctx) {
     path,
     INDEXLAB_ROOT,
     processStatus,
+    getIndexLabRoot: _getIndexLabRoot,
     readIndexLabRunMeta,
     resolveIndexLabRunDirectory,
     readIndexLabRunEvents,
@@ -48,6 +49,10 @@ export function registerIndexlabRoutes(ctx) {
     aggregateCrossRunMetrics,
     aggregateHostHealth,
   } = ctx;
+
+  // WHY: Dynamic resolution so run discovery tracks live storage settings.
+  const currentIndexLabRoot = () =>
+    (typeof _getIndexLabRoot === 'function' ? _getIndexLabRoot() : '') || INDEXLAB_ROOT;
 
   function isRunStillActive(runId = '') {
     if (typeof processStatus !== 'function') return false;
@@ -110,7 +115,7 @@ export function registerIndexlabRoutes(ctx) {
       resolveIndexLabRunDirectory,
       refreshArchivedRunDirIndex,
       runDataStorageState: ctx.runDataStorageState,
-      indexLabRoot: INDEXLAB_ROOT,
+      indexLabRoot: currentIndexLabRoot(),
       outputRoot: ctx.OUTPUT_ROOT || '',
       storage: ctx.storage || null,
       isRunStillActive,
@@ -123,7 +128,7 @@ export function registerIndexlabRoutes(ctx) {
         const fs = await import('node:fs/promises');
         const bundleDir = path.dirname(runDir);
         await fs.default.rm(bundleDir, { recursive: true, force: true });
-        const liveDir = safeJoin(INDEXLAB_ROOT, runId);
+        const liveDir = safeJoin(currentIndexLabRoot(), runId);
         if (liveDir) {
           await fs.default.rm(liveDir, { recursive: true, force: true }).catch(() => {});
         }
@@ -131,7 +136,7 @@ export function registerIndexlabRoutes(ctx) {
       },
       recalculateAllStorageMetrics: () => recalculateAllStorageMetrics({
         runDataStorageState: ctx.runDataStorageState,
-        indexLabRoot: INDEXLAB_ROOT,
+        indexLabRoot: currentIndexLabRoot(),
         listIndexLabRuns,
         resolveIndexLabRunDirectory,
       }),
@@ -151,14 +156,14 @@ export function registerIndexlabRoutes(ctx) {
       const category = String(params.get('category') || '').trim();
       const rows = await listIndexLabRuns({ limit, category });
       return jsonRes(res, 200, {
-        root: INDEXLAB_ROOT,
+        root: currentIndexLabRoot(),
         runs: rows
       });
     }
 
     if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && !parts[3] && method === 'GET') {
       const runId = String(parts[2] || '').trim();
-      const directRunDir = safeJoin(INDEXLAB_ROOT, runId);
+      const directRunDir = safeJoin(currentIndexLabRoot(), runId);
       if (!directRunDir) return jsonRes(res, 400, { error: 'invalid_run_id' });
       const runDir = typeof resolveIndexLabRunDirectory === 'function'
         ? (await resolveIndexLabRunDirectory(runId).catch(() => '')) || directRunDir
@@ -369,7 +374,7 @@ export function registerIndexlabRoutes(ctx) {
     if (parts[0] === 'indexlab' && parts[1] === 'indexes' && parts[2] === 'query-summary' && method === 'GET') {
       const category = String(params.get('category') || '').trim();
       if (!category) return jsonRes(res, 400, { error: 'missing_category' });
-      const logPath = path.join(INDEXLAB_ROOT, category, 'query-index.ndjson');
+      const logPath = path.join(currentIndexLabRoot(), category, 'query-index.ndjson');
       const summary = queryIndexSummary(logPath);
       return jsonRes(res, 200, { category, ...summary });
     }
@@ -377,7 +382,7 @@ export function registerIndexlabRoutes(ctx) {
     if (parts[0] === 'indexlab' && parts[1] === 'indexes' && parts[2] === 'url-summary' && method === 'GET') {
       const category = String(params.get('category') || '').trim();
       if (!category) return jsonRes(res, 400, { error: 'missing_category' });
-      const logPath = path.join(INDEXLAB_ROOT, category, 'url-index.ndjson');
+      const logPath = path.join(currentIndexLabRoot(), category, 'url-index.ndjson');
       const summary = urlIndexSummary(logPath);
       return jsonRes(res, 200, { category, ...summary });
     }
@@ -385,7 +390,7 @@ export function registerIndexlabRoutes(ctx) {
     if (parts[0] === 'indexlab' && parts[1] === 'indexes' && parts[2] === 'prompt-summary' && method === 'GET') {
       const category = String(params.get('category') || '').trim();
       if (!category) return jsonRes(res, 400, { error: 'missing_category' });
-      const logPath = path.join(INDEXLAB_ROOT, category, 'prompt-index.ndjson');
+      const logPath = path.join(currentIndexLabRoot(), category, 'prompt-index.ndjson');
       const summary = promptIndexSummary(logPath);
       return jsonRes(res, 200, { category, ...summary });
     }
@@ -393,7 +398,7 @@ export function registerIndexlabRoutes(ctx) {
     if (parts[0] === 'indexlab' && parts[1] === 'indexes' && parts[2] === 'knob-snapshots' && method === 'GET') {
       const category = String(params.get('category') || '').trim();
       if (!category) return jsonRes(res, 400, { error: 'missing_category' });
-      const logPath = path.join(INDEXLAB_ROOT, category, 'knob-snapshots.ndjson');
+      const logPath = path.join(currentIndexLabRoot(), category, 'knob-snapshots.ndjson');
       const snapshots = readKnobSnapshots(logPath);
       return jsonRes(res, 200, { category, snapshots });
     }
@@ -420,8 +425,8 @@ export function registerIndexlabRoutes(ctx) {
       const result = computeCompoundCurve({
         category: effectiveCategory,
         runSummaries: runs,
-        queryIndexPath: path.join(INDEXLAB_ROOT, effectiveCategory, 'query-index.ndjson'),
-        urlIndexPath: path.join(INDEXLAB_ROOT, effectiveCategory, 'url-index.ndjson'),
+        queryIndexPath: path.join(currentIndexLabRoot(), effectiveCategory, 'query-index.ndjson'),
+        urlIndexPath: path.join(currentIndexLabRoot(), effectiveCategory, 'url-index.ndjson'),
       });
       return jsonRes(res, 200, result);
     }
@@ -472,7 +477,7 @@ export function registerIndexlabRoutes(ctx) {
         for (const r of allRuns) { const c = String(r.category || '').trim(); if (c) counts[c] = (counts[c] || 0) + 1; }
         effectiveCat = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || category;
       }
-      const urlIndexPath = path.join(INDEXLAB_ROOT, effectiveCat, 'url-index.ndjson');
+      const urlIndexPath = path.join(currentIndexLabRoot(), effectiveCat, 'url-index.ndjson');
       const hosts = aggregateHostHealth({ urlIndexPath, category: effectiveCat });
       return jsonRes(res, 200, { category: effectiveCat, hosts });
     }

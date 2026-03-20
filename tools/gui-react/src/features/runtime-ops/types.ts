@@ -494,12 +494,14 @@ export interface PrefetchSchema4Bundle {
 export interface PrefetchNeedSetProfileInfluence {
   targeted_specification: number;
   targeted_sources: number;
+  total_sources: number;
   targeted_groups: number;
+  total_groups: number;
   targeted_single: number;
+  total_unresolved_keys: number;
   groups_now: number;
   groups_next: number;
   groups_hold: number;
-  total_unresolved_keys: number;
   planner_confidence: number;
   budget: number | null;
   allocated: number | null;
@@ -633,18 +635,20 @@ export interface PrefetchSearchProfileData {
   base_model?: string;
   aliases?: string[];
   discovered_count?: number;
-  approved_count?: number;
-  candidate_count?: number;
+  selected_count?: number;
   llm_serp_selector?: boolean;
   serp_explorer?: {
     query_count: number;
     candidates_checked: number;
+    candidates_sent?: number;
     urls_triaged: number;
     urls_selected: number;
     urls_rejected: number;
     dedupe_input: number;
     dedupe_output: number;
     duplicates_removed: number;
+    hard_drop_count?: number;
+    soft_exclude_count?: number;
     llm_triage_applied: boolean;
   } | null;
 }

@@ -38,7 +38,8 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "discoveryQueryConcurrency", type: "int", default: 2, min: 1, max: 16, configKey: "discoveryQueryConcurrency", envKey: "DISCOVERY_QUERY_CONCURRENCY" },
   // WHY: discoveryResultsPerQuery retired — Google always returns 10. Hardcoded in configBuilder.
   { key: "discoveryResultsPerQuery", type: "int", default: 10, deprecated: true, defaultsOnly: true, configKey: "discoveryResultsPerQuery", envKey: "" },
-  { key: "domainClassifierUrlCap", type: "int", default: 50, min: 0, max: 5000, configKey: "domainClassifierUrlCap", envKey: "DOMAIN_CLASSIFIER_URL_CAP" },
+  // WHY: domainClassifierUrlCap retired — SERP selector is the single URL cap. Domain classifier just enqueues everything.
+  { key: "domainClassifierUrlCap", type: "int", default: 50, deprecated: true, defaultsOnly: true, configKey: "domainClassifierUrlCap", envKey: "" },
   { key: "domSnippetMaxChars", type: "int", default: 3600, min: 600, max: 20000, configKey: "domSnippetMaxChars", envKey: "DOM_SNIPPET_MAX_CHARS" },
   { key: "domainRequestBurst", type: "int", default: 0, min: 0, max: 1000, configKey: "domainRequestBurst", envKey: "DOMAIN_REQUEST_BURST" },
   { key: "domainRequestRps", type: "int", default: 0, min: 0, max: 100, configKey: "domainRequestRps", envKey: "DOMAIN_REQUEST_RPS" },

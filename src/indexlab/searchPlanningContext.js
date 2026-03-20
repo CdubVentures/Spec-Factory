@@ -222,7 +222,7 @@ export function buildNormalizedKeyQueue(unresolvedFields) {
   return entries;
 }
 
-export function deriveSeedStatus(queryExecutionHistory, identity, config = {}) {
+export function deriveSeedStatus(queryExecutionHistory, identity, config = {}, categorySourceHosts = []) {
   const queries = queryExecutionHistory?.queries || [];
   const cooldownMs = config.seedCooldownMs ?? 2592000000;
   const now = Date.now();
@@ -249,6 +249,10 @@ export function deriveSeedStatus(queryExecutionHistory, identity, config = {}) {
 
   const specsSeed = seedStatusFor((q) => q.tier === 'seed' && !q.source_name);
 
+  // WHY: Source seeds come from three places:
+  // 1. Category source hosts (e.g. rtings.com, techpowerup.com) — known before any run
+  // 2. Identity official/support domains — from identityContext
+  // 3. Previously executed seed queries — from queryExecutionHistory
   const sourceSeeds = {};
   const sourceNames = new Set();
   for (const q of queries) {
@@ -256,6 +260,10 @@ export function deriveSeedStatus(queryExecutionHistory, identity, config = {}) {
   }
   if (identity?.official_domain) sourceNames.add(identity.official_domain);
   if (identity?.support_domain) sourceNames.add(identity.support_domain);
+  for (const entry of (categorySourceHosts || [])) {
+    const host = String(entry?.host || '').trim();
+    if (host) sourceNames.add(host);
+  }
   for (const name of sourceNames) {
     sourceSeeds[name] = seedStatusFor((q) => q.tier === 'seed' && q.source_name === name);
   }
@@ -526,6 +534,7 @@ export function buildSearchPlanningContext({
   needSetOutput,
   config = {},
   fieldGroupsData = {},
+  categorySourceHosts = [],
   runContext = {},
   learning = null,
   previousRoundFields = null,
@@ -563,7 +572,7 @@ export function buildSearchPlanningContext({
   const queryBudget = plannerLimits.searchProfileQueryCap || 10;
 
   // Pre-compute seed count for budget-aware group allocation
-  const preSeedStatus = deriveSeedStatus(queryExecutionHistory, ns.identity, config);
+  const preSeedStatus = deriveSeedStatus(queryExecutionHistory, ns.identity, config, categorySourceHosts);
   let seedSlots = 0;
   if (preSeedStatus?.specs_seed?.is_needed) seedSlots++;
   for (const info of Object.values(preSeedStatus?.source_seeds || {})) {

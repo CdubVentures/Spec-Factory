@@ -124,7 +124,8 @@ function assembleSchema4(ctx, queries, {
   const seedStatus = ctx.seed_status || {};
   const alloc = ctx.tier_allocation || null;
 
-  // Aspirational fallbacks (used when tier_allocation is absent)
+  // Totals — always show full inventory regardless of what's allocated
+  const allSources = Object.keys(seedStatus?.source_seeds || {});
   const specsSeedNeeded = Boolean(seedStatus?.specs_seed?.is_needed);
   const neededSources = Object.entries(seedStatus?.source_seeds || {})
     .filter(([, s]) => Boolean(s?.is_needed));
@@ -135,6 +136,9 @@ function assembleSchema4(ctx, queries, {
     g.normalized_key_queue.length > 0,
   );
   const aspirationalKeys = nonWorthyWithKeys.reduce((sum, g) => sum + g.normalized_key_queue.length, 0);
+  const totalUnresolvedKeys = focusGroups.reduce(
+    (sum, g) => sum + (Array.isArray(g.normalized_key_queue) ? g.normalized_key_queue.length : 0), 0,
+  );
 
   const tierInfluence = {
     targeted_specification: alloc
@@ -143,14 +147,14 @@ function assembleSchema4(ctx, queries, {
     targeted_sources: alloc
       ? alloc.tier1_seeds.filter(s => s.type === 'source').length
       : neededSources.length,
+    total_sources: allSources.length,
     targeted_groups: alloc ? alloc.tier2_group_count : searchWorthyGroups.length,
+    total_groups: focusGroups.length,
     targeted_single: alloc ? alloc.tier3_key_count : aspirationalKeys,
+    total_unresolved_keys: totalUnresolvedKeys,
     groups_now: focusGroups.filter(g => g.phase === 'now').length,
     groups_next: focusGroups.filter(g => g.phase === 'next').length,
     groups_hold: focusGroups.filter(g => g.phase === 'hold').length,
-    total_unresolved_keys: focusGroups.reduce(
-      (sum, g) => sum + (Array.isArray(g.normalized_key_queue) ? g.normalized_key_queue.length : 0), 0,
-    ),
     planner_confidence: llmResult?.planner_confidence ?? 0,
     budget: alloc?.budget ?? null,
     allocated: alloc ? (alloc.tier1_seed_count + alloc.tier2_group_count + alloc.tier3_key_count) : null,

@@ -408,9 +408,10 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
   const TIER_CATEGORIES = ['targeted_specification', 'targeted_sources', 'targeted_groups', 'targeted_single'] as const;
   const tierEntries = useMemo(() => {
     if (!profileInfluence) return [];
+    // WHY: Always show all 4 tier categories so the user sees the full picture
+    // even when a tier has 0 allocated (e.g. 0/5 sources on round 0).
     return TIER_CATEGORIES
-      .map((cat) => ({ category: cat, count: (profileInfluence[cat] as number) ?? 0 }))
-      .filter(e => e.count > 0);
+      .map((cat) => ({ category: cat, count: (profileInfluence[cat] as number) ?? 0 }));
   }, [profileInfluence]);
 
   const tierTotal = tierEntries.reduce((s, e) => s + e.count, 0);
@@ -496,10 +497,10 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
             {profileInfluence.budget != null && (
               <strong className="sf-text-primary not-italic">Budget: {profileInfluence.budget} queries &mdash; </strong>
             )}
-            {profileInfluence.targeted_specification > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_specification} spec seed, </strong>}
-            {profileInfluence.targeted_sources > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_sources} source {profileInfluence.targeted_sources === 1 ? 'seed' : 'seeds'}, </strong>}
-            {profileInfluence.targeted_groups > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_groups} group {profileInfluence.targeted_groups === 1 ? 'search' : 'searches'}, </strong>}
-            {profileInfluence.targeted_single > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_single} key {profileInfluence.targeted_single === 1 ? 'search' : 'searches'}. </strong>}
+            <strong className="sf-text-primary not-italic">{profileInfluence.targeted_specification}/{profileInfluence.targeted_specification > 0 ? 1 : 1} spec seed, </strong>
+            <strong className="sf-text-primary not-italic">{profileInfluence.targeted_sources}/{profileInfluence.total_sources ?? 0} sources, </strong>
+            <strong className="sf-text-primary not-italic">{profileInfluence.targeted_groups}/{profileInfluence.total_groups ?? 0} groups, </strong>
+            <strong className="sf-text-primary not-italic">{profileInfluence.targeted_single}/{profileInfluence.total_unresolved_keys ?? 0} keys. </strong>
             {(profileInfluence.overflow_groups > 0 || profileInfluence.overflow_keys > 0) && (
               <span className="text-xs sf-text-muted">
                 ({[
@@ -615,20 +616,27 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
                 ))}
               </div>
             )}
-            {/* Legend */}
+            {/* Legend — always shows all tiers with allocated / total */}
             <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs sf-text-muted">
-              {tierEntries.map((e) => (
-                <span key={e.category} className="flex items-center gap-2">
-                  <span className={`inline-block w-3 h-3 rounded-sm ${
-                    e.category === 'targeted_specification' ? 'bg-blue-600' :
-                    e.category === 'targeted_sources' ? 'bg-violet-600' :
-                    e.category === 'targeted_groups' ? 'bg-amber-500' :
-                    'bg-emerald-600'
-                  }`} />
-                  <span className="font-semibold">{e.category.replace(/_/g, ' ')}</span>
-                  <span className="font-mono font-bold sf-text-primary">{e.count}</span>
-                </span>
-              ))}
+              {tierEntries.map((e) => {
+                const total =
+                  e.category === 'targeted_specification' ? 1 :
+                  e.category === 'targeted_sources' ? (profileInfluence.total_sources ?? 0) :
+                  e.category === 'targeted_groups' ? (profileInfluence.total_groups ?? 0) :
+                  (profileInfluence.total_unresolved_keys ?? 0);
+                return (
+                  <span key={e.category} className="flex items-center gap-2">
+                    <span className={`inline-block w-3 h-3 rounded-sm ${
+                      e.category === 'targeted_specification' ? 'bg-blue-600' :
+                      e.category === 'targeted_sources' ? 'bg-violet-600' :
+                      e.category === 'targeted_groups' ? 'bg-amber-500' :
+                      'bg-emerald-600'
+                    }`} />
+                    <span className="font-semibold">{e.category.replace(/targeted_/g, '').replace(/_/g, ' ')}</span>
+                    <span className="font-mono font-bold sf-text-primary">{e.count}/{total}</span>
+                  </span>
+                );
+              })}
             </div>
             {/* Stats row */}
             <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted pt-2 border-t sf-border-soft">

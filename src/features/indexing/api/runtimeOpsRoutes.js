@@ -159,7 +159,11 @@ export function registerRuntimeOpsRoutes(ctx) {
     safeReadJson,
     safeJoin,
     path,
+    getIndexLabRoot: _getIndexLabRoot,
   } = ctx;
+
+  const currentIndexLabRoot = () =>
+    (typeof _getIndexLabRoot === 'function' ? _getIndexLabRoot() : '') || INDEXLAB_ROOT;
 
   const resolveScreenshotMetadata = createRuntimeScreenshotMetadataResolver({
     storage,
@@ -177,7 +181,7 @@ export function registerRuntimeOpsRoutes(ctx) {
     if (method !== 'GET') return false;
 
     const runId = String(parts[2] || '').trim();
-    const directRunDir = safeJoin(INDEXLAB_ROOT, runId);
+    const directRunDir = safeJoin(currentIndexLabRoot(), runId);
     if (!directRunDir) return jsonRes(res, 400, { error: 'invalid_run_id' });
 
     // WHY: Asset requests are the most frequent (one per screenshot thumbnail).

@@ -7,11 +7,13 @@ import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from '../../../stores/settingsManifest'
 import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract';
 import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore';
+import { RUNTIME_SETTING_DEFAULTS } from '../../../stores/settingsManifest';
 import {
   readRuntimeSettingsBootstrap,
   RUNTIME_SETTINGS_QUERY_KEY,
   type RuntimeSettings,
 } from './runtimeSettingsAuthorityHelpers';
+import { normalizeRuntimeDraft } from './RuntimeFlowDraftNormalization';
 import { useSettingsAutoSaveEffect } from './useSettingsAutoSaveEffect';
 
 type RuntimeSettingsPersistResult = {
@@ -105,7 +107,11 @@ export function useRuntimeSettingsStoreHydration(): void {
   const { settings } = useRuntimeSettingsReader();
   const storeHydrate = useRuntimeSettingsValueStore((s) => s.hydrate);
   useEffect(() => {
-    if (settings) storeHydrate(settings);
+    if (!settings) return;
+    // WHY: Normalize once at hydration time (clamp, validate, type-coerce).
+    // Downstream consumers read already-normalized data from the store.
+    const normalized = normalizeRuntimeDraft(settings, RUNTIME_SETTING_DEFAULTS);
+    storeHydrate(normalized as unknown as RuntimeSettings);
   }, [settings, storeHydrate]);
 }
 
@@ -149,14 +155,6 @@ export function useRuntimeSettingsAuthority({
     queryFn: () => api.get<RuntimeSettings>('/runtime-settings'),
     enabled,
   });
-
-  // WHY: Hydrate the shared Zustand value store when server data arrives.
-  // This makes runtime settings available to ALL consumers (FlowCard, LlmConfigPage,
-  // IndexingPage mutations) from one SSOT instead of each maintaining local copies.
-  const storeHydrate = useRuntimeSettingsValueStore((s) => s.hydrate);
-  useEffect(() => {
-    if (settings) storeHydrate(settings);
-  }, [settings, storeHydrate]);
 
   const payloadRef = useRef(payload);
   payloadRef.current = payload;

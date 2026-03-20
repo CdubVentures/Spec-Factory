@@ -63,6 +63,7 @@ function routeRoleFromReason(reason = '') {
   if (
     token === 'plan' ||
     token.startsWith('plan_') ||
+    token.startsWith('search_planner') ||
     token.startsWith('verify_extract_fast') ||
     token.includes('discovery_planner')
   ) {

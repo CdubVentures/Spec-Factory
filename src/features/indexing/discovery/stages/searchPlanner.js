@@ -11,15 +11,23 @@ import { toArray } from '../discoveryIdentity.js';
  */
 export async function runSearchPlanner({
   searchProfileBase,
-  variables,
+  queryExecutionHistory = null,
   config,
   logger,
   identityLock,
   missingFields,
-  job,
 }) {
   const queryRows = toArray(searchProfileBase?.query_rows);
-  const queryHistory = toArray(searchProfileBase?.base_templates);
+  // WHY: Query history should include actual prior-round queries from frontier
+  // (not just this round's deterministic templates) so the LLM avoids repeating
+  // patterns that were already tried.
+  const priorQueries = toArray(queryExecutionHistory?.queries)
+    .map((q) => String(q?.query_text || '').trim())
+    .filter(Boolean);
+  const queryHistory = [...new Set([
+    ...toArray(searchProfileBase?.base_templates),
+    ...priorQueries,
+  ])];
 
   const result = await enhanceQueryRows({
     queryRows,

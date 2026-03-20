@@ -5,17 +5,21 @@ import { safeReadJson, safeStat } from '../../../../shared/fileHelpers.js';
 // --- Module state ---
 let _outputRoot = '';
 let _runDataArchiveStorage = null;
+let _getRunDataArchiveStorage = null;
 let _runDataStorageState = null;
 let _archivedRunDirIndex = new Map();
 let _archivedRunDirIndexRoot = '';
 let _archivedRunDirIndexScannedAt = 0;
 let _archivedRunMaterializationLocks = new Map();
 
-const ARCHIVED_RUN_DIR_INDEX_TTL_MS = 2_000;
+// WHY: Local scans are fast (filesystem readdir). S3 scans are slow (listKeys over 22k+ keys).
+// Use a longer TTL so S3 scans don't fire every 2 seconds.
+const ARCHIVED_RUN_DIR_INDEX_TTL_MS = 30_000;
 
-export function initArchivedRunLocationHelpers({ outputRoot, runDataArchiveStorage, runDataStorageState }) {
+export function initArchivedRunLocationHelpers({ outputRoot, runDataArchiveStorage, runDataStorageState, getRunDataArchiveStorage }) {
   _outputRoot = outputRoot;
   _runDataArchiveStorage = runDataArchiveStorage;
+  _getRunDataArchiveStorage = typeof getRunDataArchiveStorage === 'function' ? getRunDataArchiveStorage : null;
   _runDataStorageState = runDataStorageState;
   resetArchivedRunDirIndex();
 }
@@ -46,9 +50,19 @@ export function resolveArchivedS3Settings() {
   if (String(settings.destinationType || '').trim().toLowerCase() !== 's3') return null;
   const s3Prefix = String(settings.s3Prefix || '').trim().replace(/^\/+|\/+$/g, '');
   if (!s3Prefix) return null;
-  const storage = _runDataArchiveStorage && typeof _runDataArchiveStorage.listKeys === 'function'
+  // WHY: The S3 client may be null if it was created at boot before S3 was configured.
+  // Try the dynamic getter first to get a client created from live settings.
+  let storage = _runDataArchiveStorage && typeof _runDataArchiveStorage.listKeys === 'function'
     ? _runDataArchiveStorage
     : null;
+  if (!storage && _getRunDataArchiveStorage) {
+    storage = _getRunDataArchiveStorage();
+    if (storage && typeof storage.listKeys === 'function') {
+      _runDataArchiveStorage = storage;
+    } else {
+      storage = null;
+    }
+  }
   if (!storage) return null;
   return { s3Prefix, storage };
 }
@@ -288,7 +302,10 @@ export async function refreshArchivedRunDirIndex(force = false) {
   const s3Settings = resolveArchivedS3Settings();
   if (s3Settings) {
     await addArchivedS3RunHints(nextIndex, s3Settings);
-    if (force) {
+    // WHY: Always do the full S3 key listing when the TTL cache expires.
+    // The TTL (2s) prevents redundant scans. The addArchivedS3RunHints above
+    // only checks local filesystem hints which is insufficient for S3-only runs.
+    {
       let keys = [];
       try {
         keys = await s3Settings.storage.listKeys(s3Settings.s3Prefix);

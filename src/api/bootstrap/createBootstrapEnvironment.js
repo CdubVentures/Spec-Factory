@@ -102,7 +102,7 @@ export function createBootstrapEnvironment({ projectRoot }) {
     repoDefaultOutputRoot: SETTINGS_DEFAULTS.runtime?.localOutputRoot,
   });
 
-  config.settingsCanonicalOnlyWrites = envBool('SETTINGS_CANONICAL_ONLY_WRITES', false);
+  config.settingsCanonicalOnlyWrites = envBool('SETTINGS_CANONICAL_ONLY_WRITES', true);
 
   const runDataStorageState = normalizeRunDataStorageSettings({
     enabled: envBool('RUN_DATA_STORAGE_ENABLED', envToken('S3_BUCKET', '') !== ''),
@@ -145,12 +145,21 @@ export function createBootstrapEnvironment({ projectRoot }) {
     createStorage,
   });
 
+  // WHY: Lazily creates an S3 client from LIVE runDataStorageState.
+  // At boot, S3 may not be configured yet. When the user switches to S3 at runtime,
+  // this getter creates a fresh client from the mutated settings.
+  const getRunDataArchiveStorage = () => createRunDataArchiveStorage({
+    runDataStorageState,
+    config,
+    createStorage,
+  });
+
   const markEnumSuggestionStatusBound = (category, field, value, status = 'accepted') =>
     markEnumSuggestionStatus(category, field, value, status, HELPER_ROOT);
 
   return {
     config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
-    storage, runDataStorageState, runDataArchiveStorage,
+    storage, runDataStorageState, runDataArchiveStorage, getRunDataArchiveStorage,
     resolveProjectPath,
     cleanVariant, catalogKey, markEnumSuggestionStatusBound,
     userSettings,

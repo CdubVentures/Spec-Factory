@@ -1,6 +1,6 @@
-import { Suspense, lazy, useMemo, useCallback } from 'react';
+import { Suspense, lazy, useMemo, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client';
 import { Tip } from '../../../shared/ui/feedback/Tip';
 import { RuntimeFlowCardHeader } from './RuntimeFlowCardHeader';
@@ -16,9 +16,7 @@ import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsVal
 import {
   RUNTIME_NUMBER_BOUNDS,
   RESUME_MODE_OPTIONS,
-  normalizeRuntimeDraft,
   parseBoundedNumber,
-  runtimeDraftEqual,
   toRuntimeDraft,
   type NumberBound,
   type RuntimeDraft,
@@ -33,8 +31,7 @@ import {
   RUNTIME_SETTING_DEFAULTS,
   SETTINGS_AUTOSAVE_DEBOUNCE_MS,
 } from '../../../stores/settingsManifest';
-import { readRuntimeSettingsBootstrap } from '../state/runtimeSettingsAuthority';
-import { useRuntimeSettingsEditorAdapter } from '../state/runtimeSettingsEditorAdapter';
+import { useRuntimeSettingsAuthority, type RuntimeSettings, type RuntimeEditorSaveStatus } from '../state/runtimeSettingsAuthority';
 import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore';
 import { useUiStore } from '../../../stores/uiStore';
 import { usePersistedTab } from '../../../stores/tabStore';
@@ -104,20 +101,51 @@ export function RuntimeSettingsFlowCard({
   actionPortalTarget = null,
   suppressInlineHeaderControls = false,
 }: RuntimeSettingsFlowCardProps = {}) {
-  const queryClient = useQueryClient();
   const runtimeAutoSaveEnabled = useUiStore((state) => state.runtimeAutoSaveEnabled);
   const setRuntimeAutoSaveEnabled = useUiStore((state) => state.setRuntimeAutoSaveEnabled);
   const runtimeReadyFlag = useSettingsAuthorityStore((state) => state.snapshot.runtimeReady);
 
-  const runtimeBootstrap = useMemo(
-    () => readRuntimeSettingsBootstrap(queryClient, RUNTIME_SETTING_DEFAULTS),
-    [queryClient],
-  );
+  // SSOT: read directly from the Zustand store — no local copy, no stale bootstrap.
+  const storeValues = useRuntimeSettingsValueStore((s) => s.values);
+  const storeDirty = useRuntimeSettingsValueStore((s) => s.dirty);
+  const storeHydrated = useRuntimeSettingsValueStore((s) => s.hydrated);
+
   const runtimeManifestDefaults = useMemo(() => toRuntimeDraft(RUNTIME_SETTING_DEFAULTS), []);
-  const runtimeBootstrapDraft = useMemo(
-    () => normalizeRuntimeDraft(undefined, runtimeBootstrap),
-    [runtimeBootstrap],
-  );
+  // WHY: Store is normalized at hydration time (Phase 3). Just cast, no re-normalize.
+  const runtimeDraft = (storeValues as unknown as RuntimeDraft) ?? runtimeManifestDefaults;
+
+  const [saveStatus, setSaveStatus] = useState<RuntimeEditorSaveStatus>({ kind: 'idle', message: '' });
+
+  // WHY: Authority hook manages fetch, auto-save, save mutation, and unload guard.
+  // Reads payload from the store (not a local copy), so auto-save fingerprints match store state.
+  const storePayload = (storeValues ?? {}) as RuntimeSettings;
+  const {
+    isLoading: runtimeSettingsLoading,
+    isSaving: runtimeSettingsSaving,
+    saveNow,
+  } = useRuntimeSettingsAuthority({
+    payload: storePayload,
+    dirty: storeDirty,
+    autoSaveEnabled: runtimeAutoSaveEnabled,
+    initialHydrationApplied: storeHydrated,
+    onPersisted: (result) => {
+      if (result.ok) {
+        setSaveStatus({ kind: 'ok', message: 'Runtime settings saved.' });
+      } else {
+        setSaveStatus({ kind: 'error', message: 'Runtime settings save failed.' });
+      }
+    },
+    onError: (error) => {
+      setSaveStatus({
+        kind: 'error',
+        message: error instanceof Error ? error.message : 'Runtime settings save failed.',
+      });
+    },
+  });
+
+  const runtimeDirty = storeDirty;
+  const runtimeSaveState = saveStatus.kind;
+  const runtimeSaveMessage = saveStatus.message;
 
   const [activeStep, setActiveStep] = usePersistedTab<RuntimeStepId>(
     'pipeline-settings:runtime:active-step',
@@ -145,28 +173,6 @@ export function RuntimeSettingsFlowCard({
     llmTokenContractPresetMax,
     runtimeManifestDefaults,
   }), [indexingLlmConfig, llmTokenContractPresetMax, llmTokenProfileLookup, runtimeManifestDefaults]);
-
-  const payloadFromRuntimeDraft = useCallback((nextRuntimeDraft: RuntimeDraft) => collectRuntimeFlowDraftPayload({
-    nextRuntimeDraft,
-    runtimeManifestDefaults,
-    resolveModelTokenDefaults,
-  }), [resolveModelTokenDefaults, runtimeManifestDefaults]);
-
-  const runtimeEditor = useRuntimeSettingsEditorAdapter<RuntimeDraft>({
-    bootstrapValues: runtimeBootstrapDraft,
-    payloadFromValues: payloadFromRuntimeDraft,
-    normalizeSnapshot: (snapshot) => normalizeRuntimeDraft(snapshot, runtimeBootstrap),
-    valuesEqual: runtimeDraftEqual,
-    autoSaveEnabled: runtimeAutoSaveEnabled,
-  });
-
-  const runtimeDraft = runtimeEditor.values;
-  const runtimeDirty = runtimeEditor.dirty;
-  const runtimeSaveState = runtimeEditor.saveStatus.kind;
-  const runtimeSaveMessage = runtimeEditor.saveStatus.message;
-  const runtimeSettingsLoading = runtimeEditor.isLoading;
-  const runtimeSettingsSaving = runtimeEditor.isSaving;
-  const saveNow = runtimeEditor.saveNow;
   const {
     dynamicCrawleeEnabled,
     scannedPdfOcrEnabled,
@@ -224,13 +230,11 @@ export function RuntimeSettingsFlowCard({
     runtimeAutoSaveDelaySeconds,
   });
 
-  // WHY: Use runtimeEditor.updateKey which pushes to the Zustand store synchronously.
-  // Previously this used setRuntimeDraft (raw useState setter) which bypassed the store.
+  // WHY: Writes directly to the Zustand store (SSOT). No local copy.
   const updateDraft = useCallback(<K extends keyof RuntimeDraft>(key: K, value: RuntimeDraft[K]) => {
-    runtimeEditor.updateKey(key, value);
-  }, [runtimeEditor]);
+    useRuntimeSettingsValueStore.getState().updateKey(key as string, value);
+  }, []);
 
-  // WHY: Use runtimeEditor.updateKey so the store is updated synchronously.
   const onNumberChange = useCallback(<K extends keyof RuntimeDraft>(
     key: K,
     eventValue: string,
@@ -239,8 +243,8 @@ export function RuntimeSettingsFlowCard({
     const current = runtimeDraft[key];
     const fallback = typeof current === 'number' ? current : 0;
     const next = parseBoundedNumber(eventValue, fallback, bounds) as RuntimeDraft[K];
-    runtimeEditor.updateKey(key, next);
-  }, [runtimeDraft, runtimeEditor]);
+    useRuntimeSettingsValueStore.getState().updateKey(key as string, next);
+  }, [runtimeDraft]);
 
   const getNumberBounds = useCallback(<K extends keyof RuntimeDraft>(key: K): NumberBound => {
     return RUNTIME_NUMBER_BOUNDS[key as keyof typeof RUNTIME_NUMBER_BOUNDS];
@@ -253,12 +257,12 @@ export function RuntimeSettingsFlowCard({
       );
       if (!confirmed) return;
     }
-    // WHY: Use setValues for bulk replacement, then push the full payload to the
-    // Zustand store so all consumers see the reset immediately.
-    runtimeEditor.setValues(runtimeManifestDefaults);
-    const resetPayload = payloadFromRuntimeDraft(runtimeManifestDefaults);
-    useRuntimeSettingsValueStore.getState().replaceValues(resetPayload);
-    runtimeEditor.setDirty(true);
+    const resetPayload = collectRuntimeFlowDraftPayload({
+      nextRuntimeDraft: runtimeManifestDefaults,
+      runtimeManifestDefaults,
+      resolveModelTokenDefaults,
+    });
+    useRuntimeSettingsValueStore.getState().updateKeys(resetPayload as Partial<RuntimeSettings>);
     setActiveStep('run-setup');
   }
 

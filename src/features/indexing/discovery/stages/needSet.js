@@ -56,6 +56,7 @@ export async function runNeedSet({
       needSetOutput: schema2,
       config,
       fieldGroupsData: categoryConfig?.fieldGroups || {},
+      categorySourceHosts: Array.isArray(categoryConfig?.sourceHosts) ? categoryConfig.sourceHosts : [],
       runContext: {
         run_id: runId,
         category: categoryConfig?.category || category,

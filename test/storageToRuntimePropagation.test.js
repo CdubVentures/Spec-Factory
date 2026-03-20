@@ -1,7 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import os from 'node:os';
+import path from 'node:path';
 import {
   normalizeRunDataStorageSettings,
+  defaultRunDataLocalDirectory,
 } from '../src/api/services/runDataRelocationService.js';
 
 describe('Storage → Runtime config propagation', () => {
@@ -43,6 +46,40 @@ describe('Storage → Runtime config propagation', () => {
       const result = normalizeRunDataStorageSettings({ awsRegion: 'us-west-2' });
       assert.ok(Object.hasOwn(result, 'awsRegion'));
       assert.ok(!Object.hasOwn(result, 's3Region'));
+    });
+  });
+
+  // WHY: Temp paths are volatile — they vanish on reboot. If a test or crash
+  // persists a temp-dir localDirectory, the normalize function must reject it
+  // and fall back to the stable default so runs don't disappear.
+  describe('normalizeRunDataStorageSettings rejects volatile localDirectory', () => {
+    it('replaces a temp directory localDirectory with the stable default', () => {
+      const tempPath = path.join(os.tmpdir(), 'settings-canonical-only-XXXX', 'run-data');
+      const result = normalizeRunDataStorageSettings({
+        enabled: true,
+        destinationType: 'local',
+        localDirectory: tempPath,
+      });
+      assert.equal(result.localDirectory, defaultRunDataLocalDirectory());
+    });
+
+    it('preserves a non-temp localDirectory', () => {
+      const stablePath = path.join(os.homedir(), 'Desktop', 'MyRuns');
+      const result = normalizeRunDataStorageSettings({
+        enabled: true,
+        destinationType: 'local',
+        localDirectory: stablePath,
+      });
+      assert.equal(result.localDirectory, path.resolve(stablePath));
+    });
+
+    it('rejects temp localDirectory from fallback too', () => {
+      const tempPath = path.join(os.tmpdir(), 'some-test-dir', 'run-data');
+      const result = normalizeRunDataStorageSettings(
+        { enabled: true, destinationType: 'local' },
+        { localDirectory: tempPath },
+      );
+      assert.equal(result.localDirectory, defaultRunDataLocalDirectory());
     });
   });
 

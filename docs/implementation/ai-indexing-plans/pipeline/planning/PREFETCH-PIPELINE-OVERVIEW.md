@@ -19,8 +19,8 @@ Source of truth:
 Stage 01: NeedSet           - Schema 2 -> Schema 3 -> Schema 4 group annotations (no queries)
 Stage 02: Brand Resolver    - brand domain, aliases, support domain, auto-promotion
 Stage 03: Search Profile    - tier-aware deterministic query generation + optional host plan
-Stage 04: Search Planner    - LLM query enrichment via planUberQueries
-Stage 05: Query Journey     - merge, dedupe, rank, guard, write planned search_profile
+Stage 04: Search Planner    - tier-aware LLM query enhancement via enhanceQueryRows
+Stage 05: Query Journey     - dedupe, rank, guard, cap, write planned search_profile
 Stage 06: Search Results    - internal/frontier/provider execution
 Stage 07: SERP Triage       - selector path or deterministic lane-selection path
 Stage 08: Domain Classifier - enqueue approved/candidate URLs to planner queue
@@ -39,6 +39,7 @@ The discovery search system operates on three query tiers. NeedSet's job is to r
 - Complete when: `scrape_complete` or `exhausted` AND `new_fields_closed >= 1`
 - Cooldown: `seedCooldownMs` (default 30 days) via Unix timestamp comparison
 - NeedSet emits `seed_status` with per-seed `last_status`, `cooldown_until_ms`, `new_fields_closed_last_run`
+- Source seeds include: category source hosts (`categoryConfig.sourceHosts`), identity official/support domains, and previously executed seed queries from frontier
 
 ### Tier 2 — Group Searches (conditional)
 - `{brand} {model} {variant} {group} {description}`
@@ -46,11 +47,15 @@ The discovery search system operates on three query tiers. NeedSet's job is to r
 - Skip reasons: `group_mostly_resolved` (coverage >= 80%), `too_few_missing_keys` (< 3 unresolved), `group_search_exhausted` (>= 3 broad searches), `group_on_hold`
 - Two-level fingerprint: `group_fingerprint_coarse` (stable = group_key) for broad suppression, `group_fingerprint_fine` (group_key + sorted keys) for "meaningfully different?"
 
-### Tier 3 — Individual Key Searches (progressive enrichment)
-- `{brand} {model} {variant} {key} {aliases}`
-- Each round: tack on domain hints, content types, phrasing; LLM gets creative with full history
-- NeedSet emits per-field `normalized_key`, `all_aliases`, `alias_shards`, `domains_tried_for_key`, `query_modes_tried_for_key`
-- `sorted_unresolved_keys` orders fields by: availability -> difficulty -> repeat -> need_score -> required_level
+### Tier 3 — Individual Key Searches (progressive enrichment per-key)
+- Enriched based on per-key `repeat_count` (not round number):
+  - 3a (repeat=0): `{brand} {model} {variant} {key}` — bare
+  - 3b (repeat=1): `+ aliases` — cumulative from here forward
+  - 3c (repeat=2): `+ untried domain hint`
+  - 3d (repeat=3+): `+ untried content type`
+- `repeat_count` tracked via `query_count` in `previousFieldHistories`, incremented by `buildFieldHistories()` at finalization
+- NeedSet emits enriched `normalized_key_queue` objects with per-key: `normalized_key`, `repeat_count`, `all_aliases`, `domain_hints`, `preferred_content_types`, `domains_tried_for_key`, `content_types_tried_for_key`
+- Queue sorted by: availability → difficulty → repeat → need_score → required_level
 
 ### Query Execution History
 Structured per-query tracking with `tier`, `group_key`, `normalized_key`, `hint_source` persisted by `frontierDb.recordQuery()` at fire-time via `resolveSelectedQueryRow()` in `discoverySearchExecution.js`. `runDiscoverySeedPlan` calls `frontierDb.buildQueryExecutionHistory(productId)` before NeedSet and passes the result through `runNeedSet` to `buildSearchPlanningContext`.
@@ -78,13 +83,16 @@ Structured per-query tracking with `tier`, `group_key`, `normalized_key`, `hint_
    - `buildSearchProfile()` calls `determineQueryModes()` to decide which tiers fire, then runs `buildTier1Queries`, `buildTier2Queries`, `buildTier3Queries` as appropriate. Fully deterministic, no LLM.
    - optional `buildEffectiveHostPlan()` and `buildScoredQueryRowsFromHostPlan()` run here.
 6. Stage 04 Search Planner:
-   - `resolveSchema4ExecutionPlan()` adapts the Schema 4 handoff (now always empty queries — NeedSet no longer generates them).
-   - `planUberQueries()` fires the Search Planner LLM call for query enrichment.
-   - `search_plan_generated` is emitted here.
+   - `enhanceQueryRows()` receives tier-tagged `query_rows` from Search Profile + query history.
+   - LLM enhances query strings while preserving tier metadata (tier, group_key, normalized_key, target_fields are passthrough).
+   - Fallback: no API key, no model, or LLM fails twice → returns rows unchanged as `deterministic_fallback`.
+   - `search_plan_generated` emitted when LLM succeeds.
 7. Stage 05 Query Journey:
-   - merge deterministic rows, guarded Schema 4 rows, Search Planner uber queries, then append separately guarded host-plan rows.
+   - receives enhanced rows from Search Planner (LLM-enhanced or deterministic fallback — treated identically).
+   - dedupe, rank by field priority, cap to `searchProfileQueryCap`, identity guard.
+   - append separately guarded host-plan rows.
    - write planned `search_profile`.
-   - emit `search_profile_generated` and `query_journey_completed`.
+   - emit `query_journey_completed`.
 8. Emit `search_queued` rows before Stage 06 so every search slot is visible before execution starts.
 9. Stage 06 Search Results:
    - `executeSearchQueries()` runs internal-first lookup, frontier reuse, live provider search, and plan-only fallback.
@@ -133,7 +141,7 @@ Important nuance: `search_profile_generated` is emitted from Query Journey when 
 |-------|---------------|--------|------|-------|
 | 01 NeedSet | needset | `needset_search_planner` | `plan` | `src/indexlab/searchPlanBuilder.js` (group annotations only, no queries) |
 | 02 Brand Resolver | brand_resolver | `brand_resolution` | `triage` | `src/features/indexing/discovery/discoveryLlmAdapters.js` |
-| 04 Search Planner | search_planner | `search_planner` | `plan` | `src/research/queryPlanner.js` |
+| 04 Search Planner | search_planner | `search_planner_enhance` | `plan` | `src/research/queryPlanner.js` (`enhanceQueryRows`) |
 | 07 SERP Triage | serp_triage | `serp_url_selector` | `triage` | `src/features/indexing/discovery/serpSelectorLlmAdapter.js` |
 | 07 SERP Triage | serp_triage | `uber_serp_reranker` | `plan` | `src/research/serpReranker.js` |
 
@@ -141,24 +149,22 @@ Important nuance: `search_profile_generated` is emitted from Query Journey when 
 
 ## Query Journey merge
 
-Main merged candidate set:
+Two input streams:
 
-1. Tier-aware deterministic rows from `searchProfileBase.query_rows` (tagged with `tier: 'seed' | 'group_search' | 'key_search'`)
-2. Deterministic base templates from `searchProfileBase.base_templates` (Tier 1 seeds when in tier mode)
-3. Schema 4 rows from `resolveSchema4ExecutionPlan()` (now always empty — NeedSet no longer generates queries)
-4. Search Planner uber queries from `planUberQueries()` (LLM enrichment)
+1. **Enhanced rows** from Search Planner — same rows as `searchProfileBase.query_rows` but with potentially LLM-rewritten `query` strings. If LLM failed, these are exact copies of the deterministic rows. Tagged with `tier: 'seed' | 'group_search' | 'key_search'` and `hint_source` ending in `_llm` when LLM-enhanced.
+2. **Host-plan rows** — appended after guard, separately identity-guarded.
 
 Then:
 
 - `dedupeQueryRows()`
 - `prioritizeQueryRows()`
-- rank cap
+- cap to `searchProfileQueryCap`
 - `enforceIdentityQueryGuard()`
 - separately guard host-plan rows and append unique survivors
 - write planned `search_profile`
 - emit `query_journey_completed`
 
-`searchProfilePlanned.llm_queries` contains the merged Schema 4 query texts plus Search Planner uber query texts.
+`searchProfilePlanned.llm_queries` contains only query texts from rows where `hint_source` ends with `_llm`. Empty when LLM failed.
 
 ## Search worker slots
 
@@ -201,13 +207,11 @@ Search Profile:
 
 Search Planner:
 - `src/features/indexing/discovery/stages/searchPlanner.js`
-- `src/features/indexing/discovery/searchDiscovery.js` (`resolveSchema4ExecutionPlan`)
-- `src/research/queryPlanner.js`
+- `src/research/queryPlanner.js` (`enhanceQueryRows`)
 
 Query Journey:
 - `src/features/indexing/discovery/stages/queryJourney.js`
 - `src/features/indexing/discovery/discoveryQueryPlan.js`
-- `src/features/indexing/discovery/searchPlanHandoffAdapter.js`
 
 Search Results:
 - `src/features/indexing/discovery/discoverySearchExecution.js`

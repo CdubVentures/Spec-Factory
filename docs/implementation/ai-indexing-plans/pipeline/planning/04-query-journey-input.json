@@ -1,23 +1,18 @@
 {
   "_doc": "Live inputs to Stage 05 Query Journey.",
-  "validated_against": "2026-03-18",
+  "validated_against": "2026-03-20",
   "owner": "src/features/indexing/discovery/stages/queryJourney.js",
   "upstream_sources": {
-    "deterministic_profile": "runSearchProfile() / buildSearchProfile()",
-    "schema4_plan": "runSearchPlanner() -> resolveSchema4ExecutionPlan()",
-    "uber_search_plan": "runSearchPlanner() -> planUberQueries()",
+    "enhanced_rows": "runSearchPlanner() -> enhanceQueryRows() (LLM-enhanced or deterministic fallback)",
     "host_plan_rows": "buildScoredQueryRowsFromHostPlan() when validatedRegistry is present"
   },
   "inputs": {
     "searchProfileBase": {
-      "base_templates": "string[]",
-      "queries": "string[]",
-      "query_rows": "deterministic query row objects",
+      "query_rows": "original deterministic query row objects (for profileQueryRowsByQuery map)",
       "variant_guard_terms": "string[]",
       "query_reject_log": "array"
     },
-    "schema4Plan": "guarded Schema 4 execution plan or null",
-    "uberSearchPlan": "Stage 04 Search Planner output or null",
+    "enhancedRows": "tier-tagged rows from Search Planner (same shape as query_rows, possibly with LLM-rewritten query strings)",
     "hostPlanQueryRows": "array of scored host-plan rows or []",
     "variables": {
       "brand": "string",
@@ -27,11 +22,7 @@
     },
     "config": "object",
     "searchProfileCaps": {
-      "dedupeQueriesCap": "number",
-      "deterministicAliasCap": "number",
-      "llmAliasValidationCap": "number",
-      "llmDocHintQueriesCap": "number",
-      "llmFieldTargetQueriesCap": "number"
+      "dedupeQueriesCap": "number"
     },
     "missingFields": "string[]",
     "planningHints": {
@@ -44,16 +35,11 @@
     "runId": "string",
     "logger": "logger|null",
     "storage": "storage adapter",
-    "brandResolution": "object|null",
-    "searchPlanHandoff": "original Schema 4 handoff with metadata bridge or null"
+    "brandResolution": "object|null"
   },
   "derived_caps": {
-    "queryLimit": "max(1, config.discoveryMaxQueries || 8)",
-    "mergedQueryCap": "max(queryLimit, 6)",
-    "executionQueryLimit": "max(queryLimit, queries.length)"
+    "queryLimit": "configInt(config, 'searchProfileQueryCap')",
+    "executionQueryLimit": "min(queryLimit, queries.length)"
   },
-  "internal_outputs_built_inside_stage": [
-    "profileQueryRowsByQuery map",
-    "searchProfileKeys"
-  ]
+  "merge_behavior": "Query Journey treats LLM-enhanced and deterministic fallback rows identically. No branching on source."
 }

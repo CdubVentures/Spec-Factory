@@ -1,12 +1,11 @@
 {
   "_doc": "Call boundary for the Stage 04 Search Planner wrapper runSearchPlanner().",
-  "validated_against": "2026-03-18",
+  "validated_against": "2026-03-20",
   "function": "runSearchPlanner",
   "file": "src/features/indexing/discovery/stages/searchPlanner.js",
   "caller": "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
   "call_shape": {
-    "searchPlanHandoff": "Schema 4 handoff object or null",
-    "searchProfileBase": "deterministic Search Profile base object",
+    "searchProfileBase": "deterministic Search Profile base object (query_rows, base_templates, variant_guard_terms)",
     "variables": {
       "brand": "string",
       "model": "string",
@@ -15,7 +14,6 @@
     },
     "config": "object",
     "logger": "logger|null",
-    "llmContext": "object",
     "identityLock": {
       "brand": "string",
       "model": "string",
@@ -23,26 +21,18 @@
       "productId": "string"
     },
     "missingFields": "string[]",
-    "planningHints": {
-      "missingCriticalFields": "string[]"
-    },
-    "baseQueries": "usually searchProfileBase.base_templates",
-    "frontierDb": "frontier snapshot provider or null",
     "job": "product identity object"
   },
   "stage_dependencies": [
-    "resolveSchema4ExecutionPlan() from src/features/indexing/discovery/searchDiscovery.js",
-    "planUberQueries() from src/research/queryPlanner.js"
+    "enhanceQueryRows() from src/research/queryPlanner.js"
   ],
   "derived_context": [
-    "targetedQueries from searchProfileBase.queries",
-    "archetypeSummary from searchProfileBase.archetype_summary",
-    "coverageAnalysis from searchProfileBase.coverage_analysis",
-    "frontierSummary from frontierDb.snapshotForProduct(job.productId)"
+    "queryRows from searchProfileBase.query_rows (tier-tagged rows)",
+    "queryHistory from searchProfileBase.base_templates (prior queries to avoid)"
   ],
   "config_behaviors": [
-    "Math.max(12, Number(config.discoveryMaxQueries || 12) * 2) controls the stage cap passed to planUberQueries()",
-    "hasLlmRouteApiKey(config, { role: 'plan' }) and resolvePhaseModel(config, 'searchPlanner') gate LLM vs deterministic fallback inside planUberQueries()",
-    "config.llmTimeoutMs or config.openaiTimeoutMs is forwarded to the routed Search Planner call"
+    "hasLlmRouteApiKey(config, { role: 'plan' }) gates LLM vs deterministic fallback",
+    "resolvePhaseModel(config, 'searchPlanner') gates LLM vs deterministic fallback",
+    "config.llmTimeoutMs or config.openaiTimeoutMs is forwarded to the LLM call"
   ]
 }

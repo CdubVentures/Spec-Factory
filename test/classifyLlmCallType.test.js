@@ -11,7 +11,9 @@ describe('classifyLlmCallType', () => {
     // needset planner
     ['needset_search_planner', 'needset_planner'],
 
-    // search planner — includes uber_query_planner
+    // search planner — includes uber_query_planner and tier-aware enhance
+    ['search_planner', 'search_planner'],
+    ['search_planner_enhance', 'search_planner'],
     ['discovery_planner', 'search_planner'],
     ['discovery_planner_v2', 'search_planner'],
     ['uber_query_planner', 'search_planner'],

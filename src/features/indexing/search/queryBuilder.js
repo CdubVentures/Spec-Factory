@@ -845,8 +845,11 @@ export function buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldBy
       }
 
       if (isEnriched && repeatCount >= 3) {
-        // Round 3+: add content type hints
-        const contentType = (entry.preferred_content_types || [])[0] || '';
+        // Round 3+: add content type hints — prefer untried content types
+        const triedTypes = new Set((entry.content_types_tried_for_key || []).map((t) => t.toLowerCase()));
+        const availableTypes = (entry.preferred_content_types || []);
+        const untriedType = availableTypes.find((t) => !triedTypes.has(t.toLowerCase()));
+        const contentType = untriedType || availableTypes[0] || '';
         if (contentType) parts.push(contentType);
       }
 
@@ -861,6 +864,13 @@ export function buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldBy
         source_host: '',
         group_key: g.key || '',
         normalized_key: keyName,
+        // WHY: LLM enhancement context — Search Planner uses these to craft tier-aware prompts.
+        repeat_count: repeatCount,
+        all_aliases: isEnriched ? (entry.all_aliases || []) : [],
+        domain_hints: isEnriched ? (entry.domain_hints || []) : [],
+        preferred_content_types: isEnriched ? (entry.preferred_content_types || []) : [],
+        domains_tried_for_key: isEnriched ? (entry.domains_tried_for_key || []) : [],
+        content_types_tried_for_key: isEnriched ? (entry.content_types_tried_for_key || []) : [],
       });
     }
   }

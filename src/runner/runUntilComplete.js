@@ -265,7 +265,6 @@ export async function runUntilComplete({
         missing_critical_fields: missingCriticalForPlanning,
         availability: availabilityEffort,
         contract_effort: contractEffort,
-        bundle_hints: [],
         focus_fields: focusFields,
         escalated_fields: escalatedFields,
         previousRoundFields,

@@ -156,8 +156,10 @@ The persisted payload family is written later by Query Journey and then rewritte
 
 Search Profile feeds:
 
-- Stage 04 Search Planner with `base_templates`, targeted rows, and archetype/coverage context
-- Stage 05 Query Journey with deterministic `query_rows`, `variant_guard_terms`, and optional `effective_host_plan`
+- Stage 04 Search Planner with `searchProfileBase` containing tier-tagged `query_rows` and `base_templates` (query history). Search Planner enhances query strings via LLM while preserving all tier metadata.
+- Stage 05 Query Journey receives the enhanced rows from Search Planner (not directly from Search Profile). Query Journey also reads `variant_guard_terms` and `query_reject_log` from `searchProfileBase`, and appends optional `hostPlanQueryRows`.
+
+The `searchProfileQueryCap` setting is the sole controller for total query count. Search Planner is 1:1 (same row count in/out), so the cap applies at Query Journey.
 
 It also becomes the main discovery review artifact once execution finishes.
 
@@ -167,7 +169,12 @@ NeedSet tells Search Profile which tier to operate in. Search Profile reads the 
 
 - **Tier 1**: `seed_status.specs_seed.is_needed` and `seed_status.source_seeds[name].is_needed` → `buildTier1Queries()` emits broad seed queries
 - **Tier 2**: `focus_group.group_search_worthy === true` → `buildTier2Queries()` emits one broad query per worthy group, sorted by `productivity_score`. Uses `group_description_long` as the enriched description.
-- **Tier 3**: `focus_group.group_search_worthy === false` with non-empty `normalized_key_queue` → `buildTier3Queries()` emits one query per key, ordered by availability/difficulty.
+- **Tier 3**: `focus_group.group_search_worthy === false` with non-empty `normalized_key_queue` → `buildTier3Queries()` emits one query per key with progressive enrichment based on per-key `repeat_count`:
+  - 3a (repeat=0): bare `{product} {key}`
+  - 3b (repeat=1): `+ aliases` (cumulative — carried on all subsequent passes)
+  - 3c (repeat=2): `+ untried domain hint` (prefers `domain_hints` not in `domains_tried_for_key`)
+  - 3d (repeat=3+): `+ untried content type` (prefers `preferred_content_types` not in `content_types_tried_for_key`)
+  - `repeat_count` is per-key (how many times that key was searched), not per-round
 - **Mixed mode**: Tier 2 + Tier 3 can run simultaneously when some groups are still worth broad searching while others are exhausted.
 - **Backward compat**: When `seedStatus` is not passed, the legacy archetype pipeline runs unchanged.
 

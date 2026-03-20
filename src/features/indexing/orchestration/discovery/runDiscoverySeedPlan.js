@@ -48,14 +48,9 @@ function normalizePlanningHints({
     roundContext?.missing_critical_fields || categoryConfig?.schema?.critical_fields || [],
     { fieldOrder },
   );
-  const bundleHints = Array.isArray(roundContext?.bundle_hints)
-    ? roundContext.bundle_hints
-    : [];
-
   return {
     missingRequiredFields,
     missingCriticalFields,
-    bundleHints,
   };
 }
 
@@ -169,8 +164,8 @@ export async function runDiscoverySeedPlan({
   // === Stage 04: Search Planner ===
   const plannerResult = await runSearchPlannerFn({
     searchProfileBase: profile.searchProfileBase,
-    variables, config: discoveryConfig, logger, identityLock,
-    missingFields, job,
+    queryExecutionHistory,
+    config: discoveryConfig, logger, identityLock, missingFields,
   });
 
   // === Stage 05: Query Journey ===
@@ -242,7 +237,7 @@ export async function runDiscoverySeedPlan({
     llmQueries: [],
     queries: journey.queries, searchProfilePlanned: journey.searchProfilePlanned,
     searchProfileKeys: journey.searchProfileKeys, providerState, queryConcurrency, discoveryCap,
-    effectiveHostPlan: profile.effectiveHostPlan, focusGroups: needset.focusGroups,
+    effectiveHostPlan: profile.effectiveHostPlan,
   });
 
   // WHY: Attach the seed-phase schema4 so finalization can reuse it.
@@ -251,9 +246,10 @@ export async function runDiscoverySeedPlan({
   }
 
   // === Stage 08: Domain Classifier ===
-  runDomainClassifierFn({
+  const classifierResult = runDomainClassifierFn({
     discoveryResult, planner, config: discoveryConfig, logger,
   });
+  discoveryResult.enqueue_summary = classifierResult || {};
 
   return discoveryResult;
 }

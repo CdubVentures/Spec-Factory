@@ -1,48 +1,34 @@
 {
   "_doc": "Stage 04 Search Planner output returned by runSearchPlanner().",
-  "validated_against": "2026-03-18",
+  "validated_against": "2026-03-20",
   "top_level_keys": [
-    "schema4Plan",
-    "uberSearchPlan"
+    "enhancedRows",
+    "source"
   ],
-  "schema4Plan": {
-    "nullable": true,
-    "source": "schema4",
-    "queries": "accepted Schema 4 query strings",
-    "queryRows": [
-      {
-        "query": "string",
-        "source": "schema4_planner",
-        "target_fields": "string[]",
-        "domain_hint": "string",
-        "doc_hint": "string",
-        "hint_source": "schema4_search_plan",
-        "family": "string",
-        "group_key": "string",
-        "query_hash": "string"
-      }
-    ],
-    "selectedQueryRowMap": "Map keyed by lowercased query",
-    "rejectLog": "identity guard reject log",
-    "guardContext": {
-      "brandTokens": "string[]",
-      "modelTokens": "string[]",
-      "requiredDigitGroups": "string[]",
-      "allowedModelTokens": "string[]"
+  "enhancedRows": {
+    "type": "array of row objects",
+    "count": "same length as input searchProfileBase.query_rows",
+    "row_shape": {
+      "query": "possibly LLM-rewritten query string",
+      "hint_source": "original_llm when enhanced, original value when fallback",
+      "original_query": "pre-enhancement query (only present on LLM-enhanced rows)",
+      "tier": "seed | group_search | key_search (passthrough, never mutated)",
+      "group_key": "string (passthrough)",
+      "normalized_key": "string (passthrough)",
+      "target_fields": "string[] (passthrough)",
+      "doc_hint": "string (passthrough)",
+      "domain_hint": "string (passthrough)",
+      "repeat_count": "number (Tier 3 only, passthrough)",
+      "all_aliases": "string[] (Tier 3 only, passthrough)",
+      "domain_hints": "string[] (Tier 3 only, passthrough)",
+      "preferred_content_types": "string[] (Tier 3 only, passthrough)",
+      "domains_tried_for_key": "string[] (Tier 3 only, passthrough)",
+      "content_types_tried_for_key": "string[] (Tier 3 only, passthrough)"
     }
   },
-  "uberSearchPlan": {
-    "source": "llm|deterministic|deterministic_fallback",
-    "queries": "string[]",
-    "preferred_domains": "string[]",
-    "negative_filters": "string[]",
-    "max_queries": "number",
-    "max_new_domains": "number",
-    "sitemap_mode_recommended": "boolean"
-  },
+  "source": "llm | deterministic_fallback",
   "runtime_events": {
-    "schema4_path_active": "emitted when guarded Schema 4 rows survive",
-    "search_plan_generated": "emitted when uberSearchPlan.queries has at least one query"
+    "search_plan_generated": "emitted when source is llm and enhancedRows has entries"
   },
   "downstream_consumer": "src/features/indexing/discovery/stages/queryJourney.js"
 }

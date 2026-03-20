@@ -193,8 +193,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
     assert.equal(typeof result.discoveryKey, 'string');
     assert.equal(typeof result.candidatesKey, 'string');
     assert.ok(Array.isArray(result.candidates), 'candidates is array');
-    assert.ok(Array.isArray(result.approvedUrls), 'approvedUrls is array');
-    assert.ok(Array.isArray(result.candidateUrls), 'candidateUrls is array');
+    assert.ok(Array.isArray(result.selectedUrls), 'selectedUrls is array');
     assert.ok(Array.isArray(result.queries), 'queries is array');
     assert.ok(Array.isArray(result.llm_queries), 'llm_queries is array');
     assert.ok(typeof result.search_profile === 'object' && result.search_profile !== null, 'search_profile is object');
@@ -210,7 +209,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
     assert.ok(typeof result.serp_explorer === 'object' && result.serp_explorer !== null, 'serp_explorer is object');
   });
 
-  it('approvedUrls and candidateUrls are string arrays', async () => {
+  it('selectedUrls are string arrays matching candidates', async () => {
     const result = await processDiscoveryResults({
       rawResults: makeRawResults(),
       searchAttempts: [],
@@ -243,18 +242,14 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
-    for (const url of result.approvedUrls) {
-      assert.equal(typeof url, 'string', 'each approvedUrl is a string');
-      assert.ok(url.startsWith('https://'), 'approvedUrl starts with https://');
+    for (const url of result.selectedUrls) {
+      assert.equal(typeof url, 'string', 'each selectedUrl is a string');
+      assert.ok(url.startsWith('https://'), 'selectedUrl starts with https://');
     }
-    for (const url of result.candidateUrls) {
-      assert.equal(typeof url, 'string', 'each candidateUrl is a string');
-      assert.ok(url.startsWith('https://'), 'candidateUrl starts with https://');
-    }
-    // Union of approved + candidate = all candidates
-    const allUrls = new Set([...result.approvedUrls, ...result.candidateUrls]);
-    const candidateUrls = new Set(result.candidates.map((c) => c.url));
-    assert.deepEqual(allUrls, candidateUrls, 'approved + candidate = all candidate URLs');
+    // selectedUrls = all candidate URLs
+    const selectedSet = new Set(result.selectedUrls);
+    const candidateUrlSet = new Set(result.candidates.map((c) => c.url));
+    assert.deepEqual(selectedSet, candidateUrlSet, 'selectedUrls = all candidate URLs');
   });
 
   it('serp_explorer has expected top-level shape', async () => {
@@ -418,8 +413,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
     assert.ok(Array.isArray(sp.query_rows), 'query_rows is array');
     assert.ok(Array.isArray(sp.query_stats), 'query_stats is array');
     assert.equal(typeof sp.discovered_count, 'number');
-    assert.equal(typeof sp.approved_count, 'number');
-    assert.equal(typeof sp.candidate_count, 'number');
+    assert.equal(typeof sp.selected_count, 'number');
     assert.equal(typeof sp.llm_query_planning, 'boolean');
     assert.equal(typeof sp.llm_query_model, 'string');
     assert.equal(typeof sp.llm_serp_selector, 'boolean');

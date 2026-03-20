@@ -106,6 +106,7 @@ export class FrontierDbSqlite {
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('synchronous = NORMAL');
     this.db.exec(SCHEMA);
+    this._migrateTierColumns();
 
     this._queryCooldownMs = configInt(config, 'frontierQueryCooldownSeconds') * 1000;
     this._cooldown404Ms = configInt(config, 'frontierCooldown404Seconds') * 1000;
@@ -116,6 +117,19 @@ export class FrontierDbSqlite {
     this._cooldown429BaseMs = configInt(config, 'frontierCooldown429BaseSeconds') * 1000;
     this._backoffMaxExponent = configInt(config, 'frontierBackoffMaxExponent');
     this._pathPenaltyThreshold = configInt(config, 'frontierPathPenaltyNotfoundThreshold');
+  }
+
+  // WHY: Idempotent migration — adds tier metadata columns to existing databases.
+  _migrateTierColumns() {
+    const migrations = [
+      'ALTER TABLE queries ADD COLUMN tier TEXT DEFAULT NULL',
+      'ALTER TABLE queries ADD COLUMN group_key TEXT DEFAULT NULL',
+      'ALTER TABLE queries ADD COLUMN normalized_key TEXT DEFAULT NULL',
+      'ALTER TABLE queries ADD COLUMN hint_source TEXT DEFAULT NULL',
+    ];
+    for (const sql of migrations) {
+      try { this.db.exec(sql); } catch { /* column already exists */ }
+    }
   }
 
   canonicalize(url) {
@@ -142,11 +156,19 @@ export class FrontierDbSqlite {
     return {
       ...row,
       fields: JSON.parse(row.fields || '[]'),
-      results: JSON.parse(row.results || '[]')
+      results: JSON.parse(row.results || '[]'),
+      tier: row.tier || null,
+      group_key: row.group_key || null,
+      normalized_key: row.normalized_key || null,
+      hint_source: row.hint_source || null,
     };
   }
 
-  recordQuery({ productId, query, provider = '', fields = [], results = [], ts = nowIso() } = {}) {
+  recordQuery({
+    productId, query, provider = '', fields = [], results = [],
+    tier = null, group_key = null, normalized_key = null, hint_source = null,
+    ts = nowIso(),
+  } = {}) {
     const text = normalizeQuery(query);
     if (!text) return null;
     const hash = makeQueryHash(productId, text);
@@ -159,15 +181,21 @@ export class FrontierDbSqlite {
       snippet: String(r.snippet || '').slice(0, 400)
     })));
 
-    const existing = this.db.prepare('SELECT attempts FROM queries WHERE query_hash = ?').get(hash);
+    const existing = this.db.prepare('SELECT attempts, tier, group_key, normalized_key, hint_source FROM queries WHERE query_hash = ?').get(hash);
+    // WHY: Same semantics as JSON FrontierDb — new values win, but fall back to existing if not provided.
+    const resolvedTier = tier || existing?.tier || null;
+    const resolvedGroupKey = group_key || existing?.group_key || null;
+    const resolvedNormalizedKey = normalized_key || existing?.normalized_key || null;
+    const resolvedHintSource = hint_source || existing?.hint_source || null;
+
     if (existing) {
       this.db.prepare(
-        'UPDATE queries SET attempts = attempts + 1, last_ts = ?, provider = ?, fields = ?, results = ? WHERE query_hash = ?'
-      ).run(ts, provider, fieldsJson, resultsJson, hash);
+        'UPDATE queries SET attempts = attempts + 1, last_ts = ?, provider = ?, fields = ?, results = ?, tier = ?, group_key = ?, normalized_key = ?, hint_source = ? WHERE query_hash = ?'
+      ).run(ts, provider, fieldsJson, resultsJson, resolvedTier, resolvedGroupKey, resolvedNormalizedKey, resolvedHintSource, hash);
     } else {
       this.db.prepare(
-        'INSERT INTO queries (query_hash, product_id, query_text, provider, fields, attempts, first_ts, last_ts, results) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)'
-      ).run(hash, String(productId || ''), text, provider, fieldsJson, ts, ts, resultsJson);
+        'INSERT INTO queries (query_hash, product_id, query_text, provider, fields, attempts, first_ts, last_ts, results, tier, group_key, normalized_key, hint_source) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)'
+      ).run(hash, String(productId || ''), text, provider, fieldsJson, ts, ts, resultsJson, resolvedTier, resolvedGroupKey, resolvedNormalizedKey, resolvedHintSource);
     }
 
     return { query_hash: hash, query_text: text };
@@ -422,6 +450,28 @@ export class FrontierDbSqlite {
       domain_stats_count: 0,
       path_stats_count: 0
     };
+  }
+
+  buildQueryExecutionHistory(productId) {
+    const product = String(productId || '').trim();
+    const queryRows = this.db.prepare('SELECT * FROM queries WHERE product_id = ?').all(product);
+    const queries = queryRows.map((row) => {
+      const results = JSON.parse(row.results || '[]');
+      const hasResults = results.length > 0;
+      const lastTs = row.last_ts ? Date.parse(row.last_ts) : null;
+      return {
+        query_text: row.query_text || '',
+        tier: row.tier || null,
+        group_key: row.group_key || null,
+        normalized_key: row.normalized_key || null,
+        source_name: row.hint_source === 'tier1_seed' ? (row.query_text || '').split(' ').pop() : null,
+        status: hasResults ? 'scrape_complete' : 'pending',
+        completed_at_ms: hasResults && lastTs ? lastTs : null,
+        new_fields_closed: 0,
+        pending_count: hasResults ? 0 : 1,
+      };
+    });
+    return { queries };
   }
 
   close() {

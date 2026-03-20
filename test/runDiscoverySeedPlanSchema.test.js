@@ -40,7 +40,6 @@ function makeRoundContext() {
   return {
     missing_required_fields: ['sensor_model', 'weight'],
     missing_critical_fields: ['sensor_model'],
-    bundle_hints: [],
     round: 1,
   };
 }

@@ -58,6 +58,16 @@ export function defaultRunDataLocalDirectory() {
   return path.resolve(path.join(homeDir, 'Desktop', DEFAULT_LOCAL_FOLDER_NAME));
 }
 
+// WHY: Temp directories are volatile — they vanish on reboot. If a test or
+// crash persists a temp-dir localDirectory, runs written there will disappear.
+// Reject paths under os.tmpdir() so the stable default kicks in.
+function isVolatilePath(dirPath) {
+  if (!dirPath) return false;
+  const resolved = path.resolve(dirPath);
+  const tmpDir = path.resolve(os.tmpdir());
+  return resolved.startsWith(tmpDir + path.sep) || resolved === tmpDir;
+}
+
 function resolveRunToken(runMeta, keys) {
   if (!runMeta || typeof runMeta !== 'object') return '';
   for (const key of keys) {
@@ -277,9 +287,10 @@ export function normalizeRunDataStorageSettings(input = {}, fallback = {}) {
     Object.hasOwn(next, 'destinationType') ? next.destinationType : previous.destinationType,
     LOCAL_DESTINATION,
   );
-  const localDirectoryToken = toToken(
+  const rawLocalDirectory = toToken(
     Object.hasOwn(next, 'localDirectory') ? next.localDirectory : previous.localDirectory,
   );
+  const localDirectoryToken = isVolatilePath(rawLocalDirectory) ? '' : rawLocalDirectory;
   const localDirectory = destinationType === LOCAL_DESTINATION
     ? (localDirectoryToken || defaultRunDataLocalDirectory())
     : localDirectoryToken;

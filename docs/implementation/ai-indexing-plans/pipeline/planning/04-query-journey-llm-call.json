@@ -1,38 +1,39 @@
 {
   "_doc": "There is no Query Journey-owned LLM call in the current implementation.",
-  "validated_against": "2026-03-18",
+  "validated_against": "2026-03-20",
   "query_journey_itself": {
     "llm_call": false,
     "implemented_by": [
       "src/features/indexing/discovery/stages/queryJourney.js",
-      "src/features/indexing/discovery/discoveryQueryPlan.js",
-      "src/features/indexing/discovery/searchPlanHandoffAdapter.js"
+      "src/features/indexing/discovery/discoveryQueryPlan.js"
     ],
     "operations": [
-      "merge deterministic, Schema 4, and uber query sources",
+      "receive enhanced rows from Search Planner (LLM-enhanced or deterministic fallback — treated identically)",
       "dedupeQueryRows()",
-      "prioritizeQueryRows()",
+      "prioritizeQueryRows() by field priority and host-field fit",
+      "cap to searchProfileQueryCap",
       "enforceIdentityQueryGuard()",
-      "append guarded host-plan rows",
-      "write planned search_profile"
+      "append guarded host-plan rows (separately deduped)",
+      "build llm_queries from rows where hint_source ends with _llm",
+      "write planned search_profile artifact"
     ]
   },
   "adjacent_llm_surfaces": [
     {
       "surface": "NeedSet Schema 4 planner",
-      "when": "before Query Journey",
+      "when": "before Query Journey (Stage 01)",
       "owner": "src/indexlab/searchPlanBuilder.js",
       "reason": "needset_search_planner"
     },
     {
-      "surface": "Stage 04 Search Planner",
+      "surface": "Stage 04 Search Planner (tier-aware enhancement)",
       "when": "immediately before Query Journey",
-      "owner": "src/research/queryPlanner.js",
-      "reason": "search_planner"
+      "owner": "src/research/queryPlanner.js (enhanceQueryRows)",
+      "reason": "search_planner_enhance"
     },
     {
       "surface": "SERP selector / reranker",
-      "when": "after Query Journey",
+      "when": "after Query Journey (Stage 07)",
       "owner": [
         "src/features/indexing/discovery/serpSelectorLlmAdapter.js",
         "src/research/serpReranker.js"
@@ -44,8 +45,6 @@
     }
   ],
   "current_runtime_values": {
-    "searchProfilePlanned.llm_queries": "Schema 4 query texts plus Search Planner uber query texts",
-    "processDiscoveryResults_llmQueries_arg": "canonical callers currently pass []",
-    "processDiscoveryResults_uberSearchPlan_arg": "canonical callers forward uberSearchPlan or null"
+    "searchProfilePlanned.llm_queries": "query texts from enhanced rows where hint_source ends with _llm. Empty when LLM failed."
   }
 }

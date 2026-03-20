@@ -87,7 +87,6 @@ describe('buildSerpSelectorInput', () => {
       candidateRows: [makeCandidateRow()],
       categoryConfig: makeCategoryConfig(),
       serpSelectorUrlCap: 50,
-      domainClassifierUrlCap: 50,
     });
 
     assert.ok(selectorInput.product);
@@ -192,7 +191,9 @@ describe('buildSerpSelectorInput', () => {
     assert.equal(overflowRows.length, 0);
   });
 
-  it('domainClassifierUrlCap controls effective candidate cap', () => {
+  it('effectiveCap uses SERP_SELECTOR_MAX_CANDIDATES constant', () => {
+    // WHY: domainClassifierUrlCap is retired. Input cap is now fixed at
+    // SERP_SELECTOR_MAX_CANDIDATES (80) regardless of config.
     const rows = makeRows(100);
     const { selectorInput } = buildSerpSelectorInput({
       variables: makeVariables(),
@@ -200,9 +201,8 @@ describe('buildSerpSelectorInput', () => {
       candidateRows: rows,
       categoryConfig: makeCategoryConfig(),
       discoveryCap: 60,
-      domainClassifierUrlCap: 40,
     });
-    assert.ok(selectorInput.candidates.length <= 40);
+    assert.ok(selectorInput.candidates.length <= SERP_SELECTOR_MAX_CANDIDATES);
   });
 });
 

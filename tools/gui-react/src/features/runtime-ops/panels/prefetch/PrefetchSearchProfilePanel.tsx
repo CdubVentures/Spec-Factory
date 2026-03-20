@@ -229,8 +229,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
         {/* Big stat numbers */}
         <HeroStatGrid>
           <HeroStat value={data.selected_query_count ?? data.query_count} label="queries" />
-          <HeroStat value={data.discovered_count ?? totalResults} label={(data.discovered_count ?? 0) > 0 ? 'urls discovered' : 'serp results'} colorClass={(data.discovered_count ?? 0) > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
-          <HeroStat value={data.approved_count ?? 0} label="approved" colorClass={(data.approved_count ?? 0) > 0 ? 'text-[var(--sf-token-accent)]' : 'sf-text-muted'} />
+          <HeroStat value={data.selected_count ?? data.discovered_count ?? totalResults} label={(data.selected_count ?? data.discovered_count ?? 0) > 0 ? 'urls selected' : 'serp results'} colorClass={(data.selected_count ?? data.discovered_count ?? 0) > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
           <HeroStat value={guardRejected ?? guardGuarded ?? 0} label="guard rejected" colorClass={(guardRejected ?? 0) > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
         </HeroStatGrid>
 
@@ -238,8 +237,8 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
           Deterministic planner assembled <strong className="sf-text-primary not-italic">{data.selected_query_count ?? data.query_count}</strong> queries
           {' '}from field rules, search templates, and identity aliases
-          {(data.discovered_count ?? 0) > 0 && (
-            <> &mdash; discovered <strong className="sf-text-primary not-italic">{data.discovered_count}</strong> URLs ({data.approved_count ?? 0} approved, {data.candidate_count ?? 0} candidates)</>
+          {(data.selected_count ?? data.discovered_count ?? 0) > 0 && (
+            <> &mdash; selected <strong className="sf-text-primary not-italic">{data.selected_count ?? data.discovered_count}</strong> URLs for extraction</>
           )}
           .
         </div>
@@ -337,12 +336,12 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
           <div className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-4">
             <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
               {[
-                { label: 'checked', value: data.serp_explorer.candidates_checked, color: 'sf-text-primary' },
-                { label: 'deduped', value: data.serp_explorer.dedupe_output, color: 'sf-text-primary' },
-                { label: 'triaged', value: data.serp_explorer.urls_triaged, color: 'text-[var(--sf-token-accent)]' },
+                { label: 'serp results', value: data.serp_explorer.dedupe_input, color: 'sf-text-muted' },
+                { label: 'unique urls', value: data.serp_explorer.dedupe_output, color: 'sf-text-primary' },
+                { label: 'hard dropped', value: data.serp_explorer.hard_drop_count, color: 'text-[var(--sf-state-error-fg)]' },
+                { label: 'sent to selector', value: data.serp_explorer.candidates_sent ?? data.serp_explorer.urls_triaged, color: 'text-[var(--sf-token-accent)]' },
                 { label: 'selected', value: data.serp_explorer.urls_selected, color: 'text-[var(--sf-state-success-fg)]' },
-                { label: 'rejected', value: data.serp_explorer.urls_rejected, color: 'text-[var(--sf-state-error-fg)]' },
-                { label: 'dupes removed', value: data.serp_explorer.duplicates_removed, color: 'sf-text-muted' },
+                { label: 'not selected', value: data.serp_explorer.soft_exclude_count, color: 'sf-text-muted' },
               ].map((s) => (
                 <div key={s.label}>
                   <div className={`text-2xl font-bold leading-none tracking-tight ${s.color}`}>{s.value}</div>

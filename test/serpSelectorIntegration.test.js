@@ -256,13 +256,4 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
     }
   });
 
-  it('lane_stats has _compatibility flag', async () => {
-    const result = await processDiscoveryResults(makeBaseArgs({
-      _serpSelectorCallFn: async ({ selectorInput }) => {
-        const ids = selectorInput.candidates.map((c) => c.id);
-        return makeSelectorOutput(ids);
-      },
-    }));
-    assert.equal(result.serp_explorer.lane_stats._compatibility, true);
-  });
 });

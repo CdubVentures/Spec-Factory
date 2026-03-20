@@ -154,6 +154,31 @@ test('dedupeQueryRows: skips truly empty string rows', () => {
   assert.ok(rejectLog.some((r) => r.reason === 'empty_query'));
 });
 
+test('dedupeQueryRows: preserves tier metadata on duplicate merge', () => {
+  // WHY: When a duplicate query merges into an existing row that has no tier,
+  // the existing row should absorb the duplicate's tier metadata.
+  const { rows } = dedupeQueryRows([
+    { query: 'razer viper v3 specs', source: 'profile', tier: undefined, group_key: undefined, normalized_key: undefined },
+    { query: 'Razer Viper V3 Specs', source: 'needset', tier: 'seed', group_key: 'core_specs', normalized_key: 'battery_hours' },
+  ]);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].tier, 'seed', 'tier should be absorbed from duplicate');
+  assert.equal(rows[0].group_key, 'core_specs', 'group_key should be absorbed from duplicate');
+  assert.equal(rows[0].normalized_key, 'battery_hours', 'normalized_key should be absorbed from duplicate');
+});
+
+test('dedupeQueryRows: does not overwrite existing tier metadata on merge', () => {
+  // WHY: If the first row already has tier metadata, it should not be overwritten
+  // by a later duplicate's tier metadata (first-seen wins).
+  const { rows } = dedupeQueryRows([
+    { query: 'razer viper v3 specs', source: 'needset', tier: 'seed', group_key: 'identity', normalized_key: null },
+    { query: 'Razer Viper V3 Specs', source: 'profile', tier: 'group_search', group_key: 'core_specs', normalized_key: 'weight' },
+  ]);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].tier, 'seed', 'first-seen tier should win');
+  assert.equal(rows[0].group_key, 'identity', 'first-seen group_key should win');
+});
+
 // ---------------------------------------------------------------------------
 // prioritizeQueryRows
 // ---------------------------------------------------------------------------

@@ -535,6 +535,7 @@ export class FrontierDb {
       const hasResults = results.length > 0;
       const lastTs = row.last_ts ? Date.parse(row.last_ts) : null;
       return {
+        query_text: row.query_text || '',
         tier: row.tier || null,
         group_key: row.group_key || null,
         normalized_key: row.normalized_key || null,

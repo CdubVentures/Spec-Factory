@@ -51,7 +51,6 @@ function makeRoundContext() {
   return {
     missing_required_fields: ['sensor_model', 'weight'],
     missing_critical_fields: ['sensor_model'],
-    bundle_hints: [],
     round: 0,
   };
 }
@@ -118,8 +117,7 @@ function makeSchema4Empty() {
 function makeDiscoveryResult(overrides = {}) {
   return {
     enabled: true,
-    approvedUrls: ['https://testbrand.com/testmodel'],
-    candidateUrls: ['https://review-site.com/testmodel'],
+    selectedUrls: ['https://testbrand.com/testmodel', 'https://review-site.com/testmodel'],
     candidates: [
       {
         url: 'https://testbrand.com/testmodel',
@@ -497,13 +495,11 @@ describe('Prefetch pipeline sequence characterization', () => {
 
   describe('Domain Classifier (Stage 08) — planner enqueue', () => {
 
-    it('approved URLs enqueued as discovery_approved', async () => {
+    it('all selected URLs enqueued via single discovery path', async () => {
       const enqueued = [];
-      const seeded = [];
 
       const planner = {
         enqueue(url, reason, opts) { enqueued.push({ url, reason, opts }); },
-        seedCandidates(urls, opts) { seeded.push({ urls, opts }); },
         enqueueCounters: { total: 0 },
       };
 
@@ -516,13 +512,17 @@ describe('Prefetch pipeline sequence characterization', () => {
         runDomainClassifierFn: (args) => runDomainClassifier(args),
       }));
 
-      assert.equal(enqueued.length, 1);
-      assert.equal(enqueued[0].url, 'https://testbrand.com/testmodel');
-      assert.equal(enqueued[0].reason, 'discovery_approved');
-      assert.equal(enqueued[0].opts.forceApproved, true);
-
-      assert.equal(seeded.length, 1);
-      assert.deepEqual(seeded[0].urls, ['https://review-site.com/testmodel']);
+      // WHY: All selected URLs go through one enqueue path with triageMeta.
+      // No forceApproved/forceCandidate split — triage metadata drives routing.
+      assert.equal(enqueued.length, 2);
+      const urls = enqueued.map((e) => e.url).sort();
+      assert.deepEqual(urls, [
+        'https://review-site.com/testmodel',
+        'https://testbrand.com/testmodel',
+      ]);
+      for (const entry of enqueued) {
+        assert.equal(entry.reason, 'discovery');
+      }
     });
 
     // WHY: fetchCandidateSources is retired (settingsRegistry: deprecated, always true).
