@@ -1,6 +1,6 @@
 # Prefetch Pipeline Overview
 
-Validated: 2026-03-20.
+Validated: 2026-03-20 (NeedSet budget-aware allocation added, round-mode overrides removed, round_mode field retired).
 
 Source of truth:
 
@@ -30,7 +30,7 @@ Every stage runs. There is no branching between stages. Conditional behavior sta
 
 ## Three-Tier Search Model (V4)
 
-The discovery search system operates on three query tiers. NeedSet's job is to rank groups by easiest/most productive and tell Search Profile "focus on these now." When those groups are checked off, NeedSet surfaces the next batch. Search Profile and Search Planner write the actual queries.
+The discovery search system operates on three query tiers. NeedSet's job is to rank groups by easiest/most productive, compute a budget-aware tier allocation from `searchProfileQueryCap`, and tell Search Profile "you have N slots — spend them like this." When those groups are checked off, NeedSet surfaces the next batch. Search Profile and Search Planner write the actual queries.
 
 ### Tier 1 — Broad Seeds (fire once, cooldown)
 - `{brand} {model} {variant} specifications`
@@ -53,7 +53,10 @@ The discovery search system operates on three query tiers. NeedSet's job is to r
 - `sorted_unresolved_keys` orders fields by: availability -> difficulty -> repeat -> need_score -> required_level
 
 ### Query Execution History
-Structured per-query tracking with `tier`, `group_key`, `normalized_key`, `source_name` persisted by the execution layer at fire-time (never inferred from text). Passed fresh to `buildSearchPlanningContext` on each round.
+Structured per-query tracking with `tier`, `group_key`, `normalized_key`, `hint_source` persisted by `frontierDb.recordQuery()` at fire-time via `resolveSelectedQueryRow()` in `discoverySearchExecution.js`. `runDiscoverySeedPlan` calls `frontierDb.buildQueryExecutionHistory(productId)` before NeedSet and passes the result through `runNeedSet` to `buildSearchPlanningContext`.
+
+### Field History Feedback Loop
+`runUntilComplete.js` extracts `previousFieldHistories` from `roundResult.needSet.fields[].history` via `buildPreviousFieldHistories()` after each round completes. This is passed in `roundContext` to the next round's `computeNeedSet()`, enabling `repeat_count` accumulation, `domains_tried_for_key` tracking, and progressive Tier 3 enrichment.
 
 ## Canonical runtime order
 
@@ -62,11 +65,11 @@ Structured per-query tracking with `tier`, `group_key`, `normalized_key`, `sourc
 2. Force `discoveryEnabled=true` and default empty `searchEngines` to `bing,google`.
 3. Stage 01 NeedSet:
    - `computeNeedSet()` builds Schema 2.
-   - `buildSearchPlanningContext()` builds Schema 3 (includes `seed_status`, `focus_groups` with V4 tier signals).
+   - `buildSearchPlanningContext()` builds Schema 3 (includes `seed_status`, `focus_groups` with V4 tier signals, budget-aware `tier_allocation`, expanded `pass_seed`). Receives `queryExecutionHistory` for round-over-round awareness.
    - `buildSearchPlan()` builds Schema 4 — LLM assesses groups (`reason_active`, `planner_confidence`) but does NOT generate queries. `search_plan_handoff.queries` is always empty.
    - `runNeedSet()` emits `needset_computed` twice when Schema 4 succeeds:
      - `scope: schema2_preview` before the Schema 4 LLM call
-     - `scope: schema4_planner` after panel is assembled. Panel `profile_influence` shows tier targeting: `targeted_specification`, `targeted_sources`, `targeted_groups`, `targeted_single`.
+     - `scope: schema4_planner` after panel is assembled. Panel `profile_influence` shows budget-aware targeting: `targeted_specification`, `targeted_sources`, `targeted_groups`, `targeted_single` (allocation-based), plus `budget`, `allocated`, `overflow_groups`, `overflow_keys`.
 4. Stage 02 Brand Resolver:
    - `runBrandResolver()` resolves brand domains after NeedSet so the NeedSet worker appears first in the GUI.
    - manufacturer auto-promotion happens here when enabled.
@@ -241,7 +244,7 @@ Seed-phase carry-through:
 ## Conditional behavior
 
 - Brand resolution short-circuits on empty brand, cache hit, missing route key, or resolver error.
-- NeedSet preview `needset_computed` emits before the Schema 4 LLM call; the Schema 4 `needset_computed` event is conditional on `schema4.panel`. Panel bundles do not carry queries. `profile_influence` shows tier-aware targeting counts.
+- NeedSet preview `needset_computed` emits before the Schema 4 LLM call; the Schema 4 `needset_computed` event is conditional on `schema4.panel`. Panel bundles do not carry queries. `profile_influence` shows budget-aware targeting counts (allocation-based when `tier_allocation` is present, aspirational fallback otherwise).
 - Search Planner falls back to deterministic output when no `plan` route API key or no stage model is available.
 - `buildEffectiveHostPlan()` only runs when `categoryConfig.validatedRegistry` exists.
 - External search can be skipped when `discoveryInternalFirst` satisfies required-field pressure.

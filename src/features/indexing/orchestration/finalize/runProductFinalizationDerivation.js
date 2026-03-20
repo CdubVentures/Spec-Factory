@@ -351,7 +351,6 @@ export async function runProductFinalizationDerivation({
     needSet.profile_influence = searchPlanOutput.panel.profile_influence;
     needSet.deltas = searchPlanOutput.panel.deltas;
     needSet.round = searchPlanOutput.panel.round ?? 0;
-    needSet.round_mode = searchPlanOutput.panel.round_mode ?? 'seed';
     needSet.schema_version = searchPlanOutput.schema_version;
   }
 

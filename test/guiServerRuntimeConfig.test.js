@@ -9,6 +9,7 @@ import {
   resolveStorageBackedWorkspaceRoots,
   resolveRunDataDestinationType,
   createRunDataArchiveStorage,
+  resolveCurrentIndexLabRoot,
 } from '../src/api/guiServerRuntimeConfig.js';
 
 test('resolveProjectPath resolves project-relative and absolute paths', () => {
@@ -163,4 +164,67 @@ test('resolveRunDataDestinationType and createRunDataArchiveStorage honor s3 sto
     ok: true,
     input: calls[0],
   });
+});
+
+// WHY: Contract test for resolveCurrentIndexLabRoot — SSOT dynamic derivation.
+test('resolveCurrentIndexLabRoot returns local indexlab path when local storage enabled', () => {
+  const state = { enabled: true, destinationType: 'local', localDirectory: '/my/storage' };
+  const result = resolveCurrentIndexLabRoot({
+    runDataStorageState: state,
+    defaultIndexLabRoot: () => '/default/indexlab',
+    defaultLocalOutputRoot: () => '/default/output',
+  });
+  assert.equal(result, path.resolve('/my/storage', 'indexlab'));
+});
+
+test('resolveCurrentIndexLabRoot returns default when s3 storage enabled', () => {
+  const state = { enabled: true, destinationType: 's3', s3Bucket: 'test-bucket' };
+  const result = resolveCurrentIndexLabRoot({
+    runDataStorageState: state,
+    defaultIndexLabRoot: () => '/default/indexlab',
+    defaultLocalOutputRoot: () => '/default/output',
+  });
+  assert.equal(result, '/default/indexlab');
+});
+
+test('resolveCurrentIndexLabRoot returns default when storage disabled', () => {
+  const state = { enabled: false, destinationType: 'local', localDirectory: '/my/storage' };
+  const result = resolveCurrentIndexLabRoot({
+    runDataStorageState: state,
+    defaultIndexLabRoot: () => '/default/indexlab',
+    defaultLocalOutputRoot: () => '/default/output',
+  });
+  assert.equal(result, '/default/indexlab');
+});
+
+test('resolveCurrentIndexLabRoot reflects runtime mutation of runDataStorageState', () => {
+  const state = { enabled: true, destinationType: 'local', localDirectory: '/path-a' };
+  const opts = {
+    runDataStorageState: state,
+    defaultIndexLabRoot: () => '/default/indexlab',
+    defaultLocalOutputRoot: () => '/default/output',
+  };
+  const first = resolveCurrentIndexLabRoot(opts);
+  assert.equal(first, path.resolve('/path-a', 'indexlab'));
+
+  // Mutate the same object (simulates Object.assign in configPersistenceContext)
+  Object.assign(state, { localDirectory: '/path-b' });
+  const second = resolveCurrentIndexLabRoot(opts);
+  assert.equal(second, path.resolve('/path-b', 'indexlab'));
+});
+
+test('resolveCurrentIndexLabRoot reflects destination type switch', () => {
+  const state = { enabled: true, destinationType: 'local', localDirectory: '/my/storage' };
+  const opts = {
+    runDataStorageState: state,
+    defaultIndexLabRoot: () => '/default/indexlab',
+    defaultLocalOutputRoot: () => '/default/output',
+  };
+  assert.equal(resolveCurrentIndexLabRoot(opts), path.resolve('/my/storage', 'indexlab'));
+
+  Object.assign(state, { destinationType: 's3' });
+  assert.equal(resolveCurrentIndexLabRoot(opts), '/default/indexlab');
+
+  Object.assign(state, { destinationType: 'local' });
+  assert.equal(resolveCurrentIndexLabRoot(opts), path.resolve('/my/storage', 'indexlab'));
 });

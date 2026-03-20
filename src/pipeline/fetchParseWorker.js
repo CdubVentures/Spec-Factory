@@ -1,4 +1,5 @@
 import { normalizeWhitespace } from '../utils/common.js';
+import { configInt } from '../shared/settingsAccessor.js';
 
 function toInt(value, fallback = 0) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -171,11 +172,11 @@ export function applyHostBudgetBackoff(hostRow, { status = 0, outcome = '', conf
   const token = String(outcome || '').trim().toLowerCase();
   let seconds = 0;
   if (code === 429 || token === 'rate_limited') {
-    seconds = Math.max(60, toInt(config.frontierCooldown429BaseSeconds, 15 * 60));
+    seconds = configInt(config, 'frontierCooldown429BaseSeconds');
   } else if (code === 403 || token === 'blocked' || token === 'login_wall' || token === 'bot_challenge' || token === 'soft_block') {
-    seconds = Math.max(60, toInt(config.frontierCooldown403BaseSeconds, 30 * 60));
+    seconds = configInt(config, 'frontierCooldown403BaseSeconds');
   } else if (token === 'network_timeout' || token === 'fetch_error' || token === 'server_error') {
-    seconds = Math.max(60, toInt(config.frontierCooldownTimeoutSeconds, 6 * 60 * 60));
+    seconds = configInt(config, 'frontierCooldownTimeoutSeconds');
   }
   if (seconds > 0) {
     noteHostRetryTs(hostRow, new Date(nowMs + (seconds * 1000)).toISOString());

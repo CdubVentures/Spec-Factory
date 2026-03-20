@@ -1,4 +1,5 @@
 import { toInt, toBool } from './typeHelpers.js';
+import { configValue } from '../../../../shared/settingsAccessor.js';
 
 export function parseMinEvidenceRefs(value, fallback = 1) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -275,7 +276,7 @@ export async function loadRouteMatrixPolicyForRun({
 }
 
 export function resolveRuntimeControlKey(storage, config = {}) {
-  const raw = String(config.runtimeControlFile || '_runtime/control/runtime_overrides.json').trim();
+  const raw = String(configValue(config, 'runtimeControlFile')).trim();
   if (!raw) {
     return storage.resolveOutputKey('_runtime/control/runtime_overrides.json');
   }

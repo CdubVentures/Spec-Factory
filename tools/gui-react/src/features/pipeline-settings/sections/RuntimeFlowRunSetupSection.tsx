@@ -155,9 +155,6 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
             autoComplete="off"
           />
         </SettingRow>
-        <SettingRow label="Results Per Query" tip="Number of Google organic results to request per query (10-100). Google caps at ~10 organic results per page.">
-          <SettingNumberInput draftKey="serperResultCount" value={runtimeDraft.serperResultCount} bounds={getNumberBounds('serperResultCount')} step={10} disabled={!runtimeSettingsReady || !runtimeDraft.serperEnabled} className={inputCls} onNumberChange={onNumberChange} />
-        </SettingRow>
         <AdvancedSettingsBlock title="Proxy Crawl" count={10} disabled={runtimeDraft.serperEnabled}>
           <SettingRow label="Primary Engine" tip={RUNTIME_SEARCH_PRIMARY_HELP}>
             <select
@@ -258,18 +255,12 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
         >
           <SettingNumberInput draftKey="maxPagesPerDomain" value={runtimeDraft.maxPagesPerDomain} bounds={getNumberBounds('maxPagesPerDomain')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
-        <AdvancedSettingsBlock title="Query & URL Counts" count={4}>
+        <AdvancedSettingsBlock title="Query & URL Counts" count={3}>
           <SettingRow
-            label="Search Profile Query Count / Run"
+            label="Search Query Count / Run"
             tip="Hard cap on the final merged query profile output (deterministic + LLM planner combined). The Query Journey enforces this as the ceiling on total queries sent to search."
           >
             <SettingNumberInput draftKey="searchProfileQueryCap" value={runtimeDraft.searchProfileQueryCap} bounds={getNumberBounds('searchProfileQueryCap')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow
-            label="Search Planner Query Count / Run"
-            tip="Hard cap on how many queries the LLM search planner can generate. Applied at Stage 04 before merging with deterministic queries. The final merged count is governed by Search Profile Query Count."
-          >
-            <SettingNumberInput draftKey="searchPlannerQueryCap" value={runtimeDraft.searchPlannerQueryCap} bounds={getNumberBounds('searchPlannerQueryCap')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
           <SettingRow
             label="Serp Selector URL Count / Run"

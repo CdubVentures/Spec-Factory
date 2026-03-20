@@ -8,6 +8,7 @@ import {
   ListObjectsV2Command,
   HeadObjectCommand
 } from '@aws-sdk/client-s3';
+import { configValue, configBool } from '../shared/settingsAccessor.js';
 
 async function streamToBuffer(stream) {
   const chunks = [];
@@ -35,10 +36,10 @@ function normalizeOutputMode(value, fallback = 'local') {
 
 class S3Storage {
   constructor(config) {
-    this.bucket = config.s3Bucket;
-    this.inputPrefix = config.s3InputPrefix;
-    this.outputPrefix = config.s3OutputPrefix;
-    this.client = new S3Client({ region: config.awsRegion });
+    this.bucket = configValue(config, 's3Bucket');
+    this.inputPrefix = configValue(config, 's3InputPrefix');
+    this.outputPrefix = configValue(config, 's3OutputPrefix');
+    this.client = new S3Client({ region: configValue(config, 'awsRegion') });
   }
 
   async listInputKeys(category) {
@@ -203,10 +204,10 @@ class S3Storage {
 
 class LocalStorage {
   constructor(config) {
-    this.inputRoot = path.resolve(config.localInputRoot);
-    this.outputRoot = path.resolve(config.localOutputRoot);
-    this.inputPrefix = config.s3InputPrefix;
-    this.outputPrefix = config.s3OutputPrefix;
+    this.inputRoot = path.resolve(configValue(config, 'localInputRoot'));
+    this.outputRoot = path.resolve(configValue(config, 'localOutputRoot'));
+    this.inputPrefix = configValue(config, 's3InputPrefix');
+    this.outputPrefix = configValue(config, 's3OutputPrefix');
   }
 
   resolveLocalPath(key) {
@@ -363,10 +364,10 @@ class DualMirroredStorage {
     this.config = config;
     this.local = new LocalStorage(config);
     this.s3 = new S3Storage(config);
-    this.inputPrefix = config.s3InputPrefix || 'specs/inputs';
-    this.outputPrefix = config.s3OutputPrefix || 'specs/outputs';
-    this.mirrorOutputEnabled = Boolean(config.mirrorToS3);
-    this.mirrorInputEnabled = Boolean(config.mirrorToS3Input && config.mirrorToS3);
+    this.inputPrefix = configValue(config, 's3InputPrefix');
+    this.outputPrefix = configValue(config, 's3OutputPrefix');
+    this.mirrorOutputEnabled = configBool(config, 'mirrorToS3');
+    this.mirrorInputEnabled = configBool(config, 'mirrorToS3Input') && configBool(config, 'mirrorToS3');
     this._mirrorErrors = 0;
   }
 
@@ -490,9 +491,11 @@ class DualMirroredStorage {
 }
 
 export function createStorage(config) {
+  const rawOutputMode = configValue(config, 'outputMode');
+  const isLocal = configBool(config, 'localMode');
   const mode = normalizeOutputMode(
-    config.outputMode || (config.localMode ? 'local' : 's3'),
-    config.localMode ? 'local' : 's3'
+    rawOutputMode || (isLocal ? 'local' : 's3'),
+    isLocal ? 'local' : 's3'
   );
 
   if (mode === 'local') {

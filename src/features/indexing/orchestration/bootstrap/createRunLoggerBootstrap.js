@@ -1,3 +1,5 @@
+import { configValue } from '../../../../shared/settingsAccessor.js';
+
 function validateFunctionArg(name, value) {
   if (typeof value !== 'function') {
     throw new TypeError(`createRunLoggerBootstrap requires ${name}`);
@@ -16,7 +18,7 @@ export function createRunLoggerBootstrap({
 
   const logger = createEventLoggerFn({
     storage,
-    runtimeEventsKey: config.runtimeEventsKey || '_runtime/events.jsonl',
+    runtimeEventsKey: configValue(config, 'runtimeEventsKey'),
     onEvent: config.onRuntimeEvent,
     context: {
       runId,

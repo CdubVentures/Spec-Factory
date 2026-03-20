@@ -6,6 +6,7 @@ import {
   PutObjectCommand,
 } from '@aws-sdk/client-s3';
 import { defaultIndexLabRoot, defaultLocalOutputRoot } from '../../core/config/runtimeArtifactRoots.js';
+import { computeRunStorageMetrics } from './storageMetricsService.js';
 
 const DEFAULT_LOCAL_FOLDER_NAME = 'SpecFactoryRuns';
 const DEFAULT_S3_PREFIX = 'spec-factory-runs';
@@ -527,6 +528,26 @@ export async function relocateRunDataForCompletedRun({
     `${JSON.stringify(manifest, null, 2)}\n`,
     'utf8',
   );
+
+  // WHY: Compute storage_metrics while all artifacts are staged in one place.
+  // The run is done; sizes won't change. Enrich run.json before final copy/upload.
+  try {
+    const storageMetrics = await computeRunStorageMetrics(stageRunRoot);
+    const stagedRunJsonPath = path.join(stageRunRoot, 'indexlab', 'run.json');
+    let runMeta;
+    try {
+      runMeta = JSON.parse(await fs.readFile(stagedRunJsonPath, 'utf8'));
+    } catch {
+      runMeta = null;
+    }
+    if (runMeta && typeof runMeta === 'object') {
+      runMeta.storage_metrics = storageMetrics;
+      await fs.writeFile(stagedRunJsonPath, `${JSON.stringify(runMeta, null, 2)}\n`, 'utf8');
+    }
+  } catch (metricsErr) {
+    // Non-fatal: don't block relocation on metrics failure
+    process.stderr.write(`[storage-metrics] Warning: failed to compute storage_metrics for run ${runId}: ${String(metricsErr?.message || metricsErr)}\n`);
+  }
 
   const sourceDirsToDelete = [...new Set([
     copyReport.staged_run_output ? runOutputDir : '',

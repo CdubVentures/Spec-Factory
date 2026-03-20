@@ -1,13 +1,13 @@
 # NeedSet Logic In And Out
 
-Validated against live code on 2026-03-19.
+Validated against live code on 2026-03-20. round_mode retired. Round-over-round history feedback loop wired.
 
 ## What this stage is
 
-NeedSet is the Stage 01 discovery boundary. It assesses what fields are missing, groups them, ranks which groups are easiest/most productive to work on, and passes that information upstream. It does not write queries or decide search strategy.
+NeedSet is the Stage 01 discovery boundary. It assesses what fields are missing, groups them, ranks which groups are easiest/most productive to work on, computes a budget-aware tier allocation, and passes that information upstream. It does not write queries or decide search strategy.
 
 - Schema 2 via `computeNeedSet()` — per-field gap assessment + V4 search packs
-- Schema 3 via `buildSearchPlanningContext()` — group-level aggregation, coverage/worthiness ranking, seed status
+- Schema 3 via `buildSearchPlanningContext()` — group-level aggregation, coverage/worthiness ranking, seed status, budget-aware tier allocation
 - Schema 4 via `buildSearchPlan()` — LLM call for group-level annotations only (does NOT generate queries)
 
 Primary owners:
@@ -59,11 +59,13 @@ NeedSet does NOT write queries. Its job is to say "these groups are easiest/most
 - evidence state: `fieldOrder`, `provenance`, `fieldRules`, `fieldReasoning`, `constraintAnalysis`
 - identity state: `identityContext`
 - prior memory: `previousFieldHistories`
+- `queryExecutionHistory` — per-query completion state with structured metadata (`tier`, `group_key`, `normalized_key`, `source_name`). Wired through to `buildSearchPlanningContextFn`. Null on round 0.
 - stage services: `computeNeedSetFn`, `buildSearchPlanningContextFn`, `buildSearchPlanFn`
 
-`buildSearchPlanningContext()` also accepts (V4):
+`buildSearchPlanningContext()` also accepts:
 
-- `queryExecutionHistory` — per-query completion state with structured metadata (`tier`, `group_key`, `normalized_key`, `source_name`). Fetched fresh immediately before call.
+- `queryExecutionHistory` — passed through from `runNeedSet`. Used by `deriveSeedStatus()`, `computeGroupQueryCount()`, and `computeTierAllocation()`.
+- `config` — reads `searchProfileQueryCap` for budget-aware tier allocation.
 
 `buildFieldHistories()` later consumes:
 
@@ -95,13 +97,22 @@ NeedSet does NOT write queries. Its job is to say "these groups are easiest/most
 5. `group_fingerprint_coarse` (stable = `group_key`) / `group_fingerprint_fine` (changes with unresolved set)
 6. `normalized_key_queue` — V4-sorted unresolved keys per group
 7. `productivity_score` — per-group ranking score (availability + difficulty + volume + need_score - repeat penalty)
-8. `seed_status` — per-seed completion with `last_status`, cooldown, `new_fields_closed`
-9. `pass_seed` — seed signals derivable from NeedSet data
+8. `seed_status` — per-seed completion with `last_status`, cooldown, `new_fields_closed`. Derived from `queryExecutionHistory` via `deriveSeedStatus()`. Uses actual completion status, not round number.
+9. `pass_seed` — expanded seed signals: `passA_specs_seed`, `passA_source_candidates`, `passA_target_groups`, `passB_group_queue` (search-worthy group keys), `passB_key_queue` (individual keys from non-worthy groups)
+10. `tier_allocation` — budget-aware slot distribution via `computeTierAllocation()`
 
-Phase assignment is productivity-based, not required_level-based:
+### Budget-aware tier allocation (new)
+
+`computeTierAllocation(seedStatus, focusGroups, queryBudget)` mirrors Search Profile's priority order (seeds first → groups → keys) to pre-compute how many queries go to each tier. The query budget comes from `searchProfileQueryCap` setting (default 10).
+
+Output shape: `{ budget, tier1_seed_count, tier2_group_count, tier3_key_count, tier1_seeds[], tier2_groups[], tier3_keys[], overflow_group_count, overflow_key_count }`
+
+### Budget-aware phase assignment
+
+Phase assignment is productivity-based AND budget-aware:
 
 - Round 0 (Tier 1 seeds first): all unresolved groups are `next`
-- Round 1+: groups ranked by `productivity_score` — top half become `now`, rest stay `next`
+- Round 1+: seed slots computed from `seed_status`. Remaining budget (`queryBudget - seedSlots`) limits how many search-worthy groups become `now`. Groups sorted by `productivity_score` descending — only the top N that fit become `now`, rest stay `next`. Non-worthy groups stay `next` (their keys may fire as Tier 3 but the group itself isn't getting a broad search).
 - Resolved or all-exhausted groups: `hold`
 
 Productivity score rewards easy-to-find fields (high availability), easy-to-extract fields (low difficulty), more unresolved fields per group (more bang per broad search), and higher need_score. It penalizes groups already searched multiple times. `required_level` only matters as a tie-break through `need_score`.
@@ -111,7 +122,7 @@ Productivity score rewards easy-to-find fields (high availability), easy-to-extr
 1. calls `buildSearchPlanningContext()` on the Schema 2 output
 2. emits `needset_computed` with `scope: "schema2_preview"` before the Schema 4 LLM call
 3. calls `buildSearchPlan()` — LLM assesses groups (`reason_active`, `planner_confidence`) but does NOT generate queries. Query authoring belongs to Search Profile (deterministic tiers) and Search Planner (LLM enrichment).
-4. emits `needset_computed` again with `scope: "schema4_planner"` when `schema4.panel` exists. Panel bundles do not carry queries. `profile_influence` shows tier-aware targeting: `targeted_specification`, `targeted_sources`, `targeted_groups`, `targeted_single`, group phase counts, and `planner_confidence`.
+4. emits `needset_computed` again with `scope: "schema4_planner"` when `schema4.panel` exists. Panel bundles do not carry queries. `profile_influence` shows budget-aware targeting: `targeted_specification`, `targeted_sources`, `targeted_groups`, `targeted_single` (all allocation-based when `tier_allocation` exists), plus `budget`, `allocated`, `overflow_groups`, `overflow_keys`, group phase counts, and `planner_confidence`.
 5. `searchPlanHandoff.queries` is always empty — NeedSet does not author queries
 6. emits `schema4_handoff_ready` when the handoff metadata is non-empty
 
@@ -124,10 +135,14 @@ Productivity score rewards easy-to-find fields (high availability), easy-to-extr
 - `search_intent` is per-key (derived from `exact_match_required`), not per-group. Groups do not have `search_intent` or `host_class`.
 - `group_query_count` counts actual Tier 2 broad group searches, NOT the sum of individual key retries. This prevents false exhaustion.
 - `group_search_worthy` uses `group_query_count`, not `group_key_retry_count`.
-- Phase is productivity-based: groups ranked by `productivity_score`, not by `required_level`. Round 0 → all groups `next` (seeds first).
+- Phase is productivity-based AND budget-aware: groups ranked by `productivity_score`, only the top N that fit the query budget become `now`. Round 0 → all groups `next` (seeds first).
 - Tier escalation is natural: Tier 1 seeds → Tier 2 group searches (groups with `group_search_worthy = true`) → Tier 3 individual keys (remaining fields via `normalized_key_queue`). Groups should be searched before individual keys because broad searches net more results.
 - Seed completion requires `new_fields_closed >= 1`. Scraping 10 pages with 0 new fields = failed, no cooldown.
-- `queryExecutionHistory` must be fetched fresh immediately before `buildSearchPlanningContext` runs.
+- `queryExecutionHistory` is built from `frontierDb.buildQueryExecutionHistory(productId)` in `runDiscoverySeedPlan` and wired through `runNeedSet` to `buildSearchPlanningContext`. Contains per-query `tier`, `group_key`, `normalized_key`, `status`, `completed_at_ms` from frontier records. Null-safe on round 0 (returns `{ queries: [] }`).
+- `previousFieldHistories` is extracted from `roundResult.needSet.fields[].history` by `buildPreviousFieldHistories()` in `runUntilComplete.js` and passed via `roundContext` to the next round. This enables `repeat_count` accumulation, `domains_tried_for_key` tracking, and progressive Tier 3 enrichment across rounds.
+- `passA_specs_seed` is derived from `seedStatus.specs_seed.is_needed` (actual completion status), not from round number. Without execution history, specs seed is always needed.
+- `tier_allocation` mirrors Search Profile's priority order so the dashboard shows exactly what will execute.
+- Frontier DB records tier metadata (`tier`, `group_key`, `normalized_key`, `hint_source`) per query at fire-time via `resolveSelectedQueryRow()` in `discoverySearchExecution.js`.
 
 ## Outputs out
 
@@ -154,7 +169,7 @@ Each `fields[]` entry includes:
 
 - Each `focus_groups[]` entry adds: `group_description_short`, `group_description_long`, `total_field_count`, `resolved_field_count`, `coverage_ratio`, `group_query_count`, `group_key_retry_count`, `group_search_worthy`, `skip_reason`, `group_fingerprint_coarse`, `group_fingerprint_fine`, `normalized_key_queue`, `group_search_terms`, `content_type_candidates`, `domains_tried_for_group`, `productivity_score`
 - Removed from focus_groups: `search_intent` (now per-key on Schema 2 field entry), `host_class` (removed — not a group-level concept)
-- Top-level: `seed_status` (per-seed completion state), `pass_seed` (seed signals)
+- Top-level: `seed_status` (per-seed completion state), `pass_seed` (expanded: `passA_*` + `passB_group_queue` + `passB_key_queue`), `tier_allocation` (budget-aware slot distribution)
 
 Backward-compat blocks still emitted: `run_id`, `category`, `product_id`, `generated_at`, `total_fields`, `focus_fields`, `bundles`, `profile_mix`, `rows`, `debug`.
 

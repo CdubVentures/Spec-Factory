@@ -1,5 +1,6 @@
 import { runProduct } from '../pipeline/runProduct.js';
 
+import { configValue } from '../shared/settingsAccessor.js';
 import { loadCategoryConfig } from '../categories/loader.js';
 import { evaluateSearchLoopStop } from '../features/indexing/search/index.js';
 import { EventLogger } from '../logger.js';
@@ -44,6 +45,19 @@ function buildPreviousRoundFields(roundResult) {
     .map((f) => ({ field_key: f.field_key, state: f.state || 'unknown' }));
 }
 
+// WHY: Extract per-field history objects so the next round's computeNeedSet
+// receives accumulated query_count, domains_tried, existing_queries, etc.
+// Without this, every round starts fresh and repeat_count is always 0.
+export function buildPreviousFieldHistories(roundResult) {
+  const fields = roundResult?.needSet?.fields;
+  if (!Array.isArray(fields) || fields.length === 0) return {};
+  const result = {};
+  for (const f of fields) {
+    if (f.field_key && f.history) result[f.field_key] = f.history;
+  }
+  return result;
+}
+
 // Re-exports for backward compatibility
 export { normalizeFieldContractToken, calcProgressDelta, isIdentityOrEditorialField } from './convergenceHelpers.js';
 export {
@@ -73,7 +87,7 @@ export async function runUntilComplete({
   }
   const logger = new EventLogger({
     storage,
-    runtimeEventsKey: config.runtimeEventsKey || '_runtime/events.jsonl',
+    runtimeEventsKey: configValue(config, 'runtimeEventsKey'),
     context: {
       category,
       productId
@@ -106,6 +120,7 @@ export async function runUntilComplete({
   let previousSummary = null;
   let previousProgress = null;
   let previousRoundFields = null;
+  let previousFieldHistories = {};
   let noProgressStreak = 0;
   let completed = false;
   let exhausted = false;
@@ -254,6 +269,7 @@ export async function runUntilComplete({
         focus_fields: focusFields,
         escalated_fields: escalatedFields,
         previousRoundFields,
+        previousFieldHistories,
       }
     });
     finalResult = roundResult;
@@ -397,6 +413,7 @@ export async function runUntilComplete({
         // WHY: Capture needset field states so the next round's planner can
         // compute deltas ("what changed this round") for the GUI.
         previousRoundFields = buildPreviousRoundFields(roundResult);
+        previousFieldHistories = buildPreviousFieldHistories(roundResult);
         continue;
       }
       exhausted = true;
@@ -407,6 +424,7 @@ export async function runUntilComplete({
     previousSummary = roundResult.summary;
     previousProgress = progress;
     previousRoundFields = buildPreviousRoundFields(roundResult);
+    previousFieldHistories = buildPreviousFieldHistories(roundResult);
   }
 
   if (!completed && !exhausted && rounds.length >= roundsLimit) {

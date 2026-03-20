@@ -7,7 +7,8 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { shouldAutoSave } from './settingsAutoSaveGate';
+import { shouldAutoSave, shouldFlushOnUnmount } from './settingsAutoSaveGate';
+import { teardownFetch } from '../../../api/teardownFetch';
 import {
   registerUnloadGuard,
   markDomainFlushedByUnmount,
@@ -114,34 +115,30 @@ export function useSettingsAutoSaveEffect({
   }, [domain, unloadUrl, unloadMethod]);
 
   // --- Unmount flush ---
-  // WHY: Uses fetch({ keepalive }) instead of sendBeacon because sendBeacon
-  // always sends POST regardless of the method field, silently breaking PUT
-  // endpoints. Matches the unload guard pattern (settingsUnloadGuard.ts:39-41).
   useEffect(() => {
     return () => {
-      if (isDomainFlushedByUnload(domain)) return;
       const hadPendingTimer = Boolean(pendingTimerRef.current);
       if (pendingTimerRef.current) {
         clearTimeout(pendingTimerRef.current);
         pendingTimerRef.current = null;
       }
-      if (!enabledRef.current || !dirtyRef.current || !autoSaveEnabledRef.current) return;
-      const fp = payloadFingerprintRef.current;
-      if (!fp) return;
-      if (fp === lastSavedFingerprintRef.current) return;
-      if (!hadPendingTimer && fp === lastAttemptFingerprintRef.current) return;
-      lastAttemptFingerprintRef.current = fp;
-      try {
-        const body = JSON.stringify(getUnloadBodyRef.current());
-        void fetch(unloadUrl, {
-          method: unloadMethod,
-          headers: { 'Content-Type': 'application/json' },
-          body,
-          keepalive: true,
-        });
-      } catch {
-        // Best-effort — silently catch during teardown.
-      }
+      const flush = shouldFlushOnUnmount({
+        alreadyFlushedByUnload: isDomainFlushedByUnload(domain),
+        hadPendingTimer,
+        enabled: enabledRef.current,
+        dirty: dirtyRef.current,
+        autoSaveEnabled: autoSaveEnabledRef.current,
+        payloadFingerprint: payloadFingerprintRef.current,
+        lastSavedFingerprint: lastSavedFingerprintRef.current,
+        lastAttemptFingerprint: lastAttemptFingerprintRef.current,
+      });
+      if (!flush) return;
+      lastAttemptFingerprintRef.current = payloadFingerprintRef.current;
+      teardownFetch({
+        url: unloadUrl,
+        method: unloadMethod,
+        body: getUnloadBodyRef.current(),
+      });
       markDomainFlushedByUnmount(domain);
     };
   // WHY: deps=[] — uses refs for all mutable values. Fixes the LLM Settings

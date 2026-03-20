@@ -3,7 +3,6 @@ type IndexingRunDiscoveryPayloadPrimitive = string | number | boolean;
 export interface BuildIndexingRunDiscoveryPayloadInput {
   fetchCandidateSources: boolean;
   parsedSearchProfileQueryCap: number;
-  parsedSearchPlannerQueryCap: number;
   parsedSerpSelectorUrlCap: number;
   parsedDomainClassifierUrlCap: number;
   parsedMaxUrlsPerProduct: number;
@@ -24,7 +23,6 @@ export function buildIndexingRunDiscoveryPayload(
     discoveryEnabled: true,
     fetchCandidateSources: input.fetchCandidateSources,
     searchProfileQueryCap: input.parsedSearchProfileQueryCap,
-    searchPlannerQueryCap: input.parsedSearchPlannerQueryCap,
     serpSelectorUrlCap: input.parsedSerpSelectorUrlCap,
     domainClassifierUrlCap: input.parsedDomainClassifierUrlCap,
     maxUrlsPerProduct: input.parsedMaxUrlsPerProduct,

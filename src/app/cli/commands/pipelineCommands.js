@@ -1,5 +1,6 @@
 import { slug, parseCsvList, looksHttpUrl, assertCategorySchemaReady, parseJsonArg } from '../cliHelpers.js';
 import pathNode from 'node:path';
+import { configInt, configValue } from '../../../shared/settingsAccessor.js';
 
 export function createPipelineCommands({
   asBool,
@@ -11,7 +12,7 @@ export function createPipelineCommands({
 }) {
   async function commandRunOne(config, storage, args) {
     const s3Key =
-      args.s3key || `${config.s3InputPrefix}/mouse/products/mouse-razer-viper-v3-pro.json`;
+      args.s3key || `${configValue(config, 's3InputPrefix')}/mouse/products/mouse-razer-viper-v3-pro.json`;
 
     const result = await runProduct({ storage, config, s3Key });
     return {
@@ -44,7 +45,7 @@ export function createPipelineCommands({
     const buildInputKey = (pid) => {
       const normalized = String(pid || '').trim().replace(/\.json$/i, '');
       if (!normalized) return '';
-      return toPosixKey(config.s3InputPrefix, category, 'products', `${normalized}.json`);
+      return toPosixKey(configValue(config, 's3InputPrefix'), category, 'products', `${normalized}.json`);
     };
 
     let s3Key = String(args.s3key || '').trim();
@@ -139,7 +140,7 @@ export function createPipelineCommands({
       const boundedFetchTimeoutMs = Math.max(
         1_000,
         Math.min(
-          Number(runConfig.pageGotoTimeoutMs || config.pageGotoTimeoutMs || 15_000),
+          configInt(runConfig, 'pageGotoTimeoutMs'),
           Math.floor(runBudgetMs / 3)
         )
       );
@@ -147,14 +148,14 @@ export function createPipelineCommands({
       runConfig.pageNetworkIdleTimeoutMs = Math.max(
         500,
         Math.min(
-          Number(runConfig.pageNetworkIdleTimeoutMs || config.pageNetworkIdleTimeoutMs || 2_000),
+          configInt(runConfig, 'pageNetworkIdleTimeoutMs'),
           Math.floor(boundedFetchTimeoutMs / 2)
         )
       );
       runConfig.robotsTxtTimeoutMs = Math.max(
         500,
         Math.min(
-          Number(runConfig.robotsTxtTimeoutMs || config.robotsTxtTimeoutMs || 6_000),
+          configInt(runConfig, 'robotsTxtTimeoutMs'),
           boundedFetchTimeoutMs
         )
       );
@@ -189,11 +190,11 @@ export function createPipelineCommands({
       runConfig.concurrency = 1;
       runConfig.fetchPerHostConcurrencyCap = 1;
       runConfig.maxUrlsPerProduct = Math.min(
-        Number(runConfig.maxUrlsPerProduct || config.maxUrlsPerProduct || 12),
+        configInt(runConfig, 'maxUrlsPerProduct'),
         4
       );
       runConfig.maxPagesPerDomain = Math.min(
-        Number(runConfig.maxPagesPerDomain || config.maxPagesPerDomain || 4),
+        configInt(runConfig, 'maxPagesPerDomain'),
         2
       );
     }
@@ -281,7 +282,7 @@ export function createPipelineCommands({
     }
 
     const s3Key =
-      args.s3key || toPosixKey(config.s3InputPrefix, category, 'products', `${productId}.json`);
+      args.s3key || toPosixKey(configValue(config, 's3InputPrefix'), category, 'products', `${productId}.json`);
 
     await storage.writeObject(
       s3Key,

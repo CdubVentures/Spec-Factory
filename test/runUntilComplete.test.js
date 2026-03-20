@@ -12,7 +12,8 @@ import {
   normalizeFieldContractToken,
   calcProgressDelta,
   isIdentityOrEditorialField,
-  makeLlmTargetFields
+  makeLlmTargetFields,
+  buildPreviousFieldHistories,
 } from '../src/runner/runUntilComplete.js';
 
 test('shouldForceExpectedFieldRetry forces one extra loop for expected required fields with not_found_after_search', () => {
@@ -309,7 +310,7 @@ test('buildRoundConfig keeps discovery disabled when required fields are already
   );
 
   assert.equal(roundConfig.discoveryEnabled, false);
-  assert.equal(roundConfig.fetchCandidateSources, false);
+  // WHY: fetchCandidateSources is retired (deprecated, always true). sourcePlanner hardcodes it.
   assert.equal(roundConfig.searchEngines, '');
   assert.equal(roundConfig.maxUrlsPerProduct <= 48, true);
   assert.equal(roundConfig.maxCandidateUrls <= 48, true);
@@ -422,7 +423,7 @@ test('buildRoundConfig defers external discovery on first required-search iterat
   );
 
   assert.equal(roundConfig.discoveryEnabled, false);
-  assert.equal(roundConfig.fetchCandidateSources, false);
+  // WHY: fetchCandidateSources is retired (deprecated, always true). sourcePlanner hardcodes it.
   assert.equal(roundConfig.searchEngines, '');
 });
 
@@ -551,7 +552,8 @@ test('buildRoundConfig applies production-mode budgets with boosted limits', () 
 
   assert.equal((config.maxUrlsPerProduct || 0) >= 90, true);
   assert.equal((config.maxCandidateUrls || 0) >= 120, true);
-  assert.equal((config.searchProfileQueryCap || 0) >= 8, true);
+  // WHY: searchProfileQueryCap passes through from user settings unchanged.
+  // No round-mode overrides. If not explicitly set, configInt resolves it from registry default (10).
 });
 
 test('buildContractEffortPlan derives weighted effort from field rule contracts', () => {
@@ -646,7 +648,8 @@ test('buildRoundConfig raises deep-search budgets for high contract effort plans
 
   assert.equal(high.maxUrlsPerProduct >= low.maxUrlsPerProduct, true);
   assert.equal(high.maxCandidateUrls >= low.maxCandidateUrls, true);
-  assert.equal(high.searchProfileQueryCap >= low.searchProfileQueryCap, true);
+  // WHY: searchProfileQueryCap is not affected by effort boosts — it passes
+  // through from user settings unchanged. Effort boosts only affect URL/candidate caps.
 });
 
 // --- Characterization tests for newly-exported private functions ---
@@ -822,4 +825,48 @@ test('makeLlmTargetFields: cap enforcement limits output length', () => {
     config: {}
   });
   assert.ok(fields.length <= 110);
+});
+
+// ── buildPreviousFieldHistories ──
+
+test('buildPreviousFieldHistories extracts history keyed by field_key', () => {
+  const roundResult = {
+    needSet: {
+      fields: [
+        { field_key: 'weight', state: 'unknown', history: { existing_queries: ['q1'], domains_tried: ['rtings.com'], query_count: 1, no_value_attempts: 0 } },
+        { field_key: 'dpi', state: 'accepted', history: { existing_queries: ['q2', 'q3'], domains_tried: ['techpowerup.com'], query_count: 2, no_value_attempts: 1 } },
+      ],
+    },
+  };
+  const result = buildPreviousFieldHistories(roundResult);
+  assert.deepStrictEqual(Object.keys(result).sort(), ['dpi', 'weight']);
+  assert.deepStrictEqual(result.weight.existing_queries, ['q1']);
+  assert.equal(result.weight.query_count, 1);
+  assert.deepStrictEqual(result.dpi.domains_tried, ['techpowerup.com']);
+  assert.equal(result.dpi.no_value_attempts, 1);
+});
+
+test('buildPreviousFieldHistories returns {} for null/empty needSet', () => {
+  assert.deepStrictEqual(buildPreviousFieldHistories(null), {});
+  assert.deepStrictEqual(buildPreviousFieldHistories({}), {});
+  assert.deepStrictEqual(buildPreviousFieldHistories({ needSet: null }), {});
+  assert.deepStrictEqual(buildPreviousFieldHistories({ needSet: { fields: [] } }), {});
+  assert.deepStrictEqual(buildPreviousFieldHistories({ needSet: { fields: undefined } }), {});
+});
+
+test('buildPreviousFieldHistories skips fields missing field_key or history', () => {
+  const roundResult = {
+    needSet: {
+      fields: [
+        { field_key: 'valid', history: { query_count: 3 } },
+        { field_key: null, history: { query_count: 1 } },
+        { field_key: 'no_history', history: null },
+        { field_key: '', history: { query_count: 2 } },
+        { state: 'unknown' },
+      ],
+    },
+  };
+  const result = buildPreviousFieldHistories(roundResult);
+  assert.deepStrictEqual(Object.keys(result), ['valid']);
+  assert.equal(result.valid.query_count, 3);
 });

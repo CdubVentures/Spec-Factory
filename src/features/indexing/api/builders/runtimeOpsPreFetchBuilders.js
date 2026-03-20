@@ -82,7 +82,6 @@ export function buildPreFetchPhases(events, meta, artifacts) {
         deltas: eventDeltas,
         rows: Array.isArray(payload.rows) ? payload.rows : [],
         round: typeof payload.round === 'number' ? payload.round : 0,
-        round_mode: String(payload.round_mode || 'seed').trim(),
         schema_version: payload.schema_version || null,
       };
     }
@@ -328,7 +327,6 @@ export function buildPreFetchPhases(events, meta, artifacts) {
           deltas: Array.isArray(artNeedset.deltas) ? artNeedset.deltas : [],
           rows: Array.isArray(artNeedset.rows) ? artNeedset.rows : [],
           round: typeof artNeedset.round === 'number' ? artNeedset.round : 0,
-          round_mode: String(artNeedset.round_mode || 'seed').trim(),
           schema_version: artNeedset.schema_version || null,
           snapshots: needsetSnapshots,
         }
@@ -344,7 +342,6 @@ export function buildPreFetchPhases(events, meta, artifacts) {
           deltas: [],
           rows: [],
           round: 0,
-          round_mode: 'seed',
           schema_version: null,
           snapshots: [],
         };

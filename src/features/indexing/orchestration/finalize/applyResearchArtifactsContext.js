@@ -17,7 +17,7 @@ export async function applyResearchArtifactsContext({
   }
 
   const researchBase = storage.resolveOutputKey(category, productId, 'runs', runId, 'research');
-  const searchPlanPayload = discoveryResult?.uber_search_plan || null;
+  const searchPlanPayload = { source: 'none', queries: discoveryResult?.queries || [] };
   const searchJournalRows = Array.isArray(discoveryResult?.search_journal) ? discoveryResult.search_journal : [];
   const frontierSnapshot = frontierDb?.frontierSnapshot?.({ limit: 200 }) || null;
   const previousFields = previousFinalSpec?.fields && typeof previousFinalSpec.fields === 'object'

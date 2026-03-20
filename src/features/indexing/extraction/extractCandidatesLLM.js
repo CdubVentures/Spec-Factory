@@ -1,3 +1,4 @@
+import { configInt, configValue } from '../../../shared/settingsAccessor.js';
 import { normalizeWhitespace } from '../../../utils/common.js';
 import { normalizeFieldList } from '../../../utils/fieldKeys.js';
 import { buildFieldBatches, resolveBatchModel } from './fieldBatching.js';
@@ -182,7 +183,7 @@ export async function extractCandidatesLLM({
   for (const [k, v] of Object.entries(kvEnums)) {
     if (v && Array.isArray(v.values)) knownValuesFlat[k] = v.values;
   }
-  const maxBatchCount = Math.max(1, Number.parseInt(String(config.llmMaxBatchesPerProduct || 7), 10) || 7);
+  const maxBatchCount = configInt(config, 'llmMaxBatchesPerProduct');
   const batches = buildFieldBatches({
     targetFields: effectiveFieldOrder,
     fieldRules,
@@ -199,7 +200,7 @@ export async function extractCandidatesLLM({
   const cache = new LLMCache({
       specDb,
       cacheDir: config.llmExtractionCacheDir || '.specfactory_tmp/llm_cache',
-      defaultTtlMs: Number(config.llmExtractionCacheTtlMs || 7 * 24 * 60 * 60 * 1000)
+      defaultTtlMs: configInt(config, 'llmExtractionCacheTtlMs')
     });
   let cacheHits = 0;
   const routeMatrixPolicy = llmContext?.route_matrix_policy || llmContext?.routeMatrixPolicy || null;
@@ -279,8 +280,8 @@ export async function extractCandidatesLLM({
       const effectiveReasoningMode = phaseReasoningForced || modelRoute.reasoningMode;
       const model = routePrimaryModel || (
         effectiveReasoningMode
-          ? (resolvePhaseModel(config, 'extraction') || config.llmModelReasoning || modelRoute.model)
-          : (resolvePhaseModel(config, 'extraction') || modelRoute.model || config.llmModelPlan)
+          ? (resolvePhaseModel(config, 'extraction') || String(configValue(config, 'llmModelReasoning')) || modelRoute.model)
+          : (resolvePhaseModel(config, 'extraction') || modelRoute.model || String(configValue(config, 'llmModelPlan')))
       );
       // WHY: Phase override token cap takes precedence, then route policy, then batch model route
       const phaseMaxTokens = Math.max(0, Number(config._resolvedExtractionMaxOutputTokens || 0));
@@ -377,7 +378,7 @@ export async function extractCandidatesLLM({
       const repatchEnabled = Boolean(batchRoutePolicy?.all_sources_confidence_repatch);
       const repatchModel = String(
         routeModels[1]
-          || (effectiveReasoningMode ? '' : (resolvePhaseModel(config, 'extraction') || config.llmModelReasoning || ''))
+          || (effectiveReasoningMode ? '' : (resolvePhaseModel(config, 'extraction') || String(configValue(config, 'llmModelReasoning'))))
       ).trim();
       const repatchReason = `${modelRoute.reason}_repatch`;
       const primaryRequest = {
@@ -482,8 +483,8 @@ export async function extractCandidatesLLM({
 
       // Stamp model attribution on each candidate
       for (const cand of sanitized.fieldCandidates || []) {
-        cand.llm_extract_model = model || config.llmModelPlan || '';
-        cand.llm_extract_provider = config.llmProvider || '';
+        cand.llm_extract_model = model || String(configValue(config, 'llmModelPlan'));
+        cand.llm_extract_provider = String(configValue(config, 'llmProvider'));
       }
 
       aggregateIdentity = {
@@ -537,7 +538,7 @@ export async function extractCandidatesLLM({
     }
 
     logger?.info?.('llm_extract_completed', {
-      model: resolvePhaseModel(config, 'extraction') || config.llmModelPlan,
+      model: resolvePhaseModel(config, 'extraction') || String(configValue(config, 'llmModelPlan')),
       candidate_count: primary.fieldCandidates.length,
       conflict_count: primary.conflicts.length,
       batch_count: usableBatches.length,

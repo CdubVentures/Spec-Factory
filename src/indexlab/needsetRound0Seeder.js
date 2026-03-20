@@ -33,7 +33,6 @@ export function seedRound0NeedSet({
     identityContext,
     now: new Date().toISOString(),
     round: 0,
-    roundMode: 'seed',
     brand,
     model,
     baseModel,

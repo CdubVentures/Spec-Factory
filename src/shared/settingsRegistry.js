@@ -34,10 +34,10 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "crawleeRequestHandlerTimeoutSecs", type: "int", default: 75, min: 0, max: 300, configKey: "crawleeRequestHandlerTimeoutSecs", envKey: "CRAWLEE_REQUEST_HANDLER_TIMEOUT_SECS" },
   { key: "daemonConcurrency", type: "int", default: 1, min: 1, max: 128, configKey: "daemonConcurrency", envKey: "DAEMON_CONCURRENCY" },
   { key: "deepseekApiKey", type: "string", default: "", secret: true, allowEmpty: true, configKey: "deepseekApiKey", envKey: "DEEPSEEK_API_KEY" },
-  { key: "searchPlannerQueryCap", type: "int", default: 30, min: 1, max: 2000, configKey: "searchPlannerQueryCap", envKey: "SEARCH_PLANNER_QUERY_CAP" },
-  { key: "searchProfileQueryCap", type: "int", default: 10, min: 1, max: 100, configKey: "searchProfileQueryCap", envKey: "SEARCH_PROFILE_QUERY_CAP" },
+  { key: "searchProfileQueryCap", type: "int", default: 10, min: 1, max: 100, configKey: "searchProfileQueryCap", envKey: "SEARCH_QUERY_CAP" },
   { key: "discoveryQueryConcurrency", type: "int", default: 2, min: 1, max: 16, configKey: "discoveryQueryConcurrency", envKey: "DISCOVERY_QUERY_CONCURRENCY" },
-  { key: "discoveryResultsPerQuery", type: "int", default: 10, min: 1, max: 50, configKey: "discoveryResultsPerQuery", envKey: "DISCOVERY_RESULTS_PER_QUERY" },
+  // WHY: discoveryResultsPerQuery retired — Google always returns 10. Hardcoded in configBuilder.
+  { key: "discoveryResultsPerQuery", type: "int", default: 10, deprecated: true, defaultsOnly: true, configKey: "discoveryResultsPerQuery", envKey: "" },
   { key: "domainClassifierUrlCap", type: "int", default: 50, min: 0, max: 5000, configKey: "domainClassifierUrlCap", envKey: "DOMAIN_CLASSIFIER_URL_CAP" },
   { key: "domSnippetMaxChars", type: "int", default: 3600, min: 600, max: 20000, configKey: "domSnippetMaxChars", envKey: "DOM_SNIPPET_MAX_CHARS" },
   { key: "domainRequestBurst", type: "int", default: 0, min: 0, max: 1000, configKey: "domainRequestBurst", envKey: "DOMAIN_REQUEST_BURST" },
@@ -87,7 +87,6 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "googleSearchTimeoutMs", type: "int", default: 30000, min: 30000, max: 120000, configKey: "googleSearchTimeoutMs", envKey: "GOOGLE_SEARCH_TIMEOUT_MS" },
   { key: "serperApiKey", type: "string", default: "", allowEmpty: true, configKey: "serperApiKey", envKey: "SERPER_API_KEY" },
   { key: "serperEnabled", type: "bool", default: true, configKey: "serperEnabled", envKey: "SERPER_ENABLED" },
-  { key: "serperResultCount", type: "int", default: 20, min: 10, max: 100, configKey: "serperResultCount", envKey: "SERPER_RESULT_COUNT" },
   { key: "graphqlReplayEnabled", type: "bool", default: true, configKey: "graphqlReplayEnabled", envKey: "GRAPHQL_REPLAY_ENABLED" },
   { key: "helperFilesRoot", type: "string", default: "category_authority", allowEmpty: true, deprecated: true, configKey: "helperFilesRoot", envKey: "HELPER_FILES_ROOT" },
   { key: "helperSupportiveFillMissing", type: "bool", default: true, configKey: "helperSupportiveFillMissing", envKey: "HELPER_SUPPORTIVE_FILL_MISSING" },
@@ -141,7 +140,9 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "llmWriteSummary", type: "bool", default: false, configKey: "llmWriteSummary", envKey: "LLM_WRITE_SUMMARY" },
   { key: "localInputRoot", type: "string", default: "fixtures/s3", allowEmpty: true, configKey: "localInputRoot", envKey: "LOCAL_INPUT_ROOT" },
   { key: "localMode", type: "bool", default: true, configKey: "localMode", envKey: "LOCAL_MODE" },
-  { key: "localOutputRoot", type: "string", default: "C:\\Users\\Chris\\AppData\\Local\\Temp\\spec-factory\\output", allowEmpty: true, configKey: "localOutputRoot", envKey: "LOCAL_OUTPUT_ROOT" },
+  // WHY: LOCAL_OUTPUT_ROOT is owned by pathsGroup.js (calls defaultLocalOutputRoot() dynamically).
+  // No envKey here — prevents miscGroup from creating a duplicate manifest entry with a stale default.
+  { key: "localOutputRoot", type: "string", default: "", allowEmpty: true, configKey: "localOutputRoot", envKey: "" },
   // WHY: manufacturerAutoPromote retired — always true. Kept as defaultsOnly for backward compat.
   { key: "manufacturerAutoPromote", type: "bool", default: true, deprecated: true, configKey: "manufacturerAutoPromote", envKey: "", defaultsOnly: true },
   { key: "maxCandidateUrls", type: "int", default: 80, min: 1, max: 5000, configKey: "maxCandidateUrls", envKey: "MAX_CANDIDATE_URLS" },

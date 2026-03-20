@@ -23,19 +23,12 @@ import {
   recordSettingsWriteAttempt,
   recordSettingsWriteOutcome,
 } from '../../observability/settingsPersistenceCounters.js';
-import { DUAL_KEY_PAIRS } from '../../core/config/settingsKeyMap.js';
 import { resolvePhaseOverrides } from '../../core/config/configPostMerge.js';
 import { buildRegistryLookup } from '../../core/llm/routeResolver.js';
 
 const RUNTIME_KEYS_TO_PERSIST = new Set(RUNTIME_SETTINGS_KEYS);
 const CONVERGENCE_KEYS_TO_PERSIST = new Set(CONVERGENCE_SETTINGS_KEYS);
 
-// WHY: Maps each dual-key to its partner for runtime sync.
-// When one key is updated, the partner must also update to maintain SSOT.
-const DUAL_KEY_PARTNER = new Map();
-for (const [a, b] of DUAL_KEY_PAIRS) {
-  if (a !== b) { DUAL_KEY_PARTNER.set(a, b); DUAL_KEY_PARTNER.set(b, a); }
-}
 let userSettingsPersistQueue = Promise.resolve();
 
 function isMissingFileError(error) {
@@ -328,16 +321,6 @@ function buildUserSettingsSnapshot(runtime, convergence, storage, studio = {}, u
   };
 }
 
-function resolvePersistenceSections(payload) {
-  const user = asRecord(payload || {});
-  return {
-    runtime: sanitizeRuntimeSettings(user.runtime),
-    convergence: sanitizeConvergenceSettings(user.convergence),
-    storage: sanitizeStorageSettings(user.storage),
-    studio: sanitizeStudioSettings(user.studio),
-    ui: sanitizeUiSettings(user.ui),
-  };
-}
 
 function recordUserSettingsMigrationTelemetry(rawPayload) {
   const meta = readUserSettingsDocumentMeta(rawPayload);
@@ -379,7 +362,7 @@ export function readStudioMapFromUserSettings(payload, category = '') {
   const section = sanitizeStudioSettings(asRecord(payload).studio);
   const key = normalizeCategoryToken(category);
   if (!key) return null;
-  if (!Object.prototype.hasOwnProperty.call(section, key)) return null;
+  if (!Object.hasOwn(section, key)) return null;
   const entry = asRecord(section[key]);
   const map = asRecord(entry.map);
   if (Object.keys(map).length === 0) return null;
@@ -390,25 +373,6 @@ export function readStudioMapFromUserSettings(payload, category = '') {
 }
 
 const LEGACY_HELPER_ROOT_ALIAS_KEY = `helper${'FilesRoot'}`;
-
-function migrateRuntimeS3ToStorage(snapshot) {
-  if (!snapshot || typeof snapshot !== 'object') return snapshot;
-  const runtime = asRecord(snapshot.runtime);
-  const storage = asRecord(snapshot.storage);
-  let changed = false;
-  if (runtime.awsRegion && typeof runtime.awsRegion === 'string' && runtime.awsRegion.trim()
-    && (!storage.awsRegion || typeof storage.awsRegion !== 'string' || !storage.awsRegion.trim())) {
-    storage.awsRegion = runtime.awsRegion.trim();
-    changed = true;
-  }
-  if (runtime.s3Bucket && typeof runtime.s3Bucket === 'string' && runtime.s3Bucket.trim()
-    && (!storage.s3Bucket || typeof storage.s3Bucket !== 'string' || !storage.s3Bucket.trim())) {
-    storage.s3Bucket = runtime.s3Bucket.trim();
-    changed = true;
-  }
-  if (!changed) return snapshot;
-  return { ...snapshot, storage: { ...snapshot.storage, ...storage } };
-}
 
 export function loadUserSettingsSync(options = {}) {
   const { categoryAuthorityRoot = null, strictRead = false } = options;
@@ -422,7 +386,7 @@ export function loadUserSettingsSync(options = {}) {
   recordUserSettingsMigrationTelemetry(userPayload);
   const userSettingsRaw = migrateUserSettingsDocument(userPayload);
 
-  const snapshot = migrateRuntimeS3ToStorage(deriveSettingsArtifactsFromUserSettings(userSettingsRaw).snapshot);
+  const snapshot = deriveSettingsArtifactsFromUserSettings(userSettingsRaw).snapshot;
   recordSnapshotValidationTelemetry(snapshot);
   return snapshot;
 }
@@ -438,7 +402,7 @@ export async function loadUserSettings(options = {}) {
   const userRaw = await readJsonFile(path.join(runtimeRoot, USER_SETTINGS_FILE), { strict: strictRead });
   recordUserSettingsMigrationTelemetry(userRaw);
   const userSettingsRaw = migrateUserSettingsDocument(userRaw);
-  const snapshot = migrateRuntimeS3ToStorage(deriveSettingsArtifactsFromUserSettings(userSettingsRaw).snapshot);
+  const snapshot = deriveSettingsArtifactsFromUserSettings(userSettingsRaw).snapshot;
   recordSnapshotValidationTelemetry(snapshot);
   return snapshot;
 }
@@ -464,9 +428,8 @@ function pickConvergenceSnapshotFromConfig(config = {}) {
 }
 
 async function writeUserSettingsFile(filePath, payload) {
-  const dirPath = path.dirname(filePath);
   const tempPath = path.join(
-    dirPath,
+    path.dirname(filePath),
     `${USER_SETTINGS_FILE}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
   );
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -583,6 +546,12 @@ export async function persistUserSettingsSections(options = {}) {
   });
 }
 
+// WHY: The persist queue is module-level state that serializes concurrent
+// writes. This export makes it observable so callers can await flush.
+export function drainPersistQueue() {
+  return userSettingsPersistQueue;
+}
+
 export function snapshotRuntimeSettings(config = {}) {
   return pickRuntimeSnapshotFromConfig(config);
 }
@@ -599,36 +568,31 @@ export function snapshotUiSettings(state = {}) {
   return sanitizeUiSettings(state);
 }
 
+// WHY: Derived config fields (_registryLookup, _resolved* phase fields) are
+// computed during configPostMerge but user settings are applied AFTER that.
+// This function re-derives them whenever their inputs change so config stays
+// consistent. Extracted to make the implicit side effects of apply explicit.
+const PHASE_RESOLUTION_INPUTS = [
+  'llmPhaseOverridesJson', 'llmModelPlan', 'llmModelReasoning',
+  'llmPlanUseReasoning', 'llmMaxOutputTokensPlan', 'llmMaxOutputTokensTriage',
+];
+
+function rebuildDerivedConfigState(config, appliedKeys) {
+  if (Object.hasOwn(appliedKeys, 'llmProviderRegistryJson')) {
+    config._registryLookup = buildRegistryLookup(config.llmProviderRegistryJson);
+  }
+  if (PHASE_RESOLUTION_INPUTS.some((key) => Object.hasOwn(appliedKeys, key))) {
+    resolvePhaseOverrides(config);
+  }
+}
+
 export function applyRuntimeSettingsToConfig(config, runtimeSettings = {}) {
   if (!config || typeof config !== 'object') return;
   const source = sanitizeRuntimeSettings(runtimeSettings);
   for (const [key, value] of Object.entries(source)) {
-    // WHY: Always apply persisted values to config. Keys may not exist on the
-    // initial config object (e.g. newer knobs not yet in configBuilder) but
-    // must still be applied so GET returns the persisted value.
     config[key] = value;
-    const partner = DUAL_KEY_PARTNER.get(key);
-    if (partner) config[partner] = value;
   }
-  // WHY: _registryLookup is built during configPostMerge from llmProviderRegistryJson,
-  // but that key is often absent from buildRawConfig (it only lives in user-settings /
-  // snapshot). Rebuild whenever the registry JSON changes so that model→provider routing
-  // uses the correct registry entries, API keys, and cost rates.
-  if (Object.hasOwn(source, 'llmProviderRegistryJson')) {
-    config._registryLookup = buildRegistryLookup(config.llmProviderRegistryJson);
-  }
-  // WHY: Phase override _resolved* fields are computed during configPostMerge
-  // but user settings are applied AFTER that. Re-resolve whenever ANY global
-  // input to phase resolution changes — not just llmPhaseOverridesJson.
-  // Without this, changing llmModelPlan in the GUI leaves _resolved*BaseModel
-  // stale at the old value, causing phases to use the wrong model.
-  const phaseResolutionInputs = [
-    'llmPhaseOverridesJson', 'llmModelPlan', 'llmModelReasoning',
-    'llmPlanUseReasoning', 'llmMaxOutputTokensPlan', 'llmMaxOutputTokensTriage',
-  ];
-  if (phaseResolutionInputs.some((key) => Object.hasOwn(source, key))) {
-    resolvePhaseOverrides(config);
-  }
+  rebuildDerivedConfigState(config, source);
 }
 
 export function applyConvergenceSettingsToConfig(config, convergenceSettings = {}) {
@@ -636,28 +600,17 @@ export function applyConvergenceSettingsToConfig(config, convergenceSettings = {
   const source = sanitizeConvergenceSettings(convergenceSettings);
   for (const [key, value] of Object.entries(source)) {
     config[key] = value;
-    const partner = DUAL_KEY_PARTNER.get(key);
-    if (partner) config[partner] = value;
   }
 }
 
-export function sanitizeUserSettingsSettings(payload) {
-  return deriveSettingsArtifactsFromUserSettings(payload || {}).snapshot;
-}
-
 export function deriveSettingsArtifactsFromUserSettings(payload = {}) {
-  const normalized = resolvePersistenceSections(payload || {});
-  const runtime = sanitizeRuntimeSettings(normalized.runtime);
-  const convergence = sanitizeConvergenceSettings(normalized.convergence);
-  const storage = sanitizeStorageSettings(normalized.storage);
-  const studio = sanitizeStudioSettings(normalized.studio);
-  const ui = sanitizeUiSettings(normalized.ui);
+  const user = asRecord(payload || {});
   const snapshot = buildUserSettingsSnapshot(
-    runtime,
-    convergence,
-    storage,
-    studio,
-    ui,
+    user.runtime,
+    user.convergence,
+    user.storage,
+    user.studio,
+    user.ui,
   );
   return {
     snapshot,
@@ -675,10 +628,6 @@ export function deriveSettingsArtifactsFromUserSettings(payload = {}) {
     },
   };
 }
-
-
-
-
 
 
 

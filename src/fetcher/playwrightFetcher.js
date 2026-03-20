@@ -9,6 +9,7 @@ import { RobotsPolicyCache } from './robotsPolicy.js';
 import { resolveDynamicFetchPolicy } from './dynamicFetchPolicy.js';
 import { attachRuntimeScreencast } from './runtimeScreencast.js';
 import { buildStealthContextOptions, STEALTH_INIT_SCRIPT } from './stealthProfile.js';
+import { configInt, configBool, configValue } from '../shared/settingsAccessor.js';
 
 function fixtureFilenameFromHost(host) {
   return `${host.toLowerCase()}.json`;
@@ -41,7 +42,7 @@ function buildTransientStatusError(status) {
 }
 
 function screenshotSelectorsFromConfig(config = {}) {
-  const fromEnv = String(config.capturePageScreenshotSelectors || '')
+  const fromEnv = String(configValue(config, 'capturePageScreenshotSelectors'))
     .split(',')
     .map((row) => String(row || '').trim())
     .filter(Boolean);
@@ -58,15 +59,15 @@ function screenshotSelectorsFromConfig(config = {}) {
 }
 
 async function captureScreenshotArtifact(page, config = {}, policy = {}) {
-  if (config.capturePageScreenshotEnabled === false) {
+  if (!configBool(config, 'capturePageScreenshotEnabled')) {
     return null;
   }
-  const format = String(config.capturePageScreenshotFormat || 'jpeg').trim().toLowerCase() === 'png'
+  const format = String(configValue(config, 'capturePageScreenshotFormat')).trim().toLowerCase() === 'png'
     ? 'png'
     : 'jpeg';
-  const quality = Math.max(35, Math.min(95, Number(config.capturePageScreenshotQuality || 62)));
+  const quality = configInt(config, 'capturePageScreenshotQuality');
   const selectors = screenshotSelectorsFromConfig(config);
-  const maxBytes = Math.max(128_000, Number(config.capturePageScreenshotMaxBytes || 2_200_000));
+  const maxBytes = configInt(config, 'capturePageScreenshotMaxBytes');
 
   const capture = async (selector) => {
     const element = selector ? await page.$(selector) : null;
@@ -174,7 +175,7 @@ export class PlaywrightFetcher {
     this.hostLastAccess = new Map();
     this.policyLogSeen = new Set();
     this.robotsPolicy = new RobotsPolicyCache({
-      timeoutMs: Number(this.config.robotsTxtTimeoutMs || 6000),
+      timeoutMs: configInt(this.config, 'robotsTxtTimeoutMs'),
       logger
     });
     this.onScreencastFrame = typeof options?.onScreencastFrame === 'function'
@@ -188,7 +189,7 @@ export class PlaywrightFetcher {
     }
     this.browser = await chromium.launch({ headless: true });
     const stealthOpts = buildStealthContextOptions({
-      userAgent: this.config.userAgent || undefined
+      userAgent: configValue(this.config, 'userAgent') || undefined
     });
     this.context = await this.browser.newContext(stealthOpts);
     await this.context.addInitScript(STEALTH_INIT_SCRIPT);
@@ -205,11 +206,11 @@ export class PlaywrightFetcher {
     }
   }
 
-  async waitForHostSlot(host, minDelayMs = this.config.perHostMinDelayMs) {
+  async waitForHostSlot(host, minDelayMs = configInt(this.config, 'perHostMinDelayMs')) {
     const now = Date.now();
     const last = this.hostLastAccess.get(host) || 0;
     const delta = now - last;
-    const delayMs = Math.max(0, Number(minDelayMs || this.config.perHostMinDelayMs || 0));
+    const delayMs = Math.max(0, Number(minDelayMs || configInt(this.config, 'perHostMinDelayMs')));
     let waitedMs = 0;
     if (delta < delayMs) {
       waitedMs = delayMs - delta;
@@ -220,7 +221,7 @@ export class PlaywrightFetcher {
   }
 
   async enforceRobots(source) {
-    if (this.config.robotsTxtCompliant === false || source?.robotsTxtCompliant === false) {
+    if (!configBool(this.config, 'robotsTxtCompliant') || source?.robotsTxtCompliant === false) {
       return null;
     }
 
@@ -228,7 +229,7 @@ export class PlaywrightFetcher {
     try {
       decision = await this.robotsPolicy.canFetch({
         url: source.url,
-        userAgent: this.config.userAgent || '*'
+        userAgent: configValue(this.config, 'userAgent') || '*'
       });
     } catch (error) {
       this.logger?.warn?.('robots_policy_check_failed', {
@@ -288,7 +289,7 @@ export class PlaywrightFetcher {
     }
 
     const maxAttempts = Math.max(1, Number(fetchPolicy.retryBudget || 0) + 1);
-    const fetchBudgetMs = Math.max(0, Number(fetchPolicy.fetchBudgetMs || this.config.fetchBudgetMs || 45_000));
+    const fetchBudgetMs = Math.max(0, Number(fetchPolicy.fetchBudgetMs || configInt(this.config, 'fetchBudgetMs')));
     const startedAtMs = Date.now();
 
     let html = '';
@@ -319,8 +320,8 @@ export class PlaywrightFetcher {
 
       const page = await this.context.newPage();
       const recorder = new NetworkRecorder({
-        maxJsonBytes: Math.min(Number(this.config.maxJsonBytes) || 2_000_000, 512_000),
-        maxRows: this.config.maxNetworkResponsesPerPage
+        maxJsonBytes: Math.min(configInt(this.config, 'maxJsonBytes'), 512_000),
+        maxRows: configInt(this.config, 'maxNetworkResponsesPerPage')
       });
 
       const stopRuntimeScreencast = await attachRuntimeScreencast({
@@ -338,7 +339,7 @@ export class PlaywrightFetcher {
         const navigationStartedAt = Date.now();
         const response = await page.goto(source.url, {
           waitUntil: 'domcontentloaded',
-          timeout: fetchPolicy.pageGotoTimeoutMs || this.config.pageGotoTimeoutMs || 30_000
+          timeout: fetchPolicy.pageGotoTimeoutMs || configInt(this.config, 'pageGotoTimeoutMs')
         });
         navigationMs += Math.max(0, Date.now() - navigationStartedAt);
         status = response?.status() || 0;
@@ -351,7 +352,7 @@ export class PlaywrightFetcher {
         try {
           const networkIdleStartedAt = Date.now();
           await page.waitForLoadState('networkidle', {
-            timeout: fetchPolicy.pageNetworkIdleTimeoutMs || this.config.pageNetworkIdleTimeoutMs || 6_000
+            timeout: fetchPolicy.pageNetworkIdleTimeoutMs || configInt(this.config, 'pageNetworkIdleTimeoutMs')
           });
           networkIdleWaitMs += Math.max(0, Date.now() - networkIdleStartedAt);
         } catch {
@@ -374,7 +375,7 @@ export class PlaywrightFetcher {
             page,
             capturedResponses: recorder.rows,
             maxReplays: fetchPolicy.maxGraphqlReplays,
-            maxJsonBytes: this.config.maxJsonBytes,
+            maxJsonBytes: configInt(this.config, 'maxJsonBytes'),
             logger: this.logger
           });
           graphqlReplayMs += Math.max(0, Date.now() - replayStartedAt);
@@ -468,9 +469,9 @@ export class PlaywrightFetcher {
 
   async captureInteractiveSignals(page, policy = null) {
     const activePolicy = policy || this.config;
-    const autoScrollPasses = Math.max(0, Number(activePolicy.autoScrollPasses || 0));
-    const autoScrollDelayMs = Math.max(100, Number(activePolicy.autoScrollDelayMs || 900));
-    const shouldScroll = Boolean(activePolicy.autoScrollEnabled && autoScrollPasses > 0);
+    const autoScrollPasses = configInt(activePolicy, 'autoScrollPasses');
+    const autoScrollDelayMs = configInt(activePolicy, 'autoScrollDelayMs');
+    const shouldScroll = configBool(activePolicy, 'autoScrollEnabled') && autoScrollPasses > 0;
 
     if (shouldScroll) {
       for (let i = 0; i < autoScrollPasses; i += 1) {
@@ -495,7 +496,7 @@ export class PlaywrightFetcher {
       }
     }
 
-    const postLoadWaitMs = Math.max(0, Number(activePolicy.postLoadWaitMs || 0));
+    const postLoadWaitMs = configInt(activePolicy, 'postLoadWaitMs');
     if (postLoadWaitMs > 0) {
       await page.waitForTimeout(postLoadWaitMs);
     }
@@ -534,7 +535,7 @@ export class HttpFetcher {
     this.hostLastAccess = new Map();
     this.policyLogSeen = new Set();
     this.robotsPolicy = new RobotsPolicyCache({
-      timeoutMs: Number(this.config.robotsTxtTimeoutMs || 6000),
+      timeoutMs: configInt(this.config, 'robotsTxtTimeoutMs'),
       logger
     });
   }
@@ -543,11 +544,11 @@ export class HttpFetcher {
 
   async stop() {}
 
-  async waitForHostSlot(host, minDelayMs = this.config.perHostMinDelayMs) {
+  async waitForHostSlot(host, minDelayMs = configInt(this.config, 'perHostMinDelayMs')) {
     const now = Date.now();
     const last = this.hostLastAccess.get(host) || 0;
     const delta = now - last;
-    const delayMs = Math.max(0, Number(minDelayMs || this.config.perHostMinDelayMs || 0));
+    const delayMs = Math.max(0, Number(minDelayMs || configInt(this.config, 'perHostMinDelayMs')));
     let waitedMs = 0;
     if (delta < delayMs) {
       waitedMs = delayMs - delta;
@@ -558,14 +559,14 @@ export class HttpFetcher {
   }
 
   async enforceRobots(source) {
-    if (this.config.robotsTxtCompliant === false || source?.robotsTxtCompliant === false) {
+    if (!configBool(this.config, 'robotsTxtCompliant') || source?.robotsTxtCompliant === false) {
       return null;
     }
     let decision;
     try {
       decision = await this.robotsPolicy.canFetch({
         url: source.url,
-        userAgent: this.config.userAgent || '*'
+        userAgent: configValue(this.config, 'userAgent') || '*'
       });
     } catch (error) {
       this.logger?.warn?.('robots_policy_check_failed', {
@@ -639,9 +640,9 @@ export class HttpFetcher {
         const requestStartedAt = Date.now();
         result = await fetchTextWithTimeout(
           source.url,
-          fetchPolicy.pageGotoTimeoutMs || this.config.pageGotoTimeoutMs || 30_000,
+          fetchPolicy.pageGotoTimeoutMs || configInt(this.config, 'pageGotoTimeoutMs'),
           {
-            'user-agent': this.config.userAgent || 'SpecHarvester/1.0',
+            'user-agent': configValue(this.config, 'userAgent') || 'SpecHarvester/1.0',
             accept: '*/*'
           }
         );
@@ -773,7 +774,7 @@ export class CrawleeFetcher {
     this.hostLastAccess = new Map();
     this.policyLogSeen = new Set();
     this.robotsPolicy = new RobotsPolicyCache({
-      timeoutMs: Number(this.config.robotsTxtTimeoutMs || 6000),
+      timeoutMs: configInt(this.config, 'robotsTxtTimeoutMs'),
       logger
     });
     this.crawleeImportPromise = null;
@@ -795,11 +796,11 @@ export class CrawleeFetcher {
 
   async stop() {}
 
-  async waitForHostSlot(host, minDelayMs = this.config.perHostMinDelayMs) {
+  async waitForHostSlot(host, minDelayMs = configInt(this.config, 'perHostMinDelayMs')) {
     const now = Date.now();
     const last = this.hostLastAccess.get(host) || 0;
     const delta = now - last;
-    const delayMs = Math.max(0, Number(minDelayMs || this.config.perHostMinDelayMs || 0));
+    const delayMs = Math.max(0, Number(minDelayMs || configInt(this.config, 'perHostMinDelayMs')));
     let waitedMs = 0;
     if (delta < delayMs) {
       waitedMs = delayMs - delta;
@@ -810,7 +811,7 @@ export class CrawleeFetcher {
   }
 
   async enforceRobots(source) {
-    if (this.config.robotsTxtCompliant === false || source?.robotsTxtCompliant === false) {
+    if (!configBool(this.config, 'robotsTxtCompliant') || source?.robotsTxtCompliant === false) {
       return null;
     }
 
@@ -818,7 +819,7 @@ export class CrawleeFetcher {
     try {
       decision = await this.robotsPolicy.canFetch({
         url: source.url,
-        userAgent: this.config.userAgent || '*'
+        userAgent: configValue(this.config, 'userAgent') || '*'
       });
     } catch (error) {
       this.logger?.warn?.('robots_policy_check_failed', {
@@ -848,9 +849,9 @@ export class CrawleeFetcher {
 
   async captureInteractiveSignals(page, policy = null) {
     const activePolicy = policy || this.config;
-    const autoScrollPasses = Math.max(0, Number(activePolicy.autoScrollPasses || 0));
-    const autoScrollDelayMs = Math.max(100, Number(activePolicy.autoScrollDelayMs || 900));
-    const shouldScroll = Boolean(activePolicy.autoScrollEnabled && autoScrollPasses > 0);
+    const autoScrollPasses = configInt(activePolicy, 'autoScrollPasses');
+    const autoScrollDelayMs = configInt(activePolicy, 'autoScrollDelayMs');
+    const shouldScroll = configBool(activePolicy, 'autoScrollEnabled') && autoScrollPasses > 0;
 
     if (shouldScroll) {
       for (let i = 0; i < autoScrollPasses; i += 1) {
@@ -875,7 +876,7 @@ export class CrawleeFetcher {
       }
     }
 
-    const postLoadWaitMs = Math.max(0, Number(activePolicy.postLoadWaitMs || 0));
+    const postLoadWaitMs = configInt(activePolicy, 'postLoadWaitMs');
     if (postLoadWaitMs > 0) {
       await page.waitForTimeout(postLoadWaitMs);
     }
@@ -927,9 +928,9 @@ export class CrawleeFetcher {
 
     const maxAttempts = Math.max(1, Number(fetchPolicy.retryBudget || 0) + 1);
     const retryBackoffMs = Math.max(0, Number(fetchPolicy.retryBackoffMs || 0));
-    const navigationTimeout = fetchPolicy.pageGotoTimeoutMs || this.config.pageGotoTimeoutMs || 30_000;
-    const networkIdleTimeout = fetchPolicy.pageNetworkIdleTimeoutMs || this.config.pageNetworkIdleTimeoutMs || 6_000;
-    const configuredRequestHandlerTimeout = Number(this.config.crawleeRequestHandlerTimeoutSecs || 0);
+    const navigationTimeout = fetchPolicy.pageGotoTimeoutMs || configInt(this.config, 'pageGotoTimeoutMs');
+    const networkIdleTimeout = fetchPolicy.pageNetworkIdleTimeoutMs || configInt(this.config, 'pageNetworkIdleTimeoutMs');
+    const configuredRequestHandlerTimeout = configInt(this.config, 'crawleeRequestHandlerTimeoutSecs');
     const derivedRequestHandlerTimeout = Math.ceil(
       (navigationTimeout + networkIdleTimeout + Math.max(0, Number(fetchPolicy.postLoadWaitMs || 0)) + 5_000) / 1000
     );
@@ -992,7 +993,7 @@ export class CrawleeFetcher {
       requestHandlerTimeoutSecs,
       launchContext: {
         launchOptions: {
-          headless: this.config.crawleeHeadless !== false
+          headless: configBool(this.config, 'crawleeHeadless')
         }
       },
       preNavigationHooks: [
@@ -1024,8 +1025,8 @@ export class CrawleeFetcher {
         }
 
         const recorder = new NetworkRecorder({
-          maxJsonBytes: this.config.maxJsonBytes,
-          maxRows: this.config.maxNetworkResponsesPerPage
+          maxJsonBytes: configInt(this.config, 'maxJsonBytes'),
+          maxRows: configInt(this.config, 'maxNetworkResponsesPerPage')
         });
         page.on('response', async (resp) => {
           await recorder.handleResponse(resp);
@@ -1054,7 +1055,7 @@ export class CrawleeFetcher {
               page,
               capturedResponses: recorder.rows,
               maxReplays: fetchPolicy.maxGraphqlReplays,
-              maxJsonBytes: this.config.maxJsonBytes,
+              maxJsonBytes: configInt(this.config, 'maxJsonBytes'),
               logger: this.logger
             });
             graphqlReplayMs += Math.max(0, Date.now() - replayStartedAt);

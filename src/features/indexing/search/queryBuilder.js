@@ -795,8 +795,12 @@ export function buildTier2Queries(job, focusGroups) {
 }
 
 /**
- * WHY: Tier 3 — individual key queries from normalized_key_queue.
- * Walks keys already sorted by availability → difficulty → need_score.
+ * WHY: Tier 3 — individual key queries with progressive enrichment.
+ * Each round adds more context to the query based on repeat_count:
+ *   0: bare {product} {key}
+ *   1: + aliases
+ *   2: + domain hints (prefer untried)
+ *   3+: + content type hints
  * @returns {Array<object>} queryRow[]
  */
 export function buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldByDomain) {
@@ -813,20 +817,50 @@ export function buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldBy
     const keys = toArray(g.normalized_key_queue);
     if (keys.length === 0) continue;
 
-    for (const key of keys) {
-      const readable = clean(String(key || '').replace(/_/g, ' '));
+    for (const entry of keys) {
+      // Backward compat: plain string keys still work
+      const isEnriched = entry && typeof entry === 'object';
+      const keyName = isEnriched ? entry.normalized_key : String(entry || '');
+      const readable = clean(String(keyName || '').replace(/_/g, ' '));
       if (!readable) continue;
+
+      const repeatCount = isEnriched ? (entry.repeat_count || 0) : 0;
+      const parts = [product, readable];
+
+      // Progressive enrichment based on how many times this key has been searched
+      if (isEnriched && repeatCount >= 1) {
+        // Round 1+: add aliases to differentiate the query
+        const aliases = (entry.all_aliases || [])
+          .filter((a) => clean(a) && clean(a).toLowerCase() !== readable.toLowerCase())
+          .slice(0, 3);
+        if (aliases.length > 0) parts.push(aliases.join(' '));
+      }
+
+      if (isEnriched && repeatCount >= 2) {
+        // Round 2+: add domain hints — prefer untried domains
+        const tried = new Set((entry.domains_tried_for_key || []).map((d) => d.toLowerCase()));
+        const hints = (entry.domain_hints || []).filter((d) => !tried.has(d.toLowerCase()));
+        const hint = hints[0] || (entry.domain_hints || [])[0] || '';
+        if (hint) parts.push(hint);
+      }
+
+      if (isEnriched && repeatCount >= 3) {
+        // Round 3+: add content type hints
+        const contentType = (entry.preferred_content_types || [])[0] || '';
+        if (contentType) parts.push(contentType);
+      }
+
       rows.push({
-        query: clean(`${product} ${readable}`),
+        query: clean(parts.join(' ')),
         hint_source: 'tier3_key',
         tier: 'key_search',
-        target_fields: [key],
+        target_fields: [keyName],
         doc_hint: '',
-        alias: '',
-        domain_hint: '',
+        alias: isEnriched ? (entry.all_aliases || []).join(', ') : '',
+        domain_hint: isEnriched ? (entry.domain_hints || [])[0] || '' : '',
         source_host: '',
         group_key: g.key || '',
-        normalized_key: key,
+        normalized_key: keyName,
       });
     }
   }

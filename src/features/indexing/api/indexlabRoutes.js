@@ -1,3 +1,7 @@
+import { createStorageManagerHandler } from './storageManagerRoutes.js';
+import { refreshArchivedRunDirIndex } from './builders/archivedRunLocationHelpers.js';
+import { recalculateAllStorageMetrics } from '../../../api/services/storageMetricsService.js';
+
 export function registerIndexlabRoutes(ctx) {
   const {
     jsonRes,
@@ -90,7 +94,57 @@ export function registerIndexlabRoutes(ctx) {
     };
   }
 
+  // WHY: Storage manager handler — delegates /storage/* routes to a dedicated handler.
+  const storageGuardOk = Boolean(ctx.readJsonBody && ctx.runDataStorageState);
+  if (!storageGuardOk) {
+    process.stderr.write('[indexlab-routes] Storage manager routes disabled: readJsonBody=' +
+      typeof ctx.readJsonBody + ' runDataStorageState=' + typeof ctx.runDataStorageState + '\n');
+  }
+  const handleStorageManagerRoutes = storageGuardOk
+    ? createStorageManagerHandler({
+      jsonRes,
+      readJsonBody: ctx.readJsonBody,
+      toInt,
+      broadcastWs: ctx.broadcastWs || (() => {}),
+      listIndexLabRuns,
+      resolveIndexLabRunDirectory,
+      refreshArchivedRunDirIndex,
+      runDataStorageState: ctx.runDataStorageState,
+      indexLabRoot: INDEXLAB_ROOT,
+      outputRoot: ctx.OUTPUT_ROOT || '',
+      storage: ctx.storage || null,
+      isRunStillActive,
+      readRunMeta: readIndexLabRunMeta,
+      deleteArchivedRun: async (runId) => {
+        const runDir = typeof resolveIndexLabRunDirectory === 'function'
+          ? (await resolveIndexLabRunDirectory(runId).catch(() => ''))
+          : '';
+        if (!runDir) throw new Error('run_directory_not_found');
+        const fs = await import('node:fs/promises');
+        const bundleDir = path.dirname(runDir);
+        await fs.default.rm(bundleDir, { recursive: true, force: true });
+        const liveDir = safeJoin(INDEXLAB_ROOT, runId);
+        if (liveDir) {
+          await fs.default.rm(liveDir, { recursive: true, force: true }).catch(() => {});
+        }
+        return { ok: true, run_id: runId, deleted_from: 'local' };
+      },
+      recalculateAllStorageMetrics: () => recalculateAllStorageMetrics({
+        runDataStorageState: ctx.runDataStorageState,
+        indexLabRoot: INDEXLAB_ROOT,
+        listIndexLabRuns,
+        resolveIndexLabRunDirectory,
+      }),
+    })
+    : null;
+
   return async function handleIndexlabRoutes(parts, params, method, req, res) {
+    // Storage manager routes (/storage/*)
+    if (parts[0] === 'storage' && parts[1] !== 'settings' && handleStorageManagerRoutes) {
+      const result = await handleStorageManagerRoutes(parts, params, method, req, res);
+      if (result !== false) return result;
+    }
+
     // IndexLab runs + event replay
     if (parts[0] === 'indexlab' && parts[1] === 'runs' && method === 'GET') {
       const limit = Math.max(1, toInt(params.get('limit'), 50));

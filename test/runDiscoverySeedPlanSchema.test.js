@@ -42,7 +42,6 @@ function makeRoundContext() {
     missing_critical_fields: ['sensor_model'],
     bundle_hints: [],
     round: 1,
-    round_mode: 'seed',
   };
 }
 
@@ -86,7 +85,7 @@ function makeStageStubs({ captureSearchPlannerArgs } = {}) {
     }),
     runSearchPlannerFn: async (args) => {
       if (captureSearchPlannerArgs) captureSearchPlannerArgs(args);
-      return { schema4Plan: null, uberSearchPlan: null };
+      return { enhancedRows: [], source: 'deterministic_fallback' };
     },
     runQueryJourneyFn: async () => ({
       queries: [],
@@ -116,9 +115,9 @@ function makeStageStubs({ captureSearchPlannerArgs } = {}) {
 }
 
 describe('runDiscoverySeedPlan Schema 4 wiring', () => {
-  it('passes searchPlanHandoff to discoverCandidateSourcesFn and attaches seed_search_plan_output when schema path enabled', async () => {
-    const handoff = makeHandoff();
-    let capturedArgs = null;
+  it('passes searchProfileBase to runSearchPlannerFn and attaches seed_search_plan_output when schema path enabled', async () => {
+    let capturedPlannerArgs = null;
+    let capturedJourneyArgs = null;
 
     const stubComputeNeedSet = () => ({
       schema_version: 'needset_output.v2',
@@ -136,7 +135,7 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
 
     const schema4Output = {
       schema_version: 'needset_planner_output.v2',
-      search_plan_handoff: handoff,
+      search_plan_handoff: makeHandoff(),
       planner: { mode: 'llm' },
       panel: { bundles: [{ queries: ['q1'] }] },
     };
@@ -144,8 +143,23 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
     const stubBuildPlan = async () => schema4Output;
 
     const stageStubs = makeStageStubs({
-      captureSearchPlannerArgs: (args) => { capturedArgs = args; },
+      captureSearchPlannerArgs: (args) => { capturedPlannerArgs = args; },
     });
+
+    // Override runQueryJourneyFn to capture its args
+    stageStubs.runQueryJourneyFn = async (args) => {
+      capturedJourneyArgs = args;
+      return {
+        queries: [],
+        selectedQueryRowMap: new Map(),
+        profileQueryRowsByQuery: new Map(),
+        searchProfilePlanned: {},
+        searchProfileKeys: {},
+        executionQueryLimit: 0,
+        queryLimit: 8,
+        queryRejectLogCombined: [],
+      };
+    };
 
     const result = await runDiscoverySeedPlan({
       config: makeConfig(),
@@ -170,17 +184,19 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       ...stageStubs,
     });
 
-    assert.ok(capturedArgs, 'discoverCandidateSourcesFn should have been called');
-    assert.ok(capturedArgs.searchPlanHandoff, 'searchPlanHandoff should be passed');
-    assert.equal(capturedArgs.searchPlanHandoff.queries.length, 1);
-    assert.equal(capturedArgs.searchPlanHandoff.queries[0].q, 'TestBrand TestModel sensor specs');
+    assert.ok(capturedPlannerArgs, 'runSearchPlannerFn should have been called');
+    assert.ok(capturedPlannerArgs.searchProfileBase, 'searchProfileBase should be passed to planner');
+    assert.ok(capturedPlannerArgs.missingFields, 'missingFields should be passed to planner');
+
+    assert.ok(capturedJourneyArgs, 'runQueryJourneyFn should have been called');
+    assert.ok(Array.isArray(capturedJourneyArgs.enhancedRows), 'enhancedRows should be passed to journey');
 
     // seed_search_plan_output is attached to discoveryResult
     assert.ok(result.seed_search_plan_output, 'seed_search_plan_output should be attached');
     assert.equal(result.seed_search_plan_output.schema_version, 'needset_planner_output.v2');
   });
 
-  it('passes null handoff when schema computation throws', async () => {
+  it('planner still called when schema computation throws', async () => {
     let capturedArgs = null;
     const logs = [];
 
@@ -213,12 +229,12 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       ...stageStubs,
     });
 
-    assert.ok(capturedArgs);
-    assert.equal(capturedArgs.searchPlanHandoff, null, 'handoff should be null on error');
+    assert.ok(capturedArgs, 'planner still called despite schema4 failure');
+    assert.ok(capturedArgs.searchProfileBase, 'searchProfileBase passed to planner');
     assert.ok(logs.some(l => l.msg === 'schema4_computation_failed'), 'should log warning');
   });
 
-  it('passes null handoff when buildSearchPlan returns no handoff', async () => {
+  it('planner called with searchProfileBase when buildSearchPlan returns no handoff', async () => {
     let capturedArgs = null;
 
     const stageStubs = makeStageStubs({
@@ -248,7 +264,7 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       ...stageStubs,
     });
 
-    assert.ok(capturedArgs);
-    assert.equal(capturedArgs.searchPlanHandoff, null, 'no handoff when planner disabled');
+    assert.ok(capturedArgs, 'planner called');
+    assert.ok(capturedArgs.searchProfileBase, 'searchProfileBase passed to planner');
   });
 });

@@ -191,7 +191,6 @@ export interface IndexLabNeedSetResponse {
   total_fields?: number;
   schema_version?: string;
   round?: number;
-  round_mode?: string;
   identity?: IndexLabNeedSetIdentity;
   summary?: IndexLabNeedSetSummary;
   blockers?: IndexLabNeedSetBlockers;

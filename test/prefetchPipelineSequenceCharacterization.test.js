@@ -53,7 +53,6 @@ function makeRoundContext() {
     missing_critical_fields: ['sensor_model'],
     bundle_hints: [],
     round: 0,
-    round_mode: 'seed',
   };
 }
 
@@ -98,7 +97,6 @@ function makeSchema4WithHandoff() {
     },
     panel: {
       round: 0,
-      round_mode: 'seed',
       bundles: [{ key: 'manufacturer_html', queries: [{ q: 'q1' }] }],
       deltas: [],
       profile_influence: {},
@@ -211,7 +209,7 @@ function makeSearchProfileResult() {
 }
 
 function makeSearchPlannerResult() {
-  return { schema4Plan: null, uberSearchPlan: null };
+  return { enhancedRows: [], source: 'deterministic_fallback' };
 }
 
 function makeQueryJourneyResult() {
@@ -410,24 +408,26 @@ describe('Prefetch pipeline sequence characterization', () => {
 
   describe('NeedSet output flows to downstream stages', () => {
 
-    it('searchPlanHandoff from NeedSet is passed to SearchPlanner stage', async () => {
+    it('SearchPlanner receives searchProfileBase and enhancedRows flows to QueryJourney', async () => {
       let capturedPlannerArgs = null;
-      const handoff = makeSchema4WithHandoff().search_plan_handoff;
-      handoff._planner = { mode: 'standard' };
-      handoff._learning = null;
-      handoff._panel = makeSchema4WithHandoff().panel;
+      let capturedJourneyArgs = null;
 
       await runDiscoverySeedPlan(makeBaseArgs({
         runId: 'run-flow-1',
-        runNeedSetFn: async () => makeNeedSetResult({ searchPlanHandoff: handoff }),
         runSearchPlannerFn: async (args) => {
           capturedPlannerArgs = args;
-          return makeSearchPlannerResult();
+          return { enhancedRows: [{ row: 'test' }], source: 'deterministic_fallback' };
+        },
+        runQueryJourneyFn: async (args) => {
+          capturedJourneyArgs = args;
+          return makeQueryJourneyResult();
         },
       }));
 
-      assert.ok(capturedPlannerArgs.searchPlanHandoff, 'handoff passed to planner');
-      assert.equal(capturedPlannerArgs.searchPlanHandoff.queries.length, 2);
+      assert.ok(capturedPlannerArgs.searchProfileBase, 'searchProfileBase passed to planner');
+      assert.ok(capturedPlannerArgs.missingFields, 'missingFields passed to planner');
+      assert.ok(Array.isArray(capturedJourneyArgs.enhancedRows), 'enhancedRows passed to journey');
+      assert.equal(capturedJourneyArgs.enhancedRows.length, 1, 'enhancedRows from planner flows to journey');
     });
 
     it('focusGroups from NeedSet schema3 flow to Search Profile stage', async () => {
@@ -525,25 +525,9 @@ describe('Prefetch pipeline sequence characterization', () => {
       assert.deepEqual(seeded[0].urls, ['https://review-site.com/testmodel']);
     });
 
-    it('candidate seeding skipped when fetchCandidateSources is false', async () => {
-      const seeded = [];
-      const planner = {
-        enqueue() {},
-        seedCandidates(urls) { seeded.push(...urls); },
-        enqueueCounters: { total: 0 },
-      };
-
-      const { runDomainClassifier } = await import('../src/features/indexing/discovery/stages/domainClassifier.js');
-
-      await runDiscoverySeedPlan(makeBaseArgs({
-        runId: 'run-domain-2',
-        config: makeConfig({ fetchCandidateSources: false }),
-        planner,
-        runDomainClassifierFn: (args) => runDomainClassifier(args),
-      }));
-
-      assert.equal(seeded.length, 0, 'no candidate seeding when disabled');
-    });
+    // WHY: fetchCandidateSources is retired (settingsRegistry: deprecated, always true).
+    // sourcePlanner.js hardcodes it to true. This test was testing dead behavior.
+    // Removed as part of round-mode cleanup.
   });
 
   describe('discoveryConfig invariants', () => {

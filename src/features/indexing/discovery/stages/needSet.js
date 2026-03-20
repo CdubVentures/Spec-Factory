@@ -18,6 +18,7 @@ export async function runNeedSet({
   roundContext,
   llmContext,
   logger,
+  queryExecutionHistory = null,
   computeNeedSetFn,
   buildSearchPlanningContextFn,
   buildSearchPlanFn,
@@ -39,7 +40,6 @@ export async function runNeedSet({
       constraintAnalysis: roundContext?.constraintAnalysis || {},
       identityContext: roundContext?.identityContext || {},
       round: roundContext?.round || 0,
-      roundMode: roundContext?.round_mode || 'seed',
       brand: job?.brand || job?.identityLock?.brand || '',
       model: job?.model || job?.identityLock?.model || '',
       baseModel: job?.baseModel || job?.identityLock?.base_model || '',
@@ -64,10 +64,10 @@ export async function runNeedSet({
         model: job?.model || job?.identityLock?.model || '',
         aliases: job?.aliases || [],
         round: roundContext?.round || 0,
-        round_mode: roundContext?.round_mode || 'seed',
       },
       learning: null,
       previousRoundFields,
+      queryExecutionHistory,
     });
 
     // WHY: Emit pre-LLM preview so the GUI can show blockers, deltas, and
@@ -82,7 +82,6 @@ export async function runNeedSet({
       planner_seed: schema2.planner_seed,
       total_fields: schema2.total_fields || schema2.fields?.length || 0,
       round: schema2.round,
-      round_mode: schema2.round_mode,
       deltas: computeDeltas(schema3),
       bundles: [],
       profile_influence: null,

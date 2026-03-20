@@ -407,7 +407,6 @@ export function computeNeedSet({
 
   // Schema 2 new params
   round = 0,
-  roundMode = 'seed',
   brand = '',
   model = '',
   baseModel = '',
@@ -706,7 +705,6 @@ export function computeNeedSet({
     // Schema 2 additions
     schema_version: 'needset_output.v2.1',
     round,
-    round_mode: roundMode,
     identity,
     fields: schema2Fields,
     planner_seed: plannerSeed,

@@ -14,6 +14,7 @@ import { loadConfigWithUserSettings } from '../config.js';
 import { parseArgs, asBool } from './args.js';
 import { createStorage, toPosixKey } from '../s3/storage.js';
 import { runProduct } from '../pipeline/runProduct.js';
+import { configValue, configBool } from '../shared/settingsAccessor.js';
 
 async function streamToString(stream) {
   const chunks = [];
@@ -76,7 +77,12 @@ export async function runS3Integration(argv = process.argv.slice(2)) {
     writeMarkdownSummary: asBool(args['write-md'], true)
   });
 
-  if (!config.s3Bucket) {
+  const bucket = configValue(config, 's3Bucket');
+  const region = configValue(config, 'awsRegion');
+  const inputPrefix = configValue(config, 's3InputPrefix');
+  const outputPrefix = configValue(config, 's3OutputPrefix');
+
+  if (!bucket) {
     throw new Error('S3_BUCKET is required for test:s3');
   }
 
@@ -92,12 +98,12 @@ export async function runS3Integration(argv = process.argv.slice(2)) {
   }
 
   const s3Key =
-    args.s3key || toPosixKey(config.s3InputPrefix, 'mouse', 'products', `${productId}.json`);
+    args.s3key || toPosixKey(inputPrefix, 'mouse', 'products', `${productId}.json`);
 
-  const s3 = new S3Client({ region: config.awsRegion });
+  const s3 = new S3Client({ region });
   await s3.send(
     new PutObjectCommand({
-      Bucket: config.s3Bucket,
+      Bucket: bucket,
       Key: s3Key,
       Body: Buffer.from(JSON.stringify(job, null, 2), 'utf8'),
       ContentType: 'application/json'
@@ -112,13 +118,13 @@ export async function runS3Integration(argv = process.argv.slice(2)) {
   });
 
   const runBase = toPosixKey(
-    config.s3OutputPrefix,
+    outputPrefix,
     'mouse',
     productId,
     'runs',
     runResult.runId
   );
-  const latestBase = toPosixKey(config.s3OutputPrefix, 'mouse', productId, 'latest');
+  const latestBase = toPosixKey(outputPrefix, 'mouse', productId, 'latest');
 
   const requiredKeys = [
     `${runBase}/normalized/mouse.normalized.json`,
@@ -132,17 +138,17 @@ export async function runS3Integration(argv = process.argv.slice(2)) {
     `${latestBase}/mouse.row.tsv`
   ];
 
-  if (config.writeMarkdownSummary) {
+  if (configBool(config, 'writeMarkdownSummary')) {
     requiredKeys.push(`${runBase}/summary/mouse.summary.md`);
     requiredKeys.push(`${latestBase}/summary.md`);
   }
 
   for (const key of requiredKeys) {
-    await mustHeadObject(s3, config.s3Bucket, key);
+    await mustHeadObject(s3, bucket, key);
   }
 
-  const rawPages = await listCount(s3, config.s3Bucket, `${runBase}/raw/pages/`);
-  const rawNetwork = await listCount(s3, config.s3Bucket, `${runBase}/raw/network/`);
+  const rawPages = await listCount(s3, bucket, `${runBase}/raw/pages/`);
+  const rawNetwork = await listCount(s3, bucket, `${runBase}/raw/network/`);
 
   if (rawPages.count === 0) {
     throw new Error(`No raw pages written under ${runBase}/raw/pages/`);
@@ -153,7 +159,7 @@ export async function runS3Integration(argv = process.argv.slice(2)) {
 
   const acl = await s3.send(
     new GetObjectAclCommand({
-      Bucket: config.s3Bucket,
+      Bucket: bucket,
       Key: `${latestBase}/normalized.json`
     })
   );
@@ -162,17 +168,17 @@ export async function runS3Integration(argv = process.argv.slice(2)) {
     throw new Error('Public ACL grant detected on latest/normalized.json');
   }
 
-  const summary = await readJsonFromS3(s3, config.s3Bucket, `${runBase}/logs/summary.json`);
+  const summary = await readJsonFromS3(s3, bucket, `${runBase}/logs/summary.json`);
   const normalized = await readJsonFromS3(
     s3,
-    config.s3Bucket,
+    bucket,
     `${runBase}/normalized/mouse.normalized.json`
   );
 
   const output = {
     test: 's3-integration',
-    bucket: config.s3Bucket,
-    region: config.awsRegion,
+    bucket,
+    region,
     input_key: s3Key,
     run_id: runResult.runId,
     run_base: runBase,

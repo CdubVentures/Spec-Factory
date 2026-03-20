@@ -24,8 +24,20 @@
       "product_id": "mouse-logitech-g-pro-x-superlight-2-indexlab-1773120648779",
       "run_id": "20260310053047-bd16ec",
       "first_seen_at": "2026-03-10T05:32:39.686Z"
+    },
+    {
+      "suggestion_id": "comp_sensor_system_main_sensor",
+      "suggestion_type": "new_component",
+      "component_type": "sensor",
+      "field_key": "sensor",
+      "value": "SYSTEM Main Sensor",
+      "status": "pending",
+      "source": "runtime_field_rules_engine",
+      "product_id": "mouse-evga-x15-mmo",
+      "run_id": "20260320202929-ca41ba",
+      "first_seen_at": "2026-03-20T20:32:00.849Z"
     }
   ],
   "version": 1,
-  "updated_at": "2026-03-18T22:12:35.734Z"
+  "updated_at": "2026-03-20T20:32:00.849Z"
 }

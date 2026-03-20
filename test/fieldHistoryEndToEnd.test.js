@@ -133,7 +133,6 @@ describe('field history end-to-end pipeline proof', () => {
       profile_influence: null,
       deltas: [],
       round: 0,
-      round_mode: 'seed',
       schema_version: 'needset_planner_output.v2',
     };
 
@@ -176,7 +175,6 @@ describe('field history end-to-end pipeline proof', () => {
       profile_influence: null,
       deltas: [],
       round: 0,
-      round_mode: 'seed',
       schema_version: null,
     };
 

@@ -1,8 +1,3 @@
-import { planUberQueries } from './queryPlanner.js';
-import { rerankSerpResults } from './serpReranker.js';
-import { resolveDeepeningTier } from './frontierScheduler.js';
-import { configInt } from '../shared/settingsAccessor.js';
-
 function toArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -27,54 +22,6 @@ export class UberAggressiveOrchestrator {
     this.config = config || {};
     this.logger = logger || null;
     this.frontier = frontier || null;
-  }
-
-  async buildSearchPlan({
-    llmContext = {},
-    identity = {},
-    missingFields = [],
-    baseQueries = [],
-    previousSummary = {},
-    round = 0
-  } = {}) {
-    const tier = resolveDeepeningTier({
-      round,
-      previousSummary
-    });
-    const frontierSummary = this.frontier?.snapshotForProduct?.(identity?.productId || '') || {};
-    const planned = await planUberQueries({
-      config: this.config,
-      logger: this.logger,
-      llmContext,
-      identity,
-      missingFields,
-      baseQueries,
-      frontierSummary,
-      cap: Math.max(1, configInt(this.config, 'searchPlannerQueryCap'))
-    });
-    return {
-      tier,
-      ...planned
-    };
-  }
-
-  async rerankSerp({
-    llmContext = {},
-    identity = {},
-    missingFields = [],
-    serpResults = [],
-    topK = 20
-  } = {}) {
-    return rerankSerpResults({
-      config: this.config,
-      logger: this.logger,
-      llmContext,
-      identity,
-      missingFields,
-      serpResults,
-      frontier: this.frontier,
-      topK
-    });
   }
 
   buildCoverageDelta({

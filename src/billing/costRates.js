@@ -1,3 +1,5 @@
+import { configFloat } from '../shared/settingsAccessor.js';
+
 function toNumber(value, fallback = 0) {
   const parsed = Number.parseFloat(String(value ?? ''));
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -72,10 +74,11 @@ function resolveModelPricingFromMap(rates = {}, model = '') {
 
 function resolveModelSpecificRates(rates = {}, model = '') {
   const token = normalizeModel(model);
+  // WHY: inputPer1M alias is a non-registry passthrough from costRates objects
   const output = {
-    inputPer1M: toNumber(rates.llmCostInputPer1M ?? rates.inputPer1M, 1.25),
-    outputPer1M: toNumber(rates.llmCostOutputPer1M ?? rates.outputPer1M, 10),
-    cachedInputPer1M: toNumber(rates.llmCostCachedInputPer1M ?? rates.cachedInputPer1M, 0.125)
+    inputPer1M: rates.inputPer1M != null ? toNumber(rates.inputPer1M, 1.25) : configFloat(rates, 'llmCostInputPer1M'),
+    outputPer1M: rates.outputPer1M != null ? toNumber(rates.outputPer1M, 10) : configFloat(rates, 'llmCostOutputPer1M'),
+    cachedInputPer1M: rates.cachedInputPer1M != null ? toNumber(rates.cachedInputPer1M, 0.125) : configFloat(rates, 'llmCostCachedInputPer1M')
   };
 
   const applyIfValid = (value, setter) => {
@@ -110,9 +113,9 @@ function resolveModelSpecificRates(rates = {}, model = '') {
 
 export function normalizeCostRates(config = {}) {
   return {
-    llmCostInputPer1M: toNumber(config.llmCostInputPer1M ?? config.inputPer1M, 1.25),
-    llmCostOutputPer1M: toNumber(config.llmCostOutputPer1M ?? config.outputPer1M, 10),
-    llmCostCachedInputPer1M: toNumber(config.llmCostCachedInputPer1M ?? config.cachedInputPer1M, 0.125),
+    llmCostInputPer1M: config.inputPer1M != null ? toNumber(config.inputPer1M, 1.25) : configFloat(config, 'llmCostInputPer1M'),
+    llmCostOutputPer1M: config.outputPer1M != null ? toNumber(config.outputPer1M, 10) : configFloat(config, 'llmCostOutputPer1M'),
+    llmCostCachedInputPer1M: config.cachedInputPer1M != null ? toNumber(config.cachedInputPer1M, 0.125) : configFloat(config, 'llmCostCachedInputPer1M'),
     llmCostInputPer1MDeepseekChat: toNumber(config.llmCostInputPer1MDeepseekChat ?? config.inputPer1MDeepseekChat, -1),
     llmCostOutputPer1MDeepseekChat: toNumber(config.llmCostOutputPer1MDeepseekChat ?? config.outputPer1MDeepseekChat, -1),
     llmCostCachedInputPer1MDeepseekChat: toNumber(config.llmCostCachedInputPer1MDeepseekChat ?? config.cachedInputPer1MDeepseekChat, -1),

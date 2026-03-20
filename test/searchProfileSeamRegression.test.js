@@ -1,7 +1,6 @@
 // WHY: Regression guard for the searchProfileFinal shape. Asserts no data is
-// lost during the searchDiscovery extraction seam. Tests both old path and
-// Schema 4 path to ensure brand_resolution, schema4_planner, schema4_learning,
-// schema4_panel are threaded through correctly.
+// lost during the searchDiscovery extraction seam. Tests that brand_resolution
+// and other profile fields are threaded through correctly.
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,7 +10,6 @@ import path from 'node:path';
 import { createStorage } from '../src/s3/storage.js';
 import { discoverCandidateSources } from '../src/features/indexing/discovery/searchDiscovery.js';
 import { loadSourceRegistry } from '../src/features/indexing/discovery/sourceRegistry.js';
-import { runDiscoverySeedPlan } from '../src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js';
 
 const TEST_HOSTS = {
   manufacturer: 'acme.test',
@@ -88,7 +86,7 @@ const EXPECTED_PROFILE_KEYS = [
   'status', 'provider',
   'selected_queries', 'query_rows', 'query_guard', 'query_reject_log',
   'effective_host_plan',
-  'brand_resolution', 'schema4_planner', 'schema4_learning', 'schema4_panel',
+  'brand_resolution',
   'key', 'run_key', 'latest_key',
   'query_stats', 'discovered_count', 'approved_count', 'candidate_count',
   'llm_query_planning', 'llm_serp_selector', 'serp_explorer',
@@ -173,35 +171,6 @@ describe('searchProfileFinal shape regression', () => {
       assert.ok(Array.isArray(br.aliases));
       assert.equal(typeof br.confidence, 'number');
       assert.ok(Array.isArray(br.reasoning));
-    } finally {
-      global.fetch = originalFetch;
-      await fs.rm(tempRoot, { recursive: true, force: true });
-    }
-  });
-
-  it('old path: schema4 fields are null', async () => {
-    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'profile-seam-null-'));
-    const config = makeConfig(tempRoot);
-    const storage = createStorage(config);
-    const originalFetch = global.fetch;
-    global.fetch = async () => ({ ok: true, async json() { return { results: [] }; } });
-    try {
-      const result = await discoverCandidateSources({
-        config,
-        storage,
-        categoryConfig: makeCategoryConfig(),
-        job: { productId: 'mouse-acme-orbit-x1', category: 'mouse',
-          identityLock: { brand: 'Acme', model: 'Orbit X1', variant: '' } },
-        runId: 'run-seam-null',
-        logger: null,
-        planningHints: { missingRequiredFields: ['sensor'] },
-        llmContext: {},
-      });
-
-      const sp = result.search_profile;
-      assert.equal(sp.schema4_planner, null);
-      assert.equal(sp.schema4_learning, null);
-      assert.equal(sp.schema4_panel, null);
     } finally {
       global.fetch = originalFetch;
       await fs.rm(tempRoot, { recursive: true, force: true });
@@ -294,156 +263,4 @@ describe('searchProfileFinal shape regression', () => {
     }
   });
 
-  it('schema4 path: planner metadata threaded through', async () => {
-    const mockPlanner = {
-      mode: 'llm',
-      model: 'test-model',
-      planner_complete: true,
-      planner_confidence: 0.85,
-      queries_generated: 2,
-      duplicates_suppressed: 1,
-      targeted_exceptions: 0,
-      error: null,
-    };
-    const mockLearning = {
-      query_hashes_generated: ['h1', 'h2'],
-      queries_generated: ['q1', 'q2'],
-      families_used: ['manufacturer_html'],
-      domains_targeted: ['acme.test'],
-      groups_activated: ['sensor_performance'],
-      duplicates_suppressed: 1,
-    };
-    const mockPanel = {
-      round: 1,
-      round_mode: 'seed',
-      identity: { state: 'locked' },
-      summary: {},
-      blockers: {},
-      bundles: [],
-      profile_influence: {},
-      deltas: [],
-    };
-    const handoff = {
-      queries: [
-        {
-          q: 'TestBrand TestModel sensor specs',
-          query_hash: 'h1',
-          family: 'manufacturer_html',
-          group_key: 'sensor_performance',
-          target_fields: ['sensor_model'],
-          preferred_domains: ['acme.test'],
-          exact_match_required: false,
-        },
-        {
-          q: 'TestBrand TestModel weight dimensions',
-          query_hash: 'h2',
-          family: 'review_lookup',
-          group_key: 'sensor_performance',
-          target_fields: ['weight'],
-          preferred_domains: [],
-          exact_match_required: false,
-        },
-      ],
-      query_hashes: ['h1', 'h2'],
-      total: 2,
-    };
-
-    let capturedArgs = null;
-
-    const result = await runDiscoverySeedPlan({
-      config: {
-        discoveryEnabled: true,
-        searchEngines: 'bing,google',
-        maxCandidateUrls: 10,
-        fetchCandidateSources: true,
-      },
-      storage: {
-        resolveOutputKey: () => '_learning/test',
-        readJsonOrNull: async () => null,
-      },
-      category: 'mouse',
-      categoryConfig: {
-        category: 'mouse',
-        fieldOrder: ['sensor_model', 'weight'],
-        schema: { critical_fields: ['sensor_model'] },
-      },
-      job: { productId: 'mouse-test', brand: 'TestBrand', model: 'TestModel' },
-      runId: 'run-schema4-thread',
-      logger: { info: () => {}, warn: () => {} },
-      roundContext: {
-        missing_required_fields: ['sensor_model', 'weight'],
-        missing_critical_fields: ['sensor_model'],
-        round: 1,
-        round_mode: 'seed',
-      },
-      requiredFields: [],
-      llmContext: {},
-      planner: { enqueue: () => {}, seedCandidates: () => {} },
-      normalizeFieldListFn: (f) => f,
-      loadEnabledSourceEntriesFn: () => [],
-      computeNeedSetFn: () => ({
-        schema_version: 'needset_output.v2',
-        fields: [],
-        summary: {},
-        blockers: {},
-        planner_seed: { missing_critical_fields: [], unresolved_fields: [], existing_queries: [], current_product_identity: {} },
-      }),
-      buildSearchPlanningContextFn: () => ({
-        schema_version: 'search_planning_context.v2',
-        focus_groups: [],
-        run: {},
-      }),
-      buildSearchPlanFn: async () => ({
-        schema_version: 'needset_planner_output.v2',
-        search_plan_handoff: handoff,
-        planner: mockPlanner,
-        learning_writeback: mockLearning,
-        panel: mockPanel,
-      }),
-      runBrandResolverFn: async () => ({ brandResolution: null, promotedHosts: [] }),
-      runSearchProfileFn: () => ({
-        searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] },
-        effectiveHostPlan: null,
-        hostPlanQueryRows: [],
-      }),
-      runSearchPlannerFn: async (args) => {
-        capturedArgs = args;
-        return { schema4Plan: null, uberSearchPlan: null };
-      },
-      runQueryJourneyFn: async () => ({
-        queries: [],
-        selectedQueryRowMap: new Map(),
-        profileQueryRowsByQuery: new Map(),
-        searchProfilePlanned: {},
-        searchProfileKeys: {},
-        executionQueryLimit: 0,
-        queryLimit: 8,
-        queryRejectLogCombined: [],
-      }),
-      executeSearchQueriesFn: async () => ({
-        rawResults: [],
-        searchAttempts: [],
-        searchJournal: [],
-        internalSatisfied: false,
-        externalSearchReason: null,
-      }),
-      processDiscoveryResultsFn: async () => ({
-        enabled: true,
-        approvedUrls: [],
-        candidateUrls: [],
-        candidates: [],
-      }),
-      runDomainClassifierFn: () => ({ enqueuedCount: 0, seededCount: 0 }),
-    });
-
-    // Verify _planner, _learning, _panel were attached to handoff
-    assert.ok(capturedArgs, 'discoverCandidateSourcesFn should have been called');
-    const passedHandoff = capturedArgs.searchPlanHandoff;
-    assert.ok(passedHandoff, 'searchPlanHandoff must be passed');
-    assert.equal(passedHandoff._planner?.mode, 'llm', '_planner.mode threaded');
-    assert.equal(passedHandoff._planner?.planner_confidence, 0.85, '_planner.planner_confidence threaded');
-    assert.equal(passedHandoff._planner?.duplicates_suppressed, 1, '_planner.duplicates_suppressed threaded');
-    assert.deepEqual(passedHandoff._learning?.families_used, ['manufacturer_html'], '_learning threaded');
-    assert.equal(passedHandoff._panel?.round, 1, '_panel threaded');
-  });
 });

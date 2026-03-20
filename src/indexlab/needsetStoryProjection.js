@@ -6,7 +6,6 @@ export function projectNeedSetStory({
   needSet = {},
   searchProfilePreview = null,
   round = 0,
-  roundMode = ''
 } = {}) {
   const summary = needSet.summary || { core_unresolved: 0, secondary_unresolved: 0, optional_unresolved: 0, conflicts: 0, bundles_planned: 0 };
   const plannerBlockers = needSet.blockers || { missing: 0, weak: 0, conflict: 0 };
@@ -50,7 +49,6 @@ export function projectNeedSetStory({
   return {
     ...needSet,
     round,
-    round_mode: roundMode,
     blockers: {
       ...plannerBlockers,
       needs_exact_match: needsExactMatch,

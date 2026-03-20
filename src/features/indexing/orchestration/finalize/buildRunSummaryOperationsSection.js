@@ -1,4 +1,5 @@
 import { resolvePhaseModel } from '../../../../core/llm/client/routing.js';
+import { configBool } from '../../../../shared/settingsAccessor.js';
 
 export function buildRunSummaryOperationsSection({
   config = {},
@@ -46,8 +47,8 @@ export function buildRunSummaryOperationsSection({
   return {
     category_authority: {
       enabled: indexingHelperFlowEnabled,
-      global_category_authority_enabled: Boolean(config.categoryAuthorityEnabled),
-      indexing_category_authority_enabled: Boolean(config.indexingCategoryAuthorityEnabled),
+      global_category_authority_enabled: configBool(config, 'categoryAuthorityEnabled'),
+      indexing_category_authority_enabled: configBool(config, 'indexingCategoryAuthorityEnabled'),
       root: helperRoot,
       active_filtering_match: Boolean(helperContext.active_match),
       active_filtering_source: helperContext.active_match?.source || null,
@@ -116,7 +117,7 @@ export function buildRunSummaryOperationsSection({
       fields_filled_by_component_db: contribution.componentFields,
       retry_without_schema_count: llmRetryWithoutSchemaCount,
       estimated_usage_count: llmEstimatedUsageCount,
-      verify_mode_enabled: Boolean(config.llmVerifyMode),
+      verify_mode_enabled: configBool(config, 'llmVerifyMode'),
       verify_trigger: llmContext.verification?.trigger || 'disabled',
       verify_performed: Boolean(llmContext.verification?.done),
       verify_report_key: llmContext.verification?.report_key || null,

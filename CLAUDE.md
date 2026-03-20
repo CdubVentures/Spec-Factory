@@ -329,6 +329,15 @@ For all code generation, architecture design, and refactoring, you must strictly
 - **Generic Engines Over Hardcoding:** Serialization, hydration, and UI rendering layers must utilize generic loops that iterate over the registry. 
 - **The Abstraction Mandate:** If you find yourself writing repetitive boilerplate or hardcoding specific keys in multiple files for standard fields, STOP immediately, delete the repetitive code, output `[STATE: REFACTOR]`, and build a generic schema-driven abstraction.
 
+## The Subtractive Engineering Mandate (No Dead Code)
+
+LLMs naturally default to additive coding. You are explicitly commanded to practice **subtractive engineering**. 
+
+- **Clean Up Your Mess:** If you refactor a component, change an architectural direction, or replace a legacy function, you MUST actively search for and delete the old code, unused imports, and orphaned TypeScript types. 
+- **No Graveyards:** Do not leave commented-out blocks of old code "just in case" or "for reference." If we need old code, we will look at Git history.
+- **State & Prop Pruning:** When removing a feature from the UI, you must trace that data back up the tree. Remove the unused props, delete the derived state, and remove the payload from the API response if it is no longer used anywhere else.
+- **Refuse to Add to Bloat:** If a file is over 500 lines and filled with legacy fallbacks, you must halt and request to prune the dead code before adding new features to it.
+
 ## Configurability & knobs
 
 - No magic numbers for behavior (timeouts/retries/pagination/flags).

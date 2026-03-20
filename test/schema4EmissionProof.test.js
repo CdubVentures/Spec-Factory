@@ -14,7 +14,6 @@ function makeSchema2() {
     category: 'mouse',
     product_id: 'mouse-razer-viper-v3-pro',
     round: 0,
-    round_mode: 'seed',
     identity: { state: 'locked', confidence: 0.95, brand: 'Razer', model: 'Viper V3 Pro' },
     fields: [
       { field_key: 'weight', required_level: 'required', state: 'missing', need_score: 0.95, bundle: 'manufacturer_html', search_hints: { query_terms: ['weight grams'] } },
@@ -60,7 +59,7 @@ function makeSchema2() {
 function makeSchema4() {
   return {
     schema_version: 'needset_planner_output.v2',
-    run: { run_id: 'run-schema4-proof', category: 'mouse', product_id: 'mouse-razer-viper-v3-pro', round: 0, round_mode: 'seed' },
+    run: { run_id: 'run-schema4-proof', category: 'mouse', product_id: 'mouse-razer-viper-v3-pro', round: 0 },
     planner: { mode: 'standard' },
     search_plan_handoff: {
       queries: [
@@ -92,7 +91,6 @@ function makeSchema4() {
     },
     panel: {
       round: 0,
-      round_mode: 'seed',
       identity: { state: 'locked', confidence: 0.95, brand: 'Razer', model: 'Viper V3 Pro' },
       summary: {
         total: 12,
@@ -317,7 +315,7 @@ function makeStageStubs() {
       effectiveHostPlan: null,
       hostPlanQueryRows: [],
     }),
-    runSearchPlannerFn: async () => ({ schema4Plan: null, uberSearchPlan: null }),
+    runSearchPlannerFn: async () => ({ enhancedRows: [], source: 'deterministic_fallback' }),
     runQueryJourneyFn: async () => ({
       queries: [],
       selectedQueryRowMap: new Map(),
@@ -496,13 +494,8 @@ test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundle
   assert.ok(payload.identity, 'identity must exist');
   assert.equal(payload.identity.state, 'locked');
 
-  // -- Also verify schema4_handoff_ready was logged --
-  const handoffCalls = logger.calls.filter(
-    (c) => c.level === 'info' && c.event === 'schema4_handoff_ready',
-  );
-  assert.equal(handoffCalls.length, 1, 'schema4_handoff_ready emitted');
-  assert.equal(handoffCalls[0].payload.query_count, 22);
-  assert.equal(handoffCalls[0].payload.planner_mode, 'standard');
+  // WHY: schema4_handoff_ready no longer emitted — _planner/_learning/_panel
+  // attachment removed in Search Planner redesign. needset_computed still fires.
 });
 
 test('runDiscoverySeedPlan handles schema4 computation failure gracefully', async () => {

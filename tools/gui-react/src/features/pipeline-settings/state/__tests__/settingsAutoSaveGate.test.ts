@@ -2,9 +2,11 @@ import { describe, it } from 'node:test';
 import { strictEqual } from 'node:assert';
 import {
   shouldAutoSave,
+  shouldFlushOnUnmount,
   shouldForceHydration,
   type AutoSaveGateInput,
   type HydrationForceInput,
+  type UnmountFlushGateInput,
 } from '../settingsAutoSaveGate.ts';
 
 /* ------------------------------------------------------------------ */
@@ -166,6 +168,157 @@ describe('shouldAutoSave', () => {
   for (const { name, override } of gateTests) {
     it(`gate: ${name}`, () => {
       strictEqual(shouldAutoSave(makeAutoSaveInput(override)), false);
+    });
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/*  shouldFlushOnUnmount                                                */
+/* ------------------------------------------------------------------ */
+
+function makeUnmountFlushInput(overrides: Partial<UnmountFlushGateInput> = {}): UnmountFlushGateInput {
+  return {
+    alreadyFlushedByUnload: false,
+    hadPendingTimer: true,
+    enabled: true,
+    dirty: true,
+    autoSaveEnabled: true,
+    payloadFingerprint: 'fp-new',
+    lastSavedFingerprint: 'fp-old',
+    lastAttemptFingerprint: 'fp-old',
+    ...overrides,
+  };
+}
+
+describe('shouldFlushOnUnmount', () => {
+
+  // === Happy paths ===
+
+  it('returns true when all conditions met and pending timer exists', () => {
+    strictEqual(shouldFlushOnUnmount(makeUnmountFlushInput()), true);
+  });
+
+  it('returns true when no pending timer but attempt fingerprint differs', () => {
+    strictEqual(
+      shouldFlushOnUnmount(makeUnmountFlushInput({
+        hadPendingTimer: false,
+        lastAttemptFingerprint: 'fp-different',
+      })),
+      true,
+    );
+  });
+
+  // === Gate: alreadyFlushedByUnload ===
+
+  it('returns false when already flushed by unload handler', () => {
+    strictEqual(
+      shouldFlushOnUnmount(makeUnmountFlushInput({ alreadyFlushedByUnload: true })),
+      false,
+    );
+  });
+
+  // === Gate: enabled ===
+
+  it('returns false when not enabled', () => {
+    strictEqual(
+      shouldFlushOnUnmount(makeUnmountFlushInput({ enabled: false })),
+      false,
+    );
+  });
+
+  // === Gate: dirty ===
+
+  it('returns false when not dirty', () => {
+    strictEqual(
+      shouldFlushOnUnmount(makeUnmountFlushInput({ dirty: false })),
+      false,
+    );
+  });
+
+  // === Gate: autoSaveEnabled ===
+
+  it('returns false when auto-save disabled', () => {
+    strictEqual(
+      shouldFlushOnUnmount(makeUnmountFlushInput({ autoSaveEnabled: false })),
+      false,
+    );
+  });
+
+  // === Gate: empty fingerprint ===
+
+  it('returns false when fingerprint is empty', () => {
+    strictEqual(
+      shouldFlushOnUnmount(makeUnmountFlushInput({ payloadFingerprint: '' })),
+      false,
+    );
+  });
+
+  // === Gate: fingerprint matches lastSaved ===
+
+  it('returns false when fingerprint matches lastSavedFingerprint', () => {
+    strictEqual(
+      shouldFlushOnUnmount(makeUnmountFlushInput({
+        payloadFingerprint: 'same',
+        lastSavedFingerprint: 'same',
+      })),
+      false,
+    );
+  });
+
+  // === Gate: no timer + fp matches attempt ===
+
+  it('returns false when no pending timer and fingerprint matches lastAttempt', () => {
+    strictEqual(
+      shouldFlushOnUnmount(makeUnmountFlushInput({
+        hadPendingTimer: false,
+        payloadFingerprint: 'fp-new',
+        lastAttemptFingerprint: 'fp-new',
+      })),
+      false,
+    );
+  });
+
+  // === Critical: has timer + fp matches attempt → true (interrupted debounce recovery) ===
+
+  it('returns true when pending timer exists even if fingerprint matches lastAttempt', () => {
+    strictEqual(
+      shouldFlushOnUnmount(makeUnmountFlushInput({
+        hadPendingTimer: true,
+        payloadFingerprint: 'fp-new',
+        lastAttemptFingerprint: 'fp-new',
+      })),
+      true,
+    );
+  });
+
+  // === All flags false simultaneously ===
+
+  it('returns false when all flags are false', () => {
+    strictEqual(
+      shouldFlushOnUnmount(makeUnmountFlushInput({
+        enabled: false,
+        dirty: false,
+        autoSaveEnabled: false,
+      })),
+      false,
+    );
+  });
+
+  // === Table-driven: each gate blocks independently ===
+
+  const gateTests: { name: string; override: Partial<UnmountFlushGateInput> }[] = [
+    { name: 'alreadyFlushedByUnload blocks', override: { alreadyFlushedByUnload: true } },
+    { name: 'enabled=false blocks', override: { enabled: false } },
+    { name: 'dirty=false blocks', override: { dirty: false } },
+    { name: 'autoSaveEnabled=false blocks', override: { autoSaveEnabled: false } },
+    { name: 'empty fingerprint blocks', override: { payloadFingerprint: '' } },
+    { name: 'fingerprint=lastSaved blocks', override: { payloadFingerprint: 'fp-old', lastSavedFingerprint: 'fp-old' } },
+    { name: 'no timer + fingerprint=lastAttempt blocks', override: { hadPendingTimer: false, payloadFingerprint: 'fp-new', lastAttemptFingerprint: 'fp-new' } },
+  ];
+
+  for (const { name, override } of gateTests) {
+    it(`gate: ${name}`, () => {
+      strictEqual(shouldFlushOnUnmount(makeUnmountFlushInput(override)), false);
     });
   }
 });

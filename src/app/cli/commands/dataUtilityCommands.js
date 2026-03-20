@@ -1,6 +1,7 @@
 import { assertCategorySchemaReady } from '../cliHelpers.js';
 import fsNode from 'node:fs/promises';
 import pathNode from 'node:path';
+import { configValue } from '../../../shared/settingsAccessor.js';
 
 export function createDataUtilityCommands({
   asBool,
@@ -41,7 +42,7 @@ export function createDataUtilityCommands({
     const once = asBool(args.once, false);
     const logger = new EventLogger({
       storage,
-      runtimeEventsKey: config.runtimeEventsKey || '_runtime/events.jsonl',
+      runtimeEventsKey: configValue(config, 'runtimeEventsKey'),
       context: {
         category
       }
@@ -70,7 +71,7 @@ export function createDataUtilityCommands({
     const once = asBool(args.once, false);
     const logger = new EventLogger({
       storage,
-      runtimeEventsKey: config.runtimeEventsKey || '_runtime/events.jsonl',
+      runtimeEventsKey: configValue(config, 'runtimeEventsKey'),
       context: {
         category: category || 'all'
       }

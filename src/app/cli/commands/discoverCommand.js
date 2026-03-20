@@ -1,4 +1,5 @@
 import { filterKeysByBrand } from '../cliHelpers.js';
+import { configValue } from '../../../shared/settingsAccessor.js';
 
 export function createDiscoverCommand({
   loadCategoryConfig,
@@ -13,7 +14,7 @@ export function createDiscoverCommand({
     const keys = await filterKeysByBrand(storage, allKeys, args.brand);
     const logger = new EventLogger({
       storage,
-      runtimeEventsKey: config.runtimeEventsKey || '_runtime/events.jsonl',
+      runtimeEventsKey: configValue(config, 'runtimeEventsKey'),
       context: {
         category,
       },

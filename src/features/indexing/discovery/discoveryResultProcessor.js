@@ -43,7 +43,7 @@ export async function processDiscoveryResults({
   // Identity & learning
   variables, identityLock, brandResolution, missingFields, learning,
   // LLM & planning
-  llmContext, searchProfileBase, llmQueries, uberSearchPlan, uberMode,
+  llmContext, searchProfileBase, llmQueries,
   // Search profile & query state
   queries, searchProfilePlanned, searchProfileKeys, providerState, queryConcurrency, discoveryCap,
   // Host plan
@@ -598,7 +598,6 @@ export async function processDiscoveryResults({
     search_profile_key: searchProfileKeys.inputKey,
     search_profile_run_key: searchProfileKeys.runKey,
     search_profile_latest_key: searchProfileKeys.latestKey,
-    uber_search_plan: uberSearchPlan || null,
     targeted_missing_fields: missingFields,
     internal_satisfied: internalSatisfied,
     external_search_reason: externalSearchReason,
@@ -642,7 +641,6 @@ export async function processDiscoveryResults({
     search_profile_latest_key: searchProfileKeys.latestKey,
     provider_state: providerState,
     query_concurrency: queryConcurrency,
-    uber_search_plan: uberSearchPlan || null,
     internal_satisfied: internalSatisfied,
     external_search_reason: externalSearchReason,
     search_attempts: searchAttempts,

@@ -73,12 +73,6 @@ function gateZeroRatioReason(gateKey: string): string {
   return '0/Y means no effective values are available for this gate on enabled fields.';
 }
 
-function confidenceStatColor(confidence: number): string {
-  if (confidence >= 0.7) return 'text-[var(--sf-state-success-fg)]';
-  if (confidence >= 0.4) return 'text-[var(--sf-state-warning-fg)]';
-  return 'text-[var(--sf-state-error-fg)]';
-}
-
 /* ── Query Detail Drawer ─────────────────────────────────────────────── */
 
 function QueryDetailDrawer({
@@ -188,7 +182,6 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
   );
   const providerLabel = providerDisplayLabel(liveProvider || data.provider) || toChipLabel(liveProvider || data.provider);
   const totalResults = data.query_rows.reduce((s, r) => s + (r.result_count ?? 0), 0);
-  const isSchema4 = data.source === 'schema4_planner';
   const topLevelFieldRulesOn = gateSummary.fieldRulesOn || gateSummary.fieldRuleKeyCounts.length > 0;
 
   const guardTotal = typeof data.query_guard?.total === 'number' ? data.query_guard.total : null;
@@ -197,7 +190,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
   const guardRejected = typeof data.query_guard?.rejected_query_count === 'number' ? data.query_guard.rejected_query_count : null;
 
   /* ── Empty state ── */
-  if (data.query_rows.length === 0 && !data.brand_resolution && !data.schema4_planner) {
+  if (data.query_rows.length === 0 && !data.brand_resolution) {
     return (
       <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
         <h3 className="text-sm font-semibold sf-text-primary">Search Profile</h3>
@@ -223,8 +216,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
         titleRow={<>
           <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Search Profile</span>
           <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Discovery Pipeline</span>
-          {isSchema4 && <Chip label="Schema 4" className="sf-chip-info" />}
-          {!isSchema4 && data.query_rows.length > 0 && <Chip label="Deterministic" className="sf-chip-neutral" />}
+          {data.query_rows.length > 0 && <Chip label="Deterministic" className="sf-chip-neutral" />}
         </>}
         trailing={<>
           {providerLabel && <Chip label={providerLabel} className="sf-chip-accent" />}
@@ -244,30 +236,12 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
 
         {/* Narrative */}
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
-          {isSchema4 && data.schema4_planner ? (
-            <>
-              NeedSet planner generated <strong className="sf-text-primary not-italic">{data.selected_query_count ?? data.query_count}</strong> queries
-              {data.schema4_planner.planner_confidence > 0 && (
-                <> with <strong className="sf-text-primary not-italic">{Math.round(data.schema4_planner.planner_confidence * 100)}%</strong> confidence</>
-              )}
-              {data.schema4_planner.duplicates_suppressed > 0 && (
-                <>, suppressing {data.schema4_planner.duplicates_suppressed} duplicate{data.schema4_planner.duplicates_suppressed !== 1 ? 's' : ''}</>
-              )}
-              {(data.discovered_count ?? 0) > 0 && (
-                <> &mdash; discovered <strong className="sf-text-primary not-italic">{data.discovered_count}</strong> URLs ({data.approved_count ?? 0} approved, {data.candidate_count ?? 0} candidates)</>
-              )}
-              .
-            </>
-          ) : (
-            <>
-              Deterministic planner assembled <strong className="sf-text-primary not-italic">{data.selected_query_count ?? data.query_count}</strong> queries
-              {' '}from field rules, search templates, and identity aliases
-              {(data.discovered_count ?? 0) > 0 && (
-                <> &mdash; discovered <strong className="sf-text-primary not-italic">{data.discovered_count}</strong> URLs ({data.approved_count ?? 0} approved, {data.candidate_count ?? 0} candidates)</>
-              )}
-              .
-            </>
+          Deterministic planner assembled <strong className="sf-text-primary not-italic">{data.selected_query_count ?? data.query_count}</strong> queries
+          {' '}from field rules, search templates, and identity aliases
+          {(data.discovered_count ?? 0) > 0 && (
+            <> &mdash; discovered <strong className="sf-text-primary not-italic">{data.discovered_count}</strong> URLs ({data.approved_count ?? 0} approved, {data.candidate_count ?? 0} candidates)</>
           )}
+          .
         </div>
       </HeroBand>
 
@@ -379,91 +353,6 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
             {data.serp_explorer.llm_triage_applied && (
               <div className="mt-3 pt-3 border-t sf-border-soft">
                 <Chip label="LLM Triage Applied" className="sf-chip-warning" />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════════
-          SCHEMA 4 PLANNER DECISIONS
-          ══════════════════════════════════════════════════════════════════ */}
-      {data.schema4_planner && (
-        <div>
-          <SectionHeader>planner decisions &middot; schema 4</SectionHeader>
-          <div className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-4 space-y-4">
-            {/* Planner stats */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <Chip label={`mode: ${data.schema4_planner.mode}`} className={data.schema4_planner.mode === 'llm' ? 'sf-chip-warning' : 'sf-chip-neutral'} />
-              <span className={`text-sm font-mono font-semibold ${confidenceStatColor(data.schema4_planner.planner_confidence)}`}>
-                {Math.round(data.schema4_planner.planner_confidence * 100)}% conf
-              </span>
-              {data.schema4_planner.duplicates_suppressed > 0 && (
-                <span className="text-[11px] font-mono sf-text-muted">{data.schema4_planner.duplicates_suppressed} dupes suppressed</span>
-              )}
-              {data.schema4_planner.targeted_exceptions > 0 && (
-                <span className="text-[11px] font-mono sf-text-muted">{data.schema4_planner.targeted_exceptions} exceptions</span>
-              )}
-            </div>
-
-            {/* Learning: families, domains, groups */}
-            {data.schema4_learning && (
-              <div className="flex flex-wrap gap-x-6 gap-y-3">
-                {data.schema4_learning.families_used.length > 0 && (
-                  <div>
-                    <div className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle">query families</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {data.schema4_learning.families_used.map((f) => <Chip key={f} label={f.replace(/_/g, ' ')} className="sf-chip-accent" />)}
-                    </div>
-                  </div>
-                )}
-                {data.schema4_learning.domains_targeted.length > 0 && (
-                  <div>
-                    <div className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle">domains targeted</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {data.schema4_learning.domains_targeted.map((d) => <Chip key={d} label={d} className="sf-chip-info" />)}
-                    </div>
-                  </div>
-                )}
-                {data.schema4_learning.groups_activated.length > 0 && (
-                  <div>
-                    <div className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle">groups activated</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {data.schema4_learning.groups_activated.map((g) => <Chip key={g} label={g} className="sf-chip-success" />)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Bundles */}
-            {data.schema4_panel?.bundles && data.schema4_panel.bundles.length > 0 && (
-              <div>
-                <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle">focus group bundles</div>
-                <div className="overflow-x-auto border sf-border-soft rounded-sm">
-                  <table className="min-w-full text-xs">
-                    <thead className="sf-surface-elevated sticky top-0">
-                      <tr>
-                        {['phase', 'group', 'queries', 'missing fields', 'priority'].map((h) => (
-                          <th key={h} className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.schema4_panel.bundles.map((b) => (
-                        <tr key={b.key} className="border-b sf-border-soft">
-                          <td className="py-1.5 px-4">
-                            <Chip label={b.phase} className={b.phase === 'now' ? 'sf-chip-success' : b.phase === 'next' ? 'sf-chip-warning' : 'sf-chip-neutral'} />
-                          </td>
-                          <td className="py-1.5 px-4 font-mono font-medium sf-text-primary">{b.label || b.key}</td>
-                          <td className="py-1.5 px-4 font-mono">{b.queries.length}</td>
-                          <td className="py-1.5 px-4 font-mono">{(b.fields || []).filter((f) => f.state === 'missing').length}</td>
-                          <td className="py-1.5 px-4"><Chip label={b.priority} className={b.priority === 'core' ? 'sf-chip-danger' : b.priority === 'secondary' ? 'sf-chip-warning' : 'sf-chip-neutral'} /></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
               </div>
             )}
           </div>

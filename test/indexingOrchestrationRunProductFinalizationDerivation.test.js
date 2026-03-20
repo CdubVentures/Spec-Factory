@@ -434,7 +434,6 @@ test('runProductFinalizationDerivation uses seed schema4 from discoveryResult in
     profile_influence: { manufacturer_html: 2, total_queries: 3 },
     deltas: [],
     round: 0,
-    round_mode: 'seed',
   };
   const schema4Output = {
     schema_version: 'needset_planner_output.v2',
@@ -500,7 +499,6 @@ test('runProductFinalizationDerivation uses seed schema4 from discoveryResult in
   assert.deepEqual(result.needSet.profile_influence, schema4Panel.profile_influence);
   assert.equal(result.needSet.schema_version, 'needset_planner_output.v2');
   assert.equal(result.needSet.round, 0);
-  assert.equal(result.needSet.round_mode, 'seed');
 
   // searchPlanOutput is the seed schema4 output (no LLM call in finalization)
   assert.deepEqual(result.searchPlanOutput, schema4Output);

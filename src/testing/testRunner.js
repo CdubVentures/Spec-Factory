@@ -39,6 +39,7 @@ import { evaluateConstraintGraph } from '../scoring/constraintSolver.js';
 import { buildHypothesisQueue } from '../features/indexing/learning/index.js';
 import { buildMarkdownSummary } from '../exporter/summaryWriter.js';
 import { EventLogger } from '../logger.js';
+import { configValue } from '../shared/settingsAccessor.js';
 
 function hasKnownFieldValue(val) {
   const s = String(val ?? '').trim().toLowerCase();
@@ -118,7 +119,7 @@ export async function runTestProduct({
 
   const logger = new EventLogger({
     storage,
-    runtimeEventsKey: config.runtimeEventsKey || '_runtime/events.jsonl',
+    runtimeEventsKey: configValue(config, 'runtimeEventsKey'),
     context: { runId, category, productId }
   });
   logger.info('test_run_started', { productId, runId, category, test_case: job._testCase });

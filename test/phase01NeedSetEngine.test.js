@@ -583,7 +583,7 @@ describe('Phase 01 — Top-Level Output Shape', () => {
       'summary', 'blockers', 'focus_fields', 'bundles', 'profile_mix',
       'rows', 'debug',
       // Schema 2 additions
-      'schema_version', 'round', 'round_mode', 'identity', 'fields', 'planner_seed'
+      'schema_version', 'round', 'identity', 'fields', 'planner_seed'
     ];
     for (const key of requiredKeys) {
       assert.ok(key in result, `output must have "${key}"`);
@@ -678,23 +678,20 @@ describe('Phase 01 — NeedSet Event Payload Shape (via runtimeBridge)', () => {
 // --- Schema 2 output shape tests ---
 
 describe('Phase 01 — Schema 2 Top-Level Shape', () => {
-  it('output includes schema_version, round, round_mode', () => {
+  it('output includes schema_version and round', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.equal(result.schema_version, 'needset_output.v2.1');
     assert.equal(typeof result.round, 'number');
-    assert.equal(typeof result.round_mode, 'string');
   });
 
-  it('round defaults to 0, round_mode defaults to seed', () => {
+  it('round defaults to 0', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.equal(result.round, 0);
-    assert.equal(result.round_mode, 'seed');
   });
 
-  it('round and round_mode can be overridden', () => {
-    const result = computeNeedSet(makeBaseInput({ round: 2, roundMode: 'carry_forward' }));
+  it('round can be overridden', () => {
+    const result = computeNeedSet(makeBaseInput({ round: 2 }));
     assert.equal(result.round, 2);
-    assert.equal(result.round_mode, 'carry_forward');
   });
 
   it('output has identity block', () => {
@@ -983,7 +980,6 @@ describe('Phase 01 — Schema 2 history (round 1+ carry-forward)', () => {
   it('round 1 with evidence → domains_tried populated from evidence', () => {
     const result = computeNeedSet(makeBaseInput({
       round: 1,
-      roundMode: 'carry_forward',
       provenance: {
         weight: {
           value: '58g', confidence: 0.4, pass_target: 0.8,
@@ -1138,7 +1134,6 @@ describe('Phase 01 — blockers.search_exhausted derivation', () => {
         sensor: { required_level: 'critical', search_hints: {} }
       },
       round: 3,
-      roundMode: 'carry_forward',
       previousFieldHistories: {
         weight: {
           existing_queries: ['q1', 'q2', 'q3'],

@@ -3,6 +3,7 @@
 // PUT receives a composite, disassembles to flat keys, persists, and applies.
 
 import { assembleLlmPolicy, disassembleLlmPolicy, LLM_POLICY_FLAT_KEYS } from '../../core/llm/llmPolicySchema.js';
+import { validateModelKeysAgainstRegistry } from '../../core/llm/llmModelValidation.js';
 import { emitDataChange } from '../../api/events/dataChangeContract.js';
 import { applyRuntimeSettingsToConfig } from './userSettingsService.js';
 
@@ -24,6 +25,14 @@ export function createLlmPolicyHandler({
     if (method === 'PUT' || method === 'POST') {
       const body = await readJsonBody(req).catch(() => ({}));
       const flatKeys = disassembleLlmPolicy(body);
+
+      // WHY: Reject model IDs that don't exist in the provider registry.
+      // Empty strings are allowed (fallbacks can be unset).
+      const invalidModels = validateModelKeysAgainstRegistry(flatKeys, config._registryLookup);
+      if (invalidModels.length > 0) {
+        const rejected = Object.fromEntries(invalidModels.map((m) => [m.key, m.value]));
+        return jsonRes(res, 422, { ok: false, error: 'invalid_model', rejected });
+      }
 
       // WHY: Apply to live config so subsequent reads see the new values.
       applyRuntimeSettingsToConfig(config, flatKeys);

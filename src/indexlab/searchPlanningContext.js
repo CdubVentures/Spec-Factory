@@ -61,7 +61,6 @@ function derivePlannerLimits(config) {
   return {
     discoveryEnabled: true,
     searchProfileQueryCap: configInt(config, 'searchProfileQueryCap'),
-    searchPlannerQueryCap: configInt(config, 'searchPlannerQueryCap'),
     maxUrlsPerProduct: configInt(config, 'maxUrlsPerProduct'),
     maxCandidateUrls: configInt(config, 'maxCandidateUrls'),
     maxPagesPerDomain: configInt(config, 'maxPagesPerDomain'),
@@ -196,19 +195,31 @@ export function computeGroupProductivityScore(unresolvedFields, groupQueryCount)
   return (avgAvail * 30) + (avgDiff * 20) + (avgNeed * 0.5) + volumeBonus - repeatPenalty;
 }
 
+// WHY: Returns enriched objects so Tier 3 can progressively enrich queries
+// based on repeat_count, aliases, domain hints, and content types.
 export function buildNormalizedKeyQueue(unresolvedFields) {
-  const entries = (unresolvedFields || []).map((f) => ({
-    normalized_key: f.normalized_key || f.field_key,
-    avail: V4_AVAILABILITY_RANKS[f.availability] ?? 4,
-    diff: V4_DIFFICULTY_RANKS[f.difficulty] ?? 2,
-    repeat: f.repeat_count || 0,
-    need: f.need_score || 0,
-    req: V4_REQUIRED_LEVEL_RANKS[f.required_level] ?? 4,
-  }));
+  const entries = (unresolvedFields || []).map((f) => {
+    const idx = f.idx || {};
+    return {
+      normalized_key: f.normalized_key || f.field_key,
+      repeat_count: f.repeat_count || 0,
+      all_aliases: Array.isArray(f.all_aliases) ? f.all_aliases : [],
+      alias_shards: Array.isArray(f.alias_shards) ? f.alias_shards : [],
+      domain_hints: Array.isArray(idx.domain_hints) ? idx.domain_hints : [],
+      preferred_content_types: Array.isArray(idx.preferred_content_types) ? idx.preferred_content_types : [],
+      domains_tried_for_key: Array.isArray(f.domains_tried_for_key) ? f.domains_tried_for_key : [],
+      content_types_tried_for_key: Array.isArray(f.content_types_tried_for_key) ? f.content_types_tried_for_key : [],
+      // Sort keys for ranking
+      _avail: V4_AVAILABILITY_RANKS[f.availability] ?? 4,
+      _diff: V4_DIFFICULTY_RANKS[f.difficulty] ?? 2,
+      _need: f.need_score || 0,
+      _req: V4_REQUIRED_LEVEL_RANKS[f.required_level] ?? 4,
+    };
+  });
   entries.sort((a, b) =>
-    (a.avail - b.avail) || (a.diff - b.diff) || (a.repeat - b.repeat) || (b.need - a.need) || (a.req - b.req)
+    (a._avail - b._avail) || (a._diff - b._diff) || (a.repeat_count - b.repeat_count) || (b._need - a._need) || (a._req - b._req)
   );
-  return entries.map((e) => e.normalized_key);
+  return entries;
 }
 
 export function deriveSeedStatus(queryExecutionHistory, identity, config = {}) {
@@ -259,6 +270,76 @@ export function deriveSeedStatus(queryExecutionHistory, identity, config = {}) {
       incomplete: queries.length - complete,
       pending_scrapes: queries.reduce((sum, q) => sum + (q.pending_count || 0), 0),
     },
+  };
+}
+
+// WHY: Budget-aware tier allocation — mirrors queryBuilder's priority order
+// (seeds first, groups second, keys third) so NeedSet can report accurate
+// dashboard numbers and phase assignments before Search Profile runs.
+export function computeTierAllocation(seedStatus, focusGroups, queryBudget) {
+  const budget = Math.max(0, Number(queryBudget) || 0);
+  const groups = Array.isArray(focusGroups) ? focusGroups : [];
+  let remaining = budget;
+
+  // Tier 1: seeds
+  const tier1Seeds = [];
+  if (seedStatus?.specs_seed?.is_needed) {
+    tier1Seeds.push({ type: 'specs', source_name: null, is_needed: true });
+  }
+  for (const [source, info] of Object.entries(seedStatus?.source_seeds || {})) {
+    if (info?.is_needed) {
+      tier1Seeds.push({ type: 'source', source_name: source, is_needed: true });
+    }
+  }
+  const tier1SeedCount = Math.min(tier1Seeds.length, remaining);
+  remaining -= tier1SeedCount;
+
+  // Tier 2: search-worthy groups sorted by productivity
+  const worthyGroups = groups
+    .filter((g) => g.group_search_worthy === true)
+    .sort((a, b) => (b.productivity_score || 0) - (a.productivity_score || 0));
+  const tier2GroupCount = Math.min(worthyGroups.length, remaining);
+  remaining -= tier2GroupCount;
+  const overflowGroupCount = Math.max(0, worthyGroups.length - tier2GroupCount);
+
+  const tier2Groups = worthyGroups.map((g, i) => ({
+    group_key: g.key,
+    productivity_score: g.productivity_score || 0,
+    allocated: i < tier2GroupCount,
+  }));
+
+  // Tier 3: individual keys from non-worthy groups
+  const nonWorthyWithKeys = groups.filter(
+    (g) => g.group_search_worthy === false &&
+      Array.isArray(g.normalized_key_queue) &&
+      g.normalized_key_queue.length > 0,
+  );
+  let tier3KeyCount = 0;
+  let overflowKeyCount = 0;
+  const tier3Keys = [];
+  for (const g of nonWorthyWithKeys) {
+    const keyCount = g.normalized_key_queue.length;
+    const allocatable = Math.min(keyCount, remaining);
+    tier3Keys.push({
+      group_key: g.key,
+      key_count: keyCount,
+      allocated_count: allocatable,
+    });
+    tier3KeyCount += allocatable;
+    overflowKeyCount += keyCount - allocatable;
+    remaining -= allocatable;
+  }
+
+  return {
+    budget,
+    tier1_seed_count: tier1SeedCount,
+    tier2_group_count: tier2GroupCount,
+    tier3_key_count: tier3KeyCount,
+    tier1_seeds: tier1Seeds.slice(0, tier1SeedCount),
+    tier2_groups: tier2Groups,
+    tier3_keys: tier3Keys,
+    overflow_group_count: overflowGroupCount,
+    overflow_key_count: overflowKeyCount,
   };
 }
 
@@ -473,17 +554,40 @@ export function buildSearchPlanningContext({
     focusGroups.push(buildFocusGroup(key, groupFields, catalogEntry, queryExecutionHistory));
   }
 
-  // Pass 2b: Assign phases — rank pending groups by productivity score
-  // If Tier 1 seeds haven't completed (round 0), all pending groups are 'next'
+  // Pass 2b: Budget-aware phase assignment
+  // WHY: Phase must reflect the actual query budget so the dashboard shows
+  // what will really execute, not aspirational counts.
   const round = rc.round ?? 0;
   const seedsStillNeeded = round === 0;
+  const plannerLimits = derivePlannerLimits(config);
+  const queryBudget = plannerLimits.searchProfileQueryCap || 10;
+
+  // Pre-compute seed count for budget-aware group allocation
+  const preSeedStatus = deriveSeedStatus(queryExecutionHistory, ns.identity, config);
+  let seedSlots = 0;
+  if (preSeedStatus?.specs_seed?.is_needed) seedSlots++;
+  for (const info of Object.values(preSeedStatus?.source_seeds || {})) {
+    if (info?.is_needed) seedSlots++;
+  }
+  const groupBudget = Math.max(0, queryBudget - seedSlots);
+
   const pendingGroups = focusGroups.filter((g) => g.phase === 'pending');
   if (pendingGroups.length > 0) {
     pendingGroups.sort((a, b) => b.productivity_score - a.productivity_score);
-    // Top half = now, rest = next. If seeds still needed, all = next.
-    const nowCount = seedsStillNeeded ? 0 : Math.max(1, Math.ceil(pendingGroups.length / 2));
-    for (let i = 0; i < pendingGroups.length; i++) {
-      pendingGroups[i].phase = i < nowCount ? 'now' : 'next';
+    if (seedsStillNeeded) {
+      // Round 0: all pending groups defer to 'next' — seeds take priority
+      for (const g of pendingGroups) g.phase = 'next';
+    } else {
+      // Round 1+: budget-aware — only worthy groups that fit the budget become 'now'
+      // Non-worthy groups stay 'next' — their individual keys fire as Tier 3
+      // but the group itself doesn't get a broad Tier 2 search.
+      const worthyPending = pendingGroups.filter((g) => g.group_search_worthy === true);
+      const nonWorthyPending = pendingGroups.filter((g) => g.group_search_worthy !== true);
+      const nowGroupCount = Math.min(worthyPending.length, groupBudget);
+      for (let i = 0; i < worthyPending.length; i++) {
+        worthyPending[i].phase = i < nowGroupCount ? 'now' : 'next';
+      }
+      for (const g of nonWorthyPending) g.phase = 'next';
     }
   }
 
@@ -512,14 +616,26 @@ export function buildSearchPlanningContext({
     existing_queries: plannerSeed.existing_queries || [],
   };
 
-  // V4: seed_status
-  const seedStatus = deriveSeedStatus(queryExecutionHistory, ns.identity, config);
+  // V4: seed_status (reuse pre-computed if same inputs, otherwise derive fresh)
+  const seedStatus = preSeedStatus;
 
-  // V4: pass_seed signals
+  // V4: tier_allocation — budget-aware slot distribution
+  const tierAllocation = computeTierAllocation(seedStatus, focusGroups, queryBudget);
+
+  // V4: pass_seed signals — expanded with B queue
   const passSeed = {
-    passA_specs_seed: (rc.round ?? 0) === 0,
+    passA_specs_seed: seedStatus?.specs_seed?.is_needed ?? (round === 0),
     passA_source_candidates: [ns.identity?.official_domain, ns.identity?.support_domain].filter(Boolean),
     passA_target_groups: focusGroups.filter((g) => g.phase === 'now').map((g) => g.key),
+    passB_group_queue: focusGroups
+      .filter((g) => g.group_search_worthy === true && g.phase !== 'hold')
+      .map((g) => g.key),
+    passB_key_queue: focusGroups
+      .filter((g) => g.group_search_worthy === false &&
+        Array.isArray(g.normalized_key_queue) && g.normalized_key_queue.length > 0)
+      .flatMap((g) => g.normalized_key_queue.map((e) =>
+        (e && typeof e === 'object') ? e.normalized_key : e
+      )),
   };
 
   return {
@@ -533,11 +649,10 @@ export function buildSearchPlanningContext({
       base_model: rc.base_model || '', // GAP-5
       aliases: Array.isArray(rc.aliases) ? rc.aliases : [], // GAP-5
       round: rc.round ?? 0,
-      round_mode: rc.round_mode || 'seed',
     },
     identity: ns.identity || null,
     needset,
-    planner_limits: derivePlannerLimits(config),
+    planner_limits: plannerLimits,
     group_catalog: groupCatalog,
     focus_groups: focusGroups,
     field_priority_map: fieldPriorityMap,
@@ -545,5 +660,6 @@ export function buildSearchPlanningContext({
     previous_round_fields: previousRoundFields || null,
     seed_status: seedStatus,
     pass_seed: passSeed,
+    tier_allocation: tierAllocation,
   };
 }

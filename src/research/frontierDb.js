@@ -1,4 +1,5 @@
 import { canonicalizeUrl } from './urlNormalize.js';
+import { configInt, configBool } from '../shared/settingsAccessor.js';
 
 function toInt(value, fallback = 0) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -82,15 +83,15 @@ export class FrontierDb {
     this.key = String(key || '').trim() || '_intel/frontier/frontier.json';
     this.config = config || {};
     this.state = initialState();
-    this.queryCooldownSeconds = Math.max(0, toInt(config.frontierQueryCooldownSeconds, 6 * 60 * 60));
-    this.cooldown404Seconds = Math.max(0, toInt(config.frontierCooldown404Seconds, 72 * 60 * 60));
-    this.cooldown404RepeatSeconds = Math.max(0, toInt(config.frontierCooldown404RepeatSeconds, 14 * 24 * 60 * 60));
-    this.cooldown410Seconds = Math.max(0, toInt(config.frontierCooldown410Seconds, 90 * 24 * 60 * 60));
-    this.cooldownTimeoutSeconds = Math.max(0, toInt(config.frontierCooldownTimeoutSeconds, 6 * 60 * 60));
-    this.cooldown403BaseSeconds = Math.max(60, toInt(config.frontierCooldown403BaseSeconds, 30 * 60));
-    this.cooldown429BaseSeconds = Math.max(60, toInt(config.frontierCooldown429BaseSeconds, 15 * 60));
-    this.backoffMaxExponent = Math.max(1, toInt(config.frontierBackoffMaxExponent, 4));
-    this.pathPenaltyNotfoundThreshold = Math.max(1, toInt(config.frontierPathPenaltyNotfoundThreshold, 3));
+    this.queryCooldownSeconds = configInt(config, 'frontierQueryCooldownSeconds');
+    this.cooldown404Seconds = configInt(config, 'frontierCooldown404Seconds');
+    this.cooldown404RepeatSeconds = configInt(config, 'frontierCooldown404RepeatSeconds');
+    this.cooldown410Seconds = configInt(config, 'frontierCooldown410Seconds');
+    this.cooldownTimeoutSeconds = configInt(config, 'frontierCooldownTimeoutSeconds');
+    this.cooldown403BaseSeconds = configInt(config, 'frontierCooldown403BaseSeconds');
+    this.cooldown429BaseSeconds = configInt(config, 'frontierCooldown429BaseSeconds');
+    this.backoffMaxExponent = configInt(config, 'frontierBackoffMaxExponent');
+    this.pathPenaltyNotfoundThreshold = configInt(config, 'frontierPathPenaltyNotfoundThreshold');
   }
 
   async load() {
@@ -129,7 +130,7 @@ export class FrontierDb {
 
   canonicalize(url) {
     return canonicalizeUrl(url, {
-      stripTrackingParams: this.config.frontierStripTrackingParams !== false
+      stripTrackingParams: configBool(this.config, 'frontierStripTrackingParams')
     });
   }
 
@@ -179,6 +180,10 @@ export class FrontierDb {
     provider,
     fields = [],
     results = [],
+    tier = null,
+    group_key = null,
+    normalized_key = null,
+    hint_source = null,
     ts = nowIso()
   } = {}) {
     const normalized = normalizeQuery(query);
@@ -202,7 +207,11 @@ export class FrontierDb {
         title: String(row?.title || '').trim(),
         host: String(row?.host || '').trim(),
         snippet: String(row?.snippet || '').slice(0, 400)
-      }))
+      })),
+      tier: tier || existing.tier || null,
+      group_key: group_key || existing.group_key || null,
+      normalized_key: normalized_key || existing.normalized_key || null,
+      hint_source: hint_source || existing.hint_source || null,
     };
     this.state.queries[queryHash] = next;
     const productIndex = ensureObject(this.state.product_index[next.product_id]);
@@ -512,6 +521,31 @@ export class FrontierDb {
       field_yield: fieldYield,
       cooldowns: cooldowns.slice(0, 200)
     };
+  }
+
+  // WHY: Builds the queryExecutionHistory shape consumed by deriveSeedStatus()
+  // and computeGroupQueryCount() in searchPlanningContext.js.
+  buildQueryExecutionHistory(productId) {
+    const product = String(productId || '').trim();
+    const queryRows = Object.values(this.state.queries || {}).filter(
+      (row) => String(row?.product_id || '').trim() === product
+    );
+    const queries = queryRows.map((row) => {
+      const results = ensureArray(row.results);
+      const hasResults = results.length > 0;
+      const lastTs = row.last_ts ? Date.parse(row.last_ts) : null;
+      return {
+        tier: row.tier || null,
+        group_key: row.group_key || null,
+        normalized_key: row.normalized_key || null,
+        source_name: row.hint_source === 'tier1_seed' ? (row.query_text || '').split(' ').pop() : null,
+        status: hasResults ? 'scrape_complete' : 'pending',
+        completed_at_ms: hasResults && lastTs ? lastTs : null,
+        new_fields_closed: 0,
+        pending_count: hasResults ? 0 : 1,
+      };
+    });
+    return { queries };
   }
 
   frontierSnapshot({ limit = 120 } = {}) {

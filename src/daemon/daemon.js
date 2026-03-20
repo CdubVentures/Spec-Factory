@@ -20,11 +20,10 @@ import {
 import { runUntilComplete } from '../runner/runUntilComplete.js';
 import { loadCategoryConfig } from '../categories/loader.js';
 import { validateConfig } from '../config.js';
+import { configInt, configBool, configValue } from '../shared/settingsAccessor.js';
 
 function resolveCategoryAuthorityRoot(config = {}) {
-  return path.resolve(
-    config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority'
-  );
+  return path.resolve(String(configValue(config, 'categoryAuthorityRoot')));
 }
 
 async function listConfiguredCategories(config = {}) {
@@ -162,7 +161,7 @@ export async function runWatchImports({
     if (once) {
       break;
     }
-    await wait(Math.max(1, Number(config.importsPollSeconds || 10)) * 1000);
+    await wait(configInt(config, 'importsPollSeconds') * 1000);
   } while (true);
 
   return {
@@ -228,34 +227,11 @@ export async function runDaemon({
   const scanAndEnqueueDriftFn = runtimeHooks.scanAndEnqueueDrift || scanAndEnqueueDriftedProducts;
   const reconcileDriftProductFn = runtimeHooks.reconcileDriftProduct || reconcileDriftedProduct;
   const signalTarget = runtimeHooks.signalTarget || process;
-  const driftDetectionEnabled = Boolean(
-    runtimeHooks.driftDetectionEnabled ??
-    config.driftDetectionEnabled ??
-    true
-  );
-  const driftPollSeconds = Math.max(
-    1,
-    Number.parseInt(
-      String(runtimeHooks.driftPollSeconds || config.driftPollSeconds || 24 * 60 * 60),
-      10
-    ) || (24 * 60 * 60)
-  );
-  const driftScanMaxProducts = Math.max(
-    1,
-    Number.parseInt(
-      String(runtimeHooks.driftScanMaxProducts || config.driftScanMaxProducts || 250),
-      10
-    ) || 250
-  );
-  const autoRepublishDrift = Boolean(
-    runtimeHooks.driftAutoRepublish ??
-    config.driftAutoRepublish ??
-    true
-  );
-  const daemonConcurrency = Math.max(
-    1,
-    Number.parseInt(String(runtimeHooks.daemonConcurrency || config.daemonConcurrency || 3), 10) || 3
-  );
+  const driftDetectionEnabled = runtimeHooks.driftDetectionEnabled ?? configBool(config, 'driftDetectionEnabled');
+  const driftPollSeconds = runtimeHooks.driftPollSeconds ?? configInt(config, 'driftPollSeconds');
+  const driftScanMaxProducts = runtimeHooks.driftScanMaxProducts ?? configInt(config, 'driftScanMaxProducts');
+  const autoRepublishDrift = runtimeHooks.driftAutoRepublish ?? configBool(config, 'driftAutoRepublish');
+  const daemonConcurrency = runtimeHooks.daemonConcurrency ?? configInt(config, 'daemonConcurrency');
 
   const runs = [];
   const nextDriftScanMsByCategory = new Map();
@@ -300,7 +276,7 @@ export async function runDaemon({
         const staleScan = await markStaleQueueProductsFn({
           storage,
           category: cat,
-          staleAfterDays: Math.max(1, Number.parseInt(String(config.reCrawlStaleAfterDays || 30), 10) || 30)
+          staleAfterDays: configInt(config, 'reCrawlStaleAfterDays')
         });
         logger?.info?.('daemon_stale_scan', {
           category: cat,
@@ -462,7 +438,7 @@ export async function runDaemon({
         break;
       }
       if (!processedAny) {
-        await waitFn(Math.max(1, Number(config.importsPollSeconds || 10)) * 1000);
+        await waitFn(configInt(config, 'importsPollSeconds') * 1000);
       }
     } while (true);
   } finally {

@@ -1,3 +1,5 @@
+import { configValue } from '../../../shared/settingsAccessor.js';
+
 export function createIndexingMetricsHandler({
   jsonRes,
   toInt,
@@ -61,10 +63,10 @@ export function createIndexingMetricsHandler({
         fallback_defaults: fallbackDefaults,
         routing_snapshot: llmRoutingSnapshot(config),
         resolved_api_keys: {
-          geminiApiKey: String(config.geminiApiKey || '').trim(),
-          deepseekApiKey: String(config.deepseekApiKey || '').trim(),
-          anthropicApiKey: String(config.anthropicApiKey || '').trim(),
-          openaiApiKey: String(config.openaiApiKey || '').trim(),
+          geminiApiKey: String(configValue(config, 'geminiApiKey')).trim(),
+          deepseekApiKey: String(configValue(config, 'deepseekApiKey')).trim(),
+          anthropicApiKey: String(configValue(config, 'anthropicApiKey')).trim(),
+          openaiApiKey: String(configValue(config, 'openaiApiKey')).trim(),
         },
         model_options: models,
         token_presets: Array.isArray(config.llmOutputTokenPresets)

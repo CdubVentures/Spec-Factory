@@ -50,11 +50,11 @@ export function registerConfigRoutes(ctx) {
       ? config.settingsCanonicalOnlyWrites
         : (() => {
           const raw = process.env.SETTINGS_CANONICAL_ONLY_WRITES;
-          if (raw === undefined || raw === null || raw === '') return true;
+          if (raw === undefined || raw === null || raw === '') return false;
           const token = String(raw).trim().toLowerCase();
           if (['1', 'true', 'yes', 'on'].includes(token)) return true;
           if (['0', 'false', 'no', 'off'].includes(token)) return false;
-          return true;
+          return false;
         })()
   );
   const initialUserSettings = loadUserSettingsSync({

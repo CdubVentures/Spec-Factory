@@ -1,41 +1,50 @@
 {
-  "schema_version": "2026-02-20.item-indexing-extraction-packet.simple.v1",
-  "record_kind": "item_indexing_extraction_packet_simple",
-  "item_packet_id": "sha256:<category|item_identifier>",
-  "category": "mice",
-  "item_identifier": "mice-logitech-g-pro-x",
+  "schema_version": "2026-02-20.item-indexing-extraction-packet.v1",
+  "record_kind": "item_indexing_extraction_packet",
+  "item_packet_id": "sha256:8c46c0d81f420acd4df90f65f96f0d929c817f9672a5e19c7bc056ff2984d8bd",
+  "category": "mouse",
+  "item_identifier": "mouse-logitech-g-pro-x-superlight-2",
+  "product_id": "mouse-logitech-g-pro-x-superlight-2",
   "generated_at": "2026-02-20T11:35:10.000Z",
   "run_scope": {
-    "current_run_id": "20260220-113255-3f7aa1",
+    "current_run_id": "run-schema-sample-001",
     "included_run_ids": [
-      "20260220-113255-3f7aa1"
+      "run-schema-sample-001"
     ]
+  },
+  "item_identity": {
+    "brand": "Logitech",
+    "model": "G Pro X Superlight 2",
+    "variant": null,
+    "sku": "910-XXXX"
   },
   "source_packet_refs": [
     {
-      "source_packet_id": "sha256:<source-url-1>",
-      "source_id": "src_01",
+      "source_packet_id": "sha256:6359d1df3c08c3cec9b7ac21d245fc410c79dfc828362e1a1c21fc539dde8973",
+      "source_id": "src_f0309b6b89cb",
       "canonical_url": "https://example.com/product-page",
-      "source_version_id": "sha256:<source-url-1|content>",
-      "content_hash": "sha256:<content-1>",
-      "run_id": "20260220-113255-3f7aa1"
+      "source_version_id": "sha256:e011e4afd9eb48fc92978bccda740a1f73aa526a1ed67aa5984e870feab4b448",
+      "content_hash": "sha256:852ce986388e7ab894c4774ef27fb4735b89eb8c84db6182718962e686714169",
+      "source_tier": 1,
+      "doc_kind": "html",
+      "run_id": "run-schema-sample-001"
     }
   ],
   "field_source_index": {
-    "polling_rate_hz": {
-      "field_key": "polling_rate_hz",
+    "polling_rate": {
+      "field_key": "polling_rate",
       "sources": [
         {
-          "source_packet_id": "sha256:<source-url-1>",
-          "source_version_id": "sha256:<source-url-1|content>",
-          "source_id": "src_01",
+          "source_packet_id": "sha256:6359d1df3c08c3cec9b7ac21d245fc410c79dfc828362e1a1c21fc539dde8973",
+          "source_version_id": "sha256:e011e4afd9eb48fc92978bccda740a1f73aa526a1ed67aa5984e870feab4b448",
+          "source_id": "src_f0309b6b89cb",
           "canonical_url": "https://example.com/product-page",
           "source_tier": 1,
           "assertion_ids": [
-            "cand_item_polling_rate_hz_1"
+            "cand_beb52b8c8c63dd67d1"
           ],
           "evidence_ids": [
-            "e1"
+            "e_98ce51c284fc63"
           ],
           "best_parser_score": 0.98,
           "best_target_match_score": 0.97,
@@ -48,54 +57,53 @@
     }
   },
   "field_key_map": {
-    "polling_rate_hz": {
-      "field_key": "polling_rate_hz",
-      "field_key_id": "sha256:<item_packet_id|polling_rate_hz>",
+    "polling_rate": {
+      "field_key": "polling_rate",
+      "field_key_id": "sha256:9a35e90c6cdfa6777467e2e2ba158d5b82cbfb69d814c9ad6bf75599969c9b52",
       "field_meta": {
-        "field_key": "polling_rate_hz",
+        "field_key": "polling_rate",
         "shape": "scalar",
         "required_level": "critical",
-        "unit_expected": "Hz"
+        "unit_expected": "Hz",
+        "component_type": null,
+        "enum_source": null
       },
       "contexts": [
         {
-          "field_instance_id": "sha256:<item_packet_id|grid_key|polling_rate_hz>",
+          "field_instance_id": "fi_f0bf4722b9219f09",
           "context_kind": "scalar",
+          "context_ref": null,
           "target_kind": "grid_key",
-          "selected_candidate_id": "item_cand_01",
+          "selected_candidate_id": "item_cand_ea67b297ad91aacf",
           "candidates": [
             {
-              "item_candidate_id": "item_cand_01",
-              "source_packet_id": "sha256:<source-url-1>",
-              "source_version_id": "sha256:<source-url-1|content>",
-              "source_id": "src_01",
-              "assertion_id": "cand_item_polling_rate_hz_1",
-              "candidate_id": "cand_item_polling_rate_hz_1",
-              "field_key": "polling_rate_hz",
+              "item_candidate_id": "item_cand_ea67b297ad91aacf",
+              "source_packet_id": "sha256:6359d1df3c08c3cec9b7ac21d245fc410c79dfc828362e1a1c21fc539dde8973",
+              "source_version_id": "sha256:e011e4afd9eb48fc92978bccda740a1f73aa526a1ed67aa5984e870feab4b448",
+              "source_id": "src_f0309b6b89cb",
+              "assertion_id": "cand_beb52b8c8c63dd67d1",
+              "candidate_id": "cand_beb52b8c8c63dd67d1",
+              "field_key": "polling_rate",
+              "context_kind": "scalar",
+              "value_raw": "8000",
               "value_normalized": 8000,
               "unit": "Hz",
+              "confidence": 0.98,
               "parser_score": 0.98,
               "target_match": {
                 "page_product_cluster_id": "cluster_main_product",
                 "target_match_score": 0.97,
                 "target_match_passed": true
               },
-              "suggested_start_rank": 1,
+              "suggested_start_rank": null,
               "ambiguity": {
                 "level": "low",
                 "score": 0.08
               },
               "evidence_refs": [
                 {
-                  "source_packet_id": "sha256:<source-url-1>",
-                  "evidence_id": "e1"
-                }
-              ],
-              "image_evidence_refs": [
-                {
-                  "source_packet_id": "sha256:<source-url-1>",
-                  "image_asset_id": "img1",
-                  "region_id": "r1"
+                  "source_packet_id": "sha256:6359d1df3c08c3cec9b7ac21d245fc410c79dfc828362e1a1c21fc539dde8973",
+                  "evidence_id": "e_98ce51c284fc63"
                 }
               ]
             }
@@ -119,69 +127,23 @@
   },
   "indexing_projection": {
     "retrieval_ready": true,
-    "candidate_chunk_count": 4,
+    "candidate_chunk_count": 1,
     "priority_field_keys": [
-      "polling_rate_hz"
+      "polling_rate"
     ],
-    "token_estimate_total": 420
-  },
-  "visual_index": {
-    "field_visual_links": {
-      "polling_rate_hz": [
-        {
-          "source_packet_id": "sha256:<source-url-1>",
-          "source_id": "src_01",
-          "image_asset_id": "img1",
-          "region_id": "r1",
-          "role": "identity_proof"
-        }
-      ]
-    },
-    "model_variant_clusters": [
-      {
-        "cluster_id": "mvc_01",
-        "candidate_model": "G PRO X",
-        "candidate_variant": "Wireless",
-        "source_image_refs": [
-          {
-            "source_packet_id": "sha256:<source-url-1>",
-            "source_id": "src_01",
-            "image_asset_id": "img1",
-            "region_id": "r1",
-            "role": "variant_proof"
-          }
-        ],
-        "cluster_confidence": 0.94
-      }
-    ],
-    "winner_model_visual_validation": {
-      "winner_model": "G PRO X",
-      "winner_variant": "Wireless",
-      "validated": true,
-      "confidence": 0.94,
-      "validated_at": "2026-02-20T11:36:20.000Z",
-      "supporting_image_refs": [
-        {
-          "source_packet_id": "sha256:<source-url-1>",
-          "source_id": "src_01",
-          "image_asset_id": "img1",
-          "region_id": "r1",
-          "role": "variant_proof"
-        }
-      ]
-    }
+    "token_estimate_total": 60
   },
   "sql_projection": {
     "item_field_state_rows": [
       {
-        "id": 2122,
-        "category": "mice",
-        "product_id": "mice-logitech-g-pro-x",
-        "field_key": "polling_rate_hz",
-        "value": 8000,
-        "confidence": 0.97,
+        "id": null,
+        "category": "mouse",
+        "product_id": "mouse-logitech-g-pro-x-superlight-2",
+        "field_key": "polling_rate",
+        "value": "8000",
+        "confidence": 0.95,
         "source": "pipeline",
-        "accepted_candidate_id": "cand_item_polling_rate_hz_1",
+        "accepted_candidate_id": "cand_beb52b8c8c63dd67d1",
         "overridden": false,
         "needs_ai_review": true,
         "ai_review_complete": false
@@ -189,53 +151,53 @@
     ],
     "candidate_rows": [
       {
-        "candidate_id": "cand_item_polling_rate_hz_1",
-        "category": "mice",
-        "product_id": "mice-logitech-g-pro-x",
-        "field_key": "polling_rate_hz",
+        "candidate_id": "cand_beb52b8c8c63dd67d1",
+        "category": "mouse",
+        "product_id": "mouse-logitech-g-pro-x-superlight-2",
+        "field_key": "polling_rate",
         "value": "8000",
-        "normalized_value": "8000",
+        "normalized_value": 8000,
         "score": 0.98,
-        "rank": 1,
+        "rank": null,
         "source_url": "https://example.com/product-page",
-        "source_host": "example.com",
-        "source_root_domain": "example.com",
+        "source_host": "src.f0309b6b89cb",
+        "source_root_domain": "src.f0309b6b89cb",
         "source_tier": 1,
-        "source_method": "network_json",
-        "snippet_id": "s1",
-        "snippet_hash": "sha256:<snippet>",
-        "snippet_text": "\"pollingRateHz\": 8000",
-        "quote": "\"pollingRateHz\": 8000",
+        "source_method": null,
+        "snippet_id": "e_98ce51c284fc63",
+        "snippet_hash": null,
+        "snippet_text": null,
+        "quote": null,
         "evidence_url": "https://example.com/product-page",
-        "evidence_retrieved_at": "2026-02-20T11:33:01.050Z",
+        "evidence_retrieved_at": "2026-02-20T11:35:10.000Z",
         "is_component_field": false,
         "component_type": null,
         "is_list_field": false,
-        "run_id": "20260220-113255-3f7aa1"
+        "run_id": "run-schema-sample-001"
       }
     ],
     "key_review_state_rows": [
       {
-        "id": 781,
-        "category": "mice",
+        "id": null,
+        "category": "mouse",
         "target_kind": "grid_key",
-        "item_identifier": "mice-logitech-g-pro-x",
-        "field_key": "polling_rate_hz",
+        "item_identifier": "mouse-logitech-g-pro-x-superlight-2",
+        "field_key": "polling_rate",
         "enum_value_norm": null,
         "component_identifier": null,
         "property_key": null,
-        "item_field_state_id": 2122,
+        "item_field_state_id": null,
         "component_value_id": null,
         "list_value_id": null,
         "enum_list_id": null,
-        "selected_value": 8000,
-        "selected_candidate_id": "cand_item_polling_rate_hz_1",
-        "confidence_score": 0.97,
-        "ai_confirm_primary_status": "confirmed",
-        "ai_confirm_primary_confidence": 0.95,
+        "selected_value": "8000",
+        "selected_candidate_id": "cand_beb52b8c8c63dd67d1",
+        "confidence_score": 0.95,
+        "ai_confirm_primary_status": null,
+        "ai_confirm_primary_confidence": null,
         "ai_confirm_shared_status": null,
         "ai_confirm_shared_confidence": null,
-        "user_accept_primary_status": "accepted",
+        "user_accept_primary_status": null,
         "user_accept_shared_status": null,
         "user_override_ai_primary": false,
         "user_override_ai_shared": false

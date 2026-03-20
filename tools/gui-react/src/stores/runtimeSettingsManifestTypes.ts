@@ -27,7 +27,6 @@ export interface RuntimeSettingDefaults {
   crawleeRequestHandlerTimeoutSecs: number;
   daemonConcurrency: number;
   deepseekApiKey: string;
-  searchPlannerQueryCap: number;
   searchProfileQueryCap: number;
   discoveryQueryConcurrency: number;
   discoveryResultsPerQuery: number;
@@ -80,7 +79,6 @@ export interface RuntimeSettingDefaults {
   googleSearchTimeoutMs: number;
   serperApiKey: string;
   serperEnabled: boolean;
-  serperResultCount: number;
   graphqlReplayEnabled: boolean;
   helperFilesRoot: string;
   helperSupportiveFillMissing: boolean;

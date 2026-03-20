@@ -38,12 +38,12 @@ function makeSearchProfileBase(queryCount) {
   };
 }
 
-function makeUberSearchPlan(queryCount) {
-  const queries = [];
+function makeEnhancedRows(queryCount) {
+  const rows = [];
   for (let i = 0; i < queryCount; i++) {
-    queries.push(`TestBrand TestModel planner spec ${i}`);
+    rows.push({ query: `TestBrand TestModel planner spec ${i}`, source: 'planner', target_fields: [], hint_source: 'planner' });
   }
-  return { queries };
+  return rows;
 }
 
 function makeConfig(overrides = {}) {
@@ -60,8 +60,7 @@ function makeConfig(overrides = {}) {
 function makeMinimalJourneyCtx(overrides = {}) {
   return {
     searchProfileBase: makeSearchProfileBase(20),
-    schema4Plan: null,
-    uberSearchPlan: makeUberSearchPlan(25),
+    enhancedRows: makeEnhancedRows(25),
     hostPlanQueryRows: [],
     variables: { brand: 'TestBrand', model: 'TestModel', variant: '', category: 'mouse' },
     config: makeConfig(),
@@ -80,7 +79,6 @@ function makeMinimalJourneyCtx(overrides = {}) {
       writeObject: async () => ({}),
     },
     brandResolution: null,
-    searchPlanHandoff: null,
     ...overrides,
   };
 }
@@ -112,7 +110,7 @@ describe('queryJourney respects searchProfileQueryCap as final output cap', () =
     const ctx = makeMinimalJourneyCtx({
       config: makeConfig({ searchProfileQueryCap: 10, searchPlannerQueryCap: 30 }),
       searchProfileBase: makeSearchProfileBase(20),
-      uberSearchPlan: makeUberSearchPlan(25),
+      enhancedRows: makeEnhancedRows(25),
     });
 
     const result = await runQueryJourney(ctx);
@@ -131,7 +129,7 @@ describe('queryJourney respects searchProfileQueryCap as final output cap', () =
     const ctx = makeMinimalJourneyCtx({
       config: makeConfig({ searchProfileQueryCap: 8, searchPlannerQueryCap: 30 }),
       searchProfileBase: makeSearchProfileBase(5),
-      uberSearchPlan: makeUberSearchPlan(30),
+      enhancedRows: makeEnhancedRows(30),
     });
 
     const result = await runQueryJourney(ctx);

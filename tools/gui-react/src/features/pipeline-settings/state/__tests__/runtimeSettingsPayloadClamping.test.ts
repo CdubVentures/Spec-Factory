@@ -122,7 +122,6 @@ function makeInput(
     endpointSuggestionLimit: 20,
     endpointNetworkScanLimit: 100,
     searchProfileQueryCap: 10,
-    searchPlannerQueryCap: 50,
     maxUrlsPerProduct: 20,
     maxCandidateUrls: 100,
     maxPagesPerDomain: 10,

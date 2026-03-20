@@ -1,5 +1,6 @@
 import { extractRootDomain } from '../utils/common.js';
 import { toRawFieldKey } from '../utils/fieldKeys.js';
+import { configInt } from '../shared/settingsAccessor.js';
 import {
   inferRoleForHost,
   isDeniedHost,
@@ -66,9 +67,9 @@ export class SourcePlanner {
     this.brandKey = slug(job.identityLock?.brand || '');
     this.brandHostHints = manufacturerHostHintsForBrand(job.identityLock?.brand || '');
 
-    this.maxUrls = config.maxUrlsPerProduct;
-    this.maxCandidateUrls = config.maxCandidateUrls;
-    this.maxPagesPerDomain = config.maxPagesPerDomain;
+    this.maxUrls = configInt(config, 'maxUrlsPerProduct');
+    this.maxCandidateUrls = configInt(config, 'maxCandidateUrls');
+    this.maxPagesPerDomain = configInt(config, 'maxPagesPerDomain');
 
     this.manufacturerQueue = [];
     this.priorityQueue = [];

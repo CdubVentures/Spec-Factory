@@ -67,7 +67,6 @@ export function toNeedSetSnapshot(row = {}, ts = '') {
     debug: row.debug && typeof row.debug === 'object' ? row.debug : null,
     schema_version: row.schema_version || null,
     round: asInt(row.round, 0),
-    round_mode: String(row.round_mode || 'seed').trim(),
     identity: row.identity && typeof row.identity === 'object' ? row.identity : null,
     fields: Array.isArray(row.fields) ? row.fields : [],
     planner_seed: row.planner_seed && typeof row.planner_seed === 'object' ? row.planner_seed : null,
@@ -99,7 +98,6 @@ export function toNeedSetBaseline({
     // Schema 2 additions
     schema_version: null,
     round: 0,
-    round_mode: 'seed',
     identity: null,
     fields: [],
     planner_seed: null,

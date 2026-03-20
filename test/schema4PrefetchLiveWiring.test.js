@@ -36,7 +36,6 @@ function makeMeta(overrides = {}) {
 function makeSchema4Panel() {
   return {
     round: 0,
-    round_mode: 'seed',
     identity: { state: 'locked', confidence: 0.95, brand: 'Razer', model: 'Viper V3 Pro' },
     summary: {
       total: 42,
@@ -233,7 +232,6 @@ test('buildPreFetchPhases: Schema 4 needset_computed populates bundles, profile_
   assert.equal(result.needset.total_fields, 0, 'total_fields derived from panel summary (not in panel root, falls back to 0)');
   assert.equal(result.needset.identity_state, 'locked');
   assert.equal(result.needset.round, 0);
-  assert.equal(result.needset.round_mode, 'seed');
   assert.equal(result.needset.schema_version, 'needset_planner_output.v2');
 
   // fields
@@ -489,7 +487,6 @@ test('buildPreFetchPhases: full live-run simulation populates every prefetch tab
   assert.ok(result.needset, 'needset must be populated');
   assert.equal(result.needset.identity_state, 'locked');
   assert.equal(result.needset.round, 0);
-  assert.equal(result.needset.round_mode, 'seed');
   assert.equal(result.needset.schema_version, 'needset_planner_output.v2');
   assert.equal(result.needset.fields.length, 7, 'all 7 fields');
   assert.equal(result.needset.summary.total, 42);
@@ -686,7 +683,6 @@ test('buildPreFetchPhases: Schema 4 data in needset artifact populates bundles, 
       profile_influence: panel.profile_influence,
       deltas: panel.deltas,
       round: 0,
-      round_mode: 'seed',
       schema_version: 'needset_planner_output.v2',
     },
   };

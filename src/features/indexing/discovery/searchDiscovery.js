@@ -1,7 +1,7 @@
 import { extractRootDomain } from '../../../utils/common.js';
 import { configInt } from '../../../shared/settingsAccessor.js';
 import { searchEngineAvailability } from '../search/searchProviders.js';
-import { planUberQueries } from '../../../research/queryPlanner.js';
+import { enhanceQueryRows } from '../../../research/queryPlanner.js';
 import {
   buildSearchProfile,
   buildScoredQueryRowsFromHostPlan,
@@ -41,7 +41,6 @@ import {
   resolveEnabledSourceEntries as _resolveEnabledSourceEntries,
 } from './discoveryHelpers.js';
 import { executeSearchQueries } from './discoverySearchExecution.js';
-import { convertHandoffToExecutionPlan } from './searchPlanHandoffAdapter.js';
 import { processDiscoveryResults } from './discoveryResultProcessor.js';
 
 // Phase 3 extraction: URL classification, admission gate, doc-kind,
@@ -54,40 +53,6 @@ export const detectMultiModelHint = _detectMultiModelHint;
 
 // Phase 4A extraction: helpers → discoveryHelpers.js
 export const resolveEnabledSourceEntries = _resolveEnabledSourceEntries;
-
-/**
- * Resolve Schema 4 search_plan_handoff into an execution plan, guarded by identity.
- * Returns null when handoff is empty or identity guard rejects all queries.
- * Pure function (except logger side effect).
- */
-export function resolveSchema4ExecutionPlan({ searchPlanHandoff, variables, logger } = {}) {
-  if (!searchPlanHandoff?.queries?.length) return null;
-
-  const adapted = convertHandoffToExecutionPlan(searchPlanHandoff);
-  if (adapted.queries.length === 0) return null;
-
-  const guarded = enforceIdentityQueryGuard({
-    rows: adapted.queryRows,
-    variables,
-  });
-
-  if (guarded.rows.length === 0) {
-    logger?.warn?.('schema4_guard_rejected_all', {
-      total: adapted.queries.length,
-      rejectLog: guarded.rejectLog.slice(0, 10),
-    });
-    return null;
-  }
-
-  return {
-    queries: guarded.rows.map((r) => r.query),
-    queryRows: guarded.rows,
-    selectedQueryRowMap: new Map(guarded.rows.map((r) => [r.query.toLowerCase(), r])),
-    rejectLog: guarded.rejectLog,
-    guardContext: guarded.guardContext,
-    source: 'schema4',
-  };
-}
 
 export async function discoverCandidateSources({
   config,
@@ -102,7 +67,6 @@ export async function discoverCandidateSources({
   runtimeTraceWriter = null,
   learningStoreHints = null,
   sourceEntries = null,
-  searchPlanHandoff = null,
   focusGroups = [],
   brandResolution: preComputedBrandResolution = null,
   _runSearchProvidersFn,
@@ -354,19 +318,6 @@ export async function discoverCandidateSources({
   }
 
   // === Stage 04: Search Planner (LLM enrichment) ===
-  const schema4Plan = resolveSchema4ExecutionPlan({
-    searchPlanHandoff,
-    variables,
-    logger,
-  });
-  if (schema4Plan && schema4Plan.queries.length > 0) {
-    logger?.info?.('schema4_path_active', {
-      total_handoff: searchPlanHandoff?.queries?.length ?? 0,
-      post_guard: schema4Plan.queries.length,
-      rejected: schema4Plan.rejectLog.length,
-    });
-  }
-
   const baseQueries = toArray(searchProfileBase?.base_templates);
   const targetedQueries = toArray(searchProfileBase?.queries);
   const profileQueryRowsByQuery = new Map(
@@ -377,38 +328,28 @@ export async function discoverCandidateSources({
   );
   const resolveProfileQueryRow = (query) => profileQueryRowsByQuery.get(String(query || '').trim().toLowerCase()) || null;
 
-  // WHY: planUberQueries is the Search Planner's own LLM call (Stage 04).
-  // It enriches queries beyond what the deterministic search profile and
-  // Schema 4 needset planner produce. Its worker shows under Search Planner tab.
-  const archetypeSummary = searchProfileBase?.archetype_summary || {};
-  const coverageAnalysis = searchProfileBase?.coverage_analysis || {};
-  const archetypeContext = {
-    archetypes_emitted: Object.keys(archetypeSummary),
-    hosts_targeted: Object.values(archetypeSummary).flatMap((a) => a?.hosts || []),
-    uncovered_search_worthy: coverageAnalysis.uncovered_search_worthy || [],
-    representative_gaps: (coverageAnalysis.uncovered_search_worthy || []).slice(0, 10)
-  };
-  const enrichedLlmContext = { ...llmContext, archetypeContext };
-  const frontierSummary = frontierDb?.snapshotForProduct?.(job.productId || '') || {};
-  const uberSearchPlan = await planUberQueries({
+  // WHY: enhanceQueryRows is the Search Planner's LLM call (Stage 04).
+  // It enriches deterministic query rows with LLM-refined queries.
+  // Enhanced rows get hint_source suffixed with '_llm'.
+  const enhancedResult = await enhanceQueryRows({
+    queryRows: toArray(searchProfileBase?.query_rows),
+    queryHistory: [...baseQueries, ...targetedQueries],
+    missingFields,
+    identityLock: { brand: variables.brand, model: variables.model, variant: variables.variant },
     config,
     logger,
-    llmContext: enrichedLlmContext,
-    identity: identityLock,
-    missingFields,
-    missingCriticalFields: planningHints.missingCriticalFields || [],
-    baseQueries: [...baseQueries, ...targetedQueries],
-    frontierSummary,
-    cap: Math.max(1, configInt(config, 'searchPlannerQueryCap'))
   });
 
-  if (toArray(uberSearchPlan?.queries).length > 0) {
+  const enhancedLlmRows = toArray(enhancedResult?.rows).filter(
+    (row) => String(row?.hint_source || '').endsWith('_llm')
+  );
+  if (enhancedLlmRows.length > 0) {
     logger?.info?.('search_plan_generated', {
       pass_index: 0,
       pass_name: 'primary',
-      queries_generated: toArray(uberSearchPlan.queries),
+      queries_generated: enhancedLlmRows.map((r) => r.query),
       stop_condition: 'planner_complete',
-      plan_rationale: `LLM planner generated ${toArray(uberSearchPlan.queries).length} queries`,
+      plan_rationale: `LLM planner enhanced ${enhancedLlmRows.length} queries`,
       query_target_map: {},
       missing_critical_fields: toArray(planningHints.missingCriticalFields).slice(0, 30),
       mode: String(llmContext?.mode || 'standard'),
@@ -416,11 +357,10 @@ export async function discoverCandidateSources({
   }
 
   // === Stage 05: Query Journey (merge ALL streams — no branching) ===
-  // WHY: Four input streams merged into one candidate list:
+  // WHY: Three input streams merged into one candidate list:
   // 1. Deterministic base + targeted queries (from search profile)
-  // 2. Schema 4 needset planner queries (from orchestrator LLM call)
-  // 3. Search Planner uber queries (from planUberQueries LLM call)
-  // 4. Host-plan rows (appended after guard)
+  // 2. LLM-enhanced query rows (from enhanceQueryRows)
+  // 3. Host-plan rows (appended after guard)
   const queryCandidates = [
     ...baseQueries.map((query) => ({ query, source: 'base_template', target_fields: [] })),
     ...targetedQueries.map((query) => {
@@ -434,21 +374,17 @@ export async function discoverCandidateSources({
         hint_source: String(profileRow?.hint_source || '').trim()
       };
     }),
-    ...toArray(schema4Plan?.queryRows).map((row) => ({
+    ...enhancedLlmRows.map((row) => ({
       query: row.query,
-      source: 'schema4',
+      source: 'enhanced_llm',
       target_fields: toArray(row.target_fields),
       doc_hint: String(row.doc_hint || '').trim(),
       domain_hint: String(row.domain_hint || '').trim(),
-      hint_source: String(row.hint_source || 'schema4_planner').trim(),
-    })),
-    ...toArray(uberSearchPlan?.queries).map((query) => ({
-      query, source: 'uber', target_fields: []
+      hint_source: String(row.hint_source || '').trim(),
     })),
   ];
 
-  const searchPlannerCap = Math.max(1, configInt(config, 'searchPlannerQueryCap'));
-  const mergedQueryCap = searchPlannerCap;
+  const mergedQueryCap = Math.max(1, configInt(config, 'searchProfileQueryCap'));
   const mergedQueries = dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap);
 
   const fieldPriority = new Map();
@@ -537,7 +473,6 @@ export async function discoverCandidateSources({
 
   const queryRejectLogCombined = [
     ...toArray(searchProfileBase?.query_reject_log),
-    ...toArray(schema4Plan?.rejectLog),
     ...toArray(mergedQueries.rejectLog),
     ...toArray(rankedCapRejectLog),
     ...toArray(guardedQueries.rejectLog),
@@ -559,7 +494,7 @@ export async function discoverCandidateSources({
     generated_at: new Date().toISOString(),
     status: 'planned',
     provider: config.searchEngines,
-    llm_queries: [...toArray(schema4Plan?.queries), ...toArray(uberSearchPlan?.queries)],
+    llm_queries: enhancedLlmRows.map((r) => r.query),
     query_reject_log: queryRejectLogCombined,
     query_guard: {
       brand_tokens: toArray(guardedQueries.guardContext?.brandTokens),
@@ -579,14 +514,6 @@ export async function discoverCandidateSources({
       confidence: brandResolution.confidence ?? 0,
       reasoning: brandResolution.reasoning || [],
     } : null,
-    schema4_planner: searchPlanHandoff ? {
-      mode: searchPlanHandoff._planner?.mode || 'unknown',
-      planner_confidence: searchPlanHandoff._planner?.planner_confidence ?? 0,
-      duplicates_suppressed: searchPlanHandoff._planner?.duplicates_suppressed ?? 0,
-      targeted_exceptions: searchPlanHandoff._planner?.targeted_exceptions ?? 0,
-    } : null,
-    schema4_learning: searchPlanHandoff?._learning || null,
-    schema4_panel: searchPlanHandoff?._panel || null,
     key: searchProfileKeys.inputKey,
     run_key: searchProfileKeys.runKey,
     latest_key: searchProfileKeys.latestKey,
@@ -601,7 +528,6 @@ export async function discoverCandidateSources({
   logger?.info?.('query_journey_completed', {
     selected_query_count: queries.length,
     selected_queries: queries.slice(0, 50),
-    schema4_query_count: toArray(schema4Plan?.queries).length,
     deterministic_query_count: baseQueries.length + targetedQueries.length,
     host_plan_query_count: appendedHostPlanRows.length,
     rejected_count: queryRejectLogCombined.length,
@@ -609,7 +535,7 @@ export async function discoverCandidateSources({
 
   // === Stage 06: Search Results ===
   const resultsPerQuery = Math.max(1, configInt(config, 'discoveryResultsPerQuery'));
-  const discoveryCap = Math.max(1, configInt(config, 'searchPlannerQueryCap'));
+  const discoveryCap = Math.max(1, configInt(config, 'serpSelectorUrlCap'));
   const queryConcurrency = Math.max(1, configInt(config, 'discoveryQueryConcurrency'));
 
   const providerState = searchEngineAvailability(config);
@@ -639,7 +565,7 @@ export async function discoverCandidateSources({
     rawResults, searchAttempts, searchJournal, internalSatisfied, externalSearchReason,
     config, storage, categoryConfig, job, runId, logger, runtimeTraceWriter, frontierDb,
     variables, identityLock, brandResolution, missingFields, learning,
-    llmContext, searchProfileBase, llmQueries: [], uberSearchPlan, uberMode: true,
+    llmContext, searchProfileBase, llmQueries: [],
     queries, searchProfilePlanned, searchProfileKeys, providerState, queryConcurrency, discoveryCap,
     effectiveHostPlan, focusGroups,
   });

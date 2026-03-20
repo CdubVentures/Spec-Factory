@@ -29,11 +29,16 @@ export function createIndexlabRouteContext(options = {}) {
   const {
     jsonRes, toInt, toFloat, config, safeJoin, safeReadJson, path, INDEXLAB_ROOT,
     processStatus,
+    // Storage manager deps (optional — only needed for /storage/* routes)
+    readJsonBody, broadcastWs, runDataStorageState, storage, OUTPUT_ROOT,
+    getIndexLabRoot,
   } = options;
 
   return {
     jsonRes, toInt, toFloat, config, safeJoin, safeReadJson, path, INDEXLAB_ROOT,
-    processStatus, readIndexLabRunMeta, resolveIndexLabRunDirectory,
+    processStatus, readJsonBody, broadcastWs, runDataStorageState, storage, OUTPUT_ROOT,
+    getIndexLabRoot,
+    readIndexLabRunMeta, resolveIndexLabRunDirectory,
     readIndexLabRunEvents, readIndexLabRunNeedSet, readIndexLabRunSearchProfile,
     readIndexLabRunPhase07Retrieval, readIndexLabRunPhase08Extraction,
     readIndexLabRunDynamicFetchDashboard, readIndexLabRunSourceIndexingPackets,

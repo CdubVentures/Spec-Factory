@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { wsManager } from '../../api/ws';
 import { Spinner } from '../../components/common/Spinner';
+import { StorageManagerPanel } from '../../features/storage-manager';
 import { resolveStorageSettingsStatusText } from '../../shared/ui/feedback/settingsStatus';
 import { usePersistedTab } from '../../stores/tabStore';
 import { useUiStore } from '../../stores/uiStore';
@@ -657,6 +658,12 @@ export function StoragePage() {
               </label>
             </label>
           </div>
+        </div>
+      )}
+
+      {form.enabled && (destinationType === 'local' ? form.localDirectory : form.s3Bucket) && (
+        <div className="mt-6">
+          <StorageManagerPanel />
         </div>
       )}
     </div>

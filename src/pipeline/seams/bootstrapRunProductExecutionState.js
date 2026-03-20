@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { configInt } from '../../shared/settingsAccessor.js';
 
 import { loadCategoryConfig } from '../../categories/loader.js';
 import { SourcePlanner } from '../../planner/sourcePlanner.js';
@@ -250,13 +251,13 @@ export async function bootstrapRunProductExecutionState({
 
   const initialFetcherMode = runtimeDeps.selectFetcherModeFn(config);
   const fetchRequestThrottler = runtimeDeps.createRequestThrottlerFn({
-    globalRps: Number(config.globalRequestRps || 0),
-    globalBurst: Number(config.globalRequestBurst || 0),
-    keyRps: Number(config.domainRequestRps || 0),
-    keyBurst: Number(config.domainRequestBurst || 0),
+    globalRps: configInt(config, 'globalRequestRps'),
+    globalBurst: configInt(config, 'globalRequestBurst'),
+    keyRps: configInt(config, 'domainRequestRps'),
+    keyBurst: configInt(config, 'domainRequestBurst'),
   });
   const fetchHostConcurrencyGate = runtimeDeps.createHostConcurrencyGateFn({
-    maxInFlight: Number(config.fetchPerHostConcurrencyCap || 0),
+    maxInFlight: configInt(config, 'fetchPerHostConcurrencyCap'),
   });
   const fetcherConfig = {
     ...config,
@@ -383,7 +384,6 @@ export async function bootstrapRunProductExecutionState({
     model: String(identityLock.model || job?.identityLock?.model || job?.model || '').trim(),
     baseModel: String(identityLock.base_model || job?.identityLock?.base_model || '').trim(),
     round: 0,
-    roundMode: 'seed',
   });
   // WHY: The runtime bridge + prefetch panel need the full NeedSet payload
   // (fields, summary, blockers, identity, planner_seed) — not just summary counts.

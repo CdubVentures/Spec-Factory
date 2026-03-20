@@ -403,7 +403,6 @@ async function handleNeedsetComputed(state, deps, { ts, row }) {
     rows: payload.rows,
     debug: payload.debug,
     round: payload.round,
-    round_mode: payload.round_mode,
     identity: payload.identity,
     fields: payload.fields,
     planner_seed: payload.planner_seed,

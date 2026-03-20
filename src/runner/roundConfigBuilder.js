@@ -277,94 +277,16 @@ export function buildRoundConfig(baseConfig, {
   const hasExplicitMissingCounts =
     missingRequiredCount !== undefined ||
     missingExpectedCount !== undefined;
-  const thoroughFromRound = 2;
-  const isFastRound = round === 0;
-  const isThoroughRound = round >= thoroughFromRound;
-  const round1UrlCap = 90;
-  const round1CandidateCap = 120;
-  const isRound1 = round === 1;
+  // WHY: Pipeline settings are the single source of truth. No round-mode
+  // overrides — the user's configured values pass through unchanged.
+  // The dynamic discovery toggle (below) and effort-based boosts are the
+  // only round-aware adjustments that remain.
   const next = {
     ...baseConfig,
-    runProfile: 'standard',
-    discoveryEnabled: round > 0,
-    fetchCandidateSources: true,
-    searchEngines: round === 0 ? '' : baseConfig.searchEngines,
-    llmMaxCallsPerRound:
-      round === 0
-        ? Math.max(1, baseConfig.llmMaxCallsPerRound || 4)
-        : Math.max(1, baseConfig.llmMaxCallsPerRound || 4),
-    maxUrlsPerProduct:
-      round === 0
-        ? Math.min(baseConfig.maxUrlsPerProduct || 20, 24)
-        : (
-          round >= 2
-            ? Math.max(baseConfig.maxUrlsPerProduct || 20, 220)
-            : (isRound1
-              ? Math.min(Math.max(baseConfig.maxUrlsPerProduct || 20, 60), round1UrlCap)
-              : Math.max(baseConfig.maxUrlsPerProduct || 20, 60))
-        ),
-    maxCandidateUrls:
-      round === 0
-        ? Math.min(baseConfig.maxCandidateUrls || 50, 40)
-        : (
-          round >= 2
-            ? Math.max(baseConfig.maxCandidateUrls || 50, 300)
-            : (isRound1
-              ? Math.min(Math.max(baseConfig.maxCandidateUrls || 50, 90), round1CandidateCap)
-              : Math.max(baseConfig.maxCandidateUrls || 50, 90))
-        )
+    llmMaxCallsPerRound: Math.max(1, baseConfig.llmMaxCallsPerRound || 4),
+    maxUrlsPerProduct: baseConfig.maxUrlsPerProduct || 20,
+    maxCandidateUrls: baseConfig.maxCandidateUrls || 50,
   };
-
-  // Inline round-specific profile effects (previously via applyRunProfile)
-  if (isFastRound) {
-    next.preferHttpFetcher = true;
-    next.autoScrollEnabled = false;
-    next.autoScrollPasses = 0;
-    next.postLoadWaitMs = Math.min(next.postLoadWaitMs || 0, 0);
-    next.pageGotoTimeoutMs = Math.min(next.pageGotoTimeoutMs || 12000, 12000);
-    next.pageNetworkIdleTimeoutMs = Math.min(next.pageNetworkIdleTimeoutMs || 1500, 1500);
-    next.endpointSignalLimit = Math.min(next.endpointSignalLimit || 24, 24);
-    next.endpointSuggestionLimit = Math.min(next.endpointSuggestionLimit || 8, 8);
-    next.endpointNetworkScanLimit = Math.min(next.endpointNetworkScanLimit || 400, 400);
-    next.hypothesisAutoFollowupRounds = 0;
-    next.hypothesisFollowupUrlsPerRound = Math.min(next.hypothesisFollowupUrlsPerRound || 8, 8);
-    next.maxRunSeconds = Math.min(next.maxRunSeconds || 180, 180);
-    next.maxUrlsPerProduct = Math.min(next.maxUrlsPerProduct || 12, 12);
-    next.maxCandidateUrls = Math.min(next.maxCandidateUrls || 20, 20);
-    next.maxPagesPerDomain = Math.min(next.maxPagesPerDomain || 2, 2);
-    next.searchProfileQueryCap = Math.min(next.searchProfileQueryCap || 4, 4);
-    next.discoveryResultsPerQuery = Math.min(next.discoveryResultsPerQuery || 6, 6);
-    next.searchPlannerQueryCap = Math.min(next.searchPlannerQueryCap || 60, 60);
-    next.discoveryQueryConcurrency = Math.max(next.discoveryQueryConcurrency || 0, 4);
-    next.perHostMinDelayMs = Math.min(next.perHostMinDelayMs || 150, 150);
-  } else if (isThoroughRound) {
-    next.autoScrollEnabled = true;
-    next.autoScrollPasses = Math.max(next.autoScrollPasses || 0, 3);
-    next.autoScrollDelayMs = Math.max(next.autoScrollDelayMs || 0, 1200);
-    next.pageGotoTimeoutMs = Math.max(next.pageGotoTimeoutMs || 0, 45000);
-    next.pageNetworkIdleTimeoutMs = Math.max(next.pageNetworkIdleTimeoutMs || 0, 15000);
-    next.postLoadWaitMs = Math.max(next.postLoadWaitMs || 0, 10000);
-    next.maxJsonBytes = Math.max(next.maxJsonBytes || 0, 6000000);
-    next.maxRunSeconds = Math.max(next.maxRunSeconds || 0, 3600);
-    next.preferHttpFetcher = false;
-    next.maxNetworkResponsesPerPage = Math.max(next.maxNetworkResponsesPerPage || 0, 2500);
-    next.maxGraphqlReplays = Math.max(next.maxGraphqlReplays || 0, 20);
-    next.maxHypothesisItems = Math.max(next.maxHypothesisItems || 0, 120);
-    next.hypothesisAutoFollowupRounds = Math.max(next.hypothesisAutoFollowupRounds || 0, 2);
-    next.hypothesisFollowupUrlsPerRound = Math.max(next.hypothesisFollowupUrlsPerRound || 0, 24);
-    next.maxUrlsPerProduct = Math.max(next.maxUrlsPerProduct || 0, 220);
-    next.maxCandidateUrls = Math.max(next.maxCandidateUrls || 0, 280);
-    next.maxPagesPerDomain = Math.max(next.maxPagesPerDomain || 0, 8);
-    next.maxGraphqlReplays = Math.max(next.maxGraphqlReplays || 0, 20);
-    next.maxHypothesisItems = Math.max(next.maxHypothesisItems || 0, 120);
-    next.endpointNetworkScanLimit = Math.max(next.endpointNetworkScanLimit || 0, 1800);
-    next.endpointSignalLimit = Math.max(next.endpointSignalLimit || 0, 120);
-    next.endpointSuggestionLimit = Math.max(next.endpointSuggestionLimit || 0, 36);
-    next.discoveryEnabled = true;
-    next.fetchCandidateSources = true;
-    next.discoveryResultsPerQuery = Math.max(next.discoveryResultsPerQuery || 0, 20);
-    next.discoveryQueryConcurrency = Math.max(next.discoveryQueryConcurrency || 0, 8);
-  }
 
   if (round > 0) {
     next.maxUrlsPerProduct = Math.max(next.maxUrlsPerProduct || 0, Math.max(120, 25));
@@ -373,7 +295,6 @@ export function buildRoundConfig(baseConfig, {
   }
 
   if (expectedCount > 0) {
-    next.discoveryResultsPerQuery = Math.max(next.discoveryResultsPerQuery || 0, 10);
     next.maxUrlsPerProduct = Math.max(next.maxUrlsPerProduct || 0, 90 + Math.min(140, expectedCount * 12));
     next.maxCandidateUrls = Math.max(next.maxCandidateUrls || 0, 130 + Math.min(200, expectedCount * 16));
   } else if (rareCount > 0 && sometimesCount === 0) {
@@ -415,7 +336,6 @@ export function buildRoundConfig(baseConfig, {
     }
 
     next.discoveryEnabled = discoveryEnabled;
-    next.fetchCandidateSources = true;
     const searchProviderSelection = explainSearchProviderSelection({
       baseConfig,
       discoveryEnabled,

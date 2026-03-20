@@ -8,6 +8,7 @@
 
 import Database from 'better-sqlite3';
 import { canonicalizeUrl } from './urlNormalize.js';
+import { configInt } from '../shared/settingsAccessor.js';
 
 function toInt(value, fallback = 0) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -106,15 +107,15 @@ export class FrontierDbSqlite {
     this.db.pragma('synchronous = NORMAL');
     this.db.exec(SCHEMA);
 
-    this._queryCooldownMs = toInt(config.frontierQueryCooldownSeconds, 21600) * 1000;
-    this._cooldown404Ms = toInt(config.frontierCooldown404Seconds, 259200) * 1000;
-    this._cooldown404RepeatMs = toInt(config.frontierCooldown404RepeatSeconds, 1209600) * 1000;
-    this._cooldown410Ms = toInt(config.frontierCooldown410Seconds, 7776000) * 1000;
-    this._cooldownTimeoutMs = toInt(config.frontierCooldownTimeoutSeconds, 21600) * 1000;
-    this._cooldown403BaseMs = Math.max(60000, toInt(config.frontierCooldown403BaseSeconds, 1800) * 1000);
-    this._cooldown429BaseMs = Math.max(60000, toInt(config.frontierCooldown429BaseSeconds, 900) * 1000);
-    this._backoffMaxExponent = Math.max(1, toInt(config.frontierBackoffMaxExponent, 4));
-    this._pathPenaltyThreshold = Math.max(1, toInt(config.frontierPathPenaltyNotfoundThreshold, 3));
+    this._queryCooldownMs = configInt(config, 'frontierQueryCooldownSeconds') * 1000;
+    this._cooldown404Ms = configInt(config, 'frontierCooldown404Seconds') * 1000;
+    this._cooldown404RepeatMs = configInt(config, 'frontierCooldown404RepeatSeconds') * 1000;
+    this._cooldown410Ms = configInt(config, 'frontierCooldown410Seconds') * 1000;
+    this._cooldownTimeoutMs = configInt(config, 'frontierCooldownTimeoutSeconds') * 1000;
+    this._cooldown403BaseMs = configInt(config, 'frontierCooldown403BaseSeconds') * 1000;
+    this._cooldown429BaseMs = configInt(config, 'frontierCooldown429BaseSeconds') * 1000;
+    this._backoffMaxExponent = configInt(config, 'frontierBackoffMaxExponent');
+    this._pathPenaltyThreshold = configInt(config, 'frontierPathPenaltyNotfoundThreshold');
   }
 
   canonicalize(url) {

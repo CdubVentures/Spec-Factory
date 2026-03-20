@@ -1,3 +1,5 @@
+import { configInt } from '../../../../shared/settingsAccessor.js';
+
 function validateFunctionArg(name, value) {
   if (typeof value !== 'function') {
     throw new TypeError(`runFetchSchedulerDrain requires ${name}`);
@@ -8,7 +10,7 @@ function buildSchedulerConfig(config = {}) {
   return {
     concurrency: config.concurrency,
     perHostDelayMs: config.perHostMinDelayMs,
-    maxRetries: config.fetchSchedulerMaxRetries,
+    maxRetries: configInt(config, 'fetchSchedulerMaxRetries'),
     defaultConcurrency: config.fetchSchedulerDefaultConcurrency,
     defaultPerHostDelayMs: config.fetchSchedulerDefaultDelayMs,
     defaultMaxRetries: config.fetchSchedulerDefaultMaxRetries,

@@ -995,6 +995,87 @@ describe('Phase 02 — buildTier3Queries', () => {
   });
 });
 
+// ── Tier 3 Progressive Enrichment ──
+
+describe('Phase 02 — buildTier3Queries progressive enrichment', () => {
+  it('repeat_count 0: bare query with just product + key', () => {
+    const groups = [
+      makeFocusGroup({
+        key: 'connectivity',
+        group_search_worthy: false,
+        normalized_key_queue: [
+          { normalized_key: 'battery hours', repeat_count: 0, all_aliases: ['battery life'], domain_hints: ['rtings.com'], preferred_content_types: ['review'], domains_tried_for_key: [] },
+        ],
+      }),
+    ];
+    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
+    assert.equal(rows.length, 1);
+    assert.ok(rows[0].query.includes('battery hours'), 'query has key');
+    assert.ok(!rows[0].query.includes('battery life'), 'round 0: no aliases yet');
+    assert.ok(!rows[0].query.includes('rtings.com'), 'round 0: no domain hints yet');
+  });
+
+  it('repeat_count 1: adds aliases to query', () => {
+    const groups = [
+      makeFocusGroup({
+        key: 'connectivity',
+        group_search_worthy: false,
+        normalized_key_queue: [
+          { normalized_key: 'battery hours', repeat_count: 1, all_aliases: ['battery life', 'battery runtime'], domain_hints: ['rtings.com'], preferred_content_types: ['review'], domains_tried_for_key: [] },
+        ],
+      }),
+    ];
+    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
+    assert.equal(rows.length, 1);
+    assert.ok(rows[0].query.includes('battery life') || rows[0].query.includes('battery runtime'), 'round 1: aliases added');
+  });
+
+  it('repeat_count 2: adds domain hints to query', () => {
+    const groups = [
+      makeFocusGroup({
+        key: 'connectivity',
+        group_search_worthy: false,
+        normalized_key_queue: [
+          { normalized_key: 'battery hours', repeat_count: 2, all_aliases: ['battery life'], domain_hints: ['rtings.com', 'mousespecs.org'], preferred_content_types: ['review'], domains_tried_for_key: ['rtings.com'] },
+        ],
+      }),
+    ];
+    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
+    assert.equal(rows.length, 1);
+    // Should prefer untried domain hints
+    assert.ok(rows[0].query.includes('mousespecs.org') || rows[0].query.includes('rtings.com'), 'round 2: domain hints added');
+  });
+
+  it('repeat_count 3+: adds content type hints', () => {
+    const groups = [
+      makeFocusGroup({
+        key: 'connectivity',
+        group_search_worthy: false,
+        normalized_key_queue: [
+          { normalized_key: 'battery hours', repeat_count: 3, all_aliases: ['battery life'], domain_hints: ['rtings.com'], preferred_content_types: ['review', 'spec sheet'], domains_tried_for_key: ['rtings.com'] },
+        ],
+      }),
+    ];
+    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
+    assert.equal(rows.length, 1);
+    assert.ok(rows[0].query.includes('review') || rows[0].query.includes('spec sheet'), 'round 3+: content types added');
+  });
+
+  it('backward compat: plain string keys still work', () => {
+    const groups = [
+      makeFocusGroup({
+        key: 'g1',
+        group_search_worthy: false,
+        normalized_key_queue: ['weight', 'sensor'],
+      }),
+    ];
+    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
+    assert.equal(rows.length, 2);
+    assert.ok(rows[0].query.includes('weight'));
+    assert.ok(rows[1].query.includes('sensor'));
+  });
+});
+
 // ── Tier-Aware buildSearchProfile Integration ──
 
 describe('Phase 02 — Tier-Aware buildSearchProfile Integration', () => {

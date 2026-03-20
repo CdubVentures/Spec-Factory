@@ -1,5 +1,5 @@
+export { searchSearxng } from './searchSearxng.js';
 export {
-  searchSearxng,
   runSearchProviders,
   searchEngineAvailability,
   searchProviderAvailability,

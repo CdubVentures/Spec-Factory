@@ -1,11 +1,13 @@
+import { configInt, configBool } from '../shared/settingsAccessor.js';
+
 function screencastIntervalMs(config = {}) {
-  const requestedFps = Math.max(1, Number(config.runtimeScreencastFps || 2));
+  const requestedFps = Math.max(1, configInt(config, 'runtimeScreencastFps'));
   const screenshotFps = Math.min(requestedFps, 2);
   return Math.max(250, Math.round(1000 / screenshotFps));
 }
 
 function screencastQuality(config = {}) {
-  return Math.max(20, Math.min(90, Number(config.runtimeScreencastQuality || 50)));
+  return configInt(config, 'runtimeScreencastQuality');
 }
 
 function viewportSnapshot(page) {
@@ -74,7 +76,7 @@ export async function attachRuntimeScreencast({
   workerId = '',
   onFrame,
 } = {}) {
-  if (!page || typeof onFrame !== 'function' || config.runtimeScreencastEnabled === false) {
+  if (!page || typeof onFrame !== 'function' || !configBool(config, 'runtimeScreencastEnabled')) {
     return async () => {};
   }
 
@@ -115,10 +117,10 @@ export async function attachRuntimeScreencast({
     cdpSession = await page.context().newCDPSession(page);
     await cdpSession.send('Page.startScreencast', {
       format: 'jpeg',
-      quality: Math.max(10, Math.min(100, Number(config.runtimeScreencastQuality || 50))),
-      maxWidth: Math.max(320, Number(config.runtimeScreencastMaxWidth || 1280)),
-      maxHeight: Math.max(240, Number(config.runtimeScreencastMaxHeight || 720)),
-      everyNthFrame: Math.max(1, Math.ceil(60 / Math.max(1, Number(config.runtimeScreencastFps || 10)))),
+      quality: configInt(config, 'runtimeScreencastQuality'),
+      maxWidth: configInt(config, 'runtimeScreencastMaxWidth'),
+      maxHeight: configInt(config, 'runtimeScreencastMaxHeight'),
+      everyNthFrame: Math.max(1, Math.ceil(60 / Math.max(1, configInt(config, 'runtimeScreencastFps')))),
     });
     cdpSession.on('Page.screencastFrame', (params) => {
       try {

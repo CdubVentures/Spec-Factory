@@ -404,9 +404,10 @@ test('resolvePhaseModel returns empty string for unknown phase (no crash)', () =
   assert.equal(result, 'global-base');
 });
 
-test('resolvePhaseModel returns empty string when config is empty and phase is unknown', () => {
+test('resolvePhaseModel returns registry default when config is empty and phase is unknown', () => {
   const result = resolvePhaseModel({}, 'nonexistent');
-  assert.equal(result, '');
+  // WHY: SSOT accessor provides the registry default for llmModelPlan
+  assert.equal(result, 'gemini-2.5-flash');
 });
 
 test('resolvePhaseModel works for all 8 known phases', () => {

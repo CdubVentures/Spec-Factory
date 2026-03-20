@@ -126,8 +126,7 @@ describe('buildSerpSelectorInput', () => {
   });
 
   it('max_keep uses serpSelectorUrlCap regardless of discoveryCap', () => {
-    // WHY: discoveryCap was historically derived from searchPlannerQueryCap
-    // (a query count). serpSelectorUrlCap is the SSOT for the URL cap.
+    // WHY: serpSelectorUrlCap is the SSOT for the URL cap.
     const { selectorInput } = buildSerpSelectorInput({
       variables: makeVariables(),
       brandResolution: makeBrandResolution(),

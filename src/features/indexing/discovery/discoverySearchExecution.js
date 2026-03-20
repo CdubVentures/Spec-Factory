@@ -12,6 +12,7 @@ import { recordQueryResult as _p4aRecordQueryResult } from './queryIndex.js';
 import { defaultIndexLabRoot as _p4aDefaultIndexLabRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { runSearchProviders as _defaultRunSearchProviders } from '../search/searchProviders.js';
 import { searchSourceCorpus as _defaultSearchSourceCorpus } from '../../../intel/sourceCorpus.js';
+import { configValue } from '../../../shared/settingsAccessor.js';
 import {
   buildPlanOnlyResults,
   extractSiteHostFromQuery,
@@ -144,12 +145,17 @@ export async function executeSearchQueries({
         logger
       });
       rawResults.push(...internalRows.map((row) => ({ ...row, query })));
+      const internalSelectedRow = resolveSelectedQueryRow(query);
       frontierDb?.recordQuery?.({
         productId: job.productId,
         query,
         provider: 'internal',
         fields: missingFields,
-        results: internalRows
+        results: internalRows,
+        tier: internalSelectedRow?.tier || null,
+        group_key: internalSelectedRow?.group_key || null,
+        normalized_key: internalSelectedRow?.normalized_key || null,
+        hint_source: internalSelectedRow?.hint_source || null,
       });
       searchAttempts.push({
         query,
@@ -239,7 +245,7 @@ export async function executeSearchQueries({
         const startedAt = Date.now();
         logger?.info?.('discovery_query_started', {
           query,
-          provider: config.searchEngines,
+          provider: configValue(config, 'searchEngines'),
           is_fallback: false,
         });
         // WHY: screenshotSink persists Google Crawlee SERP screenshots to
@@ -290,19 +296,24 @@ export async function executeSearchQueries({
           _p4aFs.mkdirSync(_dqDir, { recursive: true });
           _p4aRecordQueryResult({
             query,
-            provider: config.searchEngines || '',
+            provider: configValue(config, 'searchEngines'),
             result_count: providerResults.length,
             run_id: runId,
             category: job.category || categoryConfig.category || '',
             product_id: job.productId || '',
           }, _p4aPath.join(_dqDir, 'query-index.ndjson'));
         } catch { /* index recording must not crash the pipeline */ }
+        const externalSelectedRow = resolveSelectedQueryRow(query);
         const queryRecord = frontierDb?.recordQuery?.({
           productId: job.productId,
           query,
-          provider: config.searchEngines,
+          provider: configValue(config, 'searchEngines'),
           fields: missingFields,
-          results: providerResults
+          results: providerResults,
+          tier: externalSelectedRow?.tier || null,
+          group_key: externalSelectedRow?.group_key || null,
+          normalized_key: externalSelectedRow?.normalized_key || null,
+          hint_source: externalSelectedRow?.hint_source || null,
         });
         if (runtimeTraceWriter && providerResults.length > 0) {
           const trace = await runtimeTraceWriter.writeJson({
@@ -310,7 +321,7 @@ export async function executeSearchQueries({
             prefix: `query_${queryRecord?.query_hash || 'hash'}`,
             payload: {
               query,
-              provider: config.searchEngines,
+              provider: configValue(config, 'searchEngines'),
               result_count: providerResults.length,
               results: providerResults.slice(0, 20)
             },
@@ -325,14 +336,14 @@ export async function executeSearchQueries({
         const durationMs = Math.max(0, Date.now() - startedAt);
         logger?.info?.('discovery_query_completed', {
           query,
-          provider: config.searchEngines,
+          provider: configValue(config, 'searchEngines'),
           result_count: providerResults.length,
           duration_ms: durationMs,
           is_fallback: usedFallback,
         });
         if (providerResults.length > 0) {
           const engines = [...new Set(providerResults.map((r) => r?.provider).filter(Boolean))];
-          const resolvedProvider = engines.length === 1 ? engines[0] : engines.length > 1 ? engines.join('+') : config.searchEngines;
+          const resolvedProvider = engines.length === 1 ? engines[0] : engines.length > 1 ? engines.join('+') : configValue(config, 'searchEngines');
           logger?.info?.('search_results_collected', {
             query,
             provider: resolvedProvider,
@@ -361,7 +372,7 @@ export async function executeSearchQueries({
           providerResults,
           attempt: {
             query,
-            provider: config.searchEngines,
+            provider: configValue(config, 'searchEngines'),
             result_count: providerResults.length,
             reason_code: reasonCode,
             duration_ms: durationMs
@@ -369,7 +380,7 @@ export async function executeSearchQueries({
           journal: {
             ts: new Date().toISOString(),
             query,
-            provider: config.searchEngines,
+            provider: configValue(config, 'searchEngines'),
             result_count: providerResults.length,
             reason_code: reasonCode,
             duration_ms: durationMs

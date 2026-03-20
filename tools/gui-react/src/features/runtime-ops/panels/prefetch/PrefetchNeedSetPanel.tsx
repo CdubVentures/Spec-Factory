@@ -352,7 +352,6 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
   const profileInfluence = data.profile_influence;
   const deltas = data.deltas ?? [];
   const round = data.round;
-  const roundMode = data.round_mode;
   const hasData = summary !== undefined || bundles.length > 0;
   // WHY: Pre-LLM data (blockers, deltas, field history) arrives instantly from
   // Schema 2/3. LLM-dependent sections (bundles, profile, drilldown) need Schema 4.
@@ -470,7 +469,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
           <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Search Planner</span>
           {round !== undefined && (
             <span className="px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] text-[var(--sf-token-accent)] border-[1.5px] border-[var(--sf-token-accent)]">
-              round {round} &middot; {roundMode === 'seed' ? 'seeding' : roundMode === 'repair' ? 'repair' : 'carry-forward'}
+              round {round}
             </span>
           )}
         </>}
@@ -491,14 +490,25 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
           </HeroStatGrid>
         )}
 
-        {/* Narrative — tier-aware */}
+        {/* Narrative — budget-aware */}
         {summary && profileInfluence && (
           <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
-            {profileInfluence.targeted_specification > 0 && <strong className="sf-text-primary not-italic">Specification seed active. </strong>}
-            {profileInfluence.targeted_sources > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_sources} source seeds queued. </strong>}
-            {profileInfluence.targeted_groups > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_groups} group searches queued. </strong>}
-            {profileInfluence.targeted_single > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_single} individual key searches. </strong>}
-            {summary.core_unresolved + summary.secondary_unresolved + (summary.optional_unresolved ?? 0)} unresolved fields across {activeBundles} active bundles, with {summary.core_unresolved} core fields still missing.
+            {profileInfluence.budget != null && (
+              <strong className="sf-text-primary not-italic">Budget: {profileInfluence.budget} queries &mdash; </strong>
+            )}
+            {profileInfluence.targeted_specification > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_specification} spec seed, </strong>}
+            {profileInfluence.targeted_sources > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_sources} source {profileInfluence.targeted_sources === 1 ? 'seed' : 'seeds'}, </strong>}
+            {profileInfluence.targeted_groups > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_groups} group {profileInfluence.targeted_groups === 1 ? 'search' : 'searches'}, </strong>}
+            {profileInfluence.targeted_single > 0 && <strong className="sf-text-primary not-italic">{profileInfluence.targeted_single} key {profileInfluence.targeted_single === 1 ? 'search' : 'searches'}. </strong>}
+            {(profileInfluence.overflow_groups > 0 || profileInfluence.overflow_keys > 0) && (
+              <span className="text-xs sf-text-muted">
+                ({[
+                  profileInfluence.overflow_groups > 0 ? `${profileInfluence.overflow_groups} groups` : '',
+                  profileInfluence.overflow_keys > 0 ? `${profileInfluence.overflow_keys} keys` : '',
+                ].filter(Boolean).join(' + ')} deferred)
+              </span>
+            )}
+            {' '}{summary.core_unresolved + summary.secondary_unresolved + (summary.optional_unresolved ?? 0)} unresolved fields across {activeBundles} active bundles, with {summary.core_unresolved} core fields still missing.
           </div>
         )}
       </HeroBand>
@@ -622,6 +632,9 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
             </div>
             {/* Stats row */}
             <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted pt-2 border-t sf-border-soft">
+              {profileInfluence.budget != null && (
+                <span>budget <strong className="sf-text-primary">{profileInfluence.allocated ?? 0}/{profileInfluence.budget}</strong></span>
+              )}
               <span>groups now <strong className="sf-text-primary">{profileInfluence.groups_now}</strong></span>
               <span>groups next <strong className="sf-text-primary">{profileInfluence.groups_next}</strong></span>
               <span>groups hold <strong className="sf-text-primary">{profileInfluence.groups_hold}</strong></span>

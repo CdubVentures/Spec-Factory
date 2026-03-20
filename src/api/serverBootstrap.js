@@ -24,6 +24,8 @@ import {
 import { createProcessRuntime } from '../app/api/processRuntime.js';
 import { createRealtimeBridge } from '../app/api/realtimeBridge.js';
 import { createBootstrapEnvironment } from './bootstrap/createBootstrapEnvironment.js';
+import { resolveCurrentIndexLabRoot } from './guiServerRuntimeConfig.js';
+import { defaultIndexLabRoot, defaultLocalOutputRoot } from '../core/config/runtimeArtifactRoots.js';
 import { createBootstrapSessionLayer } from './bootstrap/createBootstrapSessionLayer.js';
 import { createBootstrapDomainRuntimes } from './bootstrap/createBootstrapDomainRuntimes.js';
 
@@ -79,11 +81,17 @@ export function bootstrapServer({ projectRoot }) {
   processStatusProvider = processStatus;
   forwardScreencastControlProvider = forwardScreencastControl;
 
+  // WHY: Dynamic getter so run discovery tracks live storage settings, not boot-time snapshot.
+  const getIndexLabRoot = () => resolveCurrentIndexLabRoot({
+    runDataStorageState, defaultIndexLabRoot, defaultLocalOutputRoot,
+  });
+
   // ── IndexLab init (side effect, no return value) ──
   initIndexLabDataBuilders({
     indexLabRoot: INDEXLAB_ROOT, outputRoot: OUTPUT_ROOT,
     storage, runDataArchiveStorage, config,
     getSpecDbReady, isProcessRunning, processStatus, runDataStorageState,
+    getIndexLabRoot,
   });
 
   // ── Phase 3: Domain runtimes (review + catalog) ──
@@ -93,7 +101,7 @@ export function bootstrapServer({ projectRoot }) {
 
   return {
     config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
-    storage, runDataStorageState,
+    storage, runDataStorageState, getIndexLabRoot,
     sessionCache, resolveCategoryAlias,
     specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady,
     broadcastWs, setupWatchers, attachWebSocketUpgrade, getLastScreencastFrame,

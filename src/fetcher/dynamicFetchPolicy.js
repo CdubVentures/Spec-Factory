@@ -1,3 +1,5 @@
+import { configInt, configBool } from '../shared/settingsAccessor.js';
+
 function toInt(value, fallback) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -93,17 +95,17 @@ export function resolveDynamicFetchPolicy(config = {}, source = {}) {
   const policy = {
     host,
     matchedHost,
-    perHostMinDelayMs: Number(config.perHostMinDelayMs || 0),
-    pageGotoTimeoutMs: Number(config.pageGotoTimeoutMs || 30_000),
-    pageNetworkIdleTimeoutMs: Number(config.pageNetworkIdleTimeoutMs || 6_000),
-    postLoadWaitMs: Number(config.postLoadWaitMs || 0),
-    autoScrollEnabled: Boolean(config.autoScrollEnabled),
-    autoScrollPasses: Number(config.autoScrollPasses || 0),
-    autoScrollDelayMs: Number(config.autoScrollDelayMs || 900),
-    graphqlReplayEnabled: config.graphqlReplayEnabled !== false,
-    maxGraphqlReplays: Number(config.maxGraphqlReplays || 0),
-    retryBudget: Number(config.dynamicFetchRetryBudget || 0),
-    retryBackoffMs: Number(config.dynamicFetchRetryBackoffMs || 0)
+    perHostMinDelayMs: configInt(config, 'perHostMinDelayMs'),
+    pageGotoTimeoutMs: configInt(config, 'pageGotoTimeoutMs'),
+    pageNetworkIdleTimeoutMs: configInt(config, 'pageNetworkIdleTimeoutMs'),
+    postLoadWaitMs: configInt(config, 'postLoadWaitMs'),
+    autoScrollEnabled: configBool(config, 'autoScrollEnabled'),
+    autoScrollPasses: configInt(config, 'autoScrollPasses'),
+    autoScrollDelayMs: configInt(config, 'autoScrollDelayMs'),
+    graphqlReplayEnabled: configBool(config, 'graphqlReplayEnabled'),
+    maxGraphqlReplays: configInt(config, 'maxGraphqlReplays'),
+    retryBudget: configInt(config, 'dynamicFetchRetryBudget'),
+    retryBackoffMs: configInt(config, 'dynamicFetchRetryBackoffMs')
   };
 
   if (!matchedPolicy) {

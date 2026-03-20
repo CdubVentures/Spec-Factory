@@ -1,6 +1,7 @@
 import { nextBestUrlsFromHypotheses } from '../../learning/hypothesisQueue.js';
 import { buildProvisionalHypothesisQueue } from '../shared/reasoningHelpers.js';
 import { isHelperSyntheticSource } from '../shared/urlHelpers.js';
+import { configInt } from '../../../../shared/settingsAccessor.js';
 
 function validateFunctionArg(name, value) {
   if (typeof value !== 'function') {
@@ -69,8 +70,8 @@ export async function runHypothesisFollowups({
   validateFunctionArg('isHelperSyntheticSourceFn', isHelperSyntheticSourceFn);
   validateFunctionArg('nowFn', nowFn);
 
-  const maxFollowupRounds = Math.max(0, Number(config.hypothesisAutoFollowupRounds || 0));
-  const followupPerRound = Math.max(1, Number(config.hypothesisFollowupUrlsPerRound || 12));
+  const maxFollowupRounds = configInt(config, 'hypothesisAutoFollowupRounds');
+  const followupPerRound = configInt(config, 'hypothesisFollowupUrlsPerRound');
   for (let round = 1; round <= maxFollowupRounds; round += 1) {
     const elapsedSeconds = (nowFn() - startMs) / 1000;
     if (elapsedSeconds >= config.maxRunSeconds) {

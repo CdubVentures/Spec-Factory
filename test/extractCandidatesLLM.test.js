@@ -98,9 +98,10 @@ test('extractCandidatesLLM keeps only candidates with valid evidenceRefs', async
         ]
       },
       config: {
-        llmApiKey: 'sk-test',
+        openaiApiKey: 'sk-test',
         llmBaseUrl: 'https://api.openai.com',
         llmProvider: 'openai',
+        llmModelPlan: 'gpt-4o',
         llmModelExtract: 'test-model',
         llmTimeoutMs: 5_000,
         llmExtractionCacheDir: path.join(os.tmpdir(), `llm-cache-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
@@ -175,9 +176,10 @@ test('extractCandidatesLLM returns known-answer candidates with evidence refs', 
         ]
       },
       config: {
-        llmApiKey: 'sk-test',
+        deepseekApiKey: 'sk-test',
         llmBaseUrl: 'https://api.deepseek.com',
         llmProvider: 'deepseek',
+        llmModelPlan: 'deepseek-chat',
         llmModelExtract: 'deepseek-reasoner',
         llmReasoningMode: true,
         llmReasoningBudget: 1024,

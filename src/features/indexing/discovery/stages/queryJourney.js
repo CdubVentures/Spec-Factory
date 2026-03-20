@@ -1,5 +1,5 @@
 // WHY: Stage 05 of the prefetch pipeline — Query Journey.
-// Merges ALL query streams (base, targeted, schema4, uber, host-plan),
+// Receives enhanced query rows from Search Planner + host-plan rows,
 // dedupes, ranks, guards, and produces the final selected query list.
 
 import { normalizeFieldList } from '../../../../utils/fieldKeys.js';
@@ -22,8 +22,7 @@ import {
  */
 export async function runQueryJourney({
   searchProfileBase,
-  schema4Plan,
-  uberSearchPlan,
+  enhancedRows = [],
   hostPlanQueryRows,
   variables,
   config,
@@ -37,52 +36,31 @@ export async function runQueryJourney({
   logger,
   storage,
   brandResolution,
-  searchPlanHandoff,
 }) {
-  const baseQueries = toArray(searchProfileBase?.base_templates);
-  const targetedQueries = toArray(searchProfileBase?.queries);
   const profileQueryRowsByQuery = new Map(
     toArray(searchProfileBase?.query_rows).map((row) => {
       const token = String(row?.query || '').trim().toLowerCase();
       return [token, row];
     }),
   );
-  const resolveProfileQueryRow = (query) =>
-    profileQueryRowsByQuery.get(String(query || '').trim().toLowerCase()) || null;
 
-  // WHY: Four input streams merged into one candidate list:
-  // 1. Deterministic base + targeted queries (from search profile)
-  // 2. Schema 4 needset planner queries (from orchestrator LLM call)
-  // 3. Search Planner uber queries (from planUberQueries LLM call)
-  // 4. Host-plan rows (appended after guard)
-  const queryCandidates = [
-    ...baseQueries.map((query) => ({ query, source: 'base_template', target_fields: [] })),
-    ...targetedQueries.map((query) => {
-      const profileRow = resolveProfileQueryRow(query);
-      return {
-        query,
-        source: 'targeted',
-        target_fields: toArray(profileRow?.target_fields),
-        doc_hint: String(profileRow?.doc_hint || '').trim(),
-        domain_hint: String(profileRow?.domain_hint || '').trim(),
-        hint_source: String(profileRow?.hint_source || '').trim(),
-      };
-    }),
-    ...toArray(schema4Plan?.queryRows).map((row) => ({
-      query: row.query,
-      source: 'schema4',
-      target_fields: toArray(row.target_fields),
-      doc_hint: String(row.doc_hint || '').trim(),
-      domain_hint: String(row.domain_hint || '').trim(),
-      hint_source: String(row.hint_source || 'schema4_planner').trim(),
-    })),
-    ...toArray(uberSearchPlan?.queries).map((query) => ({
-      query, source: 'uber', target_fields: [],
-    })),
-  ];
+  // WHY: Two input streams merged into one candidate list:
+  // 1. Enhanced rows from Search Planner (tier-tagged, LLM-enhanced or deterministic fallback)
+  // 2. Host-plan rows (appended after guard)
+  const queryCandidates = toArray(enhancedRows).map((row) => ({
+    query: String(row?.query || '').trim(),
+    source: String(row?.hint_source || 'enhanced').trim(),
+    target_fields: toArray(row?.target_fields),
+    doc_hint: String(row?.doc_hint || '').trim(),
+    domain_hint: String(row?.domain_hint || '').trim(),
+    hint_source: String(row?.hint_source || '').trim(),
+    tier: String(row?.tier || '').trim(),
+    group_key: String(row?.group_key || '').trim(),
+    normalized_key: String(row?.normalized_key || '').trim(),
+    original_query: row?.original_query || undefined,
+  }));
 
-  // WHY: searchProfileQueryCap is the hard cap on the final profile output.
-  // searchPlannerQueryCap caps the LLM planner contribution (applied in Stage 04).
+  // WHY: searchProfileQueryCap is the sole controller for total search queries per run.
   const queryLimit = configInt(config, 'searchProfileQueryCap');
   const mergedQueryCap = queryLimit;
   const mergedQueries = dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap);
@@ -173,7 +151,6 @@ export async function runQueryJourney({
 
   const queryRejectLogCombined = [
     ...toArray(searchProfileBase?.query_reject_log),
-    ...toArray(schema4Plan?.rejectLog),
     ...toArray(mergedQueries.rejectLog),
     ...toArray(rankedCapRejectLog),
     ...toArray(guardedQueries.rejectLog),
@@ -193,6 +170,12 @@ export async function runQueryJourney({
     runId,
   });
 
+  // WHY: llm_queries populated from enhanced rows that were LLM-rewritten.
+  const llmQueries = toArray(enhancedRows)
+    .filter((row) => String(row?.hint_source || '').endsWith('_llm'))
+    .map((row) => String(row?.query || '').trim())
+    .filter(Boolean);
+
   const searchProfilePlanned = {
     ...searchProfileBase,
     category: categoryConfig.category,
@@ -203,7 +186,7 @@ export async function runQueryJourney({
     generated_at: new Date().toISOString(),
     status: 'planned',
     provider: config.searchEngines,
-    llm_queries: [...toArray(schema4Plan?.queries), ...toArray(uberSearchPlan?.queries)],
+    llm_queries: llmQueries,
     query_reject_log: queryRejectLogCombined,
     query_guard: {
       brand_tokens: toArray(guardedQueries.guardContext?.brandTokens),
@@ -223,14 +206,6 @@ export async function runQueryJourney({
       confidence: brandResolution.confidence ?? 0,
       reasoning: brandResolution.reasoning || [],
     } : null,
-    schema4_planner: searchPlanHandoff ? {
-      mode: searchPlanHandoff._planner?.mode || 'unknown',
-      planner_confidence: searchPlanHandoff._planner?.planner_confidence ?? 0,
-      duplicates_suppressed: searchPlanHandoff._planner?.duplicates_suppressed ?? 0,
-      targeted_exceptions: searchPlanHandoff._planner?.targeted_exceptions ?? 0,
-    } : null,
-    schema4_learning: searchPlanHandoff?._learning || null,
-    schema4_panel: searchPlanHandoff?._panel || null,
     key: searchProfileKeys.inputKey,
     run_key: searchProfileKeys.runKey,
     latest_key: searchProfileKeys.latestKey,
@@ -240,13 +215,11 @@ export async function runQueryJourney({
     payload: searchProfilePlanned,
     keys: searchProfileKeys,
   });
-  // WHY: Emit query_journey_completed so the runtime bridge knows when to
-  // advance the phase cursor and the GUI can gate search worker bouncy balls.
   logger?.info?.('query_journey_completed', {
     selected_query_count: queries.length,
     selected_queries: queries.slice(0, 50),
-    schema4_query_count: toArray(schema4Plan?.queries).length,
-    deterministic_query_count: baseQueries.length + targetedQueries.length,
+    deterministic_query_count: toArray(enhancedRows).filter((r) => !String(r?.hint_source || '').endsWith('_llm')).length,
+    llm_enhanced_count: llmQueries.length,
     host_plan_query_count: appendedHostPlanRows.length,
     rejected_count: queryRejectLogCombined.length,
   });

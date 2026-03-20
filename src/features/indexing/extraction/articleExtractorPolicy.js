@@ -3,6 +3,7 @@ import {
   normalizeArticleExtractorMode,
   normalizeArticleExtractorPolicyMap,
 } from '../../../core/config/configNormalizers.js';
+import { configInt } from '../../../shared/settingsAccessor.js';
 
 export {
   normalizeArticleHostToken,
@@ -41,9 +42,9 @@ export function resolveArticleExtractionPolicy(config = {}, source = {}) {
     overrideApplied: false,
     mode: 'auto',
     enabled: true,
-    minChars: Math.max(100, Number(config.articleExtractorMinChars || 700)),
-    minScore: Math.max(1, Number(config.articleExtractorMinScore || 45)),
-    maxChars: Math.max(1000, Number(config.articleExtractorMaxChars || 24_000))
+    minChars: configInt(config, 'articleExtractorMinChars'),
+    minScore: configInt(config, 'articleExtractorMinScore'),
+    maxChars: configInt(config, 'articleExtractorMaxChars')
   };
 
   if (!matchedPolicy) {

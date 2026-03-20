@@ -174,6 +174,9 @@ async function loadPageModule() {
         export function useMemo(factory) {
           return factory();
         }
+        export function useCallback(fn) {
+          return fn;
+        }
         export function useRef(initialValue) {
           const harness = globalThis.__storageSettingsPageHarness;
           const idx = harness.cursor++;
@@ -194,10 +197,36 @@ async function loadPageModule() {
         export function useQuery() {
           return globalThis.__storageSettingsPageHarness.queryResult;
         }
+        export function useMutation() {
+          return { mutate() {}, mutateAsync: async () => ({}), isPending: false };
+        }
+        export function useQueryClient() {
+          return { invalidateQueries() {} };
+        }
+      `,
+      '@tanstack/react-table': `
+        export function useReactTable() {
+          return {
+            getHeaderGroups: () => [],
+            getRowModel: () => ({ rows: [] }),
+            getState: () => ({ sorting: [], globalFilter: '', expanded: {} }),
+            setSorting() {},
+            setGlobalFilter() {},
+            setExpanded() {},
+          };
+        }
+        export function getCoreRowModel() { return () => ({}); }
+        export function getSortedRowModel() { return () => ({}); }
+        export function getFilteredRowModel() { return () => ({}); }
+        export function getExpandedRowModel() { return () => ({}); }
+        export function flexRender(cell) { return cell; }
       `,
       '../../api/client': `
         export const api = {
           get: async () => ({}),
+          post: async () => ({}),
+          put: async () => ({}),
+          del: async () => ({}),
         };
       `,
       '../../api/ws': `

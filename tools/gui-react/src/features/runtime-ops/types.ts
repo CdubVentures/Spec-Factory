@@ -490,8 +490,7 @@ export interface PrefetchSchema4Bundle {
   fields: PrefetchNeedSetBundleField[];
 }
 
-/** Tier-aware profile influence — derived from Schema 3 focus_groups + seed_status */
-/** Tier-aware profile influence — 4 targeting categories */
+/** Tier-aware profile influence — budget-aware when tier_allocation is present */
 export interface PrefetchNeedSetProfileInfluence {
   targeted_specification: number;
   targeted_sources: number;
@@ -502,6 +501,40 @@ export interface PrefetchNeedSetProfileInfluence {
   groups_hold: number;
   total_unresolved_keys: number;
   planner_confidence: number;
+  budget: number | null;
+  allocated: number | null;
+  overflow_groups: number;
+  overflow_keys: number;
+}
+
+export interface TierAllocationSeed {
+  type: 'specs' | 'source';
+  source_name: string | null;
+  is_needed: boolean;
+}
+
+export interface TierAllocationGroup {
+  group_key: string;
+  productivity_score: number;
+  allocated: boolean;
+}
+
+export interface TierAllocationKeyBucket {
+  group_key: string;
+  key_count: number;
+  allocated_count: number;
+}
+
+export interface PrefetchNeedSetTierAllocation {
+  budget: number;
+  tier1_seed_count: number;
+  tier2_group_count: number;
+  tier3_key_count: number;
+  tier1_seeds: TierAllocationSeed[];
+  tier2_groups: TierAllocationGroup[];
+  tier3_keys: TierAllocationKeyBucket[];
+  overflow_group_count: number;
+  overflow_key_count: number;
 }
 
 export interface PrefetchNeedSetData {
@@ -514,10 +547,10 @@ export interface PrefetchNeedSetData {
   bundles?: PrefetchSchema4Bundle[];
   profile_mix?: PrefetchNeedSetProfileMix;
   profile_influence?: PrefetchNeedSetProfileInfluence | null;
+  tier_allocation?: PrefetchNeedSetTierAllocation | null;
   rows?: PrefetchNeedSetPlannerRow[];
   deltas?: Array<{ field: string; from: string; to: string }>;
   round?: number;
-  round_mode?: string;
   schema_version?: string | null;
   snapshots?: Array<{ needset_size: number; total_fields: number; identity_state: string | null; ts: string }>;
   debug?: {
@@ -596,37 +629,6 @@ export interface PrefetchSearchProfileData {
     aliases: string[];
     confidence: number;
     reasoning: string[];
-  } | null;
-  schema4_planner?: {
-    mode: string;
-    planner_confidence: number;
-    duplicates_suppressed: number;
-    targeted_exceptions: number;
-  } | null;
-  schema4_learning?: {
-    query_hashes_generated: string[];
-    queries_generated: string[];
-    families_used: string[];
-    domains_targeted: string[];
-    groups_activated: string[];
-    duplicates_suppressed: number;
-  } | null;
-  schema4_panel?: {
-    round: number;
-    round_mode: string;
-    identity: Record<string, unknown>;
-    summary: Record<string, unknown>;
-    blockers: Record<string, unknown>;
-    bundles: Array<{
-      key: string;
-      label: string;
-      priority: string;
-      phase: string;
-      queries: Array<{ q: string; family: string }>;
-      fields: Array<{ key: string; state: string; bucket: string }>;
-    }>;
-    profile_influence: Record<string, number>;
-    deltas: Array<{ field: string; from: string; to: string }>;
   } | null;
   base_model?: string;
   aliases?: string[];
@@ -827,7 +829,6 @@ export interface PrefetchLiveSettings {
   scannedPdfOcrEnabled?: boolean;
   maxPagesPerDomain?: number;
   discoveryResultsPerQuery?: number;
-  searchPlannerQueryCap?: number;
 }
 
 // ── Pre-Fetch Phases Response ──

@@ -85,7 +85,6 @@ async function run() {
       settings: {},
       previousFieldHistories: {},
       round: 0,
-      roundMode: 'seed'
     });
 
     const missingFields = needSet.planner_seed?.unresolved_fields || [];

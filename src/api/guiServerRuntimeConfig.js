@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { configValue } from '../shared/settingsAccessor.js';
 
 export function resolveProjectPath({ projectRoot, value, fallback = '' }) {
   const raw = String(value ?? '').trim();
@@ -49,7 +50,7 @@ export function normalizeRuntimeArtifactWorkspaceDefaults({
   if (!persistedOutputRoot) {
     config.localOutputRoot = resolveProjectPath({
       projectRoot,
-      value: config.localOutputRoot,
+      value: configValue(config, 'localOutputRoot'),
       fallback: defaultLocalOutputRoot(),
     });
     return;
@@ -62,7 +63,7 @@ export function normalizeRuntimeArtifactWorkspaceDefaults({
   if (!matchesKnownDefault) {
     config.localOutputRoot = resolveProjectPath({
       projectRoot,
-      value: config.localOutputRoot,
+      value: configValue(config, 'localOutputRoot'),
       fallback: defaultLocalOutputRoot(),
     });
     return;
@@ -164,6 +165,17 @@ export function resolveStorageBackedWorkspaceRoots({
   };
 }
 
+// WHY: Dynamic derivation of indexLabRoot from live runDataStorageState.
+// Same logic as createBootstrapEnvironment lines 138-140, but callable at any time.
+export function resolveCurrentIndexLabRoot({ runDataStorageState, defaultIndexLabRoot, defaultLocalOutputRoot }) {
+  const roots = resolveStorageBackedWorkspaceRoots({
+    settings: runDataStorageState,
+    defaultLocalOutputRoot,
+  });
+  if (roots?.indexLabRoot) return roots.indexLabRoot;
+  return defaultIndexLabRoot();
+}
+
 export function resolveRunDataDestinationType({ env = process.env }) {
   const explicit = envToken({
     env,
@@ -195,14 +207,14 @@ export function createRunDataArchiveStorage({
     outputMode: 's3',
     localMode: false,
     awsRegion: String(
-      runDataStorageState.awsRegion || config.awsRegion || 'us-east-2',
+      runDataStorageState.awsRegion || configValue(config, 'awsRegion'),
     ).trim(),
     s3Bucket: String(
-      runDataStorageState.s3Bucket || config.s3Bucket || '',
+      runDataStorageState.s3Bucket || configValue(config, 's3Bucket'),
     ).trim(),
-    s3InputPrefix: config.s3InputPrefix || 'specs/inputs',
-    s3OutputPrefix: config.s3OutputPrefix || 'specs/outputs',
-    localInputRoot: config.localInputRoot,
-    localOutputRoot: config.localOutputRoot,
+    s3InputPrefix: configValue(config, 's3InputPrefix'),
+    s3OutputPrefix: configValue(config, 's3OutputPrefix'),
+    localInputRoot: configValue(config, 'localInputRoot'),
+    localOutputRoot: configValue(config, 'localOutputRoot'),
   });
 }

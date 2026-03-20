@@ -17,7 +17,7 @@ export const NEEDSET_DATA_KEYS = Object.freeze([
   'needset_size', 'total_fields', 'identity_state',
   'fields', 'summary', 'blockers', 'bundles',
   'profile_influence', 'deltas', 'rows',
-  'round', 'round_mode', 'schema_version', 'snapshots',
+  'round', 'schema_version', 'snapshots',
 ]);
 
 // ── Brand Resolution ──

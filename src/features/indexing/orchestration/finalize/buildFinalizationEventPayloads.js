@@ -31,7 +31,6 @@ export function buildFinalizationEventPayloads({
     profile_influence: needSet.profile_influence || null,
     deltas: Array.isArray(needSet.deltas) ? needSet.deltas : [],
     round: typeof needSet.round === 'number' ? needSet.round : 0,
-    round_mode: needSet.round_mode || 'seed',
     schema_version: needSet.schema_version || null,
     // WHY: rows[] carries the planner drilldown grid (field_key, priority_bucket,
     // state, bundle_id) consumed by the Field Drilldown section in the GUI.

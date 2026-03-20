@@ -155,7 +155,6 @@ export function buildIndexingRunStartPayload(
     ...buildIndexingRunDiscoveryPayload({
       fetchCandidateSources: readBool(s.fetchCandidateSources),
       parsedSearchProfileQueryCap: p.parsedSearchProfileQueryCap,
-      parsedSearchPlannerQueryCap: p.parsedSearchPlannerQueryCap,
       parsedSerpSelectorUrlCap: p.parsedSerpSelectorUrlCap,
       parsedDomainClassifierUrlCap: p.parsedDomainClassifierUrlCap,
       parsedMaxUrlsPerProduct: p.parsedMaxUrlsPerProduct,

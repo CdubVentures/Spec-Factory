@@ -117,13 +117,14 @@ function assembleSchema4(ctx, queries, {
 } = {}) {
   const queryHashes = queries.map(q => q.query_hash);
 
-  // WHY: Tier-aware profile_influence — shows what's available per tier.
-  // Budget allocation (priority ordering) happens in Search Profile.
-  // NeedSet doesn't have brandResolution yet (Brand Resolver is Stage 02),
-  // so targeted_sources here only reflects seed_status history.
-  // Search Profile adds brand-resolved domains at Stage 03.
+  // WHY: Budget-aware profile_influence — when tier_allocation exists (from
+  // budget-aware NeedSet), show allocated counts. Otherwise fall back to
+  // aspirational counts for backward compat.
   const focusGroups = ctx.focus_groups || [];
   const seedStatus = ctx.seed_status || {};
+  const alloc = ctx.tier_allocation || null;
+
+  // Aspirational fallbacks (used when tier_allocation is absent)
   const specsSeedNeeded = Boolean(seedStatus?.specs_seed?.is_needed);
   const neededSources = Object.entries(seedStatus?.source_seeds || {})
     .filter(([, s]) => Boolean(s?.is_needed));
@@ -133,11 +134,17 @@ function assembleSchema4(ctx, queries, {
     Array.isArray(g.normalized_key_queue) &&
     g.normalized_key_queue.length > 0,
   );
+  const aspirationalKeys = nonWorthyWithKeys.reduce((sum, g) => sum + g.normalized_key_queue.length, 0);
+
   const tierInfluence = {
-    targeted_specification: specsSeedNeeded ? 1 : 0,
-    targeted_sources: neededSources.length,
-    targeted_groups: searchWorthyGroups.length,
-    targeted_single: nonWorthyWithKeys.reduce((sum, g) => sum + g.normalized_key_queue.length, 0),
+    targeted_specification: alloc
+      ? alloc.tier1_seeds.filter(s => s.type === 'specs').length
+      : (specsSeedNeeded ? 1 : 0),
+    targeted_sources: alloc
+      ? alloc.tier1_seeds.filter(s => s.type === 'source').length
+      : neededSources.length,
+    targeted_groups: alloc ? alloc.tier2_group_count : searchWorthyGroups.length,
+    targeted_single: alloc ? alloc.tier3_key_count : aspirationalKeys,
     groups_now: focusGroups.filter(g => g.phase === 'now').length,
     groups_next: focusGroups.filter(g => g.phase === 'next').length,
     groups_hold: focusGroups.filter(g => g.phase === 'hold').length,
@@ -145,6 +152,10 @@ function assembleSchema4(ctx, queries, {
       (sum, g) => sum + (Array.isArray(g.normalized_key_queue) ? g.normalized_key_queue.length : 0), 0,
     ),
     planner_confidence: llmResult?.planner_confidence ?? 0,
+    budget: alloc?.budget ?? null,
+    allocated: alloc ? (alloc.tier1_seed_count + alloc.tier2_group_count + alloc.tier3_key_count) : null,
+    overflow_groups: alloc?.overflow_group_count ?? 0,
+    overflow_keys: alloc?.overflow_key_count ?? 0,
   };
 
   // Group bundles — read from Schema 3 focus_groups, include display fields
@@ -236,7 +247,6 @@ function assembleSchema4(ctx, queries, {
     },
     panel: {
       round: ctx.run?.round ?? 0,
-      round_mode: ctx.run?.round_mode || 'seed',
       identity: ctx.identity,
       summary: ctx.needset?.summary || {},
       blockers: ctx.needset?.blockers || {},

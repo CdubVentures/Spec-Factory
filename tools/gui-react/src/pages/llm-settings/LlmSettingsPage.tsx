@@ -7,303 +7,47 @@ import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore';
 import { Spinner } from '../../shared/ui/feedback/Spinner';
 import { resolveLlmSettingsStatusText } from '../../shared/ui/feedback/settingsStatus';
 import type { LlmRouteRow, LlmScope } from '../../types/llmSettings';
-import { LLM_ROUTE_PRESET_LIMITS, LLM_SETTING_LIMITS } from '../../stores/settingsManifest';
-import type { LlmRoutePresetConfig } from '../../stores/settingsManifest';
-
-const SCOPE_KEYS = ['field', 'component', 'list'] as const satisfies ReadonlyArray<LlmScope>;
-const scopes = [
-  { id: 'field', label: 'Field Keys' },
-  { id: 'component', label: 'Component Review' },
-  { id: 'list', label: 'List Review' },
-] as const;
-
-const REQUIRED_LEVEL_RANK: Record<string, number> = {
-  identity: 7,
-  critical: 6,
-  required: 5,
-  expected: 4,
-  optional: 3,
-  editorial: 2,
-  commerce: 1
-};
-
-const DIFFICULTY_RANK: Record<string, number> = {
-  instrumented: 4,
-  hard: 3,
-  medium: 2,
-  easy: 1
-};
-
-const AVAILABILITY_RANK: Record<string, number> = {
-  always: 5,
-  expected: 4,
-  sometimes: 3,
-  rare: 2,
-  editorial_only: 1
-};
-
-type SortBy = 'route_key' | 'required_level' | 'difficulty' | 'availability' | 'effort';
-const SORT_BY_KEYS = [
-  'route_key',
-  'required_level',
-  'difficulty',
-  'availability',
-  'effort',
-] as const satisfies ReadonlyArray<SortBy>;
-const SORT_DIR_KEYS = ['asc', 'desc'] as const;
+import {
+  type SortBy,
+  SORT_BY_KEYS,
+  SORT_DIR_KEYS,
+  PROMPT_FLAG_FIELDS,
+  REQUIRED_LEVEL_OPTIONS,
+  DIFFICULTY_OPTIONS,
+  AVAILABILITY_OPTIONS,
+  CONTEXT_PACK_OPTIONS,
+  SCALAR_SEND_OPTIONS,
+  COMPONENT_SEND_OPTIONS,
+  LIST_SEND_OPTIONS,
+  INSUFFICIENT_EVIDENCE_OPTIONS,
+  rankForSort,
+  tagCls,
+} from './llmRouteTaxonomy';
+import {
+  EFFORT_BOUNDS,
+  MAX_TOKEN_BOUNDS,
+  MAX_TOKEN_STEP,
+  MIN_EVIDENCE_BOUNDS,
+  clampToRange,
+  toEffortBand,
+  rowEffortBand,
+  normalizeRowsEffortBand,
+  applyContextPack,
+  rowDefaultsComparable,
+  applyRoutePreset,
+} from './llmRouteDomain';
+import {
+  SCOPE_KEYS,
+  scopes,
+  presetDisplayName,
+  flagLabel,
+  selectedRouteTone,
+  selectedRouteToneStyle,
+} from './llmRoutePresentation';
 
 const inputCls = 'sf-input';
 const selectCls = inputCls;
 const cardCls = 'rounded sf-surface-elevated p-4';
-const EFFORT_BOUNDS = LLM_SETTING_LIMITS.effort;
-const MAX_TOKEN_BOUNDS = LLM_SETTING_LIMITS.maxTokens;
-const MIN_EVIDENCE_BOUNDS = LLM_SETTING_LIMITS.minEvidenceRefs;
-const MAX_TOKEN_STEP = MAX_TOKEN_BOUNDS.step ?? 1;
-
-function clampToRange(value: number, min: number, max: number) {
-  const safeValue = Number.isFinite(value) ? value : min;
-  return Math.max(min, Math.min(max, safeValue));
-}
-
-const PROMPT_FLAG_FIELDS: Array<keyof LlmRouteRow> = [
-  'studio_key_navigation_sent_in_extract_review',
-  'studio_contract_rules_sent_in_extract_review',
-  'studio_extraction_guidance_sent_in_extract_review',
-  'studio_tooltip_or_description_sent_when_present',
-  'studio_enum_options_sent_when_present',
-  'studio_component_variance_constraints_sent_in_component_review',
-  'studio_parse_template_sent_direct_in_extract_review',
-  'studio_ai_mode_difficulty_effort_sent_direct_in_extract_review',
-  'studio_required_level_sent_in_extract_review',
-  'studio_component_entity_set_sent_when_component_field',
-  'studio_evidence_policy_sent_direct_in_extract_review',
-  'studio_variance_policy_sent_in_component_review',
-  'studio_constraints_sent_in_component_review',
-  'studio_send_booleans_prompted_to_model'
-];
-
-function toEffortBand(effort: number) {
-  const parsedEffort = Number.isFinite(effort) ? effort : EFFORT_BOUNDS.min;
-  const n = clampToRange(parsedEffort, EFFORT_BOUNDS.min, EFFORT_BOUNDS.max);
-  if (n <= 3) return '1-3';
-  if (n <= 6) return '4-6';
-  if (n <= 8) return '7-8';
-  return '9-10';
-}
-
-function rowEffortBand(row: Pick<LlmRouteRow, 'effort'>) {
-  return toEffortBand(row.effort);
-}
-
-function normalizeRowEffortBand(row: LlmRouteRow): LlmRouteRow {
-  const normalizedBand = rowEffortBand(row);
-  if (row.effort_band === normalizedBand) return row;
-  return {
-    ...row,
-    effort_band: normalizedBand,
-  };
-}
-
-function normalizeRowsEffortBand(rows: LlmRouteRow[]) {
-  return rows.map((row) => normalizeRowEffortBand(row));
-}
-
-function applyContextPack(row: LlmRouteRow, pack: 'minimal' | 'standard' | 'full') {
-  const next = { ...row };
-  if (pack === 'minimal') {
-    for (const key of PROMPT_FLAG_FIELDS) next[key] = false as never;
-    next.studio_key_navigation_sent_in_extract_review = true;
-    next.studio_contract_rules_sent_in_extract_review = true;
-    next.studio_parse_template_sent_direct_in_extract_review = true;
-    next.studio_required_level_sent_in_extract_review = true;
-    next.studio_evidence_policy_sent_direct_in_extract_review = true;
-    next.studio_send_booleans_prompted_to_model = false;
-    return next;
-  }
-  if (pack === 'full') {
-    for (const key of PROMPT_FLAG_FIELDS) next[key] = true as never;
-    next.studio_send_booleans_prompted_to_model = false;
-    return next;
-  }
-  for (const key of PROMPT_FLAG_FIELDS) next[key] = true as never;
-  next.studio_component_variance_constraints_sent_in_component_review = row.scope === 'component';
-  next.studio_variance_policy_sent_in_component_review = row.scope === 'component';
-  next.studio_constraints_sent_in_component_review = row.scope === 'component';
-  next.studio_component_entity_set_sent_when_component_field = row.scope === 'component';
-  next.studio_send_booleans_prompted_to_model = false;
-  return next;
-}
-
-function routeSummary(row: LlmRouteRow) {
-  return `${row.required_level} | ${row.difficulty} | ${row.availability} | effort ${row.effort}`;
-}
-
-function selectedRouteTone(row: LlmRouteRow) {
-  const effortBand = rowEffortBand(row);
-  if (effortBand === '9-10') {
-    return 'sf-callout sf-callout-danger';
-  }
-  if (effortBand === '7-8') {
-    return 'sf-callout sf-callout-warning';
-  }
-  if (effortBand === '4-6') {
-    return 'sf-callout sf-callout-info';
-  }
-  return 'sf-callout sf-callout-success';
-}
-
-function selectedRouteToneStyle(row: LlmRouteRow) {
-  const effortBand = rowEffortBand(row);
-  if (effortBand === '9-10') {
-    return {
-      color: 'var(--sf-state-danger-fg)',
-      backgroundColor: 'var(--sf-state-danger-bg)',
-      borderColor: 'var(--sf-state-danger-border)',
-    };
-  }
-  if (effortBand === '7-8') {
-    return {
-      color: 'var(--sf-state-warning-fg)',
-      backgroundColor: 'var(--sf-state-warning-bg)',
-      borderColor: 'var(--sf-state-warning-border)',
-    };
-  }
-  if (effortBand === '4-6') {
-    return {
-      color: 'var(--sf-state-info-fg)',
-      backgroundColor: 'var(--sf-state-info-bg)',
-      borderColor: 'var(--sf-state-info-border)',
-    };
-  }
-  return {
-    color: 'var(--sf-state-success-fg)',
-    backgroundColor: 'var(--sf-state-success-bg)',
-    borderColor: 'var(--sf-state-success-border)',
-  };
-}
-
-function prettyToken(value: string) {
-  return String(value || '')
-    .replace(/_/g, ' ')
-    .trim()
-    .replace(/\b\w/g, (m) => m.toUpperCase());
-}
-
-function presetDisplayName(row: LlmRouteRow) {
-  const required = prettyToken(row.required_level);
-  const difficulty = prettyToken(row.difficulty);
-  const availability = prettyToken(row.availability);
-  return `${required} | ${difficulty} | ${availability}`;
-}
-
-function rowDefaultsComparable(row: LlmRouteRow) {
-  return {
-    scope: row.scope,
-    required_level: row.required_level,
-    difficulty: row.difficulty,
-    availability: row.availability,
-    effort: row.effort,
-    effort_band: row.effort_band,
-    single_source_data: row.single_source_data,
-    all_source_data: row.all_source_data,
-    enable_websearch: row.enable_websearch,
-    model_ladder_today: row.model_ladder_today,
-    all_sources_confidence_repatch: row.all_sources_confidence_repatch,
-    max_tokens: row.max_tokens,
-    studio_key_navigation_sent_in_extract_review: row.studio_key_navigation_sent_in_extract_review,
-    studio_contract_rules_sent_in_extract_review: row.studio_contract_rules_sent_in_extract_review,
-    studio_extraction_guidance_sent_in_extract_review: row.studio_extraction_guidance_sent_in_extract_review,
-    studio_tooltip_or_description_sent_when_present: row.studio_tooltip_or_description_sent_when_present,
-    studio_enum_options_sent_when_present: row.studio_enum_options_sent_when_present,
-    studio_component_variance_constraints_sent_in_component_review: row.studio_component_variance_constraints_sent_in_component_review,
-    studio_parse_template_sent_direct_in_extract_review: row.studio_parse_template_sent_direct_in_extract_review,
-    studio_ai_mode_difficulty_effort_sent_direct_in_extract_review: row.studio_ai_mode_difficulty_effort_sent_direct_in_extract_review,
-    studio_required_level_sent_in_extract_review: row.studio_required_level_sent_in_extract_review,
-    studio_component_entity_set_sent_when_component_field: row.studio_component_entity_set_sent_when_component_field,
-    studio_evidence_policy_sent_direct_in_extract_review: row.studio_evidence_policy_sent_direct_in_extract_review,
-    studio_variance_policy_sent_in_component_review: row.studio_variance_policy_sent_in_component_review,
-    studio_constraints_sent_in_component_review: row.studio_constraints_sent_in_component_review,
-    studio_send_booleans_prompted_to_model: row.studio_send_booleans_prompted_to_model,
-    scalar_linked_send: row.scalar_linked_send,
-    component_values_send: row.component_values_send,
-    list_values_send: row.list_values_send,
-    llm_output_min_evidence_refs_required: row.llm_output_min_evidence_refs_required,
-    insufficient_evidence_action: row.insufficient_evidence_action
-  };
-}
-
-function applyRoutePreset(row: LlmRouteRow, preset: 'balanced' | 'deep') {
-  const presetConfig: LlmRoutePresetConfig = LLM_ROUTE_PRESET_LIMITS[preset];
-  if (preset === 'balanced') {
-    return {
-      ...row,
-      single_source_data: presetConfig.singleSourceData,
-      all_source_data: row.required_level === 'required' || row.required_level === 'critical' || row.difficulty === 'hard',
-      enable_websearch: row.availability === 'rare' || row.difficulty === 'hard' || row.required_level === 'critical' || row.required_level === 'identity',
-      all_sources_confidence_repatch: presetConfig.allSourcesConfidenceRepatch,
-      model_ladder_today: row.model_ladder_today || presetConfig.modelLadderToday,
-      max_tokens: clampToRange(row.max_tokens, presetConfig.maxTokensMin, presetConfig.maxTokensMax),
-    };
-  }
-  return {
-    ...row,
-    single_source_data: presetConfig.singleSourceData,
-    all_source_data: row.required_level === 'required' || row.required_level === 'critical' || row.difficulty === 'hard',
-    enable_websearch: row.availability === 'rare' || row.difficulty === 'hard' || row.required_level === 'critical' || row.required_level === 'identity',
-    all_sources_confidence_repatch: presetConfig.allSourcesConfidenceRepatch,
-    model_ladder_today: row.model_ladder_today || presetConfig.modelLadderToday,
-    max_tokens: clampToRange(row.max_tokens, presetConfig.maxTokensMin, presetConfig.maxTokensMax),
-    llm_output_min_evidence_refs_required: clampToRange(
-      Math.max(
-        presetConfig.minEvidenceRefsRequired ?? MIN_EVIDENCE_BOUNDS.min,
-        row.llm_output_min_evidence_refs_required ?? MIN_EVIDENCE_BOUNDS.min,
-      ),
-      MIN_EVIDENCE_BOUNDS.min,
-      MIN_EVIDENCE_BOUNDS.max,
-    ),
-  };
-}
-
-function flagLabel(key: keyof LlmRouteRow): string {
-  return String(key)
-    .replace(/^studio_/, '')
-    .replace(/_sent_/, ' ')
-    .replace(/_in_/, ' in ')
-    .replace(/_when_/, ' when ')
-    .replace(/_/g, ' ');
-}
-
-function rankForSort(row: LlmRouteRow, sortBy: SortBy): number | string {
-  if (sortBy === 'effort') return row.effort;
-  if (sortBy === 'required_level') return REQUIRED_LEVEL_RANK[row.required_level] || 0;
-  if (sortBy === 'difficulty') return DIFFICULTY_RANK[row.difficulty] || 0;
-  if (sortBy === 'availability') return AVAILABILITY_RANK[row.availability] || 0;
-  return row.route_key;
-}
-
-function tagCls(kind: 'required' | 'difficulty' | 'availability' | 'effort', value: string) {
-  if (kind === 'required') {
-    if (['identity', 'critical', 'required'].includes(value)) return 'sf-chip-danger';
-    if (value === 'expected') return 'sf-chip-info';
-    return 'sf-chip-neutral';
-  }
-  if (kind === 'difficulty') {
-    if (value === 'hard' || value === 'instrumented') return 'sf-chip-warning';
-    if (value === 'medium') return 'sf-chip-info';
-    return 'sf-chip-success';
-  }
-  if (kind === 'availability') {
-    if (value === 'always' || value === 'expected') return 'sf-chip-success';
-    if (value === 'sometimes') return 'sf-chip-warning';
-    return 'sf-chip-neutral';
-  }
-  const parsedEffort = Number.parseInt(String(value || ''), 10);
-  const effortBand = toEffortBand(Number.isFinite(parsedEffort) ? parsedEffort : EFFORT_BOUNDS.min);
-  if (effortBand === '1-3') return 'sf-chip-success';
-  if (effortBand === '4-6') return 'sf-chip-info';
-  if (effortBand === '7-8') return 'sf-chip-warning';
-  return 'sf-chip-danger';
-}
 
 export function LlmSettingsPage() {
   const category = useUiStore((s) => s.category);
@@ -793,32 +537,19 @@ export function LlmSettingsPage() {
                   <div>
                     <div className="sf-text-label sf-status-text-muted mb-1">Required Level</div>
                     <select className={`${selectCls} w-full`} value={selectedRow.required_level} onChange={(e) => updateSelected({ required_level: e.target.value })}>
-                      <option value="identity">identity</option>
-                      <option value="required">required</option>
-                      <option value="critical">critical</option>
-                      <option value="expected">expected</option>
-                      <option value="optional">optional</option>
-                      <option value="editorial">editorial</option>
-                      <option value="commerce">commerce</option>
+                      {REQUIRED_LEVEL_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
                     </select>
                   </div>
                   <div>
                     <div className="sf-text-label sf-status-text-muted mb-1">Availability</div>
                     <select className={`${selectCls} w-full`} value={selectedRow.availability} onChange={(e) => updateSelected({ availability: e.target.value })}>
-                      <option value="always">always</option>
-                      <option value="expected">expected</option>
-                      <option value="sometimes">sometimes</option>
-                      <option value="rare">rare</option>
-                      <option value="editorial_only">editorial_only</option>
+                      {AVAILABILITY_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
                     </select>
                   </div>
                   <div>
                     <div className="sf-text-label sf-status-text-muted mb-1">Difficulty</div>
                     <select className={`${selectCls} w-full`} value={selectedRow.difficulty} onChange={(e) => updateSelected({ difficulty: e.target.value })}>
-                      <option value="easy">easy</option>
-                      <option value="medium">medium</option>
-                      <option value="hard">hard</option>
-                      <option value="instrumented">instrumented</option>
+                      {DIFFICULTY_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
                     </select>
                   </div>
                   <div>
@@ -861,9 +592,7 @@ export function LlmSettingsPage() {
                     <div>
                       <div className="sf-text-label sf-status-text-muted mb-1">Context Pack</div>
                       <select className={`${selectCls} w-full`} defaultValue="standard" onChange={(e) => updateSelected(applyContextPack(selectedRow, e.target.value as 'minimal' | 'standard' | 'full'))}>
-                        <option value="standard">standard</option>
-                        <option value="minimal">minimal</option>
-                        <option value="full">full</option>
+                        {CONTEXT_PACK_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
                       </select>
                     </div>
                   </div>
@@ -871,22 +600,19 @@ export function LlmSettingsPage() {
                     <div>
                       <div className="sf-text-label sf-status-text-muted mb-1">Scalar Send</div>
                       <select className={`${selectCls} w-full`} value={selectedRow.scalar_linked_send} onChange={(e) => updateSelected({ scalar_linked_send: e.target.value })}>
-                        <option value="scalar value">scalar value</option>
-                        <option value="scalar value + prime sources">scalar value + prime sources</option>
+                        {SCALAR_SEND_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
                       </select>
                     </div>
                     <div>
                       <div className="sf-text-label sf-status-text-muted mb-1">Component Send</div>
                       <select className={`${selectCls} w-full`} value={selectedRow.component_values_send} onChange={(e) => updateSelected({ component_values_send: e.target.value })}>
-                        <option value="component values">component values</option>
-                        <option value="component values + prime sources">component values + prime sources</option>
+                        {COMPONENT_SEND_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
                       </select>
                     </div>
                     <div>
                       <div className="sf-text-label sf-status-text-muted mb-1">List Send</div>
                       <select className={`${selectCls} w-full`} value={selectedRow.list_values_send} onChange={(e) => updateSelected({ list_values_send: e.target.value })}>
-                        <option value="list values">list values</option>
-                        <option value="list values prime sources">list values prime sources</option>
+                        {LIST_SEND_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
                       </select>
                     </div>
                   </div>
@@ -945,9 +671,7 @@ export function LlmSettingsPage() {
                     <div>
                       <div className="sf-text-label sf-status-text-muted mb-1">Insufficient Evidence Action</div>
                       <select className={`${selectCls} w-full`} value={selectedRow.insufficient_evidence_action} onChange={(e) => updateSelected({ insufficient_evidence_action: e.target.value })}>
-                        <option value="threshold_unmet">threshold_unmet</option>
-                        <option value="return_unk">return_unk</option>
-                        <option value="escalate">escalate</option>
+                        {INSUFFICIENT_EVIDENCE_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
                       </select>
                     </div>
                   </div>

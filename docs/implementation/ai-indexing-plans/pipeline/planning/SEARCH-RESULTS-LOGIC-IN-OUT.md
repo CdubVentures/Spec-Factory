@@ -1,6 +1,6 @@
 # Search Results Logic In And Out
 
-Validated against live code on 2026-03-19.
+Validated against live code on 2026-03-20. Tier metadata now recorded per query via resolveSelectedQueryRow.
 
 ## What this stage is
 
@@ -97,7 +97,7 @@ Important details:
 
 ## Side effects and persistence
 
-- frontier query recording via `frontierDb.recordQuery()`
+- frontier query recording via `frontierDb.recordQuery()` — now includes `tier`, `group_key`, `normalized_key`, `hint_source` from `resolveSelectedQueryRow()` lookup
 - query cooldown reuse via `frontierDb.shouldSkipQuery()`
 - query-index NDJSON writes under the IndexLab runtime artifact root
 - optional runtime trace JSON writes

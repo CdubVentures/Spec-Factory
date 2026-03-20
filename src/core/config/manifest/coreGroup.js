@@ -7,6 +7,6 @@ export const coreGroup = Object.freeze({
     { key: "CORS_ORIGIN", defaultValue: "http://localhost:8788", type: "string", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
     { key: "NODE_ENV", defaultValue: "development", type: "string", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
     { key: "PORT", defaultValue: "8788", type: "integer", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." },
-    { key: "SETTINGS_CANONICAL_ONLY_WRITES", defaultValue: "true", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." }
+    { key: "SETTINGS_CANONICAL_ONLY_WRITES", defaultValue: "false", type: "boolean", secret: false, userMutable: false, description: "System-level setting. User/domain-generated values must not be stored here." }
   ]),
 });

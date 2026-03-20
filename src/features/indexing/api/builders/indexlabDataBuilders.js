@@ -22,7 +22,7 @@ import {
   readArchivedS3RunMetaOnly,
 } from './archivedRunLocationHelpers.js';
 
-let _indexLabRoot = '';
+let _resolveIndexLabRoot = () => '';
 let _outputRoot = '';
 let _storage = null;
 let _config = null;
@@ -45,7 +45,8 @@ let _eventCache = new Map();
 export async function resolveIndexLabRunDirectory(runId) {
   const token = String(runId || '').trim();
   if (!token) return '';
-  const directRunDir = safeJoin(_indexLabRoot, token);
+  const indexLabRoot = _resolveIndexLabRoot();
+  const directRunDir = safeJoin(indexLabRoot, token);
   if (directRunDir) {
     const meta = await safeReadJson(path.join(directRunDir, 'run.json'));
     if (meta && typeof meta === 'object') {
@@ -53,11 +54,11 @@ export async function resolveIndexLabRunDirectory(runId) {
     }
   }
   try {
-    const entries = await fs.readdir(_indexLabRoot, { withFileTypes: true });
+    const entries = await fs.readdir(indexLabRoot, { withFileTypes: true });
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
       const candidateToken = String(entry.name || '').trim();
-      const candidateRunDir = safeJoin(_indexLabRoot, candidateToken);
+      const candidateRunDir = safeJoin(indexLabRoot, candidateToken);
       if (!candidateToken || !candidateRunDir) continue;
       const meta = await safeReadJson(path.join(candidateRunDir, 'run.json'));
       if (!meta || typeof meta !== 'object') continue;
@@ -114,8 +115,11 @@ export function initIndexLabDataBuilders({
   isProcessRunning,
   processStatus = null,
   runDataStorageState = null,
+  getIndexLabRoot = null,
 }) {
-  _indexLabRoot = indexLabRoot;
+  _resolveIndexLabRoot = typeof getIndexLabRoot === 'function'
+    ? getIndexLabRoot
+    : () => indexLabRoot;
   _outputRoot = outputRoot;
   _storage = storage;
   _config = config;
@@ -159,7 +163,7 @@ export function initIndexLabDataBuilders({
     readSearchProfile: readIndexLabRunSearchProfile,
   });
   _runListBuilder = createRunListBuilder({
-    getIndexLabRoot: () => _indexLabRoot,
+    getIndexLabRoot: _resolveIndexLabRoot,
     isRunStillActive,
     readEvents: readIndexLabRunEvents,
     refreshArchivedRunDirIndex,

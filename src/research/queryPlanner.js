@@ -24,217 +24,166 @@ export function normalizeQueryRows(rawQueries = []) {
   }).filter((row) => row.query);
 }
 
-function groupFieldsByTier(fields, archetypeContext = {}) {
-  const uncoveredSearchWorthy = new Set(archetypeContext.uncovered_search_worthy || []);
-  const critical = [];
-  const covered = [];
-  const uncovered = [];
-  for (const field of fields) {
-    if (uncoveredSearchWorthy.has(field)) {
-      uncovered.push(field);
-    } else {
-      covered.push(field);
-    }
-  }
-  // Return full field set as grouped structure (no truncation)
-  return {
-    all: fields,
-    uncovered_search_worthy: uncovered,
-    covered_by_archetypes: covered,
-    total: fields.length
-  };
-}
 
-function dedupeQueries(rows = [], cap = 24) {
-  const out = [];
-  const seen = new Set();
-  for (const row of rows || []) {
-    const query = normalizeQuery(row);
-    if (!query) {
-      continue;
-    }
-    const token = query.toLowerCase();
-    if (seen.has(token)) {
-      continue;
-    }
-    seen.add(token);
-    out.push(query);
-    if (out.length >= cap) {
-      break;
-    }
-  }
-  return out;
-}
+// --- enhanceQueryRows: tier-aware LLM query enhancement ---
 
-function plannerSchema() {
+function enhancerSchema() {
   return {
     type: 'object',
     additionalProperties: false,
     properties: {
-      queries: {
+      enhanced_queries: {
         type: 'array',
-        items: { type: 'string' }
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            index: { type: 'integer' },
+            query: { type: 'string' },
+          },
+          required: ['index', 'query'],
+        },
       },
-      preferred_domains: {
-        type: 'array',
-        items: { type: 'string' }
-      },
-      negative_filters: {
-        type: 'array',
-        items: { type: 'string' }
-      },
-      max_queries: { type: 'integer' },
-      max_new_domains: { type: 'integer' },
-      sitemap_mode_recommended: { type: 'boolean' }
     },
-    required: ['queries']
+    required: ['enhanced_queries'],
   };
 }
 
-export async function planUberQueries({
-  config,
-  logger,
-  llmContext = {},
-  identity = {},
-  missingFields = [],
-  missingCriticalFields = [],
-  baseQueries = [],
-  frontierSummary = {},
-  cap = 24
-} = {}) {
-  const fallbackQueries = dedupeQueries(baseQueries, Math.max(1, cap));
-  if (!hasLlmRouteApiKey(config, { role: 'plan' })) {
-    return {
-      source: 'deterministic',
-      queries: fallbackQueries,
-      preferred_domains: [],
-      negative_filters: [],
-      max_queries: Math.max(1, cap),
-      max_new_domains: Math.max(1, Math.ceil(cap / 2)),
-      sitemap_mode_recommended: false
-    };
-  }
+function buildEnhancerSystemPrompt(rowCount) {
+  return [
+    'You enhance search queries for hardware specification collection.',
+    `You receive ${rowCount} query rows, each tagged with a tier. Return exactly ${rowCount} enhanced queries in the same order.`,
+    '',
+    'TIER RULES:',
+    '- Tier "seed" (Tier 1): These are broad product seed queries. Make only minor phrasing improvements. Do not change structure.',
+    '- Tier "group_search" (Tier 2): These target a spec group. You may tighten the description, drop redundant tokens, or pick a better search angle for the group.',
+    '- Tier "key_search" (Tier 3): These target a single field. This is where you add the most value — add aliases, vary phrasing (review, benchmark, teardown, spec sheet, comparison), pick better search angles. Avoid repeating patterns from query_history.',
+    '',
+    'IDENTITY LOCK (mandatory):',
+    '- Every output query MUST contain the brand name and model name.',
+    '- Never drop, abbreviate, or alter the brand/model identity tokens.',
+    '- Never drift to a sibling or competitor product.',
+    '',
+    'HISTORY AWARENESS:',
+    '- query_history shows queries already tried. Do NOT repeat them or trivial rewrites of them.',
+    '- For Tier 3 especially, vary alias usage, phrasing family, and search angle.',
+    '',
+    'OUTPUT: Return JSON with enhanced_queries array. Each entry has "index" (0-based) and "query" (the enhanced query string).',
+    'Return exactly one entry per input row, in the same order.',
+  ].join('\n');
+}
 
-  // Group fields by tier for compressed planner context
-  const archetypeContext = llmContext?.archetypeContext || {};
-  const allFields = toArray(missingFields);
-  const grouped = groupFieldsByTier(allFields, archetypeContext);
+function passesIdentityLock(query, identityLock) {
+  const q = String(query || '').toLowerCase();
+  const brand = String(identityLock?.brand || '').toLowerCase().trim();
+  const model = String(identityLock?.model || '').toLowerCase().trim();
+  if (!brand || !model) return true;
+  return q.includes(brand) && q.includes(model);
+}
+
+function buildDeterministicFallback(queryRows) {
+  return {
+    source: 'deterministic_fallback',
+    rows: queryRows.map((row) => ({ ...row })),
+  };
+}
+
+export async function enhanceQueryRows({
+  queryRows = [],
+  queryHistory = [],
+  missingFields = [],
+  identityLock = {},
+  config = {},
+  logger = null,
+  // DI seams for testing
+  callLlmFn = callLlmWithRouting,
+  hasApiKeyFn = (cfg) => hasLlmRouteApiKey(cfg, { role: 'plan' }),
+  resolveModelFn = (cfg) => resolvePhaseModel(cfg, 'searchPlanner'),
+} = {}) {
+  const rows = Array.isArray(queryRows) ? queryRows : [];
+  if (rows.length === 0) return buildDeterministicFallback(rows);
+  if (!hasApiKeyFn(config)) return buildDeterministicFallback(rows);
+  if (!resolveModelFn(config)) return buildDeterministicFallback(rows);
 
   const payload = {
     identity_lock: {
-      brand: String(identity.brand || ''),
-      model: String(identity.model || ''),
-      variant: String(identity.variant || ''),
-      product_id: String(identity.productId || '')
+      brand: String(identityLock.brand || ''),
+      model: String(identityLock.model || ''),
+      variant: String(identityLock.variant || ''),
     },
-    missing_fields: grouped,
-    missing_critical_fields: toArray(missingCriticalFields).slice(0, 15),
-    base_queries: fallbackQueries.slice(0, 24),
-    frontier_summary: frontierSummary,
-    archetypes_emitted: archetypeContext.archetypes_emitted || [],
-    hosts_targeted: archetypeContext.hosts_targeted || [],
-    uncovered_search_worthy: archetypeContext.uncovered_search_worthy || []
+    query_history: toArray(queryHistory).slice(0, 50),
+    missing_fields: toArray(missingFields).slice(0, 60),
+    rows: rows.map((row, i) => ({
+      index: i,
+      query: String(row.query || ''),
+      tier: String(row.tier || ''),
+      target_fields: toArray(row.target_fields),
+      group_key: String(row.group_key || ''),
+      normalized_key: String(row.normalized_key || ''),
+    })),
   };
 
-  const archetypeHint = (payload.archetypes_emitted || []).length > 0
-    ? `Archetype queries already target: ${payload.archetypes_emitted.join(', ')}. Focus on GAPS not covered by these source types.`
-    : '';
-  const criticalHint = (payload.missing_critical_fields || []).length > 0
-    ? `Critical unresolved fields: ${payload.missing_critical_fields.join(', ')}. Prioritize high-yield queries for these.`
-    : '';
+  const systemPrompt = buildEnhancerSystemPrompt(rows.length);
+  const maxRetries = 2;
 
-  const resolvedModel = resolvePhaseModel(config, 'searchPlanner');
-  if (!resolvedModel) {
-    return {
-      source: 'deterministic',
-      queries: fallbackQueries,
-      preferred_domains: [],
-      negative_filters: [],
-      max_queries: Math.max(1, cap),
-      max_new_domains: Math.max(1, Math.ceil(cap / 2)),
-      sitemap_mode_recommended: false
-    };
-  }
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await callLlmFn({
+        config,
+        reason: 'search_planner_enhance',
+        role: 'plan',
+        phase: 'searchPlanner',
+        system: systemPrompt,
+        user: JSON.stringify(payload),
+        jsonSchema: enhancerSchema(),
+        usageContext: {
+          reason: 'search_planner_enhance',
+          host: '',
+          url_count: 0,
+          evidence_chars: JSON.stringify(payload).length,
+        },
+        costRates: config,
+        timeoutMs: config.llmTimeoutMs || config.openaiTimeoutMs,
+        logger,
+      });
 
-  try {
-    const result = await callLlmWithRouting({
-      config,
-      reason: 'search_planner',
-      role: 'plan',
-      phase: 'searchPlanner',
-      system: [
-        'You generate focused web research queries for hardware specification collection.',
-        `Output exactly ${Math.max(1, cap)} short, diverse search queries in strict JSON. Each query targets a DIFFERENT angle.`,
-        'Prioritize manufacturer docs, manuals, instrumented labs, and trusted spec databases.',
-        'Also include official support pages and product comparison sites.',
-        'Do not include junk domains, login workflows, or irrelevant topics.',
-        'The base_queries show searches already tried. Generate DIFFERENT query patterns covering new angles.',
-        'Vary strategies: official product pages, spec databases, review sites, teardowns, comparison pages.',
-        'NEVER put domain names (.com, .org, etc.) in query text. Domain preference is handled separately.',
-        'Avoid repeating weak query patterns. Keep queries compact and practical.',
-        archetypeHint,
-        criticalHint
-      ].filter(Boolean).join('\n'),
-      user: JSON.stringify(payload),
-      jsonSchema: plannerSchema(),
-      usageContext: {
-        category: llmContext.category || '',
-        productId: llmContext.productId || '',
-        runId: llmContext.runId || '',
-        round: llmContext.round || 0,
-        reason: 'search_planner',
-        host: '',
-        url_count: 0,
-        evidence_chars: JSON.stringify(payload).length,
-        traceWriter: llmContext.traceWriter || null,
-        trace_context: {
-          purpose: 'search_planner',
-          target_fields: toArray(missingFields).slice(0, 40)
+      const enhanced = toArray(result?.enhanced_queries);
+      if (enhanced.length !== rows.length) {
+        logger?.warn?.('enhance_query_rows_length_mismatch', {
+          expected: rows.length,
+          got: enhanced.length,
+          attempt,
+        });
+        if (attempt < maxRetries) continue;
+        return buildDeterministicFallback(rows);
+      }
+
+      const outputRows = rows.map((original, i) => {
+        const match = enhanced.find((e) => e.index === i);
+        const enhancedQuery = normalizeQuery(match?.query);
+        if (!enhancedQuery || !passesIdentityLock(enhancedQuery, identityLock)) {
+          return { ...original };
         }
-      },
-      costRates: llmContext.costRates || config,
-      onUsage: async (usageRow) => {
-        if (typeof llmContext.recordUsage === 'function') {
-          await llmContext.recordUsage(usageRow);
-        }
-      },
-      timeoutMs: config.llmTimeoutMs || config.openaiTimeoutMs,
-      logger
-    });
+        return {
+          ...original,
+          query: enhancedQuery,
+          hint_source: `${String(original.hint_source || 'unknown')}_llm`,
+          original_query: original.query,
+        };
+      });
 
-    const queries = dedupeQueries(result?.queries || [], Math.max(1, cap));
-    if (!queries.length) {
-      return {
-        source: 'deterministic_fallback',
-        queries: fallbackQueries,
-        preferred_domains: [],
-        negative_filters: [],
-        max_queries: Math.max(1, cap),
-        max_new_domains: Math.max(1, Math.ceil(cap / 2)),
-        sitemap_mode_recommended: false
-      };
+      return { source: 'llm', rows: outputRows };
+    } catch (error) {
+      logger?.warn?.('enhance_query_rows_failed', {
+        message: error.message,
+        attempt,
+      });
+      if (attempt >= maxRetries) {
+        return buildDeterministicFallback(rows);
+      }
     }
-    return {
-      source: 'llm',
-      queries,
-      preferred_domains: dedupeQueries(result?.preferred_domains || [], 20),
-      negative_filters: dedupeQueries(result?.negative_filters || [], 40),
-      max_queries: Math.max(1, Number.parseInt(String(result?.max_queries || cap), 10) || cap),
-      max_new_domains: Math.max(1, Number.parseInt(String(result?.max_new_domains || Math.ceil(cap / 2)), 10) || Math.ceil(cap / 2)),
-      sitemap_mode_recommended: Boolean(result?.sitemap_mode_recommended)
-    };
-  } catch (error) {
-    logger?.warn?.('uber_query_planner_failed', {
-      message: error.message
-    });
-    return {
-      source: 'deterministic_fallback',
-      queries: fallbackQueries,
-      preferred_domains: [],
-      negative_filters: [],
-      max_queries: Math.max(1, cap),
-      max_new_domains: Math.max(1, Math.ceil(cap / 2)),
-      sitemap_mode_recommended: false
-    };
   }
+
+  return buildDeterministicFallback(rows);
 }
+

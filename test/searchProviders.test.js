@@ -5,6 +5,7 @@ import {
   searchEngineAvailability,
   searchProviderAvailability,
   normalizeSearchEngines,
+  groupEnginesByTransport,
 } from '../src/features/indexing/search/searchProviders.js';
 
 function makeJsonResponse(payload, ok = true) {
@@ -20,6 +21,7 @@ function makeSearchConfig(overrides = {}) {
   return {
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
+    searchMaxRetries: 0,
     ...overrides,
   };
 }
@@ -285,7 +287,7 @@ test('runSearchProviders emits search_request_throttled event when acquire waits
 });
 
 test('searchSearxng adds random jitter to inter-query delay', async () => {
-  const { searchSearxng } = await import('../src/features/indexing/search/searchProviders.js');
+  const { searchSearxng } = await import('../src/features/indexing/search/searchSearxng.js');
   const originalFetch = global.fetch;
   const originalSetTimeout = global.setTimeout;
   const originalClearTimeout = global.clearTimeout;
@@ -881,4 +883,27 @@ test('screenshotSink is NOT called when screenshots are disabled', async () => {
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+// ── groupEnginesByTransport ──
+
+test('groupEnginesByTransport splits google to crawlee, others to searxng', () => {
+  const groups = groupEnginesByTransport(['bing', 'google', 'duckduckgo']);
+  assert.deepEqual(groups.crawlee, ['google']);
+  assert.deepEqual(groups.searxng, ['bing', 'duckduckgo']);
+});
+
+test('groupEnginesByTransport all-searxng engines', () => {
+  const groups = groupEnginesByTransport(['bing']);
+  assert.deepEqual(groups, { searxng: ['bing'] });
+});
+
+test('groupEnginesByTransport google-only', () => {
+  const groups = groupEnginesByTransport(['google']);
+  assert.deepEqual(groups, { crawlee: ['google'] });
+});
+
+test('groupEnginesByTransport empty list returns empty object', () => {
+  const groups = groupEnginesByTransport([]);
+  assert.deepEqual(groups, {});
 });

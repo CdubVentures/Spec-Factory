@@ -1,6 +1,6 @@
 # Search Profile Logic In And Out
 
-Validated against live code on 2026-03-20.
+Validated against live code on 2026-03-20 (NeedSet now provides tier_allocation upstream).
 
 ## What this stage is
 
@@ -170,3 +170,7 @@ NeedSet tells Search Profile which tier to operate in. Search Profile reads the 
 - **Tier 3**: `focus_group.group_search_worthy === false` with non-empty `normalized_key_queue` → `buildTier3Queries()` emits one query per key, ordered by availability/difficulty.
 - **Mixed mode**: Tier 2 + Tier 3 can run simultaneously when some groups are still worth broad searching while others are exhausted.
 - **Backward compat**: When `seedStatus` is not passed, the legacy archetype pipeline runs unchanged.
+
+### Budget alignment with NeedSet (new)
+
+NeedSet now pre-computes a `tier_allocation` that mirrors Search Profile's priority order (seeds → groups → keys). This means the NeedSet dashboard shows accurate counts of what Search Profile will actually build. Search Profile's own budget-slicing logic (`maxQueryCap`, priority fill) is unchanged — the tier_allocation is a read-ahead estimate for the dashboard, not a binding instruction to Search Profile.

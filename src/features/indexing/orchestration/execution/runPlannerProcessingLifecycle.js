@@ -1,3 +1,5 @@
+import { configInt } from '../../../../shared/settingsAccessor.js';
+
 function collectRepairEventsFromLogger({
   logger = {},
   config = {},
@@ -24,7 +26,7 @@ function refreshTerminalReasonFromBudget({
     return String(terminalReason).trim();
   }
 
-  const maxRunMs = Number(config.maxRunSeconds || 0) * 1000;
+  const maxRunMs = configInt(config, 'maxRunSeconds') * 1000;
   if (maxRunMs > 0 && (nowFn() - startMs) >= maxRunMs) {
     return 'max_run_seconds_reached';
   }

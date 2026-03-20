@@ -24,7 +24,7 @@ function makeStageStubs(overrides = {}) {
       effectiveHostPlan: null,
       hostPlanQueryRows: [],
     }),
-    runSearchPlannerFn: async () => ({ schema4Plan: null, uberSearchPlan: null }),
+    runSearchPlannerFn: async () => ({ enhancedRows: [], source: 'deterministic_fallback' }),
     runQueryJourneyFn: async () => ({
       queries: [],
       selectedQueryRowMap: new Map(),

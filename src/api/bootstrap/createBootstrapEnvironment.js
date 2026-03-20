@@ -25,6 +25,7 @@ import { normalizeRunDataStorageSettings } from '../services/runDataRelocationSe
 import { markEnumSuggestionStatus } from '../helpers/fileHelpers.js';
 import { toInt } from '../helpers/valueNormalizers.js';
 import { createConfigMutationGate } from '../../core/config/configMutationGate.js';
+import { configValue } from '../../shared/settingsAccessor.js';
 
 export function createBootstrapEnvironment({ projectRoot }) {
   const resolveProjectPath = (value, fallback = '') =>
@@ -75,13 +76,13 @@ export function createBootstrapEnvironment({ projectRoot }) {
     ...(argVal('output-mode', '') ? { outputMode: argVal('output-mode', '') } : {}),
   });
   const resolvedCategoryAuthorityRoot = resolveProjectPath(
-    config.categoryAuthorityRoot || config['helper' + 'FilesRoot'],
+    configValue(config, 'categoryAuthorityRoot'),
     'category_authority',
   );
   config.categoryAuthorityRoot = resolvedCategoryAuthorityRoot;
   config['helper' + 'FilesRoot'] = resolvedCategoryAuthorityRoot;
-  config.localOutputRoot = resolveProjectPath(config.localOutputRoot, defaultLocalOutputRoot());
-  config.localInputRoot = resolveProjectPath(config.localInputRoot, 'fixtures/s3');
+  config.localOutputRoot = resolveProjectPath(configValue(config, 'localOutputRoot'), defaultLocalOutputRoot());
+  config.localInputRoot = resolveProjectPath(configValue(config, 'localInputRoot'), 'fixtures/s3');
   const HELPER_ROOT = resolveProjectPath(config['helper' + 'FilesRoot'], 'category_authority');
   const LAUNCH_CWD = path.resolve(process.cwd());
   assertNoShadowHelperRuntime({
@@ -101,14 +102,14 @@ export function createBootstrapEnvironment({ projectRoot }) {
     repoDefaultOutputRoot: SETTINGS_DEFAULTS.runtime?.localOutputRoot,
   });
 
-  config.settingsCanonicalOnlyWrites = envBool('SETTINGS_CANONICAL_ONLY_WRITES', true);
+  config.settingsCanonicalOnlyWrites = envBool('SETTINGS_CANONICAL_ONLY_WRITES', false);
 
   const runDataStorageState = normalizeRunDataStorageSettings({
     enabled: envBool('RUN_DATA_STORAGE_ENABLED', envToken('S3_BUCKET', '') !== ''),
     destinationType: resolveRunDataDestinationType({ env: process.env }),
     localDirectory: envToken('RUN_DATA_STORAGE_LOCAL_DIRECTORY', ''),
-    awsRegion: envToken('RUN_DATA_STORAGE_S3_REGION', config.awsRegion || 'us-east-2'),
-    s3Bucket: envToken('RUN_DATA_STORAGE_S3_BUCKET', config.s3Bucket || ''),
+    awsRegion: envToken('RUN_DATA_STORAGE_S3_REGION', configValue(config, 'awsRegion')),
+    s3Bucket: envToken('RUN_DATA_STORAGE_S3_BUCKET', configValue(config, 's3Bucket')),
     s3Prefix: envToken('RUN_DATA_STORAGE_S3_PREFIX', 'spec-factory-runs'),
     s3AccessKeyId: envToken('RUN_DATA_STORAGE_S3_ACCESS_KEY_ID', process.env.AWS_ACCESS_KEY_ID || ''),
     s3SecretAccessKey: envToken('RUN_DATA_STORAGE_S3_SECRET_ACCESS_KEY', process.env.AWS_SECRET_ACCESS_KEY || ''),
@@ -133,7 +134,7 @@ export function createBootstrapEnvironment({ projectRoot }) {
   // WHY: Gate created after all INIT mutations. Runtime mutations flow through applyPatch().
   const configGate = createConfigMutationGate(config);
 
-  const OUTPUT_ROOT = resolveProjectPath(config.localOutputRoot, defaultLocalOutputRoot());
+  const OUTPUT_ROOT = resolveProjectPath(configValue(config, 'localOutputRoot'), defaultLocalOutputRoot());
   const INDEXLAB_ROOT = storageBackedWorkspaceRoots?.indexLabRoot
     ? storageBackedWorkspaceRoots.indexLabRoot
     : resolveProjectPath(argVal('indexlab-root', ''), defaultIndexLabRoot());

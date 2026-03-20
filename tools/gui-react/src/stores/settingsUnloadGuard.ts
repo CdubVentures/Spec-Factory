@@ -2,13 +2,15 @@
  * Centralized settings unload guard.
  *
  * Module-level singleton (NOT a React hook) that attaches beforeunload +
- * pagehide listeners and fires fetch({ keepalive: true }) for any dirty
- * settings domains when the page tears down.
+ * pagehide listeners and calls teardownFetch for any dirty settings
+ * domains when the page tears down.
  *
  * WHY: React unmount effects do not reliably fire during hard reload, and
  * even when they do, standard fetch is aborted by the browser. keepalive
  * survives page teardown.
  */
+
+import { teardownFetch } from '../api/teardownFetch';
 
 export interface UnloadGuardRegistration {
   domain: string;
@@ -34,21 +36,7 @@ function onUnload(): void {
         flushedByUnload.add(domain);
         continue;
       }
-      try {
-        // WHY: fetch({ keepalive }) survives page teardown and respects the
-        // registered HTTP method. sendBeacon was removed because it always
-        // sends POST regardless of the method field, which silently breaks
-        // PUT-registered domains (the backend returns false / 405).
-        const jsonBody = JSON.stringify(payload.body);
-        void fetch(payload.url, {
-          method: payload.method,
-          headers: { 'Content-Type': 'application/json' },
-          body: jsonBody,
-          keepalive: true,
-        });
-      } catch {
-        // Best-effort — silently catch and continue to next domain.
-      }
+      teardownFetch(payload);
       reg.markFlushed();
       flushedByUnload.add(domain);
     } catch {

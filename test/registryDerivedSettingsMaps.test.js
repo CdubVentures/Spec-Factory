@@ -127,7 +127,7 @@ describe('registry-derived settings maps — characterization', () => {
       'scannedPdfOcrMinLinesPerPage', 'scannedPdfOcrMinConfidence', 'resumeWindowHours',
       'reextractAfterHours', 'reCrawlStaleAfterDays', 'llmMaxOutputTokensReasoningFallback',
       'googleSearchTimeoutMs', 'googleSearchMinQueryIntervalMs', 'googleSearchMaxRetries',
-      'serperResultCount', 'searchMaxRetries', 'serpSelectorUrlCap', 'domainClassifierUrlCap',
+      'searchMaxRetries', 'serpSelectorUrlCap', 'domainClassifierUrlCap',
     ];
 
     for (const key of hardcodedKeys) {

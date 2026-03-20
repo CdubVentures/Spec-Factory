@@ -1,5 +1,6 @@
 import { callOpenAI } from './openaiClient.js';
 import { resolveModelFromRegistry } from '../routeResolver.js';
+import { configInt, configBool, configValue } from '../../../shared/settingsAccessor.js';
 
 // WHY: All roles alias to plan model via configPostMerge. ROLE_KEYS only needs
 // model + fallbackModel. Provider/baseUrl/apiKey resolved via registry or bootstrap.
@@ -22,33 +23,31 @@ function capitalize(s) {
 // llmReasoningMode is a legacy key and is NOT part of this chain.
 export function resolvePhaseReasoning(config = {}, phase = '') {
   const cap = capitalize(String(phase || '').trim());
-  if (!cap) return Boolean(config.llmPlanUseReasoning ?? false);
+  if (!cap) return configBool(config, 'llmPlanUseReasoning');
   return Boolean(
-    config[`_resolved${cap}UseReasoning`] ?? config.llmPlanUseReasoning ?? false
+    config[`_resolved${cap}UseReasoning`] ?? configValue(config, 'llmPlanUseReasoning')
   );
 }
 
 export function resolvePhaseModel(config = {}, phase = '') {
   const cap = capitalize(String(phase || '').trim());
-  if (!cap) return String(config.llmModelPlan || '').trim();
+  if (!cap) return String(configValue(config, 'llmModelPlan')).trim();
 
   const useReasoning = resolvePhaseReasoning(config, phase);
 
   if (useReasoning) {
     const reasoning = String(
       config[`_resolved${cap}ReasoningModel`]
-      || config.llmModelReasoning
+      || configValue(config, 'llmModelReasoning')
       || config[`_resolved${cap}BaseModel`]
-      || config.llmModelPlan
-      || ''
+      || configValue(config, 'llmModelPlan')
     ).trim();
     return reasoning;
   }
 
   return String(
     config[`_resolved${cap}BaseModel`]
-    || config.llmModelPlan
-    || ''
+    || configValue(config, 'llmModelPlan')
   ).trim();
 }
 
@@ -111,10 +110,11 @@ function providerFromModel(value) {
 
 // WHY: No process.env reads at runtime — config object already has keys from configBuilder.
 function bootstrapApiKey(config = {}, provider = '') {
-  if (provider === 'gemini') return normalized(config.geminiApiKey || '');
-  if (provider === 'deepseek') return normalized(config.deepseekApiKey || '');
-  if (provider === 'anthropic') return normalized(config.anthropicApiKey || '');
-  return normalized(config.openaiApiKey || config.llmApiKey || '');
+  if (provider === 'gemini') return normalized(String(configValue(config, 'geminiApiKey')));
+  if (provider === 'deepseek') return normalized(String(configValue(config, 'deepseekApiKey')));
+  if (provider === 'anthropic') return normalized(String(configValue(config, 'anthropicApiKey')));
+  // WHY: llmApiKey is not a registry key — legacy bootstrap fallback only
+  return normalized(String(configValue(config, 'openaiApiKey'))) || normalized(config.llmApiKey || '');
 }
 
 function defaultBaseUrl(provider = '') {
@@ -130,7 +130,7 @@ function roleKeySet(role) {
 
 function baseRouteForRole(config = {}, role = 'extract') {
   const keys = roleKeySet(role);
-  const modelKey = normalized(config[keys.model] || '');
+  const modelKey = normalized(String(configValue(config, keys.model)));
 
   // Registry is sole authority for provider/baseUrl/apiKey
   const resolved = resolveModelFromRegistry(config._registryLookup, modelKey);
@@ -158,7 +158,7 @@ function baseRouteForRole(config = {}, role = 'extract') {
 
 function fallbackRouteForRole(config = {}, role = 'extract') {
   const keys = roleKeySet(role);
-  const model = normalized(config[keys.fallbackModel] || '');
+  const model = normalized(String(configValue(config, keys.fallbackModel)));
   if (!model) {
     return null;
   }
@@ -232,26 +232,22 @@ export function roleTokenCap(config = {}, role = 'extract', reason = '', isFallb
   const group = reasonTokenGroup(reason);
   let cap;
   if (role === 'plan' && group === 'triage') {
-    cap = toIntToken(
-      isFallback ? config.llmMaxOutputTokensPlanFallback : config.llmMaxOutputTokensTriage,
-      toIntToken(config.llmMaxOutputTokensPlan, toIntToken(config.llmMaxOutputTokens, 1200))
-    );
+    cap = isFallback
+      ? configInt(config, 'llmMaxOutputTokensPlanFallback')
+      : configInt(config, 'llmMaxOutputTokensTriage');
   } else if (role === 'plan' && group === 'reasoning') {
-    cap = toIntToken(
-      isFallback ? config.llmMaxOutputTokensPlanFallback : config.llmMaxOutputTokensReasoning,
-      toIntToken(config.llmMaxOutputTokensPlan, toIntToken(config.llmMaxOutputTokens, 1200))
-    );
+    cap = isFallback
+      ? configInt(config, 'llmMaxOutputTokensPlanFallback')
+      : configInt(config, 'llmMaxOutputTokensReasoning');
   } else if (role === 'plan') {
-    cap = toIntToken(
-      isFallback ? config.llmMaxOutputTokensPlanFallback : config.llmMaxOutputTokensPlan,
-      toIntToken(config.llmMaxOutputTokens, 1200)
-    );
+    cap = isFallback
+      ? configInt(config, 'llmMaxOutputTokensPlanFallback')
+      : configInt(config, 'llmMaxOutputTokensPlan');
   } else {
     // extract, validate, write, and any unknown role — all use plan default path
-    cap = toIntToken(
-      isFallback ? config.llmMaxOutputTokensPlanFallback : config.llmMaxOutputTokensPlan,
-      toIntToken(config.llmMaxOutputTokens, 1200)
-    );
+    cap = isFallback
+      ? configInt(config, 'llmMaxOutputTokensPlanFallback')
+      : configInt(config, 'llmMaxOutputTokensPlan');
   }
 
   // Registry ceiling: never exceed the model's declared maxOutputTokens
@@ -272,7 +268,7 @@ function resolvePhaseTokenCap(config = {}, phase = '') {
 
 function roleReasoningCap(config = {}, role = 'extract', reason = '', isFallback = false) {
   const fallbackCap = roleTokenCap(config, role, reason, isFallback);
-  const configured = toIntToken(config.llmReasoningBudget, 0);
+  const configured = configInt(config, 'llmReasoningBudget');
   if (configured <= 0) return fallbackCap;
   if (fallbackCap <= 0) return configured;
   return Math.min(configured, fallbackCap);
@@ -348,7 +344,8 @@ export function hasLlmRouteApiKey(config = {}, { reason = '', role = '' } = {}) 
 }
 
 export function hasAnyLlmApiKey(config = {}) {
-  if (normalized(config.llmApiKey || config.openaiApiKey)) {
+  // WHY: llmApiKey is not a registry key — legacy bootstrap fallback
+  if (normalized(config.llmApiKey || String(configValue(config, 'openaiApiKey')))) {
     return true;
   }
   for (const role of Object.keys(ROLE_KEYS)) {

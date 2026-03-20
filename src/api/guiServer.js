@@ -45,7 +45,7 @@ const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 
 const {
   config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
-  storage, runDataStorageState,
+  storage, runDataStorageState, getIndexLabRoot,
   sessionCache, resolveCategoryAlias,
   specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady,
   broadcastWs, setupWatchers, attachWebSocketUpgrade, getLastScreencastFrame,
@@ -92,6 +92,7 @@ const routeCtx = {
   runtimeOpsRouteContext: createRuntimeOpsRouteContext({
     jsonRes, toInt, INDEXLAB_ROOT, OUTPUT_ROOT, config, storage,
     processStatus, getLastScreencastFrame, safeReadJson, safeJoin, path,
+    getIndexLabRoot,
   }),
   queueBillingLearningRouteContext: createQueueBillingLearningRouteContext({
     jsonRes, readJsonBody, toInt, config, storage, OUTPUT_ROOT, path,
@@ -126,7 +127,8 @@ const routeCtx = {
   }),
   indexlabRouteContext: createIndexlabRouteContext({
     jsonRes, toInt, toFloat, config, safeJoin, safeReadJson, path, INDEXLAB_ROOT,
-    processStatus,
+    processStatus, readJsonBody, broadcastWs, runDataStorageState, storage, OUTPUT_ROOT,
+    getIndexLabRoot,
   }),
   reviewRouteContext: createReviewRouteContext({
     jsonRes, readJsonBody, toInt, hasKnownValue, config, storage, OUTPUT_ROOT,

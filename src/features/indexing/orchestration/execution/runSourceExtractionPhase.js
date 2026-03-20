@@ -1,3 +1,5 @@
+import { configInt, configFloat, configValue } from '../../../../shared/settingsAccessor.js';
+
 function resolveContextSection(context = {}, sectionName) {
   const section = context?.[sectionName];
   if (section && typeof section === 'object') {
@@ -176,9 +178,9 @@ export async function runSourceExtractionPhase({
     source,
     pageData,
     criticalFields: [...(categoryConfig.criticalFieldSet || new Set())],
-    networkScanLimit: Math.max(50, Number(config.endpointNetworkScanLimit || 600)),
-    limit: Math.max(1, Number(config.endpointSignalLimit || 30)),
-    suggestionLimit: Math.max(1, Number(config.endpointSuggestionLimit || 12))
+    networkScanLimit: configInt(config, 'endpointNetworkScanLimit'),
+    limit: configInt(config, 'endpointSignalLimit'),
+    suggestionLimit: configInt(config, 'endpointSuggestionLimit')
   });
   const fingerprint = buildSiteFingerprintFn({ source, pageData });
 
@@ -228,9 +230,9 @@ export async function runSourceExtractionPhase({
       embeddedState: pageData.embeddedState,
       networkResponses: pageData.networkResponses,
       structuredMetadata: pageData.structuredMetadata || null,
-      staticDomMode: config.staticDomMode || 'cheerio',
-      staticDomTargetMatchThreshold: Number(config.staticDomTargetMatchThreshold || 0.55),
-      staticDomMaxEvidenceSnippets: Number(config.staticDomMaxEvidenceSnippets || 120),
+      staticDomMode: String(configValue(config, 'staticDomMode')),
+      staticDomTargetMatchThreshold: configFloat(config, 'staticDomTargetMatchThreshold'),
+      staticDomMaxEvidenceSnippets: configInt(config, 'staticDomMaxEvidenceSnippets'),
       identityTarget: jobIdentityLock || {}
     });
 

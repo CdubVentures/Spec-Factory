@@ -157,3 +157,111 @@ test('FrontierDb records yields and produces product snapshot', async () => {
   await db.save();
   assert.equal(Boolean(storage.snapshot(key)), true);
 });
+
+// ── Tier metadata on query recording ──
+
+test('FrontierDb.recordQuery persists tier metadata when provided', async () => {
+  const storage = createStorage();
+  const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
+  await db.load();
+
+  db.recordQuery({
+    productId: 'p1',
+    query: 'brand model specifications',
+    provider: 'google',
+    fields: ['weight'],
+    results: [{ url: 'https://x.com', title: 'T', host: 'x.com', snippet: '' }],
+    tier: 'seed',
+    group_key: null,
+    normalized_key: null,
+    hint_source: 'tier1_seed',
+  });
+
+  const record = db.getQueryRecord({ productId: 'p1', query: 'brand model specifications' });
+  assert.equal(record.tier, 'seed');
+  assert.equal(record.group_key, null);
+  assert.equal(record.hint_source, 'tier1_seed');
+});
+
+test('FrontierDb.recordQuery defaults tier fields to null when not provided', async () => {
+  const storage = createStorage();
+  const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
+  await db.load();
+
+  db.recordQuery({
+    productId: 'p1',
+    query: 'some query',
+    provider: 'bing',
+    fields: [],
+    results: [],
+  });
+
+  const record = db.getQueryRecord({ productId: 'p1', query: 'some query' });
+  assert.equal(record.tier, null);
+  assert.equal(record.group_key, null);
+  assert.equal(record.normalized_key, null);
+  assert.equal(record.hint_source, null);
+});
+
+// ── buildQueryExecutionHistory ──
+
+test('FrontierDb.buildQueryExecutionHistory returns empty for unknown product', async () => {
+  const storage = createStorage();
+  const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
+  await db.load();
+
+  const history = db.buildQueryExecutionHistory('unknown');
+  assert.deepStrictEqual(history, { queries: [] });
+});
+
+test('FrontierDb.buildQueryExecutionHistory maps tier metadata from recorded queries', async () => {
+  const storage = createStorage();
+  const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
+  await db.load();
+
+  db.recordQuery({
+    productId: 'p1', query: 'brand model specs', provider: 'google',
+    fields: ['weight'], results: [{ url: 'https://a.com', title: '', host: 'a.com', snippet: '' }],
+    tier: 'seed', group_key: null, normalized_key: null,
+  });
+  db.recordQuery({
+    productId: 'p1', query: 'brand model sensor dpi', provider: 'google',
+    fields: ['sensor', 'dpi'], results: [{ url: 'https://b.com', title: '', host: 'b.com', snippet: '' }],
+    tier: 'group_search', group_key: 'sensor_performance', normalized_key: null,
+  });
+  db.recordQuery({
+    productId: 'p1', query: 'brand model battery hours', provider: 'google',
+    fields: ['battery_hours'], results: [],
+    tier: 'key_search', group_key: 'connectivity', normalized_key: 'battery hours',
+  });
+
+  const history = db.buildQueryExecutionHistory('p1');
+  assert.equal(history.queries.length, 3);
+
+  const seed = history.queries.find(q => q.tier === 'seed');
+  assert.ok(seed);
+  assert.equal(seed.group_key, null);
+
+  const group = history.queries.find(q => q.tier === 'group_search');
+  assert.ok(group);
+  assert.equal(group.group_key, 'sensor_performance');
+
+  const key = history.queries.find(q => q.tier === 'key_search');
+  assert.ok(key);
+  assert.equal(key.normalized_key, 'battery hours');
+});
+
+test('FrontierDb.buildQueryExecutionHistory handles legacy queries without tier', async () => {
+  const storage = createStorage();
+  const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
+  await db.load();
+
+  db.recordQuery({
+    productId: 'p1', query: 'old query', provider: 'bing',
+    fields: [], results: [],
+  });
+
+  const history = db.buildQueryExecutionHistory('p1');
+  assert.equal(history.queries.length, 1);
+  assert.equal(history.queries[0].tier, null);
+});

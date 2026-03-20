@@ -109,7 +109,6 @@ test('buildFinalizationEventPayloads projects Schema 4 panel data when present o
       profile_influence: profileInfluence,
       deltas,
       round: 1,
-      round_mode: 'followup',
       schema_version: 'needset_planner_output.v2',
     },
     needSetRunKey: 'runs/r1/analysis/needset.json',
@@ -128,7 +127,6 @@ test('buildFinalizationEventPayloads projects Schema 4 panel data when present o
   assert.deepEqual(payload.profile_influence, profileInfluence);
   assert.deepEqual(payload.deltas, deltas);
   assert.equal(payload.round, 1);
-  assert.equal(payload.round_mode, 'followup');
   assert.equal(payload.schema_version, 'needset_planner_output.v2');
 });
 
@@ -154,7 +152,6 @@ test('buildFinalizationEventPayloads defaults Schema 4 fields when absent from n
   assert.equal(payload.profile_influence, null);
   assert.deepEqual(payload.deltas, []);
   assert.equal(payload.round, 0);
-  assert.equal(payload.round_mode, 'seed');
   assert.equal(payload.schema_version, null);
 });
 

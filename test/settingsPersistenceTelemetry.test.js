@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  drainPersistQueue,
   loadUserSettingsSync,
   persistUserSettingsSections,
 } from '../src/features/settings-authority/userSettingsService.js';
@@ -163,4 +164,23 @@ test('persistUserSettingsSections rejects mixed studio and studioPatch writes', 
       return true;
     },
   );
+});
+
+// =========================================================================
+// drainPersistQueue — observability for the hidden persist queue
+// =========================================================================
+
+test('drainPersistQueue resolves immediately when no operations are pending', async () => {
+  await drainPersistQueue();
+});
+
+test('drainPersistQueue waits for in-flight persist operations to complete', async () => {
+  const { root } = await makeHelperRoot('settings-drain-');
+  persistUserSettingsSections({
+    categoryAuthorityRoot: root,
+    runtime: { concurrency: 11 },
+  });
+  await drainPersistQueue();
+  const snapshot = loadUserSettingsSync({ categoryAuthorityRoot: root, strictRead: true });
+  assert.equal(snapshot.runtime.concurrency, 11);
 });

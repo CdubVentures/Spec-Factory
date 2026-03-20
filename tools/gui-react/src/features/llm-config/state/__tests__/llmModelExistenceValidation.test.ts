@@ -1,0 +1,83 @@
+import { describe, it } from 'node:test';
+import { strictEqual, deepStrictEqual } from 'node:assert';
+import { validateModelExistence } from '../llmModelValidation.ts';
+
+function makeRegistry(modelIds: string[] = ['gemini-2.5-flash-lite', 'gpt-5-medium']) {
+  return [
+    {
+      id: 'test-provider',
+      name: 'Test Provider',
+      type: 'openai-compatible',
+      baseUrl: 'https://api.test.com',
+      apiKey: 'sk-test',
+      enabled: true,
+      models: modelIds.map((modelId) => ({
+        id: `model-${modelId}`,
+        modelId,
+        role: 'primary' as const,
+        costInputPer1M: 0.5,
+        costOutputPer1M: 1.0,
+        costCachedPer1M: 0.25,
+        maxContextTokens: 128000,
+        maxOutputTokens: 8192,
+      })),
+    },
+  ];
+}
+
+describe('validateModelExistence', () => {
+  it('returns empty array when all models exist', () => {
+    const issues = validateModelExistence(
+      { llmModelPlan: 'gemini-2.5-flash-lite' },
+      makeRegistry(),
+    );
+    deepStrictEqual(issues, []);
+  });
+
+  it('returns issue for model not in registry', () => {
+    const issues = validateModelExistence(
+      { llmModelPlan: 'test-persist-model-xyz' },
+      makeRegistry(),
+    );
+    strictEqual(issues.length, 1);
+    strictEqual(issues[0].severity, 'error');
+    strictEqual(issues[0].key, 'invalid-model-llmModelPlan');
+  });
+
+  it('skips empty model values', () => {
+    const issues = validateModelExistence(
+      { llmModelPlan: '', llmPlanFallbackModel: '' },
+      makeRegistry(),
+    );
+    deepStrictEqual(issues, []);
+  });
+
+  it('reports multiple invalid models', () => {
+    const issues = validateModelExistence(
+      { llmModelPlan: 'bogus-a', llmModelReasoning: 'bogus-b' },
+      makeRegistry(),
+    );
+    strictEqual(issues.length, 2);
+  });
+
+  it('handles empty registry', () => {
+    const issues = validateModelExistence(
+      { llmModelPlan: 'gemini-2.5-flash-lite' },
+      [],
+    );
+    strictEqual(issues.length, 1);
+  });
+
+  it('ignores disabled providers', () => {
+    const registry = [{
+      id: 'disabled',
+      enabled: false,
+      models: [{ id: 'm1', modelId: 'disabled-model', role: 'primary' as const, costInputPer1M: 0, costOutputPer1M: 0, costCachedPer1M: 0, maxContextTokens: null, maxOutputTokens: null }],
+    }];
+    const issues = validateModelExistence(
+      { llmModelPlan: 'disabled-model' },
+      registry,
+    );
+    strictEqual(issues.length, 1);
+  });
+});

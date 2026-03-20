@@ -1,3 +1,5 @@
+import { configInt } from '../../../../shared/settingsAccessor.js';
+
 export function createRunLlmRuntime({
   storage,
   config = {},
@@ -24,10 +26,7 @@ export function createRunLlmRuntime({
   let llmEstimatedUsageCount = 0;
   let llmRetryWithoutSchemaCount = 0;
 
-  const llmVerifySampleRate = Math.max(
-    1,
-    Number.parseInt(String(config.llmVerifySampleRate || 10), 10) || 10,
-  );
+  const llmVerifySampleRate = configInt(config, 'llmVerifySampleRate');
   const llmVerifySampled = (stableHashFn(`${productId}:${runId}`) % llmVerifySampleRate) === 0;
   const llmVerifyForced = Boolean(roundContext?.force_verify_llm);
   const llmVerifyAggressiveAlways = Boolean(config.llmVerifyAggressiveAlways);

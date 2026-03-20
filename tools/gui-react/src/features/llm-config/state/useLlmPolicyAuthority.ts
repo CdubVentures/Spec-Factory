@@ -16,6 +16,8 @@ import { LLM_POLICY_QUERY_KEY, fetchLlmPolicy, persistLlmPolicy } from '../api/l
 import type { LlmPolicy, LlmPolicyGroup } from '../types/llmPolicyTypes';
 import { flattenLlmPolicy, flattenPolicyGroup } from './llmPolicyAdapter';
 import { assembleLlmPolicyFromFlat } from './llmPolicyDefaults';
+import { validateModelExistence } from './llmModelValidation';
+import { LLM_MODEL_ROLES } from './llmModelRoleRegistry';
 
 interface UseLlmPolicyAuthorityOptions {
   autoSaveEnabled?: boolean;
@@ -101,7 +103,28 @@ export function useLlmPolicyAuthority({
   }, [serverData, seedFingerprint]);
 
   const saveMutation = useMutation({
-    mutationFn: (nextPolicy: LlmPolicy) => persistLlmPolicy(nextPolicy),
+    mutationFn: (nextPolicy: LlmPolicy) => {
+      // WHY: Reject invalid model IDs before they reach the server.
+      // Builds a {flatKey: modelId} map from the policy's models group,
+      // then checks each against the provider registry.
+      const modelFields: Record<string, string> = {};
+      for (const entry of LLM_MODEL_ROLES) {
+        const modelId = nextPolicy.models[entry.role.toLowerCase() as keyof typeof nextPolicy.models];
+        if (modelId) modelFields[entry.modelKey] = modelId;
+        if (entry.fallbackModelKey) {
+          const fbKey = entry.role.toLowerCase() + 'Fallback';
+          const fbValue = nextPolicy.models[fbKey as keyof typeof nextPolicy.models];
+          if (fbValue) modelFields[entry.fallbackModelKey] = fbValue as string;
+        }
+      }
+      const registry = nextPolicy.providerRegistry ?? [];
+      const issues = validateModelExistence(modelFields, registry);
+      if (issues.length > 0) {
+        const names = issues.map((i) => i.title).join(', ');
+        return Promise.reject(new Error(`Invalid model(s): ${names}`));
+      }
+      return persistLlmPolicy(nextPolicy);
+    },
     onSuccess: (result) => {
       if (result.policy) {
         queryClient.setQueryData(LLM_POLICY_QUERY_KEY, result.policy);

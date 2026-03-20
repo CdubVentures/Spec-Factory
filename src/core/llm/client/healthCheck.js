@@ -3,6 +3,7 @@ import { callOpenAI } from './openaiClient.js';
 import { resolveLlmRoute, buildEffectiveCostRates } from './routing.js';
 import { normalizeCostRates } from '../../../billing/costRates.js';
 import { appendCostLedgerEntry } from '../../../billing/costLedger.js';
+import { configInt, configBool, configValue } from '../../../shared/settingsAccessor.js';
 
 function healthSchema() {
   return {
@@ -44,10 +45,11 @@ export async function runLlmHealthCheck({
 }) {
   // WHY: Use registry-resolved route when no explicit provider/model override
   const route = resolveLlmRoute(config, { role: 'extract' });
-  const resolvedProvider = String(provider || route.provider || config.llmProvider || 'openai').trim().toLowerCase();
-  const resolvedModel = String(model || route.model || config.llmModelPlan || '').trim();
+  const resolvedProvider = String(provider || route.provider || configValue(config, 'llmProvider') || 'openai').trim().toLowerCase();
+  const resolvedModel = String(model || route.model || configValue(config, 'llmModelPlan')).trim();
+  // WHY: llmApiKey is not a registry key — legacy bootstrap fallback
   const resolvedApiKey = route.apiKey || config.llmApiKey || '';
-  const resolvedBaseUrl = route.baseUrl || config.llmBaseUrl || '';
+  const resolvedBaseUrl = route.baseUrl || String(configValue(config, 'llmBaseUrl'));
 
   if (!resolvedApiKey) {
     throw new Error('LLM_API_KEY is missing');
@@ -116,9 +118,10 @@ export async function runLlmHealthCheck({
         }
       });
     },
-    reasoningMode: Boolean(config.llmReasoningMode),
-    reasoningBudget: Number(config.llmReasoningBudget || 0),
-    timeoutMs: config.llmTimeoutMs || config.openaiTimeoutMs,
+    reasoningMode: configBool(config, 'llmReasoningMode'),
+    reasoningBudget: configInt(config, 'llmReasoningBudget'),
+    // WHY: openaiTimeoutMs is not a registry key — legacy fallback
+    timeoutMs: configInt(config, 'llmTimeoutMs') || config.openaiTimeoutMs,
     logger
   });
 
@@ -136,8 +139,8 @@ export async function runLlmHealthCheck({
     provider_resolved: usage.provider || resolvedProvider,
     base_url: resolvedBaseUrl,
     model: usage.model || resolvedModel,
-    reasoning_mode: Boolean(config.llmReasoningMode),
-    reasoning_budget: Number(config.llmReasoningBudget || 0),
+    reasoning_mode: configBool(config, 'llmReasoningMode'),
+    reasoning_budget: configInt(config, 'llmReasoningBudget'),
     json_schema_requested: Boolean(usage.json_schema_requested),
     retry_without_schema: Boolean(usage.retry_without_schema),
     deepseek_mode_detected: Boolean(usage.deepseek_mode_detected),

@@ -1,4 +1,5 @@
 import { slug, filterKeysByBrand } from '../cliHelpers.js';
+import { configValue } from '../../../shared/settingsAccessor.js';
 
 export function createBatchCommand({
   loadCategoryConfig,
@@ -194,7 +195,7 @@ export function createBatchCommand({
     const categoryConfig = await loadCategoryConfig(category, { storage, config });
     const allKeys = await storage.listInputKeys(category);
     const keys = await filterKeysByBrand(storage, allKeys, args.brand);
-    const strategy = normalizeBatchStrategy(args.strategy || config.batchStrategy || 'mixed');
+    const strategy = normalizeBatchStrategy(args.strategy || configValue(config, 'batchStrategy'));
     const metadataRows = await runWithConcurrency(keys, config.concurrency, async (key) =>
       collectBatchMetadata({ storage, config, category, key })
     );

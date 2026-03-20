@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   deriveSettingsArtifactsFromUserSettings,
   readStudioMapFromUserSettings,
-  sanitizeUserSettingsSettings,
 } from '../src/features/settings-authority/userSettingsService.js';
 
 test('readStudioMapFromUserSettings returns null when category entry is missing', () => {
@@ -46,8 +45,8 @@ test('readStudioMapFromUserSettings returns populated map for matching category'
   });
 });
 
-test('sanitizeUserSettingsSettings keeps mapping and key/workbench autosave independent when auto-save-all is off', () => {
-  const normalized = sanitizeUserSettingsSettings({
+test('deriveSettingsArtifactsFromUserSettings keeps mapping and key/workbench autosave independent when auto-save-all is off', () => {
+  const { snapshot } = deriveSettingsArtifactsFromUserSettings({
     ui: {
       studioAutoSaveAllEnabled: false,
       studioAutoSaveEnabled: false,
@@ -56,8 +55,8 @@ test('sanitizeUserSettingsSettings keeps mapping and key/workbench autosave inde
       storageAutoSaveEnabled: false,
     },
   });
-  assert.equal(normalized.ui.studioAutoSaveMapEnabled, true);
-  assert.equal(normalized.ui.studioAutoSaveEnabled, false);
+  assert.equal(snapshot.ui.studioAutoSaveMapEnabled, true);
+  assert.equal(snapshot.ui.studioAutoSaveEnabled, false);
 });
 
 test('deriveSettingsArtifactsFromUserSettings normalizes runtime dynamic fetch policy object into canonical json', () => {

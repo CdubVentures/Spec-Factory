@@ -110,8 +110,13 @@ export async function runDiscoverySeedPlan({
   });
 
   // === Stage 01: NeedSet ===
+  // WHY: Build queryExecutionHistory from frontier so NeedSet can track
+  // seed completion, group query counts, and tier escalation across rounds.
+  const queryExecutionHistory = frontierDb?.buildQueryExecutionHistory?.(job?.productId) || { queries: [] };
+
   const needset = await runNeedSetFn({
     config, job, runId, category, categoryConfig, roundContext, llmContext, logger,
+    queryExecutionHistory,
     computeNeedSetFn, buildSearchPlanningContextFn, buildSearchPlanFn,
   });
 
@@ -162,25 +167,21 @@ export async function runDiscoverySeedPlan({
   });
 
   // === Stage 04: Search Planner ===
-  const baseQueries = toArray(profile.searchProfileBase?.base_templates);
   const plannerResult = await runSearchPlannerFn({
-    searchPlanHandoff: needset.searchPlanHandoff,
     searchProfileBase: profile.searchProfileBase,
-    variables, config: discoveryConfig, logger, llmContext, identityLock,
-    missingFields, planningHints, baseQueries, frontierDb, job,
+    variables, config: discoveryConfig, logger, identityLock,
+    missingFields, job,
   });
 
   // === Stage 05: Query Journey ===
   const journey = await runQueryJourneyFn({
     searchProfileBase: profile.searchProfileBase,
-    schema4Plan: plannerResult.schema4Plan,
-    uberSearchPlan: plannerResult.uberSearchPlan,
+    enhancedRows: plannerResult.enhancedRows,
     hostPlanQueryRows: profile.hostPlanQueryRows,
     variables, config: discoveryConfig, searchProfileCaps, missingFields,
     planningHints, effectiveHostPlan: profile.effectiveHostPlan,
     categoryConfig, job, runId, logger, storage,
     brandResolution: brand.brandResolution,
-    searchPlanHandoff: needset.searchPlanHandoff,
   });
 
   // WHY: Emit search_queued events BEFORE Stage 06 starts so the GUI
@@ -206,8 +207,7 @@ export async function runDiscoverySeedPlan({
 
   // === Stage 06: Search Execution ===
   const resultsPerQuery = configInt(discoveryConfig, 'discoveryResultsPerQuery');
-  // WHY: discoveryCap must derive from serpSelectorUrlCap (a URL count),
-  // not searchPlannerQueryCap (a query count). The old code conflated the two.
+  // WHY: discoveryCap derives from serpSelectorUrlCap (a URL count).
   const discoveryCap = configInt(discoveryConfig, 'serpSelectorUrlCap');
   // WHY: Strict sequential execution — search-b must not start until search-a finishes.
   const queryConcurrency = 1;
@@ -239,7 +239,7 @@ export async function runDiscoverySeedPlan({
     variables, identityLock, brandResolution: brand.brandResolution,
     missingFields, learning, llmContext,
     searchProfileBase: profile.searchProfileBase,
-    llmQueries: [], uberSearchPlan: plannerResult.uberSearchPlan, uberMode: true,
+    llmQueries: [],
     queries: journey.queries, searchProfilePlanned: journey.searchProfilePlanned,
     searchProfileKeys: journey.searchProfileKeys, providerState, queryConcurrency, discoveryCap,
     effectiveHostPlan: profile.effectiveHostPlan, focusGroups: needset.focusGroups,

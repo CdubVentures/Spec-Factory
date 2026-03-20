@@ -102,7 +102,6 @@ function makeSearchPlanningContext(overrides = {}) {
       brand: 'Razer',
       model: 'Viper V3 Pro',
       round: 0,
-      round_mode: 'seed',
     },
     identity: makeIdentity(),
     needset: {
@@ -403,14 +402,13 @@ describe('buildSearchPlan', () => {
       assert.deepStrictEqual(result.search_plan_handoff.query_hashes, expectedHashes);
     });
 
-    it('panel.round and panel.round_mode from ctx.run', async () => {
+    it('panel.round from ctx.run', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const result = await buildSearchPlan({
         searchPlanningContext: makeSearchPlanningContext(),
         config: makeConfig(),
       });
       assert.equal(result.panel.round, 0);
-      assert.equal(result.panel.round_mode, 'seed');
     });
 
     it('panel.bundles uses key not group_key', async () => {
@@ -870,6 +868,70 @@ describe('buildSearchPlan', () => {
       assert.equal(pi.targeted_groups, 0);
       assert.equal(pi.targeted_single, 0);
       assert.equal(pi.planner_confidence, 0);
+    });
+
+    it('profile_influence uses tier_allocation counts when present', async () => {
+      fetchMock = installFetchMock(makeLlmResponse());
+      const ctx = makeSearchPlanningContext({
+        focus_groups: [
+          makeFocusGroup({ key: 'g1', phase: 'now', group_search_worthy: true, normalized_key_queue: ['a', 'b'] }),
+          makeFocusGroup({ key: 'g2', phase: 'now', group_search_worthy: true, normalized_key_queue: ['c'] }),
+          makeFocusGroup({ key: 'g3', phase: 'next', group_search_worthy: true, normalized_key_queue: ['d'] }),
+          makeFocusGroup({ key: 'gk', phase: 'next', group_search_worthy: false, normalized_key_queue: ['e', 'f', 'g'] }),
+        ],
+        seed_status: {
+          specs_seed: { is_needed: true },
+          source_seeds: { 'razer.com': { is_needed: true } },
+        },
+        tier_allocation: {
+          budget: 5,
+          tier1_seed_count: 2,
+          tier2_group_count: 2,
+          tier3_key_count: 1,
+          tier1_seeds: [
+            { type: 'specs', source_name: null, is_needed: true },
+            { type: 'source', source_name: 'razer.com', is_needed: true },
+          ],
+          tier2_groups: [
+            { group_key: 'g1', productivity_score: 80, allocated: true },
+            { group_key: 'g2', productivity_score: 60, allocated: true },
+            { group_key: 'g3', productivity_score: 40, allocated: false },
+          ],
+          tier3_keys: [{ group_key: 'gk', key_count: 3, allocated_count: 1 }],
+          overflow_group_count: 1,
+          overflow_key_count: 2,
+        },
+      });
+      const result = await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
+      const pi = result.panel.profile_influence;
+      // Should use allocation-based counts, not aspirational
+      assert.equal(pi.targeted_specification, 1, 'specs seed from allocation');
+      assert.equal(pi.targeted_sources, 1, 'source seeds from allocation');
+      assert.equal(pi.targeted_groups, 2, 'allocated groups, not all 3 worthy');
+      assert.equal(pi.targeted_single, 1, 'allocated keys, not all 3');
+      assert.equal(pi.budget, 5);
+      assert.equal(pi.allocated, 5);
+      assert.equal(pi.overflow_groups, 1);
+      assert.equal(pi.overflow_keys, 2);
+    });
+
+    it('profile_influence falls back to aspirational when tier_allocation absent', async () => {
+      fetchMock = installFetchMock(makeLlmResponse());
+      const ctx = makeSearchPlanningContext({
+        focus_groups: [
+          makeFocusGroup({ key: 'g1', phase: 'now', group_search_worthy: true, normalized_key_queue: ['a'] }),
+          makeFocusGroup({ key: 'g2', phase: 'next', group_search_worthy: false, normalized_key_queue: ['b', 'c'] }),
+        ],
+        seed_status: { specs_seed: { is_needed: true }, source_seeds: { 'x.com': { is_needed: true } } },
+        // No tier_allocation
+      });
+      const result = await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
+      const pi = result.panel.profile_influence;
+      assert.equal(pi.targeted_specification, 1);
+      assert.equal(pi.targeted_sources, 1);
+      assert.equal(pi.targeted_groups, 1, 'aspirational: 1 worthy group');
+      assert.equal(pi.targeted_single, 2, 'aspirational: 2 keys from non-worthy');
+      assert.equal(pi.budget, null, 'no budget without tier_allocation');
     });
   });
 
