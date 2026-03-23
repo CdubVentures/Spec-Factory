@@ -72,8 +72,8 @@ test('infra categories GET filters private categories and honors includeTest fla
   assert.deepEqual(includeTest.body, ['mouse', '_test_keyboard']);
 });
 
-test('infra categories POST creates category skeleton and returns refreshed categories', async () => {
-  const mkdirCalls = [];
+test('infra categories POST scaffolds category and returns field_count', async () => {
+  const scaffoldCalls = [];
   const handler = registerInfraRoutes(makeCtx({
     readJsonBody: async () => ({ name: 'Gaming Mice' }),
     fs: {
@@ -82,22 +82,26 @@ test('infra categories POST creates category skeleton and returns refreshed cate
         error.code = 'ENOENT';
         throw error;
       },
-      mkdir: async (targetPath) => {
-        mkdirCalls.push(path.resolve(String(targetPath)));
-      },
+      mkdir: async () => {},
     },
     listDirs: async () => ['gaming-mice', 'mouse', '_global'],
+    scaffoldCategoryFn: async ({ category, config }) => {
+      scaffoldCalls.push({ category, config });
+      return {
+        created: true,
+        category,
+        compileResult: { compiled: true, field_count: 30, warnings: [], errors: [] },
+      };
+    },
   }));
 
   const result = await handler(['categories'], new URLSearchParams(), 'POST', {}, {});
   assert.equal(result.status, 201);
   assert.equal(result.body?.slug, 'gaming-mice');
+  assert.equal(result.body?.field_count, 30);
   assert.deepEqual(result.body?.categories, ['gaming-mice', 'mouse']);
-  assert.deepEqual(mkdirCalls, [
-    path.resolve(path.join('category_authority', 'gaming-mice')),
-    path.resolve(path.join('category_authority', 'gaming-mice', '_control_plane')),
-    path.resolve(path.join('category_authority', 'gaming-mice', '_generated')),
-  ]);
+  assert.equal(scaffoldCalls.length, 1);
+  assert.equal(scaffoldCalls[0].category, 'gaming-mice');
 });
 
 test('infra searxng surfaces start failures without mutating the success contract', async () => {

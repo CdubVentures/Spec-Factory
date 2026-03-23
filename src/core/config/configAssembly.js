@@ -43,7 +43,7 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
 
   // API keys (read from env directly, not via registry default)
   'anthropicApiKey', 'geminiApiKey', 'deepseekApiKey',
-  'serperApiKey', 'eloSupabaseAnonKey', 'eloSupabaseEndpoint',
+  'serperApiKey',
 
   // JSON map normalization + sub-fields
   'fetchSchedulerInternalsMapJson',

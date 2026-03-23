@@ -1,12 +1,15 @@
 # Prefetch Pipeline Overview
 
-Validated: 2026-03-22 (round_mode fully retired from all code/fixtures/docs. Feedback loops clarified: per-run vs cross-product learning. LLM reason string fixed).
+Validated: 2026-03-23 (round_mode fully retired from all code/fixtures/docs. Feedback loops clarified: per-run vs cross-product learning. LLM reason string fixed. Event order corrected. Schema architecture re-audited).
 
-Architecture audit: 2026-03-22. See `PIPELINE-CONTRACT-AUDIT.md` for full results. P0 SSOT fixes complete. P1 persistence complete (field_history table, write/read paths, fetch drain timeout, Zod schemas). P2 re-audited (all findings resolved). P3 complete (processDiscoveryResults decomposed 674→344 LOC into 3 modules).
+Architecture audit: 2026-03-22 (P0-P4). Schema enforcement: 2026-03-23 (P5). See `PIPELINE-CONTRACT-AUDIT.md` for full results.
+
+**P5 summary (2026-03-23):** Cumulative pipeline context schema replaces per-stage schemas. All 11 LLM adapter schemas unified to Zod. Enforcement mode with `pipelineSchemaEnforcementMode` registry knob (`off`/`warn`/`enforce`). Orchestrator mutations removed. Hardcoded crawl config extracted to registry. Live-tested in enforce mode — zero validation failures.
 
 Source of truth:
 
-- `src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js`
+- `src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js` — 8-stage orchestrator with cumulative context accumulation + schema validation at each boundary
+- `src/features/indexing/discovery/pipelineContextSchema.js` — **SSOT for pipeline contracts** (cumulative Zod schema with 8 progressive checkpoints, typed sub-schemas, enforcement mode)
 - `src/features/indexing/discovery/stages/needSet.js`
 - `src/features/indexing/discovery/stages/brandResolver.js`
 - `src/features/indexing/discovery/stages/searchProfile.js`
@@ -145,21 +148,20 @@ query_journey -> search_results -> serp_triage -> domain_classifier
 Actual key runtime event order on the canonical path:
 
 ```text
-needset_computed
-brand_resolved
-search_plan_generated
-search_profile_generated
-query_journey_completed
-search_queued
-discovery_query_started
-discovery_query_completed
-search_results_collected
-serp_selector_completed
-domains_classified
-discovery_enqueue_summary
+needset_computed (scope: schema2_preview)   — Stage 01, before Schema 4 LLM call
+brand_resolved                              — Stage 02, parallel with Stage 01
+needset_computed (scope: schema4_planner)   — Stage 01, after Schema 4 LLM completes
+search_profile_generated                    — Stage 03, deterministic profile built
+search_plan_generated                       — Stage 04, after LLM enhancement (or deterministic fallback)
+query_journey_completed                     — Stage 05, final query selection written
+search_queued                               — orchestrator, pre-Stage 06 GUI slot allocation
+discovery_query_started                     — Stage 06, per-query
+discovery_query_completed                   — Stage 06, per-query
+serp_selector_completed                     — Stage 07, after LLM selector path completes
+discovery_enqueue_summary                   — Stage 08, planner queue handoff
 ```
 
-Important nuance: `search_profile_generated` is emitted from Query Journey when the planned artifact is written, even though the GUI still treats it as the Search Profile tab payload.
+Important nuance: `search_profile_generated` is emitted by `searchProfile.js` (Stage 03) when the deterministic profile is built. The planned artifact (with status `'planned'`) is written later by Query Journey (Stage 05) via `writeSearchProfileArtifacts()`. The GUI maps the Stage 03 event to the Search Profile tab.
 
 ## LLM surfaces
 
@@ -182,12 +184,12 @@ Two input streams:
 
 Then:
 
-- `dedupeQueryRows()`
-- `prioritizeQueryRows()`
-- cap to `searchProfileQueryCap`
-- `enforceIdentityQueryGuard()`
-- separately guard host-plan rows and append unique survivors
-- write planned `search_profile`
+- `dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap)`
+- cap to `searchProfileQueryCap` via `.slice(0, mergedQueryCap)`
+- `enforceIdentityQueryGuard()` with variant guard terms
+- separately guard host-plan rows and append unique survivors within remaining budget
+- build `llm_queries` from rows where `hint_source` ends with `_llm`
+- write planned `search_profile` via `writeSearchProfileArtifacts()`
 - emit `query_journey_completed`
 
 `searchProfilePlanned.llm_queries` contains only query texts from rows where `hint_source` ends with `_llm`. Empty when LLM failed.

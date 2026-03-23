@@ -2,7 +2,7 @@
 
 > **Purpose:** Provide an annotated repo tree so an arriving LLM knows where to look before scanning the entire codebase.
 > **Prerequisites:** [scope.md](./scope.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Root Tree
 
@@ -49,7 +49,7 @@
 | `.server-state/` | local API/runtime state | written by local runs; not source of truth |
 | `.specfactory_tmp/` | default temp SQLite / scratch root | default `SPEC_DB_DIR` target from `src/core/config/manifest/pathsGroup.js` |
 | `.tmp/` | transient local temp files | local-only scratch area |
-| `category_authority/` | canonical authored control-plane content | `_runtime/user-settings.json`, per-category `_control_plane/`, `_generated/`, `sources.json` |
+| `category_authority/` | canonical authored control-plane content | `_runtime/user-settings.json`, per-category `_control_plane/`, `_generated/`, `sources.json`. Categories: `gaming_mice`, `keyboard`, `monitor`, `mouse` (plus `_global` and `_runtime` meta-dirs) |
 | `data/` | checked-in support data | auxiliary non-authority inputs |
 | `debug/` | debugging output | ad hoc local diagnostics |
 | `docs/` | maintained LLM-first doc tree | `README.md` is the current entrypoint; `implementation/` is excluded from the reading order and this pass |
@@ -73,7 +73,7 @@
 | `src/cli/` | main operator CLI surface | `spec.js` |
 | `src/core/` | config manifest, LLM routing, and shared infrastructure | `config/manifest/index.js`, `config/runtimeArtifactRoots.js`, `llm/` |
 | `src/db/` | SQLite schema, migrations, and stores | `specDb.js`, `specDbSchema.js`, `specDbMigrations.js`, `stores/`, `DOMAIN.md` |
-| `src/features/` | feature-first backend boundaries | `catalog/`, `indexing/`, `review/`, `settings/`, `settings-authority/`, `studio/`, `category-authority/` |
+| `src/features/` | feature-first backend boundaries | `catalog/`, `indexing/`, `review/`, `settings/`, `settings-authority/`, `studio/`, `category-authority/`, `review-curation/`, `expansion-hardening/` |
 | `src/pipeline/` | run orchestration and batch review workers | `runProduct.js`, `componentReviewBatch.js` |
 | `src/daemon/` | recurring watch/queue runner | `daemon.js` |
 | `src/indexlab/` | run-artifact readers and packet validation helpers | `indexingSchemaPacketsValidator.js` and packet readers |
@@ -83,7 +83,7 @@
 | `src/queue/` | queue-state helpers | `queueState.js` |
 | `src/review/` | legacy review-domain implementation consumed by review feature routes | component-review and grid data builders |
 | `src/s3/` | local/S3/dual storage abstraction | `storage.js` |
-| `src/shared/` | cross-runtime defaults and generic shared helpers | `settingsDefaults.js` |
+| `src/shared/` | cross-runtime defaults, settings registry SSOT, and generic shared helpers | `settingsRegistry.js` (430+ settings), `settingsDefaults.js`, `settingsAccessor.js`, `settingsClampingRanges.js`, `discoveryRankConstants.js`, `stableHash.js` |
 | `src/testing/` | test-mode runtime helpers | `testDataProvider.js`, `testRunner.js` |
 
 ## High-Signal `tools/` Subtrees

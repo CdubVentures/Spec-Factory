@@ -19,7 +19,7 @@ import {
   enrichResultDomains,
   resolveDomainCapSummary,
   resolveRuntimeDomainCapSummary,
-} from '../tools/gui-react/src/pages/runtime-ops/panels/searchResultsHelpers.js';
+} from '../tools/gui-react/src/features/runtime-ops/selectors/searchResultsHelpers.js';
 
 function makeResult(overrides = {}) {
   return {

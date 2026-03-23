@@ -18,7 +18,6 @@ import {
   loadLearningProfile,
 } from '../../features/indexing/learning/index.js';
 import {
-  enqueueAdapterSeedUrls,
   resolveScreencastCallback,
   createRunProductFetcherFactory,
   buildIndexlabRuntimeCategoryConfig,
@@ -42,7 +41,15 @@ import {
   buildDiscoverySeedPlanContext,
   runDiscoverySeedPlan,
 } from '../../features/indexing/orchestration/discovery/index.js';
-import { createAdapterManager } from '../../adapters/index.js';
+// WHY: Adapter subsystem removed — baseline LLM extraction handles all sources.
+// No-op factory preserves DI shape while adapters are retired.
+function createNoOpAdapterManager() {
+  return {
+    collectSeedUrls: () => [],
+    extractForPage: async () => ({}),
+    runDedicatedAdapters: async () => ({ syntheticSources: [], adapterArtifacts: [] }),
+  };
+}
 import { DeterministicParser, ComponentResolver, retrieveGoldenExamples } from '../../features/indexing/extraction/index.js';
 import { loadSourceIntel } from '../../intel/sourceIntel.js';
 import { readBillingSnapshot } from '../../billing/costLedger.js';
@@ -67,7 +74,7 @@ const DEFAULT_DEPS = {
   resolveTargetsFn: resolveTargets,
   loadCategoryBrainFn: loadCategoryBrain,
   createPlannerBootstrapFn: createPlannerBootstrap,
-  createAdapterManagerFn: createAdapterManager,
+  createAdapterManagerFn: createNoOpAdapterManager,
   loadSourceIntelFn: loadSourceIntel,
   SourcePlannerClass: SourcePlanner,
   applyRuntimeOverridesToPlannerFn: applyRuntimeOverridesToPlanner,
@@ -105,7 +112,7 @@ const DEFAULT_DEPS = {
   buildFetcherStartContextFn: buildFetcherStartContext,
   runFetcherStartPhaseFn: runFetcherStartPhase,
   createModeAwareFetcherRegistryFn: createModeAwareFetcherRegistry,
-  enqueueAdapterSeedUrlsFn: enqueueAdapterSeedUrls,
+  enqueueAdapterSeedUrlsFn: () => {},
 };
 
 export async function bootstrapRunProductExecutionState({

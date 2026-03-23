@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 
+import { z, toJSONSchema } from 'zod';
 import { callLlmWithRouting } from '../../../core/llm/client/routing.js';
 import {
   inferImageMimeFromUri,
@@ -7,87 +8,38 @@ import {
 } from './batchEvidenceSelection.js';
 import { sanitizeExtractionResult } from './sanitizeExtractionResult.js';
 
+export const extractionModelResponseZodSchema = z.object({
+  identityCandidates: z.object({
+    brand: z.string().optional(),
+    model: z.string().optional(),
+    sku: z.string().optional(),
+    mpn: z.string().optional(),
+    gtin: z.string().optional(),
+    variant: z.string().optional(),
+  }),
+  fieldCandidates: z.array(z.object({
+    field: z.string(),
+    value: z.union([z.string(), z.number(), z.boolean(), z.array(z.any()), z.record(z.string(), z.any()), z.null()]),
+    keyPath: z.string().optional(),
+    evidenceRefs: z.array(z.string()),
+    snippetId: z.string().optional(),
+    snippetHash: z.string().optional(),
+    quote: z.string().optional(),
+    quoteSpan: z.array(z.number()).min(2).max(2).optional(),
+    unknownReason: z.string().optional(),
+    confidence: z.number().optional(),
+  })),
+  conflicts: z.array(z.object({
+    field: z.string(),
+    values: z.array(z.string()),
+    evidenceRefs: z.array(z.string()),
+  })),
+  notes: z.array(z.string()),
+});
+
 function llmSchema() {
-  return {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      identityCandidates: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          brand: { type: 'string' },
-          model: { type: 'string' },
-          sku: { type: 'string' },
-          mpn: { type: 'string' },
-          gtin: { type: 'string' },
-          variant: { type: 'string' }
-        },
-        required: []
-      },
-      fieldCandidates: {
-        type: 'array',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            field: { type: 'string' },
-            value: {
-              anyOf: [
-                { type: 'string' },
-                { type: 'number' },
-                { type: 'boolean' },
-                { type: 'array' },
-                { type: 'object' },
-                { type: 'null' }
-              ]
-            },
-            keyPath: { type: 'string' },
-            evidenceRefs: {
-              type: 'array',
-              items: { type: 'string' }
-            },
-            snippetId: { type: 'string' },
-            snippetHash: { type: 'string' },
-            quote: { type: 'string' },
-            quoteSpan: {
-              type: 'array',
-              items: { type: 'number' },
-              minItems: 2,
-              maxItems: 2
-            },
-            unknownReason: { type: 'string' },
-            confidence: { type: 'number' }
-          },
-          required: ['field', 'value', 'evidenceRefs']
-        }
-      },
-      conflicts: {
-        type: 'array',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            field: { type: 'string' },
-            values: {
-              type: 'array',
-              items: { type: 'string' }
-            },
-            evidenceRefs: {
-              type: 'array',
-              items: { type: 'string' }
-            }
-          },
-          required: ['field', 'values', 'evidenceRefs']
-        }
-      },
-      notes: {
-        type: 'array',
-        items: { type: 'string' }
-      }
-    },
-    required: ['identityCandidates', 'fieldCandidates', 'conflicts', 'notes']
-  };
+  const { $schema, ...schema } = toJSONSchema(extractionModelResponseZodSchema);
+  return schema;
 }
 
 function buildFallbackImageId(fileUri = '') {

@@ -1,3 +1,4 @@
+import { z, toJSONSchema } from 'zod';
 import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../../../core/llm/client/routing.js';
 import { normalizeFieldList } from '../../../utils/fieldKeys.js';
 import { buildExtractionContextMatrix, buildPrimeSourcesFromProvenance } from '../extraction/extractionContext.js';
@@ -7,61 +8,29 @@ function hasKnownValue(value) {
   return token !== '' && token !== 'unk' && token !== 'null' && token !== 'undefined' && token !== 'n/a';
 }
 
+export const candidateValidatorResponseZodSchema = z.object({
+  accept: z.array(z.object({
+    field: z.string(),
+    value: z.string(),
+    reason: z.string(),
+    confidence: z.number().optional(),
+    evidence_refs: z.array(z.string()).optional(),
+  })),
+  reject: z.array(z.object({
+    field: z.string(),
+    value: z.string().optional(),
+    reason: z.string(),
+  })),
+  unknown: z.array(z.object({
+    field: z.string(),
+    unknown_reason: z.string(),
+    next_best_queries: z.array(z.string()).optional(),
+  })),
+});
+
 function validatorSchema() {
-  return {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      accept: {
-        type: 'array',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            field: { type: 'string' },
-            value: { type: 'string' },
-            reason: { type: 'string' },
-            confidence: { type: 'number' },
-            evidence_refs: {
-              type: 'array',
-              items: { type: 'string' }
-            }
-          },
-          required: ['field', 'value', 'reason']
-        }
-      },
-      reject: {
-        type: 'array',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            field: { type: 'string' },
-            value: { type: 'string' },
-            reason: { type: 'string' }
-          },
-          required: ['field', 'reason']
-        }
-      },
-      unknown: {
-        type: 'array',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            field: { type: 'string' },
-            unknown_reason: { type: 'string' },
-            next_best_queries: {
-              type: 'array',
-              items: { type: 'string' }
-            }
-          },
-          required: ['field', 'unknown_reason']
-        }
-      }
-    },
-    required: ['accept', 'reject', 'unknown']
-  };
+  const { $schema, ...schema } = toJSONSchema(candidateValidatorResponseZodSchema);
+  return schema;
 }
 
 function sanitizeDecisions(result = {}, uncertainSet = new Set()) {

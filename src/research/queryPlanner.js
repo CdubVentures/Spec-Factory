@@ -1,3 +1,4 @@
+import { z, toJSONSchema } from 'zod';
 import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../core/llm/client/routing.js';
 
 function toArray(value) {
@@ -27,26 +28,16 @@ export function normalizeQueryRows(rawQueries = []) {
 
 // --- enhanceQueryRows: tier-aware LLM query enhancement ---
 
+export const queryEnhancerResponseZodSchema = z.object({
+  enhanced_queries: z.array(z.object({
+    index: z.number().int(),
+    query: z.string(),
+  })),
+});
+
 function enhancerSchema() {
-  return {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      enhanced_queries: {
-        type: 'array',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            index: { type: 'integer' },
-            query: { type: 'string' },
-          },
-          required: ['index', 'query'],
-        },
-      },
-    },
-    required: ['enhanced_queries'],
-  };
+  const { $schema, ...schema } = toJSONSchema(queryEnhancerResponseZodSchema);
+  return schema;
 }
 
 function buildEnhancerSystemPrompt(rowCount) {

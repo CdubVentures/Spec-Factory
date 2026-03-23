@@ -2,7 +2,7 @@
 
 > **Purpose:** Describe the verified GUI framework, routing, state, data-fetching boundaries, and component ownership with exact file paths.
 > **Prerequisites:** [system-map.md](./system-map.md), [../02-dependencies/stack-and-toolchain.md](../02-dependencies/stack-and-toolchain.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Framework and Build Model
 
@@ -68,6 +68,7 @@
 | `/review` | `tools/gui-react/src/features/review/components/ReviewPage.tsx` |
 | `/review-components` | `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx` |
 | `/runtime-ops` | `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx` |
+| `/llm-config` | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` |
 | `/storage` | `tools/gui-react/src/pages/storage/StoragePage.tsx` |
 | `/test-mode` | `tools/gui-react/src/pages/test-mode/TestModePage.tsx` |
 

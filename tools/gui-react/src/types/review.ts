@@ -80,6 +80,7 @@ export interface FieldState {
   evidence_url?: string;
   evidence_quote?: string;
   accepted_candidate_id?: string | null;
+  selected_candidate_id?: string | null;
   keyReview?: KeyReviewLaneState;
 }
 

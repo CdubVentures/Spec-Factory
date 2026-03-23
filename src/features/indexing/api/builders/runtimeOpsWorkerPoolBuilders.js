@@ -185,6 +185,8 @@ export function buildRuntimeOpsWorkers(events, options) {
         base.avg_duration_ms = 0;
         base.last_result_count = 0;
         base.last_duration_ms = 0;
+        base.last_query = null;
+        base.last_provider = null;
         base.primary_count = 0;
         base.fallback_count = 0;
         base._result_sum = 0;
@@ -283,6 +285,8 @@ export function buildRuntimeOpsWorkers(events, options) {
         w.last_error = String(payload.message || payload.error || 'LLM call failed').trim();
       }
       if (resolvedPool === 'search' && (type === 'search_finished')) {
+        w.last_query = w.current_query;
+        w.last_provider = w.current_provider;
         w.current_query = null;
         w.current_provider = null;
         w.tasks_completed += 1;

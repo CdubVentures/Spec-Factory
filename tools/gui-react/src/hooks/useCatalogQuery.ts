@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
-import type { CatalogRow } from '../types/product';
+import { parseCatalogRows } from '../features/catalog/api/catalogParsers';
 
 interface UseCatalogQueryOptions {
   category: string;
@@ -10,7 +10,7 @@ interface UseCatalogQueryOptions {
 export function useCatalogQuery({ category, refetchIntervalMs = 10_000 }: UseCatalogQueryOptions) {
   return useQuery({
     queryKey: ['catalog', category],
-    queryFn: () => api.get<CatalogRow[]>(`/catalog/${category}`),
+    queryFn: () => api.parsedGet(`/catalog/${category}`, parseCatalogRows),
     refetchInterval: refetchIntervalMs,
   });
 }

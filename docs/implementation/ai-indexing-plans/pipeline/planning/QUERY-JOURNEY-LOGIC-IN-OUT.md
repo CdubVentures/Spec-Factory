@@ -1,6 +1,6 @@
 # Query Journey Logic In And Out
 
-Validated against live code on 2026-03-20.
+Validated against live code on 2026-03-23. Note: `hostPlanQueryRows` has no default `= []` in the function signature (QJ1 finding) — the orchestrator always passes an array, but the stage itself is not defensive against `undefined`.
 
 ## What this stage is
 
@@ -46,19 +46,17 @@ Search Planner returns `enhancedRows` which are the *same rows* as `searchProfil
 
 ## Live logic
 
-1. Build candidate list from `enhancedRows` (Stream 1).
-2. Deduplicate with `dedupeQueryRows()`.
-3. Build field-priority map from `missingCriticalFields` and `missingRequiredFields`.
-4. Build host-field-fit map from `categoryConfig.sourceHostMap` and `effectiveHostPlan`.
-5. Rank with `prioritizeQueryRows()`.
-6. Cap to `searchProfileQueryCap`.
-7. Guard with `enforceIdentityQueryGuard()` using `variant_guard_terms`.
-8. Guard host-plan rows (Stream 2) separately, append only unique survivors.
-9. If every guarded row disappears but ranked rows existed, retain one fallback query.
-10. Build `llm_queries` — filter `enhancedRows` where `hint_source` ends with `_llm`.
-11. Build planned `search_profile` payload.
-12. Write planned `search_profile` artifacts.
-13. Emit `query_journey_completed`.
+1. Build `profileQueryRowsByQuery` Map from `searchProfileBase.query_rows` (keyed by lowercase query).
+2. Build candidate list from `enhancedRows` (Stream 1) — normalize all string fields.
+3. Deduplicate with `dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap)`.
+4. Cap to `searchProfileQueryCap` via `.slice(0, mergedQueryCap)`. Tier order IS execution priority — no re-ranking.
+5. Guard with `enforceIdentityQueryGuard()` using `variant_guard_terms`.
+6. Guard host-plan rows (Stream 2) separately, append only unique survivors within remaining budget.
+7. If every guarded row disappears but capped rows existed, retain one fallback query.
+8. Build `llm_queries` — filter `enhancedRows` where `hint_source` ends with `_llm`.
+9. Build planned `search_profile` payload (`searchProfilePlanned`).
+10. Write planned `search_profile` artifacts via `writeSearchProfileArtifacts()`.
+11. Emit `query_journey_completed`.
 
 ## Guard behavior
 

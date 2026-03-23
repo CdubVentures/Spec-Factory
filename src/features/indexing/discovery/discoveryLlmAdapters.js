@@ -1,18 +1,17 @@
+import { z, toJSONSchema } from 'zod';
 import { configInt } from '../../../shared/settingsAccessor.js';
 
+export const brandResolverLlmResponseSchema = z.object({
+  official_domain: z.string(),
+  aliases: z.array(z.string()).optional(),
+  support_domain: z.string().optional(),
+  confidence: z.number().describe('0-1 confidence that this is the correct official domain'),
+  reasoning: z.array(z.string()).optional(),
+});
+
 function brandResolverSchema() {
-  return {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      official_domain: { type: 'string' },
-      aliases: { type: 'array', items: { type: 'string' } },
-      support_domain: { type: 'string' },
-      confidence: { type: 'number', description: '0-1 confidence that this is the correct official domain' },
-      reasoning: { type: 'array', items: { type: 'string' } }
-    },
-    required: ['official_domain', 'confidence']
-  };
+  const { $schema, ...schema } = toJSONSchema(brandResolverLlmResponseSchema);
+  return schema;
 }
 
 export function createBrandResolverCallLlm({ callRoutedLlmFn, config, logger }) {

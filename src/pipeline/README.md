@@ -31,7 +31,7 @@ Product indexing pipeline orchestrator: coordinates the full fetch → parse →
 - `src/fetcher/*` (Playwright, HTTP, Crawlee fetchers)
 - `src/planner/sourcePlanner.js` (source planning)
 - `src/categories/loader.js`, `src/utils/common.js`, `src/billing/*`
-- `src/normalizer/*`, `src/exporter/*`, `src/intel/*`, `src/adapters/index.js`
+- `src/normalizer/*`, `src/exporter/*`, `src/intel/*`
 - `zod` (schema validation)
 
 **Forbidden:** `src/pipeline/` must NOT import from `src/api/`, `src/db/` directly (DB access via injected `specDb`), or `src/cli/`.

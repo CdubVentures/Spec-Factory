@@ -15,6 +15,23 @@ import {
 import { collectPreviewExtractionFields } from './runtimeOpsExtractionFieldBuilders.js';
 import { inferPool } from './runtimeOpsWorkerPoolBuilders.js';
 
+// WHY: serp_selector_completed emits canonicalized URLs (www-stripped, URL-parsed)
+// but search_results_collected emits raw provider URLs. Normalize both sides so
+// triage decisions match their search results.
+function normalizeTriageUrl(url) {
+  try {
+    const u = new URL(url);
+    u.hostname = u.hostname.replace(/^www\./, '');
+    // Drop trailing slash on bare paths so "/foo/" matches "/foo"
+    if (u.pathname.length > 1 && u.pathname.endsWith('/')) {
+      u.pathname = u.pathname.slice(0, -1);
+    }
+    return u.toString();
+  } catch {
+    return String(url || '').trim();
+  }
+}
+
 function resolveWorkerTelemetryUrl(event, workerUrls = new Set()) {
   const eventUrls = extractEventUrls(event);
   const matchedUrl = eventUrls.find((url) => workerUrls.has(url));
@@ -111,7 +128,7 @@ export function buildWorkerDetail(events, workerId, options = {}) {
         for (const c of payload.candidates) {
           const url = String(c?.url || '').trim();
           if (url) {
-            triageByUrl[url] = {
+            const triageEntry = {
               decision: String(c?.decision || 'unknown').trim(),
               score: Number(c?.score) || 0,
               rationale: String(c?.rationale || '').trim(),
@@ -119,6 +136,11 @@ export function buildWorkerDetail(events, workerId, options = {}) {
                 ? c.score_components
                 : null,
             };
+            triageByUrl[url] = triageEntry;
+            // WHY: Also key by normalized URL so raw search-result URLs
+            // match their canonicalized serp_selector_completed counterparts.
+            const norm = normalizeTriageUrl(url);
+            if (norm !== url) triageByUrl[norm] = triageEntry;
           }
         }
       }
@@ -153,8 +175,8 @@ export function buildWorkerDetail(events, workerId, options = {}) {
             r.fetch_link_type = 'host_fallback';
           }
         }
-        // Triage enrichment
-        const triage = triageByUrl[r.url];
+        // Triage enrichment (try exact URL first, then normalized form)
+        const triage = triageByUrl[r.url] || triageByUrl[normalizeTriageUrl(r.url)];
         if (triage) {
           r.decision = triage.decision;
           r.score = triage.score;

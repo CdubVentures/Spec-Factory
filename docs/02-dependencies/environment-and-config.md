@@ -2,7 +2,7 @@
 
 > **Purpose:** Map the live configuration surfaces, environment manifests, and user-editable settings contracts so an arriving LLM can locate the single source of truth for each knob.
 > **Prerequisites:** [stack-and-toolchain.md](./stack-and-toolchain.md)
-> **Last validated:** 2026-03-17
+> **Last validated:** 2026-03-23
 
 ## Config Surfaces
 
@@ -10,7 +10,9 @@
 |---------|------------|-------------|-------|-------|
 | process env manifest | `src/core/config/manifest/*.js` | `src/config.js` | runtime | SSOT for env-backed config keys |
 | resolved config object | `src/config.js` | backend runtime, CLI, process launch plans | runtime | merges manifest defaults, env, runtime defaults, and overrides |
-| shared runtime defaults | `src/shared/settingsDefaults.js` | settings authority, GUI bootstrap, config normalization | runtime + GUI | canonical defaults for runtime/convergence/UI |
+| settings registry SSOT | `src/shared/settingsRegistry.js` | all settings surfaces, config assembly, GUI manifests | runtime + GUI | 430+ settings across 4 registries: `RUNTIME_SETTINGS_REGISTRY`, `CONVERGENCE_SETTINGS_REGISTRY`, `UI_SETTINGS_REGISTRY`, `STORAGE_SETTINGS_REGISTRY` |
+| shared runtime defaults | `src/shared/settingsDefaults.js` | settings authority, GUI bootstrap, config normalization | runtime + GUI | derived defaults from the registry |
+| settings accessor | `src/shared/settingsAccessor.js` | config resolution, pipeline stages | runtime | null-safe accessor with NaN fallback + registry clamping |
 | user settings document | `category_authority/_runtime/user-settings.json` | `src/features/settings-authority/*` and GUI settings hooks | persisted user state | runtime, convergence, storage, and UI settings |
 | runtime settings API | `src/features/settings/api/configRoutes.js` | GUI hooks in `tools/gui-react/src/features/pipeline-settings/state/*` | operator-writable | `GET/PUT /api/v1/runtime-settings` |
 | convergence settings API | `src/features/settings/api/configRoutes.js` | GUI convergence/settings consumers | operator-writable | `GET/PUT /api/v1/convergence-settings` |
@@ -69,7 +71,8 @@
 |--------|------|-------------------|
 | source | `src/core/config/manifest/index.js` | manifest assembly and default export surface |
 | source | `src/config.js` | config merge order and env consumption |
-| source | `src/shared/settingsDefaults.js` | canonical runtime/convergence/UI defaults |
+| source | `src/shared/settingsRegistry.js` | SSOT settings registry with 430+ setting definitions across 4 registries |
+| source | `src/shared/settingsDefaults.js` | derived defaults from the registry |
 | source | `src/features/settings/api/configRoutes.js` | live settings route surfaces |
 | source | `src/features/settings-authority/settingsContract.js` | settings authority key exports and schema ownership |
 | config | `.env.example` | partial secrets-only env template |

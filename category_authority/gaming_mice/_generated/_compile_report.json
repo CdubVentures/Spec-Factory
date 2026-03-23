@@ -1,0 +1,76 @@
+{
+  "artifacts": {
+    "control_plane_version": {
+      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\gaming_mice\\_control_plane\\_versions\\20260323T075907Z",
+      "version_id": "20260323T075907Z"
+    },
+    "field_rules": {
+      "changed": false,
+      "hash": "36a054faddf7ad5cbebfa49b15907072433e47a2ffe3f39b9354994e7bb69e93",
+      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\gaming_mice\\_generated\\field_rules.json"
+    },
+    "field_rules_full": {
+      "hash": "8b3ce858958d18b0deb19b1c41578c57d3c92481631dfb494c332a343cbc4563",
+      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\gaming_mice\\_control_plane\\field_rules.full.json"
+    },
+    "field_rules_runtime": {
+      "bytes": 90947,
+      "hash": "36a054faddf7ad5cbebfa49b15907072433e47a2ffe3f39b9354994e7bb69e93",
+      "identical_to_field_rules": true,
+      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\gaming_mice\\_generated\\field_rules.runtime.json"
+    },
+    "key_migrations": null,
+    "known_values": {
+      "hash": "c96439d41d2eec479cc2de6a039e993d6e52108d718569d3518026f236dac7e7",
+      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\gaming_mice\\_generated\\known_values.json"
+    },
+    "ui_field_catalog": {
+      "hash": "91f9956a6e29c6e119b69e7e9e6f97c2c20a356922738086922ca27b0830900c",
+      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\gaming_mice\\_generated\\ui_field_catalog.json"
+    }
+  },
+  "category": "gaming_mice",
+  "compile_mode": "field_studio",
+  "compiled": true,
+  "compiled_at": "2026-03-23T07:53:06.491Z",
+  "counts": {
+    "component_types": 0,
+    "critical": 0,
+    "deep": 0,
+    "enums": 0,
+    "expected_easy": 16,
+    "expected_sometimes": 1,
+    "fields": 29,
+    "identity": 8,
+    "required": 4
+  },
+  "diff": {
+    "changed": false,
+    "current_hash": "36a054faddf7ad5cbebfa49b15907072433e47a2ffe3f39b9354994e7bb69e93",
+    "fields": {
+      "added_count": 0,
+      "added_keys": [],
+      "changed_count": 0,
+      "changed_keys": [],
+      "removed_count": 0,
+      "removed_keys": []
+    },
+    "previous_hash": "36a054faddf7ad5cbebfa49b15907072433e47a2ffe3f39b9354994e7bb69e93"
+  },
+  "errors": [],
+  "field_studio_map_hash": "e28170c5ceb284045da97b66daab227ece53f0d75e66c358df20f257b5006ba8",
+  "field_studio_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\gaming_mice\\_control_plane\\field_studio_map.json",
+  "field_studio_source_hash": null,
+  "field_studio_source_path": "",
+  "generated_at": "2026-03-23T07:53:06.491Z",
+  "source_summary": {
+    "component_sheets": 0,
+    "component_sources": 0,
+    "enum_lists": 0,
+    "key_rows": 29,
+    "sampled_product_columns": 0,
+    "sampled_values": 0
+  },
+  "version": 1,
+  "warnings": []
+}

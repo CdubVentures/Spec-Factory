@@ -2,7 +2,7 @@
 
 > **Purpose:** Provide the verified lookup table of first-class product, authoring, runtime, and review features in the live system.
 > **Prerequisites:** [../03-architecture/system-map.md](../03-architecture/system-map.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 | Feature | Description | Doc link | Key files |
 |---------|-------------|----------|-----------|

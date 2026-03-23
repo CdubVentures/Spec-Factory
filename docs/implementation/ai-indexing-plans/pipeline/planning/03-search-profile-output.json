@@ -1,6 +1,6 @@
 {
   "_doc": "Stage 03 Search Profile output returned by runSearchProfile() and its inner buildSearchProfile().",
-  "validated_against": "2026-03-22",
+  "validated_against": "2026-03-23",
   "runSearchProfile_return": {
     "searchProfileBase": "object — from buildSearchProfile()",
     "effectiveHostPlan": "object|null — from buildEffectiveHostPlan() when validatedRegistry exists",

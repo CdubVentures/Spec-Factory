@@ -155,8 +155,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     s3Bucket,
     s3InputPrefix,
     s3OutputPrefix,
-    eloSupabaseAnonKey,
-    eloSupabaseEndpoint,
     llmWriteSummary,
     llmProvider,
     llmBaseUrl,
@@ -295,8 +293,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
   assignString(envOverrides, 'S3_BUCKET', s3Bucket);
   assignString(envOverrides, 'S3_INPUT_PREFIX', s3InputPrefix);
   assignString(envOverrides, 'S3_OUTPUT_PREFIX', s3OutputPrefix);
-  assignString(envOverrides, 'ELO_SUPABASE_ANON_KEY', eloSupabaseAnonKey);
-  assignString(envOverrides, 'ELO_SUPABASE_ENDPOINT', eloSupabaseEndpoint);
   assignString(envOverrides, 'LLM_PROVIDER', llmProvider);
   assignString(envOverrides, 'LLM_BASE_URL', llmBaseUrl);
   assignString(envOverrides, 'OPENAI_API_KEY', openaiApiKey);

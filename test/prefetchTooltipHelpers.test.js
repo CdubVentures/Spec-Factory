@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { formatTooltip } from '../tools/gui-react/src/pages/runtime-ops/components/prefetchTooltipHelpers.js';
+import { formatTooltip } from '../tools/gui-react/src/features/runtime-ops/components/prefetchTooltipHelpers.js';
 
 describe('formatTooltip', () => {
   it('formats tooltip sections with stable headings', () => {

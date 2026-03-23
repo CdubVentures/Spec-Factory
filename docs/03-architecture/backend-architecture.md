@@ -2,7 +2,7 @@
 
 > **Purpose:** Describe the verified server entrypoints, request pipeline, route families, process runtime, and error behavior with exact file paths.
 > **Prerequisites:** [system-map.md](./system-map.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Server Entrypoints
 

@@ -1,6 +1,6 @@
 # Brand Resolver Logic In And Out
 
-Validated against live code on 2026-03-22. Updated 2026-03-22 post-audit (B3+B4 fixes).
+Validated against live code on 2026-03-23. Updated 2026-03-22 post-audit (B3+B4 fixes). Updated 2026-03-23 (crawl config now registry-driven per P5-4).
 
 ## What this stage is
 
@@ -21,7 +21,7 @@ Primary owners:
 
 ## Registry settings
 
-No brand-resolver-specific registry settings exist. Confidence comes from the LLM response (not a registry default). Crawl config values (`rate_limit_ms: 2000`, `timeout_ms: 12000`) are hardcoded inline in the orchestrator pending the fetch/extraction redesign which will Zod-enforce crawl config.
+No brand-resolver-specific registry settings exist. Confidence comes from the LLM response (not a registry default). Crawl config for brand promotions uses two registry settings added in P5-4 (2026-03-23): `manufacturerCrawlRateLimitMs` (default 2000, range 100-30000) and `manufacturerCrawlTimeoutMs` (default 12000, range 1000-120000), read via `configInt()` in the orchestrator.
 
 Note: `manufacturerAutoPromote` is retired (deprecated, defaultsOnly, always true).
 
@@ -122,7 +122,7 @@ The orchestrator (`runDiscoverySeedPlan.js`) applies brand promotion inline afte
   - `tierName`: `'manufacturer'`
   - `sourceId`: `'brand_' + normalized_host` (deterministic)
   - `displayName`: `'{officialDomain} Official'`
-  - `crawlConfig`: `{ method: 'http', rate_limit_ms: 2000, timeout_ms: 12000, robots_txt_compliant: true }`
+  - `crawlConfig`: `{ method: 'http', rate_limit_ms: configInt(config, 'manufacturerCrawlRateLimitMs'), timeout_ms: configInt(config, 'manufacturerCrawlTimeoutMs'), robots_txt_compliant: true }`
   - `fieldCoverage`: `null`
   - `robotsTxtCompliant`: `true`
   - `baseUrl`: `'https://{host}'`

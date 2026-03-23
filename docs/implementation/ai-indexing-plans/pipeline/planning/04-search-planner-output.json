@@ -1,6 +1,6 @@
 {
   "_doc": "Stage 04 Search Planner output returned by runSearchPlanner().",
-  "validated_against": "2026-03-20",
+  "validated_against": "2026-03-23",
   "top_level_keys": [
     "enhancedRows",
     "source"

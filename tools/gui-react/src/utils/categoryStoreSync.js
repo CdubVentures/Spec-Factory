@@ -1,8 +1,10 @@
+export const DEFAULT_CATEGORY = 'mouse';
+
 function normalizeToken(value) {
   return String(value || '').trim();
 }
 
-export function coerceCategories(values, fallback = ['mouse']) {
+export function coerceCategories(values, fallback = [DEFAULT_CATEGORY]) {
   const input = Array.isArray(values) ? values : [];
   const seen = new Set();
   const output = [];
@@ -13,7 +15,7 @@ export function coerceCategories(values, fallback = ['mouse']) {
     output.push(token);
   }
   if (output.length > 0) return output;
-  return Array.isArray(fallback) && fallback.length > 0 ? fallback.map(normalizeToken).filter(Boolean) : ['mouse'];
+  return Array.isArray(fallback) && fallback.length > 0 ? fallback.map(normalizeToken).filter(Boolean) : [DEFAULT_CATEGORY];
 }
 
 export function resolveActiveCategory({ currentCategory, categories }) {
@@ -22,6 +24,6 @@ export function resolveActiveCategory({ currentCategory, categories }) {
   if (current && normalizedCategories.includes(current)) {
     return current;
   }
-  return normalizedCategories[0] || 'mouse';
+  return normalizedCategories[0] || DEFAULT_CATEGORY;
 }
 

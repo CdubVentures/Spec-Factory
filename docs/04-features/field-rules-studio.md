@@ -2,7 +2,7 @@
 
 > **Purpose:** Trace the verified studio authoring flow for field maps, known values, component DB views, compile actions, and cache invalidation.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [category-authority.md](./category-authority.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Entry Points
 

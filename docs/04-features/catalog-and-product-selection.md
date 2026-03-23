@@ -2,7 +2,7 @@
 
 > **Purpose:** Trace the verified category, product, brand, and queue-seeding flow from the GUI to catalog storage and SpecDb mirrors.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Entry Points
 
@@ -17,8 +17,10 @@
 ## Dependencies
 
 - `src/features/catalog/products/productCatalog.js`
+- `src/features/catalog/products/upsertCatalogProductRow.js` — SpecDb product row upsert extracted from inline route logic
 - `src/features/catalog/identity/brandRegistry.js`
 - `src/features/catalog/products/reconciler.js`
+- `src/features/catalog/contracts/catalogShapes.js` — Zod-style shape descriptors for catalog/brand responses (O(1) contract alignment)
 - `src/queue/queueState.js`
 - `src/db/specDb.js`
 - `category_authority/{category}/_control_plane/product_catalog.json`
@@ -29,7 +31,7 @@
 2. The GUI calls `POST`, `PUT`, or `DELETE` on `/api/v1/catalog/:category/products` through `tools/gui-react/src/api/client.ts`.
 3. `src/features/catalog/api/catalogRoutes.js` delegates to `catalogAddProduct`, `catalogUpdateProduct`, `catalogRemoveProduct`, or bulk/seed helpers.
 4. Catalog helpers update `product_catalog.json` under `category_authority/{category}/_control_plane/` and may queue the product through `upsertQueueProduct()`.
-5. The route mirrors the catalog state into SQLite via `specDb.upsertProduct()` or delete helpers when SpecDb is available.
+5. The route mirrors the catalog state into SQLite via `upsertCatalogProductRow()` (in `src/features/catalog/products/upsertCatalogProductRow.js`) when SpecDb is available.
 6. The route emits `data-change` events so review, indexing, and studio screens refresh cached product lists.
 7. Brand rename/delete actions in `src/features/catalog/api/brandRoutes.js` cascade into catalog rows, queue state, and SpecDb product mirrors.
 

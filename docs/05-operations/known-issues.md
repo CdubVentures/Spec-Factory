@@ -2,7 +2,7 @@
 
 > **Purpose:** Record verified bugs, gaps, and operator gotchas so arriving agents do not mistake them for newly introduced regressions.
 > **Prerequisites:** [deployment.md](./deployment.md), [../03-architecture/auth-and-sessions.md](../03-architecture/auth-and-sessions.md)
-> **Last validated:** 2026-03-17
+> **Last validated:** 2026-03-23
 
 ## Current Issues
 
@@ -17,14 +17,21 @@
 | `buildIndexingRunModelPayload()` omits extract/validate/write fallback model fields expected by the GUI test | the indexing run payload test is red and the current payload surface is narrower than the test fixture assumes | inspect `tools/gui-react/src/features/indexing/api/indexingRunModelPayload.ts` before adding or consuming fallback-model payload keys | `tools/gui-react/src/features/indexing/api/__tests__/indexingRunModelPayload.test.ts`, `tools/gui-react/src/features/indexing/api/indexingRunModelPayload.ts` |
 | Several GUI state tests fail under `node --test` because TypeScript ESM modules import sibling files without explicit `.ts` extensions | `llm-config` and `pipeline-settings` state-module tests fail before assertions run, so the current Node ESM harness is not a complete proof path for those modules | use `npm run gui:build` and targeted runtime checks as the current proof path, and treat these test failures as active import-resolution debt | `tools/gui-react/src/features/llm-config/state/llmPreflightValidation.ts`, `tools/gui-react/src/features/llm-config/state/llmMixDetection.ts`, `tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsPayload.ts`, `tools/gui-react/src/features/llm-config/state/__tests__/*.ts`, `tools/gui-react/src/features/pipeline-settings/state/__tests__/*.ts` |
 | `npm run env:check` now passes, but it only scans the fixed `FILES_TO_SCAN` list in `tools/check-env-example-sync.mjs`, including two paths that no longer exist | a passing env-check is not a full manifest-completeness guarantee and can be misread as stronger coverage than it actually provides | treat `src/core/config/manifest/*.js` and `src/config.js` as the SSOT, and treat `env:check` as a narrow reference scan only | `tools/check-env-example-sync.mjs`, `src/config.js`, `src/core/config/manifest/*.js` |
+| `src/features/settings/api/settingsManifestBuilder.js` and its test `test/settingsManifestEndpoint.test.js` have been deleted | the settings manifest endpoint is no longer available; code referencing it will fail | use the settings authority and registry-driven settings routes instead | `src/features/settings/api/configRoutes.js`, `src/shared/settingsRegistry.js` |
+| `src/adapters/tableParsing.js` moved to `src/features/indexing/extraction/parsers/tableParsing.js` | any imports from the old path will fail | update imports to use the new feature-scoped path | `src/features/indexing/extraction/parsers/tableParsing.js` |
+| GUI helper files relocated from `src/pages/runtime-ops/` to feature-scoped locations | old import paths for `prefetchTooltipHelpers`, `domainClassifierHelpers`, `searchResultsHelpers`, and `runActivityScopeHelpers` no longer resolve | import from the new feature-scoped locations in `src/features/runtime-ops/` | `tools/gui-react/src/features/runtime-ops/` |
+| `RUNTIME_SETTINGS_ROUTE_PUT — characterization` test fails consistently | the characterization test for the runtime settings PUT route does not match current implementation | investigate the settings route PUT contract drift | `src/features/settings/api/configRoutes.js` |
 
 ## Notes
 
-- Current proof snapshot on 2026-03-17:
+- Current proof snapshot on 2026-03-23:
   - `npm run gui:build` passes.
   - `npm run env:check` passes with `OK (3 referenced keys covered)`.
-  - `npm test` reports `6313` pass, `11` fail, `1` skipped.
+  - `npm test` reports approximately `7692` pass, `1` fail on a clean run. The suite is non-deterministic; timing-sensitive runs can show higher failure counts (up to ~123 fail, 11 cancelled) due to race conditions in file system access and process lifecycle tests.
+  - The consistent failure is `RUNTIME_SETTINGS_ROUTE_PUT — characterization`.
+  - The test count has grown from ~6313 to ~7693 since the 2026-03-17 baseline.
 - Auth-related environment variables exist, but no verified login/session middleware protects the live GUI/API server. Treat the runtime as a trusted-network local tool unless that architecture changes.
+- `gaming_mice` category now exists alongside `keyboard`, `monitor`, and `mouse`.
 
 ## Validated Against
 

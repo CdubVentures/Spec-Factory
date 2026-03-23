@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified SQLite schema, migration path, and canonical-versus-derived data ownership boundaries.
 > **Prerequisites:** [backend-architecture.md](./backend-architecture.md), [frontend-architecture.md](./frontend-architecture.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Persistence Summary
 
@@ -37,6 +37,8 @@
 - The schema comment at the bottom of `src/db/specDbSchema.js` explicitly states that the removed `source_strategy` table is no longer used; `sources.json` under category authority is the SSOT for source strategy.
 - `evidence_chunks_fts` is the only verified virtual table in the schema; it indexes `evidence_chunks` text for evidence search.
 - Several columns hold JSON-encoded text payloads (`meta`, `host_stats`, `per_field_helpfulness`, `last_run`, `data`, `fields`, `methods`) even though the underlying SQLite type is `TEXT`.
+- Store modules are composited via `src/db/stores/`: candidateStore, reviewStore, componentStore, itemStateStore, enumListStore, keyReviewStore, billingStore, sourceIntelStore, queueProductStore, llmRouteSourceStore, and fieldHistoryStore.
+
 ## Core review state
 
 ### `candidates`

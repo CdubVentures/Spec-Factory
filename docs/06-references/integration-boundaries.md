@@ -2,7 +2,7 @@
 
 > **Purpose:** Define where the local runtime stops and external systems or sidecars begin, including contract surfaces and failure behavior.
 > **Prerequisites:** [../02-dependencies/external-services.md](../02-dependencies/external-services.md), [../03-architecture/system-map.md](../03-architecture/system-map.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Boundary Matrix
 

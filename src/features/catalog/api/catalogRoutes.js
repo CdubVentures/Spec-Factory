@@ -1,6 +1,7 @@
 import { resolveProductIdentity } from '../index.js';
 import { emitDataChange } from '../../../api/events/dataChangeContract.js';
 import { recordQueueCleanupOutcome } from '../../../observability/dataPropagationCounters.js';
+import { upsertCatalogProductRow } from '../products/upsertCatalogProductRow.js';
 
 export function registerCatalogRoutes(ctx) {
   const {
@@ -69,20 +70,6 @@ export function registerCatalogRoutes(ctx) {
     return 0;
   }
 
-  function upsertCatalogProductRow(specDb, category, productId, product) {
-    if (!specDb?.upsertProduct || !productId || !product || typeof product !== 'object') return false;
-    specDb.upsertProduct({
-      category: specDb.category || String(category || '').trim().toLowerCase(),
-      product_id: productId,
-      brand: String(product.brand || '').trim(),
-      model: String(product.model || '').trim(),
-      variant: String(product.variant || '').trim(),
-      status: String(product.status || '').trim() || 'active',
-      seed_urls: Array.isArray(product.seed_urls) ? product.seed_urls : [],
-      identifier: String(product.identifier || '').trim() || null,
-    });
-    return true;
-  }
 
   async function syncCategoryCatalogToSpecDb(category) {
     const cat = String(category || '').trim().toLowerCase();

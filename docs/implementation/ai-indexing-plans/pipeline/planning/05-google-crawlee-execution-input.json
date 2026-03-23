@@ -1,6 +1,6 @@
 {
   "_doc": "Google transport contract used by runSearchProviders().",
-  "validated_against": "2026-03-18",
+  "validated_against": "2026-03-23",
   "entrypoint": "src/features/indexing/search/searchGoogle.js :: searchGoogle()",
   "activation_gate": {
     "transport_router": "src/features/indexing/search/searchProviders.js :: splitEnginesByTransport()",

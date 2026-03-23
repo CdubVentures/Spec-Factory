@@ -5,33 +5,24 @@
 // - NEW_COMPONENT: genuinely different → flag for human approval
 // - REJECT: bad data, extraction error, insufficient evidence
 
+import { z, toJSONSchema } from 'zod';
 import { callLlmWithRouting, hasLlmRouteApiKey } from '../../../core/llm/client/routing.js';
 
+export const componentMatchResponseZodSchema = z.object({
+  decisions: z.array(z.object({
+    review_id: z.string(),
+    decision: z.enum(['same_component', 'new_component', 'reject']),
+    confidence: z.number(),
+    reasoning: z.string(),
+    suggested_alias: z.string().optional(),
+    suggested_name: z.string().optional(),
+    suggested_maker: z.string().optional(),
+  })),
+});
+
 function responseSchema() {
-  return {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      decisions: {
-        type: 'array',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            review_id: { type: 'string' },
-            decision: { type: 'string', enum: ['same_component', 'new_component', 'reject'] },
-            confidence: { type: 'number' },
-            reasoning: { type: 'string' },
-            suggested_alias: { type: 'string' },
-            suggested_name: { type: 'string' },
-            suggested_maker: { type: 'string' },
-          },
-          required: ['review_id', 'decision', 'confidence', 'reasoning'],
-        },
-      },
-    },
-    required: ['decisions'],
-  };
+  const { $schema, ...schema } = toJSONSchema(componentMatchResponseZodSchema);
+  return schema;
 }
 
 function buildSystemPrompt(reasoningNote) {

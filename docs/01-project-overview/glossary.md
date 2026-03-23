@@ -2,7 +2,7 @@
 
 > **Purpose:** Define project-specific domain terms and overloaded words that would otherwise cause an arriving LLM to hallucinate generic meanings.
 > **Prerequisites:** [scope.md](./scope.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 | Term | Meaning in this repo | Primary evidence |
 |------|----------------------|------------------|
@@ -23,6 +23,9 @@
 | Source strategy | Per-category source/discovery policy records exposed at `/api/v1/source-strategy` | `src/features/indexing/api/sourceStrategyRoutes.js` |
 | Run data storage | Optional relocation/archive destination for run artifacts separate from the default local output root | `src/api/guiServer.js`, `src/api/services/runDataRelocationService.js` |
 | Test mode | GUI/API surface for generating deterministic category fixtures and validation runs | `src/app/api/routes/testModeRoutes.js`, `tools/gui-react/src/pages/test-mode/TestModePage.tsx` |
+| Pipeline context schema | Zod schema that validates the context object threading through discovery pipeline stages | `src/features/indexing/discovery/pipelineContextSchema.js` |
+| Catalog product row | The per-product SpecDb row upserted when catalog products are added or updated, linking catalog identity to DB state | `src/features/catalog/products/upsertCatalogProductRow.js` |
+| LLM Config | The GUI page for per-category LLM route matrix configuration, distinct from the LLM Settings page that manages global model routing | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` |
 
 ## Validated Against
 

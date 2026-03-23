@@ -80,6 +80,24 @@ describe('catalogShapeAlignment', () => {
     assertContractKeysInInterface(CATALOG_ROW_KEYS, 'CatalogRow');
   });
 
+  it('CatalogRow must NOT contain CatalogProduct-only keys', () => {
+    // WHY: buildCatalog (GET /catalog/{cat}) never sends seed_urls, added_at,
+    // added_by — those only come from the CRUD endpoint (GET /catalog/{cat}/products).
+    // CatalogRow must be its own flat shape, not extending CatalogProduct.
+    const catalogOnlyKeys = CATALOG_PRODUCT_KEYS.filter(
+      (k) => !CATALOG_ROW_KEYS.includes(k),
+    );
+    ok(catalogOnlyKeys.length > 0, 'CATALOG_PRODUCT_KEYS should have keys absent from CATALOG_ROW_KEYS');
+    const tsKeys = extractInterfaceKeys(typesSource, 'CatalogRow');
+    ok(tsKeys !== null, 'interface CatalogRow not found in product.ts');
+    const tsKeySet = new Set(tsKeys);
+    const leaked = catalogOnlyKeys.filter((k) => tsKeySet.has(k));
+    ok(
+      leaked.length === 0,
+      `CatalogRow must not contain CatalogProduct-only keys: [${leaked.join(', ')}]`,
+    );
+  });
+
   it('Brand contains all BRAND_KEYS', () => {
     assertContractKeysInInterface(BRAND_KEYS, 'Brand');
   });

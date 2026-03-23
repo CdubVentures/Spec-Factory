@@ -1,7 +1,6 @@
 // WHY: Stage 03 of the prefetch pipeline — Search Profile generation.
 // ALWAYS runs — deterministic query generation. No LLM call.
 
-import { z } from 'zod';
 import {
   buildSearchProfile,
   buildScoredQueryRowsFromHostPlan,
@@ -11,27 +10,6 @@ import { lookupFieldRule } from '../../search/queryFieldRuleGates.js';
 import { buildEffectiveHostPlan } from '../domainHintResolver.js';
 import { configInt } from '../../../../shared/settingsAccessor.js';
 import { toArray } from '../discoveryIdentity.js';
-
-export const searchProfileInputSchema = z.object({
-  job: z.object({}).passthrough(),
-  categoryConfig: z.object({}).passthrough(),
-  missingFields: z.array(z.string()).optional().default([]),
-  learning: z.object({}).passthrough().nullable().optional().default(null),
-  brandResolution: z.object({}).passthrough().nullable().optional().default(null),
-  config: z.record(z.string(), z.unknown()),
-  searchProfileCaps: z.object({}).passthrough().optional().default({}),
-  variables: z.object({}).passthrough().optional().default({}),
-  focusGroups: z.array(z.unknown()).optional().default([]),
-  seedStatus: z.object({}).passthrough().nullable().optional().default(null),
-  logger: z.unknown().optional().default(null),
-  runId: z.string().optional().default(''),
-}).passthrough();
-
-export const searchProfileOutputSchema = z.object({
-  searchProfileBase: z.object({}).passthrough(),
-  effectiveHostPlan: z.object({}).passthrough().nullable(),
-  hostPlanQueryRows: z.array(z.unknown()),
-}).passthrough();
 
 /**
  * @param {object} ctx

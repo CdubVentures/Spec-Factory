@@ -21,7 +21,7 @@ import {
   recordDataChangeInvalidationFlush,
   createDataChangeInvalidationScheduler,
 } from '../../features/data-change/index.js';
-import { coerceCategories, resolveActiveCategory } from '../../utils/categoryStoreSync.js';
+import { coerceCategories, resolveActiveCategory, DEFAULT_CATEGORY } from '../../utils/categoryStoreSync.js';
 import { usePersistedToggle } from '../../stores/collapseStore';
 import { usePersistedTab } from '../../stores/tabStore';
 import {
@@ -227,7 +227,7 @@ export function AppShell() {
   const settingsPanelRef = useRef<HTMLDivElement | null>(null);
   const fieldTestTabActive = location.pathname.startsWith('/test-mode');
   const [lastMainPath, setLastMainPath] = usePersistedTab<string>('appShell:fieldTest:returnPath', '/');
-  const [lastMainCategory, setLastMainCategory] = usePersistedTab<string>('appShell:fieldTest:returnCategory', 'mouse');
+  const [lastMainCategory, setLastMainCategory] = usePersistedTab<string>('appShell:fieldTest:returnCategory', DEFAULT_CATEGORY);
   const blockUntilSettingsReady = !settingsReady && !allowDegradedRender;
   const indicatorTitle = isRunning
     ? `Run active${processStatus?.pid ? ` (PID ${processStatus.pid})` : ''}`
@@ -264,7 +264,7 @@ export function AppShell() {
   const handleFieldTestToggle = () => {
     if (fieldTestTabActive) {
       const restorePath = lastMainPath && !lastMainPath.startsWith('/test-mode') ? lastMainPath : '/';
-      const restoreCategory = lastMainCategory && !isTestCategory(lastMainCategory) ? lastMainCategory : 'mouse';
+      const restoreCategory = lastMainCategory && !isTestCategory(lastMainCategory) ? lastMainCategory : DEFAULT_CATEGORY;
       if (category !== restoreCategory) {
         setCategory(restoreCategory);
       }

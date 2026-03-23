@@ -2,53 +2,7 @@
 // Computes needSetOutput → planningContext → searchPlan (LLM call) and emits needset_computed.
 // Runs IN PARALLEL with Brand Resolver (Stage 02) via Promise.all.
 
-import { z } from 'zod';
 import { computeDeltas } from '../../../../indexlab/searchPlanBuilder.js';
-
-// WHY: Zod input schema validates the stage boundary contract.
-// Throws immediately on malformed input so failures are caught at the boundary,
-// not deep inside computeNeedSet or buildSearchPlanningContext.
-export const needSetInputSchema = z.object({
-  config: z.record(z.string(), z.unknown()),
-  job: z.object({
-    productId: z.string().optional().default(''),
-    brand: z.string().optional().default(''),
-    model: z.string().optional().default(''),
-    baseModel: z.string().optional().default(''),
-    aliases: z.array(z.string()).optional().default([]),
-    identityLock: z.object({
-      brand: z.string().optional().default(''),
-      model: z.string().optional().default(''),
-      base_model: z.string().optional().default(''),
-    }).optional().default({}),
-  }).passthrough(),
-  runId: z.string().optional().default(''),
-  category: z.string().optional().default(''),
-  categoryConfig: z.object({
-    category: z.string().optional(),
-    fieldOrder: z.array(z.string()).optional().default([]),
-    fieldRules: z.record(z.string(), z.unknown()).optional().default({}),
-    fieldGroups: z.record(z.string(), z.unknown()).optional().default({}),
-    sourceHosts: z.array(z.unknown()).optional().default([]),
-  }).passthrough(),
-  roundContext: z.object({
-    provenance: z.record(z.string(), z.unknown()).optional().default({}),
-    fieldRules: z.record(z.string(), z.unknown()).optional(),
-    fieldReasoning: z.record(z.string(), z.unknown()).optional().default({}),
-    constraintAnalysis: z.record(z.string(), z.unknown()).optional().default({}),
-    identityContext: z.record(z.string(), z.unknown()).optional().default({}),
-    round: z.number().optional().default(0),
-    previousFieldHistories: z.record(z.string(), z.unknown()).optional().default({}),
-  }).passthrough(),
-  llmContext: z.record(z.string(), z.unknown()).optional().default({}),
-  logger: z.unknown().optional().default(null),
-  queryExecutionHistory: z.object({
-    queries: z.array(z.unknown()).optional().default([]),
-  }).nullable().optional().default(null),
-  computeNeedSetFn: z.custom((v) => typeof v === 'function', { message: 'computeNeedSetFn must be a function' }),
-  buildSearchPlanningContextFn: z.custom((v) => typeof v === 'function', { message: 'buildSearchPlanningContextFn must be a function' }),
-  buildSearchPlanFn: z.custom((v) => typeof v === 'function', { message: 'buildSearchPlanFn must be a function' }),
-}).passthrough();
 
 /**
  * @param {object} ctx

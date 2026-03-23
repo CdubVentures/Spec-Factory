@@ -1,6 +1,6 @@
 {
   "_doc": "SearXNG and mixed-provider execution contract used by executeSearchQueries().",
-  "validated_against": "2026-03-18",
+  "validated_against": "2026-03-23",
   "query_inputs": {
     "queries": "string[]",
     "selectedQueryRowMap": "Map of planned query metadata",

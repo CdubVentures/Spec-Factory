@@ -1,6 +1,6 @@
 {
   "_doc": "Return shapes of resolveBrandDomain() and the stage wrapper runBrandResolver().",
-  "validated_against": "2026-03-22",
+  "validated_against": "2026-03-23",
   "function_return": {
     "officialDomain": "string",
     "aliases": "string[]",

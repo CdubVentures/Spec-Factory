@@ -14,7 +14,6 @@ const SECRET_RUNTIME_KEYS = new Set([
   'llmPlanApiKey',
   'openaiApiKey',
   'anthropicApiKey',
-  'eloSupabaseAnonKey',
 ]);
 const NON_CANONICAL_RUNTIME_KEYS = new Set([
   'localOutputRoot',

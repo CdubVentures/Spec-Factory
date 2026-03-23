@@ -150,7 +150,7 @@ export function buildWorkerButtonSubtitle(worker) {
   }
 
   if (worker.pool === 'search') {
-    return truncateText(worker.current_query, 45) || null;
+    return truncateText(worker.current_query, 45) || truncateText(worker.last_query, 45) || null;
   }
 
   if (worker.pool === 'fetch') {

@@ -10,6 +10,7 @@ import { Spinner } from '../../shared/ui/feedback/Spinner';
 import { pct, usd, relativeTime } from '../../utils/formatting';
 import { useProductStore } from '../../stores/productStore';
 import type { CatalogRow } from '../../types/product';
+import { parseCatalogRows } from '../../features/catalog/api/catalogParsers';
 import type { ColumnDef } from '@tanstack/react-table';
 
 const columns: ColumnDef<CatalogRow, unknown>[] = [
@@ -101,7 +102,7 @@ export function OverviewPage() {
 
   const { data: catalog = [], isLoading } = useQuery({
     queryKey: ['catalog', category],
-    queryFn: () => api.get<CatalogRow[]>(`/catalog/${category}`),
+    queryFn: () => api.parsedGet(`/catalog/${category}`, parseCatalogRows),
     refetchInterval: 10_000,
   });
 

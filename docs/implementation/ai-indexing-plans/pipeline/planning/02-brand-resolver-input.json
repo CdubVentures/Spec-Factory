@@ -1,6 +1,6 @@
 {
   "_doc": "Call boundary for resolveBrandDomain() and the stage wrapper runBrandResolver().",
-  "validated_against": "2026-03-22",
+  "validated_against": "2026-03-23",
   "function": "resolveBrandDomain",
   "file": "src/features/indexing/discovery/brandResolver.js",
   "call_shape": {
@@ -12,7 +12,7 @@
     "logger": "object|null — used for LLM error logging (brand_resolver_llm_error)"
   },
   "registry_settings_consumed": {
-    "_note": "No brand-resolver-specific registry settings. Confidence is LLM-derived via parseConfidence(). Crawl config values (rate_limit_ms: 2000, timeout_ms: 12000) are hardcoded inline in orchestrator pending fetch/extraction redesign."
+    "_note": "No brand-resolver-specific registry settings. Confidence is LLM-derived via parseConfidence(). Crawl config for brand promotions uses registry settings: manufacturerCrawlRateLimitMs (default 2000, range 100-30000) and manufacturerCrawlTimeoutMs (default 12000, range 1000-120000), read via configInt() in the orchestrator (P5-4, 2026-03-23)."
   },
   "storage_contract": {
     "read": "storage.getBrandDomain(brand, category)",
@@ -58,6 +58,6 @@
   "promotion_inputs": {
     "_note": "Promotion logic is inline in runDiscoverySeedPlan.js (lines 129-147), not a separate module.",
     "file": "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
-    "inline_logic": "Normalizes officialDomain, builds host entry with hardcoded crawlConfig, pushes to categoryConfig.sourceHosts/sourceHostMap"
+    "inline_logic": "Normalizes officialDomain, builds host entry with registry-driven crawlConfig (manufacturerCrawlRateLimitMs, manufacturerCrawlTimeoutMs via configInt), pushes to categoryConfig.sourceHosts/sourceHostMap/approvedRootDomains"
   }
 }

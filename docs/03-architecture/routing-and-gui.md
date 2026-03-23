@@ -2,7 +2,7 @@
 
 > **Purpose:** Map the live GUI route table, shared layouts, and client/server boundaries with exact file ownership.
 > **Prerequisites:** [frontend-architecture.md](./frontend-architecture.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Route Map
 
@@ -14,6 +14,7 @@
 | `/product` | `ProductPage` | none | page-level query | `AppShell` | selected product detail |
 | `/llm-settings` | `LlmSettingsPage` | none | authority hooks | `AppShell` | LLM route matrix editing |
 | `/indexing` | `IndexingPage` | none | heavy React Query surface | `AppShell` | run IndexLab and inspect run artifacts |
+| `/llm-config` | `LlmConfigPage` | none | LLM config authority hooks | `AppShell` | per-category LLM route matrix configuration |
 | `/pipeline-settings` | `PipelineSettingsPage` | none | authority hooks | `AppShell` | runtime, convergence, storage, and source strategy settings |
 | `/billing` | `BillingPage` | none | page-level queries | `AppShell` | billing rollups and learning artifacts |
 | `/studio` | `StudioPage` | none | studio page queries/mutations | `AppShell` | field-rules studio |

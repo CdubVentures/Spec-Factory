@@ -2,6 +2,7 @@
 // Calls the planner LLM to generate targeted search queries from focus_groups,
 // applies anti-garbage filtering, and assembles Schema 4.
 
+import { z, toJSONSchema } from 'zod';
 import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../core/llm/client/routing.js';
 import { configInt } from '../shared/settingsAccessor.js';
 import { stableHashString } from '../shared/stableHash.js';
@@ -16,24 +17,20 @@ function defaultQueryHash(query) {
 // WHY: NeedSet LLM assesses group search priority and annotations.
 // It does NOT generate search queries — query authoring belongs to
 // Search Profile (deterministic tiers) and Search Planner (LLM).
-const PLANNER_RESPONSE_SCHEMA = {
-  type: 'object',
-  properties: {
-    planner_confidence: { type: 'number' },
-    groups: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          key: { type: 'string' },
-          phase: { type: 'string' },
-          reason_active: { type: 'string' },
-        },
-        required: ['key'],
-      },
-    },
-  },
-};
+export const plannerResponseZodSchema = z.object({
+  planner_confidence: z.number().optional(),
+  groups: z.array(z.object({
+    key: z.string(),
+    phase: z.string().optional(),
+    reason_active: z.string().optional(),
+  })).optional(),
+});
+
+function plannerResponseSchema() {
+  const { $schema, ...schema } = toJSONSchema(plannerResponseZodSchema);
+  return schema;
+}
+const PLANNER_RESPONSE_SCHEMA = plannerResponseSchema();
 
 const PLANNER_SYSTEM_PROMPT = [
   'You are a search group assessor for hardware specification data collection.',

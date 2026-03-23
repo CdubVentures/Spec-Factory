@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { coerceCategories } from '../utils/categoryStoreSync.js';
+import { coerceCategories, DEFAULT_CATEGORY } from '../utils/categoryStoreSync.js';
 import { UI_SETTING_DEFAULTS } from './settingsManifest';
 import {
   DEFAULT_SF_THEME_PROFILE,
@@ -26,7 +26,6 @@ const STUDIO_MAP_AUTOSAVE_KEY = 'autoSaveMapEnabled';
 const STORAGE_AUTOSAVE_KEY = 'storage:autoSaveEnabled';
 const LAST_LIGHT_THEME_KEY = 'ui:lastLightTheme';
 const LAST_DARK_THEME_KEY = 'ui:lastDarkTheme';
-const DEFAULT_CATEGORY = 'mouse';
 
 function readPersistedBool(key: string, fallback: boolean): boolean {
   const value = readPersistedValue(key);

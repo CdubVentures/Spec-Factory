@@ -6,7 +6,7 @@ import {
   extractIdentityFromPairs,
   extractTablePairs,
   mapPairsToFieldCandidates
-} from '../../../../adapters/tableParsing.js';
+} from './tableParsing.js';
 
 const DEFAULT_CLUSTER_SELECTORS = [
   '[data-product-id]',

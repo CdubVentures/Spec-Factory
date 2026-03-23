@@ -346,8 +346,6 @@ test('process/start forwards representative runtime override families into child
       s3Bucket: 'spec-bucket',
       s3InputPrefix: 'specs/input',
       s3OutputPrefix: 'specs/output',
-      eloSupabaseAnonKey: 'anon-key',
-      eloSupabaseEndpoint: 'https://elo.test/rest/v1',
       llmProvider: 'openai',
       llmBaseUrl: 'http://llm.test',
       openaiApiKey: 'sk-openai',
@@ -398,8 +396,6 @@ test('process/start forwards representative runtime override families into child
   assert.equal(capturedEnv?.S3_BUCKET, 'spec-bucket');
   assert.equal(capturedEnv?.S3_INPUT_PREFIX, 'specs/input');
   assert.equal(capturedEnv?.S3_OUTPUT_PREFIX, 'specs/output');
-  assert.equal(capturedEnv?.ELO_SUPABASE_ANON_KEY, 'anon-key');
-  assert.equal(capturedEnv?.ELO_SUPABASE_ENDPOINT, 'https://elo.test/rest/v1');
   assert.equal(capturedEnv?.LLM_PROVIDER, 'openai');
   assert.equal(capturedEnv?.LLM_BASE_URL, 'http://llm.test');
   assert.equal(capturedEnv?.OPENAI_API_KEY, 'sk-openai');

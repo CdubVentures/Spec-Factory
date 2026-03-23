@@ -1,6 +1,6 @@
 # Search Planner Logic In And Out
 
-Validated against live code on 2026-03-20.
+Validated against live code on 2026-03-23.
 
 ## What this stage is
 
@@ -13,27 +13,30 @@ Primary owners:
 
 ## Inputs in
 
-`runSearchPlanner()` consumes:
+`runSearchPlanner()` consumes (verified against `searchPlanner.js:12-19`):
 
 - `searchProfileBase` — deterministic base from Stage 03
-- `variables` — resolved product identity
+- `queryExecutionHistory` — optional, defaults to `null`. Per-query completion state from frontierDb.
 - `config` — runtime config (LLM routing, timeouts)
 - `logger`
 - `identityLock` — `{ brand, model, variant, productId }`
 - `missingFields` — flat missing field list
-- `job`
 
-Derived from `searchProfileBase`:
+Note: `variables` and `job` are NOT parameters of `runSearchPlanner()`. They are consumed by other stages.
 
-- `queryRows` — `searchProfileBase.query_rows` (tier-tagged rows from Search Profile)
-- `queryHistory` — `searchProfileBase.base_templates` (prior queries to avoid repeating)
+Derived internally:
+
+- `queryRows` — `toArray(searchProfileBase?.query_rows)` (tier-tagged rows from Search Profile)
+- `queryHistory` — deduplicated union of `searchProfileBase.base_templates` AND `queryExecutionHistory.queries[].query_text` (both prior deterministic templates and actual executed queries to avoid repeating)
 
 ## Live logic
 
-1. Extract `query_rows` and `base_templates` from `searchProfileBase`.
-2. Call `enhanceQueryRows()` with tier-tagged rows + context.
-3. Emit `search_plan_generated` when LLM enhancement succeeds.
-4. Return `{ enhancedRows, source }`.
+1. Extract `query_rows` from `searchProfileBase` via `toArray()`.
+2. Build `queryHistory` as deduplicated union of `base_templates` + `queryExecutionHistory.queries[].query_text`.
+3. Call `enhanceQueryRows({ queryRows, queryHistory, missingFields, identityLock, config, logger })`.
+4. Count LLM-enhanced rows (where `hint_source` ends with `_llm`).
+5. Emit `search_plan_generated` event with enhancement details (always emitted, even on deterministic fallback).
+6. Return `{ enhancedRows: result.rows, source: result.source }`.
 
 ### `enhanceQueryRows` behavior
 

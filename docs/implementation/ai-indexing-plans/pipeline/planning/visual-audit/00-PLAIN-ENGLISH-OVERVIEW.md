@@ -1,7 +1,8 @@
 # Discovery Pipeline — Plain English Audit
 
 > Generated 2026-03-22. Verified against live code with line numbers.
-> Updated 2026-03-22: P0 SSOT fixes complete. P1 complete (field_history persistence, fetch drain timeout, Zod schemas). P2 re-audited (all findings resolved). P3 complete (processDiscoveryResults decomposed 674→344 LOC). Legacy archetype pipeline removed — tier-only is sole query generation path. See `PIPELINE-CONTRACT-AUDIT.md` for full audit.
+> Updated 2026-03-23: P5 cumulative Zod schema enforced at all stage boundaries. P6 re-audit complete (documentation corrected, live code verified). See `PIPELINE-CONTRACT-AUDIT.md` for full audit.
+> Prior: P0 SSOT fixes. P1 field_history persistence. P2 re-audited. P3 processDiscoveryResults decomposed 674→344 LOC. Legacy archetype pipeline removed — tier-only is sole query generation path.
 
 ---
 
@@ -81,7 +82,7 @@ Given a brand name like "Logitech," this stage finds the official website (`logi
 2. **Cache hit** → return the stored domain and confidence (typically 0.8)
 3. **Cache miss** → ask an LLM: "What is the official domain for Logitech in the mouse category?"
 4. Store the result for next time
-5. If the LLM fails or returns no domain → confidence = 0, continue without it
+5. If the LLM fails or returns no domain → confidence = null, continue without it
 
 ### What the Orchestrator Does With It
 

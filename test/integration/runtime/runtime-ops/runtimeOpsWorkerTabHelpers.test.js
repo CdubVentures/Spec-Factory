@@ -23,7 +23,7 @@ test('buildWorkerButtonLabel prefers fetch assignment labels and keeps search sl
       pool: 'search',
       slot: 'c',
     }),
-    'slot c',
+    'Slot C',
   );
 });
 
@@ -47,7 +47,7 @@ test('buildWorkerButtonSubtitle keeps canonical worker ids visible for humanized
       slot: 'c',
       current_query: 'razer viper v3 pro weight',
     }),
-    'search-c · razer viper v3 pro weight',
+    'razer viper v3 pro weight',
   );
 
   assert.equal(

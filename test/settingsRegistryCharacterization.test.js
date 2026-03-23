@@ -192,7 +192,7 @@ describe('RUNTIME_SETTINGS_ROUTE_PUT — characterization', () => {
 
   it('stringFreeMap has expected count', () => {
     const count = Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap).length;
-    ok(count >= 40, `expected >= 40, got ${count}`);
+    ok(count >= 38, `expected >= 38, got ${count}`);
   });
 
   it('boolMap has expected count', () => {

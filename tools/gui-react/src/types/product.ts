@@ -29,11 +29,19 @@ export interface CatalogProduct {
   rename_history?: RenameHistoryEntry[];
 }
 
-// WHY: Enriched view from /api/v1/catalog/{cat} (buildCatalog in catalogHelpers.js).
-// Extends CatalogProduct with pipeline summary data.
-// Contract: CATALOG_ROW_KEYS in src/features/catalog/contracts/catalogShapes.js.
-export interface CatalogRow extends CatalogProduct {
+// WHY: Enriched summary from /api/v1/catalog/{cat} (buildCatalog in catalogHelpers.js).
+// This is a DIFFERENT shape than CatalogProduct — shares identity fields but drops
+// seed_urls/added_at/added_by and adds pipeline summary fields.
+// Contract: CATALOG_ROW_SHAPE in src/features/catalog/contracts/catalogShapes.js.
+export interface CatalogRow {
+  productId: string;
+  id: number;
+  identifier: string;
+  brand: string;
+  model: string;
   base_model: string;
+  variant: string;
+  status: string;
   hasFinal: boolean;
   validated: boolean;
   confidence: number;

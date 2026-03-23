@@ -1,3 +1,4 @@
+import { z, toJSONSchema } from 'zod';
 import { buildRunId } from '../../../utils/common.js';
 import { callOpenAI } from './openaiClient.js';
 import { resolveLlmRoute, buildEffectiveCostRates } from './routing.js';
@@ -5,19 +6,17 @@ import { normalizeCostRates } from '../../../billing/costRates.js';
 import { appendCostLedgerEntry } from '../../../billing/costLedger.js';
 import { configInt, configBool, configValue } from '../../../shared/settingsAccessor.js';
 
+export const healthCheckResponseZodSchema = z.object({
+  ok: z.boolean(),
+  provider: z.string(),
+  model: z.string(),
+  echo: z.string(),
+  reasoning_used: z.boolean(),
+});
+
 function healthSchema() {
-  return {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      ok: { type: 'boolean' },
-      provider: { type: 'string' },
-      model: { type: 'string' },
-      echo: { type: 'string' },
-      reasoning_used: { type: 'boolean' }
-    },
-    required: ['ok', 'provider', 'model', 'echo', 'reasoning_used']
-  };
+  const { $schema, ...schema } = toJSONSchema(healthCheckResponseZodSchema);
+  return schema;
 }
 
 function defaultUsageRow() {

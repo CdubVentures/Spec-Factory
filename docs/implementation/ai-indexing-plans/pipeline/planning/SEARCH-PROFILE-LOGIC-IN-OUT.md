@@ -1,6 +1,6 @@
 # Search Profile Logic In And Out
 
-Validated against live code on 2026-03-22. Legacy archetype pipeline removed — tier-only is the sole query generation path. `buildQueryRows()` deleted.
+Validated against live code on 2026-03-23. Legacy archetype pipeline removed — tier-only is the sole query generation path. P5: cumulative Zod checkpoint validates output at `afterProfile`.
 
 ## What this stage is
 

@@ -15,7 +15,7 @@ import {
 } from '../../../stores/settingsManifest';
 import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore';
 import type { ProcessStatus } from '../../../types/events';
-import type { CatalogRow } from '../../../types/product';
+import { parseCatalogRows } from '../../catalog/api/catalogParsers';
 import {
   displayVariant,
 } from '../helpers';
@@ -113,7 +113,7 @@ export function IndexingPage() {
 
   const { data: catalog = [] } = useQuery({
     queryKey: ['catalog', category, 'indexing'],
-    queryFn: () => api.get<CatalogRow[]>(`/catalog/${category}`),
+    queryFn: () => api.parsedGet(`/catalog/${category}`, parseCatalogRows),
     enabled: !isAll,
     refetchInterval: 5000
   });

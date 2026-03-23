@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified build, packaging, startup, and promotion surfaces for the live local-first runtime.
 > **Prerequisites:** [../02-dependencies/setup-and-installation.md](../02-dependencies/setup-and-installation.md), [../03-architecture/system-map.md](../03-architecture/system-map.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Deployment Model
 

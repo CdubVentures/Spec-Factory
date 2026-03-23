@@ -2,34 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  enqueueAdapterSeedUrls,
   resolveScreencastCallback,
   createRunProductFetcherFactory,
 } from '../src/features/indexing/orchestration/shared/runProductContracts.js';
-
-test('runProduct contract helpers enqueue adapter seeds with adapter_seed priority', () => {
-  const calls = [];
-  const planner = {
-    enqueue(url, kind, options) {
-      calls.push({ url, kind, options });
-    },
-  };
-
-  enqueueAdapterSeedUrls(planner, ['https://seed.one', 'https://seed.two']);
-
-  assert.deepEqual(calls, [
-    {
-      url: 'https://seed.one',
-      kind: 'adapter_seed',
-      options: { forceApproved: true, forceBrandBypass: false },
-    },
-    {
-      url: 'https://seed.two',
-      kind: 'adapter_seed',
-      options: { forceApproved: true, forceBrandBypass: false },
-    },
-  ]);
-});
 
 test('runProduct fetcher factory wires screencast only into browser-backed fetchers', () => {
   const constructorCalls = [];

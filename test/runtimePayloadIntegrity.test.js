@@ -64,8 +64,6 @@ test('every runtime payload key is accepted by the backend PUT handler', async (
     runtimeEventsKey: '',
     s3InputPrefix: '',
     s3OutputPrefix: '',
-    eloSupabaseAnonKey: '',
-    eloSupabaseEndpoint: '',
     llmProvider: '',
     llmBaseUrl: '',
     openaiApiKey: '',

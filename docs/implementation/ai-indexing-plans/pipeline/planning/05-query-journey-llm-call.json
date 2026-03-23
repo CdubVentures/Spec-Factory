@@ -1,6 +1,6 @@
 {
   "_doc": "There is no Query Journey-owned LLM call in the current implementation.",
-  "validated_against": "2026-03-20",
+  "validated_against": "2026-03-23",
   "query_journey_itself": {
     "llm_call": false,
     "implemented_by": [
@@ -9,9 +9,8 @@
     ],
     "operations": [
       "receive enhanced rows from Search Planner (LLM-enhanced or deterministic fallback — treated identically)",
-      "dedupeQueryRows()",
-      "prioritizeQueryRows() by field priority and host-field fit",
-      "cap to searchProfileQueryCap",
+      "dedupeQueryRows(queryCandidates, dedupeQueriesCap)",
+      "cap to searchProfileQueryCap via .slice(0, mergedQueryCap)",
       "enforceIdentityQueryGuard()",
       "append guarded host-plan rows (separately deduped)",
       "build llm_queries from rows where hint_source ends with _llm",

@@ -1,6 +1,6 @@
 {
-  "_doc": "Input contract for Stage 01 NeedSet. Validated against live code 2026-03-22.",
-  "validated_against": "2026-03-22",
+  "_doc": "Input contract for Stage 01 NeedSet. Validated against live code 2026-03-23.",
+  "validated_against": "2026-03-23",
   "stage_wrapper": {
     "function": "runNeedSet",
     "file": "src/features/indexing/discovery/stages/needSet.js",

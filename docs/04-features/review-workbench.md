@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified scalar, component, and enum review flows from the GUI to review mutation handlers and SQLite state.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [catalog-and-product-selection.md](./catalog-and-product-selection.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Entry Points
 

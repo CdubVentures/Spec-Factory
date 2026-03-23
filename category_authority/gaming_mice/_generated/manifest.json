@@ -1,0 +1,49 @@
+{
+  "algorithm": "sha256",
+  "artifact_count": 8,
+  "artifacts": [
+    {
+      "bytes": 475,
+      "path": "cross_validation_rules.json",
+      "sha256": "f0f5948afb30b4634b193502ffb658848f6c9593c860b76687baf663b6dc0a52"
+    },
+    {
+      "bytes": 1875,
+      "path": "field_groups.json",
+      "sha256": "8dee52f14baf56aa37fd129a4f9d1b88ac26a1ba2b694ce84e572a199dcc645b"
+    },
+    {
+      "bytes": 90947,
+      "path": "field_rules.json",
+      "sha256": "39c0e82cfcd7493f8a60b0462d5606aa289cec5fcb007d503af3403a9a94c94e"
+    },
+    {
+      "bytes": 90947,
+      "path": "field_rules.runtime.json",
+      "sha256": "39c0e82cfcd7493f8a60b0462d5606aa289cec5fcb007d503af3403a9a94c94e"
+    },
+    {
+      "bytes": 201,
+      "path": "key_migrations.json",
+      "sha256": "f586186d31cee70ccb52f334fc38e4b83e4768abed23aab8b1e711cd73aeecf5"
+    },
+    {
+      "bytes": 110,
+      "path": "known_values.json",
+      "sha256": "d798f43b23d8631124a5f98113c72e3212cba2b254f082091b5cf5e943a0fb6a"
+    },
+    {
+      "bytes": 7976,
+      "path": "parse_templates.json",
+      "sha256": "88a9d601365c71671ce63e02177e83e76dea6667541cb3cd691c309ff4ab2485"
+    },
+    {
+      "bytes": 22149,
+      "path": "ui_field_catalog.json",
+      "sha256": "c5daaea2e95c48dd72df20c194218727ab70f87fbee4c3d737d8a4cece4b05d3"
+    }
+  ],
+  "category": "gaming_mice",
+  "generated_at": "2026-03-23T07:59:07.488Z",
+  "version": 1
+}

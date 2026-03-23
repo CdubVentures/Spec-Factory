@@ -1,6 +1,6 @@
 {
   "_doc": "Query Journey stage output plus the downstream execution/triage fields it feeds.",
-  "validated_against": "2026-03-22",
+  "validated_against": "2026-03-23",
   "runQueryJourney_return": {
     "queries": "final execution query strings",
     "selectedQueryRowMap": "Map keyed by lowercased query",
@@ -89,25 +89,25 @@
     }
   },
   "processDiscoveryResults_return": {
+    "_doc": "Verified against discoveryResultProcessor.js:321-341 (2026-03-23)",
     "enabled": true,
     "discoveryKey": "string",
     "candidatesKey": "string",
-    "candidates": "selected discovery rows (approved + candidate)",
-    "approvedUrls": "string[]",
-    "candidateUrls": "string[]",
+    "candidates": "Array<object> -- candidateRowsFinal (approved + not-selected + overflow, triage-annotated)",
+    "selectedUrls": "string[] -- URLs selected by SERP selector LLM (was incorrectly documented as approvedUrls)",
+    "allCandidateUrls": "string[] -- all candidate URLs including not-selected (was incorrectly documented as candidateUrls)",
     "queries": "string[]",
-    "llm_queries": "array; canonical callers currently pass []",
-    "search_profile": "executed search_profile payload",
+    "llm_queries": "string[] -- empty array from canonical callers",
+    "search_profile": "object -- executed search_profile payload (status: 'executed')",
     "search_profile_key": "string",
     "search_profile_run_key": "string|null",
     "search_profile_latest_key": "string|null",
-    "provider_state": "searchEngineAvailability() result",
+    "provider_state": "object -- searchEngineAvailability() result",
     "query_concurrency": "number",
-    "uber_search_plan": "object|null",
     "internal_satisfied": "boolean",
     "external_search_reason": "string|null",
-    "search_attempts": "array",
-    "search_journal": "array",
-    "serp_explorer": "object"
+    "search_attempts": "Array<object>",
+    "search_journal": "Array<object>",
+    "serp_explorer": "object -- SERP explorer summary with per-query stats"
   }
 }

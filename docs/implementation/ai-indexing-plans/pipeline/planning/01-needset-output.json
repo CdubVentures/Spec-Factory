@@ -1,6 +1,6 @@
 {
   "_doc": "Output contracts for Stage 01 NeedSet. Three layers: stage return, Schema 2 (computeNeedSet), and events.",
-  "validated_against": "2026-03-22",
+  "validated_against": "2026-03-23",
 
   "stage_return": {
     "_doc": "What runNeedSet() returns to the orchestrator. Clean 3-field contract.",

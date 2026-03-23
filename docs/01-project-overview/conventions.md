@@ -2,7 +2,7 @@
 
 > **Purpose:** Record the enforced repository rules, code organization patterns, and notable absences so an LLM edits in-bounds.
 > **Prerequisites:** [scope.md](./scope.md), [folder-map.md](./folder-map.md)
-> **Last validated:** 2026-03-17
+> **Last validated:** 2026-03-23
 
 ## Non-Negotiable Repo Rules
 
@@ -44,7 +44,7 @@
 - Primary test roots: `test/` and `tests/`.
 - Prefer behavior-level tests over implementation-level tests.
 - Existing suite includes GUI contract/browser tests using Playwright, for example `test/runtimeOpsWorkerContractsGui.test.js`.
-- Full-suite proof during this audit: `npm test` -> `6313` pass, `11` fail, `1` skipped on 2026-03-17. Do not assume a green baseline; consult [../05-operations/known-issues.md](../05-operations/known-issues.md) before treating those failures as new regressions.
+- Full-suite proof on 2026-03-23: `npm test` -> `7509` pass, `123` fail, `11` cancelled. Do not assume a green baseline; consult [../05-operations/known-issues.md](../05-operations/known-issues.md) before treating those failures as new regressions.
 
 ## Branching, Commit, PR, Review Conventions
 
@@ -62,7 +62,7 @@
 | config | `package.json` | test runner and root toolchain expectations |
 | config | `tools/gui-react/package.json` | GUI TypeScript/Vite/Tailwind toolchain |
 | source | `tools/gui-react/src/App.tsx` | thin route-wrapper pattern in the GUI |
-| command | `npm test` | current full-suite baseline is red with 11 failures |
+| command | `npm test` | current full-suite baseline is red with 123 failures (7509 pass, 11 cancelled) |
 
 ## Related Documents
 

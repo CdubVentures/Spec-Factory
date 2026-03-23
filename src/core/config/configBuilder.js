@@ -200,8 +200,6 @@ export function buildRawConfig({ manifestApplicator }) {
 
     // --- API keys (direct env read) ---
     serperApiKey: process.env.SERPER_API_KEY || runtimeSettingDefault('serperApiKey'),
-    eloSupabaseAnonKey: process.env.ELO_SUPABASE_ANON_KEY || '',
-    eloSupabaseEndpoint: process.env.ELO_SUPABASE_ENDPOINT || runtimeSettingDefault('eloSupabaseEndpoint'),
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
     geminiApiKey: process.env.GEMINI_API_KEY || '',
     deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',

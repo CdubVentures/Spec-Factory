@@ -1,6 +1,6 @@
 # SERP Triage Logic In And Out
 
-Validated against live code on 2026-03-22. P3 decomposition complete — orchestrator split into 4 files.
+Validated against live code on 2026-03-23. P3 decomposition complete — orchestrator split into 4 files. P6 re-audit: discoveryResult field names corrected (selectedUrls, allCandidateUrls).
 
 ## What this stage is
 
@@ -87,9 +87,9 @@ It returns:
 - `enabled`
 - `discoveryKey`
 - `candidatesKey`
-- `candidates`
-- `approvedUrls`
-- `candidateUrls`
+- `candidates` — all triage-annotated candidate rows (approved + not-selected + overflow)
+- `selectedUrls` — URLs selected by SERP selector LLM
+- `allCandidateUrls` — all candidate URLs (selected + not-selected)
 - `queries`
 - `llm_queries`
 - `search_profile`
@@ -106,7 +106,7 @@ It returns:
 
 Important detail:
 
-- returned `candidates` is the selected discovery set (`approved + candidate`), not only the candidate-only subset
+- returned `candidates` contains ALL triage-annotated rows (approved + not-selected + overflow), not only the selected subset. `selectedUrls` is the filtered list of URLs the LLM picked. `allCandidateUrls` includes everything.
 
 `serp_explorer` now also records selector-specific state:
 

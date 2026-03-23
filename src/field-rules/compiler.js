@@ -562,7 +562,7 @@ export async function validateRules({
   };
 }
 
-export { initCategory } from './compilerCategoryInit.js';
+export { initCategory, scaffoldCategory } from './compilerCategoryInit.js';
 
 export async function listFields({
   category,

@@ -233,6 +233,95 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
     assert.ok(logs.some(l => l.msg === 'schema4_computation_failed'), 'should log warning');
   });
 
+  it('final result is a fresh object, not a mutated discoveryResult reference', async () => {
+    let capturedDiscoveryResult = null;
+    const stageStubs = makeStageStubs();
+    stageStubs.processDiscoveryResultsFn = async () => {
+      const dr = { enabled: true, selectedUrls: [], allCandidateUrls: [], candidates: [] };
+      capturedDiscoveryResult = dr;
+      return dr;
+    };
+
+    const result = await runDiscoverySeedPlan({
+      config: makeConfig(),
+      storage: makeStorage(),
+      category: 'mouse',
+      categoryConfig: makeCategoryConfig(),
+      job: makeJob(),
+      runId: 'run-immutable',
+      logger: { info: () => {}, warn: () => {} },
+      roundContext: makeRoundContext(),
+      requiredFields: [],
+      llmContext: {},
+      frontierDb: null,
+      traceWriter: null,
+      learningStoreHints: null,
+      planner: { enqueue: () => {}, seedCandidates: () => {} },
+      normalizeFieldListFn: stubNormalizeFieldList,
+      loadEnabledSourceEntriesFn: stubLoadSourceEntries,
+      computeNeedSetFn: () => ({ fields: [], planner_seed: {} }),
+      buildSearchPlanningContextFn: () => ({ focus_groups: [] }),
+      buildSearchPlanFn: async () => ({ planner: { mode: 'disabled' } }),
+      ...stageStubs,
+    });
+
+    assert.notEqual(result, capturedDiscoveryResult,
+      'returned result should be a fresh object, not the mutated discoveryResult');
+    assert.ok('enqueue_summary' in result, 'enqueue_summary attached to fresh result');
+  });
+
+  it('brand promotion uses manufacturerCrawlRateLimitMs from config', async () => {
+    let capturedCategoryConfig = null;
+    const stageStubs = makeStageStubs();
+    stageStubs.runSearchProfileFn = (args) => {
+      capturedCategoryConfig = args.categoryConfig;
+      return {
+        searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] },
+        effectiveHostPlan: null,
+        hostPlanQueryRows: [],
+      };
+    };
+
+    await runDiscoverySeedPlan({
+      config: makeConfig({
+        manufacturerCrawlRateLimitMs: 5000,
+        manufacturerCrawlTimeoutMs: 30000,
+      }),
+      storage: makeStorage(),
+      category: 'mouse',
+      categoryConfig: makeCategoryConfig(),
+      job: { ...makeJob(), brand: 'Razer', identityLock: { brand: 'Razer' } },
+      runId: 'run-config',
+      logger: { info: () => {}, warn: () => {} },
+      roundContext: makeRoundContext(),
+      requiredFields: [],
+      llmContext: {},
+      frontierDb: null,
+      traceWriter: null,
+      learningStoreHints: null,
+      planner: { enqueue: () => {}, seedCandidates: () => {} },
+      normalizeFieldListFn: stubNormalizeFieldList,
+      loadEnabledSourceEntriesFn: stubLoadSourceEntries,
+      computeNeedSetFn: () => ({ fields: [], planner_seed: {} }),
+      buildSearchPlanningContextFn: () => ({ focus_groups: [] }),
+      buildSearchPlanFn: async () => ({ planner: { mode: 'disabled' } }),
+      ...stageStubs,
+      // WHY: Override AFTER stageStubs so brand resolver returns a real domain for promotion.
+      runNeedSetFn: async () => ({ focusGroups: [], seedStatus: null, seedSearchPlan: null }),
+      runBrandResolverFn: async () => ({
+        brandResolution: { officialDomain: 'razer.com', aliases: [], supportDomain: '', confidence: 0.9 },
+      }),
+    });
+
+    // Brand promotion should have added razer.com entry with config-driven crawl values
+    const entry = capturedCategoryConfig?.sourceHosts?.find(h => h.host === 'razer.com');
+    assert.ok(entry, 'razer.com should be promoted into sourceHosts');
+    assert.equal(entry.crawlConfig.rate_limit_ms, 5000,
+      'rate_limit_ms should come from config, not hardcoded 2000');
+    assert.equal(entry.crawlConfig.timeout_ms, 30000,
+      'timeout_ms should come from config, not hardcoded 12000');
+  });
+
   it('planner called with searchProfileBase when buildSearchPlan returns no handoff', async () => {
     let capturedArgs = null;
 

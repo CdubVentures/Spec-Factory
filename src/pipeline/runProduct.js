@@ -70,7 +70,7 @@ import { exportRunArtifacts } from '../exporter/exporter.js';
 import { writeFinalOutputs } from '../exporter/finalExporter.js';
 import { buildMarkdownSummary } from '../exporter/summaryWriter.js';
 import { EventLogger } from '../logger.js';
-import { createAdapterManager } from '../adapters/index.js';
+
 import {
   loadSourceIntel,
   persistSourceIntel
@@ -113,7 +113,6 @@ import {
   selectPreferredRouteRow, deriveRouteMatrixPolicy,
   loadRouteMatrixPolicyForRun, resolveRuntimeControlKey,
   defaultRuntimeOverrides, normalizeRuntimeOverrides, applyRuntimeOverridesToPlanner,
-  enqueueAdapterSeedUrls,
   resolveScreencastCallback, createRunProductFetcherFactory,
   buildIndexlabRuntimeCategoryConfig,
   PASS_TARGET_EXEMPT_FIELDS, markSatisfiedLlmFields,

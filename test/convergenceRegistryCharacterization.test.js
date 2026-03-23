@@ -8,7 +8,6 @@ import assert from 'node:assert/strict';
 import { SETTINGS_DEFAULTS } from '../src/shared/settingsDefaults.js';
 import { CONVERGENCE_SETTINGS_ROUTE_PUT, CONVERGENCE_SETTINGS_VALUE_TYPES } from '../src/features/settings-authority/convergenceSettingsRouteContract.js';
 import { CONVERGENCE_SETTINGS_KEYS } from '../src/core/config/settingsKeyMap.js';
-import { buildSettingsManifest } from '../src/features/settings/api/settingsManifestBuilder.js';
 
 describe('convergence settings characterization (golden master)', () => {
   it('SETTINGS_DEFAULTS.convergence has exact shape', () => {
@@ -52,11 +51,4 @@ describe('convergence settings characterization (golden master)', () => {
     );
   });
 
-  it('buildSettingsManifest().convergence has exact shape', () => {
-    const manifest = buildSettingsManifest();
-    assert.deepStrictEqual(manifest.convergence, {
-      keys: ['serpTriageMinScore'],
-      defaults: { serpTriageMinScore: 3 },
-    });
-  });
 });

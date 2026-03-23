@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified settings persistence flow for runtime, convergence, UI, storage, and LLM-route controls.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Entry Points
 
@@ -17,7 +17,9 @@
 
 - `src/features/settings-authority/settingsContract.js`
 - `src/features/settings-authority/userSettingsService.js`
-- `src/shared/settingsDefaults.js`
+- `src/shared/settingsRegistry.js` — SSOT registry defining 430+ settings across runtime, convergence, UI, and storage domains
+- `src/shared/settingsDefaults.js` — derived defaults from the registry
+- `src/shared/settingsAccessor.js` — null-safe accessor with registry clamping
 - `src/api/services/runDataRelocationService.js`
 - `src/db/specDb.js`
 - `category_authority/_runtime/user-settings.json`

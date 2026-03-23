@@ -1,14 +1,13 @@
+import { z, toJSONSchema } from 'zod';
 import { callLlmWithRouting, hasLlmRouteApiKey } from '../../../../core/llm/client/routing.js';
 
+export const summaryLlmResponseZodSchema = z.object({
+  markdown: z.string(),
+});
+
 function summarySchema() {
-  return {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      markdown: { type: 'string' }
-    },
-    required: ['markdown']
-  };
+  const { $schema, ...schema } = toJSONSchema(summaryLlmResponseZodSchema);
+  return schema;
 }
 
 function validatedFieldSnapshot(normalized, provenance) {

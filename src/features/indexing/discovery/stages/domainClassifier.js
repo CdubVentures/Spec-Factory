@@ -2,26 +2,7 @@
 // Enqueues approved URLs and seeds candidate URLs into the planner.
 // Builds triage metadata map so planner.enqueue() can look up triage labels.
 
-import { z } from 'zod';
 import { canonicalizeQueueUrl } from '../../../../planner/sourcePlannerUrlUtils.js';
-
-export const domainClassifierInputSchema = z.object({
-  discoveryResult: z.object({
-    candidates: z.array(z.unknown()).optional().default([]),
-    selectedUrls: z.array(z.string()).optional().default([]),
-    allCandidateUrls: z.array(z.string()).optional().default([]),
-  }).passthrough(),
-  planner: z.object({
-    enqueue: z.custom((v) => typeof v === 'function', { message: 'planner.enqueue must be a function' }),
-  }).passthrough(),
-  config: z.record(z.string(), z.unknown()).optional().default({}),
-  logger: z.unknown().optional().default(null),
-}).passthrough();
-
-export const domainClassifierOutputSchema = z.object({
-  enqueuedCount: z.number(),
-  seededCount: z.number(),
-}).passthrough();
 
 /**
  * @param {object} ctx

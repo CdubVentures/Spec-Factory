@@ -132,6 +132,7 @@ export interface RecalculateResponse {
   runs_updated: number;
   total_size_bytes: number;
   errors: Array<{ run_id: string; error: string }>;
+  warning?: string;
 }
 
 export interface ExportResponse {

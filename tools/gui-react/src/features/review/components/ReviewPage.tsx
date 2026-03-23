@@ -19,7 +19,7 @@ import { useDebouncedCallback } from '../../../hooks/useDebounce';
 import { usePersistedToggle } from '../../../stores/collapseStore';
 import { readReviewGridSessionState, writeReviewGridSessionState } from '../state/reviewGridSessionState';
 import type { ReviewLayout, ProductReviewPayload, ProductsIndexResponse, CandidateResponse, ReviewCandidate } from '../../../types/review';
-import type { CatalogRow } from '../../../types/product';
+import { parseCatalogProducts } from '../../catalog/api/catalogParsers';
 import type { KeyReviewLaneState } from '../../../types/review';
 
 const SORT_OPTIONS: { value: SortMode; label: string }[] = [
@@ -91,7 +91,7 @@ export function ReviewPage() {
 
   const { data: catalogRows } = useQuery({
     queryKey: ['catalog-review', category],
-    queryFn: () => api.get<CatalogRow[]>(`/catalog/${category}/products`),
+    queryFn: () => api.parsedGet(`/catalog/${category}/products`, parseCatalogProducts),
     enabled: category !== 'all',
   });
 

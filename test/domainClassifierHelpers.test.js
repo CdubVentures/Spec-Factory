@@ -10,7 +10,7 @@ import {
   buildDomainFunnelBullets,
   computeAvgBudgetScore,
   computeCooldownSummary,
-} from '../tools/gui-react/src/pages/runtime-ops/panels/domainClassifierHelpers.js';
+} from '../tools/gui-react/src/features/runtime-ops/selectors/domainClassifierHelpers.js';
 
 function makeDomain(overrides = {}) {
   return {

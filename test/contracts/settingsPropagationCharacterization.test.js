@@ -250,7 +250,6 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       'writeMarkdownSummary',
       'mirrorToS3', 'mirrorToS3Input',
       's3InputPrefix', 's3OutputPrefix',
-      'eloSupabaseAnonKey', 'eloSupabaseEndpoint',
       // Search
       'searchEnginesFallback', 'searxngBaseUrl', 'searxngMinQueryIntervalMs',
       'searchProfileCapMapJson',

@@ -3,7 +3,7 @@ Own catalog product, brand, identity, and artifact-migration behavior behind the
 This feature is the stable source for catalog-backed product identity and catalog maintenance workflows.
 
 ## Public API (The Contract)
-- `src/features/catalog/index.js`: product catalog CRUD/seed/list flows, brand registry/rename helpers, identity gate and authority helpers, catalog loaders, artifact migration helpers, `scanOrphans()`, `reconcileOrphans()`, and `getCatalogFeatureInfo()`.
+- `src/features/catalog/index.js`: product catalog CRUD/seed/list flows, brand registry/rename helpers, identity gate and authority helpers, catalog loaders, artifact migration helpers, `scanOrphans()`, `reconcileOrphans()`.
 - `src/features/catalog/api/catalogRoutes.js`: `registerCatalogRoutes(ctx)`.
 - `src/features/catalog/api/brandRoutes.js`: `registerBrandRoutes(ctx)`.
 

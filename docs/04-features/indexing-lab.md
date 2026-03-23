@@ -2,7 +2,7 @@
 
 > **Purpose:** Trace the verified end-to-end indexing run flow from GUI launch through process orchestration, artifact generation, and run replay APIs.
 > **Prerequisites:** [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Entry Points
 
@@ -17,6 +17,8 @@
 ## Dependencies
 
 - `src/features/indexing/orchestration/index.js`
+- `src/features/indexing/discovery/pipelineContextSchema.js` — Zod schema for the context object threading through discovery stages
+- `src/features/indexing/extraction/parsers/tableParsing.js` — table extraction parser (moved from `src/adapters/tableParsing.js`)
 - `src/indexlab/needsetEngine.js`
 - `src/runner/runUntilComplete.js`
 - `src/logger.js`

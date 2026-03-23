@@ -1,3 +1,4 @@
+import { z, toJSONSchema } from 'zod';
 import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../../../core/llm/client/routing.js';
 
 function normalizeToken(value) {
@@ -95,29 +96,19 @@ export function resolveEnumConsistencyFormatGuidance({
   return parts.join(' ');
 }
 
+export const enumConsistencyResponseZodSchema = z.object({
+  decisions: z.array(z.object({
+    value: z.string(),
+    decision: z.enum(['map_to_existing', 'keep_new', 'uncertain']),
+    target_value: z.string().optional(),
+    reasoning: z.string().optional(),
+    confidence: z.number().optional(),
+  })),
+});
+
 function responseSchema() {
-  return {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      decisions: {
-        type: 'array',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            value: { type: 'string' },
-            decision: { type: 'string', enum: ['map_to_existing', 'keep_new', 'uncertain'] },
-            target_value: { type: 'string' },
-            reasoning: { type: 'string' },
-            confidence: { type: 'number' },
-          },
-          required: ['value', 'decision'],
-        },
-      },
-    },
-    required: ['decisions'],
-  };
+  const { $schema, ...schema } = toJSONSchema(enumConsistencyResponseZodSchema);
+  return schema;
 }
 
 function defaultUncertainDecision(value) {

@@ -222,3 +222,31 @@ export async function initCategory({
     }
   };
 }
+
+/**
+ * Scaffold a new category end-to-end: init seed files + compile field rules.
+ * After success, loadCategoryConfig(category) will NOT throw.
+ */
+export async function scaffoldCategory({ category, template = 'electronics', config = {} }) {
+  const initResult = await initCategory({ category, template, config });
+
+  const preset = TEMPLATE_PRESETS[template] || TEMPLATE_PRESETS.electronics;
+  const selectedKeys = [
+    ...(preset.common_identity || []),
+    ...(preset.common_physical || []),
+    ...(preset.common_connectivity || []),
+    ...(preset.common_editorial || []),
+    ...(preset.common_commerce || []),
+    ...(preset.common_media || []),
+  ];
+
+  // Dynamic import avoids circular dep (compiler.js imports from this file)
+  const { compileRules } = await import('./compiler.js');
+  const compileResult = await compileRules({
+    category: initResult.category,
+    fieldStudioMap: { version: 1, selected_keys: selectedKeys, field_overrides: {} },
+    config,
+  });
+
+  return { ...initResult, compileResult };
+}

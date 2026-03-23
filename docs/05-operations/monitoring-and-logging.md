@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified health checks, log sinks, WebSocket telemetry channels, and observability counters used by the live runtime.
 > **Prerequisites:** [deployment.md](./deployment.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Health And Status Endpoints
 

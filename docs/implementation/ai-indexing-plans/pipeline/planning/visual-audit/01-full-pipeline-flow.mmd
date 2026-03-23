@@ -55,12 +55,12 @@ flowchart LR
   START --> PARALLEL
 
   %% ── CONVERGENCE ──
-  CONV{{"Convergence Point\n(Orchestrator merges\nNeedSet + Brand)"}}
+  CONV{{"Convergence Point\n(Orchestrator merges\nNeedSet + Brand)\nafterBootstrap ✓"}}
 
   PARALLEL --> CONV
 
   %% ── SEQUENTIAL STAGES ──
-  subgraph SEQ["SEQUENTIAL — Stages 03 through 08"]
+  subgraph SEQ["SEQUENTIAL — Stages 03 through 08 (Zod checkpoint validation at each boundary)"]
     direction LR
 
     S03["Stage 03\nSearch Profile\n(deterministic)\nGenerate tier-tagged\nquery rows"]
@@ -75,13 +75,13 @@ flowchart LR
 
     S08["Stage 08\nDomain Classifier\nEnqueue approved\nURLs to scraper"]
 
-    S03 --> S04 --> S05 --> S06 --> S07 --> S08
+    S03 -->|"afterProfile ✓"| S04 -->|"afterPlanner ✓"| S05 -->|"afterJourney ✓"| S06 -->|"afterExecution ✓"| S07 --> S08
   end
 
   CONV --> SEQ
 
   %% ── OUTPUT ──
-  DONE(["Approved URLs\nenqueued for\npage fetching\n+ extraction"])
+  DONE(["Approved URLs\nenqueued for\npage fetching\n+ extraction\nfinal ✓"])
 
   SEQ --> DONE
 

@@ -1,7 +1,7 @@
 {
-  "_doc": "PipelineContext -- accumulated state at Stage 03 convergence. Stages 01 (NeedSet) and 02 (Brand Resolver) run in parallel via Promise.all. This object represents everything available to Stage 03 and all subsequent stages.",
-  "validated_against": "2026-03-22",
-  "source_of_truth": "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
+  "_doc": "PipelineContext -- accumulated state at Stage 03 convergence. Stages 01 (NeedSet) and 02 (Brand Resolver) run in parallel via Promise.all. This object represents everything available to Stage 03 and all subsequent stages. NOTE: The authoritative runtime schema is now pipelineContextSchema.js (Zod, cumulative checkpoints). This JSON is a reference snapshot.",
+  "validated_against": "2026-03-23 (re-audited: discoveryResult fields corrected to match live code)",
+  "source_of_truth": "src/features/indexing/discovery/pipelineContextSchema.js (Zod SSOT) + src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js (orchestrator)",
 
   "orchestrator_context": {
     "_doc": "Resolved by the orchestrator before and between stages. Not owned by any single stage.",
@@ -94,11 +94,26 @@
     "07_result_processing": {
       "_doc": "SERP triage -- selector path or deterministic lane-selection path. Rewrites search_profile to status: 'executed'.",
       "discoveryResult": {
-        "approvedUrls": "string[]",
-        "candidateUrls": "string[]",
-        "candidates": "Array<object> -- triage-annotated candidate objects",
-        "seed_search_plan_output": "Schema4 | null -- attached by orchestrator after Stage 07 from needset.seedSearchPlan",
-        "_note": "Full discoveryResult shape is large and stage-internal. Key consumer-facing fields listed."
+        "enabled": "boolean (always true)",
+        "discoveryKey": "string",
+        "candidatesKey": "string",
+        "candidates": "Array<object> -- triage-annotated candidate rows (approved + not-selected + overflow)",
+        "selectedUrls": "string[] -- URLs selected by SERP selector LLM",
+        "allCandidateUrls": "string[] -- all candidate URLs (selected + not-selected)",
+        "queries": "string[]",
+        "llm_queries": "string[] -- empty array from canonical callers",
+        "search_profile": "object -- executed search_profile payload (status: 'executed')",
+        "search_profile_key": "string",
+        "search_profile_run_key": "string|null",
+        "search_profile_latest_key": "string|null",
+        "provider_state": "object -- searchEngineAvailability() result",
+        "query_concurrency": "number",
+        "internal_satisfied": "boolean",
+        "external_search_reason": "string|null",
+        "search_attempts": "Array<object>",
+        "search_journal": "Array<object>",
+        "serp_explorer": "object -- SERP explorer summary with per-query stats",
+        "_note": "Orchestrator attaches seed_search_plan_output and enqueue_summary via fresh merge after Stage 08."
       }
     },
     "08_domain_classifier": {
@@ -123,12 +138,10 @@
     "between_05_and_06": [
       "Emit search_queued events for all planned queries (GUI slot pre-allocation)"
     ],
-    "between_07_and_08": [
-      "Attach needset.seedSearchPlan to discoveryResult.seed_search_plan_output"
-    ],
     "after_08": [
-      "Attach classifierResult to discoveryResult.enqueue_summary",
-      "Return discoveryResult"
+      "Build finalResult as fresh merge: { ...discoveryResult, seed_search_plan_output, enqueue_summary }",
+      "Validate 'final' checkpoint",
+      "Return finalResult"
     ]
   }
 }

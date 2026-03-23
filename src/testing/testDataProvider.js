@@ -9,6 +9,7 @@
  * not hardcoded to mouse or any specific category.
  */
 
+import { z, toJSONSchema } from 'zod';
 import { callLlmWithRouting } from '../core/llm/client/routing.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -2650,39 +2651,24 @@ export function buildDeterministicSourceResults({
 
 // â”€â”€ Source Result Schema â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-const sourceResponseSchema = {
-  type: 'object',
-  additionalProperties: false,
-  properties: {
-    sources: {
-      type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          host: { type: 'string' },
-          tier: { type: 'integer' },
-          role: { type: 'string' },
-          fieldCandidates: {
-            type: 'array',
-            items: {
-              type: 'object',
-              additionalProperties: false,
-              properties: {
-                field: { type: 'string' },
-                value: { type: 'string' },
-                confidence: { type: 'number' }
-              },
-              required: ['field', 'value']
-            }
-          }
-        },
-        required: ['host', 'tier', 'fieldCandidates']
-      }
-    }
-  },
-  required: ['sources']
-};
+export const sourceResponseZodSchema = z.object({
+  sources: z.array(z.object({
+    host: z.string(),
+    tier: z.number().int(),
+    role: z.string().optional(),
+    fieldCandidates: z.array(z.object({
+      field: z.string(),
+      value: z.string(),
+      confidence: z.number().optional(),
+    })),
+  })),
+});
+
+function sourceResponseJsonSchema() {
+  const { $schema, ...schema } = toJSONSchema(sourceResponseZodSchema);
+  return schema;
+}
+const sourceResponseSchema = sourceResponseJsonSchema();
 
 // â”€â”€ Core Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

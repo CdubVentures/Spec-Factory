@@ -1,9 +1,3 @@
-export function enqueueAdapterSeedUrls(planner, adapterSeedUrls = []) {
-  for (const url of adapterSeedUrls) {
-    planner.enqueue(url, 'adapter_seed', { forceApproved: true, forceBrandBypass: false });
-  }
-}
-
 export function resolveScreencastCallback(config = {}) {
   return config.runtimeScreencastEnabled && typeof config.onScreencastFrame === 'function'
     ? config.onScreencastFrame

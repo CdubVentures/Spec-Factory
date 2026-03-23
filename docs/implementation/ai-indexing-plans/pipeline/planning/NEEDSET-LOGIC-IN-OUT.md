@@ -1,6 +1,6 @@
 # NeedSet Logic In And Out
 
-Validated against live code on 2026-03-22. Return shape simplified to 3-field contract.
+Validated against live code on 2026-03-23. Return shape simplified to 3-field contract. P5: cumulative Zod checkpoint validates output at `afterBootstrap`.
 `settings` parameter retired. Error handling split into step-isolated catches.
 `configInt` hardened with registry-derived clamping. `bestTierSeen` infinity guard added.
 

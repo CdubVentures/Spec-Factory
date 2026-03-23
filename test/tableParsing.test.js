@@ -4,7 +4,7 @@ import {
   extractIdentityFromPairs,
   extractTablePairs,
   mapPairsToFieldCandidates
-} from '../src/adapters/tableParsing.js';
+} from '../src/features/indexing/extraction/parsers/tableParsing.js';
 
 test('tableParsing: extracts rows from html tables', () => {
   const html = `

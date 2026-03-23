@@ -2,7 +2,7 @@
 
 > **Purpose:** Inventory the verified long-running loops, child-process jobs, and batch workers used by the live runtime.
 > **Prerequisites:** [../05-operations/deployment.md](../05-operations/deployment.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Job Inventory
 

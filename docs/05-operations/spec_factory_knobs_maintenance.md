@@ -2,7 +2,7 @@
 
 > **Purpose:** Track the current knob authority surfaces and verified inventory snapshots without treating this file as the canonical source of setting semantics.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../04-features/pipeline-and-runtime-settings.md](../04-features/pipeline-and-runtime-settings.md)
-> **Last validated:** 2026-03-17
+> **Last validated:** 2026-03-23
 
 This log is supplemental. The canonical live definitions remain the source files that own defaults, manifests, contracts, and persistence behavior.
 
@@ -10,11 +10,14 @@ This log is supplemental. The canonical live definitions remain the source files
 
 | Surface | Path | Current role |
 |---------|------|--------------|
-| shared defaults | `src/shared/settingsDefaults.js` | canonical defaults for `runtime`, `convergence`, `storage`, `ui`, and `autosave` |
+| settings registry SSOT | `src/shared/settingsRegistry.js` | canonical 430+ setting definitions across `RUNTIME_SETTINGS_REGISTRY`, `CONVERGENCE_SETTINGS_REGISTRY`, `UI_SETTINGS_REGISTRY`, and `STORAGE_SETTINGS_REGISTRY` |
+| shared defaults | `src/shared/settingsDefaults.js` | derived defaults from the registry for `runtime`, `convergence`, `storage`, `ui`, and `autosave` |
+| settings accessor | `src/shared/settingsAccessor.js` | null-safe accessor with NaN fallback and registry clamping |
+| clamping ranges | `src/shared/settingsClampingRanges.js` | range clamping for int/float/enum settings |
 | env manifest | `src/core/config/manifest/index.js` | canonical env-backed config key registry |
 | config assembly | `src/config.js` | merges env, manifest defaults, shared defaults, and persisted settings |
 | settings authority | `src/features/settings-authority/` | runtime/convergence/ui/storage validation, migration, and persistence |
-| settings API | `src/features/settings/api/configRoutes.js` | `/runtime-settings`, `/convergence-settings`, `/ui-settings`, `/storage-settings`, `/llm-settings/*`, `/settings-manifest` |
+| settings API | `src/features/settings/api/configRoutes.js` | `/runtime-settings`, `/convergence-settings`, `/ui-settings`, `/storage-settings`, `/llm-settings/*` |
 | source strategy SSOT | `category_authority/<category>/sources.json`, `src/features/indexing/sources/sourceFileService.js`, `src/features/indexing/api/sourceStrategyRoutes.js` | file-backed source strategy ownership and mutation |
 | LLM route defaults | `src/db/specDbHelpers.js`, `src/db/specDb.js` | default `llm_route_matrix` row seed and persistence |
 | GUI runtime settings | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx`, `tools/gui-react/src/features/pipeline-settings/components/RuntimeSettingsFlowCard.tsx` | current runtime/convergence/source-strategy editor surfaces |
@@ -113,4 +116,4 @@ The storage count includes persisted Storage-page credentials that are not backe
 
 - [Pipeline and Runtime Settings](../04-features/pipeline-and-runtime-settings.md) - current verified settings persistence flow.
 - [Category Authority](../04-features/category-authority.md) - current authority snapshot flow and category artifact roots.
-- [Implementation copy of knobs maintenance](../implementation/ai-indexing-plans/spec_factory_knobs_maintenance.md) - preserved historical reference only.
+- [Environment and Config](../02-dependencies/environment-and-config.md) - maps config surfaces to manifest groups and user-editable settings.

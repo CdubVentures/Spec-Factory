@@ -38,14 +38,15 @@ const HOST_TRUST_TO_LANE = {
 // serpSelectorOutputSchema — just keep_ids
 // ---------------------------------------------------------------------------
 
+import { z, toJSONSchema } from 'zod';
+
+export const serpSelectorOutputZodSchema = z.object({
+  keep_ids: z.array(z.string()),
+});
+
 export function serpSelectorOutputSchema() {
-  return {
-    type: 'object',
-    properties: {
-      keep_ids: { type: 'array', items: { type: 'string' } },
-    },
-    required: ['keep_ids'],
-  };
+  const { $schema, ...schema } = toJSONSchema(serpSelectorOutputZodSchema);
+  return schema;
 }
 
 // ---------------------------------------------------------------------------

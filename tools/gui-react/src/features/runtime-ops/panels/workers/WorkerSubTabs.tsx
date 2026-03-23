@@ -110,8 +110,8 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
                       </span>
                     )}
                   </span>
-                  {w.pool === 'search' && w.current_provider && (
-                    <SearchProviderIcon provider={w.current_provider} size={14} className="sf-text-muted shrink-0 opacity-70" />
+                  {w.pool === 'search' && (w.current_provider ?? w.last_provider) && (
+                    <SearchProviderIcon provider={(w.current_provider ?? w.last_provider)!} size={14} className="sf-text-muted shrink-0 opacity-70" />
                   )}
                   {w.state === 'stuck' && (
                     <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('stuck')}`}>

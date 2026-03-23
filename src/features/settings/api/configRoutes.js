@@ -1,6 +1,5 @@
 import { normalizeRunDataStorageSettings } from '../../../api/services/runDataRelocationService.js';
 import { loadUserSettingsSync } from '../../settings-authority/index.js';
-import { buildSettingsManifest } from './settingsManifestBuilder.js';
 import { createConfigPersistenceContext } from './configPersistenceContext.js';
 import { createIndexingMetricsHandler } from './configIndexingMetricsHandler.js';
 import { createLlmSettingsHandler } from './configLlmSettingsHandler.js';
@@ -112,9 +111,6 @@ export function registerConfigRoutes(ctx) {
     if (parts[0] === 'convergence-settings') return convergenceHandler(parts, params, method, req, res);
     if (parts[0] === 'runtime-settings') return runtimeHandler(parts, params, method, req, res);
     if (parts[0] === 'llm-policy') return llmPolicyHandler(parts, params, method, req, res);
-    if (parts[0] === 'settings-manifest' && method === 'GET') {
-      return jsonRes(res, 200, { ok: true, manifest: buildSettingsManifest() });
-    }
     return false;
   };
 }

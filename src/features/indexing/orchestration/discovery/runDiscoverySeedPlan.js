@@ -28,6 +28,7 @@ import { runSearchProfile } from '../../discovery/stages/searchProfile.js';
 import { runSearchPlanner } from '../../discovery/stages/searchPlanner.js';
 import { runQueryJourney } from '../../discovery/stages/queryJourney.js';
 import { runDomainClassifier } from '../../discovery/stages/domainClassifier.js';
+import { validatePipelineCheckpoint } from '../../discovery/pipelineContextSchema.js';
 
 function validateFunctionArg(name, value) {
   if (typeof value !== 'function') {
@@ -135,9 +136,12 @@ export async function runDiscoverySeedPlan({
         tierName: 'manufacturer',
         sourceId: `brand_${official.replace(/[^a-z0-9]/g, '_')}`,
         displayName: `${brand.brandResolution.officialDomain} Official`,
-        // WHY: crawlConfig is consumed by the fetcher for rate limiting and method detection.
-        // Hardcoded pending fetch/extraction redesign which will Zod-enforce crawl config.
-        crawlConfig: { method: 'http', rate_limit_ms: 2000, timeout_ms: 12000, robots_txt_compliant: true },
+        crawlConfig: {
+          method: 'http',
+          rate_limit_ms: configInt(discoveryConfig, 'manufacturerCrawlRateLimitMs'),
+          timeout_ms: configInt(discoveryConfig, 'manufacturerCrawlTimeoutMs'),
+          robots_txt_compliant: true,
+        },
         fieldCoverage: null,
         robotsTxtCompliant: true,
         baseUrl: `https://${official}`,
@@ -177,6 +181,19 @@ export async function runDiscoverySeedPlan({
     productId: job?.productId || '',
   };
 
+  // === Pipeline context: accumulate after bootstrap ===
+  let ctx = {
+    config: discoveryConfig, job, category, categoryConfig, runId,
+    focusGroups: needset.focusGroups,
+    seedStatus: needset.seedStatus,
+    seedSearchPlan: needset.seedSearchPlan,
+    brandResolution: brand.brandResolution,
+    variables, identityLock, missingFields,
+    learning, enrichedLexicon, searchProfileCaps,
+    planningHints, queryExecutionHistory,
+  };
+  validatePipelineCheckpoint('afterBootstrap', ctx, logger, discoveryConfig);
+
   // === Stage 03: Search Profile ===
   const profile = runSearchProfileFn({
     job, categoryConfig, missingFields,
@@ -188,12 +205,18 @@ export async function runDiscoverySeedPlan({
     logger, runId,
   });
 
+  ctx = { ...ctx, ...profile };
+  validatePipelineCheckpoint('afterProfile', ctx, logger, discoveryConfig);
+
   // === Stage 04: Search Planner ===
   const plannerResult = await runSearchPlannerFn({
     searchProfileBase: profile.searchProfileBase,
     queryExecutionHistory,
     config: discoveryConfig, logger, identityLock, missingFields,
   });
+
+  ctx = { ...ctx, enhancedRows: plannerResult.enhancedRows };
+  validatePipelineCheckpoint('afterPlanner', ctx, logger, discoveryConfig);
 
   // === Stage 05: Query Journey ===
   const journey = await runQueryJourneyFn({
@@ -205,6 +228,9 @@ export async function runDiscoverySeedPlan({
     categoryConfig, job, runId, logger, storage,
     brandResolution: brand.brandResolution,
   });
+
+  ctx = { ...ctx, ...journey };
+  validatePipelineCheckpoint('afterJourney', ctx, logger, discoveryConfig);
 
   // WHY: Emit search_queued events BEFORE Stage 06 starts so the GUI
   // renders all planned workers immediately. Must be in the event stream
@@ -249,11 +275,19 @@ export async function runDiscoverySeedPlan({
     queryConcurrency, resultsPerQuery, queryLimit: journey.queryLimit,
     searchProfileCaps, missingFields, variables,
     selectedQueryRowMap: journey.selectedQueryRowMap,
+    // WHY: Stage 05 exports profileQueryRowsByQuery; Stage 06 expects profileQueryRowMap.
+    // Intentional boundary rename — both names are semantically accurate.
     profileQueryRowMap: journey.profileQueryRowsByQuery,
     providerState, requiredOnlySearch, missingRequiredFields,
   });
   const { rawResults, searchAttempts, searchJournal,
     internalSatisfied, externalSearchReason } = searchResult;
+  ctx = {
+    ...ctx, resultsPerQuery, discoveryCap, queryConcurrency,
+    providerState, requiredOnlySearch, missingRequiredFields,
+    ...searchResult,
+  };
+  validatePipelineCheckpoint('afterExecution', ctx, logger, discoveryConfig);
 
   // === Stage 07: Result Processing ===
   const discoveryResult = await processDiscoveryResultsFn({
@@ -269,16 +303,20 @@ export async function runDiscoverySeedPlan({
     effectiveHostPlan: profile.effectiveHostPlan,
   });
 
-  // WHY: Attach the seed-phase schema4 so finalization can reuse it.
-  if (needset.seedSearchPlan) {
-    discoveryResult.seed_search_plan_output = needset.seedSearchPlan;
-  }
-
   // === Stage 08: Domain Classifier ===
   const classifierResult = runDomainClassifierFn({
     discoveryResult, planner, config: discoveryConfig, logger,
   });
-  discoveryResult.enqueue_summary = classifierResult || {};
 
-  return discoveryResult;
+  // WHY: Build final result as a fresh merge instead of mutating discoveryResult.
+  // Stage 08 only reads from discoveryResult (candidates, selectedUrls) — safe to merge after.
+  const finalResult = {
+    ...discoveryResult,
+    ...(needset.seedSearchPlan ? { seed_search_plan_output: needset.seedSearchPlan } : {}),
+    enqueue_summary: classifierResult || {},
+  };
+  ctx = { ...ctx, discoveryResult: finalResult };
+  validatePipelineCheckpoint('final', ctx, logger, discoveryConfig);
+
+  return finalResult;
 }

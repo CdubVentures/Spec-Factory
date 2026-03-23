@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified synthetic test-category workflow used to create `_test_*` categories, generate products, run them, and validate outcomes.
 > **Prerequisites:** [field-rules-studio.md](./field-rules-studio.md), [../03-architecture/data-model.md](../03-architecture/data-model.md)
-> **Last validated:** 2026-03-16
+> **Last validated:** 2026-03-23
 
 ## Entry Points
 

@@ -66,11 +66,3 @@ export async function reconcileOrphans(options) {
   const { reconcileOrphans: reconcileOrphansImpl } = await loadCatalogReconciler();
   return reconcileOrphansImpl(options);
 }
-
-export function getCatalogFeatureInfo() {
-  return Object.freeze({
-    feature: 'catalog',
-    phase: 'phase-02-feature-ownership',
-    entrypoint: 'src/features/catalog/index.js',
-  });
-}

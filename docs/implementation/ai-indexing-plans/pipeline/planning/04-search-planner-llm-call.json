@@ -1,6 +1,6 @@
 {
   "_doc": "Live routed LLM contract used by enhanceQueryRows() in Stage 04 Search Planner.",
-  "validated_against": "2026-03-20",
+  "validated_against": "2026-03-23",
   "routing": {
     "reason": "search_planner_enhance",
     "role": "plan",

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveRunActiveScope } from '../../../../tools/gui-react/src/pages/runtime-ops/runActivityScopeHelpers.js';
+import { resolveRunActiveScope } from '../../../../tools/gui-react/src/features/runtime-ops/selectors/runActivityScopeHelpers.js';
 
 test('resolveRunActiveScope stays active while process is running', () => {
   assert.equal(

@@ -1,9 +1,10 @@
 {
   "_doc": "High-level map of the live discovery seed/planning pipeline.",
-  "validated_against": "2026-03-22",
+  "validated_against": "2026-03-23",
   "historical_numbering_note": "The numbered files in this folder are documentation buckets, not the exact runtime order.",
   "canonical_entrypoint": "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
   "compatibility_entrypoint": "src/features/indexing/discovery/searchDiscovery.js",
+  "schema_ssot": "src/features/indexing/discovery/pipelineContextSchema.js — cumulative Zod schema with 8 progressive checkpoints validated at each stage boundary by the orchestrator. This is the authoritative runtime contract for pipeline data shapes.",
   "live_entrypoints": [
     "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
     "src/features/indexing/discovery/stages/needSet.js",

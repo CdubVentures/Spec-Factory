@@ -1,6 +1,6 @@
 # Search Results Logic In And Out
 
-Validated against live code on 2026-03-22. Tier metadata now recorded per query via resolveSelectedQueryRow.
+Validated against live code on 2026-03-23. Tier metadata now recorded per query via resolveSelectedQueryRow. P5: cumulative Zod checkpoint validates output at `afterExecution`.
 P1 Phase D (2026-03-22): `fetchDrainTimeoutMs` registry setting added for fetch completion gate.
 
 ## What this stage is

@@ -2,7 +2,6 @@
 // Receives enhanced query rows from Search Planner + host-plan rows,
 // dedupes, ranks, guards, and produces the final selected query list.
 
-import { z } from 'zod';
 import { normalizeFieldList } from '../../../../utils/fieldKeys.js';
 import {
   dedupeQueryRows,
@@ -15,35 +14,6 @@ import {
   writeSearchProfileArtifacts,
   resolveSearchProfileCaps,
 } from '../discoveryHelpers.js';
-
-export const queryJourneyInputSchema = z.object({
-  searchProfileBase: z.object({}).passthrough(),
-  enhancedRows: z.array(z.unknown()).optional().default([]),
-  hostPlanQueryRows: z.array(z.unknown()).optional().default([]),
-  variables: z.object({}).passthrough().optional().default({}),
-  config: z.record(z.string(), z.unknown()),
-  searchProfileCaps: z.object({}).passthrough().optional().default({}),
-  missingFields: z.array(z.string()).optional().default([]),
-  planningHints: z.object({}).passthrough().optional().default({}),
-  effectiveHostPlan: z.object({}).passthrough().nullable().optional().default(null),
-  categoryConfig: z.object({}).passthrough(),
-  job: z.object({}).passthrough(),
-  runId: z.string().optional().default(''),
-  logger: z.unknown().optional().default(null),
-  storage: z.unknown(),
-  brandResolution: z.object({}).passthrough().nullable().optional().default(null),
-}).passthrough();
-
-export const queryJourneyOutputSchema = z.object({
-  queries: z.array(z.string()),
-  selectedQueryRowMap: z.unknown(),
-  profileQueryRowsByQuery: z.unknown(),
-  searchProfilePlanned: z.object({}).passthrough(),
-  searchProfileKeys: z.object({}).passthrough(),
-  executionQueryLimit: z.number(),
-  queryLimit: z.number(),
-  queryRejectLogCombined: z.array(z.unknown()),
-}).passthrough();
 
 /**
  * @param {object} ctx

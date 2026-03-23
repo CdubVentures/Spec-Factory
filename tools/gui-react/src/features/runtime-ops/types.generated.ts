@@ -411,6 +411,8 @@ export interface RuntimeOpsWorkerRowGen {
   avg_duration_ms?: number;
   last_result_count?: number;
   last_duration_ms?: number;
+  last_query?: string | null;
+  last_provider?: string | null;
   primary_count?: number;
   fallback_count?: number;
   call_type?: string | null;
