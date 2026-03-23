@@ -21,7 +21,7 @@ describe('generateManifestTypes', () => {
   it('contains a property for every non-routeOnly registry entry', () => {
     for (const entry of RUNTIME_SETTINGS_REGISTRY) {
       if (entry.routeOnly) continue;
-      const key = entry.cfgKey || entry.key;
+      const key = entry.configKey || entry.key;
       ok(output.includes(`${key}:`), `missing property: ${key}`);
     }
   });
@@ -29,7 +29,7 @@ describe('generateManifestTypes', () => {
   it('int entries map to number type', () => {
     const intEntries = RUNTIME_SETTINGS_REGISTRY.filter(e => e.type === 'int' && !e.routeOnly);
     for (const entry of intEntries) {
-      const key = entry.cfgKey || entry.key;
+      const key = entry.configKey || entry.key;
       const pattern = new RegExp(`${key}:\\s*number`);
       ok(pattern.test(output), `${key} should be typed as number`);
     }
@@ -38,7 +38,7 @@ describe('generateManifestTypes', () => {
   it('bool entries map to boolean type', () => {
     const boolEntries = RUNTIME_SETTINGS_REGISTRY.filter(e => e.type === 'bool' && !e.routeOnly);
     for (const entry of boolEntries) {
-      const key = entry.cfgKey || entry.key;
+      const key = entry.configKey || entry.key;
       const pattern = new RegExp(`${key}:\\s*boolean`);
       ok(pattern.test(output), `${key} should be typed as boolean`);
     }
@@ -47,7 +47,7 @@ describe('generateManifestTypes', () => {
   it('float entries map to number type', () => {
     const floatEntries = RUNTIME_SETTINGS_REGISTRY.filter(e => e.type === 'float' && !e.routeOnly);
     for (const entry of floatEntries) {
-      const key = entry.cfgKey || entry.key;
+      const key = entry.configKey || entry.key;
       const pattern = new RegExp(`${key}:\\s*number`);
       ok(pattern.test(output), `${key} should be typed as number`);
     }
@@ -58,7 +58,7 @@ describe('generateManifestTypes', () => {
       e.type === 'string' && !e.routeOnly
     );
     for (const entry of stringEntries) {
-      const key = entry.cfgKey || entry.key;
+      const key = entry.configKey || entry.key;
       const pattern = new RegExp(`${key}:\\s*string`);
       ok(pattern.test(output), `${key} should be typed as string`);
     }
@@ -70,7 +70,7 @@ describe('generateManifestTypes', () => {
     );
     ok(enumEntries.length > 0, 'should have at least one enum entry');
     for (const entry of enumEntries) {
-      const key = entry.cfgKey || entry.key;
+      const key = entry.configKey || entry.key;
       ok(output.includes(`${key}:`), `missing enum property: ${key}`);
     }
   });

@@ -4,6 +4,15 @@ Validated against live code on 2026-03-22. Return shape simplified to 3-field co
 `settings` parameter retired. Error handling split into step-isolated catches.
 `configInt` hardened with registry-derived clamping. `bestTierSeen` infinity guard added.
 
+P0 changes (2026-03-22): Rank constants (`AVAILABILITY_RANKS`, `DIFFICULTY_RANKS`, `REQUIRED_LEVEL_RANKS`,
+`PRIORITY_BUCKET_ORDER`) and exhaustion thresholds (`EXHAUSTION_MIN_ATTEMPTS`, `EXHAUSTION_MIN_EVIDENCE_CLASSES`)
+extracted to `src/shared/discoveryRankConstants.js`. Accessor functions re-exported from `needsetEngine.js` for
+backward compatibility. Schema 2/3/4 naming convention retained in code comments — refers to the transformation
+chain: Schema 1 (raw input) → Schema 2 (per-field assessment) → Schema 3 (group planning) → Schema 4 (LLM annotations).
+
+P1 Phase A (2026-03-22): `field_history` table added to specDb. Per-field search history (repeat_count, domains_tried,
+no_value_attempts, etc.) will be persisted to DB at end of each round and loaded at start for crash recovery.
+
 ## What this stage is
 
 NeedSet is Stage 01 of the discovery pipeline. It assesses what fields are missing, groups

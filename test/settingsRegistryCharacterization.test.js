@@ -63,7 +63,7 @@ describe('settingsClampingRanges — characterization', () => {
 
   it('every INT_RANGE_MAP entry has cfgKey, min, max', () => {
     for (const [key, entry] of Object.entries(SETTINGS_CLAMPING_INT_RANGE_MAP)) {
-      ok(typeof entry.cfgKey === 'string', `${key} missing cfgKey`);
+      ok(typeof entry.configKey === 'string', `${key} missing cfgKey`);
       ok(typeof entry.min === 'number' && Number.isFinite(entry.min), `${key} bad min`);
       ok(typeof entry.max === 'number' && Number.isFinite(entry.max), `${key} bad max`);
       ok(entry.min <= entry.max, `${key} min > max`);
@@ -77,7 +77,7 @@ describe('settingsClampingRanges — characterization', () => {
 
   it('every FLOAT_RANGE_MAP entry has cfgKey, min, max', () => {
     for (const [key, entry] of Object.entries(SETTINGS_CLAMPING_FLOAT_RANGE_MAP)) {
-      ok(typeof entry.cfgKey === 'string', `${key} missing cfgKey`);
+      ok(typeof entry.configKey === 'string', `${key} missing cfgKey`);
       ok(typeof entry.min === 'number' && Number.isFinite(entry.min), `${key} bad min`);
       ok(typeof entry.max === 'number' && Number.isFinite(entry.max), `${key} bad max`);
     }
@@ -90,7 +90,7 @@ describe('settingsClampingRanges — characterization', () => {
 
   it('every STRING_ENUM_MAP entry has cfgKey and allowed array', () => {
     for (const [key, entry] of Object.entries(SETTINGS_CLAMPING_STRING_ENUM_MAP)) {
-      ok(typeof entry.cfgKey === 'string', `${key} missing cfgKey`);
+      ok(typeof entry.configKey === 'string', `${key} missing cfgKey`);
       ok(Array.isArray(entry.allowed) && entry.allowed.length > 0, `${key} missing/empty allowed`);
     }
   });
@@ -201,10 +201,10 @@ describe('RUNTIME_SETTINGS_ROUTE_PUT — characterization', () => {
   });
 
   it('known aliases are correct in PUT', () => {
-    strictEqual(SETTINGS_CLAMPING_STRING_ENUM_MAP.resumeMode.cfgKey, 'indexingResumeMode');
-    strictEqual(SETTINGS_CLAMPING_INT_RANGE_MAP.fetchConcurrency.cfgKey, 'concurrency');
-    strictEqual(SETTINGS_CLAMPING_INT_RANGE_MAP.resumeWindowHours.cfgKey, 'indexingResumeMaxAgeHours');
-    strictEqual(SETTINGS_CLAMPING_INT_RANGE_MAP.reextractAfterHours.cfgKey, 'indexingReextractAfterHours');
+    strictEqual(SETTINGS_CLAMPING_STRING_ENUM_MAP.resumeMode.configKey, 'indexingResumeMode');
+    strictEqual(SETTINGS_CLAMPING_INT_RANGE_MAP.fetchConcurrency.configKey, 'concurrency');
+    strictEqual(SETTINGS_CLAMPING_INT_RANGE_MAP.resumeWindowHours.configKey, 'indexingResumeMaxAgeHours');
+    strictEqual(SETTINGS_CLAMPING_INT_RANGE_MAP.reextractAfterHours.configKey, 'indexingReextractAfterHours');
     strictEqual(RUNTIME_SETTINGS_ROUTE_PUT.boolMap.reextractIndexed, 'indexingReextractEnabled');
   });
 });
@@ -319,7 +319,7 @@ describe('alias consistency — GET ↔ clamping ↔ PUT', () => {
         ?? SETTINGS_CLAMPING_FLOAT_RANGE_MAP[feKey]
         ?? SETTINGS_CLAMPING_STRING_ENUM_MAP[feKey];
       if (clampEntry) {
-        strictEqual(clampEntry.cfgKey, cfgKey, `clamping alias mismatch for ${feKey}`);
+        strictEqual(clampEntry.configKey, cfgKey, `clamping alias mismatch for ${feKey}`);
       }
 
       const putBool = RUNTIME_SETTINGS_ROUTE_PUT.boolMap[feKey];

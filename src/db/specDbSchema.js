@@ -792,6 +792,20 @@ CREATE TABLE IF NOT EXISTS domain_classifications (
 );
 
 -- source_strategy table removed: sources.json is now the SSOT (see sourceFileService.js)
+
+CREATE TABLE IF NOT EXISTS field_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  product_id TEXT NOT NULL,
+  field_key TEXT NOT NULL,
+  round INTEGER NOT NULL,
+  run_id TEXT NOT NULL,
+  history_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(category, product_id, field_key)
+);
+CREATE INDEX IF NOT EXISTS idx_fh_product ON field_history(category, product_id);
 `;
 
 // WHY: Single source of truth for llm_route_matrix columns (excluding structural

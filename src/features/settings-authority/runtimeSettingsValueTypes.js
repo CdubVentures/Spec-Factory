@@ -2,16 +2,16 @@ import { RUNTIME_SETTINGS_ROUTE_PUT } from './runtimeSettingsRoutePut.js';
 
 const runtimeValueTypeMap = {};
 for (const value of Object.values(RUNTIME_SETTINGS_ROUTE_PUT.stringEnumMap)) {
-  runtimeValueTypeMap[value.cfgKey] = 'string';
+  runtimeValueTypeMap[value.configKey] = 'string';
 }
 for (const value of Object.values(RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap)) {
   runtimeValueTypeMap[value] = 'string';
 }
 for (const value of Object.values(RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap)) {
-  runtimeValueTypeMap[value.cfgKey] = 'integer';
+  runtimeValueTypeMap[value.configKey] = 'integer';
 }
 for (const value of Object.values(RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap)) {
-  runtimeValueTypeMap[value.cfgKey] = 'number';
+  runtimeValueTypeMap[value.configKey] = 'number';
 }
 for (const value of Object.values(RUNTIME_SETTINGS_ROUTE_PUT.boolMap)) {
   runtimeValueTypeMap[value] = 'boolean';

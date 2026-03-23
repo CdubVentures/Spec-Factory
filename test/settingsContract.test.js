@@ -74,10 +74,10 @@ test('migration keeps only canonical runtime/convergence/ui keys', () => {
 test('runtime PUT route contract keys resolve to canonical runtime settings keys', () => {
   const runtimeSet = new Set(RUNTIME_SETTINGS_KEYS);
   const cfgKeys = new Set([
-    ...Object.values(RUNTIME_SETTINGS_ROUTE_PUT.stringEnumMap).map((entry) => entry.cfgKey),
+    ...Object.values(RUNTIME_SETTINGS_ROUTE_PUT.stringEnumMap).map((entry) => entry.configKey),
     ...Object.values(RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap),
-    ...Object.values(RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap).map((entry) => entry.cfgKey),
-    ...Object.values(RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap).map((entry) => entry.cfgKey),
+    ...Object.values(RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap).map((entry) => entry.configKey),
+    ...Object.values(RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap).map((entry) => entry.configKey),
     ...Object.values(RUNTIME_SETTINGS_ROUTE_PUT.boolMap),
     'dynamicFetchPolicyMapJson',
   ]);

@@ -1,6 +1,7 @@
 # Discovery Pipeline — Plain English Audit
 
-> Generated 2026-03-22. Source of truth: live code + planning docs.
+> Generated 2026-03-22. Verified against live code with line numbers.
+> Updated 2026-03-22: P0 SSOT fixes complete (shared constants, unified naming, stableHash extraction, array metadata refactor). P1 Phase A complete (field_history table in specDb). See `PIPELINE-CONTRACT-AUDIT.md` for full audit.
 
 ---
 

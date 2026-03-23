@@ -26,6 +26,7 @@ import { createBillingStore } from './stores/billingStore.js';
 import { createSourceIntelStore } from './stores/sourceIntelStore.js';
 import { createQueueProductStore } from './stores/queueProductStore.js';
 import { createLlmRouteSourceStore } from './stores/llmRouteSourceStore.js';
+import { createFieldHistoryStore } from './stores/fieldHistoryStore.js';
 
 export class SpecDb {
   constructor({ dbPath, category }) {
@@ -88,6 +89,10 @@ export class SpecDb {
         _upsertSourceRegistry: this._upsertSourceRegistry, _insertSourceArtifact: this._insertSourceArtifact,
         _upsertSourceAssertion: this._upsertSourceAssertion, _insertSourceEvidenceRef: this._insertSourceEvidenceRef
       }
+    });
+    this._fieldHistoryStore = createFieldHistoryStore({
+      category: this.category,
+      stmts: { _upsertFieldHistory: this._upsertFieldHistory, _getFieldHistories: this._getFieldHistories, _deleteFieldHistories: this._deleteFieldHistories }
     });
   }
 
@@ -679,5 +684,11 @@ export class SpecDb {
   upsertSourceIntelPath(e) { this._sourceIntelStore.upsertSourceIntelPath(e); }
   persistSourceIntelFull(c, d) { this._sourceIntelStore.persistSourceIntelFull(c, d); }
   loadSourceIntelDomains(c) { return this._sourceIntelStore.loadSourceIntelDomains(c); }
+
+  // --- Field History (crash-recovery persistence for search progression) ---
+
+  upsertFieldHistory(opts) { this._fieldHistoryStore.upsertFieldHistory(opts); }
+  getFieldHistories(productId) { return this._fieldHistoryStore.getFieldHistories(productId); }
+  deleteFieldHistories(productId) { this._fieldHistoryStore.deleteFieldHistories(productId); }
 
 }

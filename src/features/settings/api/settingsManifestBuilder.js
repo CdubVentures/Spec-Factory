@@ -20,7 +20,7 @@ export function buildSettingsManifest() {
     intRange[key] = {
       min: spec.min,
       max: spec.max,
-      cfgKey: spec.cfgKey,
+      configKey: spec.configKey,
       default: resolveDefault(key, RUNTIME_DEFAULTS),
     };
   }
@@ -31,7 +31,7 @@ export function buildSettingsManifest() {
     floatRange[key] = {
       min: spec.min,
       max: spec.max,
-      cfgKey: spec.cfgKey,
+      configKey: spec.configKey,
       default: resolveDefault(key, RUNTIME_DEFAULTS),
     };
   }
@@ -44,7 +44,7 @@ export function buildSettingsManifest() {
   for (const [key, spec] of Object.entries(RUNTIME_SETTINGS_ROUTE_PUT.stringEnumMap)) {
     stringEnum[key] = {
       allowed: [...spec.allowed],
-      cfgKey: spec.cfgKey,
+      configKey: spec.configKey,
       default: resolveDefault(key, RUNTIME_DEFAULTS),
     };
   }

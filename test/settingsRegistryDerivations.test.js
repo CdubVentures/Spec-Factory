@@ -119,11 +119,11 @@ describe('deriveClampingIntRangeMap', () => {
     deepStrictEqual(sortedKeys(derived), sortedKeys(SETTINGS_CLAMPING_INT_RANGE_MAP));
   });
 
-  it('every entry matches cfgKey, min, max', () => {
+  it('every entry matches configKey, min, max', () => {
     for (const key of Object.keys(SETTINGS_CLAMPING_INT_RANGE_MAP)) {
       const d = derived[key];
       const e = SETTINGS_CLAMPING_INT_RANGE_MAP[key];
-      strictEqual(d.cfgKey, e.cfgKey, `${key} cfgKey mismatch`);
+      strictEqual(d.configKey, e.configKey, `${key} configKey mismatch`);
       strictEqual(d.min, e.min, `${key} min mismatch`);
       strictEqual(d.max, e.max, `${key} max mismatch`);
     }
@@ -141,11 +141,11 @@ describe('deriveClampingFloatRangeMap', () => {
     deepStrictEqual(sortedKeys(derived), sortedKeys(SETTINGS_CLAMPING_FLOAT_RANGE_MAP));
   });
 
-  it('every entry matches cfgKey, min, max', () => {
+  it('every entry matches configKey, min, max', () => {
     for (const key of Object.keys(SETTINGS_CLAMPING_FLOAT_RANGE_MAP)) {
       const d = derived[key];
       const e = SETTINGS_CLAMPING_FLOAT_RANGE_MAP[key];
-      strictEqual(d.cfgKey, e.cfgKey, `${key} cfgKey mismatch`);
+      strictEqual(d.configKey, e.configKey, `${key} configKey mismatch`);
       strictEqual(d.min, e.min, `${key} min mismatch`);
       strictEqual(d.max, e.max, `${key} max mismatch`);
     }
@@ -163,11 +163,11 @@ describe('deriveClampingStringEnumMap', () => {
     deepStrictEqual(sortedKeys(derived), sortedKeys(SETTINGS_CLAMPING_STRING_ENUM_MAP));
   });
 
-  it('every entry matches cfgKey and allowed', () => {
+  it('every entry matches configKey and allowed', () => {
     for (const key of Object.keys(SETTINGS_CLAMPING_STRING_ENUM_MAP)) {
       const d = derived[key];
       const e = SETTINGS_CLAMPING_STRING_ENUM_MAP[key];
-      strictEqual(d.cfgKey, e.cfgKey, `${key} cfgKey mismatch`);
+      strictEqual(d.configKey, e.configKey, `${key} configKey mismatch`);
       deepStrictEqual([...d.allowed], [...e.allowed], `${key} allowed mismatch`);
       strictEqual(d.csv, e.csv, `${key} csv mismatch`);
     }

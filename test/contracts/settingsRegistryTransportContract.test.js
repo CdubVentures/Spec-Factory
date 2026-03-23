@@ -17,7 +17,7 @@ describe('settingsRegistryTransportContract — Plan 03', () => {
 
   it('every entry has a configKey (explicit or derived from key)', () => {
     for (const entry of RUNTIME_SETTINGS_REGISTRY) {
-      const ck = entry.configKey || entry.cfgKey || entry.key;
+      const ck = entry.configKey || entry.key;
       ok(typeof ck === 'string' && ck.length > 0, `${entry.key} has no configKey`);
     }
   });
@@ -25,20 +25,15 @@ describe('settingsRegistryTransportContract — Plan 03', () => {
   it('no two entries share the same configKey', () => {
     const seen = new Map();
     for (const entry of RUNTIME_SETTINGS_REGISTRY) {
-      const ck = entry.configKey || entry.cfgKey || entry.key;
+      const ck = entry.configKey || entry.key;
       ok(!seen.has(ck), `Duplicate configKey "${ck}" on entries: ${seen.get(ck)} and ${entry.key}`);
       seen.set(ck, entry.key);
     }
   });
 
-  it('entries with cfgKey have matching configKey', () => {
+  it('no entry has legacy cfgKey field', () => {
     for (const entry of RUNTIME_SETTINGS_REGISTRY) {
-      if (!entry.cfgKey) continue;
-      strictEqual(
-        entry.configKey,
-        entry.cfgKey,
-        `${entry.key}: configKey (${entry.configKey}) should match cfgKey (${entry.cfgKey})`
-      );
+      ok(!entry.cfgKey, `${entry.key} still has legacy cfgKey field — use configKey instead`);
     }
   });
 

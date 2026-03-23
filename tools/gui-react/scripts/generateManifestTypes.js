@@ -47,7 +47,7 @@ export function generateManifestTypes(registry) {
   for (const entry of registry) {
     if (entry.routeOnly) continue;
     if ((entry.type === 'enum' || entry.type === 'csv_enum') && entry.allowed) {
-      const typeName = ENUM_TYPE_NAMES[entry.key] || ENUM_TYPE_NAMES[entry.cfgKey];
+      const typeName = ENUM_TYPE_NAMES[entry.key] || ENUM_TYPE_NAMES[entry.configKey];
       if (typeName && typeName !== 'string' && !unionTypes.find(u => u.name === typeName)) {
         const members = entry.allowed.map(v => `'${v}'`).join(' | ');
         unionTypes.push({ name: typeName, members });
@@ -65,19 +65,19 @@ export function generateManifestTypes(registry) {
   lines.push('export interface RuntimeSettingDefaults {');
   for (const entry of registry) {
     if (entry.routeOnly) continue;
-    const key = entry.cfgKey || entry.key;
+    const key = entry.configKey || entry.key;
     let tsType = REGISTRY_TYPE_TO_TS[entry.type];
 
     // For enum types, use named union or string
     if (tsType === null) {
-      const typeName = ENUM_TYPE_NAMES[entry.key] || ENUM_TYPE_NAMES[entry.cfgKey];
+      const typeName = ENUM_TYPE_NAMES[entry.key] || ENUM_TYPE_NAMES[entry.configKey];
       tsType = typeName || 'string';
     }
 
     lines.push(`  ${key}: ${tsType};`);
 
     // WHY: Aliased keys must appear under BOTH names to match derived defaults shape
-    if (entry.cfgKey && entry.cfgKey !== entry.key) {
+    if (entry.configKey && entry.configKey !== entry.key) {
       lines.push(`  ${entry.key}: ${tsType};`);
     }
   }

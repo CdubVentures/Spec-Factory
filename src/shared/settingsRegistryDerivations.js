@@ -3,8 +3,8 @@
 
 /**
  * Derive the runtime defaults object from registry.
- * Produces: { [cfgKey]: default } for every entry.
- * WHY: When an alias exists (cfgKey != key), BOTH forms are emitted to match
+ * Produces: { [configKey]: default } for every entry.
+ * WHY: When an alias exists (configKey != key), BOTH forms are emitted to match
  * the existing SETTINGS_DEFAULTS.runtime shape where both `resumeMode` and
  * `indexingResumeMode` coexist with identical values.
  */
@@ -13,10 +13,10 @@ export function deriveRuntimeDefaults(registry) {
   for (const entry of registry) {
     // WHY: routeOnly keys exist in route contracts but not in SETTINGS_DEFAULTS
     if (entry.routeOnly) continue;
-    const cfgKey = entry.cfgKey || entry.key;
+    const cfgKey = entry.configKey || entry.key;
     defaults[cfgKey] = entry.default;
     // WHY: Aliased keys must appear under BOTH names in defaults
-    if (entry.cfgKey && entry.cfgKey !== entry.key) {
+    if (entry.configKey && entry.configKey !== entry.key) {
       defaults[entry.key] = entry.default;
     }
   }
@@ -39,7 +39,7 @@ export function deriveOptionValues(registry) {
 
 /**
  * Derive the int clamping range map.
- * Produces: { [feKey]: { cfgKey, min, max } } matching SETTINGS_CLAMPING_INT_RANGE_MAP.
+ * Produces: { [feKey]: { configKey, min, max } } matching SETTINGS_CLAMPING_INT_RANGE_MAP.
  */
 export function deriveClampingIntRangeMap(registry) {
   const map = {};
@@ -47,7 +47,7 @@ export function deriveClampingIntRangeMap(registry) {
     if (entry.type !== 'int') continue;
     if (entry.min == null || entry.max == null) continue;
     map[entry.key] = Object.freeze({
-      cfgKey: entry.cfgKey || entry.key,
+      configKey: entry.configKey || entry.key,
       min: entry.min,
       max: entry.max,
     });
@@ -57,7 +57,7 @@ export function deriveClampingIntRangeMap(registry) {
 
 /**
  * Derive the float clamping range map.
- * Produces: { [feKey]: { cfgKey, min, max } } matching SETTINGS_CLAMPING_FLOAT_RANGE_MAP.
+ * Produces: { [feKey]: { configKey, min, max } } matching SETTINGS_CLAMPING_FLOAT_RANGE_MAP.
  */
 export function deriveClampingFloatRangeMap(registry) {
   const map = {};
@@ -65,7 +65,7 @@ export function deriveClampingFloatRangeMap(registry) {
     if (entry.type !== 'float') continue;
     if (entry.min == null || entry.max == null) continue;
     map[entry.key] = Object.freeze({
-      cfgKey: entry.cfgKey || entry.key,
+      configKey: entry.configKey || entry.key,
       min: entry.min,
       max: entry.max,
     });
@@ -75,7 +75,7 @@ export function deriveClampingFloatRangeMap(registry) {
 
 /**
  * Derive the string enum clamping map.
- * Produces: { [feKey]: { cfgKey, allowed, csv? } } matching SETTINGS_CLAMPING_STRING_ENUM_MAP.
+ * Produces: { [feKey]: { configKey, allowed, csv? } } matching SETTINGS_CLAMPING_STRING_ENUM_MAP.
  */
 export function deriveClampingStringEnumMap(registry) {
   const map = {};
@@ -83,7 +83,7 @@ export function deriveClampingStringEnumMap(registry) {
     if (entry.type !== 'enum' && entry.type !== 'csv_enum') continue;
     if (!entry.allowed) continue;
     const descriptor = {
-      cfgKey: entry.cfgKey || entry.key,
+      configKey: entry.configKey || entry.key,
       allowed: entry.allowed,
     };
     if (entry.type === 'csv_enum') descriptor.csv = true;
@@ -104,7 +104,7 @@ export function deriveRouteGetMaps(registry) {
   const boolMap = {};
   for (const entry of registry) {
     if (entry.defaultsOnly) continue;
-    const cfgKey = entry.cfgKey || entry.key;
+    const cfgKey = entry.configKey || entry.key;
     switch (entry.type) {
       case 'string':
       case 'enum':
@@ -141,7 +141,7 @@ export function deriveRoutePutContract(registry, { clampingIntRangeMap, clamping
   const boolMap = {};
   for (const entry of registry) {
     if (entry.readOnly || entry.defaultsOnly) continue;
-    const cfgKey = entry.cfgKey || entry.key;
+    const cfgKey = entry.configKey || entry.key;
     switch (entry.type) {
       case 'string':
         // WHY: dynamicFetchPolicyMapJson is handled as a special key, not in stringFreeMap
@@ -172,7 +172,7 @@ export function deriveRoutePutContract(registry, { clampingIntRangeMap, clamping
 export function deriveValueTypeMap(registry) {
   const typeMap = {};
   for (const entry of registry) {
-    const cfgKey = entry.cfgKey || entry.key;
+    const cfgKey = entry.configKey || entry.key;
     switch (entry.type) {
       case 'string':
       case 'enum':
@@ -250,7 +250,7 @@ export function deriveEnvKeyMap(registry) {
 export function deriveConfigKeyMap(registry) {
   const map = {};
   for (const entry of registry) {
-    map[entry.key] = entry.configKey || entry.cfgKey || entry.key;
+    map[entry.key] = entry.configKey || entry.key;
   }
   return Object.freeze(map);
 }

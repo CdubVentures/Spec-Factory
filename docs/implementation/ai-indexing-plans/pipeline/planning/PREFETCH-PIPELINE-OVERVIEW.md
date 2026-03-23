@@ -2,6 +2,8 @@
 
 Validated: 2026-03-22 (round_mode fully retired from all code/fixtures/docs. Feedback loops clarified: per-run vs cross-product learning. LLM reason string fixed).
 
+Architecture audit: 2026-03-22. See `PIPELINE-CONTRACT-AUDIT.md` for full audit results, P0 SSOT fixes (complete), and P1 persistence work (in progress).
+
 Source of truth:
 
 - `src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js`

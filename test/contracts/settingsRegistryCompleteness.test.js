@@ -88,11 +88,10 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
     }
   });
 
-  it('every cfgKey alias is a non-empty string', () => {
+  it('entries with configKey !== key use configKey for alias resolution', () => {
     for (const entry of RUNTIME_SETTINGS_REGISTRY) {
-      if (!entry.cfgKey) continue;
-      ok(typeof entry.cfgKey === 'string' && entry.cfgKey.length > 0, `${entry.key} has empty cfgKey`);
-      ok(entry.cfgKey !== entry.key, `${entry.key} has cfgKey === key (should be omitted)`);
+      if (!entry.configKey || entry.configKey === entry.key) continue;
+      ok(typeof entry.configKey === 'string' && entry.configKey.length > 0, `${entry.key} has empty configKey`);
     }
   });
 
@@ -125,7 +124,6 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
       'learningJsonWrite',
       'llmExtractionCacheEnabled',
       'queueJsonWrite',
-      'runtimeAutoSaveEnabled',
       'scannedPdfOcrPromoteCandidates',
       'staticDomExtractorEnabled',
     ]);
@@ -205,7 +203,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
     for (const [key, cfgKey] of Object.entries(KNOWN_ALIASES)) {
       const entry = RUNTIME_SETTINGS_REGISTRY.find(e => e.key === key);
       ok(entry, `alias key ${key} not found in registry`);
-      strictEqual(entry.cfgKey, cfgKey, `${key} cfgKey mismatch: expected ${cfgKey}, got ${entry.cfgKey}`);
+      strictEqual(entry.configKey, cfgKey, `${key} configKey mismatch: expected ${cfgKey}, got ${entry.configKey}`);
     }
   });
 

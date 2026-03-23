@@ -16,24 +16,24 @@ describe('settingsDefaults declaration drift characterization', () => {
 
     it('every non-routeOnly registry entry has a key in runtime defaults', () => {
       for (const entry of nonRouteOnlyEntries) {
-        const cfgKey = entry.cfgKey || entry.key;
+        const cfgKey = entry.configKey || entry.key;
         assert.ok(
           runtimeKeys.includes(cfgKey),
-          `Missing runtime default for registry entry: ${entry.key} (cfgKey: ${cfgKey})`,
+          `Missing runtime default for registry entry: ${entry.key} (configKey: ${cfgKey})`,
         );
       }
     });
 
-    it('aliased entries appear under both key and cfgKey', () => {
-      const aliased = nonRouteOnlyEntries.filter(e => e.cfgKey && e.cfgKey !== e.key);
+    it('aliased entries appear under both key and configKey', () => {
+      const aliased = nonRouteOnlyEntries.filter(e => e.configKey && e.configKey !== e.key);
       for (const entry of aliased) {
         assert.ok(
           runtimeKeys.includes(entry.key),
-          `Missing alias key ${entry.key} for cfgKey ${entry.cfgKey}`,
+          `Missing alias key ${entry.key} for configKey ${entry.configKey}`,
         );
         assert.ok(
-          runtimeKeys.includes(entry.cfgKey),
-          `Missing cfgKey ${entry.cfgKey} for key ${entry.key}`,
+          runtimeKeys.includes(entry.configKey),
+          `Missing configKey ${entry.configKey} for key ${entry.key}`,
         );
       }
     });

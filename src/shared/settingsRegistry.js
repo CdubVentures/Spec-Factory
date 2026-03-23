@@ -59,7 +59,7 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "fetchBudgetMs", type: "int", default: 45000, min: 5000, max: 300000, configKey: "fetchBudgetMs", envKey: "FETCH_BUDGET_MS" },
   // WHY: fetchCandidateSources retired — always true. Kept as defaultsOnly for backward compat.
   { key: "fetchCandidateSources", type: "bool", default: true, deprecated: true, configKey: "fetchCandidateSources", envKey: "", defaultsOnly: true },
-  { key: "fetchConcurrency", type: "int", default: 4, min: 1, max: 64, cfgKey: "concurrency", configKey: "concurrency", envKey: "CONCURRENCY" },
+  { key: "fetchConcurrency", type: "int", default: 4, min: 1, max: 64, configKey: "concurrency", envKey: "CONCURRENCY" },
   { key: "fetchPerHostConcurrencyCap", type: "int", default: 1, min: 1, max: 64, configKey: "fetchPerHostConcurrencyCap", envKey: "FETCH_PER_HOST_CONCURRENCY_CAP" },
   { key: "fetchSchedulerInternalsMapJson", type: "string", default: DEFAULT_FETCH_SCHEDULER_INTERNALS_MAP_JSON, allowEmpty: true, configKey: "fetchSchedulerInternalsMapJson", envKey: "FETCH_SCHEDULER_INTERNALS_MAP_JSON" },
   { key: "fetchSchedulerMaxRetries", type: "int", default: 1, min: 0, max: 20, configKey: "fetchSchedulerMaxRetries", envKey: "FETCH_SCHEDULER_MAX_RETRIES" },
@@ -174,11 +174,11 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "postLoadWaitMs", type: "int", default: 200, min: 0, max: 60000, configKey: "postLoadWaitMs", envKey: "POST_LOAD_WAIT_MS" },
   { key: "preferHttpFetcher", type: "bool", default: true, configKey: "preferHttpFetcher", envKey: "PREFER_HTTP_FETCHER" },
   { key: "reCrawlStaleAfterDays", type: "int", default: 30, min: 1, max: 3650, configKey: "reCrawlStaleAfterDays", envKey: "RECRAWL_STALE_AFTER_DAYS" },
-  { key: "reextractAfterHours", type: "int", default: 24, min: 1, max: 8760, cfgKey: "indexingReextractAfterHours", configKey: "indexingReextractAfterHours", envKey: "INDEXING_REEXTRACT_AFTER_HOURS" },
-  { key: "reextractIndexed", type: "bool", default: true, cfgKey: "indexingReextractEnabled", configKey: "indexingReextractEnabled", envKey: "INDEXING_REEXTRACT_ENABLED" },
+  { key: "reextractAfterHours", type: "int", default: 24, min: 1, max: 8760, configKey: "indexingReextractAfterHours", envKey: "INDEXING_REEXTRACT_AFTER_HOURS" },
+  { key: "reextractIndexed", type: "bool", default: true, configKey: "indexingReextractEnabled", envKey: "INDEXING_REEXTRACT_ENABLED" },
   { key: "repairDedupeRule", type: "enum", default: "domain_once", allowed: ["domain_once","domain_and_status","none"], configKey: "repairDedupeRule", envKey: "REPAIR_DEDUPE_RULE" },
-  { key: "resumeMode", type: "enum", default: "auto", allowed: ["auto","force_resume","start_over"], cfgKey: "indexingResumeMode", configKey: "indexingResumeMode", envKey: "INDEXING_RESUME_MODE" },
-  { key: "resumeWindowHours", type: "int", default: 48, min: 1, max: 8760, cfgKey: "indexingResumeMaxAgeHours", configKey: "indexingResumeMaxAgeHours", envKey: "INDEXING_RESUME_MAX_AGE_HOURS" },
+  { key: "resumeMode", type: "enum", default: "auto", allowed: ["auto","force_resume","start_over"], configKey: "indexingResumeMode", envKey: "INDEXING_RESUME_MODE" },
+  { key: "resumeWindowHours", type: "int", default: 48, min: 1, max: 8760, configKey: "indexingResumeMaxAgeHours", envKey: "INDEXING_RESUME_MAX_AGE_HOURS" },
   { key: "robotsTxtCompliant", type: "bool", default: true, configKey: "robotsTxtCompliant", envKey: "ROBOTS_TXT_COMPLIANT" },
   { key: "robotsTxtTimeoutMs", type: "int", default: 6000, min: 100, max: 120000, configKey: "robotsTxtTimeoutMs", envKey: "ROBOTS_TXT_TIMEOUT_MS" },
   { key: "runtimeControlFile", type: "string", default: "_runtime/control/runtime_overrides.json", configKey: "runtimeControlFile", envKey: "RUNTIME_CONTROL_FILE" },
@@ -231,7 +231,7 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "learningJsonWrite", type: "bool", default: false, defaultsOnly: true, configKey: "learningJsonWrite", envKey: "" },
   { key: "llmExtractionCacheEnabled", type: "bool", default: true, defaultsOnly: true, configKey: "llmExtractionCacheEnabled", envKey: "" },
   { key: "queueJsonWrite", type: "bool", default: false, defaultsOnly: true, configKey: "queueJsonWrite", envKey: "" },
-  { key: "runtimeAutoSaveEnabled", type: "bool", default: true, defaultsOnly: true, configKey: "runtimeAutoSaveEnabled", envKey: "RUNTIME_AUTOSAVE_ENABLED" },
+  // WHY: runtimeAutoSaveEnabled removed from RUNTIME — canonical home is UI_SETTINGS_REGISTRY (line 252).
   { key: "scannedPdfOcrPromoteCandidates", type: "bool", default: true, defaultsOnly: true, configKey: "scannedPdfOcrPromoteCandidates", envKey: "" },
   { key: "staticDomExtractorEnabled", type: "bool", default: true, defaultsOnly: true, configKey: "staticDomExtractorEnabled", envKey: "" },
 ]);

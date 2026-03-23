@@ -508,5 +508,20 @@ export function prepareStatements(db) {
       INSERT INTO runtime_events (ts, level, event, category, product_id, run_id, data)
       VALUES (@ts, @level, @event, @category, @product_id, @run_id, @data)
     `),
+
+    _upsertFieldHistory: db.prepare(`
+      INSERT INTO field_history (category, product_id, field_key, round, run_id, history_json, updated_at)
+      VALUES (@category, @product_id, @field_key, @round, @run_id, @history_json, CURRENT_TIMESTAMP)
+      ON CONFLICT(category, product_id, field_key)
+      DO UPDATE SET round = excluded.round, run_id = excluded.run_id, history_json = excluded.history_json, updated_at = CURRENT_TIMESTAMP
+    `),
+
+    _getFieldHistories: db.prepare(`
+      SELECT field_key, history_json FROM field_history WHERE category = @category AND product_id = @product_id
+    `),
+
+    _deleteFieldHistories: db.prepare(`
+      DELETE FROM field_history WHERE category = @category AND product_id = @product_id
+    `),
   };
 }
